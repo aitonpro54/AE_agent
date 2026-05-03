@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "after-effects": {
+      "command": "C:\\Users\\Ant\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+      "args": [
+        "C:\\Users\\Ant\\Documents\\Codex\\2026-05-03\\files-mentioned-by-the-user-c36e102f\\ae-mcp-bridge\\mcp-server\\server.js"
+      ],
+      "env": {
+        "AE_BRIDGE_PORT": "3456",
+        "AE_BRIDGE_TOKEN": "codex-ae-local"
+      }
+    }
+  }
+}
