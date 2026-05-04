@@ -1,5 +1,31 @@
 # AE MCP Bridge Releases
 
+## v0.5.0-dev-workflow - 2026-05-04
+
+Developer workflow tools for iterative AE script and panel development.
+
+Verified:
+
+- `bridge-daemon.js` and `mcp-adapter.js` report version `0.5.0`.
+- `bridge-only-smoke-test.js` starts a temporary daemon.
+- `smoke-test.js` starts a temporary daemon plus adapter and lists all 19 tools.
+- Live CEP validation on `127.0.0.1:3456` reports panel online against daemon `0.5.0`.
+- `mcp-call-tool.js` works for `run_extendscript_file`, `create_test_comp`, `create_text_layer`, `get_selected_layers`, `get_selected_properties`, and `cleanup_test_items`.
+
+Added:
+
+- `run_extendscript_file`
+- `get_selected_layers`
+- `get_selected_properties`
+- `create_test_comp`
+- `cleanup_test_items`
+- `scripts\ae-file-smoke.jsx` as a tiny file-run smoke fixture
+
+Notes:
+
+- `run_extendscript_file` is project-scoped by default. Set `AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT=1` to run files outside the bridge project.
+- `cleanup_test_items` requires `confirm: true` and only removes items matching a name prefix.
+
 ## v0.4.0-daemon-split - 2026-05-04
 
 Persistent daemon split.

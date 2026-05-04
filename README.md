@@ -17,15 +17,20 @@ It has two parts:
 - `backup_project_file` - copies the currently saved `.aep` into `backups/` without modifying the open project.
 - `ping_ae` - verifies that After Effects is connected and can run a tiny script.
 - `run_extendscript` - runs an ExtendScript function body in After Effects.
+- `run_extendscript_file` - runs a local `.jsx`, `.jsxinc`, `.js`, or `.txt` script file.
 - `list_comps` - lists project compositions.
 - `list_layers` - lists layers in a composition by index.
 - `get_project_info` - returns basic project info.
 - `get_active_comp` - returns active composition details and selected layers.
+- `get_selected_layers` - returns selected layers in the active composition.
+- `get_selected_properties` - returns selected properties in the active composition.
 - `find_comps` - finds compositions by name substring.
 - `create_text_layer` - creates a text layer in the active comp or a comp by project item index.
 - `set_layer_transform` - sets position, scale, rotation, opacity, or anchor point.
 - `apply_transform_expression` - applies an expression to a common transform property.
 - `add_layer_marker` - adds a marker to a layer.
+- `create_test_comp` - creates a temporary development comp.
+- `cleanup_test_items` - removes temporary project items by name prefix with explicit confirmation.
 
 ## Run daemon
 
@@ -152,6 +157,16 @@ $env:MCP_CALL_ARGS_JSON='{"text":"Codex test","compItemIndex":1}'
 node .\scripts\mcp-call-tool.js create_text_layer
 Remove-Item Env:MCP_CALL_ARGS_JSON
 ```
+
+`run_extendscript_file` reads files inside the bridge project by default:
+
+```powershell
+$env:MCP_CALL_ARGS_JSON='{"filePath":"scripts/ae-file-smoke.jsx"}'
+node .\scripts\mcp-call-tool.js run_extendscript_file
+Remove-Item Env:MCP_CALL_ARGS_JSON
+```
+
+Set `AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT=1` only when you intentionally want the daemon to execute script files from outside this project folder.
 
 In the Codex desktop runtime, this Node executable worked during initial validation:
 

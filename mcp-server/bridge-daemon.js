@@ -7,7 +7,7 @@ const fs = require("fs");
 const path = require("path");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "0.4.0";
+const SERVER_VERSION = "0.5.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -17,6 +17,7 @@ const PROJECT_ROOT = path.resolve(__dirname, "..");
 const LOG_DIR = path.join(PROJECT_ROOT, "logs");
 const LOG_FILE = path.join(LOG_DIR, "bridge-events.jsonl");
 const BACKUP_DIR = path.join(PROJECT_ROOT, "backups");
+const ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT = process.env.AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT === "1";
 const STARTED_AT = Date.now();
 
 const pendingCommands = [];
@@ -243,6 +244,40 @@ function sanitizeFilenamePart(value) {
 
 function timestampForFilename(date) {
   return date.toISOString().replace(/[:.]/g, "-");
+}
+
+function isPathInside(parent, child) {
+  const relative = path.relative(parent, child);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+function resolveScriptFile(filePath) {
+  const requestedPath = optionalString({ filePath }, "filePath", "");
+  if (!requestedPath) {
+    throw new Error("filePath is required.");
+  }
+
+  const resolvedPath = path.resolve(PROJECT_ROOT, requestedPath);
+  if (!ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT && !isPathInside(PROJECT_ROOT, resolvedPath)) {
+    throw new Error("filePath must resolve inside the bridge project. Set AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT=1 to allow external files.");
+  }
+
+  const ext = path.extname(resolvedPath).toLowerCase();
+  if (![".jsx", ".jsxinc", ".js", ".txt"].includes(ext)) {
+    throw new Error("filePath must point to a .jsx, .jsxinc, .js, or .txt script file.");
+  }
+  if (!fs.existsSync(resolvedPath)) {
+    throw new Error(`Script file does not exist: ${resolvedPath}`);
+  }
+  const stat = fs.statSync(resolvedPath);
+  if (!stat.isFile()) {
+    throw new Error(`Script path is not a file: ${resolvedPath}`);
+  }
+  if (stat.size > 2 * 1024 * 1024) {
+    throw new Error("Script file is too large. Keep files under 2MB for MCP execution.");
+  }
+
+  return { resolvedPath, stat };
 }
 
 function readBody(req) {
@@ -708,6 +743,24 @@ const tools = [
     }
   },
   {
+    name: "run_extendscript_file",
+    description: "Read a local ExtendScript file from disk, run it in After Effects, and return its JSON-serializable result.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        filePath: {
+          type: "string",
+          description: "Absolute path, or a path relative to the bridge project. Defaults to files inside the bridge project."
+        },
+        timeoutMs: {
+          type: "number",
+          description: "Optional timeout in milliseconds."
+        }
+      },
+      required: ["filePath"]
+    }
+  },
+  {
     name: "get_project_info",
     description: "Return basic After Effects project information.",
     inputSchema: {
@@ -740,6 +793,22 @@ const tools = [
   {
     name: "get_active_comp",
     description: "Return details about the active After Effects composition and its selected layers.",
+    inputSchema: {
+      type: "object",
+      properties: {}
+    }
+  },
+  {
+    name: "get_selected_layers",
+    description: "Return selected layers in the active composition.",
+    inputSchema: {
+      type: "object",
+      properties: {}
+    }
+  },
+  {
+    name: "get_selected_properties",
+    description: "Return selected properties in the active composition, including layer context when available.",
     inputSchema: {
       type: "object",
       properties: {}
@@ -907,6 +976,61 @@ const tools = [
       },
       required: ["layerIndex", "comment"]
     }
+  },
+  {
+    name: "create_test_comp",
+    description: "Create a temporary test composition for script development and open it in the viewer.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description: "Optional comp name. Defaults to Codex Test Comp plus a timestamp."
+        },
+        width: {
+          type: "number",
+          description: "Composition width. Defaults to 1920."
+        },
+        height: {
+          type: "number",
+          description: "Composition height. Defaults to 1080."
+        },
+        duration: {
+          type: "number",
+          description: "Composition duration in seconds. Defaults to 5."
+        },
+        frameRate: {
+          type: "number",
+          description: "Composition frame rate. Defaults to 30."
+        },
+        openInViewer: {
+          type: "boolean",
+          description: "Whether to open the comp in the viewer. Defaults to true."
+        }
+      }
+    }
+  },
+  {
+    name: "cleanup_test_items",
+    description: "Remove project items whose names start with a test prefix. Requires confirm=true.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        namePrefix: {
+          type: "string",
+          description: "Only project items with names starting with this prefix are removed. Defaults to Codex Test."
+        },
+        maxItems: {
+          type: "number",
+          description: "Maximum number of items to remove. Defaults to 25."
+        },
+        confirm: {
+          type: "boolean",
+          description: "Must be true to remove items."
+        }
+      },
+      required: ["confirm"]
+    }
   }
 ];
 
@@ -946,6 +1070,38 @@ async function callTool(name, args) {
           inPoint: layer.inPoint,
           outPoint: layer.outPoint
         };
+      }
+
+      function __codexPropertyInfo(prop, layer) {
+        var info = {
+          name: prop.name,
+          matchName: prop.matchName || null,
+          propertyIndex: prop.propertyIndex || null,
+          propertyDepth: prop.propertyDepth || null,
+          propertyType: prop.propertyType || null,
+          canSetExpression: !!prop.canSetExpression,
+          expressionEnabled: false,
+          expressionError: "",
+          isTimeVarying: false,
+          numKeys: 0,
+          selectedKeys: [],
+          layer: layer ? __codexLayerInfo(layer) : null
+        };
+
+        try { info.propertyValueType = prop.propertyValueType; } catch (__valueTypeError) {}
+        try { info.isTimeVarying = !!prop.isTimeVarying; } catch (__timeVaryingError) {}
+        try { info.numKeys = prop.numKeys || 0; } catch (__numKeysError) {}
+        try { info.expressionEnabled = !!prop.expressionEnabled; } catch (__expressionEnabledError) {}
+        try { info.expressionError = prop.expressionError || ""; } catch (__expressionErrorError) {}
+        try {
+          if (prop.selectedKeys) {
+            for (var __k = 0; __k < prop.selectedKeys.length; __k++) {
+              info.selectedKeys.push(prop.selectedKeys[__k]);
+            }
+          }
+        } catch (__selectedKeysError) {}
+
+        return info;
       }
   `;
 
@@ -1019,6 +1175,17 @@ async function callTool(name, args) {
   if (name === "run_extendscript") {
     const result = await runExtendScriptBody(String(args.script || ""), Number(args.timeoutMs) || COMMAND_TIMEOUT_MS);
     return toolResult(result.result);
+  }
+
+  if (name === "run_extendscript_file") {
+    const scriptFile = resolveScriptFile(args.filePath);
+    const script = fs.readFileSync(scriptFile.resolvedPath, "utf8");
+    const result = await runExtendScriptBody(script, Number(args.timeoutMs) || COMMAND_TIMEOUT_MS);
+    return toolResult({
+      filePath: scriptFile.resolvedPath,
+      bytes: scriptFile.stat.size,
+      result: result.result
+    });
   }
 
   if (name === "get_project_info") {
@@ -1118,6 +1285,95 @@ async function callTool(name, args) {
         numLayers: comp.numLayers,
         time: comp.time,
         selectedLayers: selectedLayers
+      };
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "get_selected_layers") {
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = app.project.activeItem;
+      if (!(comp instanceof CompItem)) {
+        throw new Error("Active item is not a composition.");
+      }
+      var layers = [];
+      for (var i = 0; i < comp.selectedLayers.length; i++) {
+        layers.push(__codexLayerInfo(comp.selectedLayers[i]));
+      }
+      return {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          time: comp.time,
+          numLayers: comp.numLayers
+        },
+        selectedLayers: layers
+      };
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "get_selected_properties") {
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = app.project.activeItem;
+      if (!(comp instanceof CompItem)) {
+        throw new Error("Active item is not a composition.");
+      }
+
+      var properties = [];
+      try {
+        if (comp.selectedProperties) {
+          for (var i = 0; i < comp.selectedProperties.length; i++) {
+            var prop = comp.selectedProperties[i];
+            var ownerLayer = null;
+            try {
+              var parent = prop;
+              while (parent && !(parent instanceof Layer)) {
+                parent = parent.parentProperty;
+              }
+              ownerLayer = parent instanceof Layer ? parent : null;
+            } catch (__ownerError) {}
+            if (!ownerLayer) {
+              try {
+                for (var layerIndex = 1; layerIndex <= comp.numLayers && !ownerLayer; layerIndex++) {
+                  var candidateLayer = comp.layer(layerIndex);
+                  var candidateProps = candidateLayer.selectedProperties || [];
+                  for (var candidateIndex = 0; candidateIndex < candidateProps.length; candidateIndex++) {
+                    if (candidateProps[candidateIndex] === prop) {
+                      ownerLayer = candidateLayer;
+                      break;
+                    }
+                  }
+                }
+              } catch (__ownerScanError) {}
+            }
+            if (!ownerLayer && comp.selectedLayers && comp.selectedLayers.length === 1) {
+              ownerLayer = comp.selectedLayers[0];
+            }
+            properties.push(__codexPropertyInfo(prop, ownerLayer));
+          }
+        }
+      } catch (__selectedPropertiesError) {}
+
+      if (properties.length === 0) {
+        for (var l = 0; l < comp.selectedLayers.length; l++) {
+          var layer = comp.selectedLayers[l];
+          var selectedProps = layer.selectedProperties || [];
+          for (var p = 0; p < selectedProps.length; p++) {
+            properties.push(__codexPropertyInfo(selectedProps[p], layer));
+          }
+        }
+      }
+
+      return {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          time: comp.time
+        },
+        selectedProperties: properties
       };
     `);
     return toolResult(result.result);
@@ -1369,6 +1625,84 @@ async function callTool(name, args) {
       };
       app.endUndoGroup();
       return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "create_test_comp") {
+    const compName = optionalString(args, "name", `Codex Test Comp ${timestampForFilename(new Date()).replace(/-/g, "_")}`);
+    const width = Math.max(4, Math.floor(optionalNumber(args, "width", 1920)));
+    const height = Math.max(4, Math.floor(optionalNumber(args, "height", 1080)));
+    const duration = optionalNumber(args, "duration", 5);
+    const frameRate = optionalNumber(args, "frameRate", 30);
+    const openInViewer = optionalBoolean(args, "openInViewer", true);
+
+    if (duration <= 0) return toolResult("duration must be greater than 0.", true);
+    if (frameRate <= 0) return toolResult("frameRate must be greater than 0.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var compName = ${aeLiteral(compName)};
+      var width = ${width};
+      var height = ${height};
+      var duration = ${duration};
+      var frameRate = ${frameRate};
+      var openInViewer = ${openInViewer ? "true" : "false"};
+
+      app.beginUndoGroup("Codex Create Test Comp");
+      var comp = app.project.items.addComp(compName, width, height, 1, duration, frameRate);
+      try { comp.comment = "Created by Codex AE MCP Bridge create_test_comp"; } catch (__commentError) {}
+      if (openInViewer) comp.openInViewer();
+      var response = {
+        itemIndex: __codexProjectIndexForItem(comp),
+        name: comp.name,
+        width: comp.width,
+        height: comp.height,
+        duration: comp.duration,
+        frameRate: comp.frameRate,
+        numLayers: comp.numLayers
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "cleanup_test_items") {
+    const confirm = optionalBoolean(args, "confirm", false);
+    if (!confirm) return toolResult("confirm must be true to remove test items.", true);
+
+    const namePrefix = optionalString(args, "namePrefix", "Codex Test");
+    const maxItems = Math.max(1, Math.min(250, Math.floor(optionalNumber(args, "maxItems", 25))));
+    if (!namePrefix || namePrefix.length < 3) {
+      return toolResult("namePrefix must be at least 3 characters.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      var namePrefix = ${aeLiteral(namePrefix)};
+      var maxItems = ${maxItems};
+      var removed = [];
+
+      app.beginUndoGroup("Codex Cleanup Test Items");
+      for (var i = app.project.numItems; i >= 1 && removed.length < maxItems; i--) {
+        var item = app.project.item(i);
+        if (item && item.name && item.name.indexOf(namePrefix) === 0) {
+          removed.push({
+            itemIndex: i,
+            name: item.name,
+            typeName: item.typeName || null
+          });
+          item.remove();
+        }
+      }
+      app.endUndoGroup();
+
+      return {
+        namePrefix: namePrefix,
+        removed: removed,
+        removedCount: removed.length,
+        hitLimit: removed.length >= maxItems
+      };
     `);
     return toolResult(result.result);
   }

@@ -25,6 +25,26 @@ Implemented the daemon split without changing `cep-panel/`.
 
 Local validation passed on temporary ports and live `127.0.0.1:3456` with CEP online. `ping_ae`, `get_project_info`, `run_extendscript`, and `create_text_layer` worked through `mcp-call-tool.js`. `backup_project_file` correctly returned an error because the live AE project was unsaved.
 
+## v0.5.0 Dev Workflow Notes
+
+Scope: enough tooling for iterative AE script/panel development, not broad Atom-like scene generation.
+
+Added tools:
+
+- `run_extendscript_file`
+- `get_selected_layers`
+- `get_selected_properties`
+- `create_test_comp`
+- `cleanup_test_items`
+
+Safety choices:
+
+- `run_extendscript_file` is limited to files inside the bridge project unless `AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT=1`.
+- `cleanup_test_items` requires `confirm: true`, a name prefix, and a max item limit.
+- `scripts/ae-file-smoke.jsx` is a tiny fixture for file execution smoke tests.
+
+Live validation passed on `127.0.0.1:3456` with CEP online. A temporary `Codex Test v0.5 Dev Workflow` comp was created, used for selected layer/property checks, and removed through `cleanup_test_items`.
+
 ## Current State
 
 The bridge works, but the lifecycle is awkward.

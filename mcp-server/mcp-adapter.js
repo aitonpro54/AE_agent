@@ -5,7 +5,7 @@ const http = require("http");
 const readline = require("readline");
 
 const SERVER_NAME = "codex-ae-mcp-adapter";
-const SERVER_VERSION = "0.4.0";
+const SERVER_VERSION = "0.5.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const DAEMON_HOST = process.env.AE_BRIDGE_HOST || "127.0.0.1";
 const DAEMON_PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
