@@ -1,5 +1,41 @@
 # AE MCP Bridge Releases
 
+## v0.4.0-daemon-split - 2026-05-04
+
+Persistent daemon split.
+
+Verified locally:
+
+- `bridge-daemon.js` reports version `0.4.0` from `/health`.
+- `bridge-only-smoke-test.js` starts the daemon successfully.
+- `smoke-test.js` starts a temporary daemon plus MCP adapter, lists all 14 tools, and simulates `/bridge/next` plus `/bridge/result`.
+- Live CEP validation on `127.0.0.1:3456` reports panel online against daemon `0.4.0`.
+- `mcp-call-tool.js` works for `get_bridge_status`, `ping_ae`, `get_project_info`, `run_extendscript`, and `create_text_layer`.
+
+Added:
+
+- `mcp-server\bridge-daemon.js`
+- `mcp-server\mcp-adapter.js`
+- `POST /tools/call` for the MCP adapter
+- `GET /tools` for tool discovery
+- `GET /results/:id` and retained recent AE command results
+- compatibility wrapper in `mcp-server\server.js`
+- ExtendScript-side result serialization that does not depend on AE exposing `JSON.stringify`
+
+Changed:
+
+- `scripts\start-bridge-only.ps1` starts the daemon directly.
+- `scripts\start-server.ps1` starts the MCP adapter only.
+- `scripts\mcp-call-tool.js` calls the MCP adapter and expects a daemon to already be running.
+- `scripts\mcp-call-tool.js` accepts `MCP_CALL_ARGS_JSON` and uses the longer AE command timeout by default.
+- MCP config examples now point at `mcp-server\mcp-adapter.js`.
+- `/bridge/next` uses short polling to avoid losing commands to stale long-poll responses.
+
+Known caveats:
+
+- A previous `0.3.0` bridge process may still be running on `127.0.0.1:3456`; stop it before starting the `0.4.0` daemon on the same port.
+- `backup_project_file` cannot back up an unsaved `.aep`; the live smoke project was unsaved, so backup validation correctly returned an error instead of creating a file.
+
 ## v0.3.0-diagnostics - 2026-05-04
 
 Diagnostics and pre-daemon-split checkpoint.

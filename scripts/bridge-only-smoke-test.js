@@ -4,7 +4,7 @@ const http = require("http");
 const path = require("path");
 const { spawn } = require("child_process");
 
-const serverPath = path.join(__dirname, "..", "mcp-server", "server.js");
+const daemonPath = path.join(__dirname, "..", "mcp-server", "bridge-daemon.js");
 const nodePath = process.execPath;
 const port = String(4450 + Math.floor(Math.random() * 1000));
 const token = "bridge-only-smoke-test-token";
@@ -33,12 +33,11 @@ function wait(ms) {
 }
 
 async function main() {
-  const child = spawn(nodePath, [serverPath, "--bridge-only"], {
+  const child = spawn(nodePath, [daemonPath], {
     env: {
       ...process.env,
       AE_BRIDGE_PORT: port,
-      AE_BRIDGE_TOKEN: token,
-      AE_BRIDGE_ONLY: "1"
+      AE_BRIDGE_TOKEN: token
     },
     stdio: ["ignore", "pipe", "pipe"]
   });
@@ -51,8 +50,8 @@ async function main() {
   const health = await requestJson(`http://127.0.0.1:${port}/health`);
   child.kill();
 
-  if (!health.body.ok || health.body.version !== "0.3.0") {
-    throw new Error("Unexpected bridge-only health response");
+  if (!health.body.ok || health.body.version !== "0.4.0") {
+    throw new Error("Unexpected daemon health response");
   }
 
   console.log(JSON.stringify({

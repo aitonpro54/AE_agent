@@ -4,8 +4,11 @@ Minimal local MCP bridge for Adobe After Effects.
 
 It has two parts:
 
-- `mcp-server/server.js` - a dependency-free Node MCP server over stdio. It also starts a local HTTP bridge for the AE panel.
+- `mcp-server/bridge-daemon.js` - a persistent local HTTP daemon that owns port `3456`, the AE panel queue, command IDs, results, logs, and backups.
+- `mcp-server/mcp-adapter.js` - a dependency-free stdio MCP adapter that exposes tools to Codex and calls the daemon over HTTP.
 - `cep-panel/` - a CEP panel that runs inside After Effects, polls the local bridge, executes ExtendScript through `evalScript`, and posts results back.
+
+`mcp-server/server.js` remains as a compatibility wrapper. By default it starts the MCP adapter; with `--bridge-only`, `--daemon`, or `AE_BRIDGE_ONLY=1`, it starts the daemon.
 
 ## Current MVP tools
 
@@ -24,12 +27,12 @@ It has two parts:
 - `apply_transform_expression` - applies an expression to a common transform property.
 - `add_layer_marker` - adds a marker to a layer.
 
-## Run server
+## Run daemon
 
 Use a working Node runtime:
 
 ```powershell
-node .\mcp-server\server.js
+node .\mcp-server\bridge-daemon.js
 ```
 
 Optional environment variables:
@@ -37,42 +40,42 @@ Optional environment variables:
 ```powershell
 $env:AE_BRIDGE_PORT="3456"
 $env:AE_BRIDGE_TOKEN="change-me"
-node .\mcp-server\server.js
+node .\mcp-server\bridge-daemon.js
 ```
 
 Or use the helper:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\start-server.ps1 -Port 3456 -Token codex-ae-local
+powershell -ExecutionPolicy Bypass -File .\scripts\start-bridge-only.ps1 -Port 3456 -Token codex-ae-local
 ```
 
 The bridge listens only on `127.0.0.1`.
 
-For diagnostics without an MCP client, run bridge-only mode:
+The adapter is what MCP clients should launch:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\start-bridge-only.ps1 -Port 3456 -Token codex-ae-local
+node .\mcp-server\mcp-adapter.js
 ```
 
-Do not run bridge-only mode at the same time as the Codex MCP server on the same port.
+Adapter helper:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-server.ps1 -Port 3456 -Token codex-ae-local
+```
+
+The adapter does not open an HTTP port. Keep the daemon running separately before Codex calls tools.
 
 ## Panel says offline
 
-The CEP panel is only a client. It becomes online when a bridge server is listening on `127.0.0.1:3456`.
+The CEP panel is only a client. It becomes online when the bridge daemon is listening on `127.0.0.1:3456`.
 
-In normal Codex MCP mode, Codex starts the server when a chat actually invokes the `after-effects` MCP server. After restarting Codex, the panel may stay offline until you ask Codex to call a tool such as:
-
-```text
-Use after-effects MCP and call get_bridge_status.
-```
-
-For standalone diagnostics without Codex MCP, run:
+Start the daemon:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\start-bridge-only.ps1 -Port 3456 -Token codex-ae-local
 ```
 
-While bridge-only is running, Codex MCP cannot start on the same port. Stop bridge-only before using Codex MCP on `3456`.
+Codex can use MCP tools while the daemon stays online because the MCP adapter no longer tries to bind port `3456`.
 
 ## Install CEP panel
 
@@ -111,7 +114,7 @@ For a stdio MCP client, point it at:
 ```json
 {
   "command": "node",
-  "args": ["C:\\path\\to\\ae-mcp-bridge\\mcp-server\\server.js"],
+  "args": ["C:\\path\\to\\ae-mcp-bridge\\mcp-server\\mcp-adapter.js"],
   "env": {
     "AE_BRIDGE_PORT": "3456",
     "AE_BRIDGE_TOKEN": "change-me"
@@ -124,9 +127,30 @@ There is also a ready local example in `mcp-config.example.json`.
 ## Smoke test
 
 This test verifies the MCP server and HTTP bridge without After Effects:
+This test starts a temporary daemon and adapter, then simulates the CEP panel:
 
 ```powershell
 node .\scripts\smoke-test.js
+```
+
+Daemon-only health:
+
+```powershell
+node .\scripts\bridge-only-smoke-test.js
+```
+
+Manual MCP tool call, with the daemon already running:
+
+```powershell
+node .\scripts\mcp-call-tool.js get_bridge_status
+```
+
+For JSON arguments from PowerShell, use `MCP_CALL_ARGS_JSON` to avoid native argument quoting quirks:
+
+```powershell
+$env:MCP_CALL_ARGS_JSON='{"text":"Codex test","compItemIndex":1}'
+node .\scripts\mcp-call-tool.js create_text_layer
+Remove-Item Env:MCP_CALL_ARGS_JSON
 ```
 
 In the Codex desktop runtime, this Node executable worked during initial validation:
@@ -160,6 +184,7 @@ You can also exercise the same tool handlers that MCP clients use:
 
 ```text
 http://127.0.0.1:3456/dev/tools?token=codex-ae-local
+http://127.0.0.1:3456/tools?token=codex-ae-local
 http://127.0.0.1:3456/dev/tool/ping_ae?token=codex-ae-local
 http://127.0.0.1:3456/dev/tool/get_project_info?token=codex-ae-local
 http://127.0.0.1:3456/dev/tool/list_comps?token=codex-ae-local
@@ -167,6 +192,12 @@ http://127.0.0.1:3456/dev/tool/get_active_comp?token=codex-ae-local
 http://127.0.0.1:3456/dev/tool/find_comps?token=codex-ae-local&query=Comp
 http://127.0.0.1:3456/dev/tool/get_bridge_status?token=codex-ae-local
 http://127.0.0.1:3456/dev/logs?token=codex-ae-local&limit=25
+```
+
+The MCP adapter uses:
+
+```text
+POST http://127.0.0.1:3456/tools/call
 ```
 
 For layers, use a composition project item index:

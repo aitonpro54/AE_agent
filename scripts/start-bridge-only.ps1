@@ -6,7 +6,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
-$Server = Join-Path $ProjectRoot "mcp-server\server.js"
+$Daemon = Join-Path $ProjectRoot "mcp-server\bridge-daemon.js"
 $BundledNode = Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"
 
 if (Test-Path -LiteralPath $BundledNode) {
@@ -17,6 +17,5 @@ if (Test-Path -LiteralPath $BundledNode) {
 
 $env:AE_BRIDGE_PORT = [string]$Port
 $env:AE_BRIDGE_TOKEN = $Token
-$env:AE_BRIDGE_ONLY = "1"
 
-& $Node $Server --bridge-only
+& $Node $Daemon

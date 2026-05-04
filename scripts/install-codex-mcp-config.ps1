@@ -2,15 +2,15 @@ $ErrorActionPreference = "Stop"
 
 $ConfigPath = Join-Path $env:USERPROFILE ".codex\config.toml"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
-$ServerPath = Join-Path $ProjectRoot "mcp-server\server.js"
+$AdapterPath = Join-Path $ProjectRoot "mcp-server\mcp-adapter.js"
 $NodePath = Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"
 
 if (!(Test-Path -LiteralPath $ConfigPath)) {
   throw "Codex config not found: $ConfigPath"
 }
 
-if (!(Test-Path -LiteralPath $ServerPath)) {
-  throw "AE MCP server not found: $ServerPath"
+if (!(Test-Path -LiteralPath $AdapterPath)) {
+  throw "AE MCP adapter not found: $AdapterPath"
 }
 
 if (!(Test-Path -LiteralPath $NodePath)) {
@@ -27,7 +27,7 @@ $Section = @"
 [mcp_servers."after-effects"]
 enabled = true
 command = '$NodePath'
-args = ['$ServerPath']
+args = ['$AdapterPath']
 startup_timeout_sec = 10
 tool_timeout_sec = 120
 

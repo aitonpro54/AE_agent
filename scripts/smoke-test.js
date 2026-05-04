@@ -4,7 +4,8 @@ const http = require("http");
 const path = require("path");
 const { spawn } = require("child_process");
 
-const serverPath = path.join(__dirname, "..", "mcp-server", "server.js");
+const daemonPath = path.join(__dirname, "..", "mcp-server", "bridge-daemon.js");
+const adapterPath = path.join(__dirname, "..", "mcp-server", "mcp-adapter.js");
 const nodePath = process.execPath;
 const port = String(3457 + Math.floor(Math.random() * 1000));
 const token = "smoke-test-token";
@@ -78,7 +79,22 @@ function waitForResponse(stdout, id, timeoutMs) {
 }
 
 async function main() {
-  const child = spawn(nodePath, [serverPath], {
+  const daemon = spawn(nodePath, [daemonPath], {
+    env: {
+      ...process.env,
+      AE_BRIDGE_PORT: port,
+      AE_BRIDGE_TOKEN: token
+    },
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+
+  const daemonStderr = [];
+  daemon.stderr.setEncoding("utf8");
+  daemon.stderr.on("data", (chunk) => daemonStderr.push(chunk));
+
+  await wait(500);
+
+  const adapter = spawn(nodePath, [adapterPath], {
     env: {
       ...process.env,
       AE_BRIDGE_PORT: port,
@@ -88,14 +104,14 @@ async function main() {
   });
 
   const stdout = [];
-  const stderr = [];
+  const adapterStderr = [];
 
-  child.stdout.setEncoding("utf8");
-  child.stderr.setEncoding("utf8");
-  child.stdout.on("data", (chunk) => stdout.push(chunk));
-  child.stderr.on("data", (chunk) => stderr.push(chunk));
+  adapter.stdout.setEncoding("utf8");
+  adapter.stderr.setEncoding("utf8");
+  adapter.stdout.on("data", (chunk) => stdout.push(chunk));
+  adapter.stderr.on("data", (chunk) => adapterStderr.push(chunk));
 
-  child.stdin.write(JSON.stringify({
+  adapter.stdin.write(JSON.stringify({
     jsonrpc: "2.0",
     id: 1,
     method: "initialize",
@@ -106,7 +122,7 @@ async function main() {
     }
   }) + "\n");
 
-  child.stdin.write(JSON.stringify({
+  adapter.stdin.write(JSON.stringify({
     jsonrpc: "2.0",
     id: 2,
     method: "tools/list",
@@ -115,7 +131,7 @@ async function main() {
 
   await wait(250);
 
-  child.stdin.write(JSON.stringify({
+  adapter.stdin.write(JSON.stringify({
     jsonrpc: "2.0",
     id: 3,
     method: "tools/call",
@@ -160,7 +176,8 @@ async function main() {
   await waitForResponse(stdout, 3, 2000);
 
   const health = await requestJson(`http://127.0.0.1:${port}/health`);
-  child.kill();
+  adapter.kill();
+  daemon.kill();
 
   const lines = stdout.join("").trim().split(/\n+/).filter(Boolean).map((line) => JSON.parse(line));
 
@@ -168,7 +185,7 @@ async function main() {
     throw new Error("Expected initialize, tools/list, and tool call responses");
   }
 
-  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge") {
+  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "0.4.0") {
     throw new Error("Unexpected health response");
   }
 
@@ -178,7 +195,8 @@ async function main() {
     tools: lines[1].result.tools.map((tool) => tool.name),
     listCompsResult: lines[2].result.content[0].text,
     health: health.body,
-    logs: stderr.join("").trim().split(/\n+/).filter(Boolean)
+    adapterLogs: adapterStderr.join("").trim().split(/\n+/).filter(Boolean),
+    daemonLogs: daemonStderr.join("").trim().split(/\n+/).filter(Boolean)
   }, null, 2));
 }
 

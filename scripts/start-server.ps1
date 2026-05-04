@@ -6,7 +6,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
-$Server = Join-Path $ProjectRoot "mcp-server\server.js"
+$Adapter = Join-Path $ProjectRoot "mcp-server\mcp-adapter.js"
 $BundledNode = Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"
 
 if (Test-Path -LiteralPath $BundledNode) {
@@ -18,4 +18,4 @@ if (Test-Path -LiteralPath $BundledNode) {
 $env:AE_BRIDGE_PORT = [string]$Port
 $env:AE_BRIDGE_TOKEN = $Token
 
-& $Node $Server
+& $Node $Adapter

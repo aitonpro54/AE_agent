@@ -3,12 +3,14 @@
 const path = require("path");
 const { spawn } = require("child_process");
 
-const serverPath = path.join(__dirname, "..", "mcp-server", "server.js");
+const adapterPath = path.join(__dirname, "..", "mcp-server", "mcp-adapter.js");
 const nodePath = process.execPath;
 const toolName = process.argv[2] || "get_bridge_status";
-const args = process.argv[3] ? JSON.parse(process.argv[3]) : {};
+const argsText = process.env.MCP_CALL_ARGS_JSON || process.argv[3] || "";
+const args = argsText ? JSON.parse(argsText) : {};
 const port = process.env.AE_BRIDGE_PORT || "3456";
 const token = process.env.AE_BRIDGE_TOKEN || "codex-ae-local";
+const toolTimeoutMs = Number(process.env.MCP_CALL_TIMEOUT_MS || process.env.AE_COMMAND_TIMEOUT_MS || 120000);
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -38,7 +40,7 @@ function waitForResponse(stdout, id, timeoutMs) {
 }
 
 async function main() {
-  const child = spawn(nodePath, [serverPath], {
+  const child = spawn(nodePath, [adapterPath], {
     env: {
       ...process.env,
       AE_BRIDGE_PORT: port,
@@ -88,7 +90,7 @@ async function main() {
     }
   }) + "\n");
 
-  const response = await waitForResponse(stdout, 2, 10000);
+  const response = await waitForResponse(stdout, 2, toolTimeoutMs);
   child.kill();
 
   console.log(JSON.stringify({
