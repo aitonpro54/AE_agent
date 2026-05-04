@@ -4,24 +4,127 @@
 const http = require("http");
 const readline = require("readline");
 const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "0.2.0";
+const SERVER_VERSION = "0.3.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
 const TOKEN = process.env.AE_BRIDGE_TOKEN || crypto.randomBytes(18).toString("hex");
 const COMMAND_TIMEOUT_MS = Number(process.env.AE_COMMAND_TIMEOUT_MS || 30000);
+const BRIDGE_ONLY = process.argv.includes("--bridge-only") || process.env.AE_BRIDGE_ONLY === "1";
+const PROJECT_ROOT = path.resolve(__dirname, "..");
+const LOG_DIR = path.join(PROJECT_ROOT, "logs");
+const LOG_FILE = path.join(LOG_DIR, "bridge-events.jsonl");
+const BACKUP_DIR = path.join(PROJECT_ROOT, "backups");
+const STARTED_AT = Date.now();
 
 const pendingCommands = [];
 const inflightCommands = new Map();
 const waitingPanels = [];
+const recentEvents = [];
 
 let lastPanelSeenAt = 0;
 let lastPanelInfo = null;
+let lastPanelPollLoggedAt = 0;
 
 function log(message) {
   process.stderr.write(`[${SERVER_NAME}] ${message}\n`);
+}
+
+function ensureDir(dir) {
+  fs.mkdirSync(dir, { recursive: true });
+}
+
+function sanitizeForLog(value) {
+  if (value === null || value === undefined) return value;
+  if (typeof value === "string") {
+    return value.length > 1000 ? `${value.slice(0, 1000)}...<truncated>` : value;
+  }
+  if (Array.isArray(value)) {
+    return value.slice(0, 50).map((item) => sanitizeForLog(item));
+  }
+  if (typeof value === "object") {
+    const result = {};
+    for (const key of Object.keys(value).slice(0, 50)) {
+      result[key] = sanitizeForLog(value[key]);
+    }
+    return result;
+  }
+  return value;
+}
+
+function recordEvent(type, details) {
+  const event = {
+    at: new Date().toISOString(),
+    type,
+    details: sanitizeForLog(details || {})
+  };
+
+  recentEvents.push(event);
+  if (recentEvents.length > 200) recentEvents.shift();
+
+  try {
+    ensureDir(LOG_DIR);
+    fs.appendFileSync(LOG_FILE, `${JSON.stringify(event)}\n`, "utf8");
+  } catch (error) {
+    log(`Could not write event log: ${error.message}`);
+  }
+}
+
+function tailJsonl(file, limit) {
+  if (!fs.existsSync(file)) return [];
+  const maxBytes = 1024 * 1024;
+  const stat = fs.statSync(file);
+  const start = Math.max(0, stat.size - maxBytes);
+  const fd = fs.openSync(file, "r");
+  try {
+    const buffer = Buffer.alloc(stat.size - start);
+    fs.readSync(fd, buffer, 0, buffer.length, start);
+    return buffer
+      .toString("utf8")
+      .trim()
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .slice(-limit)
+      .map((line) => {
+        try {
+          return JSON.parse(line);
+        } catch (_error) {
+          return { malformed: true, line };
+        }
+      });
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+function getBridgeStatus() {
+  const now = Date.now();
+  return {
+    ok: true,
+    server: SERVER_NAME,
+    version: SERVER_VERSION,
+    protocolVersion: PROTOCOL_VERSION,
+    host: HOST,
+    port: PORT,
+    uptimeMs: now - STARTED_AT,
+    startedAt: new Date(STARTED_AT).toISOString(),
+    panelConnected: now - lastPanelSeenAt < 15000,
+    lastPanelSeenAt,
+    lastPanelInfo,
+    pendingCommands: pendingCommands.length,
+    inflightCommands: Array.from(inflightCommands.entries()).map(([id, command]) => ({
+      id,
+      ageMs: now - command.createdAt
+    })),
+    waitingPanels: waitingPanels.length,
+    logFile: LOG_FILE,
+    backupDir: BACKUP_DIR,
+    recentEvents: recentEvents.slice(-25)
+  };
 }
 
 function sendRpc(message) {
@@ -91,6 +194,22 @@ function optionalString(args, name, fallback) {
   return String(args[name]);
 }
 
+function optionalBoolean(args, name, fallback) {
+  if (!hasArg(args, name)) return fallback;
+  const value = args[name];
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") {
+    if (value === 1) return true;
+    if (value === 0) return false;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["true", "1", "yes", "on"].includes(normalized)) return true;
+    if (["false", "0", "no", "off"].includes(normalized)) return false;
+  }
+  throw new Error(`${name} must be a boolean.`);
+}
+
 function parseArrayArg(value, name) {
   if (Array.isArray(value)) return value;
   if (typeof value === "string") {
@@ -119,6 +238,19 @@ function optionalNumberArray(args, name, fallback, minLength, maxLength) {
     throw new Error(`${name} must have no more than ${maxLength} numbers.`);
   }
   return values;
+}
+
+function sanitizeFilenamePart(value) {
+  return String(value || "")
+    .replace(/[<>:"/\\|?*\x00-\x1f]/g, "_")
+    .replace(/\s+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 80);
+}
+
+function timestampForFilename(date) {
+  return date.toISOString().replace(/[:.]/g, "-");
 }
 
 function readBody(req) {
@@ -185,6 +317,11 @@ function enqueueAeCommand(script, timeoutMs) {
 
     inflightCommands.set(id, { resolve, reject, timeout, createdAt: Date.now(), script });
     pendingCommands.push({ id, script });
+    recordEvent("ae_command_queued", {
+      id,
+      timeoutMs,
+      script
+    });
     drainWaitingPanels();
   });
 }
@@ -235,18 +372,32 @@ function startHttpBridge() {
     }
 
     if (url.pathname === "/health") {
+      const status = getBridgeStatus();
       writeJson(res, 200, {
         ok: true,
-        server: SERVER_NAME,
-        version: SERVER_VERSION,
+        server: status.server,
+        version: status.version,
         hasToken: Boolean(TOKEN),
-        port: PORT,
-        pending: pendingCommands.length,
-        inflight: inflightCommands.size,
-        panelConnected: Date.now() - lastPanelSeenAt < 15000,
-        lastPanelSeenAt,
-        lastPanelInfo
+        port: status.port,
+        pending: status.pendingCommands,
+        inflight: status.inflightCommands.length,
+        panelConnected: status.panelConnected,
+        lastPanelSeenAt: status.lastPanelSeenAt,
+        lastPanelInfo: status.lastPanelInfo
       });
+      return;
+    }
+
+    if (url.pathname === "/dev/status" && req.method === "GET") {
+      if (!requireToken(req, res, url)) return;
+      writeJson(res, 200, getBridgeStatus());
+      return;
+    }
+
+    if (url.pathname === "/dev/logs" && req.method === "GET") {
+      if (!requireToken(req, res, url)) return;
+      const limit = Math.max(1, Math.min(200, Math.floor(Number(url.searchParams.get("limit") || 50))));
+      writeJson(res, 200, { ok: true, logFile: LOG_FILE, events: tailJsonl(LOG_FILE, limit) });
       return;
     }
 
@@ -271,7 +422,7 @@ function startHttpBridge() {
       }
 
       try {
-        const result = await callTool(name, args);
+        const result = await callToolLogged("dev-http", name, args);
         writeJson(res, result.isError ? 500 : 200, {
           ok: !result.isError,
           tool: name,
@@ -318,6 +469,13 @@ function startHttpBridge() {
         userAgent: req.headers["user-agent"] || null,
         at: lastPanelSeenAt
       };
+      if (pendingCommands.length || Date.now() - lastPanelPollLoggedAt > 60000) {
+        lastPanelPollLoggedAt = Date.now();
+        recordEvent("panel_poll", {
+          pendingCommands: pendingCommands.length,
+          userAgent: lastPanelInfo.userAgent
+        });
+      }
 
       if (pendingCommands.length) {
         const command = pendingCommands.shift();
@@ -351,8 +509,19 @@ function startHttpBridge() {
 
       if (payload.ok) {
         command.resolve(payload.result);
+        recordEvent("ae_command_result", {
+          id: payload.id,
+          ok: true,
+          ageMs: Date.now() - command.createdAt
+        });
       } else {
         command.reject(new Error(payload.error || "After Effects command failed"));
+        recordEvent("ae_command_result", {
+          id: payload.id,
+          ok: false,
+          ageMs: Date.now() - command.createdAt,
+          error: payload.error || "After Effects command failed"
+        });
       }
 
       writeJson(res, 200, { ok: true });
@@ -365,16 +534,57 @@ function startHttpBridge() {
   server.listen(PORT, HOST, () => {
     log(`HTTP bridge listening on http://${HOST}:${PORT}`);
     log(`AE_BRIDGE_TOKEN=${TOKEN}`);
+    recordEvent("server_started", {
+      host: HOST,
+      port: PORT,
+      version: SERVER_VERSION,
+      logFile: LOG_FILE
+    });
   });
 
   server.on("error", (error) => {
     log(`HTTP bridge error: ${error.message}`);
+    recordEvent("server_error", { error: error.message });
     process.exitCode = 1;
     process.exit(1);
   });
 }
 
 const tools = [
+  {
+    name: "get_bridge_status",
+    description: "Return MCP bridge diagnostics, panel connection status, log path, backup path, and recent events.",
+    inputSchema: {
+      type: "object",
+      properties: {}
+    }
+  },
+  {
+    name: "get_command_log",
+    description: "Return recent JSONL bridge events from the local command log.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        limit: {
+          type: "number",
+          description: "Number of recent events to return. Defaults to 50, maximum 200."
+        }
+      }
+    }
+  },
+  {
+    name: "backup_project_file",
+    description: "Copy the currently saved After Effects project file into the bridge backups folder without modifying the open project.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        label: {
+          type: "string",
+          description: "Optional human-readable label to include in the backup filename."
+        }
+      }
+    }
+  },
   {
     name: "ping_ae",
     description: "Check whether the After Effects CEP panel is connected and can execute ExtendScript.",
@@ -642,6 +852,58 @@ async function callTool(name, args) {
         };
       }
   `;
+
+  if (name === "get_bridge_status") {
+    return toolResult(getBridgeStatus());
+  }
+
+  if (name === "get_command_log") {
+    const limit = Math.max(1, Math.min(200, Math.floor(optionalNumber(args, "limit", 50))));
+    return toolResult({
+      logFile: LOG_FILE,
+      events: tailJsonl(LOG_FILE, limit)
+    });
+  }
+
+  if (name === "backup_project_file") {
+    const label = sanitizeFilenamePart(optionalString(args, "label", ""));
+    const projectInfo = await runExtendScriptBody(`
+      var project = app.project;
+      return {
+        file: project && project.file ? project.file.fsName : null,
+        name: project && project.file ? project.file.name : null,
+        numItems: project ? project.numItems : 0,
+        activeItemName: project && project.activeItem ? project.activeItem.name : null,
+        activeItemType: project && project.activeItem ? project.activeItem.typeName : null
+      };
+    `);
+
+    const sourceFile = projectInfo.result.file;
+    if (!sourceFile) {
+      return toolResult("The current After Effects project has not been saved yet, so there is no .aep file to back up.", true);
+    }
+    if (!fs.existsSync(sourceFile)) {
+      return toolResult(`Project file does not exist on disk: ${sourceFile}`, true);
+    }
+
+    ensureDir(BACKUP_DIR);
+    const parsed = path.parse(sourceFile);
+    const base = sanitizeFilenamePart(parsed.name) || "after-effects-project";
+    const suffix = label ? `-${label}` : "";
+    const destinationFile = path.join(BACKUP_DIR, `${base}${suffix}-${timestampForFilename(new Date())}${parsed.ext || ".aep"}`);
+
+    fs.copyFileSync(sourceFile, destinationFile, fs.constants.COPYFILE_EXCL);
+    const stat = fs.statSync(destinationFile);
+    const response = {
+      sourceFile,
+      backupFile: destinationFile,
+      bytes: stat.size,
+      createdAt: new Date().toISOString(),
+      project: projectInfo.result
+    };
+    recordEvent("project_backup_created", response);
+    return toolResult(response);
+  }
 
   if (name === "ping_ae") {
     if (Date.now() - lastPanelSeenAt > 15000) {
@@ -923,7 +1185,7 @@ async function callTool(name, args) {
     const layerIndex = requiredPositiveInteger(args, "layerIndex");
     const property = optionalString(args, "property", "");
     const expression = optionalString(args, "expression", "");
-    const enabled = hasArg(args, "enabled") ? Boolean(args.enabled) : true;
+    const enabled = optionalBoolean(args, "enabled", true);
     const propertyMap = {
       position: "ADBE Position",
       scale: "ADBE Scale",
@@ -1018,6 +1280,39 @@ async function callTool(name, args) {
   return toolResult(`Unknown tool: ${name}`, true);
 }
 
+async function callToolLogged(source, name, args) {
+  const eventId = crypto.randomUUID();
+  const startedAt = Date.now();
+  recordEvent("tool_call_started", {
+    id: eventId,
+    source,
+    name,
+    args
+  });
+
+  try {
+    const result = await callTool(name, args);
+    recordEvent("tool_call_finished", {
+      id: eventId,
+      source,
+      name,
+      ok: !result.isError,
+      durationMs: Date.now() - startedAt
+    });
+    return result;
+  } catch (error) {
+    recordEvent("tool_call_failed", {
+      id: eventId,
+      source,
+      name,
+      durationMs: Date.now() - startedAt,
+      error: error.message || String(error),
+      line: error.line || null
+    });
+    throw error;
+  }
+}
+
 async function handleRpc(message) {
   if (!message || message.jsonrpc !== "2.0") return;
   const id = message.id;
@@ -1044,7 +1339,7 @@ async function handleRpc(message) {
 
     if (message.method === "tools/call") {
       const params = message.params || {};
-      const result = await callTool(params.name, params.arguments || {});
+      const result = await callToolLogged("mcp", params.name, params.arguments || {});
       ok(id, result);
       return;
     }
@@ -1095,4 +1390,8 @@ function startStdioMcp() {
 }
 
 startHttpBridge();
-startStdioMcp();
+if (BRIDGE_ONLY) {
+  log("Bridge-only mode enabled; stdio MCP transport is disabled.");
+} else {
+  startStdioMcp();
+}

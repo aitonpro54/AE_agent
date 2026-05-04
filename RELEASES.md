@@ -1,5 +1,41 @@
 # AE MCP Bridge Releases
 
+## v0.3.0-diagnostics - 2026-05-04
+
+Diagnostics and pre-daemon-split checkpoint.
+
+Verified:
+
+- `0.2.0` MCP tools still appear in `tools/list`.
+- The server reports version `0.3.0`.
+- `bridge-only` mode starts a persistent HTTP bridge on a chosen port.
+- `get_bridge_status` works through manual JSON-RPC MCP invocation.
+- The CEP panel connects successfully to bridge-only mode on `127.0.0.1:3456`.
+- JSONL command logging is written to `logs\bridge-events.jsonl`.
+
+Added:
+
+- `get_bridge_status`
+- `get_command_log`
+- `backup_project_file`
+- `scripts\start-bridge-only.ps1`
+- `scripts\bridge-only-smoke-test.js`
+- `scripts\mcp-call-tool.js`
+- local log and backup paths, ignored by git
+
+Known caveats:
+
+- The current architecture still combines MCP stdio server and HTTP bridge in one process.
+- Running bridge-only on `3456` prevents Codex MCP from starting another server on the same port.
+- Next planned architecture is a persistent bridge daemon plus a thin MCP adapter.
+
+Rollback:
+
+1. Stop bridge-only or any running MCP server.
+2. Use `git checkout v0.3.0-diagnostics` or restore the matching snapshot archive.
+3. Restart Codex or the bridge process.
+4. Reconnect the CEP panel in After Effects.
+
 ## v0.2.0-mvp - 2026-05-04
 
 Stable MVP checkpoint.

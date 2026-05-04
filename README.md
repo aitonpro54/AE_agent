@@ -9,6 +9,9 @@ It has two parts:
 
 ## Current MVP tools
 
+- `get_bridge_status` - returns bridge diagnostics, connection state, paths, and recent events.
+- `get_command_log` - returns recent local JSONL log events.
+- `backup_project_file` - copies the currently saved `.aep` into `backups/` without modifying the open project.
 - `ping_ae` - verifies that After Effects is connected and can run a tiny script.
 - `run_extendscript` - runs an ExtendScript function body in After Effects.
 - `list_comps` - lists project compositions.
@@ -44,6 +47,32 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-server.ps1 -Port 3456 -
 ```
 
 The bridge listens only on `127.0.0.1`.
+
+For diagnostics without an MCP client, run bridge-only mode:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-bridge-only.ps1 -Port 3456 -Token codex-ae-local
+```
+
+Do not run bridge-only mode at the same time as the Codex MCP server on the same port.
+
+## Panel says offline
+
+The CEP panel is only a client. It becomes online when a bridge server is listening on `127.0.0.1:3456`.
+
+In normal Codex MCP mode, Codex starts the server when a chat actually invokes the `after-effects` MCP server. After restarting Codex, the panel may stay offline until you ask Codex to call a tool such as:
+
+```text
+Use after-effects MCP and call get_bridge_status.
+```
+
+For standalone diagnostics without Codex MCP, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-bridge-only.ps1 -Port 3456 -Token codex-ae-local
+```
+
+While bridge-only is running, Codex MCP cannot start on the same port. Stop bridge-only before using Codex MCP on `3456`.
 
 ## Install CEP panel
 
@@ -136,6 +165,8 @@ http://127.0.0.1:3456/dev/tool/get_project_info?token=codex-ae-local
 http://127.0.0.1:3456/dev/tool/list_comps?token=codex-ae-local
 http://127.0.0.1:3456/dev/tool/get_active_comp?token=codex-ae-local
 http://127.0.0.1:3456/dev/tool/find_comps?token=codex-ae-local&query=Comp
+http://127.0.0.1:3456/dev/tool/get_bridge_status?token=codex-ae-local
+http://127.0.0.1:3456/dev/logs?token=codex-ae-local&limit=25
 ```
 
 For layers, use a composition project item index:
@@ -155,6 +186,34 @@ Invoke-RestMethod `
 ```
 
 All project-changing tools use After Effects Undo Groups, so a normal AE undo can roll back the last operation.
+
+## Diagnostics and backups
+
+The server writes local JSONL events to:
+
+```text
+logs\bridge-events.jsonl
+```
+
+The log includes server startup, tool calls, queued AE commands, AE command results, and project backup events. Long strings are truncated before logging.
+
+Create a non-destructive backup of the currently saved `.aep`:
+
+```powershell
+Invoke-RestMethod `
+  -Method Post `
+  -ContentType "application/json" `
+  -Uri "http://127.0.0.1:3456/dev/tool/backup_project_file?token=codex-ae-local" `
+  -Body '{"label":"before-big-edit"}'
+```
+
+Backups are written to:
+
+```text
+backups\
+```
+
+`backup_project_file` copies the project file currently on disk. It does not save unsaved After Effects changes and does not change the open project path.
 
 ## Security note
 
