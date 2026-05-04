@@ -1,5 +1,19 @@
 # AE MCP Bridge Releases
 
+## v0.5.1-auto-daemon - 2026-05-04
+
+Out-of-box connection hotfix.
+
+Changed:
+
+- `mcp-adapter.js` now checks daemon health on startup.
+- If `127.0.0.1:3456` is empty, the adapter auto-starts `bridge-daemon.js` as a detached background process.
+- Set `AE_DAEMON_AUTO_START=0` to disable auto-start.
+
+Why:
+
+- After the daemon split, enabling the MCP server in Codex started only the stdio adapter. The CEP panel stayed offline unless the daemon was started manually.
+
 ## v0.5.0-dev-workflow - 2026-05-04
 
 Developer workflow tools for iterative AE script and panel development.

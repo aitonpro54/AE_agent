@@ -45,6 +45,18 @@ Safety choices:
 
 Live validation passed on `127.0.0.1:3456` with CEP online. A temporary `Codex Test v0.5 Dev Workflow` comp was created, used for selected layer/property checks, and removed through `cleanup_test_items`.
 
+## v0.5.1 Auto Daemon Notes
+
+Problem found in real use: the CEP panel stayed offline after Codex restart because the MCP config launched the stdio adapter, but no persistent daemon owned `127.0.0.1:3456`.
+
+Fix:
+
+- `mcp-adapter.js` checks `/health` on startup.
+- If no daemon responds, it starts `bridge-daemon.js` as a detached background process.
+- `AE_DAEMON_AUTO_START=0` disables this behavior for manual daemon lifecycle testing.
+
+Validated by stopping anything listening on `3456`, running `mcp-call-tool.js get_bridge_status`, and confirming daemon `0.5.1` came up with CEP online.
+
 ## Current State
 
 The bridge works, but the lifecycle is awkward.

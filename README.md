@@ -8,7 +8,7 @@ It has two parts:
 - `mcp-server/mcp-adapter.js` - a dependency-free stdio MCP adapter that exposes tools to Codex and calls the daemon over HTTP.
 - `cep-panel/` - a CEP panel that runs inside After Effects, polls the local bridge, executes ExtendScript through `evalScript`, and posts results back.
 
-`mcp-server/server.js` remains as a compatibility wrapper. By default it starts the MCP adapter; with `--bridge-only`, `--daemon`, or `AE_BRIDGE_ONLY=1`, it starts the daemon.
+`mcp-server/server.js` remains as a compatibility wrapper. By default it starts the MCP adapter; with `--bridge-only`, `--daemon`, or `AE_BRIDGE_ONLY=1`, it starts the daemon. The adapter auto-starts the daemon when the daemon is not already listening.
 
 ## Current MVP tools
 
@@ -68,13 +68,13 @@ Adapter helper:
 powershell -ExecutionPolicy Bypass -File .\scripts\start-server.ps1 -Port 3456 -Token codex-ae-local
 ```
 
-The adapter does not open an HTTP port. Keep the daemon running separately before Codex calls tools.
+The adapter does not open an HTTP port itself. If the daemon is not already running, the adapter starts `bridge-daemon.js` as a detached background process. Set `AE_DAEMON_AUTO_START=0` to disable this behavior.
 
 ## Panel says offline
 
 The CEP panel is only a client. It becomes online when the bridge daemon is listening on `127.0.0.1:3456`.
 
-Start the daemon:
+Usually, calling any `after-effects` MCP tool from Codex is enough to start the daemon. If you want to start it manually:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\start-bridge-only.ps1 -Port 3456 -Token codex-ae-local

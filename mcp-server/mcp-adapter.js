@@ -3,14 +3,20 @@
 
 const http = require("http");
 const readline = require("readline");
+const path = require("path");
+const { spawn } = require("child_process");
 
 const SERVER_NAME = "codex-ae-mcp-adapter";
-const SERVER_VERSION = "0.5.0";
+const SERVER_VERSION = "0.5.1";
 const PROTOCOL_VERSION = "2025-03-26";
 const DAEMON_HOST = process.env.AE_BRIDGE_HOST || "127.0.0.1";
 const DAEMON_PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
 const TOKEN = process.env.AE_BRIDGE_TOKEN || "codex-ae-local";
 const DAEMON_TIMEOUT_MS = Number(process.env.AE_DAEMON_HTTP_TIMEOUT_MS || 125000);
+const DAEMON_START_TIMEOUT_MS = Number(process.env.AE_DAEMON_START_TIMEOUT_MS || 8000);
+const AUTO_START_DAEMON = process.env.AE_DAEMON_AUTO_START !== "0";
+
+let daemonEnsurePromise = null;
 
 function log(message) {
   process.stderr.write(`[${SERVER_NAME}] ${message}\n`);
@@ -78,7 +84,74 @@ function daemonRequest(method, requestPath, payload, timeoutMs) {
   });
 }
 
+async function getDaemonHealth(timeoutMs) {
+  const response = await daemonRequest("GET", "/health", undefined, timeoutMs || 1200);
+  if (response.status !== 200 || !response.body.ok) {
+    throw new Error(response.body.error || `Bridge daemon health failed with HTTP ${response.status}`);
+  }
+  return response.body;
+}
+
+function startDaemonDetached() {
+  const daemonPath = path.join(__dirname, "bridge-daemon.js");
+  const child = spawn(process.execPath, [daemonPath], {
+    cwd: path.resolve(__dirname, ".."),
+    detached: true,
+    env: {
+      ...process.env,
+      AE_BRIDGE_HOST: DAEMON_HOST,
+      AE_BRIDGE_PORT: String(DAEMON_PORT),
+      AE_BRIDGE_TOKEN: TOKEN
+    },
+    stdio: "ignore",
+    windowsHide: true
+  });
+  child.unref();
+  log(`Started bridge daemon process ${child.pid} at http://${DAEMON_HOST}:${DAEMON_PORT}`);
+}
+
+async function waitForDaemon(timeoutMs) {
+  const startedAt = Date.now();
+  let lastError = null;
+
+  while (Date.now() - startedAt < timeoutMs) {
+    try {
+      return await getDaemonHealth(1200);
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+  }
+
+  throw new Error(`Bridge daemon did not become healthy after ${timeoutMs}ms: ${lastError ? lastError.message : "unknown error"}`);
+}
+
+async function ensureDaemonRunning() {
+  if (daemonEnsurePromise) return daemonEnsurePromise;
+
+  daemonEnsurePromise = (async () => {
+    try {
+      return await getDaemonHealth(1200);
+    } catch (firstError) {
+      if (!AUTO_START_DAEMON) {
+        throw firstError;
+      }
+
+      log(`Bridge daemon is not reachable; auto-starting it. Reason: ${firstError.message}`);
+      startDaemonDetached();
+      return await waitForDaemon(DAEMON_START_TIMEOUT_MS);
+    }
+  })();
+
+  try {
+    return await daemonEnsurePromise;
+  } finally {
+    daemonEnsurePromise = null;
+  }
+}
+
 async function getTools() {
+  await ensureDaemonRunning();
   const response = await daemonRequest("GET", "/tools", undefined, 5000);
   if (response.status !== 200 || !response.body.ok || !Array.isArray(response.body.tools)) {
     throw new Error(response.body.error || `Bridge daemon tools endpoint failed with HTTP ${response.status}`);
@@ -87,6 +160,7 @@ async function getTools() {
 }
 
 async function callDaemonTool(name, args) {
+  await ensureDaemonRunning();
   const response = await daemonRequest("POST", "/tools/call", {
     name,
     arguments: args || {}
@@ -147,6 +221,13 @@ async function handleRpc(message) {
 
 function startStdioMcp() {
   log(`Using bridge daemon at http://${DAEMON_HOST}:${DAEMON_PORT}`);
+  ensureDaemonRunning()
+    .then((health) => {
+      log(`Bridge daemon ready: ${health.server || "unknown"} ${health.version || "unknown"}`);
+    })
+    .catch((error) => {
+      log(`Bridge daemon is not ready yet: ${error.message}`);
+    });
 
   const rl = readline.createInterface({
     input: process.stdin,
