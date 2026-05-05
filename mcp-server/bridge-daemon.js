@@ -7,7 +7,7 @@ const fs = require("fs");
 const path = require("path");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "0.8.0";
+const SERVER_VERSION = "0.9.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -1272,6 +1272,98 @@ const tools = [
     }
   },
   {
+    name: "add_effect",
+    description: "Add an effect to a layer by effect matchName or display name.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based layer index in the target composition."
+        },
+        effect: {
+          type: "string",
+          description: "Effect matchName or display name accepted by After Effects, such as ADBE Fill."
+        },
+        name: {
+          type: "string",
+          description: "Optional effect instance name after adding it."
+        }
+      },
+      required: ["layerIndex", "effect"]
+    }
+  },
+  {
+    name: "set_effect_property",
+    description: "Set a property on an existing layer effect.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based layer index in the target composition."
+        },
+        effectIndex: {
+          type: "number",
+          description: "Optional 1-based effect index in the layer effects group."
+        },
+        effectName: {
+          type: "string",
+          description: "Optional exact effect instance name."
+        },
+        effectMatchName: {
+          type: "string",
+          description: "Optional effect matchName, such as ADBE Fill."
+        },
+        propertyPath: {
+          type: "array",
+          description: "Optional property path relative to the effect. Segments can be names, indexes, or objects with matchName/name/propertyIndex.",
+          items: {}
+        },
+        propertyIndex: {
+          type: "number",
+          description: "Optional 1-based property index within the effect."
+        },
+        propertyName: {
+          type: "string",
+          description: "Optional exact effect property name."
+        },
+        propertyMatchName: {
+          type: "string",
+          description: "Optional effect property matchName."
+        },
+        value: {
+          description: "JSON-serializable value to set."
+        },
+        time: {
+          type: "number",
+          description: "Optional time in seconds for setValueAtTime."
+        },
+        setAtTime: {
+          type: "boolean",
+          description: "Whether to set a keyframed value at time. Defaults to true when time is provided."
+        }
+      },
+      required: ["layerIndex", "value"]
+    }
+  },
+  {
     name: "set_property_value",
     description: "Set an arbitrary layer property by property path or matchName path.",
     inputSchema: {
@@ -1762,6 +1854,90 @@ async function callTool(name, args) {
           }
         } catch (__textPatchProbeError) {}
         return value;
+      }
+
+      function __codexResolveEffect(layer, effectIndex, effectName, effectMatchName) {
+        var effectGroup = layer.property("ADBE Effect Parade");
+        if (!effectGroup) throw new Error("Layer has no effect parade.");
+
+        if (effectIndex !== null && effectIndex !== undefined) {
+          var indexedEffect = effectGroup.property(Math.floor(Number(effectIndex)));
+          if (!indexedEffect) throw new Error("Effect not found at index " + effectIndex + ".");
+          return indexedEffect;
+        }
+
+        if (!effectName && !effectMatchName) {
+          throw new Error("Provide effectIndex, effectName, or effectMatchName.");
+        }
+
+        var matches = [];
+        for (var __e = 1; __e <= effectGroup.numProperties; __e++) {
+          var effect = effectGroup.property(__e);
+          if (!effect) continue;
+          if (effectMatchName && effect.matchName !== effectMatchName) continue;
+          if (effectName && effect.name !== effectName) continue;
+          matches.push(effect);
+        }
+
+        if (matches.length === 0) {
+          throw new Error("No effect matched the requested name or matchName.");
+        }
+        if (matches.length > 1) {
+          var names = [];
+          for (var __m = 0; __m < matches.length; __m++) {
+            names.push("#" + matches[__m].propertyIndex + " " + matches[__m].name + " (" + matches[__m].matchName + ")");
+          }
+          throw new Error("Effect selection is ambiguous: " + names.join(", "));
+        }
+        return matches[0];
+      }
+
+      function __codexEffectProperties(effect, layer, includeValues) {
+        var properties = [];
+        try {
+          for (var __ep = 1; __ep <= effect.numProperties; __ep++) {
+            var prop = effect.property(__ep);
+            if (prop) properties.push(__codexPropertyInfo(prop, layer, includeValues, true));
+          }
+        } catch (__effectPropertiesError) {}
+        return properties;
+      }
+
+      function __codexResolveEffectProperty(effect, propertyPath, propertyIndex, propertyName, propertyMatchName) {
+        if (propertyPath instanceof Array && propertyPath.length > 0) {
+          return __codexResolveProperty(effect, propertyPath);
+        }
+
+        if (propertyIndex !== null && propertyIndex !== undefined) {
+          var indexedProperty = effect.property(Math.floor(Number(propertyIndex)));
+          if (!indexedProperty) throw new Error("Effect property not found at index " + propertyIndex + ".");
+          return indexedProperty;
+        }
+
+        if (!propertyName && !propertyMatchName) {
+          throw new Error("Provide propertyPath, propertyIndex, propertyName, or propertyMatchName.");
+        }
+
+        var matches = [];
+        for (var __p = 1; __p <= effect.numProperties; __p++) {
+          var prop = effect.property(__p);
+          if (!prop) continue;
+          if (propertyMatchName && prop.matchName !== propertyMatchName) continue;
+          if (propertyName && prop.name !== propertyName) continue;
+          matches.push(prop);
+        }
+
+        if (matches.length === 0) {
+          throw new Error("No effect property matched the requested name or matchName.");
+        }
+        if (matches.length > 1) {
+          var names = [];
+          for (var __pm = 0; __pm < matches.length; __pm++) {
+            names.push("#" + matches[__pm].propertyIndex + " " + matches[__pm].name + " (" + matches[__pm].matchName + ")");
+          }
+          throw new Error("Effect property selection is ambiguous: " + names.join(", "));
+        }
+        return matches[0];
       }
 
       function __codexPropertyInfo(prop, layer, includeValue, includeExpression) {
@@ -2787,6 +2963,117 @@ async function callTool(name, args) {
           frameRate: duplicate.frameRate,
           numLayers: duplicate.numLayers
         }
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "add_effect") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const effect = optionalString(args, "effect", "");
+    const effectName = optionalString(args, "name", "");
+
+    if (!effect) return toolResult("effect is required.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+
+      var effectIdentifier = ${aeLiteral(effect)};
+      var requestedName = ${aeLiteral(effectName)};
+      var effectGroup = layer.property("ADBE Effect Parade");
+      if (!effectGroup) throw new Error("Layer cannot receive effects.");
+
+      app.beginUndoGroup("Codex Add Effect");
+      var addedEffect = effectGroup.addProperty(effectIdentifier);
+      if (!addedEffect) throw new Error("Could not add effect: " + effectIdentifier);
+      if (requestedName) addedEffect.name = requestedName;
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name
+        },
+        layer: __codexLayerInfo(layer),
+        effect: __codexPropertyInfo(addedEffect, layer, false, true),
+        properties: __codexEffectProperties(addedEffect, layer, true)
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_effect_property") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const effectIndex = optionalPositiveInteger(args, "effectIndex");
+    const effectName = optionalString(args, "effectName", "");
+    const effectMatchName = optionalString(args, "effectMatchName", "");
+    const propertyIndex = optionalPositiveInteger(args, "propertyIndex");
+    const propertyName = optionalString(args, "propertyName", "");
+    const propertyMatchName = optionalString(args, "propertyMatchName", "");
+    const time = optionalNumber(args, "time", null);
+    const setAtTime = optionalBoolean(args, "setAtTime", time !== null);
+
+    let propertyPath = null;
+    if (Array.isArray(args.propertyPath)) {
+      propertyPath = args.propertyPath;
+    } else if (typeof args.propertyPath === "string" && args.propertyPath.trim().startsWith("[")) {
+      propertyPath = JSON.parse(args.propertyPath);
+    } else if (hasArg(args, "propertyPath")) {
+      return toolResult("propertyPath must be an array, or a JSON-encoded array string.", true);
+    }
+
+    if (!effectIndex && !effectName && !effectMatchName) {
+      return toolResult("Provide effectIndex, effectName, or effectMatchName.", true);
+    }
+    if (!propertyPath && !propertyIndex && !propertyName && !propertyMatchName) {
+      return toolResult("Provide propertyPath, propertyIndex, propertyName, or propertyMatchName.", true);
+    }
+    if (!hasArg(args, "value")) return toolResult("value is required.", true);
+    if (setAtTime && time === null) return toolResult("time is required when setAtTime is true.", true);
+
+    const value = args.value;
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+
+      var effect = __codexResolveEffect(layer, ${effectIndex === null ? "null" : effectIndex}, ${aeLiteral(effectName)}, ${aeLiteral(effectMatchName)});
+      var propertyPath = ${propertyPath ? aeLiteral(propertyPath) : "null"};
+      var prop = __codexResolveEffectProperty(effect, propertyPath, ${propertyIndex === null ? "null" : propertyIndex}, ${aeLiteral(propertyName)}, ${aeLiteral(propertyMatchName)});
+      var requestedValue = ${aeLiteral(value)};
+      var shouldSetAtTime = ${setAtTime ? "true" : "false"};
+      var targetTime = ${time === null ? "null" : time};
+
+      app.beginUndoGroup("Codex Set Effect Property");
+      var preparedValue = __codexPreparePropertyValue(prop, requestedValue);
+      if (shouldSetAtTime) {
+        prop.setValueAtTime(targetTime, preparedValue);
+      } else {
+        prop.setValue(preparedValue);
+      }
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name
+        },
+        layer: __codexLayerInfo(layer),
+        effect: __codexPropertyInfo(effect, layer, false, true),
+        property: __codexPropertyInfo(prop, layer, true, true),
+        setAtTime: shouldSetAtTime,
+        time: targetTime
       };
       app.endUndoGroup();
       return response;

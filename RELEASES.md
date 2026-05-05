@@ -1,5 +1,25 @@
 # AE MCP Bridge Releases
 
+## v0.9.0-effect-tools - 2026-05-05
+
+Effect-level tools for adding effects and setting effect properties.
+
+Added:
+
+- `add_effect`
+- `set_effect_property`
+
+Changed:
+
+- Daemon and adapter report version `0.9.0`.
+- Smoke tests expect daemon `0.9.0`.
+
+Verified:
+
+- Local syntax checks for daemon and adapter.
+- Daemon-only and adapter smoke tests pass against `0.9.0` and list 32 tools.
+- Live AE validation added an `ADBE Fill` effect, set its Color property, inspected it, and cleaned up temporary project items.
+
 ## v0.8.0-property-values - 2026-05-05
 
 Property-level write tool for targeted AE automation.

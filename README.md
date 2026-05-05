@@ -36,6 +36,8 @@ It has two parts:
 - `create_adjustment_layer` - creates an adjustment layer.
 - `add_project_item_to_comp` - adds existing footage or a comp as a layer.
 - `duplicate_comp` - duplicates a composition.
+- `add_effect` - adds an effect to a layer.
+- `set_effect_property` - sets a property on an existing layer effect.
 - `set_property_value` - sets an arbitrary layer property by property path.
 - `set_layer_transform` - sets position, scale, rotation, opacity, or anchor point.
 - `apply_transform_expression` - applies an expression to a common transform property.
