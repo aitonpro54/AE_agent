@@ -1,5 +1,24 @@
 # AE MCP Bridge Releases
 
+## v0.8.0-property-values - 2026-05-05
+
+Property-level write tool for targeted AE automation.
+
+Added:
+
+- `set_property_value`
+
+Changed:
+
+- Daemon and adapter report version `0.8.0`.
+- Smoke tests expect daemon `0.8.0`.
+
+Verified:
+
+- Local syntax checks for daemon and adapter.
+- Daemon-only and adapter smoke tests pass against `0.8.0` and list 30 tools.
+- Live AE validation set Position, Opacity, and TextDocument fields by property path, then cleaned up temporary project items.
+
 ## v0.7.0-practical-layers - 2026-05-05
 
 Practical typed operations on top of the v0.6 inspection layer.

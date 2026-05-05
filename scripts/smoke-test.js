@@ -185,7 +185,7 @@ async function main() {
     throw new Error("Expected initialize, tools/list, and tool call responses");
   }
 
-  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "0.7.0") {
+  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "0.8.0") {
     throw new Error("Unexpected health response");
   }
 

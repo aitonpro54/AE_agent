@@ -7,7 +7,7 @@ const fs = require("fs");
 const path = require("path");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "0.7.0";
+const SERVER_VERSION = "0.8.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -1272,6 +1272,44 @@ const tools = [
     }
   },
   {
+    name: "set_property_value",
+    description: "Set an arbitrary layer property by property path or matchName path.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based layer index in the target composition."
+        },
+        propertyPath: {
+          type: "array",
+          description: "Property path from the layer. Segments can be names, numeric indexes, or objects with matchName/name/propertyIndex.",
+          items: {}
+        },
+        value: {
+          description: "JSON-serializable value to set. For TextDocument properties, pass an object with fields such as text, fontSize, fillColor, applyFill."
+        },
+        time: {
+          type: "number",
+          description: "Optional time in seconds for setValueAtTime."
+        },
+        setAtTime: {
+          type: "boolean",
+          description: "Whether to set a keyframed value at time. Defaults to true when time is provided."
+        }
+      },
+      required: ["layerIndex", "propertyPath", "value"]
+    }
+  },
+  {
     name: "set_layer_transform",
     description: "Set common transform values on a layer: position, scale, rotation, opacity, or anchor point.",
     inputSchema: {
@@ -1639,6 +1677,91 @@ async function callTool(name, args) {
           guard++;
         }
         return path;
+      }
+
+      function __codexResolveChildProperty(parent, segment) {
+        if (parent === null || parent === undefined) return null;
+
+        if (typeof segment === "number") {
+          return parent.property(Math.floor(segment));
+        }
+
+        if (typeof segment === "string") {
+          return parent.property(segment);
+        }
+
+        if (segment && typeof segment === "object") {
+          var expectedMatchName = segment.matchName || null;
+          var expectedName = segment.name || null;
+          var expectedIndex = segment.propertyIndex || segment.index || null;
+
+          if (expectedMatchName || expectedName) {
+            try {
+              for (var __p = 1; __p <= parent.numProperties; __p++) {
+                var candidate = parent.property(__p);
+                if (!candidate) continue;
+                if (expectedMatchName && candidate.matchName !== expectedMatchName) continue;
+                if (expectedName && candidate.name !== expectedName) continue;
+                return candidate;
+              }
+            } catch (__scanError) {}
+          }
+
+          if (expectedIndex !== null && expectedIndex !== undefined) {
+            return parent.property(Math.floor(Number(expectedIndex)));
+          }
+
+          if (expectedMatchName) return parent.property(expectedMatchName);
+          if (expectedName) return parent.property(expectedName);
+        }
+
+        return null;
+      }
+
+      function __codexResolveProperty(root, propertyPath) {
+        if (!(propertyPath instanceof Array) || propertyPath.length === 0) {
+          throw new Error("propertyPath must be a non-empty array.");
+        }
+
+        var current = root;
+        for (var __pathIndex = 0; __pathIndex < propertyPath.length; __pathIndex++) {
+          current = __codexResolveChildProperty(current, propertyPath[__pathIndex]);
+          if (!current) {
+            throw new Error("Property path segment not found at index " + __pathIndex + ".");
+          }
+        }
+        return current;
+      }
+
+      function __codexApplyTextDocumentPatch(prop, patch) {
+        var doc = prop.value;
+        if (patch.text !== undefined) doc.text = String(patch.text);
+        if (patch.font !== undefined) doc.font = String(patch.font);
+        if (patch.fontSize !== undefined) doc.fontSize = Number(patch.fontSize);
+        if (patch.fillColor !== undefined) {
+          doc.applyFill = true;
+          doc.fillColor = patch.fillColor;
+        }
+        if (patch.applyFill !== undefined) doc.applyFill = !!patch.applyFill;
+        if (patch.strokeColor !== undefined) {
+          doc.applyStroke = true;
+          doc.strokeColor = patch.strokeColor;
+        }
+        if (patch.applyStroke !== undefined) doc.applyStroke = !!patch.applyStroke;
+        if (patch.strokeWidth !== undefined) doc.strokeWidth = Number(patch.strokeWidth);
+        if (patch.tracking !== undefined) doc.tracking = Number(patch.tracking);
+        if (patch.leading !== undefined) doc.leading = Number(patch.leading);
+        return doc;
+      }
+
+      function __codexPreparePropertyValue(prop, value) {
+        try {
+          var currentValue = prop.value;
+          if (currentValue && currentValue.text !== undefined && value && typeof value === "object" && !(value instanceof Array)) {
+            return __codexApplyTextDocumentPatch(prop, value);
+          }
+        } catch (__textPatchProbeError) {}
+        return value;
       }
 
       function __codexPropertyInfo(prop, layer, includeValue, includeExpression) {
@@ -2664,6 +2787,64 @@ async function callTool(name, args) {
           frameRate: duplicate.frameRate,
           numLayers: duplicate.numLayers
         }
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_property_value") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const time = optionalNumber(args, "time", null);
+    const setAtTime = optionalBoolean(args, "setAtTime", time !== null);
+
+    let propertyPath;
+    if (Array.isArray(args.propertyPath)) {
+      propertyPath = args.propertyPath;
+    } else if (typeof args.propertyPath === "string" && args.propertyPath.trim().startsWith("[")) {
+      propertyPath = JSON.parse(args.propertyPath);
+    } else {
+      return toolResult("propertyPath must be an array, or a JSON-encoded array string.", true);
+    }
+
+    if (propertyPath.length === 0) return toolResult("propertyPath must not be empty.", true);
+    if (!hasArg(args, "value")) return toolResult("value is required.", true);
+    if (setAtTime && time === null) return toolResult("time is required when setAtTime is true.", true);
+
+    const value = args.value;
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+
+      var propertyPath = ${aeLiteral(propertyPath)};
+      var requestedValue = ${aeLiteral(value)};
+      var shouldSetAtTime = ${setAtTime ? "true" : "false"};
+      var targetTime = ${time === null ? "null" : time};
+      var prop = __codexResolveProperty(layer, propertyPath);
+
+      app.beginUndoGroup("Codex Set Property Value");
+      var preparedValue = __codexPreparePropertyValue(prop, requestedValue);
+      if (shouldSetAtTime) {
+        prop.setValueAtTime(targetTime, preparedValue);
+      } else {
+        prop.setValue(preparedValue);
+      }
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name
+        },
+        layer: __codexLayerInfo(layer),
+        property: __codexPropertyInfo(prop, layer, true, true),
+        setAtTime: shouldSetAtTime,
+        time: targetTime
       };
       app.endUndoGroup();
       return response;
