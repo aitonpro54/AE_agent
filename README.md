@@ -373,6 +373,8 @@ Invoke-RestMethod `
 
 Any mutating tool can use either `checkpointLabel` or `autoCheckpoint:true`. The checkpoint is created before the project-changing operation and is included in the tool result. This remains opt-in so routine inspection and tiny test calls do not create extra `.aep` files.
 
+Successful mutating tool responses also include a `mutation` summary with `tool`, `changed`, `target`, optional `checkpoint`, and an `undoHint`. This gives clients a consistent way to show what changed after an operation.
+
 ## Security note
 
 Enabling CEP `PlayerDebugMode` allows unsigned CEP panels to load for the selected Adobe CEP runtime versions. That is convenient for local development, but it is a real trust setting. Only install panels from local code you control, and turn it off later if you want a stricter Adobe extension setup.

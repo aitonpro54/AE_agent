@@ -1,5 +1,28 @@
 # AE MCP Bridge Releases
 
+## v0.15.0-mutation-summaries - 2026-05-05
+
+Consistent mutation summaries for project-changing tools.
+
+Added:
+
+- Successful mutating tool responses now include a `mutation` object with `tool`, `changed`, `target`, optional `checkpoint`, and `undoHint`.
+- Checkpoint metadata and mutation summaries are composed together when `autoCheckpoint` or `checkpointLabel` is used.
+
+Changed:
+
+- Daemon and adapter report version `0.15.0`.
+- Smoke tests expect daemon `0.15.0`.
+
+Notes:
+
+- This is a response-shaping layer. It does not change the underlying After Effects commands or add render queue behavior.
+
+Verified:
+
+- Local syntax checks for daemon, adapter, and smoke scripts.
+- Daemon-only and adapter smoke tests pass against `0.15.0`.
+- Live bridge validation created a temporary comp, returned mutation metadata, and cleaned up the temporary comp.
 ## v0.14.0-checkpoint-management - 2026-05-05
 
 Checkpoint inspection and cleanup.

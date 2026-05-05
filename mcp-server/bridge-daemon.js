@@ -7,7 +7,7 @@ const fs = require("fs");
 const path = require("path");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "0.14.0";
+const SERVER_VERSION = "0.15.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -357,6 +357,12 @@ const MUTATING_TOOL_NAMES = new Set([
   "cleanup_test_items"
 ]);
 
+const MUTATION_SUMMARY_TOOL_NAMES = new Set([
+  ...MUTATING_TOOL_NAMES,
+  "checkpoint_project",
+  "delete_project_checkpoint"
+]);
+
 function aeLiteral(value) {
   return JSON.stringify(value)
     .replace(/\u2028/g, "\\u2028")
@@ -608,26 +614,103 @@ async function maybeCreateMutationCheckpoint(args, toolName) {
   return checkpoint;
 }
 
-function withMutationCheckpoint(result, checkpoint) {
-  if (!checkpoint) return result;
-  if (result && typeof result === "object" && !Array.isArray(result)) {
-    return {
-      ...result,
-      checkpoint
-    };
-  }
+function compactCheckpoint(checkpoint) {
+  if (!checkpoint) return null;
   return {
-    result,
-    checkpoint
+    label: checkpoint.label || null,
+    checkpointFile: checkpoint.checkpointFile || null,
+    bytes: checkpoint.bytes || null,
+    createdAt: checkpoint.createdAt || null
   };
 }
 
-function attachCheckpointToToolResult(result, checkpoint) {
-  if (!checkpoint || !result || !Array.isArray(result.content) || !result.content[0]) return result;
+function inferMutationTarget(toolName, args, payload) {
+  const target = { tool: toolName };
+  const request = {};
+  for (const key of ["compItemIndex", "compName", "layerIndex", "itemIndex", "itemName", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix"]) {
+    if (hasArg(args || {}, key)) request[key] = args[key];
+  }
+  if (Object.keys(request).length) target.request = request;
+
+  if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+    if (payload.comp) target.comp = payload.comp;
+    if (payload.layer) target.layer = payload.layer;
+    if (payload.effect) target.effect = payload.effect;
+    if (payload.property) target.property = payload.property;
+    if (payload.item) target.item = payload.item;
+    if (hasArg(payload, "itemIndex") || hasArg(payload, "name") || hasArg(payload, "typeName")) {
+      target.item = {
+        itemIndex: payload.itemIndex || null,
+        name: payload.name || null,
+        typeName: payload.typeName || null
+      };
+    }
+    if (payload.checkpointFile) target.checkpointFile = payload.checkpointFile;
+    if (payload.backupFile) target.backupFile = payload.backupFile;
+    if (payload.sourceFile) target.sourceFile = payload.sourceFile;
+    if (payload.namePrefix) target.namePrefix = payload.namePrefix;
+    if (Array.isArray(payload.removed)) target.removed = payload.removed;
+  }
+
+  return target;
+}
+
+function mutationUndoHint(toolName, checkpoint) {
+  if (checkpoint) return "A checkpoint was created before this operation; use restore_project_checkpoint for a safe manual restore path.";
+  if (toolName === "delete_project_checkpoint") return "Deleted checkpoint files cannot be restored by the bridge.";
+  if (toolName === "checkpoint_project") return "Delete the checkpoint with delete_project_checkpoint if it is no longer needed.";
+  return "Use After Effects Undo for the last operation when applicable, or create a checkpoint before risky edits.";
+}
+
+function buildMutationSummary(toolName, args, payload, checkpoint) {
+  const effectiveCheckpoint = checkpoint || (payload && typeof payload === "object" ? payload.checkpoint : null);
+  let changed = true;
+  if (payload && typeof payload === "object") {
+    if (typeof payload.removedCount === "number") changed = payload.removedCount > 0;
+    if (typeof payload.deleted === "boolean") changed = payload.deleted;
+  }
+
+  return {
+    tool: toolName,
+    changed,
+    target: inferMutationTarget(toolName, args || {}, payload),
+    checkpoint: compactCheckpoint(effectiveCheckpoint),
+    undoHint: mutationUndoHint(toolName, effectiveCheckpoint)
+  };
+}
+
+function withMutationMetadata(payload, toolName, args, checkpoint) {
+  let result = payload;
+  if (checkpoint) {
+    if (result && typeof result === "object" && !Array.isArray(result)) {
+      result = { ...result, checkpoint };
+    } else {
+      result = { result, checkpoint };
+    }
+  }
+
+  if (!MUTATION_SUMMARY_TOOL_NAMES.has(toolName)) return result;
+
+  if (result && typeof result === "object" && !Array.isArray(result)) {
+    return {
+      ...result,
+      mutation: buildMutationSummary(toolName, args || {}, result, checkpoint)
+    };
+  }
+
+  return {
+    result,
+    mutation: buildMutationSummary(toolName, args || {}, result, checkpoint)
+  };
+}
+
+function attachMutationMetadataToToolResult(result, toolName, args, checkpoint) {
+  if (!result || result.isError || !Array.isArray(result.content) || !result.content[0]) return result;
+  if (!checkpoint && !MUTATION_SUMMARY_TOOL_NAMES.has(toolName)) return result;
 
   const content = result.content.slice();
   const first = { ...content[0] };
-  first.text = JSON.stringify(withMutationCheckpoint(parseToolText(first.text), checkpoint), null, 2);
+  first.text = JSON.stringify(withMutationMetadata(parseToolText(first.text), toolName, args || {}, checkpoint), null, 2);
   content[0] = first;
   return {
     ...result,
@@ -4207,7 +4290,7 @@ async function callToolLogged(source, name, args) {
   try {
     const checkpoint = await maybeCreateMutationCheckpoint(args || {}, name);
     const result = await callTool(name, args);
-    const resultWithCheckpoint = attachCheckpointToToolResult(result, checkpoint);
+    const resultWithCheckpoint = attachMutationMetadataToToolResult(result, name, args || {}, checkpoint);
     recordEvent("tool_call_finished", {
       id: eventId,
       source,
