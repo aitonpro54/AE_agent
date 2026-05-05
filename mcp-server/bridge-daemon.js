@@ -7,7 +7,7 @@ const fs = require("fs");
 const path = require("path");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "0.5.4";
+const SERVER_VERSION = "0.6.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -280,6 +280,26 @@ function resolveScriptFile(filePath) {
   return { resolvedPath, stat };
 }
 
+function getScriptLineContext(script, line, radius) {
+  const lineNumber = Math.floor(Number(line));
+  if (!Number.isFinite(lineNumber) || lineNumber < 1) return [];
+
+  const lines = String(script || "").split(/\r\n|\r|\n/);
+  const start = Math.max(1, lineNumber - (radius || 3));
+  const end = Math.min(lines.length, lineNumber + (radius || 3));
+  const context = [];
+
+  for (let current = start; current <= end; current += 1) {
+    context.push({
+      line: current,
+      text: lines[current - 1],
+      errorLine: current === lineNumber
+    });
+  }
+
+  return context;
+}
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let body = "";
@@ -440,6 +460,14 @@ ${body}
 }());
 __codexMcpBridgeResult;`;
 }
+
+const EXTENDSCRIPT_BODY_LINE_OFFSET = (() => {
+  const marker = "__codex_mcp_bridge_body_marker__";
+  const wrapped = wrapExtendScriptBody(marker);
+  const markerIndex = wrapped.indexOf(marker);
+  if (markerIndex < 0) return 0;
+  return wrapped.slice(0, markerIndex).split(/\r\n|\r|\n/).length - 1;
+})();
 
 async function runExtendScriptBody(body, timeoutMs) {
   const raw = await enqueueAeCommand(wrapExtendScriptBody(body), timeoutMs || COMMAND_TIMEOUT_MS);
@@ -769,6 +797,31 @@ const tools = [
     }
   },
   {
+    name: "get_project_snapshot",
+    description: "Return a compact snapshot of project items for script development and navigation.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        maxItems: {
+          type: "number",
+          description: "Maximum number of project items to return. Defaults to 500, maximum 2000."
+        },
+        includeComps: {
+          type: "boolean",
+          description: "Whether to include compositions. Defaults to true."
+        },
+        includeFootage: {
+          type: "boolean",
+          description: "Whether to include footage items. Defaults to true."
+        },
+        includeFolders: {
+          type: "boolean",
+          description: "Whether to include folders. Defaults to true."
+        }
+      }
+    }
+  },
+  {
     name: "list_comps",
     description: "List compositions in the current After Effects project.",
     inputSchema: {
@@ -788,6 +841,65 @@ const tools = [
         }
       },
       required: ["compItemIndex"]
+    }
+  },
+  {
+    name: "get_comp_details",
+    description: "Return detailed information for a composition, optionally including its layers.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the composition. Defaults to active comp."
+        },
+        includeLayers: {
+          type: "boolean",
+          description: "Whether to include layer summaries. Defaults to true."
+        },
+        layerLimit: {
+          type: "number",
+          description: "Maximum number of layers to include. Defaults to 200, maximum 1000."
+        }
+      }
+    }
+  },
+  {
+    name: "get_layer_details",
+    description: "Return detailed information for one layer, including source, transform, text, effects, masks, and optional property tree.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based layer index in the target composition."
+        },
+        includeProperties: {
+          type: "boolean",
+          description: "Whether to include a property tree. Defaults to false."
+        },
+        propertyDepth: {
+          type: "number",
+          description: "Property tree depth. Defaults to 1, maximum 5."
+        },
+        propertyLimit: {
+          type: "number",
+          description: "Maximum property nodes to include. Defaults to 120, maximum 1000."
+        },
+        includeValues: {
+          type: "boolean",
+          description: "Whether to include compact value previews for properties. Defaults to false."
+        },
+        includeExpressions: {
+          type: "boolean",
+          description: "Whether to include expression text where available. Defaults to true."
+        }
+      },
+      required: ["layerIndex"]
     }
   },
   {
@@ -811,7 +923,16 @@ const tools = [
     description: "Return selected properties in the active composition, including layer context when available.",
     inputSchema: {
       type: "object",
-      properties: {}
+      properties: {
+        includeValues: {
+          type: "boolean",
+          description: "Whether to include compact value previews. Defaults to true."
+        },
+        includeExpressions: {
+          type: "boolean",
+          description: "Whether to include expression text where available. Defaults to true."
+        }
+      }
     }
   },
   {
@@ -1056,8 +1177,25 @@ async function callTool(name, args) {
         return item;
       }
 
-      function __codexLayerInfo(layer) {
+      function __codexItemType(item) {
+        if (item instanceof CompItem) return "comp";
+        if (item instanceof FootageItem) return "footage";
+        if (item instanceof FolderItem) return "folder";
+        return item && item.typeName ? item.typeName : "unknown";
+      }
+
+      function __codexItemReference(item) {
+        if (!item) return null;
         return {
+          itemIndex: __codexProjectIndexForItem(item),
+          name: item.name || "",
+          type: __codexItemType(item),
+          typeName: item.typeName || null
+        };
+      }
+
+      function __codexLayerInfo(layer) {
+        var info = {
           index: layer.index,
           id: layer.id,
           name: layer.name,
@@ -1070,15 +1208,81 @@ async function callTool(name, args) {
           inPoint: layer.inPoint,
           outPoint: layer.outPoint
         };
+
+        try { info.label = layer.label; } catch (__labelError) {}
+        try { info.hasVideo = !!layer.hasVideo; } catch (__hasVideoError) {}
+        try { info.hasAudio = !!layer.hasAudio; } catch (__hasAudioError) {}
+        try { info.nullLayer = !!layer.nullLayer; } catch (__nullLayerError) {}
+        try { info.guideLayer = !!layer.guideLayer; } catch (__guideLayerError) {}
+        try { info.adjustmentLayer = !!layer.adjustmentLayer; } catch (__adjustmentLayerError) {}
+        try { info.threeDLayer = !!layer.threeDLayer; } catch (__threeDError) {}
+        try { info.blendingMode = layer.blendingMode; } catch (__blendError) {}
+        try { info.parent = layer.parent ? __codexLayerInfo(layer.parent) : null; } catch (__parentError) {}
+        try { info.source = layer.source ? __codexItemReference(layer.source) : null; } catch (__sourceError) {}
+
+        return info;
       }
 
-      function __codexPropertyInfo(prop, layer) {
+      function __codexValuePreview(prop) {
+        var value = prop.value;
+        if (value === null || value === undefined) return { kind: "null", value: null };
+        if (typeof value === "number" || typeof value === "boolean" || typeof value === "string") {
+          return { kind: typeof value, value: value };
+        }
+        if (value instanceof Array) {
+          var items = [];
+          for (var __v = 0; __v < value.length && __v < 20; __v++) {
+            items.push(value[__v]);
+          }
+          return { kind: "array", length: value.length, value: items, truncated: value.length > 20 };
+        }
+        try {
+          if (value.text !== undefined) {
+            return {
+              kind: "TextDocument",
+              text: value.text,
+              font: value.font || null,
+              fontSize: value.fontSize || null,
+              fillColor: value.fillColor || null,
+              applyFill: value.applyFill || false
+            };
+          }
+        } catch (__textDocumentError) {}
+        try {
+          return { kind: "object", preview: String(value) };
+        } catch (__stringError) {
+          return { kind: "object", preview: "[object]" };
+        }
+      }
+
+      function __codexPropertyPath(prop) {
+        var path = [];
+        var current = prop;
+        var guard = 0;
+        while (current && !(current instanceof Layer) && guard < 50) {
+          path.unshift({
+            name: current.name || "",
+            matchName: current.matchName || null,
+            propertyIndex: current.propertyIndex || null
+          });
+          try {
+            current = current.parentProperty;
+          } catch (__parentPropertyError) {
+            current = null;
+          }
+          guard++;
+        }
+        return path;
+      }
+
+      function __codexPropertyInfo(prop, layer, includeValue, includeExpression) {
         var info = {
           name: prop.name,
           matchName: prop.matchName || null,
           propertyIndex: prop.propertyIndex || null,
           propertyDepth: prop.propertyDepth || null,
           propertyType: prop.propertyType || null,
+          propertyPath: __codexPropertyPath(prop),
           canSetExpression: !!prop.canSetExpression,
           expressionEnabled: false,
           expressionError: "",
@@ -1093,6 +1297,14 @@ async function callTool(name, args) {
         try { info.numKeys = prop.numKeys || 0; } catch (__numKeysError) {}
         try { info.expressionEnabled = !!prop.expressionEnabled; } catch (__expressionEnabledError) {}
         try { info.expressionError = prop.expressionError || ""; } catch (__expressionErrorError) {}
+        try {
+          if (includeExpression && prop.canSetExpression) info.expression = prop.expression || "";
+        } catch (__expressionError) {}
+        try {
+          if (includeValue && prop.propertyValueType !== undefined) info.value = __codexValuePreview(prop);
+        } catch (__valueError) {
+          info.valueError = String(__valueError);
+        }
         try {
           if (prop.selectedKeys) {
             for (var __k = 0; __k < prop.selectedKeys.length; __k++) {
@@ -1180,12 +1392,30 @@ async function callTool(name, args) {
   if (name === "run_extendscript_file") {
     const scriptFile = resolveScriptFile(args.filePath);
     const script = fs.readFileSync(scriptFile.resolvedPath, "utf8");
-    const result = await runExtendScriptBody(script, Number(args.timeoutMs) || COMMAND_TIMEOUT_MS);
-    return toolResult({
-      filePath: scriptFile.resolvedPath,
-      bytes: scriptFile.stat.size,
-      result: result.result
-    });
+    const startedAt = Date.now();
+    try {
+      const result = await runExtendScriptBody(script, Number(args.timeoutMs) || COMMAND_TIMEOUT_MS);
+      return toolResult({
+        filePath: scriptFile.resolvedPath,
+        bytes: scriptFile.stat.size,
+        durationMs: Date.now() - startedAt,
+        result: result.result
+      });
+    } catch (error) {
+      const wrappedLine = error.line || null;
+      const fileLine = wrappedLine && wrappedLine > EXTENDSCRIPT_BODY_LINE_OFFSET
+        ? wrappedLine - EXTENDSCRIPT_BODY_LINE_OFFSET
+        : wrappedLine;
+      return toolResult({
+        filePath: scriptFile.resolvedPath,
+        bytes: scriptFile.stat.size,
+        durationMs: Date.now() - startedAt,
+        error: error.message || String(error),
+        line: fileLine || null,
+        wrappedLine: wrappedLine,
+        lineContext: getScriptLineContext(script, fileLine, 4)
+      }, true);
+    }
   }
 
   if (name === "get_project_info") {
@@ -1197,6 +1427,98 @@ async function callTool(name, args) {
         numItems: project ? project.numItems : 0,
         activeItemName: project && project.activeItem ? project.activeItem.name : null,
         activeItemType: project && project.activeItem ? project.activeItem.typeName : null
+      };
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "get_project_snapshot") {
+    const maxItems = Math.max(1, Math.min(2000, Math.floor(optionalNumber(args, "maxItems", 500))));
+    const includeComps = optionalBoolean(args, "includeComps", true);
+    const includeFootage = optionalBoolean(args, "includeFootage", true);
+    const includeFolders = optionalBoolean(args, "includeFolders", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var maxItems = ${maxItems};
+      var includeComps = ${includeComps ? "true" : "false"};
+      var includeFootage = ${includeFootage ? "true" : "false"};
+      var includeFolders = ${includeFolders ? "true" : "false"};
+      var project = app.project;
+
+      function __codexFolderPath(item) {
+        var names = [];
+        var folder = null;
+        try { folder = item.parentFolder; } catch (__parentFolderError) {}
+        var guard = 0;
+        while (folder && project && folder !== project.rootFolder && guard < 50) {
+          names.unshift(folder.name);
+          try { folder = folder.parentFolder; } catch (__folderParentError) { folder = null; }
+          guard++;
+        }
+        return names.join("/");
+      }
+
+      var items = [];
+      var totalMatched = 0;
+      for (var i = 1; project && i <= project.numItems; i++) {
+        var item = project.item(i);
+        var type = __codexItemType(item);
+        if ((type === "comp" && !includeComps) || (type === "footage" && !includeFootage) || (type === "folder" && !includeFolders)) {
+          continue;
+        }
+
+        totalMatched++;
+        if (items.length >= maxItems) continue;
+
+        var info = {
+          itemIndex: i,
+          name: item.name,
+          type: type,
+          typeName: item.typeName || null,
+          folderPath: __codexFolderPath(item),
+          comment: item.comment || ""
+        };
+
+        if (item instanceof CompItem) {
+          info.width = item.width;
+          info.height = item.height;
+          info.duration = item.duration;
+          info.frameRate = item.frameRate;
+          info.numLayers = item.numLayers;
+          info.displayStartTime = item.displayStartTime;
+        } else if (item instanceof FootageItem) {
+          info.width = item.width || null;
+          info.height = item.height || null;
+          info.duration = item.duration || null;
+          info.frameRate = item.frameRate || null;
+          info.file = item.file ? item.file.fsName : null;
+          info.hasVideo = !!item.hasVideo;
+          info.hasAudio = !!item.hasAudio;
+          try { info.isStill = !!item.mainSource.isStill; } catch (__stillError) {}
+        } else if (item instanceof FolderItem) {
+          info.numItems = item.numItems || 0;
+        }
+
+        items.push(info);
+      }
+
+      return {
+        project: {
+          file: project && project.file ? project.file.fsName : null,
+          numItems: project ? project.numItems : 0,
+          activeItem: project && project.activeItem ? __codexItemReference(project.activeItem) : null
+        },
+        filters: {
+          includeComps: includeComps,
+          includeFootage: includeFootage,
+          includeFolders: includeFolders,
+          maxItems: maxItems
+        },
+        totalMatched: totalMatched,
+        returned: items.length,
+        truncated: totalMatched > items.length,
+        items: items
       };
     `);
     return toolResult(result.result);
@@ -1264,6 +1586,178 @@ async function callTool(name, args) {
     return toolResult(result.result);
   }
 
+  if (name === "get_comp_details") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const includeLayers = optionalBoolean(args, "includeLayers", true);
+    const layerLimit = Math.max(1, Math.min(1000, Math.floor(optionalNumber(args, "layerLimit", 200))));
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex});
+      var includeLayers = ${includeLayers ? "true" : "false"};
+      var layerLimit = ${layerLimit};
+      var selectedLayerIndices = [];
+      for (var s = 0; s < comp.selectedLayers.length; s++) {
+        selectedLayerIndices.push(comp.selectedLayers[s].index);
+      }
+
+      var layers = [];
+      if (includeLayers) {
+        for (var i = 1; i <= comp.numLayers && layers.length < layerLimit; i++) {
+          layers.push(__codexLayerInfo(comp.layer(i)));
+        }
+      }
+
+      return {
+        itemIndex: __codexProjectIndexForItem(comp),
+        name: comp.name,
+        type: "comp",
+        width: comp.width,
+        height: comp.height,
+        pixelAspect: comp.pixelAspect,
+        duration: comp.duration,
+        frameRate: comp.frameRate,
+        displayStartTime: comp.displayStartTime,
+        time: comp.time,
+        bgColor: comp.bgColor,
+        numLayers: comp.numLayers,
+        selectedLayerIndices: selectedLayerIndices,
+        layersReturned: layers.length,
+        layersTruncated: includeLayers && comp.numLayers > layers.length,
+        layers: layers
+      };
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "get_layer_details") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const includeProperties = optionalBoolean(args, "includeProperties", false);
+    const propertyDepth = Math.max(0, Math.min(5, Math.floor(optionalNumber(args, "propertyDepth", 1))));
+    const propertyLimit = Math.max(1, Math.min(1000, Math.floor(optionalNumber(args, "propertyLimit", 120))));
+    const includeValues = optionalBoolean(args, "includeValues", false);
+    const includeExpressions = optionalBoolean(args, "includeExpressions", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      var includeProperties = ${includeProperties ? "true" : "false"};
+      var includeValues = ${includeValues ? "true" : "false"};
+      var includeExpressions = ${includeExpressions ? "true" : "false"};
+      var propertyDepth = ${propertyDepth};
+      var propertyLimit = ${propertyLimit};
+
+      function __codexReadProperty(group, matchName) {
+        try {
+          var prop = group.property(matchName);
+          if (!prop) return null;
+          return __codexValuePreview(prop);
+        } catch (__readPropertyError) {
+          return null;
+        }
+      }
+
+      function __codexPropertyTree(prop, depth, state) {
+        if (!prop || state.count >= state.max) return null;
+        state.count++;
+        var info = __codexPropertyInfo(prop, null, includeValues, includeExpressions);
+        var children = [];
+        if (depth > 0) {
+          try {
+            for (var i = 1; i <= prop.numProperties && state.count < state.max; i++) {
+              var child = __codexPropertyTree(prop.property(i), depth - 1, state);
+              if (child) children.push(child);
+            }
+          } catch (__childrenError) {}
+        }
+        if (children.length) info.children = children;
+        return info;
+      }
+
+      var transform = null;
+      try {
+        var transformGroup = layer.property("ADBE Transform Group");
+        transform = {
+          anchorPoint: __codexReadProperty(transformGroup, "ADBE Anchor Point"),
+          position: __codexReadProperty(transformGroup, "ADBE Position"),
+          scale: __codexReadProperty(transformGroup, "ADBE Scale"),
+          rotation: __codexReadProperty(transformGroup, "ADBE Rotate Z"),
+          opacity: __codexReadProperty(transformGroup, "ADBE Opacity")
+        };
+      } catch (__transformError) {}
+
+      var text = null;
+      try {
+        var textProp = layer.property("ADBE Text Properties").property("ADBE Text Document");
+        text = __codexValuePreview(textProp);
+      } catch (__textError) {}
+
+      var effects = [];
+      try {
+        var effectGroup = layer.property("ADBE Effect Parade");
+        if (effectGroup) {
+          for (var e = 1; e <= effectGroup.numProperties; e++) {
+            var effect = effectGroup.property(e);
+            effects.push({
+              propertyIndex: effect.propertyIndex,
+              name: effect.name,
+              matchName: effect.matchName,
+              enabled: effect.enabled
+            });
+          }
+        }
+      } catch (__effectsError) {}
+
+      var masks = [];
+      try {
+        var maskGroup = layer.property("ADBE Mask Parade");
+        if (maskGroup) {
+          for (var m = 1; m <= maskGroup.numProperties; m++) {
+            var mask = maskGroup.property(m);
+            masks.push({
+              propertyIndex: mask.propertyIndex,
+              name: mask.name,
+              matchName: mask.matchName,
+              maskMode: mask.maskMode,
+              inverted: mask.inverted
+            });
+          }
+        }
+      } catch (__masksError) {}
+
+      var propertyTree = [];
+      var propertyState = { count: 0, max: propertyLimit };
+      if (includeProperties) {
+        try {
+          for (var p = 1; p <= layer.numProperties && propertyState.count < propertyState.max; p++) {
+            var branch = __codexPropertyTree(layer.property(p), propertyDepth, propertyState);
+            if (branch) propertyTree.push(branch);
+          }
+        } catch (__propertyTreeError) {}
+      }
+
+      return {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          time: comp.time,
+          numLayers: comp.numLayers
+        },
+        layer: __codexLayerInfo(layer),
+        transform: transform,
+        text: text,
+        effects: effects,
+        masks: masks,
+        propertyTree: propertyTree,
+        propertyTreeTruncated: propertyState.count >= propertyState.max
+      };
+    `);
+    return toolResult(result.result);
+  }
+
   if (name === "get_active_comp") {
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
@@ -1315,12 +1809,17 @@ async function callTool(name, args) {
   }
 
   if (name === "get_selected_properties") {
+    const includeValues = optionalBoolean(args, "includeValues", true);
+    const includeExpressions = optionalBoolean(args, "includeExpressions", true);
+
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
       var comp = app.project.activeItem;
       if (!(comp instanceof CompItem)) {
         throw new Error("Active item is not a composition.");
       }
+      var includeValues = ${includeValues ? "true" : "false"};
+      var includeExpressions = ${includeExpressions ? "true" : "false"};
 
       var properties = [];
       try {
@@ -1352,7 +1851,7 @@ async function callTool(name, args) {
             if (!ownerLayer && comp.selectedLayers && comp.selectedLayers.length === 1) {
               ownerLayer = comp.selectedLayers[0];
             }
-            properties.push(__codexPropertyInfo(prop, ownerLayer));
+            properties.push(__codexPropertyInfo(prop, ownerLayer, includeValues, includeExpressions));
           }
         }
       } catch (__selectedPropertiesError) {}
@@ -1362,7 +1861,7 @@ async function callTool(name, args) {
           var layer = comp.selectedLayers[l];
           var selectedProps = layer.selectedProperties || [];
           for (var p = 0; p < selectedProps.length; p++) {
-            properties.push(__codexPropertyInfo(selectedProps[p], layer));
+            properties.push(__codexPropertyInfo(selectedProps[p], layer, includeValues, includeExpressions));
           }
         }
       }

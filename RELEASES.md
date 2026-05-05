@@ -1,5 +1,28 @@
 # AE MCP Bridge Releases
 
+## v0.6.0-dev-inspection - 2026-05-05
+
+Read-only development inspection tools for iterative JSX/ScriptUI work.
+
+Added:
+
+- `get_project_snapshot`
+- `get_comp_details`
+- `get_layer_details`
+
+Changed:
+
+- `get_layer_details` defaults to a compact response; set `includeProperties: true` for a property tree.
+- `get_selected_properties` now includes property paths and can include value/expression previews.
+- `run_extendscript_file` returns structured failure diagnostics with file path, duration, reported line, and nearby line context when available.
+- Daemon and adapter report version `0.6.0`.
+
+Verified:
+
+- `bridge-daemon.js` and `mcp-adapter.js` pass syntax checks.
+- `bridge-only-smoke-test.js` passes against daemon `0.6.0`.
+- `smoke-test.js` passes and lists all 22 tools.
+
 ## v0.5.4-panel-autoconnect - 2026-05-05
 
 Cold boot connection reliability fix.

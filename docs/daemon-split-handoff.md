@@ -100,6 +100,22 @@ Fix:
 - Panel XHR requests have a timeout so a stale network request cannot block retry polling.
 - The daemon lifecycle remains Codex-triggered; no Windows startup task is required.
 
+## v0.6.0 Dev Inspection Notes
+
+Scope: make Codex better at understanding real AE projects and ScriptUI/slideshow work before editing.
+
+Added read-only tools:
+
+- `get_project_snapshot` for compact project item navigation.
+- `get_comp_details` for comp settings, selected layer indices, and layer summaries.
+- `get_layer_details` for one layer's source, transform, text, effects, masks, and optional property tree.
+
+Improved:
+
+- `get_layer_details` defaults to a compact response; pass `includeProperties: true` for tree inspection.
+- `get_selected_properties` includes property paths and optional value/expression previews.
+- `run_extendscript_file` catches AE script failures and returns file path, duration, reported line, and nearby file context instead of only surfacing a generic daemon error.
+
 ## Current State
 
 The bridge works with a Codex-triggered daemon lifecycle.

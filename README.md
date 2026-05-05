@@ -21,9 +21,12 @@ It has two parts:
 - `list_comps` - lists project compositions.
 - `list_layers` - lists layers in a composition by index.
 - `get_project_info` - returns basic project info.
+- `get_project_snapshot` - returns a compact snapshot of comps, footage, and folders.
+- `get_comp_details` - returns detailed comp settings and optional layer summaries.
+- `get_layer_details` - returns one layer's source, transform, text, effects, masks, and optional property tree.
 - `get_active_comp` - returns active composition details and selected layers.
 - `get_selected_layers` - returns selected layers in the active composition.
-- `get_selected_properties` - returns selected properties in the active composition.
+- `get_selected_properties` - returns selected properties with path, expression, and optional value previews.
 - `find_comps` - finds compositions by name substring.
 - `create_text_layer` - creates a text layer in the active comp or a comp by project item index.
 - `set_layer_transform` - sets position, scale, rotation, opacity, or anchor point.
@@ -160,6 +163,22 @@ Manual MCP tool call, with the daemon already running:
 node .\scripts\mcp-call-tool.js get_bridge_status
 ```
 
+Useful project inspection calls:
+
+```powershell
+node .\scripts\mcp-call-tool.js get_project_snapshot
+
+$env:MCP_CALL_ARGS_JSON='{"compItemIndex":1,"includeLayers":true}'
+node .\scripts\mcp-call-tool.js get_comp_details
+Remove-Item Env:MCP_CALL_ARGS_JSON
+
+$env:MCP_CALL_ARGS_JSON='{"compItemIndex":1,"layerIndex":1}'
+node .\scripts\mcp-call-tool.js get_layer_details
+Remove-Item Env:MCP_CALL_ARGS_JSON
+```
+
+`get_layer_details` returns a compact response by default. Pass `includeProperties: true`, `propertyDepth`, and `propertyLimit` when you need a deeper property tree.
+
 For JSON arguments from PowerShell, use `MCP_CALL_ARGS_JSON` to avoid native argument quoting quirks:
 
 ```powershell
@@ -177,6 +196,8 @@ Remove-Item Env:MCP_CALL_ARGS_JSON
 ```
 
 Set `AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT=1` only when you intentionally want the daemon to execute script files from outside this project folder.
+
+When a script file fails inside After Effects, the tool returns the file path, duration, reported line, and nearby line context when After Effects provides a line number.
 
 In the Codex desktop runtime, this Node executable worked during initial validation:
 
