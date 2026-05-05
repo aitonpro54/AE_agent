@@ -22,6 +22,7 @@ It has two parts:
 - `list_layers` - lists layers in a composition by index.
 - `get_project_info` - returns basic project info.
 - `get_project_snapshot` - returns a compact snapshot of comps, footage, and folders.
+- `find_project_items` - finds project items by name and optional type.
 - `get_comp_details` - returns detailed comp settings and optional layer summaries.
 - `get_layer_details` - returns one layer's source, transform, text, effects, masks, and optional property tree.
 - `get_active_comp` - returns active composition details and selected layers.
@@ -29,6 +30,12 @@ It has two parts:
 - `get_selected_properties` - returns selected properties with path, expression, and optional value previews.
 - `find_comps` - finds compositions by name substring.
 - `create_text_layer` - creates a text layer in the active comp or a comp by project item index.
+- `import_footage` - imports a local file as footage.
+- `create_solid_layer` - creates a solid layer.
+- `create_null_layer` - creates a null layer.
+- `create_adjustment_layer` - creates an adjustment layer.
+- `add_project_item_to_comp` - adds existing footage or a comp as a layer.
+- `duplicate_comp` - duplicates a composition.
 - `set_layer_transform` - sets position, scale, rotation, opacity, or anchor point.
 - `apply_transform_expression` - applies an expression to a common transform property.
 - `add_layer_marker` - adds a marker to a layer.

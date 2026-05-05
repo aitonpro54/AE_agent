@@ -7,7 +7,7 @@ const fs = require("fs");
 const path = require("path");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "0.6.0";
+const SERVER_VERSION = "0.7.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -277,6 +277,23 @@ function resolveScriptFile(filePath) {
     throw new Error("Script file is too large. Keep files under 2MB for MCP execution.");
   }
 
+  return { resolvedPath, stat };
+}
+
+function resolveExistingFile(filePath) {
+  const requestedPath = optionalString({ filePath }, "filePath", "");
+  if (!requestedPath) {
+    throw new Error("filePath is required.");
+  }
+
+  const resolvedPath = path.resolve(PROJECT_ROOT, requestedPath);
+  if (!fs.existsSync(resolvedPath)) {
+    throw new Error(`File does not exist: ${resolvedPath}`);
+  }
+  const stat = fs.statSync(resolvedPath);
+  if (!stat.isFile()) {
+    throw new Error(`Path is not a file: ${resolvedPath}`);
+  }
   return { resolvedPath, stat };
 }
 
@@ -822,6 +839,36 @@ const tools = [
     }
   },
   {
+    name: "find_project_items",
+    description: "Find project items by name substring, exact name, and optional item type.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "Name substring or exact name to search for. Empty query returns the first results."
+        },
+        type: {
+          type: "string",
+          enum: ["comp", "footage", "folder"],
+          description: "Optional project item type filter."
+        },
+        exactName: {
+          type: "boolean",
+          description: "Whether query must match the full item name. Defaults to false."
+        },
+        caseSensitive: {
+          type: "boolean",
+          description: "Whether name matching is case-sensitive. Defaults to false."
+        },
+        limit: {
+          type: "number",
+          description: "Maximum number of items to return. Defaults to 25."
+        }
+      }
+    }
+  },
+  {
     name: "list_comps",
     description: "List compositions in the current After Effects project.",
     inputSchema: {
@@ -873,6 +920,10 @@ const tools = [
         compItemIndex: {
           type: "number",
           description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
         },
         layerIndex: {
           type: "number",
@@ -962,6 +1013,10 @@ const tools = [
           type: "number",
           description: "Optional 1-based project item index for the target composition. Defaults to active comp."
         },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
         text: {
           type: "string",
           description: "Text content to create."
@@ -997,6 +1052,226 @@ const tools = [
     }
   },
   {
+    name: "import_footage",
+    description: "Import a local file as footage into the current After Effects project.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        filePath: {
+          type: "string",
+          description: "Absolute path, or a path relative to the bridge project, for the footage file to import."
+        },
+        name: {
+          type: "string",
+          description: "Optional project item name to apply after import."
+        },
+        sequence: {
+          type: "boolean",
+          description: "Whether to import the file as an image sequence. Defaults to false."
+        }
+      },
+      required: ["filePath"]
+    }
+  },
+  {
+    name: "create_solid_layer",
+    description: "Create a solid layer in the active comp or a comp by project item index.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        name: {
+          type: "string",
+          description: "Optional layer and solid source name. Defaults to Codex Solid."
+        },
+        color: {
+          type: "array",
+          items: { type: "number" },
+          description: "Optional RGB color with values from 0 to 1. Defaults to black."
+        },
+        width: {
+          type: "number",
+          description: "Optional solid width in pixels. Defaults to comp width."
+        },
+        height: {
+          type: "number",
+          description: "Optional solid height in pixels. Defaults to comp height."
+        },
+        pixelAspect: {
+          type: "number",
+          description: "Optional pixel aspect ratio. Defaults to comp pixel aspect."
+        },
+        startTime: {
+          type: "number",
+          description: "Optional layer start time in seconds."
+        },
+        duration: {
+          type: "number",
+          description: "Optional layer duration in seconds. Defaults to the composition duration."
+        }
+      }
+    }
+  },
+  {
+    name: "create_null_layer",
+    description: "Create a null layer in the active comp or a comp by project item index.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        name: {
+          type: "string",
+          description: "Optional layer name. Defaults to Codex Null."
+        },
+        startTime: {
+          type: "number",
+          description: "Optional layer start time in seconds."
+        },
+        duration: {
+          type: "number",
+          description: "Optional layer duration in seconds. Defaults to the composition duration."
+        }
+      }
+    }
+  },
+  {
+    name: "create_adjustment_layer",
+    description: "Create an adjustment layer in the active comp or a comp by project item index.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        name: {
+          type: "string",
+          description: "Optional layer and solid source name. Defaults to Codex Adjustment."
+        },
+        color: {
+          type: "array",
+          items: { type: "number" },
+          description: "Optional RGB solid source color with values from 0 to 1. Defaults to white."
+        },
+        width: {
+          type: "number",
+          description: "Optional solid width in pixels. Defaults to comp width."
+        },
+        height: {
+          type: "number",
+          description: "Optional solid height in pixels. Defaults to comp height."
+        },
+        pixelAspect: {
+          type: "number",
+          description: "Optional pixel aspect ratio. Defaults to comp pixel aspect."
+        },
+        startTime: {
+          type: "number",
+          description: "Optional layer start time in seconds."
+        },
+        duration: {
+          type: "number",
+          description: "Optional layer duration in seconds. Defaults to the composition duration."
+        }
+      }
+    }
+  },
+  {
+    name: "add_project_item_to_comp",
+    description: "Add an existing footage or composition project item as a layer in a target composition.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        itemIndex: {
+          type: "number",
+          description: "1-based project item index for the footage or composition to add."
+        },
+        itemName: {
+          type: "string",
+          description: "Optional exact project item name to add when itemIndex is not provided."
+        },
+        itemType: {
+          type: "string",
+          enum: ["comp", "footage"],
+          description: "Optional item type filter when resolving itemName."
+        },
+        name: {
+          type: "string",
+          description: "Optional layer name."
+        },
+        position: {
+          type: "array",
+          items: { type: "number" },
+          description: "Optional [x, y] or [x, y, z] layer position."
+        },
+        scale: {
+          type: "array",
+          items: { type: "number" },
+          description: "Optional [x, y] or [x, y, z] layer scale percentages."
+        },
+        startTime: {
+          type: "number",
+          description: "Optional layer start time in seconds."
+        },
+        duration: {
+          type: "number",
+          description: "Optional layer duration in seconds."
+        }
+      }
+    }
+  },
+  {
+    name: "duplicate_comp",
+    description: "Duplicate an After Effects composition and optionally open it in the viewer.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to duplicate when compItemIndex is not provided."
+        },
+        name: {
+          type: "string",
+          description: "Optional name for the duplicated composition."
+        },
+        openInViewer: {
+          type: "boolean",
+          description: "Whether to open the duplicated comp in the viewer. Defaults to true."
+        }
+      }
+    }
+  },
+  {
     name: "set_layer_transform",
     description: "Set common transform values on a layer: position, scale, rotation, opacity, or anchor point.",
     inputSchema: {
@@ -1005,6 +1280,10 @@ const tools = [
         compItemIndex: {
           type: "number",
           description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
         },
         layerIndex: {
           type: "number",
@@ -1047,6 +1326,10 @@ const tools = [
           type: "number",
           description: "Optional 1-based project item index for the target composition. Defaults to active comp."
         },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
         layerIndex: {
           type: "number",
           description: "1-based layer index in the target composition."
@@ -1077,6 +1360,10 @@ const tools = [
         compItemIndex: {
           type: "number",
           description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
         },
         layerIndex: {
           type: "number",
@@ -1164,15 +1451,94 @@ async function callTool(name, args) {
         return null;
       }
 
-      function __codexResolveComp(index) {
+      function __codexMatchesItemType(item, type) {
+        if (!type) return true;
+        if (type === "comp") return item instanceof CompItem;
+        if (type === "footage") return item instanceof FootageItem;
+        if (type === "folder") return item instanceof FolderItem;
+        return false;
+      }
+
+      function __codexFolderPath(item) {
+        var names = [];
+        var project = app.project;
+        var folder = null;
+        try { folder = item.parentFolder; } catch (__parentFolderError) {}
+        var guard = 0;
+        while (folder && project && folder !== project.rootFolder && guard < 50) {
+          names.unshift(folder.name);
+          try { folder = folder.parentFolder; } catch (__folderParentError) { folder = null; }
+          guard++;
+        }
+        return names.join("/");
+      }
+
+      function __codexFindProjectItems(query, type, exactName, caseSensitive, limit) {
+        var matches = [];
+        var needle = query || "";
+        var normalizedNeedle = caseSensitive ? needle : needle.toLowerCase();
+        var max = limit || 25;
+
+        for (var __i = 1; __i <= app.project.numItems; __i++) {
+          var item = app.project.item(__i);
+          if (!__codexMatchesItemType(item, type)) continue;
+
+          var itemName = item.name || "";
+          var haystack = caseSensitive ? itemName : itemName.toLowerCase();
+          var matched = exactName ? haystack === normalizedNeedle : haystack.indexOf(normalizedNeedle) !== -1;
+          if (!matched) continue;
+
+          var ref = __codexItemReference(item);
+          try { ref.folderPath = __codexFolderPath(item); } catch (__folderPathError) {}
+          matches.push(ref);
+          if (matches.length >= max) break;
+        }
+
+        return matches;
+      }
+
+      function __codexResolveProjectItem(index, name, type) {
+        if (index !== null && index !== undefined) {
+          var indexedItem = app.project.item(index);
+          if (!indexedItem) throw new Error("Project item not found.");
+          if (!__codexMatchesItemType(indexedItem, type)) {
+            throw new Error("Project item does not match requested type.");
+          }
+          return indexedItem;
+        }
+
+        if (!name) {
+          throw new Error("Provide itemIndex or itemName.");
+        }
+
+        var matches = __codexFindProjectItems(name, type, true, true, 25);
+        if (matches.length === 0) {
+          matches = __codexFindProjectItems(name, type, true, false, 25);
+        }
+        if (matches.length === 0) {
+          throw new Error("No project item matched name: " + name);
+        }
+        if (matches.length > 1) {
+          var names = [];
+          for (var __m = 0; __m < matches.length; __m++) {
+            names.push("#" + matches[__m].itemIndex + " " + matches[__m].name);
+          }
+          throw new Error("Project item name is ambiguous: " + name + " (" + names.join(", ") + ")");
+        }
+        return app.project.item(matches[0].itemIndex);
+      }
+
+      function __codexResolveComp(index, name) {
         var item = null;
         if (index !== null && index !== undefined) {
           item = app.project.item(index);
+        } else if (name) {
+          item = __codexResolveProjectItem(null, name, "comp");
         } else {
           item = app.project.activeItem;
         }
         if (!(item instanceof CompItem)) {
-          throw new Error(index ? "Project item is not a composition." : "Active item is not a composition.");
+          throw new Error(index || name ? "Project item is not a composition." : "Active item is not a composition.");
         }
         return item;
       }
@@ -1524,6 +1890,30 @@ async function callTool(name, args) {
     return toolResult(result.result);
   }
 
+  if (name === "find_project_items") {
+    const query = optionalString(args, "query", "");
+    const type = optionalString(args, "type", "");
+    const exactName = optionalBoolean(args, "exactName", false);
+    const caseSensitive = optionalBoolean(args, "caseSensitive", false);
+    const limit = Math.max(1, Math.min(250, Math.floor(optionalNumber(args, "limit", 25))));
+
+    if (type && !["comp", "footage", "folder"].includes(type)) {
+      return toolResult("type must be one of: comp, footage, folder.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      return {
+        query: ${aeLiteral(query)},
+        type: ${aeLiteral(type)},
+        exactName: ${exactName ? "true" : "false"},
+        caseSensitive: ${caseSensitive ? "true" : "false"},
+        matches: __codexFindProjectItems(${aeLiteral(query)}, ${aeLiteral(type)}, ${exactName ? "true" : "false"}, ${caseSensitive ? "true" : "false"}, ${limit})
+      };
+    `);
+    return toolResult(result.result);
+  }
+
   if (name === "list_comps") {
     const result = await runExtendScriptBody(`
       var comps = [];
@@ -1632,6 +2022,7 @@ async function callTool(name, args) {
 
   if (name === "get_layer_details") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
     const layerIndex = requiredPositiveInteger(args, "layerIndex");
     const includeProperties = optionalBoolean(args, "includeProperties", false);
     const propertyDepth = Math.max(0, Math.min(5, Math.floor(optionalNumber(args, "propertyDepth", 1))));
@@ -1641,7 +2032,7 @@ async function callTool(name, args) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex});
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
       var layer = comp.layer(${layerIndex});
       if (!layer) throw new Error("Layer not found.");
       var includeProperties = ${includeProperties ? "true" : "false"};
@@ -1907,6 +2298,7 @@ async function callTool(name, args) {
 
   if (name === "create_text_layer") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
     const text = optionalString(args, "text", "");
     if (!text) return toolResult("text is required.", true);
 
@@ -1925,7 +2317,7 @@ async function callTool(name, args) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex});
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
       var textValue = ${aeLiteral(text)};
       var layerName = ${aeLiteral(layerName)};
       var requestedPosition = ${position ? aeLiteral(position) : "null"};
@@ -1975,8 +2367,313 @@ async function callTool(name, args) {
     return toolResult(result.result);
   }
 
+  if (name === "import_footage") {
+    let resolved;
+    try {
+      resolved = resolveExistingFile(args.filePath);
+    } catch (error) {
+      return toolResult(error.message, true);
+    }
+
+    const itemName = optionalString(args, "name", "");
+    const sequence = optionalBoolean(args, "sequence", false);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var importPath = ${aeLiteral(resolved.resolvedPath)};
+      var requestedName = ${aeLiteral(itemName)};
+      var importAsSequence = ${sequence ? "true" : "false"};
+      var file = new File(importPath);
+      if (!file.exists) throw new Error("Footage file does not exist: " + importPath);
+
+      var options = new ImportOptions(file);
+      options.sequence = importAsSequence;
+      if (!options.canImportAs(ImportAsType.FOOTAGE)) {
+        throw new Error("File cannot be imported as footage: " + importPath);
+      }
+      options.importAs = ImportAsType.FOOTAGE;
+
+      app.beginUndoGroup("Codex Import Footage");
+      var item = app.project.importFile(options);
+      if (requestedName) item.name = requestedName;
+
+      var response = {
+        item: __codexItemReference(item),
+        footage: {
+          file: item.file ? item.file.fsName : importPath,
+          width: item.width || null,
+          height: item.height || null,
+          duration: item.duration || null,
+          frameRate: item.frameRate || null,
+          hasAudio: item.hasAudio || false,
+          hasVideo: item.hasVideo || false
+        },
+        sequence: importAsSequence
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "create_solid_layer") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerName = optionalString(args, "name", "Codex Solid");
+    const color = optionalNumberArray(args, "color", [0, 0, 0], 3, 3);
+    const width = optionalNumber(args, "width", null);
+    const height = optionalNumber(args, "height", null);
+    const pixelAspect = optionalNumber(args, "pixelAspect", null);
+    const startTime = optionalNumber(args, "startTime", null);
+    const duration = optionalNumber(args, "duration", null);
+
+    if (color.some((value) => value < 0 || value > 1)) return toolResult("color values must be between 0 and 1.", true);
+    if (width !== null && width <= 0) return toolResult("width must be greater than 0.", true);
+    if (height !== null && height <= 0) return toolResult("height must be greater than 0.", true);
+    if (pixelAspect !== null && pixelAspect <= 0) return toolResult("pixelAspect must be greater than 0.", true);
+    if (duration !== null && duration <= 0) return toolResult("duration must be greater than 0.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layerName = ${aeLiteral(layerName)};
+      var color = ${aeLiteral(color)};
+      var width = ${width === null ? "comp.width" : width};
+      var height = ${height === null ? "comp.height" : height};
+      var pixelAspect = ${pixelAspect === null ? "comp.pixelAspect" : pixelAspect};
+      var requestedStartTime = ${startTime === null ? "null" : startTime};
+      var requestedDuration = ${duration === null ? "comp.duration" : duration};
+
+      app.beginUndoGroup("Codex Create Solid Layer");
+      var layer = comp.layers.addSolid(color, layerName, width, height, pixelAspect, requestedDuration);
+      if (requestedStartTime !== null) {
+        layer.startTime = requestedStartTime;
+        layer.inPoint = requestedStartTime;
+      }
+      if (requestedDuration !== null) {
+        var baseTime = requestedStartTime !== null ? requestedStartTime : layer.inPoint;
+        layer.outPoint = Math.min(baseTime + requestedDuration, comp.duration);
+      }
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name
+        },
+        layer: __codexLayerInfo(layer),
+        solid: {
+          color: color,
+          width: width,
+          height: height,
+          pixelAspect: pixelAspect
+        }
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "create_null_layer") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerName = optionalString(args, "name", "Codex Null");
+    const startTime = optionalNumber(args, "startTime", null);
+    const duration = optionalNumber(args, "duration", null);
+
+    if (duration !== null && duration <= 0) return toolResult("duration must be greater than 0.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layerName = ${aeLiteral(layerName)};
+      var requestedStartTime = ${startTime === null ? "null" : startTime};
+      var requestedDuration = ${duration === null ? "comp.duration" : duration};
+
+      app.beginUndoGroup("Codex Create Null Layer");
+      var layer = comp.layers.addNull(requestedDuration);
+      if (layerName) {
+        layer.name = layerName;
+        try { if (layer.source) layer.source.name = layerName; } catch (__sourceNameError) {}
+      }
+      if (requestedStartTime !== null) {
+        layer.startTime = requestedStartTime;
+        layer.inPoint = requestedStartTime;
+      }
+      if (requestedDuration !== null) {
+        var baseTime = requestedStartTime !== null ? requestedStartTime : layer.inPoint;
+        layer.outPoint = Math.min(baseTime + requestedDuration, comp.duration);
+      }
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name
+        },
+        layer: __codexLayerInfo(layer)
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "create_adjustment_layer") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerName = optionalString(args, "name", "Codex Adjustment");
+    const color = optionalNumberArray(args, "color", [1, 1, 1], 3, 3);
+    const width = optionalNumber(args, "width", null);
+    const height = optionalNumber(args, "height", null);
+    const pixelAspect = optionalNumber(args, "pixelAspect", null);
+    const startTime = optionalNumber(args, "startTime", null);
+    const duration = optionalNumber(args, "duration", null);
+
+    if (color.some((value) => value < 0 || value > 1)) return toolResult("color values must be between 0 and 1.", true);
+    if (width !== null && width <= 0) return toolResult("width must be greater than 0.", true);
+    if (height !== null && height <= 0) return toolResult("height must be greater than 0.", true);
+    if (pixelAspect !== null && pixelAspect <= 0) return toolResult("pixelAspect must be greater than 0.", true);
+    if (duration !== null && duration <= 0) return toolResult("duration must be greater than 0.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layerName = ${aeLiteral(layerName)};
+      var color = ${aeLiteral(color)};
+      var width = ${width === null ? "comp.width" : width};
+      var height = ${height === null ? "comp.height" : height};
+      var pixelAspect = ${pixelAspect === null ? "comp.pixelAspect" : pixelAspect};
+      var requestedStartTime = ${startTime === null ? "null" : startTime};
+      var requestedDuration = ${duration === null ? "comp.duration" : duration};
+
+      app.beginUndoGroup("Codex Create Adjustment Layer");
+      var layer = comp.layers.addSolid(color, layerName, width, height, pixelAspect, requestedDuration);
+      layer.adjustmentLayer = true;
+      if (requestedStartTime !== null) {
+        layer.startTime = requestedStartTime;
+        layer.inPoint = requestedStartTime;
+      }
+      if (requestedDuration !== null) {
+        var baseTime = requestedStartTime !== null ? requestedStartTime : layer.inPoint;
+        layer.outPoint = Math.min(baseTime + requestedDuration, comp.duration);
+      }
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name
+        },
+        layer: __codexLayerInfo(layer),
+        solid: {
+          color: color,
+          width: width,
+          height: height,
+          pixelAspect: pixelAspect
+        }
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "add_project_item_to_comp") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const itemIndex = optionalPositiveInteger(args, "itemIndex");
+    const itemName = optionalString(args, "itemName", "");
+    const itemType = optionalString(args, "itemType", "");
+    const layerName = optionalString(args, "name", "");
+    const position = optionalNumberArray(args, "position", null, 2, 3);
+    const scale = optionalNumberArray(args, "scale", null, 2, 3);
+    const startTime = optionalNumber(args, "startTime", null);
+    const duration = optionalNumber(args, "duration", null);
+
+    if (!itemIndex && !itemName) return toolResult("Provide itemIndex or itemName.", true);
+    if (itemType && !["comp", "footage"].includes(itemType)) return toolResult("itemType must be one of: comp, footage.", true);
+    if (duration !== null && duration <= 0) return toolResult("duration must be greater than 0.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var item = __codexResolveProjectItem(${itemIndex === null ? "null" : itemIndex}, ${aeLiteral(itemName)}, ${aeLiteral(itemType)});
+      if (!(item instanceof FootageItem) && !(item instanceof CompItem)) {
+        throw new Error("Project item must be footage or a composition.");
+      }
+      if (item === comp) {
+        throw new Error("Cannot add a composition to itself.");
+      }
+      var layerName = ${aeLiteral(layerName)};
+      var positionValue = ${position ? aeLiteral(position) : "null"};
+      var scaleValue = ${scale ? aeLiteral(scale) : "null"};
+      var requestedStartTime = ${startTime === null ? "null" : startTime};
+      var requestedDuration = ${duration === null ? "null" : duration};
+
+      app.beginUndoGroup("Codex Add Project Item To Comp");
+      var layer = requestedDuration !== null ? comp.layers.add(item, requestedDuration) : comp.layers.add(item);
+      if (layerName) layer.name = layerName;
+      if (requestedStartTime !== null) {
+        layer.startTime = requestedStartTime;
+        layer.inPoint = requestedStartTime;
+      }
+      if (requestedDuration !== null) {
+        var baseTime = requestedStartTime !== null ? requestedStartTime : layer.inPoint;
+        layer.outPoint = Math.min(baseTime + requestedDuration, comp.duration);
+      }
+      var transform = layer.property("ADBE Transform Group");
+      if (positionValue !== null) transform.property("ADBE Position").setValue(positionValue);
+      if (scaleValue !== null) transform.property("ADBE Scale").setValue(scaleValue);
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name
+        },
+        sourceItem: __codexItemReference(item),
+        layer: __codexLayerInfo(layer)
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "duplicate_comp") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const sourceCompName = optionalString(args, "compName", "");
+    const compName = optionalString(args, "name", "");
+    const openInViewer = optionalBoolean(args, "openInViewer", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(sourceCompName)});
+      var requestedName = ${aeLiteral(compName)};
+      var openInViewer = ${openInViewer ? "true" : "false"};
+
+      app.beginUndoGroup("Codex Duplicate Comp");
+      var duplicate = comp.duplicate();
+      if (requestedName) duplicate.name = requestedName;
+      if (openInViewer) duplicate.openInViewer();
+      var response = {
+        source: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name
+        },
+        duplicate: {
+          itemIndex: __codexProjectIndexForItem(duplicate),
+          name: duplicate.name,
+          width: duplicate.width,
+          height: duplicate.height,
+          duration: duplicate.duration,
+          frameRate: duplicate.frameRate,
+          numLayers: duplicate.numLayers
+        }
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
   if (name === "set_layer_transform") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
     const layerIndex = requiredPositiveInteger(args, "layerIndex");
     const position = optionalNumberArray(args, "position", null, 2, 3);
     const scale = optionalNumberArray(args, "scale", null, 2, 3);
@@ -1993,7 +2690,7 @@ async function callTool(name, args) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex});
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
       var layer = comp.layer(${layerIndex});
       if (!layer) throw new Error("Layer not found.");
       if (layer.locked) throw new Error("Layer is locked.");
@@ -2033,6 +2730,7 @@ async function callTool(name, args) {
 
   if (name === "apply_transform_expression") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
     const layerIndex = requiredPositiveInteger(args, "layerIndex");
     const property = optionalString(args, "property", "");
     const expression = optionalString(args, "expression", "");
@@ -2052,7 +2750,7 @@ async function callTool(name, args) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex});
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
       var layer = comp.layer(${layerIndex});
       if (!layer) throw new Error("Layer not found.");
       if (layer.locked) throw new Error("Layer is locked.");
@@ -2088,6 +2786,7 @@ async function callTool(name, args) {
 
   if (name === "add_layer_marker") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
     const layerIndex = requiredPositiveInteger(args, "layerIndex");
     const time = optionalNumber(args, "time", null);
     const comment = optionalString(args, "comment", "");
@@ -2098,7 +2797,7 @@ async function callTool(name, args) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex});
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
       var layer = comp.layer(${layerIndex});
       if (!layer) throw new Error("Layer not found.");
       if (layer.locked) throw new Error("Layer is locked.");

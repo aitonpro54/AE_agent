@@ -1,5 +1,32 @@
 # AE MCP Bridge Releases
 
+## v0.7.0-practical-layers - 2026-05-05
+
+Practical typed operations on top of the v0.6 inspection layer.
+
+Added:
+
+- `import_footage`
+- `create_solid_layer`
+- `create_null_layer`
+- `create_adjustment_layer`
+- `add_project_item_to_comp`
+- `duplicate_comp`
+- `find_project_items`
+
+Changed:
+
+- Practical comp tools can target `compName` when `compItemIndex` is not stable.
+- Existing comp-targeted layer tools also accept `compName`.
+- `add_project_item_to_comp` can target `itemName` plus optional `itemType`.
+- Daemon and adapter report version `0.7.0`.
+
+Verified:
+
+- Local syntax checks for daemon and adapter.
+- Daemon-only and adapter smoke tests pass against `0.7.0` and list 29 tools.
+- Live AE validation created temporary comps/layers, used `compName` and `itemName`, duplicated a comp, and cleaned up temporary project items.
+
 ## v0.6.0-dev-inspection - 2026-05-05
 
 Read-only development inspection tools for iterative JSX/ScriptUI work.
