@@ -84,6 +84,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-bridge-only.ps1 -Port 3
 
 Codex can use MCP tools while the daemon stays online because the MCP adapter no longer tries to bind port `3456`.
 
+After you connect once, the panel remembers the URL/token and starts polling automatically when it opens again. If the daemon is not up yet, the panel keeps retrying until Codex starts it.
+
 If an old logon startup task was installed during testing, remove it:
 
 ```powershell

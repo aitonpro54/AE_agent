@@ -12,6 +12,7 @@
 
   var running = false;
   var pollTimer = null;
+  var pollInFlight = false;
 
   function log(message) {
     var at = new Date().toLocaleTimeString();
@@ -38,25 +39,35 @@
   }
 
   function request(method, path, body, onDone) {
+    var completed = false;
     var xhr = new XMLHttpRequest();
     xhr.open(method, getBaseUrl() + appendToken(path), true);
+    xhr.timeout = 10000;
     if (body !== null && body !== undefined) {
       xhr.setRequestHeader("content-type", "text/plain;charset=utf-8");
+    }
+    function finish(error, response) {
+      if (completed) return;
+      completed = true;
+      onDone(error, response);
     }
     xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) return;
       if (xhr.status < 200 || xhr.status >= 300) {
-        onDone(new Error("HTTP " + xhr.status + ": " + xhr.responseText));
+        finish(new Error("HTTP " + xhr.status + ": " + xhr.responseText));
         return;
       }
       try {
-        onDone(null, xhr.responseText ? JSON.parse(xhr.responseText) : {});
+        finish(null, xhr.responseText ? JSON.parse(xhr.responseText) : {});
       } catch (error) {
-        onDone(error);
+        finish(error);
       }
     };
     xhr.onerror = function () {
-      onDone(new Error("Network error"));
+      finish(new Error("Network error"));
+    };
+    xhr.ontimeout = function () {
+      finish(new Error("Network timeout"));
     };
     xhr.send(body !== null && body !== undefined ? JSON.stringify(body) : null);
   }
@@ -87,7 +98,10 @@
 
   function poll() {
     if (!running) return;
+    if (pollInFlight) return;
+    pollInFlight = true;
     request("GET", "/bridge/next", null, function (error, response) {
+      pollInFlight = false;
       if (!running) return;
 
       if (error) {
@@ -111,6 +125,7 @@
     running = true;
     localStorage.setItem("codexAeBridgeUrl", urlEl.value);
     localStorage.setItem("codexAeBridgeToken", tokenEl.value);
+    localStorage.setItem("codexAeBridgeAutoConnect", "1");
     setStatus("Connecting...", false);
     log("Connecting to " + getBaseUrl());
     poll();
@@ -118,7 +133,9 @@
 
   function disconnect() {
     running = false;
+    pollInFlight = false;
     if (pollTimer) clearTimeout(pollTimer);
+    localStorage.setItem("codexAeBridgeAutoConnect", "0");
     setStatus("Disconnected", false);
     log("Disconnected");
   }
@@ -129,4 +146,7 @@
   urlEl.value = localStorage.getItem("codexAeBridgeUrl") || urlEl.value;
   tokenEl.value = localStorage.getItem("codexAeBridgeToken") || "";
   setStatus("Disconnected", false);
+  if (tokenEl.value && localStorage.getItem("codexAeBridgeAutoConnect") !== "0") {
+    setTimeout(connect, 250);
+  }
 })();

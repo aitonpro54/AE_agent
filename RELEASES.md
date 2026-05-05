@@ -1,5 +1,20 @@
 # AE MCP Bridge Releases
 
+## v0.5.4-panel-autoconnect - 2026-05-05
+
+Cold boot connection reliability fix.
+
+Observed:
+
+- After a full Windows reboot, the panel could remain offline until Codex and After Effects were restarted.
+- Restarting only the programs worked, which pointed to panel polling state after cold boot rather than daemon startup alone.
+
+Changed:
+
+- The CEP panel remembers that the user clicked Connect and auto-connects on the next panel load when a token is saved.
+- Panel HTTP requests now have a timeout, so a dead request after reboot cannot block retries forever.
+- The default lifecycle remains Codex-triggered daemon startup. No Windows logon startup task is used.
+
 ## v0.5.3-codex-lifecycle-default - 2026-05-05
 
 Lifecycle default correction.

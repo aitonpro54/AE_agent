@@ -7,7 +7,7 @@ const path = require("path");
 const { spawn } = require("child_process");
 
 const SERVER_NAME = "codex-ae-mcp-adapter";
-const SERVER_VERSION = "0.5.3";
+const SERVER_VERSION = "0.5.4";
 const PROTOCOL_VERSION = "2025-03-26";
 const DAEMON_HOST = process.env.AE_BRIDGE_HOST || "127.0.0.1";
 const DAEMON_PORT = Number(process.env.AE_BRIDGE_PORT || 3456);

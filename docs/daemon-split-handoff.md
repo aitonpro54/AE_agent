@@ -89,6 +89,17 @@ Chosen default:
 
 This keeps the setup simpler and avoids background processes appearing before the user opens Codex or starts using AE tools.
 
+## v0.5.4 Panel Autoconnect Notes
+
+Observed after a full Windows reboot: Codex and After Effects were open, but the panel did not reliably reconnect until both programs were restarted. Restarting the programs without reboot worked.
+
+Fix:
+
+- `cep-panel/panel.js` now stores an autoconnect flag when the user clicks Connect.
+- If the panel opens with a saved token and autoconnect is not disabled, it starts polling automatically.
+- Panel XHR requests have a timeout so a stale network request cannot block retry polling.
+- The daemon lifecycle remains Codex-triggered; no Windows startup task is required.
+
 ## Current State
 
 The bridge works with a Codex-triggered daemon lifecycle.
@@ -101,6 +112,7 @@ Working:
 - Higher-level tools work, including text layer creation.
 - `mcp-adapter.js` can start the daemon in the background when Codex calls the MCP server.
 - `bridge-only` mode still exists for manual testing.
+- The CEP panel auto-connects after the user has connected once.
 - Diagnostics/logging tools were added:
   - `get_bridge_status`
   - `get_command_log`
