@@ -25,6 +25,8 @@ It has two parts:
 - `find_project_items` - finds project items by name and optional type.
 - `get_comp_details` - returns detailed comp settings and optional layer summaries.
 - `get_layer_details` - returns one layer's source, transform, text, effects, masks, and optional property tree.
+- `list_effects` - lists effects applied to a layer.
+- `get_effect_details` - returns one effect's metadata and optional property tree.
 - `get_active_comp` - returns active composition details and selected layers.
 - `get_selected_layers` - returns selected layers in the active composition.
 - `get_selected_properties` - returns selected properties with path, expression, and optional value previews.

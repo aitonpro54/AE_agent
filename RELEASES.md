@@ -1,5 +1,25 @@
 # AE MCP Bridge Releases
 
+## v0.10.0-effect-inspection - 2026-05-05
+
+Read-only effect inspection tools for safer effect automation.
+
+Added:
+
+- `list_effects`
+- `get_effect_details`
+
+Changed:
+
+- Daemon and adapter report version `0.10.0`.
+- Smoke tests expect daemon `0.10.0`.
+
+Verified:
+
+- Local syntax checks for daemon and adapter.
+- Daemon-only and adapter smoke tests pass against `0.10.0` and list 34 tools.
+- Live AE validation listed an added `ADBE Fill` effect, read its detail/property tree, and cleaned up temporary project items.
+
 ## v0.9.0-effect-tools - 2026-05-05
 
 Effect-level tools for adding effects and setting effect properties.

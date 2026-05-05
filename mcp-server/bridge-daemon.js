@@ -7,7 +7,7 @@ const fs = require("fs");
 const path = require("path");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "0.9.0";
+const SERVER_VERSION = "0.10.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -944,6 +944,94 @@ const tools = [
         includeValues: {
           type: "boolean",
           description: "Whether to include compact value previews for properties. Defaults to false."
+        },
+        includeExpressions: {
+          type: "boolean",
+          description: "Whether to include expression text where available. Defaults to true."
+        }
+      },
+      required: ["layerIndex"]
+    }
+  },
+  {
+    name: "list_effects",
+    description: "Return effects applied to a layer, optionally including first-level effect properties.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based layer index in the target composition."
+        },
+        includeProperties: {
+          type: "boolean",
+          description: "Whether to include first-level effect properties. Defaults to false."
+        },
+        includeValues: {
+          type: "boolean",
+          description: "Whether to include compact value previews for properties. Defaults to false."
+        },
+        includeExpressions: {
+          type: "boolean",
+          description: "Whether to include expression text where available. Defaults to true."
+        }
+      },
+      required: ["layerIndex"]
+    }
+  },
+  {
+    name: "get_effect_details",
+    description: "Return detailed information for one layer effect, including optional property tree.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based layer index in the target composition."
+        },
+        effectIndex: {
+          type: "number",
+          description: "Optional 1-based effect index in the layer effects group."
+        },
+        effectName: {
+          type: "string",
+          description: "Optional exact effect instance name."
+        },
+        effectMatchName: {
+          type: "string",
+          description: "Optional effect matchName, such as ADBE Fill."
+        },
+        includeProperties: {
+          type: "boolean",
+          description: "Whether to include a property tree. Defaults to true."
+        },
+        propertyDepth: {
+          type: "number",
+          description: "Property tree depth below each effect property. Defaults to 1, maximum 5."
+        },
+        propertyLimit: {
+          type: "number",
+          description: "Maximum property nodes to include. Defaults to 120, maximum 1000."
+        },
+        includeValues: {
+          type: "boolean",
+          description: "Whether to include compact value previews for properties. Defaults to true."
         },
         includeExpressions: {
           type: "boolean",
@@ -1892,15 +1980,33 @@ async function callTool(name, args) {
         return matches[0];
       }
 
-      function __codexEffectProperties(effect, layer, includeValues) {
+      function __codexEffectProperties(effect, layer, includeValues, includeExpressions) {
         var properties = [];
+        var shouldIncludeExpressions = includeExpressions !== false;
         try {
           for (var __ep = 1; __ep <= effect.numProperties; __ep++) {
             var prop = effect.property(__ep);
-            if (prop) properties.push(__codexPropertyInfo(prop, layer, includeValues, true));
+            if (prop) properties.push(__codexPropertyInfo(prop, layer, includeValues, shouldIncludeExpressions));
           }
         } catch (__effectPropertiesError) {}
         return properties;
+      }
+
+      function __codexPropertyTree(prop, depth, state, includeValues, includeExpressions) {
+        if (!prop || state.count >= state.max) return null;
+        state.count++;
+        var info = __codexPropertyInfo(prop, null, includeValues, includeExpressions);
+        var children = [];
+        if (depth > 0) {
+          try {
+            for (var __pt = 1; __pt <= prop.numProperties && state.count < state.max; __pt++) {
+              var child = __codexPropertyTree(prop.property(__pt), depth - 1, state, includeValues, includeExpressions);
+              if (child) children.push(child);
+            }
+          } catch (__propertyTreeChildrenError) {}
+        }
+        if (children.length) info.children = children;
+        return info;
       }
 
       function __codexResolveEffectProperty(effect, propertyPath, propertyIndex, propertyName, propertyMatchName) {
@@ -2966,6 +3072,105 @@ async function callTool(name, args) {
       };
       app.endUndoGroup();
       return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "list_effects") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const includeProperties = optionalBoolean(args, "includeProperties", false);
+    const includeValues = optionalBoolean(args, "includeValues", false);
+    const includeExpressions = optionalBoolean(args, "includeExpressions", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      var includeProperties = ${includeProperties ? "true" : "false"};
+      var includeValues = ${includeValues ? "true" : "false"};
+      var includeExpressions = ${includeExpressions ? "true" : "false"};
+      var effectGroup = layer.property("ADBE Effect Parade");
+      var effects = [];
+
+      if (effectGroup) {
+        for (var __e = 1; __e <= effectGroup.numProperties; __e++) {
+          var effect = effectGroup.property(__e);
+          if (!effect) continue;
+          var info = __codexPropertyInfo(effect, layer, false, includeExpressions);
+          if (includeProperties) {
+            info.properties = __codexEffectProperties(effect, layer, includeValues, includeExpressions);
+          }
+          effects.push(info);
+        }
+      }
+
+      return {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name
+        },
+        layer: __codexLayerInfo(layer),
+        effectCount: effectGroup ? effectGroup.numProperties : 0,
+        effects: effects
+      };
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "get_effect_details") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const effectIndex = optionalPositiveInteger(args, "effectIndex");
+    const effectName = optionalString(args, "effectName", "");
+    const effectMatchName = optionalString(args, "effectMatchName", "");
+    const includeProperties = optionalBoolean(args, "includeProperties", true);
+    const propertyDepth = Math.max(0, Math.min(5, Math.floor(optionalNumber(args, "propertyDepth", 1))));
+    const propertyLimit = Math.max(1, Math.min(1000, Math.floor(optionalNumber(args, "propertyLimit", 120))));
+    const includeValues = optionalBoolean(args, "includeValues", true);
+    const includeExpressions = optionalBoolean(args, "includeExpressions", true);
+
+    if (!effectIndex && !effectName && !effectMatchName) {
+      return toolResult("Provide effectIndex, effectName, or effectMatchName.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      var effect = __codexResolveEffect(layer, ${effectIndex === null ? "null" : effectIndex}, ${aeLiteral(effectName)}, ${aeLiteral(effectMatchName)});
+      var includeProperties = ${includeProperties ? "true" : "false"};
+      var includeValues = ${includeValues ? "true" : "false"};
+      var includeExpressions = ${includeExpressions ? "true" : "false"};
+      var propertyDepth = ${propertyDepth};
+      var propertyLimit = ${propertyLimit};
+      var properties = [];
+      var propertyState = { count: 0, max: propertyLimit };
+
+      if (includeProperties) {
+        try {
+          for (var __p = 1; __p <= effect.numProperties && propertyState.count < propertyState.max; __p++) {
+            var branch = __codexPropertyTree(effect.property(__p), propertyDepth, propertyState, includeValues, includeExpressions);
+            if (branch) properties.push(branch);
+          }
+        } catch (__effectTreeError) {}
+      }
+
+      return {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name
+        },
+        layer: __codexLayerInfo(layer),
+        effect: __codexPropertyInfo(effect, layer, false, includeExpressions),
+        propertiesReturned: properties.length,
+        propertiesTruncated: includeProperties && propertyState.count >= propertyState.max,
+        properties: properties
+      };
     `);
     return toolResult(result.result);
   }
