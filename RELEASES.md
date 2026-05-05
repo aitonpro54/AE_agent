@@ -1,5 +1,24 @@
 # AE MCP Bridge Releases
 
+## v0.11.0-effect-presets - 2026-05-05
+
+Curated effect matchName presets and automation hints.
+
+Added:
+
+- `list_effect_presets`
+
+Changed:
+
+- Daemon and adapter report version `0.11.0`.
+- Smoke tests expect daemon `0.11.0`.
+
+Verified:
+
+- Local syntax checks for daemon and adapter.
+- Daemon-only and adapter smoke tests pass against `0.11.0` and list 35 tools.
+- Live bridge validation returned the `Fill` preset, used its `ADBE Fill` matchName with `add_effect`, read 8 effect properties with `get_effect_details`, and cleaned up temporary project items.
+
 ## v0.10.0-effect-inspection - 2026-05-05
 
 Read-only effect inspection tools for safer effect automation.

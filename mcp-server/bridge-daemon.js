@@ -7,7 +7,7 @@ const fs = require("fs");
 const path = require("path");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "0.10.0";
+const SERVER_VERSION = "0.11.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -25,6 +25,181 @@ const inflightCommands = new Map();
 const completedResults = new Map();
 const waitingPanels = [];
 const recentEvents = [];
+
+const EFFECT_PRESETS = [
+  {
+    id: "fill",
+    name: "Fill",
+    matchName: "ADBE Fill",
+    category: "color",
+    description: "Recolors a layer with a single solid color.",
+    notes: "Good first effect for validation because it is common and exposes a small property set.",
+    propertyHints: [
+      {
+        name: "Color",
+        matchName: "ADBE Fill-0002",
+        propertyIndex: 3,
+        valueType: "color",
+        exampleValue: [1, 0, 0, 1],
+        notes: "RGBA-like array in AE. Inspect with get_effect_details before setting in production."
+      }
+    ]
+  },
+  {
+    id: "gaussian-blur",
+    name: "Gaussian Blur",
+    matchName: "ADBE Gaussian Blur 2",
+    category: "blur",
+    description: "Softens a layer with a standard Gaussian blur.",
+    notes: "Use get_effect_details after adding it to confirm property names for the installed AE locale/version.",
+    propertyHints: [
+      {
+        name: "Blurriness",
+        valueType: "number",
+        exampleValue: 25,
+        notes: "Common first property on Gaussian Blur variants; inspect exact matchName before setting."
+      },
+      {
+        name: "Repeat Edge Pixels",
+        valueType: "boolean",
+        exampleValue: true,
+        notes: "Useful to avoid transparent/soft edges on full-frame blurs."
+      }
+    ]
+  },
+  {
+    id: "fast-box-blur",
+    name: "Fast Box Blur",
+    matchName: "ADBE Box Blur2",
+    category: "blur",
+    description: "Fast blur effect often used for broad background softening.",
+    notes: "Availability can vary by AE version; add_effect will report if the matchName is unavailable."
+  },
+  {
+    id: "glow",
+    name: "Glow",
+    matchName: "ADBE Glo2",
+    category: "stylize",
+    description: "Adds glow around bright areas.",
+    notes: "Property names vary enough that get_effect_details should be used before setting values."
+  },
+  {
+    id: "tint",
+    name: "Tint",
+    matchName: "ADBE Tint",
+    category: "color",
+    description: "Maps black and white tones to two chosen colors.",
+    notes: "Useful for simple two-color looks. Inspect property tree before setting map colors."
+  },
+  {
+    id: "tritone",
+    name: "Tritone",
+    matchName: "ADBE Tritone",
+    category: "color",
+    description: "Maps shadows, midtones, and highlights to three colors.",
+    notes: "Useful for graphic poster looks. Inspect exact properties on the target AE install."
+  },
+  {
+    id: "curves",
+    name: "Curves",
+    matchName: "ADBE CurvesCustom",
+    category: "color",
+    description: "Advanced tonal curve adjustment.",
+    notes: "Best inspected/read before automation; direct value setting can be less ergonomic than simple color effects."
+  },
+  {
+    id: "levels",
+    name: "Levels",
+    matchName: "ADBE Easy Levels2",
+    category: "color",
+    description: "Adjusts black, white, gamma, and output levels.",
+    notes: "Useful for practical tonal cleanup. Inspect property tree for exact controls."
+  },
+  {
+    id: "drop-shadow",
+    name: "Drop Shadow",
+    matchName: "ADBE Drop Shadow",
+    category: "perspective",
+    description: "Adds a shadow offset behind a layer.",
+    notes: "Common for titles and lower thirds; inspect details for opacity/distance/softness properties."
+  },
+  {
+    id: "transform",
+    name: "Transform",
+    matchName: "ADBE Geometry2",
+    category: "distort",
+    description: "Adds effect-level transform controls independent from layer Transform.",
+    notes: "Useful when layer transforms are already animated and an extra transform stack is needed."
+  },
+  {
+    id: "displacement-map",
+    name: "Displacement Map",
+    matchName: "ADBE Displacement Map",
+    category: "distort",
+    description: "Displaces pixels using another layer as a map.",
+    notes: "Requires layer references; inspect and set with care."
+  },
+  {
+    id: "corner-pin",
+    name: "Corner Pin",
+    matchName: "ADBE Corner Pin",
+    category: "distort",
+    description: "Pins layer corners to four points.",
+    notes: "Useful for screen replacements and perspective placement."
+  }
+];
+
+function listEffectPresets(args) {
+  const query = String(args.query || "").trim().toLowerCase();
+  const category = String(args.category || "").trim().toLowerCase();
+  const includeProperties = optionalBoolean(args, "includePropertyHints", true);
+  const limit = Math.max(1, Math.min(100, Math.floor(optionalNumber(args, "limit", 50))));
+  const categories = Array.from(new Set(EFFECT_PRESETS.map((preset) => preset.category))).sort();
+  const matches = [];
+
+  for (const preset of EFFECT_PRESETS) {
+    if (category && preset.category !== category) continue;
+    if (query) {
+      const haystack = [
+        preset.id,
+        preset.name,
+        preset.matchName,
+        preset.category,
+        preset.description,
+        preset.notes
+      ].join(" ").toLowerCase();
+      if (!haystack.includes(query)) continue;
+    }
+
+    const item = {
+      id: preset.id,
+      name: preset.name,
+      matchName: preset.matchName,
+      category: preset.category,
+      description: preset.description,
+      notes: preset.notes
+    };
+    if (includeProperties && preset.propertyHints) {
+      item.propertyHints = preset.propertyHints;
+    }
+    matches.push(item);
+    if (matches.length >= limit) break;
+  }
+
+  return {
+    query,
+    category,
+    categories,
+    returned: matches.length,
+    totalCatalogSize: EFFECT_PRESETS.length,
+    workflow: [
+      "Use add_effect with the matchName.",
+      "Use get_effect_details with includeProperties=true to inspect exact property names, matchNames, and values.",
+      "Use set_effect_property only after confirming the target property on the current AE version/project."
+    ],
+    presets: matches
+  };
+}
 
 let lastPanelSeenAt = 0;
 let lastPanelInfo = null;
@@ -951,6 +1126,31 @@ const tools = [
         }
       },
       required: ["layerIndex"]
+    }
+  },
+  {
+    name: "list_effect_presets",
+    description: "Return curated After Effects effect matchName presets and automation hints.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "Optional case-insensitive search across name, matchName, category, description, and notes."
+        },
+        category: {
+          type: "string",
+          description: "Optional category filter such as color, blur, stylize, distort, or perspective."
+        },
+        includePropertyHints: {
+          type: "boolean",
+          description: "Whether to include curated property hints when known. Defaults to true."
+        },
+        limit: {
+          type: "number",
+          description: "Maximum number of presets to return. Defaults to 50, maximum 100."
+        }
+      }
     }
   },
   {
@@ -2090,6 +2290,10 @@ async function callTool(name, args) {
 
   if (name === "get_bridge_status") {
     return toolResult(getBridgeStatus());
+  }
+
+  if (name === "list_effect_presets") {
+    return toolResult(listEffectPresets(args));
   }
 
   if (name === "get_command_log") {
