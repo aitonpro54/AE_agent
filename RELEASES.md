@@ -1,5 +1,21 @@
 # AE MCP Bridge Releases
 
+## v0.5.3-codex-lifecycle-default - 2026-05-05
+
+Lifecycle default correction.
+
+Decision:
+
+- Do not use Windows logon startup as the normal bridge lifecycle.
+- Keep the daemon triggered by Codex through `mcp-adapter.js`.
+- The CEP panel remains a client and can wait offline until Codex starts the daemon.
+
+Changed:
+
+- Removed startup-task setup from the main README flow.
+- Documented `uninstall-daemon-startup-task.ps1` only as cleanup for machines that tried `v0.5.2`.
+- Confirmed the installed task `Codex AE MCP Bridge Daemon` was removed from the test machine.
+
 ## v0.5.2-startup-task - 2026-05-05
 
 Startup reliability improvement.
@@ -20,6 +36,11 @@ Verified:
 - Installed Windows Scheduled Task `Codex AE MCP Bridge Daemon`.
 - Starting the task manually brings `/health` online on `127.0.0.1:3456`.
 - CEP returns to `panelConnected: true` within a few seconds after the daemon task starts.
+
+Later decision:
+
+- This is not the default lifecycle because it starts at Windows logon and can show a PowerShell window.
+- Prefer `v0.5.3-codex-lifecycle-default`.
 
 ## v0.5.1-auto-daemon - 2026-05-04
 

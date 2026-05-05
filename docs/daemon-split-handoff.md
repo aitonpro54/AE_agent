@@ -76,9 +76,22 @@ Validation:
 - Ran the scheduled task manually.
 - `/health` returned the daemon, then CEP became `panelConnected: true` within a few seconds.
 
+Later decision: do not use the startup task as the default lifecycle. It solved speed after reboot, but it also starts at Windows logon and can show a PowerShell window. The installed task was removed from the test machine.
+
+## v0.5.3 Lifecycle Decision
+
+Chosen default:
+
+- Codex starts the stdio MCP adapter.
+- The adapter auto-starts `bridge-daemon.js` as a detached background process if nothing is listening on `127.0.0.1:3456`.
+- The CEP panel stays a passive client and connects when the daemon is available.
+- No Windows logon startup task is required.
+
+This keeps the setup simpler and avoids background processes appearing before the user opens Codex or starts using AE tools.
+
 ## Current State
 
-The bridge works, but the lifecycle is awkward.
+The bridge works with a Codex-triggered daemon lifecycle.
 
 Working:
 
@@ -86,7 +99,8 @@ Working:
 - CEP panel can connect to `http://127.0.0.1:3456`.
 - `run_extendscript` can execute inside After Effects.
 - Higher-level tools work, including text layer creation.
-- `bridge-only` mode keeps the panel online.
+- `mcp-adapter.js` can start the daemon in the background when Codex calls the MCP server.
+- `bridge-only` mode still exists for manual testing.
 - Diagnostics/logging tools were added:
   - `get_bridge_status`
   - `get_command_log`
@@ -94,14 +108,11 @@ Working:
 - Logs go to `logs\bridge-events.jsonl`.
 - Project backups go to `backups\`.
 
-Current problem:
+Current lifecycle tradeoff:
 
-- `mcp-server/server.js` currently owns both roles:
-  - stdio MCP server for Codex
-  - HTTP bridge server for the CEP panel
-- When Codex does not start the MCP process, the panel is offline.
-- When `bridge-only` is running on port `3456`, Codex MCP cannot start another process on the same port.
-- This means the panel and MCP adapter have coupled lifecycles.
+- If After Effects opens before Codex starts the daemon, the CEP panel can show offline for a while.
+- That is acceptable for now; the first Codex `after-effects` tool call should start the daemon.
+- Do not re-enable Windows logon startup unless fast post-reboot panel connection becomes more important than avoiding autostart.
 
 ## Target Architecture
 

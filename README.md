@@ -70,18 +70,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-server.ps1 -Port 3456 -
 
 The adapter does not open an HTTP port itself. If the daemon is not already running, the adapter starts `bridge-daemon.js` as a detached background process. Set `AE_DAEMON_AUTO_START=0` to disable this behavior.
 
-For the fastest connection after reboot, install the Windows logon startup task:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\install-daemon-startup-task.ps1 -Port 3456 -Token codex-ae-local
-```
-
-Check or remove it:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\get-daemon-startup-task.ps1
-powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-daemon-startup-task.ps1
-```
+Default lifecycle: do not install a Windows logon startup task. Let Codex start the adapter, let the adapter start the daemon in the background, and let the CEP panel connect when the daemon is available. This keeps the bridge out of Windows autostart and avoids visible PowerShell windows.
 
 ## Panel says offline
 
@@ -94,6 +83,12 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-bridge-only.ps1 -Port 3
 ```
 
 Codex can use MCP tools while the daemon stays online because the MCP adapter no longer tries to bind port `3456`.
+
+If an old logon startup task was installed during testing, remove it:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-daemon-startup-task.ps1
+```
 
 ## Install CEP panel
 
