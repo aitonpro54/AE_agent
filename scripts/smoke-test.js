@@ -185,7 +185,7 @@ async function main() {
     throw new Error("Expected initialize, tools/list, and tool call responses");
   }
 
-  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "0.12.0") {
+  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "0.13.0") {
     throw new Error("Unexpected health response");
   }
 
@@ -194,6 +194,10 @@ async function main() {
     if (!toolNames.includes(expectedTool)) {
       throw new Error("Missing checkpoint tool: " + expectedTool);
     }
+  }
+  const createTextTool = lines[1].result.tools.find((tool) => tool.name === "create_text_layer");
+  if (!createTextTool.inputSchema.properties.autoCheckpoint || !createTextTool.inputSchema.properties.checkpointLabel) {
+    throw new Error("create_text_layer is missing checkpoint schema fields");
   }
 
   console.log(JSON.stringify({

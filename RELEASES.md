@@ -1,5 +1,30 @@
 # AE MCP Bridge Releases
 
+## v0.13.0-auto-checkpoints - 2026-05-05
+
+Opt-in project checkpoints for mutating tools.
+
+Added:
+
+- `autoCheckpoint` and `checkpointLabel` schema fields on mutating tools.
+- Preflight checkpoint creation before mutating tool handlers when either field is provided.
+- Mutation results include the checkpoint metadata when a preflight checkpoint is created.
+
+Changed:
+
+- Daemon and adapter report version `0.13.0`.
+- Smoke tests expect daemon `0.13.0` and verify checkpoint schema fields on a mutating tool.
+
+Notes:
+
+- Preflight checkpoints are opt-in only. Read-only tools ignore checkpoint fields, and routine mutating calls do not create extra `.aep` files unless requested.
+
+Verified:
+
+- Local syntax checks for daemon, adapter, and smoke scripts.
+- Daemon-only and adapter smoke tests pass against `0.13.0`.
+- Live bridge validation created a checkpointed temporary comp, returned checkpoint metadata in the mutation result, and cleaned up the temporary comp.
+
 ## v0.12.0-checkpoints - 2026-05-05
 
 Project safety checkpoints before broader automation.

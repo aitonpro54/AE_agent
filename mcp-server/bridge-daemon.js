@@ -7,7 +7,7 @@ const fs = require("fs");
 const path = require("path");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "0.12.0";
+const SERVER_VERSION = "0.13.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -326,6 +326,37 @@ function parseToolText(text) {
   }
 }
 
+const MUTATION_CHECKPOINT_SCHEMA_PROPERTIES = {
+  autoCheckpoint: {
+    type: "boolean",
+    description: "Whether to create a project checkpoint before this mutating operation. Defaults to false."
+  },
+  checkpointLabel: {
+    type: "string",
+    description: "Optional label for a checkpoint created before this mutating operation. Providing a label enables checkpoint creation."
+  }
+};
+
+const MUTATING_TOOL_NAMES = new Set([
+  "run_extendscript",
+  "run_extendscript_file",
+  "create_text_layer",
+  "import_footage",
+  "create_solid_layer",
+  "create_null_layer",
+  "create_adjustment_layer",
+  "add_project_item_to_comp",
+  "duplicate_comp",
+  "add_effect",
+  "set_effect_property",
+  "set_property_value",
+  "set_layer_transform",
+  "apply_transform_expression",
+  "add_layer_marker",
+  "create_test_comp",
+  "cleanup_test_items"
+]);
+
 function aeLiteral(value) {
   return JSON.stringify(value)
     .replace(/\u2028/g, "\\u2028")
@@ -534,6 +565,55 @@ function resolveCheckpointFile(checkpointFile) {
   }
 
   return resolvedPath;
+}
+
+async function maybeCreateMutationCheckpoint(args, toolName) {
+  if (!MUTATING_TOOL_NAMES.has(toolName)) return null;
+
+  const label = optionalString(args, "checkpointLabel", "");
+  const autoCheckpoint = optionalBoolean(args, "autoCheckpoint", false);
+  if (!label && !autoCheckpoint) return null;
+
+  const checkpointLabel = label || `before-${toolName}`;
+  const copied = await copySavedProjectFile(checkpointLabel, "checkpoint");
+  const checkpoint = {
+    label: copied.label,
+    sourceFile: copied.sourceFile,
+    checkpointFile: copied.destinationFile,
+    bytes: copied.bytes,
+    createdAt: copied.createdAt,
+    project: copied.project,
+    triggeredBy: toolName
+  };
+  recordEvent("project_mutation_checkpoint_created", checkpoint);
+  return checkpoint;
+}
+
+function withMutationCheckpoint(result, checkpoint) {
+  if (!checkpoint) return result;
+  if (result && typeof result === "object" && !Array.isArray(result)) {
+    return {
+      ...result,
+      checkpoint
+    };
+  }
+  return {
+    result,
+    checkpoint
+  };
+}
+
+function attachCheckpointToToolResult(result, checkpoint) {
+  if (!checkpoint || !result || !Array.isArray(result.content) || !result.content[0]) return result;
+
+  const content = result.content.slice();
+  const first = { ...content[0] };
+  first.text = JSON.stringify(withMutationCheckpoint(parseToolText(first.text), checkpoint), null, 2);
+  content[0] = first;
+  return {
+    ...result,
+    content
+  };
 }
 
 function isPathInside(parent, child) {
@@ -792,6 +872,24 @@ async function runExtendScriptBody(body, timeoutMs) {
   return parsed;
 }
 
+function exposedTools() {
+  return tools.map((tool) => {
+    if (!MUTATING_TOOL_NAMES.has(tool.name)) return tool;
+
+    const inputSchema = tool.inputSchema || { type: "object", properties: {} };
+    return {
+      ...tool,
+      inputSchema: {
+        ...inputSchema,
+        properties: {
+          ...inputSchema.properties,
+          ...MUTATION_CHECKPOINT_SCHEMA_PROPERTIES
+        }
+      }
+    };
+  });
+}
+
 function startHttpBridge() {
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${HOST}:${PORT}`);
@@ -833,13 +931,13 @@ function startHttpBridge() {
 
     if (url.pathname === "/dev/tools" && req.method === "GET") {
       if (!requireToken(req, res, url)) return;
-      writeJson(res, 200, { ok: true, tools });
+      writeJson(res, 200, { ok: true, tools: exposedTools() });
       return;
     }
 
     if (url.pathname === "/tools" && req.method === "GET") {
       if (!requireToken(req, res, url)) return;
-      writeJson(res, 200, { ok: true, tools });
+      writeJson(res, 200, { ok: true, tools: exposedTools() });
       return;
     }
 
@@ -4016,15 +4114,17 @@ async function callToolLogged(source, name, args) {
   });
 
   try {
+    const checkpoint = await maybeCreateMutationCheckpoint(args || {}, name);
     const result = await callTool(name, args);
+    const resultWithCheckpoint = attachCheckpointToToolResult(result, checkpoint);
     recordEvent("tool_call_finished", {
       id: eventId,
       source,
       name,
-      ok: !result.isError,
+      ok: !resultWithCheckpoint.isError,
       durationMs: Date.now() - startedAt
     });
-    return result;
+    return resultWithCheckpoint;
   } catch (error) {
     recordEvent("tool_call_failed", {
       id: eventId,

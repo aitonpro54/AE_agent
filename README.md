@@ -337,6 +337,18 @@ Invoke-RestMethod `
 
 `restore_project_checkpoint` is intentionally non-destructive in v0.12: it validates the checkpoint and returns manual After Effects restore instructions instead of overwriting the currently open project file.
 
+Mutating tools can opt in to a preflight checkpoint:
+
+```powershell
+Invoke-RestMethod `
+  -Method Post `
+  -ContentType "application/json" `
+  -Uri "http://127.0.0.1:3456/dev/tool/create_text_layer?token=codex-ae-local" `
+  -Body '{"text":"Checkpointed title","checkpointLabel":"before-title-layer"}'
+```
+
+Any mutating tool can use either `checkpointLabel` or `autoCheckpoint:true`. The checkpoint is created before the project-changing operation and is included in the tool result. This remains opt-in so routine inspection and tiny test calls do not create extra `.aep` files.
+
 ## Security note
 
 Enabling CEP `PlayerDebugMode` allows unsigned CEP panels to load for the selected Adobe CEP runtime versions. That is convenient for local development, but it is a real trust setting. Only install panels from local code you control, and turn it off later if you want a stricter Adobe extension setup.
