@@ -17,6 +17,8 @@ It has two parts:
 - `backup_project_file` - copies the currently saved `.aep` into `backups/` without modifying the open project.
 - `checkpoint_project` - creates a named checkpoint copy of the currently saved `.aep`.
 - `list_project_checkpoints` - lists checkpoint `.aep` files in `backups/`.
+- `get_project_checkpoint_details` - validates and returns metadata for one checkpoint file.
+- `delete_project_checkpoint` - deletes one checkpoint file from `backups/` with explicit confirmation.
 - `restore_project_checkpoint` - verifies a checkpoint and returns safe manual restore instructions without overwriting the open project.
 - `ping_ae` - verifies that After Effects is connected and can run a tiny script.
 - `run_extendscript` - runs an ExtendScript function body in After Effects.
@@ -325,6 +327,16 @@ Invoke-RestMethod `
   -Uri "http://127.0.0.1:3456/dev/tool/list_project_checkpoints?token=codex-ae-local"
 ```
 
+Inspect a checkpoint:
+
+```powershell
+Invoke-RestMethod `
+  -Method Post `
+  -ContentType "application/json" `
+  -Uri "http://127.0.0.1:3456/dev/tool/get_project_checkpoint_details?token=codex-ae-local" `
+  -Body '{"checkpointFile":"My_Project-checkpoint-before-title-pass-2026-05-05T18-30-00-000Z.aep"}'
+```
+
 Prepare a restore from a checkpoint:
 
 ```powershell
@@ -336,6 +348,18 @@ Invoke-RestMethod `
 ```
 
 `restore_project_checkpoint` is intentionally non-destructive in v0.12: it validates the checkpoint and returns manual After Effects restore instructions instead of overwriting the currently open project file.
+
+Delete a checkpoint:
+
+```powershell
+Invoke-RestMethod `
+  -Method Post `
+  -ContentType "application/json" `
+  -Uri "http://127.0.0.1:3456/dev/tool/delete_project_checkpoint?token=codex-ae-local" `
+  -Body '{"checkpointFile":"My_Project-checkpoint-before-title-pass-2026-05-05T18-30-00-000Z.aep","confirm":true}'
+```
+
+`delete_project_checkpoint` only accepts `.aep` checkpoint files inside `backups/` and requires `confirm:true`.
 
 Mutating tools can opt in to a preflight checkpoint:
 

@@ -1,5 +1,29 @@
 # AE MCP Bridge Releases
 
+## v0.14.0-checkpoint-management - 2026-05-05
+
+Checkpoint inspection and cleanup.
+
+Added:
+
+- `get_project_checkpoint_details`
+- `delete_project_checkpoint`
+
+Changed:
+
+- Daemon and adapter report version `0.14.0`.
+- Smoke tests expect daemon `0.14.0` and verify the checkpoint management tools are listed.
+
+Notes:
+
+- `delete_project_checkpoint` requires `confirm=true`, only accepts `.aep` files inside `backups/`, and only deletes files with checkpoint naming created by bridge checkpoint tools.
+
+Verified:
+
+- Local syntax checks for daemon, adapter, and smoke scripts.
+- Daemon-only and adapter smoke tests pass against `0.14.0` and list 40 tools.
+- Live bridge validation created a temporary checkpoint, read its details, and deleted only that checkpoint file.
+
 ## v0.13.0-auto-checkpoints - 2026-05-05
 
 Opt-in project checkpoints for mutating tools.

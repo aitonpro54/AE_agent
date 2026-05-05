@@ -7,7 +7,7 @@ const fs = require("fs");
 const path = require("path");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "0.13.0";
+const SERVER_VERSION = "0.14.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -549,7 +549,23 @@ function listProjectCheckpoints(args) {
     .slice(0, limit);
 }
 
-function resolveCheckpointFile(checkpointFile) {
+function checkpointDetails(checkpointFile) {
+  const stat = fs.statSync(checkpointFile);
+  const parsed = parseCheckpointFilename(path.basename(checkpointFile));
+  return {
+    checkpointFile,
+    filename: path.basename(checkpointFile),
+    label: parsed ? parsed.label : null,
+    projectName: parsed ? parsed.projectName : null,
+    bytes: stat.size,
+    createdAt: parsed && parsed.createdAt ? parsed.createdAt : stat.birthtime.toISOString(),
+    modifiedAt: stat.mtime.toISOString(),
+    isCheckpoint: Boolean(parsed)
+  };
+}
+
+function resolveCheckpointFile(checkpointFile, options) {
+  const requireCheckpointName = !options || options.requireCheckpointName !== false;
   const requested = String(checkpointFile || "").trim();
   if (!requested) throw new Error("checkpointFile is required.");
 
@@ -562,6 +578,9 @@ function resolveCheckpointFile(checkpointFile) {
   }
   if (!fs.existsSync(resolvedPath)) {
     throw new Error(`Checkpoint file does not exist: ${resolvedPath}`);
+  }
+  if (requireCheckpointName && !parseCheckpointFilename(path.basename(resolvedPath))) {
+    throw new Error("checkpointFile must be a checkpoint created by checkpoint_project or an opt-in mutating tool checkpoint.");
   }
 
   return resolvedPath;
@@ -1173,6 +1192,38 @@ const tools = [
           description: "Maximum number of checkpoints to return. Defaults to 100, maximum 500."
         }
       }
+    }
+  },
+  {
+    name: "get_project_checkpoint_details",
+    description: "Return validated metadata for one project checkpoint file in the bridge backups folder.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        checkpointFile: {
+          type: "string",
+          description: "Checkpoint filename or absolute path inside the bridge backups folder."
+        }
+      },
+      required: ["checkpointFile"]
+    }
+  },
+  {
+    name: "delete_project_checkpoint",
+    description: "Delete one project checkpoint file from the bridge backups folder. Requires confirm=true.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        checkpointFile: {
+          type: "string",
+          description: "Checkpoint filename or absolute path inside the bridge backups folder."
+        },
+        confirm: {
+          type: "boolean",
+          description: "Must be true to delete the checkpoint file."
+        }
+      },
+      required: ["checkpointFile", "confirm"]
     }
   },
   {
@@ -2606,6 +2657,46 @@ async function callTool(name, args) {
       backupDir: BACKUP_DIR,
       checkpoints: listProjectCheckpoints(args)
     });
+  }
+
+  if (name === "get_project_checkpoint_details") {
+    let checkpointFile;
+    try {
+      checkpointFile = resolveCheckpointFile(args.checkpointFile);
+    } catch (error) {
+      return toolResult(error.message, true);
+    }
+
+    return toolResult({
+      backupDir: BACKUP_DIR,
+      checkpoint: checkpointDetails(checkpointFile)
+    });
+  }
+
+  if (name === "delete_project_checkpoint") {
+    let confirm;
+    try {
+      confirm = optionalBoolean(args, "confirm", false);
+    } catch (error) {
+      return toolResult(error.message, true);
+    }
+    if (!confirm) return toolResult("confirm must be true to delete a project checkpoint.", true);
+
+    let checkpointFile;
+    try {
+      checkpointFile = resolveCheckpointFile(args.checkpointFile);
+    } catch (error) {
+      return toolResult(error.message, true);
+    }
+
+    const checkpoint = checkpointDetails(checkpointFile);
+    fs.unlinkSync(checkpointFile);
+    const response = {
+      deleted: true,
+      checkpoint
+    };
+    recordEvent("project_checkpoint_deleted", response);
+    return toolResult(response);
   }
 
   if (name === "restore_project_checkpoint") {
