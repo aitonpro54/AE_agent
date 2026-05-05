@@ -185,14 +185,21 @@ async function main() {
     throw new Error("Expected initialize, tools/list, and tool call responses");
   }
 
-  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "0.11.0") {
+  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "0.12.0") {
     throw new Error("Unexpected health response");
+  }
+
+  const toolNames = lines[1].result.tools.map((tool) => tool.name);
+  for (const expectedTool of ["checkpoint_project", "list_project_checkpoints", "restore_project_checkpoint"]) {
+    if (!toolNames.includes(expectedTool)) {
+      throw new Error("Missing checkpoint tool: " + expectedTool);
+    }
   }
 
   console.log(JSON.stringify({
     ok: true,
     responses: lines.length,
-    tools: lines[1].result.tools.map((tool) => tool.name),
+    tools: toolNames,
     listCompsResult: lines[2].result.content[0].text,
     health: health.body,
     adapterLogs: adapterStderr.join("").trim().split(/\n+/).filter(Boolean),

@@ -1,5 +1,30 @@
 # AE MCP Bridge Releases
 
+## v0.12.0-checkpoints - 2026-05-05
+
+Project safety checkpoints before broader automation.
+
+Added:
+
+- `checkpoint_project`
+- `list_project_checkpoints`
+- `restore_project_checkpoint`
+
+Changed:
+
+- Daemon and adapter report version `0.12.0`.
+- Smoke tests expect daemon `0.12.0` and verify the checkpoint tools are listed.
+
+Notes:
+
+- `restore_project_checkpoint` is intentionally non-destructive in this version. It requires `confirm=true`, validates that the checkpoint is inside `backups/`, and returns manual After Effects restore instructions instead of overwriting the open project.
+
+Verified:
+
+- Local syntax checks for daemon, adapter, and smoke scripts.
+- Daemon-only and adapter smoke tests pass against `0.12.0` and list 38 tools.
+- Live bridge validation created a checkpoint for the saved `Intro_.aep`, listed it, and prepared non-destructive restore instructions.
+
 ## v0.11.0-effect-presets - 2026-05-05
 
 Curated effect matchName presets and automation hints.

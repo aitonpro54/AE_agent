@@ -15,6 +15,9 @@ It has two parts:
 - `get_bridge_status` - returns bridge diagnostics, connection state, paths, and recent events.
 - `get_command_log` - returns recent local JSONL log events.
 - `backup_project_file` - copies the currently saved `.aep` into `backups/` without modifying the open project.
+- `checkpoint_project` - creates a named checkpoint copy of the currently saved `.aep`.
+- `list_project_checkpoints` - lists checkpoint `.aep` files in `backups/`.
+- `restore_project_checkpoint` - verifies a checkpoint and returns safe manual restore instructions without overwriting the open project.
 - `ping_ae` - verifies that After Effects is connected and can run a tiny script.
 - `run_extendscript` - runs an ExtendScript function body in After Effects.
 - `run_extendscript_file` - runs a local `.jsx`, `.jsxinc`, `.js`, or `.txt` script file.
@@ -304,6 +307,35 @@ backups\
 ```
 
 `backup_project_file` copies the project file currently on disk. It does not save unsaved After Effects changes and does not change the open project path.
+
+Create a named checkpoint before a risky edit:
+
+```powershell
+Invoke-RestMethod `
+  -Method Post `
+  -ContentType "application/json" `
+  -Uri "http://127.0.0.1:3456/dev/tool/checkpoint_project?token=codex-ae-local" `
+  -Body '{"label":"before-title-pass"}'
+```
+
+List checkpoints:
+
+```powershell
+Invoke-RestMethod `
+  -Uri "http://127.0.0.1:3456/dev/tool/list_project_checkpoints?token=codex-ae-local"
+```
+
+Prepare a restore from a checkpoint:
+
+```powershell
+Invoke-RestMethod `
+  -Method Post `
+  -ContentType "application/json" `
+  -Uri "http://127.0.0.1:3456/dev/tool/restore_project_checkpoint?token=codex-ae-local" `
+  -Body '{"checkpointFile":"My_Project-checkpoint-before-title-pass-2026-05-05T18-30-00-000Z.aep","confirm":true}'
+```
+
+`restore_project_checkpoint` is intentionally non-destructive in v0.12: it validates the checkpoint and returns manual After Effects restore instructions instead of overwriting the currently open project file.
 
 ## Security note
 

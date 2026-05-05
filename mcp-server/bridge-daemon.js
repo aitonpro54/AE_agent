@@ -7,7 +7,7 @@ const fs = require("fs");
 const path = require("path");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "0.11.0";
+const SERVER_VERSION = "0.12.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -17,6 +17,7 @@ const PROJECT_ROOT = path.resolve(__dirname, "..");
 const LOG_DIR = path.join(PROJECT_ROOT, "logs");
 const LOG_FILE = path.join(LOG_DIR, "bridge-events.jsonl");
 const BACKUP_DIR = path.join(PROJECT_ROOT, "backups");
+const CHECKPOINT_SUFFIX = "-checkpoint";
 const ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT = process.env.AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT === "1";
 const STARTED_AT = Date.now();
 
@@ -419,6 +420,120 @@ function sanitizeFilenamePart(value) {
 
 function timestampForFilename(date) {
   return date.toISOString().replace(/[:.]/g, "-");
+}
+
+function timestampFromFilename(value) {
+  const match = String(value || "").match(/^(\d{4}-\d{2}-\d{2}T\d{2})-(\d{2})-(\d{2})-(\d{3}Z)$/);
+  return match ? `${match[1]}:${match[2]}:${match[3]}.${match[4]}` : null;
+}
+
+function parseCheckpointFilename(filename) {
+  const parsed = path.parse(filename);
+  if (parsed.ext.toLowerCase() !== ".aep") return null;
+
+  const match = parsed.name.match(/^(.*)-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z)$/);
+  if (!match) return null;
+
+  const prefix = match[1];
+  const checkpointIndex = prefix.indexOf(CHECKPOINT_SUFFIX);
+  if (checkpointIndex < 0) return null;
+
+  const rawLabel = prefix.slice(checkpointIndex + CHECKPOINT_SUFFIX.length).replace(/^-/, "");
+  return {
+    projectName: prefix.slice(0, checkpointIndex) || null,
+    label: rawLabel || null,
+    createdAt: timestampFromFilename(match[2])
+  };
+}
+
+async function getCurrentProjectSummary() {
+  const projectInfo = await runExtendScriptBody(`
+    var project = app.project;
+    return {
+      file: project && project.file ? project.file.fsName : null,
+      name: project && project.file ? project.file.name : null,
+      numItems: project ? project.numItems : 0,
+      activeItemName: project && project.activeItem ? project.activeItem.name : null,
+      activeItemType: project && project.activeItem ? project.activeItem.typeName : null
+    };
+  `);
+  return projectInfo.result;
+}
+
+async function copySavedProjectFile(label, kind) {
+  const safeLabel = sanitizeFilenamePart(label);
+  const project = await getCurrentProjectSummary();
+  const sourceFile = project.file;
+  if (!sourceFile) {
+    throw new Error("The current After Effects project has not been saved yet, so there is no .aep file to copy.");
+  }
+  if (!fs.existsSync(sourceFile)) {
+    throw new Error(`Project file does not exist on disk: ${sourceFile}`);
+  }
+
+  ensureDir(BACKUP_DIR);
+  const parsed = path.parse(sourceFile);
+  const base = sanitizeFilenamePart(parsed.name) || "after-effects-project";
+  const suffixParts = kind === "checkpoint" ? ["checkpoint"] : [];
+  if (safeLabel) suffixParts.push(safeLabel);
+  const suffix = suffixParts.length ? `-${suffixParts.join("-")}` : "";
+  const destinationFile = path.join(BACKUP_DIR, `${base}${suffix}-${timestampForFilename(new Date())}${parsed.ext || ".aep"}`);
+
+  fs.copyFileSync(sourceFile, destinationFile, fs.constants.COPYFILE_EXCL);
+  const stat = fs.statSync(destinationFile);
+  return {
+    sourceFile,
+    destinationFile,
+    label: safeLabel || null,
+    bytes: stat.size,
+    createdAt: new Date().toISOString(),
+    project
+  };
+}
+
+function listProjectCheckpoints(args) {
+  const limit = Math.max(1, Math.min(500, Math.floor(optionalNumber(args, "limit", 100))));
+  ensureDir(BACKUP_DIR);
+
+  return fs.readdirSync(BACKUP_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => {
+      const parsed = parseCheckpointFilename(entry.name);
+      if (!parsed) return null;
+
+      const checkpointFile = path.join(BACKUP_DIR, entry.name);
+      const stat = fs.statSync(checkpointFile);
+      return {
+        checkpointFile,
+        filename: entry.name,
+        label: parsed.label,
+        projectName: parsed.projectName,
+        bytes: stat.size,
+        createdAt: parsed.createdAt || stat.birthtime.toISOString(),
+        modifiedAt: stat.mtime.toISOString()
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+    .slice(0, limit);
+}
+
+function resolveCheckpointFile(checkpointFile) {
+  const requested = String(checkpointFile || "").trim();
+  if (!requested) throw new Error("checkpointFile is required.");
+
+  const resolvedPath = path.resolve(BACKUP_DIR, requested);
+  if (!isPathInside(BACKUP_DIR, resolvedPath)) {
+    throw new Error("checkpointFile must resolve inside the bridge backups folder.");
+  }
+  if (path.extname(resolvedPath).toLowerCase() !== ".aep") {
+    throw new Error("checkpointFile must point to a .aep file.");
+  }
+  if (!fs.existsSync(resolvedPath)) {
+    throw new Error(`Checkpoint file does not exist: ${resolvedPath}`);
+  }
+
+  return resolvedPath;
 }
 
 function isPathInside(parent, child) {
@@ -934,6 +1049,50 @@ const tools = [
           description: "Optional human-readable label to include in the backup filename."
         }
       }
+    }
+  },
+  {
+    name: "checkpoint_project",
+    description: "Create a named checkpoint copy of the currently saved After Effects project in the bridge backups folder.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        label: {
+          type: "string",
+          description: "Optional human-readable checkpoint label to include in the filename."
+        }
+      }
+    }
+  },
+  {
+    name: "list_project_checkpoints",
+    description: "List project checkpoint .aep files in the bridge backups folder.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        limit: {
+          type: "number",
+          description: "Maximum number of checkpoints to return. Defaults to 100, maximum 500."
+        }
+      }
+    }
+  },
+  {
+    name: "restore_project_checkpoint",
+    description: "Safely prepare restore instructions for a checkpoint. Requires confirm=true and does not overwrite the open project.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        checkpointFile: {
+          type: "string",
+          description: "Checkpoint filename or absolute path inside the bridge backups folder."
+        },
+        confirm: {
+          type: "boolean",
+          description: "Must be true to acknowledge restore intent."
+        }
+      },
+      required: ["checkpointFile", "confirm"]
     }
   },
   {
@@ -2305,42 +2464,103 @@ async function callTool(name, args) {
   }
 
   if (name === "backup_project_file") {
-    const label = sanitizeFilenamePart(optionalString(args, "label", ""));
-    const projectInfo = await runExtendScriptBody(`
-      var project = app.project;
-      return {
-        file: project && project.file ? project.file.fsName : null,
-        name: project && project.file ? project.file.name : null,
-        numItems: project ? project.numItems : 0,
-        activeItemName: project && project.activeItem ? project.activeItem.name : null,
-        activeItemType: project && project.activeItem ? project.activeItem.typeName : null
-      };
-    `);
-
-    const sourceFile = projectInfo.result.file;
-    if (!sourceFile) {
-      return toolResult("The current After Effects project has not been saved yet, so there is no .aep file to back up.", true);
-    }
-    if (!fs.existsSync(sourceFile)) {
-      return toolResult(`Project file does not exist on disk: ${sourceFile}`, true);
+    let copied;
+    try {
+      copied = await copySavedProjectFile(optionalString(args, "label", ""), "backup");
+    } catch (error) {
+      return toolResult(error.message, true);
     }
 
-    ensureDir(BACKUP_DIR);
-    const parsed = path.parse(sourceFile);
-    const base = sanitizeFilenamePart(parsed.name) || "after-effects-project";
-    const suffix = label ? `-${label}` : "";
-    const destinationFile = path.join(BACKUP_DIR, `${base}${suffix}-${timestampForFilename(new Date())}${parsed.ext || ".aep"}`);
-
-    fs.copyFileSync(sourceFile, destinationFile, fs.constants.COPYFILE_EXCL);
-    const stat = fs.statSync(destinationFile);
     const response = {
-      sourceFile,
-      backupFile: destinationFile,
-      bytes: stat.size,
-      createdAt: new Date().toISOString(),
-      project: projectInfo.result
+      sourceFile: copied.sourceFile,
+      backupFile: copied.destinationFile,
+      label: copied.label,
+      bytes: copied.bytes,
+      createdAt: copied.createdAt,
+      project: copied.project
     };
     recordEvent("project_backup_created", response);
+    return toolResult(response);
+  }
+
+  if (name === "checkpoint_project") {
+    let copied;
+    try {
+      copied = await copySavedProjectFile(optionalString(args, "label", ""), "checkpoint");
+    } catch (error) {
+      return toolResult(error.message, true);
+    }
+
+    const response = {
+      label: copied.label,
+      sourceFile: copied.sourceFile,
+      checkpointFile: copied.destinationFile,
+      bytes: copied.bytes,
+      createdAt: copied.createdAt,
+      project: copied.project
+    };
+    recordEvent("project_checkpoint_created", response);
+    return toolResult(response);
+  }
+
+  if (name === "list_project_checkpoints") {
+    return toolResult({
+      backupDir: BACKUP_DIR,
+      checkpoints: listProjectCheckpoints(args)
+    });
+  }
+
+  if (name === "restore_project_checkpoint") {
+    let confirm;
+    try {
+      confirm = optionalBoolean(args, "confirm", false);
+    } catch (error) {
+      return toolResult(error.message, true);
+    }
+    if (!confirm) return toolResult("confirm must be true to prepare checkpoint restore instructions.", true);
+
+    let checkpointFile;
+    try {
+      checkpointFile = resolveCheckpointFile(args.checkpointFile);
+    } catch (error) {
+      return toolResult(error.message, true);
+    }
+
+    const stat = fs.statSync(checkpointFile);
+    const checkpoint = parseCheckpointFilename(path.basename(checkpointFile));
+    let currentProject = null;
+    let currentProjectError = null;
+    if (Date.now() - lastPanelSeenAt < 15000) {
+      try {
+        currentProject = await getCurrentProjectSummary();
+      } catch (error) {
+        currentProjectError = error.message || String(error);
+      }
+    } else {
+      currentProjectError = "After Effects panel is not currently connected.";
+    }
+
+    const response = {
+      restored: false,
+      restoreMode: "manual",
+      checkpointFile,
+      bytes: stat.size,
+      checkpoint: {
+        filename: path.basename(checkpointFile),
+        label: checkpoint ? checkpoint.label : null,
+        projectName: checkpoint ? checkpoint.projectName : null,
+        createdAt: checkpoint && checkpoint.createdAt ? checkpoint.createdAt : stat.birthtime.toISOString(),
+        modifiedAt: stat.mtime.toISOString()
+      },
+      currentProject,
+      currentProjectError,
+      instructions: [
+        "This first restore implementation is intentionally non-destructive.",
+        "Use File > Open Project in After Effects and choose checkpointFile.",
+        "Save the opened checkpoint as a new project file before continuing automation."
+      ]
+    };
+    recordEvent("project_checkpoint_restore_prepared", response);
     return toolResult(response);
   }
 
