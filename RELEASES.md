@@ -1,5 +1,26 @@
 # AE MCP Bridge Releases
 
+## v0.5.2-startup-task - 2026-05-05
+
+Startup reliability improvement.
+
+Observed:
+
+- After reboot, CEP could remain offline for about 80 seconds because daemon startup still depended on Codex/MCP lifecycle timing.
+- Logs showed daemon events around `09:38:04` and the first successful CEP poll around `09:40:10`.
+
+Added:
+
+- `scripts\install-daemon-startup-task.ps1`
+- `scripts\get-daemon-startup-task.ps1`
+- `scripts\uninstall-daemon-startup-task.ps1`
+
+Verified:
+
+- Installed Windows Scheduled Task `Codex AE MCP Bridge Daemon`.
+- Starting the task manually brings `/health` online on `127.0.0.1:3456`.
+- CEP returns to `panelConnected: true` within a few seconds after the daemon task starts.
+
 ## v0.5.1-auto-daemon - 2026-05-04
 
 Out-of-box connection hotfix.

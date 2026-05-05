@@ -57,6 +57,25 @@ Fix:
 
 Validated by stopping anything listening on `3456`, running `mcp-call-tool.js get_bridge_status`, and confirming daemon `0.5.1` came up with CEP online.
 
+## v0.5.2 Startup Task Notes
+
+Observed after reboot: plugin/panel auto-opened, but status took roughly `09:38:49` to `09:40:10` to become online. Logs showed daemon startup was still coupled to Codex/MCP timing.
+
+Fix:
+
+- Added Windows Scheduled Task helpers:
+  - `scripts/install-daemon-startup-task.ps1`
+  - `scripts/get-daemon-startup-task.ps1`
+  - `scripts/uninstall-daemon-startup-task.ps1`
+- Installed task name: `Codex AE MCP Bridge Daemon`.
+- The task starts `scripts/start-bridge-only.ps1` at user logon with a 10 second delay.
+
+Validation:
+
+- Stopped current listener on `127.0.0.1:3456`.
+- Ran the scheduled task manually.
+- `/health` returned the daemon, then CEP became `panelConnected: true` within a few seconds.
+
 ## Current State
 
 The bridge works, but the lifecycle is awkward.

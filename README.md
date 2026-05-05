@@ -70,6 +70,19 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-server.ps1 -Port 3456 -
 
 The adapter does not open an HTTP port itself. If the daemon is not already running, the adapter starts `bridge-daemon.js` as a detached background process. Set `AE_DAEMON_AUTO_START=0` to disable this behavior.
 
+For the fastest connection after reboot, install the Windows logon startup task:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install-daemon-startup-task.ps1 -Port 3456 -Token codex-ae-local
+```
+
+Check or remove it:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\get-daemon-startup-task.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-daemon-startup-task.ps1
+```
+
 ## Panel says offline
 
 The CEP panel is only a client. It becomes online when the bridge daemon is listening on `127.0.0.1:3456`.
