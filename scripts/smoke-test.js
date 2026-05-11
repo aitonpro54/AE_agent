@@ -185,14 +185,14 @@ async function main() {
     throw new Error("Expected initialize, tools/list, and tool call responses");
   }
 
-  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "0.16.0") {
+  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "0.17.0") {
     throw new Error("Unexpected health response");
   }
 
   const toolNames = lines[1].result.tools.map((tool) => tool.name);
-  for (const expectedTool of ["checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint"]) {
+  for (const expectedTool of ["start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint"]) {
     if (!toolNames.includes(expectedTool)) {
-      throw new Error("Missing checkpoint tool: " + expectedTool);
+      throw new Error("Missing expected tool: " + expectedTool);
     }
   }
   const createTextTool = lines[1].result.tools.find((tool) => tool.name === "create_text_layer");

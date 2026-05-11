@@ -7,7 +7,7 @@ const fs = require("fs");
 const path = require("path");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "0.16.0";
+const SERVER_VERSION = "0.17.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -16,6 +16,8 @@ const COMMAND_TIMEOUT_MS = Number(process.env.AE_COMMAND_TIMEOUT_MS || 30000);
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const LOG_DIR = path.join(PROJECT_ROOT, "logs");
 const LOG_FILE = path.join(LOG_DIR, "bridge-events.jsonl");
+const EDIT_SESSION_ACTIVE_FILE = path.join(LOG_DIR, "edit-session-active.json");
+const EDIT_SESSION_LOG_FILE = path.join(LOG_DIR, "edit-sessions.jsonl");
 const BACKUP_DIR = path.join(PROJECT_ROOT, "backups");
 const CHECKPOINT_SUFFIX = "-checkpoint";
 const ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT = process.env.AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT === "1";
@@ -26,6 +28,7 @@ const inflightCommands = new Map();
 const completedResults = new Map();
 const waitingPanels = [];
 const recentEvents = [];
+let activeEditSession = null;
 
 const EFFECT_PRESETS = [
   {
@@ -277,6 +280,288 @@ function tailJsonl(file, limit) {
   }
 }
 
+function readJsonFile(file) {
+  if (!fs.existsSync(file)) return null;
+  return JSON.parse(fs.readFileSync(file, "utf8"));
+}
+
+function writeJsonFileAtomic(file, value) {
+  ensureDir(path.dirname(file));
+  const tmp = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+  fs.renameSync(tmp, file);
+}
+
+function appendEditSessionEvent(type, details) {
+  const event = {
+    at: new Date().toISOString(),
+    type,
+    ...details
+  };
+  try {
+    ensureDir(LOG_DIR);
+    fs.appendFileSync(EDIT_SESSION_LOG_FILE, `${JSON.stringify(event)}\n`, "utf8");
+  } catch (error) {
+    log(`Could not write edit session log: ${error.message}`);
+  }
+  recordEvent(`edit_${type}`, details);
+}
+
+function compactEditSession(session) {
+  if (!session) return null;
+  const latestOperation = session.operations && session.operations.length
+    ? session.operations[session.operations.length - 1]
+    : null;
+  return {
+    id: session.id,
+    label: session.label || null,
+    status: session.status,
+    startedAt: session.startedAt,
+    updatedAt: session.updatedAt || session.startedAt,
+    finishedAt: session.finishedAt || null,
+    outcome: session.outcome || null,
+    checkpoint: compactCheckpoint(session.checkpoint),
+    operationCount: Array.isArray(session.operations) ? session.operations.length : 0,
+    latestOperation: latestOperation ? {
+      id: latestOperation.id,
+      at: latestOperation.at,
+      tool: latestOperation.tool,
+      ok: latestOperation.ok,
+      target: latestOperation.target || null
+    } : null
+  };
+}
+
+function loadActiveEditSession() {
+  try {
+    const session = readJsonFile(EDIT_SESSION_ACTIVE_FILE);
+    if (!session || session.status !== "active") return null;
+    if (!Array.isArray(session.operations)) session.operations = [];
+    return session;
+  } catch (error) {
+    log(`Could not load active edit session: ${error.message}`);
+    return null;
+  }
+}
+
+function persistActiveEditSession() {
+  if (!activeEditSession) return;
+  writeJsonFileAtomic(EDIT_SESSION_ACTIVE_FILE, activeEditSession);
+}
+
+function clearActiveEditSession() {
+  try {
+    if (fs.existsSync(EDIT_SESSION_ACTIVE_FILE)) {
+      fs.unlinkSync(EDIT_SESSION_ACTIVE_FILE);
+    }
+  } catch (error) {
+    log(`Could not remove active edit session file: ${error.message}`);
+  }
+}
+
+function editSessionText(args, name, fallback, maxLength) {
+  const value = optionalString(args, name, fallback);
+  const normalized = String(value || "").trim();
+  return normalized.slice(0, maxLength);
+}
+
+function editSessionDetails(session, limit) {
+  const operations = Array.isArray(session.operations) ? session.operations : [];
+  const max = Math.max(1, Math.min(500, Math.floor(limit || operations.length || 1)));
+  return {
+    ...session,
+    operationCount: operations.length,
+    operations: operations.slice(-max)
+  };
+}
+
+async function startEditSession(args) {
+  if (activeEditSession) {
+    return toolResult({
+      started: false,
+      error: "An edit session is already active.",
+      activeEditSession: compactEditSession(activeEditSession)
+    }, true);
+  }
+
+  const label = editSessionText(args, "label", "", 120) || `edit-session-${timestampForFilename(new Date())}`;
+  const notes = editSessionText(args, "notes", "", 1000) || null;
+  let copied;
+  try {
+    copied = await copySavedProjectFile(`session-${label}`, "checkpoint");
+  } catch (error) {
+    recordEvent("edit_session_start_failed", { label, error: error.message || String(error) });
+    return toolResult({
+      started: false,
+      label,
+      error: error.message || String(error)
+    }, true);
+  }
+
+  const now = new Date().toISOString();
+  activeEditSession = {
+    id: crypto.randomUUID(),
+    label,
+    notes,
+    status: "active",
+    startedAt: now,
+    updatedAt: now,
+    checkpoint: {
+      label: copied.label,
+      sourceFile: copied.sourceFile,
+      checkpointFile: copied.destinationFile,
+      bytes: copied.bytes,
+      createdAt: copied.createdAt,
+      project: copied.project,
+      triggeredBy: "start_edit_session"
+    },
+    operations: []
+  };
+
+  persistActiveEditSession();
+  appendEditSessionEvent("session_started", {
+    session: compactEditSession(activeEditSession)
+  });
+
+  return toolResult({
+    started: true,
+    activeFile: EDIT_SESSION_ACTIVE_FILE,
+    sessionsLogFile: EDIT_SESSION_LOG_FILE,
+    session: editSessionDetails(activeEditSession)
+  });
+}
+
+function getEditSessionStatus(args) {
+  const limit = Math.max(1, Math.min(500, Math.floor(optionalNumber(args, "operationLimit", 100))));
+  return toolResult({
+    active: Boolean(activeEditSession),
+    activeFile: EDIT_SESSION_ACTIVE_FILE,
+    sessionsLogFile: EDIT_SESSION_LOG_FILE,
+    session: activeEditSession ? editSessionDetails(activeEditSession, limit) : null
+  });
+}
+
+function listEditSessions(args) {
+  const limit = Math.max(1, Math.min(200, Math.floor(optionalNumber(args, "limit", 50))));
+  const events = tailJsonl(EDIT_SESSION_LOG_FILE, Math.max(200, limit * 20));
+  const sessionsById = new Map();
+
+  for (const event of events) {
+    if (!event || !event.session || !event.session.id) continue;
+    sessionsById.set(event.session.id, {
+      ...(sessionsById.get(event.session.id) || {}),
+      ...event.session,
+      lastEventAt: event.at,
+      lastEventType: event.type
+    });
+  }
+
+  if (activeEditSession) {
+    sessionsById.set(activeEditSession.id, {
+      ...(sessionsById.get(activeEditSession.id) || {}),
+      ...compactEditSession(activeEditSession),
+      lastEventType: "active"
+    });
+  }
+
+  const sessions = Array.from(sessionsById.values())
+    .sort((a, b) => String(b.finishedAt || b.updatedAt || b.startedAt || "").localeCompare(String(a.finishedAt || a.updatedAt || a.startedAt || "")))
+    .slice(0, limit);
+
+  return toolResult({
+    active: Boolean(activeEditSession),
+    activeEditSession: compactEditSession(activeEditSession),
+    sessionsLogFile: EDIT_SESSION_LOG_FILE,
+    sessions
+  });
+}
+
+function finishEditSession(args) {
+  if (!activeEditSession) {
+    return toolResult("No edit session is active.", true);
+  }
+
+  const outcome = editSessionText(args, "outcome", "completed", 80) || "completed";
+  const summary = editSessionText(args, "summary", "", 2000) || null;
+  const finished = {
+    ...activeEditSession,
+    status: "finished",
+    outcome,
+    summary,
+    finishedAt: new Date().toISOString()
+  };
+  finished.updatedAt = finished.finishedAt;
+
+  appendEditSessionEvent("session_finished", {
+    session: compactEditSession(finished)
+  });
+  activeEditSession = null;
+  clearActiveEditSession();
+
+  return toolResult({
+    finished: true,
+    active: false,
+    session: editSessionDetails(finished)
+  });
+}
+
+function firstToolPayload(result) {
+  if (!result || !Array.isArray(result.content) || !result.content.length) return null;
+  return parseToolText(result.content[0].text);
+}
+
+function operationErrorFromPayload(payload) {
+  if (payload === null || payload === undefined) return null;
+  if (typeof payload === "string") return payload;
+  if (payload && typeof payload === "object") {
+    return payload.error || payload.message || null;
+  }
+  return String(payload);
+}
+
+function trackEditSessionOperation(details) {
+  if (!activeEditSession || !MUTATION_SUMMARY_TOOL_NAMES.has(details.name)) return;
+
+  try {
+    const payload = firstToolPayload(details.result);
+    const mutation = payload && typeof payload === "object" ? payload.mutation || null : null;
+    const operation = {
+      id: details.eventId,
+      at: new Date().toISOString(),
+      source: details.source,
+      tool: details.name,
+      ok: Boolean(details.ok),
+      durationMs: details.durationMs,
+      target: mutation && mutation.target ? mutation.target : inferMutationTarget(details.name, details.args || {}, payload),
+      mutation: mutation || null
+    };
+
+    const checkpoint = mutation && mutation.checkpoint
+      ? mutation.checkpoint
+      : payload && typeof payload === "object" && payload.checkpoint
+        ? compactCheckpoint(payload.checkpoint)
+        : null;
+    if (checkpoint) operation.checkpoint = checkpoint;
+
+    if (!details.ok) {
+      operation.error = details.error || operationErrorFromPayload(payload) || "Tool call failed.";
+    }
+
+    activeEditSession.operations.push(operation);
+    activeEditSession.updatedAt = operation.at;
+    persistActiveEditSession();
+    appendEditSessionEvent("session_operation", {
+      session: compactEditSession(activeEditSession),
+      operation
+    });
+  } catch (error) {
+    recordEvent("edit_session_operation_track_failed", {
+      tool: details.name,
+      error: error.message || String(error)
+    });
+  }
+}
+
 function getBridgeStatus() {
   const now = Date.now();
   return {
@@ -306,6 +591,7 @@ function getBridgeStatus() {
     waitingPanels: waitingPanels.length,
     logFile: LOG_FILE,
     backupDir: BACKUP_DIR,
+    activeEditSession: compactEditSession(activeEditSession),
     recentEvents: recentEvents.slice(-25)
   };
 }
@@ -1234,6 +1520,66 @@ const tools = [
         limit: {
           type: "number",
           description: "Number of recent events to return. Defaults to 50, maximum 200."
+        }
+      }
+    }
+  },
+  {
+    name: "start_edit_session",
+    description: "Start one active safe edit session with an automatic project checkpoint before later mutations.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        label: {
+          type: "string",
+          description: "Optional human-readable session label."
+        },
+        notes: {
+          type: "string",
+          description: "Optional session notes describing the intended edit."
+        }
+      }
+    }
+  },
+  {
+    name: "get_edit_session_status",
+    description: "Return the active edit session, checkpoint, and recent recorded mutation operations.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        operationLimit: {
+          type: "number",
+          description: "Maximum number of recent operations to include. Defaults to 100."
+        }
+      }
+    }
+  },
+  {
+    name: "finish_edit_session",
+    description: "Finish the active edit session without restoring or deleting its checkpoint.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        outcome: {
+          type: "string",
+          description: "Optional session outcome label. Defaults to completed."
+        },
+        summary: {
+          type: "string",
+          description: "Optional human-readable summary of the completed session."
+        }
+      }
+    }
+  },
+  {
+    name: "list_edit_sessions",
+    description: "List recent edit sessions recorded in the local edit session log.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        limit: {
+          type: "number",
+          description: "Maximum number of sessions to return. Defaults to 50."
         }
       }
     }
@@ -2693,6 +3039,22 @@ async function callTool(name, args) {
       logFile: LOG_FILE,
       events: tailJsonl(LOG_FILE, limit)
     });
+  }
+
+  if (name === "start_edit_session") {
+    return startEditSession(args || {});
+  }
+
+  if (name === "get_edit_session_status") {
+    return getEditSessionStatus(args || {});
+  }
+
+  if (name === "finish_edit_session") {
+    return finishEditSession(args || {});
+  }
+
+  if (name === "list_edit_sessions") {
+    return listEditSessions(args || {});
   }
 
   if (name === "backup_project_file") {
@@ -4291,25 +4653,52 @@ async function callToolLogged(source, name, args) {
     const checkpoint = await maybeCreateMutationCheckpoint(args || {}, name);
     const result = await callTool(name, args);
     const resultWithCheckpoint = attachMutationMetadataToToolResult(result, name, args || {}, checkpoint);
+    const durationMs = Date.now() - startedAt;
+    trackEditSessionOperation({
+      eventId,
+      source,
+      name,
+      args: args || {},
+      ok: !resultWithCheckpoint.isError,
+      durationMs,
+      result: resultWithCheckpoint
+    });
     recordEvent("tool_call_finished", {
       id: eventId,
       source,
       name,
       ok: !resultWithCheckpoint.isError,
-      durationMs: Date.now() - startedAt
+      durationMs
     });
     return resultWithCheckpoint;
   } catch (error) {
+    const durationMs = Date.now() - startedAt;
+    trackEditSessionOperation({
+      eventId,
+      source,
+      name,
+      args: args || {},
+      ok: false,
+      durationMs,
+      error: error.message || String(error)
+    });
     recordEvent("tool_call_failed", {
       id: eventId,
       source,
       name,
-      durationMs: Date.now() - startedAt,
+      durationMs,
       error: error.message || String(error),
       line: error.line || null
     });
     throw error;
   }
+}
+
+activeEditSession = loadActiveEditSession();
+if (activeEditSession) {
+  recordEvent("edit_session_restored", {
+    session: compactEditSession(activeEditSession)
+  });
 }
 
 startHttpBridge();

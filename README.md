@@ -14,6 +14,10 @@ It has two parts:
 
 - `get_bridge_status` - returns bridge diagnostics, connection state, paths, and recent events.
 - `get_command_log` - returns recent local JSONL log events.
+- `start_edit_session` - starts one active safe edit session with an automatic checkpoint.
+- `get_edit_session_status` - returns active session checkpoint and recorded mutation operations.
+- `finish_edit_session` - finishes the active edit session without restoring or deleting its checkpoint.
+- `list_edit_sessions` - lists recent sessions from the local edit session log.
 - `backup_project_file` - copies the currently saved `.aep` into `backups/` without modifying the open project.
 - `checkpoint_project` - creates a named checkpoint copy of the currently saved `.aep`.
 - `list_project_checkpoints` - lists checkpoint `.aep` files in `backups/`.
@@ -374,6 +378,33 @@ Invoke-RestMethod `
 Any mutating tool can use either `checkpointLabel` or `autoCheckpoint:true`. The checkpoint is created before the project-changing operation and is included in the tool result. This remains opt-in so routine inspection and tiny test calls do not create extra `.aep` files.
 
 Successful mutating tool responses also include a `mutation` summary with `tool`, `changed`, `target`, optional `checkpoint`, and an `undoHint`. This gives clients a consistent way to show what changed after an operation.
+
+Safe edit sessions group project-changing operations under one task-level checkpoint:
+
+```powershell
+Invoke-RestMethod `
+  -Method Post `
+  -ContentType "application/json" `
+  -Uri "http://127.0.0.1:3456/dev/tool/start_edit_session?token=codex-ae-local" `
+  -Body '{"label":"title cleanup","notes":"Group title layer edits under one checkpoint."}'
+```
+
+Only one edit session can be active. Starting a session creates a checkpoint first; if the current project is unsaved or the checkpoint cannot be created, the session does not start.
+
+While a session is active, successful and failed project-changing tool calls are recorded in `logs\edit-session-active.json` and lifecycle events are appended to `logs\edit-sessions.jsonl`. Read-only tools are not recorded as operations.
+
+Check status or finish the session:
+
+```powershell
+Invoke-RestMethod `
+  -Uri "http://127.0.0.1:3456/dev/tool/get_edit_session_status?token=codex-ae-local"
+
+Invoke-RestMethod `
+  -Method Post `
+  -ContentType "application/json" `
+  -Uri "http://127.0.0.1:3456/dev/tool/finish_edit_session?token=codex-ae-local" `
+  -Body '{"outcome":"completed","summary":"Finished the title cleanup pass."}'
+```
 
 ## Security note
 

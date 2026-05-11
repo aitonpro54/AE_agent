@@ -15,6 +15,10 @@ This file condenses the projectless Codex chat history that was moved into the
 - Current tag: `v0.16.0-scope-cleanup-handoff`
 - Current commit: `77df1b7 Prepare scope cleanup handoff`
 
+Active development branch:
+
+- `v0.17-safe-edit-sessions`
+
 The old large live `backups/` and `logs/` contents were intentionally not
 copied into this workspace. Empty working folders exist here, and release zip
 snapshots were copied into `snapshots/`.
@@ -71,6 +75,8 @@ Codex -> stdio MCP adapter -> local bridge daemon -> CEP panel -> After Effects
 - `v0.15.0-mutation-summaries`: consistent mutation summaries.
 - `v0.16.0-scope-cleanup-handoff`: removed obsolete scope references and
   prepared this project transfer.
+- `v0.17.0-safe-edit-sessions`: one active edit session with an automatic
+  starting checkpoint and mutation operation tracking.
 
 ## Important Product Decisions
 
@@ -126,6 +132,8 @@ The state backup recorded there is:
 - Live daemon paths now point here:
   `logs\bridge-events.jsonl` and `backups\`.
 - CEP panel is connected after the restart.
+- v0.17 development adds edit session state under `logs\edit-session-active.json`
+  and `logs\edit-sessions.jsonl`.
 
 ## Next Useful Work
 

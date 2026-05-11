@@ -1,5 +1,31 @@
 # AE MCP Bridge Releases
 
+## v0.17.0-safe-edit-sessions - 2026-05-12
+
+Safe edit sessions for grouping project-changing operations.
+
+Added:
+
+- `start_edit_session`
+- `get_edit_session_status`
+- `finish_edit_session`
+- `list_edit_sessions`
+- One active edit session at a time, with an automatic checkpoint before the session starts.
+- Active session persistence in `logs\edit-session-active.json`.
+- Session lifecycle and operation events in `logs\edit-sessions.jsonl`.
+- Automatic recording of successful and failed project-changing tool calls while a session is active.
+- `activeEditSession` summary in `get_bridge_status`.
+
+Changed:
+
+- Daemon and adapter report version `0.17.0`.
+- Smoke tests expect daemon `0.17.0` and verify the edit session tools are listed.
+
+Notes:
+
+- Edit sessions do not restore or delete checkpoints.
+- Read-only tools are not recorded as session operations.
+
 ## v0.16.0-scope-cleanup-handoff - 2026-05-11
 
 Documentation cleanup for the handoff into the next project.
