@@ -1,5 +1,20 @@
 # AE MCP Bridge Releases
 
+## v0.16.0-scope-cleanup-handoff - 2026-05-11
+
+Documentation cleanup for the handoff into the next project.
+
+Changed:
+
+- Removed remaining obsolete scope references from release notes and research notes.
+- Daemon and adapter report version `0.16.0`.
+- Smoke tests expect daemon `0.16.0`.
+
+Verified:
+
+- Local syntax checks for daemon, adapter, and smoke scripts.
+- Repository text search confirms the obsolete scope terms no longer appear in README, release notes, docs, MCP server code, or scripts.
+
 ## v0.15.0-mutation-summaries - 2026-05-05
 
 Consistent mutation summaries for project-changing tools.
@@ -16,7 +31,7 @@ Changed:
 
 Notes:
 
-- This is a response-shaping layer. It does not change the underlying After Effects commands or add render queue behavior.
+- This is a response-shaping layer. It does not change the underlying After Effects commands.
 
 Verified:
 

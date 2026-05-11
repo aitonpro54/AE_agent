@@ -46,7 +46,6 @@ Dakkshin and TheLlamainator use `ae_command.json` and `ae_mcp_result.json`-style
   - masks
   - effects by display name/matchName
   - effect/preset discovery
-  - render queue tools
   - audio markers/workflow
 - Add help and prompts:
   - `get-help`
