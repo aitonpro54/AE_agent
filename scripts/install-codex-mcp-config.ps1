@@ -21,7 +21,12 @@ $BackupPath = "$ConfigPath.ae-mcp-backup-$(Get-Date -Format yyyyMMdd-HHmmss)"
 Copy-Item -LiteralPath $ConfigPath -Destination $BackupPath
 
 $Config = Get-Content -LiteralPath $ConfigPath -Raw
-$SectionPattern = '(?ms)^\[mcp_servers\."after-effects"\]\r?\n.*?(?=^\[|\z)'
+$SectionPattern = '(?ms)^\[mcp_servers\."after-effects"\]\r?\n.*?(?=^\[|\z)(?:^\[mcp_servers\."after-effects"\.env\]\r?\n.*?(?=^\[|\z))*'
+$ExternalScriptsLine = ""
+$ExternalScriptsMatch = [regex]::Match($Config, "(?m)^AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT\s*=\s*['""][^'""]+['""]\s*$")
+if ($ExternalScriptsMatch.Success) {
+  $ExternalScriptsLine = "`r`n" + $ExternalScriptsMatch.Value.Trim()
+}
 
 $Section = @"
 [mcp_servers."after-effects"]
@@ -34,7 +39,7 @@ tool_timeout_sec = 120
 [mcp_servers."after-effects".env]
 AE_BRIDGE_PORT = '3456'
 AE_BRIDGE_TOKEN = 'codex-ae-local'
-AE_COMMAND_TIMEOUT_MS = '120000'
+AE_COMMAND_TIMEOUT_MS = '120000'$ExternalScriptsLine
 "@
 
 if ($Config -match $SectionPattern) {

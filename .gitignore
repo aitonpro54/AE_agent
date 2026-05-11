@@ -2,3 +2,4 @@ snapshots/*.zip
 logs/*.jsonl
 backups/*.aep
 backups/*.aepx
+.codex/
