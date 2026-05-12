@@ -83,7 +83,9 @@ label {
   font-size: 12px;
 }
 
-input {
+input,
+select,
+textarea {
   width: 100%;
   border: 1px solid #404040;
   border-radius: 6px;
@@ -94,7 +96,15 @@ input {
   outline: none;
 }
 
-input:focus {
+textarea {
+  min-height: 72px;
+  max-height: 132px;
+  resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
   border-color: #d04d4d;
 }
 
@@ -112,6 +122,13 @@ input:focus {
 }
 
 #reloadButton {
+  margin-left: auto;
+}
+
+#agentStatus {
+  align-self: center;
+  color: #a6a6a6;
+  font-size: 11px;
   margin-left: auto;
 }
 
@@ -133,6 +150,52 @@ button:hover {
 #connectButton {
   border-color: #a83f3f;
   background: #672222;
+}
+
+#chatTranscript {
+  min-height: 118px;
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid #353535;
+  border-radius: 6px;
+  background: #101010;
+  padding: 8px;
+}
+
+.chat-message {
+  border-radius: 6px;
+  margin: 0 0 8px;
+  padding: 8px 9px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chat-message:last-child {
+  margin-bottom: 0;
+}
+
+.chat-message.user {
+  background: #243143;
+  color: #f4f7fb;
+}
+
+.chat-message.assistant {
+  background: #222b25;
+  color: #ecf4ed;
+}
+
+.chat-message.error {
+  background: #3a2020;
+  color: #ffd8d8;
+}
+
+.chat-role {
+  color: #aeb8c4;
+  display: block;
+  font-size: 10px;
+  font-weight: 650;
+  margin-bottom: 4px;
+  text-transform: uppercase;
 }
 
 #log {

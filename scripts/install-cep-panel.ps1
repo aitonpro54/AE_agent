@@ -9,7 +9,7 @@ if (!(Test-Path -LiteralPath $Source)) {
 }
 
 New-Item -ItemType Directory -Force -Path $Destination | Out-Null
-Copy-Item -Path (Join-Path $Source "*") -Destination $Destination -Recurse -Force
+Get-ChildItem -LiteralPath $Source -Force | Copy-Item -Destination $Destination -Recurse -Force
 
 foreach ($Version in 7..13) {
   $Key = "HKCU\Software\Adobe\CSXS.$Version"
@@ -21,4 +21,4 @@ foreach ($Version in 7..13) {
 
 Write-Host "Installed CEP panel to: $Destination"
 Write-Host "Enabled PlayerDebugMode for CSXS.7 through CSXS.13"
-Write-Host "Restart After Effects, then open Window > Extensions > Codex AE MCP Bridge v0.17.0"
+Write-Host "Restart After Effects, then open Window > Extensions > Codex AE MCP Bridge v0.25.0"

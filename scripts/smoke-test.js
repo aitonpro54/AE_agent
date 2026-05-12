@@ -176,6 +176,158 @@ async function main() {
   await waitForResponse(stdout, 3, 2000);
 
   const health = await requestJson(`http://127.0.0.1:${port}/health`);
+  const agents = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents",
+    method: "GET",
+    headers: {
+      "x-ae-bridge-token": token
+    }
+  });
+  const agentsTool = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/dev/tool/list_ai_agents",
+    method: "GET",
+    headers: {
+      "x-ae-bridge-token": token
+    }
+  });
+  const readiness = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/readiness?agentId=openrouter&checkModels=0",
+    method: "GET",
+    headers: {
+      "x-ae-bridge-token": token
+    }
+  });
+  const agentLog = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/log?limit=5",
+    method: "GET",
+    headers: {
+      "x-ae-bridge-token": token
+    }
+  });
+  const badKeySave = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/key",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    agentId: "openrouter",
+    apiKey: "short"
+  });
+  const planRun = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/plan/run",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    dryRun: true,
+    requestId: "smoke-plan-run",
+    plan: {
+      summary: "Smoke-test the AE plan runner endpoint.",
+      risk: "low",
+      requiresCheckpoint: false,
+      steps: [
+        {
+          title: "Read bridge status",
+          tool: "get_bridge_status",
+          args: {}
+        }
+      ]
+    }
+  });
+  const ignoredBindingRun = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/plan/run",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    dryRun: false,
+    confirm: true,
+    requestId: "smoke-ignored-binding-run",
+    plan: {
+      summary: "Smoke-test ignored extra result bindings.",
+      risk: "low",
+      requiresCheckpoint: false,
+      steps: [
+        {
+          title: "Read bridge status with extra binding",
+          tool: "get_bridge_status",
+          args: {},
+          resultBindings: {
+            compName: "previous.missing"
+          }
+        }
+      ]
+    }
+  });
+  const mutatingPlan = {
+    summary: "Smoke-test mutating plan safety.",
+    risk: "low",
+    requiresCheckpoint: false,
+    steps: [
+      {
+        title: "Create temporary comp",
+        tool: "create_test_comp",
+        args: {
+          name: "Codex Test Safe Run Smoke",
+          width: 320,
+          height: 180,
+          duration: 1,
+          frameRate: 24,
+          openInViewer: false
+        }
+      }
+    ]
+  };
+  const mutatingDryRun = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/plan/run",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    dryRun: true,
+    requestId: "smoke-mutating-dry-run",
+    plan: mutatingPlan
+  });
+  const mutatingBlocked = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/plan/run",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    dryRun: false,
+    confirm: true,
+    allowMutations: true,
+    requestId: "smoke-mutating-blocked-run",
+    plan: mutatingPlan
+  });
   adapter.kill();
   daemon.kill();
 
@@ -185,19 +337,78 @@ async function main() {
     throw new Error("Expected initialize, tools/list, and tool call responses");
   }
 
-  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "0.17.0") {
+  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "0.25.0") {
     throw new Error("Unexpected health response");
+  }
+  if (!agents.body.ok || !Array.isArray(agents.body.agents) || !agents.body.agents.length) {
+    throw new Error("Unexpected agents response");
+  }
+  if (!agentsTool.body.ok || !agentsTool.body.result || !Array.isArray(agentsTool.body.result.agents)) {
+    throw new Error("Unexpected list_ai_agents tool response");
+  }
+  if (!readiness.body.ok || !readiness.body.readiness || readiness.body.readiness.agent.id !== "openrouter") {
+    throw new Error("Unexpected readiness response");
+  }
+  if (!agentLog.body.ok || !Array.isArray(agentLog.body.events)) {
+    throw new Error("Unexpected AI agent log response");
+  }
+  if (badKeySave.status !== 400 || badKeySave.body.ok !== false) {
+    throw new Error("Unexpected API key validation response");
+  }
+  if (
+    planRun.status !== 200 ||
+    planRun.body.ok !== true ||
+    !planRun.body.run ||
+    planRun.body.run.dryRun !== true ||
+    !Array.isArray(planRun.body.run.steps) ||
+    planRun.body.run.steps.length !== 1 ||
+    planRun.body.run.steps[0].status !== "ready" ||
+    !planRun.body.run.finishedAt
+  ) {
+    throw new Error("Unexpected plan runner dry-run response");
+  }
+  if (
+    mutatingDryRun.status !== 200 ||
+    mutatingDryRun.body.ok !== true ||
+    mutatingDryRun.body.run.validation.mutatingCount !== 1 ||
+    mutatingDryRun.body.run.steps[0].status !== "ready"
+  ) {
+    throw new Error("Unexpected mutating plan dry-run response");
+  }
+  if (
+    ignoredBindingRun.status !== 200 ||
+    ignoredBindingRun.body.ok !== true ||
+    ignoredBindingRun.body.run.steps[0].status !== "completed"
+  ) {
+    throw new Error("Unexpected ignored result binding run response");
+  }
+  if (
+    mutatingBlocked.status !== 400 ||
+    mutatingBlocked.body.ok !== false ||
+    !mutatingBlocked.body.run ||
+    mutatingBlocked.body.run.safety.status !== "blocked_missing_edit_session" ||
+    String(mutatingBlocked.body.run.error || "").indexOf("autoEditSession:true") < 0
+  ) {
+    throw new Error("Mutating plan without checkpoint/edit session was not blocked");
   }
 
   const toolNames = lines[1].result.tools.map((tool) => tool.name);
-  for (const expectedTool of ["start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint"]) {
+  for (const expectedTool of ["get_ai_agent_log", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint"]) {
     if (!toolNames.includes(expectedTool)) {
       throw new Error("Missing expected tool: " + expectedTool);
     }
   }
   const createTextTool = lines[1].result.tools.find((tool) => tool.name === "create_text_layer");
-  if (!createTextTool.inputSchema.properties.autoCheckpoint || !createTextTool.inputSchema.properties.checkpointLabel) {
-    throw new Error("create_text_layer is missing checkpoint schema fields");
+  if (!createTextTool.inputSchema.properties.autoCheckpoint || !createTextTool.inputSchema.properties.checkpointLabel || !createTextTool.inputSchema.properties.idempotencyKey || !createTextTool.inputSchema.properties.verifyAfter) {
+    throw new Error("create_text_layer is missing safety schema fields");
+  }
+  const validatePlanTool = lines[1].result.tools.find((tool) => tool.name === "validate_ai_agent_plan");
+  if (!validatePlanTool || !validatePlanTool.inputSchema.properties.plan) {
+    throw new Error("validate_ai_agent_plan is missing plan schema");
+  }
+  const runPlanTool = lines[1].result.tools.find((tool) => tool.name === "run_ai_agent_plan");
+  if (!runPlanTool || !runPlanTool.inputSchema.properties.dryRun || !runPlanTool.inputSchema.properties.allowMutations || !runPlanTool.inputSchema.properties.autoEditSession) {
+    throw new Error("run_ai_agent_plan is missing run safety schema");
   }
 
   console.log(JSON.stringify({
@@ -205,6 +416,12 @@ async function main() {
     responses: lines.length,
     tools: toolNames,
     listCompsResult: lines[2].result.content[0].text,
+    agents: agents.body.agents.map((agent) => agent.id),
+    readiness: readiness.body.readiness.status,
+    planRun: planRun.body.run.steps[0].status,
+    ignoredBindingRun: ignoredBindingRun.body.run.steps[0].status,
+    mutatingDryRun: mutatingDryRun.body.run.steps[0].status,
+    mutatingBlocked: mutatingBlocked.body.run.safety.status,
     health: health.body,
     adapterLogs: adapterStderr.join("").trim().split(/\n+/).filter(Boolean),
     daemonLogs: daemonStderr.join("").trim().split(/\n+/).filter(Boolean)

@@ -5,9 +5,10 @@ const http = require("http");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const aiAgents = require("./ai-agents");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "0.17.0";
+const SERVER_VERSION = "0.25.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -16,18 +17,38 @@ const COMMAND_TIMEOUT_MS = Number(process.env.AE_COMMAND_TIMEOUT_MS || 30000);
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const LOG_DIR = path.join(PROJECT_ROOT, "logs");
 const LOG_FILE = path.join(LOG_DIR, "bridge-events.jsonl");
+const AI_CHAT_LOG_FILE = path.join(LOG_DIR, "ai-agent-chats.jsonl");
 const EDIT_SESSION_ACTIVE_FILE = path.join(LOG_DIR, "edit-session-active.json");
 const EDIT_SESSION_LOG_FILE = path.join(LOG_DIR, "edit-sessions.jsonl");
+const IDEMPOTENCY_LOG_FILE = path.join(LOG_DIR, "idempotency-results.jsonl");
+const AGENT_SECRETS_FILE = path.join(PROJECT_ROOT, ".codex", "agent-secrets.json");
 const BACKUP_DIR = path.join(PROJECT_ROOT, "backups");
 const CHECKPOINT_SUFFIX = "-checkpoint";
 const ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT = process.env.AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT === "1";
 const STARTED_AT = Date.now();
+const AE_PLAN_SYSTEM_PROMPT = [
+  "You are a planning assistant for Codex AE MCP Bridge inside Adobe After Effects.",
+  "Return JSON only. Do not use markdown.",
+  "Do not claim that you changed the project. You are only drafting a plan.",
+  "The user may write in Russian or English. Cyrillic text is valid Russian; translate it internally and never ask for clarification only because text is non-Latin.",
+  "Prefer narrow MCP tools over raw ExtendScript.",
+  "Every mutating step must include verifyAfter=true and an idempotencyKeyTemplate.",
+  "Use checkpoints for broad, destructive, or multi-step project changes.",
+  "If the request is ambiguous, produce a clarification step instead of guessing."
+].join(" ");
+const AE_PLAN_REPAIR_SYSTEM_PROMPT = [
+  "You repair malformed JSON for Codex AE MCP Bridge.",
+  "Return one valid JSON object only.",
+  "Do not add markdown, explanations, comments, or surrounding text.",
+  "Preserve the original plan meaning as closely as possible."
+].join(" ");
 
 const pendingCommands = [];
 const inflightCommands = new Map();
 const completedResults = new Map();
 const waitingPanels = [];
 const recentEvents = [];
+const idempotencyRecords = new Map();
 let activeEditSession = null;
 
 const EFFECT_PRESETS = [
@@ -253,6 +274,25 @@ function recordEvent(type, details) {
   }
 }
 
+function appendJsonl(file, event) {
+  try {
+    ensureDir(path.dirname(file));
+    fs.appendFileSync(file, `${JSON.stringify(event)}\n`, "utf8");
+  } catch (error) {
+    log(`Could not write ${path.basename(file)}: ${error.message}`);
+  }
+}
+
+function appendAiChatEvent(type, details) {
+  const event = {
+    at: new Date().toISOString(),
+    type,
+    details: sanitizeForLog(details || {})
+  };
+  appendJsonl(AI_CHAT_LOG_FILE, event);
+  recordEvent(`ai_agent_${type}`, details);
+}
+
 function tailJsonl(file, limit) {
   if (!fs.existsSync(file)) return [];
   const maxBytes = 1024 * 1024;
@@ -290,6 +330,64 @@ function writeJsonFileAtomic(file, value) {
   const tmp = `${file}.${process.pid}.tmp`;
   fs.writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`, "utf8");
   fs.renameSync(tmp, file);
+}
+
+function agentApiKeyEnvName(agentId) {
+  if (agentId === "openrouter") return "OPENROUTER_API_KEY";
+  if (agentId === "ollama-cloud") return "OLLAMA_CLOUD_API_KEY";
+  return "";
+}
+
+function loadAgentSecrets() {
+  try {
+    const secrets = readJsonFile(AGENT_SECRETS_FILE) || {};
+    const apiKeys = secrets.apiKeys && typeof secrets.apiKeys === "object" ? secrets.apiKeys : {};
+    for (const envName of Object.keys(apiKeys)) {
+      if (!process.env[envName] && typeof apiKeys[envName] === "string" && apiKeys[envName]) {
+        process.env[envName] = apiKeys[envName];
+      }
+    }
+    return secrets;
+  } catch (error) {
+    recordEvent("ai_agent_secrets_load_failed", { error: error.message || String(error) });
+    return {};
+  }
+}
+
+function saveAgentApiKey(agentId, apiKey) {
+  const normalizedAgentId = optionalString({ agentId }, "agentId", "").trim();
+  const envName = agentApiKeyEnvName(normalizedAgentId);
+  if (!envName) {
+    throw new Error("Saving API keys is currently supported for openrouter and ollama-cloud.");
+  }
+
+  const key = optionalString({ apiKey }, "apiKey", "").trim();
+  if (!key) throw new Error("apiKey is required.");
+  if (key.length < 12) throw new Error("apiKey looks too short.");
+
+  const secrets = loadAgentSecrets();
+  const apiKeys = secrets.apiKeys && typeof secrets.apiKeys === "object" ? secrets.apiKeys : {};
+  apiKeys[envName] = key;
+  const nextSecrets = {
+    ...secrets,
+    apiKeys,
+    updatedAt: new Date().toISOString()
+  };
+  writeJsonFileAtomic(AGENT_SECRETS_FILE, nextSecrets);
+  process.env[envName] = key;
+  recordEvent("ai_agent_key_saved", {
+    agentId: normalizedAgentId,
+    apiKeyEnv: envName,
+    keySuffix: key.slice(-4),
+    secretsFile: AGENT_SECRETS_FILE
+  });
+  return {
+    agentId: normalizedAgentId,
+    apiKeyEnv: envName,
+    saved: true,
+    keySuffix: key.slice(-4),
+    secretsFile: AGENT_SECRETS_FILE
+  };
 }
 
 function appendEditSessionEvent(type, details) {
@@ -505,6 +603,61 @@ function finishEditSession(args) {
   });
 }
 
+function planRunSessionLabel(run) {
+  return `ai-plan-${String(run.id || crypto.randomUUID()).slice(0, 8)}`;
+}
+
+function isUnsavedProjectError(message) {
+  return String(message || "").indexOf("has not been saved") >= 0;
+}
+
+async function startPlanRunEditSession(run, validation) {
+  const label = planRunSessionLabel(run);
+  const result = await startEditSession({
+    label,
+    notes: `AI plan run ${run.id} with ${validation.mutatingCount} mutating step(s).`
+  });
+  const payload = firstToolPayload(result);
+  if (result.isError || !payload || payload.started !== true) {
+    const rawError = operationErrorFromPayload(payload) || "Could not start an edit session.";
+    return {
+      ok: false,
+      payload,
+      rawError,
+      saveProjectFirst: isUnsavedProjectError(rawError),
+      error: isUnsavedProjectError(rawError)
+        ? "Save the After Effects project first, then run the mutating plan again."
+        : rawError
+    };
+  }
+
+  return {
+    ok: true,
+    payload,
+    session: payload.session || null,
+    checkpoint: payload.session && payload.session.checkpoint
+      ? compactCheckpoint(payload.session.checkpoint)
+      : null
+  };
+}
+
+function finishPlanRunEditSession(run) {
+  const hasIssue = run.failedCount > 0 || run.steps.some((step) => step.status === "blocked" || step.status === "failed");
+  const result = finishEditSession({
+    outcome: hasIssue ? "needs-review" : "completed",
+    summary: `AI plan run ${run.id} ${hasIssue ? "finished with issues" : "completed"}.`
+  });
+  const payload = firstToolPayload(result);
+  if (result.isError) {
+    const error = operationErrorFromPayload(payload) || "Could not finish the auto edit session.";
+    run.warnings = run.warnings || [];
+    run.warnings.push(error);
+    if (run.safety) run.safety.finishError = error;
+    return null;
+  }
+  return payload;
+}
+
 function firstToolPayload(result) {
   if (!result || !Array.isArray(result.content) || !result.content.length) return null;
   return parseToolText(result.content[0].text);
@@ -590,8 +743,12 @@ function getBridgeStatus() {
     })),
     waitingPanels: waitingPanels.length,
     logFile: LOG_FILE,
+    aiChatLogFile: AI_CHAT_LOG_FILE,
+    idempotencyLogFile: IDEMPOTENCY_LOG_FILE,
+    agentSecretsFile: AGENT_SECRETS_FILE,
     backupDir: BACKUP_DIR,
     activeEditSession: compactEditSession(activeEditSession),
+    aiAgents: aiAgents.agentSummary(),
     recentEvents: recentEvents.slice(-25)
   };
 }
@@ -620,6 +777,18 @@ const MUTATION_CHECKPOINT_SCHEMA_PROPERTIES = {
   checkpointLabel: {
     type: "string",
     description: "Optional label for a checkpoint created before this mutating operation. Providing a label enables checkpoint creation."
+  },
+  idempotencyKey: {
+    type: "string",
+    description: "Optional repeat-safe key. Reusing the same key, scope, tool, and arguments returns the first successful result without running the mutation again."
+  },
+  idempotencyScope: {
+    type: "string",
+    description: "Optional namespace for idempotencyKey. Defaults to default."
+  },
+  verifyAfter: {
+    type: "boolean",
+    description: "Whether to inspect the AE project after this mutation and attach a verification snapshot. Defaults to true."
   }
 };
 
@@ -1004,6 +1173,325 @@ function attachMutationMetadataToToolResult(result, toolName, args, checkpoint) 
   };
 }
 
+function attachPayloadMetadataToToolResult(result, key, metadata) {
+  if (!result || !Array.isArray(result.content) || !result.content[0]) return result;
+  const content = result.content.slice();
+  const first = { ...content[0] };
+  const payload = parseToolText(first.text);
+  let nextPayload;
+  if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+    nextPayload = { ...payload, [key]: metadata };
+  } else {
+    nextPayload = { result: payload, [key]: metadata };
+  }
+  first.text = JSON.stringify(nextPayload, null, 2);
+  content[0] = first;
+  return {
+    ...result,
+    content
+  };
+}
+
+function cloneToolResult(result) {
+  if (!result) return result;
+  return JSON.parse(JSON.stringify(result));
+}
+
+function stableForHash(value) {
+  if (value === null || value === undefined) return null;
+  if (Array.isArray(value)) return value.map((item) => stableForHash(item));
+  if (typeof value === "object") {
+    const result = {};
+    for (const key of Object.keys(value).sort()) {
+      if ([
+        "autoCheckpoint",
+        "checkpointLabel",
+        "idempotencyKey",
+        "idempotencyScope",
+        "verifyAfter"
+      ].includes(key)) continue;
+      result[key] = stableForHash(value[key]);
+    }
+    return result;
+  }
+  return value;
+}
+
+function hashStableValue(value) {
+  return crypto
+    .createHash("sha256")
+    .update(JSON.stringify(stableForHash(value)))
+    .digest("hex");
+}
+
+function idempotencyContext(toolName, args) {
+  if (!MUTATING_TOOL_NAMES.has(toolName)) return null;
+  const key = optionalString(args || {}, "idempotencyKey", "").trim();
+  if (!key) return null;
+  const scope = optionalString(args || {}, "idempotencyScope", "default").trim() || "default";
+  return {
+    key,
+    scope,
+    tool: toolName,
+    recordKey: `${scope}:${toolName}:${key}`,
+    argsHash: hashStableValue(args || {})
+  };
+}
+
+function loadIdempotencyRecords() {
+  for (const event of tailJsonl(IDEMPOTENCY_LOG_FILE, 500)) {
+    if (!event || event.type !== "stored" || !event.record || !event.record.recordKey) continue;
+    idempotencyRecords.set(event.record.recordKey, event.record);
+  }
+}
+
+function storeIdempotencyResult(context, eventId, result) {
+  if (!context || !result || result.isError) return null;
+  const record = {
+    ...context,
+    eventId,
+    recordedAt: new Date().toISOString(),
+    result: cloneToolResult(result)
+  };
+  idempotencyRecords.set(context.recordKey, record);
+  appendJsonl(IDEMPOTENCY_LOG_FILE, {
+    at: record.recordedAt,
+    type: "stored",
+    record
+  });
+  return record;
+}
+
+function replayIdempotencyResult(context, record) {
+  return attachPayloadMetadataToToolResult(cloneToolResult(record.result), "idempotency", {
+    key: context.key,
+    scope: context.scope,
+    replayed: true,
+    firstEventId: record.eventId,
+    recordedAt: record.recordedAt
+  });
+}
+
+function attachStoredIdempotencyMetadata(result, context, record) {
+  if (!record) return result;
+  return attachPayloadMetadataToToolResult(result, "idempotency", {
+    key: context.key,
+    scope: context.scope,
+    replayed: false,
+    firstEventId: record.eventId,
+    recordedAt: record.recordedAt
+  });
+}
+
+function inferVerificationTarget(toolName, args, payload) {
+  const target = {
+    tool: toolName,
+    compItemIndex: null,
+    compName: "",
+    layerIndex: null,
+    layerName: "",
+    itemIndex: null,
+    itemName: ""
+  };
+
+  if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+    if (payload.comp) {
+      target.compItemIndex = Number(payload.comp.itemIndex || payload.comp.index) || null;
+      target.compName = payload.comp.name || "";
+    }
+    if (payload.layer) {
+      target.layerIndex = Number(payload.layer.index) || null;
+      target.layerName = payload.layer.name || "";
+    }
+    if (hasArg(payload, "itemIndex")) target.itemIndex = Number(payload.itemIndex) || null;
+    if (hasArg(payload, "name")) {
+      const payloadName = String(payload.name || "");
+      target.itemName = payloadName;
+      if (toolName === "create_test_comp" && !target.compName) target.compName = payloadName;
+    }
+    if (!target.compItemIndex && payload.item && hasArg(payload.item, "itemIndex")) {
+      target.compItemIndex = Number(payload.item.itemIndex) || null;
+    }
+    if (!target.compName && payload.item && payload.item.name) target.compName = payload.item.name;
+    if (!target.itemIndex && payload.item && hasArg(payload.item, "itemIndex")) {
+      target.itemIndex = Number(payload.item.itemIndex) || null;
+    }
+    if (!target.itemName && payload.item && payload.item.name) target.itemName = payload.item.name;
+  }
+
+  const rawArgs = args || {};
+  if (!target.compItemIndex && hasArg(rawArgs, "compItemIndex")) target.compItemIndex = Number(rawArgs.compItemIndex) || null;
+  if (!target.compName && hasArg(rawArgs, "compName")) target.compName = String(rawArgs.compName || "");
+  if (!target.layerIndex && hasArg(rawArgs, "layerIndex")) target.layerIndex = Number(rawArgs.layerIndex) || null;
+  if (!target.layerName && hasArg(rawArgs, "layerName")) target.layerName = String(rawArgs.layerName || "");
+  if (hasArg(rawArgs, "name")) {
+    const argName = String(rawArgs.name || "");
+    if (toolName === "create_test_comp") {
+      if (!target.compName) target.compName = argName;
+      if (!target.itemName) target.itemName = argName;
+    } else if (!target.layerName) {
+      target.layerName = argName;
+    }
+  }
+  if (!target.itemIndex && hasArg(rawArgs, "itemIndex")) target.itemIndex = Number(rawArgs.itemIndex) || null;
+  if (!target.itemName && hasArg(rawArgs, "itemName")) target.itemName = String(rawArgs.itemName || "");
+
+  return target;
+}
+
+async function verifyMutationResult(toolName, args, payload) {
+  const target = inferVerificationTarget(toolName, args || {}, payload);
+  const response = await runExtendScriptBody(`
+      var target = ${aeLiteral(target)};
+
+      function __codexValue(prop) {
+        try {
+          if (!prop) return null;
+          var value = prop.value;
+          if (value instanceof Array) {
+            var copy = [];
+            for (var i = 0; i < value.length; i++) copy.push(value[i]);
+            return copy;
+          }
+          return value;
+        } catch (__valueError) {
+          return null;
+        }
+      }
+
+      function __codexLayerInfo(layer) {
+        if (!layer) return null;
+        var transform = layer.property("ADBE Transform Group");
+        var textGroup = null;
+        var sourceText = null;
+        try { textGroup = layer.property("ADBE Text Properties"); } catch (__textGroupError) {}
+        if (textGroup) {
+          try { sourceText = textGroup.property("ADBE Text Document").value; } catch (__sourceTextError) {}
+        }
+        return {
+          index: layer.index,
+          id: layer.id || null,
+          name: layer.name || "",
+          matchName: layer.matchName || null,
+          enabled: !!layer.enabled,
+          locked: !!layer.locked,
+          startTime: layer.startTime,
+          inPoint: layer.inPoint,
+          outPoint: layer.outPoint,
+          transform: transform ? {
+            position: __codexValue(transform.property("ADBE Position")),
+            scale: __codexValue(transform.property("ADBE Scale")),
+            anchorPoint: __codexValue(transform.property("ADBE Anchor Point")),
+            opacity: __codexValue(transform.property("ADBE Opacity")),
+            rotation: __codexValue(transform.property("ADBE Rotate Z"))
+          } : null,
+          text: sourceText ? {
+            text: sourceText.text || "",
+            font: sourceText.font || null,
+            fontSize: sourceText.fontSize || null
+          } : null
+        };
+      }
+
+      function __codexCompInfo(comp) {
+        if (!comp) return null;
+        return {
+          itemIndex: comp.itemIndex || null,
+          id: comp.id || null,
+          name: comp.name || "",
+          typeName: comp.typeName || null,
+          width: comp.width,
+          height: comp.height,
+          duration: comp.duration,
+          frameRate: comp.frameRate,
+          numLayers: comp.numLayers
+        };
+      }
+
+      function __codexResolveComp() {
+        var item = null;
+        if (target.compItemIndex) {
+          try { item = app.project.item(target.compItemIndex); } catch (__indexError) {}
+          if (item instanceof CompItem) return item;
+        }
+        if (target.compName) {
+          for (var i = 1; i <= app.project.numItems; i++) {
+            item = app.project.item(i);
+            if (item instanceof CompItem && item.name === target.compName) return item;
+          }
+        }
+        if (target.itemIndex) {
+          try { item = app.project.item(target.itemIndex); } catch (__itemIndexError) {}
+          if (item instanceof CompItem) return item;
+        }
+        if (app.project.activeItem instanceof CompItem) return app.project.activeItem;
+        return null;
+      }
+
+      var activeItem = app.project.activeItem;
+      var project = {
+        numItems: app.project.numItems,
+        file: app.project.file ? app.project.file.fsName : null,
+        activeItem: activeItem ? {
+          itemIndex: activeItem.itemIndex || null,
+          name: activeItem.name || "",
+          typeName: activeItem.typeName || null
+        } : null
+      };
+
+      var comp = __codexResolveComp();
+      var targetLayer = null;
+      var sameNameLayers = [];
+      if (comp) {
+        if (target.layerIndex) {
+          try { targetLayer = comp.layer(target.layerIndex); } catch (__layerIndexError) {}
+        }
+        for (var layerIndex = 1; layerIndex <= comp.numLayers; layerIndex++) {
+          var layer = comp.layer(layerIndex);
+          if (!targetLayer && target.layerName && layer.name === target.layerName) targetLayer = layer;
+          if (target.layerName && layer.name === target.layerName) sameNameLayers.push(__codexLayerInfo(layer));
+        }
+      }
+
+      return {
+        checkedAt: (new Date()).toUTCString(),
+        project: project,
+        target: target,
+        comp: __codexCompInfo(comp),
+        layer: __codexLayerInfo(targetLayer),
+        sameNameLayerCount: sameNameLayers.length,
+        sameNameLayers: sameNameLayers.slice(0, 25)
+      };
+  `, 8000);
+
+  const verification = response.result || {};
+  verification.ok = true;
+  verification.warnings = [];
+  if (verification.target && verification.target.layerName && !verification.layer) {
+    verification.warnings.push(`Layer ${verification.target.layerName} was not found after ${toolName}.`);
+  }
+  if (verification.sameNameLayerCount > 1) {
+    verification.warnings.push(`Found ${verification.sameNameLayerCount} layers named ${verification.target.layerName}.`);
+  }
+  return verification;
+}
+
+async function attachMutationVerificationToToolResult(result, toolName, args) {
+  if (!MUTATING_TOOL_NAMES.has(toolName) || !result || result.isError) return result;
+  if (optionalBoolean(args || {}, "verifyAfter", true) === false) return result;
+  try {
+    const payload = firstToolPayload(result);
+    const verification = await verifyMutationResult(toolName, args || {}, payload);
+    return attachPayloadMetadataToToolResult(result, "verification", verification);
+  } catch (error) {
+    return attachPayloadMetadataToToolResult(result, "verification", {
+      ok: false,
+      error: error.message || String(error),
+      line: error.line || null
+    });
+  }
+}
+
 function isPathInside(parent, child) {
   const relative = path.relative(parent, child);
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
@@ -1278,6 +1766,743 @@ function exposedTools() {
   });
 }
 
+function aiChatRequestSummary(args) {
+  args = args || {};
+  return {
+    agentId: args.agentId || args.agent || args.provider || null,
+    model: args.model || null,
+    messageCount: Array.isArray(args.messages) ? args.messages.length : args.prompt || args.message ? 1 : 0
+  };
+}
+
+function extractJsonObject(text) {
+  const source = String(text || "").trim();
+  if (!source) throw new Error("Agent returned an empty plan.");
+  try {
+    return JSON.parse(source);
+  } catch (_error) {}
+
+  const firstBrace = source.indexOf("{");
+  const lastBrace = source.lastIndexOf("}");
+  if (firstBrace < 0 || lastBrace <= firstBrace) {
+    throw new Error("Agent response did not contain a JSON object.");
+  }
+  return JSON.parse(source.slice(firstBrace, lastBrace + 1));
+}
+
+function normalizeAgentPlan(rawText) {
+  try {
+    const plan = extractJsonObject(rawText);
+    if (!plan || typeof plan !== "object" || Array.isArray(plan)) {
+      throw new Error("Plan JSON must be an object.");
+    }
+    if (!Array.isArray(plan.steps)) plan.steps = [];
+    return { ok: true, plan };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error.message || String(error),
+      rawText
+    };
+  }
+}
+
+function toolByName(toolName) {
+  return tools.find((tool) => tool.name === toolName) || null;
+}
+
+function planStepToolName(step) {
+  if (!step || typeof step !== "object") return "";
+  return String(step.tool || step.mcpTool || step.name || "").trim().slice(0, 120);
+}
+
+function planStepArgs(step) {
+  if (!step || typeof step !== "object") return {};
+  const args = step.args || step.arguments || {};
+  return args && typeof args === "object" && !Array.isArray(args) ? { ...args } : {};
+}
+
+function requiredSchemaFields(tool) {
+  const required = tool && tool.inputSchema && Array.isArray(tool.inputSchema.required)
+    ? tool.inputSchema.required
+    : [];
+  return required.filter(Boolean);
+}
+
+function validateAgentPlanObject(plan, requestId) {
+  const validationId = requestId || crypto.randomUUID();
+  const sourcePlan = plan && typeof plan === "object" && !Array.isArray(plan) ? plan : {};
+  const steps = Array.isArray(sourcePlan.steps) ? sourcePlan.steps : [];
+  const validatedSteps = [];
+  const warnings = [];
+  let mutatingCount = 0;
+  let unknownToolCount = 0;
+  let executableCount = 0;
+
+  for (let index = 0; index < steps.length; index += 1) {
+    const step = steps[index] && typeof steps[index] === "object" ? steps[index] : {};
+    const toolName = planStepToolName(step);
+    const tool = toolName ? toolByName(toolName) : null;
+    const mutating = toolName ? MUTATING_TOOL_NAMES.has(toolName) : false;
+    const safeArgs = planStepArgs(step);
+    const resultBindings = step.resultBindings && typeof step.resultBindings === "object" && !Array.isArray(step.resultBindings)
+      ? step.resultBindings
+      : {};
+    const missingRequired = [];
+    const boundRequired = [];
+    const autofixes = [];
+    const stepWarnings = [];
+
+    if (!toolName) {
+      validatedSteps.push({
+        index: index + 1,
+        title: step.title || step.intent || "Untooled step",
+        tool: null,
+        valid: true,
+        executable: false,
+        mutatesProject: false,
+        args: safeArgs,
+        safeArgs,
+        warnings: stepWarnings,
+        autofixes,
+        missingRequired
+      });
+      continue;
+    }
+
+    if (!tool) {
+      unknownToolCount += 1;
+      stepWarnings.push(`Unknown MCP tool: ${toolName}`);
+    } else {
+      executableCount += 1;
+      for (const field of requiredSchemaFields(tool)) {
+        if (hasArg(safeArgs, field)) continue;
+        if (hasArg(resultBindings, field)) {
+          boundRequired.push(field);
+        } else {
+          missingRequired.push(field);
+        }
+      }
+      if (missingRequired.length) {
+        stepWarnings.push(`Missing required fields: ${missingRequired.join(", ")}`);
+      }
+      if (boundRequired.length) {
+        stepWarnings.push(`Requires runtime binding for: ${boundRequired.join(", ")}`);
+      }
+    }
+
+    if (mutating) {
+      mutatingCount += 1;
+      if (safeArgs.verifyAfter !== true) {
+        safeArgs.verifyAfter = true;
+        autofixes.push("verifyAfter=true");
+      }
+      if (!safeArgs.idempotencyKey) {
+        safeArgs.idempotencyKey = `ae-plan-${validationId}-step-${index + 1}-${toolName}`;
+        autofixes.push("idempotencyKey");
+      }
+      if (!safeArgs.idempotencyScope) {
+        safeArgs.idempotencyScope = `ae-plan:${validationId}`;
+        autofixes.push("idempotencyScope");
+      }
+      if (toolName === "run_extendscript" || toolName === "run_extendscript_file") {
+        stepWarnings.push("Raw ExtendScript is allowed only as an escape hatch; prefer a narrow MCP tool.");
+      }
+    }
+
+    validatedSteps.push({
+      index: index + 1,
+      title: step.title || step.intent || toolName,
+      tool: toolName,
+      valid: Boolean(tool) && missingRequired.length === 0,
+      executable: Boolean(tool) && missingRequired.length === 0 && boundRequired.length === 0,
+      requiresRuntimeBinding: boundRequired.length > 0,
+      mutatesProject: mutating,
+      args: planStepArgs(step),
+      safeArgs,
+      warnings: stepWarnings,
+      autofixes,
+      missingRequired,
+      boundRequired,
+      resultBindings
+    });
+  }
+
+  if (mutatingCount > 1 && sourcePlan.requiresCheckpoint !== true) {
+    warnings.push("Multiple mutating steps planned; a checkpoint is recommended before execution.");
+  }
+  if (unknownToolCount) {
+    warnings.push(`${unknownToolCount} planned step(s) reference unknown MCP tools.`);
+  }
+  if (!steps.length && !sourcePlan.clarifyingQuestion) {
+    warnings.push("Plan has no steps and no clarifying question.");
+  }
+
+  const invalidSteps = validatedSteps.filter((step) => !step.valid && step.tool);
+  return {
+    ok: invalidSteps.length === 0 && unknownToolCount === 0,
+    validationId,
+    stepCount: steps.length,
+    executableCount,
+    mutatingCount,
+    unknownToolCount,
+    invalidStepCount: invalidSteps.length,
+    requiresCheckpoint: sourcePlan.requiresCheckpoint === true || mutatingCount > 1,
+    warnings,
+    steps: validatedSteps
+  };
+}
+
+function hasCheckpointStep(validation) {
+  return Boolean(validation && Array.isArray(validation.steps) && validation.steps.some((step) => (
+    step.tool === "checkpoint_project" || step.tool === "start_edit_session"
+  )));
+}
+
+function valueAtPath(value, pathExpression) {
+  const parts = String(pathExpression || "")
+    .replace(/\[(\d+)\]/g, ".$1")
+    .split(".")
+    .filter(Boolean);
+  let current = value;
+  for (const part of parts) {
+    if (current === null || current === undefined) return undefined;
+    current = current[part];
+  }
+  return current;
+}
+
+function resolvePlanBinding(binding, executedSteps) {
+  const expression = String(binding || "").trim();
+  const match = /^steps\.(\d+)\.(.+)$/.exec(expression);
+  if (match) {
+    const index = Number(match[1]) - 1;
+    const rest = match[2].replace(/^result\./, "");
+    const step = executedSteps[index];
+    return step ? valueAtPath(step.payload, rest) : undefined;
+  }
+  if (expression.indexOf("previous.") === 0 && executedSteps.length) {
+    return valueAtPath(executedSteps[executedSteps.length - 1].payload, expression.slice("previous.".length));
+  }
+  return undefined;
+}
+
+function applyPlanRuntimeBindings(step, executedSteps) {
+  const args = { ...(step.safeArgs || {}) };
+  const bindings = step.resultBindings || {};
+  const tool = toolByName(step.tool);
+  const schemaProperties = tool && tool.inputSchema && tool.inputSchema.properties && typeof tool.inputSchema.properties === "object"
+    ? tool.inputSchema.properties
+    : null;
+  const unresolved = [];
+  for (const field of Object.keys(bindings)) {
+    if (hasArg(args, field) && args[field] !== null && args[field] !== undefined && args[field] !== "") {
+      continue;
+    }
+    if (schemaProperties && !hasArg(schemaProperties, field)) {
+      continue;
+    }
+    const value = resolvePlanBinding(bindings[field], executedSteps);
+    if (value === undefined || value === null || value === "") {
+      unresolved.push(field);
+    } else {
+      args[field] = value;
+    }
+  }
+  return { args, unresolved };
+}
+
+const PLANNING_TOOL_NAMES = [
+  "get_bridge_status",
+  "ping_ae",
+  "get_project_snapshot",
+  "get_project_info",
+  "get_active_comp",
+  "list_comps",
+  "list_layers",
+  "get_comp_details",
+  "get_layer_details",
+  "get_selected_layers",
+  "get_selected_properties",
+  "find_project_items",
+  "find_comps",
+  "list_effect_presets",
+  "list_effects",
+  "get_effect_details",
+  "checkpoint_project",
+  "create_text_layer",
+  "import_footage",
+  "create_solid_layer",
+  "create_null_layer",
+  "create_adjustment_layer",
+  "add_project_item_to_comp",
+  "duplicate_comp",
+  "add_effect",
+  "set_effect_property",
+  "set_property_value",
+  "set_layer_transform",
+  "apply_transform_expression",
+  "add_layer_marker",
+  "create_test_comp",
+  "cleanup_test_items",
+  "run_extendscript",
+  "run_extendscript_file"
+];
+
+function compactPromptText(text, limit) {
+  const compacted = String(text || "").replace(/\s+/g, " ").trim();
+  if (!compacted || compacted.length <= limit) return compacted;
+  return `${compacted.slice(0, Math.max(0, limit - 1)).trim()}...`;
+}
+
+function planningToolCatalog() {
+  const lines = [];
+  const seen = new Set();
+
+  for (const name of PLANNING_TOOL_NAMES) {
+    if (seen.has(name)) continue;
+    const tool = toolByName(name);
+    if (!tool) continue;
+    seen.add(name);
+
+    const required = requiredSchemaFields(tool);
+    const mutating = MUTATING_TOOL_NAMES.has(tool.name) ? "mutates" : "read-only";
+    const requiredText = required.length ? ` Required: ${required.join(", ")}.` : "";
+    lines.push(`- ${tool.name} (${mutating}): ${compactPromptText(tool.description, 130)}${requiredText}`);
+  }
+
+  return lines.join("\n");
+}
+
+async function runValidatedAgentPlan(options) {
+  options = options || {};
+  const plan = options.plan;
+  const validation = validateAgentPlanObject(plan, options.requestId || null);
+  const dryRun = optionalBoolean(options, "dryRun", true);
+  const confirm = optionalBoolean(options, "confirm", false);
+  const allowMutations = optionalBoolean(options, "allowMutations", false);
+  const autoEditSession = optionalBoolean(options, "autoEditSession", false);
+  const allowRuntimeBindings = optionalBoolean(options, "allowRuntimeBindings", true);
+  const allowWithoutCheckpoint = optionalBoolean(options, "allowWithoutCheckpoint", false);
+  const allowRawExtendscript = optionalBoolean(options, "allowRawExtendscript", false);
+  const stopOnError = optionalBoolean(options, "stopOnError", true);
+  const maxSteps = Math.max(1, Math.min(50, Math.floor(optionalNumber(options, "maxSteps", 20))));
+  const mutatingExecution = !dryRun && validation.mutatingCount > 0;
+  const checkpointStepPresent = hasCheckpointStep(validation);
+  const activeEditSessionAtStart = Boolean(activeEditSession);
+
+  const run = {
+    id: crypto.randomUUID(),
+    startedAt: new Date().toISOString(),
+    dryRun,
+    confirm,
+    allowMutations,
+    autoEditSession,
+    validation,
+    executedCount: 0,
+    skippedCount: 0,
+    failedCount: 0,
+    steps: [],
+    safety: {
+      mutatingExecution,
+      checkpointStepPresent,
+      activeEditSessionAtStart,
+      autoEditSession,
+      allowWithoutCheckpoint,
+      protection: activeEditSessionAtStart
+        ? "active_edit_session"
+        : checkpointStepPresent
+          ? "planned_checkpoint_step"
+          : null
+    }
+  };
+  if (activeEditSessionAtStart) {
+    run.editSession = compactEditSession(activeEditSession);
+  }
+
+  function finishRun() {
+    run.finishedAt = new Date().toISOString();
+    if (typeof run.ok !== "boolean") {
+      run.ok = run.failedCount === 0 && !run.steps.some((step) => step.status === "blocked");
+    }
+    return run;
+  }
+
+  if (!validation.ok) {
+    run.ok = false;
+    run.error = "Plan validation failed.";
+    return finishRun();
+  }
+  if (!dryRun && !confirm) {
+    run.ok = false;
+    run.error = "confirm:true is required to run a plan.";
+    return finishRun();
+  }
+  if (!dryRun && validation.mutatingCount > 0 && !allowMutations) {
+    run.ok = false;
+    run.error = "allowMutations:true is required to run mutating plan steps.";
+    return finishRun();
+  }
+  if (mutatingExecution && !activeEditSessionAtStart && !checkpointStepPresent) {
+    if (!autoEditSession) {
+      run.ok = false;
+      run.error = "autoEditSession:true is required to run a mutating plan without an existing edit session or checkpoint step.";
+      run.safety.status = "blocked_missing_edit_session";
+      return finishRun();
+    }
+
+    const started = await startPlanRunEditSession(run, validation);
+    if (!started.ok) {
+      run.ok = false;
+      run.error = started.error;
+      run.safety.status = started.saveProjectFirst ? "blocked_save_project_first" : "blocked_edit_session_failed";
+      run.safety.error = started.rawError;
+      run.safety.saveProjectFirst = started.saveProjectFirst;
+      run.editSessionStart = started.payload || null;
+      return finishRun();
+    }
+
+    run.safety.status = "protected";
+    run.safety.protection = "auto_edit_session";
+    run.editSession = started.session;
+    run.checkpoint = started.checkpoint;
+  }
+
+  const executedSteps = [];
+  const autoStartedEditSession = mutatingExecution && run.safety.protection === "auto_edit_session";
+  let checkpointProtectionReady = !mutatingExecution || Boolean(activeEditSession) || autoStartedEditSession;
+  const steps = validation.steps.slice(0, maxSteps);
+  for (const step of steps) {
+    const item = {
+      index: step.index,
+      title: step.title,
+      tool: step.tool,
+      dryRun,
+      mutatesProject: step.mutatesProject,
+      status: "pending"
+    };
+
+    if (!step.tool) {
+      item.status = "skipped";
+      item.reason = "No tool for this step.";
+      run.skippedCount += 1;
+      run.steps.push(item);
+      continue;
+    }
+    if (!step.executable && (!allowRuntimeBindings || !step.requiresRuntimeBinding)) {
+      item.status = "blocked";
+      item.reason = step.requiresRuntimeBinding ? "Runtime binding is required." : "Step is not executable.";
+      item.validation = step;
+      run.skippedCount += 1;
+      run.steps.push(item);
+      if (stopOnError) break;
+      continue;
+    }
+    if (step.mutatesProject && !allowMutations) {
+      item.status = dryRun ? "ready" : "blocked";
+      item.reason = dryRun ? null : "Mutations are not allowed.";
+      item.args = step.safeArgs;
+      run.steps.push(item);
+      if (!dryRun) run.skippedCount += 1;
+      if (!dryRun && stopOnError) break;
+      continue;
+    }
+    if (!dryRun && step.mutatesProject && !checkpointProtectionReady) {
+      item.status = "blocked";
+      item.reason = "Checkpoint/edit session protection was not established before this mutating step.";
+      item.args = step.safeArgs;
+      run.skippedCount += 1;
+      run.steps.push(item);
+      if (stopOnError) break;
+      continue;
+    }
+    if ((step.tool === "run_extendscript" || step.tool === "run_extendscript_file") && !allowRawExtendscript) {
+      item.status = "blocked";
+      item.reason = "Raw ExtendScript requires allowRawExtendscript:true.";
+      run.skippedCount += 1;
+      run.steps.push(item);
+      if (stopOnError) break;
+      continue;
+    }
+
+    const bound = applyPlanRuntimeBindings(step, executedSteps);
+    item.args = bound.args;
+    if (bound.unresolved.length) {
+      item.status = "blocked";
+      item.reason = `Unresolved runtime bindings: ${bound.unresolved.join(", ")}`;
+      item.unresolved = bound.unresolved;
+      run.skippedCount += 1;
+      run.steps.push(item);
+      if (stopOnError) break;
+      continue;
+    }
+
+    if (dryRun) {
+      item.status = "ready";
+      run.steps.push(item);
+      continue;
+    }
+
+    try {
+      const result = await callToolLogged("ai-plan-run", step.tool, bound.args);
+      const payload = firstToolPayload(result);
+      item.status = result.isError ? "failed" : "completed";
+      item.result = payload;
+      item.isError = Boolean(result.isError);
+      executedSteps.push({ step, payload });
+      run.executedCount += result.isError ? 0 : 1;
+      if (result.isError) run.failedCount += 1;
+      if (!result.isError && payload && typeof payload === "object") {
+        if (step.tool === "checkpoint_project" && payload.checkpointFile) {
+          checkpointProtectionReady = true;
+          run.safety.protection = "planned_checkpoint_step";
+          run.checkpoint = compactCheckpoint(payload);
+        }
+        if (step.tool === "start_edit_session" && payload.session) {
+          checkpointProtectionReady = true;
+          run.safety.protection = "planned_edit_session_step";
+          run.editSession = payload.session;
+        }
+      }
+      run.steps.push(item);
+      if (result.isError && stopOnError) break;
+    } catch (error) {
+      item.status = "failed";
+      item.error = error.message || String(error);
+      item.line = error.line || null;
+      run.failedCount += 1;
+      run.steps.push(item);
+      if (stopOnError) break;
+    }
+  }
+
+  if (autoStartedEditSession) {
+    const finished = finishPlanRunEditSession(run);
+    if (finished) {
+      run.editSessionFinished = finished.session || null;
+      run.safety.editSessionFinished = true;
+    }
+  }
+
+  return finishRun();
+}
+
+function buildAePlanPrompt(args) {
+  const userPrompt = optionalString(args || {}, "prompt", optionalString(args || {}, "message", "")).trim();
+  if (!userPrompt) throw new Error("prompt or message is required for AE Plan mode.");
+
+  return [
+    "User request:",
+    userPrompt,
+    "",
+    "Return one JSON object with this shape:",
+    "{",
+    "  \"summary\": \"short user-facing summary\",",
+    "  \"risk\": \"low|medium|high\",",
+    "  \"requiresCheckpoint\": true,",
+    "  \"clarifyingQuestion\": null,",
+    "  \"steps\": [",
+    "    {",
+    "      \"title\": \"short step title\",",
+    "      \"intent\": \"what this step checks or changes\",",
+    "      \"tool\": \"MCP tool name or null\",",
+    "      \"args\": {},",
+    "      \"dependsOnStep\": null,",
+    "      \"resultBindings\": {},",
+    "      \"mutatesProject\": false,",
+    "      \"verifyAfter\": true,",
+    "      \"idempotencyKeyTemplate\": \"ae-plan-{requestId}-step-1\"",
+    "    }",
+    "  ]",
+    "}",
+    "",
+    "Available MCP tools. Use these names exactly; do not invent tool names.",
+    planningToolCatalog(),
+    "",
+    "Treat Russian/Cyrillic user text as a normal request. If a Russian phrase is ambiguous, infer cautiously from the After Effects context before asking for clarification.",
+    "Use get_bridge_status or ping_ae for bridge health checks. Use get_project_snapshot, get_active_comp, get_comp_details, and get_layer_details before choosing project targets.",
+    "For any project-changing request, plan inspection steps first, then the narrow mutating step(s), then verification/readback steps.",
+    "You do not need to add a checkpoint_project step for every mutation because the plan runner can create a protected edit session, but set requiresCheckpoint=true for broad, destructive, or multi-step project changes.",
+    "When a creation tool can set a property directly, include that property in the creation tool args instead of adding a later step that needs an unknown layerIndex.",
+    "If a later step depends on a previous tool result, set dependsOnStep and resultBindings instead of inventing indices.",
+    "Use mutating tools only as planned steps; do not execute them. Use run_extendscript only when no narrower tool fits."
+  ].join("\n");
+}
+
+async function repairAgentPlanJson(args, rawText) {
+  const repairPrompt = [
+    "The following response was intended to be one JSON object matching the AE MCP plan schema, but it was malformed.",
+    "Repair it into valid JSON only. Preserve the steps, tools, args, risk, summary, and checkpoint intent.",
+    "",
+    "Malformed response:",
+    String(rawText || "")
+  ].join("\n");
+
+  const repairResult = await aiAgents.chatWithAgent({
+    ...(args || {}),
+    messages: undefined,
+    prompt: repairPrompt,
+    system: AE_PLAN_REPAIR_SYSTEM_PROMPT,
+    temperature: 0,
+    maxTokens: hasArg(args || {}, "repairMaxTokens") ? args.repairMaxTokens : 2400
+  });
+  const repaired = normalizeAgentPlan(repairResult.text);
+  return {
+    repaired,
+    repairText: repairResult.text,
+    repairModel: repairResult.model || null
+  };
+}
+
+async function runAgentChatLogged(source, args) {
+  const requestId = crypto.randomUUID();
+  const startedAtMs = Date.now();
+  const startedAt = new Date(startedAtMs).toISOString();
+  appendAiChatEvent("chat_started", {
+    requestId,
+    source,
+    ...aiChatRequestSummary(args || {})
+  });
+
+  try {
+    const result = await aiAgents.chatWithAgent(args || {});
+    const finishedAtMs = Date.now();
+    const metadata = {
+      requestId,
+      source,
+      startedAt,
+      finishedAt: new Date(finishedAtMs).toISOString(),
+      durationMs: finishedAtMs - startedAtMs,
+      agentId: result.agent ? result.agent.id : args.agentId || args.agent || null,
+      model: result.model || args.model || null,
+      textLength: result.text ? result.text.length : 0,
+      logFile: AI_CHAT_LOG_FILE
+    };
+    appendAiChatEvent("chat_finished", metadata);
+    return {
+      ...result,
+      requestId,
+      startedAt,
+      finishedAt: metadata.finishedAt,
+      durationMs: metadata.durationMs,
+      runLogFile: AI_CHAT_LOG_FILE
+    };
+  } catch (error) {
+    const finishedAtMs = Date.now();
+    const metadata = {
+      requestId,
+      source,
+      startedAt,
+      finishedAt: new Date(finishedAtMs).toISOString(),
+      durationMs: finishedAtMs - startedAtMs,
+      ...aiChatRequestSummary(args || {}),
+      error: error.message || String(error),
+      readiness: error.readiness || null,
+      logFile: AI_CHAT_LOG_FILE
+    };
+    appendAiChatEvent("chat_failed", metadata);
+    error.requestId = requestId;
+    error.startedAt = startedAt;
+    error.finishedAt = metadata.finishedAt;
+    error.durationMs = metadata.durationMs;
+    throw error;
+  }
+}
+
+async function runAgentPlanLogged(source, args) {
+  const requestId = crypto.randomUUID();
+  const startedAtMs = Date.now();
+  const startedAt = new Date(startedAtMs).toISOString();
+  appendAiChatEvent("plan_started", {
+    requestId,
+    source,
+    ...aiChatRequestSummary(args || {})
+  });
+
+  try {
+    const planPrompt = buildAePlanPrompt(args || {});
+    const result = await aiAgents.chatWithAgent({
+      ...(args || {}),
+      messages: undefined,
+      prompt: planPrompt,
+      system: optionalString(args || {}, "system", AE_PLAN_SYSTEM_PROMPT),
+      temperature: hasArg(args || {}, "temperature") ? args.temperature : 0.2,
+      maxTokens: hasArg(args || {}, "maxTokens") ? args.maxTokens : 2200
+    });
+    let parsed = normalizeAgentPlan(result.text);
+    let repaired = false;
+    let repairError = null;
+    let repairModel = null;
+    if (!parsed.ok && optionalBoolean(args || {}, "repairPlan", true) !== false) {
+      try {
+        const repair = await repairAgentPlanJson(args || {}, result.text);
+        repaired = repair.repaired.ok;
+        repairModel = repair.repairModel;
+        if (repair.repaired.ok) {
+          parsed = repair.repaired;
+        } else {
+          repairError = repair.repaired.error || "Plan repair did not produce valid JSON.";
+        }
+      } catch (error) {
+        repairError = error.message || String(error);
+      }
+    }
+    const validation = parsed.ok ? validateAgentPlanObject(parsed.plan, requestId) : null;
+    const finishedAtMs = Date.now();
+    const metadata = {
+      requestId,
+      source,
+      startedAt,
+      finishedAt: new Date(finishedAtMs).toISOString(),
+      durationMs: finishedAtMs - startedAtMs,
+      agentId: result.agent ? result.agent.id : args.agentId || args.agent || null,
+      model: result.model || args.model || null,
+      parseOk: parsed.ok,
+      repaired,
+      stepCount: parsed.plan && Array.isArray(parsed.plan.steps) ? parsed.plan.steps.length : 0,
+      validationOk: validation ? validation.ok : false,
+      mutatingCount: validation ? validation.mutatingCount : 0,
+      logFile: AI_CHAT_LOG_FILE
+    };
+    appendAiChatEvent("plan_finished", metadata);
+    return {
+      ...result,
+      mode: "ae-plan",
+      requestId,
+      startedAt,
+      finishedAt: metadata.finishedAt,
+      durationMs: metadata.durationMs,
+      runLogFile: AI_CHAT_LOG_FILE,
+      planParseOk: parsed.ok,
+      planRepaired: repaired,
+      planRepairModel: repairModel,
+      plan: parsed.plan || null,
+      planValidation: validation,
+      planRepairError: repairError,
+      planParseError: parsed.error || null
+    };
+  } catch (error) {
+    const finishedAtMs = Date.now();
+    const metadata = {
+      requestId,
+      source,
+      startedAt,
+      finishedAt: new Date(finishedAtMs).toISOString(),
+      durationMs: finishedAtMs - startedAtMs,
+      ...aiChatRequestSummary(args || {}),
+      error: error.message || String(error),
+      readiness: error.readiness || null,
+      logFile: AI_CHAT_LOG_FILE
+    };
+    appendAiChatEvent("plan_failed", metadata);
+    error.requestId = requestId;
+    error.startedAt = startedAt;
+    error.finishedAt = metadata.finishedAt;
+    error.durationMs = metadata.durationMs;
+    throw error;
+  }
+}
+
 function startHttpBridge() {
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${HOST}:${PORT}`);
@@ -1320,6 +2545,174 @@ function startHttpBridge() {
     if (url.pathname === "/dev/tools" && req.method === "GET") {
       if (!requireToken(req, res, url)) return;
       writeJson(res, 200, { ok: true, tools: exposedTools() });
+      return;
+    }
+
+    if ((url.pathname === "/agents" || url.pathname === "/dev/agents") && req.method === "GET") {
+      if (!requireToken(req, res, url)) return;
+      try {
+        writeJson(res, 200, {
+          ok: true,
+          ...(await aiAgents.listAgents({
+            includeModels: url.searchParams.get("includeModels") || "0",
+            freeOnly: url.searchParams.get("freeOnly") || "0",
+            timeoutMs: url.searchParams.get("timeoutMs") || undefined
+          }))
+        });
+      } catch (error) {
+        writeJson(res, 500, {
+          ok: false,
+          error: error.message || String(error)
+        });
+      }
+      return;
+    }
+
+    if ((url.pathname === "/agents/readiness" || url.pathname === "/dev/agents/readiness") && req.method === "GET") {
+      if (!requireToken(req, res, url)) return;
+      try {
+        writeJson(res, 200, {
+          ok: true,
+          readiness: await aiAgents.checkAgentReadiness({
+            agentId: url.searchParams.get("agentId") || url.searchParams.get("agent") || undefined,
+            model: url.searchParams.get("model") || undefined,
+            freeOnly: url.searchParams.get("freeOnly") || "0",
+            checkModels: url.searchParams.get("checkModels") || "1",
+            timeoutMs: url.searchParams.get("timeoutMs") || undefined
+          })
+        });
+      } catch (error) {
+        writeJson(res, 500, {
+          ok: false,
+          error: error.message || String(error)
+        });
+      }
+      return;
+    }
+
+    if ((url.pathname === "/agents/key" || url.pathname === "/dev/agents/key") && req.method === "POST") {
+      if (!requireToken(req, res, url)) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+        const saved = saveAgentApiKey(body.agentId || body.agent || "", body.apiKey || "");
+        writeJson(res, 200, {
+          ok: true,
+          saved,
+          readiness: await aiAgents.checkAgentReadiness({
+            agentId: saved.agentId,
+            timeoutMs: 3000
+          })
+        });
+      } catch (error) {
+        writeJson(res, 400, {
+          ok: false,
+          error: error.message || String(error)
+        });
+      }
+      return;
+    }
+
+    if ((url.pathname === "/agents/log" || url.pathname === "/dev/agents/log") && req.method === "GET") {
+      if (!requireToken(req, res, url)) return;
+      const limit = Math.max(1, Math.min(200, Math.floor(Number(url.searchParams.get("limit") || 50))));
+      writeJson(res, 200, { ok: true, logFile: AI_CHAT_LOG_FILE, events: tailJsonl(AI_CHAT_LOG_FILE, limit) });
+      return;
+    }
+
+    if ((url.pathname === "/agents/chat" || url.pathname === "/dev/agents/chat") && req.method === "POST") {
+      if (!requireToken(req, res, url)) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch (error) {
+        writeJson(res, 400, {
+          ok: false,
+          error: error.message || String(error)
+        });
+        return;
+      }
+
+      try {
+        const result = await runAgentChatLogged("panel-http", body || {});
+        writeJson(res, 200, {
+          ok: true,
+          result
+        });
+      } catch (error) {
+        writeJson(res, 500, {
+          ok: false,
+          error: error.message || String(error),
+          requestId: error.requestId || null,
+          readiness: error.readiness || null
+        });
+      }
+      return;
+    }
+
+    if ((url.pathname === "/agents/plan" || url.pathname === "/dev/agents/plan") && req.method === "POST") {
+      if (!requireToken(req, res, url)) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch (error) {
+        writeJson(res, 400, {
+          ok: false,
+          error: error.message || String(error)
+        });
+        return;
+      }
+
+      try {
+        const result = await runAgentPlanLogged("panel-http", body || {});
+        writeJson(res, 200, {
+          ok: true,
+          result
+        });
+      } catch (error) {
+        writeJson(res, 500, {
+          ok: false,
+          error: error.message || String(error),
+          requestId: error.requestId || null,
+          readiness: error.readiness || null
+        });
+      }
+      return;
+    }
+
+    if ((url.pathname === "/agents/plan/validate" || url.pathname === "/dev/agents/plan/validate") && req.method === "POST") {
+      if (!requireToken(req, res, url)) return;
+      try {
+        const body = await readJsonBody(req);
+        const plan = body.plan || body;
+        writeJson(res, 200, {
+          ok: true,
+          validation: validateAgentPlanObject(plan, body.requestId || body.validationId || null)
+        });
+      } catch (error) {
+        writeJson(res, 400, {
+          ok: false,
+          error: error.message || String(error)
+        });
+      }
+      return;
+    }
+
+    if ((url.pathname === "/agents/plan/run" || url.pathname === "/dev/agents/plan/run") && req.method === "POST") {
+      if (!requireToken(req, res, url)) return;
+      try {
+        const body = await readJsonBody(req);
+        const run = await runValidatedAgentPlan(body || {});
+        writeJson(res, run.ok ? 200 : 400, {
+          ok: run.ok,
+          run
+        });
+      } catch (error) {
+        writeJson(res, 400, {
+          ok: false,
+          error: error.message || String(error)
+        });
+      }
       return;
     }
 
@@ -1522,6 +2915,218 @@ const tools = [
           description: "Number of recent events to return. Defaults to 50, maximum 200."
         }
       }
+    }
+  },
+  {
+    name: "get_ai_agent_log",
+    description: "Return recent AI agent chat preflight, success, and failure events from the local JSONL log.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        limit: {
+          type: "number",
+          description: "Number of recent AI agent events to return. Defaults to 50, maximum 200."
+        }
+      }
+    }
+  },
+  {
+    name: "list_ai_agents",
+    description: "List configured OpenRouter, Ollama, and custom AI agents available through the bridge.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        includeModels: {
+          type: "boolean",
+          description: "Whether to query provider model lists. Defaults to false."
+        },
+        freeOnly: {
+          type: "boolean",
+          description: "When querying OpenRouter models, return only free models. Defaults to false."
+        },
+        timeoutMs: {
+          type: "number",
+          description: "Optional model-list request timeout in milliseconds."
+        }
+      }
+    }
+  },
+  {
+    name: "check_ai_agent_readiness",
+    description: "Preflight a configured AI agent and model before sending chat. Verifies setup, provider reachability, and model availability where possible.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        agentId: {
+          type: "string",
+          description: "Agent id from list_ai_agents, such as openrouter, ollama-local, or ollama-cloud."
+        },
+        model: {
+          type: "string",
+          description: "Provider model id. Defaults to the agent's configured model."
+        },
+        freeOnly: {
+          type: "boolean",
+          description: "When checking OpenRouter models, inspect only free models. Defaults to false."
+        },
+        checkModels: {
+          type: "boolean",
+          description: "Whether to query the provider model list. Defaults to true."
+        },
+        timeoutMs: {
+          type: "number",
+          description: "Optional provider readiness timeout in milliseconds."
+        }
+      },
+      required: ["agentId"]
+    }
+  },
+  {
+    name: "chat_with_ai_agent",
+    description: "Send a chat prompt to a configured OpenRouter, Ollama, or custom AI agent.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        agentId: {
+          type: "string",
+          description: "Agent id from list_ai_agents, such as openrouter, ollama-local, or ollama-cloud."
+        },
+        model: {
+          type: "string",
+          description: "Provider model id. Defaults to the agent's configured model."
+        },
+        prompt: {
+          type: "string",
+          description: "Single user prompt. Use messages for multi-turn chat."
+        },
+        messages: {
+          type: "array",
+          description: "OpenAI-style chat messages with role and content."
+        },
+        system: {
+          type: "string",
+          description: "Optional system message prepended when messages do not already include one."
+        },
+        temperature: {
+          type: "number",
+          description: "Optional sampling temperature."
+        },
+        maxTokens: {
+          type: "number",
+          description: "Optional maximum response tokens for OpenAI-compatible providers."
+        },
+        timeoutMs: {
+          type: "number",
+          description: "Optional chat request timeout in milliseconds."
+        },
+        skipReadinessCheck: {
+          type: "boolean",
+          description: "Debug escape hatch to skip provider/model preflight. Defaults to false."
+        }
+      },
+      required: ["agentId"]
+    }
+  },
+  {
+    name: "plan_with_ai_agent",
+    description: "Ask a configured AI agent to draft a safe, structured After Effects MCP plan without executing project changes.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        agentId: {
+          type: "string",
+          description: "Agent id from list_ai_agents, such as openrouter, ollama-local, or ollama-cloud."
+        },
+        model: {
+          type: "string",
+          description: "Provider model id. Defaults to the agent's configured model."
+        },
+        prompt: {
+          type: "string",
+          description: "User request to convert into a safe AE MCP plan."
+        },
+        temperature: {
+          type: "number",
+          description: "Optional sampling temperature. Defaults to 0.2."
+        },
+        maxTokens: {
+          type: "number",
+          description: "Optional maximum response tokens. Defaults to 2200."
+        },
+        repairPlan: {
+          type: "boolean",
+          description: "Whether to ask the model to repair malformed JSON plans. Defaults to true."
+        },
+        timeoutMs: {
+          type: "number",
+          description: "Optional request timeout in milliseconds."
+        }
+      },
+      required: ["agentId", "prompt"]
+    }
+  },
+  {
+    name: "validate_ai_agent_plan",
+    description: "Validate a structured AE MCP plan without executing it. Checks tool names, required args, mutation safety fields, and checkpoint need.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        plan: {
+          type: "object",
+          description: "Plan object returned by plan_with_ai_agent."
+        },
+        requestId: {
+          type: "string",
+          description: "Optional stable id used to generate idempotency key templates."
+        }
+      },
+      required: ["plan"]
+    }
+  },
+  {
+    name: "run_ai_agent_plan",
+    description: "Dry-run or execute a validated AE MCP plan. Real execution requires confirm:true; mutating plans also require allowMutations:true.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        plan: {
+          type: "object",
+          description: "Plan object returned by plan_with_ai_agent."
+        },
+        requestId: {
+          type: "string",
+          description: "Optional stable id used to generate idempotency keys."
+        },
+        dryRun: {
+          type: "boolean",
+          description: "When true, validate and show ready steps without executing. Defaults to true."
+        },
+        confirm: {
+          type: "boolean",
+          description: "Required true for real execution."
+        },
+        allowMutations: {
+          type: "boolean",
+          description: "Required true to execute project-changing steps."
+        },
+        autoEditSession: {
+          type: "boolean",
+          description: "When true, mutating runs without an existing edit session or checkpoint step start and finish a protected edit session automatically."
+        },
+        allowWithoutCheckpoint: {
+          type: "boolean",
+          description: "Legacy compatibility flag. It does not bypass auto edit-session safety for mutating runs."
+        },
+        allowRawExtendscript: {
+          type: "boolean",
+          description: "Allow run_extendscript or run_extendscript_file steps. Defaults to false."
+        },
+        maxSteps: {
+          type: "number",
+          description: "Maximum steps to consider. Defaults to 20."
+        }
+      },
+      required: ["plan"]
     }
   },
   {
@@ -2598,6 +4203,7 @@ const tools = [
 ];
 
 async function callTool(name, args) {
+  args = args || {};
   const resolveCompScript = `
       function __codexProjectIndexForItem(target) {
         for (var __i = 1; __i <= app.project.numItems; __i++) {
@@ -3039,6 +4645,71 @@ async function callTool(name, args) {
       logFile: LOG_FILE,
       events: tailJsonl(LOG_FILE, limit)
     });
+  }
+
+  if (name === "get_ai_agent_log") {
+    const limit = Math.max(1, Math.min(200, Math.floor(optionalNumber(args, "limit", 50))));
+    return toolResult({
+      logFile: AI_CHAT_LOG_FILE,
+      events: tailJsonl(AI_CHAT_LOG_FILE, limit)
+    });
+  }
+
+  if (name === "list_ai_agents") {
+    try {
+      return toolResult(await aiAgents.listAgents(args || {}));
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
+  }
+
+  if (name === "check_ai_agent_readiness") {
+    try {
+      return toolResult(await aiAgents.checkAgentReadiness(args || {}));
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
+  }
+
+  if (name === "chat_with_ai_agent") {
+    try {
+      return toolResult(await runAgentChatLogged("mcp-tool", args || {}));
+    } catch (error) {
+      return toolResult({
+        error: error.message || String(error),
+        requestId: error.requestId || null,
+        readiness: error.readiness || null
+      }, true);
+    }
+  }
+
+  if (name === "plan_with_ai_agent") {
+    try {
+      return toolResult(await runAgentPlanLogged("mcp-tool", args || {}));
+    } catch (error) {
+      return toolResult({
+        error: error.message || String(error),
+        requestId: error.requestId || null,
+        readiness: error.readiness || null
+      }, true);
+    }
+  }
+
+  if (name === "validate_ai_agent_plan") {
+    try {
+      return toolResult(validateAgentPlanObject((args || {}).plan, (args || {}).requestId || null));
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
+  }
+
+  if (name === "run_ai_agent_plan") {
+    try {
+      const run = await runValidatedAgentPlan(args || {});
+      return toolResult(run, !run.ok);
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
   }
 
   if (name === "start_edit_session") {
@@ -4642,17 +6313,43 @@ async function callTool(name, args) {
 async function callToolLogged(source, name, args) {
   const eventId = crypto.randomUUID();
   const startedAt = Date.now();
+  const idContext = idempotencyContext(name, args || {});
   recordEvent("tool_call_started", {
     id: eventId,
     source,
     name,
-    args
+    args,
+    idempotency: idContext ? { key: idContext.key, scope: idContext.scope } : null
   });
 
   try {
+    if (idContext) {
+      const existing = idempotencyRecords.get(idContext.recordKey);
+      if (existing) {
+        if (existing.argsHash !== idContext.argsHash) {
+          throw new Error(`idempotencyKey conflict for ${name}: the key was already used with different arguments in scope ${idContext.scope}.`);
+        }
+        const replayed = replayIdempotencyResult(idContext, existing);
+        const durationMs = Date.now() - startedAt;
+        recordEvent("tool_call_idempotency_replayed", {
+          id: eventId,
+          source,
+          name,
+          durationMs,
+          key: idContext.key,
+          scope: idContext.scope,
+          firstEventId: existing.eventId
+        });
+        return replayed;
+      }
+    }
+
     const checkpoint = await maybeCreateMutationCheckpoint(args || {}, name);
     const result = await callTool(name, args);
-    const resultWithCheckpoint = attachMutationMetadataToToolResult(result, name, args || {}, checkpoint);
+    let resultWithCheckpoint = attachMutationMetadataToToolResult(result, name, args || {}, checkpoint);
+    resultWithCheckpoint = await attachMutationVerificationToToolResult(resultWithCheckpoint, name, args || {});
+    const idempotencyRecord = storeIdempotencyResult(idContext, eventId, resultWithCheckpoint);
+    resultWithCheckpoint = attachStoredIdempotencyMetadata(resultWithCheckpoint, idContext, idempotencyRecord);
     const durationMs = Date.now() - startedAt;
     trackEditSessionOperation({
       eventId,
@@ -4695,6 +6392,8 @@ async function callToolLogged(source, name, args) {
 }
 
 activeEditSession = loadActiveEditSession();
+loadAgentSecrets();
+loadIdempotencyRecords();
 if (activeEditSession) {
   recordEvent("edit_session_restored", {
     session: compactEditSession(activeEditSession)

@@ -1,5 +1,165 @@
 # AE MCP Bridge Releases
 
+## v0.25.0-safe-run - 2026-05-12
+
+Safe execution path for AI-generated mutating AE plans.
+
+Added:
+
+- `autoEditSession` support on `run_ai_agent_plan` and `POST /agents/plan/run`.
+- Automatic protected edit-session startup before the first mutating step when the caller opts in with `autoEditSession:true`.
+- Run result safety details for edit session, checkpoint, verification, warnings, and restore hints.
+- Live CEP mutating smoke command: `node scripts\cep-panel-cdp-smoke.js mutating-smoke`.
+
+Safety:
+
+- Real mutating runs still require `allowMutations:true`.
+- A mutating run without an existing edit session or planned checkpoint/edit-session step is blocked unless `autoEditSession:true` is provided.
+- If the project is unsaved and a checkpoint cannot be created, the run is blocked before any mutation with a save-project-first message.
+- Mutating steps are blocked until checkpoint/edit-session protection is established, so a later checkpoint step cannot protect an earlier mutation.
+- Auto-started edit sessions are finished after run success or failure.
+
+Changed:
+
+- The CEP panel sends `autoEditSession:true` for confirmed mutating AE Plan runs and its confirmation text explicitly mentions checkpoint/edit-session protection.
+- AE Plan prompting now asks models to plan project-changing work as inspection, narrow mutation, then verification/readback.
+- Local smoke tests cover mutating dry-run readiness and blocking of unsafe mutating execution.
+- Daemon, adapter, CEP panel, manifest, install note, and smoke tests report version `0.25.0`.
+
+## v0.24.0-plan-runner - 2026-05-12
+
+Review-and-run scaffolding for validated AE plans.
+
+Added:
+
+- `run_ai_agent_plan` MCP tool.
+- `POST /agents/plan/run` HTTP endpoint.
+- Dry-run and run buttons in the CEP panel for the last generated AE Plan.
+- Runtime binding support when a later step needs a value from an earlier tool result.
+- A compact planning catalog of real MCP tool names and required fields, so local models choose executable steps more reliably.
+- CEP `.debug` descriptor for the bridge panel on AEFT port `8870`, enabling direct panel UI inspection after After Effects restarts.
+- `scripts/cep-panel-cdp-smoke.js` for live UI smoke testing through the CEP DevTools target.
+
+Safety:
+
+- Real execution requires `confirm:true`.
+- Mutating execution also requires `allowMutations:true`.
+- Multi-mutation plans require a checkpoint step unless explicitly overridden.
+- Raw ExtendScript steps are blocked unless `allowRawExtendscript:true`.
+
+Changed:
+
+- AE Plan prompts explicitly treat Russian/Cyrillic user requests as valid input, not as malformed text.
+- The CEP panel clears stale plans when a new AE Plan request starts, grants mutation permission only for actually mutating runs, and shows per-step verification details after execution.
+- Smoke tests now exercise `/agents/plan/run` in dry-run mode.
+- Live CEP UI smoke passed with Ollama `gemma4:latest`: Russian AE Plan, dry-run, and confirmed read-only run all completed through the panel.
+- Daemon, adapter, CEP panel, manifest, install note, and smoke tests report version `0.24.0`.
+
+## v0.23.0-plan-repair - 2026-05-12
+
+Repair pass for malformed JSON plans.
+
+Added:
+
+- Automatic repair retry when `plan_with_ai_agent` receives malformed JSON.
+- `repairPlan` option to disable the repair pass.
+- Runtime binding validation for steps that depend on earlier tool results.
+- CEP plan output notes when JSON repair was applied.
+
+Changed:
+
+- Daemon, adapter, CEP panel, manifest, install note, and smoke tests report version `0.23.0`.
+
+## v0.22.0-plan-validation - 2026-05-12
+
+Validation rails for AI-generated AE plans.
+
+Added:
+
+- `validate_ai_agent_plan` MCP tool.
+- `POST /agents/plan/validate` HTTP endpoint.
+- Automatic plan validation attached to `plan_with_ai_agent` results.
+- Safe argument preparation for mutating plan steps with `verifyAfter`, `idempotencyKey`, and `idempotencyScope`.
+
+Changed:
+
+- `AE Plan` output in the CEP panel now shows validation status, mutating step counts, and warnings.
+- Daemon, adapter, CEP panel, manifest, install note, and smoke tests report version `0.22.0`.
+
+## v0.21.0-ae-plan-mode - 2026-05-12
+
+Safe planning mode for model-driven AE commands.
+
+Added:
+
+- `plan_with_ai_agent` MCP tool.
+- `POST /agents/plan` HTTP endpoint.
+- `AE Plan` mode in the CEP chat panel.
+- JSON plan parsing with request ids, log entries, risk, checkpoint flag, and step list.
+
+Changed:
+
+- Panel agent requests now allow longer chat/plan timeouts for local models.
+- Daemon, adapter, CEP panel, manifest, install note, and smoke tests report version `0.21.0`.
+
+## v0.20.0-api-key-ui - 2026-05-12
+
+Local API key setup from the After Effects panel.
+
+Added:
+
+- API key password field and `Save key` button for providers that need keys.
+- `POST /agents/key` to save supported provider keys locally.
+- Local secret loading from `.codex\agent-secrets.json`, which is ignored by git.
+
+Changed:
+
+- Daemon, adapter, CEP panel, manifest, install note, and smoke tests report version `0.20.0`.
+- OpenRouter can now be configured directly from the panel instead of only through `OPENROUTER_API_KEY`.
+
+## v0.19.0-agent-rails - 2026-05-12
+
+Reliability rails for non-Codex agents and their AE automation loops.
+
+Added:
+
+- `check_ai_agent_readiness` plus `GET /agents/readiness` for provider/model preflight.
+- `get_ai_agent_log` plus `GET /agents/log` for JSONL chat attempt history in `logs\ai-agent-chats.jsonl`.
+- `idempotencyKey` and `idempotencyScope` on mutating tools to prevent duplicate AE mutations during retries.
+- `verifyAfter` on mutating tools, defaulting to true, to read back project/comp/layer state after changes.
+- Duplicate layer-name warnings in mutation verification snapshots.
+
+Changed:
+
+- `chat_with_ai_agent` and the CEP chat run readiness checks before sending provider requests.
+- The CEP panel disables chat send when the selected agent is not configured, offline, or missing the selected model.
+- OpenRouter defaults to `nvidia/nemotron-3-super-120b-a12b:free`, with `openrouter/free`, `openai/gpt-oss-120b:free`, and `google/gemma-4-31b-it:free` as built-in suggestions unless `OPENROUTER_MODEL` / `OPENROUTER_MODELS` overrides them.
+- Local Ollama defaults to `gemma4:latest` unless `OLLAMA_MODEL` overrides it.
+- Daemon, adapter, CEP panel, manifest, install note, and smoke tests report version `0.19.0`.
+
+## v0.18.0-agent-chat - 2026-05-12
+
+Selectable non-Codex chat agents for the bridge and CEP panel.
+
+Added:
+
+- `mcp-server/ai-agents.js` provider layer for OpenRouter, local Ollama, optional Ollama Cloud, and custom OpenAI-compatible providers.
+- `list_ai_agents`
+- `chat_with_ai_agent`
+- `GET /agents` and `POST /agents/chat` for the CEP panel.
+- Agent selector, model input, and chat transcript in the After Effects panel.
+
+Changed:
+
+- Daemon, adapter, CEP panel, manifest, install note, and smoke tests report version `0.18.0`.
+- `get_bridge_status` now includes a compact `aiAgents` summary.
+
+Notes:
+
+- OpenRouter uses `OPENROUTER_API_KEY`.
+- Local Ollama defaults to `http://127.0.0.1:11434` and uses installed models from `/api/tags`.
+- The panel chat only returns text. Project-changing After Effects work still goes through Codex/MCP tools, edit sessions, checkpoints, and undo groups.
+
 ## v0.17.0-safe-edit-sessions - 2026-05-12
 
 Safe edit sessions for grouping project-changing operations.

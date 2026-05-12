@@ -77,6 +77,35 @@ Codex -> stdio MCP adapter -> local bridge daemon -> CEP panel -> After Effects
   prepared this project transfer.
 - `v0.17.0-safe-edit-sessions`: one active edit session with an automatic
   starting checkpoint and mutation operation tracking.
+- `v0.18.0-agent-chat`: selectable non-Codex chat agents through OpenRouter,
+  local Ollama, optional Ollama Cloud, and custom OpenAI-compatible providers.
+- `v0.19.0-agent-rails`: readiness preflight, AI chat JSONL log,
+  idempotency keys for mutating tools, and post-mutation AE verification.
+- `v0.20.0-api-key-ui`: API key entry in the AE panel, local key saving in
+  `.codex\agent-secrets.json`, and daemon loading of saved provider keys.
+- `v0.21.0-ae-plan-mode`: safe `AE Plan` mode in the panel and
+  `plan_with_ai_agent` / `POST /agents/plan` for structured MCP step drafts
+  without executing AE changes.
+- `v0.22.0-plan-validation`: validator for AI-generated AE plans, including
+  tool existence checks, missing required args, mutating step counts, warnings,
+  and safe args with idempotency/verification fields.
+- `v0.23.0-plan-repair`: malformed JSON plan repair retry before validation,
+  runtime binding validation for dependent steps, and `repairPlan:false` as an
+  escape hatch.
+- `v0.24.0-plan-runner`: `run_ai_agent_plan` and `/agents/plan/run` for dry-run
+  and explicitly confirmed execution of validated plans, with mutation,
+  checkpoint, raw ExtendScript, and runtime binding gates. The planner prompt
+  now includes a compact catalog of real MCP tools/required fields and tells
+  local models to treat Russian/Cyrillic requests as valid input. The CEP panel
+  clears stale plans when a new AE Plan request starts and shows verification
+  details after executed plan steps.
+- `v0.25.0-safe-run`: mutating AE Plan runs now require established
+  checkpoint/edit-session protection before the first project-changing step.
+  The panel sends `autoEditSession:true` for confirmed mutating runs, the
+  backend auto-starts and finishes a protected edit session when possible, and
+  unsaved projects are blocked before mutation with a save-project-first result.
+  Smoke coverage now includes unsafe mutating-run blocking and a live CEP
+  mutating scenario with `Codex Test Safe Run` cleanup.
 
 ## Important Product Decisions
 
@@ -92,11 +121,39 @@ Codex -> stdio MCP adapter -> local bridge daemon -> CEP panel -> After Effects
   operation.
 - Keep `run_extendscript` and `run_extendscript_file` as escape hatches, but
   prefer narrow, inspectable tools for repeat workflows.
-- Do not add Ollama or other model providers inside the bridge right now. That
-  would create a second agent layer, while Codex already fills that role.
-- AE GPT and Atom AI are useful product references, but the near-term advantage
-  of this project is a transparent local bridge with safety rails, not an
-  in-AE chat UI clone.
+- Earlier guidance avoided adding Ollama or other model providers because Codex
+  was the only intended agent. On 2026-05-12, the user changed direction:
+  selectable non-Codex agents are now part of the product plan.
+- Keep that agent layer text-first until a later explicit design connects it to
+  safe AE mutations. Project-changing work still goes through Codex/MCP tools,
+  checkpoints, edit sessions, and undo-aware automation.
+- When non-Codex agents begin driving AE tools, require preflight readiness,
+  `idempotencyKey` on mutating calls, and the default `verifyAfter` readback so
+  duplicate or missing AE changes are visible immediately.
+- For non-Codex AE Plan execution, mutating steps must run through a checkpoint
+  or edit session. Prefer `autoEditSession:true` from the panel/backend runner
+  so the user gets a checkpoint/session result and the session is closed even
+  when a step fails.
+- Prefer local Ollama `gemma4:latest` for non-Codex agent testing when it is
+  installed; keep trying other Ollama-listed models such as cloud/proxy entries
+  when they appear in `/api/tags`.
+- Default OpenRouter to `nvidia/nemotron-3-super-120b-a12b:free` for now.
+  It was selected from OpenRouter's May 2026 top free model list because it is
+  positioned for agentic/coding workflows; keep `openrouter/free` available as
+  a router fallback.
+- When testing Russian prompts from PowerShell, avoid raw Cyrillic in command
+  literals if results look like `????`; send UTF-8 JSON or Unicode escapes.
+- The bridge CEP panel now ships with `.debug` using AEFT port `8870`. The
+  debug target appears only after After Effects loads the extension with that
+  file present, so an AE restart may be needed before UI automation can attach.
+- After the AE restart on 2026-05-12, `scripts/cep-panel-cdp-smoke.js smoke`
+  successfully drove the live panel on port `8870`: selected Ollama
+  `gemma4:latest`, sent a Russian AE Plan, dry-ran it, and ran the read-only
+  plan through AE with all steps completed.
+- v0.25 adds `scripts/cep-panel-cdp-smoke.js mutating-smoke` for live UI
+  validation of Safe Run. It creates only temporary comps with the
+  `Codex Test Safe Run` prefix and removes them through the same protected
+  runner path after success.
 
 ## Chat Transfer State
 

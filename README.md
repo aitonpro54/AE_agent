@@ -14,6 +14,13 @@ It has two parts:
 
 - `get_bridge_status` - returns bridge diagnostics, connection state, paths, and recent events.
 - `get_command_log` - returns recent local JSONL log events.
+- `get_ai_agent_log` - returns recent non-Codex agent chat attempts, preflight failures, and results.
+- `list_ai_agents` - lists configured OpenRouter, Ollama, Ollama Cloud, and custom chat agents.
+- `check_ai_agent_readiness` - preflights setup, provider reachability, and model availability before chat.
+- `chat_with_ai_agent` - sends a prompt or chat messages to one configured non-Codex agent.
+- `plan_with_ai_agent` - drafts a structured, non-executing AE MCP plan from a user request.
+- `validate_ai_agent_plan` - validates an AI-generated AE plan without executing it.
+- `run_ai_agent_plan` - dry-runs or explicitly runs a validated AI plan with mutation gates.
 - `start_edit_session` - starts one active safe edit session with an automatic checkpoint.
 - `get_edit_session_status` - returns active session checkpoint and recorded mutation operations.
 - `finish_edit_session` - finishes the active edit session without restoring or deleting its checkpoint.
@@ -71,6 +78,30 @@ Optional environment variables:
 $env:AE_BRIDGE_PORT="3456"
 $env:AE_BRIDGE_TOKEN="change-me"
 node .\mcp-server\bridge-daemon.js
+```
+
+Optional AI agent variables:
+
+```powershell
+$env:OPENROUTER_API_KEY="sk-or-..."
+$env:OPENROUTER_MODEL="nvidia/nemotron-3-super-120b-a12b:free"
+
+$env:OLLAMA_BASE_URL="http://127.0.0.1:11434"
+$env:OLLAMA_MODEL="gemma4:latest"
+
+$env:OLLAMA_CLOUD_BASE_URL="https://your-ollama-cloud-compatible-v1-endpoint"
+$env:OLLAMA_CLOUD_API_KEY="..."
+$env:OLLAMA_CLOUD_MODEL="..."
+```
+
+`OPENROUTER_MODEL` can be any OpenRouter model id, a `:free` variant, or the `openrouter/free` router. The default is `nvidia/nemotron-3-super-120b-a12b:free`, chosen from OpenRouter's May 2026 top free model list for agentic/coding workflows. Local Ollama defaults to `gemma4:latest`, uses `/api/chat`, and lists installed models from `/api/tags`. Ollama Cloud and custom providers use OpenAI-compatible `/chat/completions` and `/models` endpoints.
+
+You can also paste the OpenRouter key directly into the After Effects panel under `Agent > API key` and click `Save key`. The bridge stores it locally in `.codex\agent-secrets.json`; that folder is ignored by git.
+
+Custom agents can be provided as JSON:
+
+```powershell
+$env:AE_AGENT_PROVIDERS_JSON='[{"id":"studio-router","label":"Studio Router","apiStyle":"openai","baseUrl":"https://example.test/v1","apiKeyEnv":"STUDIO_ROUTER_KEY","model":"my-model","requiresApiKey":true}]'
 ```
 
 Or use the helper:
@@ -179,11 +210,53 @@ Daemon-only health:
 node .\scripts\bridge-only-smoke-test.js
 ```
 
+Live CEP panel smoke, with After Effects open and the bridge panel loaded:
+
+```powershell
+node .\scripts\cep-panel-cdp-smoke.js smoke
+```
+
+Live mutating Safe Run smoke, using only temporary `Codex Test Safe Run` items:
+
+```powershell
+node .\scripts\cep-panel-cdp-smoke.js mutating-smoke
+```
+
 Manual MCP tool call, with the daemon already running:
 
 ```powershell
 node .\scripts\mcp-call-tool.js get_bridge_status
 ```
+
+Agent calls:
+
+```powershell
+node .\scripts\mcp-call-tool.js list_ai_agents
+
+$env:MCP_CALL_ARGS_JSON='{"agentId":"ollama-local","model":"llama3.2"}'
+node .\scripts\mcp-call-tool.js check_ai_agent_readiness
+Remove-Item Env:MCP_CALL_ARGS_JSON
+
+$env:MCP_CALL_ARGS_JSON='{"agentId":"openrouter","model":"nvidia/nemotron-3-super-120b-a12b:free","prompt":"Suggest three title animation ideas."}'
+node .\scripts\mcp-call-tool.js chat_with_ai_agent
+Remove-Item Env:MCP_CALL_ARGS_JSON
+
+$env:MCP_CALL_ARGS_JSON='{"agentId":"openrouter","model":"nvidia/nemotron-3-super-120b-a12b:free","prompt":"Create a safe plan for adding a title layer to the active comp."}'
+node .\scripts\mcp-call-tool.js plan_with_ai_agent
+Remove-Item Env:MCP_CALL_ARGS_JSON
+
+$env:MCP_CALL_ARGS_JSON='{"plan":{"summary":"Add a title","steps":[{"title":"Create text","tool":"create_text_layer","args":{"text":"Title"}}]}}'
+node .\scripts\mcp-call-tool.js validate_ai_agent_plan
+Remove-Item Env:MCP_CALL_ARGS_JSON
+
+$env:MCP_CALL_ARGS_JSON='{"dryRun":true,"plan":{"summary":"Add a title","steps":[{"title":"Create text","tool":"create_text_layer","args":{"text":"Title"}}]}}'
+node .\scripts\mcp-call-tool.js run_ai_agent_plan
+Remove-Item Env:MCP_CALL_ARGS_JSON
+
+node .\scripts\mcp-call-tool.js get_ai_agent_log
+```
+
+The After Effects panel also includes an Agent selector and Chat area with `Chat` and `AE Plan` modes. `AE Plan` asks the selected model for a structured MCP step draft, gives the model a compact catalog of real bridge tools and required fields, repairs malformed JSON once when needed, and validates the plan against bridge tools, required args, mutating step counts, and safety fields. Russian/Cyrillic requests are treated as normal user input. The panel can dry-run the last plan. Real plan execution is a separate confirmed action; mutating runs require explicit mutation permission, idempotency fields, and checkpoint/edit-session protection. From v0.25, the panel sends `autoEditSession:true` for confirmed mutating runs, so the backend creates a protected edit session/checkpoint before the first mutation when the project has been saved; unsaved projects are blocked before changing AE.
 
 Useful project inspection calls:
 
@@ -377,7 +450,9 @@ Invoke-RestMethod `
 
 Any mutating tool can use either `checkpointLabel` or `autoCheckpoint:true`. The checkpoint is created before the project-changing operation and is included in the tool result. This remains opt-in so routine inspection and tiny test calls do not create extra `.aep` files.
 
-Successful mutating tool responses also include a `mutation` summary with `tool`, `changed`, `target`, optional `checkpoint`, and an `undoHint`. This gives clients a consistent way to show what changed after an operation.
+Successful mutating tool responses also include a `mutation` summary with `tool`, `changed`, `target`, optional `checkpoint`, and an `undoHint`. By default they also include a `verification` snapshot read back from After Effects after the mutation, including project state, target comp/layer details, and a duplicate-name warning when a created layer name appears more than once. Pass `verifyAfter:false` to skip the extra readback for low-risk operations.
+
+For retry-safe agent workflows, pass `idempotencyKey` on mutating tools. Reusing the same `idempotencyKey`, `idempotencyScope`, tool name, and arguments returns the first successful result without running the AE mutation a second time; reusing the same key with different arguments fails fast.
 
 Safe edit sessions group project-changing operations under one task-level checkpoint:
 

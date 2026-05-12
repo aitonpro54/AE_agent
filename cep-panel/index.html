@@ -2,14 +2,14 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Codex AE MCP Bridge v0.17.0</title>
+    <title>Codex AE MCP Bridge v0.25.0</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
     <main>
       <header>
         <div>
-          <h1><span id="appTitle">Codex AE MCP Bridge</span> <span id="appVersion" class="app-version">v0.17.0</span></h1>
+          <h1><span id="appTitle">Codex AE MCP Bridge</span> <span id="appVersion" class="app-version">v0.25.0</span></h1>
           <p id="status">Starting...</p>
         </div>
         <span id="badge">offline</span>
@@ -30,6 +30,56 @@
             <button id="disconnectButton">Disconnect</button>
           </div>
           <button id="reloadButton">Reload app</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Agent</h2>
+        <label>
+          Provider
+          <select id="agentSelect">
+            <option value="">Loading...</option>
+          </select>
+        </label>
+        <label>
+          Model
+          <input id="agentModel" list="agentModelList" />
+          <datalist id="agentModelList"></datalist>
+        </label>
+        <label id="agentApiKeyRow">
+          API key
+          <input id="agentApiKey" type="password" autocomplete="off" />
+        </label>
+        <div class="actions">
+          <div class="action-group">
+            <button id="refreshAgentsButton">Refresh agents</button>
+            <button id="saveAgentKeyButton">Save key</button>
+          </div>
+          <span id="agentStatus">Not loaded</span>
+        </div>
+      </section>
+
+      <section>
+        <h2>Chat</h2>
+        <div id="chatTranscript"></div>
+        <label>
+          Mode
+          <select id="chatMode">
+            <option value="chat">Chat</option>
+            <option value="plan">AE Plan</option>
+          </select>
+        </label>
+        <label>
+          Prompt
+          <textarea id="chatPrompt" rows="3"></textarea>
+        </label>
+        <div class="actions">
+          <div class="action-group">
+            <button id="sendChatButton">Send</button>
+            <button id="dryRunPlanButton">Dry run</button>
+            <button id="runPlanButton">Run plan</button>
+          </div>
+          <button id="clearChatButton">Clear</button>
         </div>
       </section>
 
