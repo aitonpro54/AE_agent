@@ -1,7 +1,12 @@
 "use strict";
 
 (function () {
+  var APP_NAME = "Codex AE MCP Bridge";
+  var APP_VERSION = "0.17.0";
+
   var cs = new CSInterface();
+  var titleEl = document.getElementById("appTitle");
+  var versionEl = document.getElementById("appVersion");
   var statusEl = document.getElementById("status");
   var badgeEl = document.getElementById("badge");
   var logEl = document.getElementById("log");
@@ -13,6 +18,14 @@
   var running = false;
   var pollTimer = null;
   var pollInFlight = false;
+
+  function setAppTitle(version) {
+    var normalizedVersion = version || APP_VERSION;
+    var title = APP_NAME + " v" + normalizedVersion.replace(/^v/i, "");
+    document.title = title;
+    titleEl.textContent = APP_NAME;
+    versionEl.textContent = "v" + normalizedVersion.replace(/^v/i, "");
+  }
 
   function log(message) {
     var at = new Date().toLocaleTimeString();
@@ -72,6 +85,13 @@
     xhr.send(body !== null && body !== undefined ? JSON.stringify(body) : null);
   }
 
+  function refreshAppTitle() {
+    request("GET", "/health", null, function (error, response) {
+      if (error || !response || !response.version) return;
+      setAppTitle(response.version);
+    });
+  }
+
   function postResult(id, ok, result, error) {
     request("POST", "/bridge/result", {
       id: id,
@@ -127,6 +147,7 @@
     localStorage.setItem("codexAeBridgeToken", tokenEl.value);
     localStorage.setItem("codexAeBridgeAutoConnect", "1");
     setStatus("Connecting...", false);
+    refreshAppTitle();
     log("Connecting to " + getBaseUrl());
     poll();
   }
@@ -143,6 +164,7 @@
   connectButton.addEventListener("click", connect);
   disconnectButton.addEventListener("click", disconnect);
 
+  setAppTitle(APP_VERSION);
   urlEl.value = localStorage.getItem("codexAeBridgeUrl") || urlEl.value;
   tokenEl.value = localStorage.getItem("codexAeBridgeToken") || "";
   setStatus("Disconnected", false);
