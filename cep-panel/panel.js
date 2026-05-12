@@ -14,6 +14,7 @@
   var tokenEl = document.getElementById("bridgeToken");
   var connectButton = document.getElementById("connectButton");
   var disconnectButton = document.getElementById("disconnectButton");
+  var reloadButton = document.getElementById("reloadButton");
 
   var running = false;
   var pollTimer = null;
@@ -161,8 +162,17 @@
     log("Disconnected");
   }
 
+  function reloadApp() {
+    running = false;
+    pollInFlight = false;
+    if (pollTimer) clearTimeout(pollTimer);
+    log("Reloading app");
+    window.location.reload();
+  }
+
   connectButton.addEventListener("click", connect);
   disconnectButton.addEventListener("click", disconnect);
+  reloadButton.addEventListener("click", reloadApp);
 
   setAppTitle(APP_VERSION);
   urlEl.value = localStorage.getItem("codexAeBridgeUrl") || urlEl.value;

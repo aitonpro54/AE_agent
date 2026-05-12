@@ -101,6 +101,18 @@ input:focus {
 .actions {
   display: flex;
   gap: 8px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.action-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+#reloadButton {
+  margin-left: auto;
 }
 
 button {
