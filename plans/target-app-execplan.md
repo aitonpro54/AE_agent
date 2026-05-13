@@ -31,6 +31,7 @@
 - [x] Milestone 27: Native CEP window title sync.
 - [x] Milestone 28: Provider refresh after bridge reconnect.
 - [x] Milestone 29: Selected layer Agent run binding fix.
+- [x] Milestone 30: Selected layer CTI alignment tool.
 
 ## Milestones
 
@@ -225,6 +226,13 @@
 - Treat `threeDLayer` as a safe layer attribute in `set_property_value`.
 - Keep checkpoint/edit-session protection unchanged for mutating Agent runs.
 
+### Milestone 30: Selected layer CTI alignment tool
+
+- Add a narrow `align_layers_to_time` MCP tool for aligning selected or specified layers to the active comp current time indicator.
+- Teach AE Plan prompting to prefer this tool for selected layer/precomp timeline alignment instead of raw ExtendScript.
+- Preserve raw ExtendScript blocking in Agent runs.
+- Keep checkpoint/edit-session protection unchanged for mutating Agent runs.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -262,6 +270,7 @@
 - 2026-05-13: CEP may keep an older host-frame title after manifest changes; the panel should call native `setWindowTitle` on load to synchronize the visible AE frame title.
 - 2026-05-13: A successful bridge poll should refresh provider metadata after reconnect because the initial `/agents` request can fail while the daemon is still starting.
 - 2026-05-13: Selected-layer Agent plans may use template bindings like `{{selectedLayerIndices}}`; the runner should resolve these from inspection results instead of passing the literal string to mutating tools.
+- 2026-05-13: Do not enable raw ExtendScript in Agent mode for common timeline alignment; add typed bridge tools for narrow AE actions instead.
 
 ## Validation
 
@@ -604,6 +613,19 @@
   - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `node scripts/provider-api-smoke.js`.
   - Passed `node scripts/prompt-optimization-smoke.js`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+  - Passed `git diff --check`.
+- Milestone 30:
+  - Added `align_layers_to_time` as a narrow mutating MCP tool for selected or explicit layer timing alignment.
+  - Updated AE Plan prompting to prefer `align_layers_to_time` for selected layer/precomp alignment to the current time indicator instead of raw ExtendScript.
+  - Extended mutation metadata inference and queue-level smoke coverage for multi-layer alignment.
+  - Passed a temporary Agent-plan smoke: the planning prompt exposed `align_layers_to_time`, the generated plan used `get_active_comp -> align_layers_to_time -> get_selected_layers`, validation reported 1 mutating step, and dry-run marked the alignment step `ready`.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check scripts\smoke-test.js`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-api-smoke.js`.
+  - Passed `node scripts/prompt-optimization-smoke.js` after one startup-race retry.
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.
   - Passed `git diff --check`.

@@ -810,6 +810,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "add_effect",
   "set_effect_property",
   "set_property_value",
+  "align_layers_to_time",
   "set_layer_transform",
   "apply_transform_expression",
   "add_layer_marker",
@@ -877,6 +878,11 @@ function requiredPositiveIntegerList(args, name) {
 function optionalPositiveInteger(args, name) {
   if (!hasArg(args, name)) return null;
   return requiredPositiveInteger(args, name);
+}
+
+function optionalPositiveIntegerList(args, name) {
+  if (!hasArg(args, name)) return null;
+  return requiredPositiveIntegerList(args, name);
 }
 
 function optionalString(args, name, fallback) {
@@ -1111,7 +1117,7 @@ function compactCheckpoint(checkpoint) {
 function inferMutationTarget(toolName, args, payload) {
   const target = { tool: toolName };
   const request = {};
-  for (const key of ["compItemIndex", "compName", "layerIndex", "itemIndex", "itemName", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix"]) {
+  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "targetTime", "align", "itemIndex", "itemName", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix"]) {
     if (hasArg(args || {}, key)) request[key] = args[key];
   }
   if (Object.keys(request).length) target.request = request;
@@ -1119,6 +1125,7 @@ function inferMutationTarget(toolName, args, payload) {
   if (payload && typeof payload === "object" && !Array.isArray(payload)) {
     if (payload.comp) target.comp = payload.comp;
     if (payload.layer) target.layer = payload.layer;
+    if (payload.layers) target.layers = payload.layers;
     if (payload.effect) target.effect = payload.effect;
     if (payload.property) target.property = payload.property;
     if (payload.item) target.item = payload.item;
@@ -2213,6 +2220,7 @@ const PLANNING_TOOL_NAMES = [
   "add_effect",
   "set_effect_property",
   "set_property_value",
+  "align_layers_to_time",
   "set_layer_transform",
   "apply_transform_expression",
   "add_layer_marker",
@@ -2505,6 +2513,7 @@ function buildAePlanPrompt(args) {
     "For any project-changing request, plan inspection steps first, then the narrow mutating step(s), then verification/readback steps.",
     "You do not need to add a checkpoint_project step for every mutation because the plan runner can create a protected edit session, but set requiresCheckpoint=true for broad, destructive, or multi-step project changes.",
     "When a creation tool can set a property directly, include that property in the creation tool args instead of adding a later step that needs an unknown layerIndex.",
+    "For requests to align selected layers, clips, or precomps to the current time indicator, use align_layers_to_time with no layerIndices and omit targetTime so it uses the active comp CTI.",
     "For requests about selected layers, inspect with get_active_comp or get_selected_layers first. A later layerIndex field may use {{selectedLayerIndices}} to target the selected layers.",
     "If a later step depends on a previous tool result, set dependsOnStep and resultBindings instead of inventing indices.",
     "Use mutating tools only as planned steps; do not execute them. Use run_extendscript only when no narrower tool fits."
@@ -4241,6 +4250,36 @@ const tools = [
         }
       },
       required: ["layerIndex", "propertyPath", "value"]
+    }
+  },
+  {
+    name: "align_layers_to_time",
+    description: "Move selected or specified layers so their in-points or start times align to a target time. Defaults to selected layers and the active comp current time indicator.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndices: {
+          type: ["number", "array"],
+          description: "Optional 1-based layer index or layer indexes. Defaults to selected layers in the target composition."
+        },
+        targetTime: {
+          type: "number",
+          description: "Optional target time in seconds. Defaults to the composition current time indicator."
+        },
+        align: {
+          type: "string",
+          enum: ["inPoint", "startTime"],
+          description: "Whether to align each layer's visible inPoint or raw startTime. Defaults to inPoint, matching the AE '[' shortcut behavior."
+        }
+      }
     }
   },
   {
@@ -6302,6 +6341,86 @@ async function callTool(name, args) {
         properties: properties,
         setAtTime: shouldSetAtTime,
         time: targetTime
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "align_layers_to_time") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndices = optionalPositiveIntegerList(args, "layerIndices");
+    const targetTime = optionalNumber(args, "targetTime", null);
+    const align = optionalString(args, "align", "inPoint");
+
+    if (align !== "inPoint" && align !== "startTime") {
+      return toolResult("align must be one of: inPoint, startTime.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var requestedLayerIndices = ${layerIndices ? aeLiteral(layerIndices) : "null"};
+      var targetTime = ${targetTime === null ? "comp.time" : targetTime};
+      var alignMode = ${aeLiteral(align)};
+
+      function __codexLayerTiming(layer) {
+        return {
+          index: layer.index,
+          name: layer.name,
+          startTime: layer.startTime,
+          inPoint: layer.inPoint,
+          outPoint: layer.outPoint,
+          duration: layer.outPoint - layer.inPoint
+        };
+      }
+
+      var layers = [];
+      if (requestedLayerIndices && requestedLayerIndices.length) {
+        for (var __r = 0; __r < requestedLayerIndices.length; __r++) {
+          var requestedLayer = comp.layer(requestedLayerIndices[__r]);
+          if (!requestedLayer) throw new Error("Layer not found at index " + requestedLayerIndices[__r] + ".");
+          layers.push(requestedLayer);
+        }
+      } else {
+        for (var __s = 0; __s < comp.selectedLayers.length; __s++) {
+          layers.push(comp.selectedLayers[__s]);
+        }
+      }
+      if (!layers.length) throw new Error("No target layers. Select layers or pass layerIndices.");
+
+      app.beginUndoGroup("Codex Align Layers To Time");
+      var aligned = [];
+      for (var __i = 0; __i < layers.length; __i++) {
+        var layer = layers[__i];
+        if (layer.locked) throw new Error("Layer is locked: " + layer.name);
+        var before = __codexLayerTiming(layer);
+        if (alignMode === "startTime") {
+          layer.startTime = targetTime;
+        } else {
+          var delta = targetTime - layer.inPoint;
+          layer.startTime = layer.startTime + delta;
+        }
+        aligned.push({
+          before: before,
+          after: __codexLayerTiming(layer),
+          layer: __codexLayerInfo(layer)
+        });
+      }
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          time: comp.time
+        },
+        targetTime: targetTime,
+        align: alignMode,
+        changedCount: aligned.length,
+        layer: aligned.length === 1 ? aligned[0].layer : null,
+        layers: aligned.map(function (item) { return item.layer; }),
+        aligned: aligned
       };
       app.endUndoGroup();
       return response;

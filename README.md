@@ -58,6 +58,7 @@ It has two parts:
 - `add_effect` - adds an effect to a layer.
 - `set_effect_property` - sets a property on an existing layer effect.
 - `set_property_value` - sets an arbitrary layer property by property path.
+- `align_layers_to_time` - aligns selected or specified layer timing to the current time indicator or a target time.
 - `set_layer_transform` - sets position, scale, rotation, opacity, or anchor point.
 - `apply_transform_expression` - applies an expression to a common transform property.
 - `add_layer_marker` - adds a marker to a layer.

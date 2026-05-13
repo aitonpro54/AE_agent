@@ -239,6 +239,56 @@ async function main() {
   });
   const layerAttributeSet = await layerAttributeSetPromise;
 
+  const alignLayersPromise = requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/dev/tool/align_layers_to_time",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    layerIndices: [1, 2],
+    targetTime: 3,
+    align: "inPoint",
+    verifyAfter: false
+  });
+  const alignLayersCommand = await waitForPendingCommand(port, token, 5000);
+  if (!alignLayersCommand.body.command || alignLayersCommand.body.command.script.indexOf("Codex Align Layers To Time") < 0) {
+    throw new Error("Expected align_layers_to_time to queue a narrow layer timing command.");
+  }
+  if (alignLayersCommand.body.command.script.indexOf("targetTime - layer.inPoint") < 0) {
+    throw new Error("Expected align_layers_to_time to align visible inPoint by default.");
+  }
+  await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/bridge/result",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    id: alignLayersCommand.body.command.id,
+    ok: true,
+    result: JSON.stringify({
+      ok: true,
+      result: {
+        comp: { itemIndex: 1, name: "Smoke Comp", time: 3 },
+        targetTime: 3,
+        align: "inPoint",
+        changedCount: 2,
+        layers: [
+          { index: 1, name: "Smoke Layer 1", inPoint: 3 },
+          { index: 2, name: "Smoke Layer 2", inPoint: 3 }
+        ]
+      }
+    })
+  });
+  const alignLayers = await alignLayersPromise;
+
   const health = await requestJson(`http://127.0.0.1:${port}/health`);
   const agents = await requestJsonWithOptions({
     hostname: "127.0.0.1",
@@ -410,6 +460,9 @@ async function main() {
   if (layerAttributeSet.status !== 200 || !layerAttributeSet.body.ok || !Array.isArray(layerAttributeSet.body.result.layers) || layerAttributeSet.body.result.layers.length !== 2) {
     throw new Error("Expected set_property_value to set threeDLayer on multiple selected-layer indexes");
   }
+  if (alignLayers.status !== 200 || !alignLayers.body.ok || alignLayers.body.result.changedCount !== 2) {
+    throw new Error("Expected align_layers_to_time to align multiple layer timings");
+  }
   if (!agentsTool.body.ok || !agentsTool.body.result || !Array.isArray(agentsTool.body.result.agents)) {
     throw new Error("Unexpected list_ai_agents tool response");
   }
@@ -485,6 +538,7 @@ async function main() {
     listCompsResult: lines[2].result.content[0].text,
     agents: agents.body.agents.map((agent) => agent.id),
     layerAttributeSet: layerAttributeSet.body.result.layers.length,
+    alignLayers: alignLayers.body.result.changedCount,
     readiness: readiness.body.readiness.status,
     planRun: planRun.body.run.steps[0].status,
     ignoredBindingRun: ignoredBindingRun.body.run.steps[0].status,
