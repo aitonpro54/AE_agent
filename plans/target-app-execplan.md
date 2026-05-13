@@ -21,6 +21,7 @@
 - [x] Milestone 17: Diagnostics log toggle.
 - [x] Milestone 18: Stable send button glyph.
 - [x] Milestone 19: Prompt Optimization payload smoke.
+- [x] Milestone 20: Gemini and Claude API providers.
 
 ## Milestones
 
@@ -152,6 +153,14 @@
 - Verify `promptOptimization:true` reaches AE Plan requests inside the generated planning prompt.
 - Include the smoke in repo-aware verification docs.
 
+### Milestone 20: Gemini and Claude API providers
+
+- Add `gemini-api` using Google's Gemini `generateContent` REST endpoint and `GEMINI_API_KEY`.
+- Add `claude-api` using Anthropic's Messages API and `ANTHROPIC_API_KEY`.
+- Let Gemini and Claude tabs select real setup/API providers when present, while preserving honest setup states when keys are missing.
+- Extend local secret saving to Gemini and Claude API keys.
+- Add fake-provider smoke coverage for Gemini/Claude request/response normalization without calling external APIs.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -175,6 +184,8 @@
 - 2026-05-13: Activity logs should be user-accessible on demand, but hidden by default so the first screen remains focused on provider setup and chat.
 - 2026-05-13: Prefer stable ASCII labels for compact CEP icon-like controls when Unicode glyphs risk mojibake.
 - 2026-05-13: Prompt Optimization coverage should inspect provider payloads with a fake local OpenAI-compatible endpoint instead of relying on real model behavior.
+- 2026-05-13: Gemini and Claude provider support uses official HTTP APIs with Node built-ins; no production SDK dependency is added.
+- 2026-05-13: Default provider model ids are conservative documented API ids: `gemini-2.5-flash` for Gemini and `claude-sonnet-4-20250514` for Claude.
 
 ## Validation
 
@@ -364,6 +375,27 @@
   - Passed `node --check scripts/prompt-optimization-smoke.js`.
   - Passed `node scripts/prompt-optimization-smoke.js`.
   - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+- Milestone 20:
+  - Added `gemini-api` and `claude-api` provider definitions.
+  - Added Gemini `generateContent` request/response normalization.
+  - Added Anthropic Messages API request/response normalization.
+  - Added Gemini/Claude API key saving support in the bridge daemon.
+  - Updated CEP provider selection so Gemini/Claude tabs use real provider setup states when backend agents exist.
+  - Added `node scripts/provider-api-smoke.js`.
+  - Copied updated `panel.js` into the installed CEP extension.
+  - Passed `node --check mcp-server/ai-agents.js`.
+  - Passed `node --check mcp-server/bridge-daemon.js`.
+  - Passed `node --check cep-panel/panel.js`.
+  - Passed `node --check scripts/provider-contract-smoke.js`.
+  - Passed `node --check scripts/provider-api-smoke.js`.
+  - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-api-smoke.js`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js provider-setup-smoke` with a temporary bridge job.
+  - Passed `node scripts/prompt-optimization-smoke.js`.
   - Passed `git diff --check`.
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.

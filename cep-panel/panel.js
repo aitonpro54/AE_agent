@@ -330,7 +330,7 @@
 
   function visibleAgent(agent) {
     var group = agentGroup(agent);
-    return group === "openai" || group === "local";
+    return group === "openai" || group === "local" || group === "gemini" || group === "claude";
   }
 
   function findAgentByGroup(group) {
@@ -338,6 +338,8 @@
       var mode = openAiAuthMode();
       return findAgent(mode === "api" ? "openai-api" : "openai-cli") || findAgent("openai-cli") || findAgent("openai-api");
     }
+    if (group === "gemini") return findAgent("gemini-api");
+    if (group === "claude") return findAgent("claude-api");
     if (group === "local") return findAgent("ollama-local");
     return null;
   }
@@ -350,14 +352,13 @@
   }
 
   function selectProviderGroup(group) {
-    if (isPlaceholderProviderGroup(group)) {
+    var agent = findAgentByGroup(group);
+    if (!agent && isPlaceholderProviderGroup(group)) {
       localStorage.setItem("codexAeProviderGroup", group);
       agentSelect.value = "";
       renderProviderPlaceholder(group);
       return;
     }
-
-    var agent = findAgentByGroup(group);
     if (!agent) {
       setAgentStatus(group === "local" ? "Ollama provider not available" : "Provider not configured");
       return;
@@ -385,6 +386,8 @@
     if (agent.placeholder) return agent.label + " setup";
     if (agent.id === "openai-cli") return "ChatGPT via Codex CLI";
     if (agent.id === "openai-api") return "OpenAI API key";
+    if (agent.id === "gemini-api") return "Gemini API key";
+    if (agent.id === "claude-api") return "Claude API key";
     if (agentGroup(agent) === "local") return "Local Ollama";
     return agent.label || "Provider setup";
   }
@@ -398,6 +401,8 @@
       return "Sign in with ChatGPT through Codex CLI, then use CLI models here. No OpenAI API key is used.";
     }
     if (agent.id === "openai-api") return "Uses OpenAI API billing. Paste an API key to enable API models.";
+    if (agent.id === "gemini-api") return "Uses Google Gemini API billing. Paste an API key to enable Gemini models.";
+    if (agent.id === "claude-api") return "Uses Anthropic API billing. Paste an API key to enable Claude models.";
     if (agentGroup(agent) === "local") return "Runs with Ollama on port 11434. No API key needed.";
     return agent.notes || "";
   }

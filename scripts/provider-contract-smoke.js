@@ -20,7 +20,11 @@ const MANAGED_ENV = [
   "CODEX_CLI_MODELS",
   "OPENAI_CLI_MODELS",
   "OPENAI_API_KEY",
-  "OPENAI_KEY"
+  "OPENAI_KEY",
+  "GEMINI_API_KEY",
+  "GOOGLE_API_KEY",
+  "ANTHROPIC_API_KEY",
+  "CLAUDE_API_KEY"
 ];
 
 function saveEnv() {
@@ -68,10 +72,16 @@ async function main() {
     setEnv("OPENAI_CLI_MODELS", null);
     setEnv("OPENAI_API_KEY", "");
     setEnv("OPENAI_KEY", "");
+    setEnv("GEMINI_API_KEY", "");
+    setEnv("GOOGLE_API_KEY", "");
+    setEnv("ANTHROPIC_API_KEY", "");
+    setEnv("CLAUDE_API_KEY", "");
 
     const listed = await listAgents({});
     const openAiApi = findAgent(listed.agents, "openai-api");
     const openAiCli = findAgent(listed.agents, "openai-cli");
+    const geminiApi = findAgent(listed.agents, "gemini-api");
+    const claudeApi = findAgent(listed.agents, "claude-api");
 
     assert.strictEqual(openAiApi.providerGroup, "openai");
     assert.strictEqual(openAiApi.authMode, "api");
@@ -97,6 +107,24 @@ async function main() {
     assert.deepStrictEqual(cliModelIds, EXPECTED_OPENAI_CLI_MODELS);
     assert(!cliModelIds.includes("Codex Auto Review"));
     assert(!cliModelIds.includes("codex-auto-review"));
+
+    assert.strictEqual(geminiApi.providerGroup, "gemini");
+    assert.strictEqual(geminiApi.authMode, "api");
+    assert.strictEqual(geminiApi.transport, "gemini-generate-content");
+    assert.strictEqual(geminiApi.requiresApiKey, true);
+    assert.strictEqual(geminiApi.canSaveKey, true);
+    assert.strictEqual(geminiApi.setupAction, "save_api_key");
+    assert.strictEqual(geminiApi.configured, false);
+    assert(geminiApi.modelOptions.some((item) => item.id === "gemini-2.5-flash"));
+
+    assert.strictEqual(claudeApi.providerGroup, "claude");
+    assert.strictEqual(claudeApi.authMode, "api");
+    assert.strictEqual(claudeApi.transport, "anthropic-messages");
+    assert.strictEqual(claudeApi.requiresApiKey, true);
+    assert.strictEqual(claudeApi.canSaveKey, true);
+    assert.strictEqual(claudeApi.setupAction, "save_api_key");
+    assert.strictEqual(claudeApi.configured, false);
+    assert(claudeApi.modelOptions.some((item) => item.id === "claude-sonnet-4-20250514"));
 
     const readiness = await checkAgentReadiness({
       agentId: "openai-cli",
@@ -147,6 +175,18 @@ async function main() {
           models: cliModelIds,
           missingCliError: readiness.error,
           setupLaunchBlocked: missingCliSetupError.status.status
+        },
+        geminiApi: {
+          authMode: geminiApi.authMode,
+          setupAction: geminiApi.setupAction,
+          requiresApiKey: geminiApi.requiresApiKey,
+          model: geminiApi.model
+        },
+        claudeApi: {
+          authMode: claudeApi.authMode,
+          setupAction: claudeApi.setupAction,
+          requiresApiKey: claudeApi.requiresApiKey,
+          model: claudeApi.model
         }
       }
     }, null, 2));

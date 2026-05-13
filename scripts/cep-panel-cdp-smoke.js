@@ -637,7 +637,7 @@ async function openAiApiSetupSmoke() {
   }
 }
 
-async function providerPlaceholderSmoke() {
+async function providerSetupSmoke() {
   const { page, ws, send } = await connectToPanel();
   let backup = null;
   try {
@@ -652,33 +652,35 @@ async function providerPlaceholderSmoke() {
       const clicked = await evaluate(send, selectProviderGroupExpression(group));
       if (!clicked || !clicked.ok) throw new Error(`Could not click ${group} provider tab.`);
       const label = group === "gemini" ? "Gemini" : "Claude";
-      const selected = await waitFor(send, `${label} placeholder selected`, (state) => (
+      const agentId = group === "gemini" ? "gemini-api" : "claude-api";
+      const selected = await waitFor(send, `${label} setup selected`, (state) => (
         state.activeProviderGroup === group &&
+        state.agentValue === agentId &&
         state.setupTitle.indexOf(label) >= 0 &&
-        state.setupText.indexOf("Backend provider support has not been added yet") >= 0 &&
-        state.agentStatus.indexOf("setup is planned") >= 0 &&
-        state.agentDetails.indexOf("Setup: not implemented") >= 0 &&
-        state.agentDetails.indexOf("Endpoint: not connected") >= 0 &&
+        state.setupText.indexOf("API billing") >= 0 &&
+        state.agentDetails.indexOf("Setup: key required") >= 0 &&
         state.authModeVisible === false &&
-        state.apiKeyVisible === false &&
+        state.apiKeyVisible === true &&
         state.localServiceVisible === false &&
         state.setupActionVisible === false &&
         state.sendDisabled === true &&
-        state.checkDisabled === true &&
-        state.modelOptions.length === 0
+        state.modelOptions.length > 0 &&
+        state.modelOptions.some((option) => option.text.indexOf("No API key") >= 0)
       ), 10000);
       results.push({
         group,
+        agent: selected.agentValue,
         setupTitle: selected.setupTitle,
         agentStatus: selected.agentStatus,
-        agentDetails: selected.agentDetails
+        agentDetails: selected.agentDetails,
+        modelOptions: selected.modelOptions
       });
     }
 
     console.log(JSON.stringify({
       ok: true,
       page: { title: page.title, url: page.url },
-      placeholders: results
+      providers: results
     }, null, 2));
   } finally {
     if (backup) {
@@ -689,6 +691,10 @@ async function providerPlaceholderSmoke() {
     }
     ws.close();
   }
+}
+
+async function providerPlaceholderSmoke() {
+  return providerSetupSmoke();
 }
 
 async function sidebarCollapseSmoke() {
@@ -1200,6 +1206,10 @@ async function main() {
   }
   if (command === "provider-placeholder-smoke") {
     await providerPlaceholderSmoke();
+    return;
+  }
+  if (command === "provider-setup-smoke") {
+    await providerSetupSmoke();
     return;
   }
   if (command === "sidebar-collapse-smoke") {

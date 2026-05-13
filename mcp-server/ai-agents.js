@@ -6,6 +6,8 @@ const { spawn, spawnSync } = require("child_process");
 
 const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1";
 const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+const DEFAULT_GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
+const DEFAULT_ANTHROPIC_BASE_URL = "https://api.anthropic.com/v1";
 const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434";
 const OPENAI_MODEL_OPTIONS = [
   { id: "gpt-5.5", name: "GPT-5.5" },
@@ -17,6 +19,19 @@ const OPENAI_MODEL_OPTIONS = [
 ];
 const DEFAULT_OPENAI_MODEL = "gpt-5.5";
 const DEFAULT_CODEX_CLI_MODEL = "gpt-5.5";
+const GEMINI_MODEL_OPTIONS = [
+  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
+  { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro" }
+];
+const CLAUDE_MODEL_OPTIONS = [
+  { id: "claude-sonnet-4-20250514", name: "Claude Sonnet 4" },
+  { id: "claude-opus-4-1-20250805", name: "Claude Opus 4.1" },
+  { id: "claude-opus-4-20250514", name: "Claude Opus 4" },
+  { id: "claude-3-7-sonnet-20250219", name: "Claude Sonnet 3.7" },
+  { id: "claude-3-5-haiku-20241022", name: "Claude Haiku 3.5" }
+];
+const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+const DEFAULT_CLAUDE_MODEL = "claude-sonnet-4-20250514";
 const DEFAULT_OPENROUTER_MODEL = "nvidia/nemotron-3-super-120b-a12b:free";
 const DEFAULT_OPENROUTER_FREE_MODELS = [
   DEFAULT_OPENROUTER_MODEL,
@@ -27,6 +42,7 @@ const DEFAULT_OPENROUTER_FREE_MODELS = [
 const DEFAULT_TIMEOUT_MS = Number(process.env.AE_AGENT_HTTP_TIMEOUT_MS || 45000);
 const DEFAULT_CODEX_CLI_TIMEOUT_MS = Number(process.env.AE_CODEX_CLI_TIMEOUT_MS || 120000);
 const DEFAULT_MODEL_LIST_TIMEOUT_MS = Number(process.env.AE_AGENT_MODEL_LIST_TIMEOUT_MS || 3500);
+const ANTHROPIC_VERSION = process.env.ANTHROPIC_VERSION || "2023-06-01";
 const DEFAULT_SYSTEM_PROMPT = process.env.AE_AGENT_SYSTEM_PROMPT || [
   "You are an assistant inside a local Adobe After Effects bridge.",
   "Answer in the user's language.",
@@ -253,6 +269,12 @@ function defaultAgents() {
   const codexStatus = getCodexCliStatus();
   const codexCliModel = compactString(process.env.CODEX_CLI_MODEL || process.env.OPENAI_CLI_MODEL || DEFAULT_CODEX_CLI_MODEL, 200);
   const codexCliModels = modelOptionsFromList(process.env.CODEX_CLI_MODELS || process.env.OPENAI_CLI_MODELS, OPENAI_MODEL_OPTIONS, codexCliModel);
+  const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
+  const geminiModel = compactString(process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL, 200);
+  const geminiModels = modelOptionsFromList(process.env.GEMINI_MODELS, GEMINI_MODEL_OPTIONS, geminiModel);
+  const anthropicApiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || "";
+  const claudeModel = compactString(process.env.CLAUDE_MODEL || process.env.ANTHROPIC_MODEL || DEFAULT_CLAUDE_MODEL, 200);
+  const claudeModels = modelOptionsFromList(process.env.CLAUDE_MODELS || process.env.ANTHROPIC_MODELS, CLAUDE_MODEL_OPTIONS, claudeModel);
   const openRouterApiKey = process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_KEY || "";
   const openRouterModel = compactString(
     process.env.OPENROUTER_MODEL || process.env.OPENROUTER_FREE_MODEL || DEFAULT_OPENROUTER_MODEL,
@@ -311,6 +333,48 @@ function defaultAgents() {
       codexStatus,
       free: false,
       notes: "Uses the local Codex CLI after codex login with ChatGPT. No OpenAI API key is used."
+    },
+    {
+      id: "gemini-api",
+      label: "Gemini API",
+      provider: "gemini",
+      providerGroup: "gemini",
+      authMode: "api",
+      transport: "gemini-generate-content",
+      uiModes: ["api"],
+      apiStyle: "gemini",
+      baseUrl: trimTrailingSlash(process.env.GEMINI_BASE_URL || DEFAULT_GEMINI_BASE_URL),
+      apiKey: geminiApiKey,
+      apiKeyEnv: "GEMINI_API_KEY",
+      model: geminiModel,
+      models: modelIds(geminiModels),
+      modelOptions: geminiModels,
+      requiresApiKey: true,
+      canSaveKey: true,
+      setupAction: "save_api_key",
+      free: false,
+      notes: "Uses the Google Gemini API generateContent endpoint. This is separate from ChatGPT subscription access."
+    },
+    {
+      id: "claude-api",
+      label: "Claude API",
+      provider: "claude",
+      providerGroup: "claude",
+      authMode: "api",
+      transport: "anthropic-messages",
+      uiModes: ["api"],
+      apiStyle: "anthropic",
+      baseUrl: trimTrailingSlash(process.env.ANTHROPIC_BASE_URL || process.env.CLAUDE_BASE_URL || DEFAULT_ANTHROPIC_BASE_URL),
+      apiKey: anthropicApiKey,
+      apiKeyEnv: "ANTHROPIC_API_KEY",
+      model: claudeModel,
+      models: modelIds(claudeModels),
+      modelOptions: claudeModels,
+      requiresApiKey: true,
+      canSaveKey: true,
+      setupAction: "save_api_key",
+      free: false,
+      notes: "Uses the Anthropic Messages API. This is separate from ChatGPT subscription access."
     },
     {
       id: "openrouter",
@@ -574,6 +638,22 @@ function openAiHeaders(agent) {
   return headers;
 }
 
+function geminiHeaders(agent) {
+  const headers = {};
+  const apiKey = readApiKey(agent);
+  if (apiKey) headers["x-goog-api-key"] = apiKey;
+  return headers;
+}
+
+function anthropicHeaders(agent) {
+  const headers = {
+    "anthropic-version": ANTHROPIC_VERSION
+  };
+  const apiKey = readApiKey(agent);
+  if (apiKey) headers["x-api-key"] = apiKey;
+  return headers;
+}
+
 function normalizeOpenAiModels(body, freeOnly) {
   const data = body && Array.isArray(body.data) ? body.data : [];
   return data
@@ -601,6 +681,36 @@ function normalizeOllamaModels(body) {
       size: model.size || null,
       modifiedAt: model.modified_at || null,
       details: model.details || null
+    }))
+    .filter((model) => model.id);
+}
+
+function normalizeGeminiModels(body) {
+  const models = body && Array.isArray(body.models) ? body.models : [];
+  return models
+    .filter((model) => {
+      const methods = Array.isArray(model.supportedGenerationMethods) ? model.supportedGenerationMethods : [];
+      return !methods.length || methods.includes("generateContent");
+    })
+    .map((model) => {
+      const id = String(model.baseModelId || model.name || "").replace(/^models\//, "");
+      return {
+        id,
+        name: model.displayName || id,
+        inputTokenLimit: model.inputTokenLimit || null,
+        outputTokenLimit: model.outputTokenLimit || null
+      };
+    })
+    .filter((model) => model.id);
+}
+
+function normalizeAnthropicModels(body) {
+  const models = body && Array.isArray(body.data) ? body.data : [];
+  return models
+    .map((model) => ({
+      id: model.id,
+      name: model.display_name || model.displayName || model.id,
+      createdAt: model.created_at || null
     }))
     .filter((model) => model.id);
 }
@@ -633,6 +743,22 @@ async function fetchAgentModels(agent, options) {
     return {
       reachable: true,
       models: normalizeOllamaModels(response.body)
+    };
+  }
+
+  if (agent.apiStyle === "gemini") {
+    const response = await requestJson("GET", joinUrl(agent.baseUrl, "/models"), undefined, geminiHeaders(agent), timeoutMs);
+    return {
+      reachable: true,
+      models: normalizeGeminiModels(response.body)
+    };
+  }
+
+  if (agent.apiStyle === "anthropic") {
+    const response = await requestJson("GET", joinUrl(agent.baseUrl, "/models"), undefined, anthropicHeaders(agent), timeoutMs);
+    return {
+      reachable: true,
+      models: normalizeAnthropicModels(response.body)
     };
   }
 
@@ -1063,6 +1189,100 @@ function normalizeOllamaChatResponse(agent, requestedModel, body, includeRawResp
   return result;
 }
 
+function splitSystemAndConversation(messages) {
+  const system = [];
+  const conversation = [];
+  for (const message of messages || []) {
+    if (message.role === "system") {
+      system.push(message.content);
+    } else {
+      conversation.push(message);
+    }
+  }
+  return {
+    system: system.filter(Boolean).join("\n\n"),
+    conversation
+  };
+}
+
+function geminiGeneratePath(model) {
+  const id = String(model || "").replace(/^models\//, "");
+  return `/models/${encodeURIComponent(id)}:generateContent`;
+}
+
+function geminiPayloadFromMessages(messages, options) {
+  const split = splitSystemAndConversation(messages);
+  const payload = {
+    contents: split.conversation.map((message) => ({
+      role: message.role === "assistant" ? "model" : "user",
+      parts: [{ text: String(message.content || "") }]
+    }))
+  };
+  if (split.system) {
+    payload.systemInstruction = {
+      parts: [{ text: split.system }]
+    };
+  }
+
+  const generationConfig = {};
+  if (options.temperature !== null) generationConfig.temperature = options.temperature;
+  if (options.maxTokens !== null) generationConfig.maxOutputTokens = Math.max(1, Math.floor(options.maxTokens));
+  if (Object.keys(generationConfig).length) payload.generationConfig = generationConfig;
+  return payload;
+}
+
+function normalizeGeminiChatResponse(agent, requestedModel, body, includeRawResponse) {
+  const candidate = body && Array.isArray(body.candidates) ? body.candidates[0] : null;
+  const parts = candidate && candidate.content && Array.isArray(candidate.content.parts) ? candidate.content.parts : [];
+  const text = parts.map((part) => part && part.text ? part.text : "").join("");
+  const result = {
+    agent: publicAgent(agent),
+    model: requestedModel,
+    text,
+    message: {
+      role: "assistant",
+      content: text
+    },
+    finishReason: candidate ? candidate.finishReason || null : null,
+    usage: body.usageMetadata || null
+  };
+  if (includeRawResponse) result.rawResponse = body;
+  return result;
+}
+
+function anthropicPayloadFromMessages(model, messages, options) {
+  const split = splitSystemAndConversation(messages);
+  const payload = {
+    model,
+    max_tokens: options.maxTokens !== null ? Math.max(1, Math.floor(options.maxTokens)) : 4096,
+    messages: split.conversation.map((message) => ({
+      role: message.role === "assistant" ? "assistant" : "user",
+      content: String(message.content || "")
+    }))
+  };
+  if (split.system) payload.system = split.system;
+  if (options.temperature !== null) payload.temperature = options.temperature;
+  return payload;
+}
+
+function normalizeAnthropicChatResponse(agent, requestedModel, body, includeRawResponse) {
+  const content = body && Array.isArray(body.content) ? body.content : [];
+  const text = content.map((part) => part && part.type === "text" ? part.text || "" : "").join("");
+  const result = {
+    agent: publicAgent(agent),
+    model: body.model || requestedModel,
+    text,
+    message: {
+      role: body.role || "assistant",
+      content: text
+    },
+    finishReason: body.stop_reason || null,
+    usage: body.usage || null
+  };
+  if (includeRawResponse) result.rawResponse = body;
+  return result;
+}
+
 async function chatWithAgent(args) {
   args = args || {};
   const agent = findAgent(args.agentId || args.agent || args.provider);
@@ -1105,6 +1325,24 @@ async function chatWithAgent(args) {
     const response = await requestJson("POST", joinUrl(agent.baseUrl, "/api/chat"), body, {}, timeoutMs);
     return {
       ...normalizeOllamaChatResponse(agent, model, response.body, includeRawResponse),
+      readiness
+    };
+  }
+
+  if (agent.apiStyle === "gemini") {
+    const body = geminiPayloadFromMessages(messages, { temperature, maxTokens });
+    const response = await requestJson("POST", joinUrl(agent.baseUrl, geminiGeneratePath(model)), body, geminiHeaders(agent), timeoutMs);
+    return {
+      ...normalizeGeminiChatResponse(agent, model, response.body, includeRawResponse),
+      readiness
+    };
+  }
+
+  if (agent.apiStyle === "anthropic") {
+    const body = anthropicPayloadFromMessages(model, messages, { temperature, maxTokens });
+    const response = await requestJson("POST", joinUrl(agent.baseUrl, "/messages"), body, anthropicHeaders(agent), timeoutMs);
+    return {
+      ...normalizeAnthropicChatResponse(agent, model, response.body, includeRawResponse),
       readiness
     };
   }

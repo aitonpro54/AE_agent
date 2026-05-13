@@ -88,6 +88,12 @@ $env:OPENAI_MODEL="gpt-5.5"
 
 $env:CODEX_CLI_MODEL="gpt-5.5"
 
+$env:GEMINI_API_KEY="..."
+$env:GEMINI_MODEL="gemini-2.5-flash"
+
+$env:ANTHROPIC_API_KEY="..."
+$env:CLAUDE_MODEL="claude-sonnet-4-20250514"
+
 $env:OPENROUTER_API_KEY="sk-or-..."
 $env:OPENROUTER_MODEL="nvidia/nemotron-3-super-120b-a12b:free"
 
@@ -101,9 +107,11 @@ $env:OLLAMA_CLOUD_MODEL="..."
 
 OpenAI has two separate paths. `openai-api` uses `OPENAI_API_KEY` and normal OpenAI API billing. `openai-cli` uses the local Codex CLI and the user's ChatGPT/Codex sign-in; use the panel's `Sign in with ChatGPT` button or run `codex login`, then the bridge can call `codex exec --ephemeral --json --sandbox read-only` for CLI-backed chat and AE Plan drafting. After launching sign-in from the panel, the panel refreshes readiness automatically for a short window. No OpenAI API key is used for the CLI path.
 
+`gemini-api` uses `GEMINI_API_KEY` with Google's Gemini `generateContent` REST endpoint. `claude-api` uses `ANTHROPIC_API_KEY` with Anthropic's Messages API. These are provider API billing paths, not ChatGPT subscription access.
+
 `OPENROUTER_MODEL` can be any OpenRouter model id, a `:free` variant, or the `openrouter/free` router. The default is `nvidia/nemotron-3-super-120b-a12b:free`, chosen from OpenRouter's May 2026 top free model list for agentic/coding workflows. Local Ollama defaults to `gemma4:latest`, uses `/api/chat`, and lists installed models from `/api/tags`. Ollama Cloud and custom providers use OpenAI-compatible `/chat/completions` and `/models` endpoints.
 
-You can also paste OpenAI API, OpenRouter, or Ollama Cloud keys directly into the After Effects panel under the provider API mode and click `Save`. The bridge stores keys locally in `.codex\agent-secrets.json`; that folder is ignored by git.
+You can also paste OpenAI API, Gemini, Claude, OpenRouter, or Ollama Cloud keys directly into the After Effects panel under the provider API mode and click `Save`. The bridge stores keys locally in `.codex\agent-secrets.json`; that folder is ignored by git.
 
 Custom agents can be provided as JSON:
 
@@ -223,6 +231,12 @@ Prompt Optimization payload coverage:
 
 ```powershell
 node .\scripts\prompt-optimization-smoke.js
+```
+
+Gemini and Claude provider API contract coverage:
+
+```powershell
+node .\scripts\provider-api-smoke.js
 ```
 
 Live CEP panel smoke, with After Effects open and the bridge panel loaded:

@@ -14,7 +14,7 @@ The panel remains a client of the local bridge daemon. The daemon remains the ow
   - `API`: uses an OpenAI API key and normal API billing.
   - `CLI`: uses the installed Codex CLI after the user has signed in with ChatGPT through the panel's sign-in action or `codex login`.
 - `Local` detects Ollama on `127.0.0.1:11434`, lists installed models, and does not require an API key.
-- `Gemini` and `Claude` may ship as setup-needed placeholders until provider implementations are added.
+- `Gemini` and `Claude` support API-key setup states and provider calls through their official HTTP APIs.
 - The chat area supports `Chat` and `Agent` modes, a model selector, prompt input, chat history, and a visible Prompt Optimization toggle.
 - Agent mode shows planned steps with success/error/ready states and concrete backend results.
 
@@ -32,6 +32,11 @@ OpenAI API key access remains separate:
 
 - `OpenAI -> API` uses `OPENAI_API_KEY` or a key saved through the bridge's local secret store.
 - The UI must clearly show that this mode uses API access, not ChatGPT subscription allowance.
+
+Other provider API key access is also separate from ChatGPT subscription allowance:
+
+- `Gemini` uses `GEMINI_API_KEY` and the Gemini `generateContent` REST endpoint.
+- `Claude` uses `ANTHROPIC_API_KEY` and the Anthropic Messages API.
 
 ## Safety Requirements
 

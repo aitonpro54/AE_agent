@@ -334,6 +334,8 @@ function writeJsonFileAtomic(file, value) {
 
 function agentApiKeyEnvName(agentId) {
   if (agentId === "openai-api") return "OPENAI_API_KEY";
+  if (agentId === "gemini-api") return "GEMINI_API_KEY";
+  if (agentId === "claude-api") return "ANTHROPIC_API_KEY";
   if (agentId === "openrouter") return "OPENROUTER_API_KEY";
   if (agentId === "ollama-cloud") return "OLLAMA_CLOUD_API_KEY";
   return "";
@@ -359,7 +361,7 @@ function saveAgentApiKey(agentId, apiKey) {
   const normalizedAgentId = optionalString({ agentId }, "agentId", "").trim();
   const envName = agentApiKeyEnvName(normalizedAgentId);
   if (!envName) {
-    throw new Error("Saving API keys is currently supported for openai-api, openrouter, and ollama-cloud.");
+    throw new Error("Saving API keys is currently supported for openai-api, gemini-api, claude-api, openrouter, and ollama-cloud.");
   }
 
   const key = optionalString({ apiKey }, "apiKey", "").trim();
