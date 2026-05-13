@@ -2,9 +2,21 @@
 
 const http = require("http");
 const https = require("https");
+const { spawn, spawnSync } = require("child_process");
 
+const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1";
 const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434";
+const OPENAI_MODEL_OPTIONS = [
+  { id: "gpt-5.5", name: "GPT-5.5" },
+  { id: "gpt-5.4", name: "GPT-5.4" },
+  { id: "gpt-5.4-mini", name: "GPT-5.4-Mini" },
+  { id: "gpt-5.3-codex", name: "GPT-5.3-Codex" },
+  { id: "gpt-5.3-codex-spark", name: "GPT-5.3-Codex-Spark" },
+  { id: "gpt-5.2", name: "GPT-5.2" }
+];
+const DEFAULT_OPENAI_MODEL = "gpt-5.5";
+const DEFAULT_CODEX_CLI_MODEL = "gpt-5.5";
 const DEFAULT_OPENROUTER_MODEL = "nvidia/nemotron-3-super-120b-a12b:free";
 const DEFAULT_OPENROUTER_FREE_MODELS = [
   DEFAULT_OPENROUTER_MODEL,
@@ -13,6 +25,7 @@ const DEFAULT_OPENROUTER_FREE_MODELS = [
   "google/gemma-4-31b-it:free"
 ];
 const DEFAULT_TIMEOUT_MS = Number(process.env.AE_AGENT_HTTP_TIMEOUT_MS || 45000);
+const DEFAULT_CODEX_CLI_TIMEOUT_MS = Number(process.env.AE_CODEX_CLI_TIMEOUT_MS || 120000);
 const DEFAULT_MODEL_LIST_TIMEOUT_MS = Number(process.env.AE_AGENT_MODEL_LIST_TIMEOUT_MS || 3500);
 const DEFAULT_SYSTEM_PROMPT = process.env.AE_AGENT_SYSTEM_PROMPT || [
   "You are an assistant inside a local Adobe After Effects bridge.",
@@ -41,6 +54,31 @@ function splitList(value) {
     .filter(Boolean);
 }
 
+function modelDisplayName(modelId) {
+  const text = compactString(modelId, 200);
+  const known = OPENAI_MODEL_OPTIONS.find((item) => item.id === text || item.name === text);
+  if (known) return known.name;
+  return text;
+}
+
+function modelOptionsFromList(value, fallbackOptions, selectedModel) {
+  const configured = splitList(value);
+  const options = configured.length
+    ? configured.map((id) => ({ id, name: modelDisplayName(id) }))
+    : fallbackOptions.map((item) => ({ id: item.id, name: item.name || item.id }));
+  if (selectedModel && !options.some((item) => item.id === selectedModel)) {
+    options.unshift({ id: selectedModel, name: modelDisplayName(selectedModel) });
+  }
+  return options;
+}
+
+function modelIds(options) {
+  return (options || []).map((item) => {
+    if (typeof item === "string") return item;
+    return item.id || item.name;
+  }).filter(Boolean);
+}
+
 function trimTrailingSlash(value) {
   return String(value || "").replace(/\/+$/, "");
 }
@@ -51,6 +89,64 @@ function envValue(name) {
 
 function readApiKey(config) {
   return config.apiKey || envValue(config.apiKeyEnv);
+}
+
+function codexCommand() {
+  return compactString(process.env.CODEX_CLI_PATH || process.env.CODEX_PATH || "codex", 500);
+}
+
+function syncCommand(command, args, timeoutMs) {
+  try {
+    return spawnSync(command, args, {
+      encoding: "utf8",
+      timeout: timeoutMs || 3500,
+      windowsHide: true
+    });
+  } catch (error) {
+    return { error };
+  }
+}
+
+function getCodexCliStatus() {
+  const command = codexCommand();
+  const version = syncCommand(command, ["--version"], 3000);
+  const versionText = compactString([version.stdout, version.stderr].filter(Boolean).join(" "), 300);
+  if (version.error || version.status === 127 || version.status === 9009) {
+    return {
+      installed: false,
+      loggedIn: false,
+      command,
+      version: null,
+      status: "missing",
+      error: "Codex CLI was not found. Install Codex and run codex login."
+    };
+  }
+
+  const login = syncCommand(command, ["login", "status"], 3500);
+  const loginText = compactString([login.stdout, login.stderr].filter(Boolean).join(" "), 500);
+  const loggedIn = login.status === 0;
+  return {
+    installed: true,
+    loggedIn,
+    command,
+    version: versionText || null,
+    status: loggedIn ? "ready" : "not_logged_in",
+    error: loggedIn ? null : (loginText || "Run codex login and sign in with ChatGPT.")
+  };
+}
+
+function configurationError(agent) {
+  if (!agent) return "Agent is not configured.";
+  if (agent.apiStyle === "codex-cli") {
+    const status = agent.codexStatus || getCodexCliStatus();
+    if (!status.installed) return status.error || "Codex CLI was not found.";
+    if (!status.loggedIn) return "Run codex login and sign in with ChatGPT before using OpenAI CLI.";
+    return status.error || "Codex CLI is not ready.";
+  }
+  if (agent.requiresApiKey) {
+    return `Set ${agent.apiKeyEnv || "the provider API key"} before using ${agent.label}.`;
+  }
+  return `${agent.label} is not configured.`;
 }
 
 function parseCustomAgents() {
@@ -87,6 +183,12 @@ function parseCustomAgents() {
 }
 
 function defaultAgents() {
+  const openAiApiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || "";
+  const openAiModel = compactString(process.env.OPENAI_MODEL || DEFAULT_OPENAI_MODEL, 200);
+  const openAiModels = modelOptionsFromList(process.env.OPENAI_MODELS, OPENAI_MODEL_OPTIONS, openAiModel);
+  const codexStatus = getCodexCliStatus();
+  const codexCliModel = compactString(process.env.CODEX_CLI_MODEL || process.env.OPENAI_CLI_MODEL || DEFAULT_CODEX_CLI_MODEL, 200);
+  const codexCliModels = modelOptionsFromList(process.env.CODEX_CLI_MODELS || process.env.OPENAI_CLI_MODELS, OPENAI_MODEL_OPTIONS, codexCliModel);
   const openRouterApiKey = process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_KEY || "";
   const openRouterModel = compactString(
     process.env.OPENROUTER_MODEL || process.env.OPENROUTER_FREE_MODEL || DEFAULT_OPENROUTER_MODEL,
@@ -104,9 +206,56 @@ function defaultAgents() {
 
   const agents = [
     {
+      id: "openai-api",
+      label: "OpenAI API",
+      provider: "openai",
+      providerGroup: "openai",
+      authMode: "api",
+      transport: "openai-chat-completions",
+      uiModes: ["api"],
+      apiStyle: "openai",
+      baseUrl: trimTrailingSlash(process.env.OPENAI_BASE_URL || DEFAULT_OPENAI_BASE_URL),
+      apiKey: openAiApiKey,
+      apiKeyEnv: "OPENAI_API_KEY",
+      model: openAiModel,
+      models: modelIds(openAiModels),
+      modelOptions: openAiModels,
+      requiresApiKey: true,
+      canSaveKey: true,
+      setupAction: "save_api_key",
+      free: false,
+      notes: "Uses OpenAI API billing. This is separate from ChatGPT subscription access."
+    },
+    {
+      id: "openai-cli",
+      label: "OpenAI CLI",
+      provider: "openai",
+      providerGroup: "openai",
+      authMode: "cli",
+      transport: "codex-cli",
+      uiModes: ["cli"],
+      apiStyle: "codex-cli",
+      baseUrl: "",
+      apiKey: "",
+      apiKeyEnv: "",
+      model: codexCliModel,
+      models: modelIds(codexCliModels),
+      modelOptions: codexCliModels,
+      requiresApiKey: false,
+      canSaveKey: false,
+      setupAction: "codex_login",
+      codexStatus,
+      free: false,
+      notes: "Uses the local Codex CLI after codex login with ChatGPT. No OpenAI API key is used."
+    },
+    {
       id: "openrouter",
       label: "OpenRouter",
       provider: "openrouter",
+      providerGroup: "openrouter",
+      authMode: "api",
+      transport: "openai-chat-completions",
+      uiModes: ["api"],
       apiStyle: "openai",
       baseUrl: trimTrailingSlash(process.env.OPENROUTER_BASE_URL || DEFAULT_OPENROUTER_BASE_URL),
       apiKey: openRouterApiKey,
@@ -114,6 +263,8 @@ function defaultAgents() {
       model: openRouterModel,
       models: openRouterModels,
       requiresApiKey: true,
+      canSaveKey: true,
+      setupAction: "save_api_key",
       free: openRouterModel.indexOf(":free") >= 0 || openRouterModel === "openrouter/free",
       notes: "Defaults to a top free OpenRouter model. Supports regular models, :free variants, and the openrouter/free router."
     },
@@ -121,6 +272,10 @@ function defaultAgents() {
       id: "ollama-local",
       label: "Ollama Local",
       provider: "ollama",
+      providerGroup: "local",
+      authMode: "local",
+      transport: "ollama-chat",
+      uiModes: ["local"],
       apiStyle: "ollama",
       baseUrl: trimTrailingSlash(process.env.OLLAMA_BASE_URL || DEFAULT_OLLAMA_BASE_URL),
       apiKey: "",
@@ -128,6 +283,8 @@ function defaultAgents() {
       model: ollamaModel,
       models: ollamaModels,
       requiresApiKey: false,
+      canSaveKey: false,
+      setupAction: "detect_ollama",
       free: true,
       notes: "Uses the local Ollama daemon and lists installed models from /api/tags."
     }
@@ -138,6 +295,10 @@ function defaultAgents() {
       id: "ollama-cloud",
       label: "Ollama Cloud",
       provider: "ollama-cloud",
+      providerGroup: "local",
+      authMode: "api",
+      transport: "openai-chat-completions",
+      uiModes: ["api"],
       apiStyle: "openai",
       baseUrl: trimTrailingSlash(process.env.OLLAMA_CLOUD_BASE_URL || ""),
       apiKey: process.env.OLLAMA_CLOUD_API_KEY || "",
@@ -145,6 +306,8 @@ function defaultAgents() {
       model: compactString(process.env.OLLAMA_CLOUD_MODEL || "", 200),
       models: splitList(process.env.OLLAMA_CLOUD_MODELS),
       requiresApiKey: true,
+      canSaveKey: true,
+      setupAction: "save_api_key",
       free: false,
       notes: "OpenAI-compatible Ollama cloud endpoint. Set OLLAMA_CLOUD_BASE_URL and OLLAMA_CLOUD_API_KEY."
     });
@@ -157,6 +320,10 @@ function defaultAgents() {
       id: "custom-config-error",
       label: "Custom provider config error",
       provider: "custom",
+      providerGroup: "custom",
+      authMode: "custom",
+      transport: "openai-chat-completions",
+      uiModes: ["api"],
       apiStyle: "openai",
       baseUrl: "",
       apiKey: "",
@@ -164,6 +331,8 @@ function defaultAgents() {
       model: "",
       models: [],
       requiresApiKey: false,
+      canSaveKey: false,
+      setupAction: "fix_custom_config",
       free: false,
       notes: error.message || String(error)
     });
@@ -181,13 +350,19 @@ function allAgents() {
 }
 
 function isAgentConfigured(agent) {
+  if (agent.apiStyle === "codex-cli") {
+    const status = agent.codexStatus || getCodexCliStatus();
+    return Boolean(status.installed && status.loggedIn);
+  }
   if (!agent.baseUrl) return false;
   if (agent.requiresApiKey && !readApiKey(agent)) return false;
   return true;
 }
 
 function canListModelsWithoutApiKey(agent) {
-  return agent && agent.provider === "openrouter" && Boolean(agent.baseUrl);
+  if (!agent) return false;
+  if (agent.apiStyle === "codex-cli") return true;
+  return agent.provider === "openrouter" && Boolean(agent.baseUrl);
 }
 
 function publicAgent(agent, extra) {
@@ -195,14 +370,22 @@ function publicAgent(agent, extra) {
     id: agent.id,
     label: agent.label,
     provider: agent.provider,
+    providerGroup: agent.providerGroup || agent.provider,
+    authMode: agent.authMode || null,
+    transport: agent.transport || agent.apiStyle || null,
+    uiModes: Array.isArray(agent.uiModes) ? agent.uiModes : [],
     apiStyle: agent.apiStyle,
     baseUrl: agent.baseUrl,
     model: agent.model || null,
     models: Array.isArray(agent.models) ? agent.models : [],
+    modelOptions: Array.isArray(agent.modelOptions) ? agent.modelOptions : null,
     configured: isAgentConfigured(agent),
     requiresApiKey: Boolean(agent.requiresApiKey),
     apiKeyEnv: agent.apiKeyEnv || null,
+    canSaveKey: Boolean(agent.canSaveKey),
+    setupAction: agent.setupAction || null,
     free: Boolean(agent.free),
+    codexStatus: agent.apiStyle === "codex-cli" ? agent.codexStatus || getCodexCliStatus() : null,
     notes: agent.notes || null,
     ...(extra || {})
   };
@@ -227,6 +410,17 @@ function findAgent(agentId) {
     throw new Error(`Unknown agent: ${id}`);
   }
   return agent;
+}
+
+function normalizeRequestedModel(agent, requestedModel) {
+  const requested = compactString(requestedModel || agent.model, 240);
+  if (!requested) return "";
+  const options = Array.isArray(agent.modelOptions) ? agent.modelOptions : [];
+  const lower = requested.toLowerCase();
+  const matched = options.find((item) => {
+    return String(item.id || "").toLowerCase() === lower || String(item.name || "").toLowerCase() === lower;
+  });
+  return matched ? matched.id : requested;
 }
 
 function joinUrl(baseUrl, pathName) {
@@ -352,13 +546,23 @@ async function fetchAgentModels(agent, options) {
   if (!isAgentConfigured(agent) && !(allowUnauthenticatedModelList && canListModelsWithoutApiKey(agent))) {
     return {
       reachable: false,
-      error: agent.requiresApiKey ? `Set ${agent.apiKeyEnv || "the provider API key"}.` : "Agent is not configured.",
+      error: configurationError(agent),
       models: []
     };
   }
 
   const timeoutMs = options && options.timeoutMs ? options.timeoutMs : DEFAULT_MODEL_LIST_TIMEOUT_MS;
   const freeOnly = Boolean(options && options.freeOnly);
+
+  if (agent.apiStyle === "codex-cli") {
+    const status = getCodexCliStatus();
+    agent.codexStatus = status;
+    return {
+      reachable: status.installed,
+      error: status.installed ? null : status.error,
+      models: Array.isArray(agent.modelOptions) ? agent.modelOptions : modelIds(agent.models).map((id) => ({ id, name: id }))
+    };
+  }
 
   if (agent.apiStyle === "ollama") {
     const response = await requestJson("GET", joinUrl(agent.baseUrl, "/api/tags"), undefined, {}, timeoutMs);
@@ -387,7 +591,7 @@ function isOpenRouterRouterModel(agent, model) {
 
 async function checkAgentReadiness(args) {
   const agent = findAgent(args && (args.agentId || args.agent || args.provider));
-  const model = compactString((args && args.model) || agent.model, 200);
+  const model = normalizeRequestedModel(agent, (args && args.model) || agent.model);
   const checkedAt = new Date().toISOString();
   const freeOnly = boolArg(args, "freeOnly", false);
   const checkModels = boolArg(args, "checkModels", true);
@@ -395,9 +599,7 @@ async function checkAgentReadiness(args) {
   const configured = isAgentConfigured(agent);
 
   if (!configured) {
-    const error = agent.requiresApiKey
-      ? `Set ${agent.apiKeyEnv || "the provider API key"} before using ${agent.label}.`
-      : `${agent.label} is not configured.`;
+    const error = configurationError(agent);
     return {
       checkedAt,
       agent: publicAgent(agent),
@@ -626,6 +828,139 @@ function assistantTextFromContent(content) {
   return String(content);
 }
 
+function codexPromptFromMessages(messages) {
+  const lines = [
+    "You are the assistant for a local Adobe After Effects panel.",
+    "Answer only the user's request. Do not edit files or run shell commands.",
+    "If the user asks for an After Effects project change, return the requested plan or answer text; the bridge will handle execution separately.",
+    "",
+    "Conversation:"
+  ];
+  for (const message of messages) {
+    const role = message.role === "assistant" ? "Assistant" : message.role === "system" ? "System" : "User";
+    lines.push(`${role}: ${message.content}`);
+  }
+  return lines.join("\n");
+}
+
+function codexItemText(item) {
+  if (!item || typeof item !== "object") return "";
+  if (item.type === "agent_message" && typeof item.text === "string") return item.text;
+  if (item.type === "message" && item.role === "assistant") return assistantTextFromContent(item.content || item.text);
+  if (item.role === "assistant") return assistantTextFromContent(item.content || item.text);
+  return "";
+}
+
+function parseCodexJsonl(stdout) {
+  const events = [];
+  const assistantTexts = [];
+  const errors = [];
+  const lines = String(stdout || "").split(/\r?\n/).filter(Boolean);
+  for (const line of lines) {
+    let event = null;
+    try {
+      event = JSON.parse(line);
+    } catch (_error) {
+      continue;
+    }
+    events.push(event);
+    if (event.type === "error" && event.message) errors.push(event.message);
+    const itemText = codexItemText(event.item);
+    if (itemText) assistantTexts.push(itemText);
+    const directText = codexItemText(event);
+    if (directText) assistantTexts.push(directText);
+  }
+  return {
+    events,
+    text: assistantTexts.length ? assistantTexts[assistantTexts.length - 1] : "",
+    errors,
+    threadId: events.find((event) => event.thread_id) ? events.find((event) => event.thread_id).thread_id : null,
+    usage: events.reduce((usage, event) => event && event.usage ? event.usage : usage, null)
+  };
+}
+
+function runCodexCli(agent, model, messages, options) {
+  const status = getCodexCliStatus();
+  if (!status.installed) return Promise.reject(new Error(status.error || "Codex CLI was not found."));
+  if (!status.loggedIn) return Promise.reject(new Error("Run codex login and sign in with ChatGPT before using OpenAI CLI."));
+
+  const prompt = codexPromptFromMessages(messages);
+  const command = status.command || codexCommand();
+  const args = [
+    "exec",
+    "--ephemeral",
+    "--json",
+    "--sandbox",
+    "read-only",
+    "--model",
+    model,
+    "--cd",
+    process.cwd(),
+    prompt
+  ];
+  const timeoutMs = options && options.timeoutMs ? options.timeoutMs : DEFAULT_CODEX_CLI_TIMEOUT_MS;
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd: process.cwd(),
+      env: process.env,
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    let stdout = "";
+    let stderr = "";
+    let finished = false;
+    const timer = setTimeout(() => {
+      if (finished) return;
+      child.kill();
+      reject(new Error(`Codex CLI timed out after ${timeoutMs}ms.`));
+    }, timeoutMs);
+
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
+    child.on("error", (error) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      reject(error);
+    });
+    child.on("close", (code) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      const parsed = parseCodexJsonl(stdout);
+      if (code !== 0) {
+        const message = parsed.errors.length ? parsed.errors[parsed.errors.length - 1] : compactString(stderr || stdout || `Codex CLI exited with ${code}.`, 1000);
+        reject(new Error(message));
+        return;
+      }
+      if (!parsed.text) {
+        reject(new Error(compactString(stderr || "Codex CLI did not return an assistant message.", 1000)));
+        return;
+      }
+      resolve({
+        agent: publicAgent(agent),
+        model,
+        text: parsed.text,
+        message: {
+          role: "assistant",
+          content: parsed.text
+        },
+        finishReason: "completed",
+        usage: parsed.usage,
+        codexThreadId: parsed.threadId,
+        rawResponse: options && options.includeRawResponse ? { stdout, stderr, events: parsed.events } : undefined
+      });
+    });
+  });
+}
+
 function normalizeOpenAiChatResponse(agent, requestedModel, body, includeRawResponse) {
   const choice = body && Array.isArray(body.choices) ? body.choices[0] : null;
   const message = choice && choice.message ? choice.message : {};
@@ -669,7 +1004,7 @@ function normalizeOllamaChatResponse(agent, requestedModel, body, includeRawResp
 async function chatWithAgent(args) {
   args = args || {};
   const agent = findAgent(args.agentId || args.agent || args.provider);
-  const model = compactString(args.model || agent.model, 200);
+  const model = normalizeRequestedModel(agent, args.model || agent.model);
   const skipReadinessCheck = boolArg(args, "skipReadinessCheck", false);
   const readiness = skipReadinessCheck
     ? await checkAgentReadiness({ ...args, agentId: agent.id, model, checkModels: false })
@@ -685,6 +1020,18 @@ async function chatWithAgent(args) {
   const maxTokens = maybeNumber(args.maxTokens || args.max_tokens, "maxTokens");
   const includeRawResponse = Boolean(args.includeRawResponse);
   const timeoutMs = maybeNumber(args.timeoutMs, "timeoutMs") || DEFAULT_TIMEOUT_MS;
+
+  if (agent.apiStyle === "codex-cli") {
+    const result = await runCodexCli(agent, model, messages, {
+      timeoutMs: maybeNumber(args.timeoutMs, "timeoutMs") || DEFAULT_CODEX_CLI_TIMEOUT_MS,
+      includeRawResponse
+    });
+    if (!includeRawResponse) delete result.rawResponse;
+    return {
+      ...result,
+      readiness
+    };
+  }
 
   if (agent.apiStyle === "ollama") {
     const body = {

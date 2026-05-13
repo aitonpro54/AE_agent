@@ -1,6 +1,6 @@
 # AE MCP Bridge Project Memory
 
-Date: 2026-05-11
+Date: 2026-05-13
 
 This file condenses the projectless Codex chat history that was moved into the
 `AE_MCP_Bridge` project. It is meant as the first file to read after
@@ -11,13 +11,13 @@ This file condenses the projectless Codex chat history that was moved into the
 - Active project root: `C:\Users\Ant\Documents\New project 2`
 - Origin repo copied from:
   `C:\Users\Ant\Documents\Codex\2026-05-03\files-mentioned-by-the-user-c36e102f\ae-mcp-bridge`
-- Current branch: `v0.16-scope-cleanup-handoff`
-- Current tag: `v0.16.0-scope-cleanup-handoff`
-- Current commit: `77df1b7 Prepare scope cleanup handoff`
+- Current branch: `codex-v0.26-agent-ux-polish`
+- Current tag: none for the active v0.26 work
+- Current base commit: `336a906 Add AI agents and safe AE plan execution`
 
 Active development branch:
 
-- `v0.17-safe-edit-sessions`
+- `codex-v0.26-agent-ux-polish`
 
 The old large live `backups/` and `logs/` contents were intentionally not
 copied into this workspace. Empty working folders exist here, and release zip
@@ -106,6 +106,14 @@ Codex -> stdio MCP adapter -> local bridge daemon -> CEP panel -> After Effects
   unsaved projects are blocked before mutation with a save-project-first result.
   Smoke coverage now includes unsafe mutating-run blocking and a live CEP
   mutating scenario with `Codex Test Safe Run` cleanup.
+- `v0.26.0-agent-ux-polish`: the CEP Agent area now shows provider/model
+  readiness details, supports an OpenRouter free-model filter, has a manual
+  `Check model` preflight action, and persists the visible chat transcript
+  locally until the user clears it. The panel now follows the AE GPT-style
+  provider layout, separates OpenAI API keys from OpenAI CLI/ChatGPT sign-in,
+  and exposes Prompt Optimization. The runner also tolerates common model
+  shorthand such as `step-2-result` during real runtime binding and the panel
+  formats partial/failed plan runs as `Run: needs review` instead of raw JSON.
 
 ## Important Product Decisions
 
@@ -141,6 +149,13 @@ Codex -> stdio MCP adapter -> local bridge daemon -> CEP panel -> After Effects
   It was selected from OpenRouter's May 2026 top free model list because it is
   positioned for agentic/coding workflows; keep `openrouter/free` available as
   a router fallback.
+- Treat ChatGPT subscription access as OpenAI CLI mode, not OpenAI API mode.
+  `openai-cli` depends on installed Codex CLI plus `codex login` and calls
+  `codex exec --ephemeral --json --sandbox read-only`; `openai-api` uses
+  `OPENAI_API_KEY` and normal API billing.
+- Keep Agent UX state local and low-risk: selected agent/model, free-model
+  filter, and visible transcript may use panel `localStorage`, while API keys
+  remain in `.codex\agent-secrets.json` through the daemon.
 - When testing Russian prompts from PowerShell, avoid raw Cyrillic in command
   literals if results look like `????`; send UTF-8 JSON or Unicode escapes.
 - The bridge CEP panel now ships with `.debug` using AEFT port `8870`. The

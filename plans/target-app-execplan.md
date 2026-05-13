@@ -3,10 +3,10 @@
 ## Progress
 
 - [x] Milestone 1: Docs and instruction baseline.
-- [ ] Milestone 2: Provider model contract and OpenAI/Codex CLI provider.
-- [ ] Milestone 3: AE GPT-style CEP layout.
-- [ ] Milestone 4: Chat/Agent UX parity and prompt optimization.
-- [ ] Milestone 5: Full validation and release notes.
+- [x] Milestone 2: Provider model contract and OpenAI/Codex CLI provider.
+- [x] Milestone 3: AE GPT-style CEP layout.
+- [x] Milestone 4: Chat/Agent UX parity and prompt optimization.
+- [x] Milestone 5: Full validation and release notes.
 
 ## Milestones
 
@@ -54,6 +54,8 @@
 - 2026-05-13: No Pro/license gate in this project; the screenshot activation card is treated as reference-only.
 - 2026-05-13: No production dependencies for CLI integration; use Node built-ins.
 - 2026-05-13: Existing dirty worktree must be preserved; commits should stage only the current milestone changes.
+- 2026-05-13: Gemini and Claude remain disabled UI placeholders until provider implementations are intentionally added.
+- 2026-05-13: Static local Chrome preview is the repo UI smoke for this milestone; live CEP smoke requires copying the changed panel files into the installed Adobe CEP extension first.
 
 ## Validation
 
@@ -63,10 +65,27 @@
   - Created `plans/target-app-execplan.md`.
   - Updated `AGENTS.md` verification to repo-aware checks.
 - Pending for later milestones:
-  - `node --check mcp-server/ai-agents.js`
-  - `node --check mcp-server/bridge-daemon.js`
-  - `node --check cep-panel/panel.js`
-  - `git diff --check`
-  - `node scripts/bridge-only-smoke-test.js`
-  - `node scripts/smoke-test.js`
-  - `node scripts/cep-panel-cdp-smoke.js smoke` when After Effects and the CEP panel are available.
+- Milestone 2:
+  - Added `openai-api` and `openai-cli`.
+  - Added public agent metadata: `providerGroup`, `authMode`, `transport`, `uiModes`, `canSaveKey`, and `setupAction`.
+  - Verified `openai-cli` with real `codex exec --ephemeral --json --sandbox read-only --model gpt-5.5`.
+- Milestone 3:
+  - Reworked the CEP panel into an AE GPT-style provider/sidebar and chat layout.
+  - Preserved existing bridge connection, agent selection, model readiness, local transcript, and plan run controls.
+- Milestone 4:
+  - Added `Chat`/`Agent` pill controls.
+  - Added Prompt Optimization state and backend prompt handling.
+  - Rendered Agent plan/run text as compact step cards.
+- Milestone 5:
+  - Passed `node --check mcp-server/ai-agents.js`.
+  - Passed `node --check mcp-server/bridge-daemon.js`.
+  - Passed `node --check mcp-server/mcp-adapter.js`.
+  - Passed `node --check cep-panel/panel.js`.
+  - Passed `node --check scripts/smoke-test.js`.
+  - Passed `node --check scripts/bridge-only-smoke-test.js`.
+  - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+  - Passed static Chrome preview of `cep-panel/index.html`; screenshot written to `logs/panel-preview.png`.
+  - `node scripts/cep-panel-cdp-smoke.js inspect` reached the installed CEP panel, but it points at the older AppData extension copy. Run live `smoke` after copying the updated repo panel into the installed CEP extension.

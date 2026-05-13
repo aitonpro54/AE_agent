@@ -1,5 +1,31 @@
 # AE MCP Bridge Releases
 
+## v0.26.0-agent-ux-polish - 2026-05-13
+
+Agent selector polish for the CEP panel.
+
+Added:
+
+- AE GPT-style provider UI with `Gemini`, `OpenAI`, `Claude`, and `Local` tabs.
+- Separate OpenAI `API` and `CLI` modes. API mode uses `OPENAI_API_KEY`; CLI mode uses `codex login` and `codex exec` for ChatGPT/Codex subscription-backed calls.
+- OpenAI CLI model list for `GPT-5.5`, `GPT-5.4`, `GPT-5.4-Mini`, `GPT-5.3-Codex`, `GPT-5.3-Codex-Spark`, and `GPT-5.2`.
+- Prompt Optimization toggle passed through chat and Agent requests.
+- Agent plan text rendering as compact step cards in the CEP transcript.
+- Agent details card with provider, endpoint, selected model, model count/source, readiness, setup state, notes, and last error.
+- `Free models only` toggle for OpenRouter model refreshes.
+- `Check model` action that re-runs readiness/model preflight for the selected provider and model.
+- Local visible chat transcript persistence, cleared by the panel's `Clear` button.
+
+Changed:
+
+- `list_ai_agents` now returns richer public provider metadata: `providerGroup`, `authMode`, `transport`, `uiModes`, `canSaveKey`, and `setupAction`.
+- OpenAI API keys can be saved through the same local bridge secret store as OpenRouter and Ollama Cloud keys.
+- The CEP panel sends `includeModels=1` and OpenRouter free-model filter state when refreshing agents.
+- Failed or partial AE Plan runs now render as a readable `Run: needs review` report when the backend returns run details.
+- The plan runner accepts common model shorthand such as `step-2-result` for runtime references and resolves it to useful target fields during real runs; dry-runs report those dependent steps as ready.
+- The live CEP smoke now verifies the new agent details and check-model flow.
+- Daemon, adapter, CEP panel, manifest, install note, and smoke tests report version `0.26.0`.
+
 ## v0.25.0-safe-run - 2026-05-12
 
 Safe execution path for AI-generated mutating AE plans.

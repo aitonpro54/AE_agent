@@ -8,7 +8,7 @@ const path = require("path");
 const aiAgents = require("./ai-agents");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "0.25.0";
+const SERVER_VERSION = "0.26.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -333,6 +333,7 @@ function writeJsonFileAtomic(file, value) {
 }
 
 function agentApiKeyEnvName(agentId) {
+  if (agentId === "openai-api") return "OPENAI_API_KEY";
   if (agentId === "openrouter") return "OPENROUTER_API_KEY";
   if (agentId === "ollama-cloud") return "OLLAMA_CLOUD_API_KEY";
   return "";
@@ -358,7 +359,7 @@ function saveAgentApiKey(agentId, apiKey) {
   const normalizedAgentId = optionalString({ agentId }, "agentId", "").trim();
   const envName = agentApiKeyEnvName(normalizedAgentId);
   if (!envName) {
-    throw new Error("Saving API keys is currently supported for openrouter and ollama-cloud.");
+    throw new Error("Saving API keys is currently supported for openai-api, openrouter, and ollama-cloud.");
   }
 
   const key = optionalString({ apiKey }, "apiKey", "").trim();
@@ -1972,7 +1973,74 @@ function valueAtPath(value, pathExpression) {
   return current;
 }
 
-function resolvePlanBinding(binding, executedSteps) {
+function isPlanBindingExpression(value) {
+  const expression = String(value || "").trim();
+  return /^steps\.\d+\./.test(expression)
+    || expression.indexOf("previous.") === 0
+    || /^step-\d+-result(?:\.|$)/.test(expression);
+}
+
+function firstPresent(values) {
+  for (const value of values) {
+    if (value !== undefined && value !== null && value !== "") return value;
+  }
+  return undefined;
+}
+
+function defaultPlanBindingValue(payload, targetField) {
+  if (!payload || typeof payload !== "object") return payload;
+  if (targetField === "compItemIndex") {
+    return firstPresent([
+      payload.compItemIndex,
+      payload.itemIndex,
+      valueAtPath(payload, "comp.itemIndex"),
+      valueAtPath(payload, "verification.comp.itemIndex"),
+      valueAtPath(payload, "mutation.target.item.itemIndex")
+    ]);
+  }
+  if (targetField === "compName") {
+    return firstPresent([
+      payload.compName,
+      payload.name,
+      valueAtPath(payload, "comp.name"),
+      valueAtPath(payload, "verification.comp.name"),
+      valueAtPath(payload, "mutation.target.item.name")
+    ]);
+  }
+  if (targetField === "itemIndex") {
+    return firstPresent([
+      payload.itemIndex,
+      valueAtPath(payload, "item.itemIndex"),
+      valueAtPath(payload, "mutation.target.item.itemIndex")
+    ]);
+  }
+  if (targetField === "itemName" || targetField === "name") {
+    return firstPresent([
+      payload.itemName,
+      payload.name,
+      valueAtPath(payload, "item.name"),
+      valueAtPath(payload, "mutation.target.item.name")
+    ]);
+  }
+  if (targetField === "layerIndex") {
+    return firstPresent([
+      payload.layerIndex,
+      valueAtPath(payload, "layer.index"),
+      valueAtPath(payload, "layer.layerIndex"),
+      valueAtPath(payload, "mutation.target.layer.layerIndex")
+    ]);
+  }
+  if (targetField === "layerName") {
+    return firstPresent([
+      payload.layerName,
+      valueAtPath(payload, "layer.name"),
+      valueAtPath(payload, "mutation.target.layer.name")
+    ]);
+  }
+  return payload;
+}
+
+function resolvePlanBinding(binding, executedSteps, targetField) {
   const expression = String(binding || "").trim();
   const match = /^steps\.(\d+)\.(.+)$/.exec(expression);
   if (match) {
@@ -1983,6 +2051,14 @@ function resolvePlanBinding(binding, executedSteps) {
   }
   if (expression.indexOf("previous.") === 0 && executedSteps.length) {
     return valueAtPath(executedSteps[executedSteps.length - 1].payload, expression.slice("previous.".length));
+  }
+  const shorthand = /^step-(\d+)-result(?:\.(.+))?$/.exec(expression);
+  if (shorthand) {
+    const index = Number(shorthand[1]) - 1;
+    const step = executedSteps[index];
+    if (!step) return undefined;
+    if (shorthand[2]) return valueAtPath(step.payload, shorthand[2]);
+    return defaultPlanBindingValue(step.payload, targetField);
   }
   return undefined;
 }
@@ -1995,6 +2071,15 @@ function applyPlanRuntimeBindings(step, executedSteps) {
     ? tool.inputSchema.properties
     : null;
   const unresolved = [];
+  for (const field of Object.keys(args)) {
+    if (!isPlanBindingExpression(args[field])) continue;
+    const value = resolvePlanBinding(args[field], executedSteps, field);
+    if (value === undefined || value === null || value === "") {
+      unresolved.push(field);
+    } else {
+      args[field] = value;
+    }
+  }
   for (const field of Object.keys(bindings)) {
     if (hasArg(args, field) && args[field] !== null && args[field] !== undefined && args[field] !== "") {
       continue;
@@ -2002,7 +2087,7 @@ function applyPlanRuntimeBindings(step, executedSteps) {
     if (schemaProperties && !hasArg(schemaProperties, field)) {
       continue;
     }
-    const value = resolvePlanBinding(bindings[field], executedSteps);
+    const value = resolvePlanBinding(bindings[field], executedSteps, field);
     if (value === undefined || value === null || value === "") {
       unresolved.push(field);
     } else {
@@ -2228,6 +2313,13 @@ async function runValidatedAgentPlan(options) {
     const bound = applyPlanRuntimeBindings(step, executedSteps);
     item.args = bound.args;
     if (bound.unresolved.length) {
+      if (dryRun) {
+        item.status = "ready";
+        item.reason = `Runtime bindings will resolve during run: ${bound.unresolved.join(", ")}`;
+        item.unresolved = bound.unresolved;
+        run.steps.push(item);
+        continue;
+      }
       item.status = "blocked";
       item.reason = `Unresolved runtime bindings: ${bound.unresolved.join(", ")}`;
       item.unresolved = bound.unresolved;
@@ -2320,6 +2412,7 @@ function buildAePlanPrompt(args) {
     planningToolCatalog(),
     "",
     "Treat Russian/Cyrillic user text as a normal request. If a Russian phrase is ambiguous, infer cautiously from the After Effects context before asking for clarification.",
+    optionalBoolean(args || {}, "promptOptimization", false) ? "Prompt Optimization is enabled: clarify the user's intent internally, choose conservative AE defaults, and do not expand the requested scope." : "",
     "Use get_bridge_status or ping_ae for bridge health checks. Use get_project_snapshot, get_active_comp, get_comp_details, and get_layer_details before choosing project targets.",
     "For any project-changing request, plan inspection steps first, then the narrow mutating step(s), then verification/readback steps.",
     "You do not need to add a checkpoint_project step for every mutation because the plan runner can create a protected edit session, but set requiresCheckpoint=true for broad, destructive, or multi-step project changes.",
@@ -2365,7 +2458,17 @@ async function runAgentChatLogged(source, args) {
   });
 
   try {
-    const result = await aiAgents.chatWithAgent(args || {});
+    let chatArgs = args || {};
+    if (optionalBoolean(chatArgs, "promptOptimization", false)) {
+      chatArgs = {
+        ...chatArgs,
+        system: [
+          optionalString(chatArgs, "system", ""),
+          "Prompt Optimization is enabled: clarify ambiguous wording internally, keep the user's scope, and answer with concise After Effects-friendly details."
+        ].filter(Boolean).join("\n")
+      };
+    }
+    const result = await aiAgents.chatWithAgent(chatArgs);
     const finishedAtMs = Date.now();
     const metadata = {
       requestId,
@@ -2932,7 +3035,7 @@ const tools = [
   },
   {
     name: "list_ai_agents",
-    description: "List configured OpenRouter, Ollama, and custom AI agents available through the bridge.",
+    description: "List configured OpenAI API, OpenAI CLI, OpenRouter, Ollama, and custom AI agents available through the bridge.",
     inputSchema: {
       type: "object",
       properties: {
@@ -2959,7 +3062,7 @@ const tools = [
       properties: {
         agentId: {
           type: "string",
-          description: "Agent id from list_ai_agents, such as openrouter, ollama-local, or ollama-cloud."
+          description: "Agent id from list_ai_agents, such as openai-cli, openai-api, openrouter, ollama-local, or ollama-cloud."
         },
         model: {
           type: "string",
@@ -2983,13 +3086,13 @@ const tools = [
   },
   {
     name: "chat_with_ai_agent",
-    description: "Send a chat prompt to a configured OpenRouter, Ollama, or custom AI agent.",
+    description: "Send a chat prompt to a configured OpenAI API, OpenAI CLI, OpenRouter, Ollama, or custom AI agent.",
     inputSchema: {
       type: "object",
       properties: {
         agentId: {
           type: "string",
-          description: "Agent id from list_ai_agents, such as openrouter, ollama-local, or ollama-cloud."
+          description: "Agent id from list_ai_agents, such as openai-cli, openai-api, openrouter, ollama-local, or ollama-cloud."
         },
         model: {
           type: "string",
@@ -3035,7 +3138,7 @@ const tools = [
       properties: {
         agentId: {
           type: "string",
-          description: "Agent id from list_ai_agents, such as openrouter, ollama-local, or ollama-cloud."
+          description: "Agent id from list_ai_agents, such as openai-cli, openai-api, openrouter, ollama-local, or ollama-cloud."
         },
         model: {
           type: "string",

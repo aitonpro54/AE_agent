@@ -2,9 +2,10 @@
 
 (function () {
   var APP_NAME = "Codex AE MCP Bridge";
-  var APP_VERSION = "0.25.0";
+  var APP_VERSION = "0.26.0";
 
   var cs = new CSInterface();
+  var appShellEl = document.getElementById("appShell");
   var titleEl = document.getElementById("appTitle");
   var versionEl = document.getElementById("appVersion");
   var statusEl = document.getElementById("status");
@@ -15,13 +16,27 @@
   var connectButton = document.getElementById("connectButton");
   var disconnectButton = document.getElementById("disconnectButton");
   var reloadButton = document.getElementById("reloadButton");
+  var collapseSidebarButton = document.getElementById("collapseSidebarButton");
+  var providerTabEls = document.querySelectorAll(".provider-tab");
+  var authModeTabsEl = document.getElementById("authModeTabs");
+  var authModeButtonEls = document.querySelectorAll("#authModeTabs button");
+  var agentSetupCardEl = document.getElementById("agentSetupCard");
+  var agentSetupTitleEl = document.getElementById("agentSetupTitle");
+  var agentSetupTextEl = document.getElementById("agentSetupText");
+  var localServiceCardEl = document.getElementById("localServiceCard");
+  var detectLocalButton = document.getElementById("detectLocalButton");
+  var localStatusEl = document.getElementById("localStatus");
   var agentSelect = document.getElementById("agentSelect");
   var agentModelEl = document.getElementById("agentModel");
   var agentModelListEl = document.getElementById("agentModelList");
+  var agentDetailsEl = document.getElementById("agentDetails");
   var agentApiKeyRowEl = document.getElementById("agentApiKeyRow");
   var agentApiKeyEl = document.getElementById("agentApiKey");
+  var freeModelsRowEl = document.getElementById("freeModelsRow");
+  var freeModelsOnlyEl = document.getElementById("freeModelsOnly");
   var agentStatusEl = document.getElementById("agentStatus");
   var refreshAgentsButton = document.getElementById("refreshAgentsButton");
+  var checkAgentButton = document.getElementById("checkAgentButton");
   var saveAgentKeyButton = document.getElementById("saveAgentKeyButton");
   var chatTranscriptEl = document.getElementById("chatTranscript");
   var chatPromptEl = document.getElementById("chatPrompt");
@@ -30,14 +45,19 @@
   var runPlanButton = document.getElementById("runPlanButton");
   var clearChatButton = document.getElementById("clearChatButton");
   var chatModeEl = document.getElementById("chatMode");
+  var chatModeButtonEls = document.querySelectorAll("#chatModeTabs button");
+  var promptOptimizationEl = document.getElementById("promptOptimization");
 
   var running = false;
   var pollTimer = null;
   var pollInFlight = false;
   var agents = [];
   var chatMessages = [];
+  var transcriptHistory = [];
+  var transcriptRestoring = false;
   var chatInFlight = false;
   var keySaveInFlight = false;
+  var readinessInFlight = false;
   var lastPlanResult = null;
 
   function setAppTitle(version) {
@@ -89,13 +109,17 @@
       if (xhr.readyState !== 4) return;
       if (xhr.status < 200 || xhr.status >= 300) {
         var errorMessage = "HTTP " + xhr.status + ": " + xhr.responseText;
+        var errorBody = null;
         try {
-          var errorBody = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+          errorBody = xhr.responseText ? JSON.parse(xhr.responseText) : null;
           if (errorBody) {
             errorMessage = errorBody.error || (errorBody.run && errorBody.run.error) || errorMessage;
           }
         } catch (_parseError) {}
-        finish(new Error(errorMessage));
+        var requestError = new Error(errorMessage);
+        requestError.status = xhr.status;
+        requestError.body = errorBody;
+        finish(requestError);
         return;
       }
       try {
@@ -124,6 +148,14 @@
     agentStatusEl.textContent = text;
   }
 
+  function trimText(value) {
+    return String(value || "").replace(/^\s+|\s+$/g, "");
+  }
+
+  function selectedModel() {
+    return trimText(agentModelEl.value);
+  }
+
   function findAgent(id) {
     for (var i = 0; i < agents.length; i++) {
       if (agents[i].id === id) return agents[i];
@@ -133,6 +165,33 @@
 
   function clearElement(el) {
     while (el.firstChild) el.removeChild(el.firstChild);
+  }
+
+  function forEachNode(nodes, callback) {
+    for (var i = 0; i < nodes.length; i++) callback(nodes[i], i);
+  }
+
+  function toggleClass(el, className, enabled) {
+    if (!el) return;
+    if (el.classList) {
+      if (enabled) el.classList.add(className);
+      else el.classList.remove(className);
+      return;
+    }
+    var current = " " + el.className + " ";
+    var token = " " + className + " ";
+    var hasClass = current.indexOf(token) >= 0;
+    if (enabled && !hasClass) {
+      el.className = (el.className + " " + className).replace(/^\s+|\s+$/g, "");
+    } else if (!enabled && hasClass) {
+      el.className = current.replace(token, " ").replace(/^\s+|\s+$/g, "");
+    }
+  }
+
+  function getData(el, name) {
+    if (!el) return "";
+    if (el.getAttribute) return el.getAttribute("data-" + name) || "";
+    return "";
   }
 
   function optionLabel(agent) {
@@ -149,12 +208,158 @@
     parent.appendChild(option);
   }
 
+  function addAgentDetail(label, value) {
+    var item = document.createElement("span");
+    item.textContent = label + ": " + (value || "-");
+    agentDetailsEl.appendChild(item);
+  }
+
+  function compactUrl(value) {
+    var text = String(value || "");
+    return text.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+  }
+
+  function modelSourceLabel(value) {
+    if (value === "remote_list") return "remote list";
+    if (value === "openrouter_router") return "OpenRouter router";
+    if (value === "empty_remote_list") return "empty remote list";
+    if (value === "not_checked") return "not checked";
+    if (value === "static_list") return "configured list";
+    return value || "configured list";
+  }
+
+  function readinessLabel(agent) {
+    if (!agent) return "not loaded";
+    if (!agent.configured) return agent.requiresApiKey ? "needs API key" : "needs setup";
+    if (agent.canChat === false && agent.status) return agent.status;
+    if (agent.reachable === false) return "offline";
+    if (agent.modelAvailable === false) return "model unavailable";
+    if (agent.canChat === true) return "ready";
+    return agent.status || "not checked";
+  }
+
+  function agentGroup(agent) {
+    if (!agent) return "";
+    if (agent.providerGroup) return agent.providerGroup;
+    if (agent.provider === "ollama" || agent.provider === "ollama-cloud") return "local";
+    return agent.provider || "";
+  }
+
+  function openAiAuthMode() {
+    var saved = localStorage.getItem("codexAeOpenAiAuthMode") || "cli";
+    return saved === "api" ? "api" : "cli";
+  }
+
+  function visibleAgent(agent) {
+    var group = agentGroup(agent);
+    return group === "openai" || group === "local";
+  }
+
+  function findAgentByGroup(group) {
+    if (group === "openai") {
+      var mode = openAiAuthMode();
+      return findAgent(mode === "api" ? "openai-api" : "openai-cli") || findAgent("openai-cli") || findAgent("openai-api");
+    }
+    if (group === "local") return findAgent("ollama-local");
+    return null;
+  }
+
+  function selectAgent(agentId) {
+    if (!findAgent(agentId)) return;
+    agentSelect.value = agentId;
+    localStorage.setItem("codexAeAgentId", agentId);
+    updateSelectedAgent();
+  }
+
+  function selectProviderGroup(group) {
+    var agent = findAgentByGroup(group);
+    if (!agent) {
+      setAgentStatus(group === "local" ? "Ollama provider not available" : "Provider not configured");
+      return;
+    }
+    localStorage.setItem("codexAeProviderGroup", group);
+    selectAgent(agent.id);
+  }
+
+  function setupTitleForAgent(agent) {
+    if (!agent) return "ChatGPT via Codex CLI";
+    if (agent.id === "openai-cli") return "ChatGPT via Codex CLI";
+    if (agent.id === "openai-api") return "OpenAI API key";
+    if (agentGroup(agent) === "local") return "Local Ollama";
+    return agent.label || "Provider setup";
+  }
+
+  function setupTextForAgent(agent) {
+    if (!agent) return "Connect the bridge to load provider readiness. CLI mode uses codex login and does not use an OpenAI API key.";
+    if (agent.id === "openai-cli") {
+      if (agent.codexStatus && agent.codexStatus.loggedIn) return "Codex CLI is signed in with ChatGPT. API keys are not used in this mode.";
+      if (agent.codexStatus && !agent.codexStatus.installed) return "Codex CLI was not found. Install Codex, then run codex login.";
+      return "Run codex login, choose ChatGPT sign-in, then use CLI models here. No OpenAI API key is used.";
+    }
+    if (agent.id === "openai-api") return "Uses OpenAI API billing. Paste an API key to enable API models.";
+    if (agentGroup(agent) === "local") return "Runs with Ollama on port 11434. No API key needed.";
+    return agent.notes || "";
+  }
+
+  function updateProviderUi(agent) {
+    var group = agentGroup(agent) || localStorage.getItem("codexAeProviderGroup") || "openai";
+    var authMode = agent && agent.authMode ? agent.authMode : openAiAuthMode();
+    forEachNode(providerTabEls, function (button) {
+      toggleClass(button, "active", getData(button, "provider-group") === group);
+    });
+    forEachNode(authModeButtonEls, function (button) {
+      toggleClass(button, "active", getData(button, "auth-mode") === authMode);
+    });
+    authModeTabsEl.style.display = group === "openai" ? "" : "none";
+    localServiceCardEl.style.display = group === "local" ? "grid" : "none";
+    agentSetupCardEl.style.display = group === "local" ? "none" : "";
+    agentSetupTitleEl.textContent = setupTitleForAgent(agent);
+    agentSetupTextEl.textContent = setupTextForAgent(agent);
+    if (group === "local") {
+      if (agent && agent.canChat) localStatusEl.textContent = "Connected to Ollama - " + (agent.modelCount || 0) + " models available";
+      else if (agent && agent.reachable === false) localStatusEl.textContent = agent.error || "Ollama is offline";
+      else localStatusEl.textContent = "Not checked";
+    }
+  }
+
+  function setAgentDetails(agent) {
+    clearElement(agentDetailsEl);
+    if (!agent) {
+      addAgentDetail("Provider", "-");
+      addAgentDetail("Model", "-");
+      addAgentDetail("Models", "-");
+      addAgentDetail("Status", "not loaded");
+      return;
+    }
+
+    var modelCount = typeof agent.modelCount === "number" ? String(agent.modelCount) : "-";
+    if (agent.remoteModels && agent.remoteModels.length && modelCount === "-") {
+      modelCount = String(agent.remoteModels.length);
+    }
+
+    addAgentDetail("Provider", agent.label || agent.id);
+    addAgentDetail("Mode", agent.authMode || agent.transport || "-");
+    addAgentDetail("Endpoint", agent.transport === "codex-cli" ? "codex exec" : compactUrl(agent.baseUrl));
+    addAgentDetail("Model", selectedModel() || agent.model || "-");
+    addAgentDetail("Models", modelCount + " / " + modelSourceLabel(agent.modelSource));
+    addAgentDetail("Status", readinessLabel(agent));
+    addAgentDetail("Setup", agent.requiresApiKey ? (agent.configured ? "key saved" : "key required") : "local");
+    if (agent.notes) addAgentDetail("Notes", agent.notes);
+    if (agent.error) addAgentDetail("Last error", agent.error);
+  }
+
   function updateModelList(agent) {
+    clearElement(agentModelEl);
     clearElement(agentModelListEl);
     if (!agent) return;
 
     var seen = {};
     var modelItems = [];
+    if (agent.modelOptions) {
+      for (var optionIndex = 0; optionIndex < agent.modelOptions.length; optionIndex++) {
+        modelItems.push(agent.modelOptions[optionIndex]);
+      }
+    }
     if (agent.model) modelItems.push({ id: agent.model, name: agent.model });
     if (agent.models) {
       for (var i = 0; i < agent.models.length; i++) {
@@ -171,37 +376,61 @@
       var id = modelItems[k].id || modelItems[k].name;
       if (!id || seen[id]) continue;
       seen[id] = true;
+      addOption(agentModelEl, id, modelItems[k].name || id);
       addOption(agentModelListEl, id, modelItems[k].name || id);
     }
+  }
+
+  function modelOptionExists(value) {
+    for (var i = 0; i < agentModelEl.options.length; i++) {
+      if (agentModelEl.options[i].value === value) return true;
+    }
+    return false;
+  }
+
+  function chooseModelValue(value) {
+    var target = trimText(value);
+    if (target && modelOptionExists(target)) return target;
+    if (target) {
+      var lower = target.toLowerCase();
+      for (var i = 0; i < agentModelEl.options.length; i++) {
+        if (agentModelEl.options[i].text.toLowerCase() === lower) return agentModelEl.options[i].value;
+      }
+    }
+    return agentModelEl.options.length ? agentModelEl.options[0].value : target;
   }
 
   function updateSelectedAgent() {
     var agent = findAgent(agentSelect.value);
     updateModelList(agent);
+    setAgentDetails(agent);
+    updateProviderUi(agent);
     if (!agent) {
       agentModelEl.value = "";
       agentApiKeyRowEl.style.display = "none";
+      freeModelsRowEl.style.display = "none";
       saveAgentKeyButton.style.display = "none";
       agentApiKeyEl.value = "";
       setAgentStatus("No agent");
       updateChatAvailability();
+      updateKeyAvailability();
       return;
     }
 
     var savedModel = localStorage.getItem("codexAeAgentModel:" + agent.id) || "";
-    agentModelEl.value = savedModel || agent.model || "";
+    agentModelEl.value = chooseModelValue(savedModel || agent.model || "");
     localStorage.setItem("codexAeAgentId", agent.id);
+    localStorage.setItem("codexAeProviderGroup", agentGroup(agent) || "");
     agentApiKeyEl.value = "";
 
-    if (agent.requiresApiKey) {
-      agentApiKeyRowEl.style.display = "";
-      saveAgentKeyButton.style.display = "";
+    if (agent.requiresApiKey && agent.canSaveKey !== false) {
+      agentApiKeyRowEl.style.display = "grid";
       agentApiKeyEl.placeholder = agent.configured ? "Saved locally; paste a new key to replace" : "Paste " + (agent.apiKeyEnv || "API key");
     } else {
       agentApiKeyRowEl.style.display = "none";
-      saveAgentKeyButton.style.display = "none";
       agentApiKeyEl.placeholder = "";
     }
+    freeModelsRowEl.style.display = agent.provider === "openrouter" ? "flex" : "none";
 
     if (!agent.configured) {
       setAgentStatus(agent.apiKeyEnv ? "Paste and save " + agent.apiKeyEnv : "Needs setup");
@@ -216,18 +445,22 @@
     } else {
       setAgentStatus("Ready");
     }
+    setAgentDetails(agent);
     updateChatAvailability();
     updateKeyAvailability();
   }
 
   function loadAgents() {
     setAgentStatus("Loading...");
-    request("GET", "/agents?includeModels=1", null, function (error, response) {
+    var freeOnly = freeModelsOnlyEl.checked ? "1" : "0";
+    request("GET", "/agents?includeModels=1&freeOnly=" + freeOnly, null, function (error, response) {
       if (error) {
         agents = [];
         clearElement(agentSelect);
+        setAgentDetails(null);
         setAgentStatus(error.message);
         updateChatAvailability();
+        updateKeyAvailability();
         return;
       }
 
@@ -244,10 +477,75 @@
       }
 
       var savedAgentId = localStorage.getItem("codexAeAgentId") || "";
-      if (!findAgent(savedAgentId)) savedAgentId = response.defaultAgentId || agents[0].id;
+      var savedAgent = findAgent(savedAgentId);
+      if (!savedAgent || !visibleAgent(savedAgent)) {
+        var savedGroup = localStorage.getItem("codexAeProviderGroup") || "openai";
+        var preferredAgent = findAgentByGroup(savedGroup) || findAgentByGroup("openai") || findAgentByGroup("local");
+        savedAgentId = preferredAgent ? preferredAgent.id : response.defaultAgentId || agents[0].id;
+      }
       if (!findAgent(savedAgentId)) savedAgentId = agents[0].id;
       agentSelect.value = savedAgentId;
       updateSelectedAgent();
+    });
+  }
+
+  function mergeReadiness(agent, readiness) {
+    if (!agent || !readiness) return;
+    agent.reachable = readiness.reachable;
+    agent.modelAvailable = readiness.modelAvailable;
+    agent.canChat = readiness.canChat;
+    agent.status = readiness.status;
+    agent.error = readiness.error || null;
+    agent.modelSource = readiness.modelSource || agent.modelSource;
+    agent.modelCount = typeof readiness.modelCount === "number" ? readiness.modelCount : agent.modelCount;
+    if (readiness.remoteModels) agent.remoteModels = readiness.remoteModels;
+    if (readiness.agent && readiness.agent.codexStatus) agent.codexStatus = readiness.agent.codexStatus;
+    agent.checkedAt = readiness.checkedAt || null;
+  }
+
+  function checkSelectedAgent() {
+    if (readinessInFlight) return;
+    var agent = findAgent(agentSelect.value);
+    if (!agent) {
+      setAgentStatus("Select an agent first");
+      return;
+    }
+    var model = selectedModel();
+    if (!model) {
+      setAgentStatus("Choose a model first");
+      updateChatAvailability();
+      return;
+    }
+
+    readinessInFlight = true;
+    checkAgentButton.disabled = true;
+    setAgentStatus("Checking model...");
+    request("GET", "/agents/readiness?agentId=" + encodeURIComponent(agent.id) + "&model=" + encodeURIComponent(model) + "&checkModels=1&freeOnly=" + (freeModelsOnlyEl.checked ? "1" : "0"), null, function (error, response) {
+      readinessInFlight = false;
+      if (error) {
+        agent.error = error.message;
+        agent.canChat = false;
+        agent.reachable = false;
+        setAgentStatus(error.message);
+        setAgentDetails(agent);
+        updateProviderUi(agent);
+        updateChatAvailability();
+        updateKeyAvailability();
+        return;
+      }
+
+      var readiness = response && response.readiness ? response.readiness : null;
+      mergeReadiness(agent, readiness);
+      updateModelList(agent);
+      setAgentDetails(agent);
+      updateProviderUi(agent);
+      if (agent.canChat) {
+        setAgentStatus("Ready");
+      } else {
+        setAgentStatus(agent.error || readinessLabel(agent));
+      }
+      updateChatAvailability();
+      updateKeyAvailability();
     });
   }
 
@@ -261,11 +559,124 @@
     messageEl.appendChild(roleEl);
 
     var textEl = document.createElement("span");
-    textEl.textContent = text || "";
+    renderChatText(textEl, role, text || "");
     messageEl.appendChild(textEl);
 
     chatTranscriptEl.appendChild(messageEl);
     chatTranscriptEl.scrollTop = chatTranscriptEl.scrollHeight;
+    recordTranscriptMessage(role, text);
+  }
+
+  function statusClassForStep(text) {
+    var value = String(text || "").toLowerCase();
+    if (value.indexOf("failed") >= 0 || value.indexOf("blocked") >= 0 || value.indexOf("needs review") >= 0 || value.indexOf("error") >= 0) return "failed";
+    if (value.indexOf("completed") >= 0 || value.indexOf("verification: ok") >= 0) return "completed";
+    if (value.indexOf("ready") >= 0 || value.indexOf("ok") >= 0) return "ready";
+    return "pending";
+  }
+
+  function renderPlainText(parent, text) {
+    parent.textContent = text || "";
+  }
+
+  function renderPlanText(parent, text) {
+    var lines = String(text || "").split(/\r?\n/);
+    var container = document.createElement("div");
+    container.className = "plan-result";
+    var currentStep = null;
+    var foundStep = false;
+
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      var stepMatch = /^(\d+)\.\s+(.+)$/.exec(line);
+      if (stepMatch) {
+        foundStep = true;
+        currentStep = document.createElement("div");
+        currentStep.className = "plan-step " + statusClassForStep(line);
+
+        var title = document.createElement("strong");
+        title.textContent = stepMatch[1] + ". " + stepMatch[2];
+        currentStep.appendChild(title);
+        container.appendChild(currentStep);
+        continue;
+      }
+
+      if (!line || line === "Steps:") continue;
+
+      var detail = document.createElement("span");
+      detail.textContent = line.replace(/^\s+/, "");
+      if (currentStep && /^\s+/.test(line)) {
+        currentStep.appendChild(detail);
+      } else {
+        detail.className = "plan-line";
+        container.appendChild(detail);
+        currentStep = null;
+      }
+    }
+
+    if (!foundStep) {
+      renderPlainText(parent, text);
+      return;
+    }
+    parent.appendChild(container);
+  }
+
+  function renderChatText(parent, role, text) {
+    if (role === "assistant" && /(^|\n)(Steps:|\d+\.\s+)/.test(String(text || ""))) {
+      renderPlanText(parent, text);
+      return;
+    }
+    renderPlainText(parent, text);
+  }
+
+  function compactTranscriptText(text) {
+    var value = String(text || "");
+    if (value.length > 12000) return value.slice(value.length - 12000);
+    return value;
+  }
+
+  function saveTranscriptHistory() {
+    try {
+      localStorage.setItem("codexAeChatTranscript", JSON.stringify(transcriptHistory.slice(-80)));
+    } catch (_error) {}
+  }
+
+  function recordTranscriptMessage(role, text) {
+    if (transcriptRestoring) return;
+    transcriptHistory.push({
+      role: role || "assistant",
+      text: compactTranscriptText(text)
+    });
+    if (transcriptHistory.length > 80) {
+      transcriptHistory = transcriptHistory.slice(transcriptHistory.length - 80);
+    }
+    saveTranscriptHistory();
+  }
+
+  function restoreTranscriptHistory() {
+    var raw = localStorage.getItem("codexAeChatTranscript");
+    if (!raw) return;
+    try {
+      var parsed = JSON.parse(raw);
+      if (!parsed || !parsed.length || typeof parsed.push !== "function") return;
+      transcriptRestoring = true;
+      for (var i = 0; i < parsed.length; i++) {
+        var item = parsed[i] || {};
+        var role = item.role === "user" || item.role === "assistant" || item.role === "error" ? item.role : "assistant";
+        var text = compactTranscriptText(item.text);
+        transcriptHistory.push({ role: role, text: text });
+        appendChatMessage(role, text);
+      }
+      transcriptRestoring = false;
+      if (transcriptHistory.length > 80) {
+        transcriptHistory = transcriptHistory.slice(transcriptHistory.length - 80);
+      }
+      saveTranscriptHistory();
+    } catch (_error) {
+      transcriptRestoring = false;
+      transcriptHistory = [];
+      localStorage.removeItem("codexAeChatTranscript");
+    }
   }
 
   function setChatBusy(busy) {
@@ -282,7 +693,7 @@
     if (agent.canChat === false) return false;
     if (agent.reachable === false) return false;
     if (agent.modelAvailable === false) return false;
-    if (!agentModelEl.value.replace(/^\s+|\s+$/g, "")) return false;
+    if (!selectedModel()) return false;
     return true;
   }
 
@@ -292,7 +703,7 @@
     if (agent.error) return agent.error;
     if (agent.reachable === false) return "Agent is offline.";
     if (agent.modelAvailable === false) return "Selected model is unavailable.";
-    if (!agentModelEl.value.replace(/^\s+|\s+$/g, "")) return "Choose a model first.";
+    if (!selectedModel()) return "Choose a model first.";
     return "Agent is not ready yet.";
   }
 
@@ -304,8 +715,9 @@
 
   function updateKeyAvailability() {
     var agent = findAgent(agentSelect.value);
-    var key = agentApiKeyEl.value.replace(/^\s+|\s+$/g, "");
+    var key = trimText(agentApiKeyEl.value);
     saveAgentKeyButton.disabled = chatInFlight || keySaveInFlight || !agent || !agent.requiresApiKey || !key;
+    checkAgentButton.disabled = chatInFlight || readinessInFlight || !agent || !selectedModel();
   }
 
   function rememberModel() {
@@ -313,11 +725,54 @@
     localStorage.setItem("codexAeAgentModel:" + agentSelect.value, agentModelEl.value);
   }
 
+  function onAgentModelChanged() {
+    rememberModel();
+    setAgentDetails(findAgent(agentSelect.value));
+    updateChatAvailability();
+    updateKeyAvailability();
+  }
+
+  function onFreeModelsOnlyChanged() {
+    localStorage.setItem("codexAeFreeModelsOnly", freeModelsOnlyEl.checked ? "1" : "0");
+    loadAgents();
+  }
+
+  function setChatMode(mode) {
+    chatModeEl.value = mode === "chat" ? "chat" : "plan";
+    localStorage.setItem("codexAeChatMode", chatModeEl.value);
+    forEachNode(chatModeButtonEls, function (button) {
+      toggleClass(button, "active", getData(button, "chat-mode") === chatModeEl.value);
+    });
+    updateChatAvailability();
+  }
+
+  function updatePromptOptimizationLabel() {
+    var label = promptOptimizationEl && promptOptimizationEl.parentNode ? promptOptimizationEl.parentNode.getElementsByTagName("em")[0] : null;
+    if (label) label.textContent = promptOptimizationEl.checked ? "On" : "Off";
+  }
+
+  function onPromptOptimizationChanged() {
+    localStorage.setItem("codexAePromptOptimization", promptOptimizationEl.checked ? "1" : "0");
+    updatePromptOptimizationLabel();
+  }
+
+  function setSidebarCollapsed(collapsed) {
+    toggleClass(appShellEl, "sidebar-collapsed", collapsed);
+    localStorage.setItem("codexAeSidebarCollapsed", collapsed ? "1" : "0");
+    collapseSidebarButton.textContent = collapsed ? "›" : "‹";
+    collapseSidebarButton.title = collapsed ? "Show provider panel" : "Collapse provider panel";
+  }
+
+  function toggleSidebarCollapsed() {
+    var collapsed = !appShellEl.classList || !appShellEl.classList.contains("sidebar-collapsed");
+    setSidebarCollapsed(collapsed);
+  }
+
   function saveAgentKey() {
     if (keySaveInFlight) return;
     var agent = findAgent(agentSelect.value);
     if (!agent || !agent.requiresApiKey) return;
-    var apiKey = agentApiKeyEl.value.replace(/^\s+|\s+$/g, "");
+    var apiKey = trimText(agentApiKeyEl.value);
     if (!apiKey) {
       setAgentStatus("Paste API key first");
       updateKeyAvailability();
@@ -465,6 +920,12 @@
     }, function (error, response) {
       setChatBusy(false);
       if (error) {
+        var errorRun = error.body && error.body.run ? error.body.run : null;
+        if (errorRun) {
+          appendChatMessage("assistant", formatPlanRun(errorRun));
+          log("Plan run " + (errorRun.id || "") + " needs review");
+          return;
+        }
         appendChatMessage("error", error.message);
         log("Plan run failed: " + error.message);
         return;
@@ -477,7 +938,7 @@
 
   function sendChat() {
     if (chatInFlight) return;
-    var prompt = chatPromptEl.value.replace(/^\s+|\s+$/g, "");
+    var prompt = trimText(chatPromptEl.value);
     if (!prompt) return;
 
     var agentId = agentSelect.value;
@@ -508,15 +969,18 @@
 
     setChatBusy(true);
     var path = mode === "plan" ? "/agents/plan" : "/agents/chat";
+    var optimizePrompt = promptOptimizationEl && promptOptimizationEl.checked;
     var body = mode === "plan" ? {
       agentId: agentId,
-      model: agentModelEl.value,
+      model: selectedModel(),
       prompt: prompt,
+      promptOptimization: optimizePrompt,
       timeoutMs: 120000
     } : {
       agentId: agentId,
-      model: agentModelEl.value,
+      model: selectedModel(),
       messages: chatMessages,
+      promptOptimization: optimizePrompt,
       timeoutMs: 120000
     };
 
@@ -537,7 +1001,7 @@
         if (chatMessages.length > 16) chatMessages = chatMessages.slice(chatMessages.length - 16);
       }
       if (result.requestId) {
-        log("Agent " + mode + " " + result.requestId + " finished in " + (result.durationMs || 0) + "ms with " + (result.model || agentModelEl.value));
+        log("Agent " + mode + " " + result.requestId + " finished in " + (result.durationMs || 0) + "ms with " + (result.model || selectedModel()));
       }
       updateChatAvailability();
     });
@@ -624,15 +1088,38 @@
   connectButton.addEventListener("click", connect);
   disconnectButton.addEventListener("click", disconnect);
   reloadButton.addEventListener("click", reloadApp);
+  collapseSidebarButton.addEventListener("click", toggleSidebarCollapsed);
+  forEachNode(providerTabEls, function (button) {
+    button.addEventListener("click", function () {
+      selectProviderGroup(getData(button, "provider-group"));
+    });
+  });
+  forEachNode(authModeButtonEls, function (button) {
+    button.addEventListener("click", function () {
+      var mode = getData(button, "auth-mode") === "api" ? "api" : "cli";
+      localStorage.setItem("codexAeOpenAiAuthMode", mode);
+      selectProviderGroup("openai");
+    });
+  });
+  detectLocalButton.addEventListener("click", function () {
+    selectProviderGroup("local");
+    loadAgents();
+  });
   refreshAgentsButton.addEventListener("click", loadAgents);
   agentSelect.addEventListener("change", updateSelectedAgent);
-  agentModelEl.addEventListener("change", function () {
-    rememberModel();
-    updateChatAvailability();
-  });
+  agentModelEl.addEventListener("input", onAgentModelChanged);
+  agentModelEl.addEventListener("change", onAgentModelChanged);
+  freeModelsOnlyEl.addEventListener("change", onFreeModelsOnlyChanged);
   agentApiKeyEl.addEventListener("input", updateKeyAvailability);
+  checkAgentButton.addEventListener("click", checkSelectedAgent);
   saveAgentKeyButton.addEventListener("click", saveAgentKey);
   sendChatButton.addEventListener("click", sendChat);
+  forEachNode(chatModeButtonEls, function (button) {
+    button.addEventListener("click", function () {
+      setChatMode(getData(button, "chat-mode"));
+    });
+  });
+  promptOptimizationEl.addEventListener("change", onPromptOptimizationChanged);
   dryRunPlanButton.addEventListener("click", function () {
     runLastPlan(true);
   });
@@ -641,8 +1128,10 @@
   });
   clearChatButton.addEventListener("click", function () {
     chatMessages = [];
+    transcriptHistory = [];
     lastPlanResult = null;
     clearElement(chatTranscriptEl);
+    localStorage.removeItem("codexAeChatTranscript");
     updateChatAvailability();
   });
   chatPromptEl.addEventListener("keydown", function (event) {
@@ -655,6 +1144,14 @@
   setAppTitle(APP_VERSION);
   urlEl.value = localStorage.getItem("codexAeBridgeUrl") || urlEl.value;
   tokenEl.value = localStorage.getItem("codexAeBridgeToken") || "";
+  freeModelsOnlyEl.checked = localStorage.getItem("codexAeFreeModelsOnly") === "1";
+  promptOptimizationEl.checked = localStorage.getItem("codexAePromptOptimization") === "1";
+  updatePromptOptimizationLabel();
+  setChatMode(localStorage.getItem("codexAeChatMode") || "plan");
+  setSidebarCollapsed(localStorage.getItem("codexAeSidebarCollapsed") === "1");
+  setAgentDetails(null);
+  updateProviderUi(null);
+  restoreTranscriptHistory();
   setStatus("Disconnected", false);
   updateChatAvailability();
   updateKeyAvailability();

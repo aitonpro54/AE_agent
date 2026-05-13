@@ -83,6 +83,11 @@ node .\mcp-server\bridge-daemon.js
 Optional AI agent variables:
 
 ```powershell
+$env:OPENAI_API_KEY="sk-..."
+$env:OPENAI_MODEL="gpt-5.5"
+
+$env:CODEX_CLI_MODEL="gpt-5.5"
+
 $env:OPENROUTER_API_KEY="sk-or-..."
 $env:OPENROUTER_MODEL="nvidia/nemotron-3-super-120b-a12b:free"
 
@@ -94,9 +99,11 @@ $env:OLLAMA_CLOUD_API_KEY="..."
 $env:OLLAMA_CLOUD_MODEL="..."
 ```
 
+OpenAI has two separate paths. `openai-api` uses `OPENAI_API_KEY` and normal OpenAI API billing. `openai-cli` uses the local Codex CLI and the user's ChatGPT/Codex sign-in; run `codex login` first, then the bridge can call `codex exec --ephemeral --json --sandbox read-only` for CLI-backed chat and AE Plan drafting. No OpenAI API key is used for the CLI path.
+
 `OPENROUTER_MODEL` can be any OpenRouter model id, a `:free` variant, or the `openrouter/free` router. The default is `nvidia/nemotron-3-super-120b-a12b:free`, chosen from OpenRouter's May 2026 top free model list for agentic/coding workflows. Local Ollama defaults to `gemma4:latest`, uses `/api/chat`, and lists installed models from `/api/tags`. Ollama Cloud and custom providers use OpenAI-compatible `/chat/completions` and `/models` endpoints.
 
-You can also paste the OpenRouter key directly into the After Effects panel under `Agent > API key` and click `Save key`. The bridge stores it locally in `.codex\agent-secrets.json`; that folder is ignored by git.
+You can also paste OpenAI API, OpenRouter, or Ollama Cloud keys directly into the After Effects panel under the provider API mode and click `Save`. The bridge stores keys locally in `.codex\agent-secrets.json`; that folder is ignored by git.
 
 Custom agents can be provided as JSON:
 
@@ -256,7 +263,7 @@ Remove-Item Env:MCP_CALL_ARGS_JSON
 node .\scripts\mcp-call-tool.js get_ai_agent_log
 ```
 
-The After Effects panel also includes an Agent selector and Chat area with `Chat` and `AE Plan` modes. `AE Plan` asks the selected model for a structured MCP step draft, gives the model a compact catalog of real bridge tools and required fields, repairs malformed JSON once when needed, and validates the plan against bridge tools, required args, mutating step counts, and safety fields. Russian/Cyrillic requests are treated as normal user input. The panel can dry-run the last plan. Real plan execution is a separate confirmed action; mutating runs require explicit mutation permission, idempotency fields, and checkpoint/edit-session protection. From v0.25, the panel sends `autoEditSession:true` for confirmed mutating runs, so the backend creates a protected edit session/checkpoint before the first mutation when the project has been saved; unsaved projects are blocked before changing AE.
+The After Effects panel also includes an AE GPT-style provider area and Chat/Agent composer. Provider tabs expose OpenAI and Local/Ollama in the main UI, with Gemini and Claude reserved as setup placeholders. OpenAI API mode uses an API key; OpenAI CLI mode uses `codex login` plus `codex exec` for ChatGPT/Codex subscription-backed calls. `Agent` mode asks the selected model for a structured MCP step draft, gives the model a compact catalog of real bridge tools and required fields, repairs malformed JSON once when needed, and validates the plan against bridge tools, required args, mutating step counts, and safety fields. Russian/Cyrillic requests are treated as normal user input. The panel can dry-run the last plan. Real plan execution is a separate confirmed action; mutating runs require explicit mutation permission, idempotency fields, and checkpoint/edit-session protection. From v0.25, the panel sends `autoEditSession:true` for confirmed mutating runs, so the backend creates a protected edit session/checkpoint before the first mutation when the project has been saved; unsaved projects are blocked before changing AE. From v0.26, the Agent area shows provider/model/readiness details, can re-check the selected model on demand, keeps the visible chat transcript locally until cleared, and supports a Prompt Optimization toggle.
 
 Useful project inspection calls:
 

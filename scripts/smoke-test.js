@@ -78,6 +78,25 @@ function waitForResponse(stdout, id, timeoutMs) {
   });
 }
 
+async function waitForPendingCommand(port, token, timeoutMs) {
+  const startedAt = Date.now();
+  let next = null;
+  while (Date.now() - startedAt < timeoutMs) {
+    next = await requestJsonWithOptions({
+      hostname: "127.0.0.1",
+      port,
+      path: "/bridge/next",
+      method: "GET",
+      headers: {
+        "x-ae-bridge-token": token
+      }
+    });
+    if (next.body.command && next.body.command.id && next.body.command.script) return next;
+    await wait(50);
+  }
+  return next;
+}
+
 async function main() {
   const daemon = spawn(nodePath, [daemonPath], {
     env: {
@@ -129,7 +148,7 @@ async function main() {
     params: {}
   }) + "\n");
 
-  await wait(250);
+  await waitForResponse(stdout, 2, 5000);
 
   adapter.stdin.write(JSON.stringify({
     jsonrpc: "2.0",
@@ -141,15 +160,7 @@ async function main() {
     }
   }) + "\n");
 
-  const next = await requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/bridge/next",
-    method: "GET",
-    headers: {
-      "x-ae-bridge-token": token
-    }
-  });
+  const next = await waitForPendingCommand(port, token, 5000);
 
   if (!next.body.command || !next.body.command.id || !next.body.command.script) {
     throw new Error("Expected pending AE command from bridge");
@@ -337,7 +348,7 @@ async function main() {
     throw new Error("Expected initialize, tools/list, and tool call responses");
   }
 
-  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "0.25.0") {
+  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "0.26.0") {
     throw new Error("Unexpected health response");
   }
   if (!agents.body.ok || !Array.isArray(agents.body.agents) || !agents.body.agents.length) {

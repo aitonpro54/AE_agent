@@ -2,88 +2,150 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Codex AE MCP Bridge v0.25.0</title>
+    <title>Codex AE MCP Bridge v0.26.0</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <main>
-      <header>
-        <div>
-          <h1><span id="appTitle">Codex AE MCP Bridge</span> <span id="appVersion" class="app-version">v0.25.0</span></h1>
-          <p id="status">Starting...</p>
-        </div>
-        <span id="badge">offline</span>
-      </header>
+    <div class="window-bar">
+      <span>AE GPT</span>
+      <span class="menu-mark">=</span>
+    </div>
+    <div class="trial-bar">
+      <span>Trial Version</span>
+      <a href="#">License...</a>
+    </div>
 
-      <section>
-        <label>
-          Bridge URL
-          <input id="bridgeUrl" value="http://127.0.0.1:3456" />
-        </label>
-        <label>
-          Token
-          <input id="bridgeToken" type="password" />
-        </label>
-        <div class="actions">
-          <div class="action-group">
-            <button id="connectButton">Connect</button>
-            <button id="disconnectButton">Disconnect</button>
+    <main id="appShell" class="app-shell">
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-title">
+          <h1><span id="appTitle">Codex AE MCP Bridge</span> <span id="appVersion" class="app-version">v0.26.0</span></h1>
+          <button id="collapseSidebarButton" class="icon-button" title="Collapse provider panel">‹</button>
+        </div>
+
+        <section class="bridge-section">
+          <div class="connection-row">
+            <span id="status">Starting...</span>
+            <span id="badge">offline</span>
           </div>
-          <button id="reloadButton">Reload app</button>
-        </div>
-      </section>
+          <div class="bridge-fields">
+            <label>
+              Bridge URL
+              <input id="bridgeUrl" value="http://127.0.0.1:3456" />
+            </label>
+            <label>
+              Token
+              <input id="bridgeToken" type="password" />
+            </label>
+          </div>
+          <div class="actions">
+            <div class="action-group">
+              <button id="connectButton">Connect</button>
+              <button id="disconnectButton">Disconnect</button>
+            </div>
+            <button id="reloadButton">Reload</button>
+          </div>
+        </section>
 
-      <section>
-        <h2>Agent</h2>
-        <label>
-          Provider
-          <select id="agentSelect">
+        <section class="provider-section">
+          <h2>AI Provider</h2>
+          <div id="providerTabs" class="provider-tabs">
+            <button class="provider-tab" data-provider-group="gemini" disabled>Gemini</button>
+            <button class="provider-tab active" data-provider-group="openai">OpenAI</button>
+            <button class="provider-tab" data-provider-group="claude" disabled>Claude</button>
+            <button class="provider-tab" data-provider-group="local">Local</button>
+          </div>
+
+          <select id="agentSelect" class="hidden-control" aria-hidden="true">
             <option value="">Loading...</option>
           </select>
-        </label>
-        <label>
-          Model
-          <input id="agentModel" list="agentModelList" />
-          <datalist id="agentModelList"></datalist>
-        </label>
-        <label id="agentApiKeyRow">
-          API key
-          <input id="agentApiKey" type="password" autocomplete="off" />
-        </label>
-        <div class="actions">
-          <div class="action-group">
-            <button id="refreshAgentsButton">Refresh agents</button>
-            <button id="saveAgentKeyButton">Save key</button>
-          </div>
-          <span id="agentStatus">Not loaded</span>
-        </div>
-      </section>
 
-      <section>
-        <h2>Chat</h2>
-        <div id="chatTranscript"></div>
-        <label>
-          Mode
-          <select id="chatMode">
-            <option value="chat">Chat</option>
-            <option value="plan">AE Plan</option>
+          <div id="authModeTabs" class="segmented">
+            <button data-auth-mode="api">API</button>
+            <button data-auth-mode="cli" class="active">CLI</button>
+          </div>
+
+          <div id="agentSetupCard" class="setup-card">
+            <strong id="agentSetupTitle">ChatGPT via Codex CLI</strong>
+            <span id="agentSetupText">Run codex login, choose ChatGPT sign-in, then use CLI models here. No OpenAI API key is used.</span>
+          </div>
+
+          <div id="localServiceCard" class="local-card">
+            <h3>Local AI Service</h3>
+            <p>Runs with <strong>Ollama</strong> on port 11434. No API key needed.</p>
+            <button id="detectLocalButton">Detect Ollama</button>
+            <span id="localStatus">Not checked</span>
+          </div>
+
+          <div id="agentApiKeyRow" class="api-key-row">
+            <input id="agentApiKey" type="password" autocomplete="off" placeholder="Enter API key" />
+            <button id="saveAgentKeyButton">Save</button>
+          </div>
+
+          <label id="freeModelsRow" class="checkbox-row">
+            <input id="freeModelsOnly" type="checkbox" />
+            Free models only
+          </label>
+
+          <label>
+            Model
+            <select id="agentModel"></select>
+            <datalist id="agentModelList"></datalist>
+          </label>
+
+          <div id="agentDetails">
+            <span>Provider: -</span>
+            <span>Model: -</span>
+            <span>Models: -</span>
+            <span>Status: not loaded</span>
+          </div>
+
+          <div class="actions">
+            <div class="action-group">
+              <button id="refreshAgentsButton">Refresh</button>
+              <button id="checkAgentButton">Check model</button>
+            </div>
+            <span id="agentStatus">Not loaded</span>
+          </div>
+        </section>
+
+        <section class="history-section">
+          <h2>Chat History</h2>
+          <select id="chatHistorySelect">
+            <option>Current conversation</option>
           </select>
-        </label>
-        <label>
-          Prompt
-          <textarea id="chatPrompt" rows="3"></textarea>
-        </label>
-        <div class="actions">
-          <div class="action-group">
-            <button id="sendChatButton">Send</button>
+          <button id="clearChatButton">Clear Chat</button>
+        </section>
+      </aside>
+
+      <section class="chat-pane">
+        <div id="chatTranscript"></div>
+
+        <div class="composer">
+          <select id="chatMode" class="hidden-control" aria-hidden="true">
+            <option value="chat">Chat</option>
+            <option value="plan">Agent</option>
+          </select>
+          <div id="chatModeTabs" class="mode-toggle">
+            <button data-chat-mode="chat">Chat</button>
+            <button data-chat-mode="plan" class="active">Agent</button>
+          </div>
+          <label class="prompt-toggle">
+            <input id="promptOptimization" type="checkbox" />
+            <span>Prompt Optimization</span>
+            <em>Off</em>
+          </label>
+          <div class="prompt-row">
+            <textarea id="chatPrompt" rows="4" placeholder="Describe what to create or do in After Effects..."></textarea>
+            <button id="sendChatButton" title="Send">➤</button>
+          </div>
+          <div class="plan-actions">
             <button id="dryRunPlanButton">Dry run</button>
             <button id="runPlanButton">Run plan</button>
           </div>
-          <button id="clearChatButton">Clear</button>
         </div>
       </section>
 
-      <section>
+      <section class="activity-pane">
         <h2>Activity</h2>
         <pre id="log"></pre>
       </section>
