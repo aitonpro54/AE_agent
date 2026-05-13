@@ -34,6 +34,7 @@
 - [x] Milestone 30: Selected layer CTI alignment tool.
 - [x] Milestone 31: Agent comp runtime binding hardening.
 - [x] Milestone 32: Direct Run Plan and working indicator.
+- [x] Milestone 33: Voice input in chat composer.
 
 ## Milestones
 
@@ -249,6 +250,13 @@
 - Add a temporary animated chat indicator while chat, planning, dry-run, and run requests are in flight.
 - Keep the temporary working indicator out of persisted chat history.
 
+### Milestone 33: Voice input in chat composer
+
+- Add a compact microphone control and `RU` / `EN` / `Auto` language selector beside the chat composer send button.
+- Use the CEP runtime's browser speech-recognition API to insert recognized text into `chatPrompt` without auto-sending.
+- Keep the voice language preference in panel `localStorage` and default to `RU` because the user primarily prompts in Russian while CEP reports an English browser locale.
+- Add live CEP smoke coverage with a mocked speech recognizer so validation does not require real microphone input.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -291,6 +299,8 @@
 - 2026-05-13: Selected precomp/source-comp bindings should use explicit aliases and stay unresolved when multiple different selected source comps are present, rather than guessing a target.
 - 2026-05-13: CEP `Run plan` should not show a second browser confirmation; the plan card and enabled Run button are the user-facing confirmation point, while backend mutation/edit-session safeguards remain mandatory.
 - 2026-05-13: Model calls and plan runs should show a lightweight transient chat working indicator so the panel feels alive during long provider responses.
+- 2026-05-13: Voice input v1 uses CEP's built-in `webkitSpeechRecognition` path because the installed panel exposes it; OpenAI audio transcription remains a possible later API-billing option, not part of this milestone.
+- 2026-05-13: Voice input should insert recognized text into the composer only and never auto-send, so Agent-mode actions remain reviewable before running.
 
 ## Validation
 
@@ -685,3 +695,21 @@
   - Passed `node scripts/cep-panel-cdp-smoke.js smoke` against the installed CEP panel.
   - Passed `node scripts/cep-panel-cdp-smoke.js mutating-smoke` on retry; first attempt hit an AE edit-session startup timeout before mutation, second attempt created and cleaned up `Codex Test Safe Run 81974680` with `confirmMessages: []`.
   - Passed `git diff --check`.
+- Milestone 33:
+  - Added a compact voice input button and `RU` / `EN` / `Auto` language selector beside the composer send button.
+  - Wired CEP `webkitSpeechRecognition` support to insert recognized text into `chatPrompt` without auto-sending.
+  - Persisted the voice language preference with `codexAeVoiceLanguage`, defaulting to `RU`.
+  - Added CSS-only microphone styling and disabled/listening visual states.
+  - Added `node scripts/cep-panel-cdp-smoke.js voice-input-smoke` with a mocked speech recognizer.
+  - Copied updated `index.html`, `panel.js`, and `style.css` into the installed CEP extension.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-api-smoke.js`.
+  - Passed `node scripts/prompt-optimization-smoke.js`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js reload` against the installed CEP panel; voice support reported available.
+  - Passed `node scripts/cep-panel-cdp-smoke.js voice-input-smoke`; mock text inserted into the prompt and did not enter chat history.
+  - Passed `node scripts/cep-panel-cdp-smoke.js smoke` against the installed CEP panel.

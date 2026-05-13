@@ -513,7 +513,73 @@ button:disabled {
 .prompt-row {
   display: grid;
   gap: 10px;
-  grid-template-columns: minmax(0, 1fr) 34px;
+  grid-template-columns: minmax(0, 1fr) 42px 34px;
+}
+
+.voice-control-stack {
+  align-self: end;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+#voiceLanguage {
+  font-size: 10px;
+  min-height: 24px;
+  padding: 4px 3px;
+  text-align: center;
+}
+
+.voice-button {
+  align-items: center;
+  background: #2b353a;
+  border-color: #4a6674;
+  display: flex;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0;
+}
+
+.voice-button.listening {
+  background: #175b43;
+  border-color: #26a36f;
+}
+
+.voice-button.unsupported {
+  opacity: 0.45;
+}
+
+.mic-icon {
+  border: 2px solid #d7e6ee;
+  border-radius: 8px;
+  display: block;
+  height: 14px;
+  position: relative;
+  width: 10px;
+}
+
+.mic-icon::before {
+  background: #d7e6ee;
+  content: "";
+  height: 6px;
+  left: 50%;
+  position: absolute;
+  top: 12px;
+  transform: translateX(-50%);
+  width: 2px;
+}
+
+.mic-icon::after {
+  border: 2px solid #d7e6ee;
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  content: "";
+  height: 7px;
+  left: 50%;
+  position: absolute;
+  top: 7px;
+  transform: translateX(-50%);
+  width: 14px;
 }
 
 #sendChatButton {

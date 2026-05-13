@@ -52,6 +52,8 @@
   var chatModeEl = document.getElementById("chatMode");
   var chatModeButtonEls = document.querySelectorAll("#chatModeTabs button");
   var promptOptimizationEl = document.getElementById("promptOptimization");
+  var voiceLanguageEl = document.getElementById("voiceLanguage");
+  var voiceInputButton = document.getElementById("voiceInputButton");
 
   var running = false;
   var pollTimer = null;
@@ -64,6 +66,13 @@
   var transcriptRestoring = false;
   var chatInFlight = false;
   var chatWorkingEl = null;
+  var voiceRecognition = null;
+  var voiceListening = false;
+  var voiceSupported = false;
+  var voicePromptPrefix = "";
+  var voicePromptSuffix = "";
+  var voiceFinalTranscript = "";
+  var voiceHadError = false;
   var keySaveInFlight = false;
   var setupActionInFlight = false;
   var readinessInFlight = false;
@@ -1146,6 +1155,7 @@
     sendChatButton.disabled = chatInFlight || !selectedAgentReady();
     dryRunPlanButton.disabled = chatInFlight || !lastPlanResult || !lastPlanResult.plan;
     runPlanButton.disabled = chatInFlight || !lastPlanResult || !lastPlanResult.plan || !lastPlanResult.planValidation || !lastPlanResult.planValidation.ok;
+    updateVoiceInputAvailability();
   }
 
   function updateKeyAvailability() {
@@ -1190,6 +1200,183 @@
   function onPromptOptimizationChanged() {
     localStorage.setItem("codexAePromptOptimization", promptOptimizationEl.checked ? "1" : "0");
     updatePromptOptimizationLabel();
+  }
+
+  function speechRecognitionConstructor() {
+    return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  }
+
+  function normalizeVoiceLanguage(value) {
+    if (value === "en" || value === "auto") return value;
+    return "ru";
+  }
+
+  function selectedVoiceRecognitionLanguage() {
+    var value = normalizeVoiceLanguage(voiceLanguageEl ? voiceLanguageEl.value : "ru");
+    if (value === "en") return "en-US";
+    if (value === "auto") return "";
+    return "ru-RU";
+  }
+
+  function setVoiceLanguage(value, persist) {
+    if (!voiceLanguageEl) return;
+    voiceLanguageEl.value = normalizeVoiceLanguage(value);
+    if (persist) localStorage.setItem("codexAeVoiceLanguage", voiceLanguageEl.value);
+  }
+
+  function onVoiceLanguageChanged() {
+    setVoiceLanguage(voiceLanguageEl.value, true);
+  }
+
+  function updateVoiceInputAvailability() {
+    if (!voiceInputButton) return;
+    voiceSupported = !!speechRecognitionConstructor();
+    var disabled = chatInFlight || !voiceSupported;
+    voiceInputButton.disabled = disabled;
+    voiceInputButton.setAttribute("aria-pressed", voiceListening ? "true" : "false");
+    voiceInputButton.title = voiceSupported ? (voiceListening ? "Stop voice input" : "Start voice input") : "Voice input is not supported in this CEP runtime";
+    voiceInputButton.setAttribute("aria-label", voiceInputButton.title);
+    toggleClass(voiceInputButton, "listening", voiceListening);
+    toggleClass(voiceInputButton, "unsupported", !voiceSupported);
+    if (voiceLanguageEl) voiceLanguageEl.disabled = chatInFlight || voiceListening || !voiceSupported;
+  }
+
+  function compactVoiceText(text) {
+    return String(text || "").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+  }
+
+  function notifyPromptChanged() {
+    try {
+      chatPromptEl.dispatchEvent(new Event("input", { bubbles: true }));
+      chatPromptEl.dispatchEvent(new Event("change", { bubbles: true }));
+    } catch (_eventError) {}
+  }
+
+  function voicePromptText(interimText) {
+    var spoken = compactVoiceText(voiceFinalTranscript + " " + compactVoiceText(interimText));
+    if (!spoken) return voicePromptPrefix + voicePromptSuffix;
+    var beforeSpace = voicePromptPrefix && !/\s$/.test(voicePromptPrefix) ? " " : "";
+    var afterSpace = voicePromptSuffix && !/^\s/.test(voicePromptSuffix) ? " " : "";
+    return voicePromptPrefix + beforeSpace + spoken + afterSpace + voicePromptSuffix;
+  }
+
+  function updatePromptFromVoice(interimText) {
+    chatPromptEl.value = voicePromptText(interimText);
+    notifyPromptChanged();
+  }
+
+  function rememberVoicePromptRange() {
+    var value = chatPromptEl.value || "";
+    var start = typeof chatPromptEl.selectionStart === "number" ? chatPromptEl.selectionStart : value.length;
+    var end = typeof chatPromptEl.selectionEnd === "number" ? chatPromptEl.selectionEnd : start;
+    voicePromptPrefix = value.slice(0, start);
+    voicePromptSuffix = value.slice(end);
+    voiceFinalTranscript = "";
+  }
+
+  function voiceErrorMessage(code) {
+    if (code === "not-allowed" || code === "service-not-allowed") return "Voice input blocked. Allow microphone access.";
+    if (code === "audio-capture") return "No microphone was detected.";
+    if (code === "network") return "Voice input needs network access in this CEP runtime.";
+    if (code === "no-speech") return "No speech was detected.";
+    if (code === "language-not-supported") return "Selected voice language is not supported.";
+    if (code === "aborted") return "Voice input stopped.";
+    return "Voice input failed.";
+  }
+
+  function handleVoiceResult(event) {
+    var interim = "";
+    var results = event && event.results ? event.results : [];
+    var start = typeof event.resultIndex === "number" ? event.resultIndex : 0;
+    for (var i = start; i < results.length; i++) {
+      var result = results[i];
+      var transcript = result && result[0] ? result[0].transcript : "";
+      if (result && result.isFinal) {
+        voiceFinalTranscript = compactVoiceText(voiceFinalTranscript + " " + transcript);
+      } else {
+        interim = compactVoiceText(interim + " " + transcript);
+      }
+    }
+    updatePromptFromVoice(interim);
+  }
+
+  function finishVoiceInput(recognition) {
+    if (voiceRecognition === recognition) voiceRecognition = null;
+    voiceListening = false;
+    updateVoiceInputAvailability();
+    if (!voiceHadError) {
+      setAgentStatus(voiceFinalTranscript ? "Voice input added" : "Voice input stopped");
+    }
+  }
+
+  function stopVoiceInput() {
+    if (!voiceRecognition) {
+      voiceListening = false;
+      updateVoiceInputAvailability();
+      return;
+    }
+    try {
+      voiceRecognition.stop();
+    } catch (_stopError) {
+      voiceRecognition = null;
+      voiceListening = false;
+      updateVoiceInputAvailability();
+    }
+  }
+
+  function startVoiceInput() {
+    var Recognition = speechRecognitionConstructor();
+    if (chatInFlight) return;
+    if (!Recognition) {
+      voiceSupported = false;
+      updateVoiceInputAvailability();
+      setAgentStatus("Voice input is not supported in this CEP runtime");
+      return;
+    }
+
+    rememberVoicePromptRange();
+    voiceHadError = false;
+
+    try {
+      var recognition = new Recognition();
+      voiceRecognition = recognition;
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+      var language = selectedVoiceRecognitionLanguage();
+      if (language) recognition.lang = language;
+      recognition.onstart = function () {
+        voiceListening = true;
+        updateVoiceInputAvailability();
+        setAgentStatus("Listening...");
+      };
+      recognition.onresult = handleVoiceResult;
+      recognition.onerror = function (event) {
+        voiceHadError = true;
+        var message = voiceErrorMessage(event && event.error);
+        setAgentStatus(message);
+        log("Voice input: " + message);
+      };
+      recognition.onend = function () {
+        finishVoiceInput(recognition);
+      };
+      voiceListening = true;
+      updateVoiceInputAvailability();
+      recognition.start();
+      setAgentStatus("Listening...");
+    } catch (error) {
+      voiceRecognition = null;
+      voiceListening = false;
+      voiceHadError = true;
+      updateVoiceInputAvailability();
+      setAgentStatus("Voice input failed to start");
+      log("Voice input failed to start: " + (error && error.message ? error.message : error));
+    }
+  }
+
+  function toggleVoiceInput() {
+    if (voiceListening) stopVoiceInput();
+    else startVoiceInput();
   }
 
   function setSidebarCollapsed(collapsed) {
@@ -1419,6 +1606,7 @@
 
   function sendChat() {
     if (chatInFlight) return;
+    if (voiceListening) stopVoiceInput();
     var prompt = trimText(chatPromptEl.value);
     if (!prompt) return;
 
@@ -1619,6 +1807,8 @@
     });
   });
   promptOptimizationEl.addEventListener("change", onPromptOptimizationChanged);
+  voiceInputButton.addEventListener("click", toggleVoiceInput);
+  voiceLanguageEl.addEventListener("change", onVoiceLanguageChanged);
   dryRunPlanButton.addEventListener("click", function () {
     runLastPlan(true);
   });
@@ -1641,6 +1831,8 @@
   freeModelsOnlyEl.checked = localStorage.getItem("codexAeFreeModelsOnly") === "1";
   promptOptimizationEl.checked = localStorage.getItem("codexAePromptOptimization") === "1";
   updatePromptOptimizationLabel();
+  setVoiceLanguage(localStorage.getItem("codexAeVoiceLanguage") || "ru", false);
+  updateVoiceInputAvailability();
   setChatMode(localStorage.getItem("codexAeChatMode") || "plan");
   setSidebarCollapsed(localStorage.getItem("codexAeSidebarCollapsed") === "1");
   setDiagnosticsOpen(localStorage.getItem("codexAeDiagnosticsOpen") === "1");

@@ -188,9 +188,19 @@ function stateExpression() {
     freeModelsChecked: document.getElementById("freeModelsOnly") ? document.getElementById("freeModelsOnly").checked : null,
     mode: document.getElementById("chatMode") ? document.getElementById("chatMode").value : "",
     checkDisabled: document.getElementById("checkAgentButton") ? document.getElementById("checkAgentButton").disabled : null,
+    promptValue: document.getElementById("chatPrompt") ? document.getElementById("chatPrompt").value : "",
     sendButtonText: document.getElementById("sendChatButton") ? document.getElementById("sendChatButton").textContent : "",
     sendButtonTitle: document.getElementById("sendChatButton") ? document.getElementById("sendChatButton").title : "",
     sendDisabled: document.getElementById("sendChatButton") ? document.getElementById("sendChatButton").disabled : null,
+    voiceSupported: !!(window.SpeechRecognition || window.webkitSpeechRecognition),
+    voiceButtonExists: !!document.getElementById("voiceInputButton"),
+    voiceButtonDisabled: document.getElementById("voiceInputButton") ? document.getElementById("voiceInputButton").disabled : null,
+    voiceButtonTitle: document.getElementById("voiceInputButton") ? document.getElementById("voiceInputButton").title : "",
+    voiceButtonAriaPressed: document.getElementById("voiceInputButton") ? document.getElementById("voiceInputButton").getAttribute("aria-pressed") : null,
+    voiceButtonClass: document.getElementById("voiceInputButton") ? document.getElementById("voiceInputButton").className : "",
+    voiceLanguageExists: !!document.getElementById("voiceLanguage"),
+    voiceLanguageValue: document.getElementById("voiceLanguage") ? document.getElementById("voiceLanguage").value : "",
+    voiceLanguageDisabled: document.getElementById("voiceLanguage") ? document.getElementById("voiceLanguage").disabled : null,
     dryRunDisabled: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").disabled : null,
     runDisabled: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").disabled : null,
     chatHistoryValue: document.getElementById("chatHistorySelect") ? document.getElementById("chatHistorySelect").value : "",
@@ -366,6 +376,64 @@ function writeDiagnosticsStorageExpression(values) {
     if (value === null || value === undefined) localStorage.removeItem("codexAeDiagnosticsOpen");
     else localStorage.setItem("codexAeDiagnosticsOpen", value);
     return true;
+  })()`;
+}
+
+function voiceStorageExpression() {
+  return `(() => ({
+    language: localStorage.getItem("codexAeVoiceLanguage"),
+    prompt: document.getElementById("chatPrompt") ? document.getElementById("chatPrompt").value : ""
+  }))()`;
+}
+
+function writeVoiceStorageExpression(values) {
+  const storage = values || {};
+  return `(() => {
+    const language = ${JSON.stringify(storage.language)};
+    if (language === null || language === undefined) localStorage.removeItem("codexAeVoiceLanguage");
+    else localStorage.setItem("codexAeVoiceLanguage", language);
+    const prompt = document.getElementById("chatPrompt");
+    if (prompt) {
+      prompt.value = ${JSON.stringify(storage.prompt || "")};
+      prompt.dispatchEvent(new Event("input", { bubbles: true }));
+      prompt.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    return true;
+  })()`;
+}
+
+function installVoiceMockExpression(resultText) {
+  return `(() => {
+    const text = ${JSON.stringify(resultText)};
+    window.__codexVoiceMockInstance = null;
+    function FakeSpeechRecognition() {
+      this.continuous = false;
+      this.interimResults = false;
+      this.maxAlternatives = 1;
+      this.lang = "";
+      this.started = false;
+      this.start = () => {
+        this.started = true;
+        window.__codexVoiceMockInstance = this;
+        if (this.onstart) this.onstart({});
+      };
+      this.stop = () => {
+        this.started = false;
+        if (this.onend) this.onend({});
+      };
+    }
+    window.SpeechRecognition = FakeSpeechRecognition;
+    window.webkitSpeechRecognition = FakeSpeechRecognition;
+    window.__codexVoiceEmitResult = function () {
+      const instance = window.__codexVoiceMockInstance;
+      if (!instance) return { ok: false, error: "no active voice instance" };
+      const result = [{ transcript: text }];
+      result.isFinal = true;
+      if (instance.onresult) instance.onresult({ resultIndex: 0, results: [result] });
+      if (instance.onend) instance.onend({});
+      return { ok: true, state: ${stateExpression()} };
+    };
+    return { ok: true, state: ${stateExpression()} };
   })()`;
 }
 
@@ -950,6 +1018,73 @@ async function sendButtonSmoke() {
   }
 }
 
+async function voiceInputSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  let backup = null;
+  try {
+    backup = await evaluate(send, voiceStorageExpression());
+    await evaluate(send, writeVoiceStorageExpression({ language: null, prompt: "" }));
+    await reloadActivePage(send);
+
+    const initial = await waitFor(send, "voice input controls", (state) => (
+      state.voiceButtonExists === true &&
+      state.voiceLanguageExists === true &&
+      state.voiceLanguageValue === "ru" &&
+      state.voiceButtonAriaPressed === "false" &&
+      state.voiceButtonTitle === "Start voice input" &&
+      state.voiceSupported === true
+    ), 10000);
+
+    await evaluate(send, installVoiceMockExpression("voice smoke prompt"));
+    const clicked = await evaluate(send, clickExpression("voiceInputButton"));
+    if (!clicked || !clicked.ok) throw new Error("Voice input button was not clickable.");
+    const listening = await waitFor(send, "voice input listening state", (state) => (
+      state.voiceButtonAriaPressed === "true" &&
+      state.voiceButtonTitle === "Stop voice input" &&
+      state.voiceButtonClass.indexOf("listening") >= 0 &&
+      state.voiceLanguageDisabled === true
+    ), 10000);
+
+    const emitted = await evaluate(send, `window.__codexVoiceEmitResult ? window.__codexVoiceEmitResult() : { ok: false, error: "missing voice emitter" }`);
+    if (!emitted || !emitted.ok) {
+      throw new Error(`Voice mock result failed: ${emitted && emitted.error ? emitted.error : "unknown"}`);
+    }
+    const inserted = await waitFor(send, "voice text inserted", (state) => (
+      state.voiceButtonAriaPressed === "false" &&
+      state.voiceLanguageDisabled === false &&
+      state.promptValue.indexOf("voice smoke prompt") >= 0 &&
+      state.transcript.indexOf("voice smoke prompt") < 0
+    ), 10000);
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      initial: {
+        language: initial.voiceLanguageValue,
+        supported: initial.voiceSupported,
+        buttonTitle: initial.voiceButtonTitle
+      },
+      listening: {
+        pressed: listening.voiceButtonAriaPressed,
+        buttonClass: listening.voiceButtonClass,
+        languageDisabled: listening.voiceLanguageDisabled
+      },
+      inserted: {
+        promptValue: inserted.promptValue,
+        pressed: inserted.voiceButtonAriaPressed
+      }
+    }, null, 2));
+  } finally {
+    if (backup) {
+      try {
+        await evaluate(send, writeVoiceStorageExpression(backup));
+        await reloadActivePage(send);
+      } catch (_error) {}
+    }
+    ws.close();
+  }
+}
+
 async function brandingSmoke() {
   const { page, ws, send } = await connectToPanel();
   try {
@@ -1378,6 +1513,10 @@ async function main() {
   }
   if (command === "send-button-smoke") {
     await sendButtonSmoke();
+    return;
+  }
+  if (command === "voice-input-smoke") {
+    await voiceInputSmoke();
     return;
   }
   if (command === "branding-smoke") {
