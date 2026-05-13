@@ -850,6 +850,30 @@ function requiredPositiveInteger(args, name) {
   return Math.floor(value);
 }
 
+function requiredPositiveIntegerList(args, name) {
+  let raw = args[name];
+  if (typeof raw === "string" && raw.trim().startsWith("[")) {
+    raw = JSON.parse(raw);
+  }
+  const values = Array.isArray(raw) ? raw : [raw];
+  if (!values.length) throw new Error(`${name} must include at least one positive 1-based integer.`);
+
+  const result = [];
+  const seen = new Set();
+  for (let index = 0; index < values.length; index += 1) {
+    const value = Number(values[index]);
+    if (!Number.isFinite(value) || value < 1) {
+      throw new Error(`${name} must contain only positive 1-based integers.`);
+    }
+    const normalized = Math.floor(value);
+    if (!seen.has(normalized)) {
+      seen.add(normalized);
+      result.push(normalized);
+    }
+  }
+  return result;
+}
+
 function optionalPositiveInteger(args, name) {
   if (!hasArg(args, name)) return null;
   return requiredPositiveInteger(args, name);
@@ -1981,7 +2005,8 @@ function isPlanBindingExpression(value) {
   const expression = String(value || "").trim();
   return /^steps\.\d+\./.test(expression)
     || expression.indexOf("previous.") === 0
-    || /^step-\d+-result(?:\.|$)/.test(expression);
+    || /^step-\d+-result(?:\.|$)/.test(expression)
+    || /^\{\{\s*[A-Za-z0-9_.-]+\s*\}\}$/.test(expression);
 }
 
 function firstPresent(values) {
@@ -2044,8 +2069,63 @@ function defaultPlanBindingValue(payload, targetField) {
   return payload;
 }
 
+function selectedLayerIndicesFromPayload(payload) {
+  if (!payload || typeof payload !== "object") return undefined;
+  const direct = firstPresent([
+    payload.selectedLayerIndices,
+    valueAtPath(payload, "comp.selectedLayerIndices"),
+    valueAtPath(payload, "activeComp.selectedLayerIndices")
+  ]);
+  if (Array.isArray(direct)) return direct;
+
+  const selectedLayers = firstPresent([
+    payload.selectedLayers,
+    valueAtPath(payload, "comp.selectedLayers"),
+    valueAtPath(payload, "activeComp.selectedLayers")
+  ]);
+  if (Array.isArray(selectedLayers)) {
+    return selectedLayers
+      .map((layer) => layer && (layer.index || layer.layerIndex))
+      .filter((value) => Number.isFinite(Number(value)) && Number(value) >= 1)
+      .map((value) => Math.floor(Number(value)));
+  }
+
+  return undefined;
+}
+
+function findBindingValueInExecutedSteps(executedSteps, resolver) {
+  for (let index = executedSteps.length - 1; index >= 0; index -= 1) {
+    const value = resolver(executedSteps[index].payload);
+    if (Array.isArray(value) && value.length) return value;
+    if (value !== undefined && value !== null && value !== "") return value;
+  }
+  return undefined;
+}
+
+function resolveNamedPlanBinding(name, executedSteps, targetField) {
+  const normalized = String(name || "").trim();
+  const lower = normalized.toLowerCase();
+
+  if (lower === "selectedlayerindices" || lower === "selectedlayers") {
+    return findBindingValueInExecutedSteps(executedSteps, selectedLayerIndicesFromPayload);
+  }
+  if (lower === "selectedlayerindex") {
+    const indices = findBindingValueInExecutedSteps(executedSteps, selectedLayerIndicesFromPayload);
+    return Array.isArray(indices) ? indices[0] : indices;
+  }
+
+  return findBindingValueInExecutedSteps(executedSteps, (payload) => {
+    if (!payload || typeof payload !== "object") return undefined;
+    return valueAtPath(payload, normalized);
+  });
+}
+
 function resolvePlanBinding(binding, executedSteps, targetField) {
   const expression = String(binding || "").trim();
+  const template = /^\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}$/.exec(expression);
+  if (template) {
+    return resolveNamedPlanBinding(template[1], executedSteps, targetField);
+  }
   const match = /^steps\.(\d+)\.(.+)$/.exec(expression);
   if (match) {
     const index = Number(match[1]) - 1;
@@ -2067,6 +2147,10 @@ function resolvePlanBinding(binding, executedSteps, targetField) {
   return undefined;
 }
 
+function missingPlanBindingValue(value) {
+  return value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0);
+}
+
 function applyPlanRuntimeBindings(step, executedSteps) {
   const args = { ...(step.safeArgs || {}) };
   const bindings = step.resultBindings || {};
@@ -2078,7 +2162,7 @@ function applyPlanRuntimeBindings(step, executedSteps) {
   for (const field of Object.keys(args)) {
     if (!isPlanBindingExpression(args[field])) continue;
     const value = resolvePlanBinding(args[field], executedSteps, field);
-    if (value === undefined || value === null || value === "") {
+    if (missingPlanBindingValue(value)) {
       unresolved.push(field);
     } else {
       args[field] = value;
@@ -2092,7 +2176,7 @@ function applyPlanRuntimeBindings(step, executedSteps) {
       continue;
     }
     const value = resolvePlanBinding(bindings[field], executedSteps, field);
-    if (value === undefined || value === null || value === "") {
+    if (missingPlanBindingValue(value)) {
       unresolved.push(field);
     } else {
       args[field] = value;
@@ -2421,6 +2505,7 @@ function buildAePlanPrompt(args) {
     "For any project-changing request, plan inspection steps first, then the narrow mutating step(s), then verification/readback steps.",
     "You do not need to add a checkpoint_project step for every mutation because the plan runner can create a protected edit session, but set requiresCheckpoint=true for broad, destructive, or multi-step project changes.",
     "When a creation tool can set a property directly, include that property in the creation tool args instead of adding a later step that needs an unknown layerIndex.",
+    "For requests about selected layers, inspect with get_active_comp or get_selected_layers first. A later layerIndex field may use {{selectedLayerIndices}} to target the selected layers.",
     "If a later step depends on a previous tool result, set dependsOnStep and resultBindings instead of inventing indices.",
     "Use mutating tools only as planned steps; do not execute them. Use run_extendscript only when no narrower tool fits."
   ].join("\n");
@@ -4135,12 +4220,12 @@ const tools = [
           description: "Optional exact composition name to target when compItemIndex is not provided."
         },
         layerIndex: {
-          type: "number",
-          description: "1-based layer index in the target composition."
+          type: ["number", "array"],
+          description: "1-based layer index in the target composition, or an array of 1-based layer indexes for the same property/value."
         },
         propertyPath: {
-          type: "array",
-          description: "Property path from the layer. Segments can be names, numeric indexes, or objects with matchName/name/propertyIndex.",
+          type: ["array", "string"],
+          description: "Property path from the layer. Segments can be names, numeric indexes, or objects with matchName/name/propertyIndex. Also accepts layer attributes such as threeDLayer.",
           items: {}
         },
         value: {
@@ -6145,7 +6230,7 @@ async function callTool(name, args) {
   if (name === "set_property_value") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
-    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const layerIndices = requiredPositiveIntegerList(args, "layerIndex");
     const time = optionalNumber(args, "time", null);
     const setAtTime = optionalBoolean(args, "setAtTime", time !== null);
 
@@ -6154,8 +6239,10 @@ async function callTool(name, args) {
       propertyPath = args.propertyPath;
     } else if (typeof args.propertyPath === "string" && args.propertyPath.trim().startsWith("[")) {
       propertyPath = JSON.parse(args.propertyPath);
+    } else if (typeof args.propertyPath === "string" && args.propertyPath.trim()) {
+      propertyPath = args.propertyPath.split(".").map((part) => part.trim()).filter(Boolean);
     } else {
-      return toolResult("propertyPath must be an array, or a JSON-encoded array string.", true);
+      return toolResult("propertyPath must be an array, a property-name string, or a JSON-encoded array string.", true);
     }
 
     if (propertyPath.length === 0) return toolResult("propertyPath must not be empty.", true);
@@ -6167,30 +6254,52 @@ async function callTool(name, args) {
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
       var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
-      var layer = comp.layer(${layerIndex});
-      if (!layer) throw new Error("Layer not found.");
-      if (layer.locked) throw new Error("Layer is locked.");
-
+      var layerIndices = ${aeLiteral(layerIndices)};
       var propertyPath = ${aeLiteral(propertyPath)};
       var requestedValue = ${aeLiteral(value)};
       var shouldSetAtTime = ${setAtTime ? "true" : "false"};
       var targetTime = ${time === null ? "null" : time};
-      var prop = __codexResolveProperty(layer, propertyPath);
+      var isThreeDLayerAttribute = propertyPath.length === 1 && String(propertyPath[0]) === "threeDLayer";
 
       app.beginUndoGroup("Codex Set Property Value");
-      var preparedValue = __codexPreparePropertyValue(prop, requestedValue);
-      if (shouldSetAtTime) {
-        prop.setValueAtTime(targetTime, preparedValue);
-      } else {
-        prop.setValue(preparedValue);
+      var layers = [];
+      var properties = [];
+      for (var __li = 0; __li < layerIndices.length; __li++) {
+        var layer = comp.layer(layerIndices[__li]);
+        if (!layer) throw new Error("Layer not found at index " + layerIndices[__li] + ".");
+        if (layer.locked) throw new Error("Layer is locked: " + layer.name);
+
+        if (isThreeDLayerAttribute) {
+          if (shouldSetAtTime) throw new Error("threeDLayer cannot be keyframed with setAtTime.");
+          layer.threeDLayer = !!requestedValue;
+          layers.push(__codexLayerInfo(layer));
+          properties.push({
+            name: "threeDLayer",
+            matchName: "threeDLayer",
+            value: !!layer.threeDLayer
+          });
+          continue;
+        }
+
+        var prop = __codexResolveProperty(layer, propertyPath);
+        var preparedValue = __codexPreparePropertyValue(prop, requestedValue);
+        if (shouldSetAtTime) {
+          prop.setValueAtTime(targetTime, preparedValue);
+        } else {
+          prop.setValue(preparedValue);
+        }
+        layers.push(__codexLayerInfo(layer));
+        properties.push(__codexPropertyInfo(prop, layer, true, true));
       }
       var response = {
         comp: {
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name
         },
-        layer: __codexLayerInfo(layer),
-        property: __codexPropertyInfo(prop, layer, true, true),
+        layer: layers.length === 1 ? layers[0] : null,
+        layers: layers,
+        property: properties.length === 1 ? properties[0] : null,
+        properties: properties,
         setAtTime: shouldSetAtTime,
         time: targetTime
       };

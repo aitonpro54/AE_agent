@@ -30,6 +30,7 @@
 - [x] Milestone 26: AE Agent 1.0.0 single-title cleanup.
 - [x] Milestone 27: Native CEP window title sync.
 - [x] Milestone 28: Provider refresh after bridge reconnect.
+- [x] Milestone 29: Selected layer Agent run binding fix.
 
 ## Milestones
 
@@ -217,6 +218,13 @@
 - Ensure the panel does not remain stuck with empty agents and a stale `Bridge offline` provider message while the bridge transport is already online.
 - Do not change provider implementations or bridge contracts.
 
+### Milestone 29: Selected layer Agent run binding fix
+
+- Resolve common model-produced `{{selectedLayerIndices}}` bindings from prior `get_active_comp` or `get_selected_layers` steps.
+- Allow `set_property_value` to target multiple layer indexes when the same value/property should be applied to selected layers.
+- Treat `threeDLayer` as a safe layer attribute in `set_property_value`.
+- Keep checkpoint/edit-session protection unchanged for mutating Agent runs.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -253,6 +261,7 @@
 - 2026-05-13: Keep only the native CEP title/menu product name; remove duplicate in-panel product title rows.
 - 2026-05-13: CEP may keep an older host-frame title after manifest changes; the panel should call native `setWindowTitle` on load to synchronize the visible AE frame title.
 - 2026-05-13: A successful bridge poll should refresh provider metadata after reconnect because the initial `/agents` request can fail while the daemon is still starting.
+- 2026-05-13: Selected-layer Agent plans may use template bindings like `{{selectedLayerIndices}}`; the runner should resolve these from inspection results instead of passing the literal string to mutating tools.
 
 ## Validation
 
@@ -575,6 +584,23 @@
   - Verified live bridge health on `127.0.0.1:3456` reports `codex-ae-mcp-bridge` version `1.0.0` and sees the CEP panel.
   - Passed `node scripts/cep-panel-cdp-smoke.js reload`; the live panel reported `Connected`, `online`, selected `openai-cli`, 6 CLI models, and enabled Send.
   - Passed `node --check cep-panel/panel.js`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-api-smoke.js`.
+  - Passed `node scripts/prompt-optimization-smoke.js`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+  - Passed `git diff --check`.
+- Milestone 29:
+  - Root cause: the model produced `layerIndex: "{{selectedLayerIndices}}"` and `propertyPath: "threeDLayer"`; the runner passed the literal layerIndex string to `set_property_value`.
+  - Added template binding support for selected-layer indexes from prior `get_active_comp` / `get_selected_layers` results.
+  - Updated `set_property_value` to accept multiple layer indexes for the same property/value.
+  - Updated `set_property_value` to accept `threeDLayer` as a layer attribute.
+  - Extended `node scripts/smoke-test.js` to cover multi-layer `threeDLayer` setting through the bridge command queue.
+  - Restarted the live bridge daemon on `127.0.0.1:3456` with the fixed backend.
+  - Verified live `/health` reports `codex-ae-mcp-bridge` version `1.0.0` and the CEP panel is connected.
+  - Passed a live dry-run of the selected-layer 3D plan shape without mutating the user's current composition.
+  - Passed `node --check mcp-server/bridge-daemon.js`.
+  - Passed `node --check scripts/smoke-test.js`.
   - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `node scripts/provider-api-smoke.js`.
   - Passed `node scripts/prompt-optimization-smoke.js`.

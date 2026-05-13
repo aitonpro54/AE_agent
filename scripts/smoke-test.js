@@ -186,6 +186,59 @@ async function main() {
 
   await waitForResponse(stdout, 3, 2000);
 
+  const layerAttributeSetPromise = requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/dev/tool/set_property_value",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    layerIndex: [1, 2],
+    propertyPath: "threeDLayer",
+    value: true,
+    verifyAfter: false
+  });
+  const layerAttributeCommand = await waitForPendingCommand(port, token, 5000);
+  if (!layerAttributeCommand.body.command || layerAttributeCommand.body.command.script.indexOf("var layerIndices = [1,2]") < 0) {
+    throw new Error("Expected set_property_value to accept multiple layer indexes.");
+  }
+  if (layerAttributeCommand.body.command.script.indexOf("isThreeDLayerAttribute") < 0) {
+    throw new Error("Expected set_property_value to handle the threeDLayer layer attribute.");
+  }
+  await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/bridge/result",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    id: layerAttributeCommand.body.command.id,
+    ok: true,
+    result: JSON.stringify({
+      ok: true,
+      result: {
+        comp: { itemIndex: 1, name: "Smoke Comp" },
+        layer: null,
+        layers: [
+          { index: 1, name: "Smoke Layer 1", threeDLayer: true },
+          { index: 2, name: "Smoke Layer 2", threeDLayer: true }
+        ],
+        property: null,
+        properties: [
+          { name: "threeDLayer", value: true },
+          { name: "threeDLayer", value: true }
+        ]
+      }
+    })
+  });
+  const layerAttributeSet = await layerAttributeSetPromise;
+
   const health = await requestJson(`http://127.0.0.1:${port}/health`);
   const agents = await requestJsonWithOptions({
     hostname: "127.0.0.1",
@@ -354,6 +407,9 @@ async function main() {
   if (!agents.body.ok || !Array.isArray(agents.body.agents) || !agents.body.agents.length) {
     throw new Error("Unexpected agents response");
   }
+  if (layerAttributeSet.status !== 200 || !layerAttributeSet.body.ok || !Array.isArray(layerAttributeSet.body.result.layers) || layerAttributeSet.body.result.layers.length !== 2) {
+    throw new Error("Expected set_property_value to set threeDLayer on multiple selected-layer indexes");
+  }
   if (!agentsTool.body.ok || !agentsTool.body.result || !Array.isArray(agentsTool.body.result.agents)) {
     throw new Error("Unexpected list_ai_agents tool response");
   }
@@ -428,6 +484,7 @@ async function main() {
     tools: toolNames,
     listCompsResult: lines[2].result.content[0].text,
     agents: agents.body.agents.map((agent) => agent.id),
+    layerAttributeSet: layerAttributeSet.body.result.layers.length,
     readiness: readiness.body.readiness.status,
     planRun: planRun.body.run.steps[0].status,
     ignoredBindingRun: ignoredBindingRun.body.run.steps[0].status,
