@@ -212,6 +212,11 @@ section {
   font-size: 11px;
 }
 
+.setup-action-button {
+  justify-self: center;
+  margin-top: 2px;
+}
+
 .local-card {
   display: none;
 }

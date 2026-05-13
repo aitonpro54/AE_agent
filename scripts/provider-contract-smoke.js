@@ -1,7 +1,7 @@
 "use strict";
 
 const assert = require("assert");
-const { checkAgentReadiness, listAgents } = require("../mcp-server/ai-agents");
+const { checkAgentReadiness, launchCodexLogin, listAgents } = require("../mcp-server/ai-agents");
 
 const EXPECTED_OPENAI_CLI_MODELS = [
   "gpt-5.5",
@@ -106,6 +106,32 @@ async function main() {
     assert.strictEqual(readiness.configured, false);
     assert.match(readiness.error, /Codex CLI was not found|run codex login/i);
 
+    let missingCliSetupError = null;
+    try {
+      launchCodexLogin({
+        agentId: "openai-cli",
+        action: "codex_login",
+        dryRun: true
+      });
+    } catch (error) {
+      missingCliSetupError = error;
+    }
+    assert(missingCliSetupError, "Missing Codex CLI should block setup launch.");
+    assert.strictEqual(missingCliSetupError.status.installed, false);
+
+    let unsupportedSetupError = null;
+    try {
+      launchCodexLogin({
+        agentId: "openai-api",
+        action: "codex_login",
+        dryRun: true
+      });
+    } catch (error) {
+      unsupportedSetupError = error;
+    }
+    assert(unsupportedSetupError, "OpenAI API must not launch Codex login.");
+    assert.match(unsupportedSetupError.message, /Unsupported setup action/);
+
     console.log(JSON.stringify({
       ok: true,
       checked: {
@@ -119,7 +145,8 @@ async function main() {
           setupAction: openAiCli.setupAction,
           requiresApiKey: openAiCli.requiresApiKey,
           models: cliModelIds,
-          missingCliError: readiness.error
+          missingCliError: readiness.error,
+          setupLaunchBlocked: missingCliSetupError.status.status
         }
       }
     }, null, 2));

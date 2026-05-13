@@ -153,6 +153,9 @@ function stateExpression() {
     modelOptions: Array.from(document.querySelectorAll("#agentModel option")).map((option) => ({ value: option.value, text: option.textContent })),
     setupTitle: document.getElementById("agentSetupTitle") ? document.getElementById("agentSetupTitle").textContent : "",
     setupText: document.getElementById("agentSetupText") ? document.getElementById("agentSetupText").textContent : "",
+    setupActionText: document.getElementById("agentSetupActionButton") ? document.getElementById("agentSetupActionButton").textContent : "",
+    setupActionDisabled: document.getElementById("agentSetupActionButton") ? document.getElementById("agentSetupActionButton").disabled : null,
+    setupActionVisible: document.getElementById("agentSetupActionButton") ? document.getElementById("agentSetupActionButton").style.display !== "none" : null,
     apiKeyVisible: document.getElementById("agentApiKeyRow") ? document.getElementById("agentApiKeyRow").style.display !== "none" : null,
     freeModelsVisible: document.getElementById("freeModelsRow") ? document.getElementById("freeModelsRow").style.display !== "none" : null,
     freeModelsChecked: document.getElementById("freeModelsOnly") ? document.getElementById("freeModelsOnly").checked : null,
@@ -569,6 +572,53 @@ async function openAiCliSmoke() {
   }
 }
 
+async function openAiCliSetupSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  try {
+    await reloadActivePage(send);
+    await evaluate(send, setupExpression());
+    await waitFor(send, "panel online", (state) => state.badge === "online", 15000);
+    await waitFor(send, "OpenAI CLI agent list", (state) => (
+      state.agentOptions.some((option) => option.value === OPENAI_CLI_AGENT_ID)
+    ), 20000);
+    await evaluate(send, selectOpenAiCliExpression());
+    const selected = await waitFor(send, "OpenAI CLI setup action visible", (state) => (
+      state.agentValue === OPENAI_CLI_AGENT_ID &&
+      state.setupActionVisible === true &&
+      (
+        state.setupActionText.indexOf("Sign in with ChatGPT") >= 0 ||
+        state.setupActionText.indexOf("Signed in") >= 0 ||
+        state.setupActionText.indexOf("Install Codex CLI") >= 0
+      )
+    ), 30000);
+
+    const dryRun = await postBridge("/agents/setup", {
+      agentId: OPENAI_CLI_AGENT_ID,
+      action: "codex_login",
+      dryRun: true
+    });
+
+    if (dryRun.status >= 400 || !dryRun.body || dryRun.body.ok !== true) {
+      throw new Error(`OpenAI CLI setup dry run failed: ${(dryRun.body && dryRun.body.error) || `HTTP ${dryRun.status}`}`);
+    }
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      selected: {
+        agent: selected.agentValue,
+        setupTitle: selected.setupTitle,
+        setupText: selected.setupText,
+        setupActionText: selected.setupActionText,
+        setupActionDisabled: selected.setupActionDisabled
+      },
+      dryRun: dryRun.body.setup
+    }, null, 2));
+  } finally {
+    ws.close();
+  }
+}
+
 async function historySmoke() {
   const { page, ws, send } = await connectToPanel();
   let backup = null;
@@ -795,6 +845,10 @@ async function main() {
   }
   if (command === "openai-cli-smoke") {
     await openAiCliSmoke();
+    return;
+  }
+  if (command === "openai-cli-setup-smoke") {
+    await openAiCliSetupSmoke();
     return;
   }
   if (command === "history-smoke") {

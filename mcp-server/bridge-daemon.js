@@ -2716,6 +2716,26 @@ function startHttpBridge() {
       return;
     }
 
+    if ((url.pathname === "/agents/setup" || url.pathname === "/dev/agents/setup") && req.method === "POST") {
+      if (!requireToken(req, res, url)) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+        const setup = aiAgents.launchCodexLogin(body || {});
+        writeJson(res, 200, {
+          ok: true,
+          setup
+        });
+      } catch (error) {
+        writeJson(res, 400, {
+          ok: false,
+          error: error.message || String(error),
+          codexStatus: error.status || null
+        });
+      }
+      return;
+    }
+
     if ((url.pathname === "/agents/log" || url.pathname === "/dev/agents/log") && req.method === "GET") {
       if (!requireToken(req, res, url)) return;
       const limit = Math.max(1, Math.min(200, Math.floor(Number(url.searchParams.get("limit") || 50))));

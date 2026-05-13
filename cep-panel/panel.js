@@ -23,6 +23,7 @@
   var agentSetupCardEl = document.getElementById("agentSetupCard");
   var agentSetupTitleEl = document.getElementById("agentSetupTitle");
   var agentSetupTextEl = document.getElementById("agentSetupText");
+  var agentSetupActionButton = document.getElementById("agentSetupActionButton");
   var localServiceCardEl = document.getElementById("localServiceCard");
   var detectLocalButton = document.getElementById("detectLocalButton");
   var localStatusEl = document.getElementById("localStatus");
@@ -61,6 +62,7 @@
   var transcriptRestoring = false;
   var chatInFlight = false;
   var keySaveInFlight = false;
+  var setupActionInFlight = false;
   var readinessInFlight = false;
   var lastPlanResult = null;
 
@@ -298,11 +300,33 @@
     if (agent.id === "openai-cli") {
       if (agent.codexStatus && agent.codexStatus.loggedIn) return "Codex CLI is signed in with ChatGPT. API keys are not used in this mode.";
       if (agent.codexStatus && !agent.codexStatus.installed) return "Codex CLI was not found. Install Codex, then run codex login.";
-      return "Run codex login, choose ChatGPT sign-in, then use CLI models here. No OpenAI API key is used.";
+      return "Sign in with ChatGPT through Codex CLI, then use CLI models here. No OpenAI API key is used.";
     }
     if (agent.id === "openai-api") return "Uses OpenAI API billing. Paste an API key to enable API models.";
     if (agentGroup(agent) === "local") return "Runs with Ollama on port 11434. No API key needed.";
     return agent.notes || "";
+  }
+
+  function updateSetupActionAvailability(agent) {
+    if (!agentSetupActionButton) return;
+    var show = agent && agent.id === "openai-cli";
+    agentSetupActionButton.style.display = show ? "" : "none";
+    if (!show) {
+      agentSetupActionButton.disabled = true;
+      return;
+    }
+
+    var status = agent.codexStatus || {};
+    if (status.loggedIn) {
+      agentSetupActionButton.textContent = "Signed in";
+      agentSetupActionButton.disabled = true;
+    } else if (status.installed === false) {
+      agentSetupActionButton.textContent = "Install Codex CLI";
+      agentSetupActionButton.disabled = true;
+    } else {
+      agentSetupActionButton.textContent = setupActionInFlight ? "Opening sign-in..." : "Sign in with ChatGPT";
+      agentSetupActionButton.disabled = setupActionInFlight || chatInFlight || readinessInFlight;
+    }
   }
 
   function updateProviderUi(agent) {
@@ -319,6 +343,7 @@
     agentSetupCardEl.style.display = group === "local" ? "none" : "";
     agentSetupTitleEl.textContent = setupTitleForAgent(agent);
     agentSetupTextEl.textContent = setupTextForAgent(agent);
+    updateSetupActionAvailability(agent);
     if (group === "local") {
       if (agent && agent.canChat) localStatusEl.textContent = "Connected to Ollama - " + (agent.modelCount || 0) + " models available";
       else if (agent && agent.reachable === false) localStatusEl.textContent = agent.error || "Ollama is offline";
@@ -909,6 +934,7 @@
     var key = trimText(agentApiKeyEl.value);
     saveAgentKeyButton.disabled = chatInFlight || keySaveInFlight || !agent || !agent.requiresApiKey || !key;
     checkAgentButton.disabled = chatInFlight || readinessInFlight || !agent || !selectedModel();
+    updateSetupActionAvailability(agent);
   }
 
   function rememberModel() {
@@ -989,6 +1015,39 @@
       log("Saved API key for " + (agent.label || agent.id));
       loadAgents();
       updateKeyAvailability();
+    });
+  }
+
+  function startAgentSetup() {
+    if (setupActionInFlight) return;
+    var agent = findAgent(agentSelect.value);
+    if (!agent || agent.id !== "openai-cli") return;
+
+    setupActionInFlight = true;
+    setAgentStatus("Opening ChatGPT sign-in...");
+    updateSetupActionAvailability(agent);
+    request("POST", "/agents/setup", {
+      agentId: agent.id,
+      action: agent.setupAction || "codex_login"
+    }, function (error, response) {
+      setupActionInFlight = false;
+      if (error) {
+        agent.error = error.message;
+        setAgentStatus(error.message);
+        setAgentDetails(agent);
+        updateProviderUi(agent);
+        updateKeyAvailability();
+        return;
+      }
+
+      var setup = response && response.setup ? response.setup : {};
+      if (setup.agent && setup.agent.codexStatus) agent.codexStatus = setup.agent.codexStatus;
+      setAgentStatus(setup.launched ? "Finish ChatGPT sign-in, then check model" : "Sign-in ready");
+      agentSetupTextEl.textContent = setup.message || "Finish ChatGPT sign-in, then refresh or check the model.";
+      setAgentDetails(agent);
+      updateProviderUi(agent);
+      updateKeyAvailability();
+      setTimeout(loadAgents, 2500);
     });
   }
 
@@ -1306,6 +1365,7 @@
   agentApiKeyEl.addEventListener("input", updateKeyAvailability);
   checkAgentButton.addEventListener("click", checkSelectedAgent);
   saveAgentKeyButton.addEventListener("click", saveAgentKey);
+  agentSetupActionButton.addEventListener("click", startAgentSetup);
   sendChatButton.addEventListener("click", sendChat);
   forEachNode(chatModeButtonEls, function (button) {
     button.addEventListener("click", function () {

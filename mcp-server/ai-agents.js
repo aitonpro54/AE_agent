@@ -135,6 +135,70 @@ function getCodexCliStatus() {
   };
 }
 
+function quoteWindowsCmdArg(value) {
+  return `"${String(value || "").replace(/"/g, '""')}"`;
+}
+
+function spawnCodexLogin(command) {
+  if (process.platform === "win32") {
+    return spawn("cmd.exe", [
+      "/d",
+      "/s",
+      "/c",
+      `start "Codex ChatGPT Sign-In" ${quoteWindowsCmdArg(command)} login`
+    ], {
+      detached: true,
+      stdio: "ignore",
+      windowsHide: false
+    });
+  }
+
+  return spawn(command, ["login"], {
+    detached: true,
+    stdio: "ignore",
+    windowsHide: false
+  });
+}
+
+function launchCodexLogin(args) {
+  const agent = findAgent(args && (args.agentId || args.agent || args.provider || "openai-cli"));
+  const action = compactString((args && args.action) || agent.setupAction || "codex_login", 80);
+  const dryRun = boolArg(args, "dryRun", false);
+  if (agent.id !== "openai-cli" || agent.apiStyle !== "codex-cli" || action !== "codex_login") {
+    throw new Error("Unsupported setup action. Only OpenAI CLI ChatGPT sign-in can be launched from the panel.");
+  }
+
+  const status = agent.codexStatus || getCodexCliStatus();
+  if (!status.installed) {
+    const error = new Error(status.error || "Codex CLI was not found.");
+    error.status = status;
+    throw error;
+  }
+
+  if (dryRun) {
+    return {
+      launched: false,
+      dryRun: true,
+      action,
+      agent: publicAgent(agent, { codexStatus: status }),
+      codexStatus: status,
+      message: "Codex ChatGPT sign-in can be launched from the panel."
+    };
+  }
+
+  const child = spawnCodexLogin(status.command || codexCommand());
+  child.unref();
+  return {
+    launched: true,
+    dryRun: false,
+    pid: child.pid || null,
+    action,
+    agent: publicAgent(agent, { codexStatus: status }),
+    codexStatus: status,
+    message: "Codex ChatGPT sign-in started. Finish sign-in in the opened Codex/browser window, then refresh or check the model."
+  };
+}
+
 function configurationError(agent) {
   if (!agent) return "Agent is not configured.";
   if (agent.apiStyle === "codex-cli") {
@@ -1066,5 +1130,6 @@ module.exports = {
   agentSummary,
   checkAgentReadiness,
   chatWithAgent,
+  launchCodexLogin,
   listAgents
 };

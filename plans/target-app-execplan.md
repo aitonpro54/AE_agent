@@ -13,6 +13,7 @@
 - [x] Milestone 9: Local multi-chat history.
 - [x] Milestone 10: Remove reference license gate UI.
 - [x] Milestone 11: OpenAI API setup-state model labels.
+- [x] Milestone 12: Panel-launched ChatGPT sign-in for OpenAI CLI.
 
 ## Milestones
 
@@ -91,6 +92,13 @@
 - For `OpenAI -> API` without a key, show labels like `GPT-5.5 (No API key)`.
 - Add a live CEP smoke for the OpenAI API no-key/setup state.
 
+### Milestone 12: Panel-launched ChatGPT sign-in for OpenAI CLI
+
+- Add a `Sign in with ChatGPT` action to the `OpenAI -> CLI` setup card.
+- Add a local bridge endpoint that launches the official Codex CLI login flow for `openai-cli` only.
+- Keep API keys separate: the sign-in action must not store ChatGPT tokens in CEP localStorage and must not apply to `OpenAI -> API`.
+- Add contract and live CEP smoke coverage for the setup action without triggering a real login during tests.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -106,6 +114,7 @@
 - 2026-05-13: Chat history remains panel-local for v1; no backend persistence or migration is needed, and the old `codexAeChatTranscript` key stays as the active-conversation snapshot.
 - 2026-05-13: The reference trial/license strip is not part of this product; removing it avoids implying an app license or Pro gate while preserving API/CLI billing distinctions.
 - 2026-05-13: Model dropdown setup suffixes are UI labels only; option values remain canonical model ids such as `gpt-5.5`.
+- 2026-05-13: `Sign in with ChatGPT` launches the official local Codex CLI login flow from the bridge daemon; manual `codex login` remains a fallback for troubleshooting.
 
 ## Validation
 
@@ -201,6 +210,22 @@
   - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
   - Passed `node scripts/cep-panel-cdp-smoke.js openai-api-setup-smoke` with a temporary bridge job.
   - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+- Milestone 12:
+  - Added `POST /agents/setup` and `/dev/agents/setup` for `openai-cli` / `codex_login`.
+  - Added `Sign in with ChatGPT` button to the OpenAI CLI setup card.
+  - Added `node scripts/cep-panel-cdp-smoke.js openai-cli-setup-smoke`.
+  - Updated `specs/target-app.md`, `README.md`, and `RELEASES.md`.
+  - Copied updated `index.html`, `panel.js`, and `style.css` into the installed CEP extension.
+  - Passed `node --check mcp-server/ai-agents.js`.
+  - Passed `node --check mcp-server/bridge-daemon.js`.
+  - Passed `node --check cep-panel/panel.js`.
+  - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
+  - Passed `node --check scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js openai-cli-setup-smoke` with a temporary bridge job.
   - Passed `git diff --check`.
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.

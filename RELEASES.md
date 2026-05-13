@@ -8,6 +8,7 @@ Added:
 
 - AE GPT-style provider UI with `Gemini`, `OpenAI`, `Claude`, and `Local` tabs.
 - Separate OpenAI `API` and `CLI` modes. API mode uses `OPENAI_API_KEY`; CLI mode uses `codex login` and `codex exec` for ChatGPT/Codex subscription-backed calls.
+- `Sign in with ChatGPT` action in `OpenAI -> CLI` that launches the local Codex CLI login flow from the panel.
 - OpenAI CLI model list for `GPT-5.5`, `GPT-5.4`, `GPT-5.4-Mini`, `GPT-5.3-Codex`, `GPT-5.3-Codex-Spark`, and `GPT-5.2`.
 - Prompt Optimization toggle passed through chat and Agent requests.
 - Agent plan text rendering as compact step cards in the CEP transcript.
