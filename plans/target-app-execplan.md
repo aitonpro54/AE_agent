@@ -28,6 +28,7 @@
 - [x] Milestone 24: README provider command examples.
 - [x] Milestone 25: AE Agent rename and version bump.
 - [x] Milestone 26: AE Agent 1.0.0 single-title cleanup.
+- [x] Milestone 27: Native CEP window title sync.
 
 ## Milestones
 
@@ -203,6 +204,12 @@
 - Bump the daemon, adapter, CEP panel, manifest, install note, and smoke expectations to `1.0.0`.
 - Preserve Claude and Gemini provider behavior unchanged.
 
+### Milestone 27: Native CEP window title sync
+
+- Force the live CEP host window title through the native CEP runtime when the panel loads.
+- Keep the product title as `AE Agent 1.0.0`.
+- Do not change provider implementations or bridge contracts.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -237,6 +244,7 @@
 - 2026-05-13: Claude and Gemini provider implementations stay frozen unless the user explicitly asks to change them.
 - 2026-05-13: Current working product version is `1.0.0`; visible title format is `AE Agent 1.0.0` without a `v` prefix.
 - 2026-05-13: Keep only the native CEP title/menu product name; remove duplicate in-panel product title rows.
+- 2026-05-13: CEP may keep an older host-frame title after manifest changes; the panel should call native `setWindowTitle` on load to synchronize the visible AE frame title.
 
 ## Validation
 
@@ -538,4 +546,18 @@
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.
   - Passed `node scripts/cep-panel-cdp-smoke.js branding-smoke` against the installed CEP panel; the actual document title is `AE Agent 1.0.0`, duplicate title DOM nodes are absent, and the DevTools target metadata may keep the old title until the host panel target refreshes.
+  - Passed `git diff --check`.
+- Milestone 27:
+  - Added native CEP `setWindowTitle` synchronization during `setAppTitle`.
+  - Verified the installed `com.codex.aemcpbridge` manifest, HTML title, and panel version are `AE Agent 1.0.0`.
+  - Verified `.debug` contains only the extension id/port and no stale title.
+  - Copied updated `panel.js` into the installed CEP extension.
+  - Passed `node --check cep-panel/panel.js`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js reload`; the live DevTools page title and document title both reported `AE Agent 1.0.0`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js branding-smoke`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-api-smoke.js`.
+  - Passed `node scripts/prompt-optimization-smoke.js`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
   - Passed `git diff --check`.

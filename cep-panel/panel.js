@@ -76,6 +76,11 @@
     var normalizedVersion = version || APP_VERSION;
     var title = APP_NAME + " " + normalizedVersion.replace(/^v/i, "");
     document.title = title;
+    try {
+      if (window.__adobe_cep__ && typeof window.__adobe_cep__.invokeSync === "function") {
+        window.__adobe_cep__.invokeSync("setWindowTitle", title);
+      }
+    } catch (_titleError) {}
     if (titleEl) titleEl.textContent = APP_NAME;
     if (versionEl) versionEl.textContent = normalizedVersion.replace(/^v/i, "");
   }
