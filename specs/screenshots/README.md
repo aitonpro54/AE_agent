@@ -51,3 +51,4 @@ The screenshot references are visual and behavioral targets, not source code to 
   - failed or needs review
 - Bottom composer stays fixed and compact.
 - Diagnostics/activity logs should stay out of the primary chat surface unless the user opens them.
+- Compact composer controls should avoid mojibake-prone glyphs in CEP/Windows.

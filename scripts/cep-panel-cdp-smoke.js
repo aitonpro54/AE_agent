@@ -178,6 +178,8 @@ function stateExpression() {
     freeModelsChecked: document.getElementById("freeModelsOnly") ? document.getElementById("freeModelsOnly").checked : null,
     mode: document.getElementById("chatMode") ? document.getElementById("chatMode").value : "",
     checkDisabled: document.getElementById("checkAgentButton") ? document.getElementById("checkAgentButton").disabled : null,
+    sendButtonText: document.getElementById("sendChatButton") ? document.getElementById("sendChatButton").textContent : "",
+    sendButtonTitle: document.getElementById("sendChatButton") ? document.getElementById("sendChatButton").title : "",
     sendDisabled: document.getElementById("sendChatButton") ? document.getElementById("sendChatButton").disabled : null,
     dryRunDisabled: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").disabled : null,
     runDisabled: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").disabled : null,
@@ -804,6 +806,29 @@ async function diagnosticsSmoke() {
   }
 }
 
+async function sendButtonSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  try {
+    await reloadActivePage(send);
+    const state = await waitFor(send, "stable send button label", (item) => (
+      item.sendButtonText === ">" &&
+      item.sendButtonTitle === "Send"
+    ), 10000);
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      sendButton: {
+        text: state.sendButtonText,
+        title: state.sendButtonTitle,
+        disabled: state.sendDisabled
+      }
+    }, null, 2));
+  } finally {
+    ws.close();
+  }
+}
+
 async function openAiCliSmoke() {
   const { page, ws, send } = await connectToPanel();
   try {
@@ -1183,6 +1208,10 @@ async function main() {
   }
   if (command === "diagnostics-smoke") {
     await diagnosticsSmoke();
+    return;
+  }
+  if (command === "send-button-smoke") {
+    await sendButtonSmoke();
     return;
   }
   if (command === "openai-cli-smoke") {

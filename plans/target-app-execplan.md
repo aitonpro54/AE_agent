@@ -19,6 +19,7 @@
 - [x] Milestone 15: Gemini/Claude setup placeholders.
 - [x] Milestone 16: Sidebar collapse control polish.
 - [x] Milestone 17: Diagnostics log toggle.
+- [x] Milestone 18: Stable send button glyph.
 
 ## Milestones
 
@@ -137,6 +138,12 @@
 - Keep diagnostics UI out of the main chat flow unless explicitly opened.
 - Add a live CEP smoke that opens/closes diagnostics and verifies display state plus `aria-expanded`.
 
+### Milestone 18: Stable send button glyph
+
+- Replace the composer send button Unicode arrow with an ASCII `>` label to avoid mojibake in CEP/Windows.
+- Preserve the existing `Send` tooltip and button sizing.
+- Add a live CEP smoke that verifies the installed panel's send button label and tooltip.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -158,6 +165,7 @@
 - 2026-05-13: Gemini and Claude tabs should be clickable setup placeholders, not disabled controls; real provider integrations remain out of scope until explicitly planned.
 - 2026-05-13: Use ASCII `<` / `>` for the sidebar collapse control to avoid Unicode/mojibake issues in CEP runtimes.
 - 2026-05-13: Activity logs should be user-accessible on demand, but hidden by default so the first screen remains focused on provider setup and chat.
+- 2026-05-13: Prefer stable ASCII labels for compact CEP icon-like controls when Unicode glyphs risk mojibake.
 
 ## Validation
 
@@ -328,6 +336,16 @@
   - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
   - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `node scripts/cep-panel-cdp-smoke.js diagnostics-smoke`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+- Milestone 18:
+  - Replaced the composer send button glyph with ASCII `>`.
+  - Added `node scripts/cep-panel-cdp-smoke.js send-button-smoke`.
+  - Copied updated `index.html` into the installed CEP extension.
+  - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js send-button-smoke`.
   - Passed `git diff --check`.
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.

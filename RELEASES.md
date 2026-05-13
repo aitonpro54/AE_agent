@@ -24,6 +24,7 @@ Added:
 - Clickable Gemini and Claude setup placeholder tabs, plus `provider-placeholder-smoke`.
 - ASCII sidebar collapse toggle with accessibility state coverage via `sidebar-collapse-smoke`.
 - User-facing diagnostics log toggle, plus `diagnostics-smoke`.
+- Stable ASCII composer send button label, plus `send-button-smoke`.
 
 Changed:
 
@@ -39,6 +40,7 @@ Changed:
 - Gemini and Claude now show honest planned-provider setup states instead of dead disabled tabs.
 - The sidebar collapse button now uses ASCII `<` / `>` and updates `aria-expanded`.
 - The existing Activity log pane is hidden by default and can be opened from the bridge controls.
+- The composer send button now uses a stable ASCII `>` label instead of a mojibake-prone Unicode arrow.
 - Daemon, adapter, CEP panel, manifest, install note, and smoke tests report version `0.26.0`.
 
 ## v0.25.0-safe-run - 2026-05-12
