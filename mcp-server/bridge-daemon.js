@@ -3059,7 +3059,7 @@ const tools = [
   },
   {
     name: "list_ai_agents",
-    description: "List configured OpenAI API, OpenAI CLI, OpenRouter, Ollama, and custom AI agents available through the bridge.",
+    description: "List configured OpenAI API, OpenAI CLI, Gemini, Claude, OpenRouter, Ollama, Ollama Cloud, and custom AI agents available through the bridge.",
     inputSchema: {
       type: "object",
       properties: {
@@ -3086,7 +3086,7 @@ const tools = [
       properties: {
         agentId: {
           type: "string",
-          description: "Agent id from list_ai_agents, such as openai-cli, openai-api, openrouter, ollama-local, or ollama-cloud."
+          description: "Agent id from list_ai_agents, such as openai-cli, openai-api, gemini-api, claude-api, openrouter, ollama-local, or ollama-cloud."
         },
         model: {
           type: "string",
@@ -3110,13 +3110,13 @@ const tools = [
   },
   {
     name: "chat_with_ai_agent",
-    description: "Send a chat prompt to a configured OpenAI API, OpenAI CLI, OpenRouter, Ollama, or custom AI agent.",
+    description: "Send a chat prompt to a configured OpenAI API, OpenAI CLI, Gemini, Claude, OpenRouter, Ollama, or custom AI agent.",
     inputSchema: {
       type: "object",
       properties: {
         agentId: {
           type: "string",
-          description: "Agent id from list_ai_agents, such as openai-cli, openai-api, openrouter, ollama-local, or ollama-cloud."
+          description: "Agent id from list_ai_agents, such as openai-cli, openai-api, gemini-api, claude-api, openrouter, ollama-local, or ollama-cloud."
         },
         model: {
           type: "string",
@@ -3140,7 +3140,7 @@ const tools = [
         },
         maxTokens: {
           type: "number",
-          description: "Optional maximum response tokens for OpenAI-compatible providers."
+          description: "Optional maximum response tokens where the selected provider supports it."
         },
         timeoutMs: {
           type: "number",
@@ -3162,7 +3162,7 @@ const tools = [
       properties: {
         agentId: {
           type: "string",
-          description: "Agent id from list_ai_agents, such as openai-cli, openai-api, openrouter, ollama-local, or ollama-cloud."
+          description: "Agent id from list_ai_agents, such as openai-cli, openai-api, gemini-api, claude-api, openrouter, ollama-local, or ollama-cloud."
         },
         model: {
           type: "string",
