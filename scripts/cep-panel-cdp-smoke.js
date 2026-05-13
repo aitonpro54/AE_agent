@@ -195,6 +195,9 @@ function stateExpression() {
     runDisabled: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").disabled : null,
     chatHistoryValue: document.getElementById("chatHistorySelect") ? document.getElementById("chatHistorySelect").value : "",
     chatHistoryOptions: Array.from(document.querySelectorAll("#chatHistorySelect option")).map((option) => ({ value: option.value, text: option.textContent })),
+    workingExists: !!document.querySelector(".chat-message.chat-working"),
+    workingText: document.querySelector(".chat-message.chat-working .typing-indicator") ? document.querySelector(".chat-message.chat-working .typing-indicator").textContent : "",
+    workingDots: document.querySelectorAll(".chat-message.chat-working .typing-dots i").length,
     transcript: document.getElementById("chatTranscript") ? document.getElementById("chatTranscript").innerText.slice(0, 16000) : "",
     log: document.getElementById("log") ? document.getElementById("log").innerText.slice(0, 4000) : "",
     confirmMessages: window.__codexPanelConfirmMessages || []
@@ -401,7 +404,7 @@ function installConfirmExpression() {
     window.__codexPanelConfirmMessages = [];
     window.confirm = function (message) {
       window.__codexPanelConfirmMessages.push(String(message || ""));
-      return true;
+      throw new Error("Unexpected confirm: " + String(message || ""));
     };
     return true;
   })()`;
@@ -557,6 +560,11 @@ async function smoke() {
 
     const sent = await evaluate(send, clickExpression("sendChatButton"));
     if (!sent || !sent.ok) throw new Error("Send button was not clickable.");
+    await waitFor(send, "planning indicator", (state) => (
+      state.workingExists === true &&
+      state.workingText.indexOf("Planning") >= 0 &&
+      state.workingDots === 3
+    ), 5000);
 
     const planned = await waitFor(send, "AE Plan result", (state) => (
       state.sendDisabled === false &&
@@ -1243,6 +1251,11 @@ async function mutatingSmoke() {
 
     const sent = await evaluate(send, clickExpression("sendChatButton"));
     if (!sent || !sent.ok) throw new Error("Send button was not clickable.");
+    await waitFor(send, "mutating planning indicator", (state) => (
+      state.workingExists === true &&
+      state.workingText.indexOf("Planning") >= 0 &&
+      state.workingDots === 3
+    ), 5000);
 
     const planned = await waitFor(send, "mutating AE Plan result", (state) => (
       state.sendDisabled === false &&
@@ -1274,9 +1287,8 @@ async function mutatingSmoke() {
       return false;
     }, 90000);
 
-    const confirmText = (run.confirmMessages || []).join("\n");
-    if (confirmText.indexOf("checkpoint/edit session") < 0) {
-      throw new Error("Mutating confirmation did not mention checkpoint/edit session.");
+    if ((run.confirmMessages || []).length) {
+      throw new Error("Run plan showed an unexpected confirmation dialog.");
     }
 
     const blockedSaveFirst = (

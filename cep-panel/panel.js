@@ -63,6 +63,7 @@
   var transcriptHistory = [];
   var transcriptRestoring = false;
   var chatInFlight = false;
+  var chatWorkingEl = null;
   var keySaveInFlight = false;
   var setupActionInFlight = false;
   var readinessInFlight = false;
@@ -779,6 +780,47 @@
     recordTranscriptMessage(role, text);
   }
 
+  function removeChatWorkingIndicator() {
+    if (chatWorkingEl && chatWorkingEl.parentNode) {
+      chatWorkingEl.parentNode.removeChild(chatWorkingEl);
+    }
+    chatWorkingEl = null;
+  }
+
+  function showChatWorkingIndicator(label) {
+    removeChatWorkingIndicator();
+
+    var messageEl = document.createElement("div");
+    messageEl.className = "chat-message assistant chat-working";
+
+    var roleEl = document.createElement("span");
+    roleEl.className = "chat-role";
+    roleEl.textContent = "assistant";
+    messageEl.appendChild(roleEl);
+
+    var bubbleEl = document.createElement("span");
+    bubbleEl.className = "typing-indicator";
+    bubbleEl.setAttribute("aria-label", label || "Working");
+
+    var textEl = document.createElement("span");
+    textEl.className = "typing-text";
+    textEl.textContent = label || "Working";
+    bubbleEl.appendChild(textEl);
+
+    var dotsEl = document.createElement("span");
+    dotsEl.className = "typing-dots";
+    dotsEl.setAttribute("aria-hidden", "true");
+    for (var i = 0; i < 3; i++) {
+      dotsEl.appendChild(document.createElement("i"));
+    }
+    bubbleEl.appendChild(dotsEl);
+
+    messageEl.appendChild(bubbleEl);
+    chatTranscriptEl.appendChild(messageEl);
+    chatTranscriptEl.scrollTop = chatTranscriptEl.scrollHeight;
+    chatWorkingEl = messageEl;
+  }
+
   function statusClassForStep(text) {
     var value = String(text || "").toLowerCase();
     if (value.indexOf("failed") >= 0 || value.indexOf("blocked") >= 0 || value.indexOf("needs review") >= 0 || value.indexOf("error") >= 0) return "failed";
@@ -1064,14 +1106,17 @@
     chatMessages = [];
     transcriptHistory = [];
     lastPlanResult = null;
+    removeChatWorkingIndicator();
     clearElement(chatTranscriptEl);
     saveTranscriptHistory();
     updateChatAvailability();
   }
 
-  function setChatBusy(busy) {
+  function setChatBusy(busy, label) {
     chatInFlight = busy;
     refreshAgentsButton.disabled = busy;
+    if (busy) showChatWorkingIndicator(label);
+    else removeChatWorkingIndicator();
     updateChatAvailability();
     updateKeyAvailability();
   }
@@ -1343,14 +1388,8 @@
     var mutatingCount = Number(validation.mutatingCount || 0);
     var allowMutations = !dryRun && mutatingCount > 0;
     var autoEditSession = allowMutations;
-    if (!dryRun) {
-      var message = mutatingCount
-        ? "Run this validated plan, create a checkpoint/edit session, and allow project changes?"
-        : "Run this validated plan?";
-      if (!window.confirm(message)) return;
-    }
 
-    setChatBusy(true);
+    setChatBusy(true, dryRun ? "Checking" : "Running");
     request("POST", "/agents/plan/run", {
       plan: lastPlanResult.plan,
       requestId: lastPlanResult.requestId,
@@ -1410,7 +1449,7 @@
       updateChatAvailability();
     }
 
-    setChatBusy(true);
+    setChatBusy(true, mode === "plan" ? "Planning" : "Thinking");
     var path = mode === "plan" ? "/agents/plan" : "/agents/chat";
     var optimizePrompt = promptOptimizationEl && promptOptimizationEl.checked;
     var body = mode === "plan" ? {
