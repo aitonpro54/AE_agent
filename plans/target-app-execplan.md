@@ -9,6 +9,7 @@
 - [x] Milestone 5: Full validation and release notes.
 - [x] Milestone 6: Installed CEP panel live validation.
 - [x] Milestone 7: OpenAI CLI live panel validation.
+- [x] Milestone 8: Provider contract smoke coverage.
 
 ## Milestones
 
@@ -63,6 +64,12 @@
 - Verify the installed panel can call the backend `openai-cli` provider and receive a real Codex CLI response.
 - Keep this smoke chat-only so it validates ChatGPT/Codex subscription access without mutating the AE project.
 
+### Milestone 8: Provider contract smoke coverage
+
+- Add a provider contract smoke test for OpenAI `API` vs `CLI` metadata.
+- Verify missing Codex CLI state reports `setupAction: codex_login`, no API key requirement, and the approved CLI model list.
+- Make list-agent errors use provider-specific setup guidance instead of a generic not-configured message.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -74,6 +81,7 @@
 - 2026-05-13: Static local Chrome preview is the repo UI smoke for this milestone; live CEP smoke requires copying the changed panel files into the installed Adobe CEP extension first.
 - 2026-05-13: Installed CEP validation copies only changed panel files into `C:\Users\Ant\AppData\Roaming\Adobe\CEP\extensions\com.codex.aemcpbridge`; registry/debug settings are not changed.
 - 2026-05-13: OpenAI CLI live smoke stays chat-only; Local/Ollama remains the default live mutating smoke path because it avoids unnecessary paid/subscription model calls for AE mutations.
+- 2026-05-13: Provider contract smoke simulates a missing Codex CLI with an invalid `CODEX_CLI_PATH`; authenticated CLI behavior remains covered by live CEP smoke.
 
 ## Validation
 
@@ -123,6 +131,16 @@
   - Added `node scripts/cep-panel-cdp-smoke.js openai-cli-smoke`.
   - Passed `node scripts/cep-panel-cdp-smoke.js openai-cli-smoke` against the installed panel with `openai-cli` / `gpt-5.5`; response text was `AE GPT CLI OK`.
   - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+- Milestone 8:
+  - Added `node scripts/provider-contract-smoke.js`.
+  - Updated `AGENTS.md` to include the provider contract smoke in the repo-aware verification list.
+  - Updated `listAgents` non-configured errors to use provider-specific setup guidance.
+  - Passed `node --check mcp-server/ai-agents.js`.
+  - Passed `node --check scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `git diff --check`.
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.

@@ -754,9 +754,7 @@ async function listAgents(args) {
           ? null
           : configured
             ? modelState.error || `Model ${agent.model} was not found in ${agent.label}'s model list.`
-            : agent.requiresApiKey
-              ? `Set ${agent.apiKeyEnv || "the provider API key"} before using ${agent.label}.`
-              : `${agent.label} is not configured.`
+            : configurationError(agent)
       });
     } catch (error) {
       enriched.push(publicAgent(agent, {

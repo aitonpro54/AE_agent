@@ -32,6 +32,7 @@ Before marking a milestone complete, run:
 - checks that are configured for this repository
 - `node --check` for every touched JavaScript file
 - `git diff --check`
+- `node scripts/provider-contract-smoke.js`
 - `node scripts/bridge-only-smoke-test.js`
 - `node scripts/smoke-test.js`
 - relevant live CEP smoke tests, such as `node scripts/cep-panel-cdp-smoke.js smoke`, when After Effects and the panel are available
