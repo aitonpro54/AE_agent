@@ -187,6 +187,11 @@ function stateExpression() {
     freeModelsVisible: document.getElementById("freeModelsRow") ? document.getElementById("freeModelsRow").style.display !== "none" : null,
     freeModelsChecked: document.getElementById("freeModelsOnly") ? document.getElementById("freeModelsOnly").checked : null,
     mode: document.getElementById("chatMode") ? document.getElementById("chatMode").value : "",
+    promptOptimizationChecked: document.getElementById("promptOptimization") ? document.getElementById("promptOptimization").checked : null,
+    promptOptimizationLabel: document.querySelector(".prompt-toggle em") ? document.querySelector(".prompt-toggle em").textContent : "",
+    workflowPresetValue: document.getElementById("workflowPresetSelect") ? document.getElementById("workflowPresetSelect").value : "",
+    workflowPresetOptions: Array.from(document.querySelectorAll("#workflowPresetSelect option")).map((option) => ({ value: option.value, text: option.textContent })),
+    workflowInsertDisabled: document.getElementById("applyWorkflowPresetButton") ? document.getElementById("applyWorkflowPresetButton").disabled : null,
     checkDisabled: document.getElementById("checkAgentButton") ? document.getElementById("checkAgentButton").disabled : null,
     promptValue: document.getElementById("chatPrompt") ? document.getElementById("chatPrompt").value : "",
     sendButtonText: document.getElementById("sendChatButton") ? document.getElementById("sendChatButton").textContent : "",
@@ -389,6 +394,16 @@ function clickExpression(id) {
   })()`;
 }
 
+function selectWorkflowPresetExpression(value) {
+  return `(() => {
+    const select = document.getElementById("workflowPresetSelect");
+    if (!select) return { ok: false, error: "missing workflow preset select" };
+    select.value = ${JSON.stringify(value)};
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    return { ok: true, state: ${stateExpression()} };
+  })()`;
+}
+
 function fillApiKeyExpression(value) {
   return `(() => {
     const el = document.getElementById("agentApiKey");
@@ -430,6 +445,34 @@ function writeHistoryStorageExpression(values) {
     write("codexAeChatSessions", values.sessions);
     write("codexAeActiveChatSessionId", values.active);
     write("codexAeChatTranscript", values.transcript);
+    return true;
+  })()`;
+}
+
+function composerStateExpression() {
+  return `(() => ({
+    mode: localStorage.getItem("codexAeChatMode"),
+    promptOptimization: localStorage.getItem("codexAePromptOptimization"),
+    prompt: document.getElementById("chatPrompt") ? document.getElementById("chatPrompt").value : ""
+  }))()`;
+}
+
+function writeComposerStateExpression(values) {
+  const storage = values || {};
+  return `(() => {
+    const values = ${JSON.stringify(storage)};
+    function write(key, value) {
+      if (value === null || value === undefined) localStorage.removeItem(key);
+      else localStorage.setItem(key, value);
+    }
+    write("codexAeChatMode", values.mode);
+    write("codexAePromptOptimization", values.promptOptimization);
+    const prompt = document.getElementById("chatPrompt");
+    if (prompt) {
+      prompt.value = values.prompt || "";
+      prompt.dispatchEvent(new Event("input", { bubbles: true }));
+      prompt.dispatchEvent(new Event("change", { bubbles: true }));
+    }
     return true;
   })()`;
 }
@@ -1080,6 +1123,81 @@ async function openAiCliSetupSmoke() {
   }
 }
 
+async function workflowPresetSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  let historyBackup = null;
+  let composerBackup = null;
+  try {
+    historyBackup = await evaluate(send, historyStorageExpression());
+    composerBackup = await evaluate(send, composerStateExpression());
+    await evaluate(send, writeHistoryStorageExpression(historyFixtureStorage()));
+    await reloadActivePage(send);
+
+    const restored = await waitFor(send, "workflow preset controls", (state) => (
+      state.chatHistoryValue === "history-smoke-one" &&
+      state.transcript.indexOf("First saved prompt") >= 0 &&
+      state.workflowPresetOptions.some((option) => option.value === "selected-layer-timing") &&
+      state.workflowPresetOptions.some((option) => option.value === "precompose-rename") &&
+      state.workflowPresetOptions.some((option) => option.value === "text-shape-layout") &&
+      state.workflowPresetOptions.some((option) => option.value === "basic-animation") &&
+      state.workflowPresetOptions.some((option) => option.value === "replace-source") &&
+      state.workflowInsertDisabled === true
+    ), 15000);
+
+    const selected = await evaluate(send, selectWorkflowPresetExpression("selected-layer-timing"));
+    if (!selected || !selected.ok) throw new Error("Could not select workflow preset.");
+    const ready = await waitFor(send, "workflow preset insert enabled", (state) => (
+      state.workflowPresetValue === "selected-layer-timing" &&
+      state.workflowInsertDisabled === false
+    ), 10000);
+
+    const insertedClick = await evaluate(send, clickExpression("applyWorkflowPresetButton"));
+    if (!insertedClick || !insertedClick.ok) throw new Error("Workflow preset insert button was not clickable.");
+    const inserted = await waitFor(send, "workflow preset inserted", (state) => (
+      state.mode === "plan" &&
+      state.promptOptimizationChecked === true &&
+      state.promptOptimizationLabel === "On" &&
+      state.workflowPresetValue === "" &&
+      state.workflowInsertDisabled === true &&
+      state.promptValue.indexOf("aligns them to the current time indicator") >= 0 &&
+      state.promptValue.indexOf("align_layers_to_time") >= 0 &&
+      state.promptValue.indexOf("Do not use raw ExtendScript") >= 0 &&
+      state.transcript.indexOf("First saved prompt") >= 0 &&
+      state.transcript.indexOf("align_layers_to_time") < 0 &&
+      state.chatHistoryValue === "history-smoke-one"
+    ), 10000);
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      restored: {
+        chatHistoryValue: restored.chatHistoryValue,
+        presetOptions: restored.workflowPresetOptions
+      },
+      selected: {
+        workflowPresetValue: ready.workflowPresetValue,
+        insertDisabled: ready.workflowInsertDisabled
+      },
+      inserted: {
+        mode: inserted.mode,
+        promptOptimizationChecked: inserted.promptOptimizationChecked,
+        promptPreview: inserted.promptValue.slice(0, 320),
+        transcriptTail: inserted.transcript.slice(-1000)
+      }
+    }, null, 2));
+  } finally {
+    if (historyBackup || composerBackup) {
+      try {
+        if (historyBackup) await evaluate(send, writeHistoryStorageExpression(historyBackup));
+        if (composerBackup) await evaluate(send, writeComposerStateExpression(composerBackup));
+        await reloadActivePage(send);
+        if (composerBackup) await evaluate(send, writeComposerStateExpression(composerBackup));
+      } catch (_error) {}
+    }
+    ws.close();
+  }
+}
+
 async function historySmoke() {
   const { page, ws, send } = await connectToPanel();
   let backup = null;
@@ -1391,6 +1509,10 @@ async function main() {
   }
   if (command === "openai-cli-setup-smoke") {
     await openAiCliSetupSmoke();
+    return;
+  }
+  if (command === "workflow-preset-smoke") {
+    await workflowPresetSmoke();
     return;
   }
   if (command === "history-smoke") {

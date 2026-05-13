@@ -510,6 +510,22 @@ button:disabled {
   font-style: normal;
 }
 
+.workflow-row {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) 74px;
+}
+
+.workflow-row select {
+  min-width: 0;
+}
+
+#applyWorkflowPresetButton {
+  min-height: 34px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
 .prompt-row {
   display: grid;
   gap: 10px;

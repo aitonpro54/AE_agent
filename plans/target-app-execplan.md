@@ -11,6 +11,7 @@
 - [x] Milestone 43: Animation tools.
 - [x] Milestone 44: Render queue tools.
 - [x] Milestone 45: Live typed-tool validation and spatial ease hardening.
+- [x] Milestone 46: Библиотека Agent-сценариев.
 
 ## Current Stable Baseline
 
@@ -79,6 +80,51 @@
 - Run protected live AE validation on generated `Codex Test Live Typed ...` comps for representative timeline, precomp/source, text/shape/layout, animation, and render queue setup workflows.
 - Fix issues found by live validation and keep temporary project/render-queue items cleaned up.
 
+### Milestone 46: Библиотека Agent-сценариев
+
+- Добавить компактный выбор готового workflow в composer Agent-режима.
+- Сценарии должны вставлять понятные Agent prompts для частых typed-tool workflows без автоотправки.
+- Покрыть сценарии для тайминга выбранных слоев, precompose/rename, text/shape layout, базовой анимации и замены source.
+- Оставить сценарии только фронтенд-помощниками для prompt; исполнение по-прежнему идет через Agent planning, validation, dry-run и run gates.
+- Добавить CEP smoke, который проверяет вставку сценария, Agent mode, Prompt Optimization и отсутствие побочных записей в chat history.
+
+### Milestone 47: Улучшенный Plan Review UX
+
+- Улучшить текст review для affected targets, mutation counts, checkpoint expectations и warnings.
+- Сделать dry-run и mutating run состояние легче считываемыми перед нажатием `Run plan`.
+- Сохранить совместимость backend plan schemas и существующих execution gates.
+
+### Milestone 48: Project Context Snapshot
+
+- Добавить компактный структурированный snapshot для Agent planning: active comp, selected layers, selected source/precomp hints, render queue count и недавний bridge context.
+- Держать snapshot достаточно маленьким, чтобы не раздувать prompt.
+- Предпочитать существующие typed read tools и bridge state; не делать широкие project scans без явного запроса.
+
+### Milestone 49: Recovery и checkpoint UX
+
+- Яснее показывать checkpoint/edit-session status после dry-run и run results.
+- Для неудачных mutating runs показывать самый безопасный recovery hint из существующих backend metadata.
+- Не добавлять automatic restore actions, пока они отдельно не спроектированы и не провалидированы.
+
+### Milestone 50: Provider reliability polish
+
+- Нормализовать user-facing provider errors для OpenAI API, OpenAI CLI, Gemini, Claude и Local/Ollama.
+- Разделить missing key/auth, unavailable model, network failure, rate limit и malformed provider response.
+- Добавить fake-provider smoke coverage для представительных error cases.
+
+### Milestone 51: Installer и CEP sync health
+
+- Добавить health check repo-versus-installed CEP для `index.html`, `panel.js`, `style.css` и `CSXS/manifest.xml`.
+- Добавить безопасный sync helper, который копирует только измененные panel files в установленное CEP extension.
+- Ясно показывать mismatch версии daemon, panel, manifest и installed files.
+
+### Milestone 52: Полная 1.1 validation
+
+- Запустить полный настроенный smoke suite.
+- Запустить live CEP validation, когда After Effects и panel доступны.
+- Запустить protected live AE validation на generated test comps для новых 1.1 workflows.
+- Обновить release notes и handoff notes для roadmap block 1.1.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -94,6 +140,9 @@
 - 2026-05-13: Render queue setup tools may prepare queue items and outputs, but starting a render remains out of scope for this roadmap block.
 - 2026-05-13: Spatial Position properties expect a single temporal `KeyframeEase` entry in `apply_keyframe_ease`; non-spatial array properties may still use value dimensionality.
 - 2026-05-13: AE project item indexes can shift after item-creating operations such as precompose; live validation and Agent follow-up steps should use returned/read-back indexes such as `sourceComp.itemIndex`.
+- 2026-05-14: Roadmap 1.1 не включает отдельную веху русификации UI или документации.
+- 2026-05-14: Roadmap 1.1 не включает render workflow polish; существующие render queue setup tools остаются доступными, но отдельной render-вехи в этом блоке нет.
+- 2026-05-14: Workflow presets являются только prompt helpers; они не должны обходить Agent planning, validation, dry-run или mutation gates.
 
 ## Validation
 
@@ -159,4 +208,22 @@
   - Passed `node scripts\bridge-only-smoke-test.js`.
   - Passed `node scripts\smoke-test.js`.
   - Passed `node scripts\cep-panel-cdp-smoke.js reload`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js smoke`.
+- Milestone 46:
+  - Переписал следующий roadmap-блок без отдельной русификации рабочего слоя и без render workflow polish.
+  - Добавил compact workflow preset control в CEP composer.
+  - Добавил пять prompt presets: selected-layer timing, precompose/rename, text/shape layout, basic animation и source replacement.
+  - Preset insert переключает панель в Agent mode, включает Prompt Optimization, вставляет prompt без автоотправки и сбрасывает stale `lastPlanResult`.
+  - Добавил `node scripts\cep-panel-cdp-smoke.js workflow-preset-smoke`.
+  - Скопировал измененные `index.html`, `panel.js` и `style.css` в установленное CEP extension.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js workflow-preset-smoke`.
   - Passed `node scripts\cep-panel-cdp-smoke.js smoke`.

@@ -52,6 +52,8 @@
   var chatModeEl = document.getElementById("chatMode");
   var chatModeButtonEls = document.querySelectorAll("#chatModeTabs button");
   var promptOptimizationEl = document.getElementById("promptOptimization");
+  var workflowPresetSelect = document.getElementById("workflowPresetSelect");
+  var applyWorkflowPresetButton = document.getElementById("applyWorkflowPresetButton");
 
   var running = false;
   var pollTimer = null;
@@ -72,6 +74,33 @@
   var setupStatusTimer = null;
   var setupStatusUntil = 0;
   var BRIDGE_OFFLINE_MESSAGE = "Bridge offline. Start the local bridge from Codex, then click Connect.";
+  var WORKFLOW_PRESETS = [
+    {
+      id: "selected-layer-timing",
+      label: "Selected layers: timing",
+      prompt: "Create a safe Agent plan for the active composition that reads the selected layers, aligns them to the current time indicator, sets a clean in/out time range, staggers multiple selected layers with a small overlap, and verifies the final selected-layer timing. Prefer typed AE Agent tools such as get_active_comp, get_selected_layers, align_layers_to_time, set_layer_time_range, and stagger_layers. Do not use raw ExtendScript unless no typed tool fits."
+    },
+    {
+      id: "precompose-rename",
+      label: "Precompose and rename",
+      prompt: "Create a safe Agent plan that reads the active composition and selected layers, precomposes the selected layers into a clearly named precomp, renames the resulting layer and related project items with a consistent prefix, and verifies the new precomp/source relationship. Prefer typed AE Agent tools such as get_active_comp, get_selected_layers, precompose_layers, rename_layers, rename_project_items, and get_comp_details. Ask one clarifying question if the new name is not obvious."
+    },
+    {
+      id: "text-shape-layout",
+      label: "Text and shape layout",
+      prompt: "Create a safe Agent plan for the active composition that updates or creates a text layer, adds a simple rectangle or ellipse shape layer behind it, fits or positions the selected visual layer cleanly inside the comp, and verifies the created or changed layers. Prefer typed AE Agent tools such as get_active_comp, get_selected_layers, update_text_layer, create_shape_layer, fit_layer_to_comp, and get_comp_details. Do not use raw ExtendScript unless no typed tool fits."
+    },
+    {
+      id: "basic-animation",
+      label: "Basic animation",
+      prompt: "Create a safe Agent plan for the active composition that reads the selected layers, adds simple transform keyframes for a short entrance animation, applies temporal easing, and verifies the animated properties. Prefer typed AE Agent tools such as get_active_comp, get_selected_layers, set_property_keyframes, apply_keyframe_ease, set_expression, clear_expression, and get_comp_details. Keep the animation modest and ask a clarifying question if direction, timing, or property choices are unclear."
+    },
+    {
+      id: "replace-source",
+      label: "Replace source",
+      prompt: "Create a safe Agent plan that reads the active composition and selected layers, finds the intended replacement footage or precomp item by name, replaces the selected layer source while preserving transforms, and verifies the replacement. Prefer typed AE Agent tools such as get_active_comp, get_selected_layers, find_project_items, replace_layer_source, and get_comp_details. Ask one clarifying question if the replacement item name is ambiguous."
+    }
+  ];
 
   function setAppTitle(version) {
     var normalizedVersion = version || APP_VERSION;
@@ -1146,6 +1175,9 @@
     sendChatButton.disabled = chatInFlight || !selectedAgentReady();
     dryRunPlanButton.disabled = chatInFlight || !lastPlanResult || !lastPlanResult.plan;
     runPlanButton.disabled = chatInFlight || !lastPlanResult || !lastPlanResult.plan || !lastPlanResult.planValidation || !lastPlanResult.planValidation.ok;
+    if (applyWorkflowPresetButton && workflowPresetSelect) {
+      applyWorkflowPresetButton.disabled = chatInFlight || !workflowPresetSelect.value;
+    }
   }
 
   function updateKeyAvailability() {
@@ -1180,6 +1212,54 @@
       toggleClass(button, "active", getData(button, "chat-mode") === chatModeEl.value);
     });
     updateChatAvailability();
+  }
+
+  function findWorkflowPreset(id) {
+    for (var i = 0; i < WORKFLOW_PRESETS.length; i++) {
+      if (WORKFLOW_PRESETS[i].id === id) return WORKFLOW_PRESETS[i];
+    }
+    return null;
+  }
+
+  function populateWorkflowPresets() {
+    if (!workflowPresetSelect) return;
+    clearElement(workflowPresetSelect);
+    addOption(workflowPresetSelect, "", "Workflow preset...");
+    for (var i = 0; i < WORKFLOW_PRESETS.length; i++) {
+      addOption(workflowPresetSelect, WORKFLOW_PRESETS[i].id, WORKFLOW_PRESETS[i].label);
+    }
+  }
+
+  function dispatchControlChange(el) {
+    if (!el || !el.dispatchEvent) return;
+    try {
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    } catch (_error) {}
+  }
+
+  function applyWorkflowPreset() {
+    var preset = findWorkflowPreset(workflowPresetSelect ? workflowPresetSelect.value : "");
+    if (!preset) {
+      updateChatAvailability();
+      return;
+    }
+
+    setChatMode("plan");
+    if (promptOptimizationEl && !promptOptimizationEl.checked) {
+      promptOptimizationEl.checked = true;
+      onPromptOptimizationChanged();
+    }
+
+    chatPromptEl.value = preset.prompt;
+    dispatchControlChange(chatPromptEl);
+    workflowPresetSelect.value = "";
+    lastPlanResult = null;
+    updateChatAvailability();
+    log("Inserted workflow preset: " + preset.label);
+    try {
+      chatPromptEl.focus();
+    } catch (_focusError) {}
   }
 
   function updatePromptOptimizationLabel() {
@@ -1620,6 +1700,12 @@
       setChatMode(getData(button, "chat-mode"));
     });
   });
+  if (workflowPresetSelect) {
+    workflowPresetSelect.addEventListener("change", updateChatAvailability);
+  }
+  if (applyWorkflowPresetButton) {
+    applyWorkflowPresetButton.addEventListener("click", applyWorkflowPreset);
+  }
   promptOptimizationEl.addEventListener("change", onPromptOptimizationChanged);
   dryRunPlanButton.addEventListener("click", function () {
     runLastPlan(true);
@@ -1642,6 +1728,7 @@
   tokenEl.value = localStorage.getItem("codexAeBridgeToken") || "";
   freeModelsOnlyEl.checked = localStorage.getItem("codexAeFreeModelsOnly") === "1";
   promptOptimizationEl.checked = localStorage.getItem("codexAePromptOptimization") === "1";
+  populateWorkflowPresets();
   updatePromptOptimizationLabel();
   setChatMode(localStorage.getItem("codexAeChatMode") || "plan");
   setSidebarCollapsed(localStorage.getItem("codexAeSidebarCollapsed") === "1");
