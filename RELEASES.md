@@ -1,4 +1,17 @@
-# AE MCP Bridge Releases
+# AE Agent Releases
+
+## v0.27.0-ae-agent-rename - 2026-05-13
+
+Product rename to AE Agent.
+
+Changed:
+
+- Visible CEP panel title, top bar, sidebar title, manifest menu, and install note now use `AE Agent v0.27.0`.
+- Removed `AE GPT` from the panel window header.
+- Startup task helper defaults now use `AE Agent Daemon`.
+- OpenRouter request attribution now defaults to `AE Agent`.
+- Daemon, adapter, CEP panel, manifest, install note, and smoke tests report version `0.27.0`.
+- Planning prompts now refer to AE Agent instead of the old product name.
 
 ## v0.26.0-agent-ux-polish - 2026-05-13
 

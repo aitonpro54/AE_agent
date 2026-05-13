@@ -12,7 +12,7 @@ const OPENAI_API_AGENT_ID = process.env.CEP_PANEL_OPENAI_API_AGENT_ID || "openai
 const OPENAI_API_MODEL = process.env.CEP_PANEL_OPENAI_API_MODEL || "gpt-5.5";
 const OPENAI_CLI_AGENT_ID = process.env.CEP_PANEL_OPENAI_CLI_AGENT_ID || "openai-cli";
 const OPENAI_CLI_MODEL = process.env.CEP_PANEL_OPENAI_CLI_MODEL || "gpt-5.5";
-const OPENAI_CLI_PROMPT = process.env.CEP_PANEL_OPENAI_CLI_PROMPT || "Reply with exactly: AE GPT CLI OK";
+const OPENAI_CLI_PROMPT = process.env.CEP_PANEL_OPENAI_CLI_PROMPT || "Reply with exactly: AE Agent CLI OK";
 const WAIT_MS = Number(process.env.CEP_PANEL_WAIT_MS || 90000);
 const OPENAI_CLI_WAIT_MS = Number(process.env.CEP_PANEL_OPENAI_CLI_WAIT_MS || 150000);
 const PROMPT = process.env.CEP_PANEL_PROMPT ||
@@ -85,7 +85,7 @@ async function connectToPanel() {
   const pages = await getJson(`http://127.0.0.1:${DEFAULT_PORT}/json/list`);
   const page = pages.find((item) => item.url && item.url.indexOf(EXTENSION_ID) >= 0) || pages[0];
   if (!page || !page.webSocketDebuggerUrl) {
-    throw new Error(`Could not find Codex AE MCP Bridge panel DevTools page on port ${DEFAULT_PORT}.`);
+    throw new Error(`Could not find AE Agent panel DevTools page on port ${DEFAULT_PORT}.`);
   }
 
   const ws = new WebSocket(page.webSocketDebuggerUrl);
@@ -143,6 +143,9 @@ async function reloadActivePage(send) {
 function stateExpression() {
   return `(() => ({
     title: document.title,
+    windowBarText: document.querySelector(".window-bar") ? document.querySelector(".window-bar").innerText : "",
+    appTitle: document.getElementById("appTitle") ? document.getElementById("appTitle").textContent : "",
+    appVersion: document.getElementById("appVersion") ? document.getElementById("appVersion").textContent : "",
     status: document.getElementById("status") ? document.getElementById("status").textContent : "",
     badge: document.getElementById("badge") ? document.getElementById("badge").textContent : "",
     bridgeHelp: document.getElementById("bridgeHelp") ? document.getElementById("bridgeHelp").textContent : "",
@@ -936,6 +939,33 @@ async function sendButtonSmoke() {
   }
 }
 
+async function brandingSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  try {
+    await reloadActivePage(send);
+    const state = await waitFor(send, "AE Agent branding", (item) => (
+      item.title === "AE Agent v0.27.0" &&
+      item.windowBarText.indexOf("AE Agent v0.27.0") >= 0 &&
+      item.windowBarText.indexOf("AE GPT") < 0 &&
+      item.appTitle === "AE Agent" &&
+      item.appVersion === "v0.27.0"
+    ), 10000);
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      branding: {
+        title: state.title,
+        windowBarText: state.windowBarText,
+        appTitle: state.appTitle,
+        appVersion: state.appVersion
+      }
+    }, null, 2));
+  } finally {
+    ws.close();
+  }
+}
+
 async function openAiCliSmoke() {
   const { page, ws, send } = await connectToPanel();
   try {
@@ -968,7 +998,7 @@ async function openAiCliSmoke() {
     if (!sent || !sent.ok) throw new Error("Send button was not clickable for OpenAI CLI.");
     const replied = await waitFor(send, "OpenAI CLI chat reply", (state) => (
       state.sendDisabled === false &&
-      state.transcript.indexOf("AE GPT CLI OK") >= 0
+      state.transcript.indexOf("AE Agent CLI OK") >= 0
     ), OPENAI_CLI_WAIT_MS);
 
     console.log(JSON.stringify({
@@ -1327,6 +1357,10 @@ async function main() {
   }
   if (command === "send-button-smoke") {
     await sendButtonSmoke();
+    return;
+  }
+  if (command === "branding-smoke") {
+    await brandingSmoke();
     return;
   }
   if (command === "openai-cli-smoke") {

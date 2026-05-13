@@ -1,8 +1,8 @@
-# Target Application
+# AE Agent Target Application
 
 ## Goal
 
-Build this repository into a local After Effects AI panel that combines the current Codex AE MCP Bridge safety model with an AE GPT-style user experience.
+Build this repository into AE Agent, a local After Effects AI panel that combines the current bridge safety model with a compact reference-panel-inspired user experience.
 
 The panel remains a client of the local bridge daemon. The daemon remains the owner of provider access, chat calls, AE plan validation, execution gates, logs, checkpoints, and edit-session protection.
 

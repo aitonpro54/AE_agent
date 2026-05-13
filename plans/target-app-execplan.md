@@ -26,6 +26,7 @@
 - [x] Milestone 22: Provider wording consistency.
 - [x] Milestone 23: MCP provider descriptions.
 - [x] Milestone 24: README provider command examples.
+- [x] Milestone 25: AE Agent rename and version bump.
 
 ## Milestones
 
@@ -187,6 +188,13 @@
 - Add manual MCP readiness examples for `gemini-api` and `claude-api`.
 - Keep examples explicit that these paths use provider API keys, separate from ChatGPT subscription access.
 
+### Milestone 25: AE Agent rename and version bump
+
+- Rename the visible product from `Codex AE MCP Bridge` / `AE GPT` to `AE Agent`.
+- Bump the reported version to `0.27.0` after the rename.
+- Update CEP title/header/sidebar, manifest menu, install note, startup task helper defaults, smoke-test expectations, release notes, and target spec.
+- Preserve stable internal ids and provider implementations; do not change Claude or Gemini provider behavior.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -216,6 +224,9 @@
 - 2026-05-13: Placeholder fallback copy is only for bridge sessions missing a provider contract; the target v1 includes real Gemini and Claude API providers.
 - 2026-05-13: MCP tool discovery text should enumerate the same first-party provider ids that the CEP panel exposes.
 - 2026-05-13: README manual examples should include at least one command path for each first-party provider group exposed by the panel.
+- 2026-05-13: The visible product name is `AE Agent`; the panel title should always include the current version after branding changes.
+- 2026-05-13: Keep stable technical ids such as `com.codex.aemcpbridge` and `codex-ae-mcp-bridge` for compatibility while changing user-facing names.
+- 2026-05-13: Claude and Gemini provider implementations stay frozen unless the user explicitly asks to change them.
 
 ## Validation
 
@@ -476,3 +487,25 @@
   - Passed `git diff --check`.
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.
+- Milestone 25:
+  - Renamed visible CEP product text to `AE Agent`.
+  - Removed `AE GPT` from the CEP window header.
+  - Bumped daemon, adapter, CEP panel, manifest, install note, and smoke expectations to `0.27.0`.
+  - Updated planning prompt product text, README, release notes, target spec, OpenRouter attribution, and startup task helper defaults.
+  - Left Claude and Gemini provider implementations unchanged.
+  - Copied updated `index.html`, `panel.js`, and `CSXS/manifest.xml` into the installed CEP extension.
+  - Passed `node --check cep-panel/panel.js`.
+  - Passed `node --check mcp-server/bridge-daemon.js`.
+  - Passed `node --check mcp-server/mcp-adapter.js`.
+  - Passed `node --check mcp-server/ai-agents.js`.
+  - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
+  - Passed `node --check scripts/bridge-only-smoke-test.js`.
+  - Passed `node --check scripts/smoke-test.js`.
+  - Passed XML parsing for `cep-panel/CSXS/manifest.xml`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-api-smoke.js`.
+  - Passed `node scripts/prompt-optimization-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js branding-smoke` against the installed CEP panel.

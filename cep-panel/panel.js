@@ -1,8 +1,8 @@
 "use strict";
 
 (function () {
-  var APP_NAME = "Codex AE MCP Bridge";
-  var APP_VERSION = "0.26.0";
+  var APP_NAME = "AE Agent";
+  var APP_VERSION = "0.27.0";
 
   var cs = new CSInterface();
   var appShellEl = document.getElementById("appShell");

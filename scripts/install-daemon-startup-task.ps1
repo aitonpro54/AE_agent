@@ -1,7 +1,7 @@
 param(
   [int]$Port = 3456,
   [string]$Token = "codex-ae-local",
-  [string]$TaskName = "Codex AE MCP Bridge Daemon",
+  [string]$TaskName = "AE Agent Daemon",
   [int]$StartupDelaySeconds = 10
 )
 

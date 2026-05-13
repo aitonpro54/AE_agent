@@ -1,5 +1,5 @@
 param(
-  [string]$TaskName = "Codex AE MCP Bridge Daemon"
+  [string]$TaskName = "AE Agent Daemon"
 )
 
 $ErrorActionPreference = "Stop"

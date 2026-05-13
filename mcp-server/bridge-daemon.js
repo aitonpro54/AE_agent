@@ -8,7 +8,7 @@ const path = require("path");
 const aiAgents = require("./ai-agents");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "0.26.0";
+const SERVER_VERSION = "0.27.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -29,7 +29,7 @@ const CHECKPOINT_SUFFIX = "-checkpoint";
 const ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT = process.env.AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT === "1";
 const STARTED_AT = Date.now();
 const AE_PLAN_SYSTEM_PROMPT = [
-  "You are a planning assistant for Codex AE MCP Bridge inside Adobe After Effects.",
+  "You are a planning assistant for AE Agent inside Adobe After Effects.",
   "Return JSON only. Do not use markdown.",
   "Do not claim that you changed the project. You are only drafting a plan.",
   "The user may write in Russian or English. Cyrillic text is valid Russian; translate it internally and never ask for clarification only because text is non-Latin.",
@@ -39,7 +39,7 @@ const AE_PLAN_SYSTEM_PROMPT = [
   "If the request is ambiguous, produce a clarification step instead of guessing."
 ].join(" ");
 const AE_PLAN_REPAIR_SYSTEM_PROMPT = [
-  "You repair malformed JSON for Codex AE MCP Bridge.",
+  "You repair malformed JSON for AE Agent.",
   "Return one valid JSON object only.",
   "Do not add markdown, explanations, comments, or surrounding text.",
   "Preserve the original plan meaning as closely as possible."
@@ -6378,7 +6378,7 @@ async function callTool(name, args) {
 
       app.beginUndoGroup("Codex Create Test Comp");
       var comp = app.project.items.addComp(compName, width, height, 1, duration, frameRate);
-      try { comp.comment = "Created by Codex AE MCP Bridge create_test_comp"; } catch (__commentError) {}
+      try { comp.comment = "Created by AE Agent create_test_comp"; } catch (__commentError) {}
       if (openInViewer) comp.openInViewer();
       var response = {
         itemIndex: __codexProjectIndexForItem(comp),
