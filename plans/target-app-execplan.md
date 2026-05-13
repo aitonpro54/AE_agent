@@ -37,6 +37,7 @@
 - [x] Milestone 33: Voice input in chat composer.
 - [x] Milestone 34: Voice input microphone permission hardening.
 - [x] Milestone 35: Voice input API transcription fallback.
+- [x] Milestone 36: Project relocation to `C:\Users\Ant\Documents\Codex\AE_agent`.
 
 ## Milestones
 
@@ -273,6 +274,13 @@
 - Require the saved `OpenAI -> API` key or `OPENAI_API_KEY` for the fallback; keep ChatGPT/Codex CLI access separate from API-billed audio transcription.
 - Add a fake OpenAI transcription smoke so the multipart audio request and bridge contract are covered without external API calls.
 
+### Milestone 36: Project relocation to `C:\Users\Ant\Documents\Codex\AE_agent`
+
+- Move the full working project, including git history and ignored runtime state, into `C:\Users\Ant\Documents\Codex\AE_agent`.
+- Update path-based local MCP config examples and active handoff notes from the old `New project 2` root to the new project root.
+- Refresh the user's Codex MCP `after-effects` entry after the move so the adapter launches from the new path.
+- Keep runtime logs, checkpoints, and local secrets ignored by git after relocation.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -320,6 +328,7 @@
 - 2026-05-13: CEP microphone access requires the manifest CEF media-stream flag; page reload alone may not apply new CEF command-line flags, so the installed panel/After Effects should be restarted after copying the manifest.
 - 2026-05-13: CEP Web Speech can expose `webkitSpeechRecognition` but still fail with `network`; voice input therefore needs an API transcription fallback for reliable operation.
 - 2026-05-13: Voice API transcription uses the saved OpenAI API key path and is separate from OpenAI CLI/ChatGPT subscription access.
+- 2026-05-13: The active project root is now `C:\Users\Ant\Documents\Codex\AE_agent`; tracked examples should point there while ignored runtime state remains local-only.
 
 ## Validation
 
@@ -776,3 +785,16 @@
   - Passed `node scripts/cep-panel-cdp-smoke.js reload` against the installed CEP panel.
   - Passed `node scripts/cep-panel-cdp-smoke.js voice-input-smoke`.
   - Passed `node scripts/cep-panel-cdp-smoke.js smoke`.
+- Milestone 36:
+  - Updated tracked local path references from `C:\Users\Ant\Documents\New project 2` to `C:\Users\Ant\Documents\Codex\AE_agent`.
+  - Updated `mcp-config.example.json`, `docs/project-memory.md`, `docs/2026-05-13-new-chat-handoff.md`, and this plan.
+  - No JavaScript files were changed, so `node --check` did not apply to touched files.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-api-smoke.js`.
+  - Passed `node scripts/prompt-optimization-smoke.js`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+  - Passed `node scripts/voice-transcription-smoke.js`.
+  - Live CEP smoke was not rerun because the relocation changes do not touch installed CEP panel files.

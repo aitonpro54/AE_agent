@@ -2,7 +2,7 @@
 
 This handoff is for starting a fresh Codex chat in:
 
-`C:\Users\Ant\Documents\New project 2`
+`C:\Users\Ant\Documents\Codex\AE_agent`
 
 Respond to the user in Russian. The user prefers direct execution after a short status/plan update.
 
@@ -223,10 +223,10 @@ Live environment notes:
 
 ```text
 Continue AE Agent in Russian. Read:
-C:\Users\Ant\Documents\New project 2\AGENTS.md
-C:\Users\Ant\Documents\New project 2\specs\target-app.md
-C:\Users\Ant\Documents\New project 2\plans\target-app-execplan.md
-C:\Users\Ant\Documents\New project 2\docs\2026-05-13-new-chat-handoff.md
+C:\Users\Ant\Documents\Codex\AE_agent\AGENTS.md
+C:\Users\Ant\Documents\Codex\AE_agent\specs\target-app.md
+C:\Users\Ant\Documents\Codex\AE_agent\plans\target-app-execplan.md
+C:\Users\Ant\Documents\Codex\AE_agent\docs\2026-05-13-new-chat-handoff.md
 
 Do not restart from scratch. First check git status. The latest issue is voice input: CEP Web Speech fails live with a network error, and the preferred product direction is external dictation/transcription that inserts text into the chat box without depending on the selected LLM model.
 ```

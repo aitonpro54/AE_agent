@@ -8,7 +8,7 @@ This file condenses the projectless Codex chat history that was moved into the
 
 ## Current Workspace
 
-- Active project root: `C:\Users\Ant\Documents\New project 2`
+- Active project root: `C:\Users\Ant\Documents\Codex\AE_agent`
 - Origin repo copied from:
   `C:\Users\Ant\Documents\Codex\2026-05-03\files-mentioned-by-the-user-c36e102f\ae-mcp-bridge`
 - Current branch: `codex-v0.26-agent-ux-polish`
@@ -195,9 +195,9 @@ The state backup recorded there is:
 ## Setup Completed In This Workspace
 
 - Repository files, git history, docs, scripts, CEP panel, and release snapshots
-  were copied into `C:\Users\Ant\Documents\New project 2`.
+  were copied into `C:\Users\Ant\Documents\Codex\AE_agent`.
 - Codex MCP config now points `after-effects` at
-  `C:\Users\Ant\Documents\New project 2\mcp-server\mcp-adapter.js`.
+  `C:\Users\Ant\Documents\Codex\AE_agent\mcp-server\mcp-adapter.js`.
 - Existing `AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT` was preserved in the global
   Codex config.
 - Live daemon was restarted and reports `0.16.0`.
