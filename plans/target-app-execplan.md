@@ -18,6 +18,7 @@
 - [x] Milestone 14: ChatGPT sign-in status polling.
 - [x] Milestone 15: Gemini/Claude setup placeholders.
 - [x] Milestone 16: Sidebar collapse control polish.
+- [x] Milestone 17: Diagnostics log toggle.
 
 ## Milestones
 
@@ -129,6 +130,13 @@
 - Add `aria-expanded` to the provider sidebar collapse button.
 - Add a live CEP smoke that toggles collapsed and expanded states and verifies text/title/accessibility state.
 
+### Milestone 17: Diagnostics log toggle
+
+- Expose the existing `Activity` log pane through a compact sidebar `Log` control.
+- Persist the diagnostics pane state in panel `localStorage`.
+- Keep diagnostics UI out of the main chat flow unless explicitly opened.
+- Add a live CEP smoke that opens/closes diagnostics and verifies display state plus `aria-expanded`.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -149,6 +157,7 @@
 - 2026-05-13: Keep direct process launching out of the CEP panel for v1; sign-in/status follow-up can be handled safely through the already-running bridge daemon.
 - 2026-05-13: Gemini and Claude tabs should be clickable setup placeholders, not disabled controls; real provider integrations remain out of scope until explicitly planned.
 - 2026-05-13: Use ASCII `<` / `>` for the sidebar collapse control to avoid Unicode/mojibake issues in CEP runtimes.
+- 2026-05-13: Activity logs should be user-accessible on demand, but hidden by default so the first screen remains focused on provider setup and chat.
 
 ## Validation
 
@@ -307,6 +316,18 @@
   - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
   - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `node scripts/cep-panel-cdp-smoke.js sidebar-collapse-smoke`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+- Milestone 17:
+  - Added `Log` / `Hide log` diagnostics toggle to the bridge connection controls.
+  - Added persisted `codexAeDiagnosticsOpen` state and `aria-expanded` updates.
+  - Added `node scripts/cep-panel-cdp-smoke.js diagnostics-smoke`.
+  - Copied updated `index.html`, `panel.js`, and `style.css` into the installed CEP extension.
+  - Passed `node --check cep-panel/panel.js`.
+  - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js diagnostics-smoke`.
   - Passed `git diff --check`.
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.

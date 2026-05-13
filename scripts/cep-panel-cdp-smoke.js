@@ -155,6 +155,11 @@ function stateExpression() {
     collapseButtonText: document.getElementById("collapseSidebarButton") ? document.getElementById("collapseSidebarButton").textContent : "",
     collapseButtonTitle: document.getElementById("collapseSidebarButton") ? document.getElementById("collapseSidebarButton").title : "",
     collapseButtonExpanded: document.getElementById("collapseSidebarButton") ? document.getElementById("collapseSidebarButton").getAttribute("aria-expanded") : null,
+    diagnosticsOpen: document.getElementById("appShell") ? document.getElementById("appShell").className.indexOf("diagnostics-open") >= 0 : null,
+    diagnosticsDisplay: document.querySelector(".activity-pane") ? window.getComputedStyle(document.querySelector(".activity-pane")).display : "",
+    diagnosticsButtonText: document.getElementById("diagnosticsButton") ? document.getElementById("diagnosticsButton").textContent : "",
+    diagnosticsButtonTitle: document.getElementById("diagnosticsButton") ? document.getElementById("diagnosticsButton").title : "",
+    diagnosticsButtonExpanded: document.getElementById("diagnosticsButton") ? document.getElementById("diagnosticsButton").getAttribute("aria-expanded") : null,
     agentStatus: document.getElementById("agentStatus") ? document.getElementById("agentStatus").textContent : "",
     agentValue: document.getElementById("agentSelect") ? document.getElementById("agentSelect").value : "",
     agentOptions: Array.from(document.querySelectorAll("#agentSelect option")).map((option) => ({ value: option.value, text: option.textContent })),
@@ -329,6 +334,22 @@ function writeSidebarStorageExpression(values) {
     const value = ${JSON.stringify(storage.collapsed)};
     if (value === null || value === undefined) localStorage.removeItem("codexAeSidebarCollapsed");
     else localStorage.setItem("codexAeSidebarCollapsed", value);
+    return true;
+  })()`;
+}
+
+function diagnosticsStorageExpression() {
+  return `(() => ({
+    open: localStorage.getItem("codexAeDiagnosticsOpen")
+  }))()`;
+}
+
+function writeDiagnosticsStorageExpression(values) {
+  const storage = values || {};
+  return `(() => {
+    const value = ${JSON.stringify(storage.open)};
+    if (value === null || value === undefined) localStorage.removeItem("codexAeDiagnosticsOpen");
+    else localStorage.setItem("codexAeDiagnosticsOpen", value);
     return true;
   })()`;
 }
@@ -724,6 +745,65 @@ async function sidebarCollapseSmoke() {
   }
 }
 
+async function diagnosticsSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  let backup = null;
+  try {
+    backup = await evaluate(send, diagnosticsStorageExpression());
+    await evaluate(send, writeDiagnosticsStorageExpression({ open: "0" }));
+    await reloadActivePage(send);
+    await waitFor(send, "diagnostics closed", (state) => (
+      state.diagnosticsOpen === false &&
+      state.diagnosticsDisplay === "none" &&
+      state.diagnosticsButtonText === "Log" &&
+      state.diagnosticsButtonExpanded === "false"
+    ), 10000);
+
+    const openClick = await evaluate(send, clickExpression("diagnosticsButton"));
+    if (!openClick || !openClick.ok) throw new Error("Diagnostics button was not clickable.");
+    const opened = await waitFor(send, "diagnostics open", (state) => (
+      state.diagnosticsOpen === true &&
+      state.diagnosticsDisplay !== "none" &&
+      state.diagnosticsButtonText === "Hide log" &&
+      state.diagnosticsButtonTitle === "Hide activity log" &&
+      state.diagnosticsButtonExpanded === "true"
+    ), 10000);
+
+    const closeClick = await evaluate(send, clickExpression("diagnosticsButton"));
+    if (!closeClick || !closeClick.ok) throw new Error("Diagnostics close button was not clickable.");
+    const closed = await waitFor(send, "diagnostics closed again", (state) => (
+      state.diagnosticsOpen === false &&
+      state.diagnosticsDisplay === "none" &&
+      state.diagnosticsButtonText === "Log" &&
+      state.diagnosticsButtonTitle === "Show activity log" &&
+      state.diagnosticsButtonExpanded === "false"
+    ), 10000);
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      opened: {
+        display: opened.diagnosticsDisplay,
+        text: opened.diagnosticsButtonText,
+        ariaExpanded: opened.diagnosticsButtonExpanded
+      },
+      closed: {
+        display: closed.diagnosticsDisplay,
+        text: closed.diagnosticsButtonText,
+        ariaExpanded: closed.diagnosticsButtonExpanded
+      }
+    }, null, 2));
+  } finally {
+    if (backup) {
+      try {
+        await evaluate(send, writeDiagnosticsStorageExpression(backup));
+        await reloadActivePage(send);
+      } catch (_error) {}
+    }
+    ws.close();
+  }
+}
+
 async function openAiCliSmoke() {
   const { page, ws, send } = await connectToPanel();
   try {
@@ -1099,6 +1179,10 @@ async function main() {
   }
   if (command === "sidebar-collapse-smoke") {
     await sidebarCollapseSmoke();
+    return;
+  }
+  if (command === "diagnostics-smoke") {
+    await diagnosticsSmoke();
     return;
   }
   if (command === "openai-cli-smoke") {

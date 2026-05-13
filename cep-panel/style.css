@@ -554,6 +554,11 @@ button:disabled {
   padding: 10px;
 }
 
+.diagnostics-open .activity-pane {
+  display: grid;
+  gap: 8px;
+}
+
 #log {
   background: #101010;
   border: 1px solid #353535;

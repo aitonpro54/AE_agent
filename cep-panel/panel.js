@@ -16,6 +16,7 @@
   var bridgeHelpEl = document.getElementById("bridgeHelp");
   var connectButton = document.getElementById("connectButton");
   var disconnectButton = document.getElementById("disconnectButton");
+  var diagnosticsButton = document.getElementById("diagnosticsButton");
   var reloadButton = document.getElementById("reloadButton");
   var collapseSidebarButton = document.getElementById("collapseSidebarButton");
   var providerTabEls = document.querySelectorAll(".provider-tab");
@@ -1149,6 +1150,19 @@
     setSidebarCollapsed(collapsed);
   }
 
+  function setDiagnosticsOpen(open) {
+    toggleClass(appShellEl, "diagnostics-open", open);
+    localStorage.setItem("codexAeDiagnosticsOpen", open ? "1" : "0");
+    diagnosticsButton.textContent = open ? "Hide log" : "Log";
+    diagnosticsButton.title = open ? "Hide activity log" : "Show activity log";
+    diagnosticsButton.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  function toggleDiagnostics() {
+    var open = !appShellEl.classList || !appShellEl.classList.contains("diagnostics-open");
+    setDiagnosticsOpen(open);
+  }
+
   function saveAgentKey() {
     if (keySaveInFlight) return;
     var agent = findAgent(agentSelect.value);
@@ -1517,6 +1531,7 @@
 
   connectButton.addEventListener("click", connect);
   disconnectButton.addEventListener("click", disconnect);
+  diagnosticsButton.addEventListener("click", toggleDiagnostics);
   reloadButton.addEventListener("click", reloadApp);
   collapseSidebarButton.addEventListener("click", toggleSidebarCollapsed);
   forEachNode(providerTabEls, function (button) {
@@ -1575,6 +1590,7 @@
   updatePromptOptimizationLabel();
   setChatMode(localStorage.getItem("codexAeChatMode") || "plan");
   setSidebarCollapsed(localStorage.getItem("codexAeSidebarCollapsed") === "1");
+  setDiagnosticsOpen(localStorage.getItem("codexAeDiagnosticsOpen") === "1");
   setAgentDetails(null);
   updateProviderUi(null);
   restoreTranscriptHistory();
