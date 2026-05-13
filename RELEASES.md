@@ -21,7 +21,7 @@ Added:
 - OpenAI API setup-state model labels, for example `GPT-5.5 (No API key)`, plus `openai-api-setup-smoke`.
 - Friendly bridge offline state plus `offline-smoke` for the installed CEP panel.
 - Automatic status refresh after launching `Sign in with ChatGPT` from `OpenAI -> CLI`.
-- Clickable Gemini and Claude setup placeholder tabs, plus `provider-placeholder-smoke`.
+- Clickable Gemini and Claude provider tabs with setup-state smoke coverage via `provider-setup-smoke`.
 - ASCII sidebar collapse toggle with accessibility state coverage via `sidebar-collapse-smoke`.
 - User-facing diagnostics log toggle, plus `diagnostics-smoke`.
 - Stable ASCII composer send button label, plus `send-button-smoke`.
@@ -40,7 +40,7 @@ Changed:
 - The reference `Trial Version` / `License...` strip is intentionally omitted from the CEP UI; this project has no app license gate.
 - The CEP panel now reports `Bridge offline` instead of raw `HTTP 0` or network errors when the local daemon is not reachable.
 - After launching ChatGPT sign-in, the panel waits and refreshes provider readiness automatically for a short window.
-- Gemini and Claude now show honest planned-provider setup states instead of dead disabled tabs.
+- Gemini and Claude now show honest API-key setup states instead of dead disabled tabs.
 - The sidebar collapse button now uses ASCII `<` / `>` and updates `aria-expanded`.
 - The existing Activity log pane is hidden by default and can be opened from the bridge controls.
 - The composer send button now uses a stable ASCII `>` label instead of a mojibake-prone Unicode arrow.

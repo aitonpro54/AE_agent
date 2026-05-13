@@ -14,10 +14,10 @@ It has two parts:
 
 - `get_bridge_status` - returns bridge diagnostics, connection state, paths, and recent events.
 - `get_command_log` - returns recent local JSONL log events.
-- `get_ai_agent_log` - returns recent non-Codex agent chat attempts, preflight failures, and results.
-- `list_ai_agents` - lists configured OpenRouter, Ollama, Ollama Cloud, and custom chat agents.
+- `get_ai_agent_log` - returns recent AI provider chat attempts, preflight failures, and results.
+- `list_ai_agents` - lists configured OpenAI, Gemini, Claude, OpenRouter, Ollama, Ollama Cloud, and custom chat agents.
 - `check_ai_agent_readiness` - preflights setup, provider reachability, and model availability before chat.
-- `chat_with_ai_agent` - sends a prompt or chat messages to one configured non-Codex agent.
+- `chat_with_ai_agent` - sends a prompt or chat messages to one configured AI provider.
 - `plan_with_ai_agent` - drafts a structured, non-executing AE MCP plan from a user request.
 - `validate_ai_agent_plan` - validates an AI-generated AE plan without executing it.
 - `run_ai_agent_plan` - dry-runs or explicitly runs a validated AI plan with mutation gates.

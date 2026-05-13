@@ -317,14 +317,14 @@
       provider: group,
       providerGroup: group,
       authMode: "setup",
-      transport: "planned",
+      transport: "setup",
       configured: false,
       requiresApiKey: false,
       canChat: false,
       placeholder: true,
       modelSource: "not_checked",
-      status: "planned",
-      notes: providerLabelForGroup(group) + " provider is a planned setup placeholder for v1."
+      status: "unavailable",
+      notes: providerLabelForGroup(group) + " provider is not available from this bridge session."
     };
   }
 
@@ -376,7 +376,7 @@
     freeModelsRowEl.style.display = "none";
     setAgentDetails(agent);
     updateProviderUi(agent);
-    setAgentStatus(providerLabelForGroup(group) + " setup is planned");
+    setAgentStatus(providerLabelForGroup(group) + " provider unavailable");
     updateChatAvailability();
     updateKeyAvailability();
   }
@@ -394,7 +394,7 @@
 
   function setupTextForAgent(agent) {
     if (!agent) return "Connect the bridge to load provider readiness. CLI mode uses codex login and does not use an OpenAI API key.";
-    if (agent.placeholder) return agent.label + " is reserved in the panel UI. Backend provider support has not been added yet.";
+    if (agent.placeholder) return agent.label + " is visible in the panel, but this bridge session did not expose its provider contract.";
     if (agent.id === "openai-cli") {
       if (agent.codexStatus && agent.codexStatus.loggedIn) return "Codex CLI is signed in with ChatGPT. API keys are not used in this mode.";
       if (agent.codexStatus && !agent.codexStatus.installed) return "Codex CLI was not found. Install Codex, then run codex login.";
@@ -511,7 +511,7 @@
       addAgentDetail("Endpoint", "not connected");
       addAgentDetail("Model", "-");
       addAgentDetail("Models", "-");
-      addAgentDetail("Status", "planned");
+      addAgentDetail("Status", "unavailable");
       addAgentDetail("Setup", "not implemented");
       if (agent.notes) addAgentDetail("Notes", agent.notes);
       return;

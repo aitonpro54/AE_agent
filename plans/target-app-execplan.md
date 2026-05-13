@@ -23,6 +23,7 @@
 - [x] Milestone 19: Prompt Optimization payload smoke.
 - [x] Milestone 20: Gemini and Claude API providers.
 - [x] Milestone 21: Provider key save smoke and docs cleanup.
+- [x] Milestone 22: Provider wording consistency.
 
 ## Milestones
 
@@ -168,6 +169,12 @@
 - Let the bridge use an alternate local secrets file during validation.
 - Update stale docs/release notes that still describe Gemini and Claude as placeholder-only providers.
 
+### Milestone 22: Provider wording consistency
+
+- Update user-facing docs that still describe the agent layer as non-Codex-only.
+- Update release notes that still describe Gemini and Claude as placeholder-only in the current release.
+- Make the panel's fallback placeholder copy describe a missing bridge contract, not a future product plan.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -194,6 +201,7 @@
 - 2026-05-13: Gemini and Claude provider support uses official HTTP APIs with Node built-ins; no production SDK dependency is added.
 - 2026-05-13: Default provider model ids are conservative documented API ids: `gemini-2.5-flash` for Gemini and `claude-sonnet-4-20250514` for Claude.
 - 2026-05-13: Live key-save smoke must run against an isolated temporary bridge secrets file, not the user's real provider keys.
+- 2026-05-13: Placeholder fallback copy is only for bridge sessions missing a provider contract; the target v1 includes real Gemini and Claude API providers.
 
 ## Validation
 
@@ -424,3 +432,15 @@
   - Passed `git diff --check`.
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.
+- Milestone 22:
+  - Updated README agent-provider descriptions to include OpenAI, Gemini, and Claude.
+  - Updated current release notes from placeholder-only Gemini/Claude wording to real setup-aware provider wording.
+  - Updated CEP fallback copy for missing provider contracts.
+  - Passed `node --check cep-panel/panel.js`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-api-smoke.js`.
+  - Passed `node scripts/prompt-optimization-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+  - Live installed-panel copy/smoke for the fallback text was not rerun because the approval review for copying `panel.js` into the Adobe CEP extension hit an auto-review capacity failure. The changed fallback only applies when a bridge session omits Gemini/Claude contracts; normal provider flows remain covered by the repo and provider smokes.
