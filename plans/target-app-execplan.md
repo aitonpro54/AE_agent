@@ -20,6 +20,7 @@
 - [x] Milestone 16: Sidebar collapse control polish.
 - [x] Milestone 17: Diagnostics log toggle.
 - [x] Milestone 18: Stable send button glyph.
+- [x] Milestone 19: Prompt Optimization payload smoke.
 
 ## Milestones
 
@@ -144,6 +145,13 @@
 - Preserve the existing `Send` tooltip and button sizing.
 - Add a live CEP smoke that verifies the installed panel's send button label and tooltip.
 
+### Milestone 19: Prompt Optimization payload smoke
+
+- Add a dependency-free smoke test with a fake OpenAI-compatible provider.
+- Verify `promptOptimization:true` reaches chat requests as a system instruction.
+- Verify `promptOptimization:true` reaches AE Plan requests inside the generated planning prompt.
+- Include the smoke in repo-aware verification docs.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -166,6 +174,7 @@
 - 2026-05-13: Use ASCII `<` / `>` for the sidebar collapse control to avoid Unicode/mojibake issues in CEP runtimes.
 - 2026-05-13: Activity logs should be user-accessible on demand, but hidden by default so the first screen remains focused on provider setup and chat.
 - 2026-05-13: Prefer stable ASCII labels for compact CEP icon-like controls when Unicode glyphs risk mojibake.
+- 2026-05-13: Prompt Optimization coverage should inspect provider payloads with a fake local OpenAI-compatible endpoint instead of relying on real model behavior.
 
 ## Validation
 
@@ -346,6 +355,15 @@
   - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
   - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `node scripts/cep-panel-cdp-smoke.js send-button-smoke`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+- Milestone 19:
+  - Added `node scripts/prompt-optimization-smoke.js`.
+  - Updated `AGENTS.md` and `README.md` verification notes to include the prompt optimization smoke.
+  - Passed `node --check scripts/prompt-optimization-smoke.js`.
+  - Passed `node scripts/prompt-optimization-smoke.js`.
+  - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `git diff --check`.
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.

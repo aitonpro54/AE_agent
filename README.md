@@ -219,6 +219,12 @@ Daemon-only health:
 node .\scripts\bridge-only-smoke-test.js
 ```
 
+Prompt Optimization payload coverage:
+
+```powershell
+node .\scripts\prompt-optimization-smoke.js
+```
+
 Live CEP panel smoke, with After Effects open and the bridge panel loaded:
 
 ```powershell

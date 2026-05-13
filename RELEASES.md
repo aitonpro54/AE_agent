@@ -25,6 +25,7 @@ Added:
 - ASCII sidebar collapse toggle with accessibility state coverage via `sidebar-collapse-smoke`.
 - User-facing diagnostics log toggle, plus `diagnostics-smoke`.
 - Stable ASCII composer send button label, plus `send-button-smoke`.
+- Prompt Optimization payload smoke coverage with `scripts\prompt-optimization-smoke.js`.
 
 Changed:
 
