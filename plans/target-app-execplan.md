@@ -25,6 +25,7 @@
 - [x] Milestone 21: Provider key save smoke and docs cleanup.
 - [x] Milestone 22: Provider wording consistency.
 - [x] Milestone 23: MCP provider descriptions.
+- [x] Milestone 24: README provider command examples.
 
 ## Milestones
 
@@ -181,6 +182,11 @@
 - Update MCP tool descriptions for `list_ai_agents`, `check_ai_agent_readiness`, `chat_with_ai_agent`, and `plan_with_ai_agent` to include Gemini and Claude.
 - Keep the public tool schemas compatible and avoid behavior changes.
 
+### Milestone 24: README provider command examples
+
+- Add manual MCP readiness examples for `gemini-api` and `claude-api`.
+- Keep examples explicit that these paths use provider API keys, separate from ChatGPT subscription access.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -209,6 +215,7 @@
 - 2026-05-13: Live key-save smoke must run against an isolated temporary bridge secrets file, not the user's real provider keys.
 - 2026-05-13: Placeholder fallback copy is only for bridge sessions missing a provider contract; the target v1 includes real Gemini and Claude API providers.
 - 2026-05-13: MCP tool discovery text should enumerate the same first-party provider ids that the CEP panel exposes.
+- 2026-05-13: README manual examples should include at least one command path for each first-party provider group exposed by the panel.
 
 ## Validation
 
@@ -455,6 +462,14 @@
   - Updated MCP tool descriptions and agentId examples to include `gemini-api` and `claude-api`.
   - Kept schemas and runtime behavior unchanged.
   - Passed `node --check mcp-server/bridge-daemon.js`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-api-smoke.js`.
+  - Passed `node scripts/prompt-optimization-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+- Milestone 24:
+  - Added README `mcp-call-tool.js check_ai_agent_readiness` examples for `gemini-api` and `claude-api`.
   - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `node scripts/provider-api-smoke.js`.
   - Passed `node scripts/prompt-optimization-smoke.js`.

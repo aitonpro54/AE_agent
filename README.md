@@ -268,6 +268,14 @@ Agent calls:
 ```powershell
 node .\scripts\mcp-call-tool.js list_ai_agents
 
+$env:MCP_CALL_ARGS_JSON='{"agentId":"gemini-api","model":"gemini-2.5-flash"}'
+node .\scripts\mcp-call-tool.js check_ai_agent_readiness
+Remove-Item Env:MCP_CALL_ARGS_JSON
+
+$env:MCP_CALL_ARGS_JSON='{"agentId":"claude-api","model":"claude-sonnet-4-20250514"}'
+node .\scripts\mcp-call-tool.js check_ai_agent_readiness
+Remove-Item Env:MCP_CALL_ARGS_JSON
+
 $env:MCP_CALL_ARGS_JSON='{"agentId":"ollama-local","model":"llama3.2"}'
 node .\scripts\mcp-call-tool.js check_ai_agent_readiness
 Remove-Item Env:MCP_CALL_ARGS_JSON
