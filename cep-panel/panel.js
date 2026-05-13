@@ -380,7 +380,7 @@
       var id = modelItems[k].id || modelItems[k].name;
       if (!id || seen[id]) continue;
       seen[id] = true;
-      addOption(agentModelEl, id, modelItems[k].name || id);
+      addOption(agentModelEl, id, modelOptionLabel(agent, modelItems[k]));
       addOption(agentModelListEl, id, modelItems[k].name || id);
     }
   }
@@ -402,6 +402,15 @@
       }
     }
     return agentModelEl.options.length ? agentModelEl.options[0].value : target;
+  }
+
+  function modelOptionLabel(agent, modelItem) {
+    var id = modelItem.id || modelItem.name;
+    var label = modelItem.name || id;
+    if (!agent || agent.configured) return label;
+    if (agent.id === "openai-api" || agent.requiresApiKey) return label + " (No API key)";
+    if (agent.id === "openai-cli") return label + " (Run codex login)";
+    return label;
   }
 
   function updateSelectedAgent() {

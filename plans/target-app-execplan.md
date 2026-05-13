@@ -12,6 +12,7 @@
 - [x] Milestone 8: Provider contract smoke coverage.
 - [x] Milestone 9: Local multi-chat history.
 - [x] Milestone 10: Remove reference license gate UI.
+- [x] Milestone 11: OpenAI API setup-state model labels.
 
 ## Milestones
 
@@ -84,6 +85,12 @@
 - Keep the compact AE GPT-style top bar and reclaim the removed strip height for the app shell.
 - Update screenshot notes and release notes to make the no-license-gate decision explicit.
 
+### Milestone 11: OpenAI API setup-state model labels
+
+- Add setup suffixes to model dropdown labels when a provider is not configured.
+- For `OpenAI -> API` without a key, show labels like `GPT-5.5 (No API key)`.
+- Add a live CEP smoke for the OpenAI API no-key/setup state.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -98,6 +105,7 @@
 - 2026-05-13: Provider contract smoke simulates a missing Codex CLI with an invalid `CODEX_CLI_PATH`; authenticated CLI behavior remains covered by live CEP smoke.
 - 2026-05-13: Chat history remains panel-local for v1; no backend persistence or migration is needed, and the old `codexAeChatTranscript` key stays as the active-conversation snapshot.
 - 2026-05-13: The reference trial/license strip is not part of this product; removing it avoids implying an app license or Pro gate while preserving API/CLI billing distinctions.
+- 2026-05-13: Model dropdown setup suffixes are UI labels only; option values remain canonical model ids such as `gpt-5.5`.
 
 ## Validation
 
@@ -182,6 +190,17 @@
   - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `node --check cep-panel/panel.js`.
   - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+- Milestone 11:
+  - Added model dropdown setup suffixes in `cep-panel/panel.js`.
+  - Added `node scripts/cep-panel-cdp-smoke.js openai-api-setup-smoke`.
+  - Copied updated `panel.js` into the installed CEP extension.
+  - Passed `node --check cep-panel/panel.js`.
+  - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js openai-api-setup-smoke` with a temporary bridge job.
+  - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `git diff --check`.
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.

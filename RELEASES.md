@@ -17,6 +17,7 @@ Added:
 - Local visible chat transcript persistence, cleared by the panel's `Clear` button.
 - Local multi-chat history with `New Chat`, history switching, and per-chat clearing.
 - CEP history smoke command: `node scripts\cep-panel-cdp-smoke.js history-smoke`.
+- OpenAI API setup-state model labels, for example `GPT-5.5 (No API key)`, plus `openai-api-setup-smoke`.
 
 Changed:
 

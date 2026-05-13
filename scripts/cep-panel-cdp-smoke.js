@@ -8,6 +8,8 @@ const BRIDGE_URL = process.env.CEP_PANEL_BRIDGE_URL || "http://127.0.0.1:3456";
 const BRIDGE_TOKEN = process.env.CEP_PANEL_BRIDGE_TOKEN || "codex-ae-local";
 const AGENT_ID = process.env.CEP_PANEL_AGENT_ID || "ollama-local";
 const MODEL = process.env.CEP_PANEL_MODEL || "gemma4:latest";
+const OPENAI_API_AGENT_ID = process.env.CEP_PANEL_OPENAI_API_AGENT_ID || "openai-api";
+const OPENAI_API_MODEL = process.env.CEP_PANEL_OPENAI_API_MODEL || "gpt-5.5";
 const OPENAI_CLI_AGENT_ID = process.env.CEP_PANEL_OPENAI_CLI_AGENT_ID || "openai-cli";
 const OPENAI_CLI_MODEL = process.env.CEP_PANEL_OPENAI_CLI_MODEL || "gpt-5.5";
 const OPENAI_CLI_PROMPT = process.env.CEP_PANEL_OPENAI_CLI_PROMPT || "Reply with exactly: AE GPT CLI OK";
@@ -148,6 +150,10 @@ function stateExpression() {
     agentOptions: Array.from(document.querySelectorAll("#agentSelect option")).map((option) => ({ value: option.value, text: option.textContent })),
     agentDetails: document.getElementById("agentDetails") ? document.getElementById("agentDetails").innerText : "",
     model: document.getElementById("agentModel") ? document.getElementById("agentModel").value : "",
+    modelOptions: Array.from(document.querySelectorAll("#agentModel option")).map((option) => ({ value: option.value, text: option.textContent })),
+    setupTitle: document.getElementById("agentSetupTitle") ? document.getElementById("agentSetupTitle").textContent : "",
+    setupText: document.getElementById("agentSetupText") ? document.getElementById("agentSetupText").textContent : "",
+    apiKeyVisible: document.getElementById("agentApiKeyRow") ? document.getElementById("agentApiKeyRow").style.display !== "none" : null,
     freeModelsVisible: document.getElementById("freeModelsRow") ? document.getElementById("freeModelsRow").style.display !== "none" : null,
     freeModelsChecked: document.getElementById("freeModelsOnly") ? document.getElementById("freeModelsOnly").checked : null,
     mode: document.getElementById("chatMode") ? document.getElementById("chatMode").value : "",
@@ -243,6 +249,32 @@ function selectOpenAiCliExpression() {
     setValue(document.getElementById("agentModel"), ${JSON.stringify(OPENAI_CLI_MODEL)});
     setValue(document.getElementById("chatMode"), "chat");
     setValue(document.getElementById("chatPrompt"), ${JSON.stringify(OPENAI_CLI_PROMPT)});
+    return ${stateExpression()};
+  })()`;
+}
+
+function selectOpenAiApiExpression() {
+  return `(() => {
+    function setValue(el, value) {
+      if (!el) return;
+      el.value = value;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    localStorage.setItem("codexAeProviderGroup", "openai");
+    localStorage.setItem("codexAeOpenAiAuthMode", "api");
+    localStorage.setItem("codexAeAgentModel:${OPENAI_API_AGENT_ID}", ${JSON.stringify(OPENAI_API_MODEL)});
+
+    const providerButton = document.querySelector("#providerTabs [data-provider-group='openai']");
+    if (providerButton) providerButton.click();
+    const authButton = document.querySelector("#authModeTabs [data-auth-mode='api']");
+    if (authButton) authButton.click();
+
+    setValue(document.getElementById("agentSelect"), ${JSON.stringify(OPENAI_API_AGENT_ID)});
+    setValue(document.getElementById("agentModel"), ${JSON.stringify(OPENAI_API_MODEL)});
+    setValue(document.getElementById("chatMode"), "chat");
+    setValue(document.getElementById("chatPrompt"), "OpenAI API setup smoke");
     return ${stateExpression()};
   })()`;
 }
@@ -433,6 +465,55 @@ async function smoke() {
         transcriptTail: run.transcript.slice(-3000),
         logTail: run.log.slice(-1200)
       }
+    }, null, 2));
+  } finally {
+    ws.close();
+  }
+}
+
+async function openAiApiSetupSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  try {
+    await reloadActivePage(send);
+    await evaluate(send, setupExpression());
+    await waitFor(send, "panel online", (state) => state.badge === "online", 15000);
+    await waitFor(send, "OpenAI API agent list", (state) => (
+      state.agentOptions.some((option) => option.value === OPENAI_API_AGENT_ID)
+    ), 20000);
+    await evaluate(send, selectOpenAiApiExpression());
+    const selected = await waitFor(send, "OpenAI API selected", (state) => (
+      state.agentValue === OPENAI_API_AGENT_ID &&
+      state.model === OPENAI_API_MODEL &&
+      state.apiKeyVisible === true &&
+      state.setupTitle.indexOf("OpenAI API") >= 0
+    ), 30000);
+
+    const keySaved = selected.agentDetails.indexOf("Setup: key saved") >= 0 || selected.sendDisabled === false;
+    if (keySaved) {
+      console.log(JSON.stringify({
+        ok: true,
+        skipped: true,
+        reason: "OpenAI API is configured in this environment; no-key disabled state is not expected.",
+        page: { title: page.title, url: page.url },
+        state: selected
+      }, null, 2));
+      return;
+    }
+
+    const noKey = await waitFor(send, "OpenAI API no-key state", (state) => (
+      state.agentValue === OPENAI_API_AGENT_ID &&
+      state.sendDisabled === true &&
+      state.agentDetails.indexOf("Setup: key required") >= 0 &&
+      state.setupText.indexOf("OpenAI API billing") >= 0 &&
+      state.modelOptions.some((option) => option.value === OPENAI_API_MODEL && option.text.indexOf("No API key") >= 0)
+    ), 10000);
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      agentDetails: noKey.agentDetails,
+      modelOptions: noKey.modelOptions,
+      setupText: noKey.setupText
     }, null, 2));
   } finally {
     ws.close();
@@ -706,6 +787,10 @@ async function main() {
   }
   if (command === "mutating-smoke") {
     await mutatingSmoke();
+    return;
+  }
+  if (command === "openai-api-setup-smoke") {
+    await openAiApiSetupSmoke();
     return;
   }
   if (command === "openai-cli-smoke") {
