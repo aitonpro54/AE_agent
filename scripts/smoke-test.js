@@ -445,7 +445,7 @@ async function main() {
     keyIndices: [1, 2],
     interpolation: "bezier",
     verifyAfter: false
-  }, ["Codex Apply Keyframe Ease", "setTemporalEaseAtKey"], {
+  }, ["Codex Apply Keyframe Ease", "__codexTemporalEaseDimensions", "setTemporalEaseAtKey"], {
     layer: { index: 1, name: "Layer 1" },
     keyIndices: [1, 2]
   }));

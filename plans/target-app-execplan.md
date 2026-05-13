@@ -10,6 +10,7 @@
 - [x] Milestone 42: Text, shape, and layout tools.
 - [x] Milestone 43: Animation tools.
 - [x] Milestone 44: Render queue tools.
+- [x] Milestone 45: Live typed-tool validation and spatial ease hardening.
 
 ## Current Stable Baseline
 
@@ -71,6 +72,13 @@
 - Add `get_render_queue_status`.
 - Keep render start out of scope for this milestone.
 
+### Milestone 45: Live typed-tool validation and spatial ease hardening
+
+- Restart the live bridge daemon from `C:\Users\Ant\Documents\Codex\AE_agent`.
+- Create a saved-project checkpoint before live mutations.
+- Run protected live AE validation on generated `Codex Test Live Typed ...` comps for representative timeline, precomp/source, text/shape/layout, animation, and render queue setup workflows.
+- Fix issues found by live validation and keep temporary project/render-queue items cleaned up.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -84,6 +92,8 @@
 - 2026-05-13: Runtime binding aliases resolve against established tool result shapes, not literal field names only.
 - 2026-05-13: New mutating tools must join the existing checkpoint/idempotency/verification model.
 - 2026-05-13: Render queue setup tools may prepare queue items and outputs, but starting a render remains out of scope for this roadmap block.
+- 2026-05-13: Spatial Position properties expect a single temporal `KeyframeEase` entry in `apply_keyframe_ease`; non-spatial array properties may still use value dimensionality.
+- 2026-05-13: AE project item indexes can shift after item-creating operations such as precompose; live validation and Agent follow-up steps should use returned/read-back indexes such as `sourceComp.itemIndex`.
 
 ## Validation
 
@@ -128,5 +138,25 @@
   - Passed repo-wide stale-input reference search.
   - Copied changed `cep-panel\panel.js` to the installed CEP extension.
   - Passed installed CEP extension stale-input reference search.
+  - Passed `node scripts\cep-panel-cdp-smoke.js reload`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js smoke`.
+- Milestone 45:
+  - Restarted the live daemon from `C:\Users\Ant\Documents\Codex\AE_agent`; bridge status reported logs, secrets, and backups under the relocated project root with the CEP panel connected.
+  - Created checkpoint `final_slides-checkpoint-live-typed-tools-2026-05-13-2026-05-13T18-40-53-948Z.aep` before live mutations.
+  - Live typed-tool validation covered `set_comp_work_area`, `set_layer_time_range`, `stagger_layers`, `split_layers_at_time`, `update_text_layer`, `create_shape_layer`, `fit_layer_to_comp`, `set_property_keyframes`, `apply_keyframe_ease`, `set_expression`, `clear_expression`, `precompose_layers`, `replace_layer_source`, `rename_layers`, `rename_project_items`, `add_comp_to_render_queue`, `set_render_queue_output`, and `get_render_queue_status`.
+  - Found and fixed an AE runtime failure in `apply_keyframe_ease` for spatial Position properties: AE expects one temporal ease entry for spatial position values.
+  - Added smoke coverage that checks the generated `apply_keyframe_ease` script includes the temporal ease dimension helper.
+  - Verified live render queue cleanup removed the generated render queue item and `cleanup_test_items` removed 5 generated project items for prefix `Codex Test Live Typed 1778698579888`.
+  - Verified `find_project_items` returned no matches for `Codex Test Live Typed 1778698579888` after cleanup.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check scripts\smoke-test.js`.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
   - Passed `node scripts\cep-panel-cdp-smoke.js reload`.
   - Passed `node scripts\cep-panel-cdp-smoke.js smoke`.

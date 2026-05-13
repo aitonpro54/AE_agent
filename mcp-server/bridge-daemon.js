@@ -7849,10 +7849,19 @@ async function callTool(name, args) {
         return values;
       }
 
+      function __codexTemporalEaseDimensions(prop) {
+        try {
+          if (prop.propertyValueType === PropertyValueType.TwoD_SPATIAL || prop.propertyValueType === PropertyValueType.ThreeD_SPATIAL) {
+            return 1;
+          }
+        } catch (__spatialEaseTypeError) {}
+        var value = null;
+        try { value = prop.value; } catch (__valueProbeError) {}
+        return value instanceof Array ? Math.max(1, value.length) : 1;
+      }
+
       app.beginUndoGroup("Codex Apply Keyframe Ease");
-      var value = null;
-      try { value = prop.value; } catch (__valueProbeError) {}
-      var dimensions = value instanceof Array ? Math.max(1, value.length) : 1;
+      var dimensions = __codexTemporalEaseDimensions(prop);
       var easeInValues = __codexEaseArray(easeIn, dimensions);
       var easeOutValues = __codexEaseArray(easeOut, dimensions);
       var changedKeys = [];
