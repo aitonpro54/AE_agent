@@ -27,6 +27,7 @@ Added:
 - Stable ASCII composer send button label, plus `send-button-smoke`.
 - Prompt Optimization payload smoke coverage with `scripts\prompt-optimization-smoke.js`.
 - Gemini and Claude API providers with fake-provider contract coverage via `scripts\provider-api-smoke.js`.
+- Isolated live panel API key save smoke for Gemini and Claude via `scripts\provider-key-save-smoke.js`.
 
 Changed:
 
@@ -44,6 +45,7 @@ Changed:
 - The existing Activity log pane is hidden by default and can be opened from the bridge controls.
 - The composer send button now uses a stable ASCII `>` label instead of a mojibake-prone Unicode arrow.
 - Gemini and Claude tabs now select real API-key provider contracts when configured, falling back to setup states when keys are missing.
+- `AE_AGENT_SECRETS_FILE` can point the daemon at an alternate local secrets file for isolated validation runs.
 - Daemon, adapter, CEP panel, manifest, install note, and smoke tests report version `0.26.0`.
 
 ## v0.25.0-safe-run - 2026-05-12

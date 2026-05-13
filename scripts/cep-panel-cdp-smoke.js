@@ -173,6 +173,10 @@ function stateExpression() {
     setupActionVisible: document.getElementById("agentSetupActionButton") ? document.getElementById("agentSetupActionButton").style.display !== "none" : null,
     authModeVisible: document.getElementById("authModeTabs") ? document.getElementById("authModeTabs").style.display !== "none" : null,
     apiKeyVisible: document.getElementById("agentApiKeyRow") ? document.getElementById("agentApiKeyRow").style.display !== "none" : null,
+    apiKeyPlaceholder: document.getElementById("agentApiKey") ? document.getElementById("agentApiKey").placeholder : "",
+    apiKeyValue: document.getElementById("agentApiKey") ? document.getElementById("agentApiKey").value : "",
+    saveKeyDisabled: document.getElementById("saveAgentKeyButton") ? document.getElementById("saveAgentKeyButton").disabled : null,
+    saveKeyText: document.getElementById("saveAgentKeyButton") ? document.getElementById("saveAgentKeyButton").textContent : "",
     localServiceVisible: document.getElementById("localServiceCard") ? document.getElementById("localServiceCard").style.display !== "none" : null,
     freeModelsVisible: document.getElementById("freeModelsRow") ? document.getElementById("freeModelsRow").style.display !== "none" : null,
     freeModelsChecked: document.getElementById("freeModelsOnly") ? document.getElementById("freeModelsOnly").checked : null,
@@ -372,6 +376,17 @@ function clickExpression(id) {
     const before = { disabled: !!el.disabled, text: el.textContent };
     if (!el.disabled) el.click();
     return { ok: !before.disabled, before, state: ${stateExpression()} };
+  })()`;
+}
+
+function fillApiKeyExpression(value) {
+  return `(() => {
+    const el = document.getElementById("agentApiKey");
+    if (!el) return { ok: false, error: "missing api key input" };
+    el.value = ${JSON.stringify(value)};
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+    return { ok: true, state: ${stateExpression()} };
   })()`;
 }
 
@@ -640,8 +655,10 @@ async function openAiApiSetupSmoke() {
 async function providerSetupSmoke() {
   const { page, ws, send } = await connectToPanel();
   let backup = null;
+  let bridgeBackup = null;
   try {
     backup = await evaluate(send, providerStorageExpression());
+    bridgeBackup = await evaluate(send, bridgeStorageExpression());
     await reloadActivePage(send);
     await evaluate(send, setupExpression());
     await waitFor(send, "panel online", (state) => state.badge === "online", 15000);
@@ -686,6 +703,7 @@ async function providerSetupSmoke() {
     if (backup) {
       try {
         await evaluate(send, writeProviderStorageExpression(backup));
+        if (bridgeBackup) await evaluate(send, writeBridgeStorageExpression(bridgeBackup));
         await reloadActivePage(send);
       } catch (_error) {}
     }
@@ -695,6 +713,89 @@ async function providerSetupSmoke() {
 
 async function providerPlaceholderSmoke() {
   return providerSetupSmoke();
+}
+
+async function providerKeySaveSmoke() {
+  if (process.env.CEP_PANEL_ALLOW_KEY_SAVE_SMOKE !== "1") {
+    throw new Error("provider-key-save-smoke writes test API keys. Run scripts/provider-key-save-smoke.js so the bridge uses an isolated temporary secrets file.");
+  }
+
+  const { page, ws, send } = await connectToPanel();
+  let backup = null;
+  let bridgeBackup = null;
+  try {
+    backup = await evaluate(send, providerStorageExpression());
+    bridgeBackup = await evaluate(send, bridgeStorageExpression());
+    await reloadActivePage(send);
+    await evaluate(send, setupExpression());
+    await waitFor(send, "panel online", (state) => state.badge === "online", 15000);
+    await waitFor(send, "provider agent list", (state) => (
+      state.agentOptions.some((option) => option.value === "gemini-api") &&
+      state.agentOptions.some((option) => option.value === "claude-api")
+    ), 20000);
+
+    const results = [];
+    for (const group of ["gemini", "claude"]) {
+      const clicked = await evaluate(send, selectProviderGroupExpression(group));
+      if (!clicked || !clicked.ok) throw new Error(`Could not click ${group} provider tab.`);
+
+      const label = group === "gemini" ? "Gemini" : "Claude";
+      const agentId = group === "gemini" ? "gemini-api" : "claude-api";
+      const key = `${group}-panel-smoke-key-${Date.now()}`;
+
+      const selected = await waitFor(send, `${label} API key entry ready`, (state) => (
+        state.activeProviderGroup === group &&
+        state.agentValue === agentId &&
+        state.apiKeyVisible === true &&
+        state.saveKeyDisabled === true &&
+        state.agentDetails.indexOf("Setup: key required") >= 0
+      ), 10000);
+
+      const filled = await evaluate(send, fillApiKeyExpression(key));
+      if (!filled || !filled.ok) throw new Error(`Could not fill ${label} API key.`);
+      await waitFor(send, `${label} save key enabled`, (state) => (
+        state.agentValue === agentId &&
+        state.apiKeyValue === key &&
+        state.saveKeyDisabled === false
+      ), 10000);
+
+      const savedClick = await evaluate(send, clickExpression("saveAgentKeyButton"));
+      if (!savedClick || !savedClick.ok) throw new Error(`${label} Save key button was not clickable.`);
+      const saved = await waitFor(send, `${label} key saved`, (state) => (
+        state.agentValue === agentId &&
+        state.apiKeyValue === "" &&
+        state.agentDetails.indexOf("Setup: key saved") >= 0 &&
+        state.sendDisabled === false &&
+        state.modelOptions.length > 0 &&
+        state.modelOptions.every((option) => option.text.indexOf("No API key") < 0)
+      ), 30000);
+
+      results.push({
+        group,
+        agent: saved.agentValue,
+        setupTitle: saved.setupTitle,
+        agentStatus: saved.agentStatus,
+        agentDetails: saved.agentDetails,
+        modelOptions: saved.modelOptions,
+        saveKeyText: selected.saveKeyText
+      });
+    }
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      providers: results
+    }, null, 2));
+  } finally {
+    if (backup) {
+      try {
+        await evaluate(send, writeProviderStorageExpression(backup));
+        if (bridgeBackup) await evaluate(send, writeBridgeStorageExpression(bridgeBackup));
+        await reloadActivePage(send);
+      } catch (_error) {}
+    }
+    ws.close();
+  }
 }
 
 async function sidebarCollapseSmoke() {
@@ -1210,6 +1311,10 @@ async function main() {
   }
   if (command === "provider-setup-smoke") {
     await providerSetupSmoke();
+    return;
+  }
+  if (command === "provider-key-save-smoke") {
+    await providerKeySaveSmoke();
     return;
   }
   if (command === "sidebar-collapse-smoke") {

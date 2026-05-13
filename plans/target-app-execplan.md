@@ -22,6 +22,7 @@
 - [x] Milestone 18: Stable send button glyph.
 - [x] Milestone 19: Prompt Optimization payload smoke.
 - [x] Milestone 20: Gemini and Claude API providers.
+- [x] Milestone 21: Provider key save smoke and docs cleanup.
 
 ## Milestones
 
@@ -161,6 +162,12 @@
 - Extend local secret saving to Gemini and Claude API keys.
 - Add fake-provider smoke coverage for Gemini/Claude request/response normalization without calling external APIs.
 
+### Milestone 21: Provider key save smoke and docs cleanup
+
+- Add an isolated live CEP smoke that saves Gemini and Claude API keys through the panel without touching the user's real `.codex/agent-secrets.json`.
+- Let the bridge use an alternate local secrets file during validation.
+- Update stale docs/release notes that still describe Gemini and Claude as placeholder-only providers.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -168,7 +175,7 @@
 - 2026-05-13: No Pro/license gate in this project; the screenshot activation card is treated as reference-only.
 - 2026-05-13: No production dependencies for CLI integration; use Node built-ins.
 - 2026-05-13: Existing dirty worktree must be preserved; commits should stage only the current milestone changes.
-- 2026-05-13: Gemini and Claude remain disabled UI placeholders until provider implementations are intentionally added.
+- 2026-05-13: Gemini and Claude remain setup placeholders until provider implementations are intentionally added.
 - 2026-05-13: Static local Chrome preview is the repo UI smoke for this milestone; live CEP smoke requires copying the changed panel files into the installed Adobe CEP extension first.
 - 2026-05-13: Installed CEP validation copies only changed panel files into `C:\Users\Ant\AppData\Roaming\Adobe\CEP\extensions\com.codex.aemcpbridge`; registry/debug settings are not changed.
 - 2026-05-13: OpenAI CLI live smoke stays chat-only; Local/Ollama remains the default live mutating smoke path because it avoids unnecessary paid/subscription model calls for AE mutations.
@@ -179,13 +186,14 @@
 - 2026-05-13: `Sign in with ChatGPT` launches the official local Codex CLI login flow from the bridge daemon; manual `codex login` remains a fallback for troubleshooting.
 - 2026-05-13: CEP bridge offline handling should be friendly but non-magical; the panel reports offline clearly and keeps retrying, while process startup stays in the Codex/MCP layer.
 - 2026-05-13: Keep direct process launching out of the CEP panel for v1; sign-in/status follow-up can be handled safely through the already-running bridge daemon.
-- 2026-05-13: Gemini and Claude tabs should be clickable setup placeholders, not disabled controls; real provider integrations remain out of scope until explicitly planned.
+- 2026-05-13: Gemini and Claude tabs should stay clickable and setup-aware; after Milestone 20 they resolve to real API providers when backend contracts are present.
 - 2026-05-13: Use ASCII `<` / `>` for the sidebar collapse control to avoid Unicode/mojibake issues in CEP runtimes.
 - 2026-05-13: Activity logs should be user-accessible on demand, but hidden by default so the first screen remains focused on provider setup and chat.
 - 2026-05-13: Prefer stable ASCII labels for compact CEP icon-like controls when Unicode glyphs risk mojibake.
 - 2026-05-13: Prompt Optimization coverage should inspect provider payloads with a fake local OpenAI-compatible endpoint instead of relying on real model behavior.
 - 2026-05-13: Gemini and Claude provider support uses official HTTP APIs with Node built-ins; no production SDK dependency is added.
 - 2026-05-13: Default provider model ids are conservative documented API ids: `gemini-2.5-flash` for Gemini and `claude-sonnet-4-20250514` for Claude.
+- 2026-05-13: Live key-save smoke must run against an isolated temporary bridge secrets file, not the user's real provider keys.
 
 ## Validation
 
@@ -395,6 +403,23 @@
   - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `node scripts/provider-api-smoke.js`.
   - Passed `node scripts/cep-panel-cdp-smoke.js provider-setup-smoke` with a temporary bridge job.
+  - Passed `node scripts/prompt-optimization-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+- Milestone 21:
+  - Added `AE_AGENT_SECRETS_FILE` so validation can isolate bridge secret writes.
+  - Added `node scripts/provider-key-save-smoke.js`.
+  - Added guarded `node scripts/cep-panel-cdp-smoke.js provider-key-save-smoke`.
+  - Updated README, release notes, screenshot notes, and repo verification instructions to reflect real Gemini/Claude API providers.
+  - Passed `node --check mcp-server/bridge-daemon.js`.
+  - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
+  - Passed `node --check scripts/provider-key-save-smoke.js`.
+  - Passed `node --check scripts/provider-contract-smoke.js`.
+  - Passed `node --check scripts/provider-api-smoke.js`.
+  - Passed `node scripts/provider-key-save-smoke.js` against the installed CEP panel with a temporary bridge and temporary secret file.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-api-smoke.js`.
   - Passed `node scripts/prompt-optimization-smoke.js`.
   - Passed `git diff --check`.
   - Passed `node scripts/bridge-only-smoke-test.js`.

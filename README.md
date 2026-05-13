@@ -111,7 +111,7 @@ OpenAI has two separate paths. `openai-api` uses `OPENAI_API_KEY` and normal Ope
 
 `OPENROUTER_MODEL` can be any OpenRouter model id, a `:free` variant, or the `openrouter/free` router. The default is `nvidia/nemotron-3-super-120b-a12b:free`, chosen from OpenRouter's May 2026 top free model list for agentic/coding workflows. Local Ollama defaults to `gemma4:latest`, uses `/api/chat`, and lists installed models from `/api/tags`. Ollama Cloud and custom providers use OpenAI-compatible `/chat/completions` and `/models` endpoints.
 
-You can also paste OpenAI API, Gemini, Claude, OpenRouter, or Ollama Cloud keys directly into the After Effects panel under the provider API mode and click `Save`. The bridge stores keys locally in `.codex\agent-secrets.json`; that folder is ignored by git.
+You can also paste OpenAI API, Gemini, Claude, OpenRouter, or Ollama Cloud keys directly into the After Effects panel under the provider API mode and click `Save`. The bridge stores keys locally in `.codex\agent-secrets.json`; that folder is ignored by git. For isolated validation, set `AE_AGENT_SECRETS_FILE` to point the bridge at a temporary secrets file.
 
 Custom agents can be provided as JSON:
 
@@ -239,6 +239,12 @@ Gemini and Claude provider API contract coverage:
 node .\scripts\provider-api-smoke.js
 ```
 
+Live Gemini/Claude API key save smoke, using a temporary bridge and temporary secret file:
+
+```powershell
+node .\scripts\provider-key-save-smoke.js
+```
+
 Live CEP panel smoke, with After Effects open and the bridge panel loaded:
 
 ```powershell
@@ -285,7 +291,7 @@ Remove-Item Env:MCP_CALL_ARGS_JSON
 node .\scripts\mcp-call-tool.js get_ai_agent_log
 ```
 
-The After Effects panel also includes an AE GPT-style provider area and Chat/Agent composer. Provider tabs expose OpenAI and Local/Ollama in the main UI, with Gemini and Claude reserved as setup placeholders. OpenAI API mode uses an API key; OpenAI CLI mode uses the panel's `Sign in with ChatGPT` action plus `codex exec` for ChatGPT/Codex subscription-backed calls. `Agent` mode asks the selected model for a structured MCP step draft, gives the model a compact catalog of real bridge tools and required fields, repairs malformed JSON once when needed, and validates the plan against bridge tools, required args, mutating step counts, and safety fields. Russian/Cyrillic requests are treated as normal user input. The panel can dry-run the last plan. Real plan execution is a separate confirmed action; mutating runs require explicit mutation permission, idempotency fields, and checkpoint/edit-session protection. From v0.25, the panel sends `autoEditSession:true` for confirmed mutating runs, so the backend creates a protected edit session/checkpoint before the first mutation when the project has been saved; unsaved projects are blocked before changing AE. From v0.26, the Agent area shows provider/model/readiness details, can re-check the selected model on demand, keeps local multi-chat history with `New Chat` and history switching, and supports a Prompt Optimization toggle.
+The After Effects panel also includes an AE GPT-style provider area and Chat/Agent composer. Provider tabs expose Gemini, OpenAI, Claude, and Local/Ollama in the main UI. Gemini and Claude use provider API keys; OpenAI API mode uses an OpenAI API key; OpenAI CLI mode uses the panel's `Sign in with ChatGPT` action plus `codex exec` for ChatGPT/Codex subscription-backed calls. `Agent` mode asks the selected model for a structured MCP step draft, gives the model a compact catalog of real bridge tools and required fields, repairs malformed JSON once when needed, and validates the plan against bridge tools, required args, mutating step counts, and safety fields. Russian/Cyrillic requests are treated as normal user input. The panel can dry-run the last plan. Real plan execution is a separate confirmed action; mutating runs require explicit mutation permission, idempotency fields, and checkpoint/edit-session protection. From v0.25, the panel sends `autoEditSession:true` for confirmed mutating runs, so the backend creates a protected edit session/checkpoint before the first mutation when the project has been saved; unsaved projects are blocked before changing AE. From v0.26, the Agent area shows provider/model/readiness details, can re-check the selected model on demand, keeps local multi-chat history with `New Chat` and history switching, and supports a Prompt Optimization toggle.
 
 Useful project inspection calls:
 

@@ -6,7 +6,7 @@ The screenshot references are visual and behavioral targets, not source code to 
 
 - Compact dark CEP window with a narrow top bar, left provider rail, and right chat area. The reference blue trial/license strip is intentionally omitted because this project has no license gate.
 - Provider tabs: `Gemini`, `OpenAI`, `Claude`, `Local`.
-- Gemini and Claude should be reachable provider setup tabs in v1, not inert disabled controls.
+- Gemini and Claude should be reachable API provider tabs in v1, with honest API-key setup states when keys are missing.
 - `OpenAI` is active.
 - Auth mode segmented control shows `API` and `CLI`; `CLI` is selected.
 - CLI mode shows a setup/pro feature card in the reference, but this project does not implement a license gate. Use an informational state that points to `codex login` instead.

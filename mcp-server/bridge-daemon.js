@@ -21,7 +21,9 @@ const AI_CHAT_LOG_FILE = path.join(LOG_DIR, "ai-agent-chats.jsonl");
 const EDIT_SESSION_ACTIVE_FILE = path.join(LOG_DIR, "edit-session-active.json");
 const EDIT_SESSION_LOG_FILE = path.join(LOG_DIR, "edit-sessions.jsonl");
 const IDEMPOTENCY_LOG_FILE = path.join(LOG_DIR, "idempotency-results.jsonl");
-const AGENT_SECRETS_FILE = path.join(PROJECT_ROOT, ".codex", "agent-secrets.json");
+const AGENT_SECRETS_FILE = process.env.AE_AGENT_SECRETS_FILE
+  ? path.resolve(process.env.AE_AGENT_SECRETS_FILE)
+  : path.join(PROJECT_ROOT, ".codex", "agent-secrets.json");
 const BACKUP_DIR = path.join(PROJECT_ROOT, "backups");
 const CHECKPOINT_SUFFIX = "-checkpoint";
 const ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT = process.env.AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT === "1";

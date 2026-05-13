@@ -37,6 +37,6 @@ Before marking a milestone complete, run:
 - `node scripts/prompt-optimization-smoke.js`
 - `node scripts/bridge-only-smoke-test.js`
 - `node scripts/smoke-test.js`
-- relevant live CEP smoke tests, such as `node scripts/cep-panel-cdp-smoke.js smoke`, when After Effects and the panel are available
+- relevant live CEP smoke tests, such as `node scripts/cep-panel-cdp-smoke.js smoke` and `node scripts/provider-key-save-smoke.js`, when After Effects and the panel are available
 
 If a check cannot run, record why and what would be needed to run it.
