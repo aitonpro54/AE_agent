@@ -147,6 +147,10 @@ function stateExpression() {
     badge: document.getElementById("badge") ? document.getElementById("badge").textContent : "",
     bridgeHelp: document.getElementById("bridgeHelp") ? document.getElementById("bridgeHelp").textContent : "",
     bridgeHelpClass: document.getElementById("bridgeHelp") ? document.getElementById("bridgeHelp").className : "",
+    activeProviderGroup: (() => {
+      const active = document.querySelector("#providerTabs .provider-tab.active");
+      return active ? active.getAttribute("data-provider-group") || "" : "";
+    })(),
     agentStatus: document.getElementById("agentStatus") ? document.getElementById("agentStatus").textContent : "",
     agentValue: document.getElementById("agentSelect") ? document.getElementById("agentSelect").value : "",
     agentOptions: Array.from(document.querySelectorAll("#agentSelect option")).map((option) => ({ value: option.value, text: option.textContent })),
@@ -158,7 +162,9 @@ function stateExpression() {
     setupActionText: document.getElementById("agentSetupActionButton") ? document.getElementById("agentSetupActionButton").textContent : "",
     setupActionDisabled: document.getElementById("agentSetupActionButton") ? document.getElementById("agentSetupActionButton").disabled : null,
     setupActionVisible: document.getElementById("agentSetupActionButton") ? document.getElementById("agentSetupActionButton").style.display !== "none" : null,
+    authModeVisible: document.getElementById("authModeTabs") ? document.getElementById("authModeTabs").style.display !== "none" : null,
     apiKeyVisible: document.getElementById("agentApiKeyRow") ? document.getElementById("agentApiKeyRow").style.display !== "none" : null,
+    localServiceVisible: document.getElementById("localServiceCard") ? document.getElementById("localServiceCard").style.display !== "none" : null,
     freeModelsVisible: document.getElementById("freeModelsRow") ? document.getElementById("freeModelsRow").style.display !== "none" : null,
     freeModelsChecked: document.getElementById("freeModelsOnly") ? document.getElementById("freeModelsOnly").checked : null,
     mode: document.getElementById("chatMode") ? document.getElementById("chatMode").value : "",
@@ -281,6 +287,38 @@ function selectOpenAiApiExpression() {
     setValue(document.getElementById("chatMode"), "chat");
     setValue(document.getElementById("chatPrompt"), "OpenAI API setup smoke");
     return ${stateExpression()};
+  })()`;
+}
+
+function providerStorageExpression() {
+  return `(() => ({
+    providerGroup: localStorage.getItem("codexAeProviderGroup"),
+    authMode: localStorage.getItem("codexAeOpenAiAuthMode"),
+    agentId: localStorage.getItem("codexAeAgentId")
+  }))()`;
+}
+
+function writeProviderStorageExpression(values) {
+  const storage = values || {};
+  return `(() => {
+    const values = ${JSON.stringify(storage)};
+    function write(key, value) {
+      if (value === null || value === undefined) localStorage.removeItem(key);
+      else localStorage.setItem(key, value);
+    }
+    write("codexAeProviderGroup", values.providerGroup);
+    write("codexAeOpenAiAuthMode", values.authMode);
+    write("codexAeAgentId", values.agentId);
+    return true;
+  })()`;
+}
+
+function selectProviderGroupExpression(group) {
+  return `(() => {
+    const providerButton = document.querySelector("#providerTabs [data-provider-group='" + ${JSON.stringify(group)} + "']");
+    if (!providerButton) return { ok: false, error: "missing provider button" };
+    providerButton.click();
+    return { ok: true, state: ${stateExpression()} };
   })()`;
 }
 
@@ -552,6 +590,60 @@ async function openAiApiSetupSmoke() {
       setupText: noKey.setupText
     }, null, 2));
   } finally {
+    ws.close();
+  }
+}
+
+async function providerPlaceholderSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  let backup = null;
+  try {
+    backup = await evaluate(send, providerStorageExpression());
+    await reloadActivePage(send);
+    await evaluate(send, setupExpression());
+    await waitFor(send, "panel online", (state) => state.badge === "online", 15000);
+    await waitFor(send, "agent list", (state) => state.agentOptions.some((option) => option.value === OPENAI_CLI_AGENT_ID), 20000);
+
+    const results = [];
+    for (const group of ["gemini", "claude"]) {
+      const clicked = await evaluate(send, selectProviderGroupExpression(group));
+      if (!clicked || !clicked.ok) throw new Error(`Could not click ${group} provider tab.`);
+      const label = group === "gemini" ? "Gemini" : "Claude";
+      const selected = await waitFor(send, `${label} placeholder selected`, (state) => (
+        state.activeProviderGroup === group &&
+        state.setupTitle.indexOf(label) >= 0 &&
+        state.setupText.indexOf("Backend provider support has not been added yet") >= 0 &&
+        state.agentStatus.indexOf("setup is planned") >= 0 &&
+        state.agentDetails.indexOf("Setup: not implemented") >= 0 &&
+        state.agentDetails.indexOf("Endpoint: not connected") >= 0 &&
+        state.authModeVisible === false &&
+        state.apiKeyVisible === false &&
+        state.localServiceVisible === false &&
+        state.setupActionVisible === false &&
+        state.sendDisabled === true &&
+        state.checkDisabled === true &&
+        state.modelOptions.length === 0
+      ), 10000);
+      results.push({
+        group,
+        setupTitle: selected.setupTitle,
+        agentStatus: selected.agentStatus,
+        agentDetails: selected.agentDetails
+      });
+    }
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      placeholders: results
+    }, null, 2));
+  } finally {
+    if (backup) {
+      try {
+        await evaluate(send, writeProviderStorageExpression(backup));
+        await reloadActivePage(send);
+      } catch (_error) {}
+    }
     ws.close();
   }
 }
@@ -923,6 +1015,10 @@ async function main() {
   }
   if (command === "openai-api-setup-smoke") {
     await openAiApiSetupSmoke();
+    return;
+  }
+  if (command === "provider-placeholder-smoke") {
+    await providerPlaceholderSmoke();
     return;
   }
   if (command === "openai-cli-smoke") {

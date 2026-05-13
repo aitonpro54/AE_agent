@@ -298,6 +298,35 @@
     return saved === "api" ? "api" : "cli";
   }
 
+  function isPlaceholderProviderGroup(group) {
+    return group === "gemini" || group === "claude";
+  }
+
+  function providerLabelForGroup(group) {
+    if (group === "gemini") return "Gemini";
+    if (group === "claude") return "Claude";
+    if (group === "local") return "Local";
+    return "OpenAI";
+  }
+
+  function placeholderAgentForGroup(group) {
+    return {
+      id: group + "-placeholder",
+      label: providerLabelForGroup(group),
+      provider: group,
+      providerGroup: group,
+      authMode: "setup",
+      transport: "planned",
+      configured: false,
+      requiresApiKey: false,
+      canChat: false,
+      placeholder: true,
+      modelSource: "not_checked",
+      status: "planned",
+      notes: providerLabelForGroup(group) + " provider is a planned setup placeholder for v1."
+    };
+  }
+
   function visibleAgent(agent) {
     var group = agentGroup(agent);
     return group === "openai" || group === "local";
@@ -320,6 +349,13 @@
   }
 
   function selectProviderGroup(group) {
+    if (isPlaceholderProviderGroup(group)) {
+      localStorage.setItem("codexAeProviderGroup", group);
+      agentSelect.value = "";
+      renderProviderPlaceholder(group);
+      return;
+    }
+
     var agent = findAgentByGroup(group);
     if (!agent) {
       setAgentStatus(group === "local" ? "Ollama provider not available" : "Provider not configured");
@@ -329,8 +365,23 @@
     selectAgent(agent.id);
   }
 
+  function renderProviderPlaceholder(group) {
+    var agent = placeholderAgentForGroup(group);
+    clearElement(agentModelEl);
+    clearElement(agentModelListEl);
+    agentApiKeyRowEl.style.display = "none";
+    agentApiKeyEl.value = "";
+    freeModelsRowEl.style.display = "none";
+    setAgentDetails(agent);
+    updateProviderUi(agent);
+    setAgentStatus(providerLabelForGroup(group) + " setup is planned");
+    updateChatAvailability();
+    updateKeyAvailability();
+  }
+
   function setupTitleForAgent(agent) {
     if (!agent) return "ChatGPT via Codex CLI";
+    if (agent.placeholder) return agent.label + " setup";
     if (agent.id === "openai-cli") return "ChatGPT via Codex CLI";
     if (agent.id === "openai-api") return "OpenAI API key";
     if (agentGroup(agent) === "local") return "Local Ollama";
@@ -339,6 +390,7 @@
 
   function setupTextForAgent(agent) {
     if (!agent) return "Connect the bridge to load provider readiness. CLI mode uses codex login and does not use an OpenAI API key.";
+    if (agent.placeholder) return agent.label + " is reserved in the panel UI. Backend provider support has not been added yet.";
     if (agent.id === "openai-cli") {
       if (agent.codexStatus && agent.codexStatus.loggedIn) return "Codex CLI is signed in with ChatGPT. API keys are not used in this mode.";
       if (agent.codexStatus && !agent.codexStatus.installed) return "Codex CLI was not found. Install Codex, then run codex login.";
@@ -444,6 +496,18 @@
       addAgentDetail("Model", "-");
       addAgentDetail("Models", "-");
       addAgentDetail("Status", "not loaded");
+      return;
+    }
+
+    if (agent.placeholder) {
+      addAgentDetail("Provider", agent.label || agent.id);
+      addAgentDetail("Mode", "setup");
+      addAgentDetail("Endpoint", "not connected");
+      addAgentDetail("Model", "-");
+      addAgentDetail("Models", "-");
+      addAgentDetail("Status", "planned");
+      addAgentDetail("Setup", "not implemented");
+      if (agent.notes) addAgentDetail("Notes", agent.notes);
       return;
     }
 
@@ -611,6 +675,11 @@
       var savedAgent = findAgent(savedAgentId);
       if (!savedAgent || !visibleAgent(savedAgent)) {
         var savedGroup = localStorage.getItem("codexAeProviderGroup") || "openai";
+        if (isPlaceholderProviderGroup(savedGroup)) {
+          renderProviderPlaceholder(savedGroup);
+          if (options.afterLoad) options.afterLoad(null, null);
+          return;
+        }
         var preferredAgent = findAgentByGroup(savedGroup) || findAgentByGroup("openai") || findAgentByGroup("local");
         savedAgentId = preferredAgent ? preferredAgent.id : response.defaultAgentId || agents[0].id;
       }

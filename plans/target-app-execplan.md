@@ -16,6 +16,7 @@
 - [x] Milestone 12: Panel-launched ChatGPT sign-in for OpenAI CLI.
 - [x] Milestone 13: Bridge offline UX.
 - [x] Milestone 14: ChatGPT sign-in status polling.
+- [x] Milestone 15: Gemini/Claude setup placeholders.
 
 ## Milestones
 
@@ -114,6 +115,13 @@
 - Stop polling once Codex CLI reports ChatGPT auth, when the bridge goes offline, or when the timeout expires.
 - Do not enable CEP Node process execution just to start local services from the panel.
 
+### Milestone 15: Gemini/Claude setup placeholders
+
+- Make `Gemini` and `Claude` provider tabs clickable instead of disabled.
+- Show an honest setup placeholder state for each without adding backend providers.
+- Keep chat, Agent run, model check, API key save, auth mode, and local service controls disabled/hidden for placeholders.
+- Add a live CEP smoke that clicks both placeholders, verifies the UI state, and restores prior provider selection.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -132,6 +140,7 @@
 - 2026-05-13: `Sign in with ChatGPT` launches the official local Codex CLI login flow from the bridge daemon; manual `codex login` remains a fallback for troubleshooting.
 - 2026-05-13: CEP bridge offline handling should be friendly but non-magical; the panel reports offline clearly and keeps retrying, while process startup stays in the Codex/MCP layer.
 - 2026-05-13: Keep direct process launching out of the CEP panel for v1; sign-in/status follow-up can be handled safely through the already-running bridge daemon.
+- 2026-05-13: Gemini and Claude tabs should be clickable setup placeholders, not disabled controls; real provider integrations remain out of scope until explicitly planned.
 
 ## Validation
 
@@ -266,6 +275,18 @@
   - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
   - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `node scripts/cep-panel-cdp-smoke.js openai-cli-setup-smoke` with a temporary bridge job; installed panel showed Codex CLI signed in.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+- Milestone 15:
+  - Made `Gemini` and `Claude` provider tabs clickable.
+  - Added placeholder setup rendering for planned provider groups without backend agents.
+  - Added `node scripts/cep-panel-cdp-smoke.js provider-placeholder-smoke`.
+  - Copied updated `index.html` and `panel.js` into the installed CEP extension.
+  - Passed `node --check cep-panel/panel.js`.
+  - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js provider-placeholder-smoke` with a temporary bridge job.
   - Passed `git diff --check`.
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.
