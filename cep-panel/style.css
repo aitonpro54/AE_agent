@@ -345,6 +345,11 @@ textarea:focus {
   margin-top: auto;
 }
 
+.history-actions {
+  display: grid;
+  gap: 8px;
+}
+
 button {
   background: #2d2d2d;
   border: 1px solid #4b4b4b;

@@ -10,6 +10,7 @@
 - [x] Milestone 6: Installed CEP panel live validation.
 - [x] Milestone 7: OpenAI CLI live panel validation.
 - [x] Milestone 8: Provider contract smoke coverage.
+- [x] Milestone 9: Local multi-chat history.
 
 ## Milestones
 
@@ -70,6 +71,12 @@
 - Verify missing Codex CLI state reports `setupAction: codex_login`, no API key requirement, and the approved CLI model list.
 - Make list-agent errors use provider-specific setup guidance instead of a generic not-configured message.
 
+### Milestone 9: Local multi-chat history
+
+- Add `New Chat` beside `Clear Chat` in the AE GPT-style history area.
+- Persist multiple local chat sessions in panel `localStorage` while keeping the legacy active transcript key for compatibility.
+- Add a live CEP history smoke that restores fixture conversations, switches history, creates a new blank chat, and restores the user's stored history afterward.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -82,6 +89,7 @@
 - 2026-05-13: Installed CEP validation copies only changed panel files into `C:\Users\Ant\AppData\Roaming\Adobe\CEP\extensions\com.codex.aemcpbridge`; registry/debug settings are not changed.
 - 2026-05-13: OpenAI CLI live smoke stays chat-only; Local/Ollama remains the default live mutating smoke path because it avoids unnecessary paid/subscription model calls for AE mutations.
 - 2026-05-13: Provider contract smoke simulates a missing Codex CLI with an invalid `CODEX_CLI_PATH`; authenticated CLI behavior remains covered by live CEP smoke.
+- 2026-05-13: Chat history remains panel-local for v1; no backend persistence or migration is needed, and the old `codexAeChatTranscript` key stays as the active-conversation snapshot.
 
 ## Validation
 
@@ -140,6 +148,18 @@
   - Updated `listAgents` non-configured errors to use provider-specific setup guidance.
   - Passed `node --check mcp-server/ai-agents.js`.
   - Passed `node --check scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+- Milestone 9:
+  - Added `New Chat` and multi-chat local history to the CEP panel.
+  - Added `node scripts/cep-panel-cdp-smoke.js history-smoke`.
+  - Copied updated `index.html`, `panel.js`, and `style.css` into the installed CEP extension.
+  - Passed `node --check cep-panel/panel.js`.
+  - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js history-smoke`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js smoke`.
   - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `git diff --check`.
   - Passed `node scripts/bridge-only-smoke-test.js`.

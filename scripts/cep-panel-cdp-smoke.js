@@ -155,6 +155,8 @@ function stateExpression() {
     sendDisabled: document.getElementById("sendChatButton") ? document.getElementById("sendChatButton").disabled : null,
     dryRunDisabled: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").disabled : null,
     runDisabled: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").disabled : null,
+    chatHistoryValue: document.getElementById("chatHistorySelect") ? document.getElementById("chatHistorySelect").value : "",
+    chatHistoryOptions: Array.from(document.querySelectorAll("#chatHistorySelect option")).map((option) => ({ value: option.value, text: option.textContent })),
     transcript: document.getElementById("chatTranscript") ? document.getElementById("chatTranscript").innerText.slice(0, 16000) : "",
     log: document.getElementById("log") ? document.getElementById("log").innerText.slice(0, 4000) : "",
     confirmMessages: window.__codexPanelConfirmMessages || []
@@ -263,6 +265,75 @@ function installConfirmExpression() {
       return true;
     };
     return true;
+  })()`;
+}
+
+function historyStorageExpression() {
+  return `(() => ({
+    sessions: localStorage.getItem("codexAeChatSessions"),
+    active: localStorage.getItem("codexAeActiveChatSessionId"),
+    transcript: localStorage.getItem("codexAeChatTranscript")
+  }))()`;
+}
+
+function writeHistoryStorageExpression(values) {
+  const storage = values || {};
+  return `(() => {
+    const values = ${JSON.stringify(storage)};
+    function write(key, value) {
+      if (value === null || value === undefined) localStorage.removeItem(key);
+      else localStorage.setItem(key, value);
+    }
+    write("codexAeChatSessions", values.sessions);
+    write("codexAeActiveChatSessionId", values.active);
+    write("codexAeChatTranscript", values.transcript);
+    return true;
+  })()`;
+}
+
+function historyFixtureStorage() {
+  const sessions = [
+    {
+      id: "history-smoke-one",
+      title: "First saved prompt",
+      updatedAt: new Date().toISOString(),
+      transcript: [
+        { role: "user", text: "First saved prompt" },
+        { role: "assistant", text: "First saved answer" }
+      ],
+      chatMessages: [
+        { role: "user", content: "First saved prompt" },
+        { role: "assistant", content: "First saved answer" }
+      ]
+    },
+    {
+      id: "history-smoke-two",
+      title: "Second saved prompt",
+      updatedAt: new Date().toISOString(),
+      transcript: [
+        { role: "user", text: "Second saved prompt" },
+        { role: "assistant", text: "Second saved answer" }
+      ],
+      chatMessages: [
+        { role: "user", content: "Second saved prompt" },
+        { role: "assistant", content: "Second saved answer" }
+      ]
+    }
+  ];
+  return {
+    sessions: JSON.stringify(sessions),
+    active: "history-smoke-one",
+    transcript: JSON.stringify(sessions[0].transcript)
+  };
+}
+
+function selectHistoryExpression(value) {
+  return `(() => {
+    const select = document.getElementById("chatHistorySelect");
+    if (!select) return { ok: false, error: "missing chatHistorySelect" };
+    select.value = ${JSON.stringify(value)};
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    return { ok: true, state: ${stateExpression()} };
   })()`;
 }
 
@@ -413,6 +484,65 @@ async function openAiCliSmoke() {
       logTail: replied.log.slice(-1200)
     }, null, 2));
   } finally {
+    ws.close();
+  }
+}
+
+async function historySmoke() {
+  const { page, ws, send } = await connectToPanel();
+  let backup = null;
+  try {
+    backup = await evaluate(send, historyStorageExpression());
+    await evaluate(send, writeHistoryStorageExpression(historyFixtureStorage()));
+    await reloadActivePage(send);
+
+    const restored = await waitFor(send, "restored first chat history item", (state) => (
+      state.chatHistoryOptions.length >= 2 &&
+      state.chatHistoryValue === "history-smoke-one" &&
+      state.transcript.indexOf("First saved prompt") >= 0 &&
+      state.transcript.indexOf("First saved answer") >= 0
+    ), 15000);
+
+    const selected = await evaluate(send, selectHistoryExpression("history-smoke-two"));
+    if (!selected || !selected.ok) throw new Error("Could not select second chat history item.");
+    const second = await waitFor(send, "selected second chat history item", (state) => (
+      state.chatHistoryValue === "history-smoke-two" &&
+      state.transcript.indexOf("Second saved prompt") >= 0 &&
+      state.transcript.indexOf("Second saved answer") >= 0
+    ), 10000);
+
+    const newChatClicked = await evaluate(send, clickExpression("newChatButton"));
+    if (!newChatClicked || !newChatClicked.ok) throw new Error("New Chat button was not clickable.");
+    const newChat = await waitFor(send, "new blank chat", (state) => (
+      state.chatHistoryOptions.length >= 3 &&
+      state.chatHistoryValue !== "history-smoke-one" &&
+      state.chatHistoryValue !== "history-smoke-two" &&
+      state.transcript.replace(/\s+/g, "") === ""
+    ), 10000);
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      restored: {
+        chatHistoryValue: restored.chatHistoryValue,
+        chatHistoryOptions: restored.chatHistoryOptions
+      },
+      selected: {
+        chatHistoryValue: second.chatHistoryValue,
+        transcriptTail: second.transcript.slice(-1000)
+      },
+      newChat: {
+        chatHistoryValue: newChat.chatHistoryValue,
+        chatHistoryOptions: newChat.chatHistoryOptions
+      }
+    }, null, 2));
+  } finally {
+    if (backup) {
+      try {
+        await evaluate(send, writeHistoryStorageExpression(backup));
+        await reloadActivePage(send);
+      } catch (_error) {}
+    }
     ws.close();
   }
 }
@@ -580,6 +710,10 @@ async function main() {
   }
   if (command === "openai-cli-smoke") {
     await openAiCliSmoke();
+    return;
+  }
+  if (command === "history-smoke") {
+    await historySmoke();
     return;
   }
   throw new Error(`Unknown command: ${command}`);

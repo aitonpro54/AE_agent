@@ -15,6 +15,8 @@ Added:
 - `Free models only` toggle for OpenRouter model refreshes.
 - `Check model` action that re-runs readiness/model preflight for the selected provider and model.
 - Local visible chat transcript persistence, cleared by the panel's `Clear` button.
+- Local multi-chat history with `New Chat`, history switching, and per-chat clearing.
+- CEP history smoke command: `node scripts\cep-panel-cdp-smoke.js history-smoke`.
 
 Changed:
 

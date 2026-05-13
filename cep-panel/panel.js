@@ -43,6 +43,8 @@
   var sendChatButton = document.getElementById("sendChatButton");
   var dryRunPlanButton = document.getElementById("dryRunPlanButton");
   var runPlanButton = document.getElementById("runPlanButton");
+  var chatHistorySelect = document.getElementById("chatHistorySelect");
+  var newChatButton = document.getElementById("newChatButton");
   var clearChatButton = document.getElementById("clearChatButton");
   var chatModeEl = document.getElementById("chatMode");
   var chatModeButtonEls = document.querySelectorAll("#chatModeTabs button");
@@ -52,6 +54,8 @@
   var pollTimer = null;
   var pollInFlight = false;
   var agents = [];
+  var chatSessions = [];
+  var activeChatSessionId = "";
   var chatMessages = [];
   var transcriptHistory = [];
   var transcriptRestoring = false;
@@ -635,10 +639,142 @@
     return value;
   }
 
+  function safeJsonArray(value) {
+    if (!value) return [];
+    try {
+      var parsed = JSON.parse(value);
+      if (parsed && typeof parsed.push === "function") return parsed;
+    } catch (_error) {}
+    return [];
+  }
+
+  function normalizeTranscriptItems(items, limit) {
+    var source = items && typeof items.push === "function" ? items : [];
+    var output = [];
+    for (var i = 0; i < source.length; i++) {
+      var item = source[i] || {};
+      var role = item.role === "user" || item.role === "assistant" || item.role === "error" ? item.role : "assistant";
+      output.push({
+        role: role,
+        text: compactTranscriptText(item.text)
+      });
+    }
+    if (limit && output.length > limit) return output.slice(output.length - limit);
+    return output;
+  }
+
+  function normalizeChatMessages(items, limit) {
+    var source = items && typeof items.push === "function" ? items : [];
+    var output = [];
+    for (var i = 0; i < source.length; i++) {
+      var item = source[i] || {};
+      if (!item.role || item.content === undefined) continue;
+      output.push({
+        role: String(item.role || "assistant"),
+        content: compactTranscriptText(item.content)
+      });
+    }
+    if (limit && output.length > limit) return output.slice(output.length - limit);
+    return output;
+  }
+
+  function createChatSession(title) {
+    var now = new Date().toISOString();
+    return {
+      id: "chat-" + Date.now() + "-" + Math.floor(Math.random() * 100000),
+      title: title || "New chat",
+      updatedAt: now,
+      transcript: [],
+      chatMessages: []
+    };
+  }
+
+  function normalizeChatSession(item, index) {
+    var session = item || {};
+    return {
+      id: String(session.id || ("chat-restored-" + index + "-" + Date.now())),
+      title: String(session.title || "New chat").slice(0, 80),
+      updatedAt: session.updatedAt || new Date().toISOString(),
+      transcript: normalizeTranscriptItems(session.transcript, 80),
+      chatMessages: normalizeChatMessages(session.chatMessages, 16)
+    };
+  }
+
+  function activeChatSession() {
+    for (var i = 0; i < chatSessions.length; i++) {
+      if (chatSessions[i].id === activeChatSessionId) return chatSessions[i];
+    }
+    if (!chatSessions.length) {
+      var created = createChatSession("Current conversation");
+      chatSessions.push(created);
+      activeChatSessionId = created.id;
+      return created;
+    }
+    activeChatSessionId = chatSessions[0].id;
+    return chatSessions[0];
+  }
+
+  function chatSessionTitle(session) {
+    var items = session && session.transcript ? session.transcript : [];
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].role === "user" && trimText(items[i].text)) {
+        var text = trimText(items[i].text).replace(/\s+/g, " ");
+        return text.length > 48 ? text.slice(0, 45) + "..." : text;
+      }
+    }
+    return session && session.title ? session.title : "New chat";
+  }
+
+  function renderChatHistorySelect() {
+    clearElement(chatHistorySelect);
+    if (!chatSessions.length) chatSessions.push(createChatSession("Current conversation"));
+    for (var i = 0; i < chatSessions.length; i++) {
+      addOption(chatHistorySelect, chatSessions[i].id, chatSessionTitle(chatSessions[i]));
+    }
+    chatHistorySelect.value = activeChatSessionId || chatSessions[0].id;
+  }
+
+  function trimStoredChatSessions() {
+    var kept = [];
+    for (var i = 0; i < chatSessions.length; i++) {
+      var session = chatSessions[i];
+      var isActive = session.id === activeChatSessionId;
+      var hasContent = session.transcript.length || session.chatMessages.length;
+      if (isActive || hasContent) kept.push(session);
+      if (kept.length >= 12) break;
+    }
+    chatSessions = kept.length ? kept : [createChatSession("Current conversation")];
+    if (!activeChatSession()) activeChatSessionId = chatSessions[0].id;
+  }
+
+  function saveCurrentChatSession() {
+    var session = activeChatSession();
+    session.transcript = normalizeTranscriptItems(transcriptHistory, 80);
+    session.chatMessages = normalizeChatMessages(chatMessages, 16);
+    session.title = chatSessionTitle(session);
+    session.updatedAt = new Date().toISOString();
+
+    for (var i = 0; i < chatSessions.length; i++) {
+      if (chatSessions[i].id === session.id && i > 0 && session.transcript.length) {
+        chatSessions.splice(i, 1);
+        chatSessions.unshift(session);
+        break;
+      }
+    }
+
+    trimStoredChatSessions();
+    try {
+      localStorage.setItem("codexAeChatSessions", JSON.stringify(chatSessions));
+      localStorage.setItem("codexAeActiveChatSessionId", activeChatSessionId);
+    } catch (_error) {}
+    renderChatHistorySelect();
+  }
+
   function saveTranscriptHistory() {
     try {
       localStorage.setItem("codexAeChatTranscript", JSON.stringify(transcriptHistory.slice(-80)));
     } catch (_error) {}
+    saveCurrentChatSession();
   }
 
   function recordTranscriptMessage(role, text) {
@@ -653,30 +789,76 @@
     saveTranscriptHistory();
   }
 
-  function restoreTranscriptHistory() {
-    var raw = localStorage.getItem("codexAeChatTranscript");
-    if (!raw) return;
-    try {
-      var parsed = JSON.parse(raw);
-      if (!parsed || !parsed.length || typeof parsed.push !== "function") return;
-      transcriptRestoring = true;
-      for (var i = 0; i < parsed.length; i++) {
-        var item = parsed[i] || {};
-        var role = item.role === "user" || item.role === "assistant" || item.role === "error" ? item.role : "assistant";
-        var text = compactTranscriptText(item.text);
-        transcriptHistory.push({ role: role, text: text });
-        appendChatMessage(role, text);
-      }
-      transcriptRestoring = false;
-      if (transcriptHistory.length > 80) {
-        transcriptHistory = transcriptHistory.slice(transcriptHistory.length - 80);
-      }
-      saveTranscriptHistory();
-    } catch (_error) {
-      transcriptRestoring = false;
-      transcriptHistory = [];
-      localStorage.removeItem("codexAeChatTranscript");
+  function applyChatSession(session) {
+    var selected = session || activeChatSession();
+    activeChatSessionId = selected.id;
+    chatMessages = normalizeChatMessages(selected.chatMessages, 16);
+    transcriptHistory = normalizeTranscriptItems(selected.transcript, 80);
+    lastPlanResult = null;
+    clearElement(chatTranscriptEl);
+
+    transcriptRestoring = true;
+    for (var i = 0; i < transcriptHistory.length; i++) {
+      appendChatMessage(transcriptHistory[i].role, transcriptHistory[i].text);
     }
+    transcriptRestoring = false;
+    try {
+      localStorage.setItem("codexAeActiveChatSessionId", activeChatSessionId);
+      localStorage.setItem("codexAeChatTranscript", JSON.stringify(transcriptHistory.slice(-80)));
+    } catch (_error) {}
+    renderChatHistorySelect();
+    updateChatAvailability();
+  }
+
+  function restoreTranscriptHistory() {
+    var stored = safeJsonArray(localStorage.getItem("codexAeChatSessions"));
+    chatSessions = [];
+    for (var i = 0; i < stored.length; i++) {
+      chatSessions.push(normalizeChatSession(stored[i], i));
+    }
+
+    if (!chatSessions.length) {
+      var legacy = normalizeTranscriptItems(safeJsonArray(localStorage.getItem("codexAeChatTranscript")), 80);
+      var session = createChatSession(legacy.length ? "Current conversation" : "New chat");
+      session.transcript = legacy;
+      chatSessions.push(session);
+    }
+
+    activeChatSessionId = localStorage.getItem("codexAeActiveChatSessionId") || chatSessions[0].id;
+    applyChatSession(activeChatSession());
+    saveCurrentChatSession();
+  }
+
+  function startNewChat() {
+    if (!transcriptHistory.length && !chatMessages.length) {
+      applyChatSession(activeChatSession());
+      return;
+    }
+    var session = createChatSession("New chat");
+    chatSessions.unshift(session);
+    activeChatSessionId = session.id;
+    applyChatSession(session);
+    saveCurrentChatSession();
+  }
+
+  function selectChatSession() {
+    var selectedId = chatHistorySelect.value;
+    if (!selectedId || selectedId === activeChatSessionId) return;
+    for (var i = 0; i < chatSessions.length; i++) {
+      if (chatSessions[i].id === selectedId) {
+        applyChatSession(chatSessions[i]);
+        return;
+      }
+    }
+  }
+
+  function clearActiveChat() {
+    chatMessages = [];
+    transcriptHistory = [];
+    lastPlanResult = null;
+    clearElement(chatTranscriptEl);
+    saveTranscriptHistory();
+    updateChatAvailability();
   }
 
   function setChatBusy(busy) {
@@ -962,6 +1144,7 @@
     if (mode === "chat") {
       chatMessages.push({ role: "user", content: prompt });
       if (chatMessages.length > 16) chatMessages = chatMessages.slice(chatMessages.length - 16);
+      saveCurrentChatSession();
     } else {
       lastPlanResult = null;
       updateChatAvailability();
@@ -999,6 +1182,7 @@
       if (mode === "chat") {
         chatMessages.push({ role: "assistant", content: text });
         if (chatMessages.length > 16) chatMessages = chatMessages.slice(chatMessages.length - 16);
+        saveCurrentChatSession();
       }
       if (result.requestId) {
         log("Agent " + mode + " " + result.requestId + " finished in " + (result.durationMs || 0) + "ms with " + (result.model || selectedModel()));
@@ -1126,14 +1310,9 @@
   runPlanButton.addEventListener("click", function () {
     runLastPlan(false);
   });
-  clearChatButton.addEventListener("click", function () {
-    chatMessages = [];
-    transcriptHistory = [];
-    lastPlanResult = null;
-    clearElement(chatTranscriptEl);
-    localStorage.removeItem("codexAeChatTranscript");
-    updateChatAvailability();
-  });
+  newChatButton.addEventListener("click", startNewChat);
+  clearChatButton.addEventListener("click", clearActiveChat);
+  chatHistorySelect.addEventListener("change", selectChatSession);
   chatPromptEl.addEventListener("keydown", function (event) {
     if (event.keyCode === 13 && (event.ctrlKey || event.metaKey)) {
       event.preventDefault();
