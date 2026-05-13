@@ -4,7 +4,7 @@ The screenshot references are visual and behavioral targets, not source code to 
 
 ## Reference 1: OpenAI CLI Selected
 
-- Compact dark CEP window with a narrow top bar, blue trial/license strip, left provider rail, and right chat area.
+- Compact dark CEP window with a narrow top bar, left provider rail, and right chat area. The reference blue trial/license strip is intentionally omitted because this project has no license gate.
 - Provider tabs: `Gemini`, `OpenAI`, `Claude`, `Local`.
 - `OpenAI` is active.
 - Auth mode segmented control shows `API` and `CLI`; `CLI` is selected.

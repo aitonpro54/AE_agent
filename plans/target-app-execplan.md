@@ -11,6 +11,7 @@
 - [x] Milestone 7: OpenAI CLI live panel validation.
 - [x] Milestone 8: Provider contract smoke coverage.
 - [x] Milestone 9: Local multi-chat history.
+- [x] Milestone 10: Remove reference license gate UI.
 
 ## Milestones
 
@@ -77,6 +78,12 @@
 - Persist multiple local chat sessions in panel `localStorage` while keeping the legacy active transcript key for compatibility.
 - Add a live CEP history smoke that restores fixture conversations, switches history, creates a new blank chat, and restores the user's stored history afterward.
 
+### Milestone 10: Remove reference license gate UI
+
+- Remove the screenshot-derived `Trial Version` / `License...` strip from the CEP panel.
+- Keep the compact AE GPT-style top bar and reclaim the removed strip height for the app shell.
+- Update screenshot notes and release notes to make the no-license-gate decision explicit.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -90,6 +97,7 @@
 - 2026-05-13: OpenAI CLI live smoke stays chat-only; Local/Ollama remains the default live mutating smoke path because it avoids unnecessary paid/subscription model calls for AE mutations.
 - 2026-05-13: Provider contract smoke simulates a missing Codex CLI with an invalid `CODEX_CLI_PATH`; authenticated CLI behavior remains covered by live CEP smoke.
 - 2026-05-13: Chat history remains panel-local for v1; no backend persistence or migration is needed, and the old `codexAeChatTranscript` key stays as the active-conversation snapshot.
+- 2026-05-13: The reference trial/license strip is not part of this product; removing it avoids implying an app license or Pro gate while preserving API/CLI billing distinctions.
 
 ## Validation
 
@@ -161,6 +169,19 @@
   - Passed `node scripts/cep-panel-cdp-smoke.js history-smoke`.
   - Passed `node scripts/cep-panel-cdp-smoke.js smoke`.
   - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+- Milestone 10:
+  - Removed the `Trial Version` / `License...` strip from `cep-panel/index.html` and `cep-panel/style.css`.
+  - Updated `specs/screenshots/README.md` and `RELEASES.md` with the no-license-gate decision.
+  - Copied updated `index.html` and `style.css` into the installed CEP extension.
+  - Passed installed-panel reload through `node scripts/cep-panel-cdp-smoke.js reload`.
+  - Passed installed extension text check: no `Trial Version`, `License...`, or `trial-bar` remains in the installed `index.html`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js history-smoke`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node --check cep-panel/panel.js`.
+  - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
   - Passed `git diff --check`.
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.

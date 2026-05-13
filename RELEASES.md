@@ -26,6 +26,7 @@ Changed:
 - Failed or partial AE Plan runs now render as a readable `Run: needs review` report when the backend returns run details.
 - The plan runner accepts common model shorthand such as `step-2-result` for runtime references and resolves it to useful target fields during real runs; dry-runs report those dependent steps as ready.
 - The live CEP smoke now verifies the new agent details and check-model flow.
+- The reference `Trial Version` / `License...` strip is intentionally omitted from the CEP UI; this project has no app license gate.
 - Daemon, adapter, CEP panel, manifest, install note, and smoke tests report version `0.26.0`.
 
 ## v0.25.0-safe-run - 2026-05-12
