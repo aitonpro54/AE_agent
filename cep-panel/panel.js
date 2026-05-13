@@ -52,8 +52,6 @@
   var chatModeEl = document.getElementById("chatMode");
   var chatModeButtonEls = document.querySelectorAll("#chatModeTabs button");
   var promptOptimizationEl = document.getElementById("promptOptimization");
-  var voiceLanguageEl = document.getElementById("voiceLanguage");
-  var voiceInputButton = document.getElementById("voiceInputButton");
 
   var running = false;
   var pollTimer = null;
@@ -66,22 +64,6 @@
   var transcriptRestoring = false;
   var chatInFlight = false;
   var chatWorkingEl = null;
-  var voiceRecognition = null;
-  var voiceListening = false;
-  var voiceStartPending = false;
-  var voiceSupported = false;
-  var voicePromptPrefix = "";
-  var voicePromptSuffix = "";
-  var voiceFinalTranscript = "";
-  var voiceHadError = false;
-  var voiceStartTimer = null;
-  var voiceSawActivity = false;
-  var voiceUseApiTranscription = localStorage.getItem("codexAeVoiceUseApiTranscription") === "1";
-  var voiceApiRecorder = null;
-  var voiceApiStream = null;
-  var voiceApiChunks = [];
-  var voiceApiRecording = false;
-  var voiceApiStopTimer = null;
   var keySaveInFlight = false;
   var setupActionInFlight = false;
   var readinessInFlight = false;
@@ -168,7 +150,7 @@
     var completed = false;
     var xhr = new XMLHttpRequest();
     xhr.open(method, getBaseUrl() + appendToken(path), true);
-    xhr.timeout = path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 || path.indexOf("/voice/transcribe") === 0 ? 120000 : 10000;
+    xhr.timeout = path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 ? 120000 : 10000;
     if (body !== null && body !== undefined) {
       xhr.setRequestHeader("content-type", "text/plain;charset=utf-8");
     }
@@ -1164,7 +1146,6 @@
     sendChatButton.disabled = chatInFlight || !selectedAgentReady();
     dryRunPlanButton.disabled = chatInFlight || !lastPlanResult || !lastPlanResult.plan;
     runPlanButton.disabled = chatInFlight || !lastPlanResult || !lastPlanResult.plan || !lastPlanResult.planValidation || !lastPlanResult.planValidation.ok;
-    updateVoiceInputAvailability();
   }
 
   function updateKeyAvailability() {
@@ -1209,459 +1190,6 @@
   function onPromptOptimizationChanged() {
     localStorage.setItem("codexAePromptOptimization", promptOptimizationEl.checked ? "1" : "0");
     updatePromptOptimizationLabel();
-  }
-
-  function speechRecognitionConstructor() {
-    return window.SpeechRecognition || window.webkitSpeechRecognition || null;
-  }
-
-  function normalizeVoiceLanguage(value) {
-    if (value === "en" || value === "auto") return value;
-    return "ru";
-  }
-
-  function selectedVoiceRecognitionLanguage() {
-    var value = normalizeVoiceLanguage(voiceLanguageEl ? voiceLanguageEl.value : "ru");
-    if (value === "en") return "en-US";
-    if (value === "auto") return "";
-    return "ru-RU";
-  }
-
-  function setVoiceLanguage(value, persist) {
-    if (!voiceLanguageEl) return;
-    voiceLanguageEl.value = normalizeVoiceLanguage(value);
-    if (persist) localStorage.setItem("codexAeVoiceLanguage", voiceLanguageEl.value);
-  }
-
-  function onVoiceLanguageChanged() {
-    setVoiceLanguage(voiceLanguageEl.value, true);
-  }
-
-  function updateVoiceInputAvailability() {
-    if (!voiceInputButton) return;
-    voiceSupported = !!speechRecognitionConstructor();
-    var hasApiRecorder = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
-    var disabled = chatInFlight || voiceStartPending || (!voiceSupported && !hasApiRecorder);
-    voiceInputButton.disabled = disabled;
-    voiceInputButton.setAttribute("aria-pressed", voiceListening || voiceApiRecording ? "true" : "false");
-    voiceInputButton.title = voiceStartPending ? "Checking microphone" : (voiceListening || voiceApiRecording ? "Stop voice input" : "Start voice input");
-    if (!voiceSupported && !hasApiRecorder) voiceInputButton.title = "Voice input is not supported in this CEP runtime";
-    voiceInputButton.setAttribute("aria-label", voiceInputButton.title);
-    toggleClass(voiceInputButton, "listening", voiceListening || voiceApiRecording);
-    toggleClass(voiceInputButton, "unsupported", !voiceSupported && !hasApiRecorder);
-    if (voiceLanguageEl) voiceLanguageEl.disabled = chatInFlight || voiceStartPending || voiceListening || voiceApiRecording || (!voiceSupported && !hasApiRecorder);
-  }
-
-  function compactVoiceText(text) {
-    return String(text || "").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
-  }
-
-  function notifyPromptChanged() {
-    try {
-      chatPromptEl.dispatchEvent(new Event("input", { bubbles: true }));
-      chatPromptEl.dispatchEvent(new Event("change", { bubbles: true }));
-    } catch (_eventError) {}
-  }
-
-  function voicePromptText(interimText) {
-    var spoken = compactVoiceText(voiceFinalTranscript + " " + compactVoiceText(interimText));
-    if (!spoken) return voicePromptPrefix + voicePromptSuffix;
-    var beforeSpace = voicePromptPrefix && !/\s$/.test(voicePromptPrefix) ? " " : "";
-    var afterSpace = voicePromptSuffix && !/^\s/.test(voicePromptSuffix) ? " " : "";
-    return voicePromptPrefix + beforeSpace + spoken + afterSpace + voicePromptSuffix;
-  }
-
-  function updatePromptFromVoice(interimText) {
-    chatPromptEl.value = voicePromptText(interimText);
-    notifyPromptChanged();
-  }
-
-  function rememberVoicePromptRange() {
-    var value = chatPromptEl.value || "";
-    var start = typeof chatPromptEl.selectionStart === "number" ? chatPromptEl.selectionStart : value.length;
-    var end = typeof chatPromptEl.selectionEnd === "number" ? chatPromptEl.selectionEnd : start;
-    voicePromptPrefix = value.slice(0, start);
-    voicePromptSuffix = value.slice(end);
-    voiceFinalTranscript = "";
-  }
-
-  function voiceErrorMessage(code) {
-    if (code === "not-allowed" || code === "service-not-allowed") return "Microphone blocked. Enable microphone access for After Effects, then restart the panel.";
-    if (code === "audio-capture") return "No microphone was detected.";
-    if (code === "network") return "Voice input needs network access in this CEP runtime.";
-    if (code === "no-speech") return "No speech was detected.";
-    if (code === "language-not-supported") return "Selected voice language is not supported.";
-    if (code === "aborted") return "Voice input stopped.";
-    return "Voice input failed.";
-  }
-
-  function microphoneAccessErrorMessage(error) {
-    var name = error && error.name ? error.name : "";
-    if (name === "NotAllowedError" || name === "PermissionDeniedError" || name === "SecurityError") {
-      return "Microphone blocked. Enable microphone access for After Effects, then restart the panel.";
-    }
-    if (name === "NotFoundError" || name === "DevicesNotFoundError") return "No microphone was detected.";
-    if (name === "NotReadableError" || name === "TrackStartError") return "Microphone is busy or unavailable.";
-    return "Could not access the microphone.";
-  }
-
-  function requestMicrophoneAccess(onDone) {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      onDone(null);
-      return;
-    }
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
-      try {
-        var tracks = stream && stream.getTracks ? stream.getTracks() : [];
-        for (var i = 0; i < tracks.length; i++) {
-          if (tracks[i] && tracks[i].stop) tracks[i].stop();
-        }
-      } catch (_trackError) {}
-      onDone(null);
-    }).catch(function (error) {
-      onDone(error || new Error("Microphone permission denied"));
-    });
-  }
-
-  function stopVoiceApiTracks() {
-    if (voiceApiStream && voiceApiStream.getTracks) {
-      try {
-        var tracks = voiceApiStream.getTracks();
-        for (var i = 0; i < tracks.length; i++) {
-          if (tracks[i] && tracks[i].stop) tracks[i].stop();
-        }
-      } catch (_trackError) {}
-    }
-    voiceApiStream = null;
-  }
-
-  function clearVoiceApiStopTimer() {
-    if (voiceApiStopTimer) clearTimeout(voiceApiStopTimer);
-    voiceApiStopTimer = null;
-  }
-
-  function preferredVoiceMimeType() {
-    if (!window.MediaRecorder) return "";
-    if (window.MediaRecorder.isTypeSupported && window.MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) return "audio/webm;codecs=opus";
-    if (window.MediaRecorder.isTypeSupported && window.MediaRecorder.isTypeSupported("audio/webm")) return "audio/webm";
-    return "";
-  }
-
-  function readBlobAsBase64(blob, onDone) {
-    var reader = new FileReader();
-    reader.onload = function () {
-      var result = String(reader.result || "");
-      onDone(null, result.indexOf(",") >= 0 ? result.split(",").pop() : result);
-    };
-    reader.onerror = function () {
-      onDone(new Error("Could not read voice recording."));
-    };
-    reader.readAsDataURL(blob);
-  }
-
-  function insertVoiceTranscript(text) {
-    voiceFinalTranscript = compactVoiceText(text);
-    updatePromptFromVoice("");
-    if (voiceFinalTranscript) setAgentStatus("Voice input added");
-  }
-
-  function transcribeVoiceBlob(blob, mimeType) {
-    if (!blob || !blob.size) {
-      setAgentStatus("No voice audio was recorded.");
-      updateVoiceInputAvailability();
-      return;
-    }
-    voiceStartPending = true;
-    setAgentStatus("Transcribing voice...");
-    updateVoiceInputAvailability();
-    readBlobAsBase64(blob, function (readError, audioBase64) {
-      if (readError) {
-        voiceStartPending = false;
-        setAgentStatus(readError.message);
-        updateVoiceInputAvailability();
-        return;
-      }
-      request("POST", "/voice/transcribe", {
-        audioBase64: audioBase64,
-        mimeType: mimeType || blob.type || "audio/webm",
-        language: normalizeVoiceLanguage(voiceLanguageEl ? voiceLanguageEl.value : "ru"),
-        timeoutMs: 120000
-      }, function (error, response) {
-        voiceStartPending = false;
-        if (error) {
-          var message = error.message || "Voice transcription failed.";
-          if (message.indexOf("OpenAI API key is required") >= 0) {
-            message = "Voice transcription needs an OpenAI API key. Save one in OpenAI -> API.";
-          }
-          setAgentStatus(message);
-          log("Voice transcription failed: " + message);
-          updateVoiceInputAvailability();
-          return;
-        }
-        var transcription = response && response.transcription ? response.transcription : {};
-        insertVoiceTranscript(transcription.text || "");
-        updateVoiceInputAvailability();
-      });
-    });
-  }
-
-  function finishVoiceApiRecording() {
-    clearVoiceApiStopTimer();
-    var chunks = voiceApiChunks.slice();
-    var mimeType = voiceApiRecorder && voiceApiRecorder.mimeType ? voiceApiRecorder.mimeType : preferredVoiceMimeType() || "audio/webm";
-    voiceApiRecorder = null;
-    voiceApiChunks = [];
-    voiceApiRecording = false;
-    stopVoiceApiTracks();
-    updateVoiceInputAvailability();
-    if (!chunks.length) {
-      setAgentStatus("No voice audio was recorded.");
-      return;
-    }
-    try {
-      transcribeVoiceBlob(new Blob(chunks, { type: mimeType }), mimeType);
-    } catch (error) {
-      setAgentStatus("Could not prepare voice recording.");
-      log("Voice recording failed: " + (error && error.message ? error.message : error));
-    }
-  }
-
-  function stopVoiceApiRecording() {
-    clearVoiceApiStopTimer();
-    if (!voiceApiRecorder) {
-      voiceApiRecording = false;
-      stopVoiceApiTracks();
-      updateVoiceInputAvailability();
-      return;
-    }
-    try {
-      if (voiceApiRecorder.state && voiceApiRecorder.state !== "inactive") {
-        voiceApiRecorder.stop();
-      } else {
-        finishVoiceApiRecording();
-      }
-    } catch (_stopError) {
-      finishVoiceApiRecording();
-    }
-  }
-
-  function startVoiceApiRecording() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
-      setAgentStatus("Voice recording is not supported in this CEP runtime.");
-      updateVoiceInputAvailability();
-      return;
-    }
-    voiceStartPending = true;
-    setAgentStatus("Checking voice transcription...");
-    updateVoiceInputAvailability();
-    request("GET", "/voice/status", null, function (statusError, statusResponse) {
-      var voiceStatus = statusResponse && statusResponse.voice ? statusResponse.voice : {};
-      if (statusError || !voiceStatus.configured) {
-        voiceStartPending = false;
-        var message = statusError ? statusError.message : "Voice transcription needs an OpenAI API key. Save one in OpenAI -> API.";
-        setAgentStatus(message);
-        log("Voice transcription unavailable: " + message);
-        updateVoiceInputAvailability();
-        return;
-      }
-      setAgentStatus("Starting voice recording...");
-      navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
-        var mimeType = preferredVoiceMimeType();
-        var options = mimeType ? { mimeType: mimeType } : {};
-        voiceApiStream = stream;
-        voiceApiChunks = [];
-        voiceApiRecorder = new MediaRecorder(stream, options);
-        voiceApiRecorder.ondataavailable = function (event) {
-          if (event && event.data && event.data.size) voiceApiChunks.push(event.data);
-        };
-        voiceApiRecorder.onerror = function () {
-          setAgentStatus("Voice recording failed.");
-          log("Voice recording failed inside CEP.");
-        };
-        voiceApiRecorder.onstop = finishVoiceApiRecording;
-        voiceStartPending = false;
-        voiceApiRecording = true;
-        updateVoiceInputAvailability();
-        voiceApiRecorder.start(1000);
-        setAgentStatus("Recording voice... click the microphone to stop.");
-        clearVoiceApiStopTimer();
-        voiceApiStopTimer = setTimeout(function () {
-          if (voiceApiRecording) stopVoiceApiRecording();
-        }, 45000);
-      }).catch(function (error) {
-        voiceStartPending = false;
-        voiceApiRecording = false;
-        stopVoiceApiTracks();
-        var message = microphoneAccessErrorMessage(error);
-        setAgentStatus(message);
-        log("Voice input: " + message);
-        updateVoiceInputAvailability();
-      });
-    });
-  }
-
-  function clearVoiceStartTimer() {
-    if (voiceStartTimer) clearTimeout(voiceStartTimer);
-    voiceStartTimer = null;
-  }
-
-  function markVoiceActivity() {
-    voiceSawActivity = true;
-  }
-
-  function startVoiceNoActivityTimer(recognition) {
-    clearVoiceStartTimer();
-    voiceSawActivity = false;
-    voiceStartTimer = setTimeout(function () {
-      if (voiceRecognition !== recognition || !voiceListening || voiceSawActivity || voiceFinalTranscript) return;
-      voiceHadError = true;
-      setAgentStatus("Microphone did not start. Restart After Effects after enabling microphone access.");
-      log("Voice input: microphone did not start inside CEP.");
-      try {
-        if (recognition.abort) recognition.abort();
-        else recognition.stop();
-      } catch (_abortError) {
-        finishVoiceInput(recognition);
-      }
-    }, 15000);
-  }
-
-  function handleVoiceResult(event) {
-    markVoiceActivity();
-    var interim = "";
-    var results = event && event.results ? event.results : [];
-    var start = typeof event.resultIndex === "number" ? event.resultIndex : 0;
-    for (var i = start; i < results.length; i++) {
-      var result = results[i];
-      var transcript = result && result[0] ? result[0].transcript : "";
-      if (result && result.isFinal) {
-        voiceFinalTranscript = compactVoiceText(voiceFinalTranscript + " " + transcript);
-      } else {
-        interim = compactVoiceText(interim + " " + transcript);
-      }
-    }
-    updatePromptFromVoice(interim);
-  }
-
-  function finishVoiceInput(recognition) {
-    clearVoiceStartTimer();
-    if (voiceRecognition === recognition) voiceRecognition = null;
-    voiceListening = false;
-    updateVoiceInputAvailability();
-    if (!voiceHadError) {
-      setAgentStatus(voiceFinalTranscript ? "Voice input added" : "Voice input stopped");
-    }
-  }
-
-  function stopVoiceInput() {
-    clearVoiceStartTimer();
-    if (voiceApiRecording) {
-      stopVoiceApiRecording();
-      return;
-    }
-    if (!voiceRecognition) {
-      voiceListening = false;
-      updateVoiceInputAvailability();
-      return;
-    }
-    try {
-      voiceRecognition.stop();
-    } catch (_stopError) {
-      voiceRecognition = null;
-      voiceListening = false;
-      updateVoiceInputAvailability();
-    }
-  }
-
-  function beginVoiceRecognition(Recognition) {
-    try {
-      var recognition = new Recognition();
-      voiceRecognition = recognition;
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.maxAlternatives = 1;
-      var language = selectedVoiceRecognitionLanguage();
-      if (language) recognition.lang = language;
-      recognition.onstart = function () {
-        markVoiceActivity();
-        voiceListening = true;
-        updateVoiceInputAvailability();
-        setAgentStatus("Listening...");
-      };
-      recognition.onaudiostart = markVoiceActivity;
-      recognition.onsoundstart = markVoiceActivity;
-      recognition.onspeechstart = markVoiceActivity;
-      recognition.onresult = handleVoiceResult;
-      recognition.onerror = function (event) {
-        clearVoiceStartTimer();
-        voiceHadError = true;
-        var message = voiceErrorMessage(event && event.error);
-        if (event && event.error === "network" && navigator.mediaDevices && window.MediaRecorder) {
-          localStorage.setItem("codexAeVoiceUseApiTranscription", "1");
-          voiceUseApiTranscription = true;
-          try {
-            if (recognition.abort) recognition.abort();
-            else recognition.stop();
-          } catch (_networkStopError) {}
-          voiceRecognition = null;
-          voiceListening = false;
-          setAgentStatus("Browser voice service unavailable. Recording for API transcription...");
-          updateVoiceInputAvailability();
-          startVoiceApiRecording();
-          return;
-        }
-        setAgentStatus(message);
-        log("Voice input: " + message);
-      };
-      recognition.onend = function () {
-        finishVoiceInput(recognition);
-      };
-      voiceListening = true;
-      updateVoiceInputAvailability();
-      recognition.start();
-      startVoiceNoActivityTimer(recognition);
-      setAgentStatus("Listening...");
-    } catch (error) {
-      clearVoiceStartTimer();
-      voiceRecognition = null;
-      voiceListening = false;
-      voiceHadError = true;
-      updateVoiceInputAvailability();
-      setAgentStatus("Voice input failed to start");
-      log("Voice input failed to start: " + (error && error.message ? error.message : error));
-    }
-  }
-
-  function startVoiceInput() {
-    var Recognition = speechRecognitionConstructor();
-    if (chatInFlight || voiceStartPending) return;
-    rememberVoicePromptRange();
-    voiceHadError = false;
-    if (voiceUseApiTranscription || !Recognition) {
-      startVoiceApiRecording();
-      return;
-    }
-
-    voiceStartPending = true;
-    setAgentStatus("Checking microphone...");
-    updateVoiceInputAvailability();
-    requestMicrophoneAccess(function (error) {
-      voiceStartPending = false;
-      if (error) {
-        voiceHadError = true;
-        var message = microphoneAccessErrorMessage(error);
-        setAgentStatus(message);
-        log("Voice input: " + message);
-        updateVoiceInputAvailability();
-        return;
-      }
-      beginVoiceRecognition(Recognition);
-    });
-  }
-
-  function toggleVoiceInput() {
-    if (voiceListening) stopVoiceInput();
-    else startVoiceInput();
   }
 
   function setSidebarCollapsed(collapsed) {
@@ -1891,7 +1419,6 @@
 
   function sendChat() {
     if (chatInFlight) return;
-    if (voiceListening || voiceApiRecording) stopVoiceInput();
     var prompt = trimText(chatPromptEl.value);
     if (!prompt) return;
 
@@ -2092,8 +1619,6 @@
     });
   });
   promptOptimizationEl.addEventListener("change", onPromptOptimizationChanged);
-  voiceInputButton.addEventListener("click", toggleVoiceInput);
-  voiceLanguageEl.addEventListener("change", onVoiceLanguageChanged);
   dryRunPlanButton.addEventListener("click", function () {
     runLastPlan(true);
   });
@@ -2116,8 +1641,6 @@
   freeModelsOnlyEl.checked = localStorage.getItem("codexAeFreeModelsOnly") === "1";
   promptOptimizationEl.checked = localStorage.getItem("codexAePromptOptimization") === "1";
   updatePromptOptimizationLabel();
-  setVoiceLanguage(localStorage.getItem("codexAeVoiceLanguage") || "ru", false);
-  updateVoiceInputAvailability();
   setChatMode(localStorage.getItem("codexAeChatMode") || "plan");
   setSidebarCollapsed(localStorage.getItem("codexAeSidebarCollapsed") === "1");
   setDiagnosticsOpen(localStorage.getItem("codexAeDiagnosticsOpen") === "1");

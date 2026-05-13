@@ -38,6 +38,7 @@
 - [x] Milestone 34: Voice input microphone permission hardening.
 - [x] Milestone 35: Voice input API transcription fallback.
 - [x] Milestone 36: Project relocation to `C:\Users\Ant\Documents\Codex\AE_agent`.
+- [x] Milestone 37: Remove built-in CEP voice input.
 
 ## Milestones
 
@@ -281,6 +282,14 @@
 - Refresh the user's Codex MCP `after-effects` entry after the move so the adapter launches from the new path.
 - Keep runtime logs, checkpoints, and local secrets ignored by git after relocation.
 
+### Milestone 37: Remove built-in CEP voice input
+
+- Remove the microphone button and voice language selector from the CEP composer.
+- Remove panel Web Speech, microphone permission, MediaRecorder, and API transcription fallback logic.
+- Remove bridge `/voice/status` and `/voice/transcribe` endpoints and their fake OpenAI transcription smoke.
+- Remove CEP media/speech manifest flags because the panel no longer captures audio.
+- Keep external dictation supported naturally by focusing the chat textarea and letting the user's third-party tool type or paste text there.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -329,6 +338,7 @@
 - 2026-05-13: CEP Web Speech can expose `webkitSpeechRecognition` but still fail with `network`; voice input therefore needs an API transcription fallback for reliable operation.
 - 2026-05-13: Voice API transcription uses the saved OpenAI API key path and is separate from OpenAI CLI/ChatGPT subscription access.
 - 2026-05-13: The active project root is now `C:\Users\Ant\Documents\Codex\AE_agent`; tracked examples should point there while ignored runtime state remains local-only.
+- 2026-05-13: Built-in CEP voice capture is removed. Speech-to-text is now owned by the user's external dictation tool, which inserts text into the focused chat textarea without panel microphone UI or provider-billed transcription endpoints.
 
 ## Validation
 
@@ -798,3 +808,25 @@
   - Passed `node scripts/smoke-test.js`.
   - Passed `node scripts/voice-transcription-smoke.js`.
   - Live CEP smoke was not rerun because the relocation changes do not touch installed CEP panel files.
+- Milestone 37:
+  - Removed the CEP microphone button, voice language selector, mic icon styles, and composer voice layout column.
+  - Removed panel Web Speech, microphone permission, MediaRecorder, API transcription fallback, and voice localStorage state.
+  - Removed bridge voice transcription constants, multipart OpenAI audio upload helper, `/voice/status`, and `/voice/transcribe`.
+  - Removed `scripts/voice-transcription-smoke.js` and the mocked `voice-input-smoke` command.
+  - Removed CEP manifest media/speech flags.
+  - Updated `docs/2026-05-13-new-chat-handoff.md` to mark external dictation as the active direction.
+  - Copied updated `index.html`, `panel.js`, `style.css`, and `CSXS/manifest.xml` into the installed CEP extension.
+  - Passed static search confirming no runtime/test identifiers remain for `voiceInputButton`, `voiceLanguage`, Web Speech, MediaRecorder, `/voice/*`, or CEP media/speech flags in `cep-panel`, `mcp-server`, and `scripts`.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed XML parsing for `cep-panel\CSXS\manifest.xml`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-api-smoke.js`.
+  - Passed `node scripts/prompt-optimization-smoke.js`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+  - Passed installed CEP extension static search for removed voice/runtime identifiers.
+  - Passed `node scripts/cep-panel-cdp-smoke.js reload` against the installed CEP panel.
+  - Passed `node scripts/cep-panel-cdp-smoke.js smoke` against the installed CEP panel.

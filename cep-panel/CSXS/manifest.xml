@@ -22,8 +22,6 @@
           <CEFCommandLine>
             <Parameter>--allow-file-access</Parameter>
             <Parameter>--allow-file-access-from-files</Parameter>
-            <Parameter>--enable-media-stream</Parameter>
-            <Parameter>--enable-speech-input</Parameter>
           </CEFCommandLine>
         </Resources>
         <Lifecycle>
