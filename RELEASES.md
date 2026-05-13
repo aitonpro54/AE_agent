@@ -20,6 +20,7 @@ Added:
 - CEP history smoke command: `node scripts\cep-panel-cdp-smoke.js history-smoke`.
 - OpenAI API setup-state model labels, for example `GPT-5.5 (No API key)`, plus `openai-api-setup-smoke`.
 - Friendly bridge offline state plus `offline-smoke` for the installed CEP panel.
+- Automatic status refresh after launching `Sign in with ChatGPT` from `OpenAI -> CLI`.
 
 Changed:
 
@@ -31,6 +32,7 @@ Changed:
 - The live CEP smoke now verifies the new agent details and check-model flow.
 - The reference `Trial Version` / `License...` strip is intentionally omitted from the CEP UI; this project has no app license gate.
 - The CEP panel now reports `Bridge offline` instead of raw `HTTP 0` or network errors when the local daemon is not reachable.
+- After launching ChatGPT sign-in, the panel waits and refreshes provider readiness automatically for a short window.
 - Daemon, adapter, CEP panel, manifest, install note, and smoke tests report version `0.26.0`.
 
 ## v0.25.0-safe-run - 2026-05-12

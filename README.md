@@ -99,7 +99,7 @@ $env:OLLAMA_CLOUD_API_KEY="..."
 $env:OLLAMA_CLOUD_MODEL="..."
 ```
 
-OpenAI has two separate paths. `openai-api` uses `OPENAI_API_KEY` and normal OpenAI API billing. `openai-cli` uses the local Codex CLI and the user's ChatGPT/Codex sign-in; use the panel's `Sign in with ChatGPT` button or run `codex login`, then the bridge can call `codex exec --ephemeral --json --sandbox read-only` for CLI-backed chat and AE Plan drafting. No OpenAI API key is used for the CLI path.
+OpenAI has two separate paths. `openai-api` uses `OPENAI_API_KEY` and normal OpenAI API billing. `openai-cli` uses the local Codex CLI and the user's ChatGPT/Codex sign-in; use the panel's `Sign in with ChatGPT` button or run `codex login`, then the bridge can call `codex exec --ephemeral --json --sandbox read-only` for CLI-backed chat and AE Plan drafting. After launching sign-in from the panel, the panel refreshes readiness automatically for a short window. No OpenAI API key is used for the CLI path.
 
 `OPENROUTER_MODEL` can be any OpenRouter model id, a `:free` variant, or the `openrouter/free` router. The default is `nvidia/nemotron-3-super-120b-a12b:free`, chosen from OpenRouter's May 2026 top free model list for agentic/coding workflows. Local Ollama defaults to `gemma4:latest`, uses `/api/chat`, and lists installed models from `/api/tags`. Ollama Cloud and custom providers use OpenAI-compatible `/chat/completions` and `/models` endpoints.
 

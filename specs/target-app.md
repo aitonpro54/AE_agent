@@ -26,7 +26,7 @@ ChatGPT subscription access must not be represented as a normal OpenAI API key. 
 - The bridge checks whether `codex` is installed and whether CLI auth appears usable.
 - The bridge runs subscription-backed requests through `codex exec --ephemeral --json --sandbox read-only --model <model> <prompt>`.
 - The bridge parses the final assistant message from the JSONL stream and normalizes it into the existing agent result shape.
-- If CLI auth is missing, the UI offers a `Sign in with ChatGPT` action that launches the local Codex CLI login flow. Manual `codex login` remains a fallback.
+- If CLI auth is missing, the UI offers a `Sign in with ChatGPT` action that launches the local Codex CLI login flow and refreshes readiness automatically for a short window. Manual `codex login` remains a fallback.
 
 OpenAI API key access remains separate:
 

@@ -15,6 +15,7 @@
 - [x] Milestone 11: OpenAI API setup-state model labels.
 - [x] Milestone 12: Panel-launched ChatGPT sign-in for OpenAI CLI.
 - [x] Milestone 13: Bridge offline UX.
+- [x] Milestone 14: ChatGPT sign-in status polling.
 
 ## Milestones
 
@@ -107,6 +108,12 @@
 - Keep the panel as a bridge client; starting the bridge remains owned by Codex/MCP startup or the existing helper scripts.
 - Add a live CEP offline smoke that points the panel at an unused local port, verifies the friendly state, and restores the user's bridge settings.
 
+### Milestone 14: ChatGPT sign-in status polling
+
+- After `OpenAI -> CLI -> Sign in with ChatGPT` launches, keep the panel in a waiting state and refresh provider readiness automatically for a short window.
+- Stop polling once Codex CLI reports ChatGPT auth, when the bridge goes offline, or when the timeout expires.
+- Do not enable CEP Node process execution just to start local services from the panel.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -124,6 +131,7 @@
 - 2026-05-13: Model dropdown setup suffixes are UI labels only; option values remain canonical model ids such as `gpt-5.5`.
 - 2026-05-13: `Sign in with ChatGPT` launches the official local Codex CLI login flow from the bridge daemon; manual `codex login` remains a fallback for troubleshooting.
 - 2026-05-13: CEP bridge offline handling should be friendly but non-magical; the panel reports offline clearly and keeps retrying, while process startup stays in the Codex/MCP layer.
+- 2026-05-13: Keep direct process launching out of the CEP panel for v1; sign-in/status follow-up can be handled safely through the already-running bridge daemon.
 
 ## Validation
 
@@ -247,6 +255,17 @@
   - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
   - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `node scripts/cep-panel-cdp-smoke.js offline-smoke`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+- Milestone 14:
+  - Added automatic short-window provider refresh after `Sign in with ChatGPT` launches.
+  - Added stop conditions for completed Codex CLI login, bridge offline, disconnect, reload, and timeout.
+  - Copied updated `panel.js` into the installed CEP extension.
+  - Passed `node --check cep-panel/panel.js`.
+  - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js openai-cli-setup-smoke` with a temporary bridge job; installed panel showed Codex CLI signed in.
   - Passed `git diff --check`.
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.

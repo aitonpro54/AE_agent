@@ -67,6 +67,8 @@
   var readinessInFlight = false;
   var lastPlanResult = null;
   var lastPollErrorMessage = "";
+  var setupStatusTimer = null;
+  var setupStatusUntil = 0;
   var BRIDGE_OFFLINE_MESSAGE = "Bridge offline. Start the local bridge from Codex, then click Connect.";
 
   function setAppTitle(version) {
@@ -369,6 +371,50 @@
     }
   }
 
+  function stopSetupStatusPolling() {
+    if (setupStatusTimer) clearTimeout(setupStatusTimer);
+    setupStatusTimer = null;
+    setupStatusUntil = 0;
+  }
+
+  function pollSetupStatus() {
+    if (!setupStatusUntil) return;
+    if (Date.now() > setupStatusUntil) {
+      stopSetupStatusPolling();
+      if (agentSelect.value === "openai-cli") {
+        setAgentStatus("Finish ChatGPT sign-in, then check model");
+      }
+      return;
+    }
+
+    loadAgents({
+      quiet: true,
+      afterLoad: function (_agent, error) {
+        if (error) {
+          if (isBridgeOfflineError(error)) stopSetupStatusPolling();
+          else setupStatusTimer = setTimeout(pollSetupStatus, 5000);
+          return;
+        }
+        var cliAgent = findAgent("openai-cli");
+        var signedIn = cliAgent && cliAgent.codexStatus && cliAgent.codexStatus.loggedIn;
+        if (signedIn) {
+          stopSetupStatusPolling();
+          if (agentSelect.value === "openai-cli") setAgentStatus("ChatGPT sign-in complete");
+          return;
+        }
+        if (agentSelect.value === "openai-cli") setAgentStatus("Waiting for ChatGPT sign-in...");
+        setupStatusTimer = setTimeout(pollSetupStatus, 5000);
+      }
+    });
+  }
+
+  function startSetupStatusPolling() {
+    stopSetupStatusPolling();
+    setupStatusUntil = Date.now() + 120000;
+    if (agentSelect.value === "openai-cli") setAgentStatus("Waiting for ChatGPT sign-in...");
+    setupStatusTimer = setTimeout(pollSetupStatus, 2500);
+  }
+
   function updateProviderUi(agent) {
     var group = agentGroup(agent) || localStorage.getItem("codexAeProviderGroup") || "openai";
     var authMode = agent && agent.authMode ? agent.authMode : openAiAuthMode();
@@ -480,6 +526,9 @@
 
   function updateSelectedAgent() {
     var agent = findAgent(agentSelect.value);
+    if (agent && agent.id === "openai-cli" && agent.codexStatus && agent.codexStatus.loggedIn) {
+      stopSetupStatusPolling();
+    }
     updateModelList(agent);
     setAgentDetails(agent);
     updateProviderUi(agent);
@@ -528,8 +577,9 @@
     updateKeyAvailability();
   }
 
-  function loadAgents() {
-    setAgentStatus("Loading...");
+  function loadAgents(options) {
+    options = options || {};
+    if (!options.quiet) setAgentStatus("Loading...");
     var freeOnly = freeModelsOnlyEl.checked ? "1" : "0";
     request("GET", "/agents?includeModels=1&freeOnly=" + freeOnly, null, function (error, response) {
       if (error) {
@@ -540,6 +590,7 @@
         if (isBridgeOfflineError(error)) setBridgeOffline(error);
         updateChatAvailability();
         updateKeyAvailability();
+        if (options.afterLoad) options.afterLoad(null, error);
         return;
       }
 
@@ -548,6 +599,7 @@
       if (!agents.length) {
         addOption(agentSelect, "", "No agents");
         updateSelectedAgent();
+        if (options.afterLoad) options.afterLoad(null, null);
         return;
       }
 
@@ -565,6 +617,7 @@
       if (!findAgent(savedAgentId)) savedAgentId = agents[0].id;
       agentSelect.value = savedAgentId;
       updateSelectedAgent();
+      if (options.afterLoad) options.afterLoad(findAgent(agentSelect.value), null);
     });
   }
 
@@ -1083,12 +1136,16 @@
 
       var setup = response && response.setup ? response.setup : {};
       if (setup.agent && setup.agent.codexStatus) agent.codexStatus = setup.agent.codexStatus;
-      setAgentStatus(setup.launched ? "Finish ChatGPT sign-in, then check model" : "Sign-in ready");
-      agentSetupTextEl.textContent = setup.message || "Finish ChatGPT sign-in, then refresh or check the model.";
+      setAgentStatus(setup.launched ? "Waiting for ChatGPT sign-in..." : "Sign-in ready");
+      agentSetupTextEl.textContent = setup.launched ? "Finish ChatGPT sign-in; the panel will refresh this status automatically." : (setup.message || "Sign-in setup is ready.");
       setAgentDetails(agent);
       updateProviderUi(agent);
       updateKeyAvailability();
-      setTimeout(loadAgents, 2500);
+      if (setup.launched) {
+        startSetupStatusPolling();
+      } else {
+        setTimeout(loadAgents, 2500);
+      }
     });
   }
 
@@ -1371,6 +1428,7 @@
     running = false;
     pollInFlight = false;
     lastPollErrorMessage = "";
+    stopSetupStatusPolling();
     if (pollTimer) clearTimeout(pollTimer);
     localStorage.setItem("codexAeBridgeAutoConnect", "0");
     setStatus("Disconnected", false);
@@ -1381,6 +1439,7 @@
   function reloadApp() {
     running = false;
     pollInFlight = false;
+    stopSetupStatusPolling();
     if (pollTimer) clearTimeout(pollTimer);
     log("Reloading app");
     window.location.reload();
