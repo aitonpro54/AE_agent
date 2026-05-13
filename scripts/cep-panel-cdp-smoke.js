@@ -124,6 +124,16 @@ async function evaluate(send, expression) {
   return response.result && response.result.result ? response.result.result.value : null;
 }
 
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function reloadActivePage(send) {
+  await send("Page.enable");
+  await send("Page.reload", { ignoreCache: true });
+  await delay(3000);
+}
+
 function stateExpression() {
   return `(() => ({
     title: document.title,
@@ -132,8 +142,12 @@ function stateExpression() {
     agentStatus: document.getElementById("agentStatus") ? document.getElementById("agentStatus").textContent : "",
     agentValue: document.getElementById("agentSelect") ? document.getElementById("agentSelect").value : "",
     agentOptions: Array.from(document.querySelectorAll("#agentSelect option")).map((option) => ({ value: option.value, text: option.textContent })),
+    agentDetails: document.getElementById("agentDetails") ? document.getElementById("agentDetails").innerText : "",
     model: document.getElementById("agentModel") ? document.getElementById("agentModel").value : "",
+    freeModelsVisible: document.getElementById("freeModelsRow") ? document.getElementById("freeModelsRow").style.display !== "none" : null,
+    freeModelsChecked: document.getElementById("freeModelsOnly") ? document.getElementById("freeModelsOnly").checked : null,
     mode: document.getElementById("chatMode") ? document.getElementById("chatMode").value : "",
+    checkDisabled: document.getElementById("checkAgentButton") ? document.getElementById("checkAgentButton").disabled : null,
     sendDisabled: document.getElementById("sendChatButton") ? document.getElementById("sendChatButton").disabled : null,
     dryRunDisabled: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").disabled : null,
     runDisabled: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").disabled : null,
@@ -170,6 +184,7 @@ function setupExpression() {
     localStorage.setItem("codexAeBridgeUrl", ${JSON.stringify(BRIDGE_URL)});
     localStorage.setItem("codexAeBridgeToken", ${JSON.stringify(BRIDGE_TOKEN)});
     localStorage.setItem("codexAeBridgeAutoConnect", "1");
+    window.__codexPanelConfirmMessages = [];
 
     const clearButton = document.getElementById("clearChatButton");
     if (clearButton) clearButton.click();
@@ -244,6 +259,7 @@ async function reloadPanel() {
 async function smoke() {
   const { page, ws, send } = await connectToPanel();
   try {
+    await reloadActivePage(send);
     await evaluate(send, setupExpression());
     await waitFor(send, "panel online", (state) => state.badge === "online", 15000);
     await waitFor(send, "agent list", (state) => state.agentOptions.some((option) => option.value === AGENT_ID), 20000);
@@ -252,8 +268,18 @@ async function smoke() {
       state.agentValue === AGENT_ID &&
       state.model === MODEL &&
       state.mode === "plan" &&
-      state.sendDisabled === false
+      state.sendDisabled === false &&
+      state.agentDetails.indexOf("Provider:") >= 0
     ), 20000);
+
+    const checked = await evaluate(send, clickExpression("checkAgentButton"));
+    if (!checked || !checked.ok) throw new Error("Check model button was not clickable.");
+    await waitFor(send, "checked agent ready", (state) => (
+      state.agentValue === AGENT_ID &&
+      state.model === MODEL &&
+      state.sendDisabled === false &&
+      state.checkDisabled === false
+    ), 30000);
 
     const sent = await evaluate(send, clickExpression("sendChatButton"));
     if (!sent || !sent.ok) throw new Error("Send button was not clickable.");
@@ -293,6 +319,7 @@ async function smoke() {
       planned: {
         agent: planned.agentValue,
         model: planned.model,
+        agentDetails: planned.agentDetails,
         transcriptTail: planned.transcript.slice(-3000)
       },
       dryRun: {
@@ -358,6 +385,7 @@ async function mutatingSmoke() {
   let cleanup = null;
 
   try {
+    await reloadActivePage(send);
     await evaluate(send, setupExpression());
     await waitFor(send, "panel online", (state) => state.badge === "online", 15000);
     await waitFor(send, "agent list", (state) => state.agentOptions.some((option) => option.value === AGENT_ID), 20000);
@@ -396,6 +424,7 @@ async function mutatingSmoke() {
     const run = await waitFor(send, "mutating run result", (state) => {
       if (state.sendDisabled !== false) return false;
       if (state.transcript.indexOf("Run: ok") >= 0) return true;
+      if (state.transcript.indexOf("Run: needs review") >= 0 && state.transcript.indexOf(name) >= 0) return true;
       if (state.transcript.indexOf("Save the After Effects project first") >= 0) return true;
       if (state.transcript.indexOf("Save project first") >= 0) return true;
       return false;

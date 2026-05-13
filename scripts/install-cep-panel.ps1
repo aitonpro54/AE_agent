@@ -21,4 +21,4 @@ foreach ($Version in 7..13) {
 
 Write-Host "Installed CEP panel to: $Destination"
 Write-Host "Enabled PlayerDebugMode for CSXS.7 through CSXS.13"
-Write-Host "Restart After Effects, then open Window > Extensions > Codex AE MCP Bridge v0.25.0"
+Write-Host "Restart After Effects, then open Window > Extensions > Codex AE MCP Bridge v0.26.0"

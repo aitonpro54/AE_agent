@@ -1,5 +1,6 @@
 snapshots/*.zip
 logs/*.jsonl
+logs/*.png
 backups/*.aep
 backups/*.aepx
 .codex/

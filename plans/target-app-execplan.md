@@ -7,6 +7,7 @@
 - [x] Milestone 3: AE GPT-style CEP layout.
 - [x] Milestone 4: Chat/Agent UX parity and prompt optimization.
 - [x] Milestone 5: Full validation and release notes.
+- [x] Milestone 6: Installed CEP panel live validation.
 
 ## Milestones
 
@@ -47,6 +48,14 @@
 - Run live CEP smoke only when After Effects and the panel are available.
 - Record all validation results here before marking the milestone complete.
 
+### Milestone 6: Installed CEP panel live validation
+
+- Copy the updated repo CEP files into the installed Adobe CEP extension.
+- Reload the live CEP panel through the DevTools target.
+- Run read-only live CEP smoke.
+- Run protected mutating live CEP smoke with generated `Codex Test Safe Run` items and cleanup.
+- Keep generated smoke preview/log artifacts out of git.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -56,6 +65,7 @@
 - 2026-05-13: Existing dirty worktree must be preserved; commits should stage only the current milestone changes.
 - 2026-05-13: Gemini and Claude remain disabled UI placeholders until provider implementations are intentionally added.
 - 2026-05-13: Static local Chrome preview is the repo UI smoke for this milestone; live CEP smoke requires copying the changed panel files into the installed Adobe CEP extension first.
+- 2026-05-13: Installed CEP validation copies only changed panel files into `C:\Users\Ant\AppData\Roaming\Adobe\CEP\extensions\com.codex.aemcpbridge`; registry/debug settings are not changed.
 
 ## Validation
 
@@ -89,3 +99,15 @@
   - Passed `node scripts/smoke-test.js`.
   - Passed static Chrome preview of `cep-panel/index.html`; screenshot written to `logs/panel-preview.png`.
   - `node scripts/cep-panel-cdp-smoke.js inspect` reached the installed CEP panel, but it points at the older AppData extension copy. Run live `smoke` after copying the updated repo panel into the installed CEP extension.
+- Milestone 6:
+  - Copied `index.html`, `panel.js`, `style.css`, and `CSXS/manifest.xml` into the installed CEP extension.
+  - Reloaded the installed CEP panel through `node scripts/cep-panel-cdp-smoke.js reload`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js smoke` against the installed panel with `ollama-local` / `gemma4:latest`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js mutating-smoke`; it created `Codex Test Safe Run 48750199`, used `auto_edit_session` with checkpoint `Intro_full-checkpoint-session-ai-plan-9d280408-2026-05-13T05-06-10-468Z.aep`, then cleanup removed the temporary comp.
+  - Passed `node --check mcp-server/mcp-adapter.js`.
+  - Passed `node --check scripts/bridge-only-smoke-test.js`.
+  - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
+  - Passed XML parsing for `cep-panel/CSXS/manifest.xml`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
