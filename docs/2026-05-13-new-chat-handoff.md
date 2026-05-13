@@ -1,16 +1,23 @@
 # AE Agent Handoff - 2026-05-13
 
-This handoff is for starting a fresh Codex chat in:
+This handoff is for continuing the current AE Agent repository.
+
+Repository:
 
 `C:\Users\Ant\Documents\Codex\AE_agent`
 
-Respond to the user in Russian. The user prefers direct execution after a short status/plan update.
+Respond to the user in Russian unless they explicitly ask otherwise. The user prefers direct execution after a short status update.
 
 ## Current Goal
 
-Build and harden the local After Effects panel app described in `specs/target-app.md`, following `plans/target-app-execplan.md`.
+Continue building AE Agent as a local After Effects AI panel backed by the bridge daemon and validated MCP tools.
 
-The latest product decision is that speech-to-text is handled by a third-party/external dictation tool. AE Agent should not contain its own microphone button, browser speech-recognition flow, MediaRecorder fallback, or provider-billed transcription endpoint.
+The current roadmap is focused on:
+
+- stronger Agent planning;
+- more typed After Effects tools;
+- safer mutation validation and reporting;
+- faster live validation for the installed CEP panel.
 
 ## Required Reading In New Chat
 
@@ -24,8 +31,8 @@ Before coding, read:
 Relevant skills:
 
 - `cep-panel-controls` when touching the CEP composer/UI.
-- `ae-mcp-bridge-workflow` when restarting or validating the local bridge/panel.
-- `ae-safe-project-automation` when mutating live AE projects.
+- `ae-mcp-bridge-workflow` when changing bridge tools, daemon behavior, or validation.
+- `ae-safe-project-automation` when mutating live AE projects during validation.
 - `openai-docs` only if the user asks for current OpenAI API/product details.
 
 ## Git State At Handoff
@@ -34,35 +41,24 @@ Branch:
 
 `codex-v0.26-agent-ux-polish`
 
-Recent project movement commit:
+Recent stable commit:
 
 ```text
-883ed1f Update project relocation paths
+9954391 Latest stable cleanup milestone
 ```
-
-## Voice Input Decision
-
-The previously built in-panel voice experiments were removed from the product path:
-
-- CEP composer no longer has a microphone button or language selector.
-- `cep-panel/panel.js` no longer contains Web Speech, microphone permission, MediaRecorder, or audio transcription fallback logic.
-- The bridge no longer exposes `/voice/status` or `/voice/transcribe`.
-- `scripts/voice-transcription-smoke.js` and the mocked `voice-input-smoke` live test were removed.
-- CEP manifest media/speech flags were removed because the panel no longer captures audio.
-
-External dictation can still type or paste into the focused `chatPrompt` textarea. This keeps speech input independent from the selected AI provider and from OpenAI API billing.
 
 ## Current Behavior
 
-- Chat and Agent modes remain provider-backed through the bridge.
-- OpenAI CLI and OpenAI API access remain separate:
-  - `OpenAI -> CLI` is ChatGPT/Codex subscription access.
-  - `OpenAI -> API` is normal API billing for provider calls.
-- The composer now has only the prompt textarea and the `>` send button in the prompt row.
+- The native CEP title/menu format is `AE Agent 1.0.0`.
+- Chat and Agent modes run through the local bridge daemon.
+- OpenAI API, OpenAI CLI, Gemini, Claude, and Local/Ollama provider paths remain separate.
+- Agent mode drafts a structured plan, validates it against real MCP tools, dry-runs it, and only executes with explicit mutation gates.
+- Project-changing tools use idempotency metadata, optional checkpoints, edit-session protection, and post-mutation verification.
+- Raw ExtendScript remains an escape hatch; product work should prefer narrow typed bridge tools.
 
 ## Validation To Prefer
 
-For this removal milestone, run:
+Run:
 
 ```powershell
 node --check cep-panel\panel.js
@@ -76,7 +72,7 @@ node scripts\bridge-only-smoke-test.js
 node scripts\smoke-test.js
 ```
 
-If the installed AE CEP panel is available, copy changed CEP files only and run:
+When After Effects and the installed panel are available, copy only changed CEP files and run:
 
 ```powershell
 node scripts\cep-panel-cdp-smoke.js reload
@@ -87,14 +83,6 @@ Installed extension path:
 
 `C:\Users\Ant\AppData\Roaming\Adobe\CEP\extensions\com.codex.aemcpbridge`
 
-## Suggested Opening Prompt For New Chat
+## Next Recommended Step
 
-```text
-Continue AE Agent in Russian. Read:
-C:\Users\Ant\Documents\Codex\AE_agent\AGENTS.md
-C:\Users\Ant\Documents\Codex\AE_agent\specs\target-app.md
-C:\Users\Ant\Documents\Codex\AE_agent\plans\target-app-execplan.md
-C:\Users\Ant\Documents\Codex\AE_agent\docs\2026-05-13-new-chat-handoff.md
-
-Do not restart from scratch. First check git status. Built-in CEP voice input has been removed; external dictation is expected to type into the focused chat textarea.
-```
+Continue with Milestone 39 in `plans/target-app-execplan.md`: improve Agent planning quality, then add the planned typed tool groups milestone by milestone.
