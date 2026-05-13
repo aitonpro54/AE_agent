@@ -143,8 +143,11 @@ async function reloadActivePage(send) {
 function stateExpression() {
   return `(() => ({
     title: document.title,
+    windowBarExists: !!document.querySelector(".window-bar"),
     windowBarText: document.querySelector(".window-bar") ? document.querySelector(".window-bar").innerText : "",
+    appTitleExists: !!document.getElementById("appTitle"),
     appTitle: document.getElementById("appTitle") ? document.getElementById("appTitle").textContent : "",
+    appVersionExists: !!document.getElementById("appVersion"),
     appVersion: document.getElementById("appVersion") ? document.getElementById("appVersion").textContent : "",
     status: document.getElementById("status") ? document.getElementById("status").textContent : "",
     badge: document.getElementById("badge") ? document.getElementById("badge").textContent : "",
@@ -944,11 +947,14 @@ async function brandingSmoke() {
   try {
     await reloadActivePage(send);
     const state = await waitFor(send, "AE Agent branding", (item) => (
-      item.title === "AE Agent v0.27.0" &&
-      item.windowBarText.indexOf("AE Agent v0.27.0") >= 0 &&
+      item.title === "AE Agent 1.0.0" &&
+      item.windowBarExists === false &&
+      item.windowBarText === "" &&
       item.windowBarText.indexOf("AE GPT") < 0 &&
-      item.appTitle === "AE Agent" &&
-      item.appVersion === "v0.27.0"
+      item.appTitleExists === false &&
+      item.appTitle === "" &&
+      item.appVersionExists === false &&
+      item.appVersion === ""
     ), 10000);
 
     console.log(JSON.stringify({
@@ -956,8 +962,11 @@ async function brandingSmoke() {
       page: { title: page.title, url: page.url },
       branding: {
         title: state.title,
+        windowBarExists: state.windowBarExists,
         windowBarText: state.windowBarText,
+        appTitleExists: state.appTitleExists,
         appTitle: state.appTitle,
+        appVersionExists: state.appVersionExists,
         appVersion: state.appVersion
       }
     }, null, 2));

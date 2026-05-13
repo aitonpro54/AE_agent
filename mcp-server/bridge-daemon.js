@@ -8,7 +8,7 @@ const path = require("path");
 const aiAgents = require("./ai-agents");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "0.27.0";
+const SERVER_VERSION = "1.0.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);

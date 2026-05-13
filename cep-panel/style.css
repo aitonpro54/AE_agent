@@ -20,31 +20,12 @@ body {
   overflow: hidden;
 }
 
-.window-bar {
-  align-items: center;
-  background: #202020;
-  border: 1px solid #2997f5;
-  border-bottom: 0;
-  color: #ffffff;
-  display: flex;
-  font-size: 12px;
-  gap: 8px;
-  height: 31px;
-  padding: 0 10px;
-}
-
-.menu-mark {
-  color: #9da6ad;
-  font-size: 14px;
-}
-
 .app-shell {
   border: 1px solid #2997f5;
-  border-top: 0;
   display: grid;
   grid-template-columns: 282px minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto;
-  height: calc(100vh - 31px);
+  height: 100vh;
   min-height: 0;
 }
 
@@ -61,9 +42,9 @@ body {
   align-items: center;
   border-bottom: 1px solid #353535;
   display: flex;
-  justify-content: space-between;
-  min-height: 46px;
-  padding: 0 16px;
+  justify-content: flex-end;
+  min-height: 36px;
+  padding: 0 8px;
 }
 
 h1,
@@ -586,8 +567,7 @@ button:disabled {
   overflow: hidden;
 }
 
-.sidebar-collapsed .sidebar section,
-.sidebar-collapsed .sidebar h1 {
+.sidebar-collapsed .sidebar section {
   display: none;
 }
 

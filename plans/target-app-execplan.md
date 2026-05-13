@@ -27,6 +27,7 @@
 - [x] Milestone 23: MCP provider descriptions.
 - [x] Milestone 24: README provider command examples.
 - [x] Milestone 25: AE Agent rename and version bump.
+- [x] Milestone 26: AE Agent 1.0.0 single-title cleanup.
 
 ## Milestones
 
@@ -195,6 +196,13 @@
 - Update CEP title/header/sidebar, manifest menu, install note, startup task helper defaults, smoke-test expectations, release notes, and target spec.
 - Preserve stable internal ids and provider implementations; do not change Claude or Gemini provider behavior.
 
+### Milestone 26: AE Agent 1.0.0 single-title cleanup
+
+- Remove duplicate in-panel product names from the custom top bar and sidebar heading.
+- Set the native/document/manifest title format to `AE Agent 1.0.0`.
+- Bump the daemon, adapter, CEP panel, manifest, install note, and smoke expectations to `1.0.0`.
+- Preserve Claude and Gemini provider behavior unchanged.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -227,6 +235,8 @@
 - 2026-05-13: The visible product name is `AE Agent`; the panel title should always include the current version after branding changes.
 - 2026-05-13: Keep stable technical ids such as `com.codex.aemcpbridge` and `codex-ae-mcp-bridge` for compatibility while changing user-facing names.
 - 2026-05-13: Claude and Gemini provider implementations stay frozen unless the user explicitly asks to change them.
+- 2026-05-13: Current working product version is `1.0.0`; visible title format is `AE Agent 1.0.0` without a `v` prefix.
+- 2026-05-13: Keep only the native CEP title/menu product name; remove duplicate in-panel product title rows.
 
 ## Validation
 
@@ -509,3 +519,23 @@
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.
   - Passed `node scripts/cep-panel-cdp-smoke.js branding-smoke` against the installed CEP panel.
+- Milestone 26:
+  - Removed the duplicate in-panel custom top bar and sidebar product heading.
+  - Set CEP document title and manifest/menu title to `AE Agent 1.0.0`.
+  - Bumped daemon, adapter, CEP panel, manifest, install note, and smoke expectations to `1.0.0`.
+  - Left Claude and Gemini provider behavior unchanged.
+  - Copied updated `index.html`, `panel.js`, `style.css`, and `CSXS/manifest.xml` into the installed CEP extension.
+  - Passed `node --check cep-panel/panel.js`.
+  - Passed `node --check mcp-server/bridge-daemon.js`.
+  - Passed `node --check mcp-server/mcp-adapter.js`.
+  - Passed `node --check scripts/bridge-only-smoke-test.js`.
+  - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
+  - Passed `node --check scripts/smoke-test.js`.
+  - Passed XML parsing for `cep-panel/CSXS/manifest.xml`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-api-smoke.js`.
+  - Passed `node scripts/prompt-optimization-smoke.js`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js branding-smoke` against the installed CEP panel; the actual document title is `AE Agent 1.0.0`, duplicate title DOM nodes are absent, and the DevTools target metadata may keep the old title until the host panel target refreshes.
+  - Passed `git diff --check`.

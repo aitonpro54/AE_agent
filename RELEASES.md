@@ -1,5 +1,15 @@
 # AE Agent Releases
 
+## v1.0.0-single-title - 2026-05-13
+
+Product title cleanup for AE Agent 1.0.0.
+
+Changed:
+
+- Top/native CEP title and manifest menu now use `AE Agent 1.0.0`.
+- Removed the duplicate in-panel title bar and sidebar product heading.
+- Daemon, adapter, CEP panel, manifest, install note, and smoke tests report version `1.0.0`.
+
 ## v0.27.0-ae-agent-rename - 2026-05-13
 
 Product rename to AE Agent.

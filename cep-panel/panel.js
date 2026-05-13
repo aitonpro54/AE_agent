@@ -2,7 +2,7 @@
 
 (function () {
   var APP_NAME = "AE Agent";
-  var APP_VERSION = "0.27.0";
+  var APP_VERSION = "1.0.0";
 
   var cs = new CSInterface();
   var appShellEl = document.getElementById("appShell");
@@ -74,10 +74,10 @@
 
   function setAppTitle(version) {
     var normalizedVersion = version || APP_VERSION;
-    var title = APP_NAME + " v" + normalizedVersion.replace(/^v/i, "");
+    var title = APP_NAME + " " + normalizedVersion.replace(/^v/i, "");
     document.title = title;
-    titleEl.textContent = APP_NAME;
-    versionEl.textContent = "v" + normalizedVersion.replace(/^v/i, "");
+    if (titleEl) titleEl.textContent = APP_NAME;
+    if (versionEl) versionEl.textContent = normalizedVersion.replace(/^v/i, "");
   }
 
   function log(message) {
