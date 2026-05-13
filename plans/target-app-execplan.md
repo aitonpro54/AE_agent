@@ -35,6 +35,7 @@
 - [x] Milestone 31: Agent comp runtime binding hardening.
 - [x] Milestone 32: Direct Run Plan and working indicator.
 - [x] Milestone 33: Voice input in chat composer.
+- [x] Milestone 34: Voice input microphone permission hardening.
 
 ## Milestones
 
@@ -257,6 +258,13 @@
 - Keep the voice language preference in panel `localStorage` and default to `RU` because the user primarily prompts in Russian while CEP reports an English browser locale.
 - Add live CEP smoke coverage with a mocked speech recognizer so validation does not require real microphone input.
 
+### Milestone 34: Voice input microphone permission hardening
+
+- Enable CEP media-stream support in the panel manifest so microphone capture is allowed by the embedded CEF runtime.
+- Check microphone access before starting speech recognition and show a clear blocked/busy/missing microphone status instead of silently listening forever.
+- Add a no-activity timeout for speech recognition sessions that start but never receive native microphone/speech events.
+- Keep mocked voice smoke independent of a real microphone by stubbing both speech recognition and `getUserMedia`.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -301,6 +309,7 @@
 - 2026-05-13: Model calls and plan runs should show a lightweight transient chat working indicator so the panel feels alive during long provider responses.
 - 2026-05-13: Voice input v1 uses CEP's built-in `webkitSpeechRecognition` path because the installed panel exposes it; OpenAI audio transcription remains a possible later API-billing option, not part of this milestone.
 - 2026-05-13: Voice input should insert recognized text into the composer only and never auto-send, so Agent-mode actions remain reviewable before running.
+- 2026-05-13: CEP microphone access requires the manifest CEF media-stream flag; page reload alone may not apply new CEF command-line flags, so the installed panel/After Effects should be restarted after copying the manifest.
 
 ## Validation
 
@@ -713,3 +722,23 @@
   - Passed `node scripts/cep-panel-cdp-smoke.js reload` against the installed CEP panel; voice support reported available.
   - Passed `node scripts/cep-panel-cdp-smoke.js voice-input-smoke`; mock text inserted into the prompt and did not enter chat history.
   - Passed `node scripts/cep-panel-cdp-smoke.js smoke` against the installed CEP panel.
+- Milestone 34:
+  - Root cause: live CEP reported `microphone: denied`, `getUserMedia({ audio:true })` failed with `NotAllowedError`, and native `webkitSpeechRecognition` produced no events while the UI stayed in `Listening...`.
+  - Added `--enable-media-stream` and `--enable-speech-input` to the CEP manifest.
+  - Added microphone preflight before speech recognition starts, clearer blocked/missing/busy microphone messages, and a no-activity timeout if CEP starts listening but receives no native speech events.
+  - Updated `voice-input-smoke` to mock both speech recognition and `getUserMedia`.
+  - Copied updated `panel.js` and `CSXS/manifest.xml` into the installed CEP extension.
+  - Verified the installed manifest contains `--enable-media-stream` and `--enable-speech-input`.
+  - Current live CEP process still reports `getUserMedia` as `NotAllowedError` until the panel/After Effects is restarted with the new manifest flags.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed XML parsing for `cep-panel\CSXS\manifest.xml`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-api-smoke.js`.
+  - Passed `node scripts/prompt-optimization-smoke.js`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js reload` against the installed CEP panel.
+  - Passed `node scripts/cep-panel-cdp-smoke.js voice-input-smoke`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js smoke`.

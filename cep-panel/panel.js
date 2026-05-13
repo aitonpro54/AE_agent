@@ -68,11 +68,14 @@
   var chatWorkingEl = null;
   var voiceRecognition = null;
   var voiceListening = false;
+  var voiceStartPending = false;
   var voiceSupported = false;
   var voicePromptPrefix = "";
   var voicePromptSuffix = "";
   var voiceFinalTranscript = "";
   var voiceHadError = false;
+  var voiceStartTimer = null;
+  var voiceSawActivity = false;
   var keySaveInFlight = false;
   var setupActionInFlight = false;
   var readinessInFlight = false;
@@ -1231,14 +1234,14 @@
   function updateVoiceInputAvailability() {
     if (!voiceInputButton) return;
     voiceSupported = !!speechRecognitionConstructor();
-    var disabled = chatInFlight || !voiceSupported;
+    var disabled = chatInFlight || voiceStartPending || !voiceSupported;
     voiceInputButton.disabled = disabled;
     voiceInputButton.setAttribute("aria-pressed", voiceListening ? "true" : "false");
-    voiceInputButton.title = voiceSupported ? (voiceListening ? "Stop voice input" : "Start voice input") : "Voice input is not supported in this CEP runtime";
+    voiceInputButton.title = voiceSupported ? (voiceStartPending ? "Checking microphone" : (voiceListening ? "Stop voice input" : "Start voice input")) : "Voice input is not supported in this CEP runtime";
     voiceInputButton.setAttribute("aria-label", voiceInputButton.title);
     toggleClass(voiceInputButton, "listening", voiceListening);
     toggleClass(voiceInputButton, "unsupported", !voiceSupported);
-    if (voiceLanguageEl) voiceLanguageEl.disabled = chatInFlight || voiceListening || !voiceSupported;
+    if (voiceLanguageEl) voiceLanguageEl.disabled = chatInFlight || voiceStartPending || voiceListening || !voiceSupported;
   }
 
   function compactVoiceText(text) {
@@ -1275,7 +1278,7 @@
   }
 
   function voiceErrorMessage(code) {
-    if (code === "not-allowed" || code === "service-not-allowed") return "Voice input blocked. Allow microphone access.";
+    if (code === "not-allowed" || code === "service-not-allowed") return "Microphone blocked. Enable microphone access for After Effects, then restart the panel.";
     if (code === "audio-capture") return "No microphone was detected.";
     if (code === "network") return "Voice input needs network access in this CEP runtime.";
     if (code === "no-speech") return "No speech was detected.";
@@ -1284,7 +1287,62 @@
     return "Voice input failed.";
   }
 
+  function microphoneAccessErrorMessage(error) {
+    var name = error && error.name ? error.name : "";
+    if (name === "NotAllowedError" || name === "PermissionDeniedError" || name === "SecurityError") {
+      return "Microphone blocked. Enable microphone access for After Effects, then restart the panel.";
+    }
+    if (name === "NotFoundError" || name === "DevicesNotFoundError") return "No microphone was detected.";
+    if (name === "NotReadableError" || name === "TrackStartError") return "Microphone is busy or unavailable.";
+    return "Could not access the microphone.";
+  }
+
+  function requestMicrophoneAccess(onDone) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      onDone(null);
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      try {
+        var tracks = stream && stream.getTracks ? stream.getTracks() : [];
+        for (var i = 0; i < tracks.length; i++) {
+          if (tracks[i] && tracks[i].stop) tracks[i].stop();
+        }
+      } catch (_trackError) {}
+      onDone(null);
+    }).catch(function (error) {
+      onDone(error || new Error("Microphone permission denied"));
+    });
+  }
+
+  function clearVoiceStartTimer() {
+    if (voiceStartTimer) clearTimeout(voiceStartTimer);
+    voiceStartTimer = null;
+  }
+
+  function markVoiceActivity() {
+    voiceSawActivity = true;
+  }
+
+  function startVoiceNoActivityTimer(recognition) {
+    clearVoiceStartTimer();
+    voiceSawActivity = false;
+    voiceStartTimer = setTimeout(function () {
+      if (voiceRecognition !== recognition || !voiceListening || voiceSawActivity || voiceFinalTranscript) return;
+      voiceHadError = true;
+      setAgentStatus("Microphone did not start. Restart After Effects after enabling microphone access.");
+      log("Voice input: microphone did not start inside CEP.");
+      try {
+        if (recognition.abort) recognition.abort();
+        else recognition.stop();
+      } catch (_abortError) {
+        finishVoiceInput(recognition);
+      }
+    }, 15000);
+  }
+
   function handleVoiceResult(event) {
+    markVoiceActivity();
     var interim = "";
     var results = event && event.results ? event.results : [];
     var start = typeof event.resultIndex === "number" ? event.resultIndex : 0;
@@ -1301,6 +1359,7 @@
   }
 
   function finishVoiceInput(recognition) {
+    clearVoiceStartTimer();
     if (voiceRecognition === recognition) voiceRecognition = null;
     voiceListening = false;
     updateVoiceInputAvailability();
@@ -1310,6 +1369,7 @@
   }
 
   function stopVoiceInput() {
+    clearVoiceStartTimer();
     if (!voiceRecognition) {
       voiceListening = false;
       updateVoiceInputAvailability();
@@ -1324,19 +1384,7 @@
     }
   }
 
-  function startVoiceInput() {
-    var Recognition = speechRecognitionConstructor();
-    if (chatInFlight) return;
-    if (!Recognition) {
-      voiceSupported = false;
-      updateVoiceInputAvailability();
-      setAgentStatus("Voice input is not supported in this CEP runtime");
-      return;
-    }
-
-    rememberVoicePromptRange();
-    voiceHadError = false;
-
+  function beginVoiceRecognition(Recognition) {
     try {
       var recognition = new Recognition();
       voiceRecognition = recognition;
@@ -1346,12 +1394,17 @@
       var language = selectedVoiceRecognitionLanguage();
       if (language) recognition.lang = language;
       recognition.onstart = function () {
+        markVoiceActivity();
         voiceListening = true;
         updateVoiceInputAvailability();
         setAgentStatus("Listening...");
       };
+      recognition.onaudiostart = markVoiceActivity;
+      recognition.onsoundstart = markVoiceActivity;
+      recognition.onspeechstart = markVoiceActivity;
       recognition.onresult = handleVoiceResult;
       recognition.onerror = function (event) {
+        clearVoiceStartTimer();
         voiceHadError = true;
         var message = voiceErrorMessage(event && event.error);
         setAgentStatus(message);
@@ -1363,8 +1416,10 @@
       voiceListening = true;
       updateVoiceInputAvailability();
       recognition.start();
+      startVoiceNoActivityTimer(recognition);
       setAgentStatus("Listening...");
     } catch (error) {
+      clearVoiceStartTimer();
       voiceRecognition = null;
       voiceListening = false;
       voiceHadError = true;
@@ -1372,6 +1427,35 @@
       setAgentStatus("Voice input failed to start");
       log("Voice input failed to start: " + (error && error.message ? error.message : error));
     }
+  }
+
+  function startVoiceInput() {
+    var Recognition = speechRecognitionConstructor();
+    if (chatInFlight || voiceStartPending) return;
+    if (!Recognition) {
+      voiceSupported = false;
+      updateVoiceInputAvailability();
+      setAgentStatus("Voice input is not supported in this CEP runtime");
+      return;
+    }
+
+    rememberVoicePromptRange();
+    voiceHadError = false;
+    voiceStartPending = true;
+    setAgentStatus("Checking microphone...");
+    updateVoiceInputAvailability();
+    requestMicrophoneAccess(function (error) {
+      voiceStartPending = false;
+      if (error) {
+        voiceHadError = true;
+        var message = microphoneAccessErrorMessage(error);
+        setAgentStatus(message);
+        log("Voice input: " + message);
+        updateVoiceInputAvailability();
+        return;
+      }
+      beginVoiceRecognition(Recognition);
+    });
   }
 
   function toggleVoiceInput() {

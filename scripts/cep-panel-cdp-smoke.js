@@ -422,6 +422,13 @@ function installVoiceMockExpression(resultText) {
         if (this.onend) this.onend({});
       };
     }
+    if (!navigator.mediaDevices) {
+      Object.defineProperty(navigator, "mediaDevices", { value: {}, configurable: true });
+    }
+    Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
+      value: () => Promise.resolve({ getTracks: () => [{ stop: () => {} }] }),
+      configurable: true
+    });
     window.SpeechRecognition = FakeSpeechRecognition;
     window.webkitSpeechRecognition = FakeSpeechRecognition;
     window.__codexVoiceEmitResult = function () {
