@@ -9,6 +9,7 @@ Changed:
 - Top/native CEP title and manifest menu now use `AE Agent 1.0.0`.
 - Removed the duplicate in-panel title bar and sidebar product heading.
 - The CEP panel now calls the native CEP `setWindowTitle` API on load, so an already-open or cached panel frame is renamed to `AE Agent 1.0.0` instead of keeping an older host title.
+- After the bridge comes online following an offline/connecting state, the CEP panel now refreshes the provider/model list automatically instead of leaving the provider area stuck in `Bridge offline`.
 - Daemon, adapter, CEP panel, manifest, install note, and smoke tests report version `1.0.0`.
 
 ## v0.27.0-ae-agent-rename - 2026-05-13

@@ -1493,8 +1493,12 @@
         return;
       }
 
+      var shouldRefreshAgents = !!lastPollErrorMessage || (badgeEl && badgeEl.textContent !== "online") || !agents.length;
       lastPollErrorMessage = "";
       setBridgeConnected();
+      if (shouldRefreshAgents) {
+        loadAgents({ quiet: true });
+      }
 
       if (response && response.command) {
         executeCommand(response.command);

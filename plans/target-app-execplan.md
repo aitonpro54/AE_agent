@@ -29,6 +29,7 @@
 - [x] Milestone 25: AE Agent rename and version bump.
 - [x] Milestone 26: AE Agent 1.0.0 single-title cleanup.
 - [x] Milestone 27: Native CEP window title sync.
+- [x] Milestone 28: Provider refresh after bridge reconnect.
 
 ## Milestones
 
@@ -210,6 +211,12 @@
 - Keep the product title as `AE Agent 1.0.0`.
 - Do not change provider implementations or bridge contracts.
 
+### Milestone 28: Provider refresh after bridge reconnect
+
+- Refresh provider/model metadata after `/bridge/next` first succeeds following an offline or connecting state.
+- Ensure the panel does not remain stuck with empty agents and a stale `Bridge offline` provider message while the bridge transport is already online.
+- Do not change provider implementations or bridge contracts.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -245,6 +252,7 @@
 - 2026-05-13: Current working product version is `1.0.0`; visible title format is `AE Agent 1.0.0` without a `v` prefix.
 - 2026-05-13: Keep only the native CEP title/menu product name; remove duplicate in-panel product title rows.
 - 2026-05-13: CEP may keep an older host-frame title after manifest changes; the panel should call native `setWindowTitle` on load to synchronize the visible AE frame title.
+- 2026-05-13: A successful bridge poll should refresh provider metadata after reconnect because the initial `/agents` request can fail while the daemon is still starting.
 
 ## Validation
 
@@ -555,6 +563,18 @@
   - Passed `node --check cep-panel/panel.js`.
   - Passed `node scripts/cep-panel-cdp-smoke.js reload`; the live DevTools page title and document title both reported `AE Agent 1.0.0`.
   - Passed `node scripts/cep-panel-cdp-smoke.js branding-smoke`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-api-smoke.js`.
+  - Passed `node scripts/prompt-optimization-smoke.js`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+  - Passed `git diff --check`.
+- Milestone 28:
+  - Updated CEP polling so the first successful bridge poll after offline/connecting refreshes provider/model metadata.
+  - Copied updated `panel.js` into the installed CEP extension.
+  - Verified live bridge health on `127.0.0.1:3456` reports `codex-ae-mcp-bridge` version `1.0.0` and sees the CEP panel.
+  - Passed `node scripts/cep-panel-cdp-smoke.js reload`; the live panel reported `Connected`, `online`, selected `openai-cli`, 6 CLI models, and enabled Send.
+  - Passed `node --check cep-panel/panel.js`.
   - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `node scripts/provider-api-smoke.js`.
   - Passed `node scripts/prompt-optimization-smoke.js`.
