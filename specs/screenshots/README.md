@@ -43,6 +43,7 @@ The screenshot references are visual and behavioral targets, not source code to 
 ## Reference 5: Collapsed/Focused Chat Layout
 
 - The provider sidebar can be collapsed or absent.
+- The collapse control should render consistently in CEP/Windows and avoid mojibake-prone glyphs.
 - The chat pane remains usable as the main surface.
 - Agent responses render step cards with icon/status color:
   - ready/pending

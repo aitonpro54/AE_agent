@@ -1139,8 +1139,9 @@
   function setSidebarCollapsed(collapsed) {
     toggleClass(appShellEl, "sidebar-collapsed", collapsed);
     localStorage.setItem("codexAeSidebarCollapsed", collapsed ? "1" : "0");
-    collapseSidebarButton.textContent = collapsed ? "›" : "‹";
+    collapseSidebarButton.textContent = collapsed ? ">" : "<";
     collapseSidebarButton.title = collapsed ? "Show provider panel" : "Collapse provider panel";
+    collapseSidebarButton.setAttribute("aria-expanded", collapsed ? "false" : "true");
   }
 
   function toggleSidebarCollapsed() {

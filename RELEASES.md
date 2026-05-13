@@ -22,6 +22,7 @@ Added:
 - Friendly bridge offline state plus `offline-smoke` for the installed CEP panel.
 - Automatic status refresh after launching `Sign in with ChatGPT` from `OpenAI -> CLI`.
 - Clickable Gemini and Claude setup placeholder tabs, plus `provider-placeholder-smoke`.
+- ASCII sidebar collapse toggle with accessibility state coverage via `sidebar-collapse-smoke`.
 
 Changed:
 
@@ -35,6 +36,7 @@ Changed:
 - The CEP panel now reports `Bridge offline` instead of raw `HTTP 0` or network errors when the local daemon is not reachable.
 - After launching ChatGPT sign-in, the panel waits and refreshes provider readiness automatically for a short window.
 - Gemini and Claude now show honest planned-provider setup states instead of dead disabled tabs.
+- The sidebar collapse button now uses ASCII `<` / `>` and updates `aria-expanded`.
 - Daemon, adapter, CEP panel, manifest, install note, and smoke tests report version `0.26.0`.
 
 ## v0.25.0-safe-run - 2026-05-12

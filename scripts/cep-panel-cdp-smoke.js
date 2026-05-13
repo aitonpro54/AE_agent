@@ -151,6 +151,10 @@ function stateExpression() {
       const active = document.querySelector("#providerTabs .provider-tab.active");
       return active ? active.getAttribute("data-provider-group") || "" : "";
     })(),
+    sidebarCollapsed: document.getElementById("appShell") ? document.getElementById("appShell").className.indexOf("sidebar-collapsed") >= 0 : null,
+    collapseButtonText: document.getElementById("collapseSidebarButton") ? document.getElementById("collapseSidebarButton").textContent : "",
+    collapseButtonTitle: document.getElementById("collapseSidebarButton") ? document.getElementById("collapseSidebarButton").title : "",
+    collapseButtonExpanded: document.getElementById("collapseSidebarButton") ? document.getElementById("collapseSidebarButton").getAttribute("aria-expanded") : null,
     agentStatus: document.getElementById("agentStatus") ? document.getElementById("agentStatus").textContent : "",
     agentValue: document.getElementById("agentSelect") ? document.getElementById("agentSelect").value : "",
     agentOptions: Array.from(document.querySelectorAll("#agentSelect option")).map((option) => ({ value: option.value, text: option.textContent })),
@@ -309,6 +313,22 @@ function writeProviderStorageExpression(values) {
     write("codexAeProviderGroup", values.providerGroup);
     write("codexAeOpenAiAuthMode", values.authMode);
     write("codexAeAgentId", values.agentId);
+    return true;
+  })()`;
+}
+
+function sidebarStorageExpression() {
+  return `(() => ({
+    collapsed: localStorage.getItem("codexAeSidebarCollapsed")
+  }))()`;
+}
+
+function writeSidebarStorageExpression(values) {
+  const storage = values || {};
+  return `(() => {
+    const value = ${JSON.stringify(storage.collapsed)};
+    if (value === null || value === undefined) localStorage.removeItem("codexAeSidebarCollapsed");
+    else localStorage.setItem("codexAeSidebarCollapsed", value);
     return true;
   })()`;
 }
@@ -641,6 +661,62 @@ async function providerPlaceholderSmoke() {
     if (backup) {
       try {
         await evaluate(send, writeProviderStorageExpression(backup));
+        await reloadActivePage(send);
+      } catch (_error) {}
+    }
+    ws.close();
+  }
+}
+
+async function sidebarCollapseSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  let backup = null;
+  try {
+    backup = await evaluate(send, sidebarStorageExpression());
+    await evaluate(send, writeSidebarStorageExpression({ collapsed: "0" }));
+    await reloadActivePage(send);
+    await waitFor(send, "sidebar expanded", (state) => (
+      state.sidebarCollapsed === false &&
+      state.collapseButtonText === "<" &&
+      state.collapseButtonExpanded === "true"
+    ), 10000);
+
+    const collapseClick = await evaluate(send, clickExpression("collapseSidebarButton"));
+    if (!collapseClick || !collapseClick.ok) throw new Error("Collapse sidebar button was not clickable.");
+    const collapsed = await waitFor(send, "sidebar collapsed", (state) => (
+      state.sidebarCollapsed === true &&
+      state.collapseButtonText === ">" &&
+      state.collapseButtonTitle === "Show provider panel" &&
+      state.collapseButtonExpanded === "false"
+    ), 10000);
+
+    const expandClick = await evaluate(send, clickExpression("collapseSidebarButton"));
+    if (!expandClick || !expandClick.ok) throw new Error("Expand sidebar button was not clickable.");
+    const expanded = await waitFor(send, "sidebar expanded again", (state) => (
+      state.sidebarCollapsed === false &&
+      state.collapseButtonText === "<" &&
+      state.collapseButtonTitle === "Collapse provider panel" &&
+      state.collapseButtonExpanded === "true"
+    ), 10000);
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      collapsed: {
+        text: collapsed.collapseButtonText,
+        title: collapsed.collapseButtonTitle,
+        ariaExpanded: collapsed.collapseButtonExpanded
+      },
+      expanded: {
+        text: expanded.collapseButtonText,
+        title: expanded.collapseButtonTitle,
+        ariaExpanded: expanded.collapseButtonExpanded
+      }
+    }, null, 2));
+  } finally {
+    if (backup) {
+      try {
+        await evaluate(send, writeSidebarStorageExpression(backup));
         await reloadActivePage(send);
       } catch (_error) {}
     }
@@ -1019,6 +1095,10 @@ async function main() {
   }
   if (command === "provider-placeholder-smoke") {
     await providerPlaceholderSmoke();
+    return;
+  }
+  if (command === "sidebar-collapse-smoke") {
+    await sidebarCollapseSmoke();
     return;
   }
   if (command === "openai-cli-smoke") {

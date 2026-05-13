@@ -17,6 +17,7 @@
 - [x] Milestone 13: Bridge offline UX.
 - [x] Milestone 14: ChatGPT sign-in status polling.
 - [x] Milestone 15: Gemini/Claude setup placeholders.
+- [x] Milestone 16: Sidebar collapse control polish.
 
 ## Milestones
 
@@ -122,6 +123,12 @@
 - Keep chat, Agent run, model check, API key save, auth mode, and local service controls disabled/hidden for placeholders.
 - Add a live CEP smoke that clicks both placeholders, verifies the UI state, and restores prior provider selection.
 
+### Milestone 16: Sidebar collapse control polish
+
+- Replace Unicode collapse glyphs with ASCII `<` / `>` to avoid CEP/Windows encoding drift.
+- Add `aria-expanded` to the provider sidebar collapse button.
+- Add a live CEP smoke that toggles collapsed and expanded states and verifies text/title/accessibility state.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -141,6 +148,7 @@
 - 2026-05-13: CEP bridge offline handling should be friendly but non-magical; the panel reports offline clearly and keeps retrying, while process startup stays in the Codex/MCP layer.
 - 2026-05-13: Keep direct process launching out of the CEP panel for v1; sign-in/status follow-up can be handled safely through the already-running bridge daemon.
 - 2026-05-13: Gemini and Claude tabs should be clickable setup placeholders, not disabled controls; real provider integrations remain out of scope until explicitly planned.
+- 2026-05-13: Use ASCII `<` / `>` for the sidebar collapse control to avoid Unicode/mojibake issues in CEP runtimes.
 
 ## Validation
 
@@ -287,6 +295,18 @@
   - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
   - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `node scripts/cep-panel-cdp-smoke.js provider-placeholder-smoke` with a temporary bridge job.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+- Milestone 16:
+  - Replaced sidebar collapse button text with ASCII `<` / `>`.
+  - Added `aria-expanded` updates for expanded/collapsed states.
+  - Added `node scripts/cep-panel-cdp-smoke.js sidebar-collapse-smoke`.
+  - Copied updated `index.html` and `panel.js` into the installed CEP extension.
+  - Passed `node --check cep-panel/panel.js`.
+  - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js sidebar-collapse-smoke`.
   - Passed `git diff --check`.
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.
