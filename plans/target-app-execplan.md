@@ -36,6 +36,7 @@
 - [x] Milestone 32: Direct Run Plan and working indicator.
 - [x] Milestone 33: Voice input in chat composer.
 - [x] Milestone 34: Voice input microphone permission hardening.
+- [x] Milestone 35: Voice input API transcription fallback.
 
 ## Milestones
 
@@ -265,6 +266,13 @@
 - Add a no-activity timeout for speech recognition sessions that start but never receive native microphone/speech events.
 - Keep mocked voice smoke independent of a real microphone by stubbing both speech recognition and `getUserMedia`.
 
+### Milestone 35: Voice input API transcription fallback
+
+- Add a bridge `/voice/status` and `/voice/transcribe` path backed by OpenAI API transcription when browser Web Speech fails with `network` in CEP.
+- Record short voice clips in the CEP panel with `MediaRecorder`, send audio to the bridge as base64, and insert the returned transcript into `chatPrompt` without auto-sending.
+- Require the saved `OpenAI -> API` key or `OPENAI_API_KEY` for the fallback; keep ChatGPT/Codex CLI access separate from API-billed audio transcription.
+- Add a fake OpenAI transcription smoke so the multipart audio request and bridge contract are covered without external API calls.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -310,6 +318,8 @@
 - 2026-05-13: Voice input v1 uses CEP's built-in `webkitSpeechRecognition` path because the installed panel exposes it; OpenAI audio transcription remains a possible later API-billing option, not part of this milestone.
 - 2026-05-13: Voice input should insert recognized text into the composer only and never auto-send, so Agent-mode actions remain reviewable before running.
 - 2026-05-13: CEP microphone access requires the manifest CEF media-stream flag; page reload alone may not apply new CEF command-line flags, so the installed panel/After Effects should be restarted after copying the manifest.
+- 2026-05-13: CEP Web Speech can expose `webkitSpeechRecognition` but still fail with `network`; voice input therefore needs an API transcription fallback for reliable operation.
+- 2026-05-13: Voice API transcription uses the saved OpenAI API key path and is separate from OpenAI CLI/ChatGPT subscription access.
 
 ## Validation
 
@@ -733,6 +743,30 @@
   - Passed `node --check cep-panel\panel.js`.
   - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
   - Passed XML parsing for `cep-panel\CSXS\manifest.xml`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-api-smoke.js`.
+  - Passed `node scripts/prompt-optimization-smoke.js`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js reload` against the installed CEP panel.
+  - Passed `node scripts/cep-panel-cdp-smoke.js voice-input-smoke`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js smoke`.
+- Milestone 35:
+  - Root cause after AE restart: CEP Web Speech no longer had microphone permission trouble, but `webkitSpeechRecognition` failed with `network`, so the browser speech service was unavailable in embedded Chromium.
+  - Added `/voice/status` for OpenAI API transcription readiness and `/voice/transcribe` for API-backed audio transcription.
+  - Added multipart upload to the OpenAI `/audio/transcriptions` endpoint using `gpt-4o-mini-transcribe` by default.
+  - Added CEP `MediaRecorder` fallback that records audio when Web Speech fails with `network`, checks for an OpenAI API key before recording, sends audio to the bridge, and inserts returned text into `chatPrompt` without auto-sending.
+  - Added `node scripts/voice-transcription-smoke.js` with a fake OpenAI transcription endpoint.
+  - Copied updated `panel.js` into the installed CEP extension.
+  - Restarted the live bridge daemon on `127.0.0.1:3456` with the voice transcription endpoint available.
+  - Verified live `/voice/status` returns `provider: openai-api`, `configured: false`, and `model: gpt-4o-mini-transcribe`.
+  - Verified the installed panel now reports `Voice transcription needs an OpenAI API key. Save one in OpenAI -> API.` instead of silently failing after CEP Web Speech returns `network`.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `node --check scripts\voice-transcription-smoke.js`.
+  - Passed `node scripts/voice-transcription-smoke.js`.
   - Passed `git diff --check`.
   - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `node scripts/provider-api-smoke.js`.

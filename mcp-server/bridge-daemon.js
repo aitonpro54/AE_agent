@@ -2,6 +2,7 @@
 "use strict";
 
 const http = require("http");
+const https = require("https");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -14,6 +15,8 @@ const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
 const TOKEN = process.env.AE_BRIDGE_TOKEN || "codex-ae-local";
 const COMMAND_TIMEOUT_MS = Number(process.env.AE_COMMAND_TIMEOUT_MS || 30000);
+const VOICE_TRANSCRIPTION_MODEL = process.env.AE_VOICE_TRANSCRIPTION_MODEL || "gpt-4o-mini-transcribe";
+const VOICE_TRANSCRIPTION_MAX_BYTES = Number(process.env.AE_VOICE_TRANSCRIPTION_MAX_BYTES || 8 * 1024 * 1024);
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const LOG_DIR = path.join(PROJECT_ROOT, "logs");
 const LOG_FILE = path.join(LOG_DIR, "bridge-events.jsonl");
@@ -392,6 +395,156 @@ function saveAgentApiKey(agentId, apiKey) {
     saved: true,
     keySuffix: key.slice(-4),
     secretsFile: AGENT_SECRETS_FILE
+  };
+}
+
+function openAiApiKeyForVoice() {
+  loadAgentSecrets();
+  return process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || "";
+}
+
+function multipartBuffer(fields, files) {
+  const boundary = `----ae-agent-${crypto.randomBytes(12).toString("hex")}`;
+  const chunks = [];
+  for (const [name, value] of Object.entries(fields || {})) {
+    if (value === undefined || value === null || value === "") continue;
+    chunks.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${String(value)}\r\n`, "utf8"));
+  }
+  for (const file of files || []) {
+    chunks.push(Buffer.from([
+      `--${boundary}`,
+      `Content-Disposition: form-data; name="${file.fieldName}"; filename="${file.filename}"`,
+      `Content-Type: ${file.contentType || "application/octet-stream"}`,
+      "",
+      ""
+    ].join("\r\n"), "utf8"));
+    chunks.push(file.buffer);
+    chunks.push(Buffer.from("\r\n", "utf8"));
+  }
+  chunks.push(Buffer.from(`--${boundary}--\r\n`, "utf8"));
+  return {
+    boundary,
+    body: Buffer.concat(chunks)
+  };
+}
+
+function requestOpenAiMultipart(pathName, fields, files, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const apiKey = openAiApiKeyForVoice();
+    if (!apiKey) {
+      const error = new Error("OpenAI API key is required for voice transcription. Save an OpenAI API key in OpenAI -> API, or set OPENAI_API_KEY.");
+      error.statusCode = 400;
+      reject(error);
+      return;
+    }
+
+    const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
+    const url = new URL(String(pathName || "").replace(/^\/+/, ""), `${String(baseUrl).replace(/\/+$/, "")}/`);
+    const transport = url.protocol === "https:" ? https : http;
+    const multipart = multipartBuffer(fields, files);
+    const req = transport.request({
+      protocol: url.protocol,
+      hostname: url.hostname,
+      port: url.port,
+      path: `${url.pathname}${url.search}`,
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        authorization: `Bearer ${apiKey}`,
+        "content-type": `multipart/form-data; boundary=${multipart.boundary}`,
+        "content-length": multipart.body.length
+      },
+      timeout: timeoutMs || 120000
+    }, (res) => {
+      let responseBody = "";
+      res.setEncoding("utf8");
+      res.on("data", (chunk) => {
+        responseBody += chunk;
+      });
+      res.on("end", () => {
+        let parsed = null;
+        try {
+          parsed = responseBody ? JSON.parse(responseBody) : {};
+        } catch (_error) {
+          parsed = { text: responseBody };
+        }
+
+        if ((res.statusCode || 0) < 200 || (res.statusCode || 0) >= 300) {
+          let message = `HTTP ${res.statusCode || 0} from OpenAI transcription endpoint`;
+          if (parsed && parsed.error) {
+            message = typeof parsed.error === "string" ? parsed.error : parsed.error.message || message;
+          }
+          const error = new Error(message);
+          error.statusCode = res.statusCode || 0;
+          error.response = parsed;
+          reject(error);
+          return;
+        }
+
+        resolve({
+          status: res.statusCode || 0,
+          headers: res.headers,
+          body: parsed
+        });
+      });
+    });
+
+    req.on("timeout", () => {
+      req.destroy(new Error(`Voice transcription timed out after ${timeoutMs || 120000}ms.`));
+    });
+    req.on("error", reject);
+    req.write(multipart.body);
+    req.end();
+  });
+}
+
+async function transcribeVoiceAudio(args) {
+  const startedAt = Date.now();
+  const audioBase64 = optionalString(args || {}, "audioBase64", "");
+  if (!audioBase64) throw new Error("audioBase64 is required.");
+  const mimeType = optionalString(args || {}, "mimeType", "audio/webm").slice(0, 120) || "audio/webm";
+  const language = optionalString(args || {}, "language", "").toLowerCase();
+  const normalizedLanguage = language === "ru" || language === "en" ? language : "";
+  let audioBuffer = null;
+  try {
+    audioBuffer = Buffer.from(audioBase64.replace(/^data:[^,]+,/, ""), "base64");
+  } catch (_error) {
+    throw new Error("audioBase64 must be valid base64 audio.");
+  }
+  if (!audioBuffer || !audioBuffer.length) throw new Error("audioBase64 decoded to an empty audio file.");
+  if (audioBuffer.length > VOICE_TRANSCRIPTION_MAX_BYTES) {
+    throw new Error(`Voice recording is too large (${audioBuffer.length} bytes). Keep recordings shorter.`);
+  }
+
+  const fields = {
+    model: optionalString(args || {}, "model", VOICE_TRANSCRIPTION_MODEL) || VOICE_TRANSCRIPTION_MODEL,
+    prompt: "Transcribe this short Adobe After Effects command. Preserve Russian or English text exactly.",
+    response_format: "json"
+  };
+  if (normalizedLanguage) fields.language = normalizedLanguage;
+
+  const response = await requestOpenAiMultipart("/audio/transcriptions", fields, [{
+    fieldName: "file",
+    filename: mimeType.indexOf("wav") >= 0 ? "voice.wav" : "voice.webm",
+    contentType: mimeType,
+    buffer: audioBuffer
+  }], Number(args && args.timeoutMs) || 120000);
+  const text = optionalString(response.body || {}, "text", "");
+  if (!text) throw new Error("Voice transcription returned no text.");
+
+  recordEvent("voice_transcription_finished", {
+    model: fields.model,
+    mimeType,
+    bytes: audioBuffer.length,
+    language: normalizedLanguage || "auto",
+    durationMs: Date.now() - startedAt
+  });
+
+  return {
+    text,
+    model: fields.model,
+    language: normalizedLanguage || null,
+    durationMs: Date.now() - startedAt
   };
 }
 
@@ -1605,7 +1758,7 @@ function readBody(req) {
     req.setEncoding("utf8");
     req.on("data", (chunk) => {
       body += chunk;
-      if (body.length > 5 * 1024 * 1024) {
+      if (body.length > 15 * 1024 * 1024) {
         reject(new Error("Request body too large"));
         req.destroy();
       }
@@ -3014,6 +3167,37 @@ function startHttpBridge() {
       if (!requireToken(req, res, url)) return;
       const limit = Math.max(1, Math.min(200, Math.floor(Number(url.searchParams.get("limit") || 50))));
       writeJson(res, 200, { ok: true, logFile: AI_CHAT_LOG_FILE, events: tailJsonl(AI_CHAT_LOG_FILE, limit) });
+      return;
+    }
+
+    if ((url.pathname === "/voice/status" || url.pathname === "/dev/voice/status") && req.method === "GET") {
+      if (!requireToken(req, res, url)) return;
+      writeJson(res, 200, {
+        ok: true,
+        voice: {
+          provider: "openai-api",
+          configured: !!openAiApiKeyForVoice(),
+          model: VOICE_TRANSCRIPTION_MODEL
+        }
+      });
+      return;
+    }
+
+    if ((url.pathname === "/voice/transcribe" || url.pathname === "/dev/voice/transcribe") && req.method === "POST") {
+      if (!requireToken(req, res, url)) return;
+      try {
+        const body = await readJsonBody(req);
+        const transcription = await transcribeVoiceAudio(body || {});
+        writeJson(res, 200, {
+          ok: true,
+          transcription
+        });
+      } catch (error) {
+        writeJson(res, error.statusCode && error.statusCode < 500 ? error.statusCode : 500, {
+          ok: false,
+          error: error.message || String(error)
+        });
+      }
       return;
     }
 

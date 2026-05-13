@@ -382,6 +382,7 @@ function writeDiagnosticsStorageExpression(values) {
 function voiceStorageExpression() {
   return `(() => ({
     language: localStorage.getItem("codexAeVoiceLanguage"),
+    useApi: localStorage.getItem("codexAeVoiceUseApiTranscription"),
     prompt: document.getElementById("chatPrompt") ? document.getElementById("chatPrompt").value : ""
   }))()`;
 }
@@ -392,6 +393,9 @@ function writeVoiceStorageExpression(values) {
     const language = ${JSON.stringify(storage.language)};
     if (language === null || language === undefined) localStorage.removeItem("codexAeVoiceLanguage");
     else localStorage.setItem("codexAeVoiceLanguage", language);
+    const useApi = ${JSON.stringify(storage.useApi)};
+    if (useApi === null || useApi === undefined) localStorage.removeItem("codexAeVoiceUseApiTranscription");
+    else localStorage.setItem("codexAeVoiceUseApiTranscription", useApi);
     const prompt = document.getElementById("chatPrompt");
     if (prompt) {
       prompt.value = ${JSON.stringify(storage.prompt || "")};
@@ -1030,7 +1034,7 @@ async function voiceInputSmoke() {
   let backup = null;
   try {
     backup = await evaluate(send, voiceStorageExpression());
-    await evaluate(send, writeVoiceStorageExpression({ language: null, prompt: "" }));
+    await evaluate(send, writeVoiceStorageExpression({ language: null, useApi: null, prompt: "" }));
     await reloadActivePage(send);
 
     const initial = await waitFor(send, "voice input controls", (state) => (

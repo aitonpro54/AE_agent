@@ -76,6 +76,12 @@
   var voiceHadError = false;
   var voiceStartTimer = null;
   var voiceSawActivity = false;
+  var voiceUseApiTranscription = localStorage.getItem("codexAeVoiceUseApiTranscription") === "1";
+  var voiceApiRecorder = null;
+  var voiceApiStream = null;
+  var voiceApiChunks = [];
+  var voiceApiRecording = false;
+  var voiceApiStopTimer = null;
   var keySaveInFlight = false;
   var setupActionInFlight = false;
   var readinessInFlight = false;
@@ -162,7 +168,7 @@
     var completed = false;
     var xhr = new XMLHttpRequest();
     xhr.open(method, getBaseUrl() + appendToken(path), true);
-    xhr.timeout = path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 ? 120000 : 10000;
+    xhr.timeout = path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 || path.indexOf("/voice/transcribe") === 0 ? 120000 : 10000;
     if (body !== null && body !== undefined) {
       xhr.setRequestHeader("content-type", "text/plain;charset=utf-8");
     }
@@ -1234,14 +1240,16 @@
   function updateVoiceInputAvailability() {
     if (!voiceInputButton) return;
     voiceSupported = !!speechRecognitionConstructor();
-    var disabled = chatInFlight || voiceStartPending || !voiceSupported;
+    var hasApiRecorder = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+    var disabled = chatInFlight || voiceStartPending || (!voiceSupported && !hasApiRecorder);
     voiceInputButton.disabled = disabled;
-    voiceInputButton.setAttribute("aria-pressed", voiceListening ? "true" : "false");
-    voiceInputButton.title = voiceSupported ? (voiceStartPending ? "Checking microphone" : (voiceListening ? "Stop voice input" : "Start voice input")) : "Voice input is not supported in this CEP runtime";
+    voiceInputButton.setAttribute("aria-pressed", voiceListening || voiceApiRecording ? "true" : "false");
+    voiceInputButton.title = voiceStartPending ? "Checking microphone" : (voiceListening || voiceApiRecording ? "Stop voice input" : "Start voice input");
+    if (!voiceSupported && !hasApiRecorder) voiceInputButton.title = "Voice input is not supported in this CEP runtime";
     voiceInputButton.setAttribute("aria-label", voiceInputButton.title);
-    toggleClass(voiceInputButton, "listening", voiceListening);
-    toggleClass(voiceInputButton, "unsupported", !voiceSupported);
-    if (voiceLanguageEl) voiceLanguageEl.disabled = chatInFlight || voiceStartPending || voiceListening || !voiceSupported;
+    toggleClass(voiceInputButton, "listening", voiceListening || voiceApiRecording);
+    toggleClass(voiceInputButton, "unsupported", !voiceSupported && !hasApiRecorder);
+    if (voiceLanguageEl) voiceLanguageEl.disabled = chatInFlight || voiceStartPending || voiceListening || voiceApiRecording || (!voiceSupported && !hasApiRecorder);
   }
 
   function compactVoiceText(text) {
@@ -1315,6 +1323,183 @@
     });
   }
 
+  function stopVoiceApiTracks() {
+    if (voiceApiStream && voiceApiStream.getTracks) {
+      try {
+        var tracks = voiceApiStream.getTracks();
+        for (var i = 0; i < tracks.length; i++) {
+          if (tracks[i] && tracks[i].stop) tracks[i].stop();
+        }
+      } catch (_trackError) {}
+    }
+    voiceApiStream = null;
+  }
+
+  function clearVoiceApiStopTimer() {
+    if (voiceApiStopTimer) clearTimeout(voiceApiStopTimer);
+    voiceApiStopTimer = null;
+  }
+
+  function preferredVoiceMimeType() {
+    if (!window.MediaRecorder) return "";
+    if (window.MediaRecorder.isTypeSupported && window.MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) return "audio/webm;codecs=opus";
+    if (window.MediaRecorder.isTypeSupported && window.MediaRecorder.isTypeSupported("audio/webm")) return "audio/webm";
+    return "";
+  }
+
+  function readBlobAsBase64(blob, onDone) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      var result = String(reader.result || "");
+      onDone(null, result.indexOf(",") >= 0 ? result.split(",").pop() : result);
+    };
+    reader.onerror = function () {
+      onDone(new Error("Could not read voice recording."));
+    };
+    reader.readAsDataURL(blob);
+  }
+
+  function insertVoiceTranscript(text) {
+    voiceFinalTranscript = compactVoiceText(text);
+    updatePromptFromVoice("");
+    if (voiceFinalTranscript) setAgentStatus("Voice input added");
+  }
+
+  function transcribeVoiceBlob(blob, mimeType) {
+    if (!blob || !blob.size) {
+      setAgentStatus("No voice audio was recorded.");
+      updateVoiceInputAvailability();
+      return;
+    }
+    voiceStartPending = true;
+    setAgentStatus("Transcribing voice...");
+    updateVoiceInputAvailability();
+    readBlobAsBase64(blob, function (readError, audioBase64) {
+      if (readError) {
+        voiceStartPending = false;
+        setAgentStatus(readError.message);
+        updateVoiceInputAvailability();
+        return;
+      }
+      request("POST", "/voice/transcribe", {
+        audioBase64: audioBase64,
+        mimeType: mimeType || blob.type || "audio/webm",
+        language: normalizeVoiceLanguage(voiceLanguageEl ? voiceLanguageEl.value : "ru"),
+        timeoutMs: 120000
+      }, function (error, response) {
+        voiceStartPending = false;
+        if (error) {
+          var message = error.message || "Voice transcription failed.";
+          if (message.indexOf("OpenAI API key is required") >= 0) {
+            message = "Voice transcription needs an OpenAI API key. Save one in OpenAI -> API.";
+          }
+          setAgentStatus(message);
+          log("Voice transcription failed: " + message);
+          updateVoiceInputAvailability();
+          return;
+        }
+        var transcription = response && response.transcription ? response.transcription : {};
+        insertVoiceTranscript(transcription.text || "");
+        updateVoiceInputAvailability();
+      });
+    });
+  }
+
+  function finishVoiceApiRecording() {
+    clearVoiceApiStopTimer();
+    var chunks = voiceApiChunks.slice();
+    var mimeType = voiceApiRecorder && voiceApiRecorder.mimeType ? voiceApiRecorder.mimeType : preferredVoiceMimeType() || "audio/webm";
+    voiceApiRecorder = null;
+    voiceApiChunks = [];
+    voiceApiRecording = false;
+    stopVoiceApiTracks();
+    updateVoiceInputAvailability();
+    if (!chunks.length) {
+      setAgentStatus("No voice audio was recorded.");
+      return;
+    }
+    try {
+      transcribeVoiceBlob(new Blob(chunks, { type: mimeType }), mimeType);
+    } catch (error) {
+      setAgentStatus("Could not prepare voice recording.");
+      log("Voice recording failed: " + (error && error.message ? error.message : error));
+    }
+  }
+
+  function stopVoiceApiRecording() {
+    clearVoiceApiStopTimer();
+    if (!voiceApiRecorder) {
+      voiceApiRecording = false;
+      stopVoiceApiTracks();
+      updateVoiceInputAvailability();
+      return;
+    }
+    try {
+      if (voiceApiRecorder.state && voiceApiRecorder.state !== "inactive") {
+        voiceApiRecorder.stop();
+      } else {
+        finishVoiceApiRecording();
+      }
+    } catch (_stopError) {
+      finishVoiceApiRecording();
+    }
+  }
+
+  function startVoiceApiRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+      setAgentStatus("Voice recording is not supported in this CEP runtime.");
+      updateVoiceInputAvailability();
+      return;
+    }
+    voiceStartPending = true;
+    setAgentStatus("Checking voice transcription...");
+    updateVoiceInputAvailability();
+    request("GET", "/voice/status", null, function (statusError, statusResponse) {
+      var voiceStatus = statusResponse && statusResponse.voice ? statusResponse.voice : {};
+      if (statusError || !voiceStatus.configured) {
+        voiceStartPending = false;
+        var message = statusError ? statusError.message : "Voice transcription needs an OpenAI API key. Save one in OpenAI -> API.";
+        setAgentStatus(message);
+        log("Voice transcription unavailable: " + message);
+        updateVoiceInputAvailability();
+        return;
+      }
+      setAgentStatus("Starting voice recording...");
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+        var mimeType = preferredVoiceMimeType();
+        var options = mimeType ? { mimeType: mimeType } : {};
+        voiceApiStream = stream;
+        voiceApiChunks = [];
+        voiceApiRecorder = new MediaRecorder(stream, options);
+        voiceApiRecorder.ondataavailable = function (event) {
+          if (event && event.data && event.data.size) voiceApiChunks.push(event.data);
+        };
+        voiceApiRecorder.onerror = function () {
+          setAgentStatus("Voice recording failed.");
+          log("Voice recording failed inside CEP.");
+        };
+        voiceApiRecorder.onstop = finishVoiceApiRecording;
+        voiceStartPending = false;
+        voiceApiRecording = true;
+        updateVoiceInputAvailability();
+        voiceApiRecorder.start(1000);
+        setAgentStatus("Recording voice... click the microphone to stop.");
+        clearVoiceApiStopTimer();
+        voiceApiStopTimer = setTimeout(function () {
+          if (voiceApiRecording) stopVoiceApiRecording();
+        }, 45000);
+      }).catch(function (error) {
+        voiceStartPending = false;
+        voiceApiRecording = false;
+        stopVoiceApiTracks();
+        var message = microphoneAccessErrorMessage(error);
+        setAgentStatus(message);
+        log("Voice input: " + message);
+        updateVoiceInputAvailability();
+      });
+    });
+  }
+
   function clearVoiceStartTimer() {
     if (voiceStartTimer) clearTimeout(voiceStartTimer);
     voiceStartTimer = null;
@@ -1370,6 +1555,10 @@
 
   function stopVoiceInput() {
     clearVoiceStartTimer();
+    if (voiceApiRecording) {
+      stopVoiceApiRecording();
+      return;
+    }
     if (!voiceRecognition) {
       voiceListening = false;
       updateVoiceInputAvailability();
@@ -1407,6 +1596,20 @@
         clearVoiceStartTimer();
         voiceHadError = true;
         var message = voiceErrorMessage(event && event.error);
+        if (event && event.error === "network" && navigator.mediaDevices && window.MediaRecorder) {
+          localStorage.setItem("codexAeVoiceUseApiTranscription", "1");
+          voiceUseApiTranscription = true;
+          try {
+            if (recognition.abort) recognition.abort();
+            else recognition.stop();
+          } catch (_networkStopError) {}
+          voiceRecognition = null;
+          voiceListening = false;
+          setAgentStatus("Browser voice service unavailable. Recording for API transcription...");
+          updateVoiceInputAvailability();
+          startVoiceApiRecording();
+          return;
+        }
         setAgentStatus(message);
         log("Voice input: " + message);
       };
@@ -1432,15 +1635,13 @@
   function startVoiceInput() {
     var Recognition = speechRecognitionConstructor();
     if (chatInFlight || voiceStartPending) return;
-    if (!Recognition) {
-      voiceSupported = false;
-      updateVoiceInputAvailability();
-      setAgentStatus("Voice input is not supported in this CEP runtime");
+    rememberVoicePromptRange();
+    voiceHadError = false;
+    if (voiceUseApiTranscription || !Recognition) {
+      startVoiceApiRecording();
       return;
     }
 
-    rememberVoicePromptRange();
-    voiceHadError = false;
     voiceStartPending = true;
     setAgentStatus("Checking microphone...");
     updateVoiceInputAvailability();
@@ -1690,7 +1891,7 @@
 
   function sendChat() {
     if (chatInFlight) return;
-    if (voiceListening) stopVoiceInput();
+    if (voiceListening || voiceApiRecording) stopVoiceInput();
     var prompt = trimText(chatPromptEl.value);
     if (!prompt) return;
 
