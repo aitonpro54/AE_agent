@@ -32,6 +32,7 @@
 - [x] Milestone 28: Provider refresh after bridge reconnect.
 - [x] Milestone 29: Selected layer Agent run binding fix.
 - [x] Milestone 30: Selected layer CTI alignment tool.
+- [x] Milestone 31: Agent comp runtime binding hardening.
 
 ## Milestones
 
@@ -233,6 +234,13 @@
 - Preserve raw ExtendScript blocking in Agent runs.
 - Keep checkpoint/edit-session protection unchanged for mutating Agent runs.
 
+### Milestone 31: Agent comp runtime binding hardening
+
+- Resolve common model-produced `{{compItemIndex}}` and `{{compName}}` bindings from prior `get_active_comp`, `get_comp_details`, `get_selected_layers`, project snapshot, and duplicate-comp results.
+- Support wrapped step shorthands such as `{{steps.1.result}}` in addition to bare `steps.1.result` / `step-1-result`.
+- Add selected precomp/source-comp binding aliases such as `{{selectedPrecompItemIndex}}` for plans that intentionally target a selected layer's source composition.
+- Extend smoke coverage so read-only Agent plan runs execute dependent comp bindings instead of only validating the plan shape.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -271,6 +279,8 @@
 - 2026-05-13: A successful bridge poll should refresh provider metadata after reconnect because the initial `/agents` request can fail while the daemon is still starting.
 - 2026-05-13: Selected-layer Agent plans may use template bindings like `{{selectedLayerIndices}}`; the runner should resolve these from inspection results instead of passing the literal string to mutating tools.
 - 2026-05-13: Do not enable raw ExtendScript in Agent mode for common timeline alignment; add typed bridge tools for narrow AE actions instead.
+- 2026-05-13: Runtime binding aliases should resolve against established tool result shapes, not literal field names only; `{{compItemIndex}}` can map from `itemIndex`, `comp.itemIndex`, active project item metadata, or duplicate results depending on the prior step payload.
+- 2026-05-13: Selected precomp/source-comp bindings should use explicit aliases and stay unresolved when multiple different selected source comps are present, rather than guessing a target.
 
 ## Validation
 
@@ -628,4 +638,22 @@
   - Passed `node scripts/prompt-optimization-smoke.js` after one startup-race retry.
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.
+  - Passed `git diff --check`.
+- Milestone 31:
+  - Root cause: Agent runs only resolved named template bindings by literal payload paths, so `{{compItemIndex}}` did not map to `get_active_comp`'s `itemIndex` result and blocked before the mutating/verification tool could run.
+  - Added canonical comp/item/layer binding aliases and default extraction from active comp, project active item, and `duplicate_comp` result payloads.
+  - Added wrapped step binding support for forms like `{{steps.1.result}}`.
+  - Added selected source/precomp aliases with ambiguity protection when multiple different selected source comps are present.
+  - Updated the AE Plan prompt to teach `{{compItemIndex}}` for active comp follow-up steps and `{{selectedPrecompItemIndex}}` for selected source/precomp operations.
+  - Extended `node scripts/smoke-test.js` with a read-only dependent Agent run covering `{{compItemIndex}}`, `{{steps.1.result}}`, and `{{selectedPrecompItemIndex}}`.
+  - Restarted the live bridge daemon on `127.0.0.1:3456` with the fixed backend; live `/health` reported `codex-ae-mcp-bridge` version `1.0.0` and the CEP panel connected.
+  - Passed a live read-only comp binding run after one AE command timeout retry: `get_active_comp` returned `Slides_fin`, and `get_comp_details` executed with resolved `compItemIndex: 2142`.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check scripts\smoke-test.js`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/provider-api-smoke.js`.
+  - Passed `node scripts/prompt-optimization-smoke.js`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js smoke` against the installed CEP panel.
   - Passed `git diff --check`.

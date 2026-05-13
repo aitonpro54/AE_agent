@@ -1893,6 +1893,7 @@ function validateAgentPlanObject(plan, requestId) {
       validatedSteps.push({
         index: index + 1,
         title: step.title || step.intent || "Untooled step",
+        intent: step.intent || "",
         tool: null,
         valid: true,
         executable: false,
@@ -1949,6 +1950,7 @@ function validateAgentPlanObject(plan, requestId) {
     validatedSteps.push({
       index: index + 1,
       title: step.title || step.intent || toolName,
+      intent: step.intent || "",
       tool: toolName,
       valid: Boolean(tool) && missingRequired.length === 0,
       executable: Boolean(tool) && missingRequired.length === 0 && boundRequired.length === 0,
@@ -2029,7 +2031,10 @@ function defaultPlanBindingValue(payload, targetField) {
     return firstPresent([
       payload.compItemIndex,
       payload.itemIndex,
+      valueAtPath(payload, "duplicate.itemIndex"),
       valueAtPath(payload, "comp.itemIndex"),
+      valueAtPath(payload, "activeComp.itemIndex"),
+      valueAtPath(payload, "project.activeItem.itemIndex"),
       valueAtPath(payload, "verification.comp.itemIndex"),
       valueAtPath(payload, "mutation.target.item.itemIndex")
     ]);
@@ -2038,7 +2043,10 @@ function defaultPlanBindingValue(payload, targetField) {
     return firstPresent([
       payload.compName,
       payload.name,
+      valueAtPath(payload, "duplicate.name"),
       valueAtPath(payload, "comp.name"),
+      valueAtPath(payload, "activeComp.name"),
+      valueAtPath(payload, "project.activeItem.name"),
       valueAtPath(payload, "verification.comp.name"),
       valueAtPath(payload, "mutation.target.item.name")
     ]);
@@ -2046,7 +2054,9 @@ function defaultPlanBindingValue(payload, targetField) {
   if (targetField === "itemIndex") {
     return firstPresent([
       payload.itemIndex,
+      valueAtPath(payload, "duplicate.itemIndex"),
       valueAtPath(payload, "item.itemIndex"),
+      valueAtPath(payload, "sourceItem.itemIndex"),
       valueAtPath(payload, "mutation.target.item.itemIndex")
     ]);
   }
@@ -2054,7 +2064,9 @@ function defaultPlanBindingValue(payload, targetField) {
     return firstPresent([
       payload.itemName,
       payload.name,
+      valueAtPath(payload, "duplicate.name"),
       valueAtPath(payload, "item.name"),
+      valueAtPath(payload, "sourceItem.name"),
       valueAtPath(payload, "mutation.target.item.name")
     ]);
   }
@@ -2074,6 +2086,62 @@ function defaultPlanBindingValue(payload, targetField) {
     ]);
   }
   return payload;
+}
+
+function positiveIntegerBindingValue(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 1) return undefined;
+  return Math.floor(number);
+}
+
+function sourceCompRefFromLayer(layer) {
+  const source = layer && layer.source;
+  if (!source || typeof source !== "object") return null;
+  const type = String(source.type || source.typeName || "").toLowerCase();
+  if (type && type.indexOf("comp") === -1) return null;
+  const itemIndex = positiveIntegerBindingValue(source.itemIndex || source.index);
+  if (!itemIndex) return null;
+  return {
+    itemIndex,
+    name: source.name || ""
+  };
+}
+
+function selectedSourceCompFromPayload(payload) {
+  if (!payload || typeof payload !== "object") return undefined;
+  const layerCollections = [
+    payload.selectedLayers,
+    valueAtPath(payload, "comp.selectedLayers"),
+    valueAtPath(payload, "activeComp.selectedLayers")
+  ];
+  const refs = [];
+
+  for (const layers of layerCollections) {
+    if (!Array.isArray(layers)) continue;
+    for (const layer of layers) {
+      const ref = sourceCompRefFromLayer(layer);
+      if (ref) refs.push(ref);
+    }
+  }
+
+  const directLayerRef = sourceCompRefFromLayer(payload.layer);
+  if (directLayerRef) refs.push(directLayerRef);
+
+  if (!refs.length) return undefined;
+  const first = refs[0];
+  for (const ref of refs) {
+    if (ref.itemIndex !== first.itemIndex) return undefined;
+  }
+  return first;
+}
+
+function selectedSourceCompBindingValue(payload, targetField) {
+  const ref = selectedSourceCompFromPayload(payload);
+  if (!ref) return undefined;
+  if (targetField === "compName" || targetField === "itemName" || targetField === "name") {
+    return ref.name || undefined;
+  }
+  return ref.itemIndex;
 }
 
 function selectedLayerIndicesFromPayload(payload) {
@@ -2100,6 +2168,70 @@ function selectedLayerIndicesFromPayload(payload) {
   return undefined;
 }
 
+function isCompIndexBindingName(lower) {
+  return [
+    "compitemindex",
+    "compositionitemindex",
+    "activecompitemindex",
+    "activecompositionitemindex"
+  ].includes(lower);
+}
+
+function isCompNameBindingName(lower) {
+  return [
+    "compname",
+    "compositionname",
+    "activecompname",
+    "activecompositionname"
+  ].includes(lower);
+}
+
+function isItemIndexBindingName(lower) {
+  return [
+    "itemindex",
+    "projectitemindex"
+  ].includes(lower);
+}
+
+function isItemNameBindingName(lower) {
+  return [
+    "itemname",
+    "projectitemname"
+  ].includes(lower);
+}
+
+function isLayerIndexBindingName(lower) {
+  return [
+    "layerindex",
+    "selectedlayerindex"
+  ].includes(lower);
+}
+
+function isLayerNameBindingName(lower) {
+  return [
+    "layername",
+    "selectedlayername"
+  ].includes(lower);
+}
+
+function isSelectedSourceCompBindingName(lower) {
+  return [
+    "selectedsourcecompitemindex",
+    "selectedsourceitemindex",
+    "selectedlayersourceitemindex",
+    "selectedlayercompitemindex",
+    "selectedprecompitemindex",
+    "selectedprecompcompitemindex",
+    "precompitemindex",
+    "precompcompitemindex",
+    "selectedsourcecompname",
+    "selectedsourcename",
+    "selectedlayersourcename",
+    "selectedprecompname",
+    "precompname"
+  ].includes(lower);
+}
+
 function findBindingValueInExecutedSteps(executedSteps, resolver) {
   for (let index = executedSteps.length - 1; index >= 0; index -= 1) {
     const value = resolver(executedSteps[index].payload);
@@ -2109,7 +2241,22 @@ function findBindingValueInExecutedSteps(executedSteps, resolver) {
   return undefined;
 }
 
-function resolveNamedPlanBinding(name, executedSteps, targetField) {
+function planStepText(step) {
+  return String([
+    step && step.title,
+    step && step.intent,
+    step && step.summary
+  ].filter(Boolean).join(" ")).toLowerCase();
+}
+
+function shouldPreferSelectedSourceCompBinding(step, lower, targetField) {
+  if (targetField !== "compItemIndex" && targetField !== "itemIndex") return false;
+  if (!isCompIndexBindingName(lower) && !isItemIndexBindingName(lower)) return false;
+  if (!step || step.tool !== "duplicate_comp") return false;
+  return /\b(precomp|pre-comp|source|selected)\b/.test(planStepText(step));
+}
+
+function resolveNamedPlanBinding(name, executedSteps, targetField, step) {
   const normalized = String(name || "").trim();
   const lower = normalized.toLowerCase();
 
@@ -2120,6 +2267,27 @@ function resolveNamedPlanBinding(name, executedSteps, targetField) {
     const indices = findBindingValueInExecutedSteps(executedSteps, selectedLayerIndicesFromPayload);
     return Array.isArray(indices) ? indices[0] : indices;
   }
+  if (isSelectedSourceCompBindingName(lower) || shouldPreferSelectedSourceCompBinding(step, lower, targetField)) {
+    return findBindingValueInExecutedSteps(executedSteps, (payload) => selectedSourceCompBindingValue(payload, targetField));
+  }
+  if (isCompIndexBindingName(lower)) {
+    return findBindingValueInExecutedSteps(executedSteps, (payload) => defaultPlanBindingValue(payload, "compItemIndex"));
+  }
+  if (isCompNameBindingName(lower)) {
+    return findBindingValueInExecutedSteps(executedSteps, (payload) => defaultPlanBindingValue(payload, "compName"));
+  }
+  if (isItemIndexBindingName(lower)) {
+    return findBindingValueInExecutedSteps(executedSteps, (payload) => defaultPlanBindingValue(payload, "itemIndex"));
+  }
+  if (isItemNameBindingName(lower)) {
+    return findBindingValueInExecutedSteps(executedSteps, (payload) => defaultPlanBindingValue(payload, "itemName"));
+  }
+  if (isLayerIndexBindingName(lower)) {
+    return findBindingValueInExecutedSteps(executedSteps, (payload) => defaultPlanBindingValue(payload, "layerIndex"));
+  }
+  if (isLayerNameBindingName(lower)) {
+    return findBindingValueInExecutedSteps(executedSteps, (payload) => defaultPlanBindingValue(payload, "layerName"));
+  }
 
   return findBindingValueInExecutedSteps(executedSteps, (payload) => {
     if (!payload || typeof payload !== "object") return undefined;
@@ -2127,18 +2295,24 @@ function resolveNamedPlanBinding(name, executedSteps, targetField) {
   });
 }
 
-function resolvePlanBinding(binding, executedSteps, targetField) {
+function resolvePlanBinding(binding, executedSteps, targetField, step) {
   const expression = String(binding || "").trim();
   const template = /^\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}$/.exec(expression);
   if (template) {
-    return resolveNamedPlanBinding(template[1], executedSteps, targetField);
+    const inner = template[1].trim();
+    if (isPlanBindingExpression(inner)) {
+      return resolvePlanBinding(inner, executedSteps, targetField, step);
+    }
+    return resolveNamedPlanBinding(inner, executedSteps, targetField, step);
   }
   const match = /^steps\.(\d+)\.(.+)$/.exec(expression);
   if (match) {
     const index = Number(match[1]) - 1;
     const rest = match[2].replace(/^result\./, "");
     const step = executedSteps[index];
-    return step ? valueAtPath(step.payload, rest) : undefined;
+    if (!step) return undefined;
+    if (!rest || rest === "result") return defaultPlanBindingValue(step.payload, targetField);
+    return valueAtPath(step.payload, rest);
   }
   if (expression.indexOf("previous.") === 0 && executedSteps.length) {
     return valueAtPath(executedSteps[executedSteps.length - 1].payload, expression.slice("previous.".length));
@@ -2168,7 +2342,7 @@ function applyPlanRuntimeBindings(step, executedSteps) {
   const unresolved = [];
   for (const field of Object.keys(args)) {
     if (!isPlanBindingExpression(args[field])) continue;
-    const value = resolvePlanBinding(args[field], executedSteps, field);
+    const value = resolvePlanBinding(args[field], executedSteps, field, step);
     if (missingPlanBindingValue(value)) {
       unresolved.push(field);
     } else {
@@ -2182,7 +2356,7 @@ function applyPlanRuntimeBindings(step, executedSteps) {
     if (schemaProperties && !hasArg(schemaProperties, field)) {
       continue;
     }
-    const value = resolvePlanBinding(bindings[field], executedSteps, field);
+    const value = resolvePlanBinding(bindings[field], executedSteps, field, step);
     if (missingPlanBindingValue(value)) {
       unresolved.push(field);
     } else {
@@ -2515,6 +2689,8 @@ function buildAePlanPrompt(args) {
     "When a creation tool can set a property directly, include that property in the creation tool args instead of adding a later step that needs an unknown layerIndex.",
     "For requests to align selected layers, clips, or precomps to the current time indicator, use align_layers_to_time with no layerIndices and omit targetTime so it uses the active comp CTI.",
     "For requests about selected layers, inspect with get_active_comp or get_selected_layers first. A later layerIndex field may use {{selectedLayerIndices}} to target the selected layers.",
+    "For later steps that need the active comp, compItemIndex may use {{compItemIndex}} after get_active_comp, get_comp_details, or get_selected_layers.",
+    "For requests about a selected precomp/source comp, inspect with get_active_comp or get_selected_layers first, then use {{selectedPrecompItemIndex}} for duplicate_comp or other source-comp operations.",
     "If a later step depends on a previous tool result, set dependsOnStep and resultBindings instead of inventing indices.",
     "Use mutating tools only as planned steps; do not execute them. Use run_extendscript only when no narrower tool fits."
   ].join("\n");

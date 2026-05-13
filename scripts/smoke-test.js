@@ -393,6 +393,178 @@ async function main() {
       ]
     }
   });
+  const namedCompBindingRunPromise = requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/plan/run",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    dryRun: false,
+    confirm: true,
+    requestId: "smoke-named-comp-binding-run",
+    plan: {
+      summary: "Smoke-test common named comp runtime bindings.",
+      risk: "low",
+      requiresCheckpoint: false,
+      steps: [
+        {
+          title: "Inspect active comp",
+          tool: "get_active_comp",
+          args: {}
+        },
+        {
+          title: "List layers by named active comp binding",
+          tool: "list_layers",
+          args: {
+            compItemIndex: "{{compItemIndex}}"
+          }
+        },
+        {
+          title: "Read details through wrapped step shorthand",
+          tool: "get_comp_details",
+          args: {
+            compItemIndex: "{{steps.1.result}}",
+            includeLayers: false
+          }
+        },
+        {
+          title: "List selected precomp source layers",
+          tool: "list_layers",
+          args: {
+            compItemIndex: "{{selectedPrecompItemIndex}}"
+          }
+        }
+      ]
+    }
+  });
+  const activeCompBindingCommand = await waitForPendingCommand(port, token, 5000);
+  if (!activeCompBindingCommand.body.command || activeCompBindingCommand.body.command.script.indexOf("app.project.activeItem") < 0) {
+    throw new Error("Expected get_active_comp command for named binding smoke.");
+  }
+  await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/bridge/result",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    id: activeCompBindingCommand.body.command.id,
+    ok: true,
+    result: JSON.stringify({
+      ok: true,
+      result: {
+        itemIndex: 1,
+        name: "Smoke Active Comp",
+        width: 1920,
+        height: 1080,
+        duration: 5,
+        frameRate: 24,
+        numLayers: 1,
+        time: 0,
+        selectedLayers: [
+          {
+            index: 1,
+            name: "Smoke Precomp Layer",
+            source: {
+              itemIndex: 7,
+              name: "Smoke Source Precomp",
+              type: "comp",
+              typeName: "Composition"
+            }
+          }
+        ]
+      }
+    })
+  });
+  const activeCompListCommand = await waitForPendingCommand(port, token, 5000);
+  if (!activeCompListCommand.body.command || activeCompListCommand.body.command.script.indexOf("app.project.item(1)") < 0) {
+    throw new Error("Expected named {{compItemIndex}} binding to resolve to active comp item 1.");
+  }
+  await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/bridge/result",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    id: activeCompListCommand.body.command.id,
+    ok: true,
+    result: JSON.stringify({
+      ok: true,
+      result: {
+        comp: { itemIndex: 1, name: "Smoke Active Comp", numLayers: 1 },
+        layers: [{ index: 1, name: "Smoke Precomp Layer" }]
+      }
+    })
+  });
+  const wrappedStepBindingCommand = await waitForPendingCommand(port, token, 5000);
+  if (!wrappedStepBindingCommand.body.command || wrappedStepBindingCommand.body.command.script.indexOf("__codexResolveComp(1)") < 0) {
+    throw new Error("Expected wrapped {{steps.1.result}} binding to resolve to active comp item 1.");
+  }
+  await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/bridge/result",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    id: wrappedStepBindingCommand.body.command.id,
+    ok: true,
+    result: JSON.stringify({
+      ok: true,
+      result: {
+        itemIndex: 1,
+        name: "Smoke Active Comp",
+        type: "comp",
+        width: 1920,
+        height: 1080,
+        duration: 5,
+        frameRate: 24,
+        numLayers: 1,
+        selectedLayerIndices: [1],
+        layersReturned: 0,
+        layers: []
+      }
+    })
+  });
+  const selectedPrecompBindingCommand = await waitForPendingCommand(port, token, 5000);
+  if (!selectedPrecompBindingCommand.body.command || selectedPrecompBindingCommand.body.command.script.indexOf("app.project.item(7)") < 0) {
+    throw new Error("Expected {{selectedPrecompItemIndex}} binding to resolve to selected source comp item 7.");
+  }
+  await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/bridge/result",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    id: selectedPrecompBindingCommand.body.command.id,
+    ok: true,
+    result: JSON.stringify({
+      ok: true,
+      result: {
+        comp: { itemIndex: 7, name: "Smoke Source Precomp", numLayers: 0 },
+        layers: []
+      }
+    })
+  });
+  const namedCompBindingRun = await namedCompBindingRunPromise;
   const mutatingPlan = {
     summary: "Smoke-test mutating plan safety.",
     risk: "low",
@@ -503,6 +675,18 @@ async function main() {
     throw new Error("Unexpected ignored result binding run response");
   }
   if (
+    namedCompBindingRun.status !== 200 ||
+    namedCompBindingRun.body.ok !== true ||
+    !namedCompBindingRun.body.run ||
+    namedCompBindingRun.body.run.steps.length !== 4 ||
+    namedCompBindingRun.body.run.steps.some((step) => step.status !== "completed") ||
+    Number(namedCompBindingRun.body.run.steps[1].args.compItemIndex) !== 1 ||
+    Number(namedCompBindingRun.body.run.steps[2].args.compItemIndex) !== 1 ||
+    Number(namedCompBindingRun.body.run.steps[3].args.compItemIndex) !== 7
+  ) {
+    throw new Error("Unexpected named comp runtime binding run response");
+  }
+  if (
     mutatingBlocked.status !== 400 ||
     mutatingBlocked.body.ok !== false ||
     !mutatingBlocked.body.run ||
@@ -542,6 +726,7 @@ async function main() {
     readiness: readiness.body.readiness.status,
     planRun: planRun.body.run.steps[0].status,
     ignoredBindingRun: ignoredBindingRun.body.run.steps[0].status,
+    namedCompBindingRun: namedCompBindingRun.body.run.steps.map((step) => step.status),
     mutatingDryRun: mutatingDryRun.body.run.steps[0].status,
     mutatingBlocked: mutatingBlocked.body.run.safety.status,
     health: health.body,
