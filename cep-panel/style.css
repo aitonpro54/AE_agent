@@ -125,6 +125,20 @@ section {
   gap: 8px;
 }
 
+.bridge-help {
+  color: #a8a8a8;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.bridge-help.warning {
+  color: #ffb45f;
+}
+
+.bridge-help.online {
+  color: #76e4a8;
+}
+
 .provider-section {
   gap: 14px;
 }

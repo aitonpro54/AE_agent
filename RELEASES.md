@@ -19,6 +19,7 @@ Added:
 - Local multi-chat history with `New Chat`, history switching, and per-chat clearing.
 - CEP history smoke command: `node scripts\cep-panel-cdp-smoke.js history-smoke`.
 - OpenAI API setup-state model labels, for example `GPT-5.5 (No API key)`, plus `openai-api-setup-smoke`.
+- Friendly bridge offline state plus `offline-smoke` for the installed CEP panel.
 
 Changed:
 
@@ -29,6 +30,7 @@ Changed:
 - The plan runner accepts common model shorthand such as `step-2-result` for runtime references and resolves it to useful target fields during real runs; dry-runs report those dependent steps as ready.
 - The live CEP smoke now verifies the new agent details and check-model flow.
 - The reference `Trial Version` / `License...` strip is intentionally omitted from the CEP UI; this project has no app license gate.
+- The CEP panel now reports `Bridge offline` instead of raw `HTTP 0` or network errors when the local daemon is not reachable.
 - Daemon, adapter, CEP panel, manifest, install note, and smoke tests report version `0.26.0`.
 
 ## v0.25.0-safe-run - 2026-05-12

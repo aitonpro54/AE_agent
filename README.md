@@ -149,6 +149,8 @@ Codex can use MCP tools while the daemon stays online because the MCP adapter no
 
 After you connect once, the panel remembers the URL/token and starts polling automatically when it opens again. If the daemon is not up yet, the panel keeps retrying until Codex starts it.
 
+In this state the panel shows `Bridge offline` with a short recovery hint instead of raw browser transport errors such as `HTTP 0`.
+
 If an old logon startup task was installed during testing, remove it:
 
 ```powershell

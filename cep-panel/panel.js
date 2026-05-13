@@ -13,6 +13,7 @@
   var logEl = document.getElementById("log");
   var urlEl = document.getElementById("bridgeUrl");
   var tokenEl = document.getElementById("bridgeToken");
+  var bridgeHelpEl = document.getElementById("bridgeHelp");
   var connectButton = document.getElementById("connectButton");
   var disconnectButton = document.getElementById("disconnectButton");
   var reloadButton = document.getElementById("reloadButton");
@@ -65,6 +66,8 @@
   var setupActionInFlight = false;
   var readinessInFlight = false;
   var lastPlanResult = null;
+  var lastPollErrorMessage = "";
+  var BRIDGE_OFFLINE_MESSAGE = "Bridge offline. Start the local bridge from Codex, then click Connect.";
 
   function setAppTitle(version) {
     var normalizedVersion = version || APP_VERSION;
@@ -83,6 +86,42 @@
     statusEl.textContent = text;
     badgeEl.textContent = online ? "online" : "offline";
     badgeEl.className = online ? "online" : "";
+  }
+
+  function setBridgeHelp(text, tone) {
+    if (!bridgeHelpEl) return;
+    bridgeHelpEl.textContent = text || "";
+    bridgeHelpEl.className = "bridge-help" + (tone ? " " + tone : "");
+  }
+
+  function makeBridgeOfflineError(message) {
+    var error = new Error(message || BRIDGE_OFFLINE_MESSAGE);
+    error.status = 0;
+    error.bridgeOffline = true;
+    return error;
+  }
+
+  function isBridgeOfflineError(error) {
+    if (!error) return false;
+    if (error.bridgeOffline || error.status === 0) return true;
+    return /^(HTTP 0|Network error|Network timeout)/i.test(error.message || "");
+  }
+
+  function friendlyErrorMessage(error) {
+    if (isBridgeOfflineError(error)) return BRIDGE_OFFLINE_MESSAGE;
+    return error && error.message ? error.message : "Unknown error";
+  }
+
+  function setBridgeOffline(error) {
+    var message = friendlyErrorMessage(error);
+    setStatus("Bridge offline", false);
+    setBridgeHelp(message, "warning");
+    return message;
+  }
+
+  function setBridgeConnected() {
+    setStatus("Connected", true);
+    setBridgeHelp("Bridge connected.", "online");
   }
 
   function getBaseUrl() {
@@ -114,7 +153,7 @@
     xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) return;
       if (xhr.status < 200 || xhr.status >= 300) {
-        var errorMessage = "HTTP " + xhr.status + ": " + xhr.responseText;
+        var errorMessage = xhr.status === 0 ? BRIDGE_OFFLINE_MESSAGE : "HTTP " + xhr.status + ": " + xhr.responseText;
         var errorBody = null;
         try {
           errorBody = xhr.responseText ? JSON.parse(xhr.responseText) : null;
@@ -125,6 +164,7 @@
         var requestError = new Error(errorMessage);
         requestError.status = xhr.status;
         requestError.body = errorBody;
+        if (xhr.status === 0) requestError.bridgeOffline = true;
         finish(requestError);
         return;
       }
@@ -135,10 +175,10 @@
       }
     };
     xhr.onerror = function () {
-      finish(new Error("Network error"));
+      finish(makeBridgeOfflineError());
     };
     xhr.ontimeout = function () {
-      finish(new Error("Network timeout"));
+      finish(makeBridgeOfflineError());
     };
     xhr.send(body !== null && body !== undefined ? JSON.stringify(body) : null);
   }
@@ -496,7 +536,8 @@
         agents = [];
         clearElement(agentSelect);
         setAgentDetails(null);
-        setAgentStatus(error.message);
+        setAgentStatus(friendlyErrorMessage(error));
+        if (isBridgeOfflineError(error)) setBridgeOffline(error);
         updateChatAvailability();
         updateKeyAvailability();
         return;
@@ -1292,13 +1333,17 @@
       if (!running) return;
 
       if (error) {
-        setStatus("Waiting for server...", false);
-        log(error.message);
+        var message = setBridgeOffline(error);
+        if (message !== lastPollErrorMessage) {
+          log(message);
+          lastPollErrorMessage = message;
+        }
         pollTimer = setTimeout(poll, 1500);
         return;
       }
 
-      setStatus("Connected", true);
+      lastPollErrorMessage = "";
+      setBridgeConnected();
 
       if (response && response.command) {
         executeCommand(response.command);
@@ -1310,10 +1355,12 @@
 
   function connect() {
     running = true;
+    lastPollErrorMessage = "";
     localStorage.setItem("codexAeBridgeUrl", urlEl.value);
     localStorage.setItem("codexAeBridgeToken", tokenEl.value);
     localStorage.setItem("codexAeBridgeAutoConnect", "1");
     setStatus("Connecting...", false);
+    setBridgeHelp("Connecting to the local bridge...", "");
     refreshAppTitle();
     loadAgents();
     log("Connecting to " + getBaseUrl());
@@ -1323,9 +1370,11 @@
   function disconnect() {
     running = false;
     pollInFlight = false;
+    lastPollErrorMessage = "";
     if (pollTimer) clearTimeout(pollTimer);
     localStorage.setItem("codexAeBridgeAutoConnect", "0");
     setStatus("Disconnected", false);
+    setBridgeHelp("Disconnected. Click Connect when the bridge is running.", "");
     log("Disconnected");
   }
 

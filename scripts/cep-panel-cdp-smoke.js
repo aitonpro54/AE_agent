@@ -145,6 +145,8 @@ function stateExpression() {
     title: document.title,
     status: document.getElementById("status") ? document.getElementById("status").textContent : "",
     badge: document.getElementById("badge") ? document.getElementById("badge").textContent : "",
+    bridgeHelp: document.getElementById("bridgeHelp") ? document.getElementById("bridgeHelp").textContent : "",
+    bridgeHelpClass: document.getElementById("bridgeHelp") ? document.getElementById("bridgeHelp").className : "",
     agentStatus: document.getElementById("agentStatus") ? document.getElementById("agentStatus").textContent : "",
     agentValue: document.getElementById("agentSelect") ? document.getElementById("agentSelect").value : "",
     agentOptions: Array.from(document.querySelectorAll("#agentSelect option")).map((option) => ({ value: option.value, text: option.textContent })),
@@ -324,6 +326,37 @@ function writeHistoryStorageExpression(values) {
     write("codexAeChatTranscript", values.transcript);
     return true;
   })()`;
+}
+
+function bridgeStorageExpression() {
+  return `(() => ({
+    url: localStorage.getItem("codexAeBridgeUrl"),
+    token: localStorage.getItem("codexAeBridgeToken"),
+    autoConnect: localStorage.getItem("codexAeBridgeAutoConnect")
+  }))()`;
+}
+
+function writeBridgeStorageExpression(values) {
+  const storage = values || {};
+  return `(() => {
+    const values = ${JSON.stringify(storage)};
+    function write(key, value) {
+      if (value === null || value === undefined) localStorage.removeItem(key);
+      else localStorage.setItem(key, value);
+    }
+    write("codexAeBridgeUrl", values.url);
+    write("codexAeBridgeToken", values.token);
+    write("codexAeBridgeAutoConnect", values.autoConnect);
+    return true;
+  })()`;
+}
+
+function offlineBridgeStorage() {
+  return {
+    url: process.env.CEP_PANEL_OFFLINE_URL || "http://127.0.0.1:59999",
+    token: "offline-smoke-token",
+    autoConnect: "1"
+  };
 }
 
 function historyFixtureStorage() {
@@ -678,6 +711,55 @@ async function historySmoke() {
   }
 }
 
+async function offlineSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  let backup = null;
+  try {
+    backup = await evaluate(send, bridgeStorageExpression());
+    await evaluate(send, writeBridgeStorageExpression(offlineBridgeStorage()));
+    await reloadActivePage(send);
+
+    const offline = await waitFor(send, "friendly bridge offline state", (state) => {
+      const visibleText = [
+        state.status,
+        state.bridgeHelp,
+        state.agentStatus,
+        state.log
+      ].join("\n");
+      return (
+        state.badge === "offline" &&
+        state.status === "Bridge offline" &&
+        state.bridgeHelp.indexOf("Bridge offline") >= 0 &&
+        state.agentStatus.indexOf("Bridge offline") >= 0 &&
+        visibleText.indexOf("HTTP 0") < 0 &&
+        visibleText.indexOf("Network error") < 0 &&
+        visibleText.indexOf("Network timeout") < 0
+      );
+    }, 15000);
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      state: {
+        status: offline.status,
+        badge: offline.badge,
+        bridgeHelp: offline.bridgeHelp,
+        bridgeHelpClass: offline.bridgeHelpClass,
+        agentStatus: offline.agentStatus,
+        logTail: offline.log.slice(-1000)
+      }
+    }, null, 2));
+  } finally {
+    if (backup) {
+      try {
+        await evaluate(send, writeBridgeStorageExpression(backup));
+        await reloadActivePage(send);
+      } catch (_error) {}
+    }
+    ws.close();
+  }
+}
+
 function mutatingPrompt(name) {
   return [
     `Create exactly one temporary test composition named "${name}".`,
@@ -853,6 +935,10 @@ async function main() {
   }
   if (command === "history-smoke") {
     await historySmoke();
+    return;
+  }
+  if (command === "offline-smoke") {
+    await offlineSmoke();
     return;
   }
   throw new Error(`Unknown command: ${command}`);

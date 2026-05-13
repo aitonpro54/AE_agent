@@ -14,6 +14,7 @@
 - [x] Milestone 10: Remove reference license gate UI.
 - [x] Milestone 11: OpenAI API setup-state model labels.
 - [x] Milestone 12: Panel-launched ChatGPT sign-in for OpenAI CLI.
+- [x] Milestone 13: Bridge offline UX.
 
 ## Milestones
 
@@ -99,6 +100,13 @@
 - Keep API keys separate: the sign-in action must not store ChatGPT tokens in CEP localStorage and must not apply to `OpenAI -> API`.
 - Add contract and live CEP smoke coverage for the setup action without triggering a real login during tests.
 
+### Milestone 13: Bridge offline UX
+
+- Replace raw CEP network failures such as `HTTP 0`, `Network error`, and `Network timeout` with one friendly `Bridge offline` state.
+- Add a compact bridge help line below the connection controls.
+- Keep the panel as a bridge client; starting the bridge remains owned by Codex/MCP startup or the existing helper scripts.
+- Add a live CEP offline smoke that points the panel at an unused local port, verifies the friendly state, and restores the user's bridge settings.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -115,6 +123,7 @@
 - 2026-05-13: The reference trial/license strip is not part of this product; removing it avoids implying an app license or Pro gate while preserving API/CLI billing distinctions.
 - 2026-05-13: Model dropdown setup suffixes are UI labels only; option values remain canonical model ids such as `gpt-5.5`.
 - 2026-05-13: `Sign in with ChatGPT` launches the official local Codex CLI login flow from the bridge daemon; manual `codex login` remains a fallback for troubleshooting.
+- 2026-05-13: CEP bridge offline handling should be friendly but non-magical; the panel reports offline clearly and keeps retrying, while process startup stays in the Codex/MCP layer.
 
 ## Validation
 
@@ -226,6 +235,18 @@
   - Passed `node --check scripts/provider-contract-smoke.js`.
   - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `node scripts/cep-panel-cdp-smoke.js openai-cli-setup-smoke` with a temporary bridge job.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+- Milestone 13:
+  - Added a visible `bridgeHelp` line to the CEP connection area.
+  - Normalized local bridge transport failures to `Bridge offline. Start the local bridge from Codex, then click Connect.`
+  - Added `node scripts/cep-panel-cdp-smoke.js offline-smoke` to validate the installed panel's offline state and restore prior bridge settings afterward.
+  - Copied updated `index.html`, `panel.js`, and `style.css` into the installed CEP extension.
+  - Passed `node --check cep-panel/panel.js`.
+  - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
+  - Passed `node scripts/provider-contract-smoke.js`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js offline-smoke`.
   - Passed `git diff --check`.
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.
