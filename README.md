@@ -59,6 +59,24 @@ It has two parts:
 - `set_effect_property` - sets a property on an existing layer effect.
 - `set_property_value` - sets an arbitrary layer property by property path.
 - `align_layers_to_time` - aligns selected or specified layer timing to the current time indicator or a target time.
+- `set_comp_work_area` - sets the active or specified comp work area.
+- `set_layer_time_range` - sets selected or specified layer start/in/out/duration timing.
+- `stagger_layers` - sequences layers by order, gap, and overlap.
+- `split_layers_at_time` - splits selected or specified layers at the CTI or target time.
+- `precompose_layers` - precomposes explicit layers into a new composition.
+- `replace_layer_source` - swaps layer sources while preserving transforms.
+- `rename_layers` - renames selected or specified layers with exact, prefix, suffix, or find-replace modes.
+- `rename_project_items` - renames project items by explicit indexes or scoped search.
+- `update_text_layer` - updates Source Text and common TextDocument fields.
+- `create_shape_layer` - creates a rectangle or ellipse shape layer.
+- `fit_layer_to_comp` - scales layers to contain, cover, or stretch to the comp.
+- `set_property_keyframes` - sets explicit keyframes on a layer property.
+- `apply_keyframe_ease` - applies temporal easing to selected or explicit keyframes.
+- `set_expression` - applies an expression to any expression-capable property.
+- `clear_expression` - removes an expression from any expression-capable property.
+- `add_comp_to_render_queue` - adds a comp to the render queue.
+- `set_render_queue_output` - sets output path and templates for a render queue item.
+- `get_render_queue_status` - returns compact render queue item status.
 - `set_layer_transform` - sets position, scale, rotation, opacity, or anchor point.
 - `apply_transform_expression` - applies an expression to a common transform property.
 - `add_layer_marker` - adds a marker to a layer.

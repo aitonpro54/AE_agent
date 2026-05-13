@@ -97,6 +97,50 @@ async function waitForPendingCommand(port, token, timeoutMs) {
   return next;
 }
 
+async function callQueuedDevTool(port, token, toolName, payload, scriptSnippets, fakeResult) {
+  const promise = requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/dev/tool/" + toolName,
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, payload || {});
+  const command = await waitForPendingCommand(port, token, 5000);
+  if (!command.body.command || !command.body.command.id || !command.body.command.script) {
+    throw new Error("Expected queued AE command for " + toolName);
+  }
+  for (const snippet of scriptSnippets || []) {
+    if (command.body.command.script.indexOf(snippet) < 0) {
+      throw new Error("Expected " + toolName + " script to include: " + snippet);
+    }
+  }
+  await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/bridge/result",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    id: command.body.command.id,
+    ok: true,
+    result: JSON.stringify({
+      ok: true,
+      result: fakeResult || { ok: true, tool: toolName }
+    })
+  });
+  const response = await promise;
+  if (response.status !== 200 || !response.body.ok) {
+    throw new Error("Unexpected " + toolName + " response");
+  }
+  return { response, command };
+}
+
 async function main() {
   const daemon = spawn(nodePath, [daemonPath], {
     env: {
@@ -289,6 +333,162 @@ async function main() {
   });
   const alignLayers = await alignLayersPromise;
 
+  const queuedToolResponses = [];
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "set_comp_work_area", {
+    duration: 2,
+    verifyAfter: false
+  }, ["Codex Set Comp Work Area", "comp.workAreaStart"], {
+    comp: { itemIndex: 1, name: "Smoke Comp" },
+    workAreaStart: 0,
+    workAreaDuration: 2
+  }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "set_layer_time_range", {
+    layerIndices: [1, 2],
+    inPoint: 0.5,
+    duration: 1.5,
+    verifyAfter: false
+  }, ["Codex Set Layer Time Range", "__codexResolveLayers"], {
+    changedCount: 2,
+    layers: [{ index: 1, name: "Layer 1" }, { index: 2, name: "Layer 2" }]
+  }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "stagger_layers", {
+    layerIndices: [1, 2],
+    startTime: 0,
+    gap: 0.25,
+    verifyAfter: false
+  }, ["Codex Stagger Layers", "gap - overlap"], {
+    changedCount: 2,
+    layers: [{ index: 1, name: "Layer 1" }, { index: 2, name: "Layer 2" }]
+  }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "split_layers_at_time", {
+    layerIndices: [1],
+    time: 1,
+    verifyAfter: false
+  }, ["Codex Split Layers At Time", "splitLayer"], {
+    changedCount: 1,
+    split: [{ original: { index: 2, name: "Layer 1" }, newLayer: { index: 1, name: "Layer 1" } }]
+  }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "precompose_layers", {
+    layerIndices: [1, 2],
+    newCompName: "Smoke Precomp",
+    openInViewer: false,
+    verifyAfter: false
+  }, ["Codex Precompose Layers", "precompose"], {
+    comp: { itemIndex: 3, name: "Smoke Precomp" },
+    layerIndices: [1, 2]
+  }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "replace_layer_source", {
+    layerIndices: [1],
+    sourceItemIndex: 2,
+    verifyAfter: false
+  }, ["Codex Replace Layer Source", "replaceSource"], {
+    sourceItem: { itemIndex: 2, name: "Smoke Source", type: "footage" },
+    changedCount: 1,
+    layers: [{ index: 1, name: "Layer 1" }]
+  }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "rename_layers", {
+    layerIndices: [1, 2],
+    mode: "prefix",
+    prefix: "Smoke ",
+    verifyAfter: false
+  }, ["Codex Rename Layers", "__codexRenameValue"], {
+    changedCount: 2,
+    renamed: [{ index: 1, before: "A", after: "Smoke A" }]
+  }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "rename_project_items", {
+    itemIndices: [1],
+    mode: "suffix",
+    suffix: " Smoke",
+    verifyAfter: false
+  }, ["Codex Rename Project Items", "__codexRenameValue"], {
+    changedCount: 1,
+    renamed: [{ itemIndex: 1, before: "Comp", after: "Comp Smoke" }]
+  }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "update_text_layer", {
+    layerIndex: 1,
+    text: "Smoke",
+    fontSize: 42,
+    verifyAfter: false
+  }, ["Codex Update Text Layer", "__codexApplyTextDocumentPatch"], {
+    layer: { index: 1, name: "Text" },
+    text: { kind: "TextDocument", text: "Smoke" }
+  }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "create_shape_layer", {
+    shape: "rectangle",
+    name: "Smoke Shape",
+    size: [320, 180],
+    verifyAfter: false
+  }, ["Codex Create Shape Layer", "ADBE Vector Shape - Rect"], {
+    layer: { index: 1, name: "Smoke Shape" },
+    shape: { type: "rectangle", size: [320, 180] }
+  }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "fit_layer_to_comp", {
+    layerIndices: [1],
+    mode: "contain",
+    verifyAfter: false
+  }, ["Codex Fit Layer To Comp", "__codexLayerSourceSize"], {
+    changedCount: 1,
+    layers: [{ index: 1, name: "Layer 1" }]
+  }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "set_property_keyframes", {
+    layerIndex: 1,
+    propertyPath: "ADBE Transform Group.ADBE Opacity",
+    keyframes: [{ time: 0, value: 0 }, { time: 1, value: 100 }],
+    verifyAfter: false
+  }, ["Codex Set Property Keyframes", "setValueAtTime"], {
+    layer: { index: 1, name: "Layer 1" },
+    keyframeCount: 2
+  }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "apply_keyframe_ease", {
+    layerIndex: 1,
+    propertyPath: "ADBE Transform Group.ADBE Opacity",
+    keyIndices: [1, 2],
+    interpolation: "bezier",
+    verifyAfter: false
+  }, ["Codex Apply Keyframe Ease", "setTemporalEaseAtKey"], {
+    layer: { index: 1, name: "Layer 1" },
+    keyIndices: [1, 2]
+  }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "set_expression", {
+    layerIndex: 1,
+    propertyPath: "ADBE Transform Group.ADBE Opacity",
+    expression: "value",
+    verifyAfter: false
+  }, ["Codex Set Expression", "canSetExpression"], {
+    layer: { index: 1, name: "Layer 1" },
+    expression: "value"
+  }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "clear_expression", {
+    layerIndex: 1,
+    propertyPath: "ADBE Transform Group.ADBE Opacity",
+    verifyAfter: false
+  }, ["Codex Clear Expression", "expressionValue"], {
+    layer: { index: 1, name: "Layer 1" },
+    expression: ""
+  }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "add_comp_to_render_queue", {
+    compItemIndex: 1,
+    outputPath: "smoke-output.mov",
+    verifyAfter: false
+  }, ["Codex Add Comp To Render Queue", "renderQueue.items.add"], {
+    comp: { itemIndex: 1, name: "Smoke Comp" },
+    renderQueueItem: { index: 1, comp: { itemIndex: 1, name: "Smoke Comp" } }
+  }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "set_render_queue_output", {
+    renderQueueItemIndex: 1,
+    outputPath: "smoke-output.mov",
+    verifyAfter: false
+  }, ["Codex Set Render Queue Output", "outputModule.file"], {
+    renderQueueItem: { index: 1, outputModules: [{ index: 1, file: "smoke-output.mov" }] }
+  }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "get_render_queue_status", {
+    limit: 5
+  }, ["app.project.renderQueue", "__codexRenderQueueItemInfo"], {
+    totalItems: 1,
+    returned: 1,
+    items: [{ index: 1, comp: { itemIndex: 1, name: "Smoke Comp" } }]
+  }));
+
   const health = await requestJson(`http://127.0.0.1:${port}/health`);
   const agents = await requestJsonWithOptions({
     hostname: "127.0.0.1",
@@ -360,6 +560,34 @@ async function main() {
           title: "Read bridge status",
           tool: "get_bridge_status",
           args: {}
+        }
+      ]
+    }
+  });
+  const targetSummaryValidation = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/dev/tool/validate_ai_agent_plan",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    plan: {
+      summary: "Smoke-test target summaries.",
+      risk: "low",
+      requiresCheckpoint: false,
+      steps: [
+        {
+          title: "Trim selected layers",
+          tool: "set_layer_time_range",
+          args: {
+            compItemIndex: 1,
+            layerIndices: [1, 2],
+            inPoint: 0,
+            duration: 1
+          }
         }
       ]
     }
@@ -635,6 +863,9 @@ async function main() {
   if (alignLayers.status !== 200 || !alignLayers.body.ok || alignLayers.body.result.changedCount !== 2) {
     throw new Error("Expected align_layers_to_time to align multiple layer timings");
   }
+  if (queuedToolResponses.length !== 18 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
+    throw new Error("Expected all new typed tool queue smokes to pass");
+  }
   if (!agentsTool.body.ok || !agentsTool.body.result || !Array.isArray(agentsTool.body.result.agents)) {
     throw new Error("Unexpected list_ai_agents tool response");
   }
@@ -658,6 +889,15 @@ async function main() {
     !planRun.body.run.finishedAt
   ) {
     throw new Error("Unexpected plan runner dry-run response");
+  }
+  if (
+    targetSummaryValidation.status !== 200 ||
+    targetSummaryValidation.body.ok !== true ||
+    !targetSummaryValidation.body.result ||
+    !targetSummaryValidation.body.result.steps ||
+    String(targetSummaryValidation.body.result.steps[0].targetSummary || "").indexOf("layers 1,2") < 0
+  ) {
+    throw new Error("Plan validation did not include the expected affected target summary");
   }
   if (
     mutatingDryRun.status !== 200 ||
@@ -697,7 +937,7 @@ async function main() {
   }
 
   const toolNames = lines[1].result.tools.map((tool) => tool.name);
-  for (const expectedTool of ["get_ai_agent_log", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint"]) {
+  for (const expectedTool of ["get_ai_agent_log", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint", "set_comp_work_area", "set_layer_time_range", "stagger_layers", "split_layers_at_time", "precompose_layers", "replace_layer_source", "rename_layers", "rename_project_items", "update_text_layer", "create_shape_layer", "fit_layer_to_comp", "set_property_keyframes", "apply_keyframe_ease", "set_expression", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"]) {
     if (!toolNames.includes(expectedTool)) {
       throw new Error("Missing expected tool: " + expectedTool);
     }
@@ -714,6 +954,14 @@ async function main() {
   if (!runPlanTool || !runPlanTool.inputSchema.properties.dryRun || !runPlanTool.inputSchema.properties.allowMutations || !runPlanTool.inputSchema.properties.autoEditSession) {
     throw new Error("run_ai_agent_plan is missing run safety schema");
   }
+  const setWorkAreaTool = lines[1].result.tools.find((tool) => tool.name === "set_comp_work_area");
+  if (!setWorkAreaTool.inputSchema.properties.idempotencyKey || !setWorkAreaTool.inputSchema.properties.verifyAfter) {
+    throw new Error("set_comp_work_area is missing safety schema fields");
+  }
+  const renderQueueStatusTool = lines[1].result.tools.find((tool) => tool.name === "get_render_queue_status");
+  if (renderQueueStatusTool.inputSchema.properties.idempotencyKey) {
+    throw new Error("get_render_queue_status should remain read-only");
+  }
 
   console.log(JSON.stringify({
     ok: true,
@@ -723,8 +971,10 @@ async function main() {
     agents: agents.body.agents.map((agent) => agent.id),
     layerAttributeSet: layerAttributeSet.body.result.layers.length,
     alignLayers: alignLayers.body.result.changedCount,
+    queuedTypedTools: queuedToolResponses.length,
     readiness: readiness.body.readiness.status,
     planRun: planRun.body.run.steps[0].status,
+    targetSummary: targetSummaryValidation.body.result.steps[0].targetSummary,
     ignoredBindingRun: ignoredBindingRun.body.run.steps[0].status,
     namedCompBindingRun: namedCompBindingRun.body.run.steps.map((step) => step.status),
     mutatingDryRun: mutatingDryRun.body.run.steps[0].status,

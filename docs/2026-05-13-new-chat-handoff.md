@@ -85,4 +85,4 @@ Installed extension path:
 
 ## Next Recommended Step
 
-Continue with Milestone 39 in `plans/target-app-execplan.md`: improve Agent planning quality, then add the planned typed tool groups milestone by milestone.
+Continue with live AE validation depth for the new typed tool set: run protected test-project mutations for representative timeline, precomp/source, shape/layout, animation, and render queue setup workflows.

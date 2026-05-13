@@ -1320,6 +1320,7 @@
         var tool = step.tool ? " [" + step.tool + "]" : "";
         lines.push((i + 1) + ". " + (step.title || step.intent || "Step") + tool);
         if (step.intent) lines.push("   " + step.intent);
+        if (step.targetSummary) lines.push("   target: " + step.targetSummary);
         if (step.mutatesProject) lines.push("   mutates project; safe args prepared");
         if (step.warnings && step.warnings.length) lines.push("   warning: " + step.warnings.join("; "));
       }
@@ -1360,6 +1361,7 @@
       for (var i = 0; i < run.steps.length; i++) {
         var step = run.steps[i] || {};
         lines.push((i + 1) + ". " + (step.title || step.tool || "Step") + " - " + step.status);
+        if (step.targetSummary) lines.push("   target: " + step.targetSummary);
         if (step.reason) lines.push("   " + step.reason);
         if (step.error) lines.push("   " + step.error);
         if (step.result) {

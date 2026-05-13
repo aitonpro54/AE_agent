@@ -33,7 +33,7 @@ const AE_PLAN_SYSTEM_PROMPT = [
   "Return JSON only. Do not use markdown.",
   "Do not claim that you changed the project. You are only drafting a plan.",
   "The user may write in Russian or English. Cyrillic text is valid Russian; translate it internally and never ask for clarification only because text is non-Latin.",
-  "Prefer narrow MCP tools over raw ExtendScript.",
+  "Prefer typed MCP tools over raw ExtendScript. Raw ExtendScript is only for diagnostics or actions that no listed typed tool can perform.",
   "Every mutating step must include verifyAfter=true and an idempotencyKeyTemplate.",
   "Use checkpoints for broad, destructive, or multi-step project changes.",
   "If the request is ambiguous, produce a clarification step instead of guessing."
@@ -810,6 +810,23 @@ const MUTATING_TOOL_NAMES = new Set([
   "add_effect",
   "set_effect_property",
   "set_property_value",
+  "set_comp_work_area",
+  "set_layer_time_range",
+  "stagger_layers",
+  "split_layers_at_time",
+  "precompose_layers",
+  "replace_layer_source",
+  "rename_layers",
+  "rename_project_items",
+  "update_text_layer",
+  "create_shape_layer",
+  "fit_layer_to_comp",
+  "set_property_keyframes",
+  "apply_keyframe_ease",
+  "set_expression",
+  "clear_expression",
+  "add_comp_to_render_queue",
+  "set_render_queue_output",
   "align_layers_to_time",
   "set_layer_transform",
   "apply_transform_expression",
@@ -1117,7 +1134,7 @@ function compactCheckpoint(checkpoint) {
 function inferMutationTarget(toolName, args, payload) {
   const target = { tool: toolName };
   const request = {};
-  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "targetTime", "align", "itemIndex", "itemName", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix"]) {
+  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "targetTime", "time", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "itemType", "sourceItemIndex", "sourceItemName", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "renderQueueItemIndex", "outputPath"]) {
     if (hasArg(args || {}, key)) request[key] = args[key];
   }
   if (Object.keys(request).length) target.request = request;
@@ -1139,6 +1156,11 @@ function inferMutationTarget(toolName, args, payload) {
     if (payload.checkpointFile) target.checkpointFile = payload.checkpointFile;
     if (payload.backupFile) target.backupFile = payload.backupFile;
     if (payload.sourceFile) target.sourceFile = payload.sourceFile;
+    if (payload.sourceItem) target.sourceItem = payload.sourceItem;
+    if (payload.renderQueueItem) target.renderQueueItem = payload.renderQueueItem;
+    if (payload.renderQueueItems) target.renderQueueItems = payload.renderQueueItems;
+    if (payload.renamed) target.renamed = payload.renamed;
+    if (payload.split) target.split = payload.split;
     if (payload.namePrefix) target.namePrefix = payload.namePrefix;
     if (Array.isArray(payload.removed)) target.removed = payload.removed;
   }
@@ -1579,6 +1601,50 @@ function resolveExistingFile(filePath) {
   return { resolvedPath, stat };
 }
 
+function resolveOutputFilePath(filePath) {
+  const requestedPath = optionalString({ filePath }, "filePath", "");
+  if (!requestedPath) {
+    throw new Error("outputPath is required.");
+  }
+  return path.resolve(PROJECT_ROOT, requestedPath);
+}
+
+function normalizePropertyPathArg(args, name) {
+  const value = args ? args[name] : null;
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string" && value.trim().startsWith("[")) {
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed)) throw new Error(`${name} must decode to an array.`);
+    return parsed;
+  }
+  if (typeof value === "string" && value.trim()) {
+    return value.split(".").map((part) => part.trim()).filter(Boolean);
+  }
+  throw new Error(`${name} must be an array, a property-name string, or a JSON-encoded array string.`);
+}
+
+function requiredKeyframeArray(args, name) {
+  const value = args ? args[name] : null;
+  const items = Array.isArray(value)
+    ? value
+    : typeof value === "string" && value.trim().startsWith("[")
+      ? JSON.parse(value)
+      : null;
+  if (!Array.isArray(items) || !items.length) throw new Error(`${name} must be a non-empty array.`);
+  return items.map((item, index) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`${name}[${index}] must be an object.`);
+    }
+    const time = Number(item.time);
+    if (!Number.isFinite(time)) throw new Error(`${name}[${index}].time must be a finite number.`);
+    if (!hasArg(item, "value")) throw new Error(`${name}[${index}].value is required.`);
+    return {
+      time,
+      value: item.value
+    };
+  });
+}
+
 function getScriptLineContext(script, line, radius) {
   const lineNumber = Math.floor(Number(line));
   if (!Number.isFinite(lineNumber) || lineNumber < 1) return [];
@@ -1865,6 +1931,55 @@ function requiredSchemaFields(tool) {
   return required.filter(Boolean);
 }
 
+function formatTargetPart(label, value) {
+  if (value === undefined || value === null || value === "") return "";
+  if (Array.isArray(value)) {
+    if (!value.length) return "";
+    return `${label} ${value.join(",")}`;
+  }
+  return `${label} ${value}`;
+}
+
+function planStepTargetSummary(toolName, args) {
+  args = args || {};
+  const parts = [];
+  const comp = formatTargetPart("comp", args.compName || (hasArg(args, "compItemIndex") ? `#${args.compItemIndex}` : ""));
+  if (comp) parts.push(comp);
+  if (hasArg(args, "layerIndices")) parts.push(formatTargetPart("layers", args.layerIndices));
+  if (hasArg(args, "layerIndex")) parts.push(formatTargetPart("layer", args.layerIndex));
+  if (hasArg(args, "itemIndices")) parts.push(formatTargetPart("items", args.itemIndices));
+  if (hasArg(args, "itemIndex")) parts.push(formatTargetPart("item", `#${args.itemIndex}`));
+  if (args.itemName) parts.push(formatTargetPart("item", args.itemName));
+  if (hasArg(args, "sourceItemIndex")) parts.push(formatTargetPart("source", `#${args.sourceItemIndex}`));
+  if (args.sourceItemName) parts.push(formatTargetPart("source", args.sourceItemName));
+  if (args.property || args.propertyPath) parts.push(formatTargetPart("property", args.property || (Array.isArray(args.propertyPath) ? args.propertyPath.join(".") : args.propertyPath)));
+  if (args.effect || args.effectName || args.effectMatchName) parts.push(formatTargetPart("effect", args.effect || args.effectName || args.effectMatchName));
+  if (hasArg(args, "renderQueueItemIndex")) parts.push(formatTargetPart("render queue item", `#${args.renderQueueItemIndex}`));
+  if (args.outputPath) parts.push(formatTargetPart("output", args.outputPath));
+
+  if (!parts.length) {
+    if ([
+      "get_active_comp",
+      "get_selected_layers",
+      "get_selected_properties",
+      "set_layer_time_range",
+      "stagger_layers",
+      "split_layers_at_time",
+      "fit_layer_to_comp",
+      "rename_layers"
+    ].includes(toolName)) {
+      return "active comp / selected layers";
+    }
+    if (toolName === "set_comp_work_area") return "active comp";
+    if (toolName === "get_render_queue_status") return "render queue";
+  }
+  return parts.filter(Boolean).join("; ");
+}
+
+function knownToolNamesSummary(limit) {
+  return PLANNING_TOOL_NAMES.slice(0, limit || 20).join(", ");
+}
+
 function validateAgentPlanObject(plan, requestId) {
   const validationId = requestId || crypto.randomUUID();
   const sourcePlan = plan && typeof plan === "object" && !Array.isArray(plan) ? plan : {};
@@ -1909,7 +2024,7 @@ function validateAgentPlanObject(plan, requestId) {
 
     if (!tool) {
       unknownToolCount += 1;
-      stepWarnings.push(`Unknown MCP tool: ${toolName}`);
+      stepWarnings.push(`Unknown MCP tool: ${toolName}. Use a listed tool name such as ${knownToolNamesSummary(12)}.`);
     } else {
       executableCount += 1;
       for (const field of requiredSchemaFields(tool)) {
@@ -1921,29 +2036,36 @@ function validateAgentPlanObject(plan, requestId) {
         }
       }
       if (missingRequired.length) {
-        stepWarnings.push(`Missing required fields: ${missingRequired.join(", ")}`);
+        stepWarnings.push(`Missing required fields for ${toolName}: ${missingRequired.join(", ")}.`);
       }
       if (boundRequired.length) {
-        stepWarnings.push(`Requires runtime binding for: ${boundRequired.join(", ")}`);
+        stepWarnings.push(`Runtime bindings must resolve before execution: ${boundRequired.join(", ")}.`);
       }
     }
 
     if (mutating) {
       mutatingCount += 1;
+      const safetyAutofixes = [];
       if (safeArgs.verifyAfter !== true) {
         safeArgs.verifyAfter = true;
         autofixes.push("verifyAfter=true");
+        safetyAutofixes.push("verifyAfter=true");
       }
       if (!safeArgs.idempotencyKey) {
         safeArgs.idempotencyKey = `ae-plan-${validationId}-step-${index + 1}-${toolName}`;
         autofixes.push("idempotencyKey");
+        safetyAutofixes.push("idempotencyKey");
       }
       if (!safeArgs.idempotencyScope) {
         safeArgs.idempotencyScope = `ae-plan:${validationId}`;
         autofixes.push("idempotencyScope");
+        safetyAutofixes.push("idempotencyScope");
+      }
+      if (safetyAutofixes.length) {
+        stepWarnings.push(`Added mutation safety defaults: ${safetyAutofixes.join(", ")}.`);
       }
       if (toolName === "run_extendscript" || toolName === "run_extendscript_file") {
-        stepWarnings.push("Raw ExtendScript is allowed only as an escape hatch; prefer a narrow MCP tool.");
+        stepWarnings.push("Raw ExtendScript is an escape hatch. Use a typed MCP tool whenever one fits the request.");
       }
     }
 
@@ -1956,6 +2078,7 @@ function validateAgentPlanObject(plan, requestId) {
       executable: Boolean(tool) && missingRequired.length === 0 && boundRequired.length === 0,
       requiresRuntimeBinding: boundRequired.length > 0,
       mutatesProject: mutating,
+      targetSummary: planStepTargetSummary(toolName, safeArgs),
       args: planStepArgs(step),
       safeArgs,
       warnings: stepWarnings,
@@ -1967,7 +2090,7 @@ function validateAgentPlanObject(plan, requestId) {
   }
 
   if (mutatingCount > 1 && sourcePlan.requiresCheckpoint !== true) {
-    warnings.push("Multiple mutating steps planned; a checkpoint is recommended before execution.");
+    warnings.push("Multiple mutating steps planned; set requiresCheckpoint=true or rely on the runner's protected edit session before execution.");
   }
   if (unknownToolCount) {
     warnings.push(`${unknownToolCount} planned step(s) reference unknown MCP tools.`);
@@ -2395,6 +2518,24 @@ const PLANNING_TOOL_NAMES = [
   "set_effect_property",
   "set_property_value",
   "align_layers_to_time",
+  "set_comp_work_area",
+  "set_layer_time_range",
+  "stagger_layers",
+  "split_layers_at_time",
+  "precompose_layers",
+  "replace_layer_source",
+  "rename_layers",
+  "rename_project_items",
+  "update_text_layer",
+  "create_shape_layer",
+  "fit_layer_to_comp",
+  "set_property_keyframes",
+  "apply_keyframe_ease",
+  "set_expression",
+  "clear_expression",
+  "add_comp_to_render_queue",
+  "set_render_queue_output",
+  "get_render_queue_status",
   "set_layer_transform",
   "apply_transform_expression",
   "add_layer_marker",
@@ -2532,6 +2673,7 @@ async function runValidatedAgentPlan(options) {
       index: step.index,
       title: step.title,
       tool: step.tool,
+      targetSummary: step.targetSummary || "",
       dryRun,
       mutatesProject: step.mutatesProject,
       status: "pending"
@@ -2688,11 +2830,16 @@ function buildAePlanPrompt(args) {
     "You do not need to add a checkpoint_project step for every mutation because the plan runner can create a protected edit session, but set requiresCheckpoint=true for broad, destructive, or multi-step project changes.",
     "When a creation tool can set a property directly, include that property in the creation tool args instead of adding a later step that needs an unknown layerIndex.",
     "For requests to align selected layers, clips, or precomps to the current time indicator, use align_layers_to_time with no layerIndices and omit targetTime so it uses the active comp CTI.",
+    "For timeline trims, work areas, sequencing, splitting, and offsets, use set_comp_work_area, set_layer_time_range, stagger_layers, or split_layers_at_time.",
+    "For precomp/source workflows, use precompose_layers, replace_layer_source, rename_layers, and rename_project_items before considering raw ExtendScript.",
+    "For text, shape, and fitting workflows, use update_text_layer, create_shape_layer, and fit_layer_to_comp.",
+    "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, set_expression, and clear_expression.",
+    "For render queue setup, use add_comp_to_render_queue, set_render_queue_output, and get_render_queue_status. Do not start a render.",
     "For requests about selected layers, inspect with get_active_comp or get_selected_layers first. A later layerIndex field may use {{selectedLayerIndices}} to target the selected layers.",
     "For later steps that need the active comp, compItemIndex may use {{compItemIndex}} after get_active_comp, get_comp_details, or get_selected_layers.",
     "For requests about a selected precomp/source comp, inspect with get_active_comp or get_selected_layers first, then use {{selectedPrecompItemIndex}} for duplicate_comp or other source-comp operations.",
     "If a later step depends on a previous tool result, set dependsOnStep and resultBindings instead of inventing indices.",
-    "Use mutating tools only as planned steps; do not execute them. Use run_extendscript only when no narrower tool fits."
+    "Use mutating tools only as planned steps; do not execute them. Use run_extendscript only when no typed tool fits."
   ].join("\n");
 }
 
@@ -4459,6 +4606,309 @@ const tools = [
     }
   },
   {
+    name: "set_comp_work_area",
+    description: "Set the work-area start and duration for the active or specified composition.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        start: {
+          type: "number",
+          description: "Work-area start time in seconds. Defaults to the current comp time."
+        },
+        duration: {
+          type: "number",
+          description: "Work-area duration in seconds."
+        }
+      },
+      required: ["duration"]
+    }
+  },
+  {
+    name: "set_layer_time_range",
+    description: "Set start, in-point, out-point, or duration for selected or specified layers.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndices: { type: ["number", "array"], description: "Optional layer index or indexes. Defaults to selected layers." },
+        startTime: { type: "number", description: "Optional layer start time in seconds." },
+        inPoint: { type: "number", description: "Optional layer in-point in seconds." },
+        outPoint: { type: "number", description: "Optional layer out-point in seconds." },
+        duration: { type: "number", description: "Optional visible duration in seconds, applied from the final in-point." }
+      }
+    }
+  },
+  {
+    name: "stagger_layers",
+    description: "Sequence selected or specified layers by preserving each layer duration and applying a gap or overlap.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndices: { type: ["number", "array"], description: "Optional layer index or indexes. Defaults to selected layers." },
+        startTime: { type: "number", description: "Optional sequence start time. Defaults to comp current time." },
+        gap: { type: "number", description: "Seconds between layer out-point and next layer in-point. Defaults to 0." },
+        overlap: { type: "number", description: "Seconds each next layer overlaps the previous layer. Defaults to 0." },
+        order: { type: "string", enum: ["selection", "indexAsc", "indexDesc"], description: "Layer sequencing order. Defaults to selection/request order." }
+      }
+    }
+  },
+  {
+    name: "split_layers_at_time",
+    description: "Split selected or specified layers at the current time indicator or a target time.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndices: { type: ["number", "array"], description: "Optional layer index or indexes. Defaults to selected layers." },
+        time: { type: "number", description: "Optional split time in seconds. Defaults to comp current time." }
+      }
+    }
+  },
+  {
+    name: "precompose_layers",
+    description: "Precompose explicit layers into a new composition.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndices: { type: "array", items: { type: "number" }, description: "Explicit 1-based layer indexes to precompose." },
+        newCompName: { type: "string", description: "Name for the new precomposition." },
+        moveAllAttributes: { type: "boolean", description: "Whether to move all attributes into the new comp. Defaults to true." },
+        openInViewer: { type: "boolean", description: "Whether to open the new comp after creation. Defaults to true." }
+      },
+      required: ["layerIndices", "newCompName"]
+    }
+  },
+  {
+    name: "replace_layer_source",
+    description: "Replace selected or specified layer sources with an existing footage or composition item while preserving layer transforms.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndices: { type: ["number", "array"], description: "Optional layer index or indexes. Defaults to selected layers." },
+        sourceItemIndex: { type: "number", description: "1-based project item index for the replacement source." },
+        sourceItemName: { type: "string", description: "Exact replacement source item name when sourceItemIndex is omitted." },
+        sourceItemType: { type: "string", enum: ["comp", "footage"], description: "Optional source type filter." },
+        fixExpressions: { type: "boolean", description: "Whether After Effects should adjust expressions. Defaults to true." }
+      }
+    }
+  },
+  {
+    name: "rename_layers",
+    description: "Rename selected or specified layers with exact, prefix, suffix, or find-replace modes.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndices: { type: ["number", "array"], description: "Optional layer index or indexes. Defaults to selected layers." },
+        mode: { type: "string", enum: ["exact", "prefix", "suffix", "findReplace"], description: "Rename mode. Defaults to exact when name is provided." },
+        name: { type: "string", description: "Exact base name. For multiple layers, {index} or {n} templates are supported; otherwise a number is appended." },
+        prefix: { type: "string", description: "Prefix to add in prefix mode." },
+        suffix: { type: "string", description: "Suffix to add in suffix mode." },
+        find: { type: "string", description: "Text to find in findReplace mode." },
+        replace: { type: "string", description: "Replacement text for findReplace mode." },
+        caseSensitive: { type: "boolean", description: "Whether findReplace matching is case-sensitive. Defaults to true." }
+      }
+    }
+  },
+  {
+    name: "rename_project_items",
+    description: "Rename project items by explicit indexes or a scoped search with exact, prefix, suffix, or find-replace modes.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        itemIndices: { type: ["number", "array"], description: "Optional project item index or indexes." },
+        query: { type: "string", description: "Optional name query used when itemIndices is omitted." },
+        type: { type: "string", enum: ["comp", "footage", "folder"], description: "Optional project item type filter." },
+        exactName: { type: "boolean", description: "Whether query must match the full name. Defaults to false." },
+        caseSensitive: { type: "boolean", description: "Whether query/find matching is case-sensitive. Defaults to false for query and true for findReplace." },
+        limit: { type: "number", description: "Maximum project items to rename. Defaults to 25, maximum 100." },
+        mode: { type: "string", enum: ["exact", "prefix", "suffix", "findReplace"], description: "Rename mode." },
+        name: { type: "string", description: "Exact base name. For multiple items, {index} or {n} templates are supported; otherwise a number is appended." },
+        prefix: { type: "string", description: "Prefix to add in prefix mode." },
+        suffix: { type: "string", description: "Suffix to add in suffix mode." },
+        find: { type: "string", description: "Text to find in findReplace mode." },
+        replace: { type: "string", description: "Replacement text for findReplace mode." }
+      }
+    }
+  },
+  {
+    name: "update_text_layer",
+    description: "Update a text layer's Source Text and common TextDocument fields.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndex: { type: "number", description: "1-based text layer index." },
+        text: { type: "string", description: "Optional new text content." },
+        font: { type: "string", description: "Optional font name." },
+        fontSize: { type: "number", description: "Optional font size." },
+        fillColor: { type: "array", items: { type: "number" }, description: "Optional RGB fill color with values from 0 to 1." },
+        applyFill: { type: "boolean", description: "Whether fill is enabled." },
+        strokeColor: { type: "array", items: { type: "number" }, description: "Optional RGB stroke color with values from 0 to 1." },
+        applyStroke: { type: "boolean", description: "Whether stroke is enabled." },
+        strokeWidth: { type: "number", description: "Optional stroke width." },
+        tracking: { type: "number", description: "Optional tracking value." },
+        leading: { type: "number", description: "Optional leading value." }
+      },
+      required: ["layerIndex"]
+    }
+  },
+  {
+    name: "create_shape_layer",
+    description: "Create a rectangle or ellipse shape layer with fill, stroke, size, position, and timing.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        shape: { type: "string", enum: ["rectangle", "ellipse"], description: "Shape type. Defaults to rectangle." },
+        name: { type: "string", description: "Optional layer name." },
+        size: { type: "array", items: { type: "number" }, description: "Shape size [width, height]. Defaults to half comp size." },
+        position: { type: "array", items: { type: "number" }, description: "Layer position [x, y] or [x, y, z]. Defaults to comp center." },
+        fillColor: { type: "array", items: { type: "number" }, description: "Optional RGB fill color with values from 0 to 1." },
+        strokeColor: { type: "array", items: { type: "number" }, description: "Optional RGB stroke color with values from 0 to 1." },
+        strokeWidth: { type: "number", description: "Optional stroke width. Defaults to 0." },
+        startTime: { type: "number", description: "Optional layer start time in seconds." },
+        duration: { type: "number", description: "Optional layer duration in seconds." }
+      }
+    }
+  },
+  {
+    name: "fit_layer_to_comp",
+    description: "Scale selected or specified layers to contain, cover, or stretch to the comp frame.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndices: { type: ["number", "array"], description: "Optional layer index or indexes. Defaults to selected layers." },
+        mode: { type: "string", enum: ["contain", "cover", "stretch"], description: "Fit mode. Defaults to contain." },
+        alignX: { type: "string", enum: ["left", "center", "right"], description: "Horizontal alignment. Defaults to center." },
+        alignY: { type: "string", enum: ["top", "center", "bottom"], description: "Vertical alignment. Defaults to center." }
+      }
+    }
+  },
+  {
+    name: "set_property_keyframes",
+    description: "Set explicit keyframes on a layer property by property path.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndex: { type: "number", description: "1-based layer index in the target composition." },
+        propertyPath: { type: ["array", "string"], description: "Property path from the layer.", items: {} },
+        keyframes: { type: "array", description: "Array of keyframes with time and value fields.", items: { type: "object" } },
+        clearExisting: { type: "boolean", description: "Whether to remove existing keys first. Defaults to false." }
+      },
+      required: ["layerIndex", "propertyPath", "keyframes"]
+    }
+  },
+  {
+    name: "apply_keyframe_ease",
+    description: "Apply temporal ease and optional interpolation to selected or explicit keyframes on a layer property.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndex: { type: "number", description: "1-based layer index in the target composition." },
+        propertyPath: { type: ["array", "string"], description: "Property path from the layer.", items: {} },
+        keyIndices: { type: ["number", "array"], description: "Optional keyframe index or indexes. Defaults to selected keys." },
+        easeIn: { type: "object", description: "Ease-in object with speed and influence. Defaults to speed 0, influence 33." },
+        easeOut: { type: "object", description: "Ease-out object with speed and influence. Defaults to speed 0, influence 33." },
+        interpolation: { type: "string", enum: ["bezier", "linear", "hold"], description: "Optional interpolation type." }
+      },
+      required: ["layerIndex", "propertyPath"]
+    }
+  },
+  {
+    name: "set_expression",
+    description: "Set an expression on any expression-capable layer property.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndex: { type: "number", description: "1-based layer index in the target composition." },
+        propertyPath: { type: ["array", "string"], description: "Property path from the layer.", items: {} },
+        expression: { type: "string", description: "After Effects expression source." },
+        enabled: { type: "boolean", description: "Whether the expression should be enabled. Defaults to true." }
+      },
+      required: ["layerIndex", "propertyPath", "expression"]
+    }
+  },
+  {
+    name: "clear_expression",
+    description: "Clear an expression from any expression-capable layer property.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndex: { type: "number", description: "1-based layer index in the target composition." },
+        propertyPath: { type: ["array", "string"], description: "Property path from the layer.", items: {} }
+      },
+      required: ["layerIndex", "propertyPath"]
+    }
+  },
+  {
+    name: "add_comp_to_render_queue",
+    description: "Add the active or specified composition to the After Effects render queue.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        renderSettingsTemplate: { type: "string", description: "Optional render settings template name." },
+        outputModuleTemplate: { type: "string", description: "Optional output module template name." },
+        outputPath: { type: "string", description: "Optional output file path." }
+      }
+    }
+  },
+  {
+    name: "set_render_queue_output",
+    description: "Set output path and templates for an existing render queue item.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        renderQueueItemIndex: { type: "number", description: "1-based render queue item index." },
+        renderSettingsTemplate: { type: "string", description: "Optional render settings template name." },
+        outputModuleTemplate: { type: "string", description: "Optional output module template name." },
+        outputPath: { type: "string", description: "Optional output file path." }
+      },
+      required: ["renderQueueItemIndex"]
+    }
+  },
+  {
+    name: "get_render_queue_status",
+    description: "Return compact status for After Effects render queue items.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        limit: { type: "number", description: "Maximum render queue items to return. Defaults to 50." }
+      }
+    }
+  },
+  {
     name: "set_layer_transform",
     description: "Set common transform values on a layer: position, scale, rotation, opacity, or anchor point.",
     inputSchema: {
@@ -4774,6 +5224,117 @@ async function callTool(name, args) {
         try { info.parent = layer.parent ? __codexLayerInfo(layer.parent) : null; } catch (__parentError) {}
         try { info.source = layer.source ? __codexItemReference(layer.source) : null; } catch (__sourceError) {}
 
+        return info;
+      }
+
+      function __codexResolveLayers(comp, requestedLayerIndices) {
+        var layers = [];
+        if (requestedLayerIndices && requestedLayerIndices.length) {
+          for (var __r = 0; __r < requestedLayerIndices.length; __r++) {
+            var requestedLayer = comp.layer(requestedLayerIndices[__r]);
+            if (!requestedLayer) throw new Error("Layer not found at index " + requestedLayerIndices[__r] + ".");
+            layers.push(requestedLayer);
+          }
+        } else {
+          for (var __s = 0; __s < comp.selectedLayers.length; __s++) {
+            layers.push(comp.selectedLayers[__s]);
+          }
+        }
+        if (!layers.length) throw new Error("No target layers. Select layers or pass layerIndices.");
+        return layers;
+      }
+
+      function __codexLayerTiming(layer) {
+        return {
+          index: layer.index,
+          name: layer.name,
+          startTime: layer.startTime,
+          inPoint: layer.inPoint,
+          outPoint: layer.outPoint,
+          duration: layer.outPoint - layer.inPoint
+        };
+      }
+
+      function __codexRenameValue(currentName, mode, index, total, exactName, prefix, suffix, findText, replaceText, caseSensitive) {
+        var nextName = currentName || "";
+        if (mode === "exact") {
+          if (!exactName) throw new Error("name is required for exact rename mode.");
+          nextName = exactName;
+          if (total > 1) {
+            if (nextName.indexOf("{index}") !== -1 || nextName.indexOf("{n}") !== -1) {
+              nextName = nextName.replace(/\{index\}/g, String(index)).replace(/\{n\}/g, String(index));
+            } else {
+              nextName = nextName + " " + index;
+            }
+          }
+        } else if (mode === "prefix") {
+          if (!prefix) throw new Error("prefix is required for prefix rename mode.");
+          nextName = prefix + nextName;
+        } else if (mode === "suffix") {
+          if (!suffix) throw new Error("suffix is required for suffix rename mode.");
+          nextName = nextName + suffix;
+        } else if (mode === "findReplace") {
+          if (!findText) throw new Error("find is required for findReplace rename mode.");
+          var flags = caseSensitive ? "g" : "gi";
+          var specials = "\\\\^$*+?.()|{}[]";
+          var escaped = "";
+          for (var __c = 0; __c < findText.length; __c++) {
+            var ch = findText.charAt(__c);
+            escaped += specials.indexOf(ch) >= 0 ? "\\\\" + ch : ch;
+          }
+          nextName = nextName.replace(new RegExp(escaped, flags), replaceText || "");
+        } else {
+          throw new Error("mode must be one of: exact, prefix, suffix, findReplace.");
+        }
+        return nextName;
+      }
+
+      function __codexLayerSourceSize(layer, comp) {
+        var width = null;
+        var height = null;
+        try {
+          if (layer.source) {
+            width = layer.source.width || null;
+            height = layer.source.height || null;
+          }
+        } catch (__sourceSizeError) {}
+        if ((!width || !height) && layer.sourceRectAtTime) {
+          try {
+            var rect = layer.sourceRectAtTime(comp.time, false);
+            width = rect.width || width;
+            height = rect.height || height;
+          } catch (__rectSizeError) {}
+        }
+        if (!width || !height) throw new Error("Could not determine layer source size for " + layer.name + ".");
+        return { width: width, height: height };
+      }
+
+      function __codexRenderQueueItemIndex(item) {
+        var rq = app.project.renderQueue;
+        for (var __rq = 1; __rq <= rq.numItems; __rq++) {
+          if (rq.item(__rq) === item) return __rq;
+        }
+        return null;
+      }
+
+      function __codexRenderQueueItemInfo(item) {
+        var info = {
+          index: __codexRenderQueueItemIndex(item),
+          status: item.status,
+          comp: item.comp ? __codexItemReference(item.comp) : null,
+          timeSpanStart: item.timeSpanStart,
+          timeSpanDuration: item.timeSpanDuration,
+          outputModules: []
+        };
+        try {
+          for (var __om = 1; __om <= item.numOutputModules; __om++) {
+            var outputModule = item.outputModule(__om);
+            info.outputModules.push({
+              index: __om,
+              file: outputModule.file ? outputModule.file.fsName : null
+            });
+          }
+        } catch (__outputModuleInfoError) {}
         return info;
       }
 
@@ -6600,6 +7161,862 @@ async function callTool(name, args) {
       };
       app.endUndoGroup();
       return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_comp_work_area") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const start = optionalNumber(args, "start", null);
+    const duration = optionalNumber(args, "duration", null);
+
+    if (duration === null || duration <= 0) return toolResult("duration must be greater than 0.", true);
+    if (start !== null && start < 0) return toolResult("start must be 0 or greater.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var requestedStart = ${start === null ? "comp.time" : start};
+      var requestedDuration = ${duration};
+      if (requestedStart < 0) throw new Error("Work-area start must be 0 or greater.");
+      if (requestedDuration <= 0) throw new Error("Work-area duration must be greater than 0.");
+
+      app.beginUndoGroup("Codex Set Comp Work Area");
+      var before = {
+        workAreaStart: comp.workAreaStart,
+        workAreaDuration: comp.workAreaDuration
+      };
+      comp.workAreaStart = requestedStart;
+      comp.workAreaDuration = requestedDuration;
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          duration: comp.duration
+        },
+        before: before,
+        workAreaStart: comp.workAreaStart,
+        workAreaDuration: comp.workAreaDuration
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_layer_time_range") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndices = optionalPositiveIntegerList(args, "layerIndices");
+    const startTime = optionalNumber(args, "startTime", null);
+    const inPoint = optionalNumber(args, "inPoint", null);
+    const outPoint = optionalNumber(args, "outPoint", null);
+    const duration = optionalNumber(args, "duration", null);
+
+    if (startTime === null && inPoint === null && outPoint === null && duration === null) {
+      return toolResult("Provide startTime, inPoint, outPoint, or duration.", true);
+    }
+    if (duration !== null && duration <= 0) return toolResult("duration must be greater than 0.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var requestedLayerIndices = ${layerIndices ? aeLiteral(layerIndices) : "null"};
+      var requestedStartTime = ${startTime === null ? "null" : startTime};
+      var requestedInPoint = ${inPoint === null ? "null" : inPoint};
+      var requestedOutPoint = ${outPoint === null ? "null" : outPoint};
+      var requestedDuration = ${duration === null ? "null" : duration};
+      var layers = __codexResolveLayers(comp, requestedLayerIndices);
+
+      app.beginUndoGroup("Codex Set Layer Time Range");
+      var changed = [];
+      for (var __i = 0; __i < layers.length; __i++) {
+        var layer = layers[__i];
+        if (layer.locked) throw new Error("Layer is locked: " + layer.name);
+        var before = __codexLayerTiming(layer);
+        if (requestedStartTime !== null) layer.startTime = requestedStartTime;
+        if (requestedInPoint !== null) layer.inPoint = requestedInPoint;
+        if (requestedOutPoint !== null) layer.outPoint = requestedOutPoint;
+        if (requestedDuration !== null) layer.outPoint = layer.inPoint + requestedDuration;
+        if (layer.outPoint <= layer.inPoint) throw new Error("Layer outPoint must be after inPoint: " + layer.name);
+        changed.push({
+          before: before,
+          after: __codexLayerTiming(layer),
+          layer: __codexLayerInfo(layer)
+        });
+      }
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name, time: comp.time },
+        changedCount: changed.length,
+        layer: changed.length === 1 ? changed[0].layer : null,
+        layers: changed.map(function (item) { return item.layer; }),
+        changed: changed
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "stagger_layers") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndices = optionalPositiveIntegerList(args, "layerIndices");
+    const startTime = optionalNumber(args, "startTime", null);
+    const gap = optionalNumber(args, "gap", 0);
+    const overlap = optionalNumber(args, "overlap", 0);
+    const order = optionalString(args, "order", "selection");
+
+    if (!["selection", "indexAsc", "indexDesc"].includes(order)) return toolResult("order must be one of: selection, indexAsc, indexDesc.", true);
+    if (overlap < 0) return toolResult("overlap must be 0 or greater.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var requestedLayerIndices = ${layerIndices ? aeLiteral(layerIndices) : "null"};
+      var sequenceStart = ${startTime === null ? "comp.time" : startTime};
+      var gap = ${gap};
+      var overlap = ${overlap};
+      var order = ${aeLiteral(order)};
+      var layers = __codexResolveLayers(comp, requestedLayerIndices);
+      if (order === "indexAsc") {
+        layers.sort(function (a, b) { return a.index - b.index; });
+      } else if (order === "indexDesc") {
+        layers.sort(function (a, b) { return b.index - a.index; });
+      }
+
+      app.beginUndoGroup("Codex Stagger Layers");
+      var cursor = sequenceStart;
+      var changed = [];
+      for (var __i = 0; __i < layers.length; __i++) {
+        var layer = layers[__i];
+        if (layer.locked) throw new Error("Layer is locked: " + layer.name);
+        var before = __codexLayerTiming(layer);
+        var visibleDuration = Math.max(0, layer.outPoint - layer.inPoint);
+        var delta = cursor - layer.inPoint;
+        layer.startTime = layer.startTime + delta;
+        changed.push({
+          before: before,
+          after: __codexLayerTiming(layer),
+          layer: __codexLayerInfo(layer)
+        });
+        cursor = layer.outPoint + gap - overlap;
+      }
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name, time: comp.time },
+        startTime: sequenceStart,
+        gap: gap,
+        overlap: overlap,
+        order: order,
+        changedCount: changed.length,
+        layers: changed.map(function (item) { return item.layer; }),
+        changed: changed
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "split_layers_at_time") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndices = optionalPositiveIntegerList(args, "layerIndices");
+    const splitTime = optionalNumber(args, "time", optionalNumber(args, "targetTime", null));
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var requestedLayerIndices = ${layerIndices ? aeLiteral(layerIndices) : "null"};
+      var splitTime = ${splitTime === null ? "comp.time" : splitTime};
+      var layers = __codexResolveLayers(comp, requestedLayerIndices);
+
+      app.beginUndoGroup("Codex Split Layers At Time");
+      var split = [];
+      for (var __i = 0; __i < layers.length; __i++) {
+        var layer = layers[__i];
+        if (layer.locked) throw new Error("Layer is locked: " + layer.name);
+        if (splitTime <= layer.inPoint || splitTime >= layer.outPoint) {
+          throw new Error("Split time must be inside the layer time range: " + layer.name);
+        }
+        var before = __codexLayerTiming(layer);
+        var newLayer = layer.splitLayer(splitTime);
+        split.push({
+          before: before,
+          original: __codexLayerInfo(layer),
+          newLayer: __codexLayerInfo(newLayer)
+        });
+      }
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name, time: comp.time },
+        time: splitTime,
+        changedCount: split.length,
+        split: split,
+        layers: split.map(function (item) { return item.newLayer; })
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "precompose_layers") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndices = requiredPositiveIntegerList(args, "layerIndices");
+    const newCompName = optionalString(args, "newCompName", "");
+    const moveAllAttributes = optionalBoolean(args, "moveAllAttributes", true);
+    const openInViewer = optionalBoolean(args, "openInViewer", true);
+
+    if (!newCompName) return toolResult("newCompName is required.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layerIndices = ${aeLiteral(layerIndices)};
+      var newCompName = ${aeLiteral(newCompName)};
+      var moveAllAttributes = ${moveAllAttributes ? "true" : "false"};
+      var openInViewer = ${openInViewer ? "true" : "false"};
+      for (var __i = 0; __i < layerIndices.length; __i++) {
+        var layer = comp.layer(layerIndices[__i]);
+        if (!layer) throw new Error("Layer not found at index " + layerIndices[__i] + ".");
+        if (layer.locked) throw new Error("Layer is locked: " + layer.name);
+      }
+
+      app.beginUndoGroup("Codex Precompose Layers");
+      var precomp = comp.layers.precompose(layerIndices, newCompName, moveAllAttributes);
+      if (openInViewer && precomp && precomp.openInViewer) precomp.openInViewer();
+      var response = {
+        sourceComp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        comp: { itemIndex: __codexProjectIndexForItem(precomp), name: precomp.name, numLayers: precomp.numLayers, duration: precomp.duration },
+        layerIndices: layerIndices,
+        moveAllAttributes: moveAllAttributes
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "replace_layer_source") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndices = optionalPositiveIntegerList(args, "layerIndices");
+    const sourceItemIndex = optionalPositiveInteger(args, "sourceItemIndex");
+    const sourceItemName = optionalString(args, "sourceItemName", "");
+    const sourceItemType = optionalString(args, "sourceItemType", "");
+    const fixExpressions = optionalBoolean(args, "fixExpressions", true);
+
+    if (!sourceItemIndex && !sourceItemName) return toolResult("Provide sourceItemIndex or sourceItemName.", true);
+    if (sourceItemType && !["comp", "footage"].includes(sourceItemType)) return toolResult("sourceItemType must be one of: comp, footage.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layers = __codexResolveLayers(comp, ${layerIndices ? aeLiteral(layerIndices) : "null"});
+      var sourceItem = __codexResolveProjectItem(${sourceItemIndex === null ? "null" : sourceItemIndex}, ${aeLiteral(sourceItemName)}, ${aeLiteral(sourceItemType)});
+      if (!(sourceItem instanceof FootageItem) && !(sourceItem instanceof CompItem)) {
+        throw new Error("Replacement source must be footage or a composition.");
+      }
+      var fixExpressions = ${fixExpressions ? "true" : "false"};
+
+      app.beginUndoGroup("Codex Replace Layer Source");
+      var changed = [];
+      for (var __i = 0; __i < layers.length; __i++) {
+        var layer = layers[__i];
+        if (layer.locked) throw new Error("Layer is locked: " + layer.name);
+        var before = __codexLayerInfo(layer);
+        if (!layer.replaceSource) throw new Error("Layer source cannot be replaced: " + layer.name);
+        layer.replaceSource(sourceItem, fixExpressions);
+        changed.push({
+          before: before,
+          after: __codexLayerInfo(layer)
+        });
+      }
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        sourceItem: __codexItemReference(sourceItem),
+        changedCount: changed.length,
+        layers: changed.map(function (item) { return item.after; }),
+        changed: changed
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "rename_layers") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndices = optionalPositiveIntegerList(args, "layerIndices");
+    const mode = optionalString(args, "mode", hasArg(args, "name") ? "exact" : hasArg(args, "prefix") ? "prefix" : hasArg(args, "suffix") ? "suffix" : "findReplace");
+    const renameName = optionalString(args, "name", "");
+    const prefix = optionalString(args, "prefix", "");
+    const suffix = optionalString(args, "suffix", "");
+    const findText = optionalString(args, "find", "");
+    const replaceText = optionalString(args, "replace", "");
+    const caseSensitive = optionalBoolean(args, "caseSensitive", true);
+
+    if (!["exact", "prefix", "suffix", "findReplace"].includes(mode)) return toolResult("mode must be one of: exact, prefix, suffix, findReplace.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layers = __codexResolveLayers(comp, ${layerIndices ? aeLiteral(layerIndices) : "null"});
+      var mode = ${aeLiteral(mode)};
+      var exactName = ${aeLiteral(renameName)};
+      var prefix = ${aeLiteral(prefix)};
+      var suffix = ${aeLiteral(suffix)};
+      var findText = ${aeLiteral(findText)};
+      var replaceText = ${aeLiteral(replaceText)};
+      var caseSensitive = ${caseSensitive ? "true" : "false"};
+
+      app.beginUndoGroup("Codex Rename Layers");
+      var renamed = [];
+      for (var __i = 0; __i < layers.length; __i++) {
+        var layer = layers[__i];
+        if (layer.locked) throw new Error("Layer is locked: " + layer.name);
+        var beforeName = layer.name;
+        var nextName = __codexRenameValue(beforeName, mode, __i + 1, layers.length, exactName, prefix, suffix, findText, replaceText, caseSensitive);
+        layer.name = nextName;
+        renamed.push({
+          index: layer.index,
+          before: beforeName,
+          after: layer.name,
+          layer: __codexLayerInfo(layer)
+        });
+      }
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        mode: mode,
+        changedCount: renamed.length,
+        renamed: renamed,
+        layers: renamed.map(function (item) { return item.layer; })
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "rename_project_items") {
+    const itemIndices = optionalPositiveIntegerList(args, "itemIndices");
+    const query = optionalString(args, "query", "");
+    const type = optionalString(args, "type", "");
+    const exactName = optionalBoolean(args, "exactName", false);
+    const caseSensitive = optionalBoolean(args, "caseSensitive", false);
+    const limit = Math.max(1, Math.min(100, Math.floor(optionalNumber(args, "limit", 25))));
+    const mode = optionalString(args, "mode", hasArg(args, "name") ? "exact" : hasArg(args, "prefix") ? "prefix" : hasArg(args, "suffix") ? "suffix" : "findReplace");
+    const renameName = optionalString(args, "name", "");
+    const prefix = optionalString(args, "prefix", "");
+    const suffix = optionalString(args, "suffix", "");
+    const findText = optionalString(args, "find", "");
+    const replaceText = optionalString(args, "replace", "");
+
+    if (type && !["comp", "footage", "folder"].includes(type)) return toolResult("type must be one of: comp, footage, folder.", true);
+    if (!itemIndices && !query) return toolResult("Provide itemIndices or query.", true);
+    if (!["exact", "prefix", "suffix", "findReplace"].includes(mode)) return toolResult("mode must be one of: exact, prefix, suffix, findReplace.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var requestedItemIndices = ${itemIndices ? aeLiteral(itemIndices) : "null"};
+      var query = ${aeLiteral(query)};
+      var type = ${aeLiteral(type)};
+      var exactName = ${exactName ? "true" : "false"};
+      var caseSensitive = ${caseSensitive ? "true" : "false"};
+      var limit = ${limit};
+      var mode = ${aeLiteral(mode)};
+      var exactRenameName = ${aeLiteral(renameName)};
+      var prefix = ${aeLiteral(prefix)};
+      var suffix = ${aeLiteral(suffix)};
+      var findText = ${aeLiteral(findText)};
+      var replaceText = ${aeLiteral(replaceText)};
+      var refs = [];
+
+      if (requestedItemIndices && requestedItemIndices.length) {
+        for (var __ri = 0; __ri < requestedItemIndices.length && refs.length < limit; __ri++) {
+          var indexedItem = app.project.item(requestedItemIndices[__ri]);
+          if (!indexedItem) throw new Error("Project item not found at index " + requestedItemIndices[__ri] + ".");
+          if (!__codexMatchesItemType(indexedItem, type)) throw new Error("Project item does not match requested type: " + indexedItem.name);
+          refs.push(__codexItemReference(indexedItem));
+        }
+      } else {
+        refs = __codexFindProjectItems(query, type, exactName, caseSensitive, limit);
+      }
+      if (!refs.length) throw new Error("No project items matched.");
+
+      app.beginUndoGroup("Codex Rename Project Items");
+      var renamed = [];
+      for (var __i = 0; __i < refs.length; __i++) {
+        var item = app.project.item(refs[__i].itemIndex);
+        var beforeName = item.name || "";
+        var nextName = __codexRenameValue(beforeName, mode, __i + 1, refs.length, exactRenameName, prefix, suffix, findText, replaceText, caseSensitive);
+        item.name = nextName;
+        renamed.push({
+          itemIndex: __codexProjectIndexForItem(item),
+          before: beforeName,
+          after: item.name,
+          item: __codexItemReference(item)
+        });
+      }
+      var response = {
+        mode: mode,
+        query: query,
+        type: type,
+        changedCount: renamed.length,
+        renamed: renamed
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "update_text_layer") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const patch = {};
+    for (const key of ["text", "font", "fontSize", "fillColor", "applyFill", "strokeColor", "applyStroke", "strokeWidth", "tracking", "leading"]) {
+      if (hasArg(args, key)) patch[key] = args[key];
+    }
+    if (!Object.keys(patch).length) return toolResult("Provide at least one text field to update.", true);
+    if (hasArg(patch, "fontSize") && Number(patch.fontSize) <= 0) return toolResult("fontSize must be greater than 0.", true);
+    if (hasArg(patch, "strokeWidth") && Number(patch.strokeWidth) < 0) return toolResult("strokeWidth must be 0 or greater.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      var patch = ${aeLiteral(patch)};
+      var textProp = layer.property("ADBE Text Properties").property("ADBE Text Document");
+      if (!textProp) throw new Error("Layer does not expose Source Text.");
+
+      app.beginUndoGroup("Codex Update Text Layer");
+      var before = __codexValuePreview(textProp);
+      var doc = __codexApplyTextDocumentPatch(textProp, patch);
+      textProp.setValue(doc);
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        layer: __codexLayerInfo(layer),
+        before: before,
+        text: __codexValuePreview(textProp)
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "create_shape_layer") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const shape = optionalString(args, "shape", "rectangle");
+    const layerName = optionalString(args, "name", "Codex Shape");
+    const size = optionalNumberArray(args, "size", null, 2, 2);
+    const position = optionalNumberArray(args, "position", null, 2, 3);
+    const fillColor = optionalNumberArray(args, "fillColor", [1, 1, 1], 3, 3);
+    const strokeColor = optionalNumberArray(args, "strokeColor", null, 3, 3);
+    const strokeWidth = optionalNumber(args, "strokeWidth", 0);
+    const startTime = optionalNumber(args, "startTime", null);
+    const duration = optionalNumber(args, "duration", null);
+
+    if (!["rectangle", "ellipse"].includes(shape)) return toolResult("shape must be one of: rectangle, ellipse.", true);
+    if (size && (size[0] <= 0 || size[1] <= 0)) return toolResult("size values must be greater than 0.", true);
+    if (fillColor.some((value) => value < 0 || value > 1)) return toolResult("fillColor values must be between 0 and 1.", true);
+    if (strokeColor && strokeColor.some((value) => value < 0 || value > 1)) return toolResult("strokeColor values must be between 0 and 1.", true);
+    if (strokeWidth < 0) return toolResult("strokeWidth must be 0 or greater.", true);
+    if (duration !== null && duration <= 0) return toolResult("duration must be greater than 0.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var shapeType = ${aeLiteral(shape)};
+      var layerName = ${aeLiteral(layerName)};
+      var requestedSize = ${size ? aeLiteral(size) : "[comp.width / 2, comp.height / 2]"};
+      var requestedPosition = ${position ? aeLiteral(position) : "[comp.width / 2, comp.height / 2]"};
+      var fillColor = ${aeLiteral(fillColor)};
+      var strokeColor = ${strokeColor ? aeLiteral(strokeColor) : "null"};
+      var strokeWidth = ${strokeWidth};
+      var requestedStartTime = ${startTime === null ? "null" : startTime};
+      var requestedDuration = ${duration === null ? "null" : duration};
+
+      app.beginUndoGroup("Codex Create Shape Layer");
+      var layer = comp.layers.addShape();
+      if (layerName) layer.name = layerName;
+      var root = layer.property("ADBE Root Vectors Group");
+      var group = root.addProperty("ADBE Vector Group");
+      group.name = shapeType === "ellipse" ? "Ellipse" : "Rectangle";
+      var contents = group.property("ADBE Vectors Group");
+      var shapeProp = contents.addProperty(shapeType === "ellipse" ? "ADBE Vector Shape - Ellipse" : "ADBE Vector Shape - Rect");
+      var sizeProp = shapeProp.property(shapeType === "ellipse" ? "ADBE Vector Ellipse Size" : "ADBE Vector Rect Size");
+      if (sizeProp) sizeProp.setValue(requestedSize);
+      var fill = contents.addProperty("ADBE Vector Graphic - Fill");
+      fill.property("ADBE Vector Fill Color").setValue(fillColor);
+      if (strokeColor !== null || strokeWidth > 0) {
+        var stroke = contents.addProperty("ADBE Vector Graphic - Stroke");
+        if (strokeColor !== null) stroke.property("ADBE Vector Stroke Color").setValue(strokeColor);
+        stroke.property("ADBE Vector Stroke Width").setValue(strokeWidth);
+      }
+      var transform = layer.property("ADBE Transform Group");
+      transform.property("ADBE Position").setValue(requestedPosition);
+      if (requestedStartTime !== null) {
+        layer.startTime = requestedStartTime;
+        layer.inPoint = requestedStartTime;
+      }
+      if (requestedDuration !== null) {
+        var baseTime = requestedStartTime !== null ? requestedStartTime : layer.inPoint;
+        layer.outPoint = Math.min(baseTime + requestedDuration, comp.duration);
+      }
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        layer: __codexLayerInfo(layer),
+        shape: { type: shapeType, size: requestedSize, fillColor: fillColor, strokeColor: strokeColor, strokeWidth: strokeWidth }
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "fit_layer_to_comp") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndices = optionalPositiveIntegerList(args, "layerIndices");
+    const mode = optionalString(args, "mode", "contain");
+    const alignX = optionalString(args, "alignX", "center");
+    const alignY = optionalString(args, "alignY", "center");
+
+    if (!["contain", "cover", "stretch"].includes(mode)) return toolResult("mode must be one of: contain, cover, stretch.", true);
+    if (!["left", "center", "right"].includes(alignX)) return toolResult("alignX must be one of: left, center, right.", true);
+    if (!["top", "center", "bottom"].includes(alignY)) return toolResult("alignY must be one of: top, center, bottom.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layers = __codexResolveLayers(comp, ${layerIndices ? aeLiteral(layerIndices) : "null"});
+      var mode = ${aeLiteral(mode)};
+      var alignX = ${aeLiteral(alignX)};
+      var alignY = ${aeLiteral(alignY)};
+
+      app.beginUndoGroup("Codex Fit Layer To Comp");
+      var changed = [];
+      for (var __i = 0; __i < layers.length; __i++) {
+        var layer = layers[__i];
+        if (layer.locked) throw new Error("Layer is locked: " + layer.name);
+        var before = __codexLayerInfo(layer);
+        var size = __codexLayerSourceSize(layer, comp);
+        var scaleX = comp.width / size.width * 100;
+        var scaleY = comp.height / size.height * 100;
+        if (mode === "contain") {
+          var containScale = Math.min(scaleX, scaleY);
+          scaleX = containScale;
+          scaleY = containScale;
+        } else if (mode === "cover") {
+          var coverScale = Math.max(scaleX, scaleY);
+          scaleX = coverScale;
+          scaleY = coverScale;
+        }
+        var fittedWidth = size.width * scaleX / 100;
+        var fittedHeight = size.height * scaleY / 100;
+        var x = alignX === "left" ? fittedWidth / 2 : alignX === "right" ? comp.width - fittedWidth / 2 : comp.width / 2;
+        var y = alignY === "top" ? fittedHeight / 2 : alignY === "bottom" ? comp.height - fittedHeight / 2 : comp.height / 2;
+        var transform = layer.property("ADBE Transform Group");
+        transform.property("ADBE Scale").setValue([scaleX, scaleY, 100]);
+        transform.property("ADBE Position").setValue([x, y]);
+        changed.push({
+          before: before,
+          after: __codexLayerInfo(layer),
+          sourceSize: size,
+          scale: [scaleX, scaleY, 100],
+          position: [x, y]
+        });
+      }
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name, width: comp.width, height: comp.height },
+        mode: mode,
+        alignX: alignX,
+        alignY: alignY,
+        changedCount: changed.length,
+        layers: changed.map(function (item) { return item.after; }),
+        changed: changed
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_property_keyframes") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    let propertyPath;
+    let keyframes;
+    try {
+      propertyPath = normalizePropertyPathArg(args, "propertyPath");
+      keyframes = requiredKeyframeArray(args, "keyframes");
+    } catch (error) {
+      return toolResult(error.message, true);
+    }
+    const clearExisting = optionalBoolean(args, "clearExisting", false);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      var propertyPath = ${aeLiteral(propertyPath)};
+      var keyframes = ${aeLiteral(keyframes)};
+      var clearExisting = ${clearExisting ? "true" : "false"};
+      var prop = __codexResolveProperty(layer, propertyPath);
+      if (!prop || !prop.canVaryOverTime) throw new Error("Property cannot be keyframed.");
+
+      app.beginUndoGroup("Codex Set Property Keyframes");
+      if (clearExisting) {
+        while (prop.numKeys && prop.numKeys > 0) {
+          prop.removeKey(prop.numKeys);
+        }
+      }
+      for (var __i = 0; __i < keyframes.length; __i++) {
+        var item = keyframes[__i];
+        prop.setValueAtTime(item.time, __codexPreparePropertyValue(prop, item.value));
+      }
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        layer: __codexLayerInfo(layer),
+        property: __codexPropertyInfo(prop, layer, true, true),
+        keyframeCount: keyframes.length,
+        clearExisting: clearExisting
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "apply_keyframe_ease") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const keyIndices = optionalPositiveIntegerList(args, "keyIndices");
+    const easeIn = args.easeIn && typeof args.easeIn === "object" && !Array.isArray(args.easeIn) ? args.easeIn : {};
+    const easeOut = args.easeOut && typeof args.easeOut === "object" && !Array.isArray(args.easeOut) ? args.easeOut : {};
+    const interpolation = optionalString(args, "interpolation", "");
+    let propertyPath;
+    try {
+      propertyPath = normalizePropertyPathArg(args, "propertyPath");
+    } catch (error) {
+      return toolResult(error.message, true);
+    }
+    if (interpolation && !["bezier", "linear", "hold"].includes(interpolation)) return toolResult("interpolation must be one of: bezier, linear, hold.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      var propertyPath = ${aeLiteral(propertyPath)};
+      var requestedKeyIndices = ${keyIndices ? aeLiteral(keyIndices) : "null"};
+      var easeIn = ${aeLiteral(easeIn)};
+      var easeOut = ${aeLiteral(easeOut)};
+      var interpolation = ${aeLiteral(interpolation)};
+      var prop = __codexResolveProperty(layer, propertyPath);
+      if (!prop || !prop.numKeys) throw new Error("Property has no keyframes.");
+      var keys = [];
+      if (requestedKeyIndices && requestedKeyIndices.length) {
+        keys = requestedKeyIndices;
+      } else {
+        try {
+          for (var __sk = 0; __sk < prop.selectedKeys.length; __sk++) keys.push(prop.selectedKeys[__sk]);
+        } catch (__selectedKeyError) {}
+      }
+      if (!keys.length) throw new Error("No keyframes selected or provided.");
+
+      function __codexEaseArray(ease, dimensions) {
+        var speed = ease.speed !== undefined ? Number(ease.speed) : 0;
+        var influence = ease.influence !== undefined ? Number(ease.influence) : 33;
+        var values = [];
+        for (var __d = 0; __d < dimensions; __d++) {
+          values.push(new KeyframeEase(speed, influence));
+        }
+        return values;
+      }
+
+      app.beginUndoGroup("Codex Apply Keyframe Ease");
+      var value = null;
+      try { value = prop.value; } catch (__valueProbeError) {}
+      var dimensions = value instanceof Array ? Math.max(1, value.length) : 1;
+      var easeInValues = __codexEaseArray(easeIn, dimensions);
+      var easeOutValues = __codexEaseArray(easeOut, dimensions);
+      var changedKeys = [];
+      for (var __i = 0; __i < keys.length; __i++) {
+        var keyIndex = Math.floor(Number(keys[__i]));
+        if (keyIndex < 1 || keyIndex > prop.numKeys) throw new Error("Keyframe index out of range: " + keyIndex);
+        if (interpolation) {
+          var interpolationType = interpolation === "hold" ? KeyframeInterpolationType.HOLD : interpolation === "linear" ? KeyframeInterpolationType.LINEAR : KeyframeInterpolationType.BEZIER;
+          prop.setInterpolationTypeAtKey(keyIndex, interpolationType, interpolationType);
+        }
+        prop.setTemporalEaseAtKey(keyIndex, easeInValues, easeOutValues);
+        changedKeys.push(keyIndex);
+      }
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        layer: __codexLayerInfo(layer),
+        property: __codexPropertyInfo(prop, layer, true, true),
+        keyIndices: changedKeys,
+        interpolation: interpolation || null
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_expression" || name === "clear_expression") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    let propertyPath;
+    try {
+      propertyPath = normalizePropertyPathArg(args, "propertyPath");
+    } catch (error) {
+      return toolResult(error.message, true);
+    }
+    const expression = name === "set_expression" ? optionalString(args, "expression", "") : "";
+    const enabled = name === "set_expression" ? optionalBoolean(args, "enabled", true) : false;
+    if (name === "set_expression" && !expression) return toolResult("expression is required.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      var propertyPath = ${aeLiteral(propertyPath)};
+      var expressionValue = ${aeLiteral(expression)};
+      var enabledValue = ${enabled ? "true" : "false"};
+      var prop = __codexResolveProperty(layer, propertyPath);
+      if (!prop || !prop.canSetExpression) throw new Error("Property cannot receive expressions.");
+
+      app.beginUndoGroup(${name === "set_expression" ? aeLiteral("Codex Set Expression") : aeLiteral("Codex Clear Expression")});
+      prop.expression = expressionValue;
+      try { prop.expressionEnabled = enabledValue; } catch (__expressionEnabledError) {}
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        layer: __codexLayerInfo(layer),
+        property: __codexPropertyInfo(prop, layer, true, true),
+        expression: prop.expression || "",
+        expressionEnabled: prop.expressionEnabled || false,
+        expressionError: prop.expressionError || ""
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "add_comp_to_render_queue") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const renderSettingsTemplate = optionalString(args, "renderSettingsTemplate", "");
+    const outputModuleTemplate = optionalString(args, "outputModuleTemplate", "");
+    const outputPath = optionalString(args, "outputPath", "");
+    let resolvedOutputPath = "";
+    if (outputPath) {
+      try {
+        resolvedOutputPath = resolveOutputFilePath(outputPath);
+      } catch (error) {
+        return toolResult(error.message, true);
+      }
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var renderSettingsTemplate = ${aeLiteral(renderSettingsTemplate)};
+      var outputModuleTemplate = ${aeLiteral(outputModuleTemplate)};
+      var outputPath = ${aeLiteral(resolvedOutputPath)};
+
+      app.beginUndoGroup("Codex Add Comp To Render Queue");
+      var rqItem = app.project.renderQueue.items.add(comp);
+      if (renderSettingsTemplate) rqItem.applyTemplate(renderSettingsTemplate);
+      if (outputModuleTemplate || outputPath) {
+        var outputModule = rqItem.outputModule(1);
+        if (outputModuleTemplate) outputModule.applyTemplate(outputModuleTemplate);
+        if (outputPath) outputModule.file = new File(outputPath);
+      }
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        renderQueueItem: __codexRenderQueueItemInfo(rqItem)
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_render_queue_output") {
+    const renderQueueItemIndex = requiredPositiveInteger(args, "renderQueueItemIndex");
+    const renderSettingsTemplate = optionalString(args, "renderSettingsTemplate", "");
+    const outputModuleTemplate = optionalString(args, "outputModuleTemplate", "");
+    const outputPath = optionalString(args, "outputPath", "");
+    let resolvedOutputPath = "";
+    if (!renderSettingsTemplate && !outputModuleTemplate && !outputPath) return toolResult("Provide renderSettingsTemplate, outputModuleTemplate, or outputPath.", true);
+    if (outputPath) {
+      try {
+        resolvedOutputPath = resolveOutputFilePath(outputPath);
+      } catch (error) {
+        return toolResult(error.message, true);
+      }
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var renderQueueItemIndex = ${renderQueueItemIndex};
+      var renderSettingsTemplate = ${aeLiteral(renderSettingsTemplate)};
+      var outputModuleTemplate = ${aeLiteral(outputModuleTemplate)};
+      var outputPath = ${aeLiteral(resolvedOutputPath)};
+      var rq = app.project.renderQueue;
+      var rqItem = rq.item(renderQueueItemIndex);
+      if (!rqItem) throw new Error("Render queue item not found.");
+
+      app.beginUndoGroup("Codex Set Render Queue Output");
+      if (renderSettingsTemplate) rqItem.applyTemplate(renderSettingsTemplate);
+      var outputModule = rqItem.outputModule(1);
+      if (outputModuleTemplate) outputModule.applyTemplate(outputModuleTemplate);
+      if (outputPath) outputModule.file = new File(outputPath);
+      var response = {
+        renderQueueItem: __codexRenderQueueItemInfo(rqItem)
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "get_render_queue_status") {
+    const limit = Math.max(1, Math.min(200, Math.floor(optionalNumber(args, "limit", 50))));
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var rq = app.project.renderQueue;
+      var limit = ${limit};
+      var items = [];
+      for (var __i = 1; __i <= rq.numItems && items.length < limit; __i++) {
+        items.push(__codexRenderQueueItemInfo(rq.item(__i)));
+      }
+      return {
+        totalItems: rq.numItems,
+        returned: items.length,
+        items: items
+      };
     `);
     return toolResult(result.result);
   }

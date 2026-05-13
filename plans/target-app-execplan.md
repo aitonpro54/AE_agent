@@ -4,12 +4,12 @@
 
 - [x] Stable baseline: AE Agent 1.0.0 CEP panel, provider setup, Agent planning, plan validation, protected execution, local history, diagnostics, and installed-panel smoke coverage.
 - [x] Milestone 38: Repo cleanup and roadmap reset.
-- [ ] Milestone 39: Agent planning quality.
-- [ ] Milestone 40: Timeline and layer tools.
-- [ ] Milestone 41: Precomp and source tools.
-- [ ] Milestone 42: Text, shape, and layout tools.
-- [ ] Milestone 43: Animation tools.
-- [ ] Milestone 44: Render queue tools.
+- [x] Milestone 39: Agent planning quality.
+- [x] Milestone 40: Timeline and layer tools.
+- [x] Milestone 41: Precomp and source tools.
+- [x] Milestone 42: Text, shape, and layout tools.
+- [x] Milestone 43: Animation tools.
+- [x] Milestone 44: Render queue tools.
 
 ## Current Stable Baseline
 
@@ -83,6 +83,7 @@
 - 2026-05-13: Agent plans should prefer typed bridge tools and avoid raw ExtendScript for common workflows.
 - 2026-05-13: Runtime binding aliases resolve against established tool result shapes, not literal field names only.
 - 2026-05-13: New mutating tools must join the existing checkpoint/idempotency/verification model.
+- 2026-05-13: Render queue setup tools may prepare queue items and outputs, but starting a render remains out of scope for this roadmap block.
 
 ## Validation
 
@@ -92,9 +93,40 @@
   - Passed repo-wide stale-input reference search.
   - Passed installed CEP extension stale-input reference search.
   - Passed `git diff --check`.
-- Milestone 39: Pending.
-- Milestone 40: Pending.
-- Milestone 41: Pending.
-- Milestone 42: Pending.
-- Milestone 43: Pending.
-- Milestone 44: Pending.
+- Milestone 39:
+  - Tightened the AE planning prompt around typed tools first and raw ExtendScript last.
+  - Added clearer validation warnings for unknown tools, runtime bindings, mutation safety defaults, and broad mutating plans.
+  - Added `targetSummary` to validated and run plan steps.
+  - Updated the CEP plan/run transcript formatting to show affected targets.
+- Milestone 40:
+  - Added `set_comp_work_area`, `set_layer_time_range`, `stagger_layers`, and `split_layers_at_time`.
+  - Added public schemas, planning catalog entries, mutation safety coverage, and queue smoke coverage.
+- Milestone 41:
+  - Added `precompose_layers`, `replace_layer_source`, `rename_layers`, and `rename_project_items`.
+  - Added public schemas, planning catalog entries, mutation safety coverage, and queue smoke coverage.
+- Milestone 42:
+  - Added `update_text_layer`, `create_shape_layer`, and `fit_layer_to_comp`.
+  - Added public schemas, planning catalog entries, mutation safety coverage, and queue smoke coverage.
+- Milestone 43:
+  - Added `set_property_keyframes`, `apply_keyframe_ease`, `set_expression`, and `clear_expression`.
+  - Added public schemas, planning catalog entries, mutation safety coverage, and queue smoke coverage.
+- Milestone 44:
+  - Added `add_comp_to_render_queue`, `set_render_queue_output`, and `get_render_queue_status`.
+  - Kept render start out of scope.
+  - Added public schemas, planning catalog entries, and smoke coverage.
+- Roadmap block validation:
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check scripts\smoke-test.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `git diff --check`.
+  - Passed repo-wide stale-input reference search.
+  - Copied changed `cep-panel\panel.js` to the installed CEP extension.
+  - Passed installed CEP extension stale-input reference search.
+  - Passed `node scripts\cep-panel-cdp-smoke.js reload`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js smoke`.
