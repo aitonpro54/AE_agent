@@ -8,6 +8,7 @@
 - [x] Milestone 4: Chat/Agent UX parity and prompt optimization.
 - [x] Milestone 5: Full validation and release notes.
 - [x] Milestone 6: Installed CEP panel live validation.
+- [x] Milestone 7: OpenAI CLI live panel validation.
 
 ## Milestones
 
@@ -56,6 +57,12 @@
 - Run protected mutating live CEP smoke with generated `Codex Test Safe Run` items and cleanup.
 - Keep generated smoke preview/log artifacts out of git.
 
+### Milestone 7: OpenAI CLI live panel validation
+
+- Add a live CEP smoke command that selects `OpenAI -> CLI`, model `gpt-5.5`, and `Chat` mode.
+- Verify the installed panel can call the backend `openai-cli` provider and receive a real Codex CLI response.
+- Keep this smoke chat-only so it validates ChatGPT/Codex subscription access without mutating the AE project.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access will use Codex CLI auth, not a normal OpenAI API key.
@@ -66,6 +73,7 @@
 - 2026-05-13: Gemini and Claude remain disabled UI placeholders until provider implementations are intentionally added.
 - 2026-05-13: Static local Chrome preview is the repo UI smoke for this milestone; live CEP smoke requires copying the changed panel files into the installed Adobe CEP extension first.
 - 2026-05-13: Installed CEP validation copies only changed panel files into `C:\Users\Ant\AppData\Roaming\Adobe\CEP\extensions\com.codex.aemcpbridge`; registry/debug settings are not changed.
+- 2026-05-13: OpenAI CLI live smoke stays chat-only; Local/Ollama remains the default live mutating smoke path because it avoids unnecessary paid/subscription model calls for AE mutations.
 
 ## Validation
 
@@ -108,6 +116,13 @@
   - Passed `node --check scripts/bridge-only-smoke-test.js`.
   - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
   - Passed XML parsing for `cep-panel/CSXS/manifest.xml`.
+  - Passed `git diff --check`.
+  - Passed `node scripts/bridge-only-smoke-test.js`.
+  - Passed `node scripts/smoke-test.js`.
+- Milestone 7:
+  - Added `node scripts/cep-panel-cdp-smoke.js openai-cli-smoke`.
+  - Passed `node scripts/cep-panel-cdp-smoke.js openai-cli-smoke` against the installed panel with `openai-cli` / `gpt-5.5`; response text was `AE GPT CLI OK`.
+  - Passed `node --check scripts/cep-panel-cdp-smoke.js`.
   - Passed `git diff --check`.
   - Passed `node scripts/bridge-only-smoke-test.js`.
   - Passed `node scripts/smoke-test.js`.

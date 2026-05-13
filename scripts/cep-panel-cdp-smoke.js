@@ -8,7 +8,11 @@ const BRIDGE_URL = process.env.CEP_PANEL_BRIDGE_URL || "http://127.0.0.1:3456";
 const BRIDGE_TOKEN = process.env.CEP_PANEL_BRIDGE_TOKEN || "codex-ae-local";
 const AGENT_ID = process.env.CEP_PANEL_AGENT_ID || "ollama-local";
 const MODEL = process.env.CEP_PANEL_MODEL || "gemma4:latest";
+const OPENAI_CLI_AGENT_ID = process.env.CEP_PANEL_OPENAI_CLI_AGENT_ID || "openai-cli";
+const OPENAI_CLI_MODEL = process.env.CEP_PANEL_OPENAI_CLI_MODEL || "gpt-5.5";
+const OPENAI_CLI_PROMPT = process.env.CEP_PANEL_OPENAI_CLI_PROMPT || "Reply with exactly: AE GPT CLI OK";
 const WAIT_MS = Number(process.env.CEP_PANEL_WAIT_MS || 90000);
+const OPENAI_CLI_WAIT_MS = Number(process.env.CEP_PANEL_OPENAI_CLI_WAIT_MS || 150000);
 const PROMPT = process.env.CEP_PANEL_PROMPT ||
   "\u0421\u043e\u0441\u0442\u0430\u0432\u044c \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u044b\u0439 \u043f\u043b\u0430\u043d \u0431\u0435\u0437 \u0438\u0437\u043c\u0435\u043d\u0435\u043d\u0438\u044f \u043f\u0440\u043e\u0435\u043a\u0442\u0430: \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u0441\u043e\u0441\u0442\u043e\u044f\u043d\u0438\u0435 \u043c\u043e\u0441\u0442\u0430 After Effects.";
 const MUTATING_PREFIX = "Codex Test Safe Run";
@@ -212,6 +216,35 @@ function selectAgentExpression(prompt) {
   })()`;
 }
 
+function selectOpenAiCliExpression() {
+  return `(() => {
+    function setValue(el, value) {
+      if (!el) return;
+      el.value = value;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    localStorage.setItem("codexAeProviderGroup", "openai");
+    localStorage.setItem("codexAeOpenAiAuthMode", "cli");
+    localStorage.setItem("codexAeChatMode", "chat");
+    localStorage.setItem("codexAeAgentModel:${OPENAI_CLI_AGENT_ID}", ${JSON.stringify(OPENAI_CLI_MODEL)});
+
+    const providerButton = document.querySelector("#providerTabs [data-provider-group='openai']");
+    if (providerButton) providerButton.click();
+    const authButton = document.querySelector("#authModeTabs [data-auth-mode='cli']");
+    if (authButton) authButton.click();
+    const chatButton = document.querySelector("#chatModeTabs [data-chat-mode='chat']");
+    if (chatButton) chatButton.click();
+
+    setValue(document.getElementById("agentSelect"), ${JSON.stringify(OPENAI_CLI_AGENT_ID)});
+    setValue(document.getElementById("agentModel"), ${JSON.stringify(OPENAI_CLI_MODEL)});
+    setValue(document.getElementById("chatMode"), "chat");
+    setValue(document.getElementById("chatPrompt"), ${JSON.stringify(OPENAI_CLI_PROMPT)});
+    return ${stateExpression()};
+  })()`;
+}
+
 function clickExpression(id) {
   return `(() => {
     const el = document.getElementById(${JSON.stringify(id)});
@@ -329,6 +362,55 @@ async function smoke() {
         transcriptTail: run.transcript.slice(-3000),
         logTail: run.log.slice(-1200)
       }
+    }, null, 2));
+  } finally {
+    ws.close();
+  }
+}
+
+async function openAiCliSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  try {
+    await reloadActivePage(send);
+    await evaluate(send, setupExpression());
+    await waitFor(send, "panel online", (state) => state.badge === "online", 15000);
+    await waitFor(send, "OpenAI CLI agent list", (state) => (
+      state.agentOptions.some((option) => option.value === OPENAI_CLI_AGENT_ID)
+    ), 20000);
+    await evaluate(send, selectOpenAiCliExpression());
+    await waitFor(send, "OpenAI CLI selected", (state) => (
+      state.agentValue === OPENAI_CLI_AGENT_ID &&
+      state.model === OPENAI_CLI_MODEL &&
+      state.mode === "chat" &&
+      state.sendDisabled === false &&
+      state.agentDetails.indexOf("codex exec") >= 0
+    ), 30000);
+
+    const checked = await evaluate(send, clickExpression("checkAgentButton"));
+    if (!checked || !checked.ok) throw new Error("Check model button was not clickable for OpenAI CLI.");
+    await waitFor(send, "OpenAI CLI checked ready", (state) => (
+      state.agentValue === OPENAI_CLI_AGENT_ID &&
+      state.model === OPENAI_CLI_MODEL &&
+      state.sendDisabled === false &&
+      state.checkDisabled === false &&
+      state.agentDetails.indexOf("Status") >= 0
+    ), 45000);
+
+    const sent = await evaluate(send, clickExpression("sendChatButton"));
+    if (!sent || !sent.ok) throw new Error("Send button was not clickable for OpenAI CLI.");
+    const replied = await waitFor(send, "OpenAI CLI chat reply", (state) => (
+      state.sendDisabled === false &&
+      state.transcript.indexOf("AE GPT CLI OK") >= 0
+    ), OPENAI_CLI_WAIT_MS);
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      agent: replied.agentValue,
+      model: replied.model,
+      agentDetails: replied.agentDetails,
+      transcriptTail: replied.transcript.slice(-3000),
+      logTail: replied.log.slice(-1200)
     }, null, 2));
   } finally {
     ws.close();
@@ -494,6 +576,10 @@ async function main() {
   }
   if (command === "mutating-smoke") {
     await mutatingSmoke();
+    return;
+  }
+  if (command === "openai-cli-smoke") {
+    await openAiCliSmoke();
     return;
   }
   throw new Error(`Unknown command: ${command}`);
