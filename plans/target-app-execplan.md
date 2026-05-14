@@ -23,6 +23,7 @@
 - [x] Milestone 55: Live Agent Scenario QA.
 - [x] Milestone 56: Planner Fidelity на ChatGPT 5.5.
 - [x] Milestone 57: OpenAI CLI readiness diagnostics.
+- [x] Milestone 58: Live OpenAI CLI diagnostics preflight.
 
 ## Current Stable Baseline
 
@@ -171,6 +172,12 @@
 - Расширить provider-contract smoke fake CLI проверками для not-logged-in и logged-in состояний.
 - Добавить `codexStatus` summary в live Agent scenario preflight report, чтобы следующий `agent-scenario-openai-cli-smoke` показывал источник расхождения shell/bridge readiness.
 
+### Milestone 58: Live OpenAI CLI diagnostics preflight
+
+- Перезапустить live bridge daemon из текущей ревизии `C:\Users\Ant\Documents\Codex\AE_agent`.
+- Проверить live `/agents/readiness` для `openai-cli` / `gpt-5.5` с `checkModels=0`, чтобы подтвердить новые `codexStatus.versionCheck` и `codexStatus.loginStatusCheck` без внешнего planner-запроса и без мутаций AE-проекта.
+- Не запускать полный `agent-scenario-openai-cli-smoke` без явного разрешения пользователя, потому что он отправляет Agent prompts / компактный AE project context через OpenAI/Codex CLI и выполняет временные live AE-мутации.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -202,6 +209,8 @@
 - 2026-05-15: Planner-fidelity контрольным provider становится `openai-cli` / `gpt-5.5`, то есть ChatGPT subscription path через Codex CLI; Ollama остается полезным local smoke provider, но не является итоговым критерием Milestone 56.
 - 2026-05-15: Для `agent-scenario-openai-cli-smoke` fallback через `/agents/plan/run` может выполнить cleanup/runtime validation, но сам command должен падать при fallback, чтобы не скрывать planner-quality regression.
 - 2026-05-15: OpenAI CLI readiness diagnostics добавляются как additive поля внутри `codexStatus`; публичные provider ids, auth modes, transports и readiness gates не меняются.
+
+- 2026-05-15: После перезапуска live bridge можно проверять новые OpenAI CLI diagnostic fields через `/agents/readiness?checkModels=0`; полный `agent-scenario-openai-cli-smoke` требует явного разрешения на внешний OpenAI/Codex CLI planner-запрос и временные AE-мутации.
 
 ## Validation
 
@@ -507,3 +516,18 @@
   - Passed `node scripts\smoke-test.js`.
   - Passed `node scripts\cep-panel-cdp-smoke.js inspect`.
   - Passed `node scripts\cep-panel-cdp-smoke.js openai-cli-smoke`.
+- Milestone 58:
+  - Restarted the live bridge daemon on `127.0.0.1:3456` from `C:\Users\Ant\Documents\Codex\AE_agent`; stopped PID `33836` and started PID `14228`.
+  - Confirmed bridge health after restart: `ok: true`, version `1.0.0`, panel connected, pending `0`, inflight `0`.
+  - Confirmed live readiness for `openai-cli` / `gpt-5.5` with `checkModels=0`: status `ready_unverified`, configured `true`, canChat `true`, modelSource `not_checked`.
+  - Confirmed live `codexStatus.versionCheck`: args `--version`, status `0`, output `codex-cli 0.130.0-alpha.5`.
+  - Confirmed live `codexStatus.loginStatusCheck`: args `login status`, status `0`, output `Logged in using ChatGPT`.
+  - No JavaScript files were changed, so there were no touched JavaScript files for `node --check`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js inspect` against the restarted live daemon.
+  - Did not run `node scripts\cep-panel-cdp-smoke.js agent-scenario-openai-cli-smoke`: it requires explicit user approval because it sends planner prompts/project context through OpenAI/Codex CLI and temporarily mutates the live AE project.
