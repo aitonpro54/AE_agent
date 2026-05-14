@@ -227,7 +227,7 @@ node .\scripts\cep-sync-health.js --check
 node .\scripts\cep-sync-health.js --sync --check
 ```
 
-The health command is read-only unless `--sync` is provided. `--sync` copies only missing or different tracked CEP files: `index.html`, `panel.js`, `style.css`, and `CSXS/manifest.xml`. The PowerShell installer also supports `-SyncOnly` to use the same safe sync helper.
+The health command is read-only unless `--sync` is provided. `--sync` copies only missing or different tracked CEP files: `index.html`, `panel.js`, `style.css`, and `CSXS/manifest.xml`. The PowerShell installer also supports `-SyncOnly` to use the same safe sync helper without rerunning the full install/debug-registry setup.
 
 ## MCP client config
 
