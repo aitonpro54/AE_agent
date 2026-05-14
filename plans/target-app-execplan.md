@@ -12,6 +12,7 @@
 - [x] Milestone 44: Render queue tools.
 - [x] Milestone 45: Live typed-tool validation and spatial ease hardening.
 - [x] Milestone 46: Библиотека Agent-сценариев.
+- [x] Milestone 47: Улучшенный Plan Review UX.
 
 ## Current Stable Baseline
 
@@ -143,6 +144,7 @@
 - 2026-05-14: Roadmap 1.1 не включает отдельную веху русификации UI или документации.
 - 2026-05-14: Roadmap 1.1 не включает render workflow polish; существующие render queue setup tools остаются доступными, но отдельной render-вехи в этом блоке нет.
 - 2026-05-14: Workflow presets являются только prompt helpers; они не должны обходить Agent planning, validation, dry-run или mutation gates.
+- 2026-05-14: Plan Review UX остается text-first внутри chat transcript; backend plan schemas и execution gates не меняются, а CEP только яснее показывает affected targets, mutation count, checkpoint expectation и read-only/protected run readiness.
 
 ## Validation
 
@@ -227,3 +229,23 @@
   - Passed `node scripts\smoke-test.js`.
   - Passed `node scripts\cep-panel-cdp-smoke.js workflow-preset-smoke`.
   - Passed `node scripts\cep-panel-cdp-smoke.js smoke`.
+- Milestone 47:
+  - Добавил compact `planRunStatus` рядом с `Dry run` / `Run plan`, чтобы до запуска было видно: нет плана, read-only план готов, либо mutating run пойдет через protection.
+  - Улучшил Plan Review transcript: теперь он явно показывает `Plan review`, `Affected targets`, `Mutations`, `Checkpoint expectation`, `Run readiness` и grouped warnings.
+  - Добавил CEP fallback для affected targets из уже существующих step args, например `create_test_comp` теперь показывает будущий `new comp ...` target без изменения backend schema.
+  - Улучшил run/dry-run transcript: dry-run явно пишет, что проект не менялся; mutating run показывает protected project-change mode, edit session и checkpoint.
+  - Добавил focused live CEP smoke `node scripts\cep-panel-cdp-smoke.js plan-review-smoke`.
+  - Скопировал измененные `index.html`, `panel.js` и `style.css` в установленное CEP extension.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js reload`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js plan-review-smoke`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js smoke`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js mutating-smoke`; generated `Codex Test Safe Run 36686021`, created a checkpoint under project backups, then cleaned up the generated composition.

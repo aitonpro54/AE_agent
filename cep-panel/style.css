@@ -543,9 +543,31 @@ button:disabled {
 }
 
 .plan-actions {
+  align-items: center;
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+}
+
+.plan-run-status {
+  color: #a8a8a8;
+  flex: 1 1 160px;
+  font-size: 11px;
+  line-height: 1.25;
+  min-width: 120px;
+  overflow-wrap: anywhere;
+}
+
+.plan-run-status.read-only {
+  color: #8bcaff;
+}
+
+.plan-run-status.mutating {
+  color: #ffbf7a;
+}
+
+.plan-run-status.blocked {
+  color: #ff9d9d;
 }
 
 .plan-result {
@@ -555,6 +577,24 @@ button:disabled {
 
 .plan-line {
   color: #d8d8d8;
+  font-size: 12px;
+}
+
+.plan-line.plan-heading {
+  color: #ffffff;
+  font-weight: 650;
+}
+
+.plan-line.plan-targets {
+  color: #dce8ef;
+}
+
+.plan-line.plan-safety {
+  color: #9ee0bb;
+}
+
+.plan-line.plan-warning {
+  color: #ffbf7a;
 }
 
 .plan-step {

@@ -44,6 +44,7 @@
   var chatTranscriptEl = document.getElementById("chatTranscript");
   var chatPromptEl = document.getElementById("chatPrompt");
   var sendChatButton = document.getElementById("sendChatButton");
+  var planRunStatusEl = document.getElementById("planRunStatus");
   var dryRunPlanButton = document.getElementById("dryRunPlanButton");
   var runPlanButton = document.getElementById("runPlanButton");
   var chatHistorySelect = document.getElementById("chatHistorySelect");
@@ -858,6 +859,25 @@
     return "pending";
   }
 
+  function planLineClass(text) {
+    var value = String(text || "").replace(/^\s+/, "");
+    var lower = value.toLowerCase();
+    var className = "plan-line";
+    if (/^(plan review|validation|summary|risk|run readiness|mode|mutations|plan):/i.test(value)) {
+      className += " plan-heading";
+    }
+    if (/^(affected targets|target):/i.test(value)) {
+      className += " plan-targets";
+    }
+    if (/^(checkpoint expectation|checkpoint|safety|edit session|restore):/i.test(value)) {
+      className += " plan-safety";
+    }
+    if (/^(warnings?|warning|- warning|error|save project first)/i.test(value) || lower.indexOf("needs review") >= 0 || lower.indexOf("blocked") >= 0) {
+      className += " plan-warning";
+    }
+    return className;
+  }
+
   function renderPlainText(parent, text) {
     parent.textContent = text || "";
   }
@@ -888,10 +908,10 @@
 
       var detail = document.createElement("span");
       detail.textContent = line.replace(/^\s+/, "");
+      detail.className = planLineClass(line);
       if (currentStep && /^\s+/.test(line)) {
         currentStep.appendChild(detail);
       } else {
-        detail.className = "plan-line";
         container.appendChild(detail);
         currentStep = null;
       }
@@ -1171,10 +1191,53 @@
     return "Agent is not ready yet.";
   }
 
+  function setPlanRunStatus(text, tone) {
+    if (!planRunStatusEl) return;
+    planRunStatusEl.textContent = text || "";
+    planRunStatusEl.className = "plan-run-status" + (tone ? " " + tone : "");
+  }
+
+  function updatePlanRunControls(hasPlan, validation) {
+    var mutatingCount = validation ? Number(validation.mutatingCount || 0) : 0;
+    var validationOk = !!(validation && validation.ok);
+    if (dryRunPlanButton) {
+      dryRunPlanButton.title = hasPlan ? "Check this plan without changing the AE project." : "Create an Agent plan first.";
+    }
+    if (runPlanButton) {
+      runPlanButton.textContent = "Run plan";
+      if (!hasPlan) {
+        runPlanButton.title = "Create and validate an Agent plan first.";
+      } else if (!validationOk) {
+        runPlanButton.title = "Resolve plan review issues before running.";
+      } else if (mutatingCount > 0) {
+        runPlanButton.title = "Run with the existing protected edit-session safety gate.";
+      } else {
+        runPlanButton.title = "Run this read-only plan without changing the AE project.";
+      }
+    }
+
+    if (chatInFlight) {
+      setPlanRunStatus("Working...", "");
+    } else if (!hasPlan) {
+      setPlanRunStatus("No plan ready", "");
+    } else if (!validation) {
+      setPlanRunStatus("Plan needs review", "blocked");
+    } else if (!validationOk) {
+      setPlanRunStatus("Review issues before running", "blocked");
+    } else if (mutatingCount > 0) {
+      setPlanRunStatus("Dry run first; Run uses protection", "mutating");
+    } else {
+      setPlanRunStatus("Read-only plan ready", "read-only");
+    }
+  }
+
   function updateChatAvailability() {
     sendChatButton.disabled = chatInFlight || !selectedAgentReady();
-    dryRunPlanButton.disabled = chatInFlight || !lastPlanResult || !lastPlanResult.plan;
-    runPlanButton.disabled = chatInFlight || !lastPlanResult || !lastPlanResult.plan || !lastPlanResult.planValidation || !lastPlanResult.planValidation.ok;
+    var hasPlan = !!(lastPlanResult && lastPlanResult.plan);
+    var validation = hasPlan && lastPlanResult ? lastPlanResult.planValidation || null : null;
+    dryRunPlanButton.disabled = chatInFlight || !hasPlan;
+    runPlanButton.disabled = chatInFlight || !hasPlan || !validation || !validation.ok;
+    updatePlanRunControls(hasPlan, validation);
     if (applyWorkflowPresetButton && workflowPresetSelect) {
       applyWorkflowPresetButton.disabled = chatInFlight || !workflowPresetSelect.value;
     }
@@ -1368,35 +1431,113 @@
     });
   }
 
+  function countLabel(count, singular, plural) {
+    var value = Number(count || 0);
+    return value + " " + (value === 1 ? singular : plural);
+  }
+
+  function reviewStepsForResult(result) {
+    if (result && result.planValidation && result.planValidation.steps && typeof result.planValidation.steps.push === "function") {
+      return result.planValidation.steps;
+    }
+    if (result && result.plan && result.plan.steps && typeof result.plan.steps.push === "function") {
+      return result.plan.steps;
+    }
+    return [];
+  }
+
+  function fallbackTargetSummary(step) {
+    var args = step && step.args && typeof step.args === "object" ? step.args : {};
+    if (step && step.tool === "create_test_comp" && args.name) return "new comp " + args.name;
+    if (args.compName) return "comp " + args.compName;
+    if (args.itemName) return "item " + args.itemName;
+    if (args.name) return "item " + args.name;
+    if (args.layerIndices && typeof args.layerIndices.push === "function" && args.layerIndices.length) {
+      return "layers " + args.layerIndices.join(",");
+    }
+    if (args.layerIndex !== undefined && args.layerIndex !== null && args.layerIndex !== "") {
+      return "layer " + args.layerIndex;
+    }
+    return "";
+  }
+
+  function collectTargetSummaries(steps) {
+    var source = steps && typeof steps.push === "function" ? steps : [];
+    var seen = {};
+    var targets = [];
+    for (var i = 0; i < source.length; i++) {
+      var summary = trimText(source[i] && source[i].targetSummary ? source[i].targetSummary : fallbackTargetSummary(source[i]));
+      if (!summary || seen[summary]) continue;
+      seen[summary] = true;
+      targets.push(summary);
+    }
+    if (!targets.length) return "none reported";
+    if (targets.length > 4) {
+      return targets.slice(0, 4).join("; ") + "; +" + (targets.length - 4) + " more";
+    }
+    return targets.join("; ");
+  }
+
+  function checkpointExpectationText(plan, validation, mutatingCount) {
+    if (!mutatingCount) return "Checkpoint expectation: not needed for read-only plan.";
+    if ((plan && plan.requiresCheckpoint === true) || (validation && validation.requiresCheckpoint === true)) {
+      return "Checkpoint expectation: required before project changes; protected edit session will be prepared at run time.";
+    }
+    return "Checkpoint expectation: protected edit session will be prepared if Run plan changes the project.";
+  }
+
+  function runReadinessText(validation, mutatingCount) {
+    if (!validation) return "Run readiness: waiting for plan validation.";
+    if (!validation.ok) return "Run readiness: blocked until review issues are fixed.";
+    if (mutatingCount > 0) return "Run readiness: Dry run checks without changes; Run plan uses project-change protection.";
+    return "Run readiness: Dry run checks the plan; Run plan stays read-only.";
+  }
+
+  function readableSafetyLabel(safety) {
+    var value = safety && (safety.protection || safety.status) ? String(safety.protection || safety.status) : "checked";
+    if (value === "auto_edit_session") return "protected edit session";
+    if (value === "planned_checkpoint_step") return "planned checkpoint step";
+    if (value === "planned_edit_session_step") return "planned edit session step";
+    if (value === "blocked_save_project_first") return "save project first";
+    if (value === "blocked_edit_session_failed") return "edit session failed";
+    return value.replace(/_/g, " ");
+  }
+
   function formatPlanResult(result) {
     if (!result.planParseOk || !result.plan) {
       return result.text || result.planParseError || "The agent returned a plan I could not parse.";
     }
 
     var plan = result.plan;
+    var validation = result.planValidation || null;
+    var steps = reviewStepsForResult(result);
+    var stepCount = validation ? Number(validation.stepCount || 0) : (steps ? steps.length : 0);
+    var mutatingCount = validation ? Number(validation.mutatingCount || 0) : 0;
     var lines = [];
+    if (validation) lines.push("Plan review: " + (validation.ok ? "ready" : "needs review"));
     if (plan.summary) lines.push("Summary: " + plan.summary);
     if (result.planRepaired) lines.push("JSON repair: applied");
     if (plan.risk) lines.push("Risk: " + plan.risk);
-    if (plan.requiresCheckpoint !== undefined) lines.push("Checkpoint: " + (plan.requiresCheckpoint ? "yes" : "no"));
-    if (result.planValidation) {
-      var validation = result.planValidation;
-      lines.push("Validation: " + (validation.ok ? "ok" : "needs review") + ", " + validation.stepCount + " step(s), " + validation.mutatingCount + " mutating");
+    if (validation) {
+      lines.push("Validation: " + (validation.ok ? "ok" : "needs review") + ", " + countLabel(stepCount, "step", "steps") + ", " + mutatingCount + " mutating");
+      lines.push("Affected targets: " + collectTargetSummaries(steps));
+      lines.push("Mutations: " + (mutatingCount > 0 ? countLabel(mutatingCount, "mutating step", "mutating steps") + "; Run plan will use the protected project-change gate." : "0 mutating steps; this plan is read-only."));
+      lines.push(checkpointExpectationText(plan, validation, mutatingCount));
+      lines.push(runReadinessText(validation, mutatingCount));
       if (validation.warnings && validation.warnings.length) {
         lines.push("Warnings:");
         for (var warningIndex = 0; warningIndex < validation.warnings.length; warningIndex++) {
           lines.push("- " + validation.warnings[warningIndex]);
         }
       }
+    } else if (plan.requiresCheckpoint !== undefined) {
+      lines.push("Checkpoint expectation: " + (plan.requiresCheckpoint ? "requested by plan" : "not requested by plan"));
     }
     if (plan.clarifyingQuestion) lines.push("Question: " + plan.clarifyingQuestion);
-    if (plan.steps && plan.steps.length) {
+    if (steps && steps.length) {
       lines.push("Steps:");
-      for (var i = 0; i < plan.steps.length; i++) {
-        var step = plan.steps[i] || {};
-        if (result.planValidation && result.planValidation.steps && result.planValidation.steps[i]) {
-          step = result.planValidation.steps[i];
-        }
+      for (var i = 0; i < steps.length; i++) {
+        var step = steps[i] || {};
         var tool = step.tool ? " [" + step.tool + "]" : "";
         lines.push((i + 1) + ". " + (step.title || step.intent || "Step") + tool);
         if (step.intent) lines.push("   " + step.intent);
@@ -1411,13 +1552,24 @@
   function formatPlanRun(run) {
     if (!run) return "No run result.";
     var lines = [];
+    var runValidation = run.validation || null;
+    var runSteps = run.steps && typeof run.steps.push === "function" ? run.steps : [];
+    var runMutatingCount = runValidation ? Number(runValidation.mutatingCount || 0) : 0;
     lines.push((run.dryRun ? "Dry run" : "Run") + ": " + (run.ok ? "ok" : "needs review"));
-    if (run.error) lines.push("Error: " + run.error);
-    if (run.validation) {
-      lines.push("Steps: " + run.validation.stepCount + ", mutating: " + run.validation.mutatingCount);
+    if (run.dryRun) {
+      lines.push("Mode: preview only; project was not changed.");
+    } else if (runMutatingCount > 0) {
+      lines.push("Mode: protected project-change run.");
+    } else {
+      lines.push("Mode: read-only execution.");
     }
+    if (run.error) lines.push("Error: " + run.error);
+    if (runValidation) {
+      lines.push("Plan: " + countLabel(runValidation.stepCount || 0, "step", "steps") + ", " + runMutatingCount + " mutating");
+    }
+    if (runSteps.length) lines.push("Affected targets: " + collectTargetSummaries(runSteps));
     if (run.safety) {
-      lines.push("Safety: " + (run.safety.protection || run.safety.status || "checked"));
+      lines.push("Safety: " + readableSafetyLabel(run.safety));
       if (run.safety.saveProjectFirst) lines.push("Save project first before mutating run.");
     }
     var printedCheckpoint = "";
@@ -1437,9 +1589,10 @@
     if (run.warnings && run.warnings.length) {
       lines.push("Warnings: " + run.warnings.join("; "));
     }
-    if (run.steps && run.steps.length) {
-      for (var i = 0; i < run.steps.length; i++) {
-        var step = run.steps[i] || {};
+    if (runSteps.length) {
+      lines.push("Steps:");
+      for (var i = 0; i < runSteps.length; i++) {
+        var step = runSteps[i] || {};
         lines.push((i + 1) + ". " + (step.title || step.tool || "Step") + " - " + step.status);
         if (step.targetSummary) lines.push("   target: " + step.targetSummary);
         if (step.reason) lines.push("   " + step.reason);

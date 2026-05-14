@@ -197,6 +197,10 @@ function stateExpression() {
     sendButtonText: document.getElementById("sendChatButton") ? document.getElementById("sendChatButton").textContent : "",
     sendButtonTitle: document.getElementById("sendChatButton") ? document.getElementById("sendChatButton").title : "",
     sendDisabled: document.getElementById("sendChatButton") ? document.getElementById("sendChatButton").disabled : null,
+    planRunStatus: document.getElementById("planRunStatus") ? document.getElementById("planRunStatus").textContent : "",
+    planRunStatusClass: document.getElementById("planRunStatus") ? document.getElementById("planRunStatus").className : "",
+    dryRunTitle: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").title : "",
+    runTitle: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").title : "",
     dryRunDisabled: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").disabled : null,
     runDisabled: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").disabled : null,
     chatHistoryValue: document.getElementById("chatHistorySelect") ? document.getElementById("chatHistorySelect").value : "",
@@ -612,8 +616,14 @@ async function smoke() {
 
     const planned = await waitFor(send, "AE Plan result", (state) => (
       state.sendDisabled === false &&
+      state.transcript.indexOf("Plan review: ready") >= 0 &&
       state.transcript.indexOf("Validation: ok") >= 0 &&
       state.transcript.indexOf("0 mutating") >= 0 &&
+      state.transcript.indexOf("Affected targets:") >= 0 &&
+      state.transcript.indexOf("Run readiness:") >= 0 &&
+      state.planRunStatus === "Read-only plan ready" &&
+      state.planRunStatusClass.indexOf("read-only") >= 0 &&
+      state.runTitle.indexOf("read-only") >= 0 &&
       state.dryRunDisabled === false &&
       state.runDisabled === false
     ), WAIT_MS);
@@ -622,7 +632,8 @@ async function smoke() {
     if (!dryRunClicked || !dryRunClicked.ok) throw new Error("Dry run button was not clickable.");
     const dryRun = await waitFor(send, "dry run result", (state) => (
       state.sendDisabled === false &&
-      state.transcript.indexOf("Dry run: ok") >= 0
+      state.transcript.indexOf("Dry run: ok") >= 0 &&
+      state.transcript.indexOf("Mode: preview only; project was not changed.") >= 0
     ), 30000);
 
     await evaluate(send, installConfirmExpression());
@@ -654,6 +665,64 @@ async function smoke() {
       run: {
         transcriptTail: run.transcript.slice(-3000),
         logTail: run.log.slice(-1200)
+      }
+    }, null, 2));
+  } finally {
+    ws.close();
+  }
+}
+
+async function planReviewSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  try {
+    await reloadActivePage(send);
+    await evaluate(send, setupExpression());
+    await waitFor(send, "panel online", (state) => state.badge === "online", 15000);
+    await waitFor(send, "agent list", (state) => state.agentOptions.some((option) => option.value === AGENT_ID), 20000);
+    await evaluate(send, selectAgentExpression(PROMPT));
+    await waitFor(send, "selected agent ready", (state) => (
+      state.agentValue === AGENT_ID &&
+      state.model === MODEL &&
+      state.mode === "plan" &&
+      state.sendDisabled === false
+    ), 20000);
+
+    const sent = await evaluate(send, clickExpression("sendChatButton"));
+    if (!sent || !sent.ok) throw new Error("Send button was not clickable.");
+
+    const planned = await waitFor(send, "improved plan review text", (state) => (
+      state.sendDisabled === false &&
+      state.transcript.indexOf("Plan review: ready") >= 0 &&
+      state.transcript.indexOf("Validation: ok") >= 0 &&
+      state.transcript.indexOf("Affected targets:") >= 0 &&
+      state.transcript.indexOf("Mutations:") >= 0 &&
+      state.transcript.indexOf("Checkpoint expectation:") >= 0 &&
+      state.transcript.indexOf("Run readiness:") >= 0 &&
+      state.planRunStatus === "Read-only plan ready" &&
+      state.planRunStatusClass.indexOf("read-only") >= 0 &&
+      state.dryRunDisabled === false &&
+      state.runDisabled === false
+    ), WAIT_MS);
+
+    const dryRunClicked = await evaluate(send, clickExpression("dryRunPlanButton"));
+    if (!dryRunClicked || !dryRunClicked.ok) throw new Error("Dry run button was not clickable.");
+    const dryRun = await waitFor(send, "improved dry run text", (state) => (
+      state.sendDisabled === false &&
+      state.transcript.indexOf("Dry run: ok") >= 0 &&
+      state.transcript.indexOf("Mode: preview only; project was not changed.") >= 0 &&
+      state.transcript.indexOf("Affected targets:") >= 0
+    ), 30000);
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      planned: {
+        status: planned.planRunStatus,
+        statusClass: planned.planRunStatusClass,
+        transcriptTail: planned.transcript.slice(-3000)
+      },
+      dryRun: {
+        transcriptTail: dryRun.transcript.slice(-3000)
       }
     }, null, 2));
   } finally {
@@ -1378,8 +1447,14 @@ async function mutatingSmoke() {
 
     const planned = await waitFor(send, "mutating AE Plan result", (state) => (
       state.sendDisabled === false &&
+      state.transcript.indexOf("Plan review: ready") >= 0 &&
       state.transcript.indexOf("Validation: ok") >= 0 &&
       state.transcript.indexOf("1 mutating") >= 0 &&
+      state.transcript.indexOf("Affected targets:") >= 0 &&
+      state.transcript.indexOf("Run readiness: Dry run checks without changes") >= 0 &&
+      state.planRunStatus === "Dry run first; Run uses protection" &&
+      state.planRunStatusClass.indexOf("mutating") >= 0 &&
+      state.runTitle.indexOf("protected edit-session") >= 0 &&
       state.transcript.indexOf("create_test_comp") >= 0 &&
       state.dryRunDisabled === false &&
       state.runDisabled === false
@@ -1390,6 +1465,7 @@ async function mutatingSmoke() {
     const dryRun = await waitFor(send, "mutating dry run result", (state) => (
       state.sendDisabled === false &&
       state.transcript.indexOf("Dry run: ok") >= 0 &&
+      state.transcript.indexOf("Mode: preview only; project was not changed.") >= 0 &&
       state.transcript.indexOf("ready") >= 0
     ), 30000);
 
@@ -1461,6 +1537,10 @@ async function main() {
   }
   if (command === "smoke") {
     await smoke();
+    return;
+  }
+  if (command === "plan-review-smoke") {
+    await planReviewSmoke();
     return;
   }
   if (command === "reload") {
