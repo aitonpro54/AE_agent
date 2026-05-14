@@ -20,6 +20,7 @@
 - [x] Milestone 52: Полная 1.1 validation.
 - [x] Milestone 53: Release prep review и sync-only hardening.
 - [x] Milestone 54: Master merge и release tag prep.
+- [x] Milestone 55: Live Agent Scenario QA.
 
 ## Current Stable Baseline
 
@@ -145,6 +146,14 @@
 - Подготовить lightweight release tag `v0.26.0-agent-ux-polish`.
 - Проверить merged `master` и синхронизировать установленную CEP-панель перед публикацией.
 
+### Milestone 55: Live Agent Scenario QA
+
+- Добавить live CEP smoke `agent-scenario-smoke` для реальных Agent-mode сценариев на generated assets с префиксом `Codex QA 1.2 <stamp>`.
+- Покрыть timeline/layer timing, text/shape/layout/animation, precomp/source/rename и render queue setup workflows.
+- Перед запуском проверять bridge health, panel connection, active comp, edit session и render queue baseline.
+- Если panel planner возвращает пустой или неполный plan, запускать deterministic backend fallback через `/agents/plan/run`, чтобы проверить typed tools, dry-run, protected run и checkpoint/edit-session поведение без изменения product planner.
+- Усилить cleanup: удалять generated render queue items по prefix до `cleanup_test_items`, затем проверять отсутствие generated project items и возврат render queue к baseline.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -171,6 +180,8 @@
 - 2026-05-14: Roadmap 1.1 закрыт полной validation и документацией; следующий work block должен начинаться отдельной новой вехой, а не продолжать этот список.
 - 2026-05-14: `scripts\install-cep-panel.ps1 -SyncOnly` должен выполнять только safe sync/health-check и не должен повторно включать PlayerDebugMode в реестре; full install по-прежнему выполняет registry debug setup.
 - 2026-05-14: Для release этого блока используется fast-forward merge в `master` и lightweight tag `v0.26.0-agent-ux-polish`, чтобы сохранить существующий стиль тегов repo.
+- 2026-05-14: Roadmap 1.2 live Agent QA использует deterministic backend fallback, когда panel planner возвращает пустой или частичный plan; это решение валидирует runtime typed tools и protection, но не меняет product planner behavior.
+- 2026-05-14: Live Agent QA удаляет только generated assets с префиксом `Codex QA 1.2 <stamp>`; render queue cleanup ограничен items, у которых comp name начинается с текущего generated prefix.
 
 ## Validation
 
@@ -413,3 +424,28 @@
   - Passed `node scripts\smoke-test.js`.
   - `node scripts\cep-sync-health.js --check` first reported byte mismatches between merged `master` and installed CEP files; `node scripts\cep-sync-health.js --sync --check` then copied 4 tracked files and reported ok.
   - Passed `node scripts\cep-panel-cdp-smoke.js smoke` against the synced installed CEP panel on `127.0.0.1:3456`.
+- Milestone 55:
+  - Added `node scripts\cep-panel-cdp-smoke.js agent-scenario-smoke`.
+  - Covered four live Agent-mode QA workflows: `timeline-layer-timing`, `text-shape-layout-animation`, `precomp-source-rename`, and `render-queue-setup`.
+  - Strengthened panel plan acceptance to require the exact validation summary step/mutation counts, mutating run status, and enabled dry-run/run buttons; prompt text alone no longer satisfies the check.
+  - Added deterministic backend fallback for empty/partial panel plans, using `/agents/plan/run` dry-run and protected run with `autoEditSession:true`.
+  - Added generated-prefix render queue cleanup before project item cleanup, then verified no generated project items remain and render queue returns to baseline.
+  - Before the next live run, checked the previous failed stamp `Codex QA 1.2 47551055`; no generated project items remained and render queue was already at `0`, so no one-off guarded deletion was needed.
+  - Live `agent-scenario-smoke` passed twice with `ollama-local` / `gemma4:latest`; final run prefix was `Codex QA 1.2 84055932`.
+  - In final live QA, local `gemma4:latest` returned empty or partial panel plans, including a render-plan unknown-tool variant; all four scenarios therefore used deterministic fallback and completed protected runs with checkpoints/edit sessions.
+  - Final cleanup removed generated project items per scenario (`3`, `1`, `4`, `1`), removed `1` generated render queue item in the render scenario, and left final render queue total at `0`.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Initial sandboxed `node scripts\cep-sync-health.js --check` could not read the installed CEP extension; reran installed-panel validation with approved filesystem access.
+  - Passed `node scripts\cep-sync-health.js --check` against the installed CEP extension; files and versions matched.
+  - Passed `node scripts\cep-panel-cdp-smoke.js inspect`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js reload`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js smoke`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js mutating-smoke`; generated `Codex Test Safe Run 84026908`, created checkpoint `final_slides2_tests-checkpoint-session-ai-plan-f5414a3d-2026-05-14T18-40-48-237Z.aep`, then cleaned up the generated composition.
+  - Passed `node scripts\cep-panel-cdp-smoke.js agent-scenario-smoke` after the full suite.

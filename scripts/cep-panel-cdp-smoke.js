@@ -18,6 +18,31 @@ const OPENAI_CLI_WAIT_MS = Number(process.env.CEP_PANEL_OPENAI_CLI_WAIT_MS || 15
 const PROMPT = process.env.CEP_PANEL_PROMPT ||
   "\u0421\u043e\u0441\u0442\u0430\u0432\u044c \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u044b\u0439 \u043f\u043b\u0430\u043d \u0431\u0435\u0437 \u0438\u0437\u043c\u0435\u043d\u0435\u043d\u0438\u044f \u043f\u0440\u043e\u0435\u043a\u0442\u0430: \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u0441\u043e\u0441\u0442\u043e\u044f\u043d\u0438\u0435 \u043c\u043e\u0441\u0442\u0430 After Effects.";
 const MUTATING_PREFIX = "Codex Test Safe Run";
+const AGENT_SCENARIO_PREFIX = process.env.CEP_PANEL_AGENT_SCENARIO_PREFIX || "Codex QA 1.2";
+const AGENT_SCENARIO_WAIT_MS = Number(process.env.CEP_PANEL_AGENT_SCENARIO_WAIT_MS || 180000);
+const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
+  "create_test_comp",
+  "create_solid_layer",
+  "create_text_layer",
+  "set_comp_work_area",
+  "set_layer_time_range",
+  "stagger_layers",
+  "align_layers_to_time",
+  "split_layers_at_time",
+  "update_text_layer",
+  "create_shape_layer",
+  "fit_layer_to_comp",
+  "set_property_keyframes",
+  "apply_keyframe_ease",
+  "set_expression",
+  "clear_expression",
+  "precompose_layers",
+  "replace_layer_source",
+  "rename_layers",
+  "rename_project_items",
+  "add_comp_to_render_queue",
+  "set_render_queue_output"
+]);
 
 function getJson(url) {
   return new Promise((resolve, reject) => {
@@ -79,6 +104,32 @@ function postBridge(path, payload) {
     req.write(body);
     req.end();
   });
+}
+
+function parseBridgeToolPayload(response, name) {
+  if (!response || response.status >= 400 || !response.body || response.body.ok !== true) {
+    const error = response && response.body && (response.body.error || (response.body.result && response.body.result.error));
+    throw new Error(`${name} failed: ${error || `HTTP ${response ? response.status : "unknown"}`}`);
+  }
+
+  const result = response.body.result;
+  if (!result) return null;
+  if (result.isError) {
+    const text = result.content && result.content[0] ? result.content[0].text : "tool returned an error";
+    throw new Error(`${name} failed: ${text}`);
+  }
+  if (result.content && result.content[0] && typeof result.content[0].text === "string") {
+    return JSON.parse(result.content[0].text);
+  }
+  return result;
+}
+
+async function callBridgeTool(name, args) {
+  const response = await postBridge("/tools/call", {
+    name,
+    arguments: args || {}
+  });
+  return parseBridgeToolPayload(response, name);
 }
 
 async function connectToPanel() {
@@ -265,6 +316,33 @@ function selectAgentExpression(prompt) {
     setValue(document.getElementById("agentModel"), ${JSON.stringify(MODEL)});
     setValue(document.getElementById("chatMode"), "plan");
     setValue(document.getElementById("chatPrompt"), ${JSON.stringify(promptText)});
+    return ${stateExpression()};
+  })()`;
+}
+
+function selectAgentScenarioExpression(prompt) {
+  return `(() => {
+    function setValue(el, value) {
+      if (!el) return;
+      el.value = value;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    const clearButton = document.getElementById("clearChatButton");
+    if (clearButton) clearButton.click();
+
+    const optimization = document.getElementById("promptOptimization");
+    if (optimization) {
+      optimization.checked = false;
+      optimization.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    localStorage.setItem("codexAePromptOptimization", "0");
+
+    setValue(document.getElementById("agentSelect"), ${JSON.stringify(AGENT_ID)});
+    setValue(document.getElementById("agentModel"), ${JSON.stringify(MODEL)});
+    setValue(document.getElementById("chatMode"), "plan");
+    setValue(document.getElementById("chatPrompt"), ${JSON.stringify(prompt)});
     return ${stateExpression()};
   })()`;
 }
@@ -1379,6 +1457,497 @@ async function offlineSmoke() {
   }
 }
 
+function agentScenarioStamp() {
+  return String(Date.now()).slice(-8);
+}
+
+function safeOutputName(value) {
+  return String(value || "agent-scenario")
+    .replace(/[^A-Za-z0-9_.-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 96) || "agent-scenario";
+}
+
+function exactPlanPrompt(plan) {
+  return [
+    "Return exactly this JSON object as the AE Agent plan. Do not add markdown, code fences, prose, comments, or renamed fields.",
+    "Use only the listed typed MCP tools. All generated asset names intentionally start with the QA prefix.",
+    JSON.stringify(plan, null, 2)
+  ].join("\n\n");
+}
+
+function agentScenarioPlans(runPrefix, renderQueueBaselineTotal) {
+  const timelineBase = `${runPrefix} Timeline`;
+  const layoutBase = `${runPrefix} Layout`;
+  const sourceBase = `${runPrefix} Source`;
+  const renderBase = `${runPrefix} Render`;
+  const renderIndex = Number(renderQueueBaselineTotal || 0) + 1;
+  const renderOutput = `logs/${safeOutputName(renderBase)}.mov`;
+  const renderOutputUpdated = `logs/${safeOutputName(renderBase)}-updated.mov`;
+
+  return [
+    {
+      id: "timeline-layer-timing",
+      cleanupPrefix: timelineBase,
+      expectedTools: [
+        "create_test_comp",
+        "create_solid_layer",
+        "set_comp_work_area",
+        "set_layer_time_range",
+        "stagger_layers",
+        "align_layers_to_time",
+        "split_layers_at_time",
+        "find_project_items"
+      ],
+      plan: {
+        summary: "Live QA timeline and layer timing on generated assets.",
+        risk: "low",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create timeline QA comp", tool: "create_test_comp", args: { name: timelineBase, width: 640, height: 360, duration: 4, frameRate: 24, openInViewer: false } },
+          { title: "Create first timing layer", tool: "create_solid_layer", args: { compName: timelineBase, name: `${timelineBase} Layer A`, color: [0.15, 0.35, 0.85], width: 320, height: 180, startTime: 0, duration: 3 } },
+          { title: "Create second timing layer", tool: "create_solid_layer", args: { compName: timelineBase, name: `${timelineBase} Layer B`, color: [0.85, 0.3, 0.18], width: 320, height: 180, startTime: 0, duration: 3 } },
+          { title: "Set generated comp work area", tool: "set_comp_work_area", args: { compName: timelineBase, start: 0, duration: 2.5 } },
+          { title: "Trim generated layers", tool: "set_layer_time_range", args: { compName: timelineBase, layerIndices: [1, 2], inPoint: 0, outPoint: 2 } },
+          { title: "Stagger generated layers", tool: "stagger_layers", args: { compName: timelineBase, layerIndices: [1, 2], startTime: 0, gap: 0.1, order: "indexAsc" } },
+          { title: "Align generated layers to zero", tool: "align_layers_to_time", args: { compName: timelineBase, layerIndices: [1, 2], targetTime: 0, align: "inPoint" } },
+          { title: "Split one generated layer", tool: "split_layers_at_time", args: { compName: timelineBase, layerIndices: [1], time: 0.75 } },
+          { title: "Read back timeline QA items", tool: "find_project_items", args: { query: timelineBase, limit: 10, caseSensitive: true } }
+        ]
+      }
+    },
+    {
+      id: "text-shape-layout-animation",
+      cleanupPrefix: layoutBase,
+      expectedTools: [
+        "create_test_comp",
+        "create_text_layer",
+        "update_text_layer",
+        "create_shape_layer",
+        "fit_layer_to_comp",
+        "set_property_keyframes",
+        "apply_keyframe_ease",
+        "set_expression",
+        "clear_expression",
+        "find_project_items"
+      ],
+      plan: {
+        summary: "Live QA text, shape, layout, and animation on generated assets.",
+        risk: "low",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create layout QA comp", tool: "create_test_comp", args: { name: layoutBase, width: 640, height: 360, duration: 4, frameRate: 24, openInViewer: false } },
+          { title: "Create generated text layer", tool: "create_text_layer", args: { compName: layoutBase, name: `${layoutBase} Title`, text: "QA 1.2", position: [320, 110], fontSize: 42, fillColor: [0.95, 0.95, 0.85], duration: 3 } },
+          { title: "Update generated text layer", tool: "update_text_layer", args: { compName: layoutBase, layerIndex: 1, text: "QA 1.2 Updated", fontSize: 48, fillColor: [0.2, 0.95, 0.75], applyFill: true, tracking: 15 } },
+          { title: "Create generated shape layer", tool: "create_shape_layer", args: { compName: layoutBase, name: `${layoutBase} Shape`, shape: "rectangle", size: [240, 120], position: [320, 220], fillColor: [0.12, 0.45, 0.9], strokeColor: [1, 1, 1], strokeWidth: 4, duration: 3 } },
+          { title: "Fit generated shape to comp", tool: "fit_layer_to_comp", args: { compName: layoutBase, layerIndices: [1], mode: "contain", alignX: "center", alignY: "center" } },
+          { title: "Set opacity keyframes", tool: "set_property_keyframes", args: { compName: layoutBase, layerIndex: 1, propertyPath: "ADBE Transform Group.ADBE Opacity", clearExisting: true, keyframes: [{ time: 0, value: 0 }, { time: 1, value: 100 }, { time: 2, value: 40 }] } },
+          { title: "Apply easing to opacity keys", tool: "apply_keyframe_ease", args: { compName: layoutBase, layerIndex: 1, propertyPath: "ADBE Transform Group.ADBE Opacity", keyIndices: [1, 2, 3], interpolation: "bezier", easeIn: { speed: 0, influence: 33 }, easeOut: { speed: 0, influence: 33 } } },
+          { title: "Set generated position expression", tool: "set_expression", args: { compName: layoutBase, layerIndex: 1, propertyPath: "ADBE Transform Group.ADBE Position", expression: "value + [Math.sin(time * 2) * 4, 0]", enabled: true } },
+          { title: "Clear generated position expression", tool: "clear_expression", args: { compName: layoutBase, layerIndex: 1, propertyPath: "ADBE Transform Group.ADBE Position" } },
+          { title: "Read back layout QA items", tool: "find_project_items", args: { query: layoutBase, limit: 10, caseSensitive: true } }
+        ]
+      }
+    },
+    {
+      id: "precomp-source-rename",
+      cleanupPrefix: sourceBase,
+      expectedTools: [
+        "create_test_comp",
+        "create_solid_layer",
+        "precompose_layers",
+        "replace_layer_source",
+        "rename_layers",
+        "rename_project_items",
+        "find_project_items"
+      ],
+      plan: {
+        summary: "Live QA precomp, source replacement, and rename tools on generated assets.",
+        risk: "low",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create source QA main comp", tool: "create_test_comp", args: { name: `${sourceBase} Main`, width: 640, height: 360, duration: 4, frameRate: 24, openInViewer: false } },
+          { title: "Create replacement source comp", tool: "create_test_comp", args: { name: `${sourceBase} Replacement`, width: 320, height: 180, duration: 4, frameRate: 24, openInViewer: false } },
+          { title: "Create layer to precompose", tool: "create_solid_layer", args: { compName: `${sourceBase} Main`, name: `${sourceBase} Plate`, color: [0.4, 0.2, 0.9], width: 320, height: 180, duration: 3 } },
+          { title: "Precompose generated layer", tool: "precompose_layers", args: { compName: `${sourceBase} Main`, layerIndices: [1], newCompName: `${sourceBase} Precomp`, moveAllAttributes: true, openInViewer: false } },
+          { title: "Replace generated precomp source", tool: "replace_layer_source", args: { compName: `${sourceBase} Main`, layerIndices: [1], sourceItemName: `${sourceBase} Replacement`, sourceItemType: "comp", fixExpressions: true } },
+          { title: "Rename generated layer", tool: "rename_layers", args: { compName: `${sourceBase} Main`, layerIndices: [1], mode: "exact", name: `${sourceBase} Replaced Layer` } },
+          { title: "Rename generated replacement comp", tool: "rename_project_items", args: { query: `${sourceBase} Replacement`, type: "comp", exactName: true, limit: 1, mode: "exact", name: `${sourceBase} Replacement Renamed` } },
+          { title: "Find generated source QA items", tool: "find_project_items", args: { query: sourceBase, limit: 10, caseSensitive: true } }
+        ]
+      }
+    },
+    {
+      id: "render-queue-setup",
+      cleanupPrefix: renderBase,
+      expectedTools: [
+        "create_test_comp",
+        "add_comp_to_render_queue",
+        "set_render_queue_output",
+        "get_render_queue_status"
+      ],
+      plan: {
+        summary: "Live QA render queue setup on a generated comp without starting a render.",
+        risk: "low",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create render QA comp", tool: "create_test_comp", args: { name: renderBase, width: 640, height: 360, duration: 2, frameRate: 24, openInViewer: false } },
+          { title: "Add generated comp to render queue", tool: "add_comp_to_render_queue", args: { compName: renderBase, outputPath: renderOutput } },
+          { title: "Update generated render queue output", tool: "set_render_queue_output", args: { renderQueueItemIndex: renderIndex, outputPath: renderOutputUpdated } },
+          { title: "Read render queue status", tool: "get_render_queue_status", args: { limit: renderIndex + 3 } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: scenario.plan.steps.filter((step) => AGENT_SCENARIO_MUTATING_TOOLS.has(step.tool)).length,
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
+async function agentScenarioPreflight() {
+  const health = await getJson(`${BRIDGE_URL.replace(/\/$/, "")}/health`);
+  if (!health || health.ok !== true) throw new Error("Bridge health check failed.");
+  if (!health.panelConnected) throw new Error("CEP panel is not connected to the bridge.");
+
+  const activeComp = await callBridgeTool("get_active_comp");
+  const editSession = await callBridgeTool("get_edit_session_status");
+  if (editSession && editSession.active) {
+    throw new Error("An edit session is already active; close or inspect it before running live QA.");
+  }
+  const renderQueue = await callBridgeTool("get_render_queue_status", { limit: 50 });
+
+  return {
+    health: {
+      version: health.version,
+      panelConnected: health.panelConnected,
+      pending: health.pending || health.pendingCommands || 0,
+      inflight: health.inflight || health.inflightCommands || 0
+    },
+    activeComp,
+    editSession,
+    renderQueue
+  };
+}
+
+async function cleanupRenderQueueItemsByPrefix(prefix) {
+  return callBridgeTool("run_extendscript", {
+    timeoutMs: 60000,
+    script: `
+      var prefix = ${JSON.stringify(prefix)};
+      var rq = app.project.renderQueue;
+      var removed = [];
+      for (var i = rq.numItems; i >= 1; i--) {
+        var item = rq.item(i);
+        var compName = "";
+        var outputPath = "";
+        try { compName = item && item.comp ? item.comp.name : ""; } catch (compError) {}
+        try {
+          if (item && item.outputModule && item.numOutputModules > 0) {
+            outputPath = String(item.outputModule(1).file || "");
+          }
+        } catch (outputError) {}
+        if (compName.indexOf(prefix) === 0) {
+          removed.push({ index: i, compName: compName, outputPath: outputPath });
+          item.remove();
+        }
+      }
+      return {
+        prefix: prefix,
+        removedCount: removed.length,
+        removed: removed,
+        totalItems: rq.numItems
+      };
+    `
+  });
+}
+
+async function cleanupAgentScenarioPrefix(prefix, renderQueueBaselineTotal) {
+  const renderQueueCleanup = await cleanupRenderQueueItemsByPrefix(prefix);
+  const cleanup = await postBridge("/agents/plan/run", {
+    plan: {
+      summary: `Clean up generated live QA items for ${prefix}`,
+      risk: "low",
+      requiresCheckpoint: false,
+      steps: [
+        {
+          title: "Remove generated live QA project items",
+          tool: "cleanup_test_items",
+          args: {
+            namePrefix: prefix,
+            maxItems: 100,
+            confirm: true
+          }
+        }
+      ]
+    },
+    requestId: `agent-scenario-cleanup-${Date.now()}`,
+    dryRun: false,
+    confirm: true,
+    allowMutations: true,
+    autoEditSession: true,
+    timeoutMs: 120000
+  });
+
+  if (cleanup.status >= 400 || !cleanup.body || cleanup.body.ok !== true) {
+    const error = cleanup.body && (cleanup.body.error || (cleanup.body.run && cleanup.body.run.error));
+    throw new Error(`Cleanup for ${prefix} failed: ${error || `HTTP ${cleanup.status}`}`);
+  }
+
+  const remaining = await callBridgeTool("find_project_items", {
+    query: prefix,
+    limit: 20,
+    caseSensitive: true
+  });
+  if (remaining.matches && remaining.matches.length) {
+    throw new Error(`Cleanup left generated project items for ${prefix}: ${remaining.matches.map((item) => item.name).join(", ")}`);
+  }
+
+  const renderQueue = await callBridgeTool("get_render_queue_status", { limit: 50 });
+  if (Number(renderQueue.totalItems || 0) !== Number(renderQueueBaselineTotal || 0)) {
+    throw new Error(`Render queue baseline mismatch after cleanup for ${prefix}: expected ${renderQueueBaselineTotal}, got ${renderQueue.totalItems}.`);
+  }
+
+  return {
+    renderQueueCleanup,
+    run: cleanup.body.run,
+    remaining,
+    renderQueue
+  };
+}
+
+function planRunSummary(run) {
+  const steps = run && Array.isArray(run.steps) ? run.steps : [];
+  return {
+    ok: run ? run.ok === true : false,
+    dryRun: run ? run.dryRun === true : null,
+    safety: run ? run.safety || null : null,
+    checkpoint: run && run.editSession && run.editSession.checkpoint ? run.editSession.checkpoint : run && run.checkpoint ? run.checkpoint : null,
+    statuses: steps.map((step) => ({
+      title: step.title || step.tool || "Step",
+      tool: step.tool || null,
+      status: step.status || null,
+      targetSummary: step.targetSummary || null,
+      error: step.error || null
+    }))
+  };
+}
+
+async function runBridgePlanForScenario(scenario, dryRun) {
+  const response = await postBridge("/agents/plan/run", {
+    plan: scenario.plan,
+    requestId: `agent-scenario-${scenario.id}-${dryRun ? "dry" : "run"}-${Date.now()}`,
+    dryRun,
+    confirm: !dryRun,
+    allowMutations: !dryRun,
+    autoEditSession: !dryRun,
+    timeoutMs: 180000
+  });
+
+  if (response.status >= 400 || !response.body || response.body.ok !== true) {
+    const error = response.body && (response.body.error || (response.body.run && response.body.run.error));
+    throw new Error(`${scenario.id}: direct ${dryRun ? "dry-run" : "run"} failed: ${error || `HTTP ${response.status}`}`);
+  }
+  if (!response.body.run || response.body.run.ok !== true) {
+    throw new Error(`${scenario.id}: direct ${dryRun ? "dry-run" : "run"} needs review.`);
+  }
+  return response.body.run;
+}
+
+async function runDeterministicScenarioFallback(scenario, panelPlan) {
+  const dryRun = await runBridgePlanForScenario(scenario, true);
+  const run = await runBridgePlanForScenario(scenario, false);
+  if (!run.editSession && (!run.safety || run.safety.protection !== "auto_edit_session")) {
+    throw new Error(`${scenario.id}: deterministic fallback did not use edit-session protection.`);
+  }
+  return {
+    id: scenario.id,
+    cleanupPrefix: scenario.cleanupPrefix,
+    executionMode: "deterministic-plan-fallback",
+    fallbackReason: "Panel Agent planner did not return the expected typed-tool plan.",
+    panelPlan: {
+      transcriptTail: panelPlan.transcript.slice(-3000)
+    },
+    dryRun: planRunSummary(dryRun),
+    run: planRunSummary(run)
+  };
+}
+
+async function runAgentScenario(send, scenario) {
+  await evaluate(send, selectAgentScenarioExpression(scenario.prompt));
+  await waitFor(send, `${scenario.id} agent ready`, (state) => (
+    state.agentValue === AGENT_ID &&
+    state.model === MODEL &&
+    state.mode === "plan" &&
+    state.promptOptimizationChecked === false &&
+    state.sendDisabled === false
+  ), 20000);
+
+  const sent = await evaluate(send, clickExpression("sendChatButton"));
+  if (!sent || !sent.ok) throw new Error(`${scenario.id}: Send button was not clickable.`);
+  await waitFor(send, `${scenario.id} planning indicator`, (state) => (
+    state.workingExists === true &&
+    state.workingText.indexOf("Planning") >= 0
+  ), 5000).catch(() => null);
+
+  const planned = await waitFor(send, `${scenario.id} Agent plan`, (state) => (
+    state.sendDisabled === false &&
+    state.transcript.indexOf("Plan review:") >= 0 &&
+    state.transcript.indexOf("Validation:") >= 0
+  ), AGENT_SCENARIO_WAIT_MS);
+
+  const validationLine = `Validation: ok, ${scenario.expectedStepCount} ${scenario.expectedStepCount === 1 ? "step" : "steps"}, ${scenario.expectedMutatingCount} mutating`;
+  const expectedPanelPlan = (
+    planned.transcript.indexOf("Plan review: ready") >= 0 &&
+    planned.transcript.indexOf(validationLine) >= 0 &&
+    planned.planRunStatus === "Dry run first; Run uses protection" &&
+    planned.planRunStatusClass.indexOf("mutating") >= 0 &&
+    planned.dryRunDisabled === false &&
+    planned.runDisabled === false
+  );
+
+  if (!expectedPanelPlan) {
+    return runDeterministicScenarioFallback(scenario, planned);
+  }
+
+  const dryRunClicked = await evaluate(send, clickExpression("dryRunPlanButton"));
+  if (!dryRunClicked || !dryRunClicked.ok) throw new Error(`${scenario.id}: Dry run button was not clickable.`);
+  const dryRun = await waitFor(send, `${scenario.id} dry run`, (state) => (
+    state.sendDisabled === false &&
+    state.transcript.indexOf("Dry run: ok") >= 0 &&
+    state.transcript.indexOf("Mode: preview only; project was not changed.") >= 0 &&
+    state.transcript.indexOf("Checkpoint/edit session: dry-run only; no checkpoint was created.") >= 0
+  ), 60000);
+
+  await evaluate(send, installConfirmExpression());
+  const runClicked = await evaluate(send, clickExpression("runPlanButton"));
+  if (!runClicked || !runClicked.ok) throw new Error(`${scenario.id}: Run plan button was not clickable.`);
+
+  const run = await waitFor(send, `${scenario.id} protected run`, (state) => {
+    if (state.sendDisabled !== false) return false;
+    if (state.transcript.indexOf("Run: ok") >= 0) return true;
+    if (state.transcript.indexOf("Run: needs review") >= 0) return true;
+    if (state.transcript.indexOf("Save the After Effects project first") >= 0) return true;
+    if (state.transcript.indexOf("Save project first") >= 0) return true;
+    return false;
+  }, AGENT_SCENARIO_WAIT_MS);
+
+  if ((run.confirmMessages || []).length) {
+    throw new Error(`${scenario.id}: Run plan showed an unexpected confirmation dialog.`);
+  }
+
+  const blockedSaveFirst = (
+    run.transcript.indexOf("Save the After Effects project first") >= 0 ||
+    run.transcript.indexOf("Save project first") >= 0
+  );
+  if (blockedSaveFirst) {
+    throw new Error(`${scenario.id}: project must be saved before live QA mutations can run.`);
+  }
+  if (run.transcript.indexOf("Run: ok") < 0) {
+    throw new Error(`${scenario.id}: protected run did not complete cleanly.\n${run.transcript.slice(-3000)}`);
+  }
+  if (run.transcript.indexOf("Checkpoint/edit session: protected by") < 0) {
+    throw new Error(`${scenario.id}: protected run did not report checkpoint/edit-session protection.`);
+  }
+
+  return {
+    id: scenario.id,
+    cleanupPrefix: scenario.cleanupPrefix,
+    executionMode: "panel-agent-plan",
+    planned: {
+      transcriptTail: planned.transcript.slice(-3000)
+    },
+    dryRun: {
+      transcriptTail: dryRun.transcript.slice(-3000)
+    },
+    run: {
+      transcriptTail: run.transcript.slice(-3000),
+      logTail: run.log.slice(-1200)
+    }
+  };
+}
+
+async function agentScenarioSmoke() {
+  const preflight = await agentScenarioPreflight();
+  const renderQueueBaselineTotal = Number(preflight.renderQueue && preflight.renderQueue.totalItems || 0);
+  const runPrefix = `${AGENT_SCENARIO_PREFIX} ${agentScenarioStamp()}`;
+  const scenarios = agentScenarioPlans(runPrefix, renderQueueBaselineTotal);
+  const { page, ws, send } = await connectToPanel();
+  let historyBackup = null;
+  let composerBackup = null;
+  let finalCleanupDone = false;
+  const results = [];
+  const cleanups = [];
+
+  try {
+    historyBackup = await evaluate(send, historyStorageExpression());
+    composerBackup = await evaluate(send, composerStateExpression());
+    await reloadActivePage(send);
+    await evaluate(send, setupExpression());
+    await waitFor(send, "panel online", (state) => state.badge === "online", 15000);
+    await waitFor(send, "agent list", (state) => state.agentOptions.some((option) => option.value === AGENT_ID), 20000);
+
+    for (const scenario of scenarios) {
+      const result = await runAgentScenario(send, scenario);
+      results.push(result);
+      const cleanup = await cleanupAgentScenarioPrefix(scenario.cleanupPrefix, renderQueueBaselineTotal);
+      cleanups.push({
+        id: scenario.id,
+        cleanupPrefix: scenario.cleanupPrefix,
+        renderQueueRemovedCount: cleanup.renderQueueCleanup ? cleanup.renderQueueCleanup.removedCount : null,
+        removedCount: cleanup.run && cleanup.run.steps && cleanup.run.steps[0] && cleanup.run.steps[0].result
+          ? cleanup.run.steps[0].result.removedCount
+          : null,
+        renderQueueTotal: cleanup.renderQueue.totalItems
+      });
+    }
+
+    const finalCleanup = await cleanupAgentScenarioPrefix(runPrefix, renderQueueBaselineTotal);
+    finalCleanupDone = true;
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      runPrefix,
+      agent: AGENT_ID,
+      model: MODEL,
+      preflight: {
+        health: preflight.health,
+        activeComp: preflight.activeComp ? {
+          itemIndex: preflight.activeComp.itemIndex,
+          name: preflight.activeComp.name,
+          selectedLayerCount: Array.isArray(preflight.activeComp.selectedLayers) ? preflight.activeComp.selectedLayers.length : 0
+        } : null,
+        renderQueueTotal: renderQueueBaselineTotal
+      },
+      scenarios: results,
+      cleanups,
+      finalCleanup: {
+        renderQueueRemovedCount: finalCleanup.renderQueueCleanup ? finalCleanup.renderQueueCleanup.removedCount : null,
+        removedCount: finalCleanup.run && finalCleanup.run.steps && finalCleanup.run.steps[0] && finalCleanup.run.steps[0].result
+          ? finalCleanup.run.steps[0].result.removedCount
+          : null,
+        renderQueueTotal: finalCleanup.renderQueue.totalItems
+      }
+    }, null, 2));
+  } finally {
+    if (!finalCleanupDone) {
+      try {
+        await cleanupAgentScenarioPrefix(runPrefix, renderQueueBaselineTotal);
+      } catch (_cleanupError) {}
+    }
+    if (historyBackup || composerBackup) {
+      try {
+        if (historyBackup) await evaluate(send, writeHistoryStorageExpression(historyBackup));
+        if (composerBackup) await evaluate(send, writeComposerStateExpression(composerBackup));
+        await reloadActivePage(send);
+        if (composerBackup) await evaluate(send, writeComposerStateExpression(composerBackup));
+      } catch (_restoreError) {}
+    }
+    ws.close();
+  }
+}
+
 function mutatingPrompt(name) {
   return [
     `Create exactly one temporary test composition named "${name}".`,
@@ -1557,6 +2126,10 @@ async function main() {
   }
   if (command === "mutating-smoke") {
     await mutatingSmoke();
+    return;
+  }
+  if (command === "agent-scenario-smoke") {
+    await agentScenarioSmoke();
     return;
   }
   if (command === "openai-api-setup-smoke") {
