@@ -19,6 +19,7 @@
 - [x] Milestone 51: Installer и CEP sync health.
 - [x] Milestone 52: Полная 1.1 validation.
 - [x] Milestone 53: Release prep review и sync-only hardening.
+- [x] Milestone 54: Master merge и release tag prep.
 
 ## Current Stable Baseline
 
@@ -138,6 +139,12 @@
 - Исправить найденный release-prep дефект в `scripts\install-cep-panel.ps1 -SyncOnly`.
 - Подготовить ветку к публикации без изменения runtime Agent/CEP поведения.
 
+### Milestone 54: Master merge и release tag prep
+
+- Fast-forward merge `codex-v0.26-agent-ux-polish` в `master`.
+- Подготовить lightweight release tag `v0.26.0-agent-ux-polish`.
+- Проверить merged `master` и синхронизировать установленную CEP-панель перед публикацией.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -163,6 +170,7 @@
 - 2026-05-14: CEP sync health считается read-only по умолчанию; запись в установленное extension выполняется только явным `--sync`/`-SyncOnly`, копирует только tracked files и не удаляет сторонние файлы.
 - 2026-05-14: Roadmap 1.1 закрыт полной validation и документацией; следующий work block должен начинаться отдельной новой вехой, а не продолжать этот список.
 - 2026-05-14: `scripts\install-cep-panel.ps1 -SyncOnly` должен выполнять только safe sync/health-check и не должен повторно включать PlayerDebugMode в реестре; full install по-прежнему выполняет registry debug setup.
+- 2026-05-14: Для release этого блока используется fast-forward merge в `master` и lightweight tag `v0.26.0-agent-ux-polish`, чтобы сохранить существующий стиль тегов repo.
 
 ## Validation
 
@@ -383,3 +391,25 @@
   - Initial sandboxed `node scripts\cep-sync-health.js --check` could not read the installed CEP extension; reran installed-panel validation with approved filesystem access.
   - Passed `node scripts\cep-sync-health.js --sync --check` against the installed CEP extension; copied 0, skipped 4.
   - Passed `node scripts\cep-panel-cdp-smoke.js smoke` against the live installed CEP panel on `127.0.0.1:3456`.
+- Milestone 54:
+  - Fetched `origin` before release prep; `master` was an ancestor of `codex-v0.26-agent-ux-polish`.
+  - Fast-forward merged `codex-v0.26-agent-ux-polish` into `master`.
+  - Initial committed-range `git diff --check origin/master..HEAD` reported a legacy EOF blank line in `docs\v0.9-new-chat-handoff.md`; removed it before tagging.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check mcp-server\ai-agents.js`.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `node --check scripts\provider-api-smoke.js`.
+  - Passed `node --check scripts\prompt-optimization-smoke.js`.
+  - Passed `node --check scripts\cep-sync-health.js`.
+  - Passed `node --check scripts\smoke-test.js`.
+  - Passed PowerShell parse check for `scripts\install-cep-panel.ps1`.
+  - Passed working-tree `git diff --check` after the EOF cleanup.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - `node scripts\cep-sync-health.js --check` first reported byte mismatches between merged `master` and installed CEP files; `node scripts\cep-sync-health.js --sync --check` then copied 4 tracked files and reported ok.
+  - Passed `node scripts\cep-panel-cdp-smoke.js smoke` against the synced installed CEP panel on `127.0.0.1:3456`.
