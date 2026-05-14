@@ -16,6 +16,19 @@ The execution plan is in `plans/target-app-execplan.md`.
 - After each milestone, update the Progress, Decision Log, and Validation sections of the plan.
 - Commit after each independently working milestone.
 
+## Context discipline
+
+Work in milestones. Do not run large multi-hour tasks in one thread.
+
+Before context gets high or after each completed milestone:
+1. Write `.codex/handoff.md`.
+2. Include goal, changed files, validation commands, decisions, risks, and the exact next prompt.
+3. Start a new thread instead of relying on automatic context compaction.
+
+Avoid broad repository scans unless explicitly requested.
+Use targeted `rg`, `sed`, `head`, `tail`, and file-specific reads.
+For large command outputs, save full logs to a file and summarize only the relevant lines.
+
 ## Engineering rules
 
 - Reuse existing components and design tokens.
