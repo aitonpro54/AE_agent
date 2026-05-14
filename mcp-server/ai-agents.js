@@ -43,6 +43,16 @@ const DEFAULT_TIMEOUT_MS = Number(process.env.AE_AGENT_HTTP_TIMEOUT_MS || 45000)
 const DEFAULT_CODEX_CLI_TIMEOUT_MS = Number(process.env.AE_CODEX_CLI_TIMEOUT_MS || 120000);
 const DEFAULT_MODEL_LIST_TIMEOUT_MS = Number(process.env.AE_AGENT_MODEL_LIST_TIMEOUT_MS || 3500);
 const ANTHROPIC_VERSION = process.env.ANTHROPIC_VERSION || "2023-06-01";
+const PROVIDER_ERROR_STATUSES = {
+  missing_auth: "missing_auth",
+  not_configured: "not_configured",
+  missing_model: "missing_model",
+  model_unavailable: "model_unavailable",
+  network_failure: "network_failure",
+  rate_limited: "rate_limited",
+  malformed_response: "malformed_response",
+  provider_error: "provider_error"
+};
 const DEFAULT_SYSTEM_PROMPT = process.env.AE_AGENT_SYSTEM_PROMPT || [
   "You are an assistant inside a local Adobe After Effects bridge.",
   "Answer in the user's language.",
@@ -227,6 +237,170 @@ function configurationError(agent) {
     return `Set ${agent.apiKeyEnv || "the provider API key"} before using ${agent.label}.`;
   }
   return `${agent.label} is not configured.`;
+}
+
+function providerErrorStatus(code) {
+  return PROVIDER_ERROR_STATUSES[code] || PROVIDER_ERROR_STATUSES.provider_error;
+}
+
+function providerSetupHint(agent, code) {
+  if (!agent) return null;
+  if (code === "missing_auth") {
+    if (agent.apiStyle === "codex-cli") {
+      return "Run codex login, finish ChatGPT sign-in, then check the model again.";
+    }
+    if (agent.requiresApiKey) {
+      return `Save a valid ${agent.apiKeyEnv || "provider API key"} for ${agent.label}.`;
+    }
+  }
+  if (code === "not_configured") {
+    return agent.setupAction === "detect_ollama"
+      ? `Start ${agent.label}, then check the model again.`
+      : `Finish setup for ${agent.label}, then check the model again.`;
+  }
+  if (code === "model_unavailable") {
+    return "Refresh the model list or choose a model that this provider exposes.";
+  }
+  if (code === "network_failure") {
+    return agent.apiStyle === "ollama"
+      ? "Start Ollama or check the local service URL."
+      : "Check the provider endpoint and network connection.";
+  }
+  if (code === "rate_limited") {
+    return "Wait and retry, or choose another provider/model.";
+  }
+  if (code === "malformed_response") {
+    return "Try another model or verify the provider is compatible with this transport.";
+  }
+  return null;
+}
+
+function providerErrorRetryable(code, httpStatus) {
+  if (code === "network_failure" || code === "rate_limited") return true;
+  if (code === "provider_error" && httpStatus >= 500) return true;
+  return false;
+}
+
+function providerErrorMessage(agent, code, rawMessage, options) {
+  const label = agent && agent.label ? agent.label : "Provider";
+  const model = compactString(options && options.model, 240);
+  const raw = compactString(rawMessage, 600);
+  const hint = providerSetupHint(agent, code);
+  const httpStatus = Number(options && options.httpStatus) || 0;
+
+  if (code === "missing_auth") {
+    if (!httpStatus && raw) return raw;
+    return `${label} rejected authentication. ${hint || "Check provider credentials."}`;
+  }
+  if (code === "not_configured") {
+    return raw || `${label} is not configured.`;
+  }
+  if (code === "missing_model") {
+    return raw || `Choose a model before using ${label}.`;
+  }
+  if (code === "model_unavailable") {
+    return model
+      ? `Model ${model} is not available from ${label}. ${hint || ""}`.trim()
+      : `${label} could not find the requested model. ${hint || ""}`.trim();
+  }
+  if (code === "network_failure") {
+    return `${label} is unreachable${agent && agent.baseUrl ? ` at ${agent.baseUrl}` : ""}. ${hint || "Check the provider connection."}`;
+  }
+  if (code === "rate_limited") {
+    return `${label} rate limit was reached. ${hint || "Wait and retry."}`;
+  }
+  if (code === "malformed_response") {
+    return `${label} returned an unexpected response${raw ? `: ${raw}` : "."}`;
+  }
+  return raw ? `${label} provider error: ${raw}` : `${label} provider error.`;
+}
+
+function buildProviderError(agent, code, rawMessage, options) {
+  const normalizedCode = PROVIDER_ERROR_STATUSES[code] ? code : "provider_error";
+  const httpStatus = Number(options && options.httpStatus) || null;
+  const providerError = {
+    code: normalizedCode,
+    status: providerErrorStatus(normalizedCode),
+    message: providerErrorMessage(agent, normalizedCode, rawMessage, { ...(options || {}), httpStatus }),
+    setupHint: providerSetupHint(agent, normalizedCode),
+    retryable: providerErrorRetryable(normalizedCode, httpStatus || 0),
+    httpStatus,
+    provider: agent && agent.provider ? agent.provider : null,
+    agentId: agent && agent.id ? agent.id : null,
+    model: compactString(options && options.model, 240) || null,
+    phase: compactString(options && options.phase, 80) || null,
+    rawProviderMessage: compactString(rawMessage, 600) || null
+  };
+  return providerError;
+}
+
+function attachProviderError(error, providerError) {
+  const normalized = error instanceof Error ? error : new Error(providerError.message);
+  normalized.message = providerError.message;
+  normalized.providerError = providerError;
+  return normalized;
+}
+
+function configurationProviderError(agent, message, options) {
+  const code = agent && (agent.requiresApiKey || agent.apiStyle === "codex-cli")
+    ? "missing_auth"
+    : "not_configured";
+  return buildProviderError(agent, code, message, options || {});
+}
+
+function providerErrorCodeFromHttpStatus(statusCode, phase) {
+  const status = Number(statusCode) || 0;
+  if (status === 401 || status === 403) return "missing_auth";
+  if (status === 404 && phase === "chat") return "model_unavailable";
+  if (status === 408) return "network_failure";
+  if (status === 429) return "rate_limited";
+  return "provider_error";
+}
+
+function providerErrorCodeFromMessage(message) {
+  const text = String(message || "");
+  if (/rate limit|rate-limit|too many requests|quota exceeded/i.test(text)) return "rate_limited";
+  if (/api key|auth|unauthori[sz]ed|forbidden|permission denied|codex login|sign in/i.test(text)) return "missing_auth";
+  if (/model[^.]{0,80}(not found|unavailable|unsupported|does not exist)|unknown model/i.test(text)) return "model_unavailable";
+  if (/timed out|timeout|ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|socket hang up|network error|fetch failed/i.test(text)) return "network_failure";
+  if (/assistant message|unexpected response|malformed response|invalid provider response|invalid json/i.test(text)) return "malformed_response";
+  return null;
+}
+
+function providerErrorCodeFromError(error, options) {
+  if (error && error.providerError && error.providerError.code) return error.providerError.code;
+  const statusCode = Number(error && error.statusCode) || 0;
+  if (statusCode) return providerErrorCodeFromHttpStatus(statusCode, options && options.phase);
+  const systemCode = compactString(error && error.code, 80);
+  if (["ECONNREFUSED", "ECONNRESET", "ENOTFOUND", "EAI_AGAIN", "ETIMEDOUT"].includes(systemCode)) {
+    return "network_failure";
+  }
+  return providerErrorCodeFromMessage(error && error.message) || "provider_error";
+}
+
+function normalizeProviderError(agent, error, options) {
+  if (error && error.providerError) return error;
+  const httpStatus = Number(error && error.statusCode) || null;
+  const rawMessage = error && error.message ? error.message : String(error || "Provider request failed.");
+  const code = options && options.code
+    ? options.code
+    : providerErrorCodeFromError(error, { ...(options || {}), httpStatus });
+  const providerError = buildProviderError(agent, code, rawMessage, { ...(options || {}), httpStatus });
+  if (error && error.response !== undefined) providerError.response = error.response;
+  return attachProviderError(error instanceof Error ? error : new Error(rawMessage), providerError);
+}
+
+function malformedProviderResponseError(agent, model, detail) {
+  const providerError = buildProviderError(agent, "malformed_response", detail || "Missing assistant text.", {
+    phase: "chat",
+    model
+  });
+  return attachProviderError(new Error(providerError.message), providerError);
+}
+
+function requireAssistantText(agent, model, text, detail) {
+  if (String(text || "").trim()) return text;
+  throw malformedProviderResponseError(agent, model, detail);
 }
 
 function parseCustomAgents() {
@@ -718,9 +892,14 @@ function normalizeAnthropicModels(body) {
 async function fetchAgentModels(agent, options) {
   const allowUnauthenticatedModelList = Boolean(options && options.allowUnauthenticatedModelList);
   if (!isAgentConfigured(agent) && !(allowUnauthenticatedModelList && canListModelsWithoutApiKey(agent))) {
+    const error = configurationError(agent);
     return {
       reachable: false,
-      error: configurationError(agent),
+      error,
+      providerError: configurationProviderError(agent, error, {
+        phase: "setup",
+        model: options && options.model ? options.model : agent.model
+      }),
       models: []
     };
   }
@@ -738,35 +917,42 @@ async function fetchAgentModels(agent, options) {
     };
   }
 
-  if (agent.apiStyle === "ollama") {
-    const response = await requestJson("GET", joinUrl(agent.baseUrl, "/api/tags"), undefined, {}, timeoutMs);
+  try {
+    if (agent.apiStyle === "ollama") {
+      const response = await requestJson("GET", joinUrl(agent.baseUrl, "/api/tags"), undefined, {}, timeoutMs);
+      return {
+        reachable: true,
+        models: normalizeOllamaModels(response.body)
+      };
+    }
+
+    if (agent.apiStyle === "gemini") {
+      const response = await requestJson("GET", joinUrl(agent.baseUrl, "/models"), undefined, geminiHeaders(agent), timeoutMs);
+      return {
+        reachable: true,
+        models: normalizeGeminiModels(response.body)
+      };
+    }
+
+    if (agent.apiStyle === "anthropic") {
+      const response = await requestJson("GET", joinUrl(agent.baseUrl, "/models"), undefined, anthropicHeaders(agent), timeoutMs);
+      return {
+        reachable: true,
+        models: normalizeAnthropicModels(response.body)
+      };
+    }
+
+    const response = await requestJson("GET", joinUrl(agent.baseUrl, "/models"), undefined, openAiHeaders(agent), timeoutMs);
     return {
       reachable: true,
-      models: normalizeOllamaModels(response.body)
+      models: normalizeOpenAiModels(response.body, freeOnly)
     };
+  } catch (error) {
+    throw normalizeProviderError(agent, error, {
+      phase: "models",
+      model: options && options.model ? options.model : agent.model
+    });
   }
-
-  if (agent.apiStyle === "gemini") {
-    const response = await requestJson("GET", joinUrl(agent.baseUrl, "/models"), undefined, geminiHeaders(agent), timeoutMs);
-    return {
-      reachable: true,
-      models: normalizeGeminiModels(response.body)
-    };
-  }
-
-  if (agent.apiStyle === "anthropic") {
-    const response = await requestJson("GET", joinUrl(agent.baseUrl, "/models"), undefined, anthropicHeaders(agent), timeoutMs);
-    return {
-      reachable: true,
-      models: normalizeAnthropicModels(response.body)
-    };
-  }
-
-  const response = await requestJson("GET", joinUrl(agent.baseUrl, "/models"), undefined, openAiHeaders(agent), timeoutMs);
-  return {
-    reachable: true,
-    models: normalizeOpenAiModels(response.body, freeOnly)
-  };
 }
 
 function modelIdMatches(model, requestedModel) {
@@ -790,32 +976,42 @@ async function checkAgentReadiness(args) {
 
   if (!configured) {
     const error = configurationError(agent);
+    const providerError = configurationProviderError(agent, error, {
+      phase: "setup",
+      model: model || null
+    });
     return {
       checkedAt,
-      agent: publicAgent(agent),
+      agent: publicAgent(agent, { providerError }),
       model: model || null,
       configured: false,
       reachable: false,
       modelAvailable: false,
       modelSource: null,
       canChat: false,
-      status: "not_configured",
-      error
+      status: providerError.status,
+      error: providerError.message,
+      providerError
     };
   }
 
   if (!model) {
+    const providerError = buildProviderError(agent, "missing_model", `model is required for ${agent.label}.`, {
+      phase: "setup",
+      model: null
+    });
     return {
       checkedAt,
-      agent: publicAgent(agent),
+      agent: publicAgent(agent, { providerError }),
       model: null,
       configured: true,
       reachable: null,
       modelAvailable: false,
       modelSource: null,
       canChat: false,
-      status: "missing_model",
-      error: `model is required for ${agent.label}.`
+      status: providerError.status,
+      error: providerError.message,
+      providerError
     };
   }
 
@@ -835,7 +1031,7 @@ async function checkAgentReadiness(args) {
   }
 
   try {
-    const modelState = await fetchAgentModels(agent, { freeOnly, timeoutMs });
+    const modelState = await fetchAgentModels(agent, { freeOnly, timeoutMs, model });
     const remoteModels = Array.isArray(modelState.models) ? modelState.models : [];
     const hasRemoteList = remoteModels.length > 0;
     let modelAvailable = agent.apiStyle === "ollama"
@@ -850,18 +1046,31 @@ async function checkAgentReadiness(args) {
 
     const reachable = modelState.reachable !== false;
     const canChat = configured && reachable && modelAvailable;
-    const error = canChat
-      ? null
-      : modelAvailable
-        ? modelState.error || `${agent.label} is not reachable.`
-        : `Model ${model} was not found in ${agent.label}'s model list.`;
+    let providerError = null;
+    if (!canChat) {
+      if (modelState.providerError) {
+        providerError = modelState.providerError;
+      } else if (!modelAvailable) {
+        providerError = buildProviderError(agent, "model_unavailable", `Model ${model} was not found in ${agent.label}'s model list.`, {
+          phase: "models",
+          model
+        });
+      } else {
+        providerError = buildProviderError(agent, "network_failure", modelState.error || `${agent.label} is not reachable.`, {
+          phase: "models",
+          model
+        });
+      }
+    }
+    const error = providerError ? providerError.message : null;
 
     return {
       checkedAt,
       agent: publicAgent(agent, {
         reachable,
         modelCount: remoteModels.length,
-        remoteModels: remoteModels.slice(0, 200)
+        remoteModels: remoteModels.slice(0, 200),
+        providerError
       }),
       model,
       configured: true,
@@ -871,17 +1080,24 @@ async function checkAgentReadiness(args) {
       modelCount: remoteModels.length,
       remoteModels: remoteModels.slice(0, 200),
       canChat,
-      status: canChat ? "ready" : modelAvailable ? "unreachable" : "model_not_found",
-      error
+      status: canChat ? "ready" : providerError ? providerError.status : "provider_error",
+      error,
+      providerError
     };
   } catch (error) {
+    const normalizedError = normalizeProviderError(agent, error, {
+      phase: "models",
+      model
+    });
+    const providerError = normalizedError.providerError;
     return {
       checkedAt,
       agent: publicAgent(agent, {
         reachable: false,
         modelCount: 0,
         remoteModels: [],
-        error: error.message || String(error)
+        error: providerError.message,
+        providerError
       }),
       model,
       configured: true,
@@ -891,8 +1107,9 @@ async function checkAgentReadiness(args) {
       modelCount: 0,
       remoteModels: [],
       canChat: false,
-      status: "unreachable",
-      error: error.message || String(error)
+      status: providerError.status,
+      error: providerError.message,
+      providerError
     };
   }
 }
@@ -916,7 +1133,8 @@ async function listAgents(args) {
       const modelState = await fetchAgentModels(agent, {
         freeOnly,
         timeoutMs,
-        allowUnauthenticatedModelList: true
+        allowUnauthenticatedModelList: true,
+        model: agent.model
       });
       const remoteModels = modelState.models || [];
       let modelAvailable = agent.apiStyle === "ollama"
@@ -929,32 +1147,57 @@ async function listAgents(args) {
       }
       const configured = isAgentConfigured(agent);
       const canChat = configured && modelState.reachable !== false && modelAvailable;
+      let providerError = null;
+      if (!canChat) {
+        if (!configured) {
+          providerError = modelState.providerError || configurationProviderError(agent, configurationError(agent), {
+            phase: "setup",
+            model: agent.model
+          });
+        } else if (modelState.providerError) {
+          providerError = modelState.providerError;
+        } else if (!modelAvailable) {
+          providerError = buildProviderError(agent, "model_unavailable", `Model ${agent.model} was not found in ${agent.label}'s model list.`, {
+            phase: "models",
+            model: agent.model
+          });
+        } else {
+          providerError = buildProviderError(agent, "network_failure", modelState.error || `${agent.label} is not reachable.`, {
+            phase: "models",
+            model: agent.model
+          });
+        }
+      }
       enriched.push({
         ...publicAgent(agent, {
           reachable: modelState.reachable,
           modelCount: remoteModels.length,
-          remoteModels: remoteModels.slice(0, 200)
+          remoteModels: remoteModels.slice(0, 200),
+          providerError
         }),
         selectedModel: agent.model || null,
         modelAvailable,
         modelSource,
         canChat,
-        status: canChat ? "ready" : configured ? "model_not_found" : "not_configured",
-        error: canChat
-          ? null
-          : configured
-            ? modelState.error || `Model ${agent.model} was not found in ${agent.label}'s model list.`
-            : configurationError(agent)
+        status: canChat ? "ready" : providerError ? providerError.status : "provider_error",
+        error: providerError ? providerError.message : null,
+        providerError
       });
     } catch (error) {
+      const normalizedError = normalizeProviderError(agent, error, {
+        phase: "models",
+        model: agent.model
+      });
+      const providerError = normalizedError.providerError;
       enriched.push(publicAgent(agent, {
         reachable: false,
         modelAvailable: false,
         canChat: false,
-        status: "error",
+        status: providerError.status,
         modelCount: 0,
         remoteModels: [],
-        error: error.message || String(error)
+        error: providerError.message,
+        providerError
       }));
     }
   }
@@ -1152,10 +1395,10 @@ function runCodexCli(agent, model, messages, options) {
 function normalizeOpenAiChatResponse(agent, requestedModel, body, includeRawResponse) {
   const choice = body && Array.isArray(body.choices) ? body.choices[0] : null;
   const message = choice && choice.message ? choice.message : {};
-  const text = assistantTextFromContent(message.content);
+  const text = requireAssistantText(agent, requestedModel, assistantTextFromContent(message.content), "Missing assistant message content.");
   const result = {
     agent: publicAgent(agent),
-    model: body.model || requestedModel,
+    model: body && body.model ? body.model : requestedModel,
     text,
     message: {
       role: message.role || "assistant",
@@ -1170,19 +1413,19 @@ function normalizeOpenAiChatResponse(agent, requestedModel, body, includeRawResp
 
 function normalizeOllamaChatResponse(agent, requestedModel, body, includeRawResponse) {
   const message = body && body.message ? body.message : {};
-  const text = assistantTextFromContent(message.content);
+  const text = requireAssistantText(agent, requestedModel, assistantTextFromContent(message.content), "Missing Ollama assistant message content.");
   const result = {
     agent: publicAgent(agent),
-    model: body.model || requestedModel,
+    model: body && body.model ? body.model : requestedModel,
     text,
     message: {
       role: message.role || "assistant",
       content: text
     },
-    finishReason: body.done_reason || null,
+    finishReason: body && body.done_reason ? body.done_reason : null,
     usage: {
-      promptEvalCount: body.prompt_eval_count || null,
-      evalCount: body.eval_count || null
+      promptEvalCount: body && body.prompt_eval_count ? body.prompt_eval_count : null,
+      evalCount: body && body.eval_count ? body.eval_count : null
     }
   };
   if (includeRawResponse) result.rawResponse = body;
@@ -1234,7 +1477,12 @@ function geminiPayloadFromMessages(messages, options) {
 function normalizeGeminiChatResponse(agent, requestedModel, body, includeRawResponse) {
   const candidate = body && Array.isArray(body.candidates) ? body.candidates[0] : null;
   const parts = candidate && candidate.content && Array.isArray(candidate.content.parts) ? candidate.content.parts : [];
-  const text = parts.map((part) => part && part.text ? part.text : "").join("");
+  const text = requireAssistantText(
+    agent,
+    requestedModel,
+    parts.map((part) => part && part.text ? part.text : "").join(""),
+    "Missing Gemini candidate text."
+  );
   const result = {
     agent: publicAgent(agent),
     model: requestedModel,
@@ -1244,7 +1492,7 @@ function normalizeGeminiChatResponse(agent, requestedModel, body, includeRawResp
       content: text
     },
     finishReason: candidate ? candidate.finishReason || null : null,
-    usage: body.usageMetadata || null
+    usage: body && body.usageMetadata ? body.usageMetadata : null
   };
   if (includeRawResponse) result.rawResponse = body;
   return result;
@@ -1267,17 +1515,22 @@ function anthropicPayloadFromMessages(model, messages, options) {
 
 function normalizeAnthropicChatResponse(agent, requestedModel, body, includeRawResponse) {
   const content = body && Array.isArray(body.content) ? body.content : [];
-  const text = content.map((part) => part && part.type === "text" ? part.text || "" : "").join("");
+  const text = requireAssistantText(
+    agent,
+    requestedModel,
+    content.map((part) => part && part.type === "text" ? part.text || "" : "").join(""),
+    "Missing Anthropic text content."
+  );
   const result = {
     agent: publicAgent(agent),
-    model: body.model || requestedModel,
+    model: body && body.model ? body.model : requestedModel,
     text,
     message: {
-      role: body.role || "assistant",
+      role: body && body.role ? body.role : "assistant",
       content: text
     },
-    finishReason: body.stop_reason || null,
-    usage: body.usage || null
+    finishReason: body && body.stop_reason ? body.stop_reason : null,
+    usage: body && body.usage ? body.usage : null
   };
   if (includeRawResponse) result.rawResponse = body;
   return result;
@@ -1294,6 +1547,7 @@ async function chatWithAgent(args) {
   if (!readiness.canChat) {
     const error = new Error(readiness.error || `${agent.label} is not ready for chat.`);
     error.readiness = readiness;
+    if (readiness.providerError) error.providerError = readiness.providerError;
     throw error;
   }
 
@@ -1303,65 +1557,74 @@ async function chatWithAgent(args) {
   const includeRawResponse = Boolean(args.includeRawResponse);
   const timeoutMs = maybeNumber(args.timeoutMs, "timeoutMs") || DEFAULT_TIMEOUT_MS;
 
-  if (agent.apiStyle === "codex-cli") {
-    const result = await runCodexCli(agent, model, messages, {
-      timeoutMs: maybeNumber(args.timeoutMs, "timeoutMs") || DEFAULT_CODEX_CLI_TIMEOUT_MS,
-      includeRawResponse
-    });
-    if (!includeRawResponse) delete result.rawResponse;
-    return {
-      ...result,
-      readiness
-    };
-  }
+  try {
+    if (agent.apiStyle === "codex-cli") {
+      const result = await runCodexCli(agent, model, messages, {
+        timeoutMs: maybeNumber(args.timeoutMs, "timeoutMs") || DEFAULT_CODEX_CLI_TIMEOUT_MS,
+        includeRawResponse
+      });
+      if (!includeRawResponse) delete result.rawResponse;
+      return {
+        ...result,
+        readiness
+      };
+    }
 
-  if (agent.apiStyle === "ollama") {
+    if (agent.apiStyle === "ollama") {
+      const body = {
+        model,
+        messages,
+        stream: false
+      };
+      if (temperature !== null) body.options = { temperature };
+      const response = await requestJson("POST", joinUrl(agent.baseUrl, "/api/chat"), body, {}, timeoutMs);
+      return {
+        ...normalizeOllamaChatResponse(agent, model, response.body, includeRawResponse),
+        readiness
+      };
+    }
+
+    if (agent.apiStyle === "gemini") {
+      const body = geminiPayloadFromMessages(messages, { temperature, maxTokens });
+      const response = await requestJson("POST", joinUrl(agent.baseUrl, geminiGeneratePath(model)), body, geminiHeaders(agent), timeoutMs);
+      return {
+        ...normalizeGeminiChatResponse(agent, model, response.body, includeRawResponse),
+        readiness
+      };
+    }
+
+    if (agent.apiStyle === "anthropic") {
+      const body = anthropicPayloadFromMessages(model, messages, { temperature, maxTokens });
+      const response = await requestJson("POST", joinUrl(agent.baseUrl, "/messages"), body, anthropicHeaders(agent), timeoutMs);
+      return {
+        ...normalizeAnthropicChatResponse(agent, model, response.body, includeRawResponse),
+        readiness
+      };
+    }
+
     const body = {
       model,
       messages,
       stream: false
     };
-    if (temperature !== null) body.options = { temperature };
-    const response = await requestJson("POST", joinUrl(agent.baseUrl, "/api/chat"), body, {}, timeoutMs);
+    if (temperature !== null) body.temperature = temperature;
+    if (maxTokens !== null) body.max_tokens = Math.max(1, Math.floor(maxTokens));
+    if (args.reasoning) body.reasoning = args.reasoning;
+    if (args.reasoning_effort) body.reasoning_effort = args.reasoning_effort;
+
+    const response = await requestJson("POST", joinUrl(agent.baseUrl, "/chat/completions"), body, openAiHeaders(agent), timeoutMs);
     return {
-      ...normalizeOllamaChatResponse(agent, model, response.body, includeRawResponse),
+      ...normalizeOpenAiChatResponse(agent, model, response.body, includeRawResponse),
       readiness
     };
+  } catch (error) {
+    const normalizedError = normalizeProviderError(agent, error, {
+      phase: "chat",
+      model
+    });
+    normalizedError.readiness = readiness;
+    throw normalizedError;
   }
-
-  if (agent.apiStyle === "gemini") {
-    const body = geminiPayloadFromMessages(messages, { temperature, maxTokens });
-    const response = await requestJson("POST", joinUrl(agent.baseUrl, geminiGeneratePath(model)), body, geminiHeaders(agent), timeoutMs);
-    return {
-      ...normalizeGeminiChatResponse(agent, model, response.body, includeRawResponse),
-      readiness
-    };
-  }
-
-  if (agent.apiStyle === "anthropic") {
-    const body = anthropicPayloadFromMessages(model, messages, { temperature, maxTokens });
-    const response = await requestJson("POST", joinUrl(agent.baseUrl, "/messages"), body, anthropicHeaders(agent), timeoutMs);
-    return {
-      ...normalizeAnthropicChatResponse(agent, model, response.body, includeRawResponse),
-      readiness
-    };
-  }
-
-  const body = {
-    model,
-    messages,
-    stream: false
-  };
-  if (temperature !== null) body.temperature = temperature;
-  if (maxTokens !== null) body.max_tokens = Math.max(1, Math.floor(maxTokens));
-  if (args.reasoning) body.reasoning = args.reasoning;
-  if (args.reasoning_effort) body.reasoning_effort = args.reasoning_effort;
-
-  const response = await requestJson("POST", joinUrl(agent.baseUrl, "/chat/completions"), body, openAiHeaders(agent), timeoutMs);
-  return {
-    ...normalizeOpenAiChatResponse(agent, model, response.body, includeRawResponse),
-    readiness
-  };
 }
 
 module.exports = {

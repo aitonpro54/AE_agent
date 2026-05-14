@@ -3179,6 +3179,7 @@ async function runAgentChatLogged(source, args) {
       ...aiChatRequestSummary(args || {}),
       error: error.message || String(error),
       readiness: error.readiness || null,
+      providerError: error.providerError || null,
       logFile: AI_CHAT_LOG_FILE
     };
     appendAiChatEvent("chat_failed", metadata);
@@ -3275,6 +3276,7 @@ async function runAgentPlanLogged(source, args) {
       ...aiChatRequestSummary(args || {}),
       error: error.message || String(error),
       readiness: error.readiness || null,
+      providerError: error.providerError || null,
       logFile: AI_CHAT_LOG_FILE
     };
     appendAiChatEvent("plan_failed", metadata);
@@ -3447,7 +3449,8 @@ function startHttpBridge() {
           ok: false,
           error: error.message || String(error),
           requestId: error.requestId || null,
-          readiness: error.readiness || null
+          readiness: error.readiness || null,
+          providerError: error.providerError || null
         });
       }
       return;
@@ -3477,7 +3480,8 @@ function startHttpBridge() {
           ok: false,
           error: error.message || String(error),
           requestId: error.requestId || null,
-          readiness: error.readiness || null
+          readiness: error.readiness || null,
+          providerError: error.providerError || null
         });
       }
       return;
@@ -5925,7 +5929,8 @@ async function callTool(name, args) {
       return toolResult({
         error: error.message || String(error),
         requestId: error.requestId || null,
-        readiness: error.readiness || null
+        readiness: error.readiness || null,
+        providerError: error.providerError || null
       }, true);
     }
   }
@@ -5937,7 +5942,8 @@ async function callTool(name, args) {
       return toolResult({
         error: error.message || String(error),
         requestId: error.requestId || null,
-        readiness: error.readiness || null
+        readiness: error.readiness || null,
+        providerError: error.providerError || null
       }, true);
     }
   }
