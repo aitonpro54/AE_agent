@@ -16,6 +16,7 @@
 - [x] Milestone 48: Project Context Snapshot.
 - [x] Milestone 49: Recovery и checkpoint UX.
 - [x] Milestone 50: Provider reliability polish.
+- [x] Milestone 51: Installer и CEP sync health.
 
 ## Current Stable Baseline
 
@@ -151,6 +152,7 @@
 - 2026-05-14: Project Context Snapshot выполняется как компактный planning preflight перед provider call; он использует только bridge status, `get_active_comp` и `get_render_queue_status`, пропускает AE-запросы при offline panel и остается подсказкой, которую план все равно должен проверять read tools перед мутациями.
 - 2026-05-14: Recovery UX не добавляет restore-кнопки и не запускает восстановление автоматически; failed run получает только текстовый `recoveryHint`, сформированный из safety/checkpoint/undo metadata.
 - 2026-05-14: Provider reliability errors нормализуются через стабильный `providerError` с `code/status/message/setupHint/retryable`; UI и MCP получают один и тот же user-facing error, а сырые provider failures остаются вспомогательным контекстом.
+- 2026-05-14: CEP sync health считается read-only по умолчанию; запись в установленное extension выполняется только явным `--sync`/`-SyncOnly`, копирует только tracked files и не удаляет сторонние файлы.
 
 ## Validation
 
@@ -304,6 +306,24 @@
   - Passed `node --check mcp-server\ai-agents.js`.
   - Passed `node --check mcp-server\bridge-daemon.js`.
   - Passed `node --check scripts\provider-api-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js reload`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js smoke`.
+- Milestone 51:
+  - Добавил `scripts\cep-sync-health.js` для repo-versus-installed CEP health по `index.html`, `panel.js`, `style.css` и `CSXS/manifest.xml`.
+  - Health report показывает file hashes, installed-file mismatch, repo daemon/panel/manifest versions и installed panel/title/manifest versions.
+  - Добавил safe sync mode `node scripts\cep-sync-health.js --sync --check`, который копирует только missing/different tracked files; на текущей установке он скопировал 0 и пропустил 4 совпадающих файла.
+  - Добавил `-SyncOnly` режим в `scripts\install-cep-panel.ps1`, чтобы installer мог использовать safe sync helper без полного recursive copy.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check scripts\cep-sync-health.js`.
+  - Passed PowerShell parse check for `scripts\install-cep-panel.ps1`.
+  - Passed `node scripts\cep-sync-health.js --check` against the installed CEP extension.
+  - Passed `node scripts\cep-sync-health.js --sync --check` against the installed CEP extension; copied 0, skipped 4.
   - Passed `git diff --check`.
   - Passed `node scripts\provider-contract-smoke.js`.
   - Passed `node scripts\provider-api-smoke.js`.
