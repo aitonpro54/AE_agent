@@ -21,6 +21,7 @@
 - [x] Milestone 53: Release prep review и sync-only hardening.
 - [x] Milestone 54: Master merge и release tag prep.
 - [x] Milestone 55: Live Agent Scenario QA.
+- [x] Milestone 56: Planner Fidelity на ChatGPT 5.5.
 
 ## Current Stable Baseline
 
@@ -154,6 +155,14 @@
 - Если panel planner возвращает пустой или неполный plan, запускать deterministic backend fallback через `/agents/plan/run`, чтобы проверить typed tools, dry-run, protected run и checkpoint/edit-session поведение без изменения product planner.
 - Усилить cleanup: удалять generated render queue items по prefix до `cleanup_test_items`, затем проверять отсутствие generated project items и возврат render queue к baseline.
 
+### Milestone 56: Planner Fidelity на ChatGPT 5.5
+
+- Добавить live CEP smoke `agent-scenario-openai-cli-smoke`, который прогоняет те же четыре Agent QA сценария через `openai-cli` и `gpt-5.5`.
+- Сценарный smoke должен явно выбирать OpenAI provider group, CLI auth mode, agent `openai-cli` и модель `gpt-5.5`, не полагаясь на сохраненное Local/Ollama состояние панели.
+- Отчет Agent scenario smoke должен явно разделять `panel-agent-plan` и `deterministic-plan-fallback`, показывать expected validation summary, step/mutation counts, accepted checks и transcript tail.
+- Для `openai-cli` / `gpt-5.5` deterministic fallback остается cleanup/runtime страховкой, но не считается успешным planner-fidelity результатом: command должен завершаться ошибкой, если хотя бы один сценарий ушел в fallback.
+- Не менять public provider schema; ChatGPT subscription path остается существующим `codex exec --ephemeral --json --sandbox read-only`.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -182,6 +191,8 @@
 - 2026-05-14: Для release этого блока используется fast-forward merge в `master` и lightweight tag `v0.26.0-agent-ux-polish`, чтобы сохранить существующий стиль тегов repo.
 - 2026-05-14: Roadmap 1.2 live Agent QA использует deterministic backend fallback, когда panel planner возвращает пустой или частичный plan; это решение валидирует runtime typed tools и protection, но не меняет product planner behavior.
 - 2026-05-14: Live Agent QA удаляет только generated assets с префиксом `Codex QA 1.2 <stamp>`; render queue cleanup ограничен items, у которых comp name начинается с текущего generated prefix.
+- 2026-05-15: Planner-fidelity контрольным provider становится `openai-cli` / `gpt-5.5`, то есть ChatGPT subscription path через Codex CLI; Ollama остается полезным local smoke provider, но не является итоговым критерием Milestone 56.
+- 2026-05-15: Для `agent-scenario-openai-cli-smoke` fallback через `/agents/plan/run` может выполнить cleanup/runtime validation, но сам command должен падать при fallback, чтобы не скрывать planner-quality regression.
 
 ## Validation
 
@@ -449,3 +460,22 @@
   - Passed `node scripts\cep-panel-cdp-smoke.js smoke`.
   - Passed `node scripts\cep-panel-cdp-smoke.js mutating-smoke`; generated `Codex Test Safe Run 84026908`, created checkpoint `final_slides2_tests-checkpoint-session-ai-plan-f5414a3d-2026-05-14T18-40-48-237Z.aep`, then cleaned up the generated composition.
   - Passed `node scripts\cep-panel-cdp-smoke.js agent-scenario-smoke` after the full suite.
+- Milestone 56:
+  - Added `node scripts\cep-panel-cdp-smoke.js agent-scenario-openai-cli-smoke`.
+  - The new command explicitly selects OpenAI provider group, CLI auth mode, `openai-cli`, and `gpt-5.5` before each Agent scenario.
+  - Agent scenario reports now include planner config, provider readiness, `plannerAcceptance`, per-scenario `panelPlan.accepted`, expected validation summary, expected step/mutation counts, exact acceptance checks, and transcript tail.
+  - `agent-scenario-openai-cli-smoke` requires all four scenarios to use `panel-agent-plan`; if any scenario uses deterministic fallback, cleanup/runtime validation still runs but the command exits with failure.
+  - Initial `agent-scenario-openai-cli-smoke` run produced `panelPlanCount: 3`, `fallbackCount: 1`; `gpt-5.5` added extra inspection/discovery steps to `text-shape-layout-animation`.
+  - Tightened `exactPlanPrompt` to preserve the fixture plan length/order/titles/tools/args and to forbid extra discovery, inspection, checkpoint, cleanup, verification, or explanatory steps.
+  - Final live `agent-scenario-openai-cli-smoke` passed with prefix `Codex QA 1.2 87813893`, `panelPlanCount: 4`, `fallbackCount: 0`, and `renderQueueTotal: 0`.
+  - Final cleanup removed generated project items per scenario (`3`, `1`, `4`, `1`), removed `1` generated render queue item in the render scenario, and left final cleanup removed count at `0`.
+  - Shell `codex login status` returned `Not logged in`; an interactive `codex login` attempt timed out, but the live bridge/panel OpenAI CLI readiness reported `ready` and both GPT-5.5 live smokes succeeded through the product path.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js openai-cli-smoke`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js agent-scenario-openai-cli-smoke`.

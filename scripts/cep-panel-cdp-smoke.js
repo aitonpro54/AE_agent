@@ -44,6 +44,30 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "set_render_queue_output"
 ]);
 
+function defaultAgentScenarioConfig() {
+  return {
+    label: "configured-agent",
+    agentId: AGENT_ID,
+    model: MODEL,
+    providerGroup: "",
+    authMode: "",
+    requirePanelPlans: false,
+    readinessTimeoutMs: 45000
+  };
+}
+
+function openAiCliAgentScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS
+  };
+}
+
 function getJson(url) {
   return new Promise((resolve, reject) => {
     http.get(url, (res) => {
@@ -104,6 +128,18 @@ function postBridge(path, payload) {
     req.write(body);
     req.end();
   });
+}
+
+function bridgeGetUrl(path, params) {
+  const target = new URL(path, BRIDGE_URL);
+  if (BRIDGE_TOKEN) target.searchParams.set("token", BRIDGE_TOKEN);
+  const entries = params || {};
+  for (const key of Object.keys(entries)) {
+    if (entries[key] !== undefined && entries[key] !== null) {
+      target.searchParams.set(key, String(entries[key]));
+    }
+  }
+  return target.toString();
 }
 
 function parseBridgeToolPayload(response, name) {
@@ -320,7 +356,8 @@ function selectAgentExpression(prompt) {
   })()`;
 }
 
-function selectAgentScenarioExpression(prompt) {
+function selectAgentScenarioExpression(prompt, config) {
+  const scenarioConfig = config || defaultAgentScenarioConfig();
   return `(() => {
     function setValue(el, value) {
       if (!el) return;
@@ -339,9 +376,27 @@ function selectAgentScenarioExpression(prompt) {
     }
     localStorage.setItem("codexAePromptOptimization", "0");
 
-    setValue(document.getElementById("agentSelect"), ${JSON.stringify(AGENT_ID)});
-    setValue(document.getElementById("agentModel"), ${JSON.stringify(MODEL)});
+    const providerGroup = ${JSON.stringify(scenarioConfig.providerGroup || "")};
+    const authMode = ${JSON.stringify(scenarioConfig.authMode || "")};
+    if (providerGroup) {
+      localStorage.setItem("codexAeProviderGroup", providerGroup);
+      const providerButton = document.querySelector("#providerTabs [data-provider-group='" + providerGroup + "']");
+      if (providerButton) providerButton.click();
+    }
+    if (authMode) {
+      localStorage.setItem("codexAeOpenAiAuthMode", authMode);
+      const authButton = document.querySelector("#authModeTabs [data-auth-mode='" + authMode + "']");
+      if (authButton) authButton.click();
+    }
+
+    localStorage.setItem("codexAeAgentId", ${JSON.stringify(scenarioConfig.agentId)});
+    localStorage.setItem("codexAeAgentModel:${scenarioConfig.agentId}", ${JSON.stringify(scenarioConfig.model)});
+    localStorage.setItem("codexAeChatMode", "plan");
+    setValue(document.getElementById("agentSelect"), ${JSON.stringify(scenarioConfig.agentId)});
+    setValue(document.getElementById("agentModel"), ${JSON.stringify(scenarioConfig.model)});
     setValue(document.getElementById("chatMode"), "plan");
+    const planButton = document.querySelector("#chatModeTabs [data-chat-mode='plan']");
+    if (planButton) planButton.click();
     setValue(document.getElementById("chatPrompt"), ${JSON.stringify(prompt)});
     return ${stateExpression()};
   })()`;
@@ -1471,6 +1526,8 @@ function safeOutputName(value) {
 function exactPlanPrompt(plan) {
   return [
     "Return exactly this JSON object as the AE Agent plan. Do not add markdown, code fences, prose, comments, or renamed fields.",
+    "The JSON object below is the complete QA fixture. Keep the steps array length, order, titles, tool names, args, summary, risk, and requiresCheckpoint unchanged.",
+    "Do not add discovery, inspection, checkpoint, cleanup, verification, or explanatory steps. The bridge runner already handles validation, dry-run, protected edit sessions, verification, and cleanup.",
     "Use only the listed typed MCP tools. All generated asset names intentionally start with the QA prefix.",
     JSON.stringify(plan, null, 2)
   ].join("\n\n");
@@ -1606,11 +1663,30 @@ function agentScenarioPlans(runPrefix, renderQueueBaselineTotal) {
   }));
 }
 
-async function agentScenarioPreflight() {
+async function agentScenarioReadiness(config) {
+  const scenarioConfig = config || defaultAgentScenarioConfig();
+  const response = await getJson(bridgeGetUrl("/agents/readiness", {
+    agentId: scenarioConfig.agentId,
+    model: scenarioConfig.model,
+    checkModels: "1",
+    timeoutMs: scenarioConfig.readinessTimeoutMs || 45000
+  }));
+  if (!response || response.ok !== true || !response.readiness) {
+    throw new Error(`${scenarioConfig.label}: provider readiness check failed.`);
+  }
+  if (response.readiness.canChat !== true) {
+    const error = response.readiness.error || response.readiness.status || "provider is not ready";
+    throw new Error(`${scenarioConfig.label}: ${scenarioConfig.agentId}/${scenarioConfig.model} is not ready for Agent scenario QA: ${error}`);
+  }
+  return response.readiness;
+}
+
+async function agentScenarioPreflight(config) {
   const health = await getJson(`${BRIDGE_URL.replace(/\/$/, "")}/health`);
   if (!health || health.ok !== true) throw new Error("Bridge health check failed.");
   if (!health.panelConnected) throw new Error("CEP panel is not connected to the bridge.");
 
+  const readiness = await agentScenarioReadiness(config);
   const activeComp = await callBridgeTool("get_active_comp");
   const editSession = await callBridgeTool("get_edit_session_status");
   if (editSession && editSession.active) {
@@ -1624,6 +1700,13 @@ async function agentScenarioPreflight() {
       panelConnected: health.panelConnected,
       pending: health.pending || health.pendingCommands || 0,
       inflight: health.inflight || health.inflightCommands || 0
+    },
+    readiness: {
+      status: readiness.status,
+      canChat: readiness.canChat,
+      modelAvailable: readiness.modelAvailable,
+      modelSource: readiness.modelSource,
+      modelCount: readiness.modelCount || 0
     },
     activeComp,
     editSession,
@@ -1755,7 +1838,54 @@ async function runBridgePlanForScenario(scenario, dryRun) {
   return response.body.run;
 }
 
-async function runDeterministicScenarioFallback(scenario, panelPlan) {
+function scenarioValidationLine(scenario) {
+  return `Validation: ok, ${scenario.expectedStepCount} ${scenario.expectedStepCount === 1 ? "step" : "steps"}, ${scenario.expectedMutatingCount} mutating`;
+}
+
+function panelPlanExpectation(scenario, state) {
+  const transcript = state && state.transcript ? state.transcript : "";
+  const validationLine = scenarioValidationLine(scenario);
+  const checks = {
+    reviewReady: transcript.indexOf("Plan review: ready") >= 0,
+    validationLine: transcript.indexOf(validationLine) >= 0,
+    mutatingStatus: state && state.planRunStatus === "Dry run first; Run uses protection",
+    mutatingStatusClass: Boolean(state && state.planRunStatusClass && state.planRunStatusClass.indexOf("mutating") >= 0),
+    dryRunEnabled: Boolean(state && state.dryRunDisabled === false),
+    runEnabled: Boolean(state && state.runDisabled === false)
+  };
+  return {
+    ok: checks.reviewReady &&
+      checks.validationLine &&
+      checks.mutatingStatus &&
+      checks.mutatingStatusClass &&
+      checks.dryRunEnabled &&
+      checks.runEnabled,
+    validationLine,
+    expectedStepCount: scenario.expectedStepCount,
+    expectedMutatingCount: scenario.expectedMutatingCount,
+    expectedTools: scenario.expectedTools,
+    planRunStatus: state ? state.planRunStatus : "",
+    planRunStatusClass: state ? state.planRunStatusClass : "",
+    checks
+  };
+}
+
+function panelPlanReport(scenario, state, expectation) {
+  const report = expectation || panelPlanExpectation(scenario, state);
+  return {
+    accepted: report.ok,
+    validationLine: report.validationLine,
+    expectedStepCount: report.expectedStepCount,
+    expectedMutatingCount: report.expectedMutatingCount,
+    expectedTools: report.expectedTools,
+    planRunStatus: report.planRunStatus,
+    planRunStatusClass: report.planRunStatusClass,
+    checks: report.checks,
+    transcriptTail: state && state.transcript ? state.transcript.slice(-3000) : ""
+  };
+}
+
+async function runDeterministicScenarioFallback(scenario, panelPlan, expectation) {
   const dryRun = await runBridgePlanForScenario(scenario, true);
   const run = await runBridgePlanForScenario(scenario, false);
   if (!run.editSession && (!run.safety || run.safety.protection !== "auto_edit_session")) {
@@ -1765,20 +1895,19 @@ async function runDeterministicScenarioFallback(scenario, panelPlan) {
     id: scenario.id,
     cleanupPrefix: scenario.cleanupPrefix,
     executionMode: "deterministic-plan-fallback",
-    fallbackReason: "Panel Agent planner did not return the expected typed-tool plan.",
-    panelPlan: {
-      transcriptTail: panelPlan.transcript.slice(-3000)
-    },
+    fallbackReason: "Panel Agent planner did not return the expected typed-tool plan and protected run readiness.",
+    panelPlan: panelPlanReport(scenario, panelPlan, expectation),
     dryRun: planRunSummary(dryRun),
     run: planRunSummary(run)
   };
 }
 
-async function runAgentScenario(send, scenario) {
-  await evaluate(send, selectAgentScenarioExpression(scenario.prompt));
+async function runAgentScenario(send, scenario, config) {
+  const scenarioConfig = config || defaultAgentScenarioConfig();
+  await evaluate(send, selectAgentScenarioExpression(scenario.prompt, scenarioConfig));
   await waitFor(send, `${scenario.id} agent ready`, (state) => (
-    state.agentValue === AGENT_ID &&
-    state.model === MODEL &&
+    state.agentValue === scenarioConfig.agentId &&
+    state.model === scenarioConfig.model &&
     state.mode === "plan" &&
     state.promptOptimizationChecked === false &&
     state.sendDisabled === false
@@ -1797,18 +1926,10 @@ async function runAgentScenario(send, scenario) {
     state.transcript.indexOf("Validation:") >= 0
   ), AGENT_SCENARIO_WAIT_MS);
 
-  const validationLine = `Validation: ok, ${scenario.expectedStepCount} ${scenario.expectedStepCount === 1 ? "step" : "steps"}, ${scenario.expectedMutatingCount} mutating`;
-  const expectedPanelPlan = (
-    planned.transcript.indexOf("Plan review: ready") >= 0 &&
-    planned.transcript.indexOf(validationLine) >= 0 &&
-    planned.planRunStatus === "Dry run first; Run uses protection" &&
-    planned.planRunStatusClass.indexOf("mutating") >= 0 &&
-    planned.dryRunDisabled === false &&
-    planned.runDisabled === false
-  );
+  const expectedPanelPlan = panelPlanExpectation(scenario, planned);
 
-  if (!expectedPanelPlan) {
-    return runDeterministicScenarioFallback(scenario, planned);
+  if (!expectedPanelPlan.ok) {
+    return runDeterministicScenarioFallback(scenario, planned, expectedPanelPlan);
   }
 
   const dryRunClicked = await evaluate(send, clickExpression("dryRunPlanButton"));
@@ -1855,9 +1976,7 @@ async function runAgentScenario(send, scenario) {
     id: scenario.id,
     cleanupPrefix: scenario.cleanupPrefix,
     executionMode: "panel-agent-plan",
-    planned: {
-      transcriptTail: planned.transcript.slice(-3000)
-    },
+    panelPlan: panelPlanReport(scenario, planned, expectedPanelPlan),
     dryRun: {
       transcriptTail: dryRun.transcript.slice(-3000)
     },
@@ -1868,8 +1987,9 @@ async function runAgentScenario(send, scenario) {
   };
 }
 
-async function agentScenarioSmoke() {
-  const preflight = await agentScenarioPreflight();
+async function agentScenarioSmoke(config) {
+  const scenarioConfig = config || defaultAgentScenarioConfig();
+  const preflight = await agentScenarioPreflight(scenarioConfig);
   const renderQueueBaselineTotal = Number(preflight.renderQueue && preflight.renderQueue.totalItems || 0);
   const runPrefix = `${AGENT_SCENARIO_PREFIX} ${agentScenarioStamp()}`;
   const scenarios = agentScenarioPlans(runPrefix, renderQueueBaselineTotal);
@@ -1886,10 +2006,10 @@ async function agentScenarioSmoke() {
     await reloadActivePage(send);
     await evaluate(send, setupExpression());
     await waitFor(send, "panel online", (state) => state.badge === "online", 15000);
-    await waitFor(send, "agent list", (state) => state.agentOptions.some((option) => option.value === AGENT_ID), 20000);
+    await waitFor(send, "agent list", (state) => state.agentOptions.some((option) => option.value === scenarioConfig.agentId), 20000);
 
     for (const scenario of scenarios) {
-      const result = await runAgentScenario(send, scenario);
+      const result = await runAgentScenario(send, scenario, scenarioConfig);
       results.push(result);
       const cleanup = await cleanupAgentScenarioPrefix(scenario.cleanupPrefix, renderQueueBaselineTotal);
       cleanups.push({
@@ -1905,20 +2025,34 @@ async function agentScenarioSmoke() {
 
     const finalCleanup = await cleanupAgentScenarioPrefix(runPrefix, renderQueueBaselineTotal);
     finalCleanupDone = true;
-    console.log(JSON.stringify({
+    const fallbackCount = results.filter((result) => result.executionMode === "deterministic-plan-fallback").length;
+    const panelPlanCount = results.filter((result) => result.executionMode === "panel-agent-plan").length;
+    const report = {
       ok: true,
       page: { title: page.title, url: page.url },
       runPrefix,
-      agent: AGENT_ID,
-      model: MODEL,
+      planner: {
+        label: scenarioConfig.label,
+        agent: scenarioConfig.agentId,
+        model: scenarioConfig.model,
+        providerGroup: scenarioConfig.providerGroup || null,
+        authMode: scenarioConfig.authMode || null,
+        requirePanelPlans: scenarioConfig.requirePanelPlans
+      },
       preflight: {
         health: preflight.health,
+        readiness: preflight.readiness,
         activeComp: preflight.activeComp ? {
           itemIndex: preflight.activeComp.itemIndex,
           name: preflight.activeComp.name,
           selectedLayerCount: Array.isArray(preflight.activeComp.selectedLayers) ? preflight.activeComp.selectedLayers.length : 0
         } : null,
         renderQueueTotal: renderQueueBaselineTotal
+      },
+      plannerAcceptance: {
+        panelPlanCount,
+        fallbackCount,
+        scenarioCount: results.length
       },
       scenarios: results,
       cleanups,
@@ -1929,7 +2063,11 @@ async function agentScenarioSmoke() {
           : null,
         renderQueueTotal: finalCleanup.renderQueue.totalItems
       }
-    }, null, 2));
+    };
+    console.log(JSON.stringify(report, null, 2));
+    if (scenarioConfig.requirePanelPlans && fallbackCount > 0) {
+      throw new Error(`${scenarioConfig.label}: ${fallbackCount} Agent scenario(s) used deterministic fallback; planner fidelity did not meet the GPT-5.5 acceptance gate.`);
+    }
   } finally {
     if (!finalCleanupDone) {
       try {
@@ -2130,6 +2268,10 @@ async function main() {
   }
   if (command === "agent-scenario-smoke") {
     await agentScenarioSmoke();
+    return;
+  }
+  if (command === "agent-scenario-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliAgentScenarioConfig());
     return;
   }
   if (command === "openai-api-setup-smoke") {
