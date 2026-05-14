@@ -14,6 +14,7 @@
 - [x] Milestone 46: Библиотека Agent-сценариев.
 - [x] Milestone 47: Улучшенный Plan Review UX.
 - [x] Milestone 48: Project Context Snapshot.
+- [x] Milestone 49: Recovery и checkpoint UX.
 
 ## Current Stable Baseline
 
@@ -147,6 +148,7 @@
 - 2026-05-14: Workflow presets являются только prompt helpers; они не должны обходить Agent planning, validation, dry-run или mutation gates.
 - 2026-05-14: Plan Review UX остается text-first внутри chat transcript; backend plan schemas и execution gates не меняются, а CEP только яснее показывает affected targets, mutation count, checkpoint expectation и read-only/protected run readiness.
 - 2026-05-14: Project Context Snapshot выполняется как компактный planning preflight перед provider call; он использует только bridge status, `get_active_comp` и `get_render_queue_status`, пропускает AE-запросы при offline panel и остается подсказкой, которую план все равно должен проверять read tools перед мутациями.
+- 2026-05-14: Recovery UX не добавляет restore-кнопки и не запускает восстановление автоматически; failed run получает только текстовый `recoveryHint`, сформированный из safety/checkpoint/undo metadata.
 
 ## Validation
 
@@ -268,3 +270,25 @@
   - Passed `node scripts\smoke-test.js`.
   - Passed `node scripts\cep-panel-cdp-smoke.js plan-review-smoke` against the restarted live daemon.
   - Passed `node scripts\cep-panel-cdp-smoke.js smoke` against the restarted live daemon. One earlier parallel `smoke` attempt timed out while `plan-review-smoke` was already using the single CEP panel; rerunning it separately passed.
+- Milestone 49:
+  - Добавил backend `recoveryHint` для failed Agent plan runs, вычисляемый из существующих `safety`, checkpoint и mutation undo metadata.
+  - CEP run transcript теперь явно показывает `Checkpoint/edit session:` для dry-run, read-only run, protected mutating run и blocked safety states.
+  - CEP показывает `Recovery:` только для failed runs; automatic restore actions не добавлялись.
+  - Обновил smoke coverage: blocked mutating run теперь проверяет `recoveryHint`, live CEP smokes проверяют checkpoint/edit-session строки.
+  - Скопировал обновленный `panel.js` в установленное CEP extension.
+  - Перезапустил live bridge daemon на `127.0.0.1:3456` из текущего repo root.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `node --check scripts\smoke-test.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js reload`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js plan-review-smoke`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js smoke`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js mutating-smoke`; generated `Codex Test Safe Run 37940813`, created a checkpoint under project backups, then cleaned up the generated composition.

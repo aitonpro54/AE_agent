@@ -633,7 +633,8 @@ async function smoke() {
     const dryRun = await waitFor(send, "dry run result", (state) => (
       state.sendDisabled === false &&
       state.transcript.indexOf("Dry run: ok") >= 0 &&
-      state.transcript.indexOf("Mode: preview only; project was not changed.") >= 0
+      state.transcript.indexOf("Mode: preview only; project was not changed.") >= 0 &&
+      state.transcript.indexOf("Checkpoint/edit session: not needed for read-only dry run.") >= 0
     ), 30000);
 
     await evaluate(send, installConfirmExpression());
@@ -642,11 +643,13 @@ async function smoke() {
     const run = await waitFor(send, "run result", (state) => (
       state.sendDisabled === false &&
       state.transcript.indexOf("Run: ok") >= 0 &&
+      state.transcript.indexOf("Checkpoint/edit session: not needed for read-only run.") >= 0 &&
       state.transcript.indexOf("verification") < 0
     ), 60000).catch(async () => {
       return waitFor(send, "run result with verification text", (state) => (
         state.sendDisabled === false &&
-        state.transcript.indexOf("Run: ok") >= 0
+        state.transcript.indexOf("Run: ok") >= 0 &&
+        state.transcript.indexOf("Checkpoint/edit session: not needed for read-only run.") >= 0
       ), 5000);
     });
 
@@ -710,6 +713,7 @@ async function planReviewSmoke() {
       state.sendDisabled === false &&
       state.transcript.indexOf("Dry run: ok") >= 0 &&
       state.transcript.indexOf("Mode: preview only; project was not changed.") >= 0 &&
+      state.transcript.indexOf("Checkpoint/edit session: not needed for read-only dry run.") >= 0 &&
       state.transcript.indexOf("Affected targets:") >= 0
     ), 30000);
 
@@ -1466,6 +1470,7 @@ async function mutatingSmoke() {
       state.sendDisabled === false &&
       state.transcript.indexOf("Dry run: ok") >= 0 &&
       state.transcript.indexOf("Mode: preview only; project was not changed.") >= 0 &&
+      state.transcript.indexOf("Checkpoint/edit session: dry-run only; no checkpoint was created.") >= 0 &&
       state.transcript.indexOf("ready") >= 0
     ), 30000);
 
@@ -1493,6 +1498,9 @@ async function mutatingSmoke() {
     if (!blockedSaveFirst) {
       if (run.transcript.indexOf("auto_edit_session") < 0 && run.transcript.indexOf("Edit session") < 0) {
         throw new Error("Mutating run did not show edit-session protection.");
+      }
+      if (run.transcript.indexOf("Checkpoint/edit session: protected by") < 0) {
+        throw new Error("Mutating run did not show checkpoint/edit-session status.");
       }
       if (run.transcript.indexOf(name) < 0) {
         throw new Error("Mutating run did not mention the created test comp.");

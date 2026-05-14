@@ -931,7 +931,8 @@ async function main() {
     mutatingBlocked.body.ok !== false ||
     !mutatingBlocked.body.run ||
     mutatingBlocked.body.run.safety.status !== "blocked_missing_edit_session" ||
-    String(mutatingBlocked.body.run.error || "").indexOf("autoEditSession:true") < 0
+    String(mutatingBlocked.body.run.error || "").indexOf("autoEditSession:true") < 0 ||
+    String(mutatingBlocked.body.run.recoveryHint || "").indexOf("No project change was started") < 0
   ) {
     throw new Error("Mutating plan without checkpoint/edit session was not blocked");
   }

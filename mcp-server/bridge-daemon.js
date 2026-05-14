@@ -2761,6 +2761,63 @@ function planningToolCatalog() {
   return lines.join("\n");
 }
 
+function planRunCheckpointFile(run) {
+  if (!run || typeof run !== "object") return "";
+  if (run.checkpoint && run.checkpoint.checkpointFile) return run.checkpoint.checkpointFile;
+  if (run.editSession && run.editSession.checkpoint && run.editSession.checkpoint.checkpointFile) {
+    return run.editSession.checkpoint.checkpointFile;
+  }
+  if (Array.isArray(run.steps)) {
+    for (const step of run.steps) {
+      if (step && step.result && step.result.checkpoint && step.result.checkpoint.checkpointFile) {
+        return step.result.checkpoint.checkpointFile;
+      }
+      if (step && step.result && step.result.mutation && step.result.mutation.checkpoint && step.result.mutation.checkpoint.checkpointFile) {
+        return step.result.mutation.checkpoint.checkpointFile;
+      }
+    }
+  }
+  return "";
+}
+
+function planRunUndoHint(run) {
+  if (!run || !Array.isArray(run.steps)) return "";
+  for (const step of run.steps) {
+    if (step && step.result && step.result.mutation && step.result.mutation.undoHint) {
+      return step.result.mutation.undoHint;
+    }
+  }
+  return "";
+}
+
+function planRunRecoveryHint(run) {
+  if (!run || run.ok) return null;
+  const mutatingExecution = Boolean(run.safety && run.safety.mutatingExecution);
+  const checkpointFile = planRunCheckpointFile(run);
+  const undoHint = planRunUndoHint(run);
+  const safetyStatus = run.safety && run.safety.status ? run.safety.status : "";
+
+  if (run.safety && run.safety.saveProjectFirst) {
+    return "No project change was started. Save the After Effects project so a checkpoint can be created, then retry the protected run.";
+  }
+  if (safetyStatus === "blocked_missing_edit_session") {
+    return "No project change was started. Retry through the protected Run plan action, or create a checkpoint/edit session before running mutating steps.";
+  }
+  if (safetyStatus === "blocked_edit_session_failed") {
+    return "No project change was started because edit-session protection could not be prepared. Review the safety error, then retry after the project can be checkpointed.";
+  }
+  if (checkpointFile) {
+    return `A checkpoint is available at ${checkpointFile}. Review the AE project, then restore manually from that checkpoint only if needed.`;
+  }
+  if (undoHint) {
+    return undoHint;
+  }
+  if (!mutatingExecution) {
+    return "No project changes were requested. Review the failed read-only step, adjust the plan, and retry.";
+  }
+  return "Review the failed step before retrying. If any AE change occurred, use the checkpoint or After Effects Undo path listed in the step details.";
+}
+
 async function runValidatedAgentPlan(options) {
   options = options || {};
   const plan = options.plan;
@@ -2811,6 +2868,9 @@ async function runValidatedAgentPlan(options) {
     run.finishedAt = new Date().toISOString();
     if (typeof run.ok !== "boolean") {
       run.ok = run.failedCount === 0 && !run.steps.some((step) => step.status === "blocked");
+    }
+    if (!run.ok && !run.recoveryHint) {
+      run.recoveryHint = planRunRecoveryHint(run);
     }
     return run;
   }

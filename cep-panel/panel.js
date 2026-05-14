@@ -869,10 +869,10 @@
     if (/^(affected targets|target):/i.test(value)) {
       className += " plan-targets";
     }
-    if (/^(checkpoint expectation|checkpoint|safety|edit session|restore):/i.test(value)) {
+    if (/^(checkpoint expectation|checkpoint|checkpoint\/edit session|safety|edit session|restore):/i.test(value)) {
       className += " plan-safety";
     }
-    if (/^(warnings?|warning|- warning|error|save project first)/i.test(value) || lower.indexOf("needs review") >= 0 || lower.indexOf("blocked") >= 0) {
+    if (/^(warnings?|warning|- warning|error|recovery|save project first)/i.test(value) || lower.indexOf("needs review") >= 0 || lower.indexOf("blocked") >= 0) {
       className += " plan-warning";
     }
     return className;
@@ -1503,6 +1503,81 @@
     return value.replace(/_/g, " ");
   }
 
+  function checkpointFileForRun(run) {
+    if (!run) return "";
+    if (run.checkpoint && run.checkpoint.checkpointFile) return run.checkpoint.checkpointFile;
+    if (run.editSession && run.editSession.checkpoint && run.editSession.checkpoint.checkpointFile) {
+      return run.editSession.checkpoint.checkpointFile;
+    }
+    var steps = run.steps && typeof run.steps.push === "function" ? run.steps : [];
+    for (var i = 0; i < steps.length; i++) {
+      var result = steps[i] && steps[i].result ? steps[i].result : null;
+      if (result && result.checkpoint && result.checkpoint.checkpointFile) return result.checkpoint.checkpointFile;
+      if (result && result.mutation && result.mutation.checkpoint && result.mutation.checkpoint.checkpointFile) {
+        return result.mutation.checkpoint.checkpointFile;
+      }
+    }
+    return "";
+  }
+
+  function stepUndoHintForRun(run) {
+    var steps = run && run.steps && typeof run.steps.push === "function" ? run.steps : [];
+    for (var i = 0; i < steps.length; i++) {
+      var result = steps[i] && steps[i].result ? steps[i].result : null;
+      if (result && result.mutation && result.mutation.undoHint) return result.mutation.undoHint;
+    }
+    return "";
+  }
+
+  function checkpointEditSessionStatusText(run, mutatingCount) {
+    if (!run) return "";
+    if (run.dryRun) {
+      if (mutatingCount > 0) return "Checkpoint/edit session: dry-run only; no checkpoint was created. Run plan will prepare protection.";
+      return "Checkpoint/edit session: not needed for read-only dry run.";
+    }
+    if (run.safety && run.safety.saveProjectFirst) {
+      return "Checkpoint/edit session: blocked before checkpoint; save the AE project first.";
+    }
+    if (run.safety && run.safety.status === "blocked_missing_edit_session") {
+      return "Checkpoint/edit session: blocked before any project change.";
+    }
+    if (run.safety && run.safety.status === "blocked_edit_session_failed") {
+      return "Checkpoint/edit session: protection could not be prepared.";
+    }
+    if (run.editSession) {
+      return "Checkpoint/edit session: protected by " + (run.editSession.label || run.editSession.id || "edit session") + ".";
+    }
+    if (checkpointFileForRun(run)) {
+      return "Checkpoint/edit session: checkpoint available.";
+    }
+    if (mutatingCount > 0) {
+      return "Checkpoint/edit session: no checkpoint metadata returned; review before retrying.";
+    }
+    return "Checkpoint/edit session: not needed for read-only run.";
+  }
+
+  function recoveryHintForRun(run, mutatingCount) {
+    if (!run || run.ok) return "";
+    if (run.recoveryHint) return run.recoveryHint;
+    if (run.safety && run.safety.saveProjectFirst) {
+      return "No project change was started. Save the AE project so a checkpoint can be created, then retry the protected run.";
+    }
+    if (run.safety && run.safety.status === "blocked_missing_edit_session") {
+      return "No project change was started. Retry through the protected Run plan action, or create a checkpoint/edit session before running mutating steps.";
+    }
+    if (run.safety && run.safety.status === "blocked_edit_session_failed") {
+      return "No project change was started because edit-session protection could not be prepared. Review the safety error, then retry after the project can be checkpointed.";
+    }
+    var checkpointFile = checkpointFileForRun(run);
+    if (checkpointFile) {
+      return "A checkpoint is available at " + checkpointFile + ". Review the AE project, then restore manually from that checkpoint only if needed.";
+    }
+    var undoHint = stepUndoHintForRun(run);
+    if (undoHint) return undoHint;
+    if (mutatingCount <= 0) return "No project changes were requested. Review the failed read-only step, adjust the plan, and retry.";
+    return "Review the failed step before retrying. If any AE change occurred, use the checkpoint or After Effects Undo path listed in the step details.";
+  }
+
   function formatPlanResult(result) {
     if (!result.planParseOk || !result.plan) {
       return result.text || result.planParseError || "The agent returned a plan I could not parse.";
@@ -1568,6 +1643,8 @@
       lines.push("Plan: " + countLabel(runValidation.stepCount || 0, "step", "steps") + ", " + runMutatingCount + " mutating");
     }
     if (runSteps.length) lines.push("Affected targets: " + collectTargetSummaries(runSteps));
+    var checkpointStatus = checkpointEditSessionStatusText(run, runMutatingCount);
+    if (checkpointStatus) lines.push(checkpointStatus);
     if (run.safety) {
       lines.push("Safety: " + readableSafetyLabel(run.safety));
       if (run.safety.saveProjectFirst) lines.push("Save project first before mutating run.");
@@ -1589,6 +1666,8 @@
     if (run.warnings && run.warnings.length) {
       lines.push("Warnings: " + run.warnings.join("; "));
     }
+    var recoveryHint = recoveryHintForRun(run, runMutatingCount);
+    if (recoveryHint) lines.push("Recovery: " + recoveryHint);
     if (runSteps.length) {
       lines.push("Steps:");
       for (var i = 0; i < runSteps.length; i++) {
