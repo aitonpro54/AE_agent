@@ -214,6 +214,21 @@ Then restart After Effects and open:
 Window > Extensions > AE Agent 1.0.0
 ```
 
+For the local development install script:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install-cep-panel.ps1
+```
+
+For incremental repo-versus-installed checks:
+
+```powershell
+node .\scripts\cep-sync-health.js --check
+node .\scripts\cep-sync-health.js --sync --check
+```
+
+The health command is read-only unless `--sync` is provided. `--sync` copies only missing or different tracked CEP files: `index.html`, `panel.js`, `style.css`, and `CSXS/manifest.xml`. The PowerShell installer also supports `-SyncOnly` to use the same safe sync helper.
+
 ## MCP client config
 
 For a stdio MCP client, point it at:

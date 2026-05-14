@@ -17,6 +17,7 @@
 - [x] Milestone 49: Recovery и checkpoint UX.
 - [x] Milestone 50: Provider reliability polish.
 - [x] Milestone 51: Installer и CEP sync health.
+- [x] Milestone 52: Полная 1.1 validation.
 
 ## Current Stable Baseline
 
@@ -153,6 +154,7 @@
 - 2026-05-14: Recovery UX не добавляет restore-кнопки и не запускает восстановление автоматически; failed run получает только текстовый `recoveryHint`, сформированный из safety/checkpoint/undo metadata.
 - 2026-05-14: Provider reliability errors нормализуются через стабильный `providerError` с `code/status/message/setupHint/retryable`; UI и MCP получают один и тот же user-facing error, а сырые provider failures остаются вспомогательным контекстом.
 - 2026-05-14: CEP sync health считается read-only по умолчанию; запись в установленное extension выполняется только явным `--sync`/`-SyncOnly`, копирует только tracked files и не удаляет сторонние файлы.
+- 2026-05-14: Roadmap 1.1 закрыт полной validation и документацией; следующий work block должен начинаться отдельной новой вехой, а не продолжать этот список.
 
 ## Validation
 
@@ -332,3 +334,29 @@
   - Passed `node scripts\smoke-test.js`.
   - Passed `node scripts\cep-panel-cdp-smoke.js reload`.
   - Passed `node scripts\cep-panel-cdp-smoke.js smoke`.
+- Milestone 52:
+  - Обновил `README.md` с командами CEP install/sync health.
+  - Добавил `docs\2026-05-14-roadmap-1.1-release-notes.md`.
+  - Обновил `docs\2026-05-14-new-chat-handoff.md` и `docs\project-memory.md` под завершенный roadmap 1.1 block.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check mcp-server\ai-agents.js`.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `node --check scripts\provider-api-smoke.js`.
+  - Passed `node --check scripts\cep-sync-health.js`.
+  - Passed `node --check scripts\smoke-test.js`.
+  - Passed PowerShell parse check for `scripts\install-cep-panel.ps1`.
+  - Passed `git diff --check`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `node scripts\cep-sync-health.js --check` against the installed CEP extension.
+  - Passed `node scripts\cep-sync-health.js --sync --check` against the installed CEP extension; copied 0, skipped 4.
+  - Passed `node scripts\cep-panel-cdp-smoke.js reload`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js workflow-preset-smoke`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js plan-review-smoke`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js smoke`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js mutating-smoke`; generated `Codex Test Safe Run 39391233`, created checkpoint `final_slides2-checkpoint-session-ai-plan-69ae226e-2026-05-14T06-16-56-765Z.aep`, then cleaned up the generated composition.

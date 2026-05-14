@@ -114,6 +114,11 @@ Codex -> stdio MCP adapter -> local bridge daemon -> CEP panel -> After Effects
   and exposes Prompt Optimization. The runner also tolerates common model
   shorthand such as `step-2-result` during real runtime binding and the panel
   formats partial/failed plan runs as `Run: needs review` instead of raw JSON.
+- `roadmap-1.1-2026-05-14`: added workflow presets, clearer Plan Review and
+  run/checkpoint/recovery transcripts, compact Project Context Snapshot,
+  normalized provider reliability errors, and CEP repo-versus-installed
+  sync health. Final notes live in
+  `docs/2026-05-14-roadmap-1.1-release-notes.md`.
 
 ## Important Product Decisions
 
