@@ -133,9 +133,24 @@ function syncCommand(command, args, timeoutMs) {
   }
 }
 
+function commandCheckDetails(command, args, result, maxOutput) {
+  const error = result && result.error ? result.error : null;
+  return {
+    command,
+    args: Array.isArray(args) ? args.slice() : [],
+    status: typeof (result && result.status) === "number" ? result.status : null,
+    signal: result && result.signal ? result.signal : null,
+    errorCode: error && error.code ? String(error.code) : null,
+    errorMessage: error && error.message ? compactString(error.message, 300) : null,
+    output: compactString([result && result.stdout, result && result.stderr].filter(Boolean).join(" "), maxOutput || 500) || null
+  };
+}
+
 function getCodexCliStatus() {
   const command = codexCommand();
-  const version = syncCommand(command, ["--version"], 3000);
+  const versionArgs = ["--version"];
+  const version = syncCommand(command, versionArgs, 3000);
+  const versionCheck = commandCheckDetails(command, versionArgs, version, 300);
   const versionText = compactString([version.stdout, version.stderr].filter(Boolean).join(" "), 300);
   if (version.error || version.status === 127 || version.status === 9009) {
     return {
@@ -143,12 +158,16 @@ function getCodexCliStatus() {
       loggedIn: false,
       command,
       version: null,
+      versionCheck,
+      loginStatusCheck: null,
       status: "missing",
       error: "Codex CLI was not found. Install Codex and run codex login."
     };
   }
 
-  const login = syncCommand(command, ["login", "status"], 3500);
+  const loginArgs = ["login", "status"];
+  const login = syncCommand(command, loginArgs, 3500);
+  const loginStatusCheck = commandCheckDetails(command, loginArgs, login, 500);
   const loginText = compactString([login.stdout, login.stderr].filter(Boolean).join(" "), 500);
   const loggedIn = login.status === 0;
   return {
@@ -156,6 +175,8 @@ function getCodexCliStatus() {
     loggedIn,
     command,
     version: versionText || null,
+    versionCheck,
+    loginStatusCheck,
     status: loggedIn ? "ready" : "not_logged_in",
     error: loggedIn ? null : (loginText || "Run codex login and sign in with ChatGPT.")
   };

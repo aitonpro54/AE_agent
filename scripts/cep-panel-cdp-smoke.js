@@ -68,6 +68,35 @@ function openAiCliAgentScenarioConfig() {
   };
 }
 
+function shortDiagnosticText(value, maxLength) {
+  return String(value || "").trim().slice(0, maxLength || 300) || null;
+}
+
+function commandCheckReport(check) {
+  if (!check) return null;
+  return {
+    args: Array.isArray(check.args) ? check.args.slice() : [],
+    status: typeof check.status === "number" ? check.status : null,
+    signal: check.signal || null,
+    errorCode: check.errorCode || null,
+    output: shortDiagnosticText(check.output, 300)
+  };
+}
+
+function codexStatusReport(status) {
+  if (!status) return null;
+  return {
+    installed: Boolean(status.installed),
+    loggedIn: Boolean(status.loggedIn),
+    command: status.command || null,
+    version: status.version || null,
+    status: status.status || null,
+    error: shortDiagnosticText(status.error, 300),
+    versionCheck: commandCheckReport(status.versionCheck),
+    loginStatusCheck: commandCheckReport(status.loginStatusCheck)
+  };
+}
+
 function getJson(url) {
   return new Promise((resolve, reject) => {
     http.get(url, (res) => {
@@ -1687,6 +1716,7 @@ async function agentScenarioPreflight(config) {
   if (!health.panelConnected) throw new Error("CEP panel is not connected to the bridge.");
 
   const readiness = await agentScenarioReadiness(config);
+  const codexStatus = readiness && readiness.agent ? readiness.agent.codexStatus : null;
   const activeComp = await callBridgeTool("get_active_comp");
   const editSession = await callBridgeTool("get_edit_session_status");
   if (editSession && editSession.active) {
@@ -1706,7 +1736,8 @@ async function agentScenarioPreflight(config) {
       canChat: readiness.canChat,
       modelAvailable: readiness.modelAvailable,
       modelSource: readiness.modelSource,
-      modelCount: readiness.modelCount || 0
+      modelCount: readiness.modelCount || 0,
+      codexStatus: codexStatusReport(codexStatus)
     },
     activeComp,
     editSession,

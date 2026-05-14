@@ -1,6 +1,9 @@
 "use strict";
 
 const assert = require("assert");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
 const { checkAgentReadiness, launchCodexLogin, listAgents } = require("../mcp-server/ai-agents");
 
 const EXPECTED_OPENAI_CLI_MODELS = [
@@ -55,6 +58,33 @@ function setEnv(name, value) {
   process.env[name] = value;
 }
 
+async function withFakeNodeCodex(loginExitCode, loginText, callback) {
+  const oldCwd = process.cwd();
+  const oldCodexCliPath = Object.prototype.hasOwnProperty.call(process.env, "CODEX_CLI_PATH")
+    ? process.env.CODEX_CLI_PATH
+    : undefined;
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ae-agent-fake-codex-"));
+  const loginScript = [
+    "if (process.argv[2] !== \"status\") {",
+    "  console.error(\"Unsupported fake Codex login command\");",
+    "  process.exit(2);",
+    "}",
+    `console.log(${JSON.stringify(loginText)});`,
+    `process.exit(${Number(loginExitCode) || 0});`
+  ].join("\n");
+  fs.writeFileSync(path.join(tempDir, "login"), loginScript, "utf8");
+
+  try {
+    process.chdir(tempDir);
+    setEnv("CODEX_CLI_PATH", process.execPath);
+    return await callback();
+  } finally {
+    process.chdir(oldCwd);
+    setEnv("CODEX_CLI_PATH", oldCodexCliPath);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
 function findAgent(agents, id) {
   const agent = agents.find((item) => item.id === id);
   assert(agent, `Missing agent ${id}`);
@@ -102,6 +132,9 @@ async function main() {
     assert(openAiCli.codexStatus, "OpenAI CLI should expose codexStatus");
     assert.strictEqual(openAiCli.codexStatus.installed, false);
     assert.strictEqual(openAiCli.codexStatus.loggedIn, false);
+    assert(openAiCli.codexStatus.versionCheck, "OpenAI CLI status should include version diagnostics");
+    assert.deepStrictEqual(openAiCli.codexStatus.versionCheck.args, ["--version"]);
+    assert.strictEqual(openAiCli.codexStatus.loginStatusCheck, null);
 
     const cliModelIds = openAiCli.modelOptions.map((item) => item.id);
     assert.deepStrictEqual(cliModelIds, EXPECTED_OPENAI_CLI_MODELS);
@@ -133,6 +166,7 @@ async function main() {
     assert.strictEqual(readiness.canChat, false);
     assert.strictEqual(readiness.configured, false);
     assert.match(readiness.error, /Codex CLI was not found|run codex login/i);
+    assert(readiness.agent.codexStatus.versionCheck, "Readiness should echo Codex CLI version diagnostics");
 
     let missingCliSetupError = null;
     try {
@@ -146,6 +180,42 @@ async function main() {
     }
     assert(missingCliSetupError, "Missing Codex CLI should block setup launch.");
     assert.strictEqual(missingCliSetupError.status.installed, false);
+
+    let fakeNotLoggedIn = null;
+    await withFakeNodeCodex(1, "Not logged in from fake Codex", async () => {
+      const fakeListed = await listAgents({});
+      const fakeCli = findAgent(fakeListed.agents, "openai-cli");
+      assert.strictEqual(fakeCli.codexStatus.installed, true);
+      assert.strictEqual(fakeCli.codexStatus.loggedIn, false);
+      assert.strictEqual(fakeCli.codexStatus.versionCheck.status, 0);
+      assert.strictEqual(fakeCli.codexStatus.loginStatusCheck.status, 1);
+      assert.match(fakeCli.codexStatus.loginStatusCheck.output, /Not logged in from fake Codex/);
+
+      const fakeReadiness = await checkAgentReadiness({
+        agentId: "openai-cli",
+        model: "gpt-5.5"
+      });
+      assert.strictEqual(fakeReadiness.canChat, false);
+      assert.strictEqual(fakeReadiness.configured, false);
+      assert.strictEqual(fakeReadiness.agent.codexStatus.loginStatusCheck.status, 1);
+      fakeNotLoggedIn = fakeReadiness.agent.codexStatus;
+    });
+
+    let fakeLoggedIn = null;
+    await withFakeNodeCodex(0, "Logged in from fake Codex", async () => {
+      const fakeReadiness = await checkAgentReadiness({
+        agentId: "openai-cli",
+        model: "gpt-5.5"
+      });
+      assert.strictEqual(fakeReadiness.configured, true);
+      assert.strictEqual(fakeReadiness.reachable, true);
+      assert.strictEqual(fakeReadiness.modelAvailable, true);
+      assert.strictEqual(fakeReadiness.canChat, true);
+      assert.strictEqual(fakeReadiness.status, "ready");
+      assert.strictEqual(fakeReadiness.agent.codexStatus.loginStatusCheck.status, 0);
+      assert.match(fakeReadiness.agent.codexStatus.loginStatusCheck.output, /Logged in from fake Codex/);
+      fakeLoggedIn = fakeReadiness.agent.codexStatus;
+    });
 
     let unsupportedSetupError = null;
     try {
@@ -174,7 +244,10 @@ async function main() {
           requiresApiKey: openAiCli.requiresApiKey,
           models: cliModelIds,
           missingCliError: readiness.error,
-          setupLaunchBlocked: missingCliSetupError.status.status
+          setupLaunchBlocked: missingCliSetupError.status.status,
+          missingCliVersionCheck: openAiCli.codexStatus.versionCheck.status,
+          fakeNotLoggedInLoginCheck: fakeNotLoggedIn.loginStatusCheck.status,
+          fakeLoggedInLoginCheck: fakeLoggedIn.loginStatusCheck.status
         },
         geminiApi: {
           authMode: geminiApi.authMode,

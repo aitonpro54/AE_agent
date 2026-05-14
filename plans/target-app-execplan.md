@@ -22,6 +22,7 @@
 - [x] Milestone 54: Master merge и release tag prep.
 - [x] Milestone 55: Live Agent Scenario QA.
 - [x] Milestone 56: Planner Fidelity на ChatGPT 5.5.
+- [x] Milestone 57: OpenAI CLI readiness diagnostics.
 
 ## Current Stable Baseline
 
@@ -163,6 +164,13 @@
 - Для `openai-cli` / `gpt-5.5` deterministic fallback остается cleanup/runtime страховкой, но не считается успешным planner-fidelity результатом: command должен завершаться ошибкой, если хотя бы один сценарий ушел в fallback.
 - Не менять public provider schema; ChatGPT subscription path остается существующим `codex exec --ephemeral --json --sandbox read-only`.
 
+### Milestone 57: OpenAI CLI readiness diagnostics
+
+- Добавить компактные диагностические поля в `codexStatus`: результаты `codex --version` и `codex login status` с args, exit status, signal, error code и коротким output.
+- Сохранить поведение provider readiness: ChatGPT/Codex CLI path по-прежнему считается готовым только когда CLI установлен и `login status` возвращает success.
+- Расширить provider-contract smoke fake CLI проверками для not-logged-in и logged-in состояний.
+- Добавить `codexStatus` summary в live Agent scenario preflight report, чтобы следующий `agent-scenario-openai-cli-smoke` показывал источник расхождения shell/bridge readiness.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -193,6 +201,7 @@
 - 2026-05-14: Live Agent QA удаляет только generated assets с префиксом `Codex QA 1.2 <stamp>`; render queue cleanup ограничен items, у которых comp name начинается с текущего generated prefix.
 - 2026-05-15: Planner-fidelity контрольным provider становится `openai-cli` / `gpt-5.5`, то есть ChatGPT subscription path через Codex CLI; Ollama остается полезным local smoke provider, но не является итоговым критерием Milestone 56.
 - 2026-05-15: Для `agent-scenario-openai-cli-smoke` fallback через `/agents/plan/run` может выполнить cleanup/runtime validation, но сам command должен падать при fallback, чтобы не скрывать planner-quality regression.
+- 2026-05-15: OpenAI CLI readiness diagnostics добавляются как additive поля внутри `codexStatus`; публичные provider ids, auth modes, transports и readiness gates не меняются.
 
 ## Validation
 
@@ -479,3 +488,22 @@
   - Passed `node scripts\smoke-test.js`.
   - Passed `node scripts\cep-panel-cdp-smoke.js openai-cli-smoke`.
   - Passed `node scripts\cep-panel-cdp-smoke.js agent-scenario-openai-cli-smoke`.
+- Milestone 57:
+  - Added compact `codexStatus.versionCheck` and `codexStatus.loginStatusCheck` diagnostics for OpenAI CLI readiness.
+  - The diagnostics include command args, exit status, signal, error code/message, and short output, while preserving existing provider ids, auth modes, transports, and readiness gates.
+  - Extended `node scripts\provider-contract-smoke.js` with fake Codex CLI not-logged-in and logged-in checks.
+  - Added `codexStatus` summary to Agent scenario live preflight reports so OpenAI CLI planner QA can show shell/bridge readiness details.
+  - Confirmed local shell module readiness reports installed CLI `codex-cli 0.130.0-alpha.5`, `login status` exit `1`, and `Not logged in`.
+  - Confirmed the currently running live bridge still reports OpenAI CLI ready and `node scripts\cep-panel-cdp-smoke.js openai-cli-smoke` passed through the product path; the live daemon was not restarted during this diagnostic-only milestone.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check mcp-server\ai-agents.js`.
+  - Passed `node --check scripts\provider-contract-smoke.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js inspect`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js openai-cli-smoke`.
