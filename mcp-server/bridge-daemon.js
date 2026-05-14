@@ -2551,6 +2551,197 @@ function compactPromptText(text, limit) {
   return `${compacted.slice(0, Math.max(0, limit - 1)).trim()}...`;
 }
 
+function roundedContextNumber(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return value;
+  return Math.round(value * 1000) / 1000;
+}
+
+function compactContextText(value, limit) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (!text || text.length <= limit) return text;
+  return `${text.slice(0, Math.max(0, limit - 1)).trim()}...`;
+}
+
+function compactContextItemReference(item) {
+  if (!item || typeof item !== "object") return null;
+  return {
+    itemIndex: item.itemIndex || null,
+    name: compactContextText(item.name || "", 80),
+    type: item.type || item.typeName || "unknown"
+  };
+}
+
+function compactContextLayer(layer) {
+  if (!layer || typeof layer !== "object") return null;
+  const item = {
+    index: layer.index || null,
+    name: compactContextText(layer.name || "", 80),
+    matchName: layer.matchName || "",
+    enabled: layer.enabled !== false,
+    locked: Boolean(layer.locked),
+    startTime: roundedContextNumber(layer.startTime),
+    inPoint: roundedContextNumber(layer.inPoint),
+    outPoint: roundedContextNumber(layer.outPoint)
+  };
+  const source = compactContextItemReference(layer.source);
+  if (source) item.source = source;
+  return item;
+}
+
+function selectedSourceHintsFromLayers(layers) {
+  const source = Array.isArray(layers) ? layers : [];
+  const hints = [];
+  const seen = new Set();
+  for (const layer of source) {
+    if (!layer || !layer.source) continue;
+    const ref = compactContextItemReference(layer.source);
+    if (!ref) continue;
+    const key = `${ref.itemIndex || ""}:${ref.name}:${ref.type}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    hints.push({
+      layerIndex: layer.index || null,
+      layerName: compactContextText(layer.name || "", 80),
+      source: ref,
+      bindingHint: ref.type === "comp" ? "{{selectedPrecompItemIndex}}" : null
+    });
+    if (hints.length >= 5) break;
+  }
+  return hints;
+}
+
+function compactContextEvent(event) {
+  const details = event && event.details && typeof event.details === "object" ? event.details : {};
+  return {
+    at: event && event.at ? event.at : null,
+    type: event && event.type ? event.type : "unknown",
+    name: details.name || details.tool || null,
+    ok: typeof details.ok === "boolean" ? details.ok : undefined,
+    error: details.error ? compactContextText(details.error, 120) : undefined
+  };
+}
+
+function compactBridgeForPlanContext(status) {
+  return {
+    panelConnected: Boolean(status.panelConnected),
+    pendingCommands: status.pendingCommands || 0,
+    inflightCommands: Array.isArray(status.inflightCommands) ? status.inflightCommands.length : 0,
+    retainedResults: status.retainedResults || 0,
+    activeEditSession: status.activeEditSession
+      ? {
+          id: status.activeEditSession.id || null,
+          label: status.activeEditSession.label || null,
+          checkpointFile: status.activeEditSession.checkpoint && status.activeEditSession.checkpoint.checkpointFile
+            ? status.activeEditSession.checkpoint.checkpointFile
+            : null
+        }
+      : null,
+    recentEvents: Array.isArray(status.recentEvents)
+      ? status.recentEvents.slice(-6).map(compactContextEvent)
+      : []
+  };
+}
+
+function unavailablePlanContext(reason) {
+  return {
+    available: false,
+    reason: compactContextText(reason || "unavailable", 160)
+  };
+}
+
+async function readPlanContextTool(name, args) {
+  try {
+    const result = await callToolLogged("ai-plan-context", name, args || {});
+    const payload = firstToolPayload(result);
+    if (result.isError) {
+      return {
+        ok: false,
+        error: operationErrorFromPayload(payload) || `${name} failed.`
+      };
+    }
+    return { ok: true, payload };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error.message || String(error)
+    };
+  }
+}
+
+function compactActiveCompForPlanContext(payload) {
+  if (!payload || typeof payload !== "object") return null;
+  return {
+    itemIndex: payload.itemIndex || null,
+    name: compactContextText(payload.name || "", 80),
+    size: payload.width && payload.height ? `${payload.width}x${payload.height}` : null,
+    duration: roundedContextNumber(payload.duration),
+    frameRate: roundedContextNumber(payload.frameRate),
+    time: roundedContextNumber(payload.time),
+    numLayers: payload.numLayers || 0,
+    selectedLayerCount: Array.isArray(payload.selectedLayers) ? payload.selectedLayers.length : 0
+  };
+}
+
+function compactRenderQueueForPlanContext(payload) {
+  if (!payload || typeof payload !== "object") return null;
+  const items = Array.isArray(payload.items) ? payload.items.slice(0, 3).map((item) => ({
+    index: item.index || null,
+    status: item.status || null,
+    comp: compactContextItemReference(item.comp)
+  })) : [];
+  return {
+    totalItems: payload.totalItems || 0,
+    returned: payload.returned || items.length,
+    items
+  };
+}
+
+async function buildProjectContextSnapshot() {
+  const status = getBridgeStatus();
+  const snapshot = {
+    capturedAt: new Date().toISOString(),
+    bridge: compactBridgeForPlanContext(status),
+    activeComp: unavailablePlanContext("not checked"),
+    selectedLayers: [],
+    selectedSourceHints: [],
+    renderQueue: unavailablePlanContext("not checked"),
+    notes: [
+      "Snapshot is a compact planning hint. Verify targets with read tools before mutations."
+    ]
+  };
+
+  if (!status.panelConnected) {
+    snapshot.activeComp = unavailablePlanContext("CEP panel is offline.");
+    snapshot.renderQueue = unavailablePlanContext("CEP panel is offline.");
+    snapshot.notes.push("CEP panel is offline, so AE project context was not queried.");
+    return snapshot;
+  }
+
+  const activeComp = await readPlanContextTool("get_active_comp", {});
+  if (activeComp.ok) {
+    const payload = activeComp.payload || {};
+    const selectedLayers = Array.isArray(payload.selectedLayers) ? payload.selectedLayers : [];
+    snapshot.activeComp = compactActiveCompForPlanContext(payload) || unavailablePlanContext("Active comp payload was empty.");
+    snapshot.selectedLayers = selectedLayers.slice(0, 6).map(compactContextLayer).filter(Boolean);
+    snapshot.selectedSourceHints = selectedSourceHintsFromLayers(selectedLayers);
+    if (selectedLayers.length > snapshot.selectedLayers.length) {
+      snapshot.notes.push(`Selected layer list truncated from ${selectedLayers.length} to ${snapshot.selectedLayers.length}.`);
+    }
+  } else {
+    snapshot.activeComp = unavailablePlanContext(activeComp.error);
+    snapshot.notes.push("Active composition could not be read.");
+  }
+
+  const renderQueue = await readPlanContextTool("get_render_queue_status", { limit: 3 });
+  if (renderQueue.ok) {
+    snapshot.renderQueue = compactRenderQueueForPlanContext(renderQueue.payload) || unavailablePlanContext("Render queue payload was empty.");
+  } else {
+    snapshot.renderQueue = unavailablePlanContext(renderQueue.error);
+  }
+
+  return snapshot;
+}
+
 function planningToolCatalog() {
   const lines = [];
   const seen = new Set();
@@ -2791,9 +2982,12 @@ async function runValidatedAgentPlan(options) {
   return finishRun();
 }
 
-function buildAePlanPrompt(args) {
+function buildAePlanPrompt(args, projectContextSnapshot) {
   const userPrompt = optionalString(args || {}, "prompt", optionalString(args || {}, "message", "")).trim();
   if (!userPrompt) throw new Error("prompt or message is required for AE Plan mode.");
+  const contextText = projectContextSnapshot
+    ? JSON.stringify(projectContextSnapshot, null, 2)
+    : JSON.stringify({ available: false, reason: "Context snapshot was not captured." }, null, 2);
 
   return [
     "User request:",
@@ -2822,6 +3016,9 @@ function buildAePlanPrompt(args) {
     "",
     "Available MCP tools. Use these names exactly; do not invent tool names.",
     planningToolCatalog(),
+    "",
+    "Current project context snapshot. Treat it as a compact planning hint, not as proof that a mutation is safe.",
+    contextText,
     "",
     "Treat Russian/Cyrillic user text as a normal request. If a Russian phrase is ambiguous, infer cautiously from the After Effects context before asking for clarification.",
     optionalBoolean(args || {}, "promptOptimization", false) ? "Prompt Optimization is enabled: clarify the user's intent internally, choose conservative AE defaults, and do not expand the requested scope." : "",
@@ -2944,7 +3141,8 @@ async function runAgentPlanLogged(source, args) {
   });
 
   try {
-    const planPrompt = buildAePlanPrompt(args || {});
+    const projectContextSnapshot = await buildProjectContextSnapshot();
+    const planPrompt = buildAePlanPrompt(args || {}, projectContextSnapshot);
     const result = await aiAgents.chatWithAgent({
       ...(args || {}),
       messages: undefined,
@@ -3002,6 +3200,7 @@ async function runAgentPlanLogged(source, args) {
       planRepairModel: repairModel,
       plan: parsed.plan || null,
       planValidation: validation,
+      planContextSnapshot: projectContextSnapshot,
       planRepairError: repairError,
       planParseError: parsed.error || null
     };

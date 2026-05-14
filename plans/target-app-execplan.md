@@ -13,6 +13,7 @@
 - [x] Milestone 45: Live typed-tool validation and spatial ease hardening.
 - [x] Milestone 46: Библиотека Agent-сценариев.
 - [x] Milestone 47: Улучшенный Plan Review UX.
+- [x] Milestone 48: Project Context Snapshot.
 
 ## Current Stable Baseline
 
@@ -145,6 +146,7 @@
 - 2026-05-14: Roadmap 1.1 не включает render workflow polish; существующие render queue setup tools остаются доступными, но отдельной render-вехи в этом блоке нет.
 - 2026-05-14: Workflow presets являются только prompt helpers; они не должны обходить Agent planning, validation, dry-run или mutation gates.
 - 2026-05-14: Plan Review UX остается text-first внутри chat transcript; backend plan schemas и execution gates не меняются, а CEP только яснее показывает affected targets, mutation count, checkpoint expectation и read-only/protected run readiness.
+- 2026-05-14: Project Context Snapshot выполняется как компактный planning preflight перед provider call; он использует только bridge status, `get_active_comp` и `get_render_queue_status`, пропускает AE-запросы при offline panel и остается подсказкой, которую план все равно должен проверять read tools перед мутациями.
 
 ## Validation
 
@@ -249,3 +251,20 @@
   - Passed `node scripts\cep-panel-cdp-smoke.js plan-review-smoke`.
   - Passed `node scripts\cep-panel-cdp-smoke.js smoke`.
   - Passed `node scripts\cep-panel-cdp-smoke.js mutating-smoke`; generated `Codex Test Safe Run 36686021`, created a checkpoint under project backups, then cleaned up the generated composition.
+- Milestone 48:
+  - Добавил `planContextSnapshot` в Agent planning result и вставку `Current project context snapshot` в planning prompt.
+  - Snapshot включает compact bridge context, active comp, selected layers, selected source/precomp hints с `{{selectedPrecompItemIndex}}`, render queue count и короткие recent bridge events.
+  - Snapshot не делает широкие project scans и не блокирует planning при offline CEP panel; в этом случае prompt получает offline note.
+  - Расширил `node scripts\prompt-optimization-smoke.js`: теперь он проверяет offline snapshot и simulated online CEP snapshot с selected precomp source и render queue count.
+  - Перезапустил live bridge daemon на `127.0.0.1:3456` из `C:\Users\Ant\Documents\Codex\AE_agent`.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check scripts\prompt-optimization-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js plan-review-smoke` against the restarted live daemon.
+  - Passed `node scripts\cep-panel-cdp-smoke.js smoke` against the restarted live daemon. One earlier parallel `smoke` attempt timed out while `plan-review-smoke` was already using the single CEP panel; rerunning it separately passed.
