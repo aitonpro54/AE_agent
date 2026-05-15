@@ -279,6 +279,12 @@ Solution candidate quarantine report coverage:
 node .\scripts\solution-candidate-report-smoke.js
 ```
 
+Solution promotion validation coverage:
+
+```powershell
+node .\scripts\solution-promotion-smoke.js
+```
+
 Gemini and Claude provider API contract coverage:
 
 ```powershell

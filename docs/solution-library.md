@@ -142,6 +142,31 @@ Each candidate report keeps compact review evidence:
 
 Candidate reports must not store API keys, provider secret names, raw transcript/log tails, broad project scans or absolute user/project paths. The helper redacts known secret/path patterns, drops raw transcript and scan fields, and records warnings/redaction metadata for review. Promotion still requires a separate Milestone 69 review decision and tracked registry entry.
 
+## Promotion Validation Pipeline
+
+Milestone 69 adds a local promotion helper for the explicit review step between ignored quarantine and tracked registry:
+
+```powershell
+node .\scripts\solution-promotion-helper.js --print-review-template
+node .\scripts\solution-promotion-helper.js --candidate .\logs\solution-candidates\candidate.json --review .\path\to\review.json
+node .\scripts\solution-promotion-helper.js --candidate .\logs\solution-candidates\candidate.json --review .\path\to\review.json --write
+```
+
+Без `--write` helper только валидирует review decision и печатает preview. Запись в `registry/solutions.json` выполняется только когда review JSON содержит `schemaVersion: "solution-promotion-review.v1"`, `explicitReview: true`, `decision: "promote"`, tracked `targetStatus`, reviewer, promotion evidence и хотя бы один local plan validation/dry-run fixture.
+
+Promotion review обязан заполнить registry metadata: inputs, target assumptions, execution mode, preferred tools, safety gates, verification recipe, tested AE context и promotion history. Candidate evidence используется как starting point, но не заменяет review decision.
+
+Для raw ExtendScript promotion действуют дополнительные правила:
+
+- inline `run_extendscript` запрещен; promoted raw JSX должен идти только через reviewed file under `scripts/solutions/` и `run_extendscript_file`;
+- script должен быть маленьким, без `eval`, без direct project save, без hard-coded active project paths и без broad project-item deletion loops;
+- mutating script обязан иметь `app.beginUndoGroup(...)` и `app.endUndoGroup()`;
+- generated-object workflows должны иметь generated prefix/comment evidence;
+- review должен содержать `typedToolComparison.existingTypedToolFits: false`, checked typed tools и rationale;
+- verification recipe и plan fixture должны явно показывать read-back steps/evidence.
+
+Если raw JSX recipe стабильно повторяется, это сигнал к `typed-tool-candidate` и последующей реализации typed bridge tool. Raw JSX не должен становиться постоянным shortcut, когда существующий или новый narrow bridge tool лучше выражает workflow.
+
 ## Validation
 
 Run the dependency-free validator before promoting or editing solutions:
@@ -149,6 +174,7 @@ Run the dependency-free validator before promoting or editing solutions:
 ```powershell
 node .\scripts\solution-registry-smoke.js
 node .\scripts\solution-candidate-report-smoke.js
+node .\scripts\solution-promotion-smoke.js
 ```
 
-The validators check registry shape, unique ids, tracked statuses, path hygiene, secret/path patterns, safety gates for mutating entries, stricter raw ExtendScript requirements and safe candidate quarantine report generation.
+The validators check registry shape, unique ids, tracked statuses, path hygiene, secret/path patterns, safety gates for mutating entries, stricter raw ExtendScript requirements, safe candidate quarantine report generation, explicit promotion decisions, local plan fixtures and typed-tool comparison gates.

@@ -34,7 +34,7 @@
 - [x] Milestone 66: Safe Solution Library roadmap reset.
 - [x] Milestone 67: Solution registry and metadata.
 - [x] Milestone 68: Candidate capture and quarantine.
-- [ ] Milestone 69: Promotion validation pipeline.
+- [x] Milestone 69: Promotion validation pipeline.
 - [ ] Milestone 70: Planner retrieval and safe use.
 - [ ] Milestone 71: Solution library validation.
 - [ ] Milestone 72: Project Intent Memory.
@@ -365,6 +365,7 @@
 - 2026-05-15: Milestone 67 вводит tracked registry baseline через `registry/solutions.json`, `recipes/` и `scripts/solutions/`; `candidate` и другие unreviewed статусы запрещены в tracked library, а первые реальные entries будут добавляться отдельным promotion/seed milestone.
 - 2026-05-15: `node scripts\solution-registry-smoke.js` становится dependency-free gate для `ae-solution.v1` metadata: он проверяет форму registry, уникальность ids, path/secret hygiene, safety gates для mutating entries и более строгие требования к raw ExtendScript, пока planner retrieval остается выключенным до Milestone 70.
 - 2026-05-15: Milestone 68 добавляет ignored quarantine `logs\solution-candidates\` и schema `solution-candidate-report.v1` для ручного capture удачных live candidates; candidate reports остаются локальными, не видны planner retrieval, требуют explicit promotion и проходят redaction/drop guards для секретов, абсолютных путей, raw transcripts/log tails и full project scans.
+- 2026-05-15: Milestone 69 вводит explicit promotion review schema `solution-promotion-review.v1`: tracked registry entry создается только после `explicitReview:true`, local plan fixture validation, typed-tool comparison для raw JSX и повторной registry validation. Repeated stable raw JSX recipes должны становиться `typed-tool-candidate`/typed bridge tools, а не постоянными shortcuts.
 
 ## Validation
 
@@ -867,3 +868,24 @@
   - Passed `node scripts\smoke-test.js`.
   - Did not run live CEP smoke because no CEP files changed.
   - Did not run external OpenAI CLI planner smokes or live AE mutation smokes because Milestone 68 is local quarantine/report-format work and those remain explicit-approval-gated.
+- Milestone 69:
+  - Added `scripts\solution-promotion-helper.js` with review schema `solution-promotion-review.v1`, preview-by-default CLI, explicit `--write`, candidate-to-registry entry construction, registry metadata filling and final registry validation.
+  - Added `scripts\solution-promotion-smoke.js` covering reviewed typed promotion, explicit-review rejection, inline `run_extendscript` rejection, reviewed file-based raw JSX static checks and typed-tool-fit rejection for raw JSX.
+  - Strengthened `scripts\solution-registry-smoke.js` for promoted raw JSX: small script size, file-based `run_extendscript_file`, no inline raw, undo groups, no `eval`, no direct project save, no broad project-item deletion loops, generated prefix/comment evidence and typed-tool comparison metadata.
+  - Documented the promotion workflow in `docs\solution-library.md` and added `node scripts\solution-promotion-smoke.js` to README/AGENTS verification flow.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check scripts\solution-registry-smoke.js`.
+  - Passed `node --check scripts\solution-promotion-helper.js`.
+  - Passed `node --check scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-promotion-helper.js --print-review-template`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Did not run live CEP smoke because no CEP files changed.
+  - Did not run external OpenAI CLI planner smokes or live AE mutation smokes because Milestone 69 is local promotion/validation pipeline work and those remain explicit-approval-gated.

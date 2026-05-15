@@ -13,6 +13,7 @@ const TRACKED_STATUSES = ["recipe", "typed-tool-candidate", "tool"];
 const ALLOWED_STATUSES = new Set(TRACKED_STATUSES);
 const ALLOWED_RISK_LEVELS = new Set(["low", "medium", "high"]);
 const ALLOWED_EXECUTION_MODES = new Set(["typed-plan", "recipe", "extendscript-file"]);
+const MAX_REVIEWED_EXTENDSCRIPT_BYTES = 16000;
 const ALLOWED_INPUT_TYPES = new Set([
   "string",
   "number",
@@ -153,6 +154,10 @@ function validateExecution(solution) {
     assertString(tool, `${solution.id}: execution.preferredTools[${index}]`);
     assert(/^[a-z][a-z0-9_]*$/.test(tool), `${solution.id}: preferred tool must be a bridge tool id: ${tool}`);
   });
+  assert(!execution.preferredTools.includes("run_extendscript"), `${solution.id}: promoted solutions must not recommend inline run_extendscript.`);
+  if (execution.preferredTools.includes("run_extendscript_file")) {
+    assert.strictEqual(execution.mode, "extendscript-file", `${solution.id}: run_extendscript_file is only allowed for reviewed file-based raw JSX.`);
+  }
 
   if (solution.status === "tool") {
     assert(execution.preferredTools.length > 0, `${solution.id}: tool status requires preferredTools.`);
@@ -172,17 +177,44 @@ function validateExecution(solution) {
     const script = normalizeRepoRelativePath(execution.scriptPath, `${solution.id}: execution.scriptPath`, "scripts/solutions/");
     assert(/\.jsx(inc)?$/.test(script.normalized), `${solution.id}: ExtendScript solution must use .jsx or .jsxinc.`);
     const source = fs.readFileSync(script.diskPath, "utf8");
+    const bytes = Buffer.byteLength(source, "utf8");
+    assert(bytes > 0, `${solution.id}: ExtendScript file must not be empty.`);
+    assert(bytes <= MAX_REVIEWED_EXTENDSCRIPT_BYTES, `${solution.id}: ExtendScript file must stay small (${bytes} bytes > ${MAX_REVIEWED_EXTENDSCRIPT_BYTES}).`);
     assertNoUnsafeText(source, `${solution.id}: script file`);
+    assert(execution.preferredTools.includes("run_extendscript_file"), `${solution.id}: file-based ExtendScript promotion must prefer run_extendscript_file.`);
+    assert(!/app\.project\.file\s*=/.test(source), `${solution.id}: ExtendScript must not assign or hard-code the active project file.`);
+    assert(!/app\.project\.save(?:WithDialog|As)?\s*\(/.test(source), `${solution.id}: ExtendScript solution must not save the project directly.`);
+    assert(!/app\.project\.(?:item|items)\s*\([^)]*\)\.remove\s*\(/.test(source), `${solution.id}: ExtendScript must not broadly remove project items.`);
+    assert(!/for\s*\([^)]*app\.project\.numItems[^)]*\)[\s\S]{0,300}\.remove\s*\(/.test(source), `${solution.id}: ExtendScript must not loop over project items and remove them.`);
+    assert(!/while\s*\([^)]*app\.project\.numItems[^)]*\)[\s\S]{0,300}\.remove\s*\(/.test(source), `${solution.id}: ExtendScript must not loop over project items and remove them.`);
+    assert(!/eval\s*\(/.test(source), `${solution.id}: ExtendScript must not use eval.`);
     if (execution.mutating) {
       assert(/app\.beginUndoGroup\s*\(/.test(source), `${solution.id}: mutating ExtendScript must call app.beginUndoGroup.`);
       assert(/app\.endUndoGroup\s*\(/.test(source), `${solution.id}: mutating ExtendScript must call app.endUndoGroup.`);
+      if (/\.remove\s*\(|\.add(?:Text|Solid|Null|Shape)?\s*\(|items\.add|layers\.add|duplicate\s*\(/.test(source)) {
+        const prefix = typeof execution.generatedPrefix === "string" ? execution.generatedPrefix.trim() : "";
+        assert(prefix || /Codex|AE Agent|Generated/i.test(source), `${solution.id}: mutating generated-object JSX must document a generated prefix or comment.`);
+      }
     }
+    validateTypedToolComparison(solution, true);
   } else {
     assert(
       execution.scriptPath === null || execution.scriptPath === undefined,
       `${solution.id}: scriptPath is only allowed for extendscript-file execution.`
     );
   }
+}
+
+function validateTypedToolComparison(solution, rawExecution) {
+  if (!rawExecution) return;
+  assertPlainObject(solution.typedToolComparison, `${solution.id}: typedToolComparison`);
+  assert.strictEqual(
+    solution.typedToolComparison.existingTypedToolFits,
+    false,
+    `${solution.id}: raw ExtendScript promotion requires explicit evidence that no existing typed tool fits.`
+  );
+  assertStringArray(solution.typedToolComparison.checkedTools, `${solution.id}: typedToolComparison.checkedTools`, { minItems: 1 });
+  assertString(solution.typedToolComparison.rationale, `${solution.id}: typedToolComparison.rationale`);
 }
 
 function validateSafetyGates(solution) {
@@ -430,12 +462,53 @@ function runValidatorSelfTest() {
   rawScript.verificationRecipe.steps = ["Read back generated test comp state."];
   rawScript.verificationRecipe.expectedEvidence = ["Generated test comp contains expected layers."];
   assertValidationRejects(fixtureRegistry([rawScript]), /missing file: scripts\/solutions\/missing\.jsx/, "raw scripts must be reviewed files under scripts/solutions");
+
+  const tempScriptRelative = "scripts/solutions/.tmp-solution-registry-smoke.jsx";
+  const tempScriptPath = path.join(REPO_ROOT, ...tempScriptRelative.split("/"));
+  try {
+    fs.writeFileSync(tempScriptPath, [
+      "// AE Agent generated-prefix fixture: Codex Registry Smoke",
+      "app.beginUndoGroup('Registry smoke fixture');",
+      "var comp = app.project && app.project.activeItem;",
+      "if (comp && comp.layers) {",
+      "  var layer = comp.layers.addText('Codex Registry Smoke');",
+      "  layer.comment = 'Generated by AE Agent registry smoke';",
+      "}",
+      "app.endUndoGroup();",
+      ""
+    ].join("\n"), "utf8");
+
+    const reviewedRawScript = cloneJson(rawScript);
+    reviewedRawScript.id = "fixture-reviewed-raw-script";
+    reviewedRawScript.execution.scriptPath = tempScriptRelative;
+    reviewedRawScript.execution.preferredTools = ["run_extendscript_file"];
+    reviewedRawScript.execution.generatedPrefix = "Codex Registry Smoke";
+    reviewedRawScript.typedToolComparison = {
+      existingTypedToolFits: false,
+      checkedTools: ["create_text_layer"],
+      rationale: "Fixture only; raw promotion requires proof no typed bridge tool fits."
+    };
+    validateRegistry(fixtureRegistry([reviewedRawScript]));
+
+    const inlineRawPreferred = cloneJson(reviewedRawScript);
+    inlineRawPreferred.id = "fixture-inline-raw-preferred";
+    inlineRawPreferred.execution.preferredTools = ["run_extendscript"];
+    assertValidationRejects(
+      fixtureRegistry([inlineRawPreferred]),
+      /inline run_extendscript/,
+      "promoted solutions must not recommend inline raw ExtendScript"
+    );
+  } finally {
+    if (fs.existsSync(tempScriptPath)) {
+      fs.unlinkSync(tempScriptPath);
+    }
+  }
 }
 
 function main() {
   runValidatorSelfTest();
   const summary = validateRegistry(readRegistry());
-  console.log(JSON.stringify({ ok: true, registryPath: path.relative(REPO_ROOT, REGISTRY_PATH), selfTestCases: 4, ...summary }, null, 2));
+  console.log(JSON.stringify({ ok: true, registryPath: path.relative(REPO_ROOT, REGISTRY_PATH), selfTestCases: 6, ...summary }, null, 2));
 }
 
 if (require.main === module) {
