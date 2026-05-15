@@ -182,6 +182,15 @@ Retrieval rules:
 
 The solution section is not an execution API. Every useful hint must still become normal MCP plan steps and pass the existing plan validation, dry-run/run gates, idempotency, checkpoint/edit-session protection and verification read-back.
 
+## Seeded Reviewed Recipes
+
+Milestone 71 seeds the tracked registry with two reviewed, typed-tool-first recipes:
+
+- `active-comp-context-review` - low-risk read-only context inspection using `get_active_comp`, `get_selected_layers` and `get_render_queue_status`.
+- `selected-layers-align-to-cti` - reviewed mutating alignment pattern using `get_active_comp`, `align_layers_to_time` and `get_selected_layers`, with explicit confirmation, mutation permission, idempotency, checkpoint/edit-session protection and read-back verification.
+
+These entries are still advisory. Retrieval may show them to the planner as compact hints, but the planner must emit normal MCP plan steps and the runner must enforce the usual validation and execution gates.
+
 ## Validation
 
 Run the dependency-free validator before promoting or editing solutions:
@@ -191,6 +200,7 @@ node .\scripts\solution-registry-smoke.js
 node .\scripts\solution-candidate-report-smoke.js
 node .\scripts\solution-promotion-smoke.js
 node .\scripts\solution-retrieval-smoke.js
+node .\scripts\solution-library-validation-smoke.js
 ```
 
-The validators check registry shape, unique ids, tracked statuses, path hygiene, secret/path patterns, safety gates for mutating entries, stricter raw ExtendScript requirements, safe candidate quarantine report generation, explicit promotion decisions, local plan fixtures, typed-tool comparison gates and planner retrieval behavior.
+The validators check registry shape, unique ids, tracked statuses, path hygiene, secret/path patterns, safety gates for mutating entries, stricter raw ExtendScript requirements, safe candidate quarantine report generation, explicit promotion decisions, local plan fixtures, typed-tool comparison gates, planner retrieval behavior, seeded fixture quality, stale/tool-equivalent suppression, prompt-section bounds and candidate invisibility.

@@ -37,7 +37,7 @@
 - [x] Milestone 69: Promotion validation pipeline.
 - [x] Milestone 70: Planner retrieval and safe use.
 - [x] Hotfix: Agent `itemIndexes` runtime binding.
-- [ ] Milestone 71: Solution library validation.
+- [x] Milestone 71: Solution library validation.
 - [ ] Milestone 72: Project Intent Memory.
 - [ ] Milestone 73: Plan confidence and risk classification.
 - [ ] Milestone 74: Plan repair loop.
@@ -378,6 +378,8 @@
 - 2026-05-15: Solution status handling в planner retrieval risk-aware: `candidate` невидим, `recipe` может быть подсказкой, `typed-tool-candidate` рекомендует typed bridge tool implementation, а `tool` считается представленным обычным MCP tool catalog и подавляет matching raw JSX equivalents.
 - 2026-05-15: Agent runtime binding теперь принимает model-produced plural aliases `itemIndexes` / `itemIndices` для project-item workflows, но canonical execution args остаются schema-first (`itemIndices` for `rename_project_items`); алиасы не обходят validation или mutation safety gates.
 - 2026-05-15: Для selected source/precomp workflows plural project-item bindings могут извлекаться из `get_active_comp` / `get_selected_layers` selected layer source refs или из `find_project_items` matches; одиночные target fields получают первый индекс, а array-capable fields получают deduped list.
+- 2026-05-15: Milestone 71 seeds only reviewed typed-tool recipes: `active-comp-context-review` for read-only context inspection and `selected-layers-align-to-cti` for the proven CTI alignment workflow. No raw JSX solution is promoted in this milestone.
+- 2026-05-15: `node scripts\solution-library-validation-smoke.js` becomes the combined library validation gate for seeded entry quality, advisory prompt-section bounds, candidate invisibility and stale/tool-equivalent retrieval behavior.
 
 ## Validation
 
@@ -949,3 +951,23 @@
   - Passed `node scripts\cep-panel-cdp-smoke.js smoke` against the installed CEP panel after the final live bridge restart.
   - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
   - Did not run external OpenAI CLI planner smokes or live AE mutation smokes because the hotfix was covered by local runtime binding smoke, live read-only binding smoke and live read-only CEP smoke; mutating/external paths remain explicit-approval-gated.
+- Milestone 71:
+  - Seeded `registry\solutions.json` with two reviewed typed-plan recipes: `active-comp-context-review` and `selected-layers-align-to-cti`.
+  - Added dedicated recipe docs under `recipes\active-comp-context-review.md` and `recipes\selected-layers-align-to-cti.md`.
+  - Added `scripts\solution-library-validation-smoke.js` to verify seeded fixture quality, compact prompt injection bounds, candidate invisibility, stale omission and typed-tool-equivalent suppression.
+  - Documented the validation strategy in `docs\solution-library.md`, README and AGENTS verification.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check scripts\solution-library-validation-smoke.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`; it confirmed 2 seeded entries, prompt sections under 2200/2600 character bounds, 1 candidate omitted, 1 stale entry omitted and 1 raw JSX equivalent suppressed by a typed tool.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed read-only live CEP smoke `node scripts\cep-panel-cdp-smoke.js smoke` against the connected installed panel; the run stayed read-only and reported active comp `Mother and child 2`.
+  - Did not run external OpenAI CLI planner smokes or live AE mutation smokes because Milestone 71 is local/read-only library validation and those paths remain explicit-approval-gated.

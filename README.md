@@ -291,6 +291,12 @@ Solution planner retrieval coverage:
 node .\scripts\solution-retrieval-smoke.js
 ```
 
+Solution library seeded-entry and retrieval-bound validation:
+
+```powershell
+node .\scripts\solution-library-validation-smoke.js
+```
+
 Gemini and Claude provider API contract coverage:
 
 ```powershell
