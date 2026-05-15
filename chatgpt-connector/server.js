@@ -3,6 +3,13 @@
 
 const http = require("http");
 const https = require("https");
+const {
+  DEFAULT_CANDIDATE_DIR,
+  DEFAULT_MAX_JSX_BYTES,
+  checkExtendscriptCandidate,
+  proposeExtendscriptCandidate,
+  repoRelative
+} = require("./jsx-lab");
 
 const SERVER_NAME = "ae-agent-chatgpt-connector";
 const SERVER_VERSION = "0.1.0";
@@ -175,6 +182,44 @@ const LOCAL_TOOLS = [
       checkBridge: booleanField("Whether to make a short bridge health request. Defaults to true.")
     }),
     local: true
+  },
+  {
+    name: "propose_extendscript_candidate",
+    title: "Propose ExtendScript candidate",
+    description: "Save a raw JSX/ExtendScript candidate into local ignored quarantine for later static checks. This never executes JSX and never calls After Effects.",
+    inputSchema: objectSchema({
+      title: stringField("Short candidate title."),
+      intentSummary: stringField("What the JSX candidate is intended to accomplish."),
+      jsx: stringField("Raw JSX/ExtendScript source to save in quarantine. It will not be executed."),
+      tags: stringArrayField("Optional short tags for later review."),
+      appliesWhen: stringArrayField("Optional conditions where this candidate may apply."),
+      expectedOutcome: stringField("Optional expected user-visible result."),
+      riskNotes: stringField("Optional known risks or review notes.")
+    }, ["title", "intentSummary", "jsx"]),
+    local: true,
+    handler: "proposeExtendscriptCandidate",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: false,
+      idempotentHint: false
+    }
+  },
+  {
+    name: "check_extendscript_candidate",
+    title: "Check ExtendScript candidate",
+    description: "Run offline syntax, size, static risk, and denylist checks for a saved JSX Lab candidate. This never executes JSX and never calls After Effects.",
+    inputSchema: objectSchema({
+      metadataPath: stringField("Relative metadata path returned by propose_extendscript_candidate.")
+    }, ["metadataPath"]),
+    local: true,
+    handler: "checkExtendscriptCandidate",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
+      idempotentHint: true
+    }
   }
 ];
 
@@ -200,22 +245,27 @@ function booleanField(description) {
   return { type: "boolean", description };
 }
 
+function stringArrayField(description) {
+  return { type: "array", items: { type: "string" }, description };
+}
+
 function enumField(values, description) {
   return { type: "string", enum: values, description };
 }
 
 function toMcpToolDescriptor(tool) {
+  const annotations = Object.assign({
+    readOnlyHint: true,
+    destructiveHint: false,
+    openWorldHint: false,
+    idempotentHint: true
+  }, tool.annotations || {});
   return {
     name: tool.name,
     title: tool.title,
     description: tool.description,
     inputSchema: tool.inputSchema,
-    annotations: {
-      readOnlyHint: true,
-      destructiveHint: false,
-      openWorldHint: false,
-      idempotentHint: true
-    }
+    annotations
   };
 }
 
@@ -228,7 +278,9 @@ function getConfig(overrides) {
     bridgeToken: overrides.bridgeToken || process.env.AE_BRIDGE_TOKEN || DEFAULT_BRIDGE_TOKEN,
     connectorToken: overrides.connectorToken || process.env.AE_CHATGPT_CONNECTOR_TOKEN || "",
     timeoutMs: Number(overrides.timeoutMs || process.env.AE_CHATGPT_CONNECTOR_TIMEOUT_MS || DEFAULT_TIMEOUT_MS),
-    bodyLimitBytes: Number(overrides.bodyLimitBytes || process.env.AE_CHATGPT_CONNECTOR_BODY_LIMIT_BYTES || DEFAULT_BODY_LIMIT_BYTES)
+    bodyLimitBytes: Number(overrides.bodyLimitBytes || process.env.AE_CHATGPT_CONNECTOR_BODY_LIMIT_BYTES || DEFAULT_BODY_LIMIT_BYTES),
+    candidateDir: overrides.candidateDir || process.env.AE_CHATGPT_CONNECTOR_CANDIDATE_DIR || DEFAULT_CANDIDATE_DIR,
+    maxCandidateJsxBytes: Number(overrides.maxCandidateJsxBytes || process.env.AE_CHATGPT_CONNECTOR_MAX_JSX_BYTES || DEFAULT_MAX_JSX_BYTES)
   };
 }
 
@@ -402,11 +454,15 @@ async function getConnectorStatus(config, args) {
       name: SERVER_NAME,
       version: SERVER_VERSION,
       protocolVersion: PROTOCOL_VERSION,
-      mode: "read-only",
+      mode: "read-only-bridge-with-jsx-lab-quarantine",
       writeToolsExposed: false,
+      bridgeWriteToolsExposed: false,
       rawExtendscriptExposed: false,
+      localQuarantineWrites: true,
       openAiApiCalls: false,
       bridgeOrigin: safeBridgeOrigin(config.bridgeUrl),
+      candidateLocation: repoRelative(config.candidateDir),
+      candidateTools: ["propose_extendscript_candidate", "check_extendscript_candidate"],
       exposedToolCount: ALL_TOOL_DESCRIPTORS.length,
       exposedBridgeTools: READ_ONLY_TOOL_NAMES
     },
@@ -445,7 +501,17 @@ async function callConnectorTool(config, name, args) {
     return toolResult(`Unknown or unavailable read-only connector tool: ${name}`, true);
   }
   if (tool.local) {
-    return await getConnectorStatus(config, args || {});
+    try {
+      if (tool.handler === "proposeExtendscriptCandidate") {
+        return toolResult(proposeExtendscriptCandidate(config, args || {}), false);
+      }
+      if (tool.handler === "checkExtendscriptCandidate") {
+        return toolResult(checkExtendscriptCandidate(config, args || {}), false);
+      }
+      return await getConnectorStatus(config, args || {});
+    } catch (error) {
+      return toolResult(`Connector local tool failed for ${name}: ${error.message || String(error)}`, true);
+    }
   }
 
   try {
@@ -533,7 +599,7 @@ function createServer(options) {
         ok: true,
         server: SERVER_NAME,
         version: SERVER_VERSION,
-        mode: "read-only",
+        mode: "read-only-bridge-with-jsx-lab-quarantine",
         bridgeOrigin: safeBridgeOrigin(config.bridgeUrl),
         exposedToolCount: ALL_TOOL_DESCRIPTORS.length
       });

@@ -6,7 +6,7 @@ It has these main parts:
 
 - `mcp-server/bridge-daemon.js` - a persistent local HTTP daemon that owns port `3456`, the AE panel queue, command IDs, results, logs, and backups.
 - `mcp-server/mcp-adapter.js` - a dependency-free stdio MCP adapter that exposes tools to Codex and calls the daemon over HTTP.
-- `chatgpt-connector/` - a dependency-free read-only MCP HTTP skeleton for ChatGPT custom connector development.
+- `chatgpt-connector/` - a dependency-free MCP HTTP connector for ChatGPT custom connector development with read-only bridge tools and local JSX Lab quarantine.
 - `cep-panel/` - a CEP panel that runs inside After Effects, polls the local bridge, executes ExtendScript through `evalScript`, and posts results back.
 
 `mcp-server/server.js` remains as a compatibility wrapper. By default it starts the MCP adapter; with `--bridge-only`, `--daemon`, or `AE_BRIDGE_ONLY=1`, it starts the daemon. The adapter auto-starts the daemon when the daemon is not already listening.
@@ -247,11 +247,18 @@ For a stdio MCP client, point it at:
 
 There is also a ready local example in `mcp-config.example.json`.
 
-## ChatGPT connector skeleton
+## ChatGPT connector
 
 `chatgpt-connector/server.js` exposes a local `/mcp` endpoint intended for ChatGPT custom connector development through a temporary HTTPS tunnel such as Cloudflare Tunnel.
 
-This connector is intentionally not another AI provider. It does not call OpenAI APIs itself; ChatGPT is the model host, and the connector only exposes a fixed read-only allowlist of bridge proxy tools with `readOnlyHint:true` annotations. Write tools, JSX execution, raw `run_extendscript`, provider chat, provider planning, and plan execution are not exposed in this skeleton.
+This connector is intentionally not another AI provider. It does not call OpenAI APIs itself; ChatGPT is the model host, and the connector exposes a fixed read-only allowlist of bridge proxy tools with `readOnlyHint:true` annotations.
+
+The connector also exposes a local JSX Lab quarantine flow:
+
+- `propose_extendscript_candidate` saves candidate metadata plus raw JSX under ignored `logs/solution-candidates/jsx-lab/`.
+- `check_extendscript_candidate` runs offline syntax, size, static risk, and denylist checks for a saved candidate.
+
+The JSX Lab flow does not execute JSX, does not call After Effects, does not call the bridge, and does not expose raw `run_extendscript` / `run_extendscript_file` to ChatGPT. Write/mutating AE bridge tools, provider chat, provider planning, and plan execution remain unavailable from the connector.
 
 Local start:
 
@@ -316,7 +323,7 @@ Solution library seeded-entry and retrieval-bound validation:
 node .\scripts\solution-library-validation-smoke.js
 ```
 
-ChatGPT connector read-only MCP skeleton coverage:
+ChatGPT connector read-only MCP and JSX Lab quarantine coverage:
 
 ```powershell
 node .\scripts\chatgpt-connector-smoke.js

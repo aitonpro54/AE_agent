@@ -41,7 +41,7 @@
 - [x] Hotfix: OpenAI CLI detection and setup action.
 - [x] Milestone 72: Parallel AI Paths - OpenRouter UI restore.
 - [x] Milestone 73: ChatGPT Connector read-only skeleton.
-- [ ] Milestone 74: JSX Lab candidate quarantine and checks.
+- [x] Milestone 74: JSX Lab candidate quarantine and checks.
 - [ ] Milestone 75: Gated JSX Lab run, promotion hooks and CEP connector status.
 - [ ] Milestone 76: Project Intent Memory.
 - [ ] Milestone 77: Plan confidence and risk classification.
@@ -431,6 +431,7 @@
 - 2026-05-15: Milestone 73 exposes a fixed read-only ChatGPT connector allowlist that is available offline for tool discovery, while tool calls proxy to the existing bridge only when invoked; provider chat/planning, plan execution, write tools, and raw ExtendScript stay excluded.
 - 2026-05-15: The ChatGPT connector supports an optional `AE_CHATGPT_CONNECTOR_TOKEN` for local `/mcp` development without committing connector secrets, tunnel URLs, or captured traffic.
 - 2026-05-15: JSX Lab must use candidate quarantine and static/risk checks before any execution; ChatGPT must never receive a direct raw `run_extendscript` string path that bypasses candidate reports, checkpoint/edit-session protection and read-back verification.
+- 2026-05-15: Milestone 74 keeps ChatGPT JSX Lab local-only: `propose_extendscript_candidate` is disclosed as a non-read-only quarantine write under ignored `logs/solution-candidates/jsx-lab/`, `check_extendscript_candidate` returns static non-execution reports, bridge inspection tools remain read-only, and raw `run_extendscript` / `run_extendscript_file` stay unexposed.
 
 ## Validation
 
@@ -1101,3 +1102,27 @@
   - Passed `node scripts\bridge-only-smoke-test.js`.
   - Passed `node scripts\smoke-test.js`.
   - Live ChatGPT connector/Tunnel checks were not run because Milestone 73 is an offline skeleton and live connector setup remains explicit-approval-gated.
+- Milestone 74:
+  - Added `chatgpt-connector\jsx-lab.js` for local JSX Lab quarantine handling.
+  - Added `propose_extendscript_candidate`, which saves redacted candidate metadata and raw JSX under ignored `logs\solution-candidates\jsx-lab\` without calling AE, bridge, or providers.
+  - Added `check_extendscript_candidate`, which reads saved candidates and returns offline syntax, size, static risk, denylist, hash, and path-hygiene reports without executing JSX.
+  - Kept direct raw `run_extendscript` / `run_extendscript_file`, provider chat/planning, plan execution and mutating bridge tools out of the ChatGPT connector surface.
+  - Updated connector docs and README wording so the connector is described as read-only bridge inspection plus local JSX Lab quarantine, not a general write surface.
+  - Extended `node scripts\chatgpt-connector-smoke.js` to cover candidate save, metadata redaction, raw JSX non-embedding, static acceptance, static rejection, absolute-path rejection and non-mutating check reports.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check chatgpt-connector\jsx-lab.js`.
+  - Passed `node --check chatgpt-connector\server.js`.
+  - Passed `node --check scripts\chatgpt-connector-smoke.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`.
+  - Passed `node scripts\chatgpt-connector-smoke.js`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Live ChatGPT connector/Tunnel checks, live OpenRouter calls, live CEP smokes and live AE mutations were not run because Milestone 74 is offline connector/quarantine work and those paths remain explicit-approval-gated.
