@@ -1,0 +1,220 @@
+"use strict";
+
+const DEFAULT_PLANNER_FIXTURE_PREFIX = "Codex QA Planner Fixture";
+const DEFAULT_RENDER_QUEUE_BASELINE_TOTAL = 0;
+
+const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
+  "create_test_comp",
+  "create_solid_layer",
+  "create_text_layer",
+  "set_comp_work_area",
+  "set_layer_time_range",
+  "stagger_layers",
+  "align_layers_to_time",
+  "split_layers_at_time",
+  "update_text_layer",
+  "create_shape_layer",
+  "fit_layer_to_comp",
+  "set_property_keyframes",
+  "apply_keyframe_ease",
+  "set_expression",
+  "clear_expression",
+  "precompose_layers",
+  "replace_layer_source",
+  "rename_layers",
+  "rename_project_items",
+  "add_comp_to_render_queue",
+  "set_render_queue_output"
+]);
+
+function safeOutputName(value) {
+  return String(value || "agent-scenario")
+    .replace(/[^A-Za-z0-9_.-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 96) || "agent-scenario";
+}
+
+function exactPlanPrompt(plan) {
+  return [
+    "Return exactly this JSON object as the AE Agent plan. Do not add markdown, code fences, prose, comments, or renamed fields.",
+    "The JSON object below is the complete QA fixture. Keep the steps array length, order, titles, tool names, args, summary, risk, and requiresCheckpoint unchanged.",
+    "Do not add discovery, inspection, checkpoint, cleanup, verification, or explanatory steps. The bridge runner already handles validation, dry-run, protected edit sessions, verification, and cleanup.",
+    "Use only the listed typed MCP tools. All generated asset names intentionally start with the QA prefix.",
+    JSON.stringify(plan, null, 2)
+  ].join("\n\n");
+}
+
+function expectedMutatingCount(plan) {
+  return Array.isArray(plan && plan.steps)
+    ? plan.steps.filter((step) => AGENT_SCENARIO_MUTATING_TOOLS.has(step.tool)).length
+    : 0;
+}
+
+function agentScenarioPlans(runPrefix, renderQueueBaselineTotal) {
+  const timelineBase = `${runPrefix} Timeline`;
+  const layoutBase = `${runPrefix} Layout`;
+  const sourceBase = `${runPrefix} Source`;
+  const renderBase = `${runPrefix} Render`;
+  const renderIndex = Number(renderQueueBaselineTotal || 0) + 1;
+  const renderOutput = `logs/${safeOutputName(renderBase)}.mov`;
+  const renderOutputUpdated = `logs/${safeOutputName(renderBase)}-updated.mov`;
+
+  return [
+    {
+      id: "timeline-layer-timing",
+      cleanupPrefix: timelineBase,
+      expectedTools: [
+        "create_test_comp",
+        "create_solid_layer",
+        "set_comp_work_area",
+        "set_layer_time_range",
+        "stagger_layers",
+        "align_layers_to_time",
+        "split_layers_at_time",
+        "find_project_items"
+      ],
+      plan: {
+        summary: "Live QA timeline and layer timing on generated assets.",
+        risk: "low",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create timeline QA comp", tool: "create_test_comp", args: { name: timelineBase, width: 640, height: 360, duration: 4, frameRate: 24, openInViewer: false } },
+          { title: "Create first timing layer", tool: "create_solid_layer", args: { compName: timelineBase, name: `${timelineBase} Layer A`, color: [0.15, 0.35, 0.85], width: 320, height: 180, startTime: 0, duration: 3 } },
+          { title: "Create second timing layer", tool: "create_solid_layer", args: { compName: timelineBase, name: `${timelineBase} Layer B`, color: [0.85, 0.3, 0.18], width: 320, height: 180, startTime: 0, duration: 3 } },
+          { title: "Set generated comp work area", tool: "set_comp_work_area", args: { compName: timelineBase, start: 0, duration: 2.5 } },
+          { title: "Trim generated layers", tool: "set_layer_time_range", args: { compName: timelineBase, layerIndices: [1, 2], inPoint: 0, outPoint: 2 } },
+          { title: "Stagger generated layers", tool: "stagger_layers", args: { compName: timelineBase, layerIndices: [1, 2], startTime: 0, gap: 0.1, order: "indexAsc" } },
+          { title: "Align generated layers to zero", tool: "align_layers_to_time", args: { compName: timelineBase, layerIndices: [1, 2], targetTime: 0, align: "inPoint" } },
+          { title: "Split one generated layer", tool: "split_layers_at_time", args: { compName: timelineBase, layerIndices: [1], time: 0.75 } },
+          { title: "Read back timeline QA items", tool: "find_project_items", args: { query: timelineBase, limit: 10, caseSensitive: true } }
+        ]
+      }
+    },
+    {
+      id: "text-shape-layout-animation",
+      cleanupPrefix: layoutBase,
+      expectedTools: [
+        "create_test_comp",
+        "create_text_layer",
+        "update_text_layer",
+        "create_shape_layer",
+        "fit_layer_to_comp",
+        "set_property_keyframes",
+        "apply_keyframe_ease",
+        "set_expression",
+        "clear_expression",
+        "find_project_items"
+      ],
+      plan: {
+        summary: "Live QA text, shape, layout, and animation on generated assets.",
+        risk: "low",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create layout QA comp", tool: "create_test_comp", args: { name: layoutBase, width: 640, height: 360, duration: 4, frameRate: 24, openInViewer: false } },
+          { title: "Create generated text layer", tool: "create_text_layer", args: { compName: layoutBase, name: `${layoutBase} Title`, text: "QA 1.2", position: [320, 110], fontSize: 42, fillColor: [0.95, 0.95, 0.85], duration: 3 } },
+          { title: "Update generated text layer", tool: "update_text_layer", args: { compName: layoutBase, layerIndex: 1, text: "QA 1.2 Updated", fontSize: 48, fillColor: [0.2, 0.95, 0.75], applyFill: true, tracking: 15 } },
+          { title: "Create generated shape layer", tool: "create_shape_layer", args: { compName: layoutBase, name: `${layoutBase} Shape`, shape: "rectangle", size: [240, 120], position: [320, 220], fillColor: [0.12, 0.45, 0.9], strokeColor: [1, 1, 1], strokeWidth: 4, duration: 3 } },
+          { title: "Fit generated shape to comp", tool: "fit_layer_to_comp", args: { compName: layoutBase, layerIndices: [1], mode: "contain", alignX: "center", alignY: "center" } },
+          { title: "Set opacity keyframes", tool: "set_property_keyframes", args: { compName: layoutBase, layerIndex: 1, propertyPath: "ADBE Transform Group.ADBE Opacity", clearExisting: true, keyframes: [{ time: 0, value: 0 }, { time: 1, value: 100 }, { time: 2, value: 40 }] } },
+          { title: "Apply easing to opacity keys", tool: "apply_keyframe_ease", args: { compName: layoutBase, layerIndex: 1, propertyPath: "ADBE Transform Group.ADBE Opacity", keyIndices: [1, 2, 3], interpolation: "bezier", easeIn: { speed: 0, influence: 33 }, easeOut: { speed: 0, influence: 33 } } },
+          { title: "Set generated position expression", tool: "set_expression", args: { compName: layoutBase, layerIndex: 1, propertyPath: "ADBE Transform Group.ADBE Position", expression: "value + [Math.sin(time * 2) * 4, 0]", enabled: true } },
+          { title: "Clear generated position expression", tool: "clear_expression", args: { compName: layoutBase, layerIndex: 1, propertyPath: "ADBE Transform Group.ADBE Position" } },
+          { title: "Read back layout QA items", tool: "find_project_items", args: { query: layoutBase, limit: 10, caseSensitive: true } }
+        ]
+      }
+    },
+    {
+      id: "precomp-source-rename",
+      cleanupPrefix: sourceBase,
+      expectedTools: [
+        "create_test_comp",
+        "create_solid_layer",
+        "precompose_layers",
+        "replace_layer_source",
+        "rename_layers",
+        "rename_project_items",
+        "find_project_items"
+      ],
+      plan: {
+        summary: "Live QA precomp, source replacement, and rename tools on generated assets.",
+        risk: "low",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create source QA main comp", tool: "create_test_comp", args: { name: `${sourceBase} Main`, width: 640, height: 360, duration: 4, frameRate: 24, openInViewer: false } },
+          { title: "Create replacement source comp", tool: "create_test_comp", args: { name: `${sourceBase} Replacement`, width: 320, height: 180, duration: 4, frameRate: 24, openInViewer: false } },
+          { title: "Create layer to precompose", tool: "create_solid_layer", args: { compName: `${sourceBase} Main`, name: `${sourceBase} Plate`, color: [0.4, 0.2, 0.9], width: 320, height: 180, duration: 3 } },
+          { title: "Precompose generated layer", tool: "precompose_layers", args: { compName: `${sourceBase} Main`, layerIndices: [1], newCompName: `${sourceBase} Precomp`, moveAllAttributes: true, openInViewer: false } },
+          { title: "Replace generated precomp source", tool: "replace_layer_source", args: { compName: `${sourceBase} Main`, layerIndices: [1], sourceItemName: `${sourceBase} Replacement`, sourceItemType: "comp", fixExpressions: true } },
+          { title: "Rename generated layer", tool: "rename_layers", args: { compName: `${sourceBase} Main`, layerIndices: [1], mode: "exact", name: `${sourceBase} Replaced Layer` } },
+          { title: "Rename generated replacement comp", tool: "rename_project_items", args: { query: `${sourceBase} Replacement`, type: "comp", exactName: true, limit: 1, mode: "exact", name: `${sourceBase} Replacement Renamed` } },
+          { title: "Find generated source QA items", tool: "find_project_items", args: { query: sourceBase, limit: 10, caseSensitive: true } }
+        ]
+      }
+    },
+    {
+      id: "render-queue-setup",
+      cleanupPrefix: renderBase,
+      expectedTools: [
+        "create_test_comp",
+        "add_comp_to_render_queue",
+        "set_render_queue_output",
+        "get_render_queue_status"
+      ],
+      plan: {
+        summary: "Live QA render queue setup on a generated comp without starting a render.",
+        risk: "low",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create render QA comp", tool: "create_test_comp", args: { name: renderBase, width: 640, height: 360, duration: 2, frameRate: 24, openInViewer: false } },
+          { title: "Add generated comp to render queue", tool: "add_comp_to_render_queue", args: { compName: renderBase, outputPath: renderOutput } },
+          { title: "Update generated render queue output", tool: "set_render_queue_output", args: { renderQueueItemIndex: renderIndex, outputPath: renderOutputUpdated } },
+          { title: "Read render queue status", tool: "get_render_queue_status", args: { limit: renderIndex + 3 } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
+function buildAgentPlannerRegressionCorpus(options) {
+  const config = options || {};
+  const renderQueueBaselineTotal = Number.isFinite(Number(config.renderQueueBaselineTotal))
+    ? Number(config.renderQueueBaselineTotal)
+    : DEFAULT_RENDER_QUEUE_BASELINE_TOTAL;
+  const runPrefix = config.runPrefix || DEFAULT_PLANNER_FIXTURE_PREFIX;
+  const scenarios = agentScenarioPlans(runPrefix, renderQueueBaselineTotal);
+
+  return {
+    schema: "agent-planner-regression-corpus.v1",
+    source: "accepted-live-agent-scenarios",
+    fixturePrefix: runPrefix,
+    renderQueueBaselineTotal,
+    scenarios: scenarios.map((scenario) => ({
+      id: scenario.id,
+      cleanupPrefix: scenario.cleanupPrefix,
+      prompt: scenario.prompt,
+      expected: {
+        stepCount: scenario.expectedStepCount,
+        mutatingCount: scenario.expectedMutatingCount,
+        tools: scenario.expectedTools.slice(),
+        toolSequence: scenario.plan.steps.map((step) => step.tool),
+        stepTitles: scenario.plan.steps.map((step) => step.title)
+      },
+      plan: scenario.plan
+    }))
+  };
+}
+
+module.exports = {
+  AGENT_SCENARIO_MUTATING_TOOLS,
+  DEFAULT_PLANNER_FIXTURE_PREFIX,
+  DEFAULT_RENDER_QUEUE_BASELINE_TOTAL,
+  agentScenarioPlans,
+  buildAgentPlannerRegressionCorpus,
+  exactPlanPrompt,
+  safeOutputName
+};

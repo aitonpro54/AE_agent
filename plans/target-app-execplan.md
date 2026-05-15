@@ -27,7 +27,7 @@
 - [x] Milestone 59: Approved OpenAI CLI Agent scenario smoke.
 - [x] Milestone 60: Сброс плана roadmap 1.3.
 - [x] Milestone 61: Артефакты отчетов Agent-run.
-- [ ] Milestone 62: Регрессионный корпус planner.
+- [x] Milestone 62: Регрессионный корпус planner.
 - [ ] Milestone 63: Аудит checkpoint и cleanup.
 - [ ] Milestone 64: Provider readiness self-test UX.
 - [ ] Milestone 65: Полная validation 1.3.
@@ -266,6 +266,8 @@
 - 2026-05-15: Roadmap 1.3 начинается от чистого baseline Milestone 59 на ветке `codex/roadmap-1.3-planning`; блок должен усилить Agent QA observability и regression confidence перед добавлением нового AE mutation behavior.
 - 2026-05-15: External planner smokes и live AE mutation smokes остаются approval-gated, когда они отправляют project context через OpenAI/Codex CLI или временно мутируют live AE project.
 - 2026-05-15: Agent scenario report artifacts используют компактную локальную JSON-схему `agent-run-report.v1`; live smoke пишет их в игнорируемую `logs\agent-run-reports\`, а tracked docs фиксируют только решения и validation results.
+- 2026-05-15: Planner regression corpus держит accepted Agent scenario prompts и expected plan shapes в dependency-free `scripts\agent-scenario-fixtures.js`; live CEP scenario smoke и offline corpus smoke используют один источник сценариев.
+- 2026-05-15: Offline planner corpus smoke проверяет `/agents/plan/validate` и dry-run `/agents/plan/run` через локальный bridge daemon без external providers, без CEP panel requirement и без AE project mutations.
 
 ## Validation
 
@@ -634,3 +636,20 @@
   - Passed `node scripts\bridge-only-smoke-test.js`.
   - Passed `node scripts\smoke-test.js`.
   - Live CEP Agent scenario smokes and external OpenAI CLI planner smokes were not run because Milestone 61 is local report-format coverage and those paths remain approval-gated.
+- Milestone 62:
+  - Вынес accepted Agent scenario fixture plans/prompts из `scripts\cep-panel-cdp-smoke.js` в общий dependency-free модуль `scripts\agent-scenario-fixtures.js`.
+  - Live `agent-scenario-smoke` и `agent-scenario-openai-cli-smoke` теперь строят сценарии из того же fixture-модуля, что и offline regression corpus.
+  - Добавил `scripts\agent-planner-corpus-smoke.js`, который поднимает локальный bridge daemon, проверяет fixture corpus shape, прогоняет каждый сценарий через `/agents/plan/validate`, затем через dry-run `/agents/plan/run`.
+  - Corpus smoke подтвердил 4 сценария: `timeline-layer-timing`, `text-shape-layout-animation`, `precomp-source-rename`, `render-queue-setup`; все fixture dry-run steps получили `ready`.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check scripts\agent-scenario-fixtures.js`.
+  - Passed `node --check scripts\agent-planner-corpus-smoke.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `node scripts\agent-planner-corpus-smoke.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Live CEP Agent scenario smokes and external OpenAI CLI planner smokes were not run because Milestone 62 is offline regression corpus coverage and those paths remain approval-gated.
