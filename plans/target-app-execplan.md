@@ -28,7 +28,7 @@
 - [x] Milestone 60: Сброс плана roadmap 1.3.
 - [x] Milestone 61: Артефакты отчетов Agent-run.
 - [x] Milestone 62: Регрессионный корпус planner.
-- [ ] Milestone 63: Аудит checkpoint и cleanup.
+- [x] Milestone 63: Аудит checkpoint и cleanup.
 - [ ] Milestone 64: Provider readiness self-test UX.
 - [ ] Milestone 65: Полная validation 1.3.
 
@@ -268,6 +268,7 @@
 - 2026-05-15: Agent scenario report artifacts используют компактную локальную JSON-схему `agent-run-report.v1`; live smoke пишет их в игнорируемую `logs\agent-run-reports\`, а tracked docs фиксируют только решения и validation results.
 - 2026-05-15: Planner regression corpus держит accepted Agent scenario prompts и expected plan shapes в dependency-free `scripts\agent-scenario-fixtures.js`; live CEP scenario smoke и offline corpus smoke используют один источник сценариев.
 - 2026-05-15: Offline planner corpus smoke проверяет `/agents/plan/validate` и dry-run `/agents/plan/run` через локальный bridge daemon без external providers, без CEP panel requirement и без AE project mutations.
+- 2026-05-15: Generated QA audit остается read-only: он читает project items, render queue, checkpoint records и edit-session records, но deletion остается только в существующих guarded cleanup paths с точными generated prefixes.
 
 ## Validation
 
@@ -653,3 +654,22 @@
   - Passed `node scripts\bridge-only-smoke-test.js`.
   - Passed `node scripts\smoke-test.js`.
   - Live CEP Agent scenario smokes and external OpenAI CLI planner smokes were not run because Milestone 62 is offline regression corpus coverage and those paths remain approval-gated.
+- Milestone 63:
+  - Добавил `scripts\agent-qa-audit.js` со стабильной compact JSON-схемой `agent-qa-audit.v1`.
+  - Добавил read-only command `node scripts\cep-panel-cdp-smoke.js agent-scenario-audit`, который проверяет generated QA project item prefixes, render queue leftovers, checkpoint records и edit-session records.
+  - Audit command не вызывает cleanup, не запускает planner и не мутирует AE project; render queue deletion остается только в существующем guarded cleanup helper, а project-item deletion только через `cleanup_test_items` с точным prefix.
+  - Добавил dependency-free `node scripts\agent-qa-audit-smoke.js` для проверки prefix matching, render queue matching, checkpoint/edit-session matching и concise output limits без live AE.
+  - Live read-only audit на bridge `127.0.0.1:3456` подтвердил: generated project item leftovers `0`, render queue leftovers `0`, active edit session `false`, checkpoint records `69`, edit-session records `99`.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check scripts\agent-qa-audit.js`.
+  - Passed `node --check scripts\agent-qa-audit-smoke.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `node scripts\agent-qa-audit-smoke.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js agent-scenario-audit` with `CEP_PANEL_AUDIT_DETAIL_LIMIT=3`.
+  - External OpenAI CLI planner smokes and live AE mutation smokes were not run because Milestone 63 is read-only audit coverage and those paths remain approval-gated.

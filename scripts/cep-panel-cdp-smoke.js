@@ -3,6 +3,10 @@
 const http = require("http");
 const { writeAgentRunReport } = require("./agent-scenario-report");
 const { agentScenarioPlans } = require("./agent-scenario-fixtures");
+const {
+  buildAgentQaAuditReport,
+  collectAuditPrefixes
+} = require("./agent-qa-audit");
 
 const DEFAULT_PORT = Number(process.env.CEP_PANEL_CDP_PORT || 8870);
 const EXTENSION_ID = process.env.CEP_PANEL_EXTENSION_ID || "com.codex.aemcpbridge";
@@ -174,6 +178,32 @@ async function callBridgeTool(name, args) {
     arguments: args || {}
   });
   return parseBridgeToolPayload(response, name);
+}
+
+function safeErrorText(error) {
+  return error && error.message ? error.message : String(error || "Unknown error");
+}
+
+async function safeGetJson(url) {
+  try {
+    return { ok: true, result: await getJson(url) };
+  } catch (error) {
+    return { ok: false, error: safeErrorText(error) };
+  }
+}
+
+async function safeCallBridgeTool(name, args) {
+  try {
+    return { ok: true, result: await callBridgeTool(name, args) };
+  } catch (error) {
+    return { ok: false, error: safeErrorText(error) };
+  }
+}
+
+function boundedNumber(value, fallback, min, max) {
+  const parsed = Math.floor(Number(value));
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.min(max, parsed));
 }
 
 async function connectToPanel() {
@@ -1542,6 +1572,58 @@ async function agentScenarioReadiness(config) {
   return response.readiness;
 }
 
+async function agentScenarioAudit() {
+  const prefixLimit = boundedNumber(process.env.CEP_PANEL_AUDIT_MAX_PREFIXES, 30, 1, 100);
+  const prefixes = collectAuditPrefixes({
+    prefixes: process.env.CEP_PANEL_AUDIT_PREFIXES || "",
+    includeReportPrefixes: process.env.CEP_PANEL_AUDIT_INCLUDE_REPORT_PREFIXES !== "0",
+    reportLimit: boundedNumber(process.env.CEP_PANEL_AUDIT_REPORT_LIMIT, 5, 0, 50)
+  }).slice(0, prefixLimit);
+  const projectItemLimit = boundedNumber(process.env.CEP_PANEL_AUDIT_PROJECT_ITEM_LIMIT, 50, 1, 250);
+  const renderQueueLimit = boundedNumber(process.env.CEP_PANEL_AUDIT_RENDER_QUEUE_LIMIT, 100, 1, 200);
+  const checkpointLimit = boundedNumber(process.env.CEP_PANEL_AUDIT_CHECKPOINT_LIMIT, 200, 1, 500);
+  const editSessionLimit = boundedNumber(process.env.CEP_PANEL_AUDIT_EDIT_SESSION_LIMIT, 200, 1, 200);
+  const detailLimit = boundedNumber(process.env.CEP_PANEL_AUDIT_DETAIL_LIMIT, 20, 0, 200);
+
+  const healthCall = await safeGetJson(`${BRIDGE_URL.replace(/\/$/, "")}/health`);
+  const projectInfoCall = await safeCallBridgeTool("get_project_info");
+  const projectSearchResults = [];
+  for (const prefix of prefixes) {
+    const search = await safeCallBridgeTool("find_project_items", {
+      query: prefix,
+      limit: projectItemLimit,
+      caseSensitive: true
+    });
+    projectSearchResults.push({
+      prefix,
+      result: search.ok ? search.result : null,
+      error: search.ok ? null : search.error
+    });
+  }
+
+  const renderQueueCall = await safeCallBridgeTool("get_render_queue_status", { limit: renderQueueLimit });
+  const checkpointsCall = await safeCallBridgeTool("list_project_checkpoints", { limit: checkpointLimit });
+  const editSessionsCall = await safeCallBridgeTool("list_edit_sessions", { limit: editSessionLimit });
+  const audit = buildAgentQaAuditReport({
+    bridgeUrl: BRIDGE_URL,
+    prefixes,
+    health: healthCall.ok ? healthCall.result : null,
+    healthError: healthCall.ok ? null : healthCall.error,
+    projectInfo: projectInfoCall.ok ? projectInfoCall.result : null,
+    projectInfoError: projectInfoCall.ok ? null : projectInfoCall.error,
+    projectSearchResults,
+    renderQueue: renderQueueCall.ok ? renderQueueCall.result : null,
+    renderQueueError: renderQueueCall.ok ? null : renderQueueCall.error,
+    checkpoints: checkpointsCall.ok ? checkpointsCall.result : null,
+    checkpointsError: checkpointsCall.ok ? null : checkpointsCall.error,
+    editSessions: editSessionsCall.ok ? editSessionsCall.result : null,
+    editSessionsError: editSessionsCall.ok ? null : editSessionsCall.error,
+    detailLimit
+  });
+
+  console.log(JSON.stringify(audit, null, 2));
+}
+
 async function agentScenarioPreflight(config) {
   const health = await getJson(`${BRIDGE_URL.replace(/\/$/, "")}/health`);
   if (!health || health.ok !== true) throw new Error("Bridge health check failed.");
@@ -2133,6 +2215,10 @@ async function main() {
   }
   if (command === "mutating-smoke") {
     await mutatingSmoke();
+    return;
+  }
+  if (command === "agent-scenario-audit") {
+    await agentScenarioAudit();
     return;
   }
   if (command === "agent-scenario-smoke") {
