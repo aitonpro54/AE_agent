@@ -36,6 +36,7 @@
 - [x] Milestone 68: Candidate capture and quarantine.
 - [x] Milestone 69: Promotion validation pipeline.
 - [x] Milestone 70: Planner retrieval and safe use.
+- [x] Hotfix: Agent `itemIndexes` runtime binding.
 - [ ] Milestone 71: Solution library validation.
 - [ ] Milestone 72: Project Intent Memory.
 - [ ] Milestone 73: Plan confidence and risk classification.
@@ -275,6 +276,13 @@
 - Добавить risk-aware behavior: `candidate` entries are invisible to planner by default, `recipe` entries can be suggested, `typed-tool-candidate` can recommend tool implementation, `tool` is represented by normal MCP tool catalog.
 - Покрыть planner corpus cases: relevant recipe is surfaced, irrelevant/stale recipe is omitted, raw ExtendScript recipe is marked risky, and typed-tool equivalent wins when available.
 
+### Hotfix: Agent `itemIndexes` runtime binding
+
+- Исправить live Agent-run regression, где plan step для переименования source/precomp project items блокировался с `Unresolved runtime bindings: itemIndexes`.
+- Нормализовать common planner aliases such as `itemIndexes` to canonical tool schema field `itemIndices`.
+- Добавить plural project-item binding resolution from selected source/precomp layers and project item search results.
+- Сохранить существующие safety gates: rename/mutation execution still goes through validation, mutation permission, idempotency, checkpoint/edit-session protection and read-back verification.
+
 ### Milestone 71: Solution library validation
 
 - Seed the library with 1-2 low-risk reviewed examples from existing proven workflows, preferably recipe-first and typed-tool-based rather than new mutating JSX.
@@ -368,6 +376,8 @@
 - 2026-05-15: Milestone 69 вводит explicit promotion review schema `solution-promotion-review.v1`: tracked registry entry создается только после `explicitReview:true`, local plan fixture validation, typed-tool comparison для raw JSX и повторной registry validation. Repeated stable raw JSX recipes должны становиться `typed-tool-candidate`/typed bridge tools, а не постоянными shortcuts.
 - 2026-05-15: Milestone 70 включает только read-only advisory retrieval для Agent planning prompt: bridge читает tracked `registry/solutions.json`, выбирает compact top-N по tags/intent/tools/risk и никогда не читает ignored candidate quarantine или full library.
 - 2026-05-15: Solution status handling в planner retrieval risk-aware: `candidate` невидим, `recipe` может быть подсказкой, `typed-tool-candidate` рекомендует typed bridge tool implementation, а `tool` считается представленным обычным MCP tool catalog и подавляет matching raw JSX equivalents.
+- 2026-05-15: Agent runtime binding теперь принимает model-produced plural aliases `itemIndexes` / `itemIndices` для project-item workflows, но canonical execution args остаются schema-first (`itemIndices` for `rename_project_items`); алиасы не обходят validation или mutation safety gates.
+- 2026-05-15: Для selected source/precomp workflows plural project-item bindings могут извлекаться из `get_active_comp` / `get_selected_layers` selected layer source refs или из `find_project_items` matches; одиночные target fields получают первый индекс, а array-capable fields получают deduped list.
 
 ## Validation
 
@@ -917,3 +927,25 @@
   - Passed `node scripts\smoke-test.js`.
   - Did not run live CEP smoke because no CEP files changed.
   - Did not run external OpenAI CLI planner smokes or live AE mutation smokes because Milestone 70 is local planner-prompt retrieval work and those remain explicit-approval-gated.
+- Hotfix: Agent `itemIndexes` runtime binding:
+  - Root cause: the live planner produced an Agent step for selected source/precomp project-item renaming with `itemIndexes`, while the canonical `rename_project_items` schema expects `itemIndices`; runtime binding resolution also lacked plural project-item aliases, so the step blocked before mutation.
+  - Added schema-aware arg alias normalization so `itemIndexes`, `itemIndex`, source/precomp item aliases and layer index aliases resolve to canonical fields only when the target tool schema supports them.
+  - Added plural project-item binding extraction from selected source/precomp layer refs and project item search/match payloads, with deduping and singular-field coercion.
+  - Updated planner prompt to prefer canonical `itemIndices` and `{{selectedPrecompItemIndices}}` for selected source/precomp rename workflows.
+  - Extended `node scripts\smoke-test.js` to validate alias normalization and execute a dependent `{{itemIndexes}}` plan step.
+  - Restarted live bridge daemon on `127.0.0.1:3456` from the current repo; health reported `ok: true`, panel connected, pending `0`, inflight `0`.
+  - Current AE selection had no selected layers, so the exact selected-source rename case was not re-run live. Instead, a live read-only plan `find_project_items -> get_comp_details` verified `{{itemIndexes}}` resolves and executes without mutation against `Mother and child 2` (`itemIndex: 323`).
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check scripts\smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js smoke` against the installed CEP panel after the final live bridge restart.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Did not run external OpenAI CLI planner smokes or live AE mutation smokes because the hotfix was covered by local runtime binding smoke, live read-only binding smoke and live read-only CEP smoke; mutating/external paths remain explicit-approval-gated.

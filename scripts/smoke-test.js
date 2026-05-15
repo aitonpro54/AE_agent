@@ -592,6 +592,33 @@ async function main() {
       ]
     }
   });
+  const itemAliasValidation = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/dev/tool/validate_ai_agent_plan",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    plan: {
+      summary: "Smoke-test project item index alias normalization.",
+      risk: "low",
+      requiresCheckpoint: false,
+      steps: [
+        {
+          title: "Rename selected source precomp through alias",
+          tool: "rename_project_items",
+          args: {
+            itemIndexes: [7],
+            mode: "suffix",
+            suffix: " Smoke"
+          }
+        }
+      ]
+    }
+  });
   const ignoredBindingRun = await requestJsonWithOptions({
     hostname: "127.0.0.1",
     port,
@@ -649,6 +676,14 @@ async function main() {
           tool: "list_layers",
           args: {
             compItemIndex: "{{compItemIndex}}"
+          }
+        },
+        {
+          title: "Read selected source precomp through itemIndexes binding",
+          tool: "get_comp_details",
+          args: {
+            compItemIndex: "{{itemIndexes}}",
+            includeLayers: false
           }
         },
         {
@@ -732,6 +767,38 @@ async function main() {
       result: {
         comp: { itemIndex: 1, name: "Smoke Active Comp", numLayers: 1 },
         layers: [{ index: 1, name: "Smoke Precomp Layer" }]
+      }
+    })
+  });
+  const itemIndexesBindingCommand = await waitForPendingCommand(port, token, 5000);
+  if (!itemIndexesBindingCommand.body.command || itemIndexesBindingCommand.body.command.script.indexOf("__codexResolveComp(7)") < 0) {
+    throw new Error("Expected {{itemIndexes}} binding to resolve to selected source comp item 7.");
+  }
+  await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/bridge/result",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    id: itemIndexesBindingCommand.body.command.id,
+    ok: true,
+    result: JSON.stringify({
+      ok: true,
+      result: {
+        itemIndex: 7,
+        name: "Smoke Source Precomp",
+        type: "comp",
+        width: 1920,
+        height: 1080,
+        duration: 5,
+        frameRate: 24,
+        numLayers: 0,
+        layersReturned: 0,
+        layers: []
       }
     })
   });
@@ -900,6 +967,17 @@ async function main() {
     throw new Error("Plan validation did not include the expected affected target summary");
   }
   if (
+    itemAliasValidation.status !== 200 ||
+    itemAliasValidation.body.ok !== true ||
+    !itemAliasValidation.body.result ||
+    !itemAliasValidation.body.result.steps ||
+    !Array.isArray(itemAliasValidation.body.result.steps[0].safeArgs.itemIndices) ||
+    itemAliasValidation.body.result.steps[0].safeArgs.itemIndices[0] !== 7 ||
+    Object.prototype.hasOwnProperty.call(itemAliasValidation.body.result.steps[0].safeArgs, "itemIndexes")
+  ) {
+    throw new Error("Plan validation did not normalize itemIndexes to itemIndices");
+  }
+  if (
     mutatingDryRun.status !== 200 ||
     mutatingDryRun.body.ok !== true ||
     mutatingDryRun.body.run.validation.mutatingCount !== 1 ||
@@ -918,11 +996,12 @@ async function main() {
     namedCompBindingRun.status !== 200 ||
     namedCompBindingRun.body.ok !== true ||
     !namedCompBindingRun.body.run ||
-    namedCompBindingRun.body.run.steps.length !== 4 ||
+    namedCompBindingRun.body.run.steps.length !== 5 ||
     namedCompBindingRun.body.run.steps.some((step) => step.status !== "completed") ||
     Number(namedCompBindingRun.body.run.steps[1].args.compItemIndex) !== 1 ||
-    Number(namedCompBindingRun.body.run.steps[2].args.compItemIndex) !== 1 ||
-    Number(namedCompBindingRun.body.run.steps[3].args.compItemIndex) !== 7
+    Number(namedCompBindingRun.body.run.steps[2].args.compItemIndex) !== 7 ||
+    Number(namedCompBindingRun.body.run.steps[3].args.compItemIndex) !== 1 ||
+    Number(namedCompBindingRun.body.run.steps[4].args.compItemIndex) !== 7
   ) {
     throw new Error("Unexpected named comp runtime binding run response");
   }
@@ -976,6 +1055,7 @@ async function main() {
     readiness: readiness.body.readiness.status,
     planRun: planRun.body.run.steps[0].status,
     targetSummary: targetSummaryValidation.body.result.steps[0].targetSummary,
+    itemAlias: itemAliasValidation.body.result.steps[0].safeArgs.itemIndices,
     ignoredBindingRun: ignoredBindingRun.body.run.steps[0].status,
     namedCompBindingRun: namedCompBindingRun.body.run.steps.map((step) => step.status),
     mutatingDryRun: mutatingDryRun.body.run.steps[0].status,

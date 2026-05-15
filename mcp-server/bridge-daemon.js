@@ -1997,7 +1997,7 @@ function validateAgentPlanObject(plan, requestId) {
     const toolName = planStepToolName(step);
     const tool = toolName ? toolByName(toolName) : null;
     const mutating = toolName ? MUTATING_TOOL_NAMES.has(toolName) : false;
-    const safeArgs = planStepArgs(step);
+    const safeArgs = tool ? normalizePlanArgAliases(planStepArgs(step), tool) : planStepArgs(step);
     const resultBindings = step.resultBindings && typeof step.resultBindings === "object" && !Array.isArray(step.resultBindings)
       ? step.resultBindings
       : {};
@@ -2185,6 +2185,12 @@ function defaultPlanBindingValue(payload, targetField) {
       valueAtPath(payload, "mutation.target.item.itemIndex")
     ]);
   }
+  if (targetField === "itemIndices" || targetField === "itemIndexes") {
+    return firstPresent([
+      selectedSourceCompIndicesFromPayload(payload),
+      projectItemIndicesFromPayload(payload)
+    ]);
+  }
   if (targetField === "itemName" || targetField === "name") {
     return firstPresent([
       payload.itemName,
@@ -2232,7 +2238,53 @@ function sourceCompRefFromLayer(layer) {
   };
 }
 
-function selectedSourceCompFromPayload(payload) {
+function uniquePositiveIntegerList(values) {
+  const source = Array.isArray(values) ? values : [values];
+  const result = [];
+  const seen = new Set();
+  for (const value of source) {
+    const normalized = positiveIntegerBindingValue(value);
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    result.push(normalized);
+  }
+  return result.length ? result : undefined;
+}
+
+function itemIndicesFromObjectList(items) {
+  if (!Array.isArray(items)) return undefined;
+  const values = [];
+  for (const item of items) {
+    values.push(
+      item && item.itemIndex,
+      valueAtPath(item, "item.itemIndex"),
+      valueAtPath(item, "source.itemIndex"),
+      valueAtPath(item, "sourceItem.itemIndex")
+    );
+  }
+  return uniquePositiveIntegerList(values);
+}
+
+function projectItemIndicesFromPayload(payload) {
+  if (!payload || typeof payload !== "object") return undefined;
+  return firstPresent([
+    uniquePositiveIntegerList(payload.itemIndices),
+    uniquePositiveIntegerList(payload.itemIndexes),
+    uniquePositiveIntegerList([
+      payload.itemIndex,
+      valueAtPath(payload, "duplicate.itemIndex"),
+      valueAtPath(payload, "item.itemIndex"),
+      valueAtPath(payload, "sourceItem.itemIndex"),
+      valueAtPath(payload, "mutation.target.item.itemIndex")
+    ]),
+    itemIndicesFromObjectList(payload.items),
+    itemIndicesFromObjectList(payload.matches),
+    itemIndicesFromObjectList(payload.renamed),
+    itemIndicesFromObjectList(payload.removed)
+  ]);
+}
+
+function selectedSourceCompRefsFromPayload(payload) {
   if (!payload || typeof payload !== "object") return undefined;
   const layerCollections = [
     payload.selectedLayers,
@@ -2240,24 +2292,42 @@ function selectedSourceCompFromPayload(payload) {
     valueAtPath(payload, "activeComp.selectedLayers")
   ];
   const refs = [];
+  const seen = new Set();
+
+  function addRef(ref) {
+    if (!ref) return;
+    const key = `${ref.itemIndex}:${ref.name || ""}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    refs.push(ref);
+  }
 
   for (const layers of layerCollections) {
     if (!Array.isArray(layers)) continue;
     for (const layer of layers) {
-      const ref = sourceCompRefFromLayer(layer);
-      if (ref) refs.push(ref);
+      addRef(sourceCompRefFromLayer(layer));
     }
   }
 
-  const directLayerRef = sourceCompRefFromLayer(payload.layer);
-  if (directLayerRef) refs.push(directLayerRef);
+  addRef(sourceCompRefFromLayer(payload.layer));
 
-  if (!refs.length) return undefined;
+  return refs.length ? refs : undefined;
+}
+
+function selectedSourceCompFromPayload(payload) {
+  const refs = selectedSourceCompRefsFromPayload(payload);
+  if (!refs || !refs.length) return undefined;
   const first = refs[0];
   for (const ref of refs) {
     if (ref.itemIndex !== first.itemIndex) return undefined;
   }
   return first;
+}
+
+function selectedSourceCompIndicesFromPayload(payload) {
+  const refs = selectedSourceCompRefsFromPayload(payload);
+  if (!refs || !refs.length) return undefined;
+  return uniquePositiveIntegerList(refs.map((ref) => ref.itemIndex));
 }
 
 function selectedSourceCompBindingValue(payload, targetField) {
@@ -2318,6 +2388,15 @@ function isItemIndexBindingName(lower) {
   ].includes(lower);
 }
 
+function isItemIndicesBindingName(lower) {
+  return [
+    "itemindices",
+    "itemindexes",
+    "projectitemindices",
+    "projectitemindexes"
+  ].includes(lower);
+}
+
 function isItemNameBindingName(lower) {
   return [
     "itemname",
@@ -2357,6 +2436,23 @@ function isSelectedSourceCompBindingName(lower) {
   ].includes(lower);
 }
 
+function isSelectedSourceCompIndicesBindingName(lower) {
+  return [
+    "selectedsourcecompitemindices",
+    "selectedsourcecompitemindexes",
+    "selectedsourceitemindices",
+    "selectedsourceitemindexes",
+    "selectedlayersourceitemindices",
+    "selectedlayersourceitemindexes",
+    "selectedprecompitemindices",
+    "selectedprecompitemindexes",
+    "precompitemindices",
+    "precompitemindexes",
+    "sourceitemindices",
+    "sourceitemindexes"
+  ].includes(lower);
+}
+
 function findBindingValueInExecutedSteps(executedSteps, resolver) {
   for (let index = executedSteps.length - 1; index >= 0; index -= 1) {
     const value = resolver(executedSteps[index].payload);
@@ -2381,6 +2477,20 @@ function shouldPreferSelectedSourceCompBinding(step, lower, targetField) {
   return /\b(precomp|pre-comp|source|selected)\b/.test(planStepText(step));
 }
 
+function fitBindingValueToTargetField(value, targetField) {
+  if (!Array.isArray(value)) return value;
+  if ([
+    "compItemIndex",
+    "itemIndex",
+    "sourceItemIndex",
+    "layerIndex",
+    "renderQueueItemIndex"
+  ].includes(targetField)) {
+    return value[0];
+  }
+  return value;
+}
+
 function resolveNamedPlanBinding(name, executedSteps, targetField, step) {
   const normalized = String(name || "").trim();
   const lower = normalized.toLowerCase();
@@ -2392,8 +2502,18 @@ function resolveNamedPlanBinding(name, executedSteps, targetField, step) {
     const indices = findBindingValueInExecutedSteps(executedSteps, selectedLayerIndicesFromPayload);
     return Array.isArray(indices) ? indices[0] : indices;
   }
+  if (isSelectedSourceCompIndicesBindingName(lower)) {
+    const value = findBindingValueInExecutedSteps(executedSteps, selectedSourceCompIndicesFromPayload);
+    return fitBindingValueToTargetField(value, targetField);
+  }
   if (isSelectedSourceCompBindingName(lower) || shouldPreferSelectedSourceCompBinding(step, lower, targetField)) {
     return findBindingValueInExecutedSteps(executedSteps, (payload) => selectedSourceCompBindingValue(payload, targetField));
+  }
+  if (isItemIndicesBindingName(lower)) {
+    const value = findBindingValueInExecutedSteps(executedSteps, (payload) => (
+      selectedSourceCompIndicesFromPayload(payload) || projectItemIndicesFromPayload(payload)
+    ));
+    return fitBindingValueToTargetField(value, targetField);
   }
   if (isCompIndexBindingName(lower)) {
     return findBindingValueInExecutedSteps(executedSteps, (payload) => defaultPlanBindingValue(payload, "compItemIndex"));
@@ -2453,14 +2573,58 @@ function resolvePlanBinding(binding, executedSteps, targetField, step) {
   return undefined;
 }
 
+function canonicalPlanArgField(field, schemaProperties) {
+  const original = String(field || "");
+  if (!schemaProperties || hasArg(schemaProperties, original)) return original;
+
+  const aliases = {
+    itemindex: "itemIndices",
+    itemindexes: "itemIndices",
+    projectitemindex: "itemIndices",
+    projectitemindexes: "itemIndices",
+    projectitemindices: "itemIndices",
+    selectedprecompitemindex: "itemIndices",
+    selectedprecompitemindexes: "itemIndices",
+    selectedprecompitemindices: "itemIndices",
+    sourceitemindex: "itemIndices",
+    sourceitemindexes: "itemIndices",
+    sourceitemindices: "itemIndices",
+    layerindex: "layerIndices",
+    layerindexes: "layerIndices",
+    selectedlayerindex: "layerIndices",
+    selectedlayerindexes: "layerIndices",
+    selectedlayerindices: "layerIndices"
+  };
+  const canonical = aliases[original.toLowerCase()];
+  return canonical && hasArg(schemaProperties, canonical) ? canonical : original;
+}
+
+function normalizePlanArgAliases(args, tool) {
+  const schemaProperties = tool && tool.inputSchema && tool.inputSchema.properties && typeof tool.inputSchema.properties === "object"
+    ? tool.inputSchema.properties
+    : null;
+  if (!schemaProperties) return { ...(args || {}) };
+
+  const normalized = { ...(args || {}) };
+  for (const field of Object.keys(normalized)) {
+    const canonical = canonicalPlanArgField(field, schemaProperties);
+    if (canonical === field) continue;
+    if (!hasArg(normalized, canonical) || missingPlanBindingValue(normalized[canonical])) {
+      normalized[canonical] = normalized[field];
+    }
+    delete normalized[field];
+  }
+  return normalized;
+}
+
 function missingPlanBindingValue(value) {
   return value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0);
 }
 
 function applyPlanRuntimeBindings(step, executedSteps) {
-  const args = { ...(step.safeArgs || {}) };
-  const bindings = step.resultBindings || {};
   const tool = toolByName(step.tool);
+  const args = normalizePlanArgAliases(step.safeArgs || {}, tool);
+  const bindings = step.resultBindings || {};
   const schemaProperties = tool && tool.inputSchema && tool.inputSchema.properties && typeof tool.inputSchema.properties === "object"
     ? tool.inputSchema.properties
     : null;
@@ -2475,17 +2639,18 @@ function applyPlanRuntimeBindings(step, executedSteps) {
     }
   }
   for (const field of Object.keys(bindings)) {
-    if (hasArg(args, field) && args[field] !== null && args[field] !== undefined && args[field] !== "") {
+    const canonicalField = canonicalPlanArgField(field, schemaProperties);
+    if (hasArg(args, canonicalField) && args[canonicalField] !== null && args[canonicalField] !== undefined && args[canonicalField] !== "") {
       continue;
     }
-    if (schemaProperties && !hasArg(schemaProperties, field)) {
+    if (schemaProperties && !hasArg(schemaProperties, canonicalField)) {
       continue;
     }
-    const value = resolvePlanBinding(bindings[field], executedSteps, field, step);
+    const value = resolvePlanBinding(bindings[field], executedSteps, canonicalField, step);
     if (missingPlanBindingValue(value)) {
-      unresolved.push(field);
+      unresolved.push(canonicalField);
     } else {
-      args[field] = value;
+      args[canonicalField] = value;
     }
   }
   return { args, unresolved };
@@ -3099,7 +3264,8 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection) {
     "For render queue setup, use add_comp_to_render_queue, set_render_queue_output, and get_render_queue_status. Do not start a render.",
     "For requests about selected layers, inspect with get_active_comp or get_selected_layers first. A later layerIndex field may use {{selectedLayerIndices}} to target the selected layers.",
     "For later steps that need the active comp, compItemIndex may use {{compItemIndex}} after get_active_comp, get_comp_details, or get_selected_layers.",
-    "For requests about a selected precomp/source comp, inspect with get_active_comp or get_selected_layers first, then use {{selectedPrecompItemIndex}} for duplicate_comp or other source-comp operations.",
+    "For requests about selected precomp/source comp(s), inspect with get_active_comp or get_selected_layers first, then use {{selectedPrecompItemIndex}} for one source comp or {{selectedPrecompItemIndices}} in itemIndices for rename_project_items.",
+    "Use canonical schema field names such as itemIndices and layerIndices; do not use itemIndexes or layerIndexes.",
     "If a later step depends on a previous tool result, set dependsOnStep and resultBindings instead of inventing indices.",
     "If solution hints mention a typed-tool-candidate, prefer recommending a typed bridge tool implementation over repeating a workaround.",
     "If solution hints mention a reviewed raw ExtendScript file, mark the plan risky, prefer typed tools first, and only plan run_extendscript_file when no typed tool fits.",
