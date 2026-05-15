@@ -7,7 +7,7 @@
 - `registry/solutions.json` - единственный tracked индекс reviewed решений.
 - `recipes/` - человекочитаемые reusable recipes. Они описывают безопасный план действий, но не исполняются напрямую.
 - `scripts/solutions/` - reviewed ExtendScript files, только когда typed bridge tool пока не покрывает задачу.
-- `logs/solution-candidates/` - будущая ignored quarantine area для Milestone 68. Candidate entries не должны попадать в tracked registry.
+- `logs/solution-candidates/` - ignored quarantine area для свежих candidate-отчетов. Candidate entries не должны попадать в tracked registry.
 
 ## Registry Shape
 
@@ -120,12 +120,35 @@
 - Registry entries, recipes and promoted scripts must not contain secrets, API keys, broad local project paths or hard-coded absolute user paths.
 - Repeated stable raw JSX recipes should become typed bridge tools instead of permanent script shortcuts.
 
+## Candidate Quarantine
+
+Milestone 68 adds a local-only capture format for promising live experiments before review. Candidate reports use schema `solution-candidate-report.v1` and are written under ignored `logs/solution-candidates/`, so they are not planner-visible and are not promoted automatically.
+
+Manual capture helper:
+
+```powershell
+node .\scripts\solution-candidate-report.js --print-template
+node .\scripts\solution-candidate-report.js --input .\path\to\candidate.json
+```
+
+Each candidate report keeps compact review evidence:
+
+- user intent and applies-when notes;
+- generated tool plan and optional small generated script body;
+- affected target summary, not a full project scan;
+- run result, safety/checkpoint summary and verification read-back evidence;
+- warnings, project assumptions and suggested next promotion action;
+- compact provenance from existing Agent run report shape when available.
+
+Candidate reports must not store API keys, provider secret names, raw transcript/log tails, broad project scans or absolute user/project paths. The helper redacts known secret/path patterns, drops raw transcript and scan fields, and records warnings/redaction metadata for review. Promotion still requires a separate Milestone 69 review decision and tracked registry entry.
+
 ## Validation
 
 Run the dependency-free validator before promoting or editing solutions:
 
 ```powershell
 node .\scripts\solution-registry-smoke.js
+node .\scripts\solution-candidate-report-smoke.js
 ```
 
-The validator checks registry shape, unique ids, tracked statuses, path hygiene, secret/path patterns, safety gates for mutating entries and stricter raw ExtendScript requirements.
+The validators check registry shape, unique ids, tracked statuses, path hygiene, secret/path patterns, safety gates for mutating entries, stricter raw ExtendScript requirements and safe candidate quarantine report generation.

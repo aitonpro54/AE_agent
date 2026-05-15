@@ -273,6 +273,12 @@ Solution Library registry and metadata coverage:
 node .\scripts\solution-registry-smoke.js
 ```
 
+Solution candidate quarantine report coverage:
+
+```powershell
+node .\scripts\solution-candidate-report-smoke.js
+```
+
 Gemini and Claude provider API contract coverage:
 
 ```powershell

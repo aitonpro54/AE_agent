@@ -33,7 +33,7 @@
 - [x] Milestone 65: Полная validation 1.3.
 - [x] Milestone 66: Safe Solution Library roadmap reset.
 - [x] Milestone 67: Solution registry and metadata.
-- [ ] Milestone 68: Candidate capture and quarantine.
+- [x] Milestone 68: Candidate capture and quarantine.
 - [ ] Milestone 69: Promotion validation pipeline.
 - [ ] Milestone 70: Planner retrieval and safe use.
 - [ ] Milestone 71: Solution library validation.
@@ -364,6 +364,7 @@
 - 2026-05-15: Solution Library не должна становиться обходом safety model: promoted solutions only advise planner context, while execution remains through validated Agent plans, mutation gates, idempotency, checkpoint/edit-session protection and read-back verification.
 - 2026-05-15: Milestone 67 вводит tracked registry baseline через `registry/solutions.json`, `recipes/` и `scripts/solutions/`; `candidate` и другие unreviewed статусы запрещены в tracked library, а первые реальные entries будут добавляться отдельным promotion/seed milestone.
 - 2026-05-15: `node scripts\solution-registry-smoke.js` становится dependency-free gate для `ae-solution.v1` metadata: он проверяет форму registry, уникальность ids, path/secret hygiene, safety gates для mutating entries и более строгие требования к raw ExtendScript, пока planner retrieval остается выключенным до Milestone 70.
+- 2026-05-15: Milestone 68 добавляет ignored quarantine `logs\solution-candidates\` и schema `solution-candidate-report.v1` для ручного capture удачных live candidates; candidate reports остаются локальными, не видны planner retrieval, требуют explicit promotion и проходят redaction/drop guards для секретов, абсолютных путей, raw transcripts/log tails и full project scans.
 
 ## Validation
 
@@ -848,3 +849,21 @@
   - Passed `node scripts\smoke-test.js`.
   - Did not run live CEP smoke because no CEP files changed.
   - Did not run external OpenAI CLI planner smokes or live AE mutation smokes because Milestone 67 is local registry/docs/validator work and those remain explicit-approval-gated.
+- Milestone 68:
+  - Added ignored candidate quarantine path `logs\solution-candidates\`.
+  - Added `scripts\solution-candidate-report.js` with schema `solution-candidate-report.v1`, manual capture template/input helper, compact Agent-run provenance, generated plan/script capture, affected target summary, run result, verification read-back, warnings, project assumptions and suggested promotion action.
+  - Candidate reports are quarantine-only, not planner-visible and require explicit promotion; helper redacts known secret/path patterns and drops raw transcript/log tail/full project scan fields.
+  - Documented candidate quarantine in `docs\solution-library.md` and added `node scripts\solution-candidate-report-smoke.js` to README/AGENTS verification flow.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check scripts\solution-candidate-report.js`.
+  - Passed `node --check scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Did not run live CEP smoke because no CEP files changed.
+  - Did not run external OpenAI CLI planner smokes or live AE mutation smokes because Milestone 68 is local quarantine/report-format work and those remain explicit-approval-gated.
