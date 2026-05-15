@@ -2,10 +2,11 @@
 
 Local AI agent panel and MCP bridge for Adobe After Effects.
 
-It has two parts:
+It has these main parts:
 
 - `mcp-server/bridge-daemon.js` - a persistent local HTTP daemon that owns port `3456`, the AE panel queue, command IDs, results, logs, and backups.
 - `mcp-server/mcp-adapter.js` - a dependency-free stdio MCP adapter that exposes tools to Codex and calls the daemon over HTTP.
+- `chatgpt-connector/` - a dependency-free read-only MCP HTTP skeleton for ChatGPT custom connector development.
 - `cep-panel/` - a CEP panel that runs inside After Effects, polls the local bridge, executes ExtendScript through `evalScript`, and posts results back.
 
 `mcp-server/server.js` remains as a compatibility wrapper. By default it starts the MCP adapter; with `--bridge-only`, `--daemon`, or `AE_BRIDGE_ONLY=1`, it starts the daemon. The adapter auto-starts the daemon when the daemon is not already listening.
@@ -246,6 +247,24 @@ For a stdio MCP client, point it at:
 
 There is also a ready local example in `mcp-config.example.json`.
 
+## ChatGPT connector skeleton
+
+`chatgpt-connector/server.js` exposes a local `/mcp` endpoint intended for ChatGPT custom connector development through a temporary HTTPS tunnel such as Cloudflare Tunnel.
+
+This connector is intentionally not another AI provider. It does not call OpenAI APIs itself; ChatGPT is the model host, and the connector only exposes a fixed read-only allowlist of bridge proxy tools with `readOnlyHint:true` annotations. Write tools, JSX execution, raw `run_extendscript`, provider chat, provider planning, and plan execution are not exposed in this skeleton.
+
+Local start:
+
+```powershell
+node .\chatgpt-connector\server.js
+```
+
+Offline validation:
+
+```powershell
+node .\scripts\chatgpt-connector-smoke.js
+```
+
 ## Smoke test
 
 This test verifies the MCP server and HTTP bridge without After Effects:
@@ -295,6 +314,12 @@ Solution library seeded-entry and retrieval-bound validation:
 
 ```powershell
 node .\scripts\solution-library-validation-smoke.js
+```
+
+ChatGPT connector read-only MCP skeleton coverage:
+
+```powershell
+node .\scripts\chatgpt-connector-smoke.js
 ```
 
 Gemini and Claude provider API contract coverage:

@@ -40,7 +40,7 @@
 - [x] Milestone 71: Solution library validation.
 - [x] Hotfix: OpenAI CLI detection and setup action.
 - [x] Milestone 72: Parallel AI Paths - OpenRouter UI restore.
-- [ ] Milestone 73: ChatGPT Connector read-only skeleton.
+- [x] Milestone 73: ChatGPT Connector read-only skeleton.
 - [ ] Milestone 74: JSX Lab candidate quarantine and checks.
 - [ ] Milestone 75: Gated JSX Lab run, promotion hooks and CEP connector status.
 - [ ] Milestone 76: Project Intent Memory.
@@ -428,6 +428,8 @@
 - 2026-05-15: OpenRouter attribution headers now send `HTTP-Referer` and `X-OpenRouter-Title`, while keeping legacy `X-Title` as a compatibility fallback.
 - 2026-05-15: ChatGPT Connector will be an isolated Apps SDK/MCP `/mcp` server reached through Cloudflare Tunnel for development; it will not call OpenAI APIs itself and must not commit tunnel URLs, connector tokens or secrets.
 - 2026-05-15: ChatGPT Connector tools start read-only with `readOnlyHint:true`; write/JSX tools require explicit server-side risk signals and confirmation gates before exposure.
+- 2026-05-15: Milestone 73 exposes a fixed read-only ChatGPT connector allowlist that is available offline for tool discovery, while tool calls proxy to the existing bridge only when invoked; provider chat/planning, plan execution, write tools, and raw ExtendScript stay excluded.
+- 2026-05-15: The ChatGPT connector supports an optional `AE_CHATGPT_CONNECTOR_TOKEN` for local `/mcp` development without committing connector secrets, tunnel URLs, or captured traffic.
 - 2026-05-15: JSX Lab must use candidate quarantine and static/risk checks before any execution; ChatGPT must never receive a direct raw `run_extendscript` string path that bypasses candidate reports, checkpoint/edit-session protection and read-back verification.
 
 ## Validation
@@ -1076,3 +1078,26 @@
   - Passed targeted live CEP smoke `node scripts\cep-panel-cdp-smoke.js provider-self-test-smoke` using fake readiness data; it verified OpenRouter self-test row without calling OpenRouter.
   - Did not run generic live CEP `smoke` because normal panel reload can query live model lists for configured providers, including OpenRouter, and live OpenRouter calls remain explicit-approval-gated.
   - Did not run Cloudflare Tunnel, ChatGPT connector checks, external OpenAI CLI planner smokes or live AE mutation smokes because this milestone is OpenRouter UI/fake-provider coverage only and those paths remain explicit-approval-gated.
+- Milestone 73:
+  - Added isolated `chatgpt-connector/server.js` as a dependency-free MCP HTTP `/mcp` skeleton for ChatGPT custom connector development.
+  - Kept the connector separate from normal API providers: it does not call OpenAI APIs, Codex CLI, OpenRouter, Gemini, Claude, or Ollama.
+  - Exposed only a fixed read-only bridge proxy allowlist plus `get_connector_status`, with `readOnlyHint:true`, `destructiveHint:false`, and `openWorldHint:false` annotations.
+  - Excluded write tools, raw `run_extendscript`, JSX execution, provider chat/planning, and plan execution from the connector surface.
+  - Added `chatgpt-connector/README.md` and README/AGENTS verification references.
+  - Added `node scripts\chatgpt-connector-smoke.js`, which starts the connector on a random local port and verifies initialize, tool listing, annotations, token rejection, local status, and offline bridge error shaping without ChatGPT, Cloudflare Tunnel, After Effects, live providers, or AE mutations.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check chatgpt-connector\server.js`.
+  - Passed `node --check scripts\chatgpt-connector-smoke.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\chatgpt-connector-smoke.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Live ChatGPT connector/Tunnel checks were not run because Milestone 73 is an offline skeleton and live connector setup remains explicit-approval-gated.
