@@ -25,6 +25,12 @@
 - [x] Milestone 57: OpenAI CLI readiness diagnostics.
 - [x] Milestone 58: Live OpenAI CLI diagnostics preflight.
 - [x] Milestone 59: Approved OpenAI CLI Agent scenario smoke.
+- [x] Milestone 60: Сброс плана roadmap 1.3.
+- [ ] Milestone 61: Артефакты отчетов Agent-run.
+- [ ] Milestone 62: Регрессионный корпус planner.
+- [ ] Milestone 63: Аудит checkpoint и cleanup.
+- [ ] Milestone 64: Provider readiness self-test UX.
+- [ ] Milestone 65: Полная validation 1.3.
 
 ## Current Stable Baseline
 
@@ -186,6 +192,43 @@
 - Проверить, что protected runs создают checkpoint/edit-session protection, cleanup удаляет generated project/render-queue items, а render queue возвращается к baseline.
 - Зафиксировать результат как validation-only milestone без изменений product code.
 
+### Milestone 60: Сброс плана roadmap 1.3
+
+- Начать roadmap 1.3 от чистого baseline после Milestone 59 на отдельной ветке.
+- Сфокусировать новый блок на наблюдаемости, регрессионных доказательствах, безопасности cleanup и provider readiness перед добавлением нового AE mutation behavior.
+- Определить следующие маленькие вехи, чтобы работа продолжалась milestone-by-milestone без догадок после закрытого 1.2 live QA block.
+- Обновить active handoff так, чтобы следующий поток мог сразу начинать Milestone 61.
+
+### Milestone 61: Артефакты отчетов Agent-run
+
+- Добавить стабильный локальный report artifact для Agent scenario smokes: planner config, plan source, acceptance counts, scenario outcomes, cleanup counts и final render queue status.
+- По умолчанию держать raw live artifacts вне git; в tracked docs заносить только устойчивые решения и validation results.
+- Добавить smoke coverage, которая проверяет создание отчета и ключевые поля для диагностики planner regressions без чтения длинного terminal log.
+
+### Milestone 62: Регрессионный корпус planner
+
+- Зафиксировать accepted live Agent scenario prompts и expected plan shapes как offline fixture corpus.
+- Добавить dependency-free validator, который прогоняет fixture plans через plan validation и dry-run-compatible checks без вызова external providers.
+- Использовать corpus как preflight перед дорогими live OpenAI CLI planner runs.
+
+### Milestone 63: Аудит checkpoint и cleanup
+
+- Добавить read-only audit command для generated QA prefixes, render queue leftovers, checkpoint records и edit-session records, связанных с live smoke runs.
+- Оставить deletion под guard через точные generated prefixes и существующие cleanup tools; audit path не должен мутировать AE projects.
+- Использовать audit до и после live mutating validation, чтобы leftover state был виден перед следующим external planner run.
+
+### Milestone 64: Provider readiness self-test UX
+
+- Показать в панели compact provider readiness diagnostics для OpenAI API, OpenAI CLI, Gemini, Claude и Local/Ollama.
+- Скрывать secrets и сохранить существующую shape provider contract.
+- Добавить fake-provider и CEP smoke coverage для missing auth, unavailable models и CLI readiness details.
+
+### Milestone 65: Полная validation 1.3
+
+- Запустить configured repo smoke suite и relevant live CEP validation после внесения изменений 1.3.
+- Запускать external-provider или mutating live smokes только с явным approval, если они отправляют planner prompts/project context или мутируют AE project.
+- Обновить release/handoff notes с финальным validation status 1.3 и следующим recommended block.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -220,6 +263,8 @@
 
 - 2026-05-15: После перезапуска live bridge можно проверять новые OpenAI CLI diagnostic fields через `/agents/readiness?checkModels=0`; полный `agent-scenario-openai-cli-smoke` требует явного разрешения на внешний OpenAI/Codex CLI planner-запрос и временные AE-мутации.
 - 2026-05-15: После явного разрешения пользователя полный `agent-scenario-openai-cli-smoke` можно учитывать как отдельный validation milestone; он не требует code changes, если `panelPlanCount` совпадает со scenario count и cleanup возвращает render queue к baseline.
+- 2026-05-15: Roadmap 1.3 начинается от чистого baseline Milestone 59 на ветке `codex/roadmap-1.3-planning`; блок должен усилить Agent QA observability и regression confidence перед добавлением нового AE mutation behavior.
+- 2026-05-15: External planner smokes и live AE mutation smokes остаются approval-gated, когда они отправляют project context через OpenAI/Codex CLI или временно мутируют live AE project.
 
 ## Validation
 
@@ -552,6 +597,19 @@
   - Cleanup removed generated project items per scenario (`3`, `1`, `4`, `1`), removed `1` generated render queue item in the render scenario, and final cleanup left `renderQueueTotal: 0`.
   - No JavaScript files were changed, so there were no touched JavaScript files for `node --check`.
   - No package manager check is configured because the repository has no `package.json`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+- Milestone 60:
+  - Подтвердил, что Milestone 59 уже закоммичен как `869365f Record approved OpenAI CLI agent smoke`.
+  - Подтвердил clean working tree на предыдущей ветке перед стартом нового блока.
+  - Создал ветку `codex/roadmap-1.3-planning` для следующего roadmap block.
+  - Добавил Milestones 61-65 для Agent QA reporting, planner regression fixtures, cleanup auditing, provider readiness self-test UX и full 1.3 validation.
+  - JavaScript-файлы не менялись, поэтому `node --check` не применяется.
+  - Package manager check не настроен, потому что в репозитории нет `package.json`.
   - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
   - Passed `node scripts\provider-contract-smoke.js`.
   - Passed `node scripts\provider-api-smoke.js`.
