@@ -167,6 +167,8 @@ Promotion review обязан заполнить registry metadata: inputs, targ
 
 Если raw JSX recipe стабильно повторяется, это сигнал к `typed-tool-candidate` и последующей реализации typed bridge tool. Raw JSX не должен становиться постоянным shortcut, когда существующий или новый narrow bridge tool лучше выражает workflow.
 
+Milestone 75 добавляет ChatGPT Connector hook в этот lifecycle. `promote_solution_candidate` принимает JSX Lab candidate metadata, повторно запускает static checks и пишет только ignored `solution-candidate-report.v1` artifact. Он не изменяет tracked `registry/solutions.json`, не делает candidate planner-visible и блокирует прямой переход `candidate -> tool`; дальнейшее продвижение остается явным review через `solution-promotion-helper.js` по цепочке `candidate -> recipe -> typed-tool-candidate -> tool`.
+
 ## Planner Retrieval
 
 Milestone 70 enables a read-only retrieval path for Agent planning prompts. The bridge reads `registry/solutions.json`, scores reviewed entries against the user request by tags, intent, preferred tools and risk, then injects only a compact top-N advisory section.

@@ -19,6 +19,9 @@
   var diagnosticsButton = document.getElementById("diagnosticsButton");
   var reloadButton = document.getElementById("reloadButton");
   var collapseSidebarButton = document.getElementById("collapseSidebarButton");
+  var connectorStatusButton = document.getElementById("connectorStatusButton");
+  var connectorEmergencyDisableButton = document.getElementById("connectorEmergencyDisableButton");
+  var connectorStatusListEl = document.getElementById("connectorStatusList");
   var providerTabEls = document.querySelectorAll(".provider-tab");
   var authModeTabsEl = document.getElementById("authModeTabs");
   var authModeButtonEls = document.querySelectorAll("#authModeTabs button");
@@ -74,6 +77,8 @@
   var readinessInFlight = false;
   var providerSelfTestInFlight = false;
   var providerSelfTestResults = {};
+  var connectorStatusInFlight = false;
+  var connectorStatus = null;
   var renderedAgentId = "";
   var agentsLoadSeq = 0;
   var agentsLoadInFlight = false;
@@ -83,6 +88,7 @@
   var setupStatusTimer = null;
   var setupStatusUntil = 0;
   var BRIDGE_OFFLINE_MESSAGE = "Bridge offline. Start the local bridge from Codex, then click Connect.";
+  var CONNECTOR_BASE_URL = "http://127.0.0.1:8787";
   var PROVIDER_SELF_TESTS = [
     { key: "openai-api", label: "OpenAI API", agentId: "openai-api" },
     { key: "openai-cli", label: "OpenAI CLI", agentId: "openai-cli" },
@@ -293,6 +299,152 @@
     if (!el) return "";
     if (el.getAttribute) return el.getAttribute("data-" + name) || "";
     return "";
+  }
+
+  function getConnectorBaseUrl() {
+    return (localStorage.getItem("codexAeChatGptConnectorUrl") || CONNECTOR_BASE_URL).replace(/\/+$/, "");
+  }
+
+  function connectorRequest(method, path, body, onDone) {
+    var completed = false;
+    var xhr = new XMLHttpRequest();
+    xhr.open(method, getConnectorBaseUrl() + path, true);
+    xhr.timeout = 3000;
+    if (body !== null && body !== undefined) {
+      xhr.setRequestHeader("content-type", "text/plain;charset=utf-8");
+    }
+    function finish(error, response) {
+      if (completed) return;
+      completed = true;
+      onDone(error, response);
+    }
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) return;
+      if (xhr.status < 200 || xhr.status >= 300) {
+        finish(new Error(xhr.status === 0 ? "Connector offline" : "HTTP " + xhr.status));
+        return;
+      }
+      try {
+        finish(null, xhr.responseText ? JSON.parse(xhr.responseText) : {});
+      } catch (error) {
+        finish(error);
+      }
+    };
+    xhr.onerror = function () {
+      finish(new Error("Connector offline"));
+    };
+    xhr.ontimeout = function () {
+      finish(new Error("Connector offline"));
+    };
+    xhr.send(body !== null && body !== undefined ? JSON.stringify(body) : null);
+  }
+
+  function connectorToolSummary(status) {
+    var connector = status && status.connector ? status.connector : {};
+    var tools = connector.exposedToolsSnapshot || [];
+    var localTools = [];
+    for (var i = 0; i < tools.length; i++) {
+      if (!tools[i].bridgeProxy) localTools.push(tools[i].name);
+    }
+    if (!localTools.length && connector.candidateTools) localTools = connector.candidateTools;
+    var shown = localTools.slice(0, 4).join(", ");
+    return shown + (tools.length ? " (" + tools.length + " total)" : "");
+  }
+
+  function connectorLastCallSummary(status) {
+    var call = status && status.connector ? status.connector.lastToolCall : null;
+    if (!call) return "None";
+    return call.name + " " + (call.ok ? "ok" : "failed");
+  }
+
+  function setConnectorRows(rows) {
+    if (!connectorStatusListEl) return;
+    clearElement(connectorStatusListEl);
+    for (var i = 0; i < rows.length; i++) {
+      var row = document.createElement("div");
+      row.className = "connector-status-row" + (rows[i].tone ? " " + rows[i].tone : "");
+      row.setAttribute("data-connector-status", rows[i].key);
+      var label = document.createElement("span");
+      label.className = "connector-status-label";
+      label.textContent = rows[i].label;
+      var value = document.createElement("span");
+      value.className = "connector-status-value";
+      value.textContent = rows[i].value;
+      row.appendChild(label);
+      row.appendChild(value);
+      connectorStatusListEl.appendChild(row);
+    }
+  }
+
+  function renderConnectorStatus() {
+    var status = connectorStatus;
+    if (!status) {
+      setConnectorRows([
+        { key: "state", label: "State", value: "Not checked", tone: "" },
+        { key: "endpoint", label: "Endpoint", value: getConnectorBaseUrl(), tone: "" },
+        { key: "writes", label: "Writes", value: "Unknown", tone: "" }
+      ]);
+      if (connectorEmergencyDisableButton) connectorEmergencyDisableButton.disabled = true;
+      return;
+    }
+    var connector = status.connector || {};
+    var online = connector.connected !== false;
+    var tunnel = connector.publicUrlConfigured ? "Tunnel " + (connector.publicUrlOrigin || "configured") : "Local only";
+    var writes = connector.emergencyDisabled ? "Emergency disabled" : (connector.writeActionsEnabled ? "Enabled" : "Disabled");
+    setConnectorRows([
+      { key: "state", label: "State", value: online ? "Connected" : "Offline", tone: online ? "ready" : "error" },
+      { key: "endpoint", label: "Endpoint", value: tunnel, tone: connector.publicUrlConfigured ? "warning" : "" },
+      { key: "tools", label: "Tools", value: connectorToolSummary(status), tone: "" },
+      { key: "last", label: "Last call", value: connectorLastCallSummary(status), tone: "" },
+      { key: "writes", label: "Writes", value: writes, tone: connector.writeActionsEnabled ? "warning" : "" },
+      { key: "emergency", label: "Emergency", value: connector.emergencyDisabled ? "Active" : "Ready", tone: connector.emergencyDisabled ? "error" : "" }
+    ]);
+    if (connectorEmergencyDisableButton) connectorEmergencyDisableButton.disabled = connectorStatusInFlight || !online || connector.emergencyDisabled;
+  }
+
+  function refreshConnectorStatus() {
+    if (connectorStatusInFlight) return;
+    connectorStatusInFlight = true;
+    if (connectorStatusButton) connectorStatusButton.textContent = "Checking...";
+    if (connectorEmergencyDisableButton) connectorEmergencyDisableButton.disabled = true;
+    connectorRequest("GET", "/status?checkBridge=0", null, function (error, response) {
+      connectorStatusInFlight = false;
+      if (connectorStatusButton) connectorStatusButton.textContent = "Refresh";
+      if (error) {
+        connectorStatus = {
+          connector: {
+            connected: false,
+            publicUrlConfigured: false,
+            exposedToolsSnapshot: [],
+            lastToolCall: null,
+            writeActionsEnabled: false,
+            emergencyDisabled: false
+          }
+        };
+        renderConnectorStatus();
+        return;
+      }
+      connectorStatus = response && response.status ? response.status : null;
+      renderConnectorStatus();
+    });
+  }
+
+  function emergencyDisableConnector() {
+    if (connectorStatusInFlight) return;
+    connectorStatusInFlight = true;
+    connectorEmergencyDisableButton.disabled = true;
+    connectorEmergencyDisableButton.textContent = "Disabling...";
+    connectorRequest("POST", "/emergency-disable", {}, function (error, response) {
+      connectorStatusInFlight = false;
+      connectorEmergencyDisableButton.textContent = "Disable writes";
+      if (error) {
+        log("Could not disable connector writes: " + error.message);
+        renderConnectorStatus();
+        return;
+      }
+      connectorStatus = response && response.status ? response.status : connectorStatus;
+      renderConnectorStatus();
+    });
   }
 
   function optionLabel(agent) {
@@ -2262,6 +2414,8 @@
   diagnosticsButton.addEventListener("click", toggleDiagnostics);
   reloadButton.addEventListener("click", reloadApp);
   collapseSidebarButton.addEventListener("click", toggleSidebarCollapsed);
+  if (connectorStatusButton) connectorStatusButton.addEventListener("click", refreshConnectorStatus);
+  if (connectorEmergencyDisableButton) connectorEmergencyDisableButton.addEventListener("click", emergencyDisableConnector);
   forEachNode(providerTabEls, function (button) {
     button.addEventListener("click", function () {
       selectProviderGroup(getData(button, "provider-group"));
@@ -2330,6 +2484,8 @@
   setAgentDetails(null);
   updateProviderUi(null);
   renderProviderSelfTest();
+  renderConnectorStatus();
+  setTimeout(refreshConnectorStatus, 300);
   restoreTranscriptHistory();
   setStatus("Disconnected", false);
   updateChatAvailability();

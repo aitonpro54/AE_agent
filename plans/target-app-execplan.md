@@ -42,7 +42,7 @@
 - [x] Milestone 72: Parallel AI Paths - OpenRouter UI restore.
 - [x] Milestone 73: ChatGPT Connector read-only skeleton.
 - [x] Milestone 74: JSX Lab candidate quarantine and checks.
-- [ ] Milestone 75: Gated JSX Lab run, promotion hooks and CEP connector status.
+- [x] Milestone 75: Gated JSX Lab run, promotion hooks and CEP connector status.
 - [ ] Milestone 76: Project Intent Memory.
 - [ ] Milestone 77: Plan confidence and risk classification.
 - [ ] Milestone 78: Plan repair loop.
@@ -432,6 +432,9 @@
 - 2026-05-15: The ChatGPT connector supports an optional `AE_CHATGPT_CONNECTOR_TOKEN` for local `/mcp` development without committing connector secrets, tunnel URLs, or captured traffic.
 - 2026-05-15: JSX Lab must use candidate quarantine and static/risk checks before any execution; ChatGPT must never receive a direct raw `run_extendscript` string path that bypasses candidate reports, checkpoint/edit-session protection and read-back verification.
 - 2026-05-15: Milestone 74 keeps ChatGPT JSX Lab local-only: `propose_extendscript_candidate` is disclosed as a non-read-only quarantine write under ignored `logs/solution-candidates/jsx-lab/`, `check_extendscript_candidate` returns static non-execution reports, bridge inspection tools remain read-only, and raw `run_extendscript` / `run_extendscript_file` stay unexposed.
+- 2026-05-15: `run_extendscript_candidate` remains opt-in disabled unless `AE_CHATGPT_CONNECTOR_WRITE_ACTIONS=1`; even when enabled it only runs saved accepted candidates through `/agents/plan/run` with `confirm:true`, hash confirmation, generated-prefix evidence, `allowRawExtendscript:true` inside the bridge runner, checkpoint/edit-session protection and read-back allowlist calls.
+- 2026-05-15: `promote_solution_candidate` creates only ignored `solution-candidate-report.v1` promotion hooks. It does not write `registry/solutions.json`, does not make candidates planner-visible and blocks direct `candidate -> tool` promotion; tracked promotion remains explicit review through `solution-promotion-helper.js`.
+- 2026-05-15: The CEP ChatGPT Connector status card polls the local connector `/status` endpoint for local/tunnel state, exposed tool snapshot, last tool call and write-action state; emergency disable blocks connector local write actions until restart.
 
 ## Validation
 
@@ -1126,3 +1129,32 @@
   - Passed `node scripts\bridge-only-smoke-test.js`.
   - Passed `node scripts\smoke-test.js`.
   - Live ChatGPT connector/Tunnel checks, live OpenRouter calls, live CEP smokes and live AE mutations were not run because Milestone 74 is offline connector/quarantine work and those paths remain explicit-approval-gated.
+- Milestone 75:
+  - Added `run_extendscript_candidate` as a gated JSX Lab wrapper for saved accepted candidates only.
+  - The run gate requires explicit confirmation, mutation opt-in, auto edit-session protection, candidate hash confirmation, generated-prefix evidence and read-back tool calls for real runs.
+  - Candidate execution routes through the existing bridge `/agents/plan/run` safety model with `run_extendscript_file`, `allowRawExtendscript:true`, checkpoint/edit-session protection and bridge mutation verification; direct raw `run_extendscript` / `run_extendscript_file` are still not exposed as ChatGPT connector tools.
+  - Added `promote_solution_candidate`, which writes only ignored `solution-candidate-report.v1` promotion hooks and blocks direct `candidate -> tool` promotion.
+  - Added connector runtime status, `/status`, emergency write-disable, local/tunnel status fields, exposed tool snapshot and last-tool-call tracking.
+  - Added compact CEP ChatGPT Connector status UI with connected/offline state, local/tunnel state, exposed tools, last call, write state and emergency disable.
+  - Synchronized updated `index.html`, `panel.js` and `style.css` into the installed CEP extension with `node scripts\cep-sync-health.js --sync --check`.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check chatgpt-connector\jsx-lab.js`.
+  - Passed `node --check chatgpt-connector\server.js`.
+  - Passed `node --check scripts\chatgpt-connector-smoke.js`.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\chatgpt-connector-smoke.js`; fake bridge coverage verified gated run payloads, read-back allowlist preflight, disabled write-action behavior, emergency disable and promotion hooks without AE mutations.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed targeted live CEP smoke `node scripts\cep-panel-cdp-smoke.js connector-status-smoke` with fake connector data; it verified status rows and emergency disable UI without a live tunnel.
+  - Passed live read-only CEP smoke `node scripts\cep-panel-cdp-smoke.js smoke` through Local/Ollama; it planned, dry-ran and ran a read-only bridge-status plan with 0 mutating steps.
+  - Did not run live ChatGPT connector/Tunnel checks, live OpenRouter calls, external OpenAI CLI planner smokes or live AE mutation smokes because those remain explicit-approval-gated.

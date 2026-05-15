@@ -120,6 +120,72 @@ section {
   color: #76e4a8;
 }
 
+.connector-section {
+  border-bottom: 1px solid #353535;
+  gap: 10px;
+}
+
+.connector-header {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.connector-header h2 {
+  margin: 0;
+}
+
+.connector-header button,
+.connector-section > button {
+  font-size: 11px;
+  min-height: 28px;
+}
+
+.connector-status-list {
+  border: 1px solid #34383b;
+  display: grid;
+}
+
+.connector-status-row {
+  align-items: start;
+  border-top: 1px solid #34383b;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: minmax(62px, 0.8fr) minmax(0, 1.2fr);
+  padding: 7px 8px;
+}
+
+.connector-status-row:first-child {
+  border-top: 0;
+}
+
+.connector-status-label {
+  color: #aeb7bd;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.connector-status-value {
+  color: #ececec;
+  font-size: 11px;
+  line-height: 1.3;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.connector-status-row.ready .connector-status-value {
+  color: #76e4a8;
+}
+
+.connector-status-row.warning .connector-status-value {
+  color: #ffb45f;
+}
+
+.connector-status-row.error .connector-status-value {
+  color: #ff7777;
+}
+
 .provider-section {
   gap: 14px;
 }

@@ -40,6 +40,15 @@
           <p id="bridgeHelp" class="bridge-help">Waiting for the local bridge.</p>
         </section>
 
+        <section class="connector-section">
+          <div class="connector-header">
+            <h2>ChatGPT Connector</h2>
+            <button id="connectorStatusButton">Refresh</button>
+          </div>
+          <div id="connectorStatusList" class="connector-status-list" aria-live="polite"></div>
+          <button id="connectorEmergencyDisableButton">Disable writes</button>
+        </section>
+
         <section class="provider-section">
           <h2>AI Provider</h2>
           <div id="providerTabs" class="provider-tabs">

@@ -68,6 +68,96 @@ function listen(server) {
   });
 }
 
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    req.setEncoding("utf8");
+    req.on("data", (chunk) => {
+      body += chunk;
+    });
+    req.on("end", () => {
+      try {
+        resolve(body ? JSON.parse(body) : {});
+      } catch (error) {
+        reject(error);
+      }
+    });
+    req.on("error", reject);
+  });
+}
+
+function writeJson(res, status, body) {
+  const text = JSON.stringify(body || {});
+  res.writeHead(status, {
+    "content-type": "application/json; charset=utf-8",
+    "content-length": Buffer.byteLength(text)
+  });
+  res.end(text);
+}
+
+function createFakeBridgeServer(captured) {
+  return http.createServer(async (req, res) => {
+    if (req.url === "/health" && req.method === "GET") {
+      writeJson(res, 200, {
+        ok: true,
+        server: "fake-ae-bridge",
+        version: "1.0.0",
+        panelConnected: true,
+        pendingCommands: 0,
+        inflightCommands: 0
+      });
+      return;
+    }
+
+    if (req.url === "/agents/plan/run" && req.method === "POST") {
+      const body = await readBody(req);
+      captured.planRun = body;
+      writeJson(res, 200, {
+        ok: true,
+        run: {
+          ok: true,
+          dryRun: body.dryRun === true,
+          safety: {
+            status: body.dryRun === true ? "dry-run" : "protected",
+            protection: "auto_edit_session",
+            editSessionFinished: body.dryRun !== true
+          },
+          steps: [
+            {
+              index: 1,
+              tool: "run_extendscript_file",
+              status: body.dryRun === true ? "ready" : "completed",
+              args: body.plan && body.plan.steps && body.plan.steps[0] ? body.plan.steps[0].args : {}
+            }
+          ]
+        }
+      });
+      return;
+    }
+
+    if (req.url === "/tools/call" && req.method === "POST") {
+      const body = await readBody(req);
+      captured.readBack = body;
+      writeJson(res, 200, {
+        ok: true,
+        tool: body.name,
+        result: {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              comp: { name: "Codex Smoke Comp", numLayers: 1 },
+              selectedLayers: []
+            })
+          }]
+        }
+      });
+      return;
+    }
+
+    writeJson(res, 404, { ok: false, error: "not found" });
+  });
+}
+
 function close(server) {
   return new Promise((resolve, reject) => {
     server.close((error) => {
@@ -94,7 +184,9 @@ function assertReadOnlyTools(tools) {
   const names = tools.map((tool) => tool.name);
   const candidateTools = [
     "propose_extendscript_candidate",
-    "check_extendscript_candidate"
+    "check_extendscript_candidate",
+    "run_extendscript_candidate",
+    "promote_solution_candidate"
   ];
   const banned = [
     "run_extendscript",
@@ -145,9 +237,9 @@ function assertReadOnlyTools(tools) {
 
   for (const tool of tools) {
     assert(tool.inputSchema && tool.inputSchema.type === "object", `Expected object inputSchema for ${tool.name}`);
-    if (tool.name === "propose_extendscript_candidate") {
-      assert(tool.annotations && tool.annotations.readOnlyHint === false, "Expected propose_extendscript_candidate to disclose local quarantine write.");
-      assert(tool.annotations && tool.annotations.idempotentHint === false, "Expected propose_extendscript_candidate to be non-idempotent.");
+    if (["propose_extendscript_candidate", "run_extendscript_candidate", "promote_solution_candidate"].includes(tool.name)) {
+      assert(tool.annotations && tool.annotations.readOnlyHint === false, `Expected ${tool.name} to disclose local write/gated mutation behavior.`);
+      assert(tool.annotations && tool.annotations.idempotentHint === false, `Expected ${tool.name} to be non-idempotent.`);
     } else {
       assert(tool.annotations && tool.annotations.readOnlyHint === true, `Expected readOnlyHint:true for ${tool.name}`);
     }
@@ -164,8 +256,11 @@ async function main() {
     connectorToken: "connector-smoke-token",
     timeoutMs: 750,
     candidateDir,
+    solutionCandidateDir: candidateDir,
     maxCandidateJsxBytes: 768
   });
+  let fakeBridge = null;
+  let runServer = null;
   const port = await listen(server);
   const headers = { authorization: "Bearer connector-smoke-token" };
 
@@ -174,7 +269,14 @@ async function main() {
     assert(health.status === 200, `Expected health HTTP 200, got ${health.status}`);
     assert(health.body.server === SERVER_NAME, "Expected health server name.");
     assert(health.body.version === SERVER_VERSION, "Expected health server version.");
-    assert(health.body.mode === "read-only-bridge-with-jsx-lab-quarantine", "Expected JSX Lab quarantine health mode.");
+    assert(health.body.mode === "read-only-bridge-with-gated-jsx-lab", "Expected gated JSX Lab health mode.");
+    assert(health.body.writeActionsEnabled === false, "Expected gated AE write actions disabled by default.");
+
+    const httpStatus = await requestJson(port, "/status?checkBridge=0");
+    assert(httpStatus.status === 200 && httpStatus.body.ok === true, "Expected public connector status endpoint.");
+    assert(httpStatus.body.status.connector.publicUrlConfigured === false, "Expected local-only status by default.");
+    assert(httpStatus.body.status.connector.writeActionsEnabled === false, "Expected write actions disabled in status.");
+    assert(httpStatus.body.status.connector.exposedToolsSnapshot.some((tool) => tool.name === "run_extendscript_candidate"), "Expected status tools snapshot.");
 
     const unauthorized = await requestJson(port, "/mcp", {
       jsonrpc: "2.0",
@@ -204,6 +306,8 @@ async function main() {
     assert(status.structuredContent.connector.writeToolsExposed === false, "Expected write tools disabled.");
     assert(status.structuredContent.connector.bridgeWriteToolsExposed === false, "Expected bridge write tools disabled.");
     assert(status.structuredContent.connector.localQuarantineWrites === true, "Expected local quarantine candidate writes to be disclosed.");
+    assert(status.structuredContent.connector.gatedCandidateRunExposed === true, "Expected gated candidate run tool disclosure.");
+    assert(status.structuredContent.connector.writeActionsEnabled === false, "Expected gated AE writes disabled in connector status.");
     assert(status.structuredContent.connector.rawExtendscriptExposed === false, "Expected raw ExtendScript disabled.");
     assert(status.structuredContent.connector.openAiApiCalls === false, "Expected no connector-side OpenAI API calls.");
     assert(status.structuredContent.bridge.checked === true, "Expected bridge health check attempt.");
@@ -228,6 +332,7 @@ async function main() {
           "#target aftereffects",
           "app.beginUndoGroup(\"Codex Smoke Label\");",
           "var labelText = \"Codex Smoke\";",
+          "var generatedPrefix = \"Codex Smoke\";",
           "app.endUndoGroup();"
         ].join("\n")
       }
@@ -260,6 +365,153 @@ async function main() {
     assert(checkReport.structuredContent.safety.executed === false, "Check report must not execute JSX.");
     assert(checkReport.structuredContent.safety.bridgeCalled === false, "Check report must not call the bridge.");
     assert(checkReport.structuredContent.safety.aeMutated === false, "Check report must not mutate AE.");
+
+    const blockedRun = await callRpc(port, 61, "tools/call", {
+      name: "run_extendscript_candidate",
+      arguments: {
+        metadataPath: savedCandidate.structuredContent.metadataPath,
+        confirm: true,
+        allowMutations: true,
+        autoEditSession: true,
+        confirmedJsxSha256: checkReport.structuredContent.jsxSha256,
+        expectedGeneratedPrefix: "Codex Smoke",
+        readBackToolCalls: [{ name: "get_active_comp", arguments: {} }],
+        dryRun: false
+      }
+    }, headers);
+    assert(blockedRun.isError === true, "Expected run_extendscript_candidate to be disabled without write-actions opt-in.");
+    assert(blockedRun.content[0].text.includes("AE_CHATGPT_CONNECTOR_WRITE_ACTIONS=1"), "Expected write-actions opt-in guidance.");
+
+    const promotionHook = await callRpc(port, 62, "tools/call", {
+      name: "promote_solution_candidate",
+      arguments: {
+        metadataPath: savedCandidate.structuredContent.metadataPath,
+        targetStatus: "recipe",
+        promotionRationale: "Smoke verifies JSX Lab candidate can enter Solution Library review without registry writes.",
+        verificationEvidence: ["Static check accepted; gated run remains separately required."]
+      }
+    }, headers);
+    assert(!promotionHook.isError, "Expected promote_solution_candidate to create a quarantine promotion hook.");
+    assert(promotionHook.structuredContent.status === "promotion-hook-created", "Expected promotion hook status.");
+    assert(promotionHook.structuredContent.safety.writesTrackedRegistry === false, "Promotion hook must not write tracked registry.");
+    assert(fs.existsSync(path.join(PROJECT_ROOT, promotionHook.structuredContent.solutionCandidateReportPath)), "Expected solution candidate report artifact.");
+
+    const toolPromotion = await callRpc(port, 63, "tools/call", {
+      name: "promote_solution_candidate",
+      arguments: {
+        metadataPath: savedCandidate.structuredContent.metadataPath,
+        targetStatus: "tool",
+        promotionRationale: "Direct tool promotion should be blocked."
+      }
+    }, headers);
+    assert(toolPromotion.isError === true, "Expected direct candidate-to-tool promotion to be blocked.");
+    assert(toolPromotion.content[0].text.includes("direct candidate-to-tool promotion is not allowed"), "Expected lifecycle error.");
+
+    const captured = {};
+    fakeBridge = createFakeBridgeServer(captured);
+    const fakeBridgePort = await listen(fakeBridge);
+    runServer = createServer({
+      bridgeUrl: `http://127.0.0.1:${fakeBridgePort}`,
+      bridgeToken: "fake-bridge-token",
+      connectorToken: "connector-smoke-token",
+      timeoutMs: 1500,
+      candidateDir,
+      solutionCandidateDir: candidateDir,
+      maxCandidateJsxBytes: 768,
+      writeActionsEnabled: true
+    });
+    const runPort = await listen(runServer);
+    const runStatus = await callRpc(runPort, 64, "tools/call", {
+      name: "get_connector_status",
+      arguments: { checkBridge: true }
+    }, headers);
+    assert(runStatus.structuredContent.connector.writeActionsEnabled === true, "Expected write actions enabled in opted-in run server.");
+    assert(runStatus.structuredContent.bridge.ok === true, "Expected fake bridge health to be reachable.");
+
+    const missingConfirm = await callRpc(runPort, 65, "tools/call", {
+      name: "run_extendscript_candidate",
+      arguments: {
+        metadataPath: savedCandidate.structuredContent.metadataPath,
+        allowMutations: true,
+        autoEditSession: true,
+        confirmedJsxSha256: checkReport.structuredContent.jsxSha256,
+        expectedGeneratedPrefix: "Codex Smoke",
+        dryRun: true
+      }
+    }, headers);
+    assert(missingConfirm.isError === true, "Expected explicit confirm gate.");
+    assert(missingConfirm.content[0].text.includes("confirm:true"), "Expected confirm gate error.");
+
+    const badPrefix = await callRpc(runPort, 66, "tools/call", {
+      name: "run_extendscript_candidate",
+      arguments: {
+        metadataPath: savedCandidate.structuredContent.metadataPath,
+        confirm: true,
+        allowMutations: true,
+        autoEditSession: true,
+        confirmedJsxSha256: checkReport.structuredContent.jsxSha256,
+        expectedGeneratedPrefix: "Missing Prefix",
+        dryRun: true
+      }
+    }, headers);
+    assert(badPrefix.isError === true, "Expected generated prefix gate.");
+    assert(badPrefix.content[0].text.includes("expectedGeneratedPrefix"), "Expected prefix gate error.");
+
+    const badReadBack = await callRpc(runPort, 661, "tools/call", {
+      name: "run_extendscript_candidate",
+      arguments: {
+        metadataPath: savedCandidate.structuredContent.metadataPath,
+        confirm: true,
+        allowMutations: true,
+        autoEditSession: true,
+        confirmedJsxSha256: checkReport.structuredContent.jsxSha256,
+        expectedGeneratedPrefix: "Codex Smoke",
+        readBackToolCalls: [{ name: "create_text_layer", arguments: {} }],
+        dryRun: false
+      }
+    }, headers);
+    assert(badReadBack.isError === true, "Expected read-back allowlist gate.");
+    assert(badReadBack.content[0].text.includes("read-only allowlist"), "Expected read-back allowlist error.");
+    assert(!captured.planRun, "Invalid read-back gate must block before bridge plan run.");
+
+    const runCandidate = await callRpc(runPort, 67, "tools/call", {
+      name: "run_extendscript_candidate",
+      arguments: {
+        metadataPath: savedCandidate.structuredContent.metadataPath,
+        confirm: true,
+        allowMutations: true,
+        autoEditSession: true,
+        confirmedJsxSha256: checkReport.structuredContent.jsxSha256,
+        expectedGeneratedPrefix: "Codex Smoke",
+        readBackToolCalls: [{ name: "get_active_comp", arguments: {} }],
+        dryRun: false
+      }
+    }, headers);
+    assert(!runCandidate.isError, "Expected gated candidate run through fake bridge.");
+    assert(runCandidate.structuredContent.status === "completed", "Expected completed gated run status.");
+    assert(runCandidate.structuredContent.safety.bridgePlanRunnerRequired === true, "Expected bridge plan runner safety metadata.");
+    assert(runCandidate.structuredContent.safety.checkpointEditSessionRequired === true, "Expected checkpoint/edit-session safety metadata.");
+    assert(runCandidate.structuredContent.safety.readBackCompleted === true, "Expected read-back verification to run.");
+    assert(runCandidate.structuredContent.bridgePlanRun.safety.protection === "auto_edit_session", "Expected protected fake run.");
+    assert(captured.planRun.allowRawExtendscript === true, "Expected connector wrapper to enable raw ExtendScript only inside plan runner.");
+    assert(captured.planRun.autoEditSession === true, "Expected auto edit session in bridge payload.");
+    assert(captured.planRun.plan.steps[0].tool === "run_extendscript_file", "Expected file-based candidate execution.");
+    assert(captured.planRun.plan.steps[0].args.filePath === savedCandidate.structuredContent.jsxPath, "Expected saved candidate JSX path.");
+    assert(captured.planRun.plan.steps[0].args.verifyAfter === true, "Expected bridge verification enabled.");
+    assert(captured.readBack.name === "get_active_comp", "Expected configured read-back tool call.");
+    assert(!JSON.stringify(runCandidate.structuredContent).includes("app.beginUndoGroup"), "Run result must not return raw JSX.");
+
+    const disabled = await requestJson(runPort, "/emergency-disable", {}, headers);
+    assert(disabled.status === 200 && disabled.body.status.connector.emergencyDisabled === true, "Expected emergency disable endpoint.");
+    const blockedAfterEmergency = await callRpc(runPort, 68, "tools/call", {
+      name: "propose_extendscript_candidate",
+      arguments: {
+        title: "Blocked after emergency",
+        intentSummary: "Should not write after emergency disable.",
+        jsx: "return 1;"
+      }
+    }, headers);
+    assert(blockedAfterEmergency.isError === true, "Expected emergency disable to block local write tools.");
 
     const unsafeCandidate = await callRpc(port, 7, "tools/call", {
       name: "propose_extendscript_candidate",
@@ -295,8 +547,10 @@ async function main() {
     assert(badPath.isError === true, "Expected absolute metadata path to be rejected.");
     assert(badPath.content[0].text.includes("relative quarantine paths"), "Expected path hygiene error.");
 
-    console.log(`ChatGPT connector smoke passed with ${listed.tools.length} connector tools and JSX Lab quarantine checks.`);
+    console.log(`ChatGPT connector smoke passed with ${listed.tools.length} connector tools, gated JSX Lab run checks, and promotion hooks.`);
   } finally {
+    if (runServer) await close(runServer);
+    if (fakeBridge) await close(fakeBridge);
     await close(server);
     const allowedCleanupRoot = path.join(PROJECT_ROOT, "logs", "solution-candidates");
     if (candidateDir.startsWith(allowedCleanupRoot)) {

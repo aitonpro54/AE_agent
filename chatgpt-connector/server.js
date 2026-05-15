@@ -7,6 +7,8 @@ const {
   DEFAULT_CANDIDATE_DIR,
   DEFAULT_MAX_JSX_BYTES,
   checkExtendscriptCandidate,
+  prepareExtendscriptCandidateRun,
+  promoteSolutionCandidateHook,
   proposeExtendscriptCandidate,
   repoRelative
 } = require("./jsx-lab");
@@ -21,6 +23,7 @@ const DEFAULT_BRIDGE_PORT = 3456;
 const DEFAULT_BRIDGE_TOKEN = "codex-ae-local";
 const DEFAULT_TIMEOUT_MS = 10000;
 const DEFAULT_BODY_LIMIT_BYTES = 1024 * 1024;
+const CONNECTOR_MODE = "read-only-bridge-with-gated-jsx-lab";
 
 const READ_ONLY_BRIDGE_TOOLS = [
   {
@@ -220,6 +223,65 @@ const LOCAL_TOOLS = [
       openWorldHint: false,
       idempotentHint: true
     }
+  },
+  {
+    name: "run_extendscript_candidate",
+    title: "Run checked ExtendScript candidate",
+    description: "Run a saved JSX Lab candidate only through the bridge Agent plan runner after explicit confirmation, accepted static checks, checkpoint/edit-session protection, generated-prefix evidence, and read-back configuration.",
+    inputSchema: objectSchema({
+      metadataPath: stringField("Relative metadata path returned by propose_extendscript_candidate."),
+      confirm: booleanField("Must be true to confirm this gated candidate run."),
+      allowMutations: booleanField("Must be true. The bridge plan runner still enforces mutation gates."),
+      autoEditSession: booleanField("Must be true so the bridge creates protected checkpoint/edit-session coverage when needed."),
+      confirmedJsxSha256: stringField("Candidate JSX SHA-256 copied from check_extendscript_candidate."),
+      expectedGeneratedPrefix: stringField("Generated item/text prefix expected in the JSX source and later read-back evidence."),
+      dryRun: booleanField("When true, validate through the bridge plan runner without executing. Defaults to true."),
+      timeoutMs: numberField("Optional ExtendScript execution timeout in milliseconds."),
+      requestId: stringField("Optional stable request id for the bridge plan runner."),
+      readBackToolCalls: {
+        type: "array",
+        description: "Required for real runs. Read-only bridge tool calls to verify the result after execution.",
+        items: objectSchema({
+          name: stringField("Read-only bridge tool name, such as get_active_comp or get_comp_details."),
+          arguments: {
+            type: "object",
+            description: "Arguments for the read-only bridge tool."
+          }
+        }, ["name"])
+      }
+    }, ["metadataPath", "confirm", "allowMutations", "autoEditSession", "confirmedJsxSha256", "expectedGeneratedPrefix"]),
+    local: true,
+    handler: "runExtendscriptCandidate",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: false,
+      idempotentHint: false
+    }
+  },
+  {
+    name: "promote_solution_candidate",
+    title: "Prepare solution promotion hook",
+    description: "Create an ignored Solution Library candidate report from a JSX Lab candidate for explicit human review. This never writes the tracked registry and blocks direct candidate-to-tool promotion.",
+    inputSchema: objectSchema({
+      metadataPath: stringField("Relative metadata path returned by propose_extendscript_candidate."),
+      targetStatus: enumField(["recipe", "typed-tool-candidate"], "Tracked lifecycle status to prepare for explicit review."),
+      promotionRationale: stringField("Short rationale for why this candidate merits review."),
+      affectedTargets: stringArrayField("Optional compact target summary lines."),
+      affectedTargetSummary: stringField("Optional one-line target summary."),
+      runSummary: stringField("Optional summary of a prior gated candidate run."),
+      verificationSummary: stringField("Optional read-back summary from prior verification."),
+      verificationEvidence: stringArrayField("Optional compact read-back evidence lines."),
+      projectAssumptions: stringArrayField("Optional project assumptions, without absolute paths or secrets.")
+    }, ["metadataPath", "targetStatus", "promotionRationale"]),
+    local: true,
+    handler: "promoteSolutionCandidate",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      openWorldHint: false,
+      idempotentHint: false
+    }
   }
 ];
 
@@ -280,8 +342,19 @@ function getConfig(overrides) {
     timeoutMs: Number(overrides.timeoutMs || process.env.AE_CHATGPT_CONNECTOR_TIMEOUT_MS || DEFAULT_TIMEOUT_MS),
     bodyLimitBytes: Number(overrides.bodyLimitBytes || process.env.AE_CHATGPT_CONNECTOR_BODY_LIMIT_BYTES || DEFAULT_BODY_LIMIT_BYTES),
     candidateDir: overrides.candidateDir || process.env.AE_CHATGPT_CONNECTOR_CANDIDATE_DIR || DEFAULT_CANDIDATE_DIR,
-    maxCandidateJsxBytes: Number(overrides.maxCandidateJsxBytes || process.env.AE_CHATGPT_CONNECTOR_MAX_JSX_BYTES || DEFAULT_MAX_JSX_BYTES)
+    solutionCandidateDir: overrides.solutionCandidateDir || process.env.AE_CHATGPT_CONNECTOR_SOLUTION_CANDIDATE_DIR || "",
+    maxCandidateJsxBytes: Number(overrides.maxCandidateJsxBytes || process.env.AE_CHATGPT_CONNECTOR_MAX_JSX_BYTES || DEFAULT_MAX_JSX_BYTES),
+    publicUrl: overrides.publicUrl || process.env.AE_CHATGPT_CONNECTOR_PUBLIC_URL || process.env.AE_CHATGPT_CONNECTOR_TUNNEL_URL || "",
+    writeActionsEnabled: booleanConfig(overrides.writeActionsEnabled, process.env.AE_CHATGPT_CONNECTOR_WRITE_ACTIONS, false),
+    emergencyDisabled: booleanConfig(overrides.emergencyDisabled, process.env.AE_CHATGPT_CONNECTOR_EMERGENCY_DISABLE, false)
   };
+}
+
+function booleanConfig(overrideValue, envValue, fallback) {
+  if (typeof overrideValue === "boolean") return overrideValue;
+  const text = String(envValue === undefined || envValue === null ? "" : envValue).trim().toLowerCase();
+  if (!text) return Boolean(fallback);
+  return ["1", "true", "yes", "on"].includes(text);
 }
 
 function safeBridgeOrigin(bridgeUrl) {
@@ -291,6 +364,55 @@ function safeBridgeOrigin(bridgeUrl) {
   } catch (_error) {
     return "invalid-bridge-url";
   }
+}
+
+function safeOrigin(value) {
+  if (!value) return "";
+  try {
+    return new URL(value).origin;
+  } catch (_error) {
+    return "invalid-url";
+  }
+}
+
+function createRuntimeState(config) {
+  return {
+    startedAt: new Date().toISOString(),
+    emergencyDisabled: Boolean(config.emergencyDisabled),
+    lastToolCall: null
+  };
+}
+
+function effectiveWriteActionsEnabled(config, state) {
+  return Boolean(config.writeActionsEnabled) && !(state && state.emergencyDisabled);
+}
+
+function toolSnapshot() {
+  return ALL_TOOL_DESCRIPTORS.map((tool) => ({
+    name: tool.name,
+    readOnly: tool.annotations && tool.annotations.readOnlyHint === true,
+    bridgeProxy: READ_ONLY_TOOL_NAMES.includes(tool.name)
+  }));
+}
+
+function toolArgumentKeys(args) {
+  if (!args || typeof args !== "object" || Array.isArray(args)) return [];
+  return Object.keys(args).sort().slice(0, 20);
+}
+
+function recordToolCall(state, name, args, result, startedAt) {
+  if (!state) return;
+  state.lastToolCall = {
+    name,
+    calledAt: new Date().toISOString(),
+    ok: !(result && result.isError),
+    durationMs: Date.now() - startedAt,
+    argumentKeys: toolArgumentKeys(args)
+  };
+}
+
+function isWriteLikeLocalTool(tool) {
+  return Boolean(tool && tool.local && tool.annotations && tool.annotations.readOnlyHint === false);
 }
 
 function jsonResponse(res, statusCode, body) {
@@ -447,24 +569,33 @@ async function getBridgeHealth(config) {
   return response.body;
 }
 
-async function getConnectorStatus(config, args) {
+async function buildConnectorStatus(config, args, state) {
   const checkBridge = !args || args.checkBridge !== false;
   const status = {
     connector: {
       name: SERVER_NAME,
       version: SERVER_VERSION,
       protocolVersion: PROTOCOL_VERSION,
-      mode: "read-only-bridge-with-jsx-lab-quarantine",
+      connected: true,
+      mode: CONNECTOR_MODE,
       writeToolsExposed: false,
       bridgeWriteToolsExposed: false,
       rawExtendscriptExposed: false,
       localQuarantineWrites: true,
+      gatedCandidateRunExposed: true,
+      writeActionsEnabled: effectiveWriteActionsEnabled(config, state),
+      emergencyDisabled: Boolean(state && state.emergencyDisabled),
       openAiApiCalls: false,
+      localEndpoint: `http://${config.host}:${config.port}`,
+      publicUrlConfigured: Boolean(config.publicUrl),
+      publicUrlOrigin: safeOrigin(config.publicUrl),
       bridgeOrigin: safeBridgeOrigin(config.bridgeUrl),
       candidateLocation: repoRelative(config.candidateDir),
-      candidateTools: ["propose_extendscript_candidate", "check_extendscript_candidate"],
+      candidateTools: ["propose_extendscript_candidate", "check_extendscript_candidate", "run_extendscript_candidate", "promote_solution_candidate"],
       exposedToolCount: ALL_TOOL_DESCRIPTORS.length,
-      exposedBridgeTools: READ_ONLY_TOOL_NAMES
+      exposedBridgeTools: READ_ONLY_TOOL_NAMES,
+      exposedToolsSnapshot: toolSnapshot(),
+      lastToolCall: state && state.lastToolCall ? state.lastToolCall : null
     },
     bridge: {
       checked: checkBridge
@@ -492,39 +623,129 @@ async function getConnectorStatus(config, args) {
     }
   }
 
-  return toolResult(status, false);
+  return status;
 }
 
-async function callConnectorTool(config, name, args) {
+async function getConnectorStatus(config, args, state) {
+  return toolResult(await buildConnectorStatus(config, args, state), false);
+}
+
+function assertReadBackAllowed(call) {
+  if (!READ_ONLY_TOOL_NAMES.includes(call.name)) {
+    throw new Error(`read-back tool is not in the connector read-only allowlist: ${call.name}`);
+  }
+}
+
+async function callBridgeTool(config, name, args) {
+  const response = await bridgeRequest(config, "POST", "/tools/call", {
+    name,
+    arguments: args || {}
+  });
+  if (response.status !== 200 || !response.body || !response.body.ok) {
+    throw new Error(response.body && response.body.error ? response.body.error : `HTTP ${response.status}`);
+  }
+  return normalizeBridgeToolResult(name, response.body.result);
+}
+
+async function runExtendscriptCandidate(config, args) {
+  const prepared = prepareExtendscriptCandidateRun(config, args || {});
+  for (const call of prepared.readBackToolCalls) {
+    assertReadBackAllowed(call);
+  }
+  const response = await bridgeRequest(config, "POST", "/agents/plan/run", prepared.planRunPayload, Number(args && args.timeoutMs) || config.timeoutMs);
+  if (!response.body || !response.body.run) {
+    throw new Error(response.body && response.body.error ? response.body.error : `Bridge plan run failed with HTTP ${response.status}`);
+  }
+
+  const readBack = [];
+  if (!prepared.dryRun && response.body.ok === true) {
+    for (const call of prepared.readBackToolCalls) {
+      const result = await callBridgeTool(config, call.name, call.arguments);
+      readBack.push({
+        name: call.name,
+        ok: !result.isError,
+        result: result.structuredContent || null
+      });
+    }
+  }
+
+  return {
+    schemaVersion: prepared.schemaVersion,
+    status: response.body.ok ? (prepared.dryRun ? "dry-run-ready" : "completed") : "blocked",
+    candidateId: prepared.candidateId,
+    dryRun: prepared.dryRun,
+    metadataPath: prepared.paths.metadataPath,
+    jsxPath: prepared.paths.jsxPath,
+    jsxSha256: prepared.staticCheck.jsxSha256,
+    staticCheck: {
+      status: prepared.staticCheck.status,
+      summary: prepared.staticCheck.summary,
+      findings: prepared.staticCheck.findings
+    },
+    bridgePlanRun: response.body.run,
+    readBack,
+    safety: Object.assign({}, prepared.safety, {
+      bridgeCalled: true,
+      aeMutated: !prepared.dryRun && response.body.ok === true,
+      readBackCompleted: prepared.dryRun ? false : readBack.length > 0
+    })
+  };
+}
+
+async function callConnectorTool(config, state, name, args) {
+  const startedAt = Date.now();
   const tool = TOOL_BY_NAME.get(name);
   if (!tool) {
-    return toolResult(`Unknown or unavailable read-only connector tool: ${name}`, true);
+    const result = toolResult(`Unknown or unavailable read-only connector tool: ${name}`, true);
+    recordToolCall(state, name, args, result, startedAt);
+    return result;
   }
   if (tool.local) {
     try {
+      if (state && state.emergencyDisabled && isWriteLikeLocalTool(tool)) {
+        throw new Error("Connector emergency disable is active; local write actions are blocked until restart.");
+      }
       if (tool.handler === "proposeExtendscriptCandidate") {
-        return toolResult(proposeExtendscriptCandidate(config, args || {}), false);
+        const result = toolResult(proposeExtendscriptCandidate(config, args || {}), false);
+        recordToolCall(state, name, args, result, startedAt);
+        return result;
       }
       if (tool.handler === "checkExtendscriptCandidate") {
-        return toolResult(checkExtendscriptCandidate(config, args || {}), false);
+        const result = toolResult(checkExtendscriptCandidate(config, args || {}), false);
+        recordToolCall(state, name, args, result, startedAt);
+        return result;
       }
-      return await getConnectorStatus(config, args || {});
+      if (tool.handler === "runExtendscriptCandidate") {
+        if (!effectiveWriteActionsEnabled(config, state)) {
+          throw new Error("run_extendscript_candidate is disabled. Set AE_CHATGPT_CONNECTOR_WRITE_ACTIONS=1 and restart the connector to enable gated AE write actions.");
+        }
+        const result = toolResult(await runExtendscriptCandidate(config, args || {}), false);
+        recordToolCall(state, name, args, result, startedAt);
+        return result;
+      }
+      if (tool.handler === "promoteSolutionCandidate") {
+        const result = toolResult(promoteSolutionCandidateHook(config, args || {}), false);
+        recordToolCall(state, name, args, result, startedAt);
+        return result;
+      }
+      const result = await getConnectorStatus(config, args || {}, state);
+      recordToolCall(state, name, args, result, startedAt);
+      return result;
     } catch (error) {
-      return toolResult(`Connector local tool failed for ${name}: ${error.message || String(error)}`, true);
+      const result = toolResult(`Connector local tool failed for ${name}: ${error.message || String(error)}`, true);
+      recordToolCall(state, name, args, result, startedAt);
+      return result;
     }
   }
 
   try {
-    const response = await bridgeRequest(config, "POST", "/tools/call", {
-      name,
-      arguments: args || {}
-    });
-    if (response.status !== 200 || !response.body || !response.body.ok) {
-      return toolResult(`Bridge proxy failed for ${name}: ${response.body && response.body.error ? response.body.error : `HTTP ${response.status}`}`, true);
-    }
-    return normalizeBridgeToolResult(name, response.body.result);
+    const result = await callBridgeTool(config, name, args || {});
+    recordToolCall(state, name, args, result, startedAt);
+    return result;
   } catch (error) {
-    return toolResult(`Bridge proxy failed for ${name}: ${error.message || String(error)}`, true);
+    const result = toolResult(`Bridge proxy failed for ${name}: ${error.message || String(error)}`, true);
+    recordToolCall(state, name, args, result, startedAt);
+    return result;
   }
 }
 
@@ -538,7 +759,7 @@ function rpcError(id, code, message, data) {
   return { jsonrpc: "2.0", id, error };
 }
 
-async function handleRpcMessage(config, message) {
+async function handleRpcMessage(config, state, message) {
   if (!message || message.jsonrpc !== "2.0") {
     return rpcError(message && message.id !== undefined ? message.id : null, -32600, "Invalid JSON-RPC request.");
   }
@@ -565,27 +786,28 @@ async function handleRpcMessage(config, message) {
 
   if (message.method === "tools/call") {
     const params = message.params || {};
-    const result = await callConnectorTool(config, String(params.name || ""), params.arguments || {});
+    const result = await callConnectorTool(config, state, String(params.name || ""), params.arguments || {});
     return rpcResult(id, result);
   }
 
   return rpcError(id, -32601, `Method not found: ${message.method}`);
 }
 
-async function handleRpcBody(config, body) {
+async function handleRpcBody(config, state, body) {
   if (Array.isArray(body)) {
     const responses = [];
     for (const message of body) {
-      const response = await handleRpcMessage(config, message);
+      const response = await handleRpcMessage(config, state, message);
       if (response) responses.push(response);
     }
     return responses.length ? responses : undefined;
   }
-  return await handleRpcMessage(config, body);
+  return await handleRpcMessage(config, state, body);
 }
 
 function createServer(options) {
   const config = getConfig(options || {});
+  const state = createRuntimeState(config);
   return http.createServer(async (req, res) => {
     if (req.method === "OPTIONS") {
       jsonResponse(res, 204);
@@ -599,9 +821,33 @@ function createServer(options) {
         ok: true,
         server: SERVER_NAME,
         version: SERVER_VERSION,
-        mode: "read-only-bridge-with-jsx-lab-quarantine",
+        mode: CONNECTOR_MODE,
         bridgeOrigin: safeBridgeOrigin(config.bridgeUrl),
-        exposedToolCount: ALL_TOOL_DESCRIPTORS.length
+        exposedToolCount: ALL_TOOL_DESCRIPTORS.length,
+        writeActionsEnabled: effectiveWriteActionsEnabled(config, state),
+        emergencyDisabled: Boolean(state.emergencyDisabled)
+      });
+      return;
+    }
+
+    if (url.pathname === "/status" && req.method === "GET") {
+      const checkBridge = url.searchParams.get("checkBridge") !== "0";
+      jsonResponse(res, 200, {
+        ok: true,
+        status: await buildConnectorStatus(config, { checkBridge }, state)
+      });
+      return;
+    }
+
+    if (url.pathname === "/emergency-disable" && req.method === "POST") {
+      if (!hasValidConnectorToken(req, config)) {
+        jsonResponse(res, 401, { ok: false, error: "Unauthorized" });
+        return;
+      }
+      state.emergencyDisabled = true;
+      jsonResponse(res, 200, {
+        ok: true,
+        status: await buildConnectorStatus(config, { checkBridge: false }, state)
       });
       return;
     }
@@ -623,7 +869,7 @@ function createServer(options) {
 
     try {
       const body = await readJsonBody(req, config.bodyLimitBytes);
-      const response = await handleRpcBody(config, body);
+      const response = await handleRpcBody(config, state, body);
       if (response === undefined) {
         jsonResponse(res, 202, { ok: true });
         return;
@@ -641,6 +887,7 @@ function startServer(options) {
   server.listen(config.port, config.host, () => {
     process.stderr.write(`[${SERVER_NAME}] listening on http://${config.host}:${config.port}/mcp\n`);
     process.stderr.write(`[${SERVER_NAME}] bridge proxy target ${safeBridgeOrigin(config.bridgeUrl)}\n`);
+    process.stderr.write(`[${SERVER_NAME}] gated AE write actions ${config.writeActionsEnabled ? "enabled" : "disabled"}\n`);
   });
   server.on("error", (error) => {
     process.stderr.write(`[${SERVER_NAME}] server error: ${error.message}\n`);

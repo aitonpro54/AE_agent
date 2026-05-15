@@ -253,12 +253,14 @@ There is also a ready local example in `mcp-config.example.json`.
 
 This connector is intentionally not another AI provider. It does not call OpenAI APIs itself; ChatGPT is the model host, and the connector exposes a fixed read-only allowlist of bridge proxy tools with `readOnlyHint:true` annotations.
 
-The connector also exposes a local JSX Lab quarantine flow:
+The connector also exposes a local JSX Lab quarantine and gated-run flow:
 
 - `propose_extendscript_candidate` saves candidate metadata plus raw JSX under ignored `logs/solution-candidates/jsx-lab/`.
 - `check_extendscript_candidate` runs offline syntax, size, static risk, and denylist checks for a saved candidate.
+- `run_extendscript_candidate` is opt-in disabled by default. When `AE_CHATGPT_CONNECTOR_WRITE_ACTIONS=1` is set, it still only runs saved candidates through the bridge Agent plan runner with explicit confirmation, accepted static checks, hash confirmation, generated-prefix evidence, checkpoint/edit-session protection and read-back calls.
+- `promote_solution_candidate` writes an ignored Solution Library candidate report for human review; it does not write `registry/solutions.json` and blocks direct candidate-to-tool promotion.
 
-The JSX Lab flow does not execute JSX, does not call After Effects, does not call the bridge, and does not expose raw `run_extendscript` / `run_extendscript_file` to ChatGPT. Write/mutating AE bridge tools, provider chat, provider planning, and plan execution remain unavailable from the connector.
+The connector never exposes raw `run_extendscript` / `run_extendscript_file` as ChatGPT tools. General write/mutating AE bridge tools, provider chat, provider planning, and plan execution remain unavailable from the connector. The CEP panel shows a compact ChatGPT Connector status card for local/tunnel state, exposed tools, last tool call, write-action state and emergency write disable.
 
 Local start:
 
@@ -327,6 +329,12 @@ ChatGPT connector read-only MCP and JSX Lab quarantine coverage:
 
 ```powershell
 node .\scripts\chatgpt-connector-smoke.js
+```
+
+Targeted live CEP status-card smoke with fake connector data:
+
+```powershell
+node .\scripts\cep-panel-cdp-smoke.js connector-status-smoke
 ```
 
 Gemini and Claude provider API contract coverage:

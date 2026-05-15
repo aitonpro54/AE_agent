@@ -281,6 +281,14 @@ function stateExpression() {
     badge: document.getElementById("badge") ? document.getElementById("badge").textContent : "",
     bridgeHelp: document.getElementById("bridgeHelp") ? document.getElementById("bridgeHelp").textContent : "",
     bridgeHelpClass: document.getElementById("bridgeHelp") ? document.getElementById("bridgeHelp").className : "",
+    connectorStatusButtonText: document.getElementById("connectorStatusButton") ? document.getElementById("connectorStatusButton").textContent : "",
+    connectorEmergencyDisabled: document.getElementById("connectorEmergencyDisableButton") ? document.getElementById("connectorEmergencyDisableButton").disabled : null,
+    connectorRows: Array.from(document.querySelectorAll("#connectorStatusList .connector-status-row")).map((row) => ({
+      key: row.getAttribute("data-connector-status") || "",
+      className: row.className || "",
+      label: row.querySelector(".connector-status-label") ? row.querySelector(".connector-status-label").textContent : "",
+      value: row.querySelector(".connector-status-value") ? row.querySelector(".connector-status-value").textContent : ""
+    })),
     activeProviderGroup: (() => {
       const active = document.querySelector("#providerTabs .provider-tab.active");
       return active ? active.getAttribute("data-provider-group") || "" : "";
@@ -848,6 +856,110 @@ function restoreProviderSelfTestFakeExpression() {
   return `(function () {
     if (typeof window.__codexRestoreProviderSelfTestFake === "function") {
       return window.__codexRestoreProviderSelfTestFake();
+    }
+    return true;
+  })()`;
+}
+
+function installConnectorStatusFakeExpression() {
+  return `(function () {
+    var OriginalXHR = window.XMLHttpRequest;
+    var disabled = false;
+    function statusBody() {
+      return {
+        ok: true,
+        status: {
+          connector: {
+            connected: true,
+            publicUrlConfigured: true,
+            publicUrlOrigin: "https://connector-smoke.example",
+            writeActionsEnabled: !disabled,
+            emergencyDisabled: disabled,
+            exposedToolsSnapshot: [
+              { name: "get_connector_status", readOnly: true, bridgeProxy: false },
+              { name: "propose_extendscript_candidate", readOnly: false, bridgeProxy: false },
+              { name: "run_extendscript_candidate", readOnly: false, bridgeProxy: false },
+              { name: "promote_solution_candidate", readOnly: false, bridgeProxy: false },
+              { name: "get_active_comp", readOnly: true, bridgeProxy: true }
+            ],
+            lastToolCall: {
+              name: "check_extendscript_candidate",
+              ok: true,
+              calledAt: "2026-05-15T00:00:00.000Z"
+            }
+          }
+        }
+      };
+    }
+    function FakeXHR() {
+      this.readyState = 0;
+      this.status = 0;
+      this.responseText = "";
+      this.timeout = 0;
+      this._headers = {};
+      this.onreadystatechange = null;
+      this.onerror = null;
+      this.ontimeout = null;
+    }
+    FakeXHR.prototype.open = function (method, url, isAsync) {
+      this._method = method;
+      this._url = url;
+      this._async = isAsync !== false;
+    };
+    FakeXHR.prototype.setRequestHeader = function (name, value) {
+      this._headers[name] = value;
+    };
+    FakeXHR.prototype.send = function (body) {
+      var self = this;
+      var urlText = String(this._url || "");
+      if (urlText.indexOf(":8787/status") >= 0) {
+        setTimeout(function () {
+          self.readyState = 4;
+          self.status = 200;
+          self.responseText = JSON.stringify(statusBody());
+          if (typeof self.onreadystatechange === "function") self.onreadystatechange();
+        }, 25);
+        return;
+      }
+      if (urlText.indexOf(":8787/emergency-disable") >= 0) {
+        setTimeout(function () {
+          disabled = true;
+          self.readyState = 4;
+          self.status = 200;
+          self.responseText = JSON.stringify(statusBody());
+          if (typeof self.onreadystatechange === "function") self.onreadystatechange();
+        }, 25);
+        return;
+      }
+      var xhr = new OriginalXHR();
+      xhr.timeout = this.timeout;
+      xhr.onreadystatechange = function () {
+        self.readyState = xhr.readyState;
+        self.status = xhr.status;
+        self.responseText = xhr.responseText;
+        if (typeof self.onreadystatechange === "function") self.onreadystatechange();
+      };
+      xhr.onerror = function () { if (typeof self.onerror === "function") self.onerror(); };
+      xhr.ontimeout = function () { if (typeof self.ontimeout === "function") self.ontimeout(); };
+      xhr.open(this._method, this._url, this._async);
+      Object.keys(this._headers).forEach(function (name) {
+        xhr.setRequestHeader(name, self._headers[name]);
+      });
+      xhr.send(body);
+    };
+    window.XMLHttpRequest = FakeXHR;
+    window.__codexRestoreConnectorStatusFake = function () {
+      window.XMLHttpRequest = OriginalXHR;
+      return true;
+    };
+    return true;
+  })()`;
+}
+
+function restoreConnectorStatusFakeExpression() {
+  return `(function () {
+    if (typeof window.__codexRestoreConnectorStatusFake === "function") {
+      return window.__codexRestoreConnectorStatusFake();
     }
     return true;
   })()`;
@@ -1548,6 +1660,54 @@ async function diagnosticsSmoke() {
         await reloadActivePage(send);
       } catch (_error) {}
     }
+    ws.close();
+  }
+}
+
+async function connectorStatusSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  try {
+    await reloadActivePage(send);
+    await evaluate(send, installConnectorStatusFakeExpression());
+    const clicked = await evaluate(send, clickExpression("connectorStatusButton"));
+    if (!clicked || !clicked.ok) throw new Error("Connector status button was not clickable.");
+    const ready = await waitFor(send, "connector status rows", (state) => {
+      const rows = {};
+      for (const row of state.connectorRows || []) rows[row.key] = row;
+      return rows.state &&
+        rows.state.value === "Connected" &&
+        rows.endpoint &&
+        rows.endpoint.value.indexOf("https://connector-smoke.example") >= 0 &&
+        rows.tools &&
+        rows.tools.value.indexOf("run_extendscript_candidate") >= 0 &&
+        rows.last &&
+        rows.last.value.indexOf("check_extendscript_candidate ok") >= 0 &&
+        rows.writes &&
+        rows.writes.value === "Enabled";
+    }, 3000);
+
+    const emergencyClick = await evaluate(send, clickExpression("connectorEmergencyDisableButton"));
+    if (!emergencyClick || !emergencyClick.ok) throw new Error("Connector emergency disable button was not clickable.");
+    const disabled = await waitFor(send, "connector emergency disable", (state) => {
+      const rows = {};
+      for (const row of state.connectorRows || []) rows[row.key] = row;
+      return rows.writes &&
+        rows.writes.value === "Emergency disabled" &&
+        rows.emergency &&
+        rows.emergency.value === "Active" &&
+        state.connectorEmergencyDisabled === true;
+    }, 3000);
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      readyRows: ready.connectorRows,
+      emergencyRows: disabled.connectorRows
+    }, null, 2));
+  } finally {
+    try {
+      await evaluate(send, restoreConnectorStatusFakeExpression());
+    } catch (_error) {}
     ws.close();
   }
 }
@@ -2592,6 +2752,10 @@ async function main() {
   }
   if (command === "diagnostics-smoke") {
     await diagnosticsSmoke();
+    return;
+  }
+  if (command === "connector-status-smoke") {
+    await connectorStatusSmoke();
     return;
   }
   if (command === "send-button-smoke") {

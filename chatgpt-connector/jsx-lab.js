@@ -3,14 +3,22 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const {
+  writeSolutionCandidateReport
+} = require("../scripts/solution-candidate-report");
 
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const JSX_LAB_SCHEMA_VERSION = "jsx-lab-candidate.v1";
 const JSX_LAB_CHECK_SCHEMA_VERSION = "jsx-lab-check-report.v1";
+const JSX_LAB_RUN_SCHEMA_VERSION = "jsx-lab-run-request.v1";
+const JSX_LAB_PROMOTION_SCHEMA_VERSION = "jsx-lab-promotion-hook.v1";
 const DEFAULT_CANDIDATE_DIR = path.join(PROJECT_ROOT, "logs", "solution-candidates", "jsx-lab");
+const DEFAULT_SOLUTION_CANDIDATE_DIR = path.join(PROJECT_ROOT, "logs", "solution-candidates");
 const DEFAULT_MAX_JSX_BYTES = 64 * 1024;
 const MAX_TEXT_CHARS = 1200;
 const MAX_ARRAY_ITEMS = 16;
+const MAX_READ_BACK_CALLS = 4;
+const PROMOTION_TARGET_STATUSES = new Set(["recipe", "typed-tool-candidate"]);
 
 const SECRET_PATTERNS = [
   {
@@ -235,6 +243,10 @@ function candidateDirFromConfig(config) {
   return path.resolve(config.candidateDir || DEFAULT_CANDIDATE_DIR);
 }
 
+function solutionCandidateDirFromConfig(config) {
+  return path.resolve(config.solutionCandidateDir || DEFAULT_SOLUTION_CANDIDATE_DIR);
+}
+
 function resolveInsideCandidateDir(config, relativePath) {
   const candidateDir = candidateDirFromConfig(config);
   const input = String(relativePath || "");
@@ -253,6 +265,53 @@ function resolveInsideCandidateDir(config, relativePath) {
   }
 
   throw new Error("Candidate path is outside the JSX Lab quarantine.");
+}
+
+function uniqueStrings(values) {
+  const output = [];
+  for (const value of values || []) {
+    const text = String(value || "").trim();
+    if (text && !output.includes(text)) output.push(text);
+  }
+  return output;
+}
+
+function requireBoolean(raw, field) {
+  if (!raw || raw[field] !== true) {
+    throw new Error(`run_extendscript_candidate requires ${field}:true.`);
+  }
+}
+
+function requireString(raw, field) {
+  const text = String(raw && raw[field] !== undefined ? raw[field] : "").trim();
+  if (!text) {
+    throw new Error(`run_extendscript_candidate requires ${field}.`);
+  }
+  return text;
+}
+
+function normalizeTimeoutMs(value) {
+  const timeoutMs = Math.floor(Number(value || 0));
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return 30000;
+  return Math.max(1000, Math.min(120000, timeoutMs));
+}
+
+function normalizeReadBackToolCalls(raw) {
+  const source = Array.isArray(raw.readBackToolCalls) ? raw.readBackToolCalls : [];
+  if (source.length > MAX_READ_BACK_CALLS) {
+    throw new Error(`run_extendscript_candidate allows at most ${MAX_READ_BACK_CALLS} read-back tool call(s).`);
+  }
+  return source.map((item, index) => {
+    const call = isPlainObject(item) ? item : {};
+    const name = String(call.name || call.tool || "").trim();
+    if (!name) {
+      throw new Error(`readBackToolCalls[${index}].name is required.`);
+    }
+    return {
+      name,
+      arguments: isPlainObject(call.arguments) ? call.arguments : (isPlainObject(call.args) ? call.args : {})
+    };
+  });
 }
 
 function rawJsxFromArgs(args) {
@@ -509,12 +568,245 @@ function checkExtendscriptCandidate(config, args) {
   };
 }
 
+function loadCheckedCandidateForRun(config, args) {
+  const raw = isPlainObject(args) ? args : {};
+  if (!raw.metadataPath) {
+    throw new Error("run_extendscript_candidate requires metadataPath from propose_extendscript_candidate.");
+  }
+
+  const loaded = loadCandidateMetadata(config || {}, raw);
+  const source = fs.readFileSync(loaded.jsxPath, "utf8");
+  const checkReport = checkExtendscriptCandidate(config || {}, raw);
+  if (checkReport.status !== "accepted") {
+    throw new Error(`run_extendscript_candidate requires an accepted static check; current status is ${checkReport.status}.`);
+  }
+  return {
+    metadata: loaded.metadata,
+    metadataPath: loaded.metadataPath,
+    jsxPath: loaded.jsxPath,
+    source,
+    checkReport
+  };
+}
+
+function prepareExtendscriptCandidateRun(config, args) {
+  const raw = isPlainObject(args) ? args : {};
+  const dryRun = raw.dryRun !== false;
+  requireBoolean(raw, "confirm");
+  requireBoolean(raw, "allowMutations");
+  requireBoolean(raw, "autoEditSession");
+
+  const loaded = loadCheckedCandidateForRun(config || {}, raw);
+  const expectedHash = requireString(raw, "confirmedJsxSha256");
+  if (expectedHash !== loaded.checkReport.jsxSha256) {
+    throw new Error("confirmedJsxSha256 must match the saved candidate hash from check_extendscript_candidate.");
+  }
+
+  const expectedGeneratedPrefix = requireString(raw, "expectedGeneratedPrefix");
+  if (expectedGeneratedPrefix.length < 4) {
+    throw new Error("expectedGeneratedPrefix must be at least 4 characters.");
+  }
+  if (loaded.source.indexOf(expectedGeneratedPrefix) < 0) {
+    throw new Error("expectedGeneratedPrefix must appear in the saved JSX source.");
+  }
+
+  const readBackToolCalls = normalizeReadBackToolCalls(raw);
+  if (!dryRun && readBackToolCalls.length === 0) {
+    throw new Error("run_extendscript_candidate requires at least one readBackToolCalls entry for a real run.");
+  }
+
+  const candidateId = loaded.metadata.candidate.id;
+  const shortHash = loaded.checkReport.jsxSha256.slice(0, 16);
+  const requestId = String(raw.requestId || `jsx-lab-${candidateId}-${shortHash}`).trim();
+  const timeoutMs = normalizeTimeoutMs(raw.timeoutMs);
+  const filePath = candidateRelative(config || {}, loaded.jsxPath);
+  const plan = {
+    summary: `Run checked JSX Lab candidate ${candidateId} from local quarantine.`,
+    risk: "high",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Run checked JSX Lab candidate",
+        tool: "run_extendscript_file",
+        args: {
+          filePath,
+          timeoutMs,
+          idempotencyKey: `jsx-lab-${candidateId}-${shortHash}`,
+          idempotencyScope: "chatgpt-connector-jsx-lab",
+          verifyAfter: true
+        }
+      }
+    ]
+  };
+
+  return {
+    schemaVersion: JSX_LAB_RUN_SCHEMA_VERSION,
+    candidateId,
+    dryRun,
+    requestId,
+    planRunPayload: {
+      plan,
+      requestId,
+      dryRun,
+      confirm: true,
+      allowMutations: true,
+      autoEditSession: true,
+      allowRawExtendscript: true,
+      maxSteps: 1
+    },
+    readBackToolCalls,
+    staticCheck: loaded.checkReport,
+    paths: {
+      metadataPath: candidateRelative(config || {}, loaded.metadataPath),
+      jsxPath: filePath
+    },
+    safety: {
+      explicitConfirmation: true,
+      savedCandidateOnly: true,
+      acceptedStaticCheckRequired: true,
+      denylistEnforced: true,
+      confirmedHashRequired: true,
+      generatedPrefixRequired: true,
+      expectedGeneratedPrefix,
+      bridgePlanRunnerRequired: true,
+      checkpointEditSessionRequired: true,
+      readBackRequired: !dryRun,
+      rawJsxReturnedToConnector: false,
+      directRunExtendscriptExposed: false
+    }
+  };
+}
+
+function promotionActionForTargetStatus(targetStatus) {
+  if (targetStatus === "typed-tool-candidate") return "promote-to-typed-tool-candidate";
+  return "promote-to-recipe";
+}
+
+function prepareSolutionCandidateReportInput(metadata, checkReport, raw) {
+  const candidate = metadata.candidate || {};
+  const targetStatus = String(raw.targetStatus || "recipe").trim();
+  if (!PROMOTION_TARGET_STATUSES.has(targetStatus)) {
+    throw new Error("promote_solution_candidate only prepares recipe or typed-tool-candidate review hooks; direct candidate-to-tool promotion is not allowed.");
+  }
+
+  return {
+    id: candidate.id,
+    title: candidate.title,
+    tags: uniqueStrings((candidate.tags || []).concat(["jsx-lab", targetStatus])),
+    intent: {
+      summary: candidate.intentSummary,
+      appliesWhen: candidate.appliesWhen || []
+    },
+    generatedPlan: {
+      summary: "Reviewed JSX Lab candidate may be promoted only through Solution Library review.",
+      steps: [
+        {
+          tool: "run_extendscript_file",
+          mutating: true,
+          targetSummary: raw.affectedTargetSummary || candidate.expectedOutcome || candidate.intentSummary,
+          status: "candidate"
+        }
+      ]
+    },
+    generatedScript: {
+      language: "extendscript",
+      summary: candidate.riskNotes || "Raw JSX is stored separately in JSX Lab quarantine and is not embedded in this promotion hook.",
+      body: null
+    },
+    affectedTargets: raw.affectedTargets || [candidate.expectedOutcome || candidate.intentSummary],
+    runResult: raw.runResult || {
+      ok: null,
+      dryRun: null,
+      mutating: true,
+      safety: {
+        staticCheckStatus: checkReport.status,
+        jsxSha256: checkReport.jsxSha256
+      },
+      outputSummary: raw.runSummary || "No tracked promotion is written by the connector."
+    },
+    verificationReadBack: {
+      summary: raw.verificationSummary || "Promotion review must include successful read-back evidence from bridge inspection tools.",
+      evidence: raw.verificationEvidence || []
+    },
+    projectAssumptions: raw.projectAssumptions || [],
+    warnings: (metadata.warnings || []).concat(checkReport.warnings || []),
+    suggestedPromotionAction: {
+      action: promotionActionForTargetStatus(targetStatus),
+      rationale: raw.promotionRationale || "Connector prepared a quarantine-only promotion hook for explicit human review.",
+      nextReviewChecks: [
+        "Confirm no existing typed bridge tool already covers this workflow.",
+        "Confirm the candidate ran through checkpoint/edit-session protection and read-back verification before tracked promotion.",
+        "Promote to typed-tool-candidate before implementing a durable tool; do not promote directly from candidate to tool."
+      ]
+    },
+    provenance: {
+      source: "chatgpt-connector-jsx-lab",
+      sourceReportPath: checkReport.metadataPath,
+      planner: {
+        label: "ChatGPT Connector JSX Lab",
+        providerGroup: "chatgpt-connector"
+      }
+    }
+  };
+}
+
+function promoteSolutionCandidateHook(config, args, options) {
+  const raw = isPlainObject(args) ? args : {};
+  if (!raw.metadataPath) {
+    throw new Error("promote_solution_candidate requires metadataPath from propose_extendscript_candidate.");
+  }
+  const loaded = loadCandidateMetadata(config || {}, raw);
+  const checkReport = checkExtendscriptCandidate(config || {}, raw);
+  if (checkReport.status === "rejected") {
+    throw new Error("promote_solution_candidate requires a candidate that is not rejected by static checks.");
+  }
+
+  const reportInput = prepareSolutionCandidateReportInput(loaded.metadata, checkReport, raw);
+  const artifact = writeSolutionCandidateReport(reportInput, {
+    outputDir: solutionCandidateDirFromConfig(config || {}),
+    generatedAt: options && options.generatedAt,
+    source: "chatgpt-connector-jsx-lab"
+  });
+  const relativePath = repoRelative(artifact.path);
+
+  return {
+    schemaVersion: JSX_LAB_PROMOTION_SCHEMA_VERSION,
+    status: "promotion-hook-created",
+    candidateId: loaded.metadata.candidate.id,
+    targetStatus: reportInput.suggestedPromotionAction.action === "promote-to-typed-tool-candidate"
+      ? "typed-tool-candidate"
+      : "recipe",
+    solutionCandidateReportPath: relativePath,
+    lifecycle: {
+      current: "candidate",
+      allowedNext: ["recipe", "typed-tool-candidate"],
+      laterStages: ["tool"],
+      rule: "candidate -> recipe -> typed-tool-candidate -> tool; direct candidate-to-tool promotion is blocked."
+    },
+    nextReviewCommand: `node scripts\\solution-promotion-helper.js --candidate ${relativePath} --review <review.json>`,
+    safety: {
+      quarantineOnly: true,
+      writesTrackedRegistry: false,
+      plannerVisible: false,
+      rawJsxEmbedded: false,
+      explicitPromotionReviewRequired: true
+    },
+    warnings: artifact.report.candidate.warnings
+  };
+}
+
 module.exports = {
   DEFAULT_CANDIDATE_DIR,
   DEFAULT_MAX_JSX_BYTES,
+  DEFAULT_SOLUTION_CANDIDATE_DIR,
   JSX_LAB_CHECK_SCHEMA_VERSION,
+  JSX_LAB_PROMOTION_SCHEMA_VERSION,
+  JSX_LAB_RUN_SCHEMA_VERSION,
   JSX_LAB_SCHEMA_VERSION,
   checkExtendscriptCandidate,
+  loadCheckedCandidateForRun,
+  prepareExtendscriptCandidateRun,
+  promoteSolutionCandidateHook,
   proposeExtendscriptCandidate,
   repoRelative,
   runStaticChecks
