@@ -24,6 +24,7 @@
 - [x] Milestone 56: Planner Fidelity на ChatGPT 5.5.
 - [x] Milestone 57: OpenAI CLI readiness diagnostics.
 - [x] Milestone 58: Live OpenAI CLI diagnostics preflight.
+- [x] Milestone 59: Approved OpenAI CLI Agent scenario smoke.
 
 ## Current Stable Baseline
 
@@ -178,6 +179,13 @@
 - Проверить live `/agents/readiness` для `openai-cli` / `gpt-5.5` с `checkModels=0`, чтобы подтвердить новые `codexStatus.versionCheck` и `codexStatus.loginStatusCheck` без внешнего planner-запроса и без мутаций AE-проекта.
 - Не запускать полный `agent-scenario-openai-cli-smoke` без явного разрешения пользователя, потому что он отправляет Agent prompts / компактный AE project context через OpenAI/Codex CLI и выполняет временные live AE-мутации.
 
+### Milestone 59: Approved OpenAI CLI Agent scenario smoke
+
+- После явного разрешения пользователя запустить полный live CEP smoke `agent-scenario-openai-cli-smoke` через `openai-cli` / `gpt-5.5`.
+- Подтвердить, что все четыре Agent QA сценария используют `panel-agent-plan`, а не deterministic fallback.
+- Проверить, что protected runs создают checkpoint/edit-session protection, cleanup удаляет generated project/render-queue items, а render queue возвращается к baseline.
+- Зафиксировать результат как validation-only milestone без изменений product code.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -211,6 +219,7 @@
 - 2026-05-15: OpenAI CLI readiness diagnostics добавляются как additive поля внутри `codexStatus`; публичные provider ids, auth modes, transports и readiness gates не меняются.
 
 - 2026-05-15: После перезапуска live bridge можно проверять новые OpenAI CLI diagnostic fields через `/agents/readiness?checkModels=0`; полный `agent-scenario-openai-cli-smoke` требует явного разрешения на внешний OpenAI/Codex CLI planner-запрос и временные AE-мутации.
+- 2026-05-15: После явного разрешения пользователя полный `agent-scenario-openai-cli-smoke` можно учитывать как отдельный validation milestone; он не требует code changes, если `panelPlanCount` совпадает со scenario count и cleanup возвращает render queue к baseline.
 
 ## Validation
 
@@ -531,3 +540,21 @@
   - Passed `node scripts\smoke-test.js`.
   - Passed `node scripts\cep-panel-cdp-smoke.js inspect` against the restarted live daemon.
   - Did not run `node scripts\cep-panel-cdp-smoke.js agent-scenario-openai-cli-smoke`: it requires explicit user approval because it sends planner prompts/project context through OpenAI/Codex CLI and temporarily mutates the live AE project.
+- Milestone 59:
+  - Received explicit user approval to run the full OpenAI CLI Agent smoke.
+  - Preflight passed: live bridge health `ok: true`, version `1.0.0`, panel connected, pending `0`, inflight `0`; installed CEP page title `AE Agent 1.0.0`; selected agent `openai-cli`, model `gpt-5.5`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js agent-scenario-openai-cli-smoke`.
+  - Smoke run prefix: `Codex QA 1.2 16056606`.
+  - Planner readiness reported `openai-cli` / `gpt-5.5` ready with remote model list count `6`, `codex-cli 0.130.0-alpha.5`, and `Logged in using ChatGPT`.
+  - Planner acceptance passed with `panelPlanCount: 4`, `fallbackCount: 0`, `scenarioCount: 4`.
+  - Covered `timeline-layer-timing`, `text-shape-layout-animation`, `precomp-source-rename`, and `render-queue-setup` through panel-generated Agent plans.
+  - Protected runs created checkpoint/edit-session protection under `backups\` and completed cleanup.
+  - Cleanup removed generated project items per scenario (`3`, `1`, `4`, `1`), removed `1` generated render queue item in the render scenario, and final cleanup left `renderQueueTotal: 0`.
+  - No JavaScript files were changed, so there were no touched JavaScript files for `node --check`.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
