@@ -32,7 +32,7 @@
 - [x] Milestone 64: Provider readiness self-test UX.
 - [x] Milestone 65: Полная validation 1.3.
 - [x] Milestone 66: Safe Solution Library roadmap reset.
-- [ ] Milestone 67: Solution registry and metadata.
+- [x] Milestone 67: Solution registry and metadata.
 - [ ] Milestone 68: Candidate capture and quarantine.
 - [ ] Milestone 69: Promotion validation pipeline.
 - [ ] Milestone 70: Planner retrieval and safe use.
@@ -362,6 +362,8 @@
 - 2026-05-15: Следующий roadmap block после 1.3 validation — Agent reliability layer: project intent memory, plan confidence/risk classification, bounded plan repair, semantic verification и отдельная reliability validation веха.
 - 2026-05-15: После обсуждения live ChatGPT-in-AE testing roadmap получает промежуточный блок `Safe Solution Library`: удачные одноразовые ExtendScript/Agent решения сначала попадают в quarantine как candidates, затем проходят explicit promotion в reviewed recipes или typed tools; automatic promotion после одного успешного запуска запрещен.
 - 2026-05-15: Solution Library не должна становиться обходом safety model: promoted solutions only advise planner context, while execution remains through validated Agent plans, mutation gates, idempotency, checkpoint/edit-session protection and read-back verification.
+- 2026-05-15: Milestone 67 вводит tracked registry baseline через `registry/solutions.json`, `recipes/` и `scripts/solutions/`; `candidate` и другие unreviewed статусы запрещены в tracked library, а первые реальные entries будут добавляться отдельным promotion/seed milestone.
+- 2026-05-15: `node scripts\solution-registry-smoke.js` становится dependency-free gate для `ae-solution.v1` metadata: он проверяет форму registry, уникальность ids, path/secret hygiene, safety gates для mutating entries и более строгие требования к raw ExtendScript, пока planner retrieval остается выключенным до Milestone 70.
 
 ## Validation
 
@@ -831,3 +833,18 @@
   - Passed `node scripts\bridge-only-smoke-test.js`.
   - Passed `node scripts\smoke-test.js`.
   - Did not run live CEP or mutating AE smokes because this milestone changed only roadmap/handoff documentation.
+- Milestone 67:
+  - Added the tracked Safe Solution Library baseline: `registry/solutions.json`, `recipes/`, and `scripts/solutions/`.
+  - Documented the `ae-solution.v1` contract and promotion safety rules in `docs/solution-library.md`, plus README/AGENTS verification references.
+  - Added `node scripts\solution-registry-smoke.js` with fixture self-tests for a valid reviewed recipe, tracked `candidate` rejection, absolute path rejection, and raw script file gating.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for new files.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Did not run live CEP smoke because no CEP files changed.
+  - Did not run external OpenAI CLI planner smokes or live AE mutation smokes because Milestone 67 is local registry/docs/validator work and those remain explicit-approval-gated.

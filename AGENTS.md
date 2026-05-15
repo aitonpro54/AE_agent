@@ -46,6 +46,7 @@ Before marking a milestone complete, run:
 - `node --check` for every touched JavaScript file
 - `git diff --check`
 - `node scripts/provider-contract-smoke.js`
+- `node scripts/solution-registry-smoke.js`
 - `node scripts/provider-api-smoke.js`
 - `node scripts/prompt-optimization-smoke.js`
 - `node scripts/bridge-only-smoke-test.js`

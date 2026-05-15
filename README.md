@@ -267,6 +267,12 @@ Prompt Optimization payload coverage:
 node .\scripts\prompt-optimization-smoke.js
 ```
 
+Solution Library registry and metadata coverage:
+
+```powershell
+node .\scripts\solution-registry-smoke.js
+```
+
 Gemini and Claude provider API contract coverage:
 
 ```powershell
