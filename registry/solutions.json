@@ -5,7 +5,7 @@
   "policy": {
     "trackedStatuses": ["recipe", "typed-tool-candidate", "tool"],
     "candidateLocation": "logs/solution-candidates/",
-    "plannerUse": "disabled-until-milestone-70",
+    "plannerUse": "advisory-retrieval-enabled",
     "executionRule": "Solutions are advisory metadata; execution still uses validated Agent plans."
   },
   "solutions": []

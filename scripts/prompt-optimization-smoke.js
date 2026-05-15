@@ -1,8 +1,11 @@
 "use strict";
 
+const fs = require("fs");
 const http = require("http");
+const os = require("os");
 const path = require("path");
 const { spawn } = require("child_process");
+const { PLANNER_USE } = require("../mcp-server/solution-library");
 
 const daemonPath = path.join(__dirname, "..", "mcp-server", "bridge-daemon.js");
 const nodePath = process.execPath;
@@ -68,6 +71,84 @@ function listen(server) {
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function writePromptSolutionRegistry(tempDir) {
+  const registryPath = path.join(tempDir, "solutions.json");
+  const registry = {
+    schema: "ae-solution-registry.v1",
+    solutionSchema: "ae-solution.v1",
+    updatedAt: "2026-05-15",
+    policy: {
+      trackedStatuses: ["recipe", "typed-tool-candidate", "tool"],
+      candidateLocation: "logs/solution-candidates/",
+      plannerUse: PLANNER_USE,
+      executionRule: "Solutions are advisory metadata; execution still uses validated Agent plans."
+    },
+    solutions: [
+      {
+        schema: "ae-solution.v1",
+        id: "centered-title-recipe",
+        title: "Create Centered Title Recipe",
+        status: "recipe",
+        tags: ["text", "title", "layout"],
+        intent: {
+          summary: "Create a centered title text layer in the active comp.",
+          appliesWhen: ["The user asks for a centered title layer."]
+        },
+        inputs: [
+          {
+            name: "titleText",
+            type: "string",
+            required: true,
+            description: "Title text requested by the user."
+          }
+        ],
+        targetAssumptions: ["An active composition exists."],
+        execution: {
+          mode: "typed-plan",
+          mutating: true,
+          riskLevel: "medium",
+          recipePath: "recipes/README.md",
+          scriptPath: null,
+          preferredTools: ["get_active_comp", "create_text_layer", "get_selected_layers"]
+        },
+        requiredSafetyGates: {
+          planValidation: true,
+          explicitConfirmation: true,
+          allowMutations: true,
+          idempotency: true,
+          checkpointOrEditSession: true,
+          postMutationReadBack: true
+        },
+        verificationRecipe: {
+          summary: "Read back the created title layer.",
+          steps: ["Use get_selected_layers or get_layer_details to verify text and position."],
+          expectedEvidence: ["Created text layer has the expected title text and centered position."]
+        },
+        testedAeContext: {
+          aeVersion: null,
+          panelVersion: "AE Agent 1.0.0",
+          bridgeVersion: "1.0.0",
+          projectKind: "synthetic",
+          notes: []
+        },
+        promotionHistory: [
+          {
+            date: "2026-05-15",
+            from: "candidate",
+            to: "recipe",
+            reviewer: "codex",
+            evidence: "Prompt smoke fixture.",
+            commit: null
+          }
+        ],
+        notes: []
+      }
+    ]
+  };
+  fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2) + "\n", "utf8");
+  return registryPath;
 }
 
 async function waitForBridge() {
@@ -187,6 +268,8 @@ async function serviceOnlineContextSnapshot() {
 }
 
 async function main() {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ae-solution-prompt-"));
+  const solutionRegistryPath = writePromptSolutionRegistry(tempDir);
   const provider = http.createServer(async (req, res) => {
     try {
       if (req.method === "GET" && req.url === "/models") {
@@ -257,7 +340,8 @@ async function main() {
           models: [model],
           requiresApiKey: false
         }
-      ])
+      ]),
+      AE_SOLUTION_REGISTRY_PATH: solutionRegistryPath
     },
     stdio: ["ignore", "pipe", "pipe"]
   });
@@ -337,6 +421,14 @@ async function main() {
     if (planUser.indexOf("Prompt Optimization is enabled") < 0 || planUser.indexOf("Return one JSON object") < 0) {
       throw new Error("Plan prompt optimization instruction was not sent to provider.");
     }
+    if (
+      planUser.indexOf("Reviewed solution hints") < 0 ||
+      planUser.indexOf("Create Centered Title Recipe") < 0 ||
+      planUser.indexOf("advisory") < 0 ||
+      planUser.indexOf("normal MCP plan steps") < 0
+    ) {
+      throw new Error("Plan prompt did not include advisory solution retrieval hints.");
+    }
     if (planUser.indexOf("Current project context snapshot") < 0 || planUser.indexOf("CEP panel is offline") < 0) {
       throw new Error("Plan prompt did not include the compact project context snapshot.");
     }
@@ -377,6 +469,7 @@ async function main() {
         status: plan.status,
         summary: plan.body.result.plan.summary,
         userPromptIncludesOptimization: planUser.indexOf("Prompt Optimization is enabled") >= 0,
+        userPromptIncludesSolutionHints: planUser.indexOf("Create Centered Title Recipe") >= 0,
         userPromptIncludesContextSnapshot: planUser.indexOf("Current project context snapshot") >= 0,
         contextPanelConnected: plan.body.result.planContextSnapshot.bridge.panelConnected
       },
@@ -392,6 +485,7 @@ async function main() {
   } finally {
     daemon.kill();
     provider.close();
+    fs.rmSync(tempDir, { recursive: true, force: true });
   }
 }
 

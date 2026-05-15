@@ -21,7 +21,7 @@
   "policy": {
     "trackedStatuses": ["recipe", "typed-tool-candidate", "tool"],
     "candidateLocation": "logs/solution-candidates/",
-    "plannerUse": "disabled-until-milestone-70",
+    "plannerUse": "advisory-retrieval-enabled",
     "executionRule": "Solutions are advisory metadata; execution still uses validated Agent plans."
   },
   "solutions": []
@@ -112,7 +112,7 @@
 ## Safety Rules
 
 - Candidate/unreviewed statuses are not allowed in tracked `registry/solutions.json`.
-- Planner retrieval is disabled until Milestone 70. Entries are metadata only, not execution shortcuts.
+- Planner retrieval is read-only and advisory. It injects only compact top matches into Agent planning, never the full library and never quarantined candidates.
 - Every execution still becomes a normal validated Agent plan with mutation gates, idempotency and read-back verification.
 - Mutating entries must require `planValidation`, `explicitConfirmation`, `allowMutations`, `idempotency` and `postMutationReadBack`.
 - Mutating raw ExtendScript entries must also require `checkpointOrEditSession` and the script must include an undo group.
@@ -167,6 +167,21 @@ Promotion review обязан заполнить registry metadata: inputs, targ
 
 Если raw JSX recipe стабильно повторяется, это сигнал к `typed-tool-candidate` и последующей реализации typed bridge tool. Raw JSX не должен становиться постоянным shortcut, когда существующий или новый narrow bridge tool лучше выражает workflow.
 
+## Planner Retrieval
+
+Milestone 70 enables a read-only retrieval path for Agent planning prompts. The bridge reads `registry/solutions.json`, scores reviewed entries against the user request by tags, intent, preferred tools and risk, then injects only a compact top-N advisory section.
+
+Retrieval rules:
+
+- `candidate` remains invisible. Quarantine reports under `logs/solution-candidates/` are never read by planner retrieval.
+- `recipe` can be suggested as an advisory planning pattern.
+- `typed-tool-candidate` can be surfaced, but the prompt tells the model to recommend or use a narrow typed bridge tool rather than repeating a workaround.
+- `tool` entries are represented by the normal MCP tool catalog; matching tool-backed entries suppress older raw JSX equivalents.
+- stale entries whose preferred tools are no longer in the planning catalog are omitted.
+- raw `extendscript-file` recipes are marked risky and must stay an escape hatch; the planner is told to prefer typed tools and only plan `run_extendscript_file` when no typed tool fits and raw execution is explicitly allowed.
+
+The solution section is not an execution API. Every useful hint must still become normal MCP plan steps and pass the existing plan validation, dry-run/run gates, idempotency, checkpoint/edit-session protection and verification read-back.
+
 ## Validation
 
 Run the dependency-free validator before promoting or editing solutions:
@@ -175,6 +190,7 @@ Run the dependency-free validator before promoting or editing solutions:
 node .\scripts\solution-registry-smoke.js
 node .\scripts\solution-candidate-report-smoke.js
 node .\scripts\solution-promotion-smoke.js
+node .\scripts\solution-retrieval-smoke.js
 ```
 
-The validators check registry shape, unique ids, tracked statuses, path hygiene, secret/path patterns, safety gates for mutating entries, stricter raw ExtendScript requirements, safe candidate quarantine report generation, explicit promotion decisions, local plan fixtures and typed-tool comparison gates.
+The validators check registry shape, unique ids, tracked statuses, path hygiene, secret/path patterns, safety gates for mutating entries, stricter raw ExtendScript requirements, safe candidate quarantine report generation, explicit promotion decisions, local plan fixtures, typed-tool comparison gates and planner retrieval behavior.

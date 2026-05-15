@@ -11,6 +11,7 @@ const {
   REGISTRY_SCHEMA,
   SOLUTION_SCHEMA,
   TRACKED_STATUSES,
+  PLANNER_USE,
   validateRegistry
 } = require("./solution-registry-smoke");
 
@@ -381,7 +382,7 @@ function buildPromotedSolution(report, review, options = {}) {
     policy: options.registryPolicy || {
       trackedStatuses: TRACKED_STATUSES,
       candidateLocation: "logs/solution-candidates/",
-      plannerUse: "disabled-until-milestone-70",
+      plannerUse: PLANNER_USE,
       executionRule: "Solutions are advisory metadata; execution still uses validated Agent plans."
     },
     solutions: [solution]

@@ -8,6 +8,7 @@ const REPO_ROOT = path.join(__dirname, "..");
 const REGISTRY_PATH = path.join(REPO_ROOT, "registry", "solutions.json");
 const REGISTRY_SCHEMA = "ae-solution-registry.v1";
 const SOLUTION_SCHEMA = "ae-solution.v1";
+const PLANNER_USE = "advisory-retrieval-enabled";
 
 const TRACKED_STATUSES = ["recipe", "typed-tool-candidate", "tool"];
 const ALLOWED_STATUSES = new Set(TRACKED_STATUSES);
@@ -321,7 +322,7 @@ function validateRegistry(registry) {
   assertPlainObject(registry.policy, "registry.policy");
   assert.deepStrictEqual(registry.policy.trackedStatuses, TRACKED_STATUSES, "registry.policy.trackedStatuses changed unexpectedly.");
   assert.strictEqual(registry.policy.candidateLocation, "logs/solution-candidates/", "registry.policy.candidateLocation must point to ignored candidate quarantine.");
-  assert.strictEqual(registry.policy.plannerUse, "disabled-until-milestone-70", "registry.policy.plannerUse must stay disabled for Milestone 67.");
+  assert.strictEqual(registry.policy.plannerUse, PLANNER_USE, "registry.policy.plannerUse must enable read-only advisory retrieval.");
   assertString(registry.policy.executionRule, "registry.policy.executionRule");
   assert(Array.isArray(registry.solutions), "registry.solutions must be an array.");
   assertNoUnsafeStrings(registry.policy, "registry.policy");
@@ -358,7 +359,7 @@ function fixtureRegistry(solutions) {
     policy: {
       trackedStatuses: TRACKED_STATUSES,
       candidateLocation: "logs/solution-candidates/",
-      plannerUse: "disabled-until-milestone-70",
+      plannerUse: PLANNER_USE,
       executionRule: "Solutions are advisory metadata; execution still uses validated Agent plans."
     },
     solutions
@@ -519,5 +520,6 @@ module.exports = {
   REGISTRY_SCHEMA,
   SOLUTION_SCHEMA,
   TRACKED_STATUSES,
+  PLANNER_USE,
   validateRegistry
 };

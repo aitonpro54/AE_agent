@@ -285,6 +285,12 @@ Solution promotion validation coverage:
 node .\scripts\solution-promotion-smoke.js
 ```
 
+Solution planner retrieval coverage:
+
+```powershell
+node .\scripts\solution-retrieval-smoke.js
+```
+
 Gemini and Claude provider API contract coverage:
 
 ```powershell

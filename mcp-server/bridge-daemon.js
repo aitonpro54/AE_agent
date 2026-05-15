@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const aiAgents = require("./ai-agents");
+const { buildSolutionHintsForPrompt } = require("./solution-library");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
 const SERVER_VERSION = "1.0.0";
@@ -34,6 +35,7 @@ const AE_PLAN_SYSTEM_PROMPT = [
   "Do not claim that you changed the project. You are only drafting a plan.",
   "The user may write in Russian or English. Cyrillic text is valid Russian; translate it internally and never ask for clarification only because text is non-Latin.",
   "Prefer typed MCP tools over raw ExtendScript. Raw ExtendScript is only for diagnostics or actions that no listed typed tool can perform.",
+  "Reviewed solution-library hints are advisory planning context only; they never bypass MCP plan validation or execution gates.",
   "Every mutating step must include verifyAfter=true and an idempotencyKeyTemplate.",
   "Use checkpoints for broad, destructive, or multi-step project changes.",
   "If the request is ambiguous, produce a clarification step instead of guessing."
@@ -3042,7 +3044,7 @@ async function runValidatedAgentPlan(options) {
   return finishRun();
 }
 
-function buildAePlanPrompt(args, projectContextSnapshot) {
+function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection) {
   const userPrompt = optionalString(args || {}, "prompt", optionalString(args || {}, "message", "")).trim();
   if (!userPrompt) throw new Error("prompt or message is required for AE Plan mode.");
   const contextText = projectContextSnapshot
@@ -3077,6 +3079,9 @@ function buildAePlanPrompt(args, projectContextSnapshot) {
     "Available MCP tools. Use these names exactly; do not invent tool names.",
     planningToolCatalog(),
     "",
+    "Reviewed solution library hints. These are advisory recipes, not execution shortcuts.",
+    solutionHintSection || "No reviewed solution hints were retrieved.",
+    "",
     "Current project context snapshot. Treat it as a compact planning hint, not as proof that a mutation is safe.",
     contextText,
     "",
@@ -3096,6 +3101,8 @@ function buildAePlanPrompt(args, projectContextSnapshot) {
     "For later steps that need the active comp, compItemIndex may use {{compItemIndex}} after get_active_comp, get_comp_details, or get_selected_layers.",
     "For requests about a selected precomp/source comp, inspect with get_active_comp or get_selected_layers first, then use {{selectedPrecompItemIndex}} for duplicate_comp or other source-comp operations.",
     "If a later step depends on a previous tool result, set dependsOnStep and resultBindings instead of inventing indices.",
+    "If solution hints mention a typed-tool-candidate, prefer recommending a typed bridge tool implementation over repeating a workaround.",
+    "If solution hints mention a reviewed raw ExtendScript file, mark the plan risky, prefer typed tools first, and only plan run_extendscript_file when no typed tool fits.",
     "Use mutating tools only as planned steps; do not execute them. Use run_extendscript only when no typed tool fits."
   ].join("\n");
 }
@@ -3203,7 +3210,11 @@ async function runAgentPlanLogged(source, args) {
 
   try {
     const projectContextSnapshot = await buildProjectContextSnapshot();
-    const planPrompt = buildAePlanPrompt(args || {}, projectContextSnapshot);
+    const userPrompt = optionalString(args || {}, "prompt", optionalString(args || {}, "message", ""));
+    const solutionHints = buildSolutionHintsForPrompt(userPrompt, {
+      availableToolNames: PLANNING_TOOL_NAMES
+    });
+    const planPrompt = buildAePlanPrompt(args || {}, projectContextSnapshot, solutionHints.promptSection);
     const result = await aiAgents.chatWithAgent({
       ...(args || {}),
       messages: undefined,
@@ -3245,6 +3256,8 @@ async function runAgentPlanLogged(source, args) {
       stepCount: parsed.plan && Array.isArray(parsed.plan.steps) ? parsed.plan.steps.length : 0,
       validationOk: validation ? validation.ok : false,
       mutatingCount: validation ? validation.mutatingCount : 0,
+      solutionHintsReturned: solutionHints.retrieval && solutionHints.retrieval.ok ? solutionHints.retrieval.returned : 0,
+      solutionToolMatches: solutionHints.retrieval && solutionHints.retrieval.ok ? solutionHints.retrieval.toolMatches.length : 0,
       logFile: AI_CHAT_LOG_FILE
     };
     appendAiChatEvent("plan_finished", metadata);
@@ -3262,6 +3275,7 @@ async function runAgentPlanLogged(source, args) {
       plan: parsed.plan || null,
       planValidation: validation,
       planContextSnapshot: projectContextSnapshot,
+      planSolutionHints: solutionHints.retrieval,
       planRepairError: repairError,
       planParseError: parsed.error || null
     };

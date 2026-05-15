@@ -12,6 +12,7 @@ const {
   PROMOTION_REVIEW_SCHEMA,
   promoteCandidate
 } = require("./solution-promotion-helper");
+const { PLANNER_USE } = require("./solution-registry-smoke");
 
 const REPO_ROOT = path.join(__dirname, "..");
 const TEMP_SCRIPT_RELATIVE = "scripts/solutions/.tmp-promotion-smoke-safe.jsx";
@@ -25,7 +26,7 @@ function baseRegistry() {
     policy: {
       trackedStatuses: ["recipe", "typed-tool-candidate", "tool"],
       candidateLocation: "logs/solution-candidates/",
-      plannerUse: "disabled-until-milestone-70",
+      plannerUse: PLANNER_USE,
       executionRule: "Solutions are advisory metadata; execution still uses validated Agent plans."
     },
     solutions: []

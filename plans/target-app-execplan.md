@@ -35,7 +35,7 @@
 - [x] Milestone 67: Solution registry and metadata.
 - [x] Milestone 68: Candidate capture and quarantine.
 - [x] Milestone 69: Promotion validation pipeline.
-- [ ] Milestone 70: Planner retrieval and safe use.
+- [x] Milestone 70: Planner retrieval and safe use.
 - [ ] Milestone 71: Solution library validation.
 - [ ] Milestone 72: Project Intent Memory.
 - [ ] Milestone 73: Plan confidence and risk classification.
@@ -366,6 +366,8 @@
 - 2026-05-15: `node scripts\solution-registry-smoke.js` становится dependency-free gate для `ae-solution.v1` metadata: он проверяет форму registry, уникальность ids, path/secret hygiene, safety gates для mutating entries и более строгие требования к raw ExtendScript, пока planner retrieval остается выключенным до Milestone 70.
 - 2026-05-15: Milestone 68 добавляет ignored quarantine `logs\solution-candidates\` и schema `solution-candidate-report.v1` для ручного capture удачных live candidates; candidate reports остаются локальными, не видны planner retrieval, требуют explicit promotion и проходят redaction/drop guards для секретов, абсолютных путей, raw transcripts/log tails и full project scans.
 - 2026-05-15: Milestone 69 вводит explicit promotion review schema `solution-promotion-review.v1`: tracked registry entry создается только после `explicitReview:true`, local plan fixture validation, typed-tool comparison для raw JSX и повторной registry validation. Repeated stable raw JSX recipes должны становиться `typed-tool-candidate`/typed bridge tools, а не постоянными shortcuts.
+- 2026-05-15: Milestone 70 включает только read-only advisory retrieval для Agent planning prompt: bridge читает tracked `registry/solutions.json`, выбирает compact top-N по tags/intent/tools/risk и никогда не читает ignored candidate quarantine или full library.
+- 2026-05-15: Solution status handling в planner retrieval risk-aware: `candidate` невидим, `recipe` может быть подсказкой, `typed-tool-candidate` рекомендует typed bridge tool implementation, а `tool` считается представленным обычным MCP tool catalog и подавляет matching raw JSX equivalents.
 
 ## Validation
 
@@ -889,3 +891,29 @@
   - Passed `node scripts\smoke-test.js`.
   - Did not run live CEP smoke because no CEP files changed.
   - Did not run external OpenAI CLI planner smokes or live AE mutation smokes because Milestone 69 is local promotion/validation pipeline work and those remain explicit-approval-gated.
+- Milestone 70:
+  - Added `mcp-server\solution-library.js` for read-only advisory retrieval from tracked `registry\solutions.json`.
+  - Agent planning prompt now includes compact reviewed solution hints when relevant, while explicitly keeping recipes advisory and requiring normal MCP plan steps, validation, mutation gates and read-back verification.
+  - Retrieval filters out candidates and stale entries, marks reviewed raw ExtendScript as risky, surfaces `typed-tool-candidate` as tool-implementation guidance, and treats `tool` entries as represented by the normal MCP tool catalog.
+  - Added `scripts\solution-retrieval-smoke.js` covering relevant recipe surfaced, irrelevant/stale/candidate omitted, raw ExtendScript marked risky, typed-tool equivalent winning over raw JSX, and typed-tool-candidate guidance.
+  - Updated `node scripts\prompt-optimization-smoke.js` to verify solution hints are injected into the planning prompt from a temporary registry fixture.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check mcp-server\solution-library.js`.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check scripts\solution-retrieval-smoke.js`.
+  - Passed `node --check scripts\prompt-optimization-smoke.js`.
+  - Passed `node --check scripts\solution-registry-smoke.js`.
+  - Passed `node --check scripts\solution-promotion-helper.js`.
+  - Passed `node --check scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Did not run live CEP smoke because no CEP files changed.
+  - Did not run external OpenAI CLI planner smokes or live AE mutation smokes because Milestone 70 is local planner-prompt retrieval work and those remain explicit-approval-gated.
