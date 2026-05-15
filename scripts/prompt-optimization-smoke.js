@@ -6,6 +6,7 @@ const os = require("os");
 const path = require("path");
 const { spawn } = require("child_process");
 const { PLANNER_USE } = require("../mcp-server/solution-library");
+const { PLANNER_USE: MEMORY_PLANNER_USE } = require("../mcp-server/project-intent-memory");
 
 const daemonPath = path.join(__dirname, "..", "mcp-server", "bridge-daemon.js");
 const nodePath = process.execPath;
@@ -151,6 +152,46 @@ function writePromptSolutionRegistry(tempDir) {
   return registryPath;
 }
 
+function writePromptIntentMemory(tempDir) {
+  const memoryPath = path.join(tempDir, "project-intent-memory.json");
+  const memory = {
+    schema: "ae-project-intent-memory.v1",
+    entrySchema: "ae-project-intent-memory-entry.v1",
+    updatedAt: "2026-05-15",
+    policy: {
+      plannerUse: MEMORY_PLANNER_USE,
+      maxPromptChars: 1800,
+      maxRetrievedEntries: 4,
+      storageRule: "Local reviewed project intent only; no secrets, raw transcripts, public/tunnel URLs, full project scans, or user absolute paths."
+    },
+    entries: [
+      {
+        schema: "ae-project-intent-memory-entry.v1",
+        id: "temporary-title-generated-prefix",
+        status: "active",
+        category: "generated-prefix",
+        title: "Temporary Title Generated Prefix",
+        summary: "Use Codex QA naming for temporary generated title assets and keep cleanup scoped to generated names.",
+        tags: ["title", "generated-assets", "temporary", "cleanup"],
+        appliesWhen: [
+          "The user asks to create a temporary generated title layer or comp.",
+          "Cleanup should avoid user-named project assets."
+        ],
+        priority: 9,
+        confidence: "high",
+        source: {
+          kind: "prompt-smoke",
+          date: "2026-05-15",
+          reviewed: true
+        },
+        notes: ["Verify targets before any mutation."]
+      }
+    ]
+  };
+  fs.writeFileSync(memoryPath, JSON.stringify(memory, null, 2) + "\n", "utf8");
+  return memoryPath;
+}
+
 async function waitForBridge() {
   const startedAt = Date.now();
   while (Date.now() - startedAt < 8000) {
@@ -270,6 +311,7 @@ async function serviceOnlineContextSnapshot() {
 async function main() {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ae-solution-prompt-"));
   const solutionRegistryPath = writePromptSolutionRegistry(tempDir);
+  const projectIntentMemoryPath = writePromptIntentMemory(tempDir);
   const provider = http.createServer(async (req, res) => {
     try {
       if (req.method === "GET" && req.url === "/models") {
@@ -341,7 +383,8 @@ async function main() {
           requiresApiKey: false
         }
       ]),
-      AE_SOLUTION_REGISTRY_PATH: solutionRegistryPath
+      AE_SOLUTION_REGISTRY_PATH: solutionRegistryPath,
+      AE_PROJECT_INTENT_MEMORY_PATH: projectIntentMemoryPath
     },
     stdio: ["ignore", "pipe", "pipe"]
   });
@@ -422,6 +465,20 @@ async function main() {
       throw new Error("Plan prompt optimization instruction was not sent to provider.");
     }
     if (
+      planUser.indexOf("Project intent memory hints") < 0 ||
+      planUser.indexOf("Temporary Title Generated Prefix") < 0 ||
+      planUser.indexOf("local inspectable advisory memory") < 0 ||
+      planUser.indexOf("provider secrets") < 0
+    ) {
+      throw new Error("Plan prompt did not include bounded project intent memory hints.");
+    }
+    if (!plan.body.result.planProjectIntentMemory || plan.body.result.planProjectIntentMemory.returned < 1) {
+      throw new Error("Plan result did not expose project intent memory retrieval metadata.");
+    }
+    if (planUser.indexOf("C:\\") >= 0 || planUser.indexOf("trycloudflare") >= 0) {
+      throw new Error("Plan prompt should not include absolute paths or tunnel URLs from memory.");
+    }
+    if (
       planUser.indexOf("Reviewed solution hints") < 0 ||
       planUser.indexOf("Create Centered Title Recipe") < 0 ||
       planUser.indexOf("advisory") < 0 ||
@@ -470,6 +527,8 @@ async function main() {
         summary: plan.body.result.plan.summary,
         userPromptIncludesOptimization: planUser.indexOf("Prompt Optimization is enabled") >= 0,
         userPromptIncludesSolutionHints: planUser.indexOf("Create Centered Title Recipe") >= 0,
+        userPromptIncludesIntentMemory: planUser.indexOf("Temporary Title Generated Prefix") >= 0,
+        projectIntentMemoryReturned: plan.body.result.planProjectIntentMemory.returned,
         userPromptIncludesContextSnapshot: planUser.indexOf("Current project context snapshot") >= 0,
         contextPanelConnected: plan.body.result.planContextSnapshot.bridge.panelConnected
       },

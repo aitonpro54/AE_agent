@@ -43,7 +43,7 @@
 - [x] Milestone 73: ChatGPT Connector read-only skeleton.
 - [x] Milestone 74: JSX Lab candidate quarantine and checks.
 - [x] Milestone 75: Gated JSX Lab run, promotion hooks and CEP connector status.
-- [ ] Milestone 76: Project Intent Memory.
+- [x] Milestone 76: Project Intent Memory.
 - [ ] Milestone 77: Plan confidence and risk classification.
 - [ ] Milestone 78: Plan repair loop.
 - [ ] Milestone 79: Semantic verification.
@@ -435,6 +435,8 @@
 - 2026-05-15: `run_extendscript_candidate` remains opt-in disabled unless `AE_CHATGPT_CONNECTOR_WRITE_ACTIONS=1`; even when enabled it only runs saved accepted candidates through `/agents/plan/run` with `confirm:true`, hash confirmation, generated-prefix evidence, `allowRawExtendscript:true` inside the bridge runner, checkpoint/edit-session protection and read-back allowlist calls.
 - 2026-05-15: `promote_solution_candidate` creates only ignored `solution-candidate-report.v1` promotion hooks. It does not write `registry/solutions.json`, does not make candidates planner-visible and blocks direct `candidate -> tool` promotion; tracked promotion remains explicit review through `solution-promotion-helper.js`.
 - 2026-05-15: The CEP ChatGPT Connector status card polls the local connector `/status` endpoint for local/tunnel state, exposed tool snapshot, last tool call and write-action state; emergency disable blocks connector local write actions until restart.
+- 2026-05-15: Project Intent Memory хранится локально в tracked `registry/project-intent-memory.json` как compact reviewed hints; planner получает только bounded top matches и не весь registry.
+- 2026-05-15: `update_project_intent_memory` является явным operator/MCP update path с `confirm:true` и hygiene checks, но не входит в Agent planning catalog, чтобы AI-generated AE plans не могли обновлять память как обычный step.
 
 ## Validation
 
@@ -1158,3 +1160,31 @@
   - Passed targeted live CEP smoke `node scripts\cep-panel-cdp-smoke.js connector-status-smoke` with fake connector data; it verified status rows and emergency disable UI without a live tunnel.
   - Passed live read-only CEP smoke `node scripts\cep-panel-cdp-smoke.js smoke` through Local/Ollama; it planned, dry-ran and ran a read-only bridge-status plan with 0 mutating steps.
   - Did not run live ChatGPT connector/Tunnel checks, live OpenRouter calls, external OpenAI CLI planner smokes or live AE mutation smokes because those remain explicit-approval-gated.
+- Milestone 76:
+  - Added tracked local `registry\project-intent-memory.json` with schema `ae-project-intent-memory.v1` and three reviewed baseline hints for generated prefixes, protected user assets and batch naming conventions.
+  - Added `mcp-server\project-intent-memory.js` for validation, unsafe-content hygiene, bounded retrieval, prompt-section formatting and explicit read/update helpers.
+  - Added MCP tools `get_project_intent_memory` and `update_project_intent_memory`; update requires `confirm:true`, supports `upsert`/`disable`, and rejects provider secrets, raw transcripts, public/tunnel URLs, broad project dumps and user absolute paths.
+  - Kept memory update out of the Agent planning catalog; plan validation now rejects MCP tools that are not in `PLANNING_TOOL_NAMES` so local operator tools cannot become AE Agent plan steps.
+  - Injected bounded `Project intent memory hints` into `plan_with_ai_agent` prompts beside Solution Library hints and Project Context Snapshot, and exposed retrieval metadata as `planProjectIntentMemory`.
+  - Documented the contract in `docs\project-intent-memory.md` and added `node scripts\project-intent-memory-smoke.js` to README/AGENTS verification.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check mcp-server\project-intent-memory.js`.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check scripts\project-intent-memory-smoke.js`.
+  - Passed `node --check scripts\prompt-optimization-smoke.js`.
+  - Passed `node --check scripts\smoke-test.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\project-intent-memory-smoke.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\chatgpt-connector-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`; it verified memory hints, solution hints and context snapshot injection.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`; it verified memory tools are listed and `update_project_intent_memory` is rejected inside AE Agent plans.
+  - Passed read-only live CEP smoke `node scripts\cep-panel-cdp-smoke.js smoke` through Local/Ollama; it planned, dry-ran and ran a 0-mutating read-only bridge/project status plan.
+  - Did not run live ChatGPT connector/Tunnel checks, live OpenRouter calls, external OpenAI CLI planner smokes or live AE mutation smokes because those remain explicit-approval-gated and Milestone 76 was covered by local/fake-provider/read-only validation.

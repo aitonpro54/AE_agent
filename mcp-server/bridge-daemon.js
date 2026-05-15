@@ -7,6 +7,11 @@ const fs = require("fs");
 const path = require("path");
 const aiAgents = require("./ai-agents");
 const { buildSolutionHintsForPrompt } = require("./solution-library");
+const {
+  buildProjectIntentMemoryForPrompt,
+  readProjectIntentMemory,
+  updateProjectIntentMemory
+} = require("./project-intent-memory");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
 const SERVER_VERSION = "1.0.0";
@@ -36,6 +41,7 @@ const AE_PLAN_SYSTEM_PROMPT = [
   "The user may write in Russian or English. Cyrillic text is valid Russian; translate it internally and never ask for clarification only because text is non-Latin.",
   "Prefer typed MCP tools over raw ExtendScript. Raw ExtendScript is only for diagnostics or actions that no listed typed tool can perform.",
   "Reviewed solution-library hints are advisory planning context only; they never bypass MCP plan validation or execution gates.",
+  "Project intent memory hints are local advisory planning context only; they must not bypass inspection, validation, or mutation gates.",
   "Every mutating step must include verifyAfter=true and an idempotencyKeyTemplate.",
   "Use checkpoints for broad, destructive, or multi-step project changes.",
   "If the request is ambiguous, produce a clarification step instead of guessing."
@@ -1996,6 +2002,7 @@ function validateAgentPlanObject(plan, requestId) {
     const step = steps[index] && typeof steps[index] === "object" ? steps[index] : {};
     const toolName = planStepToolName(step);
     const tool = toolName ? toolByName(toolName) : null;
+    const planningTool = toolName ? PLANNING_TOOL_NAMES.includes(toolName) : false;
     const mutating = toolName ? MUTATING_TOOL_NAMES.has(toolName) : false;
     const safeArgs = tool ? normalizePlanArgAliases(planStepArgs(step), tool) : planStepArgs(step);
     const resultBindings = step.resultBindings && typeof step.resultBindings === "object" && !Array.isArray(step.resultBindings)
@@ -2027,6 +2034,8 @@ function validateAgentPlanObject(plan, requestId) {
     if (!tool) {
       unknownToolCount += 1;
       stepWarnings.push(`Unknown MCP tool: ${toolName}. Use a listed tool name such as ${knownToolNamesSummary(12)}.`);
+    } else if (!planningTool) {
+      stepWarnings.push(`${toolName} is not available for AI Agent plans. Use a tool from the planning catalog such as ${knownToolNamesSummary(12)}.`);
     } else {
       executableCount += 1;
       for (const field of requiredSchemaFields(tool)) {
@@ -2076,8 +2085,8 @@ function validateAgentPlanObject(plan, requestId) {
       title: step.title || step.intent || toolName,
       intent: step.intent || "",
       tool: toolName,
-      valid: Boolean(tool) && missingRequired.length === 0,
-      executable: Boolean(tool) && missingRequired.length === 0 && boundRequired.length === 0,
+      valid: Boolean(tool) && planningTool && missingRequired.length === 0,
+      executable: Boolean(tool) && planningTool && missingRequired.length === 0 && boundRequired.length === 0,
       requiresRuntimeBinding: boundRequired.length > 0,
       mutatesProject: mutating,
       targetSummary: planStepTargetSummary(toolName, safeArgs),
@@ -3209,7 +3218,7 @@ async function runValidatedAgentPlan(options) {
   return finishRun();
 }
 
-function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection) {
+function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, projectIntentMemorySection) {
   const userPrompt = optionalString(args || {}, "prompt", optionalString(args || {}, "message", "")).trim();
   if (!userPrompt) throw new Error("prompt or message is required for AE Plan mode.");
   const contextText = projectContextSnapshot
@@ -3243,6 +3252,9 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection) {
     "",
     "Available MCP tools. Use these names exactly; do not invent tool names.",
     planningToolCatalog(),
+    "",
+    "Project intent memory hints. These are local project preferences, not execution shortcuts.",
+    projectIntentMemorySection || "No project intent memory hints were retrieved.",
     "",
     "Reviewed solution library hints. These are advisory recipes, not execution shortcuts.",
     solutionHintSection || "No reviewed solution hints were retrieved.",
@@ -3377,10 +3389,11 @@ async function runAgentPlanLogged(source, args) {
   try {
     const projectContextSnapshot = await buildProjectContextSnapshot();
     const userPrompt = optionalString(args || {}, "prompt", optionalString(args || {}, "message", ""));
+    const projectIntentMemory = buildProjectIntentMemoryForPrompt(userPrompt);
     const solutionHints = buildSolutionHintsForPrompt(userPrompt, {
       availableToolNames: PLANNING_TOOL_NAMES
     });
-    const planPrompt = buildAePlanPrompt(args || {}, projectContextSnapshot, solutionHints.promptSection);
+    const planPrompt = buildAePlanPrompt(args || {}, projectContextSnapshot, solutionHints.promptSection, projectIntentMemory.promptSection);
     const result = await aiAgents.chatWithAgent({
       ...(args || {}),
       messages: undefined,
@@ -3422,6 +3435,7 @@ async function runAgentPlanLogged(source, args) {
       stepCount: parsed.plan && Array.isArray(parsed.plan.steps) ? parsed.plan.steps.length : 0,
       validationOk: validation ? validation.ok : false,
       mutatingCount: validation ? validation.mutatingCount : 0,
+      projectIntentMemoryReturned: projectIntentMemory.retrieval && projectIntentMemory.retrieval.ok ? projectIntentMemory.retrieval.returned : 0,
       solutionHintsReturned: solutionHints.retrieval && solutionHints.retrieval.ok ? solutionHints.retrieval.returned : 0,
       solutionToolMatches: solutionHints.retrieval && solutionHints.retrieval.ok ? solutionHints.retrieval.toolMatches.length : 0,
       logFile: AI_CHAT_LOG_FILE
@@ -3441,6 +3455,7 @@ async function runAgentPlanLogged(source, args) {
       plan: parsed.plan || null,
       planValidation: validation,
       planContextSnapshot: projectContextSnapshot,
+      planProjectIntentMemory: projectIntentMemory.retrieval,
       planSolutionHints: solutionHints.retrieval,
       planRepairError: repairError,
       planParseError: parsed.error || null
@@ -3915,6 +3930,57 @@ const tools = [
           description: "Number of recent AI agent events to return. Defaults to 50, maximum 200."
         }
       }
+    }
+  },
+  {
+    name: "get_project_intent_memory",
+    description: "Return the local Project Intent Memory registry and optional compact retrieval hints without querying AE or external providers.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        prompt: {
+          type: "string",
+          description: "Optional user request used to retrieve compact matching memory hints."
+        },
+        topN: {
+          type: "number",
+          description: "Optional maximum memory hints to retrieve. Defaults to 4, maximum 6."
+        },
+        includeEntries: {
+          type: "boolean",
+          description: "Whether to include full reviewed memory entries. Defaults to true."
+        }
+      }
+    }
+  },
+  {
+    name: "update_project_intent_memory",
+    description: "Explicitly upsert or disable one reviewed local Project Intent Memory entry after secret/path/transcript hygiene checks. This does not query or mutate AE.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        action: {
+          type: "string",
+          description: "Update action: upsert or disable. Defaults to upsert."
+        },
+        entry: {
+          type: "object",
+          description: "Memory entry for upsert. Must use ae-project-intent-memory-entry.v1-safe fields; no secrets, raw transcripts, tunnel URLs, broad project dumps, or absolute paths."
+        },
+        id: {
+          type: "string",
+          description: "Entry id for disable."
+        },
+        confirm: {
+          type: "boolean",
+          description: "Required true because this writes the local memory artifact."
+        },
+        dryRun: {
+          type: "boolean",
+          description: "Validate the update without writing the memory artifact."
+        }
+      },
+      required: ["confirm"]
     }
   },
   {
@@ -6084,6 +6150,23 @@ async function callTool(name, args) {
       logFile: AI_CHAT_LOG_FILE,
       events: tailJsonl(AI_CHAT_LOG_FILE, limit)
     });
+  }
+
+  if (name === "get_project_intent_memory") {
+    try {
+      return toolResult(readProjectIntentMemory(args || {}));
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
+  }
+
+  if (name === "update_project_intent_memory") {
+    try {
+      const update = updateProjectIntentMemory(args || {});
+      return toolResult(update, !update.ok);
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
   }
 
   if (name === "list_ai_agents") {

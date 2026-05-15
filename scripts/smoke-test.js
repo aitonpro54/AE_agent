@@ -619,6 +619,32 @@ async function main() {
       ]
     }
   });
+  const memoryToolPlanValidation = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/dev/tool/validate_ai_agent_plan",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    plan: {
+      summary: "Smoke-test local memory tools stay out of AE Agent plans.",
+      risk: "low",
+      requiresCheckpoint: false,
+      steps: [
+        {
+          title: "Do not update memory inside an AE plan",
+          tool: "update_project_intent_memory",
+          args: {
+            confirm: true,
+            dryRun: true
+          }
+        }
+      ]
+    }
+  });
   const ignoredBindingRun = await requestJsonWithOptions({
     hostname: "127.0.0.1",
     port,
@@ -978,6 +1004,15 @@ async function main() {
     throw new Error("Plan validation did not normalize itemIndexes to itemIndices");
   }
   if (
+    memoryToolPlanValidation.status !== 200 ||
+    memoryToolPlanValidation.body.ok !== true ||
+    !memoryToolPlanValidation.body.result ||
+    memoryToolPlanValidation.body.result.ok !== false ||
+    String((memoryToolPlanValidation.body.result.steps[0].warnings || []).join(" ")).indexOf("not available for AI Agent plans") < 0
+  ) {
+    throw new Error("Project Intent Memory update tool should not be available inside AE Agent plans");
+  }
+  if (
     mutatingDryRun.status !== 200 ||
     mutatingDryRun.body.ok !== true ||
     mutatingDryRun.body.run.validation.mutatingCount !== 1 ||
@@ -1017,7 +1052,7 @@ async function main() {
   }
 
   const toolNames = lines[1].result.tools.map((tool) => tool.name);
-  for (const expectedTool of ["get_ai_agent_log", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint", "set_comp_work_area", "set_layer_time_range", "stagger_layers", "split_layers_at_time", "precompose_layers", "replace_layer_source", "rename_layers", "rename_project_items", "update_text_layer", "create_shape_layer", "fit_layer_to_comp", "set_property_keyframes", "apply_keyframe_ease", "set_expression", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"]) {
+  for (const expectedTool of ["get_ai_agent_log", "get_project_intent_memory", "update_project_intent_memory", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint", "set_comp_work_area", "set_layer_time_range", "stagger_layers", "split_layers_at_time", "precompose_layers", "replace_layer_source", "rename_layers", "rename_project_items", "update_text_layer", "create_shape_layer", "fit_layer_to_comp", "set_property_keyframes", "apply_keyframe_ease", "set_expression", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"]) {
     if (!toolNames.includes(expectedTool)) {
       throw new Error("Missing expected tool: " + expectedTool);
     }

@@ -16,6 +16,8 @@ It has these main parts:
 - `get_bridge_status` - returns bridge diagnostics, connection state, paths, and recent events.
 - `get_command_log` - returns recent local JSONL log events.
 - `get_ai_agent_log` - returns recent AI provider chat attempts, preflight failures, and results.
+- `get_project_intent_memory` - reads the local Project Intent Memory registry and optional prompt-matched hints.
+- `update_project_intent_memory` - explicitly upserts or disables one reviewed Project Intent Memory entry after hygiene checks.
 - `list_ai_agents` - lists configured OpenAI, Gemini, Claude, OpenRouter, Ollama, Ollama Cloud, and custom chat agents.
 - `check_ai_agent_readiness` - preflights setup, provider reachability, and model availability before chat.
 - `chat_with_ai_agent` - sends a prompt or chat messages to one configured AI provider.
@@ -323,6 +325,12 @@ Solution library seeded-entry and retrieval-bound validation:
 
 ```powershell
 node .\scripts\solution-library-validation-smoke.js
+```
+
+Project Intent Memory contract, retrieval, update and hygiene coverage:
+
+```powershell
+node .\scripts\project-intent-memory-smoke.js
 ```
 
 ChatGPT connector read-only MCP and JSX Lab quarantine coverage:
