@@ -41,6 +41,8 @@
   var refreshAgentsButton = document.getElementById("refreshAgentsButton");
   var checkAgentButton = document.getElementById("checkAgentButton");
   var saveAgentKeyButton = document.getElementById("saveAgentKeyButton");
+  var providerSelfTestButton = document.getElementById("providerSelfTestButton");
+  var providerSelfTestListEl = document.getElementById("providerSelfTestList");
   var chatTranscriptEl = document.getElementById("chatTranscript");
   var chatPromptEl = document.getElementById("chatPrompt");
   var sendChatButton = document.getElementById("sendChatButton");
@@ -70,11 +72,20 @@
   var keySaveInFlight = false;
   var setupActionInFlight = false;
   var readinessInFlight = false;
+  var providerSelfTestInFlight = false;
+  var providerSelfTestResults = {};
   var lastPlanResult = null;
   var lastPollErrorMessage = "";
   var setupStatusTimer = null;
   var setupStatusUntil = 0;
   var BRIDGE_OFFLINE_MESSAGE = "Bridge offline. Start the local bridge from Codex, then click Connect.";
+  var PROVIDER_SELF_TESTS = [
+    { key: "openai-api", label: "OpenAI API", agentId: "openai-api" },
+    { key: "openai-cli", label: "OpenAI CLI", agentId: "openai-cli" },
+    { key: "gemini-api", label: "Gemini", agentId: "gemini-api" },
+    { key: "claude-api", label: "Claude", agentId: "claude-api" },
+    { key: "ollama-local", label: "Local/Ollama", agentId: "ollama-local" }
+  ];
   var WORKFLOW_PRESETS = [
     {
       id: "selected-layer-timing",
@@ -380,6 +391,293 @@
     return null;
   }
 
+  function selfTestSpecForAgentId(agentId) {
+    for (var i = 0; i < PROVIDER_SELF_TESTS.length; i++) {
+      if (PROVIDER_SELF_TESTS[i].agentId === agentId) return PROVIDER_SELF_TESTS[i];
+    }
+    return null;
+  }
+
+  function firstModelId(items) {
+    if (!items || !items.length) return "";
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var id = typeof item === "string" ? item : item && (item.id || item.name);
+      if (id) return id;
+    }
+    return "";
+  }
+
+  function selfTestModel(agent) {
+    if (!agent) return "";
+    return localStorage.getItem("codexAeAgentModel:" + agent.id) ||
+      agent.model ||
+      firstModelId(agent.modelOptions) ||
+      firstModelId(agent.models) ||
+      "";
+  }
+
+  function shortDetail(value, maxLength) {
+    var text = trimText(value);
+    var limit = maxLength || 180;
+    if (text.length <= limit) return text;
+    return text.slice(0, Math.max(0, limit - 1)) + "...";
+  }
+
+  function commandStatusSummary(check, okLabel, failLabel) {
+    if (!check) return "";
+    var ok = check.status === 0;
+    var label = ok ? okLabel : failLabel;
+    var output = shortDetail(check.output || check.errorMessage || check.errorCode || "", 80);
+    return label + (output ? " (" + output + ")" : "");
+  }
+
+  function codexSelfTestDetail(status) {
+    if (!status) return "";
+    var parts = [];
+    if (status.installed === false) {
+      parts.push("Codex CLI not found");
+    } else if (status.loggedIn) {
+      parts.push("ChatGPT signed in");
+    } else {
+      parts.push("ChatGPT sign-in needed");
+    }
+    if (status.version) parts.push(status.version);
+    var versionCheck = commandStatusSummary(status.versionCheck, "version ok", "version check failed");
+    var loginCheck = commandStatusSummary(status.loginStatusCheck, "login ok", "login status failed");
+    if (versionCheck) parts.push(versionCheck);
+    if (loginCheck) parts.push(loginCheck);
+    if (status.error) parts.push(shortDetail(status.error, 80));
+    return parts.join(" - ");
+  }
+
+  function selfTestToneForReadiness(readiness) {
+    if (!readiness) return "";
+    if (readiness.canChat === true) return "ready";
+    if (readiness.configured === false || readiness.status === "missing_auth" || readiness.status === "model_unavailable") return "warning";
+    return "error";
+  }
+
+  function selfTestStatusForReadiness(readiness) {
+    if (!readiness) return "Not checked";
+    if (readiness.canChat === true) return "Ready";
+    if (readiness.configured === false || readiness.status === "missing_auth") return "Setup";
+    if (readiness.status === "model_unavailable") return "Model missing";
+    if (readiness.reachable === false) return "Offline";
+    return readiness.status || "Blocked";
+  }
+
+  function selfTestDetailFromReadiness(agent, readiness) {
+    if (!readiness) return "";
+    var responseAgent = readiness.agent || agent || {};
+    var providerError = readiness.providerError || responseAgent.providerError || null;
+    var detail = "";
+    if (readiness.canChat === true) {
+      detail = "Model " + (readiness.model || selfTestModel(agent) || "-") + " ready";
+      if (typeof readiness.modelCount === "number") {
+        detail += " - " + readiness.modelCount + " models";
+      }
+      if (readiness.modelSource) {
+        detail += " / " + modelSourceLabel(readiness.modelSource);
+      }
+    } else if (providerError && providerError.code === "missing_auth" && responseAgent.apiKeyEnv) {
+      detail = "Needs " + responseAgent.apiKeyEnv + "; key value is hidden.";
+    } else if (readiness.error) {
+      detail = readiness.error;
+    } else if (providerError && providerError.message) {
+      detail = providerError.message;
+    } else {
+      detail = readiness.status || "Provider is not ready.";
+    }
+
+    if (responseAgent.id === "openai-cli") {
+      var cliDetail = codexSelfTestDetail(responseAgent.codexStatus);
+      if (cliDetail) detail = detail ? detail + " - " + cliDetail : cliDetail;
+    }
+    return shortDetail(detail, 220);
+  }
+
+  function selfTestResultFromReadiness(spec, agent, readiness) {
+    return {
+      key: spec.key,
+      label: spec.label,
+      status: selfTestStatusForReadiness(readiness),
+      tone: selfTestToneForReadiness(readiness),
+      detail: selfTestDetailFromReadiness(agent, readiness)
+    };
+  }
+
+  function baselineSelfTestResult(spec) {
+    var agent = findAgent(spec.agentId);
+    if (!agent) {
+      return {
+        key: spec.key,
+        label: spec.label,
+        status: "Missing",
+        tone: "warning",
+        detail: "Provider contract is not available from this bridge session."
+      };
+    }
+    if (!agent.configured) {
+      return {
+        key: spec.key,
+        label: spec.label,
+        status: "Setup",
+        tone: "warning",
+        detail: agent.requiresApiKey ? "Needs " + (agent.apiKeyEnv || "API key") + "; key value is hidden." : setupTextForAgent(agent)
+      };
+    }
+    if (agent.canChat === true) {
+      return {
+        key: spec.key,
+        label: spec.label,
+        status: "Ready",
+        tone: "ready",
+        detail: "Last check passed for " + (selfTestModel(agent) || agent.model || "selected model") + "."
+      };
+    }
+    if (agent.canChat === false) {
+      return {
+        key: spec.key,
+        label: spec.label,
+        status: readinessLabel(agent),
+        tone: agent.reachable === false ? "error" : "warning",
+        detail: shortDetail(agent.error || setupTextForAgent(agent) || "Provider is not ready.", 220)
+      };
+    }
+    return {
+      key: spec.key,
+      label: spec.label,
+      status: "Not checked",
+      tone: "",
+      detail: "Checks setup and model availability for " + (selfTestModel(agent) || "the default model") + "."
+    };
+  }
+
+  function renderProviderSelfTest() {
+    if (!providerSelfTestListEl) return;
+    clearElement(providerSelfTestListEl);
+    for (var i = 0; i < PROVIDER_SELF_TESTS.length; i++) {
+      var spec = PROVIDER_SELF_TESTS[i];
+      var result = providerSelfTestResults[spec.key] || baselineSelfTestResult(spec);
+      var row = document.createElement("div");
+      row.className = "self-test-row" + (result.tone ? " " + result.tone : "");
+      row.setAttribute("data-self-test", spec.key);
+
+      var label = document.createElement("span");
+      label.className = "self-test-label";
+      label.textContent = spec.label;
+      row.appendChild(label);
+
+      var state = document.createElement("span");
+      state.className = "self-test-state";
+      state.textContent = result.status || "Not checked";
+      row.appendChild(state);
+
+      var detail = document.createElement("span");
+      detail.className = "self-test-detail";
+      detail.textContent = result.detail || "";
+      row.appendChild(detail);
+
+      providerSelfTestListEl.appendChild(row);
+    }
+    updateProviderSelfTestButton();
+  }
+
+  function setProviderSelfTestResult(agentId, result) {
+    var spec = selfTestSpecForAgentId(agentId);
+    if (!spec) return;
+    providerSelfTestResults[spec.key] = result;
+    renderProviderSelfTest();
+  }
+
+  function providerReadinessPath(agent, model) {
+    return "/agents/readiness?agentId=" + encodeURIComponent(agent.id) +
+      "&model=" + encodeURIComponent(model) +
+      "&checkModels=1&freeOnly=" + (freeModelsOnlyEl.checked ? "1" : "0");
+  }
+
+  function runProviderSelfTestAt(index) {
+    if (index >= PROVIDER_SELF_TESTS.length) {
+      providerSelfTestInFlight = false;
+      setAgentStatus("Provider self-test complete");
+      updateProviderSelfTestButton();
+      updateChatAvailability();
+      updateKeyAvailability();
+      return;
+    }
+
+    var spec = PROVIDER_SELF_TESTS[index];
+    var agent = findAgent(spec.agentId);
+    if (!agent) {
+      providerSelfTestResults[spec.key] = baselineSelfTestResult(spec);
+      renderProviderSelfTest();
+      runProviderSelfTestAt(index + 1);
+      return;
+    }
+
+    var model = selfTestModel(agent);
+    if (!model) {
+      providerSelfTestResults[spec.key] = {
+        key: spec.key,
+        label: spec.label,
+        status: "No model",
+        tone: "warning",
+        detail: "Choose or configure a model before testing this provider."
+      };
+      renderProviderSelfTest();
+      runProviderSelfTestAt(index + 1);
+      return;
+    }
+
+    providerSelfTestResults[spec.key] = {
+      key: spec.key,
+      label: spec.label,
+      status: "Checking",
+      tone: "",
+      detail: "Testing " + model + "..."
+    };
+    renderProviderSelfTest();
+    request("GET", providerReadinessPath(agent, model), null, function (error, response) {
+      if (error) {
+        providerSelfTestResults[spec.key] = {
+          key: spec.key,
+          label: spec.label,
+          status: isBridgeOfflineError(error) ? "Bridge offline" : "Error",
+          tone: "error",
+          detail: friendlyErrorMessage(error)
+        };
+      } else {
+        var readiness = response && response.readiness ? response.readiness : null;
+        mergeReadiness(agent, readiness);
+        providerSelfTestResults[spec.key] = selfTestResultFromReadiness(spec, agent, readiness);
+        if (agent.id === agentSelect.value) {
+          updateModelList(agent);
+          setAgentDetails(agent);
+          updateProviderUi(agent);
+        }
+      }
+      renderProviderSelfTest();
+      runProviderSelfTestAt(index + 1);
+    });
+  }
+
+  function runProviderSelfTest() {
+    if (providerSelfTestInFlight || readinessInFlight || chatInFlight) return;
+    providerSelfTestInFlight = true;
+    providerSelfTestResults = {};
+    setAgentStatus("Testing providers...");
+    updateProviderSelfTestButton();
+    renderProviderSelfTest();
+    runProviderSelfTestAt(0);
+  }
+
+  function updateProviderSelfTestButton() {
+    if (!providerSelfTestButton) return;
+    providerSelfTestButton.textContent = providerSelfTestInFlight ? "Testing..." : "Test";
+    providerSelfTestButton.disabled = chatInFlight || readinessInFlight || providerSelfTestInFlight || !agents.length;
+  }
+
   function selectAgent(agentId) {
     if (!findAgent(agentId)) return;
     agentSelect.value = agentId;
@@ -413,6 +711,7 @@
     setAgentDetails(agent);
     updateProviderUi(agent);
     setAgentStatus(providerLabelForGroup(group) + " provider unavailable");
+    renderProviderSelfTest();
     updateChatAvailability();
     updateKeyAvailability();
   }
@@ -690,9 +989,11 @@
     request("GET", "/agents?includeModels=1&freeOnly=" + freeOnly, null, function (error, response) {
       if (error) {
         agents = [];
+        providerSelfTestResults = {};
         clearElement(agentSelect);
         setAgentDetails(null);
         setAgentStatus(friendlyErrorMessage(error));
+        renderProviderSelfTest();
         if (isBridgeOfflineError(error)) setBridgeOffline(error);
         updateChatAvailability();
         updateKeyAvailability();
@@ -705,6 +1006,7 @@
       if (!agents.length) {
         addOption(agentSelect, "", "No agents");
         updateSelectedAgent();
+        renderProviderSelfTest();
         if (options.afterLoad) options.afterLoad(null, null);
         return;
       }
@@ -728,6 +1030,7 @@
       if (!findAgent(savedAgentId)) savedAgentId = agents[0].id;
       agentSelect.value = savedAgentId;
       updateSelectedAgent();
+      renderProviderSelfTest();
       if (options.afterLoad) options.afterLoad(findAgent(agentSelect.value), null);
     });
   }
@@ -747,7 +1050,7 @@
   }
 
   function checkSelectedAgent() {
-    if (readinessInFlight) return;
+    if (readinessInFlight || providerSelfTestInFlight) return;
     var agent = findAgent(agentSelect.value);
     if (!agent) {
       setAgentStatus("Select an agent first");
@@ -779,6 +1082,7 @@
 
       var readiness = response && response.readiness ? response.readiness : null;
       mergeReadiness(agent, readiness);
+      setProviderSelfTestResult(agent.id, selfTestResultFromReadiness(selfTestSpecForAgentId(agent.id) || { key: agent.id, label: agent.label || agent.id }, agent, readiness));
       updateModelList(agent);
       setAgentDetails(agent);
       updateProviderUi(agent);
@@ -1241,14 +1545,16 @@
     if (applyWorkflowPresetButton && workflowPresetSelect) {
       applyWorkflowPresetButton.disabled = chatInFlight || !workflowPresetSelect.value;
     }
+    updateProviderSelfTestButton();
   }
 
   function updateKeyAvailability() {
     var agent = findAgent(agentSelect.value);
     var key = trimText(agentApiKeyEl.value);
     saveAgentKeyButton.disabled = chatInFlight || keySaveInFlight || !agent || !agent.requiresApiKey || !key;
-    checkAgentButton.disabled = chatInFlight || readinessInFlight || !agent || !selectedModel();
+    checkAgentButton.disabled = chatInFlight || readinessInFlight || providerSelfTestInFlight || !agent || !selectedModel();
     updateSetupActionAvailability(agent);
+    updateProviderSelfTestButton();
   }
 
   function rememberModel() {
@@ -1924,6 +2230,7 @@
   freeModelsOnlyEl.addEventListener("change", onFreeModelsOnlyChanged);
   agentApiKeyEl.addEventListener("input", updateKeyAvailability);
   checkAgentButton.addEventListener("click", checkSelectedAgent);
+  providerSelfTestButton.addEventListener("click", runProviderSelfTest);
   saveAgentKeyButton.addEventListener("click", saveAgentKey);
   agentSetupActionButton.addEventListener("click", startAgentSetup);
   sendChatButton.addEventListener("click", sendChat);
@@ -1967,6 +2274,7 @@
   setDiagnosticsOpen(localStorage.getItem("codexAeDiagnosticsOpen") === "1");
   setAgentDetails(null);
   updateProviderUi(null);
+  renderProviderSelfTest();
   restoreTranscriptHistory();
   setStatus("Disconnected", false);
   updateChatAvailability();

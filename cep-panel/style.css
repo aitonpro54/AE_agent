@@ -226,6 +226,92 @@ section {
   text-align: left;
 }
 
+.self-test-card {
+  background: #252525;
+  border: 1px solid #3f3f3f;
+  border-radius: 5px;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.self-test-header {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.self-test-header strong {
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.self-test-header button {
+  min-height: 24px;
+  padding: 3px 10px;
+}
+
+.self-test-list {
+  display: grid;
+  gap: 6px;
+}
+
+.self-test-row {
+  border-top: 1px solid #373737;
+  display: grid;
+  gap: 3px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding-top: 6px;
+}
+
+.self-test-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.self-test-label {
+  color: #e0e4e6;
+  font-size: 11px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.self-test-state {
+  border: 1px solid #555555;
+  border-radius: 4px;
+  color: #c9d0d3;
+  font-size: 10px;
+  line-height: 1.2;
+  padding: 2px 5px;
+  text-transform: uppercase;
+}
+
+.self-test-detail {
+  color: #a9b1b5;
+  font-size: 10px;
+  grid-column: 1 / -1;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.self-test-row.ready .self-test-state {
+  border-color: #248f5a;
+  color: #76e4a8;
+}
+
+.self-test-row.warning .self-test-state {
+  border-color: #92713d;
+  color: #ffcf79;
+}
+
+.self-test-row.error .self-test-state {
+  border-color: #8b4b4b;
+  color: #ff9a9a;
+}
+
 .api-key-row {
   display: none;
   gap: 8px;

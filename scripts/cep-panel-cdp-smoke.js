@@ -295,6 +295,15 @@ function stateExpression() {
     agentValue: document.getElementById("agentSelect") ? document.getElementById("agentSelect").value : "",
     agentOptions: Array.from(document.querySelectorAll("#agentSelect option")).map((option) => ({ value: option.value, text: option.textContent })),
     agentDetails: document.getElementById("agentDetails") ? document.getElementById("agentDetails").innerText : "",
+    selfTestButtonText: document.getElementById("providerSelfTestButton") ? document.getElementById("providerSelfTestButton").textContent : "",
+    selfTestButtonDisabled: document.getElementById("providerSelfTestButton") ? document.getElementById("providerSelfTestButton").disabled : null,
+    selfTestRows: Array.from(document.querySelectorAll("#providerSelfTestList .self-test-row")).map((row) => ({
+      key: row.getAttribute("data-self-test") || "",
+      className: row.className || "",
+      label: row.querySelector(".self-test-label") ? row.querySelector(".self-test-label").textContent : "",
+      state: row.querySelector(".self-test-state") ? row.querySelector(".self-test-state").textContent : "",
+      detail: row.querySelector(".self-test-detail") ? row.querySelector(".self-test-detail").textContent : ""
+    })),
     model: document.getElementById("agentModel") ? document.getElementById("agentModel").value : "",
     modelOptions: Array.from(document.querySelectorAll("#agentModel option")).map((option) => ({ value: option.value, text: option.textContent })),
     setupTitle: document.getElementById("agentSetupTitle") ? document.getElementById("agentSetupTitle").textContent : "",
@@ -587,6 +596,178 @@ function fillApiKeyExpression(value) {
     el.dispatchEvent(new Event("input", { bubbles: true }));
     el.dispatchEvent(new Event("change", { bubbles: true }));
     return { ok: true, state: ${stateExpression()} };
+  })()`;
+}
+
+function installProviderSelfTestFakeExpression() {
+  return `(() => {
+    const OriginalXHR = window.__codexOriginalProviderSelfTestXHR || window.XMLHttpRequest;
+    window.__codexOriginalProviderSelfTestXHR = OriginalXHR;
+    function queryValue(url, name) {
+      const match = new RegExp("[?&]" + name + "=([^&]*)").exec(String(url || ""));
+      return match ? decodeURIComponent(match[1].replace(/\\+/g, " ")) : "";
+    }
+    function check(args, status, output) {
+      return { args, status, signal: null, errorCode: null, output };
+    }
+    function readinessFor(url) {
+      const agentId = queryValue(url, "agentId");
+      const model = queryValue(url, "model") || "smoke-model";
+      if (agentId === "openai-api") {
+        return {
+          checkedAt: "2026-05-15T00:00:00.000Z",
+          model,
+          configured: false,
+          reachable: false,
+          modelAvailable: false,
+          modelSource: null,
+          canChat: false,
+          status: "missing_auth",
+          error: "Save a valid OPENAI_API_KEY for OpenAI API.",
+          providerError: { code: "missing_auth", status: "missing_auth", message: "Save a valid OPENAI_API_KEY for OpenAI API." },
+          agent: { id: "openai-api", label: "OpenAI API", apiKeyEnv: "OPENAI_API_KEY", requiresApiKey: true }
+        };
+      }
+      if (agentId === "openai-cli") {
+        return {
+          checkedAt: "2026-05-15T00:00:00.000Z",
+          model,
+          configured: false,
+          reachable: false,
+          modelAvailable: false,
+          modelSource: null,
+          canChat: false,
+          status: "missing_auth",
+          error: "Run codex login, finish ChatGPT sign-in, then check the model again.",
+          providerError: { code: "missing_auth", status: "missing_auth", message: "Run codex login, finish ChatGPT sign-in, then check the model again." },
+          agent: {
+            id: "openai-cli",
+            label: "OpenAI CLI",
+            requiresApiKey: false,
+            codexStatus: {
+              installed: true,
+              loggedIn: false,
+              version: "codex-cli smoke",
+              status: "not_logged_in",
+              error: null,
+              versionCheck: check(["--version"], 0, "codex-cli smoke"),
+              loginStatusCheck: check(["login", "status"], 1, "Not logged in from CEP smoke")
+            }
+          }
+        };
+      }
+      if (agentId === "gemini-api") {
+        return {
+          checkedAt: "2026-05-15T00:00:00.000Z",
+          model,
+          configured: false,
+          reachable: false,
+          modelAvailable: false,
+          modelSource: null,
+          canChat: false,
+          status: "missing_auth",
+          error: "Save a valid GEMINI_API_KEY for Gemini.",
+          providerError: { code: "missing_auth", status: "missing_auth", message: "Save a valid GEMINI_API_KEY for Gemini." },
+          agent: { id: "gemini-api", label: "Gemini", apiKeyEnv: "GEMINI_API_KEY", requiresApiKey: true }
+        };
+      }
+      if (agentId === "claude-api") {
+        return {
+          checkedAt: "2026-05-15T00:00:00.000Z",
+          model,
+          configured: true,
+          reachable: true,
+          modelAvailable: false,
+          modelSource: "remote_list",
+          modelCount: 1,
+          remoteModels: [{ id: "claude-other", name: "Claude Other" }],
+          canChat: false,
+          status: "model_unavailable",
+          error: "Model " + model + " was not found in Claude's model list.",
+          providerError: { code: "model_unavailable", status: "model_unavailable", message: "Model " + model + " was not found in Claude's model list." },
+          agent: { id: "claude-api", label: "Claude", apiKeyEnv: "ANTHROPIC_API_KEY", requiresApiKey: true }
+        };
+      }
+      if (agentId === "ollama-local") {
+        return {
+          checkedAt: "2026-05-15T00:00:00.000Z",
+          model,
+          configured: true,
+          reachable: false,
+          modelAvailable: false,
+          modelSource: null,
+          modelCount: 0,
+          remoteModels: [],
+          canChat: false,
+          status: "network_failure",
+          error: "Ollama is offline for CEP smoke.",
+          providerError: { code: "network_failure", status: "network_failure", message: "Ollama is offline for CEP smoke." },
+          agent: { id: "ollama-local", label: "Ollama", requiresApiKey: false }
+        };
+      }
+      return null;
+    }
+    function FakeXHR() {
+      this.readyState = 0;
+      this.status = 0;
+      this.responseText = "";
+      this.timeout = 0;
+      this._headers = {};
+      this.onreadystatechange = null;
+      this.onerror = null;
+      this.ontimeout = null;
+    }
+    FakeXHR.prototype.open = function (method, url, async) {
+      this._method = method;
+      this._url = url;
+      this._async = async !== false;
+    };
+    FakeXHR.prototype.setRequestHeader = function (name, value) {
+      this._headers[name] = value;
+    };
+    FakeXHR.prototype.send = function (body) {
+      const self = this;
+      const fakeReadiness = String(this._url || "").indexOf("/agents/readiness") >= 0 ? readinessFor(this._url) : null;
+      if (fakeReadiness) {
+        setTimeout(function () {
+          self.readyState = 4;
+          self.status = 200;
+          self.responseText = JSON.stringify({ ok: true, readiness: fakeReadiness });
+          if (typeof self.onreadystatechange === "function") self.onreadystatechange();
+        }, 25);
+        return;
+      }
+      const xhr = new OriginalXHR();
+      xhr.timeout = this.timeout;
+      xhr.onreadystatechange = function () {
+        self.readyState = xhr.readyState;
+        self.status = xhr.status;
+        self.responseText = xhr.responseText;
+        if (typeof self.onreadystatechange === "function") self.onreadystatechange();
+      };
+      xhr.onerror = function () { if (typeof self.onerror === "function") self.onerror(); };
+      xhr.ontimeout = function () { if (typeof self.ontimeout === "function") self.ontimeout(); };
+      xhr.open(this._method, this._url, this._async);
+      Object.keys(this._headers).forEach(function (name) {
+        xhr.setRequestHeader(name, self._headers[name]);
+      });
+      xhr.send(body);
+    };
+    window.XMLHttpRequest = FakeXHR;
+    window.__codexRestoreProviderSelfTestFake = function () {
+      window.XMLHttpRequest = OriginalXHR;
+      return true;
+    };
+    return true;
+  })()`;
+}
+
+function restoreProviderSelfTestFakeExpression() {
+  return `(() => {
+    if (typeof window.__codexRestoreProviderSelfTestFake === "function") {
+      return window.__codexRestoreProviderSelfTestFake();
+    }
+    return true;
   })()`;
 }
 
@@ -1015,6 +1196,74 @@ async function providerSetupSmoke() {
 
 async function providerPlaceholderSmoke() {
   return providerSetupSmoke();
+}
+
+function selfTestRowsByKey(state) {
+  const rows = {};
+  for (const row of state.selfTestRows || []) rows[row.key] = row;
+  return rows;
+}
+
+async function providerSelfTestSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  let backup = null;
+  let bridgeBackup = null;
+  try {
+    backup = await evaluate(send, providerStorageExpression());
+    bridgeBackup = await evaluate(send, bridgeStorageExpression());
+    await reloadActivePage(send);
+    await evaluate(send, setupExpression());
+    await waitFor(send, "panel online", (state) => state.badge === "online", 15000);
+    await waitFor(send, "provider self-test rows", (state) => (
+      state.selfTestRows.length === 5 &&
+      state.agentOptions.some((option) => option.value === OPENAI_CLI_AGENT_ID)
+    ), 20000);
+
+    await evaluate(send, installProviderSelfTestFakeExpression());
+    const clicked = await evaluate(send, clickExpression("providerSelfTestButton"));
+    if (!clicked || !clicked.ok) throw new Error("Could not start provider self-test.");
+
+    const tested = await waitFor(send, "provider self-test diagnostics", (state) => {
+      const rows = selfTestRowsByKey(state);
+      return rows["openai-api"] &&
+        rows["openai-api"].state === "Setup" &&
+        rows["openai-api"].detail.indexOf("OPENAI_API_KEY") >= 0 &&
+        rows["openai-api"].detail.indexOf("smoke-key") < 0 &&
+        rows["openai-cli"] &&
+        rows["openai-cli"].state === "Setup" &&
+        rows["openai-cli"].detail.indexOf("Not logged in from CEP smoke") >= 0 &&
+        rows["openai-cli"].detail.indexOf("login status failed") >= 0 &&
+        rows["gemini-api"] &&
+        rows["gemini-api"].state === "Setup" &&
+        rows["gemini-api"].detail.indexOf("GEMINI_API_KEY") >= 0 &&
+        rows["claude-api"] &&
+        rows["claude-api"].state === "Model missing" &&
+        rows["claude-api"].detail.indexOf("model list") >= 0 &&
+        rows["ollama-local"] &&
+        rows["ollama-local"].state === "Offline" &&
+        rows["ollama-local"].detail.indexOf("Ollama is offline for CEP smoke") >= 0 &&
+        state.selfTestButtonDisabled === false &&
+        state.apiKeyValue === "";
+    }, 15000);
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      selfTestRows: tested.selfTestRows
+    }, null, 2));
+  } finally {
+    try {
+      await evaluate(send, restoreProviderSelfTestFakeExpression());
+    } catch (_restoreError) {}
+    if (backup) {
+      try {
+        await evaluate(send, writeProviderStorageExpression(backup));
+        if (bridgeBackup) await evaluate(send, writeBridgeStorageExpression(bridgeBackup));
+        await reloadActivePage(send);
+      } catch (_error) {}
+    }
+    ws.close();
+  }
 }
 
 async function providerKeySaveSmoke() {
@@ -2239,6 +2488,10 @@ async function main() {
   }
   if (command === "provider-setup-smoke") {
     await providerSetupSmoke();
+    return;
+  }
+  if (command === "provider-self-test-smoke") {
+    await providerSelfTestSmoke();
     return;
   }
   if (command === "provider-key-save-smoke") {

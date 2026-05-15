@@ -29,7 +29,7 @@
 - [x] Milestone 61: Артефакты отчетов Agent-run.
 - [x] Milestone 62: Регрессионный корпус planner.
 - [x] Milestone 63: Аудит checkpoint и cleanup.
-- [ ] Milestone 64: Provider readiness self-test UX.
+- [x] Milestone 64: Provider readiness self-test UX.
 - [ ] Milestone 65: Полная validation 1.3.
 
 ## Current Stable Baseline
@@ -269,6 +269,8 @@
 - 2026-05-15: Planner regression corpus держит accepted Agent scenario prompts и expected plan shapes в dependency-free `scripts\agent-scenario-fixtures.js`; live CEP scenario smoke и offline corpus smoke используют один источник сценариев.
 - 2026-05-15: Offline planner corpus smoke проверяет `/agents/plan/validate` и dry-run `/agents/plan/run` через локальный bridge daemon без external providers, без CEP panel requirement и без AE project mutations.
 - 2026-05-15: Generated QA audit остается read-only: он читает project items, render queue, checkpoint records и edit-session records, но deletion остается только в существующих guarded cleanup paths с точными generated prefixes.
+- 2026-05-15: Provider self-test UX использует существующий `/agents/readiness` contract для OpenAI API, OpenAI CLI, Gemini, Claude и Local/Ollama; публичная provider shape не меняется, а UI показывает только безопасные summaries без API key values.
+- 2026-05-15: Self-test results не сбрасываются обычным reload списка агентов, чтобы startup refresh не стирал только что полученную диагностику; новый запуск self-test очищает результаты перед повторной проверкой.
 
 ## Validation
 
@@ -673,3 +675,23 @@
   - Passed `node scripts\smoke-test.js`.
   - Passed `node scripts\cep-panel-cdp-smoke.js agent-scenario-audit` with `CEP_PANEL_AUDIT_DETAIL_LIMIT=3`.
   - External OpenAI CLI planner smokes and live AE mutation smokes were not run because Milestone 63 is read-only audit coverage and those paths remain approval-gated.
+- Milestone 64:
+  - Добавил compact `Provider self-test` block в CEP provider section.
+  - Self-test проверяет `openai-api`, `openai-cli`, `gemini-api`, `claude-api` и `ollama-local` через существующий `/agents/readiness` endpoint с `checkModels=1`.
+  - UI показывает setup/missing auth, model unavailable, offline и ready states без отображения API key values; OpenAI CLI row включает безопасный summary `codexStatus` version/login checks.
+  - Исправил startup race: обычный refresh списка агентов больше не стирает последние self-test rows, а новый запуск self-test очищает их явно.
+  - Добавил `node scripts\cep-panel-cdp-smoke.js provider-self-test-smoke` с fake readiness responses для missing auth, unavailable model, Local/Ollama offline и CLI readiness details.
+  - Синхронизировал установленную CEP-панель через `node scripts\cep-sync-health.js --sync --check`; copied `index.html`, `panel.js`, `style.css`, skipped unchanged manifest on first sync, then copied updated `panel.js` after race fix.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js provider-self-test-smoke`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js smoke`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js provider-setup-smoke`.
+  - External OpenAI CLI planner smokes and live AE mutation smokes were not run because Milestone 64 is provider-readiness UI coverage and those paths remain approval-gated.
