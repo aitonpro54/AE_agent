@@ -31,11 +31,17 @@
 - [x] Milestone 63: Аудит checkpoint и cleanup.
 - [x] Milestone 64: Provider readiness self-test UX.
 - [x] Milestone 65: Полная validation 1.3.
-- [ ] Milestone 66: Project Intent Memory.
-- [ ] Milestone 67: Plan confidence and risk classification.
-- [ ] Milestone 68: Plan repair loop.
-- [ ] Milestone 69: Semantic verification.
-- [ ] Milestone 70: Reliability validation.
+- [x] Milestone 66: Safe Solution Library roadmap reset.
+- [ ] Milestone 67: Solution registry and metadata.
+- [ ] Milestone 68: Candidate capture and quarantine.
+- [ ] Milestone 69: Promotion validation pipeline.
+- [ ] Milestone 70: Planner retrieval and safe use.
+- [ ] Milestone 71: Solution library validation.
+- [ ] Milestone 72: Project Intent Memory.
+- [ ] Milestone 73: Plan confidence and risk classification.
+- [ ] Milestone 74: Plan repair loop.
+- [ ] Milestone 75: Semantic verification.
+- [ ] Milestone 76: Reliability validation.
 
 ## Current Stable Baseline
 
@@ -234,34 +240,76 @@
 - Запускать external-provider или mutating live smokes только с явным approval, если они отправляют planner prompts/project context или мутируют AE project.
 - Обновить release/handoff notes с финальным validation status 1.3 и следующим recommended block.
 
-### Milestone 66: Project Intent Memory
+### Milestone 66: Safe Solution Library roadmap reset
+
+- Зафиксировать pivot после 1.3 validation: перед дальнейшим reliability layer добавить безопасную базу удачных решений, чтобы одноразовые ExtendScript-находки проходили quarantine, review и promotion.
+- Определить целевой lifecycle решений: `candidate` -> `recipe` -> `typed-tool-candidate` -> `tool`, без автоматического повышения доверия после одного удачного запуска.
+- Оставить raw ExtendScript escape hatch, но не давать новой библиотеке обходить Agent plan validation, mutation gates, idempotency, checkpoint/edit-session protection и post-mutation verification.
+- Обновить handoff так, чтобы следующий чат начинал с Milestone 67 и не запускал external planner smokes или live AE mutation smokes без explicit approval.
+
+### Milestone 67: Solution registry and metadata
+
+- Добавить tracked структуру для общей базы решений: registry JSON, `recipes/` для reusable recipes и `scripts/solutions/` для reviewed ExtendScript files, без production dependencies.
+- Описать стабильную схему `ae-solution.v1`: id, title, status, tags, intent, inputs, target assumptions, mutating/read-only flag, risk level, required safety gates, verification recipe, tested AE context и promotion history.
+- Добавить dependency-free validator, который проверяет registry shape, уникальность ids, допустимые статусы, обязательные safety fields для mutating/raw ExtendScript entries и отсутствие абсолютных project-specific paths в promoted recipes.
+- Задокументировать contract в README или `docs/`, чтобы новые решения добавлялись одинаково и не превращались в неструктурированный архив JSX.
+
+### Milestone 68: Candidate capture and quarantine
+
+- Добавить локальный ignored quarantine area для свежих удачных решений, например `logs/solution-candidates/`, чтобы live experiments не попадали в git автоматически.
+- Добавить helper/report format для ручного сохранения candidate: исходный user intent, generated script/tool plan, affected target summary, run result, verification read-back, warnings, project assumptions и suggested next promotion action.
+- Интегрировать capture с существующими Agent run reports и bridge logs без записи secrets, API keys, full project scans или больших raw transcripts.
+- Добавить smoke coverage на candidate report generation без live AE и external providers.
+
+### Milestone 69: Promotion validation pipeline
+
+- Добавить promotion helper, который переносит candidate в tracked solution entry только после явного review decision и заполняет registry metadata.
+- Для raw ExtendScript promotion требовать file-based execution shape, small script size, undo group for mutations, generated prefixes/comments where applicable, no broad project deletion, no hard-coded active project paths и explicit verification steps.
+- Добавить local validation suite: registry validator, promoted script syntax/static checks where possible, plan validation/dry-run fixtures и checks that promoted solutions do not recommend raw ExtendScript when an existing typed tool fits.
+- Зафиксировать правило: repeated stable recipes should become typed bridge tools rather than permanent raw JSX shortcuts.
+
+### Milestone 70: Planner retrieval and safe use
+
+- Добавить read-only solution retrieval path for planning prompt: compact top-N relevant recipes by tags/intent/risk, never the full library.
+- Обновить Agent planning prompt so solutions are advisory recipes, not execution bypasses; every suggested action still becomes normal validated plan steps.
+- Добавить risk-aware behavior: `candidate` entries are invisible to planner by default, `recipe` entries can be suggested, `typed-tool-candidate` can recommend tool implementation, `tool` is represented by normal MCP tool catalog.
+- Покрыть planner corpus cases: relevant recipe is surfaced, irrelevant/stale recipe is omitted, raw ExtendScript recipe is marked risky, and typed-tool equivalent wins when available.
+
+### Milestone 71: Solution library validation
+
+- Seed the library with 1-2 low-risk reviewed examples from existing proven workflows, preferably recipe-first and typed-tool-based rather than new mutating JSX.
+- Run full local smoke suite plus solution-specific validators; run read-only live inspection only if AE/panel are available.
+- Run external OpenAI CLI planner smokes or live mutating AE validation only after explicit approval; if run, use generated prefixes, checkpoint/edit-session protection and generated QA audit before/after.
+- Update plan Decision Log, Validation and handoff with the library schema, promotion rules, seeded entries, validation evidence and next recommended reliability milestone.
+
+### Milestone 72: Project Intent Memory
 
 - Спроектировать lightweight per-project memory для Agent planning: главные comps, защищенные folders/assets, naming conventions, generated prefixes и user/project hints.
 - Хранить память локально, без отправки секретов и без широкого project scan по умолчанию.
 - Добавить явные read/update paths и compact summary для planning prompt.
 - Покрыть offline smoke fixtures и read-only live inspection, не мутируя AE project.
 
-### Milestone 67: Plan confidence and risk classification
+### Milestone 73: Plan confidence and risk classification
 
 - Добавить предварительную классификацию Agent plans: safe typed-tool, needs clarification, risky, unsupported.
-- Связать classification с existing validation summary, mutation counts, affected targets, checkpoint expectation и raw ExtendScript risk.
+- Связать classification с existing validation summary, mutation counts, affected targets, checkpoint expectation, raw ExtendScript risk и solution-library recipe risk.
 - В CEP Plan Review показать короткий confidence/risk verdict до dry-run/run.
 - Покрыть corpus cases для safe, ambiguous, risky и unsupported plans.
 
-### Milestone 68: Plan repair loop
+### Milestone 74: Plan repair loop
 
 - Добавить bounded repair path для near-valid plans: missing required fields, common binding aliases, wrong tool names with obvious typed-tool equivalent.
 - Не превращать repair в raw ExtendScript fallback и не исполнять repaired plan без повторной validation.
 - Покрыть repair corpus и убедиться, что unsafe/ambiguous plans остаются blocked or clarification-needed.
 
-### Milestone 69: Semantic verification
+### Milestone 75: Semantic verification
 
 - Усилить post-run verification так, чтобы Agent сравнивал requested outcome с read-back summaries, а не только `tool completed`.
 - Начать с typed-tool workflows из existing Agent scenario fixtures: timing, layout/animation, precomp/source/rename, render queue setup.
 - Показывать concise verification result в run transcript и Agent run report artifact.
 - Не добавлять внешние provider calls в verification без отдельного решения.
 
-### Milestone 70: Reliability validation
+### Milestone 76: Reliability validation
 
 - Собрать reliability validation suite: offline corpus, read-only live audit, provider readiness, and approved protected mutation checks.
 - Разделить cheap local checks, read-only live checks, external-provider checks и mutating live AE checks.
@@ -312,6 +360,8 @@
 - 2026-05-15: Milestone 65 выявил race в CEP provider key-save UX: старые `loadAgents` ответы могли очистить введенный API key или откатить `key saved` state. Панель теперь применяет readiness из `/agents/key`, сохраняет typed key при refresh того же агента и игнорирует stale agent-list responses.
 - 2026-05-15: Полная validation 1.3 не запускает external OpenAI CLI planner smoke и live AE mutation smoke без отдельного approval; Milestone 65 закрывается local suite, provider key save, read-only live CEP smoke и read-only generated QA audit.
 - 2026-05-15: Следующий roadmap block после 1.3 validation — Agent reliability layer: project intent memory, plan confidence/risk classification, bounded plan repair, semantic verification и отдельная reliability validation веха.
+- 2026-05-15: После обсуждения live ChatGPT-in-AE testing roadmap получает промежуточный блок `Safe Solution Library`: удачные одноразовые ExtendScript/Agent решения сначала попадают в quarantine как candidates, затем проходят explicit promotion в reviewed recipes или typed tools; automatic promotion после одного успешного запуска запрещен.
+- 2026-05-15: Solution Library не должна становиться обходом safety model: promoted solutions only advise planner context, while execution remains through validated Agent plans, mutation gates, idempotency, checkpoint/edit-session protection and read-back verification.
 
 ## Validation
 
@@ -768,3 +818,16 @@
   - Passed `node scripts\cep-panel-cdp-smoke.js agent-scenario-audit`; generated project item leftovers `0`, render queue leftovers `0`, active edit session `false`, checkpoint records `69`, edit-session records `99`.
   - Passed `node scripts\cep-panel-cdp-smoke.js inspect`; final panel state was `Connected` / `online`, selected `ollama-local`, `gemma4:latest`, 3 Local/Ollama models.
   - Did not run external OpenAI CLI planner smokes or live AE mutation smokes because they remain explicit-approval-gated.
+- Milestone 66:
+  - Зафиксировал planning-only pivot к `Safe Solution Library` перед продолжением reliability layer.
+  - Разложил путь к безопасной базе решений на Milestones 67-71: registry/metadata, candidate quarantine, promotion validation, planner retrieval и library validation.
+  - Перенес прежний Agent reliability layer после library block как Milestones 72-76.
+  - JavaScript-файлы не менялись, поэтому `node --check` не применяется.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Initial `node scripts\prompt-optimization-smoke.js` attempt reported `Bridge did not become ready`; immediate rerun passed, consistent with a transient random-port bridge startup issue rather than a code regression.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Did not run live CEP or mutating AE smokes because this milestone changed only roadmap/handoff documentation.
