@@ -1585,7 +1585,7 @@ async function openAiCliSetupSmoke() {
       (
         state.setupActionText.indexOf("Sign in with ChatGPT") >= 0 ||
         state.setupActionText.indexOf("Signed in") >= 0 ||
-        state.setupActionText.indexOf("Install Codex CLI") >= 0
+        state.setupActionText.indexOf("Retry CLI check") >= 0
       )
     ), 30000);
 

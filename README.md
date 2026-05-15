@@ -124,7 +124,7 @@ $env:OLLAMA_CLOUD_API_KEY="..."
 $env:OLLAMA_CLOUD_MODEL="..."
 ```
 
-OpenAI has two separate paths. `openai-api` uses `OPENAI_API_KEY` and normal OpenAI API billing. `openai-cli` uses the local Codex CLI and the user's ChatGPT/Codex sign-in; use the panel's `Sign in with ChatGPT` button or run `codex login`, then the bridge can call `codex exec --ephemeral --json --sandbox read-only` for CLI-backed chat and AE Plan drafting. After launching sign-in from the panel, the panel refreshes readiness automatically for a short window. No OpenAI API key is used for the CLI path.
+OpenAI has two separate paths. `openai-api` uses `OPENAI_API_KEY` and normal OpenAI API billing. `openai-cli` uses the local Codex CLI and the user's ChatGPT/Codex sign-in; use the panel's `Sign in with ChatGPT` button or run `codex login`, then the bridge can call `codex exec --ephemeral --json --sandbox read-only` for CLI-backed chat and AE Plan drafting. After launching sign-in from the panel, the panel refreshes readiness automatically for a short window. No OpenAI API key is used for the CLI path. On Windows, if the bridge process cannot resolve `codex` through its PATH, it also checks the Codex Desktop local install at `%LOCALAPPDATA%\OpenAI\Codex\bin\codex.exe`; set `CODEX_CLI_PATH` for custom installs.
 
 `gemini-api` uses `GEMINI_API_KEY` with Google's Gemini `generateContent` REST endpoint. `claude-api` uses `ANTHROPIC_API_KEY` with Anthropic's Messages API. These are provider API billing paths, not ChatGPT subscription access.
 

@@ -1,7 +1,9 @@
 "use strict";
 
+const fs = require("fs");
 const http = require("http");
 const https = require("https");
+const path = require("path");
 const { spawn, spawnSync } = require("child_process");
 
 const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1";
@@ -121,6 +123,39 @@ function codexCommand() {
   return compactString(process.env.CODEX_CLI_PATH || process.env.CODEX_PATH || "codex", 500);
 }
 
+function explicitCodexCommand() {
+  return compactString(process.env.CODEX_CLI_PATH || process.env.CODEX_PATH || "", 500);
+}
+
+function uniqueStrings(values) {
+  const output = [];
+  for (const value of values || []) {
+    const text = compactString(value, 500);
+    if (text && !output.includes(text)) output.push(text);
+  }
+  return output;
+}
+
+function defaultLocalAppData() {
+  if (process.env.LOCALAPPDATA) return process.env.LOCALAPPDATA;
+  if (process.env.USERPROFILE) return path.join(process.env.USERPROFILE, "AppData", "Local");
+  return "";
+}
+
+function codexCommandCandidates() {
+  const explicit = explicitCodexCommand();
+  if (explicit) return [explicit];
+
+  const candidates = ["codex"];
+  if (process.platform === "win32") {
+    const localAppData = defaultLocalAppData();
+    if (localAppData) {
+      candidates.push(path.join(localAppData, "OpenAI", "Codex", "bin", "codex.exe"));
+    }
+  }
+  return uniqueStrings(candidates);
+}
+
 function syncCommand(command, args, timeoutMs) {
   try {
     return spawnSync(command, args, {
@@ -131,6 +166,14 @@ function syncCommand(command, args, timeoutMs) {
   } catch (error) {
     return { error };
   }
+}
+
+function commandLooksMissing(result) {
+  const error = result && result.error ? result.error : null;
+  return Boolean(
+    error && (error.code === "ENOENT" || error.code === "ENOTDIR") ||
+    result && (result.status === 127 || result.status === 9009)
+  );
 }
 
 function commandCheckDetails(command, args, result, maxOutput) {
@@ -147,21 +190,47 @@ function commandCheckDetails(command, args, result, maxOutput) {
 }
 
 function getCodexCliStatus() {
-  const command = codexCommand();
   const versionArgs = ["--version"];
-  const version = syncCommand(command, versionArgs, 3000);
-  const versionCheck = commandCheckDetails(command, versionArgs, version, 300);
+  const candidates = codexCommandCandidates();
+  const attemptedVersionChecks = [];
+  let command = candidates[0] || codexCommand();
+  let version = null;
+  let versionCheck = null;
+
+  for (const candidate of candidates) {
+    if (candidate !== "codex" && !fs.existsSync(candidate)) {
+      const missing = { error: Object.assign(new Error(`Missing file: ${candidate}`), { code: "ENOENT" }) };
+      attemptedVersionChecks.push(commandCheckDetails(candidate, versionArgs, missing, 300));
+      continue;
+    }
+    const candidateVersion = syncCommand(candidate, versionArgs, 3000);
+    const candidateCheck = commandCheckDetails(candidate, versionArgs, candidateVersion, 300);
+    attemptedVersionChecks.push(candidateCheck);
+    if (!candidateVersion.error && !commandLooksMissing(candidateVersion)) {
+      command = candidate;
+      version = candidateVersion;
+      versionCheck = candidateCheck;
+      break;
+    }
+  }
+
+  if (!version) {
+    version = { error: Object.assign(new Error("Codex CLI was not found."), { code: "ENOENT" }) };
+    versionCheck = attemptedVersionChecks[0] || commandCheckDetails(command, versionArgs, version, 300);
+  }
+
   const versionText = compactString([version.stdout, version.stderr].filter(Boolean).join(" "), 300);
-  if (version.error || version.status === 127 || version.status === 9009) {
+  if (commandLooksMissing(version)) {
     return {
       installed: false,
       loggedIn: false,
       command,
       version: null,
       versionCheck,
+      attemptedVersionChecks,
       loginStatusCheck: null,
       status: "missing",
-      error: "Codex CLI was not found. Install Codex and run codex login."
+      error: "Codex CLI was not found. Install Codex, restart the bridge, or set CODEX_CLI_PATH."
     };
   }
 
@@ -176,6 +245,7 @@ function getCodexCliStatus() {
     command,
     version: versionText || null,
     versionCheck,
+    attemptedVersionChecks,
     loginStatusCheck,
     status: loggedIn ? "ready" : "not_logged_in",
     error: loggedIn ? null : (loginText || "Run codex login and sign in with ChatGPT.")

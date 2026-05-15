@@ -38,6 +38,7 @@
 - [x] Milestone 70: Planner retrieval and safe use.
 - [x] Hotfix: Agent `itemIndexes` runtime binding.
 - [x] Milestone 71: Solution library validation.
+- [x] Hotfix: OpenAI CLI detection and setup action.
 - [ ] Milestone 72: Project Intent Memory.
 - [ ] Milestone 73: Plan confidence and risk classification.
 - [ ] Milestone 74: Plan repair loop.
@@ -290,6 +291,13 @@
 - Run external OpenAI CLI planner smokes or live mutating AE validation only after explicit approval; if run, use generated prefixes, checkpoint/edit-session protection and generated QA audit before/after.
 - Update plan Decision Log, Validation and handoff with the library schema, promotion rules, seeded entries, validation evidence and next recommended reliability milestone.
 
+### Hotfix: OpenAI CLI detection and setup action
+
+- Fix OpenAI CLI setup state when the bridge process cannot find `codex` through its inherited PATH even though Codex Desktop installed a local CLI under the user's profile.
+- Keep explicit `CODEX_CLI_PATH` / `CODEX_PATH` overrides authoritative for tests and custom installs.
+- Make the missing-CLI setup button actionable instead of disabled, so it can retry setup and show a backend error if the CLI is truly unavailable.
+- Sync the installed CEP panel and restart the live bridge from the current repo after validation.
+
 ### Milestone 72: Project Intent Memory
 
 - Спроектировать lightweight per-project memory для Agent planning: главные comps, защищенные folders/assets, naming conventions, generated prefixes и user/project hints.
@@ -380,6 +388,8 @@
 - 2026-05-15: Для selected source/precomp workflows plural project-item bindings могут извлекаться из `get_active_comp` / `get_selected_layers` selected layer source refs или из `find_project_items` matches; одиночные target fields получают первый индекс, а array-capable fields получают deduped list.
 - 2026-05-15: Milestone 71 seeds only reviewed typed-tool recipes: `active-comp-context-review` for read-only context inspection and `selected-layers-align-to-cti` for the proven CTI alignment workflow. No raw JSX solution is promoted in this milestone.
 - 2026-05-15: `node scripts\solution-library-validation-smoke.js` becomes the combined library validation gate for seeded entry quality, advisory prompt-section bounds, candidate invisibility and stale/tool-equivalent retrieval behavior.
+- 2026-05-15: OpenAI CLI detection now falls back to the Codex Desktop local install path `%LOCALAPPDATA%\OpenAI\Codex\bin\codex.exe` when no explicit CLI path is configured and the bridge's PATH cannot resolve `codex`; explicit `CODEX_CLI_PATH` / `CODEX_PATH` still take precedence.
+- 2026-05-15: The OpenAI CLI setup button no longer becomes a disabled `Install Codex CLI` dead end when the live bridge reports missing CLI; it stays actionable as `Retry CLI check` and surfaces backend setup errors.
 
 ## Validation
 
@@ -971,3 +981,31 @@
   - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
   - Passed read-only live CEP smoke `node scripts\cep-panel-cdp-smoke.js smoke` against the connected installed panel; the run stayed read-only and reported active comp `Mother and child 2`.
   - Did not run external OpenAI CLI planner smokes or live AE mutation smokes because Milestone 71 is local/read-only library validation and those paths remain explicit-approval-gated.
+- Hotfix: OpenAI CLI detection and setup action:
+  - Root cause: the live bridge process inherited a PATH where `codex` was not resolvable, while the user's current shell could run `codex --version` through the Codex Desktop local install. The panel then rendered a disabled `Install Codex CLI` button, so setup appeared to do nothing.
+  - Added backend fallback detection for `%LOCALAPPDATA%\OpenAI\Codex\bin\codex.exe` when no explicit `CODEX_CLI_PATH` / `CODEX_PATH` is set.
+  - Preserved explicit CLI path behavior for custom installs and provider contract tests.
+  - Changed the CEP setup button for missing CLI from disabled `Install Codex CLI` to actionable `Retry CLI check`.
+  - Updated CEP setup smoke expectations for the new button label.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check mcp-server\ai-agents.js`.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed manual fallback simulation with empty `PATH`, confirming OpenAI CLI status resolves to `C:\Users\Ant\AppData\Local\OpenAI\Codex\bin\codex.exe` and reports `not_logged_in` instead of `missing`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\cep-sync-health.js --sync --check`; copied updated `panel.js` into the installed CEP extension.
+  - Restarted the live bridge daemon on `127.0.0.1:3456` from the current repo.
+  - Live `/agents` now reports OpenAI CLI `installed:true`, `loggedIn:true`, `status:"ready"`, `version:"codex-cli 0.130.0-alpha.5"` and `loginStatusCheck.output:"Logged in using ChatGPT"`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js reload`; the live panel now shows OpenAI CLI `Status: ready`, setup text `Codex CLI is signed in with ChatGPT...`, self-test row `Ready`, and enabled Send.
+  - Passed `node scripts\cep-panel-cdp-smoke.js openai-cli-setup-smoke`.
+  - Did not run external OpenAI CLI planner/chat smokes or live AE mutation smokes; the hotfix was validated through readiness/setup paths without sending a provider prompt or mutating the AE project.

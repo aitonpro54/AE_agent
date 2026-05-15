@@ -761,8 +761,8 @@
       agentSetupActionButton.textContent = "Signed in";
       agentSetupActionButton.disabled = true;
     } else if (status.installed === false) {
-      agentSetupActionButton.textContent = "Install Codex CLI";
-      agentSetupActionButton.disabled = true;
+      agentSetupActionButton.textContent = setupActionInFlight ? "Checking CLI..." : "Retry CLI check";
+      agentSetupActionButton.disabled = setupActionInFlight || chatInFlight || readinessInFlight;
     } else {
       agentSetupActionButton.textContent = setupActionInFlight ? "Opening sign-in..." : "Sign in with ChatGPT";
       agentSetupActionButton.disabled = setupActionInFlight || chatInFlight || readinessInFlight;
@@ -1755,7 +1755,8 @@
     if (!agent || agent.id !== "openai-cli") return;
 
     setupActionInFlight = true;
-    setAgentStatus("Opening ChatGPT sign-in...");
+    var missingCodex = agent.codexStatus && agent.codexStatus.installed === false;
+    setAgentStatus(missingCodex ? "Checking Codex CLI..." : "Opening ChatGPT sign-in...");
     updateSetupActionAvailability(agent);
     request("POST", "/agents/setup", {
       agentId: agent.id,
