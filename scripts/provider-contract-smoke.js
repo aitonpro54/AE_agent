@@ -27,7 +27,11 @@ const MANAGED_ENV = [
   "GEMINI_API_KEY",
   "GOOGLE_API_KEY",
   "ANTHROPIC_API_KEY",
-  "CLAUDE_API_KEY"
+  "CLAUDE_API_KEY",
+  "OPENROUTER_API_KEY",
+  "OPENROUTER_KEY",
+  "OPENROUTER_MODEL",
+  "OPENROUTER_MODELS"
 ];
 
 function saveEnv() {
@@ -106,12 +110,17 @@ async function main() {
     setEnv("GOOGLE_API_KEY", "");
     setEnv("ANTHROPIC_API_KEY", "");
     setEnv("CLAUDE_API_KEY", "");
+    setEnv("OPENROUTER_API_KEY", "");
+    setEnv("OPENROUTER_KEY", "");
+    setEnv("OPENROUTER_MODEL", null);
+    setEnv("OPENROUTER_MODELS", null);
 
     const listed = await listAgents({});
     const openAiApi = findAgent(listed.agents, "openai-api");
     const openAiCli = findAgent(listed.agents, "openai-cli");
     const geminiApi = findAgent(listed.agents, "gemini-api");
     const claudeApi = findAgent(listed.agents, "claude-api");
+    const openRouter = findAgent(listed.agents, "openrouter");
 
     assert.strictEqual(openAiApi.providerGroup, "openai");
     assert.strictEqual(openAiApi.authMode, "api");
@@ -158,6 +167,16 @@ async function main() {
     assert.strictEqual(claudeApi.setupAction, "save_api_key");
     assert.strictEqual(claudeApi.configured, false);
     assert(claudeApi.modelOptions.some((item) => item.id === "claude-sonnet-4-20250514"));
+
+    assert.strictEqual(openRouter.providerGroup, "openrouter");
+    assert.strictEqual(openRouter.authMode, "api");
+    assert.strictEqual(openRouter.transport, "openai-chat-completions");
+    assert.deepStrictEqual(openRouter.uiModes, ["api"]);
+    assert.strictEqual(openRouter.requiresApiKey, true);
+    assert.strictEqual(openRouter.canSaveKey, true);
+    assert.strictEqual(openRouter.setupAction, "save_api_key");
+    assert.strictEqual(openRouter.configured, false);
+    assert(openRouter.models.some((item) => item.indexOf(":free") >= 0 || item === "openrouter/free"));
 
     const readiness = await checkAgentReadiness({
       agentId: "openai-cli",
@@ -260,6 +279,12 @@ async function main() {
           setupAction: claudeApi.setupAction,
           requiresApiKey: claudeApi.requiresApiKey,
           model: claudeApi.model
+        },
+        openRouter: {
+          authMode: openRouter.authMode,
+          setupAction: openRouter.setupAction,
+          requiresApiKey: openRouter.requiresApiKey,
+          models: openRouter.models
         }
       }
     }, null, 2));

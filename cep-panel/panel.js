@@ -88,6 +88,7 @@
     { key: "openai-cli", label: "OpenAI CLI", agentId: "openai-cli" },
     { key: "gemini-api", label: "Gemini", agentId: "gemini-api" },
     { key: "claude-api", label: "Claude", agentId: "claude-api" },
+    { key: "openrouter", label: "OpenRouter", agentId: "openrouter" },
     { key: "ollama-local", label: "Local/Ollama", agentId: "ollama-local" }
   ];
   var WORKFLOW_PRESETS = [
@@ -357,6 +358,7 @@
   function providerLabelForGroup(group) {
     if (group === "gemini") return "Gemini";
     if (group === "claude") return "Claude";
+    if (group === "openrouter") return "OpenRouter";
     if (group === "local") return "Local";
     return "OpenAI";
   }
@@ -381,7 +383,7 @@
 
   function visibleAgent(agent) {
     var group = agentGroup(agent);
-    return group === "openai" || group === "local" || group === "gemini" || group === "claude";
+    return group === "openai" || group === "local" || group === "gemini" || group === "claude" || group === "openrouter";
   }
 
   function findAgentByGroup(group) {
@@ -391,6 +393,7 @@
     }
     if (group === "gemini") return findAgent("gemini-api");
     if (group === "claude") return findAgent("claude-api");
+    if (group === "openrouter") return findAgent("openrouter");
     if (group === "local") return findAgent("ollama-local");
     return null;
   }
@@ -728,6 +731,7 @@
     if (agent.id === "openai-api") return "OpenAI API key";
     if (agent.id === "gemini-api") return "Gemini API key";
     if (agent.id === "claude-api") return "Claude API key";
+    if (agent.id === "openrouter") return "OpenRouter API key";
     if (agentGroup(agent) === "local") return "Local Ollama";
     return agent.label || "Provider setup";
   }
@@ -743,6 +747,7 @@
     if (agent.id === "openai-api") return "Uses OpenAI API billing. Paste an API key to enable API models.";
     if (agent.id === "gemini-api") return "Uses Google Gemini API billing. Paste an API key to enable Gemini models.";
     if (agent.id === "claude-api") return "Uses Anthropic API billing. Paste an API key to enable Claude models.";
+    if (agent.id === "openrouter") return "Uses OpenRouter API billing. Paste an API key to enable OpenRouter models, including :free variants and the openrouter/free router.";
     if (agentGroup(agent) === "local") return "Runs with Ollama on port 11434. No API key needed.";
     return agent.notes || "";
   }

@@ -10,7 +10,7 @@ The panel remains a client of the local bridge daemon. The daemon remains the ow
 
 - The first screen is a compact dark CEP panel inspired by the references in `specs/screenshots/`.
 - The visible product title format is `AE Agent 1.0.0` in the native CEP title/menu only; do not duplicate the product name in a separate in-panel top bar or sidebar heading.
-- The left side exposes provider setup: `Gemini`, `OpenAI`, `Claude`, and `Local`.
+- The left side exposes provider setup: `Gemini`, `OpenAI`, `Claude`, `OpenRouter`, and `Local`.
 - `OpenAI` supports two auth modes:
   - `API`: uses an OpenAI API key and normal API billing.
   - `CLI`: uses the installed Codex CLI after the user has signed in with ChatGPT through the panel's sign-in action or `codex login`.
@@ -38,6 +38,7 @@ Other provider API key access is also separate from ChatGPT subscription allowan
 
 - `Gemini` uses `GEMINI_API_KEY` and the Gemini `generateContent` REST endpoint.
 - `Claude` uses `ANTHROPIC_API_KEY` and the Anthropic Messages API.
+- `OpenRouter` uses `OPENROUTER_API_KEY` and the OpenRouter OpenAI-compatible API, including `:free` model variants and the `openrouter/free` router.
 
 ## Safety Requirements
 

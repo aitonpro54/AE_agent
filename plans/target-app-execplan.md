@@ -39,18 +39,22 @@
 - [x] Hotfix: Agent `itemIndexes` runtime binding.
 - [x] Milestone 71: Solution library validation.
 - [x] Hotfix: OpenAI CLI detection and setup action.
-- [ ] Milestone 72: Project Intent Memory.
-- [ ] Milestone 73: Plan confidence and risk classification.
-- [ ] Milestone 74: Plan repair loop.
-- [ ] Milestone 75: Semantic verification.
-- [ ] Milestone 76: Reliability validation.
+- [x] Milestone 72: Parallel AI Paths - OpenRouter UI restore.
+- [ ] Milestone 73: ChatGPT Connector read-only skeleton.
+- [ ] Milestone 74: JSX Lab candidate quarantine and checks.
+- [ ] Milestone 75: Gated JSX Lab run, promotion hooks and CEP connector status.
+- [ ] Milestone 76: Project Intent Memory.
+- [ ] Milestone 77: Plan confidence and risk classification.
+- [ ] Milestone 78: Plan repair loop.
+- [ ] Milestone 79: Semantic verification.
+- [ ] Milestone 80: Reliability validation.
 
 ## Current Stable Baseline
 
 - The active repository is `C:\Users\Ant\Documents\Codex\AE_agent`.
 - The native CEP title/menu format is `AE Agent 1.0.0`.
 - The panel is a compact dark CEP client for the local bridge daemon.
-- Provider paths are separate: OpenAI API, OpenAI CLI, Gemini, Claude, and Local/Ollama.
+- Provider paths are separate: OpenAI API, OpenAI CLI, Gemini, Claude, OpenRouter, and Local/Ollama.
 - Agent mode drafts structured MCP plans, validates tool names and required fields, dry-runs plans, and executes only through explicit mutation gates.
 - Project-changing tools use idempotency, optional checkpoints, edit-session protection, and post-mutation verification.
 - Raw ExtendScript remains available as an escape hatch, but normal product workflows should use typed bridge tools.
@@ -298,34 +302,63 @@
 - Make the missing-CLI setup button actionable instead of disabled, so it can retry setup and show a backend error if the CLI is truly unavailable.
 - Sync the installed CEP panel and restart the live bridge from the current repo after validation.
 
-### Milestone 72: Project Intent Memory
+### Milestone 72: Parallel AI Paths - OpenRouter UI restore
+
+- Insert the new `Parallel AI Paths: ChatGPT Connector + OpenRouter API` roadmap block before the previous reliability-layer milestones.
+- Restore OpenRouter as a visible CEP provider tab while preserving backend ids and env names: `openrouter`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `openrouter/free`, and `:free` model variants.
+- Add OpenRouter to provider self-test and CEP setup smoke coverage, including API-key setup, model list selection, `freeOnly` UI and disabled chat state when no key is saved.
+- Update OpenRouter attribution headers to send `HTTP-Referer` and `X-OpenRouter-Title`, while keeping `X-Title` as a compatibility fallback.
+- Cover OpenRouter with offline/fake-provider tests only; live OpenRouter calls remain explicit-approval-gated because they can spend API quota and expose prompt/project context.
+
+### Milestone 73: ChatGPT Connector read-only skeleton
+
+- Add an isolated `chatgpt-connector/` module for an Apps SDK/MCP HTTP `/mcp` server intended for ChatGPT Business/Admin custom connectors through a Cloudflare Tunnel.
+- Keep the connector separate from normal API providers: it must not call OpenAI APIs itself; the ChatGPT subscription/workspace model calls AE Agent tools through the connector.
+- Start with read-only bridge proxy tools and tool listing, with `readOnlyHint:true` annotations and no AE mutation/write tools exposed.
+- Add a local/offline MCP tool-list smoke without requiring a live tunnel or ChatGPT workspace.
+
+### Milestone 74: JSX Lab candidate quarantine and checks
+
+- Add a controlled JSX Lab candidate flow for ChatGPT connector use: `propose_extendscript_candidate` stores candidate metadata and JSX in ignored quarantine.
+- Add `check_extendscript_candidate` for syntax, static risk, size limit and denylist checks without mutating AE.
+- Do not expose direct raw `run_extendscript` from ChatGPT; raw JSX must always pass through saved candidates and reports.
+- Add offline smoke coverage for candidate save, redaction/path hygiene, static rejection and non-mutating check reports.
+
+### Milestone 75: Gated JSX Lab run, promotion hooks and CEP connector status
+
+- Add `run_extendscript_candidate` only for saved candidates, with explicit confirmation, checkpoint/edit-session protection, generated-prefix expectations, denylist enforcement and read-back verification.
+- Add `promote_solution_candidate` hooks into the existing Solution Library review/promotion lifecycle: `candidate -> recipe -> typed-tool-candidate -> tool`.
+- Add compact CEP status for ChatGPT Connector: connected/offline, local/tunnel status, exposed tools snapshot, last tool call, write actions enabled/disabled and emergency disable.
+- Keep live ChatGPT connector checks, Cloudflare Tunnel checks and any live AE mutation run explicit-approval-gated.
+
+### Milestone 76: Project Intent Memory
 
 - Спроектировать lightweight per-project memory для Agent planning: главные comps, защищенные folders/assets, naming conventions, generated prefixes и user/project hints.
 - Хранить память локально, без отправки секретов и без широкого project scan по умолчанию.
 - Добавить явные read/update paths и compact summary для planning prompt.
 - Покрыть offline smoke fixtures и read-only live inspection, не мутируя AE project.
 
-### Milestone 73: Plan confidence and risk classification
+### Milestone 77: Plan confidence and risk classification
 
 - Добавить предварительную классификацию Agent plans: safe typed-tool, needs clarification, risky, unsupported.
 - Связать classification с existing validation summary, mutation counts, affected targets, checkpoint expectation, raw ExtendScript risk и solution-library recipe risk.
 - В CEP Plan Review показать короткий confidence/risk verdict до dry-run/run.
 - Покрыть corpus cases для safe, ambiguous, risky и unsupported plans.
 
-### Milestone 74: Plan repair loop
+### Milestone 78: Plan repair loop
 
 - Добавить bounded repair path для near-valid plans: missing required fields, common binding aliases, wrong tool names with obvious typed-tool equivalent.
 - Не превращать repair в raw ExtendScript fallback и не исполнять repaired plan без повторной validation.
 - Покрыть repair corpus и убедиться, что unsafe/ambiguous plans остаются blocked or clarification-needed.
 
-### Milestone 75: Semantic verification
+### Milestone 79: Semantic verification
 
 - Усилить post-run verification так, чтобы Agent сравнивал requested outcome с read-back summaries, а не только `tool completed`.
 - Начать с typed-tool workflows из existing Agent scenario fixtures: timing, layout/animation, precomp/source/rename, render queue setup.
 - Показывать concise verification result в run transcript и Agent run report artifact.
 - Не добавлять внешние provider calls в verification без отдельного решения.
 
-### Milestone 76: Reliability validation
+### Milestone 80: Reliability validation
 
 - Собрать reliability validation suite: offline corpus, read-only live audit, provider readiness, and approved protected mutation checks.
 - Разделить cheap local checks, read-only live checks, external-provider checks и mutating live AE checks.
@@ -390,6 +423,12 @@
 - 2026-05-15: `node scripts\solution-library-validation-smoke.js` becomes the combined library validation gate for seeded entry quality, advisory prompt-section bounds, candidate invisibility and stale/tool-equivalent retrieval behavior.
 - 2026-05-15: OpenAI CLI detection now falls back to the Codex Desktop local install path `%LOCALAPPDATA%\OpenAI\Codex\bin\codex.exe` when no explicit CLI path is configured and the bridge's PATH cannot resolve `codex`; explicit `CODEX_CLI_PATH` / `CODEX_PATH` still take precedence.
 - 2026-05-15: The OpenAI CLI setup button no longer becomes a disabled `Install Codex CLI` dead end when the live bridge reports missing CLI; it stays actionable as `Retry CLI check` and surfaces backend setup errors.
+- 2026-05-15: Parallel AI Paths block is inserted before Project Intent Memory; OpenRouter UI restore is the first small reviewable milestone because the backend provider and secret-store path already exist.
+- 2026-05-15: OpenRouter remains a normal API-billed provider path, separate from OpenAI API and ChatGPT/Codex CLI subscription access; live OpenRouter chat/plan calls stay explicit-approval-gated.
+- 2026-05-15: OpenRouter attribution headers now send `HTTP-Referer` and `X-OpenRouter-Title`, while keeping legacy `X-Title` as a compatibility fallback.
+- 2026-05-15: ChatGPT Connector will be an isolated Apps SDK/MCP `/mcp` server reached through Cloudflare Tunnel for development; it will not call OpenAI APIs itself and must not commit tunnel URLs, connector tokens or secrets.
+- 2026-05-15: ChatGPT Connector tools start read-only with `readOnlyHint:true`; write/JSX tools require explicit server-side risk signals and confirmation gates before exposure.
+- 2026-05-15: JSX Lab must use candidate quarantine and static/risk checks before any execution; ChatGPT must never receive a direct raw `run_extendscript` string path that bypasses candidate reports, checkpoint/edit-session protection and read-back verification.
 
 ## Validation
 
@@ -1009,3 +1048,31 @@
   - Passed `node scripts\cep-panel-cdp-smoke.js reload`; the live panel now shows OpenAI CLI `Status: ready`, setup text `Codex CLI is signed in with ChatGPT...`, self-test row `Ready`, and enabled Send.
   - Passed `node scripts\cep-panel-cdp-smoke.js openai-cli-setup-smoke`.
   - Did not run external OpenAI CLI planner/chat smokes or live AE mutation smokes; the hotfix was validated through readiness/setup paths without sending a provider prompt or mutating the AE project.
+- Milestone 72:
+  - Inserted the new `Parallel AI Paths: ChatGPT Connector + OpenRouter API` roadmap block before the previous Project Intent Memory reliability-layer milestone.
+  - Restored OpenRouter as a visible CEP provider tab while preserving backend id `openrouter`, env/key names `OPENROUTER_API_KEY` / `OPENROUTER_MODEL`, `openrouter/free` and `:free` variants.
+  - Added OpenRouter to provider self-test rows and CEP provider setup smoke coverage, including API-key setup copy, model list state and the free-model filter row.
+  - Updated OpenRouter attribution headers to send `HTTP-Referer`, `X-OpenRouter-Title` and legacy fallback `X-Title`.
+  - Extended provider contract/API smokes with OpenRouter metadata and a fake OpenRouter server that verifies attribution headers without a live OpenRouter call.
+  - Synchronized changed `index.html`, `panel.js` and `style.css` into the installed CEP extension with `node scripts\cep-sync-health.js --sync --check`.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check mcp-server\ai-agents.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `node --check scripts\provider-api-smoke.js`.
+  - Passed `node --check scripts\provider-contract-smoke.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed targeted live CEP smoke `node scripts\cep-panel-cdp-smoke.js provider-setup-smoke` using fake provider data; it verified OpenRouter tab/setup without calling OpenRouter.
+  - Passed targeted live CEP smoke `node scripts\cep-panel-cdp-smoke.js provider-self-test-smoke` using fake readiness data; it verified OpenRouter self-test row without calling OpenRouter.
+  - Did not run generic live CEP `smoke` because normal panel reload can query live model lists for configured providers, including OpenRouter, and live OpenRouter calls remain explicit-approval-gated.
+  - Did not run Cloudflare Tunnel, ChatGPT connector checks, external OpenAI CLI planner smokes or live AE mutation smokes because this milestone is OpenRouter UI/fake-provider coverage only and those paths remain explicit-approval-gated.

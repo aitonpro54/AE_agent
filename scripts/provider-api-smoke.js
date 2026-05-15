@@ -6,6 +6,7 @@ const { chatWithAgent, checkAgentReadiness } = require("../mcp-server/ai-agents"
 
 const geminiRequests = [];
 const claudeRequests = [];
+const openRouterRequests = [];
 const errorProviderRequests = [];
 
 function listen(server) {
@@ -129,6 +130,56 @@ function makeClaudeServer() {
       writeJson(res, 404, { error: "not found" });
     } catch (error) {
       writeJson(res, 500, { error: error.message || String(error) });
+    }
+  });
+}
+
+function makeOpenRouterServer() {
+  return http.createServer(async (req, res) => {
+    try {
+      if (req.method === "GET" && req.url === "/models") {
+        writeJson(res, 200, {
+          data: [
+            {
+              id: "openrouter/free",
+              name: "OpenRouter Free Router"
+            },
+            {
+              id: "meta/smoke:free",
+              name: "Meta Smoke Free"
+            }
+          ]
+        });
+        return;
+      }
+
+      if (req.method === "POST" && req.url === "/chat/completions") {
+        const body = await readJsonBody(req);
+        openRouterRequests.push({ headers: req.headers, body });
+        writeJson(res, 200, {
+          id: "chatcmpl_openrouter_smoke",
+          model: body.model || "openrouter/free",
+          choices: [
+            {
+              index: 0,
+              message: {
+                role: "assistant",
+                content: "OpenRouter provider smoke ok"
+              },
+              finish_reason: "stop"
+            }
+          ],
+          usage: {
+            prompt_tokens: 1,
+            completion_tokens: 1
+          }
+        });
+        return;
+      }
+
+      writeJson(res, 404, { error: { message: "not found" } });
+    } catch (error) {
+      writeJson(res, 500, { error: { message: error.message || String(error) } });
     }
   });
 }
@@ -264,16 +315,25 @@ async function main() {
     "CLAUDE_API_KEY",
     "CLAUDE_MODEL",
     "CLAUDE_MODELS",
+    "OPENROUTER_BASE_URL",
+    "OPENROUTER_API_KEY",
+    "OPENROUTER_KEY",
+    "OPENROUTER_MODEL",
+    "OPENROUTER_MODELS",
+    "OPENROUTER_SITE_URL",
+    "OPENROUTER_APP_NAME",
     "AE_AGENT_PROVIDERS_JSON"
   ];
   const saved = saveEnv(envNames);
   const gemini = makeGeminiServer();
   const claude = makeClaudeServer();
+  const openRouter = makeOpenRouterServer();
   const errorProvider = makeOpenAiErrorServer();
 
   try {
     const geminiPort = await listen(gemini);
     const claudePort = await listen(claude);
+    const openRouterPort = await listen(openRouter);
     const errorProviderPort = await listen(errorProvider);
     const networkFailurePort = await unusedPort();
 
@@ -287,6 +347,13 @@ async function main() {
     process.env.CLAUDE_API_KEY = "";
     process.env.CLAUDE_MODEL = "claude-smoke";
     process.env.CLAUDE_MODELS = "claude-smoke";
+    process.env.OPENROUTER_BASE_URL = `http://127.0.0.1:${openRouterPort}`;
+    process.env.OPENROUTER_API_KEY = "openrouter-smoke-key";
+    process.env.OPENROUTER_KEY = "";
+    process.env.OPENROUTER_MODEL = "openrouter/free";
+    process.env.OPENROUTER_MODELS = "openrouter/free,meta/smoke:free";
+    process.env.OPENROUTER_SITE_URL = "https://example.invalid/ae-agent-smoke";
+    process.env.OPENROUTER_APP_NAME = "AE Agent Smoke";
     process.env.AE_AGENT_PROVIDERS_JSON = JSON.stringify([
       {
         id: "error-openai",
@@ -314,8 +381,10 @@ async function main() {
 
     const geminiReady = await checkAgentReadiness({ agentId: "gemini-api", model: "gemini-smoke" });
     const claudeReady = await checkAgentReadiness({ agentId: "claude-api", model: "claude-smoke" });
+    const openRouterReady = await checkAgentReadiness({ agentId: "openrouter", model: "openrouter/free", freeOnly: true });
     assert.strictEqual(geminiReady.canChat, true);
     assert.strictEqual(claudeReady.canChat, true);
+    assert.strictEqual(openRouterReady.canChat, true);
 
     const geminiChat = await chatWithAgent({
       agentId: "gemini-api",
@@ -331,9 +400,17 @@ async function main() {
       system: "Claude system smoke",
       skipReadinessCheck: true
     });
+    const openRouterChat = await chatWithAgent({
+      agentId: "openrouter",
+      model: "openrouter/free",
+      prompt: "Hello OpenRouter",
+      system: "OpenRouter system smoke",
+      skipReadinessCheck: true
+    });
 
     assert.strictEqual(geminiChat.text, "Gemini provider smoke ok");
     assert.strictEqual(claudeChat.text, "Claude provider smoke ok");
+    assert.strictEqual(openRouterChat.text, "OpenRouter provider smoke ok");
     assert.strictEqual(geminiRequests[0].headers["x-goog-api-key"], "gemini-smoke-key");
     assert.strictEqual(geminiRequests[0].body.systemInstruction.parts[0].text, "Gemini system smoke");
     assert.strictEqual(geminiRequests[0].body.contents[0].parts[0].text, "Hello Gemini");
@@ -343,6 +420,13 @@ async function main() {
     assert.strictEqual(claudePost.headers["anthropic-version"], "2023-06-01");
     assert.strictEqual(claudePost.body.system, "Claude system smoke");
     assert.strictEqual(claudePost.body.messages[0].content, "Hello Claude");
+    assert.strictEqual(openRouterRequests[0].headers.authorization, "Bearer openrouter-smoke-key");
+    assert.strictEqual(openRouterRequests[0].headers["http-referer"], "https://example.invalid/ae-agent-smoke");
+    assert.strictEqual(openRouterRequests[0].headers["x-openrouter-title"], "AE Agent Smoke");
+    assert.strictEqual(openRouterRequests[0].headers["x-title"], "AE Agent Smoke");
+    assert.strictEqual(openRouterRequests[0].body.model, "openrouter/free");
+    assert.strictEqual(openRouterRequests[0].body.messages[0].content, "OpenRouter system smoke");
+    assert.strictEqual(openRouterRequests[0].body.messages[1].content, "Hello OpenRouter");
 
     process.env.GEMINI_API_KEY = "";
     const missingAuthReady = await checkAgentReadiness({ agentId: "gemini-api", model: "gemini-smoke" });
@@ -402,6 +486,16 @@ async function main() {
         text: claudeChat.text,
         requestPath: "/messages"
       },
+      openRouter: {
+        readiness: openRouterReady.status,
+        text: openRouterChat.text,
+        requestPath: "/chat/completions",
+        attribution: {
+          referer: openRouterRequests[0].headers["http-referer"],
+          title: openRouterRequests[0].headers["x-openrouter-title"],
+          fallbackTitle: openRouterRequests[0].headers["x-title"]
+        }
+      },
       errors: {
         missingAuth: missingAuthReady.status,
         unavailableModel: unavailableModelReady.status,
@@ -416,6 +510,7 @@ async function main() {
     restoreEnv(saved);
     gemini.close();
     claude.close();
+    openRouter.close();
     errorProvider.close();
   }
 }

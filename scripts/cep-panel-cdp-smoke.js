@@ -250,7 +250,10 @@ async function evaluate(send, expression) {
   });
   if (response.error) throw new Error(response.error.message || JSON.stringify(response.error));
   if (response.result && response.result.exceptionDetails) {
-    throw new Error(response.result.exceptionDetails.text || "Runtime.evaluate failed.");
+    const details = response.result.exceptionDetails;
+    const description = details.exception && details.exception.description ? details.exception.description : "";
+    const location = details.lineNumber !== undefined ? ` at ${details.lineNumber}:${details.columnNumber}` : "";
+    throw new Error((description || details.text || "Runtime.evaluate failed.") + location);
   }
   return response.result && response.result.result ? response.result.result.value : null;
 }
@@ -600,23 +603,76 @@ function fillApiKeyExpression(value) {
 }
 
 function installProviderSelfTestFakeExpression() {
-  return `(() => {
-    const OriginalXHR = window.__codexOriginalProviderSelfTestXHR || window.XMLHttpRequest;
+  return `(function () {
+    var OriginalXHR = window.__codexOriginalProviderSelfTestXHR || window.XMLHttpRequest;
     window.__codexOriginalProviderSelfTestXHR = OriginalXHR;
     function queryValue(url, name) {
-      const match = new RegExp("[?&]" + name + "=([^&]*)").exec(String(url || ""));
+      var match = new RegExp("[?&]" + name + "=([^&]*)").exec(String(url || ""));
       return match ? decodeURIComponent(match[1].replace(/\\+/g, " ")) : "";
     }
     function check(args, status, output) {
       return { args, status, signal: null, errorCode: null, output };
     }
+    function agentForList(id, label, provider, providerGroup, apiKeyEnv, model, models, extra) {
+      var agent = {
+        id: id,
+        label: label,
+        provider: provider,
+        providerGroup: providerGroup,
+        authMode: id === "openai-cli" ? "cli" : providerGroup === "local" ? "local" : "api",
+        transport: id === "openai-cli" ? "codex-cli" : providerGroup === "local" ? "ollama-chat" : "openai-chat-completions",
+        uiModes: [id === "openai-cli" ? "cli" : providerGroup === "local" ? "local" : "api"],
+        apiStyle: provider === "gemini" ? "gemini" : provider === "claude" ? "anthropic" : providerGroup === "local" ? "ollama" : "openai",
+        baseUrl: providerGroup === "local" ? "http://127.0.0.1:11434" : "https://example.invalid",
+        apiKeyEnv: apiKeyEnv || "",
+        model: model,
+        models: models,
+        modelOptions: models.map(function (item) { return { id: item, name: item }; }),
+        configured: false,
+        requiresApiKey: Boolean(apiKeyEnv),
+        canSaveKey: Boolean(apiKeyEnv),
+        setupAction: apiKeyEnv ? "save_api_key" : id === "openai-cli" ? "codex_login" : "detect_ollama",
+        reachable: false,
+        modelAvailable: false,
+        canChat: false,
+        status: apiKeyEnv ? "missing_auth" : "not_ready",
+        modelSource: "not_checked",
+        modelCount: models.length,
+        remoteModels: []
+      };
+      Object.keys(extra || {}).forEach(function (key) { agent[key] = extra[key]; });
+      return agent;
+    }
+    function agentsForList() {
+      return [
+        agentForList("openai-api", "OpenAI API", "openai", "openai", "OPENAI_API_KEY", "gpt-5.5", ["gpt-5.5"]),
+        agentForList("openai-cli", "OpenAI CLI", "openai", "openai", "", "gpt-5.5", ["gpt-5.5"], {
+          codexStatus: {
+            installed: true,
+            loggedIn: false,
+            version: "codex-cli smoke",
+            status: "not_logged_in",
+            error: null,
+            versionCheck: check(["--version"], 0, "codex-cli smoke"),
+            loginStatusCheck: check(["login", "status"], 1, "Not logged in from CEP smoke")
+          }
+        }),
+        agentForList("gemini-api", "Gemini API", "gemini", "gemini", "GEMINI_API_KEY", "gemini-2.5-flash", ["gemini-2.5-flash"]),
+        agentForList("claude-api", "Claude API", "claude", "claude", "ANTHROPIC_API_KEY", "claude-sonnet-4-20250514", ["claude-sonnet-4-20250514"]),
+        agentForList("openrouter", "OpenRouter", "openrouter", "openrouter", "OPENROUTER_API_KEY", "openrouter/free", ["openrouter/free", "meta/smoke:free"]),
+        agentForList("ollama-local", "Ollama Local", "ollama", "local", "", "gemma4:latest", ["gemma4:latest"], {
+          configured: true,
+          status: "network_failure"
+        })
+      ];
+    }
     function readinessFor(url) {
-      const agentId = queryValue(url, "agentId");
-      const model = queryValue(url, "model") || "smoke-model";
+      var agentId = queryValue(url, "agentId");
+      var model = queryValue(url, "model") || "smoke-model";
       if (agentId === "openai-api") {
         return {
           checkedAt: "2026-05-15T00:00:00.000Z",
-          model,
+          model: model,
           configured: false,
           reachable: false,
           modelAvailable: false,
@@ -631,7 +687,7 @@ function installProviderSelfTestFakeExpression() {
       if (agentId === "openai-cli") {
         return {
           checkedAt: "2026-05-15T00:00:00.000Z",
-          model,
+          model: model,
           configured: false,
           reachable: false,
           modelAvailable: false,
@@ -659,7 +715,7 @@ function installProviderSelfTestFakeExpression() {
       if (agentId === "gemini-api") {
         return {
           checkedAt: "2026-05-15T00:00:00.000Z",
-          model,
+          model: model,
           configured: false,
           reachable: false,
           modelAvailable: false,
@@ -674,7 +730,7 @@ function installProviderSelfTestFakeExpression() {
       if (agentId === "claude-api") {
         return {
           checkedAt: "2026-05-15T00:00:00.000Z",
-          model,
+          model: model,
           configured: true,
           reachable: true,
           modelAvailable: false,
@@ -688,10 +744,25 @@ function installProviderSelfTestFakeExpression() {
           agent: { id: "claude-api", label: "Claude", apiKeyEnv: "ANTHROPIC_API_KEY", requiresApiKey: true }
         };
       }
+      if (agentId === "openrouter") {
+        return {
+          checkedAt: "2026-05-15T00:00:00.000Z",
+          model: model,
+          configured: false,
+          reachable: false,
+          modelAvailable: false,
+          modelSource: null,
+          canChat: false,
+          status: "missing_auth",
+          error: "Save a valid OPENROUTER_API_KEY for OpenRouter.",
+          providerError: { code: "missing_auth", status: "missing_auth", message: "Save a valid OPENROUTER_API_KEY for OpenRouter." },
+          agent: { id: "openrouter", label: "OpenRouter", apiKeyEnv: "OPENROUTER_API_KEY", requiresApiKey: true }
+        };
+      }
       if (agentId === "ollama-local") {
         return {
           checkedAt: "2026-05-15T00:00:00.000Z",
-          model,
+          model: model,
           configured: true,
           reachable: false,
           modelAvailable: false,
@@ -717,17 +788,28 @@ function installProviderSelfTestFakeExpression() {
       this.onerror = null;
       this.ontimeout = null;
     }
-    FakeXHR.prototype.open = function (method, url, async) {
+    FakeXHR.prototype.open = function (method, url, isAsync) {
       this._method = method;
       this._url = url;
-      this._async = async !== false;
+      this._async = isAsync !== false;
     };
     FakeXHR.prototype.setRequestHeader = function (name, value) {
       this._headers[name] = value;
     };
     FakeXHR.prototype.send = function (body) {
-      const self = this;
-      const fakeReadiness = String(this._url || "").indexOf("/agents/readiness") >= 0 ? readinessFor(this._url) : null;
+      var self = this;
+      var urlText = String(this._url || "");
+      var fakeAgents = urlText.indexOf("/agents?") >= 0 || urlText.slice(-7) === "/agents";
+      var fakeReadiness = urlText.indexOf("/agents/readiness") >= 0 ? readinessFor(this._url) : null;
+      if (fakeAgents) {
+        setTimeout(function () {
+          self.readyState = 4;
+          self.status = 200;
+          self.responseText = JSON.stringify({ ok: true, defaultAgentId: "openai-cli", agents: agentsForList() });
+          if (typeof self.onreadystatechange === "function") self.onreadystatechange();
+        }, 25);
+        return;
+      }
       if (fakeReadiness) {
         setTimeout(function () {
           self.readyState = 4;
@@ -737,7 +819,7 @@ function installProviderSelfTestFakeExpression() {
         }, 25);
         return;
       }
-      const xhr = new OriginalXHR();
+      var xhr = new OriginalXHR();
       xhr.timeout = this.timeout;
       xhr.onreadystatechange = function () {
         self.readyState = xhr.readyState;
@@ -763,7 +845,7 @@ function installProviderSelfTestFakeExpression() {
 }
 
 function restoreProviderSelfTestFakeExpression() {
-  return `(() => {
+  return `(function () {
     if (typeof window.__codexRestoreProviderSelfTestFake === "function") {
       return window.__codexRestoreProviderSelfTestFake();
     }
@@ -1143,16 +1225,17 @@ async function providerSetupSmoke() {
     backup = await evaluate(send, providerStorageExpression());
     bridgeBackup = await evaluate(send, bridgeStorageExpression());
     await reloadActivePage(send);
+    await evaluate(send, installProviderSelfTestFakeExpression());
     await evaluate(send, setupExpression());
     await waitFor(send, "panel online", (state) => state.badge === "online", 15000);
     await waitFor(send, "agent list", (state) => state.agentOptions.some((option) => option.value === OPENAI_CLI_AGENT_ID), 20000);
 
     const results = [];
-    for (const group of ["gemini", "claude"]) {
+    for (const group of ["gemini", "claude", "openrouter"]) {
       const clicked = await evaluate(send, selectProviderGroupExpression(group));
       if (!clicked || !clicked.ok) throw new Error(`Could not click ${group} provider tab.`);
-      const label = group === "gemini" ? "Gemini" : "Claude";
-      const agentId = group === "gemini" ? "gemini-api" : "claude-api";
+      const label = group === "gemini" ? "Gemini" : group === "claude" ? "Claude" : "OpenRouter";
+      const agentId = group === "gemini" ? "gemini-api" : group === "claude" ? "claude-api" : "openrouter";
       const selected = await waitFor(send, `${label} setup selected`, (state) => (
         state.activeProviderGroup === group &&
         state.agentValue === agentId &&
@@ -1162,6 +1245,7 @@ async function providerSetupSmoke() {
         state.authModeVisible === false &&
         state.apiKeyVisible === true &&
         state.localServiceVisible === false &&
+        state.freeModelsVisible === (group === "openrouter") &&
         state.setupActionVisible === false &&
         state.sendDisabled === true &&
         state.modelOptions.length > 0 &&
@@ -1187,9 +1271,11 @@ async function providerSetupSmoke() {
       try {
         await evaluate(send, writeProviderStorageExpression(backup));
         if (bridgeBackup) await evaluate(send, writeBridgeStorageExpression(bridgeBackup));
-        await reloadActivePage(send);
       } catch (_error) {}
     }
+    try {
+      await evaluate(send, restoreProviderSelfTestFakeExpression());
+    } catch (_restoreError) {}
     ws.close();
   }
 }
@@ -1212,14 +1298,14 @@ async function providerSelfTestSmoke() {
     backup = await evaluate(send, providerStorageExpression());
     bridgeBackup = await evaluate(send, bridgeStorageExpression());
     await reloadActivePage(send);
+    await evaluate(send, installProviderSelfTestFakeExpression());
     await evaluate(send, setupExpression());
     await waitFor(send, "panel online", (state) => state.badge === "online", 15000);
     await waitFor(send, "provider self-test rows", (state) => (
-      state.selfTestRows.length === 5 &&
+      state.selfTestRows.length === 6 &&
       state.agentOptions.some((option) => option.value === OPENAI_CLI_AGENT_ID)
     ), 20000);
 
-    await evaluate(send, installProviderSelfTestFakeExpression());
     const clicked = await evaluate(send, clickExpression("providerSelfTestButton"));
     if (!clicked || !clicked.ok) throw new Error("Could not start provider self-test.");
 
@@ -1239,6 +1325,9 @@ async function providerSelfTestSmoke() {
         rows["claude-api"] &&
         rows["claude-api"].state === "Model missing" &&
         rows["claude-api"].detail.indexOf("model list") >= 0 &&
+        rows["openrouter"] &&
+        rows["openrouter"].state === "Setup" &&
+        rows["openrouter"].detail.indexOf("OPENROUTER_API_KEY") >= 0 &&
         rows["ollama-local"] &&
         rows["ollama-local"].state === "Offline" &&
         rows["ollama-local"].detail.indexOf("Ollama is offline for CEP smoke") >= 0 &&
@@ -1252,16 +1341,15 @@ async function providerSelfTestSmoke() {
       selfTestRows: tested.selfTestRows
     }, null, 2));
   } finally {
-    try {
-      await evaluate(send, restoreProviderSelfTestFakeExpression());
-    } catch (_restoreError) {}
     if (backup) {
       try {
         await evaluate(send, writeProviderStorageExpression(backup));
         if (bridgeBackup) await evaluate(send, writeBridgeStorageExpression(bridgeBackup));
-        await reloadActivePage(send);
       } catch (_error) {}
     }
+    try {
+      await evaluate(send, restoreProviderSelfTestFakeExpression());
+    } catch (_restoreError) {}
     ws.close();
   }
 }

@@ -897,8 +897,10 @@ function openAiHeaders(agent) {
   const apiKey = readApiKey(agent);
   if (apiKey) headers.authorization = `Bearer ${apiKey}`;
   if (agent.provider === "openrouter") {
+    const appName = process.env.OPENROUTER_APP_NAME || "AE Agent";
     headers["HTTP-Referer"] = process.env.OPENROUTER_SITE_URL || "http://127.0.0.1:3456";
-    headers["X-Title"] = process.env.OPENROUTER_APP_NAME || "AE Agent";
+    headers["X-OpenRouter-Title"] = appName;
+    headers["X-Title"] = appName;
   }
   return headers;
 }
