@@ -26,7 +26,7 @@
 - [x] Milestone 58: Live OpenAI CLI diagnostics preflight.
 - [x] Milestone 59: Approved OpenAI CLI Agent scenario smoke.
 - [x] Milestone 60: Сброс плана roadmap 1.3.
-- [ ] Milestone 61: Артефакты отчетов Agent-run.
+- [x] Milestone 61: Артефакты отчетов Agent-run.
 - [ ] Milestone 62: Регрессионный корпус planner.
 - [ ] Milestone 63: Аудит checkpoint и cleanup.
 - [ ] Milestone 64: Provider readiness self-test UX.
@@ -265,6 +265,7 @@
 - 2026-05-15: После явного разрешения пользователя полный `agent-scenario-openai-cli-smoke` можно учитывать как отдельный validation milestone; он не требует code changes, если `panelPlanCount` совпадает со scenario count и cleanup возвращает render queue к baseline.
 - 2026-05-15: Roadmap 1.3 начинается от чистого baseline Milestone 59 на ветке `codex/roadmap-1.3-planning`; блок должен усилить Agent QA observability и regression confidence перед добавлением нового AE mutation behavior.
 - 2026-05-15: External planner smokes и live AE mutation smokes остаются approval-gated, когда они отправляют project context через OpenAI/Codex CLI или временно мутируют live AE project.
+- 2026-05-15: Agent scenario report artifacts используют компактную локальную JSON-схему `agent-run-report.v1`; live smoke пишет их в игнорируемую `logs\agent-run-reports\`, а tracked docs фиксируют только решения и validation results.
 
 ## Validation
 
@@ -616,3 +617,20 @@
   - Passed `node scripts\prompt-optimization-smoke.js`.
   - Passed `node scripts\bridge-only-smoke-test.js`.
   - Passed `node scripts\smoke-test.js`.
+- Milestone 61:
+  - Добавил `scripts\agent-scenario-report.js` со стабильной compact JSON-схемой `agent-run-report.v1`.
+  - Подключил запись artifact к `agent-scenario-smoke` и `agent-scenario-openai-cli-smoke`; report включает planner config, plan source counts, acceptance counts, scenario outcomes, cleanup counts и final render queue status.
+  - Добавил `logs\agent-run-reports\` в `.gitignore`, чтобы live report artifacts оставались локальными.
+  - Добавил dependency-free `node scripts\agent-scenario-report-smoke.js`, который проверяет создание отчета и ключевые поля без live AE, OpenAI/Codex CLI или mutating smokes.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check scripts\agent-scenario-report.js`.
+  - Passed `node --check scripts\agent-scenario-report-smoke.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `node scripts\agent-scenario-report-smoke.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Live CEP Agent scenario smokes and external OpenAI CLI planner smokes were not run because Milestone 61 is local report-format coverage and those paths remain approval-gated.

@@ -1,6 +1,7 @@
 "use strict";
 
 const http = require("http");
+const { writeAgentRunReport } = require("./agent-scenario-report");
 
 const DEFAULT_PORT = Number(process.env.CEP_PANEL_CDP_PORT || 8870);
 const EXTENSION_ID = process.env.CEP_PANEL_EXTENSION_ID || "com.codex.aemcpbridge";
@@ -2094,6 +2095,12 @@ async function agentScenarioSmoke(config) {
           : null,
         renderQueueTotal: finalCleanup.renderQueue.totalItems
       }
+    };
+    const artifact = writeAgentRunReport(report, { source: "cep-panel-cdp-smoke" });
+    report.artifact = {
+      schemaVersion: artifact.report.schemaVersion,
+      path: artifact.path,
+      relativePath: artifact.relativePath
     };
     console.log(JSON.stringify(report, null, 2));
     if (scenarioConfig.requirePanelPlans && fallbackCount > 0) {

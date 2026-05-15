@@ -2,6 +2,7 @@ snapshots/*.zip
 logs/*.jsonl
 logs/*.log
 logs/*.png
+logs/agent-run-reports/
 backups/*.aep
 backups/*.aepx
 .codex/
