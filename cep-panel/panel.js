@@ -74,6 +74,10 @@
   var readinessInFlight = false;
   var providerSelfTestInFlight = false;
   var providerSelfTestResults = {};
+  var renderedAgentId = "";
+  var agentsLoadSeq = 0;
+  var agentsLoadInFlight = false;
+  var agentDataVersion = 0;
   var lastPlanResult = null;
   var lastPollErrorMessage = "";
   var setupStatusTimer = null;
@@ -703,6 +707,7 @@
 
   function renderProviderPlaceholder(group) {
     var agent = placeholderAgentForGroup(group);
+    renderedAgentId = "";
     clearElement(agentModelEl);
     clearElement(agentModelListEl);
     agentApiKeyRowEl.style.display = "none";
@@ -938,6 +943,7 @@
     setAgentDetails(agent);
     updateProviderUi(agent);
     if (!agent) {
+      renderedAgentId = "";
       agentModelEl.value = "";
       agentApiKeyRowEl.style.display = "none";
       freeModelsRowEl.style.display = "none";
@@ -953,7 +959,8 @@
     agentModelEl.value = chooseModelValue(savedModel || agent.model || "");
     localStorage.setItem("codexAeAgentId", agent.id);
     localStorage.setItem("codexAeProviderGroup", agentGroup(agent) || "");
-    agentApiKeyEl.value = "";
+    if (renderedAgentId !== agent.id) agentApiKeyEl.value = "";
+    renderedAgentId = agent.id;
 
     if (agent.requiresApiKey && agent.canSaveKey !== false) {
       agentApiKeyRowEl.style.display = "grid";
@@ -984,9 +991,19 @@
 
   function loadAgents(options) {
     options = options || {};
+    if (agentsLoadInFlight && options.quiet) return;
+    agentsLoadInFlight = true;
     if (!options.quiet) setAgentStatus("Loading...");
     var freeOnly = freeModelsOnlyEl.checked ? "1" : "0";
+    var loadSeq = ++agentsLoadSeq;
+    var loadBaseUrl = getBaseUrl();
+    var loadDataVersion = agentDataVersion;
     request("GET", "/agents?includeModels=1&freeOnly=" + freeOnly, null, function (error, response) {
+      if (loadSeq !== agentsLoadSeq || loadBaseUrl !== getBaseUrl() || loadDataVersion !== agentDataVersion) {
+        if (loadSeq === agentsLoadSeq) agentsLoadInFlight = false;
+        return;
+      }
+      agentsLoadInFlight = false;
       if (error) {
         agents = [];
         providerSelfTestResults = {};
@@ -1047,6 +1064,32 @@
     if (readiness.remoteModels) agent.remoteModels = readiness.remoteModels;
     if (readiness.agent && readiness.agent.codexStatus) agent.codexStatus = readiness.agent.codexStatus;
     agent.checkedAt = readiness.checkedAt || null;
+  }
+
+  function applySavedAgentReadiness(readiness) {
+    if (!readiness || !readiness.agent || !readiness.agent.id) return null;
+    var updatedAgent = readiness.agent;
+    var agent = findAgent(updatedAgent.id);
+    if (!agent) {
+      agents.push(updatedAgent);
+      addOption(agentSelect, updatedAgent.id, optionLabel(updatedAgent));
+      agent = updatedAgent;
+    } else {
+      for (var key in updatedAgent) {
+        if (Object.prototype.hasOwnProperty.call(updatedAgent, key)) {
+          agent[key] = updatedAgent[key];
+        }
+      }
+    }
+    mergeReadiness(agent, readiness);
+    for (var optionIndex = 0; optionIndex < agentSelect.options.length; optionIndex++) {
+      if (agentSelect.options[optionIndex].value === agent.id) {
+        agentSelect.options[optionIndex].textContent = optionLabel(agent);
+      }
+    }
+    var selfTestSpec = selfTestSpecForAgentId(agent.id) || { key: agent.id, label: agent.label || agent.id };
+    setProviderSelfTestResult(agent.id, selfTestResultFromReadiness(selfTestSpec, agent, readiness));
+    return agent;
   }
 
   function checkSelectedAgent() {
@@ -1684,7 +1727,7 @@
     request("POST", "/agents/key", {
       agentId: agent.id,
       apiKey: apiKey
-    }, function (error) {
+    }, function (error, response) {
       keySaveInFlight = false;
       agentApiKeyEl.value = "";
       if (error) {
@@ -1695,7 +1738,13 @@
       }
       setAgentStatus("API key saved");
       log("Saved API key for " + (agent.label || agent.id));
-      loadAgents();
+      agentDataVersion += 1;
+      var savedAgent = applySavedAgentReadiness(response && response.readiness);
+      if (savedAgent) {
+        agentSelect.value = savedAgent.id;
+        localStorage.setItem("codexAeAgentId", savedAgent.id);
+        updateSelectedAgent();
+      }
       updateKeyAvailability();
     });
   }

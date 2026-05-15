@@ -30,7 +30,12 @@
 - [x] Milestone 62: Регрессионный корпус planner.
 - [x] Milestone 63: Аудит checkpoint и cleanup.
 - [x] Milestone 64: Provider readiness self-test UX.
-- [ ] Milestone 65: Полная validation 1.3.
+- [x] Milestone 65: Полная validation 1.3.
+- [ ] Milestone 66: Project Intent Memory.
+- [ ] Milestone 67: Plan confidence and risk classification.
+- [ ] Milestone 68: Plan repair loop.
+- [ ] Milestone 69: Semantic verification.
+- [ ] Milestone 70: Reliability validation.
 
 ## Current Stable Baseline
 
@@ -229,6 +234,39 @@
 - Запускать external-provider или mutating live smokes только с явным approval, если они отправляют planner prompts/project context или мутируют AE project.
 - Обновить release/handoff notes с финальным validation status 1.3 и следующим recommended block.
 
+### Milestone 66: Project Intent Memory
+
+- Спроектировать lightweight per-project memory для Agent planning: главные comps, защищенные folders/assets, naming conventions, generated prefixes и user/project hints.
+- Хранить память локально, без отправки секретов и без широкого project scan по умолчанию.
+- Добавить явные read/update paths и compact summary для planning prompt.
+- Покрыть offline smoke fixtures и read-only live inspection, не мутируя AE project.
+
+### Milestone 67: Plan confidence and risk classification
+
+- Добавить предварительную классификацию Agent plans: safe typed-tool, needs clarification, risky, unsupported.
+- Связать classification с existing validation summary, mutation counts, affected targets, checkpoint expectation и raw ExtendScript risk.
+- В CEP Plan Review показать короткий confidence/risk verdict до dry-run/run.
+- Покрыть corpus cases для safe, ambiguous, risky и unsupported plans.
+
+### Milestone 68: Plan repair loop
+
+- Добавить bounded repair path для near-valid plans: missing required fields, common binding aliases, wrong tool names with obvious typed-tool equivalent.
+- Не превращать repair в raw ExtendScript fallback и не исполнять repaired plan без повторной validation.
+- Покрыть repair corpus и убедиться, что unsafe/ambiguous plans остаются blocked or clarification-needed.
+
+### Milestone 69: Semantic verification
+
+- Усилить post-run verification так, чтобы Agent сравнивал requested outcome с read-back summaries, а не только `tool completed`.
+- Начать с typed-tool workflows из existing Agent scenario fixtures: timing, layout/animation, precomp/source/rename, render queue setup.
+- Показывать concise verification result в run transcript и Agent run report artifact.
+- Не добавлять внешние provider calls в verification без отдельного решения.
+
+### Milestone 70: Reliability validation
+
+- Собрать reliability validation suite: offline corpus, read-only live audit, provider readiness, and approved protected mutation checks.
+- Разделить cheap local checks, read-only live checks, external-provider checks и mutating live AE checks.
+- Сформировать handoff/release notes с доказательствами reliability layer перед добавлением новых AE mutation tools.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -271,6 +309,9 @@
 - 2026-05-15: Generated QA audit остается read-only: он читает project items, render queue, checkpoint records и edit-session records, но deletion остается только в существующих guarded cleanup paths с точными generated prefixes.
 - 2026-05-15: Provider self-test UX использует существующий `/agents/readiness` contract для OpenAI API, OpenAI CLI, Gemini, Claude и Local/Ollama; публичная provider shape не меняется, а UI показывает только безопасные summaries без API key values.
 - 2026-05-15: Self-test results не сбрасываются обычным reload списка агентов, чтобы startup refresh не стирал только что полученную диагностику; новый запуск self-test очищает результаты перед повторной проверкой.
+- 2026-05-15: Milestone 65 выявил race в CEP provider key-save UX: старые `loadAgents` ответы могли очистить введенный API key или откатить `key saved` state. Панель теперь применяет readiness из `/agents/key`, сохраняет typed key при refresh того же агента и игнорирует stale agent-list responses.
+- 2026-05-15: Полная validation 1.3 не запускает external OpenAI CLI planner smoke и live AE mutation smoke без отдельного approval; Milestone 65 закрывается local suite, provider key save, read-only live CEP smoke и read-only generated QA audit.
+- 2026-05-15: Следующий roadmap block после 1.3 validation — Agent reliability layer: project intent memory, plan confidence/risk classification, bounded plan repair, semantic verification и отдельная reliability validation веха.
 
 ## Validation
 
@@ -695,3 +736,35 @@
   - Passed `node scripts\cep-panel-cdp-smoke.js smoke`.
   - Passed `node scripts\cep-panel-cdp-smoke.js provider-setup-smoke`.
   - External OpenAI CLI planner smokes and live AE mutation smokes were not run because Milestone 64 is provider-readiness UI coverage and those paths remain approval-gated.
+- Milestone 65:
+  - Закрыл full 1.3 validation и подготовил следующий roadmap block `Agent reliability layer`.
+  - Во время validation найден и исправлен CEP race в provider API-key save flow: background agent refresh мог очистить typed key или откатить `key saved` UI после успешного `/agents/key`.
+  - Обновил `cep-panel\panel.js`: key input сохраняется при refresh того же агента, stale `loadAgents` responses игнорируются после bridge/key-state changes, `/agents/key` readiness применяется сразу к выбранному provider UI.
+  - Синхронизировал установленную CEP-панель; final sync health подтвердил совпадение `index.html`, `panel.js`, `style.css` и `CSXS/manifest.xml`, version/title `AE Agent 1.0.0`.
+  - Live bridge на `127.0.0.1:3456` перед финальным CEP кругом был offline; перезапустил bridge из текущего repo через `scripts\start-bridge-only.ps1`, после чего health стал `ok: true`, panel connected, pending `0`, inflight `0`.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `node --check scripts\agent-scenario-report.js`.
+  - Passed `node --check scripts\agent-scenario-report-smoke.js`.
+  - Passed `node --check scripts\agent-scenario-fixtures.js`.
+  - Passed `node --check scripts\agent-planner-corpus-smoke.js`.
+  - Passed `node --check scripts\agent-qa-audit.js`.
+  - Passed `node --check scripts\agent-qa-audit-smoke.js`.
+  - Passed `node scripts\agent-scenario-report-smoke.js`.
+  - Passed `node scripts\agent-planner-corpus-smoke.js`.
+  - Passed `node scripts\agent-qa-audit-smoke.js`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `node scripts\provider-key-save-smoke.js`; Gemini and Claude key-save paths used an isolated temporary secrets file and did not touch user secrets.
+  - Passed `node scripts\cep-sync-health.js --sync --check`.
+  - Passed `node scripts\cep-sync-health.js --check`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js smoke`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js provider-self-test-smoke`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js provider-setup-smoke`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js agent-scenario-audit`; generated project item leftovers `0`, render queue leftovers `0`, active edit session `false`, checkpoint records `69`, edit-session records `99`.
+  - Passed `node scripts\cep-panel-cdp-smoke.js inspect`; final panel state was `Connected` / `online`, selected `ollama-local`, `gemma4:latest`, 3 Local/Ollama models.
+  - Did not run external OpenAI CLI planner smokes or live AE mutation smokes because they remain explicit-approval-gated.
