@@ -8,6 +8,7 @@ const path = require("path");
 const aiAgents = require("./ai-agents");
 const { buildSolutionHintsForPrompt } = require("./solution-library");
 const { classifyAgentPlan } = require("./plan-risk-classifier");
+const { repairAgentPlan } = require("./plan-repair");
 const {
   buildProjectIntentMemoryForPrompt,
   readProjectIntentMemory,
@@ -2128,6 +2129,70 @@ function validateAgentPlanObject(plan, requestId, context) {
   return validation;
 }
 
+function compactAgentPlanValidationSummary(validation) {
+  if (!validation || typeof validation !== "object") return null;
+  return {
+    ok: Boolean(validation.ok),
+    stepCount: Number(validation.stepCount || 0),
+    executableCount: Number(validation.executableCount || 0),
+    mutatingCount: Number(validation.mutatingCount || 0),
+    unknownToolCount: Number(validation.unknownToolCount || 0),
+    invalidStepCount: Number(validation.invalidStepCount || 0),
+    classification: validation.classification && validation.classification.category || null
+  };
+}
+
+function validateAgentPlanWithRepair(plan, requestId, context, options) {
+  const config = options || {};
+  const repairEnabled = optionalBoolean(config, "repairPlan", true) !== false;
+  const originalValidation = validateAgentPlanObject(plan, requestId, context);
+  if (!repairEnabled) {
+    originalValidation.planRepair = {
+      schema: "ae-agent-plan-repair.v1",
+      applied: false,
+      skipped: true,
+      reason: "repairPlan=false"
+    };
+    return {
+      plan,
+      validation: originalValidation,
+      originalValidation,
+      repair: originalValidation.planRepair
+    };
+  }
+
+  const repair = repairAgentPlan(plan, originalValidation, {
+    tools,
+    planningToolNames: PLANNING_TOOL_NAMES
+  });
+  if (!repair.applied || !repair.repairedPlan) {
+    originalValidation.planRepair = {
+      ...repair,
+      repairedPlan: undefined
+    };
+    return {
+      plan,
+      validation: originalValidation,
+      originalValidation,
+      repair: originalValidation.planRepair
+    };
+  }
+
+  const repairedValidation = validateAgentPlanObject(repair.repairedPlan, requestId, context);
+  const report = {
+    ...repair,
+    repairedPlan: undefined,
+    repairedValidation: compactAgentPlanValidationSummary(repairedValidation)
+  };
+  repairedValidation.planRepair = report;
+  return {
+    plan: repair.repairedPlan,
+    validation: repairedValidation,
+    originalValidation,
+    repair: report
+  };
+}
+
 function hasCheckpointStep(validation) {
   return Boolean(validation && Array.isArray(validation.steps) && validation.steps.some((step) => (
     step.tool === "checkpoint_project" || step.tool === "start_edit_session"
@@ -2999,11 +3064,13 @@ function planRunRecoveryHint(run) {
 
 async function runValidatedAgentPlan(options) {
   options = options || {};
-  const plan = options.plan;
-  const validation = validateAgentPlanObject(plan, options.requestId || null, {
+  const prepared = validateAgentPlanWithRepair(options.plan, options.requestId || null, {
     solutionHints: options.solutionHints || options.planSolutionHints || null,
     projectIntentMemory: options.projectIntentMemory || options.planProjectIntentMemory || null
+  }, {
+    repairPlan: options.repairPlan
   });
+  const validation = prepared.validation;
   const dryRun = optionalBoolean(options, "dryRun", true);
   const confirm = optionalBoolean(options, "confirm", false);
   const allowMutations = optionalBoolean(options, "allowMutations", false);
@@ -3026,6 +3093,7 @@ async function runValidatedAgentPlan(options) {
     autoEditSession,
     validation,
     classification: validation.classification || null,
+    planRepair: prepared.repair || null,
     executedCount: 0,
     skippedCount: 0,
     failedCount: 0,
@@ -3045,6 +3113,9 @@ async function runValidatedAgentPlan(options) {
   };
   if (activeEditSessionAtStart) {
     run.editSession = compactEditSession(activeEditSession);
+  }
+  if (prepared.repair && prepared.repair.applied) {
+    run.repairedPlan = prepared.plan;
   }
 
   function finishRun() {
@@ -3437,10 +3508,25 @@ async function runAgentPlanLogged(source, args) {
         repairError = error.message || String(error);
       }
     }
-    const validation = parsed.ok ? validateAgentPlanObject(parsed.plan, requestId, {
-      solutionHints: solutionHints.retrieval,
-      projectIntentMemory: projectIntentMemory.retrieval
-    }) : null;
+    let validation = null;
+    let planRepair = null;
+    let planRepairApplied = false;
+    let originalPlanValidation = null;
+    if (parsed.ok) {
+      const prepared = validateAgentPlanWithRepair(parsed.plan, requestId, {
+        solutionHints: solutionHints.retrieval,
+        projectIntentMemory: projectIntentMemory.retrieval
+      }, {
+        repairPlan: args && args.repairPlan
+      });
+      validation = prepared.validation;
+      planRepair = prepared.repair;
+      planRepairApplied = Boolean(planRepair && planRepair.applied);
+      if (planRepairApplied) {
+        parsed.plan = prepared.plan;
+        originalPlanValidation = compactAgentPlanValidationSummary(prepared.originalValidation);
+      }
+    }
     const finishedAtMs = Date.now();
     const metadata = {
       requestId,
@@ -3452,6 +3538,7 @@ async function runAgentPlanLogged(source, args) {
       model: result.model || args.model || null,
       parseOk: parsed.ok,
       repaired,
+      planRepairApplied,
       stepCount: parsed.plan && Array.isArray(parsed.plan.steps) ? parsed.plan.steps.length : 0,
       validationOk: validation ? validation.ok : false,
       mutatingCount: validation ? validation.mutatingCount : 0,
@@ -3473,8 +3560,11 @@ async function runAgentPlanLogged(source, args) {
       planParseOk: parsed.ok,
       planRepaired: repaired,
       planRepairModel: repairModel,
+      planRepair,
+      planRepairApplied,
       plan: parsed.plan || null,
       planValidation: validation,
+      originalPlanValidation,
       planClassification: validation ? validation.classification : null,
       planContextSnapshot: projectContextSnapshot,
       planProjectIntentMemory: projectIntentMemory.retrieval,
@@ -3709,14 +3799,19 @@ function startHttpBridge() {
       try {
         const body = await readJsonBody(req);
         const plan = body.plan || body;
-        const validation = validateAgentPlanObject(plan, body.requestId || body.validationId || null, {
+        const prepared = validateAgentPlanWithRepair(plan, body.requestId || body.validationId || null, {
           solutionHints: body.solutionHints || body.planSolutionHints || null,
           projectIntentMemory: body.projectIntentMemory || body.planProjectIntentMemory || null
+        }, {
+          repairPlan: body.repairPlan
         });
+        const validation = prepared.validation;
         writeJson(res, 200, {
           ok: true,
           validation,
-          classification: validation.classification || null
+          classification: validation.classification || null,
+          planRepair: prepared.repair || null,
+          repairedPlan: prepared.repair && prepared.repair.applied ? prepared.plan : null
         });
       } catch (error) {
         writeJson(res, 400, {
@@ -6240,7 +6335,9 @@ async function callTool(name, args) {
 
   if (name === "validate_ai_agent_plan") {
     try {
-      return toolResult(validateAgentPlanObject((args || {}).plan, (args || {}).requestId || null));
+      return toolResult(validateAgentPlanWithRepair((args || {}).plan, (args || {}).requestId || null, null, {
+        repairPlan: args && args.repairPlan
+      }).validation);
     } catch (error) {
       return toolResult(error.message || String(error), true);
     }

@@ -53,6 +53,7 @@ Before marking a milestone complete, run:
 - `node scripts/solution-library-validation-smoke.js`
 - `node scripts/project-intent-memory-smoke.js`
 - `node scripts/plan-classification-smoke.js`
+- `node scripts/plan-repair-smoke.js`
 - `node scripts/chatgpt-connector-smoke.js`
 - `node scripts/provider-api-smoke.js`
 - `node scripts/prompt-optimization-smoke.js`

@@ -1,0 +1,260 @@
+"use strict";
+
+const assert = require("assert");
+const http = require("http");
+const path = require("path");
+const { spawn } = require("child_process");
+
+const daemonPath = path.join(__dirname, "..", "mcp-server", "bridge-daemon.js");
+const nodePath = process.execPath;
+const port = String(4750 + Math.floor(Math.random() * 1000));
+const token = "plan-repair-smoke-token";
+const REQUEST_TIMEOUT_MS = 10000;
+
+function requestJsonWithOptions(options, payload) {
+  return new Promise((resolve, reject) => {
+    const req = http.request(options, (res) => {
+      let body = "";
+      res.setEncoding("utf8");
+      res.on("data", (chunk) => {
+        body += chunk;
+      });
+      res.on("end", () => {
+        try {
+          resolve({ status: res.statusCode, body: body ? JSON.parse(body) : {} });
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+    req.on("error", reject);
+    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+      req.destroy(new Error(`Timed out waiting for ${options.method || "GET"} ${options.path}`));
+    });
+    if (payload) req.write(JSON.stringify(payload));
+    req.end();
+  });
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function bridgePost(pathname, payload) {
+  return requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: pathname,
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, payload);
+}
+
+function bridgeGet(pathname) {
+  return requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: pathname,
+    method: "GET"
+  });
+}
+
+async function waitForBridgeHealth(child) {
+  const startedAt = Date.now();
+  let lastError = null;
+  while (Date.now() - startedAt < 7000) {
+    if (child.exitCode !== null) break;
+    try {
+      const response = await bridgeGet("/health");
+      if (response.status === 200 && response.body && response.body.ok === true) {
+        return response.body;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+    await wait(100);
+  }
+  throw new Error(`Bridge did not become healthy for plan repair smoke: ${lastError ? lastError.message : "not ready"}`);
+}
+
+async function validatePlan(id, plan, expectations) {
+  const response = await bridgePost("/agents/plan/validate", {
+    requestId: `plan-repair-${id}`,
+    plan
+  });
+  assert.strictEqual(response.status, 200, `${id}: validate endpoint status`);
+  assert.strictEqual(response.body.ok, true, `${id}: validate endpoint ok`);
+  assert(response.body.validation, `${id}: validation missing`);
+  assert(response.body.planRepair, `${id}: repair metadata missing`);
+  if (expectations.applied !== undefined) {
+    assert.strictEqual(response.body.planRepair.applied, expectations.applied, `${id}: repair applied`);
+  }
+  if (expectations.category) {
+    assert.strictEqual(response.body.classification.category, expectations.category, `${id}: classification category`);
+  }
+  if (expectations.validationOk !== undefined) {
+    assert.strictEqual(response.body.validation.ok, expectations.validationOk, `${id}: validation ok`);
+  }
+  if (expectations.toolSequence) {
+    assert(response.body.repairedPlan, `${id}: repaired plan missing`);
+    assert.deepStrictEqual(response.body.repairedPlan.steps.map((step) => step.tool), expectations.toolSequence, `${id}: repaired tool sequence`);
+  }
+  if (expectations.actionTypes) {
+    const actionTypes = response.body.planRepair.actions.map((action) => action.type);
+    for (const type of expectations.actionTypes) {
+      assert(actionTypes.includes(type), `${id}: missing repair action type ${type}`);
+    }
+  }
+  return response.body;
+}
+
+async function main() {
+  const child = spawn(nodePath, [daemonPath], {
+    env: {
+      ...process.env,
+      AE_BRIDGE_PORT: port,
+      AE_BRIDGE_TOKEN: token
+    },
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  const stderr = [];
+  child.stderr.setEncoding("utf8");
+  child.stderr.on("data", (chunk) => stderr.push(chunk));
+
+  try {
+    const health = await waitForBridgeHealth(child);
+
+    const precomposeRepair = await validatePlan("precompose-selected", {
+      summary: "Precompose selected layers after inspecting selection.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Inspect selected layers", tool: "get_selected_layers", args: {} },
+        { title: "Precompose selected layers", tool: "precompose", args: { compIndex: "{{compItemIndex}}", newName: "Codex Repair Precomp", openInViewer: false } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["get_selected_layers", "precompose_layers"],
+      actionTypes: ["tool-alias", "arg-alias", "missing-required-binding"]
+    });
+    assert.strictEqual(precomposeRepair.repairedPlan.steps[1].resultBindings.layerIndices, "{{selectedLayerIndices}}");
+
+    const textRepair = await validatePlan("text-layer-binding", {
+      summary: "Create and then update a text layer.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Create text", tool: "create_text_layer", args: { text: "Repair Smoke", fontSize: 24 } },
+        { title: "Update text", tool: "update_text", args: { content: "Repair Smoke Updated", fontSize: 32 } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["create_text_layer", "update_text_layer"],
+      actionTypes: ["tool-alias", "arg-alias", "missing-required-binding"]
+    });
+    assert.strictEqual(textRepair.repairedPlan.steps[1].resultBindings.layerIndex, "{{layerIndex}}");
+
+    const bindingAliasRepair = await validatePlan("binding-alias", {
+      summary: "Set selected layers 3D using common aliases.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Inspect selected layers", tool: "get_selected_layers", args: {} },
+        { title: "Enable 3D", tool: "set_layer_property", args: { layerIndexes: "{{selectedLayerIndexes}}", property: "threeDLayer", newValue: true } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["get_selected_layers", "set_property_value"],
+      actionTypes: ["tool-alias", "arg-alias", "binding-alias"]
+    });
+    assert.strictEqual(bindingAliasRepair.repairedPlan.steps[1].args.layerIndex, "{{selectedLayerIndices}}");
+
+    await validatePlan("ambiguous-missing", {
+      summary: "Update an unknown text layer.",
+      risk: "low",
+      requiresCheckpoint: false,
+      steps: [
+        { title: "Update text without target", tool: "update_text_layer", args: { text: "Missing target" } }
+      ]
+    }, {
+      applied: false,
+      validationOk: false,
+      category: "needs clarification"
+    });
+
+    await validatePlan("unsupported-tool", {
+      summary: "Unsupported local operator request.",
+      risk: "low",
+      requiresCheckpoint: false,
+      steps: [
+        { title: "Delete everything", tool: "delete_all_layers", args: {} }
+      ]
+    }, {
+      applied: false,
+      validationOk: false,
+      category: "unsupported"
+    });
+
+    await validatePlan("raw-script-not-repaired", {
+      summary: "Try to run a script alias.",
+      risk: "high",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Run script", tool: "execute_script", args: { script: "app.project.close();" } }
+      ]
+    }, {
+      applied: false,
+      validationOk: false,
+      category: "unsupported"
+    });
+
+    const dryRunResponse = await bridgePost("/agents/plan/run", {
+      requestId: "plan-repair-dry-run",
+      dryRun: true,
+      plan: {
+        summary: "Dry-run repaired selected-layer precompose plan.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Inspect selected layers", tool: "get_selected_layers", args: {} },
+          { title: "Precompose selected layers", tool: "precompose", args: { newName: "Codex Repair Dry Run" } }
+        ]
+      }
+    });
+    assert.strictEqual(dryRunResponse.status, 200, "dry-run repaired endpoint status");
+    assert.strictEqual(dryRunResponse.body.ok, true, "dry-run repaired ok");
+    assert.strictEqual(dryRunResponse.body.run.planRepair.applied, true, "dry-run repair applied");
+    assert.strictEqual(dryRunResponse.body.run.validation.classification.category, "risky", "dry-run repaired classification");
+    assert(dryRunResponse.body.run.steps.every((step) => step.status === "ready"), "dry-run repaired steps should be ready");
+
+    console.log(JSON.stringify({
+      ok: true,
+      bridge: {
+        version: health.version,
+        panelConnected: health.panelConnected
+      },
+      repairs: {
+        precomposeActions: precomposeRepair.planRepair.actions.length,
+        textActions: textRepair.planRepair.actions.length,
+        bindingAliasActions: bindingAliasRepair.planRepair.actions.length,
+        dryRunStatus: dryRunResponse.body.run.steps.map((step) => step.status)
+      }
+    }, null, 2));
+  } finally {
+    child.kill();
+  }
+}
+
+main().catch((error) => {
+  console.error(error.stack || error.message || String(error));
+  process.exit(1);
+});

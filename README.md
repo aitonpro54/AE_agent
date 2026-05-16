@@ -339,6 +339,12 @@ Plan confidence/risk classification coverage:
 node .\scripts\plan-classification-smoke.js
 ```
 
+Bounded Agent plan repair coverage:
+
+```powershell
+node .\scripts\plan-repair-smoke.js
+```
+
 ChatGPT connector read-only MCP and JSX Lab quarantine coverage:
 
 ```powershell

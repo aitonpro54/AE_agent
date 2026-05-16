@@ -45,7 +45,7 @@
 - [x] Milestone 75: Gated JSX Lab run, promotion hooks and CEP connector status.
 - [x] Milestone 76: Project Intent Memory.
 - [x] Milestone 77: Plan confidence and risk classification.
-- [ ] Milestone 78: Plan repair loop.
+- [x] Milestone 78: Plan repair loop.
 - [ ] Milestone 79: Semantic verification.
 - [ ] Milestone 80: Reliability validation.
 
@@ -441,6 +441,8 @@
 - 2026-05-16: `safe typed-tool` означает только read-only validated typed-tool plan. Любая project mutation классифицируется как `risky`, даже если typed-tool validation проходит и Run может идти через protected edit-session.
 - 2026-05-16: `needs clarification` и `unsupported` получают `blocksRun:true`; backend также блокирует dry-run для non-actionable classifications через `allowsDryRun:false`, чтобы пустые или operator-tool планы не выглядели готовыми.
 - 2026-05-16: Solution Library и Project Intent Memory signals входят в classification только как advisory context; они усиливают risk/safety verdict, но не делают plan executable и не обходят validation, mutation gates или checkpoints.
+- 2026-05-16: Plan repair выполняется локально и детерминированно после первичной validation: только bounded tool aliases, schema arg/binding aliases и runtime bindings из уже запланированных read/create steps. Repair не вызывает provider, не предлагает raw ExtendScript fallback и не исполняется без повторной validation/classification.
+- 2026-05-16: `/agents/plan/validate`, `validate_ai_agent_plan`, `plan_with_ai_agent` и `/agents/plan/run` возвращают additive `planRepair` metadata; когда repair применен, runner использует repaired plan только после revalidation. Ambiguous, unsupported и non-obvious plans остаются blocked или clarification-needed.
 
 ## Validation
 
@@ -1220,5 +1222,33 @@
   - Passed `node scripts\provider-api-smoke.js`.
   - Passed `node scripts\chatgpt-connector-smoke.js`.
   - Passed `node scripts\agent-planner-corpus-smoke.js`.
+  - `node scripts\cep-panel-cdp-smoke.js plan-review-smoke` could not run because the live CEP CDP endpoint refused connection on `127.0.0.1:8870`; After Effects/panel CDP access is needed to rerun it.
+  - Did not run live ChatGPT connector/Tunnel checks, live OpenRouter calls, external OpenAI CLI planner smokes or live AE mutation smokes because those remain explicit-approval-gated.
+- Milestone 78:
+  - Added `mcp-server\plan-repair.js` with `ae-agent-plan-repair.v1` metadata for bounded deterministic Agent plan repair.
+  - Wired repair into planner results, `/agents/plan/validate`, `validate_ai_agent_plan`, and `/agents/plan/run`; repaired plans are revalidated/reclassified before dry-run or run.
+  - Repair covers obvious typed-tool aliases, schema field aliases, binding alias normalization and runtime bindings for near-valid missing required fields.
+  - Raw ExtendScript aliases, unsupported tools and ambiguous missing targets remain unsupported or needs-clarification instead of being repaired.
+  - Added `node scripts\plan-repair-smoke.js` and documented it in README/AGENTS verification.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check mcp-server\plan-repair.js`.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check scripts\plan-repair-smoke.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\plan-repair-smoke.js`.
+  - Passed `node scripts\plan-classification-smoke.js`.
+  - Passed `node scripts\agent-planner-corpus-smoke.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`.
+  - Passed `node scripts\project-intent-memory-smoke.js`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\chatgpt-connector-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
   - `node scripts\cep-panel-cdp-smoke.js plan-review-smoke` could not run because the live CEP CDP endpoint refused connection on `127.0.0.1:8870`; After Effects/panel CDP access is needed to rerun it.
   - Did not run live ChatGPT connector/Tunnel checks, live OpenRouter calls, external OpenAI CLI planner smokes or live AE mutation smokes because those remain explicit-approval-gated.
