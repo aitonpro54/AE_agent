@@ -333,6 +333,12 @@ Project Intent Memory contract, retrieval, update and hygiene coverage:
 node .\scripts\project-intent-memory-smoke.js
 ```
 
+Plan confidence/risk classification coverage:
+
+```powershell
+node .\scripts\plan-classification-smoke.js
+```
+
 ChatGPT connector read-only MCP and JSX Lab quarantine coverage:
 
 ```powershell

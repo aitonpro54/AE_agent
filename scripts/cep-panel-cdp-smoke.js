@@ -1163,11 +1163,12 @@ async function smoke() {
     const planned = await waitFor(send, "AE Plan result", (state) => (
       state.sendDisabled === false &&
       state.transcript.indexOf("Plan review: ready") >= 0 &&
+      state.transcript.indexOf("Confidence: Safe typed-tool") >= 0 &&
       state.transcript.indexOf("Validation: ok") >= 0 &&
       state.transcript.indexOf("0 mutating") >= 0 &&
       state.transcript.indexOf("Affected targets:") >= 0 &&
       state.transcript.indexOf("Run readiness:") >= 0 &&
-      state.planRunStatus === "Read-only plan ready" &&
+      state.planRunStatus === "Safe typed-tool ready" &&
       state.planRunStatusClass.indexOf("read-only") >= 0 &&
       state.runTitle.indexOf("read-only") >= 0 &&
       state.dryRunDisabled === false &&
@@ -1242,12 +1243,13 @@ async function planReviewSmoke() {
     const planned = await waitFor(send, "improved plan review text", (state) => (
       state.sendDisabled === false &&
       state.transcript.indexOf("Plan review: ready") >= 0 &&
+      state.transcript.indexOf("Confidence: Safe typed-tool") >= 0 &&
       state.transcript.indexOf("Validation: ok") >= 0 &&
       state.transcript.indexOf("Affected targets:") >= 0 &&
       state.transcript.indexOf("Mutations:") >= 0 &&
       state.transcript.indexOf("Checkpoint expectation:") >= 0 &&
       state.transcript.indexOf("Run readiness:") >= 0 &&
-      state.planRunStatus === "Read-only plan ready" &&
+      state.planRunStatus === "Safe typed-tool ready" &&
       state.planRunStatusClass.indexOf("read-only") >= 0 &&
       state.dryRunDisabled === false &&
       state.runDisabled === false
@@ -2290,13 +2292,15 @@ function panelPlanExpectation(scenario, state) {
   const checks = {
     reviewReady: transcript.indexOf("Plan review: ready") >= 0,
     validationLine: transcript.indexOf(validationLine) >= 0,
-    mutatingStatus: state && state.planRunStatus === "Dry run first; Run uses protection",
+    classificationVerdict: transcript.indexOf("Confidence: Risky") >= 0,
+    mutatingStatus: state && state.planRunStatus === "Risky plan; dry run first",
     mutatingStatusClass: Boolean(state && state.planRunStatusClass && state.planRunStatusClass.indexOf("mutating") >= 0),
     dryRunEnabled: Boolean(state && state.dryRunDisabled === false),
     runEnabled: Boolean(state && state.runDisabled === false)
   };
   return {
     ok: checks.reviewReady &&
+      checks.classificationVerdict &&
       checks.validationLine &&
       checks.mutatingStatus &&
       checks.mutatingStatusClass &&
@@ -2607,11 +2611,12 @@ async function mutatingSmoke() {
     const planned = await waitFor(send, "mutating AE Plan result", (state) => (
       state.sendDisabled === false &&
       state.transcript.indexOf("Plan review: ready") >= 0 &&
+      state.transcript.indexOf("Confidence: Risky") >= 0 &&
       state.transcript.indexOf("Validation: ok") >= 0 &&
       state.transcript.indexOf("1 mutating") >= 0 &&
       state.transcript.indexOf("Affected targets:") >= 0 &&
       state.transcript.indexOf("Run readiness: Dry run checks without changes") >= 0 &&
-      state.planRunStatus === "Dry run first; Run uses protection" &&
+      state.planRunStatus === "Risky plan; dry run first" &&
       state.planRunStatusClass.indexOf("mutating") >= 0 &&
       state.runTitle.indexOf("protected edit-session") >= 0 &&
       state.transcript.indexOf("create_test_comp") >= 0 &&

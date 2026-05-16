@@ -722,6 +722,12 @@ button:disabled {
   color: #ff9d9d;
 }
 
+.plan-run-status.read-only,
+.plan-run-status.mutating,
+.plan-run-status.blocked {
+  font-weight: 600;
+}
+
 .plan-result {
   display: grid;
   gap: 6px;
@@ -735,6 +741,10 @@ button:disabled {
 .plan-line.plan-heading {
   color: #ffffff;
   font-weight: 650;
+}
+
+.plan-line.plan-confidence {
+  color: #b9d8ff;
 }
 
 .plan-line.plan-targets {

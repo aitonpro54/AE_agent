@@ -7,6 +7,7 @@ const fs = require("fs");
 const path = require("path");
 const aiAgents = require("./ai-agents");
 const { buildSolutionHintsForPrompt } = require("./solution-library");
+const { classifyAgentPlan } = require("./plan-risk-classifier");
 const {
   buildProjectIntentMemoryForPrompt,
   readProjectIntentMemory,
@@ -1988,7 +1989,7 @@ function knownToolNamesSummary(limit) {
   return PLANNING_TOOL_NAMES.slice(0, limit || 20).join(", ");
 }
 
-function validateAgentPlanObject(plan, requestId) {
+function validateAgentPlanObject(plan, requestId, context) {
   const validationId = requestId || crypto.randomUUID();
   const sourcePlan = plan && typeof plan === "object" && !Array.isArray(plan) ? plan : {};
   const steps = Array.isArray(sourcePlan.steps) ? sourcePlan.steps : [];
@@ -2111,7 +2112,7 @@ function validateAgentPlanObject(plan, requestId) {
   }
 
   const invalidSteps = validatedSteps.filter((step) => !step.valid && step.tool);
-  return {
+  const validation = {
     ok: invalidSteps.length === 0 && unknownToolCount === 0,
     validationId,
     stepCount: steps.length,
@@ -2123,6 +2124,8 @@ function validateAgentPlanObject(plan, requestId) {
     warnings,
     steps: validatedSteps
   };
+  validation.classification = classifyAgentPlan(sourcePlan, validation, context || {});
+  return validation;
 }
 
 function hasCheckpointStep(validation) {
@@ -2997,7 +3000,10 @@ function planRunRecoveryHint(run) {
 async function runValidatedAgentPlan(options) {
   options = options || {};
   const plan = options.plan;
-  const validation = validateAgentPlanObject(plan, options.requestId || null);
+  const validation = validateAgentPlanObject(plan, options.requestId || null, {
+    solutionHints: options.solutionHints || options.planSolutionHints || null,
+    projectIntentMemory: options.projectIntentMemory || options.planProjectIntentMemory || null
+  });
   const dryRun = optionalBoolean(options, "dryRun", true);
   const confirm = optionalBoolean(options, "confirm", false);
   const allowMutations = optionalBoolean(options, "allowMutations", false);
@@ -3019,6 +3025,7 @@ async function runValidatedAgentPlan(options) {
     allowMutations,
     autoEditSession,
     validation,
+    classification: validation.classification || null,
     executedCount: 0,
     skippedCount: 0,
     failedCount: 0,
@@ -3054,6 +3061,16 @@ async function runValidatedAgentPlan(options) {
   if (!validation.ok) {
     run.ok = false;
     run.error = "Plan validation failed.";
+    return finishRun();
+  }
+  if (dryRun && validation.classification && validation.classification.allowsDryRun === false) {
+    run.ok = false;
+    run.error = validation.classification.runRecommendation || "Plan classification blocks dry-run.";
+    return finishRun();
+  }
+  if (!dryRun && validation.classification && validation.classification.blocksRun === true) {
+    run.ok = false;
+    run.error = validation.classification.runRecommendation || "Plan classification blocks run.";
     return finishRun();
   }
   if (!dryRun && !confirm) {
@@ -3420,7 +3437,10 @@ async function runAgentPlanLogged(source, args) {
         repairError = error.message || String(error);
       }
     }
-    const validation = parsed.ok ? validateAgentPlanObject(parsed.plan, requestId) : null;
+    const validation = parsed.ok ? validateAgentPlanObject(parsed.plan, requestId, {
+      solutionHints: solutionHints.retrieval,
+      projectIntentMemory: projectIntentMemory.retrieval
+    }) : null;
     const finishedAtMs = Date.now();
     const metadata = {
       requestId,
@@ -3435,6 +3455,7 @@ async function runAgentPlanLogged(source, args) {
       stepCount: parsed.plan && Array.isArray(parsed.plan.steps) ? parsed.plan.steps.length : 0,
       validationOk: validation ? validation.ok : false,
       mutatingCount: validation ? validation.mutatingCount : 0,
+      planClassification: validation && validation.classification ? validation.classification.category : null,
       projectIntentMemoryReturned: projectIntentMemory.retrieval && projectIntentMemory.retrieval.ok ? projectIntentMemory.retrieval.returned : 0,
       solutionHintsReturned: solutionHints.retrieval && solutionHints.retrieval.ok ? solutionHints.retrieval.returned : 0,
       solutionToolMatches: solutionHints.retrieval && solutionHints.retrieval.ok ? solutionHints.retrieval.toolMatches.length : 0,
@@ -3454,6 +3475,7 @@ async function runAgentPlanLogged(source, args) {
       planRepairModel: repairModel,
       plan: parsed.plan || null,
       planValidation: validation,
+      planClassification: validation ? validation.classification : null,
       planContextSnapshot: projectContextSnapshot,
       planProjectIntentMemory: projectIntentMemory.retrieval,
       planSolutionHints: solutionHints.retrieval,
@@ -3687,9 +3709,14 @@ function startHttpBridge() {
       try {
         const body = await readJsonBody(req);
         const plan = body.plan || body;
+        const validation = validateAgentPlanObject(plan, body.requestId || body.validationId || null, {
+          solutionHints: body.solutionHints || body.planSolutionHints || null,
+          projectIntentMemory: body.projectIntentMemory || body.planProjectIntentMemory || null
+        });
         writeJson(res, 200, {
           ok: true,
-          validation: validateAgentPlanObject(plan, body.requestId || body.validationId || null)
+          validation,
+          classification: validation.classification || null
         });
       } catch (error) {
         writeJson(res, 400, {

@@ -44,7 +44,7 @@
 - [x] Milestone 74: JSX Lab candidate quarantine and checks.
 - [x] Milestone 75: Gated JSX Lab run, promotion hooks and CEP connector status.
 - [x] Milestone 76: Project Intent Memory.
-- [ ] Milestone 77: Plan confidence and risk classification.
+- [x] Milestone 77: Plan confidence and risk classification.
 - [ ] Milestone 78: Plan repair loop.
 - [ ] Milestone 79: Semantic verification.
 - [ ] Milestone 80: Reliability validation.
@@ -437,6 +437,10 @@
 - 2026-05-15: The CEP ChatGPT Connector status card polls the local connector `/status` endpoint for local/tunnel state, exposed tool snapshot, last tool call and write-action state; emergency disable blocks connector local write actions until restart.
 - 2026-05-15: Project Intent Memory хранится локально в tracked `registry/project-intent-memory.json` как compact reviewed hints; planner получает только bounded top matches и не весь registry.
 - 2026-05-15: `update_project_intent_memory` является явным operator/MCP update path с `confirm:true` и hygiene checks, но не входит в Agent planning catalog, чтобы AI-generated AE plans не могли обновлять память как обычный step.
+- 2026-05-16: Plan classification добавляется как additive metadata поверх existing validation: `planValidation.classification`, `planClassification` у planner result и `run.classification` у runner result; базовые validation поля и safety gates остаются источником истины.
+- 2026-05-16: `safe typed-tool` означает только read-only validated typed-tool plan. Любая project mutation классифицируется как `risky`, даже если typed-tool validation проходит и Run может идти через protected edit-session.
+- 2026-05-16: `needs clarification` и `unsupported` получают `blocksRun:true`; backend также блокирует dry-run для non-actionable classifications через `allowsDryRun:false`, чтобы пустые или operator-tool планы не выглядели готовыми.
+- 2026-05-16: Solution Library и Project Intent Memory signals входят в classification только как advisory context; они усиливают risk/safety verdict, но не делают plan executable и не обходят validation, mutation gates или checkpoints.
 
 ## Validation
 
@@ -1188,3 +1192,33 @@
   - Passed `node scripts\smoke-test.js`; it verified memory tools are listed and `update_project_intent_memory` is rejected inside AE Agent plans.
   - Passed read-only live CEP smoke `node scripts\cep-panel-cdp-smoke.js smoke` through Local/Ollama; it planned, dry-ran and ran a 0-mutating read-only bridge/project status plan.
   - Did not run live ChatGPT connector/Tunnel checks, live OpenRouter calls, external OpenAI CLI planner smokes or live AE mutation smokes because those remain explicit-approval-gated and Milestone 76 was covered by local/fake-provider/read-only validation.
+- Milestone 77:
+  - Added `mcp-server\plan-risk-classifier.js` with `ae-agent-plan-classification.v1` output for `safe typed-tool`, `needs clarification`, `risky` and `unsupported` plans.
+  - Attached classification to `planValidation.classification`, top-level `planClassification` in planner results, `/agents/plan/validate` responses and `run.classification`.
+  - Classification uses existing validation summary, mutation counts, affected targets, checkpoint expectations, raw ExtendScript steps, declared plan risk, Solution Library risk metadata and Project Intent Memory advisory matches.
+  - CEP Plan Review now prints a `Confidence:` verdict and `Run guidance:` before dry-run/run; the plan-run status row shows safe/risky/blocked state and normal Run is disabled when `classification.blocksRun` is true.
+  - Added `docs\plan-classification.md` and `node scripts\plan-classification-smoke.js` for offline safe/ambiguous/risky/unsupported coverage plus Solution Library and Project Intent Memory context-signal assertions.
+  - Synchronized changed `panel.js` and `style.css` into the installed CEP extension with `node scripts\cep-sync-health.js --sync --check`.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check mcp-server\plan-risk-classifier.js`.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check scripts\plan-classification-smoke.js`.
+  - Passed `node --check scripts\smoke-test.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `node scripts\plan-classification-smoke.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `node scripts\project-intent-memory-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\chatgpt-connector-smoke.js`.
+  - Passed `node scripts\agent-planner-corpus-smoke.js`.
+  - `node scripts\cep-panel-cdp-smoke.js plan-review-smoke` could not run because the live CEP CDP endpoint refused connection on `127.0.0.1:8870`; After Effects/panel CDP access is needed to rerun it.
+  - Did not run live ChatGPT connector/Tunnel checks, live OpenRouter calls, external OpenAI CLI planner smokes or live AE mutation smokes because those remain explicit-approval-gated.

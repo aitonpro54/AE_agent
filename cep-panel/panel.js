@@ -1367,8 +1367,11 @@
     var value = String(text || "").replace(/^\s+/, "");
     var lower = value.toLowerCase();
     var className = "plan-line";
-    if (/^(plan review|validation|summary|risk|run readiness|mode|mutations|plan):/i.test(value)) {
+    if (/^(plan review|validation|summary|risk|confidence|verdict|run guidance|run readiness|mode|mutations|plan):/i.test(value)) {
       className += " plan-heading";
+    }
+    if (/^(confidence|verdict|run guidance):/i.test(value)) {
+      className += " plan-confidence";
     }
     if (/^(affected targets|target):/i.test(value)) {
       className += " plan-targets";
@@ -1701,9 +1704,40 @@
     planRunStatusEl.className = "plan-run-status" + (tone ? " " + tone : "");
   }
 
+  function planClassification(validation) {
+    return validation && validation.classification && typeof validation.classification === "object"
+      ? validation.classification
+      : null;
+  }
+
+  function classificationBlocksRun(validation) {
+    var classification = planClassification(validation);
+    return !!(classification && classification.blocksRun === true);
+  }
+
+  function classificationStatusText(classification, validationOk, mutatingCount) {
+    if (!classification) {
+      if (!validationOk) return "Review issues before running";
+      return mutatingCount > 0 ? "Dry run first; Run uses protection" : "Read-only plan ready";
+    }
+    if (classification.category === "safe typed-tool") return "Safe typed-tool ready";
+    if (classification.category === "risky") return "Risky plan; dry run first";
+    if (classification.category === "needs clarification") return "Clarification needed";
+    if (classification.category === "unsupported") return "Unsupported plan";
+    return classification.label || "Plan classified";
+  }
+
+  function classificationTone(classification, validationOk, mutatingCount) {
+    if (classification && classification.tone) return classification.tone;
+    if (!validationOk) return "blocked";
+    return mutatingCount > 0 ? "mutating" : "read-only";
+  }
+
   function updatePlanRunControls(hasPlan, validation) {
     var mutatingCount = validation ? Number(validation.mutatingCount || 0) : 0;
     var validationOk = !!(validation && validation.ok);
+    var classification = planClassification(validation);
+    var blocksRun = classificationBlocksRun(validation);
     if (dryRunPlanButton) {
       dryRunPlanButton.title = hasPlan ? "Check this plan without changing the AE project." : "Create an Agent plan first.";
     }
@@ -1711,6 +1745,8 @@
       runPlanButton.textContent = "Run plan";
       if (!hasPlan) {
         runPlanButton.title = "Create and validate an Agent plan first.";
+      } else if (blocksRun) {
+        runPlanButton.title = classification && classification.runRecommendation ? classification.runRecommendation : "Resolve plan classification before running.";
       } else if (!validationOk) {
         runPlanButton.title = "Resolve plan review issues before running.";
       } else if (mutatingCount > 0) {
@@ -1726,12 +1762,8 @@
       setPlanRunStatus("No plan ready", "");
     } else if (!validation) {
       setPlanRunStatus("Plan needs review", "blocked");
-    } else if (!validationOk) {
-      setPlanRunStatus("Review issues before running", "blocked");
-    } else if (mutatingCount > 0) {
-      setPlanRunStatus("Dry run first; Run uses protection", "mutating");
     } else {
-      setPlanRunStatus("Read-only plan ready", "read-only");
+      setPlanRunStatus(classificationStatusText(classification, validationOk, mutatingCount), classificationTone(classification, validationOk, mutatingCount));
     }
   }
 
@@ -1740,7 +1772,7 @@
     var hasPlan = !!(lastPlanResult && lastPlanResult.plan);
     var validation = hasPlan && lastPlanResult ? lastPlanResult.planValidation || null : null;
     dryRunPlanButton.disabled = chatInFlight || !hasPlan;
-    runPlanButton.disabled = chatInFlight || !hasPlan || !validation || !validation.ok;
+    runPlanButton.disabled = chatInFlight || !hasPlan || !validation || !validation.ok || classificationBlocksRun(validation);
     updatePlanRunControls(hasPlan, validation);
     if (applyWorkflowPresetButton && workflowPresetSelect) {
       applyWorkflowPresetButton.disabled = chatInFlight || !workflowPresetSelect.value;
@@ -2098,11 +2130,16 @@
 
     var plan = result.plan;
     var validation = result.planValidation || null;
+    var classification = result.planClassification || (validation ? validation.classification : null);
     var steps = reviewStepsForResult(result);
     var stepCount = validation ? Number(validation.stepCount || 0) : (steps ? steps.length : 0);
     var mutatingCount = validation ? Number(validation.mutatingCount || 0) : 0;
     var lines = [];
     if (validation) lines.push("Plan review: " + (validation.ok ? "ready" : "needs review"));
+    if (classification) {
+      lines.push("Confidence: " + (classification.verdict || ((classification.label || classification.category || "Plan") + " / " + (classification.confidence || "unknown"))));
+      if (classification.runRecommendation) lines.push("Run guidance: " + classification.runRecommendation);
+    }
     if (plan.summary) lines.push("Summary: " + plan.summary);
     if (result.planRepaired) lines.push("JSON repair: applied");
     if (plan.risk) lines.push("Risk: " + plan.risk);

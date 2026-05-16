@@ -979,7 +979,9 @@ async function main() {
     !Array.isArray(planRun.body.run.steps) ||
     planRun.body.run.steps.length !== 1 ||
     planRun.body.run.steps[0].status !== "ready" ||
-    !planRun.body.run.finishedAt
+    !planRun.body.run.finishedAt ||
+    !planRun.body.run.validation.classification ||
+    planRun.body.run.validation.classification.category !== "safe typed-tool"
   ) {
     throw new Error("Unexpected plan runner dry-run response");
   }
@@ -988,7 +990,9 @@ async function main() {
     targetSummaryValidation.body.ok !== true ||
     !targetSummaryValidation.body.result ||
     !targetSummaryValidation.body.result.steps ||
-    String(targetSummaryValidation.body.result.steps[0].targetSummary || "").indexOf("layers 1,2") < 0
+    String(targetSummaryValidation.body.result.steps[0].targetSummary || "").indexOf("layers 1,2") < 0 ||
+    !targetSummaryValidation.body.result.classification ||
+    targetSummaryValidation.body.result.classification.category !== "risky"
   ) {
     throw new Error("Plan validation did not include the expected affected target summary");
   }
@@ -1008,6 +1012,8 @@ async function main() {
     memoryToolPlanValidation.body.ok !== true ||
     !memoryToolPlanValidation.body.result ||
     memoryToolPlanValidation.body.result.ok !== false ||
+    !memoryToolPlanValidation.body.result.classification ||
+    memoryToolPlanValidation.body.result.classification.category !== "unsupported" ||
     String((memoryToolPlanValidation.body.result.steps[0].warnings || []).join(" ")).indexOf("not available for AI Agent plans") < 0
   ) {
     throw new Error("Project Intent Memory update tool should not be available inside AE Agent plans");
@@ -1016,6 +1022,7 @@ async function main() {
     mutatingDryRun.status !== 200 ||
     mutatingDryRun.body.ok !== true ||
     mutatingDryRun.body.run.validation.mutatingCount !== 1 ||
+    mutatingDryRun.body.run.validation.classification.category !== "risky" ||
     mutatingDryRun.body.run.steps[0].status !== "ready"
   ) {
     throw new Error("Unexpected mutating plan dry-run response");
