@@ -25,6 +25,8 @@ Before context gets high or after each completed milestone:
 2. Include goal, changed files, validation commands, decisions, risks, and the exact next prompt.
 3. Start a new thread instead of relying on automatic context compaction.
 
+Always update `.codex/handoff.md` according to the milestone handoff format after milestone work, and also at the end of any current-window work if the conversation context has exceeded 128K tokens.
+
 Avoid broad repository scans unless explicitly requested.
 Use targeted `rg`, `sed`, `head`, `tail`, and file-specific reads.
 For large command outputs, save full logs to a file and summarize only the relevant lines.
