@@ -3,6 +3,7 @@ logs/*.jsonl
 logs/*.log
 logs/*.png
 logs/agent-run-reports/
+logs/reliability-validation/
 logs/solution-candidates/
 backups/*.aep
 backups/*.aepx

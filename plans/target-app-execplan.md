@@ -47,7 +47,7 @@
 - [x] Milestone 77: Plan confidence and risk classification.
 - [x] Milestone 78: Plan repair loop.
 - [x] Milestone 79: Semantic verification.
-- [ ] Milestone 80: Reliability validation.
+- [x] Milestone 80: Reliability validation.
 
 ## Current Stable Baseline
 
@@ -445,6 +445,7 @@
 - 2026-05-16: `/agents/plan/validate`, `validate_ai_agent_plan`, `plan_with_ai_agent` и `/agents/plan/run` возвращают additive `planRepair` metadata; когда repair применен, runner использует repaired plan только после revalidation. Ambiguous, unsupported и non-obvious plans остаются blocked или clarification-needed.
 - 2026-05-16: Semantic verification добавляется как локальный deterministic post-run слой `ae-agent-semantic-verification.v1`: он сравнивает requested typed-tool outcome с result/read-back summaries после последней мутации, не вызывает provider и не меняет `run.ok`.
 - 2026-05-16: Для passed semantic verification у mutating Agent-run нужен явный read-back summary step после мутаций; per-step `verifyAfter` snapshots остаются evidence, но без финального read-back outcome помечается `needs_review`.
+- 2026-05-16: Reliability validation suite фиксируется как orchestration/reporting слой, а не новый execution shortcut: `local` запускает дешевые offline/fake-provider проверки, `provider-readiness` использует live readiness только с `checkModels=0`, `read-only-live` не мутирует AE project, а `external-provider` и `mutating-live` требуют явных флагов approval.
 
 ## Validation
 
@@ -1291,3 +1292,23 @@
   - Passed `node scripts\smoke-test.js`.
   - `node scripts\cep-panel-cdp-smoke.js plan-review-smoke` could not run because the live CEP CDP endpoint refused connection on `127.0.0.1:8870`; After Effects/panel CDP access is needed to rerun it.
   - Did not run live ChatGPT connector/Tunnel checks, live OpenRouter calls, external OpenAI CLI planner smokes or live AE mutation smokes because those remain explicit-approval-gated.
+- Milestone 80:
+  - Added `scripts\reliability-validation-suite.js` with grouped validation scopes: `local`, `provider-readiness`, `read-only-live`, `external-provider`, `mutating-live`, `all`, and `list`.
+  - Added `scripts\reliability-validation-suite-smoke.js` to cover catalog integrity, category coverage, readiness grouping, and approval-gate behavior.
+  - The local suite groups offline corpus validation, provider fake/API smokes, Project Intent Memory, Solution Library, plan classification/repair, semantic verification, Agent report/audit schemas, and daemon/adapter smokes.
+  - The live provider readiness matrix checks OpenAI API, OpenAI CLI, Gemini, Claude, OpenRouter and Local/Ollama through `/agents/readiness` with `checkModels=0`, avoiding external provider model-list calls.
+  - The read-only live suite records CEP/CDP inspect, read-only smoke, Plan Review, generated QA audit, provider setup/self-test UI and connector status UI as non-mutating checks that still require AE/panel availability.
+  - External-provider and mutating-live suites are present but blocked unless explicitly launched with `--allow-external-provider` and/or `--allow-mutating-live`.
+  - Added ignored report output path `logs\reliability-validation\`.
+  - Updated README, RELEASES and AGENTS verification notes for the reliability suite.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check scripts\reliability-validation-suite.js`.
+  - Passed `node --check scripts\reliability-validation-suite-smoke.js`.
+  - Passed `node scripts\reliability-validation-suite-smoke.js`.
+  - Passed `node scripts\reliability-validation-suite.js list`; catalog reported 31 checks across local, provider-readiness, read-only-live, external-provider and mutating-live groups.
+  - Passed `node scripts\reliability-validation-suite.js local`; summary 19/19 passed, covering provider contract/API fakes, connector quarantine, prompt optimization, Project Intent Memory, plan classification/repair, semantic verification, Agent audit/report schemas, planner corpus, Solution Library, bridge-only and repo smoke.
+  - Passed `node scripts\reliability-validation-suite.js provider-readiness`; live bridge `127.0.0.1:3456` returned structured readiness for 6/6 providers with `checkModels=0`, 3 configured/canChat providers and 3 setup-needed API-key providers.
+  - `node scripts\reliability-validation-suite.js read-only-live --stop-on-fail` could not run live CEP checks because CDP `127.0.0.1:8870` refused connection; open After Effects/panel with CDP to rerun.
+  - Passed `node scripts\reliability-validation-suite.js all --dry-run --allow-external-provider --allow-mutating-live`; all 31 checks were planned without execution.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Did not run external-provider checks, live ChatGPT connector/Tunnel checks, live OpenRouter calls or mutating live AE checks because those remain explicit-approval-gated.

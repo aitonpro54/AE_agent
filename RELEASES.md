@@ -1,5 +1,26 @@
 # AE Agent Releases
 
+## v1.0.0-reliability-validation - 2026-05-16
+
+Reliability validation layer before adding new AE mutation tools.
+
+Added:
+
+- `scripts\reliability-validation-suite.js` with explicit groups for `local`, `provider-readiness`, `read-only-live`, `external-provider`, and `mutating-live` checks.
+- `scripts\reliability-validation-suite-smoke.js` to verify the suite catalog, grouping, and approval gates.
+- Ignored JSON report output under `logs\reliability-validation\` when the suite is run with `--write-report`.
+
+Safety:
+
+- `provider-readiness` uses live `/agents/readiness` with `checkModels=0`, so readiness evidence does not call provider model-list APIs.
+- `external-provider` requires `--allow-external-provider`.
+- `mutating-live` requires `--allow-mutating-live`; the OpenAI CLI Agent scenario also requires `--allow-external-provider`.
+
+Validation:
+
+- Milestone 80 local validation is intended to run through `node scripts\reliability-validation-suite.js local` plus the existing milestone-required smoke commands.
+- Live CEP/CDP, external provider, and live mutating checks remain documented but approval/availability gated.
+
 ## v1.0.0-single-title - 2026-05-13
 
 Product title cleanup for AE Agent 1.0.0.

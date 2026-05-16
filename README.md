@@ -351,6 +351,19 @@ Agent-run semantic verification coverage:
 node .\scripts\semantic-verification-smoke.js
 ```
 
+Reliability validation suite:
+
+```powershell
+node .\scripts\reliability-validation-suite.js list
+node .\scripts\reliability-validation-suite.js local
+node .\scripts\reliability-validation-suite.js provider-readiness
+node .\scripts\reliability-validation-suite.js read-only-live
+node .\scripts\reliability-validation-suite.js external-provider --allow-external-provider
+node .\scripts\reliability-validation-suite.js mutating-live --allow-mutating-live
+```
+
+`local` runs the cheap offline corpus, provider fakes, repair/classification/semantic checks, Solution Library checks, and local daemon smokes. `provider-readiness` queries the live bridge with `checkModels=0`, so it reports setup state without external model-list calls. `read-only-live` requires the installed CEP panel/CDP target and does not mutate the AE project. `external-provider` and `mutating-live` stay explicit-approval paths because they can send prompts/project context to providers or mutate generated live AE items.
+
 ChatGPT connector read-only MCP and JSX Lab quarantine coverage:
 
 ```powershell
