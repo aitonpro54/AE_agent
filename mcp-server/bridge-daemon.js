@@ -9,6 +9,7 @@ const aiAgents = require("./ai-agents");
 const { buildSolutionHintsForPrompt } = require("./solution-library");
 const { classifyAgentPlan } = require("./plan-risk-classifier");
 const { repairAgentPlan } = require("./plan-repair");
+const { buildSemanticVerification } = require("./semantic-verification");
 const {
   buildProjectIntentMemoryForPrompt,
   readProjectIntentMemory,
@@ -3122,6 +3123,9 @@ async function runValidatedAgentPlan(options) {
     run.finishedAt = new Date().toISOString();
     if (typeof run.ok !== "boolean") {
       run.ok = run.failedCount === 0 && !run.steps.some((step) => step.status === "blocked");
+    }
+    if (!run.dryRun && validation.mutatingCount > 0 && !run.semanticVerification) {
+      run.semanticVerification = buildSemanticVerification(prepared.plan, run);
     }
     if (!run.ok && !run.recoveryHint) {
       run.recoveryHint = planRunRecoveryHint(run);

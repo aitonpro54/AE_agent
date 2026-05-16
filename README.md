@@ -345,6 +345,12 @@ Bounded Agent plan repair coverage:
 node .\scripts\plan-repair-smoke.js
 ```
 
+Agent-run semantic verification coverage:
+
+```powershell
+node .\scripts\semantic-verification-smoke.js
+```
+
 ChatGPT connector read-only MCP and JSX Lab quarantine coverage:
 
 ```powershell

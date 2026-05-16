@@ -46,7 +46,7 @@
 - [x] Milestone 76: Project Intent Memory.
 - [x] Milestone 77: Plan confidence and risk classification.
 - [x] Milestone 78: Plan repair loop.
-- [ ] Milestone 79: Semantic verification.
+- [x] Milestone 79: Semantic verification.
 - [ ] Milestone 80: Reliability validation.
 
 ## Current Stable Baseline
@@ -443,6 +443,8 @@
 - 2026-05-16: Solution Library и Project Intent Memory signals входят в classification только как advisory context; они усиливают risk/safety verdict, но не делают plan executable и не обходят validation, mutation gates или checkpoints.
 - 2026-05-16: Plan repair выполняется локально и детерминированно после первичной validation: только bounded tool aliases, schema arg/binding aliases и runtime bindings из уже запланированных read/create steps. Repair не вызывает provider, не предлагает raw ExtendScript fallback и не исполняется без повторной validation/classification.
 - 2026-05-16: `/agents/plan/validate`, `validate_ai_agent_plan`, `plan_with_ai_agent` и `/agents/plan/run` возвращают additive `planRepair` metadata; когда repair применен, runner использует repaired plan только после revalidation. Ambiguous, unsupported и non-obvious plans остаются blocked или clarification-needed.
+- 2026-05-16: Semantic verification добавляется как локальный deterministic post-run слой `ae-agent-semantic-verification.v1`: он сравнивает requested typed-tool outcome с result/read-back summaries после последней мутации, не вызывает provider и не меняет `run.ok`.
+- 2026-05-16: Для passed semantic verification у mutating Agent-run нужен явный read-back summary step после мутаций; per-step `verifyAfter` snapshots остаются evidence, но без финального read-back outcome помечается `needs_review`.
 
 ## Validation
 
@@ -1244,6 +1246,43 @@
   - Passed `node scripts\solution-retrieval-smoke.js`.
   - Passed `node scripts\solution-library-validation-smoke.js`.
   - Passed `node scripts\project-intent-memory-smoke.js`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\chatgpt-connector-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - `node scripts\cep-panel-cdp-smoke.js plan-review-smoke` could not run because the live CEP CDP endpoint refused connection on `127.0.0.1:8870`; After Effects/panel CDP access is needed to rerun it.
+  - Did not run live ChatGPT connector/Tunnel checks, live OpenRouter calls, external OpenAI CLI planner smokes or live AE mutation smokes because those remain explicit-approval-gated.
+- Milestone 79:
+  - Added `mcp-server\semantic-verification.js` with schema `ae-agent-semantic-verification.v1` for deterministic post-run outcome checks.
+  - Wired semantic verification into `/agents/plan/run` and `run_ai_agent_plan` results for non-dry-run mutating Agent plans.
+  - Semantic verification compares typed-tool requested outcomes against tool result summaries and explicit read-back steps after the last mutation for timing, layout/animation, precomp/source/rename, and render queue setup fixture workflows.
+  - CEP run transcript now shows concise `Outcome verification` and check/read-back counts for mutating runs.
+  - Agent scenario report artifacts now include compact per-scenario semantic verification plus aggregate passed/needs-review counts.
+  - Updated live Agent scenario smoke expectations so protected runs must surface passed outcome verification when live CDP/AE validation is available.
+  - Added `node scripts\semantic-verification-smoke.js` and documented it in README/AGENTS verification.
+  - Synchronized the updated `panel.js` into the installed CEP extension with `node scripts\cep-sync-health.js --sync --check`; the first sandboxed attempt could not read the installed extension, the approved run copied `panel.js` and reported sync status `ok`.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check mcp-server\semantic-verification.js`.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `node --check scripts\agent-scenario-report.js`.
+  - Passed `node --check scripts\agent-scenario-report-smoke.js`.
+  - Passed `node --check scripts\semantic-verification-smoke.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\semantic-verification-smoke.js`.
+  - Passed `node scripts\agent-scenario-report-smoke.js`.
+  - Passed `node scripts\agent-planner-corpus-smoke.js`.
+  - Passed `node scripts\plan-classification-smoke.js`.
+  - Passed `node scripts\plan-repair-smoke.js`.
+  - Passed `node scripts\project-intent-memory-smoke.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`.
   - Passed `node scripts\provider-contract-smoke.js`.
   - Passed `node scripts\provider-api-smoke.js`.
   - Passed `node scripts\chatgpt-connector-smoke.js`.

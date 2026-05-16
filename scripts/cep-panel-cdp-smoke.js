@@ -344,6 +344,7 @@ function stateExpression() {
     sendDisabled: document.getElementById("sendChatButton") ? document.getElementById("sendChatButton").disabled : null,
     planRunStatus: document.getElementById("planRunStatus") ? document.getElementById("planRunStatus").textContent : "",
     planRunStatusClass: document.getElementById("planRunStatus") ? document.getElementById("planRunStatus").className : "",
+    planRunSemanticVerification: window.__aeAgentLastPlanRunResult && window.__aeAgentLastPlanRunResult.semanticVerification ? window.__aeAgentLastPlanRunResult.semanticVerification : null,
     dryRunTitle: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").title : "",
     runTitle: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").title : "",
     dryRunDisabled: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").disabled : null,
@@ -2251,6 +2252,7 @@ function planRunSummary(run) {
     dryRun: run ? run.dryRun === true : null,
     safety: run ? run.safety || null : null,
     checkpoint: run && run.editSession && run.editSession.checkpoint ? run.editSession.checkpoint : run && run.checkpoint ? run.checkpoint : null,
+    semanticVerification: run ? run.semanticVerification || null : null,
     statuses: steps.map((step) => ({
       title: step.title || step.tool || "Step",
       tool: step.tool || null,
@@ -2417,6 +2419,9 @@ async function runAgentScenario(send, scenario, config) {
   if (run.transcript.indexOf("Checkpoint/edit session: protected by") < 0) {
     throw new Error(`${scenario.id}: protected run did not report checkpoint/edit-session protection.`);
   }
+  if (run.transcript.indexOf("Outcome verification: passed") < 0) {
+    throw new Error(`${scenario.id}: protected run did not report passed outcome verification.\n${run.transcript.slice(-3000)}`);
+  }
 
   return {
     id: scenario.id,
@@ -2428,6 +2433,7 @@ async function runAgentScenario(send, scenario, config) {
     },
     run: {
       transcriptTail: run.transcript.slice(-3000),
+      semanticVerification: run.planRunSemanticVerification || null,
       logTail: run.log.slice(-1200)
     }
   };

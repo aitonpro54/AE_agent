@@ -54,7 +54,24 @@ function fixtureReport() {
           checks: { reviewReady: true, validationLine: true }
         },
         dryRun: { transcriptTail: "Dry run: ok" },
-        run: { transcriptTail: "Run: ok", logTail: "protected" }
+        run: {
+          transcriptTail: "Run: ok",
+          logTail: "protected",
+          semanticVerification: {
+            schema: "ae-agent-semantic-verification.v1",
+            status: "passed",
+            ok: true,
+            summary: "Fixture semantic verification passed.",
+            readBackCount: 1,
+            mutationVerificationCount: 2,
+            passedChecks: 3,
+            failedChecks: 0,
+            checks: [
+              { id: "fixture", status: "passed", title: "Fixture check", expected: "expected", observed: "observed", evidence: "read-back" }
+            ],
+            warnings: []
+          }
+        }
       },
       {
         id: "render-queue-setup",
@@ -117,7 +134,12 @@ function main() {
   assert.strictEqual(onDisk.acceptance.scenarioCount, 2);
   assert.strictEqual(onDisk.acceptance.acceptedCount, 1);
   assert.strictEqual(onDisk.acceptance.rejectedCount, 1);
+  assert.strictEqual(onDisk.semanticVerification.reportedCount, 1);
+  assert.strictEqual(onDisk.semanticVerification.passedCount, 1);
+  assert.strictEqual(onDisk.semanticVerification.needsReviewCount, 0);
   assert.strictEqual(onDisk.scenarios[0].planSource, "panel-agent-plan");
+  assert.strictEqual(onDisk.scenarios[0].run.semanticVerification.status, "passed");
+  assert.strictEqual(onDisk.scenarios[0].run.semanticVerification.checks.length, 1);
   assert.strictEqual(onDisk.scenarios[1].planSource, "deterministic-plan-fallback");
   assert.strictEqual(onDisk.cleanup.projectItemsRemovedTotal, 4);
   assert.strictEqual(onDisk.cleanup.renderQueueItemsRemovedTotal, 1);

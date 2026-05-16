@@ -66,7 +66,8 @@ function compactScenarioOutcome(result) {
       dryRun: typeof run.dryRun === "boolean" ? run.dryRun : null,
       safety: run.safety || null,
       checkpoint: run.checkpoint || null,
-      statusCount: Array.isArray(run.statuses) ? run.statuses.length : null
+      statusCount: Array.isArray(run.statuses) ? run.statuses.length : null,
+      semanticVerification: compactSemanticVerification(run.semanticVerification)
     }
   };
 }
@@ -78,6 +79,30 @@ function compactCleanup(item) {
     projectItemsRemoved: numberOrNull(item && item.removedCount),
     renderQueueItemsRemoved: numberOrNull(item && item.renderQueueRemovedCount),
     renderQueueTotal: numberOrNull(item && item.renderQueueTotal)
+  };
+}
+
+function compactSemanticVerification(semantic) {
+  if (!semantic || typeof semantic !== "object") return null;
+  const checks = Array.isArray(semantic.checks) ? semantic.checks.slice(0, 8).map((check) => ({
+    id: check.id || null,
+    status: check.status || null,
+    title: check.title || null,
+    expected: check.expected || null,
+    observed: check.observed || null,
+    evidence: check.evidence || null
+  })) : [];
+  return {
+    schema: semantic.schema || null,
+    status: semantic.status || null,
+    ok: typeof semantic.ok === "boolean" ? semantic.ok : null,
+    summary: semantic.summary || null,
+    readBackCount: numberOrNull(semantic.readBackCount),
+    mutationVerificationCount: numberOrNull(semantic.mutationVerificationCount),
+    passedChecks: numberOrNull(semantic.passedChecks),
+    failedChecks: numberOrNull(semantic.failedChecks),
+    warnings: Array.isArray(semantic.warnings) ? semantic.warnings.slice(0, 8) : [],
+    checks
   };
 }
 
@@ -108,6 +133,9 @@ function normalizeAgentRunReport(rawReport, options) {
     ? rawAcceptance.scenarioCount
     : scenarios.length;
   const acceptedCount = scenarios.filter((scenario) => scenario.panelPlan.accepted).length;
+  const semanticOutcomes = scenarios
+    .map((scenario) => scenario.run.semanticVerification)
+    .filter(Boolean);
   const baselineRenderQueueTotal = numberOrNull(rawPreflight.renderQueueTotal);
   const finalRenderQueueTotal = finalCleanup.renderQueueTotal;
 
@@ -145,6 +173,12 @@ function normalizeAgentRunReport(rawReport, options) {
       scenarioCount,
       acceptedCount,
       rejectedCount: Math.max(0, scenarioCount - acceptedCount)
+    },
+    semanticVerification: {
+      reportedCount: semanticOutcomes.length,
+      passedCount: semanticOutcomes.filter((semantic) => semantic.status === "passed").length,
+      needsReviewCount: semanticOutcomes.filter((semantic) => semantic.status === "needs_review").length,
+      notReportedCount: Math.max(0, scenarios.length - semanticOutcomes.length)
     },
     scenarios,
     cleanup: {

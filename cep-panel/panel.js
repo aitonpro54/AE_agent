@@ -84,6 +84,7 @@
   var agentsLoadInFlight = false;
   var agentDataVersion = 0;
   var lastPlanResult = null;
+  var lastPlanRunResult = null;
   var lastPollErrorMessage = "";
   var setupStatusTimer = null;
   var setupStatusUntil = 0;
@@ -1601,6 +1602,7 @@
     chatMessages = normalizeChatMessages(selected.chatMessages, 16);
     transcriptHistory = normalizeTranscriptItems(selected.transcript, 80);
     lastPlanResult = null;
+    rememberPlanRun(null);
     clearElement(chatTranscriptEl);
 
     transcriptRestoring = true;
@@ -1662,6 +1664,7 @@
     chatMessages = [];
     transcriptHistory = [];
     lastPlanResult = null;
+    rememberPlanRun(null);
     removeChatWorkingIndicator();
     clearElement(chatTranscriptEl);
     saveTranscriptHistory();
@@ -1856,6 +1859,7 @@
     dispatchControlChange(chatPromptEl);
     workflowPresetSelect.value = "";
     lastPlanResult = null;
+    rememberPlanRun(null);
     updateChatAvailability();
     log("Inserted workflow preset: " + preset.label);
     try {
@@ -2174,6 +2178,26 @@
     return lines.join("\n");
   }
 
+  function rememberPlanRun(run) {
+    lastPlanRunResult = run || null;
+    window.__aeAgentLastPlanRunResult = lastPlanRunResult;
+  }
+
+  function formatSemanticVerification(semantic) {
+    if (!semantic || semantic.status === "not_applicable" || semantic.status === "not_run") return "";
+    var label = semantic.status === "passed" ? "passed" : "needs review";
+    var parts = ["Outcome verification: " + label];
+    if (semantic.summary) parts[0] += " - " + semantic.summary;
+    var checkText = "Verification checks: " + Number(semantic.passedChecks || 0) + " passed";
+    if (Number(semantic.failedChecks || 0) > 0) checkText += ", " + Number(semantic.failedChecks || 0) + " need review";
+    checkText += "; read-back summaries: " + Number(semantic.readBackCount || 0);
+    parts.push(checkText);
+    if (semantic.warnings && semantic.warnings.length) {
+      parts.push("Verification warning: " + semantic.warnings.slice(0, 2).join("; "));
+    }
+    return parts.join("\n");
+  }
+
   function formatPlanRun(run) {
     if (!run) return "No run result.";
     var lines = [];
@@ -2218,6 +2242,8 @@
     }
     var recoveryHint = recoveryHintForRun(run, runMutatingCount);
     if (recoveryHint) lines.push("Recovery: " + recoveryHint);
+    var semanticText = !run.dryRun ? formatSemanticVerification(run.semanticVerification) : "";
+    if (semanticText) lines.push(semanticText);
     if (runSteps.length) {
       lines.push("Steps:");
       for (var i = 0; i < runSteps.length; i++) {
@@ -2253,6 +2279,7 @@
     var allowMutations = !dryRun && mutatingCount > 0;
     var autoEditSession = allowMutations;
 
+    rememberPlanRun(null);
     setChatBusy(true, dryRun ? "Checking" : "Running");
     request("POST", "/agents/plan/run", {
       plan: lastPlanResult.plan,
@@ -2267,6 +2294,7 @@
       if (error) {
         var errorRun = error.body && error.body.run ? error.body.run : null;
         if (errorRun) {
+          rememberPlanRun(errorRun);
           appendChatMessage("assistant", formatPlanRun(errorRun));
           log("Plan run " + (errorRun.id || "") + " needs review");
           return;
@@ -2276,6 +2304,7 @@
         return;
       }
       var run = response && response.run ? response.run : null;
+      rememberPlanRun(run);
       appendChatMessage("assistant", formatPlanRun(run));
       if (run && run.id) log("Plan run " + run.id + " finished");
     });
@@ -2310,6 +2339,7 @@
       saveCurrentChatSession();
     } else {
       lastPlanResult = null;
+      rememberPlanRun(null);
       updateChatAvailability();
     }
 
