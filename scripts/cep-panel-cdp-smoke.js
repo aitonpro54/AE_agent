@@ -349,6 +349,12 @@ function stateExpression() {
     runTitle: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").title : "",
     dryRunDisabled: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").disabled : null,
     runDisabled: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").disabled : null,
+    inlinePlanActionCount: document.querySelectorAll(".inline-plan-actions").length,
+    inlinePlanActionStatus: document.querySelector(".inline-plan-action-status") ? document.querySelector(".inline-plan-action-status").textContent : "",
+    inlineDryRunText: document.querySelector(".inline-dry-run-button") ? document.querySelector(".inline-dry-run-button").textContent : "",
+    inlineDryRunDisabled: document.querySelector(".inline-dry-run-button") ? document.querySelector(".inline-dry-run-button").disabled : null,
+    inlineRunPlanText: document.querySelector(".inline-run-plan-button") ? document.querySelector(".inline-run-plan-button").textContent : "",
+    inlineRunPlanDisabled: document.querySelector(".inline-run-plan-button") ? document.querySelector(".inline-run-plan-button").disabled : null,
     chatHistoryValue: document.getElementById("chatHistorySelect") ? document.getElementById("chatHistorySelect").value : "",
     chatHistoryOptions: Array.from(document.querySelectorAll("#chatHistorySelect option")).map((option) => ({ value: option.value, text: option.textContent })),
     workingExists: !!document.querySelector(".chat-message.chat-working"),
@@ -520,7 +526,8 @@ function providerStorageExpression() {
   return `(() => ({
     providerGroup: localStorage.getItem("codexAeProviderGroup"),
     authMode: localStorage.getItem("codexAeOpenAiAuthMode"),
-    agentId: localStorage.getItem("codexAeAgentId")
+    agentId: localStorage.getItem("codexAeAgentId"),
+    smokeAgentModel: localStorage.getItem(${JSON.stringify(`codexAeAgentModel:${AGENT_ID}`)})
   }))()`;
 }
 
@@ -535,6 +542,7 @@ function writeProviderStorageExpression(values) {
     write("codexAeProviderGroup", values.providerGroup);
     write("codexAeOpenAiAuthMode", values.authMode);
     write("codexAeAgentId", values.agentId);
+    write(${JSON.stringify(`codexAeAgentModel:${AGENT_ID}`)}, values.smokeAgentModel);
     return true;
   })()`;
 }
@@ -608,6 +616,16 @@ function fillApiKeyExpression(value) {
     el.dispatchEvent(new Event("input", { bubbles: true }));
     el.dispatchEvent(new Event("change", { bubbles: true }));
     return { ok: true, state: ${stateExpression()} };
+  })()`;
+}
+
+function clickSelectorExpression(selector) {
+  return `(() => {
+    const el = document.querySelector(${JSON.stringify(selector)});
+    if (!el) return { ok: false, error: "missing" };
+    const before = { disabled: !!el.disabled, text: el.textContent };
+    if (!el.disabled) el.click();
+    return { ok: !before.disabled, before, state: ${stateExpression()} };
   })()`;
 }
 
@@ -1130,7 +1148,14 @@ async function reloadPanel() {
 
 async function smoke() {
   const { page, ws, send } = await connectToPanel();
+  let historyBackup = null;
+  let providerBackup = null;
+  let composerBackup = null;
   try {
+    historyBackup = await evaluate(send, historyStorageExpression());
+    providerBackup = await evaluate(send, providerStorageExpression());
+    composerBackup = await evaluate(send, composerStateExpression());
+
     await reloadActivePage(send);
     await evaluate(send, setupExpression());
     await waitFor(send, "panel online", (state) => state.badge === "online", 15000);
@@ -1173,7 +1198,12 @@ async function smoke() {
       state.planRunStatusClass.indexOf("read-only") >= 0 &&
       state.runTitle.indexOf("read-only") >= 0 &&
       state.dryRunDisabled === false &&
-      state.runDisabled === false
+      state.runDisabled === false &&
+      state.inlinePlanActionCount >= 1 &&
+      state.inlineDryRunText === "Проверить" &&
+      state.inlineDryRunDisabled === false &&
+      state.inlineRunPlanText === "Выполнить план" &&
+      state.inlineRunPlanDisabled === false
     ), WAIT_MS);
 
     const dryRunClicked = await evaluate(send, clickExpression("dryRunPlanButton"));
@@ -1186,8 +1216,8 @@ async function smoke() {
     ), 30000);
 
     await evaluate(send, installConfirmExpression());
-    const runClicked = await evaluate(send, clickExpression("runPlanButton"));
-    if (!runClicked || !runClicked.ok) throw new Error("Run plan button was not clickable.");
+    const runClicked = await evaluate(send, clickSelectorExpression(".inline-run-plan-button"));
+    if (!runClicked || !runClicked.ok) throw new Error("Inline Run plan button was not clickable.");
     const run = await waitFor(send, "run result", (state) => (
       state.sendDisabled === false &&
       state.transcript.indexOf("Run: ok") >= 0 &&
@@ -1219,6 +1249,14 @@ async function smoke() {
       }
     }, null, 2));
   } finally {
+    if (historyBackup || providerBackup || composerBackup) {
+      try {
+        if (historyBackup) await evaluate(send, writeHistoryStorageExpression(historyBackup));
+        if (providerBackup) await evaluate(send, writeProviderStorageExpression(providerBackup));
+        if (composerBackup) await evaluate(send, writeComposerStateExpression(composerBackup));
+        await reloadActivePage(send);
+      } catch (_restoreError) {}
+    }
     ws.close();
   }
 }

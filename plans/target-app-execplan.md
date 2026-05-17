@@ -48,6 +48,7 @@
 - [x] Milestone 78: Plan repair loop.
 - [x] Milestone 79: Semantic verification.
 - [x] Milestone 80: Reliability validation.
+- [x] Milestone 81: Inline Agent plan execution controls.
 
 ## Current Stable Baseline
 
@@ -56,6 +57,7 @@
 - The panel is a compact dark CEP client for the local bridge daemon.
 - Provider paths are separate: OpenAI API, OpenAI CLI, Gemini, Claude, OpenRouter, and Local/Ollama.
 - Agent mode drafts structured MCP plans, validates tool names and required fields, dry-runs plans, and executes only through explicit mutation gates.
+- The latest valid Agent plan exposes inline `Проверить` and `Выполнить план` controls inside the chat message, while keeping the same validated backend runner and project-change gates.
 - Project-changing tools use idempotency, optional checkpoints, edit-session protection, and post-mutation verification.
 - Raw ExtendScript remains available as an escape hatch, but normal product workflows should use typed bridge tools.
 
@@ -364,6 +366,13 @@
 - Разделить cheap local checks, read-only live checks, external-provider checks и mutating live AE checks.
 - Сформировать handoff/release notes с доказательствами reliability layer перед добавлением новых AE mutation tools.
 
+### Milestone 81: Inline Agent plan execution controls
+
+- Добавить inline-действия к последнему валидному Agent-плану прямо внутри сообщения чата.
+- Переименовать persistent run controls в `Проверить` / `Выполнить план`, сохранив существующий `/agents/plan/run` runner.
+- Оставить старые/замененные планы неактивными, чтобы пользователь не запускал устаревший план после нового запроса.
+- Обновить live CEP smoke так, чтобы он проверял наличие inline-кнопок и запускал read-only план через `Выполнить план`.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -446,6 +455,7 @@
 - 2026-05-16: Semantic verification добавляется как локальный deterministic post-run слой `ae-agent-semantic-verification.v1`: он сравнивает requested typed-tool outcome с result/read-back summaries после последней мутации, не вызывает provider и не меняет `run.ok`.
 - 2026-05-16: Для passed semantic verification у mutating Agent-run нужен явный read-back summary step после мутаций; per-step `verifyAfter` snapshots остаются evidence, но без финального read-back outcome помечается `needs_review`.
 - 2026-05-16: Reliability validation suite фиксируется как orchestration/reporting слой, а не новый execution shortcut: `local` запускает дешевые offline/fake-provider проверки, `provider-readiness` использует live readiness только с `checkModels=0`, `read-only-live` не мутирует AE project, а `external-provider` и `mutating-live` требуют явных флагов approval.
+- 2026-05-17: Inline `Выполнить план` в Agent-чате является UX-обвязкой над существующим `/agents/plan/run`; она не обходит validation, classification blocks, dry-run, `confirm:true`, `allowMutations`, checkpoint/edit-session protection или semantic verification.
 
 ## Validation
 
@@ -1312,3 +1322,36 @@
   - Passed `node scripts\reliability-validation-suite.js all --dry-run --allow-external-provider --allow-mutating-live`; all 31 checks were planned without execution.
   - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
   - Did not run external-provider checks, live ChatGPT connector/Tunnel checks, live OpenRouter calls or mutating live AE checks because those remain explicit-approval-gated.
+- Milestone 81:
+  - Added inline `Проверить` and `Выполнить план` controls to valid Agent plan chat messages.
+  - The inline controls are enabled only for the latest current plan; replaced plans become disabled and cannot start stale execution.
+  - Kept execution routed through the existing `/agents/plan/run` request with the same dry-run, `confirm:true`, mutation allowance, auto edit-session and classification blocking rules.
+  - Renamed the persistent composer plan buttons to `Проверить` and `Выполнить план`.
+  - Updated `node scripts\cep-panel-cdp-smoke.js smoke` to assert inline controls and click the inline `Выполнить план` button for read-only live execution.
+  - Updated the live smoke to back up and restore chat history, provider selection and composer state after the run.
+  - Synchronized updated `index.html`, `panel.js` and `style.css` into the installed CEP extension with `node scripts\cep-sync-health.js --sync --check`.
+  - No package manager check is configured because the repository has no `package.json`.
+  - `node --check ...` through the PATH `node.exe` failed with Windows `Access is denied`; the same checks passed with the bundled Codex runtime Node executable.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`.
+  - Passed `node scripts\project-intent-memory-smoke.js`.
+  - Passed `node scripts\plan-classification-smoke.js`.
+  - Passed `node scripts\plan-repair-smoke.js`.
+  - Passed `node scripts\semantic-verification-smoke.js`.
+  - Passed `node scripts\reliability-validation-suite-smoke.js`.
+  - Passed `node scripts\chatgpt-connector-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js inspect`; installed panel was online through CDP and bridge connected.
+  - Passed live read-only `node scripts\cep-panel-cdp-smoke.js smoke`; the installed panel generated a valid Agent plan, showed inline `Проверить` / `Выполнить план`, clicked inline `Выполнить план`, and completed a read-only run.
+  - Passed a follow-up live `node scripts\cep-panel-cdp-smoke.js inspect` confirming the user's prior chat history/provider state was restored after the smoke.
+  - Did not run external-provider checks, OpenAI CLI planner scenario smokes, ChatGPT connector/Tunnel checks, live OpenRouter calls or mutating live AE checks because this milestone only changes panel Agent-run UX and those paths remain explicit-approval-gated.

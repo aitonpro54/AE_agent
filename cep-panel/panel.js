@@ -85,6 +85,7 @@
   var agentDataVersion = 0;
   var lastPlanResult = null;
   var lastPlanRunResult = null;
+  var inlinePlanActionRows = [];
   var lastPollErrorMessage = "";
   var setupStatusTimer = null;
   var setupStatusUntil = 0;
@@ -1297,7 +1298,7 @@
     });
   }
 
-  function appendChatMessage(role, text) {
+  function appendChatMessage(role, text, options) {
     var messageEl = document.createElement("div");
     messageEl.className = "chat-message " + role;
 
@@ -1308,11 +1309,55 @@
 
     var textEl = document.createElement("span");
     renderChatText(textEl, role, text || "");
+    if (options && options.planActions) appendInlinePlanActions(textEl, options.planActions);
     messageEl.appendChild(textEl);
 
     chatTranscriptEl.appendChild(messageEl);
     chatTranscriptEl.scrollTop = chatTranscriptEl.scrollHeight;
     recordTranscriptMessage(role, text);
+  }
+
+  function appendInlinePlanActions(parent, planResult) {
+    if (!parent || !planResult || !planResult.plan) return;
+
+    var row = document.createElement("div");
+    row.className = "inline-plan-actions";
+
+    var status = document.createElement("span");
+    status.className = "inline-plan-action-status";
+    status.textContent = "Plan ready";
+    row.appendChild(status);
+
+    var dryRunButton = document.createElement("button");
+    dryRunButton.className = "inline-dry-run-button";
+    dryRunButton.textContent = "Проверить";
+    dryRunButton.title = "Проверить план без изменений в проекте After Effects.";
+    row.appendChild(dryRunButton);
+
+    var runButton = document.createElement("button");
+    runButton.className = "inline-run-plan-button";
+    runButton.textContent = "Выполнить план";
+    runButton.title = "Выполнить план через защищенный runner AE Agent.";
+    row.appendChild(runButton);
+
+    var entry = {
+      planResult: planResult,
+      row: row,
+      status: status,
+      dryRunButton: dryRunButton,
+      runButton: runButton
+    };
+
+    dryRunButton.addEventListener("click", function () {
+      if (!dryRunButton.disabled) runLastPlan(true);
+    });
+    runButton.addEventListener("click", function () {
+      if (!runButton.disabled) runLastPlan(false);
+    });
+
+    inlinePlanActionRows.push(entry);
+    parent.appendChild(row);
+    updateInlinePlanActionRows();
   }
 
   function removeChatWorkingIndicator() {
@@ -1707,6 +1752,42 @@
     planRunStatusEl.className = "plan-run-status" + (tone ? " " + tone : "");
   }
 
+  function updateInlinePlanActionRows() {
+    for (var i = inlinePlanActionRows.length - 1; i >= 0; i--) {
+      var entry = inlinePlanActionRows[i];
+      if (!entry || !entry.row || !entry.row.parentNode) {
+        inlinePlanActionRows.splice(i, 1);
+        continue;
+      }
+
+      var isCurrentPlan = !!(lastPlanResult && entry.planResult === lastPlanResult);
+      var validation = isCurrentPlan && lastPlanResult ? lastPlanResult.planValidation || null : null;
+      var mutatingCount = validation ? Number(validation.mutatingCount || 0) : 0;
+      var validationOk = !!(validation && validation.ok);
+      var classification = planClassification(validation);
+      var blocksRun = classificationBlocksRun(validation);
+      var dryDisabled = chatInFlight || !isCurrentPlan;
+      var runDisabled = chatInFlight || !isCurrentPlan || !validation || !validationOk || blocksRun;
+
+      entry.dryRunButton.disabled = dryDisabled;
+      entry.runButton.disabled = runDisabled;
+
+      if (!isCurrentPlan) {
+        entry.status.textContent = "Replaced by a newer plan";
+        entry.row.className = "inline-plan-actions blocked";
+      } else if (chatInFlight) {
+        entry.status.textContent = "Working...";
+        entry.row.className = "inline-plan-actions";
+      } else if (!validation) {
+        entry.status.textContent = "Plan needs review";
+        entry.row.className = "inline-plan-actions blocked";
+      } else {
+        entry.status.textContent = classificationStatusText(classification, validationOk, mutatingCount);
+        entry.row.className = "inline-plan-actions " + classificationTone(classification, validationOk, mutatingCount);
+      }
+    }
+  }
+
   function planClassification(validation) {
     return validation && validation.classification && typeof validation.classification === "object"
       ? validation.classification
@@ -1742,10 +1823,11 @@
     var classification = planClassification(validation);
     var blocksRun = classificationBlocksRun(validation);
     if (dryRunPlanButton) {
+      dryRunPlanButton.textContent = "Проверить";
       dryRunPlanButton.title = hasPlan ? "Check this plan without changing the AE project." : "Create an Agent plan first.";
     }
     if (runPlanButton) {
-      runPlanButton.textContent = "Run plan";
+      runPlanButton.textContent = "Выполнить план";
       if (!hasPlan) {
         runPlanButton.title = "Create and validate an Agent plan first.";
       } else if (blocksRun) {
@@ -1777,6 +1859,7 @@
     dryRunPlanButton.disabled = chatInFlight || !hasPlan;
     runPlanButton.disabled = chatInFlight || !hasPlan || !validation || !validation.ok || classificationBlocksRun(validation);
     updatePlanRunControls(hasPlan, validation);
+    updateInlinePlanActionRows();
     if (applyWorkflowPresetButton && workflowPresetSelect) {
       applyWorkflowPresetButton.disabled = chatInFlight || !workflowPresetSelect.value;
     }
@@ -2371,7 +2454,7 @@
       var result = response && response.result ? response.result : {};
       var text = mode === "plan" ? formatPlanResult(result) : result.text || "";
       lastPlanResult = mode === "plan" ? result : lastPlanResult;
-      appendChatMessage("assistant", text);
+      appendChatMessage("assistant", text, mode === "plan" ? { planActions: result } : null);
       if (mode === "chat") {
         chatMessages.push({ role: "assistant", content: text });
         if (chatMessages.length > 16) chatMessages = chatMessages.slice(chatMessages.length - 16);

@@ -18,6 +18,7 @@ The panel remains a client of the local bridge daemon. The daemon remains the ow
 - `Gemini` and `Claude` support API-key setup states and provider calls through their official HTTP APIs.
 - The chat area supports `Chat` and `Agent` modes, a model selector, prompt input, chat history, and a visible Prompt Optimization toggle.
 - Agent mode shows planned steps with success/error/ready states and concrete backend results.
+- Valid Agent-mode plans expose inline `Проверить` and `Выполнить план` actions in the chat message, wired to the same validated plan runner and safety gates as the persistent composer controls.
 
 ## ChatGPT Subscription Model Access
 

@@ -701,6 +701,10 @@ button:disabled {
   justify-content: flex-end;
 }
 
+.plan-actions button {
+  min-width: 88px;
+}
+
 .plan-run-status {
   color: #a8a8a8;
   flex: 1 1 160px;
@@ -726,6 +730,48 @@ button:disabled {
 .plan-run-status.mutating,
 .plan-run-status.blocked {
   font-weight: 600;
+}
+
+.inline-plan-actions {
+  align-items: center;
+  border-top: 1px solid #3d3d3d;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+.inline-plan-action-status {
+  color: #a8a8a8;
+  flex: 1 1 120px;
+  font-size: 11px;
+  line-height: 1.25;
+  min-width: 110px;
+}
+
+.inline-plan-actions.read-only .inline-plan-action-status {
+  color: #8bcaff;
+}
+
+.inline-plan-actions.mutating .inline-plan-action-status {
+  color: #ffbf7a;
+}
+
+.inline-plan-actions.blocked .inline-plan-action-status {
+  color: #ff9d9d;
+}
+
+.inline-plan-actions button {
+  min-height: 28px;
+  min-width: 88px;
+  padding: 5px 9px;
+}
+
+.inline-run-plan-button {
+  background: #915714;
+  border-color: #915714;
+  color: #f1f6f8;
 }
 
 .plan-result {
