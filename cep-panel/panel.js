@@ -2,7 +2,7 @@
 
 (function () {
   var APP_NAME = "AE Agent";
-  var APP_VERSION = "1.0.0";
+  var APP_VERSION = "1.0.1";
 
   var cs = new CSInterface();
   var appShellEl = document.getElementById("appShell");
@@ -50,6 +50,7 @@
   var chatPromptEl = document.getElementById("chatPrompt");
   var sendChatButton = document.getElementById("sendChatButton");
   var planRunStatusEl = document.getElementById("planRunStatus");
+  var recoverLastPlanButton = document.getElementById("recoverLastPlanButton");
   var dryRunPlanButton = document.getElementById("dryRunPlanButton");
   var runPlanButton = document.getElementById("runPlanButton");
   var chatHistorySelect = document.getElementById("chatHistorySelect");
@@ -1314,7 +1315,7 @@
 
     chatTranscriptEl.appendChild(messageEl);
     chatTranscriptEl.scrollTop = chatTranscriptEl.scrollHeight;
-    recordTranscriptMessage(role, text);
+    recordTranscriptMessage(role, text, options);
   }
 
   function appendInlinePlanActions(parent, planResult) {
@@ -1500,16 +1501,45 @@
     return [];
   }
 
+  function jsonClone(value) {
+    try {
+      return JSON.parse(JSON.stringify(value));
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  function normalizeTranscriptPlanResult(result) {
+    if (!result || typeof result !== "object" || !result.plan || typeof result.plan !== "object") return null;
+    var normalized = {
+      planParseOk: result.planParseOk !== false,
+      plan: result.plan
+    };
+    if (result.requestId) normalized.requestId = String(result.requestId).slice(0, 180);
+    if (result.model) normalized.model = String(result.model).slice(0, 120);
+    if (typeof result.durationMs === "number") normalized.durationMs = result.durationMs;
+    if (result.planValidation && typeof result.planValidation === "object") normalized.planValidation = result.planValidation;
+    if (result.planClassification && typeof result.planClassification === "object") normalized.planClassification = result.planClassification;
+    if (result.planRepair && typeof result.planRepair === "object") normalized.planRepair = result.planRepair;
+    if (result.planRepaired) normalized.planRepaired = true;
+    if (result.planParseError) normalized.planParseError = compactTranscriptText(result.planParseError);
+    var cloned = jsonClone(normalized);
+    return cloned && cloned.plan ? cloned : null;
+  }
+
   function normalizeTranscriptItems(items, limit) {
     var source = items && typeof items.push === "function" ? items : [];
     var output = [];
     for (var i = 0; i < source.length; i++) {
       var item = source[i] || {};
       var role = item.role === "user" || item.role === "assistant" || item.role === "error" ? item.role : "assistant";
-      output.push({
+      var normalized = {
         role: role,
         text: compactTranscriptText(item.text)
-      });
+      };
+      var planResult = normalizeTranscriptPlanResult(item.planResult);
+      if (planResult) normalized.planResult = planResult;
+      output.push(normalized);
     }
     if (limit && output.length > limit) return output.slice(output.length - limit);
     return output;
@@ -1629,16 +1659,31 @@
     saveCurrentChatSession();
   }
 
-  function recordTranscriptMessage(role, text) {
+  function recordTranscriptMessage(role, text, options) {
     if (transcriptRestoring) return;
-    transcriptHistory.push({
+    var item = {
       role: role || "assistant",
       text: compactTranscriptText(text)
-    });
+    };
+    var planResult = normalizeTranscriptPlanResult(options && options.planActions);
+    if (planResult) item.planResult = planResult;
+    transcriptHistory.push(item);
     if (transcriptHistory.length > 80) {
       transcriptHistory = transcriptHistory.slice(transcriptHistory.length - 80);
     }
     saveTranscriptHistory();
+  }
+
+  function renderTranscriptHistory(recoveredPlanIndex, recoveredPlanResult) {
+    inlinePlanActionRows = [];
+    clearElement(chatTranscriptEl);
+
+    transcriptRestoring = true;
+    for (var i = 0; i < transcriptHistory.length; i++) {
+      var options = recoveredPlanResult && i === recoveredPlanIndex ? { planActions: recoveredPlanResult } : null;
+      appendChatMessage(transcriptHistory[i].role, transcriptHistory[i].text, options);
+    }
+    transcriptRestoring = false;
   }
 
   function applyChatSession(session) {
@@ -1648,13 +1693,7 @@
     transcriptHistory = normalizeTranscriptItems(selected.transcript, 80);
     lastPlanResult = null;
     rememberPlanRun(null);
-    clearElement(chatTranscriptEl);
-
-    transcriptRestoring = true;
-    for (var i = 0; i < transcriptHistory.length; i++) {
-      appendChatMessage(transcriptHistory[i].role, transcriptHistory[i].text);
-    }
-    transcriptRestoring = false;
+    renderTranscriptHistory(-1, null);
     try {
       localStorage.setItem("codexAeActiveChatSessionId", activeChatSessionId);
       localStorage.setItem("codexAeChatTranscript", JSON.stringify(transcriptHistory.slice(-80)));
@@ -1852,10 +1891,64 @@
     }
   }
 
+  function findLastTranscriptPlanItem() {
+    for (var i = transcriptHistory.length - 1; i >= 0; i--) {
+      var planResult = normalizeTranscriptPlanResult(transcriptHistory[i] && transcriptHistory[i].planResult);
+      if (planResult) return { index: i, planResult: planResult };
+    }
+    return null;
+  }
+
+  function looksLikePlanText(text) {
+    var value = String(text || "");
+    if (!trimText(value)) return false;
+    if (/(^|\n)\s*\d+\.\s+\S/.test(value)) return true;
+    if (/(^|\n)\s*(Plan review|Steps:|План|Обнов[^\n]*план|План выполнения)/i.test(value)) return true;
+    return false;
+  }
+
+  function findLastPlanLikeTranscriptText() {
+    for (var i = transcriptHistory.length - 1; i >= 0; i--) {
+      var item = transcriptHistory[i] || {};
+      if (item.role !== "assistant") continue;
+      if (looksLikePlanText(item.text)) return compactTranscriptText(item.text);
+    }
+    return "";
+  }
+
+  function buildPlanRecoveryPrompt(sourceText) {
+    return [
+      "Подхвати последний план из чата и преврати его в валидный структурированный AE Agent plan.",
+      "Используй только реальные typed AE Agent tools, сохрани смысл исходных шагов и добавь безопасные read-back проверки. Не выполняй план: только подготовь структурированный план для validation/dry-run/run controls.",
+      "Последний план из чата:",
+      sourceText
+    ].join("\n\n");
+  }
+
+  function updateRecoverLastPlanButton(hasPlan) {
+    if (!recoverLastPlanButton) return;
+    var recoverable = findLastTranscriptPlanItem();
+    recoverLastPlanButton.disabled = chatInFlight || hasPlan || !transcriptHistory.length;
+    if (chatInFlight) {
+      recoverLastPlanButton.title = "Wait for the current Agent request to finish.";
+    } else if (hasPlan) {
+      recoverLastPlanButton.title = "A plan is already active.";
+    } else if (recoverable) {
+      recoverLastPlanButton.title = "Restore the latest saved structured Agent plan from this chat.";
+    } else if (findLastPlanLikeTranscriptText()) {
+      recoverLastPlanButton.title = "Ask Agent mode to convert the latest plan-like chat message into a validated plan.";
+    } else if (transcriptHistory.length) {
+      recoverLastPlanButton.title = "This chat has no saved structured Agent plan. Create a plan in Agent mode first.";
+    } else {
+      recoverLastPlanButton.title = "No chat history to scan yet.";
+    }
+  }
+
   function updateChatAvailability() {
     sendChatButton.disabled = chatInFlight || !selectedAgentReady();
     var hasPlan = !!(lastPlanResult && lastPlanResult.plan);
     var validation = hasPlan && lastPlanResult ? lastPlanResult.planValidation || null : null;
+    updateRecoverLastPlanButton(hasPlan);
     dryRunPlanButton.disabled = chatInFlight || !hasPlan;
     runPlanButton.disabled = chatInFlight || !hasPlan || !validation || !validation.ok || classificationBlocksRun(validation);
     updatePlanRunControls(hasPlan, validation);
@@ -1948,6 +2041,64 @@
     try {
       chatPromptEl.focus();
     } catch (_focusError) {}
+  }
+
+  function recoverLastPlanFromChat() {
+    if (chatInFlight || (lastPlanResult && lastPlanResult.plan)) return;
+    var recovered = findLastTranscriptPlanItem();
+    if (recovered) {
+      lastPlanResult = recovered.planResult;
+      rememberPlanRun(null);
+      renderTranscriptHistory(recovered.index, recovered.planResult);
+      updateChatAvailability();
+      log("Recovered latest Agent plan from chat history");
+      return;
+    }
+
+    var sourceText = findLastPlanLikeTranscriptText();
+    if (!sourceText) {
+      updateChatAvailability();
+      setPlanRunStatus("No saved Agent plan in chat", "blocked");
+      log("No structured Agent plan found in current chat history");
+      return;
+    }
+
+    var agentId = agentSelect.value;
+    var agent = findAgent(agentId);
+    if (!agent || !selectedAgentReady()) {
+      var readyError = readinessError(agent);
+      updateChatAvailability();
+      setPlanRunStatus(readyError, "blocked");
+      setAgentStatus(readyError);
+      return;
+    }
+
+    rememberPlanRun(null);
+    setChatBusy(true, "Planning");
+    request("POST", "/agents/plan", {
+      agentId: agentId,
+      model: selectedModel(),
+      prompt: buildPlanRecoveryPrompt(sourceText),
+      promptOptimization: promptOptimizationEl && promptOptimizationEl.checked,
+      timeoutMs: 120000
+    }, function (error, response) {
+      setChatBusy(false);
+      if (error) {
+        appendChatMessage("error", error.message);
+        log("Plan recovery failed: " + error.message);
+        return;
+      }
+      var result = response && response.result ? response.result : {};
+      var text = formatPlanResult(result);
+      lastPlanResult = result && result.plan ? result : null;
+      appendChatMessage("assistant", text, lastPlanResult ? { planActions: result } : null);
+      if (result.requestId) {
+        log("Recovered chat plan through Agent planner " + result.requestId);
+      } else {
+        log("Recovered chat plan through Agent planner");
+      }
+      updateChatAvailability();
+    });
   }
 
   function updatePromptOptimizationLabel() {
@@ -2605,6 +2756,7 @@
     applyWorkflowPresetButton.addEventListener("click", applyWorkflowPreset);
   }
   promptOptimizationEl.addEventListener("change", onPromptOptimizationChanged);
+  if (recoverLastPlanButton) recoverLastPlanButton.addEventListener("click", recoverLastPlanFromChat);
   dryRunPlanButton.addEventListener("click", function () {
     runLastPlan(true);
   });

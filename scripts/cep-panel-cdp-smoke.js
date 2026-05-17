@@ -345,6 +345,9 @@ function stateExpression() {
     planRunStatus: document.getElementById("planRunStatus") ? document.getElementById("planRunStatus").textContent : "",
     planRunStatusClass: document.getElementById("planRunStatus") ? document.getElementById("planRunStatus").className : "",
     planRunSemanticVerification: window.__aeAgentLastPlanRunResult && window.__aeAgentLastPlanRunResult.semanticVerification ? window.__aeAgentLastPlanRunResult.semanticVerification : null,
+    recoverLastPlanText: document.getElementById("recoverLastPlanButton") ? document.getElementById("recoverLastPlanButton").textContent : "",
+    recoverLastPlanTitle: document.getElementById("recoverLastPlanButton") ? document.getElementById("recoverLastPlanButton").title : "",
+    recoverLastPlanDisabled: document.getElementById("recoverLastPlanButton") ? document.getElementById("recoverLastPlanButton").disabled : null,
     dryRunTitle: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").title : "",
     runTitle: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").title : "",
     dryRunDisabled: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").disabled : null,
@@ -1197,6 +1200,8 @@ async function smoke() {
       state.planRunStatus === "Safe typed-tool ready" &&
       state.planRunStatusClass.indexOf("read-only") >= 0 &&
       state.runTitle.indexOf("read-only") >= 0 &&
+      state.recoverLastPlanText === "Подхватить последний план из чата" &&
+      state.recoverLastPlanDisabled === true &&
       state.dryRunDisabled === false &&
       state.runDisabled === false &&
       state.inlinePlanActionCount >= 1 &&
@@ -1205,6 +1210,29 @@ async function smoke() {
       state.inlineRunPlanText === "Выполнить план" &&
       state.inlineRunPlanDisabled === false
     ), WAIT_MS);
+
+    await reloadActivePage(send);
+    await waitFor(send, "panel online after plan reload", (state) => state.badge === "online", 15000);
+    await waitFor(send, "saved plan recoverable after reload", (state) => (
+      state.transcript.indexOf("Plan review: ready") >= 0 &&
+      state.planRunStatus === "No plan ready" &&
+      state.recoverLastPlanText === "Подхватить последний план из чата" &&
+      state.recoverLastPlanDisabled === false &&
+      state.dryRunDisabled === true &&
+      state.runDisabled === true &&
+      state.inlinePlanActionCount === 0
+    ), 20000);
+
+    const recoveredClick = await evaluate(send, clickExpression("recoverLastPlanButton"));
+    if (!recoveredClick || !recoveredClick.ok) throw new Error("Recover last plan button was not clickable.");
+    const recovered = await waitFor(send, "recovered plan ready", (state) => (
+      state.planRunStatus === "Safe typed-tool ready" &&
+      state.planRunStatusClass.indexOf("read-only") >= 0 &&
+      state.dryRunDisabled === false &&
+      state.runDisabled === false &&
+      state.inlinePlanActionCount >= 1 &&
+      state.inlineRunPlanDisabled === false
+    ), 10000);
 
     const dryRunClicked = await evaluate(send, clickExpression("dryRunPlanButton"));
     if (!dryRunClicked || !dryRunClicked.ok) throw new Error("Dry run button was not clickable.");
@@ -1239,6 +1267,12 @@ async function smoke() {
         model: planned.model,
         agentDetails: planned.agentDetails,
         transcriptTail: planned.transcript.slice(-3000)
+      },
+      recovered: {
+        status: recovered.planRunStatus,
+        statusClass: recovered.planRunStatusClass,
+        recoverTitle: recovered.recoverLastPlanTitle,
+        transcriptTail: recovered.transcript.slice(-3000)
       },
       dryRun: {
         transcriptTail: dryRun.transcript.slice(-3000)
@@ -1781,7 +1815,7 @@ async function brandingSmoke() {
   try {
     await reloadActivePage(send);
     const state = await waitFor(send, "AE Agent branding", (item) => (
-      item.title === "AE Agent 1.0.0" &&
+      item.title === "AE Agent 1.0.1" &&
       item.windowBarExists === false &&
       item.windowBarText === "" &&
       item.windowBarText.indexOf("AE GPT") < 0 &&

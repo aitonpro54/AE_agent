@@ -2,7 +2,7 @@
 
 ## Progress
 
-- [x] Stable baseline: AE Agent 1.0.0 CEP panel, provider setup, Agent planning, plan validation, protected execution, local history, diagnostics, and installed-panel smoke coverage.
+- [x] Stable baseline: AE Agent 1.0.1 CEP panel, provider setup, Agent planning, plan validation, protected execution, local history, diagnostics, and installed-panel smoke coverage.
 - [x] Milestone 38: Repo cleanup and roadmap reset.
 - [x] Milestone 39: Agent planning quality.
 - [x] Milestone 40: Timeline and layer tools.
@@ -49,11 +49,12 @@
 - [x] Milestone 79: Semantic verification.
 - [x] Milestone 80: Reliability validation.
 - [x] Milestone 81: Inline Agent plan execution controls.
+- [x] Milestone 82: Восстановление последнего плана из чата.
 
 ## Current Stable Baseline
 
 - The active repository is `C:\Users\Ant\Documents\Codex\AE_agent`.
-- The native CEP title/menu format is `AE Agent 1.0.0`.
+- The native CEP title/menu format is `AE Agent 1.0.1`.
 - The panel is a compact dark CEP client for the local bridge daemon.
 - Provider paths are separate: OpenAI API, OpenAI CLI, Gemini, Claude, OpenRouter, and Local/Ollama.
 - Agent mode drafts structured MCP plans, validates tool names and required fields, dry-runs plans, and executes only through explicit mutation gates.
@@ -373,6 +374,14 @@
 - Оставить старые/замененные планы неактивными, чтобы пользователь не запускал устаревший план после нового запроса.
 - Обновить live CEP smoke так, чтобы он проверял наличие inline-кнопок и запускал read-only план через `Выполнить план`.
 
+### Milestone 82: Восстановление последнего плана из чата
+
+- Добавить composer-кнопку `Подхватить последний план из чата`.
+- Сохранять структурированный `planResult` вместе с Agent transcript item, чтобы после reload можно было восстановить последний валидный план без повторного provider call.
+- Для старых plan-like текстовых ответов без сохраненного `planResult` использовать безопасный fallback: отправить текст обратно в `/agents/plan` для нового validated Agent plan, не исполняя произвольный текст напрямую.
+- Обновить live CEP smoke так, чтобы он генерировал план, перезагружал панель, восстанавливал план кнопкой и выполнял read-only run через существующий runner.
+- Поднять patch-версию панели/bridge/manifest до `1.0.1`.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -456,6 +465,8 @@
 - 2026-05-16: Для passed semantic verification у mutating Agent-run нужен явный read-back summary step после мутаций; per-step `verifyAfter` snapshots остаются evidence, но без финального read-back outcome помечается `needs_review`.
 - 2026-05-16: Reliability validation suite фиксируется как orchestration/reporting слой, а не новый execution shortcut: `local` запускает дешевые offline/fake-provider проверки, `provider-readiness` использует live readiness только с `checkModels=0`, `read-only-live` не мутирует AE project, а `external-provider` и `mutating-live` требуют явных флагов approval.
 - 2026-05-17: Inline `Выполнить план` в Agent-чате является UX-обвязкой над существующим `/agents/plan/run`; она не обходит validation, classification blocks, dry-run, `confirm:true`, `allowMutations`, checkpoint/edit-session protection или semantic verification.
+- 2026-05-17: `Подхватить последний план из чата` восстанавливает только сохраненный structured `planResult`; старые текстовые планы без metadata перепланируются через `/agents/plan` и не исполняются напрямую.
+- 2026-05-17: Любое изменение кода панели должно поднимать patch-часть версии после второй точки; текущая панель, manifest, daemon и adapter обновлены до `1.0.1`.
 
 ## Validation
 
@@ -1355,3 +1366,38 @@
   - Passed live read-only `node scripts\cep-panel-cdp-smoke.js smoke`; the installed panel generated a valid Agent plan, showed inline `Проверить` / `Выполнить план`, clicked inline `Выполнить план`, and completed a read-only run.
   - Passed a follow-up live `node scripts\cep-panel-cdp-smoke.js inspect` confirming the user's prior chat history/provider state was restored after the smoke.
   - Did not run external-provider checks, OpenAI CLI planner scenario smokes, ChatGPT connector/Tunnel checks, live OpenRouter calls or mutating live AE checks because this milestone only changes panel Agent-run UX and those paths remain explicit-approval-gated.
+- Milestone 82:
+  - Added `Подхватить последний план из чата` to the composer plan controls.
+  - Persisted structured Agent `planResult` metadata with transcript items so the latest valid plan can be restored after panel reload.
+  - Added a safe fallback for old plan-like text: the panel asks `/agents/plan` to convert the chat text into a validated Agent plan instead of executing text directly.
+  - Bumped CEP panel, manifest, bridge daemon, MCP adapter, install note and smoke expectations to `1.0.1`.
+  - Updated `node scripts\cep-panel-cdp-smoke.js smoke` to verify reload recovery before dry-run/run.
+  - Synchronized updated `index.html`, `panel.js`, `style.css` and `CSXS\manifest.xml` into the installed CEP extension with `node scripts\cep-sync-health.js --sync --check`.
+  - Restarted the live bridge daemon on `127.0.0.1:3456`; live `/health` reported `version:"1.0.1"` and the CEP panel connected.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check` for all touched JavaScript files using the bundled Codex runtime Node executable.
+  - Passed XML parsing for `cep-panel\CSXS\manifest.xml`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`.
+  - Passed `node scripts\project-intent-memory-smoke.js`.
+  - Passed `node scripts\plan-classification-smoke.js`.
+  - Passed `node scripts\plan-repair-smoke.js`.
+  - Passed `node scripts\semantic-verification-smoke.js`.
+  - Passed `node scripts\reliability-validation-suite-smoke.js`.
+  - Passed `node scripts\chatgpt-connector-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\agent-qa-audit-smoke.js`.
+  - Passed `node scripts\agent-scenario-report-smoke.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js smoke`; it generated a valid read-only Agent plan, reloaded the panel, restored the plan through `Подхватить последний план из чата`, dry-ran it and ran it read-only.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js reload`; state title reported `AE Agent 1.0.1` and the restored user transcript showed the recovery button enabled for the existing text-only plan.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js branding-smoke`; page and document title both reported `AE Agent 1.0.1`.
+  - Did not click the recovery button on the user's restored text-only plan because the selected provider was OpenAI CLI and that would send the plan text through an external/subscription-backed planner request.
+  - Did not run external-provider checks, OpenAI CLI planner scenario smokes, ChatGPT connector/Tunnel checks, live OpenRouter calls or mutating live AE checks because this milestone only changes panel recovery UX and those paths remain explicit-approval-gated.

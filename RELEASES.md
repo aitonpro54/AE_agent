@@ -1,5 +1,21 @@
 # AE Agent Releases
 
+## v1.0.1-chat-plan-recovery - 2026-05-17
+
+Patch release for recovering Agent plans after CEP reload.
+
+Changed:
+
+- Added `Подхватить последний план из чата` in the CEP composer.
+- New Agent plans now persist their structured `planResult` with the local chat transcript, so the last valid plan can be restored after panel reload.
+- Older text-only plan messages are sent back through `/agents/plan` for validation instead of being executed directly.
+- CEP panel, manifest, bridge daemon, adapter, install note, and smoke expectations now report `1.0.1`.
+
+Validation:
+
+- Passed local smoke suite and live read-only CEP smoke with reload recovery.
+- Live bridge was restarted from the current repo and reported `1.0.1`.
+
 ## v1.0.0-reliability-validation - 2026-05-16
 
 Reliability validation layer before adding new AE mutation tools.

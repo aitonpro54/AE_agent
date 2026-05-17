@@ -697,12 +697,20 @@ button:disabled {
 .plan-actions {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
 }
 
 .plan-actions button {
   min-width: 88px;
+}
+
+.plan-actions .recover-plan-button {
+  flex: 1 1 210px;
+  max-width: 280px;
+  min-height: 32px;
+  white-space: normal;
 }
 
 .plan-run-status {

@@ -104,8 +104,8 @@ function baseReview(overrides = {}) {
     },
     testedAeContext: {
       aeVersion: null,
-      panelVersion: "AE Agent 1.0.0",
-      bridgeVersion: "1.0.0",
+      panelVersion: "AE Agent 1.0.1",
+      bridgeVersion: "1.0.1",
       projectKind: "synthetic",
       notes: ["Promotion smoke fixture only."]
     },
