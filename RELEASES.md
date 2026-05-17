@@ -1,5 +1,21 @@
 # AE Agent Releases
 
+## v1.0.3-dev-escalation-handoff - 2026-05-17
+
+Patch release for preparing typed-tool development handoffs from AE Agent outcomes without turning the AE chat into a repository-development thread.
+
+Changed:
+
+- Added `Prepare typed tool request` in the CEP plan controls when the current Agent outcome shows unsupported tools, raw ExtendScript, a failed run, or semantic verification that needs review.
+- Added `/agents/dev-request`, which writes a redacted local handoff bundle under ignored `logs\dev-requests\`.
+- Dev bundles include `request.md`, compact `ae-evidence.json`, targeted `start-prompt.md`, and `candidate.jsx` when a raw ExtendScript workaround exists.
+- The bridge can request `codex app <repo>` after bundle creation, while keeping actual implementation work in a separate Codex App dev chat.
+- CEP panel, manifest, bridge daemon, adapter, install note, and smoke expectations now report `1.0.3`.
+
+Validation:
+
+- Local smoke coverage now verifies bundle creation, secret/path redaction, targeted start prompts, and raw ExtendScript candidate capture.
+
 ## v1.0.2-dry-run-visibility - 2026-05-17
 
 Patch release for making Agent dry-run actions explicit and visibly responsive.

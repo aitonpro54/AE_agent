@@ -2,7 +2,7 @@
 
 ## Progress
 
-- [x] Stable baseline: AE Agent 1.0.2 CEP panel, provider setup, Agent planning, plan validation, protected execution, local history, diagnostics, and installed-panel smoke coverage.
+- [x] Stable baseline: AE Agent 1.0.3 CEP panel, provider setup, Agent planning, plan validation, protected execution, local history, diagnostics, and installed-panel smoke coverage.
 - [x] Milestone 38: Repo cleanup and roadmap reset.
 - [x] Milestone 39: Agent planning quality.
 - [x] Milestone 40: Timeline and layer tools.
@@ -51,15 +51,17 @@
 - [x] Milestone 81: Inline Agent plan execution controls.
 - [x] Milestone 82: Восстановление последнего плана из чата.
 - [x] Milestone 83: Dry run visibility and stale workspace guard.
+- [x] Milestone 84: Hardcore dev escalation handoff.
 
 ## Current Stable Baseline
 
 - The active repository is `C:\Users\Ant\Documents\Codex\AE_agent`.
-- The native CEP title/menu format is `AE Agent 1.0.2`.
+- The native CEP title/menu format is `AE Agent 1.0.3`.
 - The panel is a compact dark CEP client for the local bridge daemon.
 - Provider paths are separate: OpenAI API, OpenAI CLI, Gemini, Claude, OpenRouter, and Local/Ollama.
 - Agent mode drafts structured MCP plans, validates tool names and required fields, dry-runs plans, and executes only through explicit mutation gates.
 - The latest valid Agent plan exposes inline `Dry run / Проверить` and `Выполнить план` controls inside the chat message, while keeping the same validated backend runner and project-change gates.
+- Agent plans or runs that reveal a typed-tool gap can create an ignored `logs/dev-requests/<id>/` bundle for a targeted Codex App dev handoff instead of continuing repo development inside the AE chat.
 - Project-changing tools use idempotency, optional checkpoints, edit-session protection, and post-mutation verification.
 - Raw ExtendScript remains available as an escape hatch, but normal product workflows should use typed bridge tools.
 
@@ -391,6 +393,15 @@
 - Пометить старую папку `C:\Users\Ant\Documents\New project 2` как неактивную копию, чтобы будущие агенты не читали устаревший план до Milestone 37.
 - Поднять patch-версию панели/bridge/manifest до `1.0.2`.
 
+### Milestone 84: Hardcore dev escalation handoff
+
+- Добавить backend `/agents/dev-request`, который создает локальный ignored bundle для typed-tool/panel escalation вместо длинной dev-работы внутри AE-чата.
+- Bundle должен включать `request.md`, `ae-evidence.json`, `start-prompt.md` и `candidate.jsx`, если текущий Agent-план содержит raw ExtendScript workaround.
+- Редактировать provider secrets, bridge tokens и локальные project paths перед записью bundle.
+- Добавить CEP-кнопку `Prepare typed tool request`, видимую только для unsupported/raw/failed/semantic-needs-review Agent outcomes.
+- По явному клику из панели пытаться открыть Codex App на текущем workspace через стабильный `codex app <repo>` path fallback.
+- Поднять patch-версию панели/bridge/manifest до `1.0.3`.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -479,6 +490,10 @@
 - 2026-05-17: Старый каталог `C:\Users\Ant\Documents\New project 2` является stale copy после переноса; его `AGENTS.md` и план теперь явно направляют в активный репозиторий `C:\Users\Ant\Documents\Codex\AE_agent`.
 - 2026-05-17: Dry-run действие должно быть подписано явно как `Dry run / Проверить`; статус строки плана после клика сообщает о запуске и о том, что результат добавлен ниже.
 - 2026-05-17: Текущее изменение кода панели подняло panel, manifest, daemon и adapter до `1.0.2`.
+- 2026-05-17: Hardcore dev escalation не выполняет repo-разработку внутри AE-чата. Панель только создает compact local handoff bundle для отдельного Codex App dev-чата, когда Agent outcome показывает typed-tool gap.
+- 2026-05-17: Dev-request bundle пишется в ignored `logs/dev-requests/<id>/`, потому что `.codex/dev-requests` может быть недоступен для записи дочернему bridge-процессу в sandboxed окружении.
+- 2026-05-17: `Prepare typed tool request` видим только для unsupported/raw/failed/semantic-needs-review outcomes и не создает escalation, если текущий Agent workflow решается существующими typed tools.
+- 2026-05-17: Текущее изменение кода панели подняло panel, manifest, daemon и adapter до `1.0.3`.
 
 ## Validation
 
@@ -1446,3 +1461,45 @@
   - Passed live `node scripts\cep-panel-cdp-smoke.js smoke`; the installed panel showed `AE Agent 1.0.2`, generated a read-only plan, showed `Dry run / Проверить`, recovered the plan after reload, dry-ran it and ran it read-only.
   - Passed follow-up live `node scripts\cep-panel-cdp-smoke.js inspect`; user's prior chat/provider state was restored and the panel remained connected to bridge `1.0.2`.
   - Did not run external-provider checks, OpenAI CLI planner scenario smokes, ChatGPT connector/Tunnel checks, live OpenRouter calls or mutating live AE checks because this milestone only changes panel dry-run UX and stale workspace guidance.
+- Milestone 84:
+  - Added a hardcore dev escalation handoff path: AE chat remains focused on the user's AE task, while typed-tool/panel development moves into a compact local dev request bundle.
+  - Added backend `/agents/dev-request` and `/dev/agents/dev-request` endpoints that create ignored `logs\dev-requests\<id>\` bundles with `request.md`, `ae-evidence.json`, `start-prompt.md`, and optional `candidate.jsx`.
+  - The bundle redacts configured secrets/tokens and local user/project path prefixes, captures compact plan/run/semantic evidence, and includes a targeted Codex App prompt that forbids broad repo rereads unless targeted search cannot find the needed code.
+  - Added CEP action `Prepare typed tool request`; it is visible only when the current Agent outcome shows a typed-tool gap: unsupported tools, raw ExtendScript, failed run, or semantic verification needing review.
+  - The action posts the compact plan/run evidence to the backend and reports bundle paths plus Codex App launch status in chat; repo/git/commit work remains outside AE chat and starts only after explicit dev escalation.
+  - Added `logs/dev-requests/` to ignored local artifacts and documented the workflow in README, release notes, target spec, and current baseline.
+  - Bumped CEP panel, manifest, bridge daemon, MCP adapter, install note and smoke expectations to `1.0.3`.
+  - Synchronized updated `index.html`, `panel.js`, `style.css` and `CSXS\manifest.xml` into the installed CEP extension with `node scripts\cep-sync-health.js --sync --check`; the approved run copied 4 files and reported status `ok`.
+  - Restarted the live bridge daemon on `127.0.0.1:3456` from the current repo; live `/health` reported `version:"1.0.3"` and `panelConnected:true`.
+  - No package manager check is configured because the repository has no `package.json`.
+  - The PATH `node.exe`/`codex.exe` WindowsApps shims returned access-denied/EPERM in this environment; validation used the bundled Codex runtime Node and the backend now treats EPERM/EACCES CLI probes as unusable so it can fall back to `%LOCALAPPDATA%\OpenAI\Codex\bin\codex.exe`.
+  - Passed `node --check` for all touched JavaScript files using the bundled Codex runtime Node executable.
+  - Passed XML parsing for `cep-panel\CSXS\manifest.xml`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\smoke-test.js`; it now verifies the dev request bundle files, secret redaction, local path redaction, candidate capture, and targeted `start-prompt.md` context.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`.
+  - Passed `node scripts\project-intent-memory-smoke.js`.
+  - Passed `node scripts\plan-classification-smoke.js`.
+  - Passed `node scripts\plan-repair-smoke.js`.
+  - Passed `node scripts\semantic-verification-smoke.js`.
+  - Passed `node scripts\reliability-validation-suite-smoke.js`.
+  - Passed `node scripts\chatgpt-connector-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\agent-qa-audit-smoke.js`.
+  - Passed `node scripts\agent-scenario-report-smoke.js`.
+  - Passed `node scripts\reliability-validation-suite.js local`; summary 19/19 passed.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js inspect`; installed panel reported `AE Agent 1.0.3`, bridge connected, and `Prepare typed tool request` hidden in the normal no-gap state.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js branding-smoke`; page title reported `AE Agent 1.0.3`.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js dev-request-button-smoke`; safe typed-tool recovered plan kept the dev request action hidden, and raw ExtendScript/tool-gap recovered plan showed it enabled with the raw-workaround promotion reason.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js connector-status-smoke`.
+  - Passed `node scripts\provider-key-save-smoke.js`; it used the isolated temporary secrets wrapper.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js openai-cli-setup-smoke`; OpenAI CLI was detected through the local Codex Desktop install and signed-in ChatGPT state.
+  - The first live `node scripts\cep-panel-cdp-smoke.js smoke` attempt used the default Local/Ollama configuration and failed because Ollama was offline; rerun with `CEP_PANEL_AGENT_ID=openai-cli` and `CEP_PANEL_MODEL=gpt-5.5` passed planning, reload recovery, dry-run, and read-only run.
+  - Did not run live ChatGPT connector/Tunnel checks, live OpenRouter calls, external OpenAI CLI Agent scenario smokes, or mutating live AE smokes because they are outside this narrow dev-escalation handoff milestone and remain explicit-approval-gated.

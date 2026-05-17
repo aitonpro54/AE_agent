@@ -129,8 +129,8 @@ function writePromptSolutionRegistry(tempDir) {
         },
         testedAeContext: {
           aeVersion: null,
-          panelVersion: "AE Agent 1.0.2",
-          bridgeVersion: "1.0.2",
+          panelVersion: "AE Agent 1.0.3",
+          bridgeVersion: "1.0.3",
           projectKind: "synthetic",
           notes: []
         },

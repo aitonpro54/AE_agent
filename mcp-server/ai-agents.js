@@ -171,7 +171,7 @@ function syncCommand(command, args, timeoutMs) {
 function commandLooksMissing(result) {
   const error = result && result.error ? result.error : null;
   return Boolean(
-    error && (error.code === "ENOENT" || error.code === "ENOTDIR") ||
+    error && (error.code === "ENOENT" || error.code === "ENOTDIR" || error.code === "EACCES" || error.code === "EPERM") ||
     result && (result.status === 127 || result.status === 9009)
   );
 }
@@ -1724,6 +1724,7 @@ module.exports = {
   agentSummary,
   checkAgentReadiness,
   chatWithAgent,
+  getCodexCliStatus,
   launchCodexLogin,
   listAgents
 };

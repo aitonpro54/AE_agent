@@ -50,7 +50,7 @@ async function main() {
   const health = await requestJson(`http://127.0.0.1:${port}/health`);
   child.kill();
 
-  if (!health.body.ok || health.body.version !== "1.0.2") {
+  if (!health.body.ok || health.body.version !== "1.0.3") {
     throw new Error("Unexpected daemon health response");
   }
 

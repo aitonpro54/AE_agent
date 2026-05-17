@@ -9,7 +9,7 @@ The panel remains a client of the local bridge daemon. The daemon remains the ow
 ## Product Shape
 
 - The first screen is a compact dark CEP panel inspired by the references in `specs/screenshots/`.
-- The visible product title format is `AE Agent 1.0.2` in the native CEP title/menu only; do not duplicate the product name in a separate in-panel top bar or sidebar heading.
+- The visible product title format is `AE Agent 1.0.3` in the native CEP title/menu only; do not duplicate the product name in a separate in-panel top bar or sidebar heading.
 - The left side exposes provider setup: `Gemini`, `OpenAI`, `Claude`, `OpenRouter`, and `Local`.
 - `OpenAI` supports two auth modes:
   - `API`: uses an OpenAI API key and normal API billing.
@@ -18,7 +18,8 @@ The panel remains a client of the local bridge daemon. The daemon remains the ow
 - `Gemini` and `Claude` support API-key setup states and provider calls through their official HTTP APIs.
 - The chat area supports `Chat` and `Agent` modes, a model selector, prompt input, chat history, and a visible Prompt Optimization toggle.
 - Agent mode shows planned steps with success/error/ready states and concrete backend results.
-- Valid Agent-mode plans expose inline `Проверить` and `Выполнить план` actions in the chat message, wired to the same validated plan runner and safety gates as the persistent composer controls.
+- Valid Agent-mode plans expose inline `РџСЂРѕРІРµСЂРёС‚СЊ` and `Р’С‹РїРѕР»РЅРёС‚СЊ РїР»Р°РЅ` actions in the chat message, wired to the same validated plan runner and safety gates as the persistent composer controls.
+- When an Agent plan or run shows a typed-tool gap, raw ExtendScript workaround, failed run, or semantic verification issue, the panel can prepare a targeted dev-request bundle for Codex App instead of continuing repository development inside the AE chat.
 
 ## ChatGPT Subscription Model Access
 
@@ -48,6 +49,7 @@ Other provider API key access is also separate from ChatGPT subscription allowan
 - Broad or multi-step mutations must use checkpoint/edit-session protection.
 - The panel must not let ChatGPT/Codex CLI directly run arbitrary workspace edits or shell commands as part of AE chat. Use `--sandbox read-only` for CLI calls.
 - `run_extendscript` and `run_extendscript_file` stay escape hatches, but planned workflows should prefer narrow bridge tools.
+- Dev-request bundles are local handoffs for a separate Codex App development chat. They must be compact, redacted, ignored by git, and limited to targeted files and evidence.
 
 ## Non-Goals For V1
 

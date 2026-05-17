@@ -715,6 +715,14 @@ button:disabled {
   white-space: normal;
 }
 
+.plan-actions .dev-request-button {
+  display: none;
+  flex: 1 1 190px;
+  max-width: 250px;
+  min-height: 32px;
+  white-space: normal;
+}
+
 .plan-run-status {
   color: #a8a8a8;
   flex: 1 1 160px;

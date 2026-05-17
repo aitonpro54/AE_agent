@@ -352,6 +352,10 @@ function stateExpression() {
     dryRunTitle: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").title : "",
     runText: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").textContent : "",
     runTitle: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").title : "",
+    prepareDevRequestText: document.getElementById("prepareDevRequestButton") ? document.getElementById("prepareDevRequestButton").textContent : "",
+    prepareDevRequestTitle: document.getElementById("prepareDevRequestButton") ? document.getElementById("prepareDevRequestButton").title : "",
+    prepareDevRequestVisible: document.getElementById("prepareDevRequestButton") ? document.getElementById("prepareDevRequestButton").style.display !== "none" : null,
+    prepareDevRequestDisabled: document.getElementById("prepareDevRequestButton") ? document.getElementById("prepareDevRequestButton").disabled : null,
     dryRunDisabled: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").disabled : null,
     runDisabled: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").disabled : null,
     inlinePlanActionCount: document.querySelectorAll(".inline-plan-actions").length,
@@ -1023,6 +1027,85 @@ function writeHistoryStorageExpression(values) {
   })()`;
 }
 
+function devRequestPlanResult(rawExtendscript) {
+  const rawStep = {
+    title: "Import and layout photos",
+    tool: "run_extendscript",
+    args: {
+      script: "app.beginUndoGroup('Dev request smoke'); app.endUndoGroup();"
+    },
+    mutatesProject: true,
+    description: "Raw ExtendScript workaround that should be promoted to a typed tool."
+  };
+  const readOnlyStep = {
+    title: "Inspect bridge",
+    tool: "get_bridge_status",
+    args: {},
+    mutatesProject: false,
+    description: "Read-only bridge status check."
+  };
+  const steps = rawExtendscript ? [readOnlyStep, rawStep] : [readOnlyStep];
+  const classification = rawExtendscript ? {
+    category: "risky",
+    label: "Risky / raw ExtendScript",
+    allowsDryRun: true,
+    blocksNormalRun: true,
+    rawExtendscriptStepCount: 1
+  } : {
+    category: "safe typed-tool",
+    label: "Safe typed-tool",
+    allowsDryRun: true,
+    blocksNormalRun: false,
+    rawExtendscriptStepCount: 0
+  };
+  return {
+    planParseOk: true,
+    requestId: rawExtendscript ? "dev-request-raw-smoke" : "dev-request-safe-smoke",
+    model: "smoke",
+    durationMs: 1,
+    plan: {
+      summary: rawExtendscript ? "Promote photo import and layout workflow to a typed tool." : "Inspect bridge status safely.",
+      risk: rawExtendscript ? "medium" : "low",
+      steps
+    },
+    planValidation: {
+      ok: true,
+      mutatingCount: rawExtendscript ? 1 : 0,
+      steps,
+      classification
+    },
+    planClassification: classification
+  };
+}
+
+function installDevRequestTranscriptExpression(planResult, sessionId) {
+  const transcript = [
+    {
+      role: "user",
+      text: "Dev request button smoke prompt"
+    },
+    {
+      role: "assistant",
+      text: "Plan review: ready\nValidation: ok\nRun readiness: smoke",
+      planResult
+    }
+  ];
+  const session = {
+    id: sessionId,
+    title: "Dev request button smoke",
+    updatedAt: "2026-05-17T00:00:00.000Z",
+    transcript,
+    chatMessages: []
+  };
+  return `(() => {
+    const session = ${JSON.stringify(session)};
+    localStorage.setItem("codexAeChatSessions", JSON.stringify([session]));
+    localStorage.setItem("codexAeActiveChatSessionId", session.id);
+    localStorage.setItem("codexAeChatTranscript", JSON.stringify(session.transcript));
+    return true;
+  })()`;
+}
+
 function composerStateExpression() {
   return `(() => ({
     mode: localStorage.getItem("codexAeChatMode"),
@@ -1202,16 +1285,16 @@ async function smoke() {
       state.planRunStatus === "Safe typed-tool ready" &&
       state.planRunStatusClass.indexOf("read-only") >= 0 &&
       state.runTitle.indexOf("read-only") >= 0 &&
-      state.recoverLastPlanText === "Подхватить последний план из чата" &&
+      state.recoverLastPlanText === "РџРѕРґС…РІР°С‚РёС‚СЊ РїРѕСЃР»РµРґРЅРёР№ РїР»Р°РЅ РёР· С‡Р°С‚Р°" &&
       state.recoverLastPlanDisabled === true &&
-      state.dryRunText === "Dry run / Проверить" &&
+      state.dryRunText === "Dry run / РџСЂРѕРІРµСЂРёС‚СЊ" &&
       state.dryRunDisabled === false &&
-      state.runText === "Выполнить план" &&
+      state.runText === "Р’С‹РїРѕР»РЅРёС‚СЊ РїР»Р°РЅ" &&
       state.runDisabled === false &&
       state.inlinePlanActionCount >= 1 &&
-      state.inlineDryRunText === "Dry run / Проверить" &&
+      state.inlineDryRunText === "Dry run / РџСЂРѕРІРµСЂРёС‚СЊ" &&
       state.inlineDryRunDisabled === false &&
-      state.inlineRunPlanText === "Выполнить план" &&
+      state.inlineRunPlanText === "Р’С‹РїРѕР»РЅРёС‚СЊ РїР»Р°РЅ" &&
       state.inlineRunPlanDisabled === false
     ), WAIT_MS);
 
@@ -1220,7 +1303,7 @@ async function smoke() {
     await waitFor(send, "saved plan recoverable after reload", (state) => (
       state.transcript.indexOf("Plan review: ready") >= 0 &&
       state.planRunStatus === "No plan ready" &&
-      state.recoverLastPlanText === "Подхватить последний план из чата" &&
+      state.recoverLastPlanText === "РџРѕРґС…РІР°С‚РёС‚СЊ РїРѕСЃР»РµРґРЅРёР№ РїР»Р°РЅ РёР· С‡Р°С‚Р°" &&
       state.recoverLastPlanDisabled === false &&
       state.dryRunDisabled === true &&
       state.runDisabled === true &&
@@ -1292,6 +1375,78 @@ async function smoke() {
         if (historyBackup) await evaluate(send, writeHistoryStorageExpression(historyBackup));
         if (providerBackup) await evaluate(send, writeProviderStorageExpression(providerBackup));
         if (composerBackup) await evaluate(send, writeComposerStateExpression(composerBackup));
+        await reloadActivePage(send);
+      } catch (_restoreError) {}
+    }
+    ws.close();
+  }
+}
+
+async function devRequestButtonSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  let historyBackup = null;
+  try {
+    historyBackup = await evaluate(send, historyStorageExpression());
+
+    async function recoverStoredPlan(label, rawExtendscript) {
+      await evaluate(send, installDevRequestTranscriptExpression(
+        devRequestPlanResult(rawExtendscript),
+        `dev-request-${label}-${Date.now()}`
+      ));
+      await reloadActivePage(send);
+      const loaded = await waitFor(send, `${label} plan transcript loaded`, (state) => (
+        state.transcript.indexOf("Plan review: ready") >= 0 &&
+        state.recoverLastPlanDisabled === false &&
+        state.planRunStatus === "No plan ready" &&
+        state.prepareDevRequestVisible === false &&
+        state.prepareDevRequestDisabled === true
+      ), 15000);
+
+      const recoveredClick = await evaluate(send, clickExpression("recoverLastPlanButton"));
+      if (!recoveredClick || !recoveredClick.ok) {
+        throw new Error(`${label}: Recover last plan button was not clickable.`);
+      }
+
+      const recovered = await waitFor(send, `${label} dev request button state`, (state) => {
+        if (rawExtendscript) {
+          return state.planRunStatus === "Risky plan; dry run first" &&
+            state.prepareDevRequestVisible === true &&
+            state.prepareDevRequestDisabled === false &&
+            state.prepareDevRequestTitle.indexOf("raw ExtendScript") >= 0;
+        }
+        return state.planRunStatus === "Safe typed-tool ready" &&
+          state.prepareDevRequestVisible === false &&
+          state.prepareDevRequestDisabled === true;
+      }, 10000);
+
+      return {
+        loaded: {
+          recoverDisabled: loaded.recoverLastPlanDisabled,
+          prepareVisible: loaded.prepareDevRequestVisible,
+          prepareDisabled: loaded.prepareDevRequestDisabled
+        },
+        recovered: {
+          status: recovered.planRunStatus,
+          statusClass: recovered.planRunStatusClass,
+          prepareVisible: recovered.prepareDevRequestVisible,
+          prepareDisabled: recovered.prepareDevRequestDisabled,
+          prepareTitle: recovered.prepareDevRequestTitle
+        }
+      };
+    }
+
+    const safe = await recoverStoredPlan("safe", false);
+    const toolGap = await recoverStoredPlan("tool-gap", true);
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      safe,
+      toolGap
+    }, null, 2));
+  } finally {
+    if (historyBackup) {
+      try {
+        await evaluate(send, writeHistoryStorageExpression(historyBackup));
         await reloadActivePage(send);
       } catch (_restoreError) {}
     }
@@ -1819,7 +1974,7 @@ async function brandingSmoke() {
   try {
     await reloadActivePage(send);
     const state = await waitFor(send, "AE Agent branding", (item) => (
-      item.title === "AE Agent 1.0.2" &&
+      item.title === "AE Agent 1.0.3" &&
       item.windowBarExists === false &&
       item.windowBarText === "" &&
       item.windowBarText.indexOf("AE GPT") < 0 &&
@@ -2787,6 +2942,10 @@ async function main() {
   }
   if (command === "smoke") {
     await smoke();
+    return;
+  }
+  if (command === "dev-request-button-smoke") {
+    await devRequestButtonSmoke();
     return;
   }
   if (command === "plan-review-smoke") {

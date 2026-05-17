@@ -1,5 +1,6 @@
 "use strict";
 
+const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const { spawn } = require("child_process");
@@ -935,6 +936,121 @@ async function main() {
     requestId: "smoke-mutating-blocked-run",
     plan: mutatingPlan
   });
+  const rawExtendscriptPlan = {
+    summary: "Smoke-test raw ExtendScript execution gate.",
+    risk: "medium",
+    requiresCheckpoint: false,
+    steps: [
+      {
+        title: "Run raw script only after explicit dry-run gate",
+        tool: "run_extendscript",
+        args: {
+          script: "return { ok: true, smoke: 'raw-gate' };"
+        }
+      }
+    ]
+  };
+  const rawExtendscriptDryRun = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/plan/run",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    dryRun: true,
+    requestId: "smoke-raw-extendscript-gate",
+    plan: rawExtendscriptPlan
+  });
+  const rawExtendscriptWrongGate = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/plan/run",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    dryRun: false,
+    confirm: true,
+    allowMutations: true,
+    allowRawExtendscript: true,
+    rawExtendscriptDryRunId: "wrong-dry-run-id",
+    requestId: "smoke-raw-extendscript-gate",
+    plan: rawExtendscriptPlan
+  });
+  const rawExtendscriptAfterDryRun = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/plan/run",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    dryRun: false,
+    confirm: true,
+    allowMutations: true,
+    allowRawExtendscript: true,
+    rawExtendscriptDryRunId: rawExtendscriptDryRun.body && rawExtendscriptDryRun.body.run ? rawExtendscriptDryRun.body.run.id : "",
+    requestId: "smoke-raw-extendscript-gate",
+    plan: rawExtendscriptPlan
+  });
+  const devRequest = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/dev-request",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    source: "smoke-test",
+    title: "Smoke typed tool escalation",
+    goal: "Create a typed bridge tool for the raw smoke workflow. OPENAI_API_KEY=sk-smoke-secret",
+    reason: "Raw ExtendScript workaround should become a typed tool.",
+    desiredTool: "A typed bridge tool that replaces the raw smoke script.",
+    acceptanceCriteria: [
+      "Dev request bundle is compact.",
+      "Start prompt lists targeted context only."
+    ],
+    targetFiles: ["mcp-server/bridge-daemon.js", "scripts/smoke-test.js"],
+    planResult: {
+      requestId: "smoke-raw-extendscript-gate",
+      plan: rawExtendscriptPlan,
+      planValidation: rawExtendscriptDryRun.body && rawExtendscriptDryRun.body.run ? rawExtendscriptDryRun.body.run.validation : null
+    },
+    runResult: {
+      ok: false,
+      error: "Provider token Bearer smoke-secret-token and path C:\\Users\\Ant\\Documents\\Codex\\AE_agent\\private.aep must be redacted."
+    },
+    openCodexApp: false
+  });
+  const devRequestBundle = devRequest.body && devRequest.body.bundle ? devRequest.body.bundle : null;
+  const devRequestDir = devRequestBundle && devRequestBundle.directory
+    ? path.join(__dirname, "..", devRequestBundle.directory)
+    : "";
+  const devRequestFile = devRequestBundle && devRequestBundle.requestFile
+    ? path.join(__dirname, "..", devRequestBundle.requestFile)
+    : "";
+  const devEvidenceFile = devRequestBundle && devRequestBundle.evidenceFile
+    ? path.join(__dirname, "..", devRequestBundle.evidenceFile)
+    : "";
+  const devStartPromptFile = devRequestBundle && devRequestBundle.startPromptFile
+    ? path.join(__dirname, "..", devRequestBundle.startPromptFile)
+    : "";
+  const devCandidateFile = devRequestBundle && devRequestBundle.candidateFile
+    ? path.join(__dirname, "..", devRequestBundle.candidateFile)
+    : "";
+  const devRequestText = devRequestFile && fs.existsSync(devRequestFile) ? fs.readFileSync(devRequestFile, "utf8") : "";
+  const devEvidenceText = devEvidenceFile && fs.existsSync(devEvidenceFile) ? fs.readFileSync(devEvidenceFile, "utf8") : "";
+  const devStartPromptText = devStartPromptFile && fs.existsSync(devStartPromptFile) ? fs.readFileSync(devStartPromptFile, "utf8") : "";
+  const devCandidateText = devCandidateFile && fs.existsSync(devCandidateFile) ? fs.readFileSync(devCandidateFile, "utf8") : "";
   adapter.kill();
   daemon.kill();
 
@@ -944,7 +1060,7 @@ async function main() {
     throw new Error("Expected initialize, tools/list, and tool call responses");
   }
 
-  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "1.0.2") {
+  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "1.0.3") {
     throw new Error("Unexpected health response");
   }
   if (!agents.body.ok || !Array.isArray(agents.body.agents) || !agents.body.agents.length) {
@@ -1057,6 +1173,70 @@ async function main() {
   ) {
     throw new Error("Mutating plan without checkpoint/edit session was not blocked");
   }
+  if (
+    rawExtendscriptDryRun.status !== 200 ||
+    rawExtendscriptDryRun.body.ok !== true ||
+    !rawExtendscriptDryRun.body.run ||
+    rawExtendscriptDryRun.body.run.validation.classification.rawExtendscriptStepCount !== 1 ||
+    rawExtendscriptDryRun.body.run.validation.classification.blocksRun !== true ||
+    !rawExtendscriptDryRun.body.run.safety.rawExtendscriptGate ||
+    rawExtendscriptDryRun.body.run.safety.rawExtendscriptGate.status !== "dry-run-approved" ||
+    rawExtendscriptDryRun.body.run.steps[0].status !== "ready"
+  ) {
+    throw new Error("Raw ExtendScript dry-run did not record an execution gate approval");
+  }
+  if (
+    rawExtendscriptWrongGate.status !== 400 ||
+    rawExtendscriptWrongGate.body.ok !== false ||
+    !rawExtendscriptWrongGate.body.run ||
+    rawExtendscriptWrongGate.body.run.safety.status !== "blocked_raw_extendscript_gate" ||
+    String(rawExtendscriptWrongGate.body.run.error || "").indexOf("same current plan") < 0
+  ) {
+    throw new Error("Raw ExtendScript run without matching dry-run gate was not blocked");
+  }
+  if (
+    rawExtendscriptAfterDryRun.status !== 400 ||
+    rawExtendscriptAfterDryRun.body.ok !== false ||
+    !rawExtendscriptAfterDryRun.body.run ||
+    !rawExtendscriptAfterDryRun.body.run.safety.rawExtendscriptGate ||
+    rawExtendscriptAfterDryRun.body.run.safety.rawExtendscriptGate.status !== "approved" ||
+    rawExtendscriptAfterDryRun.body.run.safety.status !== "blocked_missing_edit_session" ||
+    String(rawExtendscriptAfterDryRun.body.run.error || "").indexOf("autoEditSession:true") < 0
+  ) {
+    throw new Error("Raw ExtendScript dry-run gate did not unlock the normal edit-session safety check");
+  }
+  if (
+    devRequest.status !== 200 ||
+    devRequest.body.ok !== true ||
+    !devRequestBundle ||
+    !devRequestBundle.requestFile ||
+    !devRequestBundle.evidenceFile ||
+    !devRequestBundle.startPromptFile ||
+    !devRequestBundle.candidateFile ||
+    !fs.existsSync(devRequestFile) ||
+    !fs.existsSync(devEvidenceFile) ||
+    !fs.existsSync(devStartPromptFile) ||
+    !fs.existsSync(devCandidateFile)
+  ) {
+    throw new Error("Dev request bundle was not created");
+  }
+  if (
+    /sk-smoke-secret|smoke-secret-token|C:\\Users\\Ant\\Documents\\Codex\\AE_agent/.test(devRequestText + devEvidenceText + devStartPromptText + devCandidateText)
+  ) {
+    throw new Error("Dev request bundle leaked a secret or absolute project path");
+  }
+  if (
+    devStartPromptText.indexOf("dev-requests/") < 0 ||
+    devStartPromptText.indexOf("specs/target-app.md") < 0 ||
+    devStartPromptText.indexOf("plans/target-app-execplan.md") < 0 ||
+    devStartPromptText.indexOf("mcp-server/bridge-daemon.js") < 0 ||
+    /rg --files|Get-ChildItem -Recurse/i.test(devStartPromptText)
+  ) {
+    throw new Error("Dev request start prompt is not targeted");
+  }
+  if (devRequestDir && devRequestDir.indexOf(path.join(__dirname, "..", "logs", "dev-requests")) === 0) {
+    fs.rmSync(devRequestDir, { recursive: true, force: true });
+  }
 
   const toolNames = lines[1].result.tools.map((tool) => tool.name);
   for (const expectedTool of ["get_ai_agent_log", "get_project_intent_memory", "update_project_intent_memory", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint", "set_comp_work_area", "set_layer_time_range", "stagger_layers", "split_layers_at_time", "precompose_layers", "replace_layer_source", "rename_layers", "rename_project_items", "update_text_layer", "create_shape_layer", "fit_layer_to_comp", "set_property_keyframes", "apply_keyframe_ease", "set_expression", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"]) {
@@ -1073,7 +1253,7 @@ async function main() {
     throw new Error("validate_ai_agent_plan is missing plan schema");
   }
   const runPlanTool = lines[1].result.tools.find((tool) => tool.name === "run_ai_agent_plan");
-  if (!runPlanTool || !runPlanTool.inputSchema.properties.dryRun || !runPlanTool.inputSchema.properties.allowMutations || !runPlanTool.inputSchema.properties.autoEditSession) {
+  if (!runPlanTool || !runPlanTool.inputSchema.properties.dryRun || !runPlanTool.inputSchema.properties.allowMutations || !runPlanTool.inputSchema.properties.autoEditSession || !runPlanTool.inputSchema.properties.rawExtendscriptDryRunId) {
     throw new Error("run_ai_agent_plan is missing run safety schema");
   }
   const setWorkAreaTool = lines[1].result.tools.find((tool) => tool.name === "set_comp_work_area");
@@ -1102,6 +1282,16 @@ async function main() {
     namedCompBindingRun: namedCompBindingRun.body.run.steps.map((step) => step.status),
     mutatingDryRun: mutatingDryRun.body.run.steps[0].status,
     mutatingBlocked: mutatingBlocked.body.run.safety.status,
+    rawExtendscriptGate: {
+      dryRun: rawExtendscriptDryRun.body.run.safety.rawExtendscriptGate.status,
+      wrongGate: rawExtendscriptWrongGate.body.run.safety.status,
+      afterDryRun: rawExtendscriptAfterDryRun.body.run.safety.status
+    },
+    devRequest: {
+      requestFile: devRequestBundle.requestFile,
+      startPromptFile: devRequestBundle.startPromptFile,
+      candidateFile: devRequestBundle.candidateFile
+    },
     health: health.body,
     adapterLogs: adapterStderr.join("").trim().split(/\n+/).filter(Boolean),
     daemonLogs: daemonStderr.join("").trim().split(/\n+/).filter(Boolean)

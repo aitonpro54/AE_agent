@@ -2,7 +2,7 @@
 
 (function () {
   var APP_NAME = "AE Agent";
-  var APP_VERSION = "1.0.2";
+  var APP_VERSION = "1.0.3";
 
   var cs = new CSInterface();
   var appShellEl = document.getElementById("appShell");
@@ -53,6 +53,7 @@
   var recoverLastPlanButton = document.getElementById("recoverLastPlanButton");
   var dryRunPlanButton = document.getElementById("dryRunPlanButton");
   var runPlanButton = document.getElementById("runPlanButton");
+  var prepareDevRequestButton = document.getElementById("prepareDevRequestButton");
   var chatHistorySelect = document.getElementById("chatHistorySelect");
   var newChatButton = document.getElementById("newChatButton");
   var clearChatButton = document.getElementById("clearChatButton");
@@ -77,6 +78,7 @@
   var setupActionInFlight = false;
   var readinessInFlight = false;
   var providerSelfTestInFlight = false;
+  var devRequestInFlight = false;
   var providerSelfTestResults = {};
   var connectorStatusInFlight = false;
   var connectorStatus = null;
@@ -86,6 +88,7 @@
   var agentDataVersion = 0;
   var lastPlanResult = null;
   var lastPlanRunResult = null;
+  var lastAcceptedDryRun = null;
   var planRunInFlightMode = "";
   var inlinePlanActionRows = [];
   var lastPollErrorMessage = "";
@@ -1349,14 +1352,14 @@
 
     var dryRunButton = document.createElement("button");
     dryRunButton.className = "inline-dry-run-button";
-    dryRunButton.textContent = "Dry run / Проверить";
-    dryRunButton.title = "Dry run: проверить план без изменений в проекте After Effects.";
+    dryRunButton.textContent = "Dry run / РџСЂРѕРІРµСЂРёС‚СЊ";
+    dryRunButton.title = "Dry run: РїСЂРѕРІРµСЂРёС‚СЊ РїР»Р°РЅ Р±РµР· РёР·РјРµРЅРµРЅРёР№ РІ РїСЂРѕРµРєС‚Рµ After Effects.";
     row.appendChild(dryRunButton);
 
     var runButton = document.createElement("button");
     runButton.className = "inline-run-plan-button";
-    runButton.textContent = "Выполнить план";
-    runButton.title = "Выполнить план через защищенный runner AE Agent.";
+    runButton.textContent = "Р’С‹РїРѕР»РЅРёС‚СЊ РїР»Р°РЅ";
+    runButton.title = "Р’С‹РїРѕР»РЅРёС‚СЊ РїР»Р°РЅ С‡РµСЂРµР· Р·Р°С‰РёС‰РµРЅРЅС‹Р№ runner AE Agent.";
     row.appendChild(runButton);
 
     var entry = {
@@ -1822,13 +1825,17 @@
       var mutatingCount = validation ? Number(validation.mutatingCount || 0) : 0;
       var validationOk = !!(validation && validation.ok);
       var classification = planClassification(validation);
-      var blocksRun = classificationBlocksRun(validation);
+      var rawGateReady = rawExtendscriptDryRunGateReady(validation);
+      var blocksRun = classificationBlocksRun(validation) && !rawGateReady;
       var dryDisabled = chatInFlight || !isCurrentPlan;
       var runDisabled = chatInFlight || !isCurrentPlan || !validation || !validationOk || blocksRun;
 
-      entry.dryRunButton.textContent = chatInFlight && planRunInFlightMode === "dry-run" && isCurrentPlan ? "Dry run..." : "Dry run / Проверить";
-      entry.dryRunButton.title = "Dry run: проверить план без изменений в проекте After Effects.";
-      entry.runButton.textContent = chatInFlight && planRunInFlightMode === "run" && isCurrentPlan ? "Выполняю..." : "Выполнить план";
+      entry.dryRunButton.textContent = chatInFlight && planRunInFlightMode === "dry-run" && isCurrentPlan ? "Dry run..." : "Dry run / РџСЂРѕРІРµСЂРёС‚СЊ";
+      entry.dryRunButton.title = "Dry run: РїСЂРѕРІРµСЂРёС‚СЊ РїР»Р°РЅ Р±РµР· РёР·РјРµРЅРµРЅРёР№ РІ РїСЂРѕРµРєС‚Рµ After Effects.";
+      entry.runButton.textContent = chatInFlight && planRunInFlightMode === "run" && isCurrentPlan ? "Р’С‹РїРѕР»РЅСЏСЋ..." : "Р’С‹РїРѕР»РЅРёС‚СЊ РїР»Р°РЅ";
+      entry.runButton.title = rawGateReady
+        ? "Dry run passed; execute through the explicit raw ExtendScript gate and protected runner."
+        : "Р’С‹РїРѕР»РЅРёС‚СЊ РїР»Р°РЅ С‡РµСЂРµР· Р·Р°С‰РёС‰РµРЅРЅС‹Р№ runner AE Agent.";
       entry.dryRunButton.disabled = dryDisabled;
       entry.runButton.disabled = runDisabled;
 
@@ -1842,7 +1849,7 @@
         entry.status.textContent = "Plan needs review";
         entry.row.className = "inline-plan-actions blocked";
       } else {
-        entry.status.textContent = classificationStatusText(classification, validationOk, mutatingCount);
+        entry.status.textContent = classificationStatusText(classification, validationOk, mutatingCount, rawGateReady);
         entry.row.className = "inline-plan-actions " + classificationTone(classification, validationOk, mutatingCount);
       }
     }
@@ -1859,12 +1866,99 @@
     return !!(classification && classification.blocksRun === true);
   }
 
-  function classificationStatusText(classification, validationOk, mutatingCount) {
+  function planKeyFor(plan) {
+    try {
+      return JSON.stringify(plan || {});
+    } catch (_error) {
+      return "";
+    }
+  }
+
+  function currentPlanKey() {
+    return lastPlanResult && lastPlanResult.plan ? planKeyFor(lastPlanResult.plan) : "";
+  }
+
+  function rawExtendscriptStepCount(validation) {
+    var classification = planClassification(validation);
+    var classifiedCount = classification ? Number(classification.rawExtendscriptStepCount || 0) : 0;
+    if (classifiedCount > 0) return classifiedCount;
+    var steps = validation && validation.steps && typeof validation.steps.push === "function" ? validation.steps : [];
+    var count = 0;
+    for (var i = 0; i < steps.length; i++) {
+      var tool = steps[i] && steps[i].tool ? String(steps[i].tool) : "";
+      if (tool === "run_extendscript" || tool === "run_extendscript_file") count++;
+    }
+    return count;
+  }
+
+  function rawExtendscriptDryRunGateReady(validation) {
+    if (!lastAcceptedDryRun || !lastAcceptedDryRun.ok || !lastAcceptedDryRun.runId) return false;
+    if (!classificationBlocksRun(validation) || rawExtendscriptStepCount(validation) <= 0) return false;
+    var planKey = currentPlanKey();
+    if (!planKey || lastAcceptedDryRun.planKey !== planKey) return false;
+    if (lastPlanResult && lastPlanResult.requestId && lastAcceptedDryRun.requestId && lastAcceptedDryRun.requestId !== lastPlanResult.requestId) return false;
+    return true;
+  }
+
+  function planRunBlocksNormalRun(validation) {
+    return classificationBlocksRun(validation) && !rawExtendscriptDryRunGateReady(validation);
+  }
+
+  function semanticNeedsReview(run) {
+    return !!(run && run.semanticVerification && run.semanticVerification.status === "needs_review");
+  }
+
+  function devRequestEligibility(validation, run) {
+    if (!validation) return { ok: false, reason: "" };
+    var classification = planClassification(validation);
+    if (classification && classification.category === "unsupported") {
+      return { ok: true, reason: "The current Agent plan references unsupported or unavailable tools." };
+    }
+    if (rawExtendscriptStepCount(validation) > 0) {
+      return { ok: true, reason: "The current Agent plan needs raw ExtendScript; promote the workaround into a typed tool if it works." };
+    }
+    if (run && run.ok === false) {
+      return { ok: true, reason: "The latest Agent run needs review and may require a typed bridge or panel fix." };
+    }
+    if (semanticNeedsReview(run)) {
+      return { ok: true, reason: "The latest Agent run completed but outcome verification needs review." };
+    }
+    return { ok: false, reason: "" };
+  }
+
+  function lastUserPromptText() {
+    for (var i = transcriptHistory.length - 1; i >= 0; i--) {
+      var item = transcriptHistory[i] || {};
+      if (item.role === "user" && trimText(item.text)) return trimText(item.text);
+    }
+    return "";
+  }
+
+  function devRequestTargetFiles(validation) {
+    var files = ["mcp-server/bridge-daemon.js", "scripts/smoke-test.js"];
+    if (validation && rawExtendscriptStepCount(validation) > 0) files.push("scripts/solution-candidate-report.js");
+    files.push("cep-panel/panel.js");
+    return files;
+  }
+
+  function updateDevRequestButton(hasPlan, validation) {
+    if (!prepareDevRequestButton) return;
+    var eligibility = devRequestEligibility(validation, lastPlanRunResult);
+    prepareDevRequestButton.style.display = hasPlan && eligibility.ok ? "inline-block" : "none";
+    prepareDevRequestButton.disabled = chatInFlight || devRequestInFlight || !hasPlan || !eligibility.ok;
+    prepareDevRequestButton.textContent = devRequestInFlight ? "Preparing request..." : "Prepare typed tool request";
+    prepareDevRequestButton.title = eligibility.ok
+      ? eligibility.reason
+      : "Available only when the current Agent result shows a typed-tool gap.";
+  }
+
+  function classificationStatusText(classification, validationOk, mutatingCount, rawGateReady) {
     if (!classification) {
       if (!validationOk) return "Review issues before running";
       return mutatingCount > 0 ? "Dry run first; Run uses protection" : "Read-only plan ready";
     }
     if (classification.blocksRun) {
+      if (rawGateReady) return "Dry run accepted; Run unlocked";
       return classification.allowsDryRun === false ? "Plan blocked" : "Dry run available; Run blocked";
     }
     if (classification.category === "safe typed-tool") return "Safe typed-tool ready";
@@ -1884,15 +1978,18 @@
     var mutatingCount = validation ? Number(validation.mutatingCount || 0) : 0;
     var validationOk = !!(validation && validation.ok);
     var classification = planClassification(validation);
-    var blocksRun = classificationBlocksRun(validation);
+    var rawGateReady = rawExtendscriptDryRunGateReady(validation);
+    var blocksRun = classificationBlocksRun(validation) && !rawGateReady;
     if (dryRunPlanButton) {
-      dryRunPlanButton.textContent = chatInFlight && planRunInFlightMode === "dry-run" ? "Dry run..." : "Dry run / Проверить";
+      dryRunPlanButton.textContent = chatInFlight && planRunInFlightMode === "dry-run" ? "Dry run..." : "Dry run / РџСЂРѕРІРµСЂРёС‚СЊ";
       dryRunPlanButton.title = hasPlan ? "Dry run: check this plan without changing the AE project." : "Create an Agent plan first.";
     }
     if (runPlanButton) {
-      runPlanButton.textContent = chatInFlight && planRunInFlightMode === "run" ? "Выполняю..." : "Выполнить план";
+      runPlanButton.textContent = chatInFlight && planRunInFlightMode === "run" ? "Р’С‹РїРѕР»РЅСЏСЋ..." : "Р’С‹РїРѕР»РЅРёС‚СЊ РїР»Р°РЅ";
       if (!hasPlan) {
         runPlanButton.title = "Create and validate an Agent plan first.";
+      } else if (rawGateReady) {
+        runPlanButton.title = "Dry run passed; execute through the explicit raw ExtendScript gate and protected runner.";
       } else if (blocksRun) {
         runPlanButton.title = classification && classification.runRecommendation ? classification.runRecommendation : "Resolve plan classification before running.";
       } else if (!validationOk) {
@@ -1917,7 +2014,7 @@
     } else if (!validation) {
       setPlanRunStatus("Plan needs review", "blocked");
     } else {
-      setPlanRunStatus(classificationStatusText(classification, validationOk, mutatingCount), classificationTone(classification, validationOk, mutatingCount));
+      setPlanRunStatus(classificationStatusText(classification, validationOk, mutatingCount, rawGateReady), classificationTone(classification, validationOk, mutatingCount));
     }
   }
 
@@ -1933,7 +2030,7 @@
     var value = String(text || "");
     if (!trimText(value)) return false;
     if (/(^|\n)\s*\d+\.\s+\S/.test(value)) return true;
-    if (/(^|\n)\s*(Plan review|Steps:|План|Обнов[^\n]*план|План выполнения)/i.test(value)) return true;
+    if (/(^|\n)\s*(Plan review|Steps:|РџР»Р°РЅ|РћР±РЅРѕРІ[^\n]*РїР»Р°РЅ|РџР»Р°РЅ РІС‹РїРѕР»РЅРµРЅРёСЏ)/i.test(value)) return true;
     return false;
   }
 
@@ -1948,9 +2045,9 @@
 
   function buildPlanRecoveryPrompt(sourceText) {
     return [
-      "Подхвати последний план из чата и преврати его в валидный структурированный AE Agent plan.",
-      "Используй только реальные typed AE Agent tools, сохрани смысл исходных шагов и добавь безопасные read-back проверки. Не выполняй план: только подготовь структурированный план для validation/dry-run/run controls.",
-      "Последний план из чата:",
+      "РџРѕРґС…РІР°С‚Рё РїРѕСЃР»РµРґРЅРёР№ РїР»Р°РЅ РёР· С‡Р°С‚Р° Рё РїСЂРµРІСЂР°С‚Рё РµРіРѕ РІ РІР°Р»РёРґРЅС‹Р№ СЃС‚СЂСѓРєС‚СѓСЂРёСЂРѕРІР°РЅРЅС‹Р№ AE Agent plan.",
+      "РСЃРїРѕР»СЊР·СѓР№ С‚РѕР»СЊРєРѕ СЂРµР°Р»СЊРЅС‹Рµ typed AE Agent tools, СЃРѕС…СЂР°РЅРё СЃРјС‹СЃР» РёСЃС…РѕРґРЅС‹С… С€Р°РіРѕРІ Рё РґРѕР±Р°РІСЊ Р±РµР·РѕРїР°СЃРЅС‹Рµ read-back РїСЂРѕРІРµСЂРєРё. РќРµ РІС‹РїРѕР»РЅСЏР№ РїР»Р°РЅ: С‚РѕР»СЊРєРѕ РїРѕРґРіРѕС‚РѕРІСЊ СЃС‚СЂСѓРєС‚СѓСЂРёСЂРѕРІР°РЅРЅС‹Р№ РїР»Р°РЅ РґР»СЏ validation/dry-run/run controls.",
+      "РџРѕСЃР»РµРґРЅРёР№ РїР»Р°РЅ РёР· С‡Р°С‚Р°:",
       sourceText
     ].join("\n\n");
   }
@@ -1980,7 +2077,8 @@
     var validation = hasPlan && lastPlanResult ? lastPlanResult.planValidation || null : null;
     updateRecoverLastPlanButton(hasPlan);
     dryRunPlanButton.disabled = chatInFlight || !hasPlan;
-    runPlanButton.disabled = chatInFlight || !hasPlan || !validation || !validation.ok || classificationBlocksRun(validation);
+    runPlanButton.disabled = chatInFlight || !hasPlan || !validation || !validation.ok || planRunBlocksNormalRun(validation);
+    updateDevRequestButton(hasPlan, validation);
     updatePlanRunControls(hasPlan, validation);
     updateInlinePlanActionRows();
     if (applyWorkflowPresetButton && workflowPresetSelect) {
@@ -2313,6 +2411,7 @@
     if (value === "planned_edit_session_step") return "planned edit session step";
     if (value === "blocked_save_project_first") return "save project first";
     if (value === "blocked_edit_session_failed") return "edit session failed";
+    if (value === "blocked_raw_extendscript_gate") return "raw ExtendScript gate blocked";
     return value.replace(/_/g, " ");
   }
 
@@ -2445,6 +2544,18 @@
   function rememberPlanRun(run) {
     lastPlanRunResult = run || null;
     window.__aeAgentLastPlanRunResult = lastPlanRunResult;
+    lastAcceptedDryRun = null;
+    if (run && run.dryRun && run.ok && rawExtendscriptStepCount((lastPlanResult && lastPlanResult.planValidation) || run.validation || null) > 0) {
+      lastAcceptedDryRun = {
+        ok: true,
+        runId: String(run.id || ""),
+        requestId: lastPlanResult && lastPlanResult.requestId ? String(lastPlanResult.requestId) : "",
+        planKey: currentPlanKey(),
+        acceptedAt: new Date().toISOString()
+      };
+      if (!lastAcceptedDryRun.runId || !lastAcceptedDryRun.planKey) lastAcceptedDryRun = null;
+    }
+    window.__aeAgentLastAcceptedDryRun = lastAcceptedDryRun;
   }
 
   function showPlanRunFinishedStatus(dryRun, run, failed) {
@@ -2494,6 +2605,9 @@
     if (checkpointStatus) lines.push(checkpointStatus);
     if (run.safety) {
       lines.push("Safety: " + readableSafetyLabel(run.safety));
+      if (run.safety.rawExtendscriptGate && run.safety.rawExtendscriptGate.status === "approved") {
+        lines.push("Raw ExtendScript gate: approved by dry run " + (run.safety.rawExtendscriptGate.dryRunId || "ok") + ".");
+      }
       if (run.safety.saveProjectFirst) lines.push("Save project first before mutating run.");
     }
     var printedCheckpoint = "";
@@ -2545,17 +2659,73 @@
     return lines.join("\n");
   }
 
+  function formatDevRequestResult(response) {
+    var bundle = response && response.bundle ? response.bundle : {};
+    var codexApp = response && response.codexApp ? response.codexApp : {};
+    var lines = ["Typed tool request prepared."];
+    if (bundle.directory) lines.push("Bundle: " + bundle.directory);
+    if (bundle.requestFile) lines.push("Request: " + bundle.requestFile);
+    if (bundle.startPromptFile) lines.push("Start prompt: " + bundle.startPromptFile);
+    if (bundle.candidateFile) lines.push("Candidate: " + bundle.candidateFile);
+    if (codexApp.launched) {
+      lines.push("Codex App: open requested. Start the dev chat from the start prompt.");
+    } else if (codexApp.error) {
+      lines.push("Codex App: " + codexApp.error);
+    } else {
+      lines.push("Codex App: open it manually and use the start prompt.");
+    }
+    return lines.join("\n");
+  }
+
+  function prepareDevRequest() {
+    if (chatInFlight || devRequestInFlight || !lastPlanResult || !lastPlanResult.plan) return;
+    var validation = lastPlanResult.planValidation || null;
+    var eligibility = devRequestEligibility(validation, lastPlanRunResult);
+    if (!eligibility.ok) return;
+
+    var goal = lastUserPromptText() || (lastPlanResult.plan && lastPlanResult.plan.summary) || "AE Agent typed tool request";
+    var body = {
+      source: "cep-panel",
+      title: goal,
+      goal: goal,
+      reason: eligibility.reason,
+      desiredTool: "Convert this AE workflow into a narrow typed AE Agent bridge or panel capability so future Agent runs do not need raw ExtendScript, unsupported tools, or long manual dev work inside the AE chat.",
+      acceptanceCriteria: [
+        "The workflow can be planned and run through validated AE Agent tools.",
+        "Normal execution keeps dry-run, protected run, idempotency, checkpoint/edit-session, and read-back verification gates.",
+        "The dev chat stays targeted to the generated bundle and listed files."
+      ],
+      targetFiles: devRequestTargetFiles(validation),
+      planResult: lastPlanResult,
+      runResult: lastPlanRunResult,
+      openCodexApp: true
+    };
+
+    devRequestInFlight = true;
+    updateChatAvailability();
+    setChatBusy(true, "Preparing dev request");
+    request("POST", "/agents/dev-request", body, function (error, response) {
+      devRequestInFlight = false;
+      setChatBusy(false);
+      updateChatAvailability();
+      if (error) {
+        appendChatMessage("error", error.message);
+        log("Dev request failed: " + error.message);
+        return;
+      }
+      appendChatMessage("assistant", formatDevRequestResult(response || {}));
+      log("Dev request prepared");
+    });
+  }
+
   function runLastPlan(dryRun) {
     if (chatInFlight || !lastPlanResult || !lastPlanResult.plan) return;
     var validation = lastPlanResult.planValidation || {};
     var mutatingCount = Number(validation.mutatingCount || 0);
     var allowMutations = !dryRun && mutatingCount > 0;
     var autoEditSession = allowMutations;
-
-    planRunInFlightMode = dryRun ? "dry-run" : "run";
-    rememberPlanRun(null);
-    setChatBusy(true, dryRun ? "Dry run" : "Running");
-    request("POST", "/agents/plan/run", {
+    var allowRawExtendscript = !dryRun && rawExtendscriptDryRunGateReady(validation);
+    var body = {
       plan: lastPlanResult.plan,
       requestId: lastPlanResult.requestId,
       dryRun: dryRun,
@@ -2563,13 +2733,23 @@
       allowMutations: allowMutations,
       autoEditSession: autoEditSession,
       timeoutMs: 120000
-    }, function (error, response) {
+    };
+    if (allowRawExtendscript) {
+      body.allowRawExtendscript = true;
+      body.rawExtendscriptDryRunId = lastAcceptedDryRun.runId;
+    }
+
+    planRunInFlightMode = dryRun ? "dry-run" : "run";
+    rememberPlanRun(null);
+    setChatBusy(true, dryRun ? "Dry run" : "Running");
+    request("POST", "/agents/plan/run", body, function (error, response) {
       planRunInFlightMode = "";
       setChatBusy(false);
       if (error) {
         var errorRun = error.body && error.body.run ? error.body.run : null;
         if (errorRun) {
           rememberPlanRun(errorRun);
+          updateChatAvailability();
           appendChatMessage("assistant", formatPlanRun(errorRun));
           showPlanRunFinishedStatus(dryRun, errorRun, true);
           log("Plan run " + (errorRun.id || "") + " needs review");
@@ -2582,6 +2762,7 @@
       }
       var run = response && response.run ? response.run : null;
       rememberPlanRun(run);
+      updateChatAvailability();
       appendChatMessage("assistant", formatPlanRun(run));
       showPlanRunFinishedStatus(dryRun, run, false);
       if (run && run.id) log("Plan run " + run.id + " finished");
@@ -2807,6 +2988,7 @@
   runPlanButton.addEventListener("click", function () {
     runLastPlan(false);
   });
+  if (prepareDevRequestButton) prepareDevRequestButton.addEventListener("click", prepareDevRequest);
   newChatButton.addEventListener("click", startNewChat);
   clearChatButton.addEventListener("click", clearActiveChat);
   chatHistorySelect.addEventListener("change", selectChatSession);

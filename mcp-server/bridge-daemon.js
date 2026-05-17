@@ -5,6 +5,7 @@ const http = require("http");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const { spawn } = require("child_process");
 const aiAgents = require("./ai-agents");
 const { buildSolutionHintsForPrompt } = require("./solution-library");
 const { classifyAgentPlan } = require("./plan-risk-classifier");
@@ -17,7 +18,7 @@ const {
 } = require("./project-intent-memory");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "1.0.2";
+const SERVER_VERSION = "1.0.3";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -30,6 +31,9 @@ const AI_CHAT_LOG_FILE = path.join(LOG_DIR, "ai-agent-chats.jsonl");
 const EDIT_SESSION_ACTIVE_FILE = path.join(LOG_DIR, "edit-session-active.json");
 const EDIT_SESSION_LOG_FILE = path.join(LOG_DIR, "edit-sessions.jsonl");
 const IDEMPOTENCY_LOG_FILE = path.join(LOG_DIR, "idempotency-results.jsonl");
+const DEV_REQUESTS_DIR = process.env.AE_AGENT_DEV_REQUEST_DIR
+  ? path.resolve(process.env.AE_AGENT_DEV_REQUEST_DIR)
+  : path.join(LOG_DIR, "dev-requests");
 const AGENT_SECRETS_FILE = process.env.AE_AGENT_SECRETS_FILE
   ? path.resolve(process.env.AE_AGENT_SECRETS_FILE)
   : path.join(PROJECT_ROOT, ".codex", "agent-secrets.json");
@@ -62,6 +66,8 @@ const completedResults = new Map();
 const waitingPanels = [];
 const recentEvents = [];
 const idempotencyRecords = new Map();
+const rawExtendscriptDryRunApprovals = new Map();
+const RAW_EXTENDSCRIPT_DRY_RUN_APPROVAL_TTL_MS = 10 * 60 * 1000;
 let activeEditSession = null;
 
 const EFFECT_PRESETS = [
@@ -3063,6 +3069,368 @@ function planRunRecoveryHint(run) {
   return "Review the failed step before retrying. If any AE change occurred, use the checkpoint or After Effects Undo path listed in the step details.";
 }
 
+function escapeRegExp(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function normalizeBundlePath(filePath) {
+  const relative = path.relative(PROJECT_ROOT, filePath);
+  return relative && !relative.startsWith("..") && !path.isAbsolute(relative)
+    ? relative.replace(/\\/g, "/")
+    : path.basename(filePath);
+}
+
+function safeDevRequestId(value) {
+  const source = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const suffix = crypto.randomBytes(3).toString("hex");
+  return `${stamp}-${source || "typed-tool-request"}-${suffix}`;
+}
+
+function redactDevRequestText(value, limit = 4000) {
+  let text = String(value === undefined || value === null ? "" : value);
+  if (PROJECT_ROOT) text = text.replace(new RegExp(escapeRegExp(PROJECT_ROOT), "gi"), "<project-root>");
+  if (process.env.USERPROFILE) text = text.replace(new RegExp(escapeRegExp(process.env.USERPROFILE), "gi"), "<user-profile>");
+  if (process.env.LOCALAPPDATA) text = text.replace(new RegExp(escapeRegExp(process.env.LOCALAPPDATA), "gi"), "<local-app-data>");
+  if (process.env.APPDATA) text = text.replace(new RegExp(escapeRegExp(process.env.APPDATA), "gi"), "<app-data>");
+  text = text
+    .replace(/\b(OPENAI_API_KEY|OPENAI_KEY|ANTHROPIC_API_KEY|CLAUDE_API_KEY|GEMINI_API_KEY|GOOGLE_API_KEY|OPENROUTER_API_KEY|OPENROUTER_KEY|AE_BRIDGE_TOKEN|CEP_PANEL_BRIDGE_TOKEN)\b\s*[:=]\s*["']?[^"',\s)]+/gi, "$1=<redacted>")
+    .replace(/\bBearer\s+[A-Za-z0-9._-]{12,}/gi, "Bearer <redacted>")
+    .replace(/\bsk-[A-Za-z0-9_-]{12,}/g, "<redacted-openai-key>")
+    .replace(/\bAIza[0-9A-Za-z_-]{20,}/g, "<redacted-google-key>");
+  if (text.length > limit) return `${text.slice(0, Math.max(0, limit - 14)).trim()}\n...<truncated>`;
+  return text;
+}
+
+function sanitizeDevRequestValue(value, depth = 0) {
+  if (depth > 5) return "<truncated-depth>";
+  if (value === undefined) return null;
+  if (value === null || typeof value === "number" || typeof value === "boolean") return value;
+  if (typeof value === "string") return redactDevRequestText(value, 5000);
+  if (Array.isArray(value)) return value.slice(0, 40).map((item) => sanitizeDevRequestValue(item, depth + 1));
+  if (typeof value === "object") {
+    const output = {};
+    const keys = Object.keys(value).slice(0, 80);
+    for (const key of keys) {
+      output[key] = /token|apiKey|secret|authorization|password/i.test(key)
+        ? "<redacted>"
+        : sanitizeDevRequestValue(value[key], depth + 1);
+    }
+    if (Object.keys(value).length > keys.length) output.__truncatedKeys = Object.keys(value).length - keys.length;
+    return output;
+  }
+  return redactDevRequestText(value, 1000);
+}
+
+function normalizeAcceptanceCriteria(value) {
+  const source = Array.isArray(value) ? value : String(value || "").split(/\r?\n/);
+  const criteria = source
+    .map((item) => redactDevRequestText(item, 300).trim())
+    .filter(Boolean)
+    .slice(0, 12);
+  return criteria.length ? criteria : [
+    "Implement one narrow typed bridge or panel capability for this AE workflow.",
+    "Keep normal AE execution routed through validated Agent plans and safety gates.",
+    "Add focused smoke coverage for the new behavior."
+  ];
+}
+
+function normalizeTargetFiles(value) {
+  const source = Array.isArray(value) ? value : [];
+  const fallback = [
+    "mcp-server/bridge-daemon.js",
+    "cep-panel/panel.js",
+    "scripts/smoke-test.js"
+  ];
+  const files = [];
+  for (const item of source.concat(fallback)) {
+    const text = redactDevRequestText(item, 240).replace(/\\/g, "/").trim();
+    if (!text || text.startsWith("..") || path.isAbsolute(text)) continue;
+    if (!files.includes(text)) files.push(text);
+    if (files.length >= 8) break;
+  }
+  return files;
+}
+
+function collectDevRequestSignals(planResult, runResult, reason) {
+  const signals = [];
+  const validation = planResult && planResult.planValidation ? planResult.planValidation : runResult && runResult.validation ? runResult.validation : null;
+  const classification = validation && validation.classification ? validation.classification : null;
+  if (reason) signals.push(reason);
+  if (classification && classification.category) signals.push(`Plan classification: ${classification.category}.`);
+  if (classification && classification.rawExtendscriptStepCount > 0) signals.push(`${classification.rawExtendscriptStepCount} raw ExtendScript step(s) were planned.`);
+  if (classification && classification.runRecommendation) signals.push(`Run recommendation: ${classification.runRecommendation}`);
+  if (runResult && runResult.ok === false && runResult.error) signals.push(`Run error: ${runResult.error}`);
+  if (runResult && runResult.semanticVerification && runResult.semanticVerification.status === "needs_review") {
+    signals.push(`Semantic verification needs review: ${runResult.semanticVerification.summary || "no summary"}`);
+  }
+  return signals.map((item) => redactDevRequestText(item, 500)).filter(Boolean).slice(0, 12);
+}
+
+function rawExtendscriptCandidatesFromPlan(planResult) {
+  const plan = planResult && planResult.plan ? planResult.plan : null;
+  const steps = plan && Array.isArray(plan.steps) ? plan.steps : [];
+  const candidates = [];
+  for (const step of steps) {
+    if (!step || (step.tool !== "run_extendscript" && step.tool !== "run_extendscript_file")) continue;
+    const args = step.args || {};
+    if (args.script) {
+      candidates.push({
+        title: step.title || step.intent || "Raw ExtendScript candidate",
+        tool: step.tool,
+        script: redactDevRequestText(args.script, 20000)
+      });
+    } else if (args.filePath) {
+      candidates.push({
+        title: step.title || step.intent || "Raw ExtendScript file candidate",
+        tool: step.tool,
+        filePath: redactDevRequestText(args.filePath, 1000)
+      });
+    }
+  }
+  return candidates.slice(0, 4);
+}
+
+function buildDevRequestMarkdown(bundle) {
+  const criteria = bundle.acceptanceCriteria.map((item) => `- ${item}`).join("\n");
+  const signals = bundle.signals.length ? bundle.signals.map((item) => `- ${item}`).join("\n") : "- No specific tool gap signal was provided.";
+  const targetFiles = bundle.targetFiles.map((item) => `- ${item}`).join("\n");
+  return [
+    `# AE Agent Typed Tool Request: ${bundle.title}`,
+    "",
+    "## Goal",
+    bundle.goal,
+    "",
+    "## Why This Escalated",
+    signals,
+    "",
+    "## Desired Tool Or Panel Change",
+    bundle.desiredTool,
+    "",
+    "## Acceptance Criteria",
+    criteria,
+    "",
+    "## Evidence",
+    `- Compact evidence: \`${bundle.evidenceFile}\``,
+    bundle.candidateFile ? `- Raw workaround candidate: \`${bundle.candidateFile}\`` : "- No raw workaround candidate was captured.",
+    "",
+    "## Targeted Files",
+    targetFiles,
+    "",
+    "## Development Boundary",
+    "- Work on one narrow typed tool or panel change only.",
+    "- Do not continue the long AE chat here.",
+    "- Do not broadly scan the repository before reading this bundle.",
+    "- Use targeted search only if the listed files do not contain the relevant implementation point.",
+    "- Keep AE mutations routed through validated Agent plans, checkpoints/edit sessions, idempotency, and read-back verification."
+  ].join("\n");
+}
+
+function buildStartPromptMarkdown(bundle) {
+  const targetFiles = bundle.targetFiles.map((item) => `- ${item}`).join("\n");
+  return [
+    `РџСЂРѕРґРѕР»Р¶Рё СЂР°Р·СЂР°Р±РѕС‚РєСѓ РІ С‚РµРєСѓС‰РµРј workspace AE Agent РґР»СЏ dev request \`${bundle.id}\`.`,
+    "",
+    "РЎРЅР°С‡Р°Р»Р° РїСЂРѕС‡РёС‚Р°Р№ С‚РѕР»СЊРєРѕ СЌС‚Рё С„Р°Р№Р»С‹:",
+    `- ${bundle.requestFile}`,
+    `- ${bundle.evidenceFile}`,
+    bundle.candidateFile ? `- ${bundle.candidateFile}` : "",
+    "- specs/target-app.md",
+    "- plans/target-app-execplan.md",
+    "",
+    "Р—Р°С‚РµРј С‡РёС‚Р°Р№ С‚РѕР»СЊРєРѕ С†РµР»РµРІС‹Рµ С„Р°Р№Р»С‹:",
+    targetFiles,
+    "",
+    "РќРµ РґРµР»Р°Р№ С€РёСЂРѕРєРёР№ scan РІСЃРµРіРѕ repo. Р•СЃР»Рё РЅСѓР¶РЅР°СЏ С‚РѕС‡РєР° РЅРµ РЅР°Р№РґРµРЅР° РІ С†РµР»РµРІС‹С… С„Р°Р№Р»Р°С…, РёСЃРїРѕР»СЊР·СѓР№ С‚РѕС‡РµС‡РЅС‹Р№ rg РїРѕ РёРјРµРЅРё tool/API/UI-control Рё Р·Р°С„РёРєСЃРёСЂСѓР№ РїСЂРёС‡РёРЅСѓ.",
+    "",
+    "Р—Р°РґР°С‡Р°: СЂРµР°Р»РёР·РѕРІР°С‚СЊ РѕРґРёРЅ СѓР·РєРёР№ typed tool РёР»Рё РѕРґРЅСѓ СѓР·РєСѓСЋ РїСЂР°РІРєСѓ РїР°РЅРµР»Рё, РєРѕС‚РѕСЂР°СЏ Р·Р°РєСЂС‹РІР°РµС‚ СЌС‚РѕС‚ AE workflow Р±РµР· РїРµСЂРµРіСЂСѓР·Р° AE-С‡Р°С‚Р°. РџРѕСЃР»Рµ СЂРµР°Р»РёР·Р°С†РёРё Р·Р°РїСѓСЃС‚Рё СЂРµР»РµРІР°РЅС‚РЅС‹Рµ РїСЂРѕРІРµСЂРєРё, РѕР±РЅРѕРІРё РїР»Р°РЅ/handoff РїРѕ milestone rules Рё СЃРґРµР»Р°Р№ РѕРґРёРЅ reviewable commit."
+  ].filter(Boolean).join("\n");
+}
+
+function writeCandidateFile(bundleDir, candidates) {
+  if (!candidates.length) return null;
+  const lines = [
+    "// Captured raw ExtendScript workaround for typed-tool review.",
+    "// Do not run this directly from the dev request. Convert to a typed bridge tool when possible.",
+    ""
+  ];
+  candidates.forEach((candidate, index) => {
+    lines.push(`// Candidate ${index + 1}: ${candidate.title}`);
+    lines.push(`// Source tool: ${candidate.tool}`);
+    if (candidate.filePath) lines.push(`// Original file path: ${candidate.filePath}`);
+    if (candidate.script) lines.push(candidate.script);
+    lines.push("");
+  });
+  const filePath = path.join(bundleDir, "candidate.jsx");
+  fs.writeFileSync(filePath, lines.join("\n"), "utf8");
+  return filePath;
+}
+
+function createDevRequestBundle(args) {
+  const goal = redactDevRequestText(optionalString(args, "goal", optionalString(args, "prompt", "AE Agent typed tool request")), 1200).trim();
+  const title = redactDevRequestText(optionalString(args, "title", goal || "Typed tool request"), 120).replace(/\s+/g, " ").trim() || "Typed tool request";
+  const id = safeDevRequestId(title);
+  const bundleDir = path.join(DEV_REQUESTS_DIR, id);
+  fs.mkdirSync(bundleDir, { recursive: true });
+
+  const planResult = sanitizeDevRequestValue(args.planResult || null);
+  const runResult = sanitizeDevRequestValue(args.runResult || null);
+  const desiredTool = redactDevRequestText(optionalString(args, "desiredTool", "A narrow typed AE Agent bridge or panel tool for this workflow."), 1200).trim();
+  const acceptanceCriteria = normalizeAcceptanceCriteria(args.acceptanceCriteria);
+  const targetFiles = normalizeTargetFiles(args.targetFiles);
+  const signals = collectDevRequestSignals(planResult, runResult, optionalString(args, "reason", ""));
+  const rawCandidates = rawExtendscriptCandidatesFromPlan(planResult);
+
+  const evidence = {
+    schema: "ae-agent-dev-request-evidence.v1",
+    id,
+    createdAt: new Date().toISOString(),
+    source: redactDevRequestText(optionalString(args, "source", "cep-panel"), 80),
+    goal,
+    desiredTool,
+    signals,
+    targetFiles,
+    planResult,
+    runResult,
+    candidateId: redactDevRequestText(optionalString(args, "candidateId", ""), 200) || null,
+    candidateReport: sanitizeDevRequestValue(args.candidateReport || null),
+    notes: [
+      "This bundle is local and ignored by git under logs/dev-requests by default.",
+      "It intentionally contains compact evidence, not full chat history or provider secrets."
+    ]
+  };
+
+  const candidateFilePath = writeCandidateFile(bundleDir, rawCandidates);
+  const bundle = {
+    id,
+    title,
+    goal,
+    desiredTool,
+    acceptanceCriteria,
+    signals,
+    targetFiles,
+    requestFile: normalizeBundlePath(path.join(bundleDir, "request.md")),
+    evidenceFile: normalizeBundlePath(path.join(bundleDir, "ae-evidence.json")),
+    startPromptFile: normalizeBundlePath(path.join(bundleDir, "start-prompt.md")),
+    candidateFile: candidateFilePath ? normalizeBundlePath(candidateFilePath) : null
+  };
+
+  fs.writeFileSync(path.join(bundleDir, "ae-evidence.json"), JSON.stringify(evidence, null, 2) + "\n", "utf8");
+  fs.writeFileSync(path.join(bundleDir, "request.md"), buildDevRequestMarkdown(bundle) + "\n", "utf8");
+  fs.writeFileSync(path.join(bundleDir, "start-prompt.md"), buildStartPromptMarkdown(bundle) + "\n", "utf8");
+
+  recordEvent("agent_dev_request_created", {
+    id,
+    requestFile: bundle.requestFile,
+    evidenceFile: bundle.evidenceFile,
+    startPromptFile: bundle.startPromptFile,
+    candidateFile: bundle.candidateFile
+  });
+
+  return {
+    ...bundle,
+    directory: normalizeBundlePath(bundleDir)
+  };
+}
+
+function launchCodexAppForDevRequest() {
+  const status = aiAgents.getCodexCliStatus ? aiAgents.getCodexCliStatus() : null;
+  if (!status || !status.installed || !status.command) {
+    return {
+      launched: false,
+      error: status && status.error ? status.error : "Codex CLI was not found."
+    };
+  }
+  try {
+    const child = spawn(status.command, ["app", PROJECT_ROOT], {
+      cwd: PROJECT_ROOT,
+      env: process.env,
+      detached: true,
+      stdio: "ignore",
+      windowsHide: false
+    });
+    child.on("error", (error) => {
+      recordEvent("agent_dev_request_codex_app_error", {
+        error: error.message || String(error)
+      });
+    });
+    child.unref();
+    return {
+      launched: true,
+      pid: child.pid || null,
+      command: redactDevRequestText(status.command, 500)
+    };
+  } catch (error) {
+    return {
+      launched: false,
+      error: error.message || String(error)
+    };
+  }
+}
+
+function rawExtendscriptStepCount(validation) {
+  const classificationCount = Number(validation && validation.classification && validation.classification.rawExtendscriptStepCount || 0);
+  if (classificationCount > 0) return classificationCount;
+  return Array.isArray(validation && validation.steps)
+    ? validation.steps.filter((step) => step && (step.tool === "run_extendscript" || step.tool === "run_extendscript_file")).length
+    : 0;
+}
+
+function planDryRunApprovalKey(plan, requestId) {
+  const hash = crypto.createHash("sha256");
+  hash.update(String(requestId || ""));
+  hash.update("\n");
+  hash.update(JSON.stringify(plan || {}));
+  return hash.digest("hex");
+}
+
+function pruneRawExtendscriptDryRunApprovals(now = Date.now()) {
+  for (const [key, approval] of rawExtendscriptDryRunApprovals.entries()) {
+    if (!approval || Number(approval.expiresAtMs || 0) <= now) {
+      rawExtendscriptDryRunApprovals.delete(key);
+    }
+  }
+}
+
+function recordRawExtendscriptDryRunApproval(run, plan, requestId, validation) {
+  if (!run || !run.id || !validation || rawExtendscriptStepCount(validation) <= 0) return null;
+  const now = Date.now();
+  pruneRawExtendscriptDryRunApprovals(now);
+  const approval = {
+    key: planDryRunApprovalKey(plan, requestId),
+    dryRunId: run.id,
+    requestId: requestId || null,
+    createdAt: new Date(now).toISOString(),
+    expiresAt: new Date(now + RAW_EXTENDSCRIPT_DRY_RUN_APPROVAL_TTL_MS).toISOString(),
+    expiresAtMs: now + RAW_EXTENDSCRIPT_DRY_RUN_APPROVAL_TTL_MS
+  };
+  rawExtendscriptDryRunApprovals.set(approval.key, approval);
+  return approval;
+}
+
+function rawExtendscriptRunApproval(validation, plan, requestId, dryRunId, allowRawExtendscript) {
+  const classification = validation && validation.classification ? validation.classification : null;
+  if (!classification || classification.blocksRun !== true) return { ok: true, approval: null };
+  if (rawExtendscriptStepCount(validation) <= 0 || classification.allowsDryRun === false || classification.category !== "risky") {
+    return { ok: false, error: classification.runRecommendation || "Plan classification blocks run." };
+  }
+  if (!allowRawExtendscript) {
+    return { ok: false, error: "Raw ExtendScript requires allowRawExtendscript:true after a successful dry run." };
+  }
+  const key = planDryRunApprovalKey(plan, requestId);
+  pruneRawExtendscriptDryRunApprovals();
+  const approval = rawExtendscriptDryRunApprovals.get(key);
+  if (!approval || approval.dryRunId !== dryRunId) {
+    return { ok: false, error: "Run raw ExtendScript only after a successful dry run of the same current plan." };
+  }
+  return { ok: true, approval };
+}
+
 async function runValidatedAgentPlan(options) {
   options = options || {};
   const prepared = validateAgentPlanWithRepair(options.plan, options.requestId || null, {
@@ -3079,6 +3447,7 @@ async function runValidatedAgentPlan(options) {
   const allowRuntimeBindings = optionalBoolean(options, "allowRuntimeBindings", true);
   const allowWithoutCheckpoint = optionalBoolean(options, "allowWithoutCheckpoint", false);
   const allowRawExtendscript = optionalBoolean(options, "allowRawExtendscript", false);
+  const rawExtendscriptDryRunId = optionalString(options, "rawExtendscriptDryRunId", "");
   const stopOnError = optionalBoolean(options, "stopOnError", true);
   const maxSteps = Math.max(1, Math.min(50, Math.floor(optionalNumber(options, "maxSteps", 20))));
   const mutatingExecution = !dryRun && validation.mutatingCount > 0;
@@ -3105,6 +3474,7 @@ async function runValidatedAgentPlan(options) {
       activeEditSessionAtStart,
       autoEditSession,
       allowWithoutCheckpoint,
+      allowRawExtendscript,
       protection: activeEditSessionAtStart
         ? "active_edit_session"
         : checkpointStepPresent
@@ -3127,6 +3497,16 @@ async function runValidatedAgentPlan(options) {
     if (!run.dryRun && validation.mutatingCount > 0 && !run.semanticVerification) {
       run.semanticVerification = buildSemanticVerification(prepared.plan, run);
     }
+    if (run.dryRun && run.ok) {
+      const approval = recordRawExtendscriptDryRunApproval(run, prepared.plan, options.requestId || null, validation);
+      if (approval) {
+        run.safety.rawExtendscriptGate = {
+          status: "dry-run-approved",
+          dryRunId: approval.dryRunId,
+          expiresAt: approval.expiresAt
+        };
+      }
+    }
     if (!run.ok && !run.recoveryHint) {
       run.recoveryHint = planRunRecoveryHint(run);
     }
@@ -3144,9 +3524,20 @@ async function runValidatedAgentPlan(options) {
     return finishRun();
   }
   if (!dryRun && validation.classification && validation.classification.blocksRun === true) {
-    run.ok = false;
-    run.error = validation.classification.runRecommendation || "Plan classification blocks run.";
-    return finishRun();
+    const rawApproval = rawExtendscriptRunApproval(validation, prepared.plan, options.requestId || null, rawExtendscriptDryRunId, allowRawExtendscript);
+    if (!rawApproval.ok) {
+      run.ok = false;
+      run.error = rawApproval.error || validation.classification.runRecommendation || "Plan classification blocks run.";
+      run.safety.status = "blocked_raw_extendscript_gate";
+      return finishRun();
+    }
+    if (rawApproval.approval) {
+      run.safety.rawExtendscriptGate = {
+        status: "approved",
+        dryRunId: rawApproval.approval.dryRunId,
+        expiresAt: rawApproval.approval.expiresAt
+      };
+    }
   }
   if (!dryRun && !confirm) {
     run.ok = false;
@@ -3844,6 +4235,28 @@ function startHttpBridge() {
       return;
     }
 
+    if ((url.pathname === "/agents/dev-request" || url.pathname === "/dev/agents/dev-request") && req.method === "POST") {
+      if (!requireToken(req, res, url)) return;
+      try {
+        const body = await readJsonBody(req);
+        const bundle = createDevRequestBundle(body || {});
+        const codexApp = optionalBoolean(body || {}, "openCodexApp", false)
+          ? launchCodexAppForDevRequest()
+          : { launched: false, skipped: true };
+        writeJson(res, 200, {
+          ok: true,
+          bundle,
+          codexApp
+        });
+      } catch (error) {
+        writeJson(res, 400, {
+          ok: false,
+          error: error.message || String(error)
+        });
+      }
+      return;
+    }
+
     if (url.pathname === "/tools" && req.method === "GET") {
       if (!requireToken(req, res, url)) return;
       writeJson(res, 200, { ok: true, tools: exposedTools() });
@@ -4299,6 +4712,10 @@ const tools = [
         allowRawExtendscript: {
           type: "boolean",
           description: "Allow run_extendscript or run_extendscript_file steps. Defaults to false."
+        },
+        rawExtendscriptDryRunId: {
+          type: "string",
+          description: "Successful dry-run id for the same current plan, required when allowing raw ExtendScript execution."
         },
         maxSteps: {
           type: "number",

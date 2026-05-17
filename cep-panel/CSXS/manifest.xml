@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ExtensionManifest Version="7.0" ExtensionBundleId="com.codex.aemcpbridge" ExtensionBundleVersion="1.0.2" ExtensionBundleName="AE Agent 1.0.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<ExtensionManifest Version="7.0" ExtensionBundleId="com.codex.aemcpbridge" ExtensionBundleVersion="1.0.3" ExtensionBundleName="AE Agent 1.0.3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <ExtensionList>
-    <Extension Id="com.codex.aemcpbridge.panel" Version="1.0.2" />
+    <Extension Id="com.codex.aemcpbridge.panel" Version="1.0.3" />
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>
@@ -29,7 +29,7 @@
         </Lifecycle>
         <UI>
           <Type>Panel</Type>
-          <Menu>AE Agent 1.0.2</Menu>
+          <Menu>AE Agent 1.0.3</Menu>
           <Geometry>
             <Size>
               <Height>560</Height>
