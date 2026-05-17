@@ -2,7 +2,16 @@
 
 (function () {
   var APP_NAME = "AE Agent";
-  var APP_VERSION = "1.0.3";
+  var APP_VERSION = "1.0.4";
+  var CHAT_MODE_CHAT = "chat";
+  var CHAT_MODE_AGENT = "plan";
+  var CHAT_MODE_HARDCORE = "hardcore";
+  var RECOVER_PLAN_TEXT = "Подхватить последний план из чата";
+  var DRY_RUN_PLAN_TEXT = "Dry run / Проверить";
+  var RUN_PLAN_TEXT = "Выполнить план";
+  var RUNNING_PLAN_TEXT = "Выполняю...";
+  var DRY_RUN_PLAN_TITLE = "Dry run: проверить план без изменений в проекте After Effects.";
+  var RUN_PLAN_TITLE = "Выполнить план через защищенный runner AE Agent.";
 
   var cs = new CSInterface();
   var appShellEl = document.getElementById("appShell");
@@ -1352,14 +1361,14 @@
 
     var dryRunButton = document.createElement("button");
     dryRunButton.className = "inline-dry-run-button";
-    dryRunButton.textContent = "Dry run / РџСЂРѕРІРµСЂРёС‚СЊ";
-    dryRunButton.title = "Dry run: РїСЂРѕРІРµСЂРёС‚СЊ РїР»Р°РЅ Р±РµР· РёР·РјРµРЅРµРЅРёР№ РІ РїСЂРѕРµРєС‚Рµ After Effects.";
+    dryRunButton.textContent = DRY_RUN_PLAN_TEXT;
+    dryRunButton.title = DRY_RUN_PLAN_TITLE;
     row.appendChild(dryRunButton);
 
     var runButton = document.createElement("button");
     runButton.className = "inline-run-plan-button";
-    runButton.textContent = "Р’С‹РїРѕР»РЅРёС‚СЊ РїР»Р°РЅ";
-    runButton.title = "Р’С‹РїРѕР»РЅРёС‚СЊ РїР»Р°РЅ С‡РµСЂРµР· Р·Р°С‰РёС‰РµРЅРЅС‹Р№ runner AE Agent.";
+    runButton.textContent = RUN_PLAN_TEXT;
+    runButton.title = RUN_PLAN_TITLE;
     row.appendChild(runButton);
 
     var entry = {
@@ -1830,12 +1839,12 @@
       var dryDisabled = chatInFlight || !isCurrentPlan;
       var runDisabled = chatInFlight || !isCurrentPlan || !validation || !validationOk || blocksRun;
 
-      entry.dryRunButton.textContent = chatInFlight && planRunInFlightMode === "dry-run" && isCurrentPlan ? "Dry run..." : "Dry run / РџСЂРѕРІРµСЂРёС‚СЊ";
-      entry.dryRunButton.title = "Dry run: РїСЂРѕРІРµСЂРёС‚СЊ РїР»Р°РЅ Р±РµР· РёР·РјРµРЅРµРЅРёР№ РІ РїСЂРѕРµРєС‚Рµ After Effects.";
-      entry.runButton.textContent = chatInFlight && planRunInFlightMode === "run" && isCurrentPlan ? "Р’С‹РїРѕР»РЅСЏСЋ..." : "Р’С‹РїРѕР»РЅРёС‚СЊ РїР»Р°РЅ";
+      entry.dryRunButton.textContent = chatInFlight && planRunInFlightMode === "dry-run" && isCurrentPlan ? "Dry run..." : DRY_RUN_PLAN_TEXT;
+      entry.dryRunButton.title = DRY_RUN_PLAN_TITLE;
+      entry.runButton.textContent = chatInFlight && planRunInFlightMode === "run" && isCurrentPlan ? RUNNING_PLAN_TEXT : RUN_PLAN_TEXT;
       entry.runButton.title = rawGateReady
         ? "Dry run passed; execute through the explicit raw ExtendScript gate and protected runner."
-        : "Р’С‹РїРѕР»РЅРёС‚СЊ РїР»Р°РЅ С‡РµСЂРµР· Р·Р°С‰РёС‰РµРЅРЅС‹Р№ runner AE Agent.";
+        : RUN_PLAN_TITLE;
       entry.dryRunButton.disabled = dryDisabled;
       entry.runButton.disabled = runDisabled;
 
@@ -1981,11 +1990,11 @@
     var rawGateReady = rawExtendscriptDryRunGateReady(validation);
     var blocksRun = classificationBlocksRun(validation) && !rawGateReady;
     if (dryRunPlanButton) {
-      dryRunPlanButton.textContent = chatInFlight && planRunInFlightMode === "dry-run" ? "Dry run..." : "Dry run / РџСЂРѕРІРµСЂРёС‚СЊ";
+      dryRunPlanButton.textContent = chatInFlight && planRunInFlightMode === "dry-run" ? "Dry run..." : DRY_RUN_PLAN_TEXT;
       dryRunPlanButton.title = hasPlan ? "Dry run: check this plan without changing the AE project." : "Create an Agent plan first.";
     }
     if (runPlanButton) {
-      runPlanButton.textContent = chatInFlight && planRunInFlightMode === "run" ? "Р’С‹РїРѕР»РЅСЏСЋ..." : "Р’С‹РїРѕР»РЅРёС‚СЊ РїР»Р°РЅ";
+      runPlanButton.textContent = chatInFlight && planRunInFlightMode === "run" ? RUNNING_PLAN_TEXT : RUN_PLAN_TEXT;
       if (!hasPlan) {
         runPlanButton.title = "Create and validate an Agent plan first.";
       } else if (rawGateReady) {
@@ -2030,7 +2039,7 @@
     var value = String(text || "");
     if (!trimText(value)) return false;
     if (/(^|\n)\s*\d+\.\s+\S/.test(value)) return true;
-    if (/(^|\n)\s*(Plan review|Steps:|РџР»Р°РЅ|РћР±РЅРѕРІ[^\n]*РїР»Р°РЅ|РџР»Р°РЅ РІС‹РїРѕР»РЅРµРЅРёСЏ)/i.test(value)) return true;
+    if (/(^|\n)\s*(Plan review|Steps:|План|Обнов[^\n]*план|План выполнения)/i.test(value)) return true;
     return false;
   }
 
@@ -2045,15 +2054,16 @@
 
   function buildPlanRecoveryPrompt(sourceText) {
     return [
-      "РџРѕРґС…РІР°С‚Рё РїРѕСЃР»РµРґРЅРёР№ РїР»Р°РЅ РёР· С‡Р°С‚Р° Рё РїСЂРµРІСЂР°С‚Рё РµРіРѕ РІ РІР°Р»РёРґРЅС‹Р№ СЃС‚СЂСѓРєС‚СѓСЂРёСЂРѕРІР°РЅРЅС‹Р№ AE Agent plan.",
-      "РСЃРїРѕР»СЊР·СѓР№ С‚РѕР»СЊРєРѕ СЂРµР°Р»СЊРЅС‹Рµ typed AE Agent tools, СЃРѕС…СЂР°РЅРё СЃРјС‹СЃР» РёСЃС…РѕРґРЅС‹С… С€Р°РіРѕРІ Рё РґРѕР±Р°РІСЊ Р±РµР·РѕРїР°СЃРЅС‹Рµ read-back РїСЂРѕРІРµСЂРєРё. РќРµ РІС‹РїРѕР»РЅСЏР№ РїР»Р°РЅ: С‚РѕР»СЊРєРѕ РїРѕРґРіРѕС‚РѕРІСЊ СЃС‚СЂСѓРєС‚СѓСЂРёСЂРѕРІР°РЅРЅС‹Р№ РїР»Р°РЅ РґР»СЏ validation/dry-run/run controls.",
-      "РџРѕСЃР»РµРґРЅРёР№ РїР»Р°РЅ РёР· С‡Р°С‚Р°:",
+      "Подхвати последний план из чата и преврати его в валидный структурированный AE Agent plan.",
+      "Используй только реальные typed AE Agent tools, сохрани смысл исходных шагов и добавь безопасные read-back проверки. Не выполняй план: только подготовь структурированный план для validation/dry-run/run controls.",
+      "Последний план из чата:",
       sourceText
     ].join("\n\n");
   }
 
   function updateRecoverLastPlanButton(hasPlan) {
     if (!recoverLastPlanButton) return;
+    recoverLastPlanButton.textContent = RECOVER_PLAN_TEXT;
     var recoverable = findLastTranscriptPlanItem();
     recoverLastPlanButton.disabled = chatInFlight || hasPlan || !transcriptHistory.length;
     if (chatInFlight) {
@@ -2114,12 +2124,20 @@
   }
 
   function setChatMode(mode) {
-    chatModeEl.value = mode === "chat" ? "chat" : "plan";
+    if (mode === CHAT_MODE_HARDCORE) {
+      chatModeEl.value = CHAT_MODE_HARDCORE;
+    } else {
+      chatModeEl.value = mode === CHAT_MODE_CHAT ? CHAT_MODE_CHAT : CHAT_MODE_AGENT;
+    }
     localStorage.setItem("codexAeChatMode", chatModeEl.value);
     forEachNode(chatModeButtonEls, function (button) {
       toggleClass(button, "active", getData(button, "chat-mode") === chatModeEl.value);
     });
     updateChatAvailability();
+  }
+
+  function isAgentChatMode(mode) {
+    return mode === CHAT_MODE_AGENT || mode === CHAT_MODE_HARDCORE;
   }
 
   function findWorkflowPreset(id) {
@@ -2503,6 +2521,7 @@
     var mutatingCount = validation ? Number(validation.mutatingCount || 0) : 0;
     var lines = [];
     if (validation) lines.push("Plan review: " + (validation.ok ? "ready" : "needs review"));
+    if (result.agentMode === "hardcore") lines.push("Mode: Agent Hardcore");
     if (classification) {
       lines.push("Confidence: " + (classification.verdict || ((classification.label || classification.category || "Plan") + " / " + (classification.confidence || "unknown"))));
       if (classification.runRecommendation) lines.push("Run guidance: " + classification.runRecommendation);
@@ -2789,10 +2808,12 @@
     }
 
     rememberModel();
-    var mode = chatModeEl.value || "chat";
+    var mode = chatModeEl.value || CHAT_MODE_CHAT;
+    var agentPlanMode = isAgentChatMode(mode);
+    var hardcoreMode = mode === CHAT_MODE_HARDCORE;
     chatPromptEl.value = "";
     appendChatMessage("user", prompt);
-    if (mode === "chat") {
+    if (!agentPlanMode) {
       chatMessages.push({ role: "user", content: prompt });
       if (chatMessages.length > 16) chatMessages = chatMessages.slice(chatMessages.length - 16);
       saveCurrentChatSession();
@@ -2802,14 +2823,16 @@
       updateChatAvailability();
     }
 
-    setChatBusy(true, mode === "plan" ? "Planning" : "Thinking");
-    var path = mode === "plan" ? "/agents/plan" : "/agents/chat";
+    setChatBusy(true, agentPlanMode ? (hardcoreMode ? "Hardcore planning" : "Planning") : "Thinking");
+    var path = agentPlanMode ? "/agents/plan" : "/agents/chat";
     var optimizePrompt = promptOptimizationEl && promptOptimizationEl.checked;
-    var body = mode === "plan" ? {
+    var body = agentPlanMode ? {
       agentId: agentId,
       model: selectedModel(),
       prompt: prompt,
       promptOptimization: optimizePrompt,
+      hardcore: hardcoreMode,
+      agentMode: hardcoreMode ? "hardcore" : "agent",
       timeoutMs: 120000
     } : {
       agentId: agentId,
@@ -2828,10 +2851,10 @@
       }
 
       var result = response && response.result ? response.result : {};
-      var text = mode === "plan" ? formatPlanResult(result) : result.text || "";
-      lastPlanResult = mode === "plan" ? result : lastPlanResult;
-      appendChatMessage("assistant", text, mode === "plan" ? { planActions: result } : null);
-      if (mode === "chat") {
+      var text = agentPlanMode ? formatPlanResult(result) : result.text || "";
+      lastPlanResult = agentPlanMode ? result : lastPlanResult;
+      appendChatMessage("assistant", text, agentPlanMode ? { planActions: result } : null);
+      if (!agentPlanMode) {
         chatMessages.push({ role: "assistant", content: text });
         if (chatMessages.length > 16) chatMessages = chatMessages.slice(chatMessages.length - 16);
         saveCurrentChatSession();

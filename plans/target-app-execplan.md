@@ -2,7 +2,7 @@
 
 ## Progress
 
-- [x] Stable baseline: AE Agent 1.0.3 CEP panel, provider setup, Agent planning, plan validation, protected execution, local history, diagnostics, and installed-panel smoke coverage.
+- [x] Stable baseline: AE Agent 1.0.4 CEP panel, provider setup, Agent planning, Agent Hardcore planning, plan validation, protected execution, local history, diagnostics, and installed-panel smoke coverage.
 - [x] Milestone 38: Repo cleanup and roadmap reset.
 - [x] Milestone 39: Agent planning quality.
 - [x] Milestone 40: Timeline and layer tools.
@@ -52,14 +52,16 @@
 - [x] Milestone 82: Восстановление последнего плана из чата.
 - [x] Milestone 83: Dry run visibility and stale workspace guard.
 - [x] Milestone 84: Hardcore dev escalation handoff.
+- [x] Milestone 85: Agent Hardcore visible mode and Cyrillic UI fix.
 
 ## Current Stable Baseline
 
 - The active repository is `C:\Users\Ant\Documents\Codex\AE_agent`.
-- The native CEP title/menu format is `AE Agent 1.0.3`.
+- The native CEP title/menu format is `AE Agent 1.0.4`.
 - The panel is a compact dark CEP client for the local bridge daemon.
 - Provider paths are separate: OpenAI API, OpenAI CLI, Gemini, Claude, OpenRouter, and Local/Ollama.
 - Agent mode drafts structured MCP plans, validates tool names and required fields, dry-runs plans, and executes only through explicit mutation gates.
+- Agent Hardcore is a visible composer mode next to Agent; it uses the same planner/runner safety gates with stronger guidance for inspection, dry-run/read-back evidence, verification, and typed-tool gap handoff.
 - The latest valid Agent plan exposes inline `Dry run / Проверить` and `Выполнить план` controls inside the chat message, while keeping the same validated backend runner and project-change gates.
 - Agent plans or runs that reveal a typed-tool gap can create an ignored `logs/dev-requests/<id>/` bundle for a targeted Codex App dev handoff instead of continuing repo development inside the AE chat.
 - Project-changing tools use idempotency, optional checkpoints, edit-session protection, and post-mutation verification.
@@ -402,6 +404,14 @@
 - По явному клику из панели пытаться открыть Codex App на текущем workspace через стабильный `codex app <repo>` path fallback.
 - Поднять patch-версию панели/bridge/manifest до `1.0.3`.
 
+### Milestone 85: Agent Hardcore visible mode and Cyrillic UI fix
+
+- Add `Agent Hardcore` as a visible third composer mode next to `Chat` and `Agent`.
+- Route Hardcore through the existing `/agents/plan` path with an explicit `hardcore` flag and no new execution shortcut.
+- Add backend planning guidance for Hardcore: inspection first, dry-run/read-back evidence, verification, and typed-tool gap handoff instead of repo work inside AE chat.
+- Fix mojibake in visible Cyrillic controls: `Подхватить последний план из чата`, `Dry run / Проверить`, and `Выполнить план`.
+- Bump panel/bridge/manifest to `1.0.4` and synchronize the installed CEP extension.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -494,6 +504,10 @@
 - 2026-05-17: Dev-request bundle пишется в ignored `logs/dev-requests/<id>/`, потому что `.codex/dev-requests` может быть недоступен для записи дочернему bridge-процессу в sandboxed окружении.
 - 2026-05-17: `Prepare typed tool request` видим только для unsupported/raw/failed/semantic-needs-review outcomes и не создает escalation, если текущий Agent workflow решается существующими typed tools.
 - 2026-05-17: Текущее изменение кода панели подняло panel, manifest, daemon и adapter до `1.0.3`.
+
+- 2026-05-17: Agent Hardcore is now a visible composer mode next to `Agent`, not only a post-run action. In v1.0.4 it uses the existing `/agents/plan` endpoint with `hardcore:true` and stronger planning guidance for inspection/read-back/verification.
+- 2026-05-17: CEP panel Cyrillic control labels must be stored as valid UTF-8, not mojibake; this fix replaces the visible labels with readable Russian text.
+- 2026-05-17: This panel code change bumped panel, manifest, daemon and adapter to `1.0.4`.
 
 ## Validation
 
@@ -1503,3 +1517,38 @@
   - Passed live `node scripts\cep-panel-cdp-smoke.js openai-cli-setup-smoke`; OpenAI CLI was detected through the local Codex Desktop install and signed-in ChatGPT state.
   - The first live `node scripts\cep-panel-cdp-smoke.js smoke` attempt used the default Local/Ollama configuration and failed because Ollama was offline; rerun with `CEP_PANEL_AGENT_ID=openai-cli` and `CEP_PANEL_MODEL=gpt-5.5` passed planning, reload recovery, dry-run, and read-only run.
   - Did not run live ChatGPT connector/Tunnel checks, live OpenRouter calls, external OpenAI CLI Agent scenario smokes, or mutating live AE smokes because they are outside this narrow dev-escalation handoff milestone and remain explicit-approval-gated.
+- Milestone 85:
+  - Added visible `Agent Hardcore` composer mode next to `Chat` and `Agent`.
+  - Hardcore planning reuses `/agents/plan` with `hardcore:true`/`agentMode:"hardcore"` and stronger inspection, dry-run/read-back and verification guidance.
+  - Fixed visible Cyrillic plan controls: `Подхватить последний план из чата`, `Dry run / Проверить`, and `Выполнить план`.
+  - Bumped CEP panel, manifest, bridge daemon, MCP adapter, install note and smoke expectations to `1.0.4`.
+  - Synchronized updated `index.html`, `panel.js`, `style.css` and `CSXS\manifest.xml` into the installed CEP extension with `node scripts\cep-sync-health.js --sync --check`; the approved run copied 4 changed files and reported installed panel/manifest `1.0.4`.
+  - Restarted the live bridge daemon on `127.0.0.1:3456` from the current repo; live `/health` reported `version:"1.0.4"` and `panelConnected:true`.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check` for all touched JavaScript files using the bundled Codex runtime Node executable.
+  - Passed XML parsing for `cep-panel\CSXS\manifest.xml`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `rg` source check for mojibake markers in active UI/backend files; no current `Рџ...`/`????` artifacts were found in the active panel sources.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`.
+  - Passed `node scripts\project-intent-memory-smoke.js`.
+  - Passed `node scripts\plan-classification-smoke.js`.
+  - Passed `node scripts\plan-repair-smoke.js`.
+  - Passed `node scripts\semantic-verification-smoke.js`.
+  - Passed `node scripts\reliability-validation-suite-smoke.js`.
+  - Passed `node scripts\chatgpt-connector-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `node scripts\agent-qa-audit-smoke.js`.
+  - Passed `node scripts\agent-scenario-report-smoke.js`.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js reload`; document state reported `AE Agent 1.0.4`, the panel stayed connected, and the bottom controls showed readable Cyrillic labels.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js branding-smoke`; page and document title reported `AE Agent 1.0.4`.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js mode-toggle-smoke`; the panel exposed `Chat`, `Agent`, and `Agent Hardcore`, and selecting Hardcore set mode `hardcore`.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js dev-request-button-smoke`; safe plans kept dev escalation hidden and tool-gap plans showed it enabled.
+  - Did not run live ChatGPT connector/Tunnel checks, live OpenRouter calls, external OpenAI CLI Agent scenario smokes, or mutating live AE smokes because this milestone only changes visible mode selection, planner guidance and label rendering.

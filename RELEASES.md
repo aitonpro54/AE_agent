@@ -1,5 +1,20 @@
 # AE Agent Releases
 
+## v1.0.4-agent-hardcore-mode-ui - 2026-05-17
+
+Patch release for making Agent Hardcore a visible composer mode and fixing Cyrillic control text in the CEP panel.
+
+Changed:
+
+- Added `Agent Hardcore` as a visible third composer mode next to `Chat` and `Agent`.
+- Hardcore mode uses the existing Agent planner endpoint and safety gates, with additional planning guidance for inspection, dry-run/read-back evidence, verification, and typed-tool gap handoff.
+- Fixed mojibake in visible Russian/Cyrillic panel controls: `Подхватить последний план из чата`, `Dry run / Проверить`, and `Выполнить план`.
+- CEP panel, manifest, bridge daemon, adapter, install note, and smoke expectations now report `1.0.4`.
+
+Validation:
+
+- Added a live CEP `mode-toggle-smoke` path for the three composer modes and retained the dev-request button smoke for typed-tool-gap visibility.
+
 ## v1.0.3-dev-escalation-handoff - 2026-05-17
 
 Patch release for preparing typed-tool development handoffs from AE Agent outcomes without turning the AE chat into a repository-development thread.

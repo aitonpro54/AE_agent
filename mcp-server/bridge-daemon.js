@@ -18,7 +18,7 @@ const {
 } = require("./project-intent-memory");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "1.0.3";
+const SERVER_VERSION = "1.0.4";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -3234,21 +3234,21 @@ function buildDevRequestMarkdown(bundle) {
 function buildStartPromptMarkdown(bundle) {
   const targetFiles = bundle.targetFiles.map((item) => `- ${item}`).join("\n");
   return [
-    `РџСЂРѕРґРѕР»Р¶Рё СЂР°Р·СЂР°Р±РѕС‚РєСѓ РІ С‚РµРєСѓС‰РµРј workspace AE Agent РґР»СЏ dev request \`${bundle.id}\`.`,
+    `Continue development in the current AE Agent workspace for dev request \`${bundle.id}\`.`,
     "",
-    "РЎРЅР°С‡Р°Р»Р° РїСЂРѕС‡РёС‚Р°Р№ С‚РѕР»СЊРєРѕ СЌС‚Рё С„Р°Р№Р»С‹:",
+    "Read only these files first:",
     `- ${bundle.requestFile}`,
     `- ${bundle.evidenceFile}`,
     bundle.candidateFile ? `- ${bundle.candidateFile}` : "",
     "- specs/target-app.md",
     "- plans/target-app-execplan.md",
     "",
-    "Р—Р°С‚РµРј С‡РёС‚Р°Р№ С‚РѕР»СЊРєРѕ С†РµР»РµРІС‹Рµ С„Р°Р№Р»С‹:",
+    "Then read only these targeted files:",
     targetFiles,
     "",
-    "РќРµ РґРµР»Р°Р№ С€РёСЂРѕРєРёР№ scan РІСЃРµРіРѕ repo. Р•СЃР»Рё РЅСѓР¶РЅР°СЏ С‚РѕС‡РєР° РЅРµ РЅР°Р№РґРµРЅР° РІ С†РµР»РµРІС‹С… С„Р°Р№Р»Р°С…, РёСЃРїРѕР»СЊР·СѓР№ С‚РѕС‡РµС‡РЅС‹Р№ rg РїРѕ РёРјРµРЅРё tool/API/UI-control Рё Р·Р°С„РёРєСЃРёСЂСѓР№ РїСЂРёС‡РёРЅСѓ.",
+    "Do not broadly scan the whole repo. If the needed point is not found in the targeted files, use targeted rg by tool/API/UI-control name and record the reason.",
     "",
-    "Р—Р°РґР°С‡Р°: СЂРµР°Р»РёР·РѕРІР°С‚СЊ РѕРґРёРЅ СѓР·РєРёР№ typed tool РёР»Рё РѕРґРЅСѓ СѓР·РєСѓСЋ РїСЂР°РІРєСѓ РїР°РЅРµР»Рё, РєРѕС‚РѕСЂР°СЏ Р·Р°РєСЂС‹РІР°РµС‚ СЌС‚РѕС‚ AE workflow Р±РµР· РїРµСЂРµРіСЂСѓР·Р° AE-С‡Р°С‚Р°. РџРѕСЃР»Рµ СЂРµР°Р»РёР·Р°С†РёРё Р·Р°РїСѓСЃС‚Рё СЂРµР»РµРІР°РЅС‚РЅС‹Рµ РїСЂРѕРІРµСЂРєРё, РѕР±РЅРѕРІРё РїР»Р°РЅ/handoff РїРѕ milestone rules Рё СЃРґРµР»Р°Р№ РѕРґРёРЅ reviewable commit."
+    "Task: implement one narrow typed tool or one narrow panel fix that closes this AE workflow without overloading the AE chat. After implementation, run relevant checks, update plan/handoff by milestone rules, and make one reviewable commit."
   ].filter(Boolean).join("\n");
 }
 
@@ -3746,6 +3746,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     contextText,
     "",
     "Treat Russian/Cyrillic user text as a normal request. If a Russian phrase is ambiguous, infer cautiously from the After Effects context before asking for clarification.",
+    optionalBoolean(args || {}, "hardcore", false) || optionalString(args || {}, "agentMode", "") === "hardcore" ? "Agent Hardcore mode is enabled: act like an autonomous AE QA operator inside the existing safety model. Plan inspection, dry-run/read-back evidence, and verification steps explicitly. Ask clarifying questions only for risky irreversible ambiguity. If the workflow needs raw ExtendScript or an unsupported tool, keep that gap explicit and narrow so the panel can prepare a typed-tool dev request instead of doing repository work inside the AE chat." : "",
     optionalBoolean(args || {}, "promptOptimization", false) ? "Prompt Optimization is enabled: clarify the user's intent internally, choose conservative AE defaults, and do not expand the requested scope." : "",
     "Use get_bridge_status or ping_ae for bridge health checks. Use get_project_snapshot, get_active_comp, get_comp_details, and get_layer_details before choosing project targets.",
     "For any project-changing request, plan inspection steps first, then the narrow mutating step(s), then verification/readback steps.",
@@ -3947,6 +3948,7 @@ async function runAgentPlanLogged(source, args) {
     return {
       ...result,
       mode: "ae-plan",
+      agentMode: optionalBoolean(args || {}, "hardcore", false) || optionalString(args || {}, "agentMode", "") === "hardcore" ? "hardcore" : "agent",
       requestId,
       startedAt,
       finishedAt: metadata.finishedAt,
@@ -4648,6 +4650,10 @@ const tools = [
         repairPlan: {
           type: "boolean",
           description: "Whether to ask the model to repair malformed JSON plans. Defaults to true."
+        },
+        hardcore: {
+          type: "boolean",
+          description: "When true, draft the plan with Agent Hardcore guidance: explicit inspection, dry-run/read-back evidence, verification, and typed-tool gap handoff instead of repo work in AE chat."
         },
         timeoutMs: {
           type: "number",

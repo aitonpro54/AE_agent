@@ -409,8 +409,8 @@ function fixtureSolution(overrides = {}) {
     },
     testedAeContext: {
       aeVersion: null,
-      panelVersion: "AE Agent 1.0.3",
-      bridgeVersion: "1.0.3",
+      panelVersion: "AE Agent 1.0.4",
+      bridgeVersion: "1.0.4",
       projectKind: "synthetic",
       notes: []
     },

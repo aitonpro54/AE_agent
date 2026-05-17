@@ -225,8 +225,15 @@ section {
   border-radius: 5px;
   display: grid;
   gap: 4px;
-  grid-template-columns: 1fr 1fr;
   padding: 3px;
+}
+
+.segmented {
+  grid-template-columns: 1fr 1fr;
+}
+
+.mode-toggle {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .segmented button,
@@ -246,7 +253,11 @@ section {
 
 .mode-toggle {
   justify-self: center;
-  min-width: 164px;
+  min-width: 314px;
+}
+
+.mode-toggle button {
+  white-space: nowrap;
 }
 
 .mode-toggle button.active {

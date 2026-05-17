@@ -332,6 +332,12 @@ function stateExpression() {
     freeModelsVisible: document.getElementById("freeModelsRow") ? document.getElementById("freeModelsRow").style.display !== "none" : null,
     freeModelsChecked: document.getElementById("freeModelsOnly") ? document.getElementById("freeModelsOnly").checked : null,
     mode: document.getElementById("chatMode") ? document.getElementById("chatMode").value : "",
+    chatModeOptions: Array.from(document.querySelectorAll("#chatMode option")).map((option) => ({ value: option.value, text: option.textContent })),
+    chatModeButtons: Array.from(document.querySelectorAll("#chatModeTabs button")).map((button) => ({
+      value: button.getAttribute("data-chat-mode") || "",
+      text: button.textContent,
+      active: button.className.indexOf("active") >= 0
+    })),
     promptOptimizationChecked: document.getElementById("promptOptimization") ? document.getElementById("promptOptimization").checked : null,
     promptOptimizationLabel: document.querySelector(".prompt-toggle em") ? document.querySelector(".prompt-toggle em").textContent : "",
     workflowPresetValue: document.getElementById("workflowPresetSelect") ? document.getElementById("workflowPresetSelect").value : "",
@@ -1285,16 +1291,16 @@ async function smoke() {
       state.planRunStatus === "Safe typed-tool ready" &&
       state.planRunStatusClass.indexOf("read-only") >= 0 &&
       state.runTitle.indexOf("read-only") >= 0 &&
-      state.recoverLastPlanText === "РџРѕРґС…РІР°С‚РёС‚СЊ РїРѕСЃР»РµРґРЅРёР№ РїР»Р°РЅ РёР· С‡Р°С‚Р°" &&
+      state.recoverLastPlanText === "Подхватить последний план из чата" &&
       state.recoverLastPlanDisabled === true &&
-      state.dryRunText === "Dry run / РџСЂРѕРІРµСЂРёС‚СЊ" &&
+      state.dryRunText === "Dry run / Проверить" &&
       state.dryRunDisabled === false &&
-      state.runText === "Р’С‹РїРѕР»РЅРёС‚СЊ РїР»Р°РЅ" &&
+      state.runText === "Выполнить план" &&
       state.runDisabled === false &&
       state.inlinePlanActionCount >= 1 &&
-      state.inlineDryRunText === "Dry run / РџСЂРѕРІРµСЂРёС‚СЊ" &&
+      state.inlineDryRunText === "Dry run / Проверить" &&
       state.inlineDryRunDisabled === false &&
-      state.inlineRunPlanText === "Р’С‹РїРѕР»РЅРёС‚СЊ РїР»Р°РЅ" &&
+      state.inlineRunPlanText === "Выполнить план" &&
       state.inlineRunPlanDisabled === false
     ), WAIT_MS);
 
@@ -1303,7 +1309,7 @@ async function smoke() {
     await waitFor(send, "saved plan recoverable after reload", (state) => (
       state.transcript.indexOf("Plan review: ready") >= 0 &&
       state.planRunStatus === "No plan ready" &&
-      state.recoverLastPlanText === "РџРѕРґС…РІР°С‚РёС‚СЊ РїРѕСЃР»РµРґРЅРёР№ РїР»Р°РЅ РёР· С‡Р°С‚Р°" &&
+      state.recoverLastPlanText === "Подхватить последний план из чата" &&
       state.recoverLastPlanDisabled === false &&
       state.dryRunDisabled === true &&
       state.runDisabled === true &&
@@ -1447,6 +1453,51 @@ async function devRequestButtonSmoke() {
     if (historyBackup) {
       try {
         await evaluate(send, writeHistoryStorageExpression(historyBackup));
+        await reloadActivePage(send);
+      } catch (_restoreError) {}
+    }
+    ws.close();
+  }
+}
+
+async function modeToggleSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  let composerBackup = null;
+  try {
+    composerBackup = await evaluate(send, composerStateExpression());
+    await reloadActivePage(send);
+    const initial = await waitFor(send, "mode toggle buttons", (state) => (
+      state.chatModeButtons.length === 3 &&
+      state.chatModeButtons.some((button) => button.value === "chat" && button.text === "Chat") &&
+      state.chatModeButtons.some((button) => button.value === "plan" && button.text === "Agent") &&
+      state.chatModeButtons.some((button) => button.value === "hardcore" && button.text === "Agent Hardcore") &&
+      state.chatModeOptions.some((option) => option.value === "hardcore" && option.text === "Agent Hardcore")
+    ), 15000);
+
+    const clicked = await evaluate(send, clickSelectorExpression("#chatModeTabs [data-chat-mode='hardcore']"));
+    if (!clicked || !clicked.ok) throw new Error("Agent Hardcore mode tab was not clickable.");
+    const hardcore = await waitFor(send, "hardcore mode selected", (state) => (
+      state.mode === "hardcore" &&
+      state.chatModeButtons.some((button) => button.value === "hardcore" && button.active === true)
+    ), 10000);
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      initial: {
+        mode: initial.mode,
+        buttons: initial.chatModeButtons,
+        options: initial.chatModeOptions
+      },
+      hardcore: {
+        mode: hardcore.mode,
+        buttons: hardcore.chatModeButtons
+      }
+    }, null, 2));
+  } finally {
+    if (composerBackup) {
+      try {
+        await evaluate(send, writeComposerStateExpression(composerBackup));
         await reloadActivePage(send);
       } catch (_restoreError) {}
     }
@@ -1974,7 +2025,7 @@ async function brandingSmoke() {
   try {
     await reloadActivePage(send);
     const state = await waitFor(send, "AE Agent branding", (item) => (
-      item.title === "AE Agent 1.0.3" &&
+      item.title === "AE Agent 1.0.4" &&
       item.windowBarExists === false &&
       item.windowBarText === "" &&
       item.windowBarText.indexOf("AE GPT") < 0 &&
@@ -2946,6 +2997,10 @@ async function main() {
   }
   if (command === "dev-request-button-smoke") {
     await devRequestButtonSmoke();
+    return;
+  }
+  if (command === "mode-toggle-smoke") {
+    await modeToggleSmoke();
     return;
   }
   if (command === "plan-review-smoke") {
