@@ -2,7 +2,7 @@
 
 (function () {
   var APP_NAME = "AE Agent";
-  var APP_VERSION = "1.0.1";
+  var APP_VERSION = "1.0.2";
 
   var cs = new CSInterface();
   var appShellEl = document.getElementById("appShell");
@@ -86,6 +86,7 @@
   var agentDataVersion = 0;
   var lastPlanResult = null;
   var lastPlanRunResult = null;
+  var planRunInFlightMode = "";
   var inlinePlanActionRows = [];
   var lastPollErrorMessage = "";
   var setupStatusTimer = null;
@@ -1299,6 +1300,23 @@
     });
   }
 
+  function scrollChatTranscriptToBottom(targetEl) {
+    if (!chatTranscriptEl) return;
+
+    function scrollNow() {
+      chatTranscriptEl.scrollTop = chatTranscriptEl.scrollHeight;
+      if (targetEl && targetEl.scrollIntoView) {
+        try {
+          targetEl.scrollIntoView(false);
+        } catch (_scrollError) {}
+      }
+    }
+
+    scrollNow();
+    setTimeout(scrollNow, 0);
+    setTimeout(scrollNow, 80);
+  }
+
   function appendChatMessage(role, text, options) {
     var messageEl = document.createElement("div");
     messageEl.className = "chat-message " + role;
@@ -1314,7 +1332,7 @@
     messageEl.appendChild(textEl);
 
     chatTranscriptEl.appendChild(messageEl);
-    chatTranscriptEl.scrollTop = chatTranscriptEl.scrollHeight;
+    scrollChatTranscriptToBottom(messageEl);
     recordTranscriptMessage(role, text, options);
   }
 
@@ -1331,8 +1349,8 @@
 
     var dryRunButton = document.createElement("button");
     dryRunButton.className = "inline-dry-run-button";
-    dryRunButton.textContent = "Проверить";
-    dryRunButton.title = "Проверить план без изменений в проекте After Effects.";
+    dryRunButton.textContent = "Dry run / Проверить";
+    dryRunButton.title = "Dry run: проверить план без изменений в проекте After Effects.";
     row.appendChild(dryRunButton);
 
     var runButton = document.createElement("button");
@@ -1398,7 +1416,7 @@
 
     messageEl.appendChild(bubbleEl);
     chatTranscriptEl.appendChild(messageEl);
-    chatTranscriptEl.scrollTop = chatTranscriptEl.scrollHeight;
+    scrollChatTranscriptToBottom(messageEl);
     chatWorkingEl = messageEl;
   }
 
@@ -1808,6 +1826,9 @@
       var dryDisabled = chatInFlight || !isCurrentPlan;
       var runDisabled = chatInFlight || !isCurrentPlan || !validation || !validationOk || blocksRun;
 
+      entry.dryRunButton.textContent = chatInFlight && planRunInFlightMode === "dry-run" && isCurrentPlan ? "Dry run..." : "Dry run / Проверить";
+      entry.dryRunButton.title = "Dry run: проверить план без изменений в проекте After Effects.";
+      entry.runButton.textContent = chatInFlight && planRunInFlightMode === "run" && isCurrentPlan ? "Выполняю..." : "Выполнить план";
       entry.dryRunButton.disabled = dryDisabled;
       entry.runButton.disabled = runDisabled;
 
@@ -1843,6 +1864,9 @@
       if (!validationOk) return "Review issues before running";
       return mutatingCount > 0 ? "Dry run first; Run uses protection" : "Read-only plan ready";
     }
+    if (classification.blocksRun) {
+      return classification.allowsDryRun === false ? "Plan blocked" : "Dry run available; Run blocked";
+    }
     if (classification.category === "safe typed-tool") return "Safe typed-tool ready";
     if (classification.category === "risky") return "Risky plan; dry run first";
     if (classification.category === "needs clarification") return "Clarification needed";
@@ -1862,11 +1886,11 @@
     var classification = planClassification(validation);
     var blocksRun = classificationBlocksRun(validation);
     if (dryRunPlanButton) {
-      dryRunPlanButton.textContent = "Проверить";
-      dryRunPlanButton.title = hasPlan ? "Check this plan without changing the AE project." : "Create an Agent plan first.";
+      dryRunPlanButton.textContent = chatInFlight && planRunInFlightMode === "dry-run" ? "Dry run..." : "Dry run / Проверить";
+      dryRunPlanButton.title = hasPlan ? "Dry run: check this plan without changing the AE project." : "Create an Agent plan first.";
     }
     if (runPlanButton) {
-      runPlanButton.textContent = "Выполнить план";
+      runPlanButton.textContent = chatInFlight && planRunInFlightMode === "run" ? "Выполняю..." : "Выполнить план";
       if (!hasPlan) {
         runPlanButton.title = "Create and validate an Agent plan first.";
       } else if (blocksRun) {
@@ -1881,7 +1905,13 @@
     }
 
     if (chatInFlight) {
-      setPlanRunStatus("Working...", "");
+      if (planRunInFlightMode === "dry-run") {
+        setPlanRunStatus("Dry run is running...", "");
+      } else if (planRunInFlightMode === "run") {
+        setPlanRunStatus("Run is executing...", "");
+      } else {
+        setPlanRunStatus("Working...", "");
+      }
     } else if (!hasPlan) {
       setPlanRunStatus("No plan ready", "");
     } else if (!validation) {
@@ -2417,6 +2447,15 @@
     window.__aeAgentLastPlanRunResult = lastPlanRunResult;
   }
 
+  function showPlanRunFinishedStatus(dryRun, run, failed) {
+    var label = dryRun ? "Dry run" : "Run";
+    var ok = run && run.ok && !failed;
+    var validation = lastPlanResult && lastPlanResult.planValidation ? lastPlanResult.planValidation : null;
+    var mutatingCount = validation ? Number(validation.mutatingCount || 0) : 0;
+    var tone = ok ? (mutatingCount > 0 ? "mutating" : "read-only") : "blocked";
+    setPlanRunStatus(label + (ok ? " complete; result added below" : " needs review; see result below"), tone);
+  }
+
   function formatSemanticVerification(semantic) {
     if (!semantic || semantic.status === "not_applicable" || semantic.status === "not_run") return "";
     var label = semantic.status === "passed" ? "passed" : "needs review";
@@ -2513,8 +2552,9 @@
     var allowMutations = !dryRun && mutatingCount > 0;
     var autoEditSession = allowMutations;
 
+    planRunInFlightMode = dryRun ? "dry-run" : "run";
     rememberPlanRun(null);
-    setChatBusy(true, dryRun ? "Checking" : "Running");
+    setChatBusy(true, dryRun ? "Dry run" : "Running");
     request("POST", "/agents/plan/run", {
       plan: lastPlanResult.plan,
       requestId: lastPlanResult.requestId,
@@ -2524,22 +2564,26 @@
       autoEditSession: autoEditSession,
       timeoutMs: 120000
     }, function (error, response) {
+      planRunInFlightMode = "";
       setChatBusy(false);
       if (error) {
         var errorRun = error.body && error.body.run ? error.body.run : null;
         if (errorRun) {
           rememberPlanRun(errorRun);
           appendChatMessage("assistant", formatPlanRun(errorRun));
+          showPlanRunFinishedStatus(dryRun, errorRun, true);
           log("Plan run " + (errorRun.id || "") + " needs review");
           return;
         }
         appendChatMessage("error", error.message);
+        showPlanRunFinishedStatus(dryRun, null, true);
         log("Plan run failed: " + error.message);
         return;
       }
       var run = response && response.run ? response.run : null;
       rememberPlanRun(run);
       appendChatMessage("assistant", formatPlanRun(run));
+      showPlanRunFinishedStatus(dryRun, run, false);
       if (run && run.id) log("Plan run " + run.id + " finished");
     });
   }

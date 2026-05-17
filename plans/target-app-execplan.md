@@ -2,7 +2,7 @@
 
 ## Progress
 
-- [x] Stable baseline: AE Agent 1.0.1 CEP panel, provider setup, Agent planning, plan validation, protected execution, local history, diagnostics, and installed-panel smoke coverage.
+- [x] Stable baseline: AE Agent 1.0.2 CEP panel, provider setup, Agent planning, plan validation, protected execution, local history, diagnostics, and installed-panel smoke coverage.
 - [x] Milestone 38: Repo cleanup and roadmap reset.
 - [x] Milestone 39: Agent planning quality.
 - [x] Milestone 40: Timeline and layer tools.
@@ -50,15 +50,16 @@
 - [x] Milestone 80: Reliability validation.
 - [x] Milestone 81: Inline Agent plan execution controls.
 - [x] Milestone 82: Восстановление последнего плана из чата.
+- [x] Milestone 83: Dry run visibility and stale workspace guard.
 
 ## Current Stable Baseline
 
 - The active repository is `C:\Users\Ant\Documents\Codex\AE_agent`.
-- The native CEP title/menu format is `AE Agent 1.0.1`.
+- The native CEP title/menu format is `AE Agent 1.0.2`.
 - The panel is a compact dark CEP client for the local bridge daemon.
 - Provider paths are separate: OpenAI API, OpenAI CLI, Gemini, Claude, OpenRouter, and Local/Ollama.
 - Agent mode drafts structured MCP plans, validates tool names and required fields, dry-runs plans, and executes only through explicit mutation gates.
-- The latest valid Agent plan exposes inline `Проверить` and `Выполнить план` controls inside the chat message, while keeping the same validated backend runner and project-change gates.
+- The latest valid Agent plan exposes inline `Dry run / Проверить` and `Выполнить план` controls inside the chat message, while keeping the same validated backend runner and project-change gates.
 - Project-changing tools use idempotency, optional checkpoints, edit-session protection, and post-mutation verification.
 - Raw ExtendScript remains available as an escape hatch, but normal product workflows should use typed bridge tools.
 
@@ -382,6 +383,14 @@
 - Обновить live CEP smoke так, чтобы он генерировал план, перезагружал панель, восстанавливал план кнопкой и выполнял read-only run через существующий runner.
 - Поднять patch-версию панели/bridge/manifest до `1.0.1`.
 
+### Milestone 83: Dry run visibility and stale workspace guard
+
+- Сделать dry-run действие явно видимым как `Dry run / Проверить` в persistent и inline controls.
+- Добавить понятный in-flight/completion status для dry-run/run, чтобы клики не выглядели как отсутствие реакции.
+- Усилить автоскролл transcript после working indicator и новых run results.
+- Пометить старую папку `C:\Users\Ant\Documents\New project 2` как неактивную копию, чтобы будущие агенты не читали устаревший план до Milestone 37.
+- Поднять patch-версию панели/bridge/manifest до `1.0.2`.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -467,6 +476,9 @@
 - 2026-05-17: Inline `Выполнить план` в Agent-чате является UX-обвязкой над существующим `/agents/plan/run`; она не обходит validation, classification blocks, dry-run, `confirm:true`, `allowMutations`, checkpoint/edit-session protection или semantic verification.
 - 2026-05-17: `Подхватить последний план из чата` восстанавливает только сохраненный structured `planResult`; старые текстовые планы без metadata перепланируются через `/agents/plan` и не исполняются напрямую.
 - 2026-05-17: Любое изменение кода панели должно поднимать patch-часть версии после второй точки; текущая панель, manifest, daemon и adapter обновлены до `1.0.1`.
+- 2026-05-17: Старый каталог `C:\Users\Ant\Documents\New project 2` является stale copy после переноса; его `AGENTS.md` и план теперь явно направляют в активный репозиторий `C:\Users\Ant\Documents\Codex\AE_agent`.
+- 2026-05-17: Dry-run действие должно быть подписано явно как `Dry run / Проверить`; статус строки плана после клика сообщает о запуске и о том, что результат добавлен ниже.
+- 2026-05-17: Текущее изменение кода панели подняло panel, manifest, daemon и adapter до `1.0.2`.
 
 ## Validation
 
@@ -1401,3 +1413,36 @@
   - Passed live `node scripts\cep-panel-cdp-smoke.js branding-smoke`; page and document title both reported `AE Agent 1.0.1`.
   - Did not click the recovery button on the user's restored text-only plan because the selected provider was OpenAI CLI and that would send the plan text through an external/subscription-backed planner request.
   - Did not run external-provider checks, OpenAI CLI planner scenario smokes, ChatGPT connector/Tunnel checks, live OpenRouter calls or mutating live AE checks because this milestone only changes panel recovery UX and those paths remain explicit-approval-gated.
+- Milestone 83:
+  - Root cause for the milestone confusion: the active Codex workspace still opened `C:\Users\Ant\Documents\New project 2`, an old relocated copy whose plan stopped at Milestone 37.
+  - Added stale-copy warnings to `C:\Users\Ant\Documents\New project 2\AGENTS.md` and `C:\Users\Ant\Documents\New project 2\plans\target-app-execplan.md`, pointing future work to `C:\Users\Ant\Documents\Codex\AE_agent`.
+  - Renamed persistent and inline dry-run controls to `Dry run / Проверить`.
+  - Added plan-run in-flight labels (`Dry run...`, `Dry run is running...`) and completion status (`result added below`).
+  - Changed blocked risky plan status from the ambiguous `Risky plan; dry run first` to `Dry run available; Run blocked` when classification blocks normal Run.
+  - Hardened transcript autoscroll after working indicators and appended run results.
+  - Bumped CEP panel, manifest, bridge daemon, MCP adapter, install note and smoke expectations to `1.0.2`.
+  - Synchronized updated `index.html`, `panel.js`, `style.css` and `CSXS\manifest.xml` into the installed CEP extension with `node scripts\cep-sync-health.js --sync --check`; the first sandboxed attempt could not read/write the installed extension, the approved run copied 4 files and reported status `ok`.
+  - Restarted the live bridge daemon on `127.0.0.1:3456` from the current repo; live `/health` reported `version:"1.0.2"` and the CEP panel connected.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check` for all touched JavaScript files using the bundled Codex runtime Node executable.
+  - Passed XML parsing for `cep-panel\CSXS\manifest.xml`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`.
+  - Passed `node scripts\project-intent-memory-smoke.js`.
+  - Passed `node scripts\plan-classification-smoke.js`.
+  - Passed `node scripts\plan-repair-smoke.js`.
+  - Passed `node scripts\semantic-verification-smoke.js`.
+  - Passed `node scripts\reliability-validation-suite-smoke.js`.
+  - Passed `node scripts\chatgpt-connector-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js smoke`; the installed panel showed `AE Agent 1.0.2`, generated a read-only plan, showed `Dry run / Проверить`, recovered the plan after reload, dry-ran it and ran it read-only.
+  - Passed follow-up live `node scripts\cep-panel-cdp-smoke.js inspect`; user's prior chat/provider state was restored and the panel remained connected to bridge `1.0.2`.
+  - Did not run external-provider checks, OpenAI CLI planner scenario smokes, ChatGPT connector/Tunnel checks, live OpenRouter calls or mutating live AE checks because this milestone only changes panel dry-run UX and stale workspace guidance.

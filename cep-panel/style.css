@@ -703,7 +703,9 @@ button:disabled {
 }
 
 .plan-actions button {
-  min-width: 88px;
+  line-height: 1.2;
+  min-width: 112px;
+  white-space: normal;
 }
 
 .plan-actions .recover-plan-button {
@@ -772,8 +774,14 @@ button:disabled {
 
 .inline-plan-actions button {
   min-height: 28px;
-  min-width: 88px;
+  min-width: 112px;
   padding: 5px 9px;
+  white-space: normal;
+}
+
+#dryRunPlanButton,
+.inline-dry-run-button {
+  min-width: 132px;
 }
 
 .inline-run-plan-button {

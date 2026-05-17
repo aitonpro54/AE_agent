@@ -348,7 +348,9 @@ function stateExpression() {
     recoverLastPlanText: document.getElementById("recoverLastPlanButton") ? document.getElementById("recoverLastPlanButton").textContent : "",
     recoverLastPlanTitle: document.getElementById("recoverLastPlanButton") ? document.getElementById("recoverLastPlanButton").title : "",
     recoverLastPlanDisabled: document.getElementById("recoverLastPlanButton") ? document.getElementById("recoverLastPlanButton").disabled : null,
+    dryRunText: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").textContent : "",
     dryRunTitle: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").title : "",
+    runText: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").textContent : "",
     runTitle: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").title : "",
     dryRunDisabled: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").disabled : null,
     runDisabled: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").disabled : null,
@@ -1202,10 +1204,12 @@ async function smoke() {
       state.runTitle.indexOf("read-only") >= 0 &&
       state.recoverLastPlanText === "Подхватить последний план из чата" &&
       state.recoverLastPlanDisabled === true &&
+      state.dryRunText === "Dry run / Проверить" &&
       state.dryRunDisabled === false &&
+      state.runText === "Выполнить план" &&
       state.runDisabled === false &&
       state.inlinePlanActionCount >= 1 &&
-      state.inlineDryRunText === "Проверить" &&
+      state.inlineDryRunText === "Dry run / Проверить" &&
       state.inlineDryRunDisabled === false &&
       state.inlineRunPlanText === "Выполнить план" &&
       state.inlineRunPlanDisabled === false
@@ -1815,7 +1819,7 @@ async function brandingSmoke() {
   try {
     await reloadActivePage(send);
     const state = await waitFor(send, "AE Agent branding", (item) => (
-      item.title === "AE Agent 1.0.1" &&
+      item.title === "AE Agent 1.0.2" &&
       item.windowBarExists === false &&
       item.windowBarText === "" &&
       item.windowBarText.indexOf("AE GPT") < 0 &&

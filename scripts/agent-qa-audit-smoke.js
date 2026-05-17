@@ -51,7 +51,7 @@ function smoke() {
     generatedAt: "2026-05-15T00:00:00.000Z",
     bridgeUrl: "http://127.0.0.1:3456",
     prefixes: ["Codex QA 1.2", "Codex Test Safe Run"],
-    health: { ok: true, version: "1.0.1", panelConnected: true },
+    health: { ok: true, version: "1.0.2", panelConnected: true },
     projectInfo: { numItems: 12, activeItemName: "Main" },
     projectSearchResults: [
       {

@@ -1,5 +1,21 @@
 # AE Agent Releases
 
+## v1.0.2-dry-run-visibility - 2026-05-17
+
+Patch release for making Agent dry-run actions explicit and visibly responsive.
+
+Changed:
+
+- Renamed the persistent and inline dry-run action to `Dry run / Проверить`.
+- Added clearer in-flight and completion status for plan dry-runs/runs.
+- Hardened transcript scrolling after working indicators and new run results are appended.
+- CEP panel, manifest, bridge daemon, adapter, install note, and smoke expectations now report `1.0.2`.
+
+Validation:
+
+- Passed local smoke suite and live read-only CEP smoke with reload recovery.
+- Installed CEP panel and live bridge both reported `1.0.2`.
+
 ## v1.0.1-chat-plan-recovery - 2026-05-17
 
 Patch release for recovering Agent plans after CEP reload.

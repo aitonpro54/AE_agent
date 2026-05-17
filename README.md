@@ -214,7 +214,7 @@ PlayerDebugMode = 1
 Then restart After Effects and open:
 
 ```text
-Window > Extensions > AE Agent 1.0.1
+Window > Extensions > AE Agent 1.0.2
 ```
 
 For the local development install script:
@@ -442,7 +442,7 @@ Remove-Item Env:MCP_CALL_ARGS_JSON
 node .\scripts\mcp-call-tool.js get_ai_agent_log
 ```
 
-The After Effects panel also includes an AE Agent provider area and Chat/Agent composer. Provider tabs expose Gemini, OpenAI, Claude, OpenRouter, and Local/Ollama in the main UI. Gemini, Claude, and OpenRouter use provider API keys; OpenAI API mode uses an OpenAI API key; OpenAI CLI mode uses the panel's `Sign in with ChatGPT` action plus `codex exec` for ChatGPT/Codex subscription-backed calls. `Agent` mode asks the selected model for a structured MCP step draft, gives the model a compact catalog of real bridge tools and required fields, repairs malformed JSON once when needed, and validates the plan against bridge tools, required args, mutating step counts, and safety fields. Russian/Cyrillic requests are treated as normal user input. The panel can dry-run the last plan. Real plan execution is a separate confirmed action; mutating runs require explicit mutation permission, idempotency fields, and checkpoint/edit-session protection. From v0.25, the panel sends `autoEditSession:true` for confirmed mutating runs, so the backend creates a protected edit session/checkpoint before the first mutation when the project has been saved; unsaved projects are blocked before changing AE. From v0.26, the Agent area shows provider/model/readiness details, can re-check the selected model on demand, keeps local multi-chat history with `New Chat` and history switching, and supports a Prompt Optimization toggle. From v1.0.1, the visible product title is `AE Agent 1.0.1` in the native CEP title/menu only; duplicate in-panel product title rows remain removed.
+The After Effects panel also includes an AE Agent provider area and Chat/Agent composer. Provider tabs expose Gemini, OpenAI, Claude, OpenRouter, and Local/Ollama in the main UI. Gemini, Claude, and OpenRouter use provider API keys; OpenAI API mode uses an OpenAI API key; OpenAI CLI mode uses the panel's `Sign in with ChatGPT` action plus `codex exec` for ChatGPT/Codex subscription-backed calls. `Agent` mode asks the selected model for a structured MCP step draft, gives the model a compact catalog of real bridge tools and required fields, repairs malformed JSON once when needed, and validates the plan against bridge tools, required args, mutating step counts, and safety fields. Russian/Cyrillic requests are treated as normal user input. The panel can dry-run the last plan. Real plan execution is a separate confirmed action; mutating runs require explicit mutation permission, idempotency fields, and checkpoint/edit-session protection. From v0.25, the panel sends `autoEditSession:true` for confirmed mutating runs, so the backend creates a protected edit session/checkpoint before the first mutation when the project has been saved; unsaved projects are blocked before changing AE. From v0.26, the Agent area shows provider/model/readiness details, can re-check the selected model on demand, keeps local multi-chat history with `New Chat` and history switching, and supports a Prompt Optimization toggle. From v1.0.2, the visible product title is `AE Agent 1.0.2` in the native CEP title/menu only; duplicate in-panel product title rows remain removed.
 
 Useful project inspection calls:
 
