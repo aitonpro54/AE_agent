@@ -2,7 +2,7 @@
 
 ## Progress
 
-- [x] Stable baseline: AE Agent 1.0.5 CEP panel, provider setup, Agent planning, Agent Hardcore planning, plan validation, protected execution, local history, diagnostics, and installed-panel smoke coverage.
+- [x] Stable baseline: AE Agent 1.0.6 CEP panel, provider setup, Agent planning, Agent Hardcore planning, plan validation, protected execution, local history, diagnostics, and installed-panel smoke coverage.
 - [x] Milestone 38: Repo cleanup and roadmap reset.
 - [x] Milestone 39: Agent planning quality.
 - [x] Milestone 40: Timeline and layer tools.
@@ -56,11 +56,12 @@
 - [x] Milestone 86: Raw ExtendScript dry-run gate unlocks Run plan.
 - [x] Milestone 87: Dev request manual Codex chat handoff.
 - [x] Milestone 88: Deep duplicate selected precomp typed tool.
+- [x] Milestone 89: Selected precomp layer runtime binding.
 
 ## Current Stable Baseline
 
 - The active repository is `C:\Users\Ant\Documents\Codex\AE_agent`.
-- The native CEP title/menu format is `AE Agent 1.0.5`.
+- The native CEP title/menu format is `AE Agent 1.0.6`.
 - The panel is a compact dark CEP client for the local bridge daemon.
 - Provider paths are separate: OpenAI API, OpenAI CLI, Gemini, Claude, OpenRouter, and Local/Ollama.
 - Agent mode drafts structured MCP plans, validates tool names and required fields, dry-runs plans, and executes only through explicit mutation gates.
@@ -441,6 +442,13 @@
 - Keep the tool inside the existing mutating-tool safety model: idempotency, optional checkpoint labels, protected plan execution, and post-mutation verification metadata.
 - Add smoke coverage for tool exposure, queued AE command generation, typed plan validation, and typed dry-run without raw ExtendScript.
 
+### Milestone 89: Selected precomp layer runtime binding
+
+- Add runtime binding aliases for `{{selectedPrecompLayerIndex}}`, `{{selectedPrecompLayerIndices}}`, and related source/precomp layer names.
+- Resolve those bindings only from selected layers whose source is a comp, so layer-level verification steps can inspect the selected precomp layer before running `deep_duplicate_precomp_sources`.
+- Update Agent planner guidance for deep duplicate requests to use `deep_duplicate_precomp_sources` with `layerIndex: "{{selectedPrecompLayerIndex}}"` and `sourceCompItemIndex: "{{selectedPrecompItemIndex}}"`, not `run_extendscript`.
+- Extend smoke coverage for named runtime bindings and bump panel/bridge/manifest to `1.0.6`.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -541,6 +549,7 @@
 - 2026-05-18: ChatGPT JSX Lab real candidate runs must follow the same bridge contract: preflight dry-run first, then real `/agents/plan/run` with `allowRawExtendscript:true` and the returned `rawExtendscriptDryRunId`.
 - 2026-05-18: `Prepare typed tool request` creates only the local handoff bundle in v1. It does not launch Codex App or imply that a new Codex App chat was created; chat creation stays manual from `start-prompt.md` until a stable local API exists.
 - 2026-05-18: The selected-precomp deep duplicate workflow is now a typed mutating bridge tool (`deep_duplicate_precomp_sources`) rather than a raw ExtendScript plan step; it still requires the normal Agent mutation gates for real execution.
+- 2026-05-18: `{{selectedPrecompLayerIndex}}` resolves to the selected layer whose source is a comp, while `{{selectedPrecompItemIndex}}` resolves to that layer's source comp item. Deep duplicate plans should use both bindings with `deep_duplicate_precomp_sources`.
 
 ## Validation
 
@@ -1684,3 +1693,16 @@
   - Passed live `node scripts\cep-panel-cdp-smoke.js connector-status-smoke`.
   - Passed `node scripts\provider-key-save-smoke.js`.
   - Did not run full live Agent planner smoke or mutating live AE validation because this milestone changes a backend typed tool and the full planner smoke would send a provider request; the typed tool path was validated through backend plan validation/dry-run and queued-command smoke.
+- Milestone 89:
+  - Fixed Run plan failures where `get_layer_details` used `layerIndex: "{{selectedPrecompLayerIndex}}"` after selected-precomp inspection.
+  - Added selected-precomp layer runtime binding aliases that resolve only from selected layers with comp sources.
+  - Added clearer unresolved-binding diagnostics so a missing selected precomp layer is reported explicitly instead of only `layerIndex`.
+  - Strengthened Agent planner guidance so deep duplicate plans use `deep_duplicate_precomp_sources` with `{{selectedPrecompLayerIndex}}` and `{{selectedPrecompItemIndex}}`.
+  - Bumped CEP panel, manifest, bridge daemon, MCP adapter, install note and smoke expectations to `1.0.6`.
+  - Synced the installed CEP panel to `1.0.6`, restarted the live bridge daemon on `127.0.0.1:3456`, and confirmed `deep_duplicate_precomp_sources` is exposed in `/tools`.
+  - Live read-only validation before the AE selection changed completed `get_active_comp` then `get_layer_details`; `{{selectedPrecompLayerIndex}}` resolved to layer `2` (`Pre-comp 4`) without mutation. After restart, the active comp reported `selectedLayers: []`, and the new diagnostic correctly reported that no selected precomp layer was found.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check` for touched JavaScript files.
+  - Passed the configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
+  - Passed `node scripts\smoke-test.js`; output included six completed named-binding steps, explicit unresolved selected-precomp-layer diagnostics, and `deepDuplicatePlan.rawExtendscriptStepCount:0`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.

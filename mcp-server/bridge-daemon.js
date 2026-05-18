@@ -18,7 +18,7 @@ const {
 } = require("./project-intent-memory");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "1.0.5";
+const SERVER_VERSION = "1.0.6";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -2454,6 +2454,24 @@ function selectedLayerIndicesFromPayload(payload) {
   return undefined;
 }
 
+function selectedPrecompLayerIndicesFromPayload(payload) {
+  if (!payload || typeof payload !== "object") return undefined;
+  const selectedLayers = firstPresent([
+    payload.selectedLayers,
+    valueAtPath(payload, "comp.selectedLayers"),
+    valueAtPath(payload, "activeComp.selectedLayers")
+  ]);
+  if (!Array.isArray(selectedLayers)) return undefined;
+
+  const indices = [];
+  for (const layer of selectedLayers) {
+    if (!sourceCompRefFromLayer(layer)) continue;
+    const index = positiveIntegerBindingValue(layer && (layer.index || layer.layerIndex));
+    if (index) indices.push(index);
+  }
+  return uniquePositiveIntegerList(indices);
+}
+
 function isCompIndexBindingName(lower) {
   return [
     "compitemindex",
@@ -2499,6 +2517,28 @@ function isLayerIndexBindingName(lower) {
   return [
     "layerindex",
     "selectedlayerindex"
+  ].includes(lower);
+}
+
+function isSelectedPrecompLayerIndexBindingName(lower) {
+  return [
+    "selectedprecomplayerindex",
+    "selectedsourcecomplayerindex",
+    "selectedsourcelayerindex",
+    "precomplayerindex"
+  ].includes(lower);
+}
+
+function isSelectedPrecompLayerIndicesBindingName(lower) {
+  return [
+    "selectedprecomplayerindices",
+    "selectedprecomplayerindexes",
+    "selectedsourcecomplayerindices",
+    "selectedsourcecomplayerindexes",
+    "selectedsourcelayerindices",
+    "selectedsourcelayerindexes",
+    "precomplayerindices",
+    "precomplayerindexes"
   ].includes(lower);
 }
 
@@ -2591,6 +2631,14 @@ function resolveNamedPlanBinding(name, executedSteps, targetField, step) {
   }
   if (lower === "selectedlayerindex") {
     const indices = findBindingValueInExecutedSteps(executedSteps, selectedLayerIndicesFromPayload);
+    return Array.isArray(indices) ? indices[0] : indices;
+  }
+  if (isSelectedPrecompLayerIndicesBindingName(lower)) {
+    const value = findBindingValueInExecutedSteps(executedSteps, selectedPrecompLayerIndicesFromPayload);
+    return fitBindingValueToTargetField(value, targetField);
+  }
+  if (isSelectedPrecompLayerIndexBindingName(lower)) {
+    const indices = findBindingValueInExecutedSteps(executedSteps, selectedPrecompLayerIndicesFromPayload);
     return Array.isArray(indices) ? indices[0] : indices;
   }
   if (isSelectedSourceCompIndicesBindingName(lower)) {
@@ -2712,6 +2760,31 @@ function missingPlanBindingValue(value) {
   return value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0);
 }
 
+function runtimeBindingResolutionHint(expression, field) {
+  const template = /^\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}$/.exec(String(expression || "").trim());
+  if (!template) return String(field || "");
+
+  const name = template[1].trim();
+  const lower = name.toLowerCase();
+  if (isSelectedPrecompLayerIndexBindingName(lower) || isSelectedPrecompLayerIndicesBindingName(lower)) {
+    return `${field} (${name}: no selected precomp layer was found in prior inspection results)`;
+  }
+  if (isSelectedSourceCompIndexBindingName(lower) || isSelectedSourceCompIndicesBindingName(lower)) {
+    return `${field} (${name}: no selected precomp source comp was found in prior inspection results)`;
+  }
+  if (isSelectedLayerIndexBindingName(lower) || isSelectedLayerIndicesBindingName(lower)) {
+    return `${field} (${name}: no selected layer was found in prior inspection results)`;
+  }
+  return `${field} (${name})`;
+}
+
+function formatUnresolvedRuntimeBindings(bound) {
+  const details = bound && Array.isArray(bound.unresolvedDetails) && bound.unresolvedDetails.length
+    ? bound.unresolvedDetails
+    : bound.unresolved;
+  return (details || []).join(", ");
+}
+
 function applyPlanRuntimeBindings(step, executedSteps) {
   const tool = toolByName(step.tool);
   const args = normalizePlanArgAliases(step.safeArgs || {}, tool);
@@ -2720,11 +2793,13 @@ function applyPlanRuntimeBindings(step, executedSteps) {
     ? tool.inputSchema.properties
     : null;
   const unresolved = [];
+  const unresolvedDetails = [];
   for (const field of Object.keys(args)) {
     if (!isPlanBindingExpression(args[field])) continue;
     const value = resolvePlanBinding(args[field], executedSteps, field, step);
     if (missingPlanBindingValue(value)) {
       unresolved.push(field);
+      unresolvedDetails.push(runtimeBindingResolutionHint(args[field], field));
     } else {
       args[field] = value;
     }
@@ -2740,11 +2815,12 @@ function applyPlanRuntimeBindings(step, executedSteps) {
     const value = resolvePlanBinding(bindings[field], executedSteps, canonicalField, step);
     if (missingPlanBindingValue(value)) {
       unresolved.push(canonicalField);
+      unresolvedDetails.push(runtimeBindingResolutionHint(bindings[field], canonicalField));
     } else {
       args[canonicalField] = value;
     }
   }
-  return { args, unresolved };
+  return { args, unresolved, unresolvedDetails };
 }
 
 const PLANNING_TOOL_NAMES = [
@@ -3647,13 +3723,13 @@ async function runValidatedAgentPlan(options) {
     if (bound.unresolved.length) {
       if (dryRun) {
         item.status = "ready";
-        item.reason = `Runtime bindings will resolve during run: ${bound.unresolved.join(", ")}`;
+        item.reason = `Runtime bindings will resolve during run: ${formatUnresolvedRuntimeBindings(bound)}`;
         item.unresolved = bound.unresolved;
         run.steps.push(item);
         continue;
       }
       item.status = "blocked";
-      item.reason = `Unresolved runtime bindings: ${bound.unresolved.join(", ")}`;
+      item.reason = `Unresolved runtime bindings: ${formatUnresolvedRuntimeBindings(bound)}`;
       item.unresolved = bound.unresolved;
       run.skippedCount += 1;
       run.steps.push(item);
@@ -3770,7 +3846,8 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For render queue setup, use add_comp_to_render_queue, set_render_queue_output, and get_render_queue_status. Do not start a render.",
     "For requests about selected layers, inspect with get_active_comp or get_selected_layers first. A later layerIndex field may use {{selectedLayerIndices}} to target the selected layers.",
     "For later steps that need the active comp, compItemIndex may use {{compItemIndex}} after get_active_comp, get_comp_details, or get_selected_layers.",
-    "For requests about selected precomp/source comp(s), inspect with get_active_comp or get_selected_layers first, then use {{selectedPrecompItemIndex}} for one source comp or {{selectedPrecompItemIndices}} in itemIndices for rename_project_items.",
+    "For requests about selected precomp/source comp(s), inspect with get_active_comp or get_selected_layers first, then use {{selectedPrecompLayerIndex}} for the selected precomp layer, {{selectedPrecompItemIndex}} for one source comp, or {{selectedPrecompItemIndices}} in itemIndices for rename_project_items.",
+    "For deep duplicate of a selected precomp and its sources, prefer one deep_duplicate_precomp_sources step with layerIndex {{selectedPrecompLayerIndex}} and sourceCompItemIndex {{selectedPrecompItemIndex}} after inspection; do not use run_extendscript.",
     "Use canonical schema field names such as itemIndices and layerIndices; do not use itemIndexes or layerIndexes.",
     "If a later step depends on a previous tool result, set dependsOnStep and resultBindings instead of inventing indices.",
     "If solution hints mention a typed-tool-candidate, prefer recommending a typed bridge tool implementation over repeating a workaround.",

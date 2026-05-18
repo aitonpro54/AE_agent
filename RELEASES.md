@@ -1,5 +1,21 @@
 # AE Agent Releases
 
+## v1.0.6-selected-precomp-layer-binding - 2026-05-18
+
+Patch release for fixing Run plan failures in selected-precomp deep duplicate workflows.
+
+Changed:
+
+- Added runtime bindings for `{{selectedPrecompLayerIndex}}` and related selected-precomp layer aliases.
+- Added clearer Run diagnostics when selected-precomp bindings cannot resolve because the prior inspection found no selected precomp layer.
+- Strengthened Agent planner guidance to use `deep_duplicate_precomp_sources` with `{{selectedPrecompLayerIndex}}` and `{{selectedPrecompItemIndex}}` for selected precomp deep duplication.
+- CEP panel, manifest, bridge daemon, adapter, install note, and smoke expectations now report `1.0.6`.
+
+Validation:
+
+- Local smoke coverage now verifies that `{{selectedPrecompLayerIndex}}` resolves during execution.
+- Live bridge health confirms `1.0.6`; read-only validation resolved the selected precomp layer before the AE selection changed, and later reported the no-selection case with the new diagnostic.
+
 ## v1.0.5-dev-request-manual-chat - 2026-05-18
 
 Patch release for making typed-tool dev escalation honest and quiet from the AE panel.

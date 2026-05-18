@@ -60,8 +60,8 @@ function solution(overrides = {}) {
     },
     testedAeContext: {
       aeVersion: null,
-      panelVersion: "AE Agent 1.0.5",
-      bridgeVersion: "1.0.5",
+      panelVersion: "AE Agent 1.0.6",
+      bridgeVersion: "1.0.6",
       projectKind: "synthetic",
       notes: []
     },

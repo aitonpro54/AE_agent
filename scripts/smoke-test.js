@@ -746,6 +746,39 @@ async function main() {
       ]
     }
   });
+  const unresolvedSelectedPrecompLayerRun = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/plan/run",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    dryRun: false,
+    confirm: true,
+    requestId: "smoke-unresolved-selected-precomp-layer-binding",
+    plan: {
+      summary: "Smoke-test selected precomp layer binding diagnostics.",
+      risk: "low",
+      requiresCheckpoint: false,
+      steps: [
+        {
+          title: "Read bridge status",
+          tool: "get_bridge_status",
+          args: {}
+        },
+        {
+          title: "Read selected precomp layer without selection context",
+          tool: "get_layer_details",
+          args: {
+            layerIndex: "{{selectedPrecompLayerIndex}}"
+          }
+        }
+      ]
+    }
+  });
   const namedCompBindingRunPromise = requestJsonWithOptions({
     hostname: "127.0.0.1",
     port,
@@ -774,6 +807,13 @@ async function main() {
           tool: "list_layers",
           args: {
             compItemIndex: "{{compItemIndex}}"
+          }
+        },
+        {
+          title: "Read selected precomp layer through layer binding",
+          tool: "get_layer_details",
+          args: {
+            layerIndex: "{{selectedPrecompLayerIndex}}"
           }
         },
         {
@@ -865,6 +905,38 @@ async function main() {
       result: {
         comp: { itemIndex: 1, name: "Smoke Active Comp", numLayers: 1 },
         layers: [{ index: 1, name: "Smoke Precomp Layer" }]
+      }
+    })
+  });
+  const selectedPrecompLayerBindingCommand = await waitForPendingCommand(port, token, 5000);
+  if (!selectedPrecompLayerBindingCommand.body.command || selectedPrecompLayerBindingCommand.body.command.script.indexOf("comp.layer(1)") < 0) {
+    throw new Error("Expected {{selectedPrecompLayerIndex}} binding to resolve to selected layer index 1.");
+  }
+  await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/bridge/result",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    id: selectedPrecompLayerBindingCommand.body.command.id,
+    ok: true,
+    result: JSON.stringify({
+      ok: true,
+      result: {
+        layer: {
+          index: 1,
+          name: "Smoke Precomp Layer",
+          source: {
+            itemIndex: 7,
+            name: "Smoke Source Precomp",
+            type: "comp",
+            typeName: "Composition"
+          }
+        }
       }
     })
   });
@@ -1131,7 +1203,7 @@ async function main() {
     throw new Error("Expected initialize, tools/list, and tool call responses");
   }
 
-  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "1.0.5") {
+  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "1.0.6") {
     throw new Error("Unexpected health response");
   }
   if (!agents.body.ok || !Array.isArray(agents.body.agents) || !agents.body.agents.length) {
@@ -1251,15 +1323,25 @@ async function main() {
     throw new Error("Unexpected ignored result binding run response");
   }
   if (
+    unresolvedSelectedPrecompLayerRun.status !== 400 ||
+    unresolvedSelectedPrecompLayerRun.body.ok !== false ||
+    !unresolvedSelectedPrecompLayerRun.body.run ||
+    unresolvedSelectedPrecompLayerRun.body.run.steps[1].status !== "blocked" ||
+    String(unresolvedSelectedPrecompLayerRun.body.run.steps[1].reason || "").indexOf("no selected precomp layer") < 0
+  ) {
+    throw new Error("Unexpected unresolved selected precomp layer binding diagnostic");
+  }
+  if (
     namedCompBindingRun.status !== 200 ||
     namedCompBindingRun.body.ok !== true ||
     !namedCompBindingRun.body.run ||
-    namedCompBindingRun.body.run.steps.length !== 5 ||
+    namedCompBindingRun.body.run.steps.length !== 6 ||
     namedCompBindingRun.body.run.steps.some((step) => step.status !== "completed") ||
     Number(namedCompBindingRun.body.run.steps[1].args.compItemIndex) !== 1 ||
-    Number(namedCompBindingRun.body.run.steps[2].args.compItemIndex) !== 7 ||
-    Number(namedCompBindingRun.body.run.steps[3].args.compItemIndex) !== 1 ||
-    Number(namedCompBindingRun.body.run.steps[4].args.compItemIndex) !== 7
+    Number(namedCompBindingRun.body.run.steps[2].args.layerIndex) !== 1 ||
+    Number(namedCompBindingRun.body.run.steps[3].args.compItemIndex) !== 7 ||
+    Number(namedCompBindingRun.body.run.steps[4].args.compItemIndex) !== 1 ||
+    Number(namedCompBindingRun.body.run.steps[5].args.compItemIndex) !== 7
   ) {
     throw new Error("Unexpected named comp runtime binding run response");
   }
@@ -1391,6 +1473,7 @@ async function main() {
       rawExtendscriptStepCount: deepDuplicateDryRun.body.run.validation.classification.rawExtendscriptStepCount
     },
     ignoredBindingRun: ignoredBindingRun.body.run.steps[0].status,
+    unresolvedSelectedPrecompLayerBinding: unresolvedSelectedPrecompLayerRun.body.run.steps[1].reason,
     namedCompBindingRun: namedCompBindingRun.body.run.steps.map((step) => step.status),
     mutatingDryRun: mutatingDryRun.body.run.steps[0].status,
     mutatingBlocked: mutatingBlocked.body.run.safety.status,
