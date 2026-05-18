@@ -812,6 +812,39 @@ async function main() {
       ]
     }
   });
+  const unresolvedSelectedLayerRun = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/plan/run",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    dryRun: false,
+    confirm: true,
+    requestId: "smoke-unresolved-selected-layer-binding",
+    plan: {
+      summary: "Smoke-test selected layer binding diagnostics.",
+      risk: "low",
+      requiresCheckpoint: false,
+      steps: [
+        {
+          title: "Read bridge status",
+          tool: "get_bridge_status",
+          args: {}
+        },
+        {
+          title: "Read selected layer without selection context",
+          tool: "get_layer_details",
+          args: {
+            layerIndex: "{{selectedLayerIndex}}"
+          }
+        }
+      ]
+    }
+  });
   const namedCompBindingRunPromise = requestJsonWithOptions({
     hostname: "127.0.0.1",
     port,
@@ -1374,6 +1407,15 @@ async function main() {
     throw new Error("Unexpected unresolved selected source comp binding diagnostic");
   }
   if (
+    unresolvedSelectedLayerRun.status !== 400 ||
+    unresolvedSelectedLayerRun.body.ok !== false ||
+    !unresolvedSelectedLayerRun.body.run ||
+    unresolvedSelectedLayerRun.body.run.steps[1].status !== "blocked" ||
+    String(unresolvedSelectedLayerRun.body.run.steps[1].reason || "").indexOf("no selected layer") < 0
+  ) {
+    throw new Error("Unexpected unresolved selected layer binding diagnostic");
+  }
+  if (
     namedCompBindingRun.status !== 200 ||
     namedCompBindingRun.body.ok !== true ||
     !namedCompBindingRun.body.run ||
@@ -1517,6 +1559,7 @@ async function main() {
     ignoredBindingRun: ignoredBindingRun.body.run.steps[0].status,
     unresolvedSelectedPrecompLayerBinding: unresolvedSelectedPrecompLayerRun.body.run.steps[1].reason,
     unresolvedSelectedSourceCompBinding: unresolvedSelectedSourceCompRun.body.run.steps[1].reason,
+    unresolvedSelectedLayerBinding: unresolvedSelectedLayerRun.body.run.steps[1].reason,
     namedCompBindingRun: namedCompBindingRun.body.run.steps.map((step) => step.status),
     mutatingDryRun: mutatingDryRun.body.run.steps[0].status,
     mutatingBlocked: mutatingBlocked.body.run.safety.status,

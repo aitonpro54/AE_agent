@@ -2520,6 +2520,20 @@ function isLayerIndexBindingName(lower) {
   ].includes(lower);
 }
 
+function isSelectedLayerIndexBindingName(lower) {
+  return [
+    "selectedlayerindex"
+  ].includes(lower);
+}
+
+function isSelectedLayerIndicesBindingName(lower) {
+  return [
+    "selectedlayerindices",
+    "selectedlayerindexes",
+    "selectedlayers"
+  ].includes(lower);
+}
+
 function isSelectedPrecompLayerIndexBindingName(lower) {
   return [
     "selectedprecomplayerindex",

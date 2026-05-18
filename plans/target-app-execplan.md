@@ -60,6 +60,7 @@
 - [x] Milestone 90: CEP cache-busting reload for installed panel updates.
 - [x] Milestone 91: Deep duplicate file-footage fallback.
 - [x] Milestone 92: Selected source comp binding diagnostic hotfix.
+- [x] Milestone 93: Selected layer binding diagnostic hotfix.
 
 ## Current Stable Baseline
 
@@ -471,6 +472,12 @@
 - Add smoke coverage for unresolved selected-source-comp binding diagnostics.
 - Restart the live bridge and verify the panel-facing endpoint returns a normal binding diagnostic instead of `isSelectedSourceCompIndexBindingName is not defined`.
 
+### Milestone 93: Selected layer binding diagnostic hotfix
+
+- Add explicit selected-layer binding diagnostic helpers so `{{selectedLayerIndex}}`, `{{selectedLayerIndices}}`, and related aliases no longer trigger backend `ReferenceError` messages.
+- Add smoke coverage for unresolved selected-layer binding diagnostics.
+- Manually test the live panel-facing runner in both dry-run and read-only run modes.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -575,6 +582,7 @@
 - 2026-05-18: Installed CEP panel updates need cache-busting at the HTML/script level because AE can keep serving a stale Chromium cache even when the Roaming extension files are already synchronized.
 - 2026-05-18: Deep duplicate of selected precomps must handle file-backed footage as reimported project items, because AE may not expose `duplicate()` on `FootageItem` objects such as `.avi`.
 - 2026-05-18: Runtime binding diagnostics must use the same helper names as runtime binding resolution; selected source/precomp item bindings use `isSelectedSourceCompBindingName`.
+- 2026-05-18: Selected-layer runtime binding diagnostics use explicit selected-layer helper functions rather than relying on generic layer-index helper names.
 
 ## Validation
 
@@ -1760,3 +1768,13 @@
   - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
   - Restarted the live bridge on `127.0.0.1:3456`; `/health` reported `version:"1.0.6"` and `panelConnected:true`.
   - Live read-only regression run against `/agents/plan/run` with `compItemIndex:"{{selectedPrecompItemIndex}}"` returned the normal diagnostic `no selected precomp source comp was found in prior inspection results`, not a backend ReferenceError.
+- Milestone 93:
+  - Fixed the panel-facing backend exception `isSelectedLayerIndexBindingName is not defined` by adding explicit selected-layer binding diagnostic helpers for singular/plural selected layer aliases.
+  - Added smoke coverage for unresolved `{{selectedLayerIndex}}` so the selected-layer diagnostic path is exercised directly.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check scripts\smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`; output included `unresolvedSelectedLayerBinding`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Restarted the live bridge on `127.0.0.1:3456`; `/health` reported `version:"1.0.6"` and `panelConnected:true`.
+  - Live manual dry-run with both `{{selectedPrecompItemIndex}}` and `{{selectedLayerIndex}}` returned ready steps with normal runtime-binding messages.
+  - Live manual read-only run for `{{selectedLayerIndex}}` returned the normal diagnostic `no selected layer was found in prior inspection results`, not a backend ReferenceError.
