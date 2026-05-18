@@ -271,6 +271,9 @@ async function reloadActivePage(send) {
 function stateExpression() {
   return `(() => ({
     title: document.title,
+    locationHref: String(window.location.href || ""),
+    assetVersion: window.__aeAgentAssetVersion || "",
+    scriptSrcs: Array.from(document.scripts || []).map((script) => script.src || ""),
     windowBarExists: !!document.querySelector(".window-bar"),
     windowBarText: document.querySelector(".window-bar") ? document.querySelector(".window-bar").innerText : "",
     appTitleExists: !!document.getElementById("appTitle"),
@@ -2575,7 +2578,7 @@ async function brandingSmoke() {
   try {
     await reloadActivePage(send);
     const state = await waitFor(send, "AE Agent branding", (item) => (
-      item.title === "AE Agent 1.0.7" &&
+      item.title === "AE Agent 1.0.8" &&
       item.windowBarExists === false &&
       item.windowBarText === "" &&
       item.windowBarText.indexOf("AE GPT") < 0 &&
@@ -2596,6 +2599,36 @@ async function brandingSmoke() {
         appTitle: state.appTitle,
         appVersionExists: state.appVersionExists,
         appVersion: state.appVersion
+      }
+    }, null, 2));
+  } finally {
+    ws.close();
+  }
+}
+
+async function reloadButtonSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  try {
+    await reloadActivePage(send);
+    const clicked = await evaluate(send, clickExpression("reloadButton"));
+    if (!clicked || !clicked.ok) throw new Error("Reload button was not clickable.");
+    const state = await waitFor(send, "hard reload button result", (item) => (
+      item.title === "AE Agent 1.0.8" &&
+      item.locationHref.indexOf("v=1.0.8") >= 0 &&
+      item.locationHref.indexOf("assets=") >= 0 &&
+      item.locationHref.indexOf("reload=") >= 0 &&
+      item.assetVersion &&
+      item.scriptSrcs.some((src) => src.indexOf("panel.js?v=" + encodeURIComponent(item.assetVersion)) >= 0)
+    ), 15000);
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      reload: {
+        title: state.title,
+        locationHref: state.locationHref,
+        assetVersion: state.assetVersion,
+        panelScript: state.scriptSrcs.find((src) => src.indexOf("panel.js") >= 0) || ""
       }
     }, null, 2));
   } finally {
@@ -3623,6 +3656,10 @@ async function main() {
   }
   if (command === "branding-smoke") {
     await brandingSmoke();
+    return;
+  }
+  if (command === "reload-button-smoke") {
+    await reloadButtonSmoke();
     return;
   }
   if (command === "openai-cli-smoke") {

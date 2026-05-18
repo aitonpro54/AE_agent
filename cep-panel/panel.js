@@ -2,7 +2,7 @@
 
 (function () {
   var APP_NAME = "AE Agent";
-  var APP_VERSION = "1.0.7";
+  var APP_VERSION = "1.0.8";
   var CHAT_MODE_CHAT = "chat";
   var CHAT_MODE_AGENT = "plan";
   var CHAT_MODE_HARDCORE = "hardcore";
@@ -3054,14 +3054,40 @@
     log("Disconnected");
   }
 
+  function reloadNonce() {
+    return String(Date.now()) + "-" + String(Math.random()).slice(2);
+  }
+
+  function reloadTargetUrl() {
+    var href = String(window.location.href || "");
+    var baseUrl = href.split("#")[0].split("?")[0];
+    if (!baseUrl) return "index.html";
+    if (!/index\.html$/i.test(baseUrl)) {
+      baseUrl = baseUrl.replace(/\/?$/, "/index.html");
+    }
+    var nonce = reloadNonce();
+    return baseUrl +
+      "?v=" + encodeURIComponent(APP_VERSION) +
+      "&assets=" + encodeURIComponent(nonce) +
+      "&reload=" + encodeURIComponent(nonce);
+  }
+
   function reloadApp() {
     running = false;
     pollInFlight = false;
     stopSetupStatusPolling();
     if (pollTimer) clearTimeout(pollTimer);
-    log("Reloading app");
-    var baseUrl = String(window.location.href || "").split("#")[0].split("?")[0];
-    window.location.replace(baseUrl + "?v=" + encodeURIComponent(APP_VERSION) + "&reload=" + Date.now());
+    if (reloadButton) {
+      reloadButton.disabled = true;
+      reloadButton.textContent = "Reloading...";
+    }
+    var targetUrl = reloadTargetUrl();
+    log("Reloading app from " + targetUrl);
+    try {
+      window.location.replace(targetUrl);
+    } catch (_replaceError) {
+      window.location.href = targetUrl;
+    }
   }
 
   connectButton.addEventListener("click", connect);

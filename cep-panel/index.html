@@ -5,8 +5,21 @@
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <title>AE Agent 1.0.7</title>
-    <link rel="stylesheet" href="./style.css?v=1.0.7" />
+    <title>AE Agent 1.0.8</title>
+    <script>
+      (function () {
+        var search = String(window.location.search || "");
+        function queryValue(name) {
+          var pattern = new RegExp("[?&]" + name + "=([^&]+)");
+          var match = search.match(pattern);
+          return match ? decodeURIComponent(match[1].replace(/\+/g, " ")) : "";
+        }
+        window.__aeAgentAssetVersion = queryValue("assets") || queryValue("reload") || "1.0.8";
+      })();
+    </script>
+    <script>
+      document.write('<link rel="stylesheet" href="./style.css?v=' + encodeURIComponent(window.__aeAgentAssetVersion) + '" />');
+    </script>
   </head>
   <body>
     <main id="appShell" class="app-shell">
@@ -181,7 +194,9 @@
       </section>
     </main>
 
-    <script src="./lib/CSInterface.js?v=1.0.7"></script>
-    <script src="./panel.js?v=1.0.7"></script>
+    <script>
+      document.write('<script src="./lib/CSInterface.js?v=' + encodeURIComponent(window.__aeAgentAssetVersion) + '"><\/script>');
+      document.write('<script src="./panel.js?v=' + encodeURIComponent(window.__aeAgentAssetVersion) + '"><\/script>');
+    </script>
   </body>
 </html>

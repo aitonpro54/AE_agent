@@ -2,7 +2,7 @@
 
 ## Progress
 
-- [x] Stable baseline: AE Agent 1.0.7 CEP panel, provider setup, Agent planning, Agent Hardcore autopilot, plan validation, protected execution, local history, diagnostics, and installed-panel smoke coverage.
+- [x] Stable baseline: AE Agent 1.0.8 CEP panel, provider setup, Agent planning, Agent Hardcore autopilot, plan validation, protected execution, local history, diagnostics, reload hard-refresh, and installed-panel smoke coverage.
 - [x] Milestone 38: Repo cleanup and roadmap reset.
 - [x] Milestone 39: Agent planning quality.
 - [x] Milestone 40: Timeline and layer tools.
@@ -64,11 +64,12 @@
 - [x] Milestone 94: Agent Hardcore Autopilot.
 - [x] Hotfix: Version 1.0.7 and Hardcore installed-panel sync.
 - [x] Hotfix: Deep duplicate read-back binding aliases.
+- [x] Hotfix: Version 1.0.8 hard Reload button.
 
 ## Current Stable Baseline
 
 - The active repository is `C:\Users\Ant\Documents\Codex\AE_agent`.
-- The native CEP title/menu format is `AE Agent 1.0.7`.
+- The native CEP title/menu format is `AE Agent 1.0.8`.
 - The panel is a compact dark CEP client for the local bridge daemon.
 - Provider paths are separate: OpenAI API, OpenAI CLI, Gemini, Claude, OpenRouter, and Local/Ollama.
 - Agent mode drafts structured MCP plans, validates tool names and required fields, dry-runs plans, and executes only through explicit mutation gates.
@@ -79,6 +80,7 @@
 - Project-changing tools use idempotency, optional checkpoints, edit-session protection, and post-mutation verification.
 - Precomp/source workflows include `deep_duplicate_precomp_sources` for recursively duplicating a selected precomp layer's source comp and nested comp/footage project items without raw ExtendScript in Agent plans.
 - Raw ExtendScript remains available as an escape hatch, but normal product workflows should use typed bridge tools.
+- The CEP `Reload` button forces a cache-busted reload of the installed `index.html` and passes a fresh asset nonce to CSS/JS, so an already-open panel can pick up synced panel files without keeping stale `panel.js?v=<old>` cache entries.
 
 ## Milestones
 
@@ -503,6 +505,13 @@
 - Update planner guidance to use the explicit deep-duplicate read-back binding after mutating runs.
 - Add smoke coverage that verifies the queued typed tool response exposes the read-back aliases.
 
+### Hotfix: Version 1.0.8 hard Reload button
+
+- Bump patch version for the user-visible CEP title/menu, bridge daemon, MCP adapter, install note, reload-aware asset loader, and smoke expectations.
+- Change the CEP `Reload` action to build a fresh `index.html?v=<version>&assets=<nonce>&reload=<nonce>` URL instead of preserving stale asset cache keys.
+- Change `index.html` to load CSS/JS through the reload nonce so `panel.js` and `CSInterface.js` are re-read after installed-panel sync.
+- Add focused CEP smoke coverage for clicking the panel `Reload` button and observing the current title/version afterward.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -615,8 +624,18 @@
 - 2026-05-18: Patch version must bump on every user-visible AE Agent behavior change; the installed CEP panel is part of completion, not a separate optional release step.
 - 2026-05-18: In `Agent Hardcore`, ordinary `Dry run` / `Run plan` controls are hidden to avoid routing the user back into manual validation; the composer send button is the full autopilot entry point.
 - 2026-05-18: `deep_duplicate_precomp_sources` must return top-level read-back binding aliases for its duplicated root comp and created project items, because Agent follow-up read steps resolve named bindings from previous payload fields rather than from informal `resultBindings` output declarations.
+- 2026-05-18: The CEP `Reload` button must be a hard panel refresh path, not a normal page reload; it uses a fresh asset nonce so the current installed `panel.js` wins over any old CEP cache entry.
 
 ## Validation
+
+- Hotfix 1.0.8:
+  - Passed bundled `node --check` for changed JavaScript files: `cep-panel\panel.js`, `mcp-server\bridge-daemon.js`, `mcp-server\mcp-adapter.js`, `scripts\cep-panel-cdp-smoke.js`, `scripts\smoke-test.js`, `scripts\bridge-only-smoke-test.js`, `scripts\chatgpt-connector-smoke.js`, `scripts\prompt-optimization-smoke.js`, `scripts\solution-registry-smoke.js`, `scripts\solution-promotion-helper.js`, `scripts\solution-promotion-smoke.js`, `scripts\solution-retrieval-smoke.js`, `scripts\solution-library-validation-smoke.js`, `scripts\agent-qa-audit-smoke.js`, and `scripts\agent-scenario-report-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed required local smokes: `provider-contract-smoke`, `solution-registry-smoke`, `solution-candidate-report-smoke`, `solution-promotion-smoke`, `solution-retrieval-smoke`, `solution-library-validation-smoke`, `project-intent-memory-smoke`, `plan-classification-smoke`, `plan-repair-smoke`, `semantic-verification-smoke`, `reliability-validation-suite-smoke`, `chatgpt-connector-smoke`, `provider-api-smoke`, `prompt-optimization-smoke`, `bridge-only-smoke-test`, and `smoke-test`.
+  - Synced installed CEP extension with `scripts\cep-sync-health.js --sync --check --json`; installed `index.html`, `panel.js`, `style.css`, and `CSXS/manifest.xml` matched repo, and installed panel/title/manifest versions reported `1.0.8`.
+  - Cleared only the CEP cache directories for `AEFT_26.2_com.codex.aemcpbridge.panel`: `Cache`, `Code Cache`, `GPUCache`, and `blob_storage`; Local Storage was left intact.
+  - Restarted the live bridge daemon on `127.0.0.1:3456` from the current repo; `/health` reported version `1.0.8`, `pending:0`, and `inflight:0`.
+  - Live `node scripts\cep-panel-cdp-smoke.js reload-button-smoke` could not run because the CEP DevTools target on `127.0.0.1:8870` refused connection in this session; the smoke command is added for the next reachable live panel check.
 
 - Hotfix: Deep duplicate read-back binding aliases:
   - Passed bundled `node --check` for `mcp-server\bridge-daemon.js` and `scripts\smoke-test.js` using `C:\Users\Ant\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe`; the plain `node.exe` on PATH failed with Access denied.

@@ -1,5 +1,21 @@
 # AE Agent Releases
 
+## v1.0.8-hard-reload-panel - 2026-05-18
+
+Patch release for making the CEP `Reload` button load the current installed panel instead of staying on stale cached assets.
+
+Changed:
+
+- CEP panel, manifest, bridge daemon, MCP adapter, install note, cache-busting loader, and smoke expectations now report `1.0.8`.
+- The panel `Reload` action now navigates to the current `index.html` with a fresh nonce and passes that nonce through to CSS/JS asset URLs.
+- `index.html` now loads `style.css`, `CSInterface.js`, and `panel.js` through a reload-aware asset version so stale `panel.js?v=<old>` cache entries are bypassed.
+
+Validation:
+
+- Local checks verify the `1.0.8` bridge/panel version contract.
+- Installed CEP sync confirms the installed panel, title, and manifest report `1.0.8`.
+- A focused live CEP `reload-button-smoke` is available to confirm the button click path when the CEP DevTools target is reachable.
+
 ## v1.0.7-hardcore-autopilot-sync - 2026-05-18
 
 Patch release for making the completed Agent Hardcore autopilot visible in the installed AE panel.
