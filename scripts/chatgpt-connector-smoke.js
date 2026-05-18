@@ -101,7 +101,7 @@ function createFakeBridgeServer(captured) {
       writeJson(res, 200, {
         ok: true,
         server: "fake-ae-bridge",
-        version: "1.0.4",
+        version: "1.0.5",
         panelConnected: true,
         pendingCommands: 0,
         inflightCommands: 0

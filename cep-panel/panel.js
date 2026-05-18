@@ -2,7 +2,7 @@
 
 (function () {
   var APP_NAME = "AE Agent";
-  var APP_VERSION = "1.0.4";
+  var APP_VERSION = "1.0.5";
   var CHAT_MODE_CHAT = "chat";
   var CHAT_MODE_AGENT = "plan";
   var CHAT_MODE_HARDCORE = "hardcore";
@@ -2690,11 +2690,13 @@
     if (bundle.startPromptFile) lines.push("Start prompt: " + bundle.startPromptFile);
     if (bundle.candidateFile) lines.push("Candidate: " + bundle.candidateFile);
     if (codexApp.launched) {
-      lines.push("Codex App: open requested. Start the dev chat from the start prompt.");
+      lines.push("Codex App: project launch requested; new chats are manual in v1.");
+      lines.push("Next: open a new Codex App chat in this project and paste the start prompt.");
     } else if (codexApp.error) {
       lines.push("Codex App: " + codexApp.error);
     } else {
-      lines.push("Codex App: open it manually and use the start prompt.");
+      lines.push("Codex App: no new chat was created automatically.");
+      lines.push("Next: open Codex App for this project and start a dev chat from the start prompt.");
     }
     return lines.join("\n");
   }
@@ -2720,7 +2722,7 @@
       targetFiles: devRequestTargetFiles(validation),
       planResult: lastPlanResult,
       runResult: lastPlanRunResult,
-      openCodexApp: true
+      openCodexApp: false
     };
 
     devRequestInFlight = true;

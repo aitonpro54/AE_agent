@@ -2,7 +2,7 @@
 
 ## Progress
 
-- [x] Stable baseline: AE Agent 1.0.4 CEP panel, provider setup, Agent planning, Agent Hardcore planning, plan validation, protected execution, local history, diagnostics, and installed-panel smoke coverage.
+- [x] Stable baseline: AE Agent 1.0.5 CEP panel, provider setup, Agent planning, Agent Hardcore planning, plan validation, protected execution, local history, diagnostics, and installed-panel smoke coverage.
 - [x] Milestone 38: Repo cleanup and roadmap reset.
 - [x] Milestone 39: Agent planning quality.
 - [x] Milestone 40: Timeline and layer tools.
@@ -54,18 +54,19 @@
 - [x] Milestone 84: Hardcore dev escalation handoff.
 - [x] Milestone 85: Agent Hardcore visible mode and Cyrillic UI fix.
 - [x] Milestone 86: Raw ExtendScript dry-run gate unlocks Run plan.
+- [x] Milestone 87: Dev request manual Codex chat handoff.
 
 ## Current Stable Baseline
 
 - The active repository is `C:\Users\Ant\Documents\Codex\AE_agent`.
-- The native CEP title/menu format is `AE Agent 1.0.4`.
+- The native CEP title/menu format is `AE Agent 1.0.5`.
 - The panel is a compact dark CEP client for the local bridge daemon.
 - Provider paths are separate: OpenAI API, OpenAI CLI, Gemini, Claude, OpenRouter, and Local/Ollama.
 - Agent mode drafts structured MCP plans, validates tool names and required fields, dry-runs plans, and executes only through explicit mutation gates.
 - Agent Hardcore is a visible composer mode next to Agent; it uses the same planner/runner safety gates with stronger guidance for inspection, dry-run/read-back evidence, verification, and typed-tool gap handoff.
 - The latest valid Agent plan exposes inline `Dry run / Проверить` and `Выполнить план` controls inside the chat message, while keeping the same validated backend runner and project-change gates.
 - Raw ExtendScript plans stay blocked for normal Run until a successful dry run of the same current plan records a short-lived gate id; the enabled Run then sends `allowRawExtendscript:true` with the matching `rawExtendscriptDryRunId`.
-- Agent plans or runs that reveal a typed-tool gap can create an ignored `logs/dev-requests/<id>/` bundle for a targeted Codex App dev handoff instead of continuing repo development inside the AE chat.
+- Agent plans or runs that reveal a typed-tool gap can create an ignored `logs/dev-requests/<id>/` bundle for a targeted Codex App dev handoff instead of continuing repo development inside the AE chat; v1 does not auto-create a Codex App chat, so the user starts a new dev chat from `start-prompt.md`.
 - Project-changing tools use idempotency, optional checkpoints, edit-session protection, and post-mutation verification.
 - Raw ExtendScript remains available as an escape hatch, but normal product workflows should use typed bridge tools.
 
@@ -423,6 +424,13 @@
 - Update ChatGPT JSX Lab candidate runs to perform the same preflight dry-run gate before a real raw file execution.
 - Add offline/backend and CEP/CDP smoke coverage for the unlocked-button payload.
 
+### Milestone 87: Dev request manual Codex chat handoff
+
+- Stop `Prepare typed tool request` from launching Codex App by default, because v1 cannot create a new Codex App chat automatically.
+- Change the panel result text to say that the bundle was prepared, no new chat was auto-created, and the next step is to open a Codex App dev chat from `start-prompt.md`.
+- Keep backend `codex app <repo>` fallback available for explicit callers, but hide its console window and report `autoChatCreated:false`.
+- Bump panel/bridge/manifest to `1.0.5` and synchronize the installed CEP extension.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -521,6 +529,7 @@
 - 2026-05-17: This panel code change bumped panel, manifest, daemon and adapter to `1.0.4`.
 - 2026-05-18: Raw ExtendScript remains blocked by classification until a successful dry run of the same current plan records a matching short-lived gate id; unlocking `Выполнить план` sends that id to the protected runner rather than bypassing mutation/checkpoint/edit-session safety.
 - 2026-05-18: ChatGPT JSX Lab real candidate runs must follow the same bridge contract: preflight dry-run first, then real `/agents/plan/run` with `allowRawExtendscript:true` and the returned `rawExtendscriptDryRunId`.
+- 2026-05-18: `Prepare typed tool request` creates only the local handoff bundle in v1. It does not launch Codex App or imply that a new Codex App chat was created; chat creation stays manual from `start-prompt.md` until a stable local API exists.
 
 ## Validation
 
@@ -1597,3 +1606,41 @@
   - Passed `node scripts\bridge-only-smoke-test.js`.
   - Passed `node scripts\smoke-test.js`.
   - Could not run live `node scripts\cep-panel-cdp-smoke.js raw-run-gate-smoke` or `inspect` because the CEP CDP endpoint refused connection on `127.0.0.1:8870`; open/reload After Effects with CEP remote debugging to rerun the prepared UI smoke.
+- Milestone 87:
+  - Changed `Prepare typed tool request` so the CEP panel posts `openCodexApp:false`; clicking it no longer launches a transient command window and no longer implies a Codex App chat was created.
+  - Updated the panel transcript copy to say: `Codex App: no new chat was created automatically.` and to direct the user to start a Codex App dev chat from `start-prompt.md`.
+  - Kept backend explicit `codex app <repo>` fallback hidden-window only and marked its response with `autoChatCreated:false`.
+  - Bumped CEP panel, manifest, bridge daemon, MCP adapter, install note and smoke expectations to `1.0.5`.
+  - Synchronized updated `index.html`, `panel.js` and `CSXS\manifest.xml` into the installed CEP extension with `node scripts\cep-sync-health.js --sync --check`; the approved run reported installed panel/manifest `1.0.5`.
+  - Restarted the live bridge daemon on `127.0.0.1:3456` from the current repo; live `/health` reported `version:"1.0.5"` and `panelConnected:true`.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check mcp-server\mcp-adapter.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `node --check scripts\smoke-test.js`.
+  - Passed XML parsing for `cep-panel\CSXS\manifest.xml`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`.
+  - Passed `node scripts\project-intent-memory-smoke.js`.
+  - Passed `node scripts\plan-classification-smoke.js`.
+  - Passed `node scripts\plan-repair-smoke.js`.
+  - Passed `node scripts\semantic-verification-smoke.js`.
+  - Passed `node scripts\reliability-validation-suite-smoke.js`.
+  - Passed `node scripts\chatgpt-connector-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`; it now asserts that `openCodexApp:false` skips Codex App launch.
+  - Passed `node scripts\agent-qa-audit-smoke.js`.
+  - Passed `node scripts\agent-scenario-report-smoke.js`.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js reload`; document state reported `AE Agent 1.0.5`.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js branding-smoke`; page and document title reported `AE Agent 1.0.5`.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js dev-request-button-smoke`; the tool-gap path clicked `Prepare typed tool request` and the transcript reported that no new chat was created automatically.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js mode-toggle-smoke`.
+  - Did not run live ChatGPT connector/Tunnel checks, live OpenRouter calls, external OpenAI CLI Agent scenario smokes, or mutating live AE smokes because this milestone only changes dev-request handoff UX and launch behavior.

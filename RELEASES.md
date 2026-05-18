@@ -1,5 +1,20 @@
 # AE Agent Releases
 
+## v1.0.5-dev-request-manual-chat - 2026-05-18
+
+Patch release for making typed-tool dev escalation honest and quiet from the AE panel.
+
+Changed:
+
+- `Prepare typed tool request` now prepares the bundle and tells the user that Codex App chat creation is manual in v1.
+- The CEP panel no longer asks the backend to launch Codex App automatically from this button, avoiding a quick flashing command window and the false expectation of a new chat.
+- The backend fallback launcher now hides its console window and reports that it can only request a project launch, not create a chat.
+- CEP panel, manifest, bridge daemon, adapter, install note, and smoke expectations now report `1.0.5`.
+
+Validation:
+
+- Local smoke coverage still verifies bundle creation, redaction, targeted `start-prompt.md`, and raw ExtendScript candidate capture.
+
 ## v1.0.4-agent-hardcore-mode-ui - 2026-05-17
 
 Patch release for making Agent Hardcore a visible composer mode and fixing Cyrillic control text in the CEP panel.

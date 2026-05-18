@@ -18,7 +18,7 @@ const {
 } = require("./project-intent-memory");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "1.0.4";
+const SERVER_VERSION = "1.0.5";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -3352,7 +3352,7 @@ function launchCodexAppForDevRequest() {
       env: process.env,
       detached: true,
       stdio: "ignore",
-      windowsHide: false
+      windowsHide: true
     });
     child.on("error", (error) => {
       recordEvent("agent_dev_request_codex_app_error", {
@@ -3363,7 +3363,9 @@ function launchCodexAppForDevRequest() {
     return {
       launched: true,
       pid: child.pid || null,
-      command: redactDevRequestText(status.command, 500)
+      command: redactDevRequestText(status.command, 500),
+      autoChatCreated: false,
+      note: "Codex App launch can open the project, but creating a new chat from a bundle is still manual in v1."
     };
   } catch (error) {
     return {

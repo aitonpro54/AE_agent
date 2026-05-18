@@ -1624,6 +1624,20 @@ async function devRequestButtonSmoke() {
           state.prepareDevRequestDisabled === true;
       }, 10000);
 
+      let prepared = null;
+      if (rawExtendscript) {
+        const prepareClick = await evaluate(send, clickExpression("prepareDevRequestButton"));
+        if (!prepareClick || !prepareClick.ok) {
+          throw new Error(`${label}: Prepare typed tool request button was not clickable.`);
+        }
+        prepared = await waitFor(send, `${label} dev request prepared`, (state) => (
+          state.transcript.indexOf("Typed tool request prepared.") >= 0 &&
+          state.transcript.indexOf("Start prompt: logs/dev-requests/") >= 0 &&
+          state.transcript.indexOf("Codex App: no new chat was created automatically.") >= 0 &&
+          state.transcript.indexOf("start a dev chat from the start prompt") >= 0
+        ), 15000);
+      }
+
       return {
         loaded: {
           recoverDisabled: loaded.recoverLastPlanDisabled,
@@ -1636,7 +1650,10 @@ async function devRequestButtonSmoke() {
           prepareVisible: recovered.prepareDevRequestVisible,
           prepareDisabled: recovered.prepareDevRequestDisabled,
           prepareTitle: recovered.prepareDevRequestTitle
-        }
+        },
+        prepared: prepared ? {
+          transcriptTail: prepared.transcript.slice(-1200)
+        } : null
       };
     }
 
@@ -2339,7 +2356,7 @@ async function brandingSmoke() {
   try {
     await reloadActivePage(send);
     const state = await waitFor(send, "AE Agent branding", (item) => (
-      item.title === "AE Agent 1.0.4" &&
+      item.title === "AE Agent 1.0.5" &&
       item.windowBarExists === false &&
       item.windowBarText === "" &&
       item.windowBarText.indexOf("AE GPT") < 0 &&

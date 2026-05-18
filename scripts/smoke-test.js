@@ -1060,7 +1060,7 @@ async function main() {
     throw new Error("Expected initialize, tools/list, and tool call responses");
   }
 
-  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "1.0.4") {
+  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "1.0.5") {
     throw new Error("Unexpected health response");
   }
   if (!agents.body.ok || !Array.isArray(agents.body.agents) || !agents.body.agents.length) {
@@ -1219,6 +1219,9 @@ async function main() {
     !fs.existsSync(devCandidateFile)
   ) {
     throw new Error("Dev request bundle was not created");
+  }
+  if (!devRequest.body.codexApp || devRequest.body.codexApp.skipped !== true) {
+    throw new Error("Dev request smoke should not launch Codex App when openCodexApp is false");
   }
   if (
     /sk-smoke-secret|smoke-secret-token|C:\\Users\\Ant\\Documents\\Codex\\AE_agent/.test(devRequestText + devEvidenceText + devStartPromptText + devCandidateText)

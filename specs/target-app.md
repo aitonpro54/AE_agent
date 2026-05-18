@@ -9,7 +9,7 @@ The panel remains a client of the local bridge daemon. The daemon remains the ow
 ## Product Shape
 
 - The first screen is a compact dark CEP panel inspired by the references in `specs/screenshots/`.
-- The visible product title format is `AE Agent 1.0.4` in the native CEP title/menu only; do not duplicate the product name in a separate in-panel top bar or sidebar heading.
+- The visible product title format is `AE Agent 1.0.5` in the native CEP title/menu only; do not duplicate the product name in a separate in-panel top bar or sidebar heading.
 - The left side exposes provider setup: `Gemini`, `OpenAI`, `Claude`, `OpenRouter`, and `Local`.
 - `OpenAI` supports two auth modes:
   - `API`: uses an OpenAI API key and normal API billing.
@@ -50,6 +50,7 @@ Other provider API key access is also separate from ChatGPT subscription allowan
 - The panel must not let ChatGPT/Codex CLI directly run arbitrary workspace edits or shell commands as part of AE chat. Use `--sandbox read-only` for CLI calls.
 - `run_extendscript` and `run_extendscript_file` stay escape hatches, but planned workflows should prefer narrow bridge tools.
 - Dev-request bundles are local handoffs for a separate Codex App development chat. They must be compact, redacted, ignored by git, and limited to targeted files and evidence.
+- V1 must not imply that a Codex App chat was created automatically; dev escalation prepares the bundle and start prompt, then the user starts the Codex App dev chat manually from that prompt until a stable local chat-creation API exists.
 
 ## Non-Goals For V1
 
