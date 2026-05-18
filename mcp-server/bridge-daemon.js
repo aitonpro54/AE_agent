@@ -2769,7 +2769,7 @@ function runtimeBindingResolutionHint(expression, field) {
   if (isSelectedPrecompLayerIndexBindingName(lower) || isSelectedPrecompLayerIndicesBindingName(lower)) {
     return `${field} (${name}: no selected precomp layer was found in prior inspection results)`;
   }
-  if (isSelectedSourceCompIndexBindingName(lower) || isSelectedSourceCompIndicesBindingName(lower)) {
+  if (isSelectedSourceCompBindingName(lower) || isSelectedSourceCompIndicesBindingName(lower)) {
     return `${field} (${name}: no selected precomp source comp was found in prior inspection results)`;
   }
   if (isSelectedLayerIndexBindingName(lower) || isSelectedLayerIndicesBindingName(lower)) {

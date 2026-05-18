@@ -59,6 +59,7 @@
 - [x] Milestone 89: Selected precomp layer runtime binding.
 - [x] Milestone 90: CEP cache-busting reload for installed panel updates.
 - [x] Milestone 91: Deep duplicate file-footage fallback.
+- [x] Milestone 92: Selected source comp binding diagnostic hotfix.
 
 ## Current Stable Baseline
 
@@ -464,6 +465,12 @@
 - Add rollback cleanup for partial duplicate items if the deep duplicate step fails after creating intermediate copies.
 - Extend smoke coverage so the generated typed command includes the file-footage reimport fallback.
 
+### Milestone 92: Selected source comp binding diagnostic hotfix
+
+- Fix the unresolved binding diagnostic for selected source/precomp item bindings so `{{selectedPrecompItemIndex}}` no longer triggers a backend `ReferenceError`.
+- Add smoke coverage for unresolved selected-source-comp binding diagnostics.
+- Restart the live bridge and verify the panel-facing endpoint returns a normal binding diagnostic instead of `isSelectedSourceCompIndexBindingName is not defined`.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -567,6 +574,7 @@
 - 2026-05-18: `{{selectedPrecompLayerIndex}}` resolves to the selected layer whose source is a comp, while `{{selectedPrecompItemIndex}}` resolves to that layer's source comp item. Deep duplicate plans should use both bindings with `deep_duplicate_precomp_sources`.
 - 2026-05-18: Installed CEP panel updates need cache-busting at the HTML/script level because AE can keep serving a stale Chromium cache even when the Roaming extension files are already synchronized.
 - 2026-05-18: Deep duplicate of selected precomps must handle file-backed footage as reimported project items, because AE may not expose `duplicate()` on `FootageItem` objects such as `.avi`.
+- 2026-05-18: Runtime binding diagnostics must use the same helper names as runtime binding resolution; selected source/precomp item bindings use `isSelectedSourceCompBindingName`.
 
 ## Validation
 
@@ -1743,3 +1751,12 @@
   - Passed `node --check scripts\smoke-test.js`.
   - Passed `node scripts\smoke-test.js`.
   - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+- Milestone 92:
+  - Fixed the panel-facing backend exception `isSelectedSourceCompIndexBindingName is not defined` by using the existing `isSelectedSourceCompBindingName` helper in runtime binding diagnostics.
+  - Added smoke coverage for unresolved `{{selectedPrecompItemIndex}}` so the selected-source-comp diagnostic path is exercised directly.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check scripts\smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`; output included `unresolvedSelectedSourceCompBinding`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Restarted the live bridge on `127.0.0.1:3456`; `/health` reported `version:"1.0.6"` and `panelConnected:true`.
+  - Live read-only regression run against `/agents/plan/run` with `compItemIndex:"{{selectedPrecompItemIndex}}"` returned the normal diagnostic `no selected precomp source comp was found in prior inspection results`, not a backend ReferenceError.

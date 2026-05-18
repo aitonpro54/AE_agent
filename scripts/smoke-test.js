@@ -779,6 +779,39 @@ async function main() {
       ]
     }
   });
+  const unresolvedSelectedSourceCompRun = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/plan/run",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    dryRun: false,
+    confirm: true,
+    requestId: "smoke-unresolved-selected-source-comp-binding",
+    plan: {
+      summary: "Smoke-test selected source comp binding diagnostics.",
+      risk: "low",
+      requiresCheckpoint: false,
+      steps: [
+        {
+          title: "Read bridge status",
+          tool: "get_bridge_status",
+          args: {}
+        },
+        {
+          title: "Read selected source comp without selection context",
+          tool: "get_comp_details",
+          args: {
+            compItemIndex: "{{selectedPrecompItemIndex}}"
+          }
+        }
+      ]
+    }
+  });
   const namedCompBindingRunPromise = requestJsonWithOptions({
     hostname: "127.0.0.1",
     port,
@@ -1332,6 +1365,15 @@ async function main() {
     throw new Error("Unexpected unresolved selected precomp layer binding diagnostic");
   }
   if (
+    unresolvedSelectedSourceCompRun.status !== 400 ||
+    unresolvedSelectedSourceCompRun.body.ok !== false ||
+    !unresolvedSelectedSourceCompRun.body.run ||
+    unresolvedSelectedSourceCompRun.body.run.steps[1].status !== "blocked" ||
+    String(unresolvedSelectedSourceCompRun.body.run.steps[1].reason || "").indexOf("no selected precomp source comp") < 0
+  ) {
+    throw new Error("Unexpected unresolved selected source comp binding diagnostic");
+  }
+  if (
     namedCompBindingRun.status !== 200 ||
     namedCompBindingRun.body.ok !== true ||
     !namedCompBindingRun.body.run ||
@@ -1474,6 +1516,7 @@ async function main() {
     },
     ignoredBindingRun: ignoredBindingRun.body.run.steps[0].status,
     unresolvedSelectedPrecompLayerBinding: unresolvedSelectedPrecompLayerRun.body.run.steps[1].reason,
+    unresolvedSelectedSourceCompBinding: unresolvedSelectedSourceCompRun.body.run.steps[1].reason,
     namedCompBindingRun: namedCompBindingRun.body.run.steps.map((step) => step.status),
     mutatingDryRun: mutatingDryRun.body.run.steps[0].status,
     mutatingBlocked: mutatingBlocked.body.run.safety.status,

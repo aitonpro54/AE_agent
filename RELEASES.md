@@ -11,6 +11,7 @@ Changed:
 - Strengthened Agent planner guidance to use `deep_duplicate_precomp_sources` with `{{selectedPrecompLayerIndex}}` and `{{selectedPrecompItemIndex}}` for selected precomp deep duplication.
 - Added CEP cache-busting resource URLs and a cache-busting Reload action so the panel stops showing stale pre-update titles after install sync.
 - Hardened `deep_duplicate_precomp_sources` for file footage such as `.avi`: footage items that cannot be duplicated through AE's project-item API are reimported from the same source file and relinked into the copied precomp.
+- Fixed the selected-source-comp binding diagnostic helper so plans using `{{selectedPrecompItemIndex}}` no longer fail with `isSelectedSourceCompIndexBindingName is not defined`.
 - CEP panel, manifest, bridge daemon, adapter, install note, and smoke expectations now report `1.0.6`.
 
 Validation:
@@ -19,6 +20,7 @@ Validation:
 - Live bridge health confirms `1.0.6`; read-only validation resolved the selected precomp layer before the AE selection changed, and later reported the no-selection case with the new diagnostic.
 - Installed CEP verification confirms `index.html` and `panel.js` include the cache-busting `1.0.6` assets after sync.
 - Local smoke coverage verifies the deep duplicate queued command contains the footage reimport fallback and rollback path.
+- Local and live read-only regression checks verify unresolved `{{selectedPrecompItemIndex}}` reports a normal binding diagnostic instead of a backend ReferenceError.
 
 ## v1.0.5-dev-request-manual-chat - 2026-05-18
 
