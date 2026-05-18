@@ -68,6 +68,7 @@
 - [x] Hotfix: Deep duplicate read-back binding aliases.
 - [x] Hotfix: Version 1.0.8 hard Reload button.
 - [x] Hotfix: Version 1.0.9 sync clears CEP cache.
+- [x] Hotfix: Executable Agent plan enforcement.
 
 ## Current Stable Baseline
 
@@ -541,6 +542,13 @@
 - Make Hardcore retry when a run only executes inspection plus skipped pseudo/no-tool steps, so autopilot asks for real MCP tool calls instead of declaring a no-op plan verified.
 - Bump CEP/bridge/MCP/smoke version expectations to `1.0.11`.
 
+### Hotfix: Executable Agent plan enforcement
+
+- Treat Agent plans with zero executable MCP tool steps as invalid, so `Run plan` can no longer report `ok` for `0 steps, 0 mutating`.
+- Accept model-provided `parameters` as a step args alias, matching common local-model plan output.
+- Repair the common selected-precomp pseudo-command shape (`get_active_layers` / `execute_command` / `duplicate_layer`) into the typed `deep_duplicate_precomp_sources` workflow with inspection and read-back steps.
+- Show blocked invalid runs in the panel as `Mode: blocked before execution` instead of a misleading read-only execution mode.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -661,8 +669,20 @@
 - 2026-05-18: Milestone 95 live CEP/CDP validation is closed when the installed panel is reachable and `hardcore-autopilot-ui-smoke` verifies visible Hardcore controls, `/agents/hardcore/run` owner-mode flags, transcript output, and the Resource report. The bundled Codex Node runtime remains the reliable local runner because the PATH `node.exe` still fails with `Access denied`.
 - 2026-05-18: For Milestone 96, `validation.ok` is the execution readiness boundary for normal typed-tool plans. `needs clarification` classification becomes a review warning instead of a dry-run/run blocker, while raw ExtendScript still requires a matching dry-run approval and real runner gates still enforce invalid tools, runtime bindings, mutation permission, checkpoints, and edit sessions.
 - 2026-05-18: Agent Hardcore must not mark no-op pseudo plans as verified. If a run only completes inspection/read-only context steps and skips `tool:null` or pseudo-conditional steps, the retry prompt asks for real MCP tool calls before the session can succeed.
+- 2026-05-18: `validation.ok` also requires at least one executable MCP tool step. Empty plans or pure pseudo-command plans are not runnable; selected-precomp duplicate pseudo output is repaired into the existing typed `deep_duplicate_precomp_sources` path instead of silently executing nothing.
 
 ## Validation
+
+- Hotfix: Executable Agent plan enforcement:
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check` for touched JavaScript files: `cep-panel\panel.js`, `mcp-server\bridge-daemon.js`, `mcp-server\plan-repair.js`, `mcp-server\plan-risk-classifier.js`, `scripts\plan-classification-smoke.js`, and `scripts\plan-repair-smoke.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed focused `node scripts\plan-repair-smoke.js`; it now verifies empty plans fail with `Plan validation failed` and selected-precomp pseudo-command plans repair into `get_active_comp`, `deep_duplicate_precomp_sources`, and `get_comp_details`.
+  - Passed updated `node scripts\plan-classification-smoke.js`; empty clarifying/no-op plans are blocked until executable MCP steps exist.
+  - Passed required local smokes: `provider-contract-smoke`, `solution-registry-smoke`, `solution-candidate-report-smoke`, `solution-promotion-smoke`, `solution-retrieval-smoke`, `solution-library-validation-smoke`, `project-intent-memory-smoke`, `plan-classification-smoke`, `plan-repair-smoke`, `semantic-verification-smoke`, `reliability-validation-suite-smoke`, `chatgpt-connector-smoke`, `provider-api-smoke`, `prompt-optimization-smoke`, `bridge-only-smoke-test`, and `smoke-test`.
+  - Synced the installed CEP extension with approved `node scripts\cep-sync-health.js --sync --check --json`; `panel.js` was copied, three files were skipped as unchanged, and four CEP cache folders were cleared while preserving Local Storage.
+  - Restarted the live bridge daemon on `127.0.0.1:3456`; live `/health` reported version `1.0.11`, `panelConnected:true`, `pending:0`, and `inflight:0`.
+  - Passed live CEP/CDP `node scripts\cep-panel-cdp-smoke.js smoke`; the installed `AE Agent 1.0.11` panel planned three real read-only steps, dry-ran them, then ran them with all three commands `completed`.
 
 - Milestone 96:
   - No package manager check is configured because the repository has no `package.json`.

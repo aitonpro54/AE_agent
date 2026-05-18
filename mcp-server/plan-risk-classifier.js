@@ -131,6 +131,7 @@ function runRecommendationFor(category, validation, rawCount, blocksRun) {
   const mutatingCount = Number(validation && validation.mutatingCount || 0);
   if (category === "unsupported") return "Replace unsupported or unavailable tools before dry-run or run.";
   if (category === "needs clarification") {
+    if (!validation || validation.ok !== true) return "Resolve the missing executable MCP steps before dry-run or run.";
     if (blocksRun && rawCount > 0) return "Dry-run first; raw ExtendScript still requires an explicit raw-script execution gate.";
     return "Runnable with review; non-tool steps will be skipped or require replanning.";
   }

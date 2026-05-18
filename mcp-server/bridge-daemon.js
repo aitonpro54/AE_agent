@@ -1947,7 +1947,7 @@ function planStepToolName(step) {
 
 function planStepArgs(step) {
   if (!step || typeof step !== "object") return {};
-  const args = step.args || step.arguments || {};
+  const args = step.args || step.arguments || step.parameters || {};
   return args && typeof args === "object" && !Array.isArray(args) ? { ...args } : {};
 }
 
@@ -2131,10 +2131,13 @@ function validateAgentPlanObject(plan, requestId, context) {
   if (!steps.length && !sourcePlan.clarifyingQuestion) {
     warnings.push("Plan has no steps and no clarifying question.");
   }
+  if (executableCount <= 0) {
+    warnings.push("Plan has no executable MCP tool steps.");
+  }
 
   const invalidSteps = validatedSteps.filter((step) => !step.valid && step.tool);
   const validation = {
-    ok: invalidSteps.length === 0 && unknownToolCount === 0,
+    ok: invalidSteps.length === 0 && unknownToolCount === 0 && executableCount > 0,
     validationId,
     stepCount: steps.length,
     executableCount,

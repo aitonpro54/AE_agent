@@ -217,6 +217,50 @@ async function main() {
       category: "unsupported"
     });
 
+    await validatePlan("empty-plan-blocked", {
+      summary: "Empty pseudo-success must not be runnable.",
+      risk: "low",
+      requiresCheckpoint: false,
+      steps: []
+    }, {
+      applied: false,
+      validationOk: false,
+      category: "needs clarification"
+    });
+
+    const selectedPrecompDuplicateRepair = await validatePlan("selected-precomp-pseudo-command", {
+      summary: "Duplicate the selected pre-composition.",
+      risk: "low",
+      requiresCheckpoint: true,
+      steps: [
+        {
+          title: "Check active layers",
+          tool: "get_active_layers",
+          parameters: {}
+        },
+        {
+          type: "conditional",
+          condition: "if selected layer source is precomp",
+          steps: [
+            {
+              type: "action",
+              action: "execute_command",
+              command: "duplicate_layer(layer_index=0, target_comp_name='Duplicated_Precomp_Name')"
+            }
+          ]
+        }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["get_active_comp", "deep_duplicate_precomp_sources", "get_comp_details"],
+      actionTypes: ["workflow-repair"]
+    });
+    assert.strictEqual(selectedPrecompDuplicateRepair.repairedPlan.steps[1].args.layerIndex, "{{selectedPrecompLayerIndex}}");
+    assert.strictEqual(selectedPrecompDuplicateRepair.repairedPlan.steps[1].args.sourceCompItemIndex, "{{selectedPrecompItemIndex}}");
+    assert.strictEqual(selectedPrecompDuplicateRepair.repairedPlan.steps[1].args.unavailableFootagePolicy, "reuse");
+
     const dryRunResponse = await bridgePost("/agents/plan/run", {
       requestId: "plan-repair-dry-run",
       dryRun: true,
@@ -236,6 +280,23 @@ async function main() {
     assert.strictEqual(dryRunResponse.body.run.validation.classification.category, "risky", "dry-run repaired classification");
     assert(dryRunResponse.body.run.steps.every((step) => step.status === "ready"), "dry-run repaired steps should be ready");
 
+    const emptyRunResponse = await bridgePost("/agents/plan/run", {
+      requestId: "plan-repair-empty-run",
+      dryRun: false,
+      confirm: true,
+      plan: {
+        summary: "Do not report success for a no-op command plan.",
+        risk: "low",
+        requiresCheckpoint: false,
+        steps: []
+      }
+    });
+    assert.strictEqual(emptyRunResponse.status, 400, "empty run endpoint status");
+    assert.strictEqual(emptyRunResponse.body.ok, false, "empty run ok");
+    assert.strictEqual(emptyRunResponse.body.run.ok, false, "empty run result ok");
+    assert.strictEqual(emptyRunResponse.body.run.validation.ok, false, "empty run validation ok");
+    assert.strictEqual(emptyRunResponse.body.run.validation.executableCount, 0, "empty run executable count");
+
     console.log(JSON.stringify({
       ok: true,
       bridge: {
@@ -246,6 +307,8 @@ async function main() {
         precomposeActions: precomposeRepair.planRepair.actions.length,
         textActions: textRepair.planRepair.actions.length,
         bindingAliasActions: bindingAliasRepair.planRepair.actions.length,
+        selectedPrecompDuplicateActions: selectedPrecompDuplicateRepair.planRepair.actions.length,
+        emptyRunStatus: emptyRunResponse.body.run.error,
         dryRunStatus: dryRunResponse.body.run.steps.map((step) => step.status)
       }
     }, null, 2));

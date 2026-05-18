@@ -5,6 +5,9 @@ const PLAN_REPAIR_SCHEMA = "ae-agent-plan-repair.v1";
 const TOOL_ALIASES = {
   activecomp: "get_active_comp",
   activecomposition: "get_active_comp",
+  activelayers: "get_selected_layers",
+  getactivelayer: "get_selected_layers",
+  getactivelayers: "get_selected_layers",
   getactivecomp: "get_active_comp",
   getactivecomposition: "get_active_comp",
   selectedlayers: "get_selected_layers",
@@ -46,6 +49,11 @@ const TOOL_ALIASES = {
   precompose: "precompose_layers",
   precomposelayer: "precompose_layers",
   precomposelayers: "precompose_layers",
+  duplicateprecomp: "deep_duplicate_precomp_sources",
+  duplicateprecomposition: "deep_duplicate_precomp_sources",
+  duplicatedselectedprecomp: "deep_duplicate_precomp_sources",
+  deepduplicateprecomp: "deep_duplicate_precomp_sources",
+  deepduplicateprecompsources: "deep_duplicate_precomp_sources",
   replace_source: "replace_layer_source",
   replacesource: "replace_layer_source",
   replacelayersource: "replace_layer_source",
@@ -169,7 +177,7 @@ function stepToolName(step) {
 
 function stepArgs(step) {
   if (!isPlainObject(step)) return {};
-  const args = step.args || step.arguments || {};
+  const args = step.args || step.arguments || step.parameters || {};
   return isPlainObject(args) ? args : {};
 }
 
@@ -276,6 +284,100 @@ function addAction(actions, stepIndex, type, message, extra) {
     message,
     ...(extra || {})
   });
+}
+
+function addPlanAction(actions, type, message, extra) {
+  actions.push({
+    step: 0,
+    type,
+    message,
+    ...(extra || {})
+  });
+}
+
+function planSearchText(plan) {
+  try {
+    return JSON.stringify(plan || {}).toLowerCase();
+  } catch (_error) {
+    return "";
+  }
+}
+
+function planHasTool(plan, toolName) {
+  const steps = Array.isArray(plan && plan.steps) ? plan.steps : [];
+  return steps.some((step) => stepToolName(step) === toolName);
+}
+
+function hasSelectedPrecompDuplicateIntent(plan) {
+  const text = planSearchText(plan);
+  const duplicateIntent = /duplicate|duplicat|clone|copy|duplicate_layer|\u0434\u0443\u0431\u043b|\u043a\u043e\u043f\u0438\u0440/.test(text);
+  const precompIntent = /pre[\s_-]*comp|pre[\s_-]*composition|precomposition|\u043f\u0440\u0435\u043a\u043e\u043c\u043f/.test(text);
+  return duplicateIntent && precompIntent;
+}
+
+function planHasPseudoExecution(plan) {
+  const steps = Array.isArray(plan && plan.steps) ? plan.steps : [];
+  const text = planSearchText(plan);
+  if (!steps.length) return true;
+  if (/execute_command|duplicate_layer|step_type|on_success|conditional/.test(text)) return true;
+  return steps.some((step) => isPlainObject(step) && !stepToolName(step) && (
+    step.command || step.action || step.description || step.condition || Array.isArray(step.steps)
+  ));
+}
+
+function buildSelectedPrecompDuplicatePlan(plan) {
+  return {
+    ...clonePlan(plan),
+    summary: plan.summary || "Deep duplicate the selected precomp source tree.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    clarifyingQuestion: null,
+    steps: [
+      {
+        title: "Inspect selected precomp layer",
+        intent: "Read the active comp and selected layers before choosing the precomp source to duplicate.",
+        tool: "get_active_comp",
+        args: {}
+      },
+      {
+        title: "Deep duplicate selected precomp sources",
+        intent: "Duplicate the selected precomp source tree and relink the selected layer to the duplicated source comp.",
+        tool: "deep_duplicate_precomp_sources",
+        args: {
+          layerIndex: "{{selectedPrecompLayerIndex}}",
+          sourceCompItemIndex: "{{selectedPrecompItemIndex}}",
+          nameSuffix: " copy",
+          unavailableFootagePolicy: "reuse",
+          openInViewer: false
+        }
+      },
+      {
+        title: "Read back duplicated precomp",
+        intent: "Verify the duplicated root comp after the protected run.",
+        tool: "get_comp_details",
+        args: {
+          compItemIndex: "{{duplicatedRootCompItemIndex}}",
+          includeLayers: true
+        }
+      }
+    ]
+  };
+}
+
+function repairSelectedPrecompDuplicateWorkflow(plan, catalog, actions) {
+  if (!catalog.toolByName("deep_duplicate_precomp_sources") || !catalog.planningToolNames.has("deep_duplicate_precomp_sources")) {
+    return null;
+  }
+  if (planHasTool(plan, "deep_duplicate_precomp_sources")) return null;
+  if (!hasSelectedPrecompDuplicateIntent(plan) || !planHasPseudoExecution(plan)) return null;
+
+  addPlanAction(
+    actions,
+    "workflow-repair",
+    "Rebuilt selected-precomp duplicate pseudo plan as a typed deep_duplicate_precomp_sources workflow.",
+    { tool: "deep_duplicate_precomp_sources" }
+  );
+  return buildSelectedPrecompDuplicatePlan(plan);
 }
 
 function previousTools(steps, stepIndex) {
@@ -464,6 +566,14 @@ function repairAgentPlan(plan, validation, catalogOptions) {
   if (!Array.isArray(repairedPlan.steps)) repairedPlan.steps = [];
   if (repairedPlan.steps.length > 50) {
     repair.blockers.push("Plan has too many steps for bounded repair.");
+    return repair;
+  }
+
+  const workflowRepair = repairSelectedPrecompDuplicateWorkflow(repairedPlan, catalog, repair.actions);
+  if (workflowRepair) {
+    repair.applied = true;
+    repair.summary = compactText(repair.actions.map((action) => action.message).join(" "), 280);
+    repair.repairedPlan = workflowRepair;
     return repair;
   }
 

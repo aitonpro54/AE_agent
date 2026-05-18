@@ -2754,6 +2754,8 @@
     lines.push((run.dryRun ? "Dry run" : "Run") + ": " + (run.ok ? "ok" : "needs review"));
     if (run.dryRun) {
       lines.push("Mode: preview only; project was not changed.");
+    } else if (runValidation && runValidation.ok === false) {
+      lines.push("Mode: blocked before execution.");
     } else if (runMutatingCount > 0) {
       lines.push("Mode: protected project-change run.");
     } else {
