@@ -57,6 +57,7 @@
 - [x] Milestone 87: Dev request manual Codex chat handoff.
 - [x] Milestone 88: Deep duplicate selected precomp typed tool.
 - [x] Milestone 89: Selected precomp layer runtime binding.
+- [x] Milestone 90: CEP cache-busting reload for installed panel updates.
 
 ## Current Stable Baseline
 
@@ -449,6 +450,12 @@
 - Update Agent planner guidance for deep duplicate requests to use `deep_duplicate_precomp_sources` with `layerIndex: "{{selectedPrecompLayerIndex}}"` and `sourceCompItemIndex: "{{selectedPrecompItemIndex}}"`, not `run_extendscript`.
 - Extend smoke coverage for named runtime bindings and bump panel/bridge/manifest to `1.0.6`.
 
+### Milestone 90: CEP cache-busting reload for installed panel updates
+
+- Add no-cache metadata and versioned resource URLs to the CEP panel HTML for CSS/JS assets.
+- Make the panel Reload action navigate to the same `index.html` with a versioned timestamp query instead of relying on a normal Chromium reload.
+- After syncing an installed panel update, clear only the AE Agent CEP cache/code-cache/GPU cache directories while preserving Local Storage.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -550,6 +557,7 @@
 - 2026-05-18: `Prepare typed tool request` creates only the local handoff bundle in v1. It does not launch Codex App or imply that a new Codex App chat was created; chat creation stays manual from `start-prompt.md` until a stable local API exists.
 - 2026-05-18: The selected-precomp deep duplicate workflow is now a typed mutating bridge tool (`deep_duplicate_precomp_sources`) rather than a raw ExtendScript plan step; it still requires the normal Agent mutation gates for real execution.
 - 2026-05-18: `{{selectedPrecompLayerIndex}}` resolves to the selected layer whose source is a comp, while `{{selectedPrecompItemIndex}}` resolves to that layer's source comp item. Deep duplicate plans should use both bindings with `deep_duplicate_precomp_sources`.
+- 2026-05-18: Installed CEP panel updates need cache-busting at the HTML/script level because AE can keep serving a stale Chromium cache even when the Roaming extension files are already synchronized.
 
 ## Validation
 
@@ -1705,4 +1713,15 @@
   - Passed `node --check` for touched JavaScript files.
   - Passed the configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
   - Passed `node scripts\smoke-test.js`; output included six completed named-binding steps, explicit unresolved selected-precomp-layer diagnostics, and `deepDuplicatePlan.rawExtendscriptStepCount:0`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+- Milestone 90:
+  - Investigated user-reported stale `AE Agent 1.0.5` after panel reload.
+  - Confirmed with elevated `cep-sync-health` that the installed Roaming extension files already matched repo `1.0.6`; no second `com.codex.aemcpbridge` copy was found in the common CEP extensions folder.
+  - Found the relevant AE cache at `C:\Users\Ant\AppData\Local\Temp\cep_cache\AEFT_26.2_com.codex.aemcpbridge.panel` and cleared only `Cache`, `Code Cache`, `GPUCache`, and `blob_storage`, preserving Local Storage.
+  - Added no-cache HTML metadata and versioned resource URLs (`style.css?v=1.0.6`, `panel.js?v=1.0.6`) so the installed panel stops loading stale pre-sync assets.
+  - Changed the panel Reload button to navigate to `index.html?v=1.0.6&reload=<timestamp>` instead of relying on a normal `window.location.reload()`.
+  - Synced the installed CEP panel again; `cep-sync-health --sync --check` reported installed panel/title/manifest `1.0.6` and copied the changed `index.html` and `panel.js`.
+  - Verified installed `index.html` contains `AE Agent 1.0.6` and `panel.js?v=1.0.6`; installed `panel.js` contains `APP_VERSION = "1.0.6"` and the cache-busting reload.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node scripts\smoke-test.js`.
   - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.

@@ -2960,7 +2960,8 @@
     stopSetupStatusPolling();
     if (pollTimer) clearTimeout(pollTimer);
     log("Reloading app");
-    window.location.reload();
+    var baseUrl = String(window.location.href || "").split("#")[0].split("?")[0];
+    window.location.replace(baseUrl + "?v=" + encodeURIComponent(APP_VERSION) + "&reload=" + Date.now());
   }
 
   connectButton.addEventListener("click", connect);
