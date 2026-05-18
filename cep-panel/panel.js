@@ -218,7 +218,7 @@
     var completed = false;
     var xhr = new XMLHttpRequest();
     xhr.open(method, getBaseUrl() + appendToken(path), true);
-    xhr.timeout = path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 ? 120000 : 10000;
+    xhr.timeout = path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 || path.indexOf("/agents/hardcore") === 0 ? 120000 : 10000;
     if (body !== null && body !== undefined) {
       xhr.setRequestHeader("content-type", "text/plain;charset=utf-8");
     }
@@ -2681,6 +2681,63 @@
     return lines.join("\n");
   }
 
+  function formatHardcoreSession(session) {
+    if (!session) return "Agent Hardcore: no session result.";
+    var lines = [];
+    var attempts = session.attempts && typeof session.attempts.push === "function" ? session.attempts : [];
+    var finalRun = session.finalRun || (session.finalAttempt && session.finalAttempt.run) || null;
+    lines.push("Agent Hardcore: " + (session.ok ? "verified" : "needs review"));
+    lines.push("Attempts: " + attempts.length + " / " + (session.maxAttempts || attempts.length || 1));
+    if (session.finalPlanResult && session.finalPlanResult.plan && session.finalPlanResult.plan.summary) {
+      lines.push("Final plan: " + session.finalPlanResult.plan.summary);
+    }
+    if (finalRun) {
+      lines.push((finalRun.dryRun ? "Dry run" : "Protected run") + ": " + (finalRun.ok ? "ok" : "needs review"));
+      if (finalRun.error) lines.push("Error: " + finalRun.error);
+      if (finalRun.recoveryHint) lines.push("Recovery: " + finalRun.recoveryHint);
+      var semanticText = formatSemanticVerification(finalRun.semanticVerification);
+      if (semanticText) lines.push(semanticText);
+      if (finalRun.checkpoint && finalRun.checkpoint.checkpointFile) lines.push("Checkpoint: " + finalRun.checkpoint.checkpointFile);
+      if (finalRun.editSession && finalRun.editSession.checkpoint && finalRun.editSession.checkpoint.checkpointFile) {
+        lines.push("Checkpoint: " + finalRun.editSession.checkpoint.checkpointFile);
+      }
+    }
+    if (session.artifacts) {
+      if (session.artifacts.sessionArtifact && session.artifacts.sessionArtifact.sessionFile) {
+        lines.push("Session evidence: " + session.artifacts.sessionArtifact.sessionFile);
+      }
+      if (session.artifacts.candidate && session.artifacts.candidate.path) {
+        lines.push("Candidate: " + session.artifacts.candidate.path);
+      }
+      if (session.artifacts.solutionPromotion) {
+        if (session.artifacts.solutionPromotion.solutionId) lines.push("Solution memory: " + session.artifacts.solutionPromotion.solutionId);
+        if (session.artifacts.solutionPromotion.reason) lines.push("Solution memory: " + session.artifacts.solutionPromotion.reason);
+        if (session.artifacts.solutionPromotion.error) lines.push("Solution memory warning: " + session.artifacts.solutionPromotion.error);
+      }
+      if (session.artifacts.projectMemory && session.artifacts.projectMemory.error) {
+        lines.push("Project memory warning: " + session.artifacts.projectMemory.error);
+      }
+      if (session.artifacts.errors && session.artifacts.errors.length) {
+        lines.push("Artifact warnings: " + session.artifacts.errors.slice(0, 3).join("; "));
+      }
+    }
+    if (attempts.length) {
+      lines.push("Attempt log:");
+      for (var i = 0; i < attempts.length; i++) {
+        var attempt = attempts[i] || {};
+        lines.push((i + 1) + ". " + (attempt.status || "unknown"));
+        if (attempt.blocker) lines.push("   " + attempt.blocker);
+        if (attempt.planResult && attempt.planResult.planValidation) {
+          lines.push("   validation: " + (attempt.planResult.planValidation.ok ? "ok" : "needs review"));
+        }
+        if (attempt.run && attempt.run.semanticVerification && attempt.run.semanticVerification.summary) {
+          lines.push("   verification: " + attempt.run.semanticVerification.summary);
+        }
+      }
+    }
+    return lines.join("\n");
+  }
+
   function formatDevRequestResult(response) {
     var bundle = response && response.bundle ? response.bundle : {};
     var codexApp = response && response.codexApp ? response.codexApp : {};
@@ -2828,10 +2885,22 @@
       updateChatAvailability();
     }
 
-    setChatBusy(true, agentPlanMode ? (hardcoreMode ? "Hardcore planning" : "Planning") : "Thinking");
-    var path = agentPlanMode ? "/agents/plan" : "/agents/chat";
+    setChatBusy(true, agentPlanMode ? (hardcoreMode ? "Hardcore autopilot" : "Planning") : "Thinking");
+    var path = hardcoreMode ? "/agents/hardcore/run" : (agentPlanMode ? "/agents/plan" : "/agents/chat");
     var optimizePrompt = promptOptimizationEl && promptOptimizationEl.checked;
-    var body = agentPlanMode ? {
+    var body = hardcoreMode ? {
+      agentId: agentId,
+      model: selectedModel(),
+      prompt: prompt,
+      promptOptimization: optimizePrompt,
+      hardcore: true,
+      agentMode: "hardcore",
+      maxAttempts: 3,
+      allowMutations: true,
+      autoEditSession: true,
+      autoPromoteKnowledge: true,
+      timeoutMs: 120000
+    } : agentPlanMode ? {
       agentId: agentId,
       model: selectedModel(),
       prompt: prompt,
@@ -2855,16 +2924,23 @@
         return;
       }
 
-      var result = response && response.result ? response.result : {};
-      var text = agentPlanMode ? formatPlanResult(result) : result.text || "";
-      lastPlanResult = agentPlanMode ? result : lastPlanResult;
-      appendChatMessage("assistant", text, agentPlanMode ? { planActions: result } : null);
+      var result = hardcoreMode ? (response && response.session ? response.session : {}) : (response && response.result ? response.result : {});
+      var text = hardcoreMode ? formatHardcoreSession(result) : (agentPlanMode ? formatPlanResult(result) : result.text || "");
+      if (hardcoreMode) {
+        lastPlanResult = null;
+        rememberPlanRun(result.finalRun || null);
+      } else {
+        lastPlanResult = agentPlanMode ? result : lastPlanResult;
+      }
+      appendChatMessage("assistant", text, agentPlanMode && !hardcoreMode ? { planActions: result } : null);
       if (!agentPlanMode) {
         chatMessages.push({ role: "assistant", content: text });
         if (chatMessages.length > 16) chatMessages = chatMessages.slice(chatMessages.length - 16);
         saveCurrentChatSession();
       }
-      if (result.requestId) {
+      if (hardcoreMode && result.sessionId) {
+        log("Agent hardcore session " + result.sessionId + " finished with " + (result.status || "unknown"));
+      } else if (result.requestId) {
         log("Agent " + mode + " " + result.requestId + " finished in " + (result.durationMs || 0) + "ms with " + (result.model || selectedModel()));
       }
       updateChatAvailability();

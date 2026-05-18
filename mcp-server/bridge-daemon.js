@@ -11,6 +11,8 @@ const { buildSolutionHintsForPrompt } = require("./solution-library");
 const { classifyAgentPlan } = require("./plan-risk-classifier");
 const { repairAgentPlan } = require("./plan-repair");
 const { buildSemanticVerification } = require("./semantic-verification");
+const { writeSolutionCandidateReport } = require("../scripts/solution-candidate-report");
+const { validateRegistry } = require("../scripts/solution-registry-smoke");
 const {
   buildProjectIntentMemoryForPrompt,
   readProjectIntentMemory,
@@ -34,6 +36,9 @@ const IDEMPOTENCY_LOG_FILE = path.join(LOG_DIR, "idempotency-results.jsonl");
 const DEV_REQUESTS_DIR = process.env.AE_AGENT_DEV_REQUEST_DIR
   ? path.resolve(process.env.AE_AGENT_DEV_REQUEST_DIR)
   : path.join(LOG_DIR, "dev-requests");
+const HARDCORE_SESSIONS_DIR = process.env.AE_AGENT_HARDCORE_SESSION_DIR
+  ? path.resolve(process.env.AE_AGENT_HARDCORE_SESSION_DIR)
+  : path.join(LOG_DIR, "hardcore-sessions");
 const AGENT_SECRETS_FILE = process.env.AE_AGENT_SECRETS_FILE
   ? path.resolve(process.env.AE_AGENT_SECRETS_FILE)
   : path.join(PROJECT_ROOT, ".codex", "agent-secrets.json");
@@ -767,6 +772,7 @@ function getBridgeStatus() {
     logFile: LOG_FILE,
     aiChatLogFile: AI_CHAT_LOG_FILE,
     idempotencyLogFile: IDEMPOTENCY_LOG_FILE,
+    hardcoreSessionDir: HARDCORE_SESSIONS_DIR,
     agentSecretsFile: AGENT_SECRETS_FILE,
     backupDir: BACKUP_DIR,
     activeEditSession: compactEditSession(activeEditSession),
@@ -3167,6 +3173,567 @@ function planRunRecoveryHint(run) {
   return "Review the failed step before retrying. If any AE change occurred, use the checkpoint or After Effects Undo path listed in the step details.";
 }
 
+function hardcoreSessionSlug(value) {
+  return String(value || "agent-hardcore-session")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64) || "agent-hardcore-session";
+}
+
+function hardcoreRegistryPath() {
+  return process.env.AE_SOLUTION_REGISTRY_PATH
+    ? path.resolve(process.env.AE_SOLUTION_REGISTRY_PATH)
+    : path.join(PROJECT_ROOT, "registry", "solutions.json");
+}
+
+function uniqueList(values, limit) {
+  const output = [];
+  for (const value of values || []) {
+    const text = String(value || "").trim();
+    if (text && !output.includes(text)) output.push(text);
+    if (limit && output.length >= limit) break;
+  }
+  return output;
+}
+
+function compactHardcoreText(value, limit = 500) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (text.length <= limit) return text;
+  return `${text.slice(0, Math.max(0, limit - 1)).trim()}...`;
+}
+
+function planTools(plan) {
+  const steps = plan && Array.isArray(plan.steps) ? plan.steps : [];
+  return uniqueList(steps.map((step) => step && step.tool).filter(Boolean), 12);
+}
+
+function hardcoreAttemptSucceeded(attempt) {
+  const run = attempt && attempt.run;
+  if (!run || run.ok !== true) return false;
+  const semantic = run.semanticVerification || null;
+  return !semantic || semantic.status === "passed" || semantic.status === "not_applicable";
+}
+
+function compactHardcoreRunFailure(run) {
+  if (!run) return { error: "No run result." };
+  const failedSteps = Array.isArray(run.steps)
+    ? run.steps.filter((step) => step && (step.status === "failed" || step.status === "blocked")).slice(0, 4)
+    : [];
+  return {
+    ok: run.ok,
+    error: compactHardcoreText(run.error || "", 260),
+    recoveryHint: compactHardcoreText(run.recoveryHint || "", 260),
+    semanticVerification: run.semanticVerification
+      ? {
+          status: run.semanticVerification.status || null,
+          summary: compactHardcoreText(run.semanticVerification.summary || "", 260),
+          failedChecks: run.semanticVerification.failedChecks || 0,
+          warnings: Array.isArray(run.semanticVerification.warnings) ? run.semanticVerification.warnings.slice(0, 3) : []
+        }
+      : null,
+    failedSteps: failedSteps.map((step) => ({
+      index: step.index || null,
+      title: compactHardcoreText(step.title || step.tool || "Step", 120),
+      tool: step.tool || null,
+      status: step.status || null,
+      reason: compactHardcoreText(step.reason || step.error || "", 220)
+    }))
+  };
+}
+
+function compactHardcoreAttemptForPrompt(attempt) {
+  return {
+    attempt: attempt && attempt.index,
+    planSummary: compactHardcoreText(attempt && attempt.planResult && attempt.planResult.plan && attempt.planResult.plan.summary, 220),
+    validationOk: Boolean(attempt && attempt.planResult && attempt.planResult.planValidation && attempt.planResult.planValidation.ok),
+    tools: planTools(attempt && attempt.planResult && attempt.planResult.plan),
+    dryRunOk: attempt && attempt.dryRun ? attempt.dryRun.ok : null,
+    run: compactHardcoreRunFailure(attempt && attempt.run),
+    blocker: attempt && attempt.blocker ? compactHardcoreText(attempt.blocker, 260) : null
+  };
+}
+
+function buildHardcoreRetryPrompt(originalPrompt, attempts) {
+  const lastAttempts = attempts.slice(-2).map(compactHardcoreAttemptForPrompt);
+  return [
+    originalPrompt,
+    "",
+    "Agent Hardcore retry context:",
+    "The previous protected attempt did not finish with verified success. Draft a repaired typed-tool AE plan.",
+    "Keep the original user intent, avoid raw ExtendScript, inspect targets before mutations, and add explicit read-back verification after mutations.",
+    "Previous attempt evidence:",
+    JSON.stringify(lastAttempts, null, 2)
+  ].join("\n");
+}
+
+function injectedHardcorePlanResult(plan, requestId, options) {
+  const prepared = validateAgentPlanWithRepair(plan, requestId, {
+    solutionHints: options && options.solutionHints || null,
+    projectIntentMemory: options && options.projectIntentMemory || null
+  }, {
+    repairPlan: options && options.repairPlan
+  });
+  return {
+    mode: "ae-plan",
+    agentMode: "hardcore",
+    requestId,
+    startedAt: new Date().toISOString(),
+    finishedAt: new Date().toISOString(),
+    durationMs: 0,
+    planParseOk: true,
+    planRepaired: false,
+    planRepair: prepared.repair || null,
+    planRepairApplied: Boolean(prepared.repair && prepared.repair.applied),
+    plan: prepared.plan,
+    planValidation: prepared.validation,
+    planClassification: prepared.validation ? prepared.validation.classification : null,
+    planContextSnapshot: null,
+    planProjectIntentMemory: null,
+    planSolutionHints: null,
+    planParseError: null
+  };
+}
+
+function hardcorePlanFromInjectedAttempts(args, attemptIndex, sessionId) {
+  const attempts = Array.isArray(args && args.attemptPlans)
+    ? args.attemptPlans
+    : (args && args.plan ? [args.plan] : []);
+  if (!attempts.length) return null;
+  const plan = attempts[Math.min(attemptIndex - 1, attempts.length - 1)];
+  return injectedHardcorePlanResult(plan, `${sessionId}-attempt-${attemptIndex}`, {
+    repairPlan: args && args.repairPlan !== false
+  });
+}
+
+async function draftHardcorePlan(source, args, attemptIndex, session) {
+  const injected = hardcorePlanFromInjectedAttempts(args, attemptIndex, session.sessionId);
+  if (injected) return injected;
+
+  const retryPrompt = attemptIndex > 1
+    ? buildHardcoreRetryPrompt(session.prompt, session.attempts)
+    : session.prompt;
+  return runAgentPlanLogged(source, {
+    ...(args || {}),
+    prompt: retryPrompt,
+    hardcore: true,
+    agentMode: "hardcore",
+    repairPlan: args && args.repairPlan !== false,
+    timeoutMs: hasArg(args || {}, "timeoutMs") ? args.timeoutMs : 120000
+  });
+}
+
+function writeHardcoreSessionArtifact(session) {
+  const dirName = `${new Date().toISOString().replace(/[:.]/g, "-")}-${hardcoreSessionSlug(session.prompt).slice(0, 40)}-${session.sessionId.slice(0, 8)}`;
+  const dir = path.join(HARDCORE_SESSIONS_DIR, dirName);
+  fs.mkdirSync(dir, { recursive: true });
+  const sessionPath = path.join(dir, "session.json");
+  fs.writeFileSync(sessionPath, JSON.stringify(session, null, 2) + "\n", "utf8");
+  return {
+    directory: normalizeBundlePath(dir),
+    sessionFile: normalizeBundlePath(sessionPath)
+  };
+}
+
+function buildHardcoreCandidateInput(session) {
+  const finalAttempt = session.finalAttempt || session.attempts[session.attempts.length - 1] || {};
+  const plan = finalAttempt.planResult && finalAttempt.planResult.plan ? finalAttempt.planResult.plan : {};
+  const run = finalAttempt.run || {};
+  const semantic = run.semanticVerification || {};
+  const affectedTargets = Array.isArray(run.steps)
+    ? run.steps.map((step) => step && (step.targetSummary || step.title || step.tool)).filter(Boolean).slice(0, 12)
+    : [];
+  return {
+    title: session.ok ? "Agent Hardcore verified typed workflow" : "Agent Hardcore workflow needs review",
+    tags: uniqueList(["hardcore", "autopilot", "typed-tool"].concat(planTools(plan)), 12),
+    intent: {
+      summary: compactHardcoreText(session.prompt, 500),
+      appliesWhen: ["A user asks Agent Hardcore to autonomously plan, run, repair, and verify an AE workflow."]
+    },
+    generatedPlan: plan,
+    affectedTargets,
+    runResult: {
+      ok: run.ok === true,
+      dryRun: false,
+      mutating: Boolean(run.validation && run.validation.mutatingCount > 0),
+      safety: run.safety || null,
+      checkpoint: run.checkpoint || null,
+      errorSummary: run.error || null,
+      outputSummary: session.ok ? "Autonomous protected run completed with verification." : "Autonomous protected run stopped with review evidence."
+    },
+    verificationReadBack: {
+      summary: semantic.summary || (session.ok ? "Verified by Agent Hardcore run result." : "Needs review."),
+      status: semantic.status || (session.ok ? "passed" : "needs_review"),
+      evidence: Array.isArray(semantic.checks)
+        ? semantic.checks.slice(0, 6).map((check) => `${check.title || check.id}: ${check.status}`)
+        : []
+    },
+    projectAssumptions: [
+      "Targets were selected or discovered through normal AE Agent inspection tools.",
+      "Execution stayed inside validated Agent plan gates with checkpoint/edit-session protection."
+    ],
+    warnings: uniqueList((session.warnings || []).concat(session.ok ? [] : ["Session did not finish with verified success."]), 12),
+    suggestedPromotionAction: {
+      action: session.ok ? "promote-to-recipe" : "keep-in-quarantine",
+      rationale: session.ok
+        ? "Autonomous session completed through typed tools and read-back evidence."
+        : "Keep in quarantine until a successful verified run exists."
+    },
+    provenance: {
+      source: "agent-hardcore-autopilot",
+      runPrefix: session.sessionId,
+      planner: {
+        agent: session.agentId,
+        model: session.model
+      }
+    }
+  };
+}
+
+function buildHardcoreSolution(session) {
+  const finalAttempt = session.finalAttempt || {};
+  const plan = finalAttempt.planResult && finalAttempt.planResult.plan ? finalAttempt.planResult.plan : {};
+  const validation = finalAttempt.planResult && finalAttempt.planResult.planValidation ? finalAttempt.planResult.planValidation : {};
+  const tools = planTools(plan).filter((tool) => tool !== "run_extendscript" && tool !== "run_extendscript_file");
+  const deepDuplicate = tools.includes("deep_duplicate_precomp_sources");
+  const id = deepDuplicate ? "deep-duplicate-precomp-fileless-source" : "agent-hardcore-autopilot-typed-workflow";
+  const mutating = Number(validation.mutatingCount || 0) > 0;
+  const today = new Date().toISOString().slice(0, 10);
+
+  return {
+    schema: "ae-solution.v1",
+    id,
+    title: deepDuplicate ? "Deep Duplicate Precomp With Fileless Sources" : "Agent Hardcore Autopilot Typed Workflow",
+    status: "recipe",
+    tags: uniqueList((deepDuplicate
+      ? ["precomp", "source", "deep-duplicate", "fileless-footage", "solid-source", "hardcore", "typed-tool"]
+      : ["hardcore", "autopilot", "typed-tool", "repair-loop"]).concat(tools), 12),
+    intent: {
+      summary: deepDuplicate
+        ? "Duplicate a selected precomp source tree even when nested adjustment or generated solid footage has no source file."
+        : "Run an Agent Hardcore request as a protected plan, dry-run, mutation, read-back, and repair loop.",
+      appliesWhen: deepDuplicate
+        ? [
+            "The user asks to deep duplicate a selected precomp/source tree.",
+            "Nested sources may include generated solids, adjustment layers, placeholders, or missing footage."
+          ]
+        : [
+            "The user asks Agent Hardcore to handle a workflow without manual dry-run/run steps.",
+            "The task can be represented with existing typed AE Agent tools."
+          ]
+    },
+    inputs: [
+      {
+        name: "userPrompt",
+        type: "string",
+        required: true,
+        description: "The user's AE workflow request."
+      },
+      {
+        name: "selectedLayer",
+        type: "layer-selection",
+        required: false,
+        description: "Optional selected layer or precomp source inspected before mutation."
+      }
+    ],
+    targetAssumptions: [
+      "An active composition exists when the workflow targets current selection.",
+      "Targets are verified through read tools before mutation."
+    ],
+    execution: {
+      mode: "typed-plan",
+      mutating,
+      riskLevel: mutating ? "medium" : "low",
+      recipePath: deepDuplicate ? "recipes/deep-duplicate-precomp-fileless-source.md" : "recipes/agent-hardcore-autopilot.md",
+      scriptPath: null,
+      preferredTools: tools.length ? tools : ["get_active_comp", "get_selected_layers"]
+    },
+    requiredSafetyGates: {
+      planValidation: true,
+      explicitConfirmation: mutating,
+      allowMutations: mutating,
+      idempotency: mutating,
+      checkpointOrEditSession: mutating,
+      postMutationReadBack: mutating
+    },
+    verificationRecipe: {
+      summary: "Run read-back tools after the protected run and require semantic verification to pass or report needs-review evidence.",
+      steps: ["Run the typed plan through dry-run first.", "Execute through protected run gates.", "Read back affected comp/layer/source state after mutation."],
+      expectedEvidence: ["Run result is ok.", "Semantic verification status is passed or not_applicable.", "Candidate evidence is stored under local ignored logs."]
+    },
+    testedAeContext: {
+      aeVersion: null,
+      panelVersion: "AE Agent 1.0.6",
+      bridgeVersion: SERVER_VERSION,
+      projectKind: "agent-hardcore-session",
+      notes: ["Auto-promoted only after local registry validation succeeds."]
+    },
+    promotionHistory: [
+      {
+        date: today,
+        from: "agent-hardcore-session",
+        to: "recipe",
+        reviewer: "agent-hardcore-autopilot",
+        evidence: "Successful Agent Hardcore session passed local candidate and registry validation before becoming planner-visible.",
+        commit: null
+      }
+    ],
+    notes: [
+      "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification."
+    ]
+  };
+}
+
+function autoPromoteHardcoreSolution(session) {
+  if (!session.ok) return { ok: true, skipped: true, reason: "Session did not finish with verified success." };
+  const finalAttempt = session.finalAttempt || {};
+  const plan = finalAttempt.planResult && finalAttempt.planResult.plan ? finalAttempt.planResult.plan : {};
+  const tools = planTools(plan);
+  if (tools.includes("run_extendscript") || tools.includes("run_extendscript_file")) {
+    return { ok: true, skipped: true, reason: "Raw ExtendScript plans are kept in quarantine." };
+  }
+
+  const registryPath = hardcoreRegistryPath();
+  const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
+  const solution = buildHardcoreSolution(session);
+  if (Array.isArray(registry.solutions) && registry.solutions.some((entry) => entry && entry.id === solution.id)) {
+    return { ok: true, skipped: true, reason: "Solution already exists.", solutionId: solution.id };
+  }
+
+  const nextRegistry = {
+    ...registry,
+    updatedAt: new Date().toISOString().slice(0, 10),
+    solutions: (registry.solutions || []).concat([solution])
+  };
+  validateRegistry(nextRegistry);
+  fs.writeFileSync(registryPath, JSON.stringify(nextRegistry, null, 2) + "\n", "utf8");
+  return { ok: true, skipped: false, solutionId: solution.id, registryPath: normalizeBundlePath(registryPath) };
+}
+
+function updateHardcoreProjectMemory(session) {
+  const finalAttempt = session.finalAttempt || {};
+  const plan = finalAttempt.planResult && finalAttempt.planResult.plan ? finalAttempt.planResult.plan : {};
+  const tools = planTools(plan);
+  const deepDuplicate = tools.includes("deep_duplicate_precomp_sources");
+  const entry = {
+    id: deepDuplicate ? "deep-duplicate-fileless-source-fallback" : "agent-hardcore-autopilot-loop",
+    status: "active",
+    category: "workflow-hint",
+    title: deepDuplicate ? "Deep Duplicate Fileless Source Fallback" : "Agent Hardcore Autopilot Loop",
+    summary: deepDuplicate
+      ? "When deep-duplicating precomp sources, generated solids or placeholders may have no file; reuse or reconstruct them with explicit warnings instead of failing the whole run."
+      : "Agent Hardcore should plan, dry-run, execute protected mutations, read back results, and retry from compact failure evidence before stopping.",
+    tags: deepDuplicate
+      ? ["precomp", "source", "fileless-footage", "hardcore", "readback"]
+      : ["hardcore", "autopilot", "repair-loop", "readback", "checkpoint"],
+    appliesWhen: deepDuplicate
+      ? ["A selected precomp contains adjustment layers, generated solids, placeholders, or missing footage sources."]
+      : ["The user selects Agent Hardcore for an AE workflow and expects autonomous execution."],
+    priority: deepDuplicate ? 8 : 7,
+    confidence: session.ok ? "high" : "medium",
+    source: {
+      kind: "agent-hardcore-session",
+      date: new Date().toISOString().slice(0, 10),
+      reviewed: true
+    },
+    notes: ["Memory is advisory only and never bypasses typed read tools or mutation gates."]
+  };
+  return updateProjectIntentMemory({
+    confirm: true,
+    action: "upsert",
+    entry
+  });
+}
+
+function persistHardcoreKnowledge(session, args) {
+  const result = {
+    sessionArtifact: null,
+    candidate: null,
+    solutionPromotion: null,
+    projectMemory: null,
+    errors: []
+  };
+
+  try {
+    result.sessionArtifact = writeHardcoreSessionArtifact(session);
+  } catch (error) {
+    result.errors.push(`session artifact: ${error.message || String(error)}`);
+  }
+
+  try {
+    const candidate = writeSolutionCandidateReport(buildHardcoreCandidateInput(session), {
+      source: "agent-hardcore-autopilot"
+    });
+    result.candidate = {
+      candidateId: candidate.report.candidate.id,
+      path: normalizeBundlePath(candidate.path),
+      warnings: candidate.report.candidate.warnings.length
+    };
+  } catch (error) {
+    result.errors.push(`candidate report: ${error.message || String(error)}`);
+  }
+
+  if (optionalBoolean(args || {}, "autoPromoteKnowledge", true)) {
+    try {
+      result.solutionPromotion = autoPromoteHardcoreSolution(session);
+    } catch (error) {
+      result.solutionPromotion = { ok: false, error: error.message || String(error) };
+      result.errors.push(`solution promotion: ${error.message || String(error)}`);
+    }
+
+    try {
+      const memory = updateHardcoreProjectMemory(session);
+      result.projectMemory = memory.ok
+        ? { ok: true, memoryPath: normalizeBundlePath(memory.memoryPath), activeCount: memory.registry && memory.registry.activeCount }
+        : { ok: false, error: memory.error || "Project memory update failed." };
+      if (!memory.ok) result.errors.push(`project memory: ${memory.error || "update failed"}`);
+    } catch (error) {
+      result.projectMemory = { ok: false, error: error.message || String(error) };
+      result.errors.push(`project memory: ${error.message || String(error)}`);
+    }
+  }
+
+  return result;
+}
+
+async function runAgentHardcoreSession(source, args) {
+  args = args || {};
+  const prompt = optionalString(args, "prompt", optionalString(args, "message", "")).trim();
+  if (!prompt && !args.plan && !Array.isArray(args.attemptPlans)) {
+    throw new Error("prompt is required for Agent Hardcore autopilot.");
+  }
+
+  const session = {
+    schema: "ae-agent-hardcore-session.v1",
+    sessionId: crypto.randomUUID(),
+    source,
+    startedAt: new Date().toISOString(),
+    prompt: prompt || "Injected Agent Hardcore plan",
+    agentId: optionalString(args, "agentId", optionalString(args, "agent", "")) || null,
+    model: optionalString(args, "model", "") || null,
+    maxAttempts: Math.max(1, Math.min(5, Math.floor(optionalNumber(args, "maxAttempts", 3)))),
+    allowMutations: optionalBoolean(args, "allowMutations", true),
+    autoEditSession: optionalBoolean(args, "autoEditSession", true),
+    autoPromoteKnowledge: optionalBoolean(args, "autoPromoteKnowledge", true),
+    attempts: [],
+    repairHistory: [],
+    warnings: [],
+    artifacts: null,
+    ok: false,
+    finalAttempt: null,
+    finalPlanResult: null,
+    finalRun: null
+  };
+
+  appendAiChatEvent("hardcore_session_started", {
+    sessionId: session.sessionId,
+    source,
+    agentId: session.agentId,
+    model: session.model,
+    maxAttempts: session.maxAttempts
+  });
+
+  for (let attemptIndex = 1; attemptIndex <= session.maxAttempts; attemptIndex++) {
+    const attempt = {
+      index: attemptIndex,
+      startedAt: new Date().toISOString(),
+      planResult: null,
+      dryRun: null,
+      run: null,
+      status: "started",
+      blocker: null
+    };
+    session.attempts.push(attempt);
+
+    try {
+      attempt.planResult = await draftHardcorePlan(source, args, attemptIndex, session);
+      if (attempt.planResult && attempt.planResult.planRepair) {
+        session.repairHistory.push({
+          attempt: attemptIndex,
+          planRepair: attempt.planResult.planRepair
+        });
+      }
+      if (!attempt.planResult || !attempt.planResult.plan || !attempt.planResult.planValidation || !attempt.planResult.planValidation.ok) {
+        attempt.status = "plan-needs-review";
+        attempt.blocker = attempt.planResult && attempt.planResult.planParseError || "Plan validation failed.";
+        continue;
+      }
+
+      attempt.dryRun = await runValidatedAgentPlan({
+        plan: attempt.planResult.plan,
+        requestId: attempt.planResult.requestId,
+        dryRun: true,
+        repairPlan: true,
+        maxSteps: optionalNumber(args, "maxSteps", 30)
+      });
+      if (!attempt.dryRun.ok) {
+        attempt.status = "dry-run-needs-review";
+        attempt.blocker = attempt.dryRun.error || "Dry run failed.";
+        continue;
+      }
+
+      attempt.run = await runValidatedAgentPlan({
+        plan: attempt.planResult.plan,
+        requestId: attempt.planResult.requestId,
+        dryRun: false,
+        confirm: true,
+        allowMutations: session.allowMutations,
+        autoEditSession: session.autoEditSession,
+        allowRawExtendscript: false,
+        repairPlan: true,
+        maxSteps: optionalNumber(args, "maxSteps", 30)
+      });
+
+      if (hardcoreAttemptSucceeded(attempt)) {
+        attempt.status = "verified";
+        session.ok = true;
+        session.finalAttempt = attempt;
+        session.finalPlanResult = attempt.planResult;
+        session.finalRun = attempt.run;
+        break;
+      }
+
+      attempt.status = "run-needs-review";
+      attempt.blocker = attempt.run && (attempt.run.error || attempt.run.recoveryHint) || "Run did not pass semantic verification.";
+      if (attempt.run && attempt.run.safety && attempt.run.safety.saveProjectFirst) {
+        break;
+      }
+    } catch (error) {
+      attempt.status = "failed";
+      attempt.blocker = error.message || String(error);
+      if (error.readiness || error.providerError) {
+        attempt.providerError = error.providerError || null;
+        attempt.readiness = error.readiness || null;
+        break;
+      }
+    } finally {
+      attempt.finishedAt = new Date().toISOString();
+    }
+  }
+
+  if (!session.finalAttempt) {
+    session.finalAttempt = session.attempts[session.attempts.length - 1] || null;
+    session.finalPlanResult = session.finalAttempt && session.finalAttempt.planResult || null;
+    session.finalRun = session.finalAttempt && session.finalAttempt.run || null;
+  }
+  session.finishedAt = new Date().toISOString();
+  session.status = session.ok ? "verified" : "needs_review";
+  session.artifacts = persistHardcoreKnowledge(session, args);
+
+  appendAiChatEvent("hardcore_session_finished", {
+    sessionId: session.sessionId,
+    source,
+    status: session.status,
+    ok: session.ok,
+    attempts: session.attempts.length,
+    artifact: session.artifacts && session.artifacts.sessionArtifact ? session.artifacts.sessionArtifact.sessionFile : null,
+    candidate: session.artifacts && session.artifacts.candidate ? session.artifacts.candidate.path : null
+  });
+
+  return session;
+}
+
 function escapeRegExp(value) {
   return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -4338,6 +4905,27 @@ function startHttpBridge() {
       return;
     }
 
+    if ((url.pathname === "/agents/hardcore/run" || url.pathname === "/dev/agents/hardcore/run") && req.method === "POST") {
+      if (!requireToken(req, res, url)) return;
+      try {
+        const body = await readJsonBody(req);
+        const session = await runAgentHardcoreSession("panel-http", body || {});
+        writeJson(res, 200, {
+          ok: session.ok,
+          session
+        });
+      } catch (error) {
+        writeJson(res, 400, {
+          ok: false,
+          error: error.message || String(error),
+          requestId: error.requestId || null,
+          readiness: error.readiness || null,
+          providerError: error.providerError || null
+        });
+      }
+      return;
+    }
+
     if ((url.pathname === "/agents/dev-request" || url.pathname === "/dev/agents/dev-request") && req.method === "POST") {
       if (!requireToken(req, res, url)) return;
       try {
@@ -4830,6 +5418,48 @@ const tools = [
         }
       },
       required: ["plan"]
+    }
+  },
+  {
+    name: "run_agent_hardcore_session",
+    description: "Run an autonomous Agent Hardcore session: plan, dry-run, protected execution, read-back verification, retry from compact evidence, and local knowledge capture.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        agentId: {
+          type: "string",
+          description: "Agent id from list_ai_agents, such as openai-cli, openai-api, gemini-api, claude-api, openrouter, ollama-local, or ollama-cloud."
+        },
+        model: {
+          type: "string",
+          description: "Provider model id. Defaults to the agent's configured model."
+        },
+        prompt: {
+          type: "string",
+          description: "User request to execute autonomously through Agent Hardcore."
+        },
+        maxAttempts: {
+          type: "number",
+          description: "Maximum plan/dry-run/run/repair attempts. Defaults to 3, maximum 5."
+        },
+        allowMutations: {
+          type: "boolean",
+          description: "Whether protected project-changing steps may run. Defaults to true."
+        },
+        autoEditSession: {
+          type: "boolean",
+          description: "Whether the runner should create and finish a protected edit session for mutating plans. Defaults to true."
+        },
+        autoPromoteKnowledge: {
+          type: "boolean",
+          description: "Whether successful verified sessions may write validated local memory and reviewed solution metadata. Defaults to true."
+        },
+        timeoutMs: {
+          type: "number",
+          description: "Optional provider request timeout in milliseconds."
+        }
+      },
+      required: ["agentId", "prompt"]
     }
   },
   {
@@ -5641,6 +6271,11 @@ const tools = [
         openInViewer: {
           type: "boolean",
           description: "Whether to open the duplicated precomp after creation. Defaults to false."
+        },
+        unavailableFootagePolicy: {
+          type: "string",
+          enum: ["reuse", "fail"],
+          description: "How to handle generated, placeholder, missing, or otherwise unreimportable footage sources. 'reuse' keeps the copied comp linked to the original item with a warning; 'fail' blocks the run. Defaults to reuse."
         }
       }
     }
@@ -6921,6 +7556,20 @@ async function callTool(name, args) {
     }
   }
 
+  if (name === "run_agent_hardcore_session") {
+    try {
+      const session = await runAgentHardcoreSession("mcp-tool", args || {});
+      return toolResult(session, !session.ok);
+    } catch (error) {
+      return toolResult({
+        error: error.message || String(error),
+        requestId: error.requestId || null,
+        readiness: error.readiness || null,
+        providerError: error.providerError || null
+      }, true);
+    }
+  }
+
   if (name === "start_edit_session") {
     return startEditSession(args || {});
   }
@@ -8023,6 +8672,7 @@ async function callTool(name, args) {
     const nameSuffix = optionalString(args, "nameSuffix", " copy");
     const fixExpressions = optionalBoolean(args, "fixExpressions", false);
     const openInViewer = optionalBoolean(args, "openInViewer", false);
+    const unavailableFootagePolicy = optionalString(args, "unavailableFootagePolicy", "reuse") === "fail" ? "fail" : "reuse";
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
@@ -8033,6 +8683,10 @@ async function callTool(name, args) {
       var nameSuffix = ${aeLiteral(nameSuffix)};
       var fixExpressions = ${fixExpressions ? "true" : "false"};
       var openInViewer = ${openInViewer ? "true" : "false"};
+      var unavailableFootagePolicy = ${aeLiteral(unavailableFootagePolicy)};
+      var deepDuplicateWarnings = [];
+      var duplicatedFootageCount = 0;
+      var reusedFootageCount = 0;
 
       function __codexCompReference(item) {
         var ref = __codexItemReference(item);
@@ -8064,6 +8718,102 @@ async function callTool(name, args) {
         return file;
       }
 
+      function __codexSourceTypename(item) {
+        try {
+          if (item && item.mainSource && item.mainSource.typename) return String(item.mainSource.typename);
+        } catch (__typenameError) {}
+        try {
+          if (item && item.mainSource && item.mainSource.constructor && item.mainSource.constructor.name) {
+            return String(item.mainSource.constructor.name);
+          }
+        } catch (__constructorNameError) {}
+        try {
+          if (item && item.mainSource) {
+            var sourceText = String(item.mainSource);
+            var match = sourceText.match(/^\\[object\\s+([^\\]]+)\\]$/);
+            if (match && match[1]) return String(match[1]);
+          }
+        } catch (__sourceTextError) {}
+        return "";
+      }
+
+      function __codexSolidColor(item) {
+        try {
+          if (item && item.mainSource && item.mainSource.color && item.mainSource.color.length >= 3) {
+            return [Number(item.mainSource.color[0]), Number(item.mainSource.color[1]), Number(item.mainSource.color[2])];
+          }
+        } catch (__solidColorError) {}
+        return [0, 0, 0];
+      }
+
+      function __codexFootagePixelAspect(item) {
+        try {
+          if (item && item.pixelAspect) return Number(item.pixelAspect);
+        } catch (__pixelAspectError) {}
+        return 1;
+      }
+
+      function __codexFootageDuration(item) {
+        try {
+          if (item && item.duration && isFinite(item.duration) && item.duration > 0) return Number(item.duration);
+        } catch (__durationError) {}
+        return 1;
+      }
+
+      function __codexFootageFrameRate(item) {
+        try {
+          if (item && item.frameRate && isFinite(item.frameRate) && item.frameRate > 0) return Number(item.frameRate);
+        } catch (__frameRateError) {}
+        return 25;
+      }
+
+      function __codexDuplicateSolidFootageItem(item) {
+        var width = Math.max(1, Math.round(Number(item.width || 1)));
+        var height = Math.max(1, Math.round(Number(item.height || 1)));
+        var pixelAspect = __codexFootagePixelAspect(item);
+        var duration = __codexFootageDuration(item);
+        var tempComp = null;
+        var copy = null;
+        try {
+          tempComp = app.project.items.addComp("__Codex Solid Duplicate Temp", width, height, pixelAspect, duration, __codexFootageFrameRate(item));
+          var tempLayer = tempComp.layers.addSolid(__codexSolidColor(item), item.name || "Solid", width, height, pixelAspect, duration);
+          copy = tempLayer.source;
+          try { tempLayer.remove(); } catch (__solidTempLayerRemoveError) {}
+        } finally {
+          try { if (tempComp) tempComp.remove(); } catch (__solidTempCompRemoveError) {}
+        }
+        if (!copy) {
+          return __codexReuseUnavailableFootage(item, "Solid footage source cannot be duplicated by this After Effects host");
+        }
+        try { copy.parentFolder = item.parentFolder; } catch (__solidParentFolderError) {}
+        return copy;
+      }
+
+      function __codexDuplicatePlaceholderFootageItem(item) {
+        var width = Math.max(1, Math.round(Number(item.width || 1)));
+        var height = Math.max(1, Math.round(Number(item.height || 1)));
+        var frameRate = __codexFootageFrameRate(item);
+        var duration = __codexFootageDuration(item);
+        var copy = null;
+        if (app.project.importPlaceholder) {
+          copy = app.project.importPlaceholder(item.name || "Placeholder", width, height, frameRate, duration);
+        } else if (app.project.items.addPlaceholder) {
+          copy = app.project.items.addPlaceholder(item.name || "Placeholder", width, height, frameRate, duration);
+        }
+        if (!copy) return null;
+        try { copy.parentFolder = item.parentFolder; } catch (__placeholderParentFolderError) {}
+        return copy;
+      }
+
+      function __codexReuseUnavailableFootage(item, reason) {
+        if (unavailableFootagePolicy === "fail") {
+          throw new Error(reason + ": " + item.name);
+        }
+        reusedFootageCount++;
+        deepDuplicateWarnings.push(reason + "; reused original footage item: " + item.name);
+        return item;
+      }
+
       function __codexCopyFootageInterpretation(sourceItem, copyItem) {
         var source = null;
         var copy = null;
@@ -8090,23 +8840,61 @@ async function callTool(name, args) {
       }
 
       function __codexDuplicateFootageItem(item) {
-        if (item.duplicate) return item.duplicate();
+        var sourceType = __codexSourceTypename(item);
+        var copy = null;
+
+        if (item.duplicate) {
+          copy = item.duplicate();
+          duplicatedFootageCount++;
+          return copy;
+        }
+
+        if (sourceType === "SolidSource") {
+          copy = __codexDuplicateSolidFootageItem(item);
+          duplicatedFootageCount++;
+          return copy;
+        }
+
+        if (sourceType === "PlaceholderSource") {
+          copy = __codexDuplicatePlaceholderFootageItem(item);
+          if (copy) {
+            duplicatedFootageCount++;
+            return copy;
+          }
+          return __codexReuseUnavailableFootage(item, "Placeholder footage source cannot be duplicated by this After Effects host");
+        }
 
         var file = __codexFootageFile(item);
         if (!file) {
-          throw new Error("Footage item cannot be duplicated or reimported because its source file is unavailable: " + item.name);
+          return __codexReuseUnavailableFootage(item, "Footage item cannot be duplicated or reimported because its source file is unavailable");
         }
 
         var options = new ImportOptions(file);
         options.sequence = false;
         if (!options.canImportAs(ImportAsType.FOOTAGE)) {
-          throw new Error("Footage file cannot be reimported as footage: " + file.fsName);
+          return __codexReuseUnavailableFootage(item, "Footage file cannot be reimported as footage");
         }
         options.importAs = ImportAsType.FOOTAGE;
-        var copy = app.project.importFile(options);
+        copy = app.project.importFile(options);
+        duplicatedFootageCount++;
         __codexCopyFootageInterpretation(item, copy);
         try { copy.parentFolder = item.parentFolder; } catch (__parentFolderError) {}
         return copy;
+      }
+
+      function __codexLayerFlags(layer) {
+        return {
+          adjustmentLayer: (function () { try { return !!layer.adjustmentLayer; } catch (__flagError) { return null; } })(),
+          guideLayer: (function () { try { return !!layer.guideLayer; } catch (__guideError) { return null; } })(),
+          threeDLayer: (function () { try { return !!layer.threeDLayer; } catch (__threeDError) { return null; } })()
+        };
+      }
+
+      function __codexRestoreLayerFlags(layer, flags) {
+        if (!layer || !flags) return;
+        try { if (flags.adjustmentLayer !== null) layer.adjustmentLayer = flags.adjustmentLayer; } catch (__adjustmentRestoreError) {}
+        try { if (flags.guideLayer !== null) layer.guideLayer = flags.guideLayer; } catch (__guideRestoreError) {}
+        try { if (flags.threeDLayer !== null) layer.threeDLayer = flags.threeDLayer; } catch (__threeDRestoreError) {}
       }
 
       function __codexResolvePrecompLayer(parentComp, requestedIndex) {
@@ -8146,6 +8934,10 @@ async function callTool(name, args) {
         if (duplicatedByKey[key]) return duplicatedByKey[key];
 
         var copy = item instanceof FootageItem ? __codexDuplicateFootageItem(item) : item.duplicate();
+        if (copy === item) {
+          duplicatedByKey[key] = item;
+          return item;
+        }
         if (nameSuffix) copy.name = item.name + nameSuffix;
         duplicatedByKey[key] = copy;
         duplicatedCopies.push(copy);
@@ -8164,12 +8956,14 @@ async function callTool(name, args) {
             var nestedCopy = __codexDuplicateItemDeep(nestedSource);
             if (nestedCopy && nestedCopy !== nestedSource && layer.replaceSource) {
               var wasLocked = false;
+              var layerFlags = __codexLayerFlags(layer);
               try {
                 wasLocked = !!layer.locked;
                 if (wasLocked) layer.locked = false;
               } catch (__unlockError) {}
               try {
                 layer.replaceSource(nestedCopy, fixExpressions);
+                __codexRestoreLayerFlags(layer, layerFlags);
                 relinkedLayerCount++;
               } finally {
                 try { if (wasLocked) layer.locked = true; } catch (__relockError) {}
@@ -8195,8 +8989,11 @@ async function callTool(name, args) {
           duplicateComp: __codexCompReference(newComp),
           changedCount: 1,
           duplicatedItemCount: duplicatedItems.length,
+          duplicatedFootageCount: duplicatedFootageCount,
+          reusedFootageCount: reusedFootageCount,
           relinkedLayerCount: relinkedLayerCount,
           duplicatedItems: duplicatedItems,
+          warnings: deepDuplicateWarnings,
           nameSuffix: nameSuffix
         };
       } catch (__deepDuplicateError) {

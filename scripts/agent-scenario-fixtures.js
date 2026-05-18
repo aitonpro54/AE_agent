@@ -19,6 +19,8 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "apply_keyframe_ease",
   "set_expression",
   "clear_expression",
+  "duplicate_comp",
+  "deep_duplicate_precomp_sources",
   "precompose_layers",
   "replace_layer_source",
   "rename_layers",

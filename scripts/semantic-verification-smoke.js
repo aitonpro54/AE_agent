@@ -192,6 +192,35 @@ function fakeMutationResult(step, state) {
     state.projectItems.push({ itemIndex: state.nextItemIndex++, name: args.newCompName, type: "comp" });
     return withVerification({ sourceComp: { name: compName }, comp: { name: args.newCompName, itemIndex: state.nextItemIndex, numLayers: 1 } }, compName);
   }
+  if (step.tool === "duplicate_comp") {
+    const name = args.name || `${compName} copy`;
+    state.projectItems.push({ itemIndex: state.nextItemIndex++, name, type: "comp" });
+    return withVerification({
+      source: { name: compName, itemIndex: args.compItemIndex || 1 },
+      duplicate: { name, itemIndex: state.nextItemIndex, numLayers: 1 }
+    }, name);
+  }
+  if (step.tool === "deep_duplicate_precomp_sources") {
+    const nameSuffix = args.nameSuffix || " copy";
+    const originalName = args.sourceCompName || "Nested Precomp";
+    const duplicateName = `${originalName}${nameSuffix}`;
+    state.projectItems.push({ itemIndex: state.nextItemIndex++, name: duplicateName, type: "comp" });
+    return withVerification({
+      comp: { name: compName },
+      layer: layerInfo(duplicateName, {
+        index: args.layerIndex || 1,
+        source: { name: duplicateName, itemIndex: state.nextItemIndex, type: "comp" }
+      }),
+      originalComp: { name: originalName, itemIndex: args.sourceCompItemIndex || 2, type: "comp" },
+      duplicateComp: { name: duplicateName, itemIndex: state.nextItemIndex, type: "comp", numLayers: 2 },
+      changedCount: 1,
+      duplicatedItemCount: 2,
+      duplicatedFootageCount: 1,
+      reusedFootageCount: args.unavailableFootagePolicy === "reuse" ? 1 : 0,
+      relinkedLayerCount: 1,
+      warnings: args.unavailableFootagePolicy === "reuse" ? ["Footage item reused with warning."] : []
+    }, compName);
+  }
   if (step.tool === "replace_layer_source") {
     return withVerification({
       comp: { name: compName },
@@ -322,6 +351,35 @@ function assertMissingReadBackNeedsReview(scenario) {
   assert(semantic.warnings.some((warning) => warning.indexOf("No explicit read-back") >= 0));
 }
 
+function assertDeepDuplicatePasses() {
+  const plan = {
+    summary: "Deep duplicate selected precomp with fileless sources.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Deep duplicate selected precomp",
+        tool: "deep_duplicate_precomp_sources",
+        args: {
+          layerIndex: 1,
+          sourceCompName: "Nested Precomp",
+          nameSuffix: " copy",
+          unavailableFootagePolicy: "reuse"
+        }
+      },
+      {
+        title: "Read back duplicated project items",
+        tool: "find_project_items",
+        args: { query: "Nested Precomp copy" }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `deep duplicate semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("deep_duplicate_precomp_sources:duplicate") >= 0), "deep duplicate check should be reported.");
+}
+
 function main() {
   const scenarios = agentScenarioPlans("Codex Semantic Fixture", 0);
   const results = scenarios.map(assertScenarioPasses);
@@ -329,6 +387,7 @@ function main() {
   const timingScenario = scenarios.find((scenario) => scenario.id === "timeline-layer-timing");
   assertMismatchNeedsReview(layoutScenario);
   assertMissingReadBackNeedsReview(timingScenario);
+  assertDeepDuplicatePasses();
 
   console.log(JSON.stringify({
     ok: true,

@@ -270,7 +270,7 @@ function validateTestedContext(solution) {
     `${solution.id}: testedAeContext.bridgeVersion must be string or null.`
   );
   assertString(context.projectKind, `${solution.id}: testedAeContext.projectKind`);
-  assert(["unknown", "synthetic", "live-readonly", "live-generated"].includes(context.projectKind), `${solution.id}: unsupported projectKind.`);
+  assert(["unknown", "synthetic", "live-readonly", "live-generated", "agent-hardcore-session"].includes(context.projectKind), `${solution.id}: unsupported projectKind.`);
   assertStringArray(context.notes, `${solution.id}: testedAeContext.notes`);
 }
 

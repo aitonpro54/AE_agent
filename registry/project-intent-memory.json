@@ -1,7 +1,7 @@
 {
   "schema": "ae-project-intent-memory.v1",
   "entrySchema": "ae-project-intent-memory-entry.v1",
-  "updatedAt": "2026-05-15",
+  "updatedAt": "2026-05-18",
   "policy": {
     "plannerUse": "advisory-memory-enabled",
     "maxPromptChars": 1800,
@@ -24,7 +24,13 @@
       "category": "generated-prefix",
       "title": "Generated Asset Prefixes",
       "summary": "Use clear generated prefixes such as Codex Test, Codex QA, or AE Agent Generated for temporary validation assets so cleanup can target only generated items.",
-      "tags": ["generated-assets", "cleanup", "qa", "temporary", "idempotency"],
+      "tags": [
+        "generated-assets",
+        "cleanup",
+        "qa",
+        "temporary",
+        "idempotency"
+      ],
       "appliesWhen": [
         "Creating temporary comps, layers, folders, or render queue items for validation.",
         "Planning cleanup or idempotency for generated objects."
@@ -47,7 +53,13 @@
       "category": "protected-assets",
       "title": "Protect User Project Assets",
       "summary": "Treat non-generated comps, footage, folders, render queue items, and selected layers as user assets; inspect first and prefer narrow selected-target operations.",
-      "tags": ["safety", "protected-assets", "readback", "selection", "checkpoint"],
+      "tags": [
+        "safety",
+        "protected-assets",
+        "readback",
+        "selection",
+        "checkpoint"
+      ],
       "appliesWhen": [
         "The request would rename, move, replace, delete, retime, or batch-edit existing project assets.",
         "A prompt is broad or does not clearly name generated objects."
@@ -70,7 +82,13 @@
       "category": "naming-convention",
       "title": "Batch Naming Conventions",
       "summary": "For broad naming work, read current names and use exact prefix, suffix, or find-replace rules; avoid guessing user naming conventions from project-wide dumps.",
-      "tags": ["naming", "rename", "batch", "project-items", "layers"],
+      "tags": [
+        "naming",
+        "rename",
+        "batch",
+        "project-items",
+        "layers"
+      ],
       "appliesWhen": [
         "The user asks for layer, comp, or project-item renaming.",
         "The requested naming pattern is underspecified or affects many existing objects."
@@ -84,6 +102,34 @@
       },
       "notes": [
         "Prefer explicit selected targets for rename operations."
+      ]
+    },
+    {
+      "schema": "ae-project-intent-memory-entry.v1",
+      "id": "deep-duplicate-fileless-source-fallback",
+      "status": "active",
+      "category": "workflow-hint",
+      "title": "Deep Duplicate Fileless Source Fallback",
+      "summary": "When deep-duplicating precomp sources, generated solids or placeholders may have no file; reuse or reconstruct them with explicit warnings instead of failing the whole run.",
+      "tags": [
+        "precomp",
+        "source",
+        "fileless-footage",
+        "hardcore",
+        "readback"
+      ],
+      "appliesWhen": [
+        "A selected precomp contains adjustment layers, generated solids, placeholders, or missing footage sources."
+      ],
+      "priority": 8,
+      "confidence": "high",
+      "source": {
+        "kind": "agent-hardcore-session",
+        "date": "2026-05-18",
+        "reviewed": true
+      },
+      "notes": [
+        "Memory is advisory only and never bypasses typed read tools or mutation gates."
       ]
     }
   ]

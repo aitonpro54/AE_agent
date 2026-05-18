@@ -10,6 +10,21 @@ const adapterPath = path.join(__dirname, "..", "mcp-server", "mcp-adapter.js");
 const nodePath = process.execPath;
 const port = String(3457 + Math.floor(Math.random() * 1000));
 const token = "smoke-test-token";
+const repoRoot = path.join(__dirname, "..");
+
+function smokeArtifactDir() {
+  const dir = path.join(repoRoot, "logs", "hardcore-sessions", "smoke-" + port);
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function writeSmokeRegistryAndMemory(dir) {
+  const registryPath = path.join(dir, "solutions.json");
+  const memoryPath = path.join(dir, "project-intent-memory.json");
+  fs.copyFileSync(path.join(repoRoot, "registry", "solutions.json"), registryPath);
+  fs.copyFileSync(path.join(repoRoot, "registry", "project-intent-memory.json"), memoryPath);
+  return { registryPath, memoryPath };
+}
 
 function requestJson(url) {
   return new Promise((resolve, reject) => {
@@ -143,11 +158,17 @@ async function callQueuedDevTool(port, token, toolName, payload, scriptSnippets,
 }
 
 async function main() {
+  const smokeDir = smokeArtifactDir();
+  const smokeStores = writeSmokeRegistryAndMemory(smokeDir);
   const daemon = spawn(nodePath, [daemonPath], {
     env: {
       ...process.env,
       AE_BRIDGE_PORT: port,
-      AE_BRIDGE_TOKEN: token
+      AE_BRIDGE_TOKEN: token,
+      AE_AGENT_HARDCORE_SESSION_DIR: smokeDir,
+      AE_SOLUTION_CANDIDATE_DIR: path.join(smokeDir, "solution-candidates"),
+      AE_SOLUTION_REGISTRY_PATH: smokeStores.registryPath,
+      AE_PROJECT_INTENT_MEMORY_PATH: smokeStores.memoryPath
     },
     stdio: ["ignore", "pipe", "pipe"]
   });
@@ -391,14 +412,17 @@ async function main() {
     layerIndex: 1,
     sourceCompItemIndex: 3,
     nameSuffix: " Smoke Copy",
+    unavailableFootagePolicy: "reuse",
     verifyAfter: false
-  }, ["Codex Deep Duplicate Precomp Sources", "__codexDuplicateItemDeep", "__codexDuplicateFootageItem", "app.project.importFile(options)", "replaceSource(newComp"], {
+  }, ["Codex Deep Duplicate Precomp Sources", "__codexDuplicateItemDeep", "__codexDuplicateFootageItem", "__codexDuplicateSolidFootageItem", "unavailableFootagePolicy", "replaceSource(newComp"], {
     comp: { itemIndex: 1, name: "Smoke Comp" },
     layer: { index: 1, name: "Smoke Precomp Smoke Copy", source: { itemIndex: 4, name: "Smoke Precomp Smoke Copy", type: "comp" } },
     originalComp: { itemIndex: 3, name: "Smoke Precomp", type: "comp" },
     duplicateComp: { itemIndex: 4, name: "Smoke Precomp Smoke Copy", type: "comp", numLayers: 2 },
     changedCount: 1,
     duplicatedItemCount: 2,
+    duplicatedFootageCount: 1,
+    reusedFootageCount: 1,
     relinkedLayerCount: 1
   }));
   queuedToolResponses.push(await callQueuedDevTool(port, token, "rename_layers", {
@@ -656,7 +680,8 @@ async function main() {
           args: {
             layerIndex: 1,
             sourceCompItemIndex: 7,
-            nameSuffix: " copy smoke"
+            nameSuffix: " copy smoke",
+            unavailableFootagePolicy: "reuse"
           }
         }
       ]
@@ -685,11 +710,54 @@ async function main() {
           args: {
             layerIndex: 1,
             sourceCompItemIndex: 7,
-            nameSuffix: " copy smoke"
+            nameSuffix: " copy smoke",
+            unavailableFootagePolicy: "reuse"
           }
         }
       ]
     }
+  });
+  const hardcoreSession = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/hardcore/run",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    prompt: "Smoke-test Agent Hardcore retry loop and knowledge capture.",
+    maxAttempts: 2,
+    allowMutations: true,
+    autoEditSession: true,
+    autoPromoteKnowledge: true,
+    attemptPlans: [
+      {
+        summary: "Invalid first attempt to exercise retry.",
+        risk: "low",
+        requiresCheckpoint: false,
+        steps: [
+          {
+            title: "Unsupported smoke tool",
+            tool: "not_a_real_tool",
+            args: {}
+          }
+        ]
+      },
+      {
+        summary: "Read-only verified Hardcore smoke.",
+        risk: "low",
+        requiresCheckpoint: false,
+        steps: [
+          {
+            title: "Read bridge status",
+            tool: "get_bridge_status",
+            args: {}
+          }
+        ]
+      }
+    ]
   });
   const memoryToolPlanValidation = await requestJsonWithOptions({
     hostname: "127.0.0.1",
@@ -1362,6 +1430,24 @@ async function main() {
     throw new Error("Deep duplicate precomp source workflow did not dry-run as a typed plan");
   }
   if (
+    hardcoreSession.status !== 200 ||
+    hardcoreSession.body.ok !== true ||
+    !hardcoreSession.body.session ||
+    hardcoreSession.body.session.status !== "verified" ||
+    hardcoreSession.body.session.attempts.length !== 2 ||
+    hardcoreSession.body.session.attempts[0].status !== "plan-needs-review" ||
+    hardcoreSession.body.session.attempts[1].status !== "verified" ||
+    !hardcoreSession.body.session.artifacts ||
+    !hardcoreSession.body.session.artifacts.sessionArtifact ||
+    !hardcoreSession.body.session.artifacts.candidate ||
+    !hardcoreSession.body.session.artifacts.solutionPromotion ||
+    hardcoreSession.body.session.artifacts.solutionPromotion.ok !== true ||
+    !hardcoreSession.body.session.artifacts.projectMemory ||
+    hardcoreSession.body.session.artifacts.projectMemory.ok !== true
+  ) {
+    throw new Error("Agent Hardcore session did not retry, verify, and capture validated knowledge artifacts");
+  }
+  if (
     memoryToolPlanValidation.status !== 200 ||
     memoryToolPlanValidation.body.ok !== true ||
     !memoryToolPlanValidation.body.result ||
@@ -1508,7 +1594,7 @@ async function main() {
   }
 
   const toolNames = lines[1].result.tools.map((tool) => tool.name);
-  for (const expectedTool of ["get_ai_agent_log", "get_project_intent_memory", "update_project_intent_memory", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint", "set_comp_work_area", "set_layer_time_range", "stagger_layers", "split_layers_at_time", "precompose_layers", "replace_layer_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer", "create_shape_layer", "fit_layer_to_comp", "set_property_keyframes", "apply_keyframe_ease", "set_expression", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"]) {
+  for (const expectedTool of ["get_ai_agent_log", "get_project_intent_memory", "update_project_intent_memory", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "run_agent_hardcore_session", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint", "set_comp_work_area", "set_layer_time_range", "stagger_layers", "split_layers_at_time", "precompose_layers", "replace_layer_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer", "create_shape_layer", "fit_layer_to_comp", "set_property_keyframes", "apply_keyframe_ease", "set_expression", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"]) {
     if (!toolNames.includes(expectedTool)) {
       throw new Error("Missing expected tool: " + expectedTool);
     }
@@ -1525,12 +1611,16 @@ async function main() {
   if (!runPlanTool || !runPlanTool.inputSchema.properties.dryRun || !runPlanTool.inputSchema.properties.allowMutations || !runPlanTool.inputSchema.properties.autoEditSession || !runPlanTool.inputSchema.properties.rawExtendscriptDryRunId) {
     throw new Error("run_ai_agent_plan is missing run safety schema");
   }
+  const hardcoreTool = lines[1].result.tools.find((tool) => tool.name === "run_agent_hardcore_session");
+  if (!hardcoreTool || !hardcoreTool.inputSchema.properties.maxAttempts || !hardcoreTool.inputSchema.properties.autoPromoteKnowledge || !hardcoreTool.inputSchema.properties.autoEditSession) {
+    throw new Error("run_agent_hardcore_session is missing autopilot schema");
+  }
   const setWorkAreaTool = lines[1].result.tools.find((tool) => tool.name === "set_comp_work_area");
   if (!setWorkAreaTool.inputSchema.properties.idempotencyKey || !setWorkAreaTool.inputSchema.properties.verifyAfter) {
     throw new Error("set_comp_work_area is missing safety schema fields");
   }
   const deepDuplicateTool = lines[1].result.tools.find((tool) => tool.name === "deep_duplicate_precomp_sources");
-  if (!deepDuplicateTool.inputSchema.properties.idempotencyKey || !deepDuplicateTool.inputSchema.properties.verifyAfter) {
+  if (!deepDuplicateTool.inputSchema.properties.idempotencyKey || !deepDuplicateTool.inputSchema.properties.verifyAfter || !deepDuplicateTool.inputSchema.properties.unavailableFootagePolicy) {
     throw new Error("deep_duplicate_precomp_sources is missing safety schema fields");
   }
   const renderQueueStatusTool = lines[1].result.tools.find((tool) => tool.name === "get_render_queue_status");
@@ -1555,6 +1645,11 @@ async function main() {
       validation: deepDuplicateStep.status || (deepDuplicateStep.valid ? "valid" : "invalid"),
       dryRun: deepDuplicateDryRun.body.run.steps[0].status,
       rawExtendscriptStepCount: deepDuplicateDryRun.body.run.validation.classification.rawExtendscriptStepCount
+    },
+    hardcoreSession: {
+      status: hardcoreSession.body.session.status,
+      attempts: hardcoreSession.body.session.attempts.length,
+      candidate: hardcoreSession.body.session.artifacts.candidate.path
     },
     ignoredBindingRun: ignoredBindingRun.body.run.steps[0].status,
     unresolvedSelectedPrecompLayerBinding: unresolvedSelectedPrecompLayerRun.body.run.steps[1].reason,

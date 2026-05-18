@@ -18,6 +18,8 @@ const MUTATING_TOOLS = new Set([
   "apply_keyframe_ease",
   "set_expression",
   "clear_expression",
+  "duplicate_comp",
+  "deep_duplicate_precomp_sources",
   "precompose_layers",
   "replace_layer_source",
   "rename_layers",
@@ -536,6 +538,36 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "precompose_layers") {
     checkName(checks, step, args.newCompName, payload.comp && payload.comp.name, evidence, "Precomp name matches request");
+    return;
+  }
+
+  if (step.tool === "duplicate_comp") {
+    checkName(checks, step, args.name, payload.duplicate && payload.duplicate.name, evidence, "Duplicated comp name matches request");
+    return;
+  }
+
+  if (step.tool === "deep_duplicate_precomp_sources") {
+    const duplicate = payload.duplicateComp || {};
+    const layer = payload.layer || {};
+    const expectedSuffix = args.nameSuffix || " copy";
+    const duplicateName = duplicate.name || "";
+    const layerSourceName = layer.source && layer.source.name ? layer.source.name : "";
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:duplicate`,
+      title: "Selected precomp source was duplicated and relinked",
+      expected: `duplicate source comp with suffix ${expectedSuffix}`,
+      observed: duplicateName || layerSourceName || "missing duplicate comp",
+      passed: Boolean(duplicateName) && duplicateName.indexOf(expectedSuffix) >= 0 && (!layerSourceName || layerSourceName === duplicateName),
+      evidence: observedNameEvidence(evidence.all, duplicateName) || stepLabel(step)
+    });
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:items`,
+      title: "Deep duplicate reported copied or reused source items",
+      expected: "duplicated or explicitly reused source items",
+      observed: `duplicated=${Number(payload.duplicatedItemCount || 0)}, reusedFootage=${Number(payload.reusedFootageCount || 0)}`,
+      passed: Number(payload.duplicatedItemCount || 0) > 0 || Number(payload.reusedFootageCount || 0) > 0,
+      evidence: stepLabel(step)
+    });
     return;
   }
 

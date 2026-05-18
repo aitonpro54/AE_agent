@@ -5,6 +5,7 @@ logs/*.png
 logs/agent-run-reports/
 logs/reliability-validation/
 logs/dev-requests/
+logs/hardcore-sessions/
 logs/solution-candidates/
 backups/*.aep
 backups/*.aepx

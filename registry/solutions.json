@@ -1,9 +1,13 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-05-15",
+  "updatedAt": "2026-05-18",
   "policy": {
-    "trackedStatuses": ["recipe", "typed-tool-candidate", "tool"],
+    "trackedStatuses": [
+      "recipe",
+      "typed-tool-candidate",
+      "tool"
+    ],
     "candidateLocation": "logs/solution-candidates/",
     "plannerUse": "advisory-retrieval-enabled",
     "executionRule": "Solutions are advisory metadata; execution still uses validated Agent plans."
@@ -14,7 +18,14 @@
       "id": "active-comp-context-review",
       "title": "Active Comp Context Review",
       "status": "recipe",
-      "tags": ["context", "active-comp", "selected-layers", "render-queue", "read-only", "typed-tool"],
+      "tags": [
+        "context",
+        "active-comp",
+        "selected-layers",
+        "render-queue",
+        "read-only",
+        "typed-tool"
+      ],
       "intent": {
         "summary": "Inspect active composition, selected layers and optional render queue state without changing the project.",
         "appliesWhen": [
@@ -32,7 +43,11 @@
         "riskLevel": "low",
         "recipePath": "recipes/active-comp-context-review.md",
         "scriptPath": null,
-        "preferredTools": ["get_active_comp", "get_selected_layers", "get_render_queue_status"]
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_render_queue_status"
+        ]
       },
       "requiredSafetyGates": {
         "planValidation": true,
@@ -75,7 +90,14 @@
       "id": "selected-layers-align-to-cti",
       "title": "Selected Layers Align To CTI",
       "status": "recipe",
-      "tags": ["timeline", "layers", "align", "cti", "selected-layers", "typed-tool"],
+      "tags": [
+        "timeline",
+        "layers",
+        "align",
+        "cti",
+        "selected-layers",
+        "typed-tool"
+      ],
       "intent": {
         "summary": "Move selected layers so their timing aligns to the active comp current time indicator.",
         "appliesWhen": [
@@ -107,7 +129,11 @@
         "riskLevel": "medium",
         "recipePath": "recipes/selected-layers-align-to-cti.md",
         "scriptPath": null,
-        "preferredTools": ["get_active_comp", "align_layers_to_time", "get_selected_layers"]
+        "preferredTools": [
+          "get_active_comp",
+          "align_layers_to_time",
+          "get_selected_layers"
+        ]
       },
       "requiredSafetyGates": {
         "planValidation": true,
@@ -149,6 +175,104 @@
       ],
       "notes": [
         "Keep this recipe typed-tool-only; raw ExtendScript is not needed for CTI alignment."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "deep-duplicate-precomp-fileless-source",
+      "title": "Deep Duplicate Precomp With Fileless Sources",
+      "status": "recipe",
+      "tags": [
+        "precomp",
+        "source",
+        "deep-duplicate",
+        "fileless-footage",
+        "solid-source",
+        "hardcore",
+        "typed-tool",
+        "get_bridge_status",
+        "get_active_comp",
+        "deep_duplicate_precomp_sources"
+      ],
+      "intent": {
+        "summary": "Duplicate a selected precomp source tree even when nested adjustment or generated solid footage has no source file.",
+        "appliesWhen": [
+          "The user asks to deep duplicate a selected precomp/source tree.",
+          "Nested sources may include generated solids, adjustment layers, placeholders, or missing footage."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "userPrompt",
+          "type": "string",
+          "required": true,
+          "description": "The user's AE workflow request."
+        },
+        {
+          "name": "selectedLayer",
+          "type": "layer-selection",
+          "required": false,
+          "description": "Optional selected layer or precomp source inspected before mutation."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists when the workflow targets current selection.",
+        "Targets are verified through read tools before mutation."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/deep-duplicate-precomp-fileless-source.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_bridge_status",
+          "get_active_comp",
+          "deep_duplicate_precomp_sources"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Run read-back tools after the protected run and require semantic verification to pass or report needs-review evidence.",
+        "steps": [
+          "Run the typed plan through dry-run first.",
+          "Execute through protected run gates.",
+          "Read back affected comp/layer/source state after mutation."
+        ],
+        "expectedEvidence": [
+          "Run result is ok.",
+          "Semantic verification status is passed or not_applicable.",
+          "Candidate evidence is stored under local ignored logs."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 1.0.6",
+        "bridgeVersion": "1.0.6",
+        "projectKind": "agent-hardcore-session",
+        "notes": [
+          "Auto-promoted only after local registry validation succeeds."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-18",
+          "from": "agent-hardcore-session",
+          "to": "recipe",
+          "reviewer": "agent-hardcore-autopilot",
+          "evidence": "Successful Agent Hardcore session passed local candidate and registry validation before becoming planner-visible.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification."
       ]
     }
   ]

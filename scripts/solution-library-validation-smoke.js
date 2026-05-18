@@ -21,6 +21,7 @@ const AVAILABLE_TOOLS = [
   "get_selected_layers",
   "get_render_queue_status",
   "align_layers_to_time",
+  "deep_duplicate_precomp_sources",
   "run_extendscript_file"
 ];
 

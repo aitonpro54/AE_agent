@@ -61,6 +61,7 @@
 - [x] Milestone 91: Deep duplicate file-footage fallback.
 - [x] Milestone 92: Selected source comp binding diagnostic hotfix.
 - [x] Milestone 93: Selected layer binding diagnostic hotfix.
+- [x] Milestone 94: Agent Hardcore Autopilot.
 
 ## Current Stable Baseline
 
@@ -478,6 +479,14 @@
 - Add smoke coverage for unresolved selected-layer binding diagnostics.
 - Manually test the live panel-facing runner in both dry-run and read-only run modes.
 
+### Milestone 94: Agent Hardcore Autopilot
+
+- Add `/agents/hardcore/run` and `run_agent_hardcore_session` for autonomous Hardcore sessions that plan, dry-run, execute protected runs, inspect semantic verification, retry from compact failure evidence, and save local evidence.
+- Wire CEP `Agent Hardcore` mode to the autopilot session path while keeping ordinary Agent mode on manual plan review, dry-run, and run controls.
+- Harden `deep_duplicate_precomp_sources` for generated/fileless footage sources: duplicate solids, duplicate placeholders where supported, and reuse unreconstructable sources with explicit warnings under `unavailableFootagePolicy:"reuse"`.
+- Save Hardcore session evidence under ignored `logs/hardcore-sessions/`, candidate reports under ignored solution-candidate paths, and promote only validated typed successful sessions into reviewed solution/project memory metadata.
+- Extend semantic verification and smoke coverage for deep duplicate, fileless-source fallback, Hardcore retry loop, and knowledge-capture gates.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -583,9 +592,24 @@
 - 2026-05-18: Deep duplicate of selected precomps must handle file-backed footage as reimported project items, because AE may not expose `duplicate()` on `FootageItem` objects such as `.avi`.
 - 2026-05-18: Runtime binding diagnostics must use the same helper names as runtime binding resolution; selected source/precomp item bindings use `isSelectedSourceCompBindingName`.
 - 2026-05-18: Selected-layer runtime binding diagnostics use explicit selected-layer helper functions rather than relying on generic layer-index helper names.
+- 2026-05-18: `Agent Hardcore` is now an autopilot session, not only a stronger planning prompt: it may run protected mutating plans with `confirm:true`, `allowMutations:true`, and `autoEditSession:true`, then retry from read-back/semantic evidence without per-step UI confirmation.
+- 2026-05-18: Hardcore knowledge capture is automatic but gated: raw session artifacts and candidates are ignored local files, while planner-visible solution registry updates are written only after local registry validation succeeds.
+- 2026-05-18: `deep_duplicate_precomp_sources` defaults to `unavailableFootagePolicy:"reuse"` so generated solids/placeholders/missing footage do not fail the entire selected-precomp duplicate workflow when safe reuse or reconstruction is possible.
+- 2026-05-18: Live AE showed `SolidSource` exposes an empty `mainSource.typename` but a usable `mainSource.constructor.name`; SolidSource reconstruction therefore detects both shapes and creates duplicate solid footage through a temporary comp layer using `layers.addSolid`.
 
 ## Validation
 
+- Milestone 94:
+  - Passed bundled `node --check` for `mcp-server\bridge-daemon.js`, `mcp-server\semantic-verification.js`, `cep-panel\panel.js`, `scripts\smoke-test.js`, `scripts\semantic-verification-smoke.js`, `scripts\agent-scenario-fixtures.js`, `scripts\solution-registry-smoke.js`, `scripts\solution-promotion-helper.js`, and `scripts\solution-library-validation-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed `node scripts\provider-contract-smoke.js`, `node scripts\solution-candidate-report-smoke.js`, `node scripts\solution-promotion-smoke.js`, `node scripts\solution-retrieval-smoke.js`, `node scripts\project-intent-memory-smoke.js`, `node scripts\plan-classification-smoke.js`, `node scripts\plan-repair-smoke.js`, `node scripts\provider-api-smoke.js`, `node scripts\prompt-optimization-smoke.js`, `node scripts\bridge-only-smoke-test.js`, `node scripts\chatgpt-connector-smoke.js`, and `node scripts\reliability-validation-suite-smoke.js`.
+  - Passed `node scripts\semantic-verification-smoke.js` with new deep duplicate semantic coverage.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`.
+  - Passed `node scripts\smoke-test.js`, including `run_agent_hardcore_session`, `/agents/hardcore/run`, injected retry attempts, candidate capture, temp-registry promotion, and project-memory update checks.
+  - Passed live `/agents/hardcore/run` against active comp `SlideShow2`, selected layer `54`, source comp `Flash 01`: first run verified fileless fallback evidence and auto-promoted `deep-duplicate-precomp-fileless-source`; final run after SolidSource reconstruction verified `duplicatedFootageCount: 2`, `reusedFootageCount: 0`, no warnings, semantic verification `passed`, and read-back confirmed `Adjustment Layer 3 Solid Copy` kept `adjustmentLayer:true` with `mainSourceType:"SolidSource"`.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js smoke`, `node scripts\cep-panel-cdp-smoke.js connector-status-smoke`, and `node scripts\provider-key-save-smoke.js`.
+  - Final live bridge check on `127.0.0.1:3456` reported `panelConnected:true`, `pendingCommands:0`, `inflightCommands:[]`, and `activeEditSession:null`.
 - Milestone 38:
   - Rewrote the active handoff as a clean current-state document.
   - Replaced the historical plan with the current stable baseline and active roadmap.
