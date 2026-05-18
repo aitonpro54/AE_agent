@@ -53,6 +53,7 @@
 - [x] Milestone 83: Dry run visibility and stale workspace guard.
 - [x] Milestone 84: Hardcore dev escalation handoff.
 - [x] Milestone 85: Agent Hardcore visible mode and Cyrillic UI fix.
+- [x] Milestone 86: Raw ExtendScript dry-run gate unlocks Run plan.
 
 ## Current Stable Baseline
 
@@ -63,6 +64,7 @@
 - Agent mode drafts structured MCP plans, validates tool names and required fields, dry-runs plans, and executes only through explicit mutation gates.
 - Agent Hardcore is a visible composer mode next to Agent; it uses the same planner/runner safety gates with stronger guidance for inspection, dry-run/read-back evidence, verification, and typed-tool gap handoff.
 - The latest valid Agent plan exposes inline `Dry run / Проверить` and `Выполнить план` controls inside the chat message, while keeping the same validated backend runner and project-change gates.
+- Raw ExtendScript plans stay blocked for normal Run until a successful dry run of the same current plan records a short-lived gate id; the enabled Run then sends `allowRawExtendscript:true` with the matching `rawExtendscriptDryRunId`.
 - Agent plans or runs that reveal a typed-tool gap can create an ignored `logs/dev-requests/<id>/` bundle for a targeted Codex App dev handoff instead of continuing repo development inside the AE chat.
 - Project-changing tools use idempotency, optional checkpoints, edit-session protection, and post-mutation verification.
 - Raw ExtendScript remains available as an escape hatch, but normal product workflows should use typed bridge tools.
@@ -412,6 +414,15 @@
 - Fix mojibake in visible Cyrillic controls: `Подхватить последний план из чата`, `Dry run / Проверить`, and `Выполнить план`.
 - Bump panel/bridge/manifest to `1.0.4` and synchronize the installed CEP extension.
 
+### Milestone 86: Raw ExtendScript dry-run gate unlocks Run plan
+
+- Keep raw ExtendScript classification blocking normal Run by default.
+- After a successful dry run of the same current plan/request, store a short-lived accepted dry-run id in the panel and backend.
+- Re-enable persistent and inline `Выполнить план` only for that matching raw dry-run gate.
+- Send real runs through the existing protected runner with `confirm:true`, `allowMutations:true`, `autoEditSession:true`, `allowRawExtendscript:true`, and `rawExtendscriptDryRunId`.
+- Update ChatGPT JSX Lab candidate runs to perform the same preflight dry-run gate before a real raw file execution.
+- Add offline/backend and CEP/CDP smoke coverage for the unlocked-button payload.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -508,6 +519,8 @@
 - 2026-05-17: Agent Hardcore is now a visible composer mode next to `Agent`, not only a post-run action. In v1.0.4 it uses the existing `/agents/plan` endpoint with `hardcore:true` and stronger planning guidance for inspection/read-back/verification.
 - 2026-05-17: CEP panel Cyrillic control labels must be stored as valid UTF-8, not mojibake; this fix replaces the visible labels with readable Russian text.
 - 2026-05-17: This panel code change bumped panel, manifest, daemon and adapter to `1.0.4`.
+- 2026-05-18: Raw ExtendScript remains blocked by classification until a successful dry run of the same current plan records a matching short-lived gate id; unlocking `Выполнить план` sends that id to the protected runner rather than bypassing mutation/checkpoint/edit-session safety.
+- 2026-05-18: ChatGPT JSX Lab real candidate runs must follow the same bridge contract: preflight dry-run first, then real `/agents/plan/run` with `allowRawExtendscript:true` and the returned `rawExtendscriptDryRunId`.
 
 ## Validation
 
@@ -1552,3 +1565,35 @@
   - Passed live `node scripts\cep-panel-cdp-smoke.js mode-toggle-smoke`; the panel exposed `Chat`, `Agent`, and `Agent Hardcore`, and selecting Hardcore set mode `hardcore`.
   - Passed live `node scripts\cep-panel-cdp-smoke.js dev-request-button-smoke`; safe plans kept dev escalation hidden and tool-gap plans showed it enabled.
   - Did not run live ChatGPT connector/Tunnel checks, live OpenRouter calls, external OpenAI CLI Agent scenario smokes, or mutating live AE smokes because this milestone only changes visible mode selection, planner guidance and label rendering.
+- Milestone 86:
+  - Activated persistent and inline `Выполнить план` for raw ExtendScript plans only after a successful dry run of the same current plan/request.
+  - Preserved the backend classification block by requiring `allowRawExtendscript:true` plus the matching `rawExtendscriptDryRunId`; wrong or missing ids return `blocked_raw_extendscript_gate`.
+  - Updated ChatGPT JSX Lab real candidate execution to dry-run the exact bridge plan before the real raw file run, then pass the matching dry-run id.
+  - Added `scripts\cep-panel-cdp-smoke.js raw-run-gate-smoke` for the UI unlock/payload path; it uses a fake `/agents/plan/run` XHR and does not mutate AE.
+  - Synchronized the updated installed CEP panel with `node scripts\cep-sync-health.js --sync --check`; the sandboxed attempt could not access the installed extension, the approved run copied `panel.js` and reported status `ok`.
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check cep-panel\panel.js`.
+  - Passed `node --check chatgpt-connector\server.js`.
+  - Passed `node --check chatgpt-connector\jsx-lab.js`.
+  - Passed `node --check scripts\cep-panel-cdp-smoke.js`.
+  - Passed `node --check scripts\chatgpt-connector-smoke.js`.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check scripts\smoke-test.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`.
+  - Passed `node scripts\project-intent-memory-smoke.js`.
+  - Passed `node scripts\plan-classification-smoke.js`.
+  - Passed `node scripts\plan-repair-smoke.js`.
+  - Passed `node scripts\semantic-verification-smoke.js`.
+  - Passed `node scripts\reliability-validation-suite-smoke.js`.
+  - Passed `node scripts\chatgpt-connector-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Could not run live `node scripts\cep-panel-cdp-smoke.js raw-run-gate-smoke` or `inspect` because the CEP CDP endpoint refused connection on `127.0.0.1:8870`; open/reload After Effects with CEP remote debugging to rerun the prepared UI smoke.

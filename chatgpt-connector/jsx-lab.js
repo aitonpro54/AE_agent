@@ -651,7 +651,7 @@ function prepareExtendscriptCandidateRun(config, args) {
       confirm: true,
       allowMutations: true,
       autoEditSession: true,
-      allowRawExtendscript: true,
+      allowRawExtendscript: !dryRun,
       maxSteps: 1
     },
     readBackToolCalls,

@@ -2583,7 +2583,10 @@
     var validation = lastPlanResult && lastPlanResult.planValidation ? lastPlanResult.planValidation : null;
     var mutatingCount = validation ? Number(validation.mutatingCount || 0) : 0;
     var tone = ok ? (mutatingCount > 0 ? "mutating" : "read-only") : "blocked";
-    setPlanRunStatus(label + (ok ? " complete; result added below" : " needs review; see result below"), tone);
+    var doneText = ok && dryRun && rawExtendscriptDryRunGateReady(validation)
+      ? " complete; Run unlocked"
+      : " complete; result added below";
+    setPlanRunStatus(label + (ok ? doneText : " needs review; see result below"), tone);
   }
 
   function formatSemanticVerification(semantic) {

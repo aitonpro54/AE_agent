@@ -60,7 +60,7 @@ The connector exposes local connector tools:
 
 `propose_extendscript_candidate` saves raw JSX and redacted metadata under ignored `logs/solution-candidates/jsx-lab/`. `check_extendscript_candidate` runs offline syntax, size, static risk, path hygiene, and denylist checks for a saved candidate.
 
-`run_extendscript_candidate` is disabled by default. With write actions enabled, it still requires `confirm:true`, `allowMutations:true`, `autoEditSession:true`, `confirmedJsxSha256`, `expectedGeneratedPrefix`, and read-back tool calls for real runs. The connector builds a one-step `run_extendscript_file` Agent plan and sends it to `/agents/plan/run` with `allowRawExtendscript:true`, so the bridge still owns checkpoint/edit-session protection and mutation verification.
+`run_extendscript_candidate` is disabled by default. With write actions enabled, it still requires `confirm:true`, `allowMutations:true`, `autoEditSession:true`, `confirmedJsxSha256`, `expectedGeneratedPrefix`, and read-back tool calls for real runs. The connector builds a one-step `run_extendscript_file` Agent plan, dry-runs that exact plan first, then sends the real `/agents/plan/run` with `allowRawExtendscript:true` and the matching `rawExtendscriptDryRunId`, so the bridge still owns checkpoint/edit-session protection and mutation verification.
 
 `promote_solution_candidate` creates an ignored `solution-candidate-report.v1` artifact that can be reviewed with `scripts/solution-promotion-helper.js`. It never writes the tracked registry and does not allow direct candidate-to-tool promotion.
 

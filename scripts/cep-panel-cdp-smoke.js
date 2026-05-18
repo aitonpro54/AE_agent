@@ -351,6 +351,8 @@ function stateExpression() {
     planRunStatus: document.getElementById("planRunStatus") ? document.getElementById("planRunStatus").textContent : "",
     planRunStatusClass: document.getElementById("planRunStatus") ? document.getElementById("planRunStatus").className : "",
     planRunSemanticVerification: window.__aeAgentLastPlanRunResult && window.__aeAgentLastPlanRunResult.semanticVerification ? window.__aeAgentLastPlanRunResult.semanticVerification : null,
+    rawDryRunGate: window.__aeAgentLastAcceptedDryRun || null,
+    rawRunGateRequests: window.__codexRawRunGateRequests || [],
     recoverLastPlanText: document.getElementById("recoverLastPlanButton") ? document.getElementById("recoverLastPlanButton").textContent : "",
     recoverLastPlanTitle: document.getElementById("recoverLastPlanButton") ? document.getElementById("recoverLastPlanButton").title : "",
     recoverLastPlanDisabled: document.getElementById("recoverLastPlanButton") ? document.getElementById("recoverLastPlanButton").disabled : null,
@@ -999,6 +1001,133 @@ function restoreConnectorStatusFakeExpression() {
   })()`;
 }
 
+function installRawRunGateFakeExpression() {
+  return `(function () {
+    var OriginalXHR = window.__codexOriginalRawRunGateXHR || window.XMLHttpRequest;
+    window.__codexOriginalRawRunGateXHR = OriginalXHR;
+    window.__codexRawRunGateRequests = [];
+    function respond(xhr, status, body) {
+      setTimeout(function () {
+        xhr.readyState = 4;
+        xhr.status = status;
+        xhr.responseText = JSON.stringify(body || {});
+        if (typeof xhr.onreadystatechange === "function") xhr.onreadystatechange();
+      }, 25);
+    }
+    function makeStep(payload, status) {
+      var step = payload && payload.plan && payload.plan.steps && payload.plan.steps[0] ? payload.plan.steps[0] : {};
+      return {
+        index: 1,
+        title: step.title || "Raw ExtendScript gate smoke",
+        tool: step.tool || "run_extendscript",
+        status: status,
+        targetSummary: step.targetSummary || "active comp / selected layers"
+      };
+    }
+    function runResponse(payload, runId) {
+      var dryRun = payload.dryRun === true;
+      return {
+        ok: true,
+        run: {
+          id: runId,
+          ok: true,
+          dryRun: dryRun,
+          requestId: payload.requestId || "",
+          safety: {
+            status: dryRun ? "dry-run" : "protected",
+            protection: dryRun ? "dry_run" : "auto_edit_session",
+            editSessionFinished: !dryRun,
+            rawExtendscriptGate: dryRun
+              ? { status: "dry-run-approved", dryRunId: runId }
+              : { status: "approved", dryRunId: payload.rawExtendscriptDryRunId || "" }
+          },
+          steps: [makeStep(payload, dryRun ? "ready" : "completed")]
+        }
+      };
+    }
+    function FakeXHR() {
+      this.readyState = 0;
+      this.status = 0;
+      this.responseText = "";
+      this.timeout = 0;
+      this._headers = {};
+      this.onreadystatechange = null;
+      this.onerror = null;
+      this.ontimeout = null;
+    }
+    FakeXHR.prototype.open = function (method, url, isAsync) {
+      this._method = method;
+      this._url = url;
+      this._async = isAsync !== false;
+    };
+    FakeXHR.prototype.setRequestHeader = function (name, value) {
+      this._headers[name] = value;
+    };
+    FakeXHR.prototype.send = function (body) {
+      var self = this;
+      var urlText = String(this._url || "");
+      if (urlText.indexOf("/agents/plan/run") >= 0) {
+        var payload = {};
+        try {
+          payload = body ? JSON.parse(body) : {};
+        } catch (_error) {}
+        window.__codexRawRunGateRequests.push(payload);
+        if (payload.dryRun === true) {
+          respond(self, 200, runResponse(payload, "raw-gate-dry-run-smoke"));
+          return;
+        }
+        if (payload.rawExtendscriptDryRunId !== "raw-gate-dry-run-smoke") {
+          respond(self, 400, {
+            ok: false,
+            error: "same current plan dry-run id is required",
+            run: {
+              id: "raw-gate-blocked-smoke",
+              ok: false,
+              dryRun: false,
+              requestId: payload.requestId || "",
+              safety: { status: "blocked_raw_extendscript_gate" },
+              steps: []
+            }
+          });
+          return;
+        }
+        respond(self, 200, runResponse(payload, "raw-gate-run-smoke"));
+        return;
+      }
+      var xhr = new OriginalXHR();
+      xhr.timeout = this.timeout;
+      xhr.onreadystatechange = function () {
+        self.readyState = xhr.readyState;
+        self.status = xhr.status;
+        self.responseText = xhr.responseText;
+        if (typeof self.onreadystatechange === "function") self.onreadystatechange();
+      };
+      xhr.onerror = function () { if (typeof self.onerror === "function") self.onerror(); };
+      xhr.ontimeout = function () { if (typeof self.ontimeout === "function") self.ontimeout(); };
+      xhr.open(this._method, this._url, this._async);
+      Object.keys(this._headers).forEach(function (name) {
+        xhr.setRequestHeader(name, self._headers[name]);
+      });
+      xhr.send(body);
+    };
+    window.XMLHttpRequest = FakeXHR;
+    window.__codexRestoreRawRunGateFake = function () {
+      window.XMLHttpRequest = OriginalXHR;
+      return true;
+    };
+    return true;
+  })()`;
+}
+
+function restoreRawRunGateFakeExpression() {
+  return `(function () {
+    if (typeof window.__codexRestoreRawRunGateFake === "function") {
+      return window.__codexRestoreRawRunGateFake();
+    }
+    return true;
+  })()`;
+}
+
 function installConfirmExpression() {
   return `(() => {
     window.__codexPanelConfirmMessages = [];
@@ -1084,6 +1213,48 @@ function devRequestPlanResult(rawExtendscript) {
   };
 }
 
+function rawRunGatePlanResult() {
+  const rawStep = {
+    title: "Import and layout photos",
+    tool: "run_extendscript",
+    args: {
+      script: "return { ok: true, smoke: 'raw-run-gate' };"
+    },
+    mutatesProject: true,
+    targetSummary: "active comp / selected layers",
+    description: "Raw ExtendScript plan that must be unlocked by a matching dry run."
+  };
+  const classification = {
+    category: "risky",
+    label: "Risky / raw ExtendScript",
+    tone: "mutating",
+    allowsDryRun: true,
+    blocksRun: true,
+    blocksNormalRun: true,
+    rawExtendscriptStepCount: 1,
+    runRecommendation: "Dry run this exact raw ExtendScript plan before normal execution."
+  };
+  return {
+    planParseOk: true,
+    requestId: "raw-run-gate-smoke",
+    model: "smoke",
+    durationMs: 1,
+    plan: {
+      summary: "Import and layout selected photos with a raw ExtendScript workaround.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [rawStep]
+    },
+    planValidation: {
+      ok: true,
+      mutatingCount: 1,
+      steps: [rawStep],
+      classification
+    },
+    planClassification: classification
+  };
+}
+
 function installDevRequestTranscriptExpression(planResult, sessionId) {
   const transcript = [
     {
@@ -1100,6 +1271,34 @@ function installDevRequestTranscriptExpression(planResult, sessionId) {
     id: sessionId,
     title: "Dev request button smoke",
     updatedAt: "2026-05-17T00:00:00.000Z",
+    transcript,
+    chatMessages: []
+  };
+  return `(() => {
+    const session = ${JSON.stringify(session)};
+    localStorage.setItem("codexAeChatSessions", JSON.stringify([session]));
+    localStorage.setItem("codexAeActiveChatSessionId", session.id);
+    localStorage.setItem("codexAeChatTranscript", JSON.stringify(session.transcript));
+    return true;
+  })()`;
+}
+
+function installRawRunGateTranscriptExpression(planResult, sessionId) {
+  const transcript = [
+    {
+      role: "user",
+      text: "Raw run gate smoke prompt"
+    },
+    {
+      role: "assistant",
+      text: "Plan review: ready\nValidation: ok, 1 step, 1 mutating\nRun readiness: Dry run checks without changes",
+      planResult
+    }
+  ];
+  const session = {
+    id: sessionId,
+    title: "Raw run gate smoke",
+    updatedAt: "2026-05-18T00:00:00.000Z",
     transcript,
     chatMessages: []
   };
@@ -1450,6 +1649,121 @@ async function devRequestButtonSmoke() {
       toolGap
     }, null, 2));
   } finally {
+    if (historyBackup) {
+      try {
+        await evaluate(send, writeHistoryStorageExpression(historyBackup));
+        await reloadActivePage(send);
+      } catch (_restoreError) {}
+    }
+    ws.close();
+  }
+}
+
+async function rawRunGateSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  let historyBackup = null;
+  try {
+    historyBackup = await evaluate(send, historyStorageExpression());
+    await evaluate(send, installRawRunGateTranscriptExpression(
+      rawRunGatePlanResult(),
+      `raw-run-gate-${Date.now()}`
+    ));
+    await reloadActivePage(send);
+
+    const loaded = await waitFor(send, "raw run gate plan loaded", (state) => (
+      state.transcript.indexOf("Plan review: ready") >= 0 &&
+      state.recoverLastPlanDisabled === false &&
+      state.planRunStatus === "No plan ready" &&
+      state.dryRunDisabled === true &&
+      state.runDisabled === true
+    ), 15000);
+
+    const recoveredClick = await evaluate(send, clickExpression("recoverLastPlanButton"));
+    if (!recoveredClick || !recoveredClick.ok) throw new Error("Recover last plan button was not clickable.");
+    const recovered = await waitFor(send, "raw run gate recovered", (state) => (
+      state.planRunStatus === "Dry run available; Run blocked" &&
+      state.planRunStatusClass.indexOf("mutating") >= 0 &&
+      state.dryRunDisabled === false &&
+      state.runDisabled === true &&
+      state.inlinePlanActionCount >= 1 &&
+      state.inlineDryRunDisabled === false &&
+      state.inlineRunPlanDisabled === true
+    ), 10000);
+
+    await evaluate(send, installRawRunGateFakeExpression());
+    const dryRunClicked = await evaluate(send, clickExpression("dryRunPlanButton"));
+    if (!dryRunClicked || !dryRunClicked.ok) throw new Error("Dry run button was not clickable.");
+    const dryRun = await waitFor(send, "raw run gate dry-run unlock", (state) => (
+      state.sendDisabled === false &&
+      state.transcript.indexOf("Dry run: ok") >= 0 &&
+      state.rawDryRunGate &&
+      state.rawDryRunGate.runId === "raw-gate-dry-run-smoke" &&
+      state.rawDryRunGate.requestId === "raw-run-gate-smoke" &&
+      state.runDisabled === false &&
+      state.inlineRunPlanDisabled === false &&
+      state.runTitle.indexOf("explicit raw ExtendScript gate") >= 0 &&
+      state.rawRunGateRequests.length === 1
+    ), 30000);
+
+    await evaluate(send, installConfirmExpression());
+    const runClicked = await evaluate(send, clickExpression("runPlanButton"));
+    if (!runClicked || !runClicked.ok) throw new Error("Run plan button was not clickable after matching dry run.");
+    const run = await waitFor(send, "raw run gate protected run", (state) => (
+      state.sendDisabled === false &&
+      state.transcript.indexOf("Run: ok") >= 0 &&
+      state.transcript.indexOf("Raw ExtendScript gate: approved by dry run raw-gate-dry-run-smoke.") >= 0 &&
+      state.rawRunGateRequests.length === 2
+    ), 30000);
+
+    const requests = run.rawRunGateRequests || [];
+    const dryRunPayload = requests[0] || {};
+    const runPayload = requests[1] || {};
+    if (dryRunPayload.dryRun !== true) throw new Error("Expected first raw gate request to be a dry run.");
+    if (dryRunPayload.allowRawExtendscript === true) throw new Error("Dry run should not request raw ExtendScript execution approval.");
+    if (runPayload.dryRun !== false) throw new Error("Expected second raw gate request to be a real run.");
+    if (runPayload.allowRawExtendscript !== true) throw new Error("Real run must include explicit raw ExtendScript approval.");
+    if (runPayload.rawExtendscriptDryRunId !== "raw-gate-dry-run-smoke") throw new Error("Real run must include the matching dry-run id.");
+    if (runPayload.confirm !== true || runPayload.allowMutations !== true || runPayload.autoEditSession !== true) {
+      throw new Error("Real run must keep confirm, mutation, and auto edit-session protection enabled.");
+    }
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      loaded: {
+        recoverDisabled: loaded.recoverLastPlanDisabled,
+        status: loaded.planRunStatus
+      },
+      recovered: {
+        status: recovered.planRunStatus,
+        statusClass: recovered.planRunStatusClass,
+        runDisabled: recovered.runDisabled,
+        inlineRunPlanDisabled: recovered.inlineRunPlanDisabled
+      },
+      dryRun: {
+        rawDryRunGate: dryRun.rawDryRunGate,
+        runDisabled: dryRun.runDisabled,
+        inlineRunPlanDisabled: dryRun.inlineRunPlanDisabled
+      },
+      run: {
+        requestCount: requests.length,
+        dryRunPayload: {
+          dryRun: dryRunPayload.dryRun,
+          allowRawExtendscript: dryRunPayload.allowRawExtendscript
+        },
+        runPayload: {
+          dryRun: runPayload.dryRun,
+          allowRawExtendscript: runPayload.allowRawExtendscript,
+          rawExtendscriptDryRunId: runPayload.rawExtendscriptDryRunId,
+          autoEditSession: runPayload.autoEditSession
+        },
+        transcriptTail: run.transcript.slice(-3000)
+      }
+    }, null, 2));
+  } finally {
+    try {
+      await evaluate(send, restoreRawRunGateFakeExpression());
+    } catch (_restoreFakeError) {}
     if (historyBackup) {
       try {
         await evaluate(send, writeHistoryStorageExpression(historyBackup));
@@ -2997,6 +3311,10 @@ async function main() {
   }
   if (command === "dev-request-button-smoke") {
     await devRequestButtonSmoke();
+    return;
+  }
+  if (command === "raw-run-gate-smoke") {
+    await rawRunGateSmoke();
     return;
   }
   if (command === "mode-toggle-smoke") {

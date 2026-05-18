@@ -111,16 +111,47 @@ function createFakeBridgeServer(captured) {
 
     if (req.url === "/agents/plan/run" && req.method === "POST") {
       const body = await readBody(req);
+      if (!Array.isArray(captured.planRuns)) captured.planRuns = [];
+      const runId = body.dryRun === true ? `fake-dry-run-${captured.planRuns.length + 1}` : `fake-run-${captured.planRuns.length + 1}`;
+      const approvedDryRunId = captured.planRuns
+        .slice()
+        .reverse()
+        .find((item) => item && item.dryRun === true && item.__fakeRunId);
+      body.__fakeRunId = runId;
+      captured.planRuns.push(body);
       captured.planRun = body;
+      if (body.dryRun !== true && body.allowRawExtendscript === true) {
+        const expectedDryRunId = approvedDryRunId ? approvedDryRunId.__fakeRunId : "";
+        if (!body.rawExtendscriptDryRunId || body.rawExtendscriptDryRunId !== expectedDryRunId) {
+          writeJson(res, 400, {
+            ok: false,
+            error: "missing matching raw ExtendScript dry-run id",
+            run: {
+              id: runId,
+              ok: false,
+              dryRun: false,
+              safety: {
+                status: "blocked_raw_extendscript_gate"
+              },
+              steps: []
+            }
+          });
+          return;
+        }
+      }
       writeJson(res, 200, {
         ok: true,
         run: {
+          id: runId,
           ok: true,
           dryRun: body.dryRun === true,
           safety: {
             status: body.dryRun === true ? "dry-run" : "protected",
             protection: "auto_edit_session",
-            editSessionFinished: body.dryRun !== true
+            editSessionFinished: body.dryRun !== true,
+            rawExtendscriptGate: body.dryRun === true
+              ? { status: "dry-run-approved", dryRunId: runId }
+              : { status: "approved", dryRunId: body.rawExtendscriptDryRunId || "" }
           },
           steps: [
             {
@@ -472,7 +503,7 @@ async function main() {
     }, headers);
     assert(badReadBack.isError === true, "Expected read-back allowlist gate.");
     assert(badReadBack.content[0].text.includes("read-only allowlist"), "Expected read-back allowlist error.");
-    assert(!captured.planRun, "Invalid read-back gate must block before bridge plan run.");
+    assert(!captured.planRun && (!captured.planRuns || captured.planRuns.length === 0), "Invalid read-back gate must block before bridge plan run.");
 
     const runCandidate = await callRpc(runPort, 67, "tools/call", {
       name: "run_extendscript_candidate",
@@ -493,11 +524,17 @@ async function main() {
     assert(runCandidate.structuredContent.safety.checkpointEditSessionRequired === true, "Expected checkpoint/edit-session safety metadata.");
     assert(runCandidate.structuredContent.safety.readBackCompleted === true, "Expected read-back verification to run.");
     assert(runCandidate.structuredContent.bridgePlanRun.safety.protection === "auto_edit_session", "Expected protected fake run.");
-    assert(captured.planRun.allowRawExtendscript === true, "Expected connector wrapper to enable raw ExtendScript only inside plan runner.");
-    assert(captured.planRun.autoEditSession === true, "Expected auto edit session in bridge payload.");
-    assert(captured.planRun.plan.steps[0].tool === "run_extendscript_file", "Expected file-based candidate execution.");
-    assert(captured.planRun.plan.steps[0].args.filePath === savedCandidate.structuredContent.jsxPath, "Expected saved candidate JSX path.");
-    assert(captured.planRun.plan.steps[0].args.verifyAfter === true, "Expected bridge verification enabled.");
+    assert(Array.isArray(captured.planRuns) && captured.planRuns.length === 2, "Expected dry-run gate and real bridge plan run.");
+    const preflightPlanRun = captured.planRuns[0];
+    const protectedPlanRun = captured.planRuns[1];
+    assert(preflightPlanRun.dryRun === true, "Expected connector wrapper to dry-run before raw ExtendScript execution.");
+    assert(preflightPlanRun.allowRawExtendscript !== true, "Dry-run gate should not request raw ExtendScript execution approval.");
+    assert(protectedPlanRun.allowRawExtendscript === true, "Expected connector wrapper to enable raw ExtendScript only inside the protected plan runner.");
+    assert(protectedPlanRun.rawExtendscriptDryRunId === preflightPlanRun.__fakeRunId, "Expected real run to include the matching dry-run gate id.");
+    assert(protectedPlanRun.autoEditSession === true, "Expected auto edit session in bridge payload.");
+    assert(protectedPlanRun.plan.steps[0].tool === "run_extendscript_file", "Expected file-based candidate execution.");
+    assert(protectedPlanRun.plan.steps[0].args.filePath === savedCandidate.structuredContent.jsxPath, "Expected saved candidate JSX path.");
+    assert(protectedPlanRun.plan.steps[0].args.verifyAfter === true, "Expected bridge verification enabled.");
     assert(captured.readBack.name === "get_active_comp", "Expected configured read-back tool call.");
     assert(!JSON.stringify(runCandidate.structuredContent).includes("app.beginUndoGroup"), "Run result must not return raw JSX.");
 

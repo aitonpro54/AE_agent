@@ -652,7 +652,51 @@ async function runExtendscriptCandidate(config, args) {
   for (const call of prepared.readBackToolCalls) {
     assertReadBackAllowed(call);
   }
-  const response = await bridgeRequest(config, "POST", "/agents/plan/run", prepared.planRunPayload, Number(args && args.timeoutMs) || config.timeoutMs);
+  const timeoutMs = Number(args && args.timeoutMs) || config.timeoutMs;
+  let preflightDryRun = null;
+  let planRunPayload = prepared.planRunPayload;
+  if (!prepared.dryRun) {
+    const dryRunPayload = Object.assign({}, prepared.planRunPayload, {
+      dryRun: true,
+      allowRawExtendscript: false
+    });
+    const dryRunResponse = await bridgeRequest(config, "POST", "/agents/plan/run", dryRunPayload, timeoutMs);
+    if (!dryRunResponse.body || !dryRunResponse.body.run) {
+      throw new Error(dryRunResponse.body && dryRunResponse.body.error ? dryRunResponse.body.error : `Bridge plan dry run failed with HTTP ${dryRunResponse.status}`);
+    }
+    preflightDryRun = dryRunResponse.body.run;
+    if (dryRunResponse.body.ok !== true) {
+      return {
+        schemaVersion: prepared.schemaVersion,
+        status: "blocked",
+        candidateId: prepared.candidateId,
+        dryRun: prepared.dryRun,
+        metadataPath: prepared.paths.metadataPath,
+        jsxPath: prepared.paths.jsxPath,
+        jsxSha256: prepared.staticCheck.jsxSha256,
+        staticCheck: {
+          status: prepared.staticCheck.status,
+          summary: prepared.staticCheck.summary,
+          findings: prepared.staticCheck.findings
+        },
+        bridgePlanRun: preflightDryRun,
+        preflightDryRun,
+        readBack: [],
+        safety: Object.assign({}, prepared.safety, {
+          bridgeCalled: true,
+          rawExtendscriptDryRunRequired: true,
+          rawExtendscriptDryRunId: preflightDryRun.id || "",
+          aeMutated: false,
+          readBackCompleted: false
+        })
+      };
+    }
+    planRunPayload = Object.assign({}, prepared.planRunPayload, {
+      rawExtendscriptDryRunId: preflightDryRun.id || ""
+    });
+  }
+
+  const response = await bridgeRequest(config, "POST", "/agents/plan/run", planRunPayload, timeoutMs);
   if (!response.body || !response.body.run) {
     throw new Error(response.body && response.body.error ? response.body.error : `Bridge plan run failed with HTTP ${response.status}`);
   }
@@ -683,9 +727,12 @@ async function runExtendscriptCandidate(config, args) {
       findings: prepared.staticCheck.findings
     },
     bridgePlanRun: response.body.run,
+    preflightDryRun,
     readBack,
     safety: Object.assign({}, prepared.safety, {
       bridgeCalled: true,
+      rawExtendscriptDryRunRequired: !prepared.dryRun,
+      rawExtendscriptDryRunId: preflightDryRun && preflightDryRun.id ? preflightDryRun.id : "",
       aeMutated: !prepared.dryRun && response.body.ok === true,
       readBackCompleted: prepared.dryRun ? false : readBack.length > 0
     })
