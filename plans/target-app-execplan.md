@@ -2,7 +2,7 @@
 
 ## Progress
 
-- [x] Stable baseline: AE Agent 1.0.10 CEP panel, provider setup, Agent planning, Agent Hardcore owner mode, plan validation, protected execution, local history, diagnostics, reload hard-refresh, install/sync cache clearing, and installed-panel smoke coverage.
+- [x] Stable baseline: AE Agent 1.0.11 CEP panel, provider setup, Agent planning, Agent Hardcore owner mode, plan validation, protected execution, local history, diagnostics, reload hard-refresh, install/sync cache clearing, and installed-panel smoke coverage.
 - [x] Milestone 38: Repo cleanup and roadmap reset.
 - [x] Milestone 39: Agent planning quality.
 - [x] Milestone 40: Timeline and layer tools.
@@ -63,6 +63,7 @@
 - [x] Milestone 93: Selected layer binding diagnostic hotfix.
 - [x] Milestone 94: Agent Hardcore Autopilot.
 - [x] Milestone 95: Hardcore owner controls, usage reporting, and TypedTool fallback.
+- [x] Milestone 96: Validation-ok plan review unblocks Agent and Hardcore.
 - [x] Hotfix: Version 1.0.7 and Hardcore installed-panel sync.
 - [x] Hotfix: Deep duplicate read-back binding aliases.
 - [x] Hotfix: Version 1.0.8 hard Reload button.
@@ -71,10 +72,11 @@
 ## Current Stable Baseline
 
 - The active repository is `C:\Users\Ant\Documents\Codex\AE_agent`.
-- The native CEP title/menu format is `AE Agent 1.0.10`.
+- The native CEP title/menu format is `AE Agent 1.0.11`.
 - The panel is a compact dark CEP client for the local bridge daemon.
 - Provider paths are separate: OpenAI API, OpenAI CLI, Gemini, Claude, OpenRouter, and Local/Ollama.
 - Agent mode drafts structured MCP plans, validates tool names and required fields, dry-runs plans, and executes only through explicit mutation gates.
+- Agent plans with `validation.ok` and review-warning classifications stay runnable in Agent and Agent Hardcore; classification is guidance, while invalid schema/tools, raw ExtendScript approval, runtime bindings, mutation permission, checkpoint, and edit-session gates remain enforced by the runner.
 - Agent Hardcore is a visible composer mode next to Agent; its composer send button starts the full owner-mode autopilot session with xhigh reasoning, while manual `Dry run` / `Run plan` controls remain visible for the latest active plan.
 - The latest valid Agent plan exposes inline `Dry run / Проверить` and `Выполнить план` controls inside the chat message, while keeping the same validated backend runner and project-change gates.
 - Raw ExtendScript plans stay blocked for normal Run until a successful dry run of the same current plan records a short-lived gate id; the enabled Run then sends `allowRawExtendscript:true` with the matching `rawExtendscriptDryRunId`.
@@ -532,6 +534,13 @@
 - When a Hardcore run step fails on a typed tool, mark that TypedTool as not working, create a redacted `logs/dev-requests/<id>/` bundle with a returned Codex App start prompt, and let the next retry continue the AE task with another typed tool or a narrow raw ExtendScript fallback through the dry-run gate.
 - Bump CEP/bridge/MCP/smoke version expectations to `1.0.10` so installed panel cache-busting picks up the behavior change.
 
+### Milestone 96: Validation-ok plan review unblocks Agent and Hardcore
+
+- Treat `needs clarification` / review-warning classifications as runnable when `planValidation.ok` is true; dry-run and run controls stay available in both Agent and Agent Hardcore.
+- Keep raw ExtendScript behind the existing matching dry-run gate, and keep runtime-binding, mutation permission, checkpoint, and edit-session protections inside the backend runner.
+- Make Hardcore retry when a run only executes inspection plus skipped pseudo/no-tool steps, so autopilot asks for real MCP tool calls instead of declaring a no-op plan verified.
+- Bump CEP/bridge/MCP/smoke version expectations to `1.0.11`.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -650,8 +659,25 @@
 - 2026-05-18: The panel cannot read the Codex App account quota meter directly, so five-hour limit monitoring is a local task-window timer plus panel context-token estimate; provider token usage is shown only when the provider returns usage metadata.
 - 2026-05-18: A failed TypedTool in Hardcore creates an ignored dev-request bundle and marks that tool as not working for the session; the AE task may continue through another typed tool or a narrow raw ExtendScript fallback, but raw execution still requires the same current-plan dry-run approval.
 - 2026-05-18: Milestone 95 live CEP/CDP validation is closed when the installed panel is reachable and `hardcore-autopilot-ui-smoke` verifies visible Hardcore controls, `/agents/hardcore/run` owner-mode flags, transcript output, and the Resource report. The bundled Codex Node runtime remains the reliable local runner because the PATH `node.exe` still fails with `Access denied`.
+- 2026-05-18: For Milestone 96, `validation.ok` is the execution readiness boundary for normal typed-tool plans. `needs clarification` classification becomes a review warning instead of a dry-run/run blocker, while raw ExtendScript still requires a matching dry-run approval and real runner gates still enforce invalid tools, runtime bindings, mutation permission, checkpoints, and edit sessions.
+- 2026-05-18: Agent Hardcore must not mark no-op pseudo plans as verified. If a run only completes inspection/read-only context steps and skips `tool:null` or pseudo-conditional steps, the retry prompt asks for real MCP tool calls before the session can succeed.
 
 ## Validation
+
+- Milestone 96:
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed bundled `node --check` for 17 touched JavaScript files, including `cep-panel\panel.js`, `mcp-server\bridge-daemon.js`, `mcp-server\mcp-adapter.js`, `mcp-server\plan-risk-classifier.js`, `scripts\cep-panel-cdp-smoke.js`, `scripts\plan-classification-smoke.js`, and `scripts\smoke-test.js`.
+  - Passed XML parsing for `cep-panel\CSXS\manifest.xml`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed focused `node scripts\plan-classification-smoke.js`; `needs clarification` now reports `allowsDryRun:true` and `blocksRun:false` when validation is ok.
+  - Passed `node scripts\smoke-test.js`; output included bridge health `1.0.11`, a validation-ok classification-warning dry run with skipped non-tool step, Hardcore retry with `run-needs-tool-plan` before typed-tool failure retry, and preserved raw ExtendScript dry-run gate / mutation edit-session blocking.
+  - Passed required local smokes: `provider-contract-smoke`, `solution-registry-smoke`, `solution-candidate-report-smoke`, `solution-promotion-smoke`, `solution-retrieval-smoke`, `solution-library-validation-smoke`, `project-intent-memory-smoke`, `plan-classification-smoke`, `plan-repair-smoke`, `semantic-verification-smoke`, `reliability-validation-suite-smoke`, `chatgpt-connector-smoke`, `provider-api-smoke`, `prompt-optimization-smoke`, `bridge-only-smoke-test`, and `smoke-test`.
+  - Synced the installed CEP extension with approved `scripts\cep-sync-health.js --sync --check --json`; installed panel/title/manifest versions reported `1.0.11`, three changed files copied, cache clearing removed four safe cache folders, and Local Storage was preserved.
+  - Restarted the live bridge daemon on `127.0.0.1:3456`; live `/health` and MCP `get_bridge_status` reported version `1.0.11`, `panelConnected:true`, `pendingCommands:0`, and no inflight commands.
+  - Passed live CEP/CDP `classification-warning-controls-smoke`; installed page title was `AE Agent 1.0.11`, status was `Runnable with review`, and persistent/inline `Выполнить план` controls were enabled for a `validation.ok` review-warning plan.
+  - Passed live CEP/CDP `hardcore-autopilot-ui-smoke`; installed page title was `AE Agent 1.0.11`, owner-mode payload stayed `reasoning_effort:"xhigh"` with protected mutation/session flags, and Resource report remained visible.
+  - Passed live CEP/CDP `raw-run-gate-smoke`; raw ExtendScript stayed blocked until matching dry-run approval, then sent `allowRawExtendscript:true` with `rawExtendscriptDryRunId`.
+  - An initial concurrent CEP smoke attempt failed because two CDP smokes wrote to the same panel chat history at once; rerunning the same checks sequentially passed.
 
 - Milestone 95:
   - No package manager check is configured because the repository has no `package.json`.

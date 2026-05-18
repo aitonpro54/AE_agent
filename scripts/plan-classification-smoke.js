@@ -215,8 +215,10 @@ async function main() {
       clarifyingQuestion: "Which selected layers should be changed?",
       steps: []
     }, "needs clarification", (classification) => {
-      assert.strictEqual(classification.blocksRun, true);
-      assert.strictEqual(classification.allowsDryRun, false);
+      assert.strictEqual(classification.blocksRun, false);
+      assert.strictEqual(classification.allowsDryRun, true);
+      assert.strictEqual(classification.tone, "mutating");
+      assert(classification.runRecommendation.indexOf("Runnable with review") >= 0);
     });
 
     const risky = await validatePlan("risky", {

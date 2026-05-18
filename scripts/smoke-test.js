@@ -609,6 +609,36 @@ async function main() {
       ]
     }
   });
+  const classificationWarningDryRun = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/plan/run",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    dryRun: true,
+    requestId: "smoke-classification-warning-dry-run",
+    plan: {
+      summary: "Smoke-test validation-ok classification warnings do not block dry-run.",
+      risk: "low",
+      requiresCheckpoint: false,
+      steps: [
+        {
+          title: "Read bridge status",
+          tool: "get_bridge_status",
+          args: {}
+        },
+        {
+          title: "Planner note that should be skipped",
+          tool: null,
+          args: {}
+        }
+      ]
+    }
+  });
   const targetSummaryValidation = await requestJsonWithOptions({
     hostname: "127.0.0.1",
     port,
@@ -734,7 +764,7 @@ async function main() {
     }
   }, {
     prompt: "Smoke-test Agent Hardcore retry loop and knowledge capture.",
-    maxAttempts: 2,
+    maxAttempts: 3,
     projectOwner: true,
     reasoning_effort: "xhigh",
     allowMutations: true,
@@ -742,6 +772,23 @@ async function main() {
     allowRawFallback: true,
     autoPromoteKnowledge: true,
     attemptPlans: [
+      {
+        summary: "Reject pseudo steps that are not real MCP tool work.",
+        risk: "low",
+        requiresCheckpoint: true,
+        steps: [
+          {
+            title: "Read bridge status before pseudo action",
+            tool: "get_bridge_status",
+            args: {}
+          },
+          {
+            title: "Pseudo action without MCP tool",
+            tool: null,
+            args: {}
+          }
+        ]
+      },
       {
         summary: "Fail one typed tool to exercise dev handoff.",
         risk: "low",
@@ -1348,7 +1395,7 @@ async function main() {
     throw new Error("Expected initialize, tools/list, and tool call responses");
   }
 
-  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "1.0.10") {
+  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "1.0.11") {
     throw new Error("Unexpected health response");
   }
   if (!agents.body.ok || !Array.isArray(agents.body.agents) || !agents.body.agents.length) {
@@ -1399,6 +1446,19 @@ async function main() {
     planRun.body.run.validation.classification.category !== "safe typed-tool"
   ) {
     throw new Error("Unexpected plan runner dry-run response");
+  }
+  if (
+    classificationWarningDryRun.status !== 200 ||
+    classificationWarningDryRun.body.ok !== true ||
+    !classificationWarningDryRun.body.run ||
+    classificationWarningDryRun.body.run.validation.classification.category !== "needs clarification" ||
+    classificationWarningDryRun.body.run.validation.classification.blocksRun !== false ||
+    classificationWarningDryRun.body.run.validation.classification.allowsDryRun !== true ||
+    classificationWarningDryRun.body.run.steps.length !== 2 ||
+    classificationWarningDryRun.body.run.steps[0].status !== "ready" ||
+    classificationWarningDryRun.body.run.steps[1].status !== "skipped"
+  ) {
+    throw new Error("Validation-ok classification warning blocked dry-run or failed to skip non-tool step");
   }
   if (
     targetSummaryValidation.status !== 200 ||
@@ -1456,9 +1516,11 @@ async function main() {
     hardcoreSession.body.ok !== true ||
     !hardcoreSession.body.session ||
     hardcoreSession.body.session.status !== "verified" ||
-    hardcoreSession.body.session.attempts.length !== 2 ||
-    hardcoreSession.body.session.attempts[0].status !== "run-needs-review" ||
-    hardcoreSession.body.session.attempts[1].status !== "verified" ||
+    hardcoreSession.body.session.attempts.length !== 3 ||
+    hardcoreSession.body.session.attempts[0].status !== "run-needs-tool-plan" ||
+    String(hardcoreSession.body.session.attempts[0].blocker || "").indexOf("real MCP tool calls") < 0 ||
+    hardcoreSession.body.session.attempts[1].status !== "run-needs-review" ||
+    hardcoreSession.body.session.attempts[2].status !== "verified" ||
     hardcoreSession.body.session.projectOwner !== true ||
     hardcoreSession.body.session.reasoningEffort !== "xhigh" ||
     !Array.isArray(hardcoreSession.body.session.typedToolFailures) ||

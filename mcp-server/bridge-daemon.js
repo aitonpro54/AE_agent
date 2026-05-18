@@ -20,7 +20,7 @@ const {
 } = require("./project-intent-memory");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "1.0.10";
+const SERVER_VERSION = "1.0.11";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -3275,9 +3275,43 @@ function isRawExtendscriptTool(tool) {
   return tool === "run_extendscript" || tool === "run_extendscript_file";
 }
 
+const HARDCORE_INSPECTION_ONLY_TOOLS = new Set([
+  "get_bridge_status",
+  "ping_ae",
+  "get_active_comp",
+  "get_selected_layers",
+  "get_selected_properties",
+  "get_project_snapshot",
+  "get_comp_details",
+  "get_layer_details",
+  "list_layers",
+  "find_project_items",
+  "get_render_queue_status"
+]);
+
+function hardcoreExecutablePlanBlocker(attempt) {
+  const run = attempt && attempt.run;
+  const validation = attempt && attempt.planResult && attempt.planResult.planValidation;
+  if (!run || run.ok !== true || !validation) return null;
+  const steps = Array.isArray(run.steps) ? run.steps : [];
+  const noToolCount = Array.isArray(validation.steps)
+    ? validation.steps.filter((step) => !step || !step.tool).length
+    : 0;
+  const completedToolSteps = steps.filter((step) => step && step.tool && step.status === "completed");
+  const meaningfulToolSteps = completedToolSteps.filter((step) => !HARDCORE_INSPECTION_ONLY_TOOLS.has(step.tool));
+  if (completedToolSteps.length <= 0) {
+    return "Convert every pseudo step into real MCP tool calls; do not use conditional/execute_command/tool:null.";
+  }
+  if (noToolCount > 0 && meaningfulToolSteps.length <= 0) {
+    return "Convert every pseudo step into real MCP tool calls; do not use conditional/execute_command/tool:null.";
+  }
+  return null;
+}
+
 function hardcoreAttemptSucceeded(attempt) {
   const run = attempt && attempt.run;
   if (!run || run.ok !== true) return false;
+  if (hardcoreExecutablePlanBlocker(attempt)) return false;
   const semantic = run.semanticVerification || null;
   return !semantic || semantic.status === "passed" || semantic.status === "not_applicable";
 }
@@ -3287,8 +3321,13 @@ function compactHardcoreRunFailure(run) {
   const failedSteps = Array.isArray(run.steps)
     ? run.steps.filter((step) => step && (step.status === "failed" || step.status === "blocked")).slice(0, 4)
     : [];
+  const skippedNoToolSteps = Array.isArray(run.steps)
+    ? run.steps.filter((step) => step && !step.tool && step.status === "skipped").slice(0, 4)
+    : [];
   return {
     ok: run.ok,
+    executedCount: Number(run.executedCount || 0),
+    skippedCount: Number(run.skippedCount || 0),
     error: compactHardcoreText(run.error || "", 260),
     recoveryHint: compactHardcoreText(run.recoveryHint || "", 260),
     semanticVerification: run.semanticVerification
@@ -3305,6 +3344,11 @@ function compactHardcoreRunFailure(run) {
       tool: step.tool || null,
       status: step.status || null,
       reason: compactHardcoreText(step.reason || step.error || "", 220)
+    })),
+    skippedNoToolSteps: skippedNoToolSteps.map((step) => ({
+      index: step.index || null,
+      title: compactHardcoreText(step.title || "Untooled step", 120),
+      reason: compactHardcoreText(step.reason || "No tool for this step.", 220)
     }))
   };
 }
@@ -3595,7 +3639,7 @@ function buildHardcoreSolution(session) {
     },
     testedAeContext: {
       aeVersion: null,
-      panelVersion: "AE Agent 1.0.10",
+      panelVersion: "AE Agent 1.0.11",
       bridgeVersion: SERVER_VERSION,
       projectKind: "agent-hardcore-session",
       notes: ["Auto-promoted only after local registry validation succeeds."]
@@ -3834,6 +3878,13 @@ async function runAgentHardcoreSession(source, args) {
           dryRunId: rawDryRunId || null
         };
         if (attempt.run && attempt.run.executedCount > 0) session.rawFallbackUsed = true;
+      }
+
+      const executablePlanBlocker = hardcoreExecutablePlanBlocker(attempt);
+      if (executablePlanBlocker) {
+        attempt.status = "run-needs-tool-plan";
+        attempt.blocker = executablePlanBlocker;
+        continue;
       }
 
       if (hardcoreAttemptSucceeded(attempt)) {
@@ -4242,7 +4293,7 @@ function recordRawExtendscriptDryRunApproval(run, plan, requestId, validation) {
 function rawExtendscriptRunApproval(validation, plan, requestId, dryRunId, allowRawExtendscript) {
   const classification = validation && validation.classification ? validation.classification : null;
   if (!classification || classification.blocksRun !== true) return { ok: true, approval: null };
-  if (rawExtendscriptStepCount(validation) <= 0 || classification.allowsDryRun === false || classification.category !== "risky") {
+  if (rawExtendscriptStepCount(validation) <= 0 || classification.allowsDryRun === false) {
     return { ok: false, error: classification.runRecommendation || "Plan classification blocks run." };
   }
   if (!allowRawExtendscript) {
@@ -4344,12 +4395,12 @@ async function runValidatedAgentPlan(options) {
     run.error = "Plan validation failed.";
     return finishRun();
   }
-  if (dryRun && validation.classification && validation.classification.allowsDryRun === false) {
+  if (dryRun && validation.ok !== true && validation.classification && validation.classification.allowsDryRun === false) {
     run.ok = false;
     run.error = validation.classification.runRecommendation || "Plan classification blocks dry-run.";
     return finishRun();
   }
-  if (!dryRun && validation.classification && validation.classification.blocksRun === true) {
+  if (!dryRun && validation.classification && validation.classification.blocksRun === true && rawExtendscriptStepCount(validation) > 0) {
     const rawApproval = rawExtendscriptRunApproval(validation, prepared.plan, options.requestId || null, rawExtendscriptDryRunId, allowRawExtendscript);
     if (!rawApproval.ok) {
       run.ok = false;

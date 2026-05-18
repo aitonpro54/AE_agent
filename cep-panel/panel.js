@@ -2,7 +2,7 @@
 
 (function () {
   var APP_NAME = "AE Agent";
-  var APP_VERSION = "1.0.10";
+  var APP_VERSION = "1.0.11";
   var CHAT_MODE_CHAT = "chat";
   var CHAT_MODE_AGENT = "plan";
   var CHAT_MODE_HARDCORE = "hardcore";
@@ -1990,7 +1990,7 @@
 
   function classificationBlocksRun(validation) {
     var classification = planClassification(validation);
-    return !!(classification && classification.blocksRun === true);
+    return !!(classification && classification.blocksRun === true && rawExtendscriptStepCount(validation) > 0);
   }
 
   function planKeyFor(plan) {
@@ -2084,20 +2084,21 @@
       if (!validationOk) return "Review issues before running";
       return mutatingCount > 0 ? "Dry run first; Run uses protection" : "Read-only plan ready";
     }
-    if (classification.blocksRun) {
+    if (classification.blocksRun && Number(classification.rawExtendscriptStepCount || 0) > 0) {
       if (rawGateReady) return "Dry run accepted; Run unlocked";
       return classification.allowsDryRun === false ? "Plan blocked" : "Dry run available; Run blocked";
     }
     if (classification.category === "safe typed-tool") return "Safe typed-tool ready";
     if (classification.category === "risky") return "Risky plan; dry run first";
-    if (classification.category === "needs clarification") return "Clarification needed";
+    if (classification.category === "needs clarification") return "Runnable with review";
     if (classification.category === "unsupported") return "Unsupported plan";
     return classification.label || "Plan classified";
   }
 
   function classificationTone(classification, validationOk, mutatingCount) {
-    if (classification && classification.tone) return classification.tone;
     if (!validationOk) return "blocked";
+    if (classification && classification.category === "needs clarification") return "mutating";
+    if (classification && classification.tone) return classification.tone;
     return mutatingCount > 0 ? "mutating" : "read-only";
   }
 
@@ -2121,6 +2122,8 @@
         runPlanButton.title = classification && classification.runRecommendation ? classification.runRecommendation : "Resolve plan classification before running.";
       } else if (!validationOk) {
         runPlanButton.title = "Resolve plan review issues before running.";
+      } else if (classification && classification.category === "needs clarification") {
+        runPlanButton.title = classification.runRecommendation || "Runnable with review; non-tool steps will be skipped or require replanning.";
       } else if (mutatingCount > 0) {
         runPlanButton.title = "Run with the existing protected edit-session safety gate.";
       } else {

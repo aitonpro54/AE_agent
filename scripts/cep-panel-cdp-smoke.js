@@ -1399,6 +1399,55 @@ function rawRunGatePlanResult() {
   };
 }
 
+function classificationWarningPlanResult() {
+  const steps = [
+    {
+      title: "Read bridge status before review note",
+      tool: "get_bridge_status",
+      args: {},
+      mutatesProject: false,
+      targetSummary: "bridge status"
+    },
+    {
+      title: "Review note without a tool",
+      tool: null,
+      args: {},
+      mutatesProject: false,
+      warnings: ["No MCP tool for this step."]
+    }
+  ];
+  const classification = {
+    category: "needs clarification",
+    label: "Needs clarification",
+    tone: "mutating",
+    allowsDryRun: true,
+    blocksRun: false,
+    rawExtendscriptStepCount: 0,
+    runRecommendation: "Runnable with review; non-tool steps will be skipped or require replanning."
+  };
+  return {
+    planParseOk: true,
+    requestId: "classification-warning-controls-smoke",
+    model: "smoke",
+    durationMs: 1,
+    plan: {
+      summary: "Validation ok plan with a review warning.",
+      risk: "low",
+      requiresCheckpoint: false,
+      steps
+    },
+    planValidation: {
+      ok: true,
+      stepCount: 2,
+      executableCount: 1,
+      mutatingCount: 0,
+      steps,
+      classification
+    },
+    planClassification: classification
+  };
+}
+
 function installDevRequestTranscriptExpression(planResult, sessionId) {
   const transcript = [
     {
@@ -1423,6 +1472,7 @@ function installDevRequestTranscriptExpression(planResult, sessionId) {
     localStorage.setItem("codexAeChatSessions", JSON.stringify([session]));
     localStorage.setItem("codexAeActiveChatSessionId", session.id);
     localStorage.setItem("codexAeChatTranscript", JSON.stringify(session.transcript));
+    localStorage.setItem("codexAeChatMode", "plan");
     return true;
   })()`;
 }
@@ -1451,6 +1501,7 @@ function installRawRunGateTranscriptExpression(planResult, sessionId) {
     localStorage.setItem("codexAeChatSessions", JSON.stringify([session]));
     localStorage.setItem("codexAeActiveChatSessionId", session.id);
     localStorage.setItem("codexAeChatTranscript", JSON.stringify(session.transcript));
+    localStorage.setItem("codexAeChatMode", "plan");
     return true;
   })()`;
 }
@@ -1925,6 +1976,62 @@ async function rawRunGateSmoke() {
     try {
       await evaluate(send, restoreRawRunGateFakeExpression());
     } catch (_restoreFakeError) {}
+    if (historyBackup) {
+      try {
+        await evaluate(send, writeHistoryStorageExpression(historyBackup));
+        await reloadActivePage(send);
+      } catch (_restoreError) {}
+    }
+    ws.close();
+  }
+}
+
+async function classificationWarningControlsSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  let historyBackup = null;
+  try {
+    historyBackup = await evaluate(send, historyStorageExpression());
+    await evaluate(send, installRawRunGateTranscriptExpression(
+      classificationWarningPlanResult(),
+      `classification-warning-${Date.now()}`
+    ));
+    await reloadActivePage(send);
+
+    await waitFor(send, "classification warning plan loaded", (state) => (
+      state.transcript.indexOf("Plan review: ready") >= 0 &&
+      state.recoverLastPlanDisabled === false &&
+      state.planRunStatus === "No plan ready" &&
+      state.dryRunDisabled === true &&
+      state.runDisabled === true
+    ), 15000);
+
+    const recoveredClick = await evaluate(send, clickExpression("recoverLastPlanButton"));
+    if (!recoveredClick || !recoveredClick.ok) throw new Error("Recover last plan button was not clickable.");
+    const recovered = await waitFor(send, "classification warning recovered", (state) => (
+      state.planRunStatus === "Runnable with review" &&
+      state.planRunStatusClass.indexOf("mutating") >= 0 &&
+      state.dryRunDisabled === false &&
+      state.runDisabled === false &&
+      state.inlinePlanActionCount >= 1 &&
+      state.inlinePlanActionStatus === "Runnable with review" &&
+      state.inlineDryRunDisabled === false &&
+      state.inlineRunPlanDisabled === false &&
+      state.transcript.indexOf("Plan blocked") < 0
+    ), 10000);
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      recovered: {
+        status: recovered.planRunStatus,
+        statusClass: recovered.planRunStatusClass,
+        dryRunDisabled: recovered.dryRunDisabled,
+        runDisabled: recovered.runDisabled,
+        inlineStatus: recovered.inlinePlanActionStatus,
+        inlineRunPlanDisabled: recovered.inlineRunPlanDisabled
+      }
+    }, null, 2));
+  } finally {
     if (historyBackup) {
       try {
         await evaluate(send, writeHistoryStorageExpression(historyBackup));
@@ -2586,7 +2693,7 @@ async function brandingSmoke() {
   try {
     await reloadActivePage(send);
     const state = await waitFor(send, "AE Agent branding", (item) => (
-      item.title === "AE Agent 1.0.10" &&
+      item.title === "AE Agent 1.0.11" &&
       item.windowBarExists === false &&
       item.windowBarText === "" &&
       item.windowBarText.indexOf("AE GPT") < 0 &&
@@ -2621,8 +2728,8 @@ async function reloadButtonSmoke() {
     const clicked = await evaluate(send, clickExpression("reloadButton"));
     if (!clicked || !clicked.ok) throw new Error("Reload button was not clickable.");
     const state = await waitFor(send, "hard reload button result", (item) => (
-      item.title === "AE Agent 1.0.10" &&
-      item.locationHref.indexOf("v=1.0.10") >= 0 &&
+      item.title === "AE Agent 1.0.11" &&
+      item.locationHref.indexOf("v=1.0.11") >= 0 &&
       item.locationHref.indexOf("assets=") >= 0 &&
       item.locationHref.indexOf("reload=") >= 0 &&
       item.assetVersion &&
@@ -3592,6 +3699,10 @@ async function main() {
   }
   if (command === "raw-run-gate-smoke") {
     await rawRunGateSmoke();
+    return;
+  }
+  if (command === "classification-warning-controls-smoke") {
+    await classificationWarningControlsSmoke();
     return;
   }
   if (command === "mode-toggle-smoke") {

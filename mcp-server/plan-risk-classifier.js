@@ -130,7 +130,10 @@ function categoryLabel(category) {
 function runRecommendationFor(category, validation, rawCount, blocksRun) {
   const mutatingCount = Number(validation && validation.mutatingCount || 0);
   if (category === "unsupported") return "Replace unsupported or unavailable tools before dry-run or run.";
-  if (category === "needs clarification") return "Answer the clarification or complete missing plan details before running.";
+  if (category === "needs clarification") {
+    if (blocksRun && rawCount > 0) return "Dry-run first; raw ExtendScript still requires an explicit raw-script execution gate.";
+    return "Runnable with review; non-tool steps will be skipped or require replanning.";
+  }
   if (blocksRun) return "Dry-run may preview the plan, but normal Run is blocked until raw ExtendScript risk is handled explicitly.";
   if (category === "risky") {
     if (rawCount > 0) return "Dry-run first; raw ExtendScript still requires an explicit raw-script execution gate.";
@@ -223,8 +226,8 @@ function classifyAgentPlan(plan, validation, context = {}) {
   } else if (sourcePlan.clarifyingQuestion || stepCount === 0 || noToolCount > 0 || missingCount > 0 || invalidStepCount > 0) {
     category = "needs clarification";
     score = 0.46;
-    blocksRun = true;
-    allowsDryRun = false;
+    blocksRun = safeValidation.ok ? rawCount > 0 : true;
+    allowsDryRun = safeValidation.ok ? true : false;
     if (sourcePlan.clarifyingQuestion) pushUnique(blockers, `Clarifying question: ${sourcePlan.clarifyingQuestion}`);
     if (stepCount === 0) pushUnique(blockers, "Plan has no executable steps.");
     if (noToolCount > 0) pushUnique(blockers, `${noToolCount} step${noToolCount === 1 ? "" : "s"} have no MCP tool.`);
@@ -248,7 +251,9 @@ function classifyAgentPlan(plan, validation, context = {}) {
   } else if (category === "risky") {
     pushUnique(reasons, "Plan is valid, but project-change or escape-hatch risk needs explicit review.");
   } else if (category === "needs clarification") {
-    pushUnique(reasons, "Plan is not actionable until the ambiguous or incomplete details are resolved.");
+    pushUnique(reasons, safeValidation.ok
+      ? "Plan passed validation but has review warnings; runner can execute tool steps and skip non-tool notes."
+      : "Plan is not actionable until the ambiguous or incomplete details are resolved.");
   } else {
     pushUnique(reasons, "Plan references tools that the AI Agent plan runner cannot accept.");
   }
@@ -259,9 +264,9 @@ function classifyAgentPlan(plan, validation, context = {}) {
   const confidence = confidenceLabel(score);
   const label = categoryLabel(category);
   const runRecommendation = runRecommendationFor(category, safeValidation, rawCount, blocksRun);
-  const tone = category === "unsupported" || category === "needs clarification"
+  const tone = category === "unsupported" || (category === "needs clarification" && !safeValidation.ok)
     ? "blocked"
-    : category === "risky"
+    : category === "risky" || category === "needs clarification"
       ? "mutating"
       : "read-only";
 
