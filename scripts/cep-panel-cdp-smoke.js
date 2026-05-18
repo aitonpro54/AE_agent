@@ -355,11 +355,14 @@ function stateExpression() {
     rawRunGateRequests: window.__codexRawRunGateRequests || [],
     recoverLastPlanText: document.getElementById("recoverLastPlanButton") ? document.getElementById("recoverLastPlanButton").textContent : "",
     recoverLastPlanTitle: document.getElementById("recoverLastPlanButton") ? document.getElementById("recoverLastPlanButton").title : "",
+    recoverLastPlanVisible: document.getElementById("recoverLastPlanButton") ? document.getElementById("recoverLastPlanButton").style.display !== "none" : null,
     recoverLastPlanDisabled: document.getElementById("recoverLastPlanButton") ? document.getElementById("recoverLastPlanButton").disabled : null,
     dryRunText: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").textContent : "",
     dryRunTitle: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").title : "",
+    dryRunVisible: document.getElementById("dryRunPlanButton") ? document.getElementById("dryRunPlanButton").style.display !== "none" : null,
     runText: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").textContent : "",
     runTitle: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").title : "",
+    runVisible: document.getElementById("runPlanButton") ? document.getElementById("runPlanButton").style.display !== "none" : null,
     prepareDevRequestText: document.getElementById("prepareDevRequestButton") ? document.getElementById("prepareDevRequestButton").textContent : "",
     prepareDevRequestTitle: document.getElementById("prepareDevRequestButton") ? document.getElementById("prepareDevRequestButton").title : "",
     prepareDevRequestVisible: document.getElementById("prepareDevRequestButton") ? document.getElementById("prepareDevRequestButton").style.display !== "none" : null,
@@ -379,6 +382,7 @@ function stateExpression() {
     workingDots: document.querySelectorAll(".chat-message.chat-working .typing-dots i").length,
     transcript: document.getElementById("chatTranscript") ? document.getElementById("chatTranscript").innerText.slice(0, 16000) : "",
     log: document.getElementById("log") ? document.getElementById("log").innerText.slice(0, 4000) : "",
+    hardcoreRequests: window.__codexHardcoreAutopilotRequests || [],
     confirmMessages: window.__codexPanelConfirmMessages || []
   }))()`;
 }
@@ -433,6 +437,28 @@ function selectAgentExpression(prompt) {
     setValue(document.getElementById("agentSelect"), ${JSON.stringify(AGENT_ID)});
     setValue(document.getElementById("agentModel"), ${JSON.stringify(MODEL)});
     setValue(document.getElementById("chatMode"), "plan");
+    const planButton = document.querySelector("#chatModeTabs [data-chat-mode='plan']");
+    if (planButton) planButton.click();
+    setValue(document.getElementById("chatPrompt"), ${JSON.stringify(promptText)});
+    return ${stateExpression()};
+  })()`;
+}
+
+function selectHardcoreAgentExpression(prompt) {
+  const promptText = prompt || "Run Agent Hardcore autopilot UI smoke.";
+  return `(() => {
+    function setValue(el, value) {
+      if (!el) return;
+      el.value = value;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    setValue(document.getElementById("agentSelect"), ${JSON.stringify(AGENT_ID)});
+    setValue(document.getElementById("agentModel"), ${JSON.stringify(MODEL)});
+    setValue(document.getElementById("chatMode"), "hardcore");
+    const hardcoreButton = document.querySelector("#chatModeTabs [data-chat-mode='hardcore']");
+    if (hardcoreButton) hardcoreButton.click();
     setValue(document.getElementById("chatPrompt"), ${JSON.stringify(promptText)});
     return ${stateExpression()};
   })()`;
@@ -1123,6 +1149,117 @@ function restoreRawRunGateFakeExpression() {
   return `(function () {
     if (typeof window.__codexRestoreRawRunGateFake === "function") {
       return window.__codexRestoreRawRunGateFake();
+    }
+    return true;
+  })()`;
+}
+
+function installHardcoreAutopilotFakeExpression() {
+  return `(function () {
+    var OriginalXHR = window.__codexOriginalHardcoreAutopilotXHR || window.XMLHttpRequest;
+    window.__codexOriginalHardcoreAutopilotXHR = OriginalXHR;
+    window.__codexHardcoreAutopilotRequests = [];
+    function respond(xhr, status, body) {
+      setTimeout(function () {
+        xhr.readyState = 4;
+        xhr.status = status;
+        xhr.responseText = JSON.stringify(body || {});
+        if (typeof xhr.onreadystatechange === "function") xhr.onreadystatechange();
+      }, 50);
+    }
+    function FakeXHR() {
+      this.readyState = 0;
+      this.status = 0;
+      this.responseText = "";
+      this.timeout = 0;
+      this._headers = {};
+      this.onreadystatechange = null;
+      this.onerror = null;
+      this.ontimeout = null;
+    }
+    FakeXHR.prototype.open = function (method, url, isAsync) {
+      this._method = method;
+      this._url = url;
+      this._async = isAsync !== false;
+    };
+    FakeXHR.prototype.setRequestHeader = function (name, value) {
+      this._headers[name] = value;
+    };
+    FakeXHR.prototype.send = function (body) {
+      var self = this;
+      var urlText = String(this._url || "");
+      if (urlText.indexOf("/agents/hardcore/run") >= 0) {
+        var payload = {};
+        try {
+          payload = body ? JSON.parse(body) : {};
+        } catch (_error) {}
+        window.__codexHardcoreAutopilotRequests.push(payload);
+        respond(self, 200, {
+          ok: true,
+          session: {
+            ok: true,
+            status: "verified",
+            sessionId: "hardcore-ui-smoke",
+            maxAttempts: payload.maxAttempts || 3,
+            attempts: [
+              {
+                index: 1,
+                status: "verified",
+                planResult: {
+                  planValidation: { ok: true, mutatingCount: 1 }
+                }
+              }
+            ],
+            finalPlanResult: {
+              plan: { summary: "Hardcore UI smoke autopilot plan" }
+            },
+            finalRun: {
+              ok: true,
+              dryRun: false,
+              semanticVerification: {
+                status: "passed",
+                summary: "Hardcore UI smoke semantic verification passed."
+              },
+              checkpoint: {
+                checkpointFile: "logs/hardcore-ui-smoke-checkpoint.aep"
+              }
+            },
+            artifacts: {
+              sessionArtifact: { sessionFile: "logs/hardcore-sessions/hardcore-ui-smoke/session.json" }
+            }
+          }
+        });
+        return;
+      }
+      var xhr = new OriginalXHR();
+      xhr.timeout = this.timeout;
+      xhr.onreadystatechange = function () {
+        self.readyState = xhr.readyState;
+        self.status = xhr.status;
+        self.responseText = xhr.responseText;
+        if (typeof self.onreadystatechange === "function") self.onreadystatechange();
+      };
+      xhr.onerror = function () { if (typeof self.onerror === "function") self.onerror(); };
+      xhr.ontimeout = function () { if (typeof self.ontimeout === "function") self.ontimeout(); };
+      xhr.open(this._method, this._url, this._async);
+      Object.keys(this._headers).forEach(function (name) {
+        xhr.setRequestHeader(name, self._headers[name]);
+      });
+      xhr.send(body);
+    };
+    window.XMLHttpRequest = FakeXHR;
+    window.__codexRestoreHardcoreAutopilotFake = function () {
+      window.XMLHttpRequest = OriginalXHR;
+      return true;
+    };
+    return true;
+  })()`;
+}
+
+function restoreHardcoreAutopilotFakeExpression() {
+  return `(function () {
+    if (typeof window.__codexRestoreHardcoreAutopilotFake === "function") {
+      return window.__codexRestoreHardcoreAutopilotFake();
     }
     return true;
   })()`;
@@ -1836,6 +1973,88 @@ async function modeToggleSmoke() {
   }
 }
 
+async function hardcoreAutopilotUiSmoke() {
+  const { page, ws, send } = await connectToPanel();
+  let composerBackup = null;
+  try {
+    composerBackup = await evaluate(send, composerStateExpression());
+    await reloadActivePage(send);
+    await evaluate(send, setupExpression());
+    await waitFor(send, "panel online", (state) => state.badge === "online", 15000);
+    await waitFor(send, "agent list", (state) => state.agentOptions.some((option) => option.value === AGENT_ID), 20000);
+    await evaluate(send, installHardcoreAutopilotFakeExpression());
+    const selected = await evaluate(send, selectHardcoreAgentExpression("Run Hardcore UI autopilot smoke."));
+    if (!selected || selected.mode !== "hardcore") throw new Error("Agent Hardcore mode was not selected.");
+
+    const ready = await waitFor(send, "hardcore autopilot controls", (state) => (
+      state.mode === "hardcore" &&
+      state.sendDisabled === false &&
+      state.planRunStatus === "Hardcore autopilot: send once" &&
+      state.recoverLastPlanVisible === false &&
+      state.dryRunVisible === false &&
+      state.runVisible === false &&
+      state.prepareDevRequestVisible === false &&
+      state.dryRunDisabled === true &&
+      state.runDisabled === true
+    ), 10000);
+
+    const sent = await evaluate(send, clickExpression("sendChatButton"));
+    if (!sent || !sent.ok) throw new Error("Hardcore send button was not clickable.");
+    await waitFor(send, "hardcore autopilot busy", (state) => (
+      state.workingExists === true &&
+      state.workingText.indexOf("Hardcore autopilot") >= 0 &&
+      state.planRunStatus === "Hardcore autopilot is running..."
+    ), 5000);
+    const finished = await waitFor(send, "hardcore autopilot finished", (state) => (
+      state.sendDisabled === false &&
+      state.transcript.indexOf("Agent Hardcore: verified") >= 0 &&
+      state.transcript.indexOf("Protected run: ok") >= 0 &&
+      state.transcript.indexOf("Session evidence: logs/hardcore-sessions/hardcore-ui-smoke/session.json") >= 0 &&
+      state.hardcoreRequests.length === 1
+    ), 30000);
+
+    const payload = finished.hardcoreRequests[0] || {};
+    if (payload.allowMutations !== true || payload.autoEditSession !== true || payload.autoPromoteKnowledge !== true) {
+      throw new Error("Hardcore autopilot request must enable protected mutation/session/knowledge gates.");
+    }
+    if (payload.maxAttempts !== 3 || payload.agentMode !== "hardcore") {
+      throw new Error("Hardcore autopilot request must keep maxAttempts=3 and agentMode=hardcore.");
+    }
+
+    console.log(JSON.stringify({
+      ok: true,
+      page: { title: page.title, url: page.url },
+      ready: {
+        status: ready.planRunStatus,
+        dryRunVisible: ready.dryRunVisible,
+        runVisible: ready.runVisible,
+        recoverVisible: ready.recoverLastPlanVisible,
+        sendDisabled: ready.sendDisabled
+      },
+      request: {
+        path: "/agents/hardcore/run",
+        agentMode: payload.agentMode,
+        maxAttempts: payload.maxAttempts,
+        allowMutations: payload.allowMutations,
+        autoEditSession: payload.autoEditSession,
+        autoPromoteKnowledge: payload.autoPromoteKnowledge
+      },
+      transcriptTail: finished.transcript.slice(-2000)
+    }, null, 2));
+  } finally {
+    try {
+      await evaluate(send, restoreHardcoreAutopilotFakeExpression());
+    } catch (_restoreFakeError) {}
+    if (composerBackup) {
+      try {
+        await evaluate(send, writeComposerStateExpression(composerBackup));
+        await reloadActivePage(send);
+      } catch (_restoreError) {}
+    }
+    ws.close();
+  }
+}
+
 async function planReviewSmoke() {
   const { page, ws, send } = await connectToPanel();
   try {
@@ -2356,7 +2575,7 @@ async function brandingSmoke() {
   try {
     await reloadActivePage(send);
     const state = await waitFor(send, "AE Agent branding", (item) => (
-      item.title === "AE Agent 1.0.6" &&
+      item.title === "AE Agent 1.0.7" &&
       item.windowBarExists === false &&
       item.windowBarText === "" &&
       item.windowBarText.indexOf("AE GPT") < 0 &&
@@ -3336,6 +3555,10 @@ async function main() {
   }
   if (command === "mode-toggle-smoke") {
     await modeToggleSmoke();
+    return;
+  }
+  if (command === "hardcore-autopilot-ui-smoke") {
+    await hardcoreAutopilotUiSmoke();
     return;
   }
   if (command === "plan-review-smoke") {

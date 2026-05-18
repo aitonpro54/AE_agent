@@ -2,7 +2,7 @@
 
 ## Progress
 
-- [x] Stable baseline: AE Agent 1.0.6 CEP panel, provider setup, Agent planning, Agent Hardcore planning, plan validation, protected execution, local history, diagnostics, and installed-panel smoke coverage.
+- [x] Stable baseline: AE Agent 1.0.7 CEP panel, provider setup, Agent planning, Agent Hardcore autopilot, plan validation, protected execution, local history, diagnostics, and installed-panel smoke coverage.
 - [x] Milestone 38: Repo cleanup and roadmap reset.
 - [x] Milestone 39: Agent planning quality.
 - [x] Milestone 40: Timeline and layer tools.
@@ -62,16 +62,17 @@
 - [x] Milestone 92: Selected source comp binding diagnostic hotfix.
 - [x] Milestone 93: Selected layer binding diagnostic hotfix.
 - [x] Milestone 94: Agent Hardcore Autopilot.
+- [x] Hotfix: Version 1.0.7 and Hardcore installed-panel sync.
 - [x] Hotfix: Deep duplicate read-back binding aliases.
 
 ## Current Stable Baseline
 
 - The active repository is `C:\Users\Ant\Documents\Codex\AE_agent`.
-- The native CEP title/menu format is `AE Agent 1.0.6`.
+- The native CEP title/menu format is `AE Agent 1.0.7`.
 - The panel is a compact dark CEP client for the local bridge daemon.
 - Provider paths are separate: OpenAI API, OpenAI CLI, Gemini, Claude, OpenRouter, and Local/Ollama.
 - Agent mode drafts structured MCP plans, validates tool names and required fields, dry-runs plans, and executes only through explicit mutation gates.
-- Agent Hardcore is a visible composer mode next to Agent; it uses the same planner/runner safety gates with stronger guidance for inspection, dry-run/read-back evidence, verification, and typed-tool gap handoff.
+- Agent Hardcore is a visible composer mode next to Agent; its composer send button starts the full autopilot session directly, while manual `Dry run` / `Run plan` controls are hidden in Hardcore and remain available for ordinary Agent mode.
 - The latest valid Agent plan exposes inline `Dry run / Проверить` and `Выполнить план` controls inside the chat message, while keeping the same validated backend runner and project-change gates.
 - Raw ExtendScript plans stay blocked for normal Run until a successful dry run of the same current plan records a short-lived gate id; the enabled Run then sends `allowRawExtendscript:true` with the matching `rawExtendscriptDryRunId`.
 - Agent plans or runs that reveal a typed-tool gap can create an ignored `logs/dev-requests/<id>/` bundle for a targeted Codex App dev handoff instead of continuing repo development inside the AE chat; v1 does not auto-create a Codex App chat, so the user starts a new dev chat from `start-prompt.md`.
@@ -488,6 +489,12 @@
 - Save Hardcore session evidence under ignored `logs/hardcore-sessions/`, candidate reports under ignored solution-candidate paths, and promote only validated typed successful sessions into reviewed solution/project memory metadata.
 - Extend semantic verification and smoke coverage for deep duplicate, fileless-source fallback, Hardcore retry loop, and knowledge-capture gates.
 
+### Hotfix: Version 1.0.7 and Hardcore installed-panel sync
+
+- Bump patch version for the user-visible CEP title/menu, bridge daemon, MCP adapter, install note, cache-busting asset URLs, and smoke expectations.
+- Hide ordinary manual plan validation/run controls while the composer is in `Agent Hardcore`, so the only primary action is the full autopilot send.
+- Sync the installed CEP extension and restart the live bridge so After Effects loads the new panel/daemon instead of the previous `1.0.6` bundle.
+
 ### Hotfix: Deep duplicate read-back binding aliases
 
 - Fix the dev-request workflow where `deep_duplicate_precomp_sources` succeeded but the next `get_comp_details` read-back step blocked on unresolved `{{duplicatedRootCompItemIndex}}`.
@@ -605,6 +612,8 @@
 - 2026-05-18: Hardcore knowledge capture is automatic but gated: raw session artifacts and candidates are ignored local files, while planner-visible solution registry updates are written only after local registry validation succeeds.
 - 2026-05-18: `deep_duplicate_precomp_sources` defaults to `unavailableFootagePolicy:"reuse"` so generated solids/placeholders/missing footage do not fail the entire selected-precomp duplicate workflow when safe reuse or reconstruction is possible.
 - 2026-05-18: Live AE showed `SolidSource` exposes an empty `mainSource.typename` but a usable `mainSource.constructor.name`; SolidSource reconstruction therefore detects both shapes and creates duplicate solid footage through a temporary comp layer using `layers.addSolid`.
+- 2026-05-18: Patch version must bump on every user-visible AE Agent behavior change; the installed CEP panel is part of completion, not a separate optional release step.
+- 2026-05-18: In `Agent Hardcore`, ordinary `Dry run` / `Run plan` controls are hidden to avoid routing the user back into manual validation; the composer send button is the full autopilot entry point.
 - 2026-05-18: `deep_duplicate_precomp_sources` must return top-level read-back binding aliases for its duplicated root comp and created project items, because Agent follow-up read steps resolve named bindings from previous payload fields rather than from informal `resultBindings` output declarations.
 
 ## Validation
@@ -627,6 +636,14 @@
   - Passed live `/agents/hardcore/run` against active comp `SlideShow2`, selected layer `54`, source comp `Flash 01`: first run verified fileless fallback evidence and auto-promoted `deep-duplicate-precomp-fileless-source`; final run after SolidSource reconstruction verified `duplicatedFootageCount: 2`, `reusedFootageCount: 0`, no warnings, semantic verification `passed`, and read-back confirmed `Adjustment Layer 3 Solid Copy` kept `adjustmentLayer:true` with `mainSourceType:"SolidSource"`.
   - Passed live `node scripts\cep-panel-cdp-smoke.js smoke`, `node scripts\cep-panel-cdp-smoke.js connector-status-smoke`, and `node scripts\provider-key-save-smoke.js`.
   - Final live bridge check on `127.0.0.1:3456` reported `panelConnected:true`, `pendingCommands:0`, `inflightCommands:[]`, and `activeEditSession:null`.
+- Hotfix 1.0.7:
+  - Passed bundled `node --check` for changed JS files: `cep-panel\panel.js`, `mcp-server\bridge-daemon.js`, `mcp-server\mcp-adapter.js`, `scripts\cep-panel-cdp-smoke.js`, `scripts\smoke-test.js`, `scripts\bridge-only-smoke-test.js`, `scripts\chatgpt-connector-smoke.js`, `scripts\prompt-optimization-smoke.js`, `scripts\solution-registry-smoke.js`, `scripts\solution-promotion-helper.js`, `scripts\solution-promotion-smoke.js`, `scripts\solution-retrieval-smoke.js`, `scripts\solution-library-validation-smoke.js`, `scripts\agent-qa-audit-smoke.js`, and `scripts\agent-scenario-report-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed required local smokes: `provider-contract-smoke`, `solution-registry-smoke`, `solution-candidate-report-smoke`, `solution-promotion-smoke`, `solution-retrieval-smoke`, `solution-library-validation-smoke`, `project-intent-memory-smoke`, `plan-classification-smoke`, `plan-repair-smoke`, `semantic-verification-smoke`, `reliability-validation-suite-smoke`, `chatgpt-connector-smoke`, `provider-api-smoke`, `prompt-optimization-smoke`, `bridge-only-smoke-test`, and `smoke-test`.
+  - Synced installed CEP extension with `scripts\cep-sync-health.js --sync --check --json`; installed `index.html`, `panel.js`, `style.css`, and `CSXS/manifest.xml` matched repo, and installed panel/title/manifest versions reported `1.0.7`.
+  - Restarted live bridge on `127.0.0.1:3456`; final bridge status reported version `1.0.7`, `panelConnected:true`, `pendingCommands:0`, `inflightCommands:[]`, and `activeEditSession:null`.
+  - Passed live CEP `branding-smoke`, `hardcore-autopilot-ui-smoke`, `smoke`, `connector-status-smoke`, and `provider-key-save-smoke`. The Hardcore UI smoke confirmed manual `Dry run` / `Run plan` / recover controls hidden in Hardcore and request payload routed to `/agents/hardcore/run` with `maxAttempts:3`, `allowMutations:true`, `autoEditSession:true`, and `autoPromoteKnowledge:true`.
+  - Full `scripts\smoke-test.js` also verified `deep_duplicate_precomp_sources` now returns read-back binding aliases `rootCompItemIndex`, `duplicatedRootCompItemIndex`, `createdItemIndices`, and `duplicatedProjectItemIndices`.
 - Milestone 38:
   - Rewrote the active handoff as a clean current-state document.
   - Replaced the historical plan with the current stable baseline and active roadmap.

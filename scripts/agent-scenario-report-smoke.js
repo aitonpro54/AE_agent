@@ -13,7 +13,7 @@ const {
 function fixtureReport() {
   return {
     ok: true,
-    page: { title: "AE Agent 1.0.6", url: "devtools://fixture" },
+    page: { title: "AE Agent 1.0.7", url: "devtools://fixture" },
     runPrefix: "Codex QA 1.2 12345678",
     planner: {
       label: "openai-cli-gpt-5.5",
@@ -24,7 +24,7 @@ function fixtureReport() {
       requirePanelPlans: true
     },
     preflight: {
-      health: { version: "1.0.6", panelConnected: true, pending: 0, inflight: 0 },
+      health: { version: "1.0.7", panelConnected: true, pending: 0, inflight: 0 },
       readiness: {
         status: "ready",
         canChat: true,

@@ -2,7 +2,7 @@
 
 (function () {
   var APP_NAME = "AE Agent";
-  var APP_VERSION = "1.0.6";
+  var APP_VERSION = "1.0.7";
   var CHAT_MODE_CHAT = "chat";
   var CHAT_MODE_AGENT = "plan";
   var CHAT_MODE_HARDCORE = "hardcore";
@@ -2083,13 +2083,37 @@
 
   function updateChatAvailability() {
     sendChatButton.disabled = chatInFlight || !selectedAgentReady();
+    var hardcoreMode = chatModeEl.value === CHAT_MODE_HARDCORE;
     var hasPlan = !!(lastPlanResult && lastPlanResult.plan);
     var validation = hasPlan && lastPlanResult ? lastPlanResult.planValidation || null : null;
-    updateRecoverLastPlanButton(hasPlan);
-    dryRunPlanButton.disabled = chatInFlight || !hasPlan;
-    runPlanButton.disabled = chatInFlight || !hasPlan || !validation || !validation.ok || planRunBlocksNormalRun(validation);
-    updateDevRequestButton(hasPlan, validation);
-    updatePlanRunControls(hasPlan, validation);
+    if (hardcoreMode) {
+      if (recoverLastPlanButton) {
+        recoverLastPlanButton.style.display = "none";
+        recoverLastPlanButton.disabled = true;
+      }
+      if (dryRunPlanButton) {
+        dryRunPlanButton.style.display = "none";
+        dryRunPlanButton.disabled = true;
+      }
+      if (runPlanButton) {
+        runPlanButton.style.display = "none";
+        runPlanButton.disabled = true;
+      }
+      if (prepareDevRequestButton) {
+        prepareDevRequestButton.style.display = "none";
+        prepareDevRequestButton.disabled = true;
+      }
+      setPlanRunStatus(chatInFlight ? "Hardcore autopilot is running..." : "Hardcore autopilot: send once", chatInFlight ? "" : "mutating");
+    } else {
+      if (recoverLastPlanButton) recoverLastPlanButton.style.display = "";
+      if (dryRunPlanButton) dryRunPlanButton.style.display = "";
+      if (runPlanButton) runPlanButton.style.display = "";
+      updateRecoverLastPlanButton(hasPlan);
+      dryRunPlanButton.disabled = chatInFlight || !hasPlan;
+      runPlanButton.disabled = chatInFlight || !hasPlan || !validation || !validation.ok || planRunBlocksNormalRun(validation);
+      updateDevRequestButton(hasPlan, validation);
+      updatePlanRunControls(hasPlan, validation);
+    }
     updateInlinePlanActionRows();
     if (applyWorkflowPresetButton && workflowPresetSelect) {
       applyWorkflowPresetButton.disabled = chatInFlight || !workflowPresetSelect.value;

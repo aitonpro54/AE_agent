@@ -1,5 +1,20 @@
 # AE Agent Releases
 
+## v1.0.7-hardcore-autopilot-sync - 2026-05-18
+
+Patch release for making the completed Agent Hardcore autopilot visible in the installed AE panel.
+
+Changed:
+
+- CEP panel, manifest, bridge daemon, MCP adapter, install note, cache-busting asset URLs, and smoke expectations now report `1.0.7`.
+- `Agent Hardcore` hides the ordinary manual `Dry run` / `Run plan` controls; the composer send button is the full autopilot entry point.
+- Installed-panel sync and live bridge restart are treated as part of the hotfix completion so After Effects does not keep loading the previous panel bundle.
+
+Validation:
+
+- Local checks verify the `1.0.7` bridge/panel version contract.
+- Live CEP validation confirms the installed panel title reports `AE Agent 1.0.7` and Hardcore mode routes through autopilot UI instead of manual validation controls.
+
 ## v1.0.6-selected-precomp-layer-binding - 2026-05-18
 
 Patch release for fixing Run plan failures in selected-precomp deep duplicate workflows.
