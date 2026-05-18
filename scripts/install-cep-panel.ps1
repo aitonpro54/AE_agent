@@ -22,12 +22,17 @@ if ($SyncOnly) {
     throw "CEP sync helper reported a mismatch after sync."
   }
   Write-Host "Synced changed CEP panel files to: $Destination"
+  Write-Host "Cleared AE Agent CEP cache while preserving Local Storage."
   Write-Host "Check sync health with: node scripts\cep-sync-health.js --check"
-  Write-Host "Restart After Effects, then open Window > Extensions > AE Agent 1.0.8"
+  Write-Host "Restart After Effects, then open Window > Extensions > AE Agent 1.0.9"
   return
 } else {
   New-Item -ItemType Directory -Force -Path $Destination | Out-Null
   Get-ChildItem -LiteralPath $Source -Force | Copy-Item -Destination $Destination -Recurse -Force
+  & node $SyncHealthScript --clear-cache --check --install-dir $Destination
+  if ($LASTEXITCODE -ne 0) {
+    throw "CEP sync helper reported a mismatch after install."
+  }
 }
 
 foreach ($Version in 7..13) {
@@ -39,6 +44,7 @@ foreach ($Version in 7..13) {
 }
 
 Write-Host "Installed CEP panel to: $Destination"
+Write-Host "Cleared AE Agent CEP cache while preserving Local Storage."
 Write-Host "Enabled PlayerDebugMode for CSXS.7 through CSXS.13"
 Write-Host "Check sync health with: node scripts\cep-sync-health.js --check"
-Write-Host "Restart After Effects, then open Window > Extensions > AE Agent 1.0.8"
+Write-Host "Restart After Effects, then open Window > Extensions > AE Agent 1.0.9"

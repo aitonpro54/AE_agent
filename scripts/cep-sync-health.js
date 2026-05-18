@@ -8,6 +8,12 @@ const path = require("path");
 const EXTENSION_ID = "com.codex.aemcpbridge";
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const SOURCE_DIR = path.join(PROJECT_ROOT, "cep-panel");
+const CEP_CACHE_SUBDIRS = [
+  "Cache",
+  "Code Cache",
+  "GPUCache",
+  "blob_storage"
+];
 const TRACKED_FILES = [
   "index.html",
   "panel.js",
@@ -18,6 +24,10 @@ const TRACKED_FILES = [
 function defaultInstallDir() {
   const roaming = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
   return path.join(roaming, "Adobe", "CEP", "extensions", EXTENSION_ID);
+}
+
+function defaultCacheRoot() {
+  return process.env.CEP_PANEL_CACHE_ROOT || path.join(os.tmpdir(), "cep_cache");
 }
 
 function compactHash(hash) {
@@ -160,6 +170,64 @@ function copyChangedFiles(files) {
   return actions;
 }
 
+function pathInside(parent, child) {
+  const relative = path.relative(parent, child);
+  return relative === "" || (relative && !relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+function discoverCepCacheDirs(cacheRoot) {
+  try {
+    return fs.readdirSync(cacheRoot, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && entry.name.indexOf(EXTENSION_ID) >= 0)
+      .map((entry) => path.join(cacheRoot, entry.name));
+  } catch (error) {
+    if (error && error.code === "ENOENT") return [];
+    throw error;
+  }
+}
+
+function clearCepCaches(options) {
+  const cacheRoot = path.resolve(options.cacheRoot || defaultCacheRoot());
+  const actions = [];
+  const cacheDirs = discoverCepCacheDirs(cacheRoot);
+  for (const cacheDir of cacheDirs) {
+    const resolvedCacheDir = path.resolve(cacheDir);
+    if (!pathInside(cacheRoot, resolvedCacheDir)) {
+      actions.push({ path: resolvedCacheDir, action: "skipped", reason: "outside_cache_root" });
+      continue;
+    }
+    for (const name of CEP_CACHE_SUBDIRS) {
+      const target = path.resolve(resolvedCacheDir, name);
+      if (!pathInside(resolvedCacheDir, target)) {
+        actions.push({ path: target, action: "skipped", reason: "outside_extension_cache" });
+        continue;
+      }
+      if (!fs.existsSync(target)) {
+        actions.push({ path: target, action: "skipped", reason: "missing" });
+        continue;
+      }
+      try {
+        fs.rmSync(target, { recursive: true, force: true });
+        actions.push({ path: target, action: "cleared", reason: "cache" });
+      } catch (error) {
+        actions.push({ path: target, action: "error", reason: error.message || String(error) });
+      }
+    }
+  }
+  return {
+    attempted: true,
+    cacheRoot,
+    extensionCacheDirs: cacheDirs,
+    cleared: actions.filter((item) => item.action === "cleared").length,
+    skipped: actions.filter((item) => item.action === "skipped").length,
+    errors: actions.filter((item) => item.action === "error").length,
+    preserved: [
+      "Local Storage"
+    ],
+    actions
+  };
+}
+
 function addVersionMismatch(mismatches, name, expected, actual) {
   if (!expected || !actual || expected === actual) return;
   mismatches.push({ name, expected, actual });
@@ -193,9 +261,24 @@ function buildReport(options) {
   const installDir = options.installDir || defaultInstallDir();
   const beforeFiles = compareFiles(SOURCE_DIR, installDir);
   const syncActions = options.sync ? copyChangedFiles(beforeFiles) : [];
+  const shouldClearCache = options.clearCache || options.sync;
+  const cache = shouldClearCache
+    ? clearCepCaches(options)
+    : {
+      attempted: false,
+      cacheRoot: path.resolve(options.cacheRoot || defaultCacheRoot()),
+      extensionCacheDirs: [],
+      cleared: 0,
+      skipped: 0,
+      errors: 0,
+      preserved: [
+        "Local Storage"
+      ],
+      actions: []
+    };
   const files = options.sync ? compareFiles(SOURCE_DIR, installDir) : beforeFiles;
   const versions = collectVersions(SOURCE_DIR, installDir);
-  const ok = files.every((item) => item.status === "same") && versions.mismatches.length === 0;
+  const ok = files.every((item) => item.status === "same") && versions.mismatches.length === 0 && cache.errors === 0;
   return {
     ok,
     mode: options.sync ? "sync" : "check",
@@ -208,7 +291,8 @@ function buildReport(options) {
       copied: syncActions.filter((item) => item.action === "copied").length,
       skipped: syncActions.filter((item) => item.action === "skipped").length,
       actions: syncActions
-    }
+    },
+    cache
   };
 }
 
@@ -247,6 +331,15 @@ function printHuman(report) {
       console.log(`  ${action.action.padEnd(7)} ${action.path} (${action.reason})`);
     }
   }
+  if (report.cache.attempted) {
+    console.log("");
+    console.log(`Cache actions: cleared ${report.cache.cleared}, skipped ${report.cache.skipped}, errors ${report.cache.errors}`);
+    console.log(`  root: ${report.cache.cacheRoot}`);
+    console.log(`  preserved: ${report.cache.preserved.join(", ")}`);
+    for (const action of report.cache.actions) {
+      console.log(`  ${action.action.padEnd(7)} ${action.path} (${action.reason})`);
+    }
+  }
 }
 
 function printHelp() {
@@ -254,9 +347,11 @@ function printHelp() {
     "Usage: node scripts/cep-sync-health.js [--check] [--sync] [--json] [--install-dir <path>]",
     "",
     "--check       Exit with code 1 when tracked installed CEP files or versions mismatch.",
-    "--sync        Copy only missing or different tracked CEP files into the installed extension.",
+    "--sync        Copy only missing/different tracked CEP files, then clear this extension's CEP cache.",
+    "--clear-cache Clear this extension's CEP Cache, Code Cache, GPUCache, and blob_storage while preserving Local Storage.",
     "--json        Print JSON instead of human-readable output.",
-    "--install-dir Override the installed CEP extension directory."
+    "--install-dir Override the installed CEP extension directory.",
+    "--cache-root  Override the CEP cache root; defaults to %TEMP%/cep_cache."
   ].join("\n"));
 }
 
@@ -265,7 +360,9 @@ function parseArgs(argv) {
     check: false,
     sync: false,
     json: false,
-    installDir: process.env.CEP_PANEL_INSTALL_DIR || ""
+    clearCache: false,
+    installDir: process.env.CEP_PANEL_INSTALL_DIR || "",
+    cacheRoot: process.env.CEP_PANEL_CACHE_ROOT || ""
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -275,11 +372,16 @@ function parseArgs(argv) {
       options.check = true;
     } else if (arg === "--sync") {
       options.sync = true;
+    } else if (arg === "--clear-cache") {
+      options.clearCache = true;
     } else if (arg === "--json") {
       options.json = true;
     } else if (arg === "--install-dir") {
       index += 1;
       options.installDir = argv[index] || "";
+    } else if (arg === "--cache-root") {
+      index += 1;
+      options.cacheRoot = argv[index] || "";
     } else {
       throw new Error(`Unknown argument: ${arg}`);
     }

@@ -9,7 +9,7 @@ The panel remains a client of the local bridge daemon. The daemon remains the ow
 ## Product Shape
 
 - The first screen is a compact dark CEP panel inspired by the references in `specs/screenshots/`.
-- The visible product title format is `AE Agent 1.0.8` in the native CEP title/menu only; do not duplicate the product name in a separate in-panel top bar or sidebar heading.
+- The visible product title format is `AE Agent 1.0.9` in the native CEP title/menu only; do not duplicate the product name in a separate in-panel top bar or sidebar heading.
 - The left side exposes provider setup: `Gemini`, `OpenAI`, `Claude`, `OpenRouter`, and `Local`.
 - `OpenAI` supports two auth modes:
   - `API`: uses an OpenAI API key and normal API billing.

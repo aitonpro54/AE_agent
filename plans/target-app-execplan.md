@@ -2,7 +2,7 @@
 
 ## Progress
 
-- [x] Stable baseline: AE Agent 1.0.8 CEP panel, provider setup, Agent planning, Agent Hardcore autopilot, plan validation, protected execution, local history, diagnostics, reload hard-refresh, and installed-panel smoke coverage.
+- [x] Stable baseline: AE Agent 1.0.9 CEP panel, provider setup, Agent planning, Agent Hardcore autopilot, plan validation, protected execution, local history, diagnostics, reload hard-refresh, install/sync cache clearing, and installed-panel smoke coverage.
 - [x] Milestone 38: Repo cleanup and roadmap reset.
 - [x] Milestone 39: Agent planning quality.
 - [x] Milestone 40: Timeline and layer tools.
@@ -65,11 +65,12 @@
 - [x] Hotfix: Version 1.0.7 and Hardcore installed-panel sync.
 - [x] Hotfix: Deep duplicate read-back binding aliases.
 - [x] Hotfix: Version 1.0.8 hard Reload button.
+- [x] Hotfix: Version 1.0.9 sync clears CEP cache.
 
 ## Current Stable Baseline
 
 - The active repository is `C:\Users\Ant\Documents\Codex\AE_agent`.
-- The native CEP title/menu format is `AE Agent 1.0.8`.
+- The native CEP title/menu format is `AE Agent 1.0.9`.
 - The panel is a compact dark CEP client for the local bridge daemon.
 - Provider paths are separate: OpenAI API, OpenAI CLI, Gemini, Claude, OpenRouter, and Local/Ollama.
 - Agent mode drafts structured MCP plans, validates tool names and required fields, dry-runs plans, and executes only through explicit mutation gates.
@@ -81,6 +82,7 @@
 - Precomp/source workflows include `deep_duplicate_precomp_sources` for recursively duplicating a selected precomp layer's source comp and nested comp/footage project items without raw ExtendScript in Agent plans.
 - Raw ExtendScript remains available as an escape hatch, but normal product workflows should use typed bridge tools.
 - The CEP `Reload` button forces a cache-busted reload of the installed `index.html` and passes a fresh asset nonce to CSS/JS, so an already-open panel can pick up synced panel files without keeping stale `panel.js?v=<old>` cache entries.
+- CEP install/sync clears only this extension's Chromium cache folders (`Cache`, `Code Cache`, `GPUCache`, `blob_storage`) while preserving Local Storage, so even old open-panel reload handlers can reach the current installed bundle after a sync.
 
 ## Milestones
 
@@ -512,6 +514,14 @@
 - Change `index.html` to load CSS/JS through the reload nonce so `panel.js` and `CSInterface.js` are re-read after installed-panel sync.
 - Add focused CEP smoke coverage for clicking the panel `Reload` button and observing the current title/version afterward.
 
+### Hotfix: Version 1.0.9 sync clears CEP cache
+
+- Bump patch version for the user-visible CEP title/menu, bridge daemon, MCP adapter, install note, and smoke expectations.
+- Make `scripts\cep-sync-health.js --sync` clear this extension's CEP cache folders every time it runs, not only when byte differences are copied.
+- Add explicit `--clear-cache` / `--cache-root` support for full installer and focused smoke validation.
+- Update `scripts\install-cep-panel.ps1` so both full install and `-SyncOnly` clear only safe cache folders while preserving Local Storage.
+- Add `scripts\cep-sync-cache-smoke.js` to prove cache folders are removed and Local Storage survives.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -625,8 +635,19 @@
 - 2026-05-18: In `Agent Hardcore`, ordinary `Dry run` / `Run plan` controls are hidden to avoid routing the user back into manual validation; the composer send button is the full autopilot entry point.
 - 2026-05-18: `deep_duplicate_precomp_sources` must return top-level read-back binding aliases for its duplicated root comp and created project items, because Agent follow-up read steps resolve named bindings from previous payload fields rather than from informal `resultBindings` output declarations.
 - 2026-05-18: The CEP `Reload` button must be a hard panel refresh path, not a normal page reload; it uses a fresh asset nonce so the current installed `panel.js` wins over any old CEP cache entry.
+- 2026-05-18: CEP cache clearing belongs in install/sync, not in a manual rescue step. `--sync` clears this extension's cache even if installed files already match, because the stale state can live only in Chromium cache.
 
 ## Validation
+
+- Hotfix 1.0.9:
+  - Passed bundled `node --check` for changed JavaScript files: `scripts\cep-sync-health.js`, `scripts\cep-sync-cache-smoke.js`, `cep-panel\panel.js`, `mcp-server\bridge-daemon.js`, `mcp-server\mcp-adapter.js`, `scripts\cep-panel-cdp-smoke.js`, `scripts\smoke-test.js`, `scripts\bridge-only-smoke-test.js`, `scripts\chatgpt-connector-smoke.js`, `scripts\prompt-optimization-smoke.js`, `scripts\solution-registry-smoke.js`, `scripts\solution-promotion-helper.js`, `scripts\solution-promotion-smoke.js`, `scripts\solution-retrieval-smoke.js`, `scripts\solution-library-validation-smoke.js`, `scripts\agent-qa-audit-smoke.js`, and `scripts\agent-scenario-report-smoke.js`.
+  - Passed `git diff --check`.
+  - Passed focused `node scripts\cep-sync-cache-smoke.js`; it copied tracked panel files into a temp install dir, cleared 4 cache folders, and preserved Local Storage.
+  - Passed required local smokes: `provider-contract-smoke`, `solution-registry-smoke`, `solution-candidate-report-smoke`, `solution-promotion-smoke`, `solution-retrieval-smoke`, `solution-library-validation-smoke`, `project-intent-memory-smoke`, `plan-classification-smoke`, `plan-repair-smoke`, `semantic-verification-smoke`, `reliability-validation-suite-smoke`, `chatgpt-connector-smoke`, `provider-api-smoke`, `prompt-optimization-smoke`, `bridge-only-smoke-test`, and `smoke-test`.
+  - Synced installed CEP extension with `scripts\cep-sync-health.js --sync --check --json`; installed `index.html`, `panel.js`, `style.css`, and `CSXS/manifest.xml` matched repo, installed panel/title/manifest versions reported `1.0.9`, and cache clearing reported 4 cleared folders, 0 errors, with Local Storage preserved.
+  - Restarted the live bridge daemon on `127.0.0.1:3456` from the current repo; live `/health` and MCP `get_bridge_status` reported version `1.0.9`, `panelConnected:true`, `pendingCommands:0`, and no inflight commands.
+  - Live AE/CEP inspection first confirmed the panel was still open as `AE Agent 1.0.8`; live `node scripts\cep-panel-cdp-smoke.js reload-button-smoke` then clicked `Reload` and verified the panel transitioned to `AE Agent 1.0.9` with a fresh asset nonce and `panel.js` loaded from the installed AppData extension.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js branding-smoke`, `node scripts\cep-panel-cdp-smoke.js smoke`, `node scripts\cep-panel-cdp-smoke.js connector-status-smoke`, and `node scripts\provider-key-save-smoke`.
 
 - Hotfix 1.0.8:
   - Passed bundled `node --check` for changed JavaScript files: `cep-panel\panel.js`, `mcp-server\bridge-daemon.js`, `mcp-server\mcp-adapter.js`, `scripts\cep-panel-cdp-smoke.js`, `scripts\smoke-test.js`, `scripts\bridge-only-smoke-test.js`, `scripts\chatgpt-connector-smoke.js`, `scripts\prompt-optimization-smoke.js`, `scripts\solution-registry-smoke.js`, `scripts\solution-promotion-helper.js`, `scripts\solution-promotion-smoke.js`, `scripts\solution-retrieval-smoke.js`, `scripts\solution-library-validation-smoke.js`, `scripts\agent-qa-audit-smoke.js`, and `scripts\agent-scenario-report-smoke.js`.

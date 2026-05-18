@@ -1342,7 +1342,7 @@ async function main() {
     throw new Error("Expected initialize, tools/list, and tool call responses");
   }
 
-  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "1.0.8") {
+  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "1.0.9") {
     throw new Error("Unexpected health response");
   }
   if (!agents.body.ok || !Array.isArray(agents.body.agents) || !agents.body.agents.length) {

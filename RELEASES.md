@@ -1,5 +1,21 @@
 # AE Agent Releases
 
+## v1.0.9-sync-clears-cep-cache - 2026-05-18
+
+Patch release for making installed-panel updates reliably reach already-open After Effects CEP panels.
+
+Changed:
+
+- CEP panel, manifest, bridge daemon, MCP adapter, install note, and smoke expectations now report `1.0.9`.
+- `scripts/cep-sync-health.js --sync` now clears only this extension's CEP `Cache`, `Code Cache`, `GPUCache`, and `blob_storage` directories after sync while preserving Local Storage.
+- `scripts/install-cep-panel.ps1` clears the same safe CEP cache set in both full install and `-SyncOnly` paths.
+- Added `scripts/cep-sync-cache-smoke.js` to verify stale cache folders are removed and Local Storage survives.
+
+Validation:
+
+- Live AE/CEP inspection confirmed the panel was running from the installed AppData extension as `AE Agent 1.0.8` before this patch, with nonce-loaded assets and bridge `1.0.8`.
+- Live `reload-button-smoke` confirmed the button reloads to a fresh nonce and keeps the panel at the current installed version.
+
 ## v1.0.8-hard-reload-panel - 2026-05-18
 
 Patch release for making the CEP `Reload` button load the current installed panel instead of staying on stale cached assets.

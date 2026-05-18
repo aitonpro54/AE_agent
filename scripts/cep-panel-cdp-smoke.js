@@ -2578,7 +2578,7 @@ async function brandingSmoke() {
   try {
     await reloadActivePage(send);
     const state = await waitFor(send, "AE Agent branding", (item) => (
-      item.title === "AE Agent 1.0.8" &&
+      item.title === "AE Agent 1.0.9" &&
       item.windowBarExists === false &&
       item.windowBarText === "" &&
       item.windowBarText.indexOf("AE GPT") < 0 &&
@@ -2613,8 +2613,8 @@ async function reloadButtonSmoke() {
     const clicked = await evaluate(send, clickExpression("reloadButton"));
     if (!clicked || !clicked.ok) throw new Error("Reload button was not clickable.");
     const state = await waitFor(send, "hard reload button result", (item) => (
-      item.title === "AE Agent 1.0.8" &&
-      item.locationHref.indexOf("v=1.0.8") >= 0 &&
+      item.title === "AE Agent 1.0.9" &&
+      item.locationHref.indexOf("v=1.0.9") >= 0 &&
       item.locationHref.indexOf("assets=") >= 0 &&
       item.locationHref.indexOf("reload=") >= 0 &&
       item.assetVersion &&
