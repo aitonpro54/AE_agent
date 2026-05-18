@@ -387,6 +387,20 @@ async function main() {
     changedCount: 1,
     layers: [{ index: 1, name: "Layer 1" }]
   }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "deep_duplicate_precomp_sources", {
+    layerIndex: 1,
+    sourceCompItemIndex: 3,
+    nameSuffix: " Smoke Copy",
+    verifyAfter: false
+  }, ["Codex Deep Duplicate Precomp Sources", "__codexDuplicateItemDeep", "replaceSource(newComp"], {
+    comp: { itemIndex: 1, name: "Smoke Comp" },
+    layer: { index: 1, name: "Smoke Precomp Smoke Copy", source: { itemIndex: 4, name: "Smoke Precomp Smoke Copy", type: "comp" } },
+    originalComp: { itemIndex: 3, name: "Smoke Precomp", type: "comp" },
+    duplicateComp: { itemIndex: 4, name: "Smoke Precomp Smoke Copy", type: "comp", numLayers: 2 },
+    changedCount: 1,
+    duplicatedItemCount: 2,
+    relinkedLayerCount: 1
+  }));
   queuedToolResponses.push(await callQueuedDevTool(port, token, "rename_layers", {
     layerIndices: [1, 2],
     mode: "prefix",
@@ -615,6 +629,63 @@ async function main() {
             itemIndexes: [7],
             mode: "suffix",
             suffix: " Smoke"
+          }
+        }
+      ]
+    }
+  });
+  const deepDuplicateValidation = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/dev/tool/validate_ai_agent_plan",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    requestId: "smoke-deep-duplicate-validation",
+    plan: {
+      summary: "Smoke-test deep duplicate selected precomp source tree as a typed tool.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        {
+          title: "Deep duplicate selected precomp sources",
+          tool: "deep_duplicate_precomp_sources",
+          args: {
+            layerIndex: 1,
+            sourceCompItemIndex: 7,
+            nameSuffix: " copy smoke"
+          }
+        }
+      ]
+    }
+  });
+  const deepDuplicateDryRun = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/plan/run",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    dryRun: true,
+    requestId: "smoke-deep-duplicate-dry-run",
+    plan: {
+      summary: "Dry-run the typed deep duplicate precomp tool.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        {
+          title: "Deep duplicate selected precomp sources",
+          tool: "deep_duplicate_precomp_sources",
+          args: {
+            layerIndex: 1,
+            sourceCompItemIndex: 7,
+            nameSuffix: " copy smoke"
           }
         }
       ]
@@ -1072,7 +1143,7 @@ async function main() {
   if (alignLayers.status !== 200 || !alignLayers.body.ok || alignLayers.body.result.changedCount !== 2) {
     throw new Error("Expected align_layers_to_time to align multiple layer timings");
   }
-  if (queuedToolResponses.length !== 18 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
+  if (queuedToolResponses.length !== 19 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
     throw new Error("Expected all new typed tool queue smokes to pass");
   }
   if (!agentsTool.body.ok || !agentsTool.body.result || !Array.isArray(agentsTool.body.result.agents)) {
@@ -1122,6 +1193,35 @@ async function main() {
     Object.prototype.hasOwnProperty.call(itemAliasValidation.body.result.steps[0].safeArgs, "itemIndexes")
   ) {
     throw new Error("Plan validation did not normalize itemIndexes to itemIndices");
+  }
+  const deepDuplicateStep = deepDuplicateValidation.body.result && deepDuplicateValidation.body.result.steps
+    ? deepDuplicateValidation.body.result.steps[0]
+    : null;
+  if (
+    deepDuplicateValidation.status !== 200 ||
+    deepDuplicateValidation.body.ok !== true ||
+    !deepDuplicateStep ||
+    deepDuplicateStep.tool !== "deep_duplicate_precomp_sources" ||
+    deepDuplicateStep.valid !== true ||
+    deepDuplicateStep.executable !== true ||
+    deepDuplicateStep.mutatesProject !== true ||
+    deepDuplicateValidation.body.result.classification.rawExtendscriptStepCount !== 0 ||
+    String(deepDuplicateStep.targetSummary || "").indexOf("source comp #7") < 0 ||
+    deepDuplicateStep.safeArgs.verifyAfter !== true ||
+    !deepDuplicateStep.safeArgs.idempotencyKey
+  ) {
+    throw new Error("Deep duplicate precomp source workflow did not validate as a typed mutating tool");
+  }
+  if (
+    deepDuplicateDryRun.status !== 200 ||
+    deepDuplicateDryRun.body.ok !== true ||
+    !deepDuplicateDryRun.body.run ||
+    deepDuplicateDryRun.body.run.validation.classification.rawExtendscriptStepCount !== 0 ||
+    deepDuplicateDryRun.body.run.validation.mutatingCount !== 1 ||
+    deepDuplicateDryRun.body.run.steps[0].tool !== "deep_duplicate_precomp_sources" ||
+    deepDuplicateDryRun.body.run.steps[0].status !== "ready"
+  ) {
+    throw new Error("Deep duplicate precomp source workflow did not dry-run as a typed plan");
   }
   if (
     memoryToolPlanValidation.status !== 200 ||
@@ -1242,7 +1342,7 @@ async function main() {
   }
 
   const toolNames = lines[1].result.tools.map((tool) => tool.name);
-  for (const expectedTool of ["get_ai_agent_log", "get_project_intent_memory", "update_project_intent_memory", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint", "set_comp_work_area", "set_layer_time_range", "stagger_layers", "split_layers_at_time", "precompose_layers", "replace_layer_source", "rename_layers", "rename_project_items", "update_text_layer", "create_shape_layer", "fit_layer_to_comp", "set_property_keyframes", "apply_keyframe_ease", "set_expression", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"]) {
+  for (const expectedTool of ["get_ai_agent_log", "get_project_intent_memory", "update_project_intent_memory", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint", "set_comp_work_area", "set_layer_time_range", "stagger_layers", "split_layers_at_time", "precompose_layers", "replace_layer_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer", "create_shape_layer", "fit_layer_to_comp", "set_property_keyframes", "apply_keyframe_ease", "set_expression", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"]) {
     if (!toolNames.includes(expectedTool)) {
       throw new Error("Missing expected tool: " + expectedTool);
     }
@@ -1263,6 +1363,10 @@ async function main() {
   if (!setWorkAreaTool.inputSchema.properties.idempotencyKey || !setWorkAreaTool.inputSchema.properties.verifyAfter) {
     throw new Error("set_comp_work_area is missing safety schema fields");
   }
+  const deepDuplicateTool = lines[1].result.tools.find((tool) => tool.name === "deep_duplicate_precomp_sources");
+  if (!deepDuplicateTool.inputSchema.properties.idempotencyKey || !deepDuplicateTool.inputSchema.properties.verifyAfter) {
+    throw new Error("deep_duplicate_precomp_sources is missing safety schema fields");
+  }
   const renderQueueStatusTool = lines[1].result.tools.find((tool) => tool.name === "get_render_queue_status");
   if (renderQueueStatusTool.inputSchema.properties.idempotencyKey) {
     throw new Error("get_render_queue_status should remain read-only");
@@ -1281,6 +1385,11 @@ async function main() {
     planRun: planRun.body.run.steps[0].status,
     targetSummary: targetSummaryValidation.body.result.steps[0].targetSummary,
     itemAlias: itemAliasValidation.body.result.steps[0].safeArgs.itemIndices,
+    deepDuplicatePlan: {
+      validation: deepDuplicateStep.status || (deepDuplicateStep.valid ? "valid" : "invalid"),
+      dryRun: deepDuplicateDryRun.body.run.steps[0].status,
+      rawExtendscriptStepCount: deepDuplicateDryRun.body.run.validation.classification.rawExtendscriptStepCount
+    },
     ignoredBindingRun: ignoredBindingRun.body.run.steps[0].status,
     namedCompBindingRun: namedCompBindingRun.body.run.steps.map((step) => step.status),
     mutatingDryRun: mutatingDryRun.body.run.steps[0].status,

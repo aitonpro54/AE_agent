@@ -824,6 +824,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "create_adjustment_layer",
   "add_project_item_to_comp",
   "duplicate_comp",
+  "deep_duplicate_precomp_sources",
   "add_effect",
   "set_effect_property",
   "set_property_value",
@@ -1151,7 +1152,7 @@ function compactCheckpoint(checkpoint) {
 function inferMutationTarget(toolName, args, payload) {
   const target = { tool: toolName };
   const request = {};
-  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "targetTime", "time", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "itemType", "sourceItemIndex", "sourceItemName", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "renderQueueItemIndex", "outputPath"]) {
+  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "targetTime", "time", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "itemType", "sourceItemIndex", "sourceItemName", "sourceCompItemIndex", "sourceCompName", "nameSuffix", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "renderQueueItemIndex", "outputPath"]) {
     if (hasArg(args || {}, key)) request[key] = args[key];
   }
   if (Object.keys(request).length) target.request = request;
@@ -1174,6 +1175,9 @@ function inferMutationTarget(toolName, args, payload) {
     if (payload.backupFile) target.backupFile = payload.backupFile;
     if (payload.sourceFile) target.sourceFile = payload.sourceFile;
     if (payload.sourceItem) target.sourceItem = payload.sourceItem;
+    if (payload.originalComp) target.originalComp = payload.originalComp;
+    if (payload.duplicateComp) target.duplicateComp = payload.duplicateComp;
+    if (payload.duplicatedItems) target.duplicatedItems = payload.duplicatedItems;
     if (payload.renderQueueItem) target.renderQueueItem = payload.renderQueueItem;
     if (payload.renderQueueItems) target.renderQueueItems = payload.renderQueueItems;
     if (payload.renamed) target.renamed = payload.renamed;
@@ -1969,6 +1973,8 @@ function planStepTargetSummary(toolName, args) {
   if (args.itemName) parts.push(formatTargetPart("item", args.itemName));
   if (hasArg(args, "sourceItemIndex")) parts.push(formatTargetPart("source", `#${args.sourceItemIndex}`));
   if (args.sourceItemName) parts.push(formatTargetPart("source", args.sourceItemName));
+  if (hasArg(args, "sourceCompItemIndex")) parts.push(formatTargetPart("source comp", `#${args.sourceCompItemIndex}`));
+  if (args.sourceCompName) parts.push(formatTargetPart("source comp", args.sourceCompName));
   if (args.property || args.propertyPath) parts.push(formatTargetPart("property", args.property || (Array.isArray(args.propertyPath) ? args.propertyPath.join(".") : args.propertyPath)));
   if (args.effect || args.effectName || args.effectMatchName) parts.push(formatTargetPart("effect", args.effect || args.effectName || args.effectMatchName));
   if (hasArg(args, "renderQueueItemIndex")) parts.push(formatTargetPart("render queue item", `#${args.renderQueueItemIndex}`));
@@ -1988,6 +1994,7 @@ function planStepTargetSummary(toolName, args) {
       return "active comp / selected layers";
     }
     if (toolName === "set_comp_work_area") return "active comp";
+    if (toolName === "deep_duplicate_precomp_sources") return "active comp / selected precomp layer";
     if (toolName === "get_render_queue_status") return "render queue";
   }
   return parts.filter(Boolean).join("; ");
@@ -2765,6 +2772,7 @@ const PLANNING_TOOL_NAMES = [
   "create_adjustment_layer",
   "add_project_item_to_comp",
   "duplicate_comp",
+  "deep_duplicate_precomp_sources",
   "add_effect",
   "set_effect_property",
   "set_property_value",
@@ -3756,7 +3764,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "When a creation tool can set a property directly, include that property in the creation tool args instead of adding a later step that needs an unknown layerIndex.",
     "For requests to align selected layers, clips, or precomps to the current time indicator, use align_layers_to_time with no layerIndices and omit targetTime so it uses the active comp CTI.",
     "For timeline trims, work areas, sequencing, splitting, and offsets, use set_comp_work_area, set_layer_time_range, stagger_layers, or split_layers_at_time.",
-    "For precomp/source workflows, use precompose_layers, replace_layer_source, rename_layers, and rename_project_items before considering raw ExtendScript.",
+    "For precomp/source workflows, use precompose_layers, replace_layer_source, deep_duplicate_precomp_sources, rename_layers, and rename_project_items before considering raw ExtendScript.",
     "For text, shape, and fitting workflows, use update_text_layer, create_shape_layer, and fit_layer_to_comp.",
     "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, set_expression, and clear_expression.",
     "For render queue setup, use add_comp_to_render_queue, set_render_queue_output, and get_render_queue_status. Do not start a render.",
@@ -5501,6 +5509,47 @@ const tools = [
         openInViewer: {
           type: "boolean",
           description: "Whether to open the duplicated comp in the viewer. Defaults to true."
+        }
+      }
+    }
+  },
+  {
+    name: "deep_duplicate_precomp_sources",
+    description: "Deep-duplicate the source comp of one selected or specified precomp layer, duplicate nested comp and footage project items, relink the copied comp to copied sources, and replace the layer with the copied precomp.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the parent composition that contains the precomp layer. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact parent composition name when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "Optional 1-based precomp layer index. Defaults to the single selected layer in the parent composition."
+        },
+        sourceCompItemIndex: {
+          type: "number",
+          description: "Optional expected 1-based project item index of the selected layer's source precomp. Used as a safety check before mutation."
+        },
+        sourceCompName: {
+          type: "string",
+          description: "Optional expected source precomp name when sourceCompItemIndex is omitted. Used as a safety check before mutation."
+        },
+        nameSuffix: {
+          type: "string",
+          description: "Suffix added to every duplicated project item name. Defaults to ' copy'."
+        },
+        fixExpressions: {
+          type: "boolean",
+          description: "Whether After Effects should adjust expressions while replacing sources. Defaults to false."
+        },
+        openInViewer: {
+          type: "boolean",
+          description: "Whether to open the duplicated precomp after creation. Defaults to false."
         }
       }
     }
@@ -7869,6 +7918,141 @@ async function callTool(name, args) {
         }
       };
       app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "deep_duplicate_precomp_sources") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = optionalPositiveInteger(args, "layerIndex");
+    const sourceCompItemIndex = optionalPositiveInteger(args, "sourceCompItemIndex");
+    const sourceCompName = optionalString(args, "sourceCompName", "");
+    const nameSuffix = optionalString(args, "nameSuffix", " copy");
+    const fixExpressions = optionalBoolean(args, "fixExpressions", false);
+    const openInViewer = optionalBoolean(args, "openInViewer", false);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var requestedLayerIndex = ${layerIndex === null ? "null" : layerIndex};
+      var expectedSourceCompIndex = ${sourceCompItemIndex === null ? "null" : sourceCompItemIndex};
+      var expectedSourceCompName = ${aeLiteral(sourceCompName)};
+      var nameSuffix = ${aeLiteral(nameSuffix)};
+      var fixExpressions = ${fixExpressions ? "true" : "false"};
+      var openInViewer = ${openInViewer ? "true" : "false"};
+
+      function __codexCompReference(item) {
+        var ref = __codexItemReference(item);
+        if (!ref || !(item instanceof CompItem)) return ref;
+        ref.width = item.width;
+        ref.height = item.height;
+        ref.duration = item.duration;
+        ref.frameRate = item.frameRate;
+        ref.numLayers = item.numLayers;
+        return ref;
+      }
+
+      function __codexDuplicateKey(item) {
+        var itemId = null;
+        try { itemId = item.id; } catch (__idError) {}
+        if (itemId !== null && itemId !== undefined && itemId !== "") return "id:" + itemId;
+        return "index:" + __codexProjectIndexForItem(item);
+      }
+
+      function __codexResolvePrecompLayer(parentComp, requestedIndex) {
+        if (requestedIndex !== null) {
+          var explicitLayer = parentComp.layer(requestedIndex);
+          if (!explicitLayer) throw new Error("Layer not found at index " + requestedIndex + ".");
+          return explicitLayer;
+        }
+        if (parentComp.selectedLayers.length !== 1) {
+          throw new Error("Select exactly one precomp layer or pass layerIndex.");
+        }
+        return parentComp.selectedLayers[0];
+      }
+
+      var selectedLayer = __codexResolvePrecompLayer(comp, requestedLayerIndex);
+      if (selectedLayer.locked) throw new Error("Layer is locked: " + selectedLayer.name);
+      var sourceComp = selectedLayer.source;
+      if (!(sourceComp instanceof CompItem)) {
+        throw new Error("Target layer source is not a composition/precomp.");
+      }
+      if (expectedSourceCompIndex !== null || expectedSourceCompName) {
+        var expectedSource = __codexResolveProjectItem(expectedSourceCompIndex, expectedSourceCompName, "comp");
+        if (expectedSource !== sourceComp) {
+          throw new Error("Selected layer no longer points to the expected source precomp.");
+        }
+      }
+
+      var duplicatedByKey = {};
+      var duplicatedItems = [];
+      var relinkedLayerCount = 0;
+
+      function __codexDuplicateItemDeep(item) {
+        if (!item) return item;
+        if (!(item instanceof CompItem) && !(item instanceof FootageItem)) return item;
+        var key = __codexDuplicateKey(item);
+        if (duplicatedByKey[key]) return duplicatedByKey[key];
+        if (!item.duplicate) throw new Error("Project item cannot be duplicated: " + item.name);
+
+        var copy = item.duplicate();
+        if (nameSuffix) copy.name = item.name + nameSuffix;
+        duplicatedByKey[key] = copy;
+        duplicatedItems.push({
+          source: item instanceof CompItem ? __codexCompReference(item) : __codexItemReference(item),
+          duplicate: copy instanceof CompItem ? __codexCompReference(copy) : __codexItemReference(copy)
+        });
+
+        if (copy instanceof CompItem) {
+          for (var __i = 1; __i <= copy.numLayers; __i++) {
+            var layer = copy.layer(__i);
+            if (!layer) continue;
+            var nestedSource = null;
+            try { nestedSource = layer.source; } catch (__sourceError) {}
+            if (!nestedSource) continue;
+            var nestedCopy = __codexDuplicateItemDeep(nestedSource);
+            if (nestedCopy && nestedCopy !== nestedSource && layer.replaceSource) {
+              var wasLocked = false;
+              try {
+                wasLocked = !!layer.locked;
+                if (wasLocked) layer.locked = false;
+              } catch (__unlockError) {}
+              try {
+                layer.replaceSource(nestedCopy, fixExpressions);
+                relinkedLayerCount++;
+              } finally {
+                try { if (wasLocked) layer.locked = true; } catch (__relockError) {}
+              }
+            }
+          }
+        }
+
+        return copy;
+      }
+
+      app.beginUndoGroup("Codex Deep Duplicate Precomp Sources");
+      var response = null;
+      try {
+        var newComp = __codexDuplicateItemDeep(sourceComp);
+        selectedLayer.replaceSource(newComp, fixExpressions);
+        selectedLayer.name = newComp.name;
+        if (openInViewer && newComp && newComp.openInViewer) newComp.openInViewer();
+        response = {
+          comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+          layer: __codexLayerInfo(selectedLayer),
+          originalComp: __codexCompReference(sourceComp),
+          duplicateComp: __codexCompReference(newComp),
+          changedCount: 1,
+          duplicatedItemCount: duplicatedItems.length,
+          relinkedLayerCount: relinkedLayerCount,
+          duplicatedItems: duplicatedItems,
+          nameSuffix: nameSuffix
+        };
+      } finally {
+        app.endUndoGroup();
+      }
       return response;
     `);
     return toolResult(result.result);

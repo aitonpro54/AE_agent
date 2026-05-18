@@ -55,6 +55,7 @@
 - [x] Milestone 85: Agent Hardcore visible mode and Cyrillic UI fix.
 - [x] Milestone 86: Raw ExtendScript dry-run gate unlocks Run plan.
 - [x] Milestone 87: Dev request manual Codex chat handoff.
+- [x] Milestone 88: Deep duplicate selected precomp typed tool.
 
 ## Current Stable Baseline
 
@@ -68,6 +69,7 @@
 - Raw ExtendScript plans stay blocked for normal Run until a successful dry run of the same current plan records a short-lived gate id; the enabled Run then sends `allowRawExtendscript:true` with the matching `rawExtendscriptDryRunId`.
 - Agent plans or runs that reveal a typed-tool gap can create an ignored `logs/dev-requests/<id>/` bundle for a targeted Codex App dev handoff instead of continuing repo development inside the AE chat; v1 does not auto-create a Codex App chat, so the user starts a new dev chat from `start-prompt.md`.
 - Project-changing tools use idempotency, optional checkpoints, edit-session protection, and post-mutation verification.
+- Precomp/source workflows include `deep_duplicate_precomp_sources` for recursively duplicating a selected precomp layer's source comp and nested comp/footage project items without raw ExtendScript in Agent plans.
 - Raw ExtendScript remains available as an escape hatch, but normal product workflows should use typed bridge tools.
 
 ## Milestones
@@ -431,6 +433,14 @@
 - Keep backend `codex app <repo>` fallback available for explicit callers, but hide its console window and report `autoChatCreated:false`.
 - Bump panel/bridge/manifest to `1.0.5` and synchronize the installed CEP extension.
 
+### Milestone 88: Deep duplicate selected precomp typed tool
+
+- Promote the dev-request raw workaround for duplicating a selected precomp and its nested source project items into one narrow typed bridge tool.
+- Keep the operation scoped to the active/specified comp and exactly one selected or specified precomp layer.
+- Duplicate nested comp and footage project items recursively, relink the copied comp to copied sources, then replace the original selected layer source with the copied precomp.
+- Keep the tool inside the existing mutating-tool safety model: idempotency, optional checkpoint labels, protected plan execution, and post-mutation verification metadata.
+- Add smoke coverage for tool exposure, queued AE command generation, typed plan validation, and typed dry-run without raw ExtendScript.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -530,6 +540,7 @@
 - 2026-05-18: Raw ExtendScript remains blocked by classification until a successful dry run of the same current plan records a matching short-lived gate id; unlocking `Выполнить план` sends that id to the protected runner rather than bypassing mutation/checkpoint/edit-session safety.
 - 2026-05-18: ChatGPT JSX Lab real candidate runs must follow the same bridge contract: preflight dry-run first, then real `/agents/plan/run` with `allowRawExtendscript:true` and the returned `rawExtendscriptDryRunId`.
 - 2026-05-18: `Prepare typed tool request` creates only the local handoff bundle in v1. It does not launch Codex App or imply that a new Codex App chat was created; chat creation stays manual from `start-prompt.md` until a stable local API exists.
+- 2026-05-18: The selected-precomp deep duplicate workflow is now a typed mutating bridge tool (`deep_duplicate_precomp_sources`) rather than a raw ExtendScript plan step; it still requires the normal Agent mutation gates for real execution.
 
 ## Validation
 
@@ -1644,3 +1655,32 @@
   - Passed live `node scripts\cep-panel-cdp-smoke.js dev-request-button-smoke`; the tool-gap path clicked `Prepare typed tool request` and the transcript reported that no new chat was created automatically.
   - Passed live `node scripts\cep-panel-cdp-smoke.js mode-toggle-smoke`.
   - Did not run live ChatGPT connector/Tunnel checks, live OpenRouter calls, external OpenAI CLI Agent scenario smokes, or mutating live AE smokes because this milestone only changes dev-request handoff UX and launch behavior.
+- Milestone 88:
+  - Added `deep_duplicate_precomp_sources` as a mutating typed bridge tool for the dev request `2026-05-18T08-33-25-625Z-typed-tool-request-c1e5e0`.
+  - The tool targets the active/specified comp and one selected/specified precomp layer, verifies the optional expected source comp, recursively duplicates nested comp and footage project items, relinks copied comp layers to copied sources, then replaces the original layer source with the copied precomp.
+  - Added planner guidance so selected precomp/source duplication can choose the typed tool before raw ExtendScript.
+  - Extended smoke coverage so `deep_duplicate_precomp_sources` is exposed with mutating safety schema, queues the expected AE command, validates as a typed mutating plan, and dry-runs with `rawExtendscriptStepCount:0`.
+  - No package manager check is configured because the repository has no `package.json`.
+  - PATH `node.exe` returned Windows `Access is denied`; validation used the bundled Codex runtime Node executable.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check scripts\smoke-test.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\smoke-test.js`; output included `deepDuplicatePlan.validation:"valid"`, `dryRun:"ready"`, and `rawExtendscriptStepCount:0`.
+  - Passed `node scripts\provider-contract-smoke.js`.
+  - Passed `node scripts\solution-registry-smoke.js`.
+  - Passed `node scripts\solution-candidate-report-smoke.js`.
+  - Passed `node scripts\solution-promotion-smoke.js`.
+  - Passed `node scripts\solution-retrieval-smoke.js`.
+  - Passed `node scripts\solution-library-validation-smoke.js`.
+  - Passed `node scripts\project-intent-memory-smoke.js`.
+  - Passed `node scripts\plan-classification-smoke.js`.
+  - Passed `node scripts\plan-repair-smoke.js`.
+  - Passed `node scripts\semantic-verification-smoke.js`.
+  - Passed `node scripts\reliability-validation-suite-smoke.js`.
+  - Passed `node scripts\chatgpt-connector-smoke.js`.
+  - Passed `node scripts\provider-api-smoke.js`.
+  - Passed `node scripts\prompt-optimization-smoke.js`.
+  - Passed `node scripts\bridge-only-smoke-test.js`.
+  - Passed live `node scripts\cep-panel-cdp-smoke.js connector-status-smoke`.
+  - Passed `node scripts\provider-key-save-smoke.js`.
+  - Did not run full live Agent planner smoke or mutating live AE validation because this milestone changes a backend typed tool and the full planner smoke would send a provider request; the typed tool path was validated through backend plan validation/dry-run and queued-command smoke.
