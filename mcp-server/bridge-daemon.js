@@ -8038,6 +8038,63 @@ async function callTool(name, args) {
         return "index:" + __codexProjectIndexForItem(item);
       }
 
+      function __codexFootageFile(item) {
+        var file = null;
+        try {
+          if (item && item.mainSource && item.mainSource.file) file = item.mainSource.file;
+        } catch (__mainSourceFileError) {}
+        if (!file) {
+          try { if (item && item.file) file = item.file; } catch (__itemFileError) {}
+        }
+        if (!file || !file.exists) return null;
+        return file;
+      }
+
+      function __codexCopyFootageInterpretation(sourceItem, copyItem) {
+        var source = null;
+        var copy = null;
+        try { source = sourceItem.mainSource; } catch (__sourceMainError) {}
+        try { copy = copyItem.mainSource; } catch (__copyMainError) {}
+        if (!source || !copy) return;
+
+        var properties = [
+          "alphaMode",
+          "premulColor",
+          "invertAlpha",
+          "conformFrameRate",
+          "fieldSeparationType",
+          "highQualityFieldSeparation",
+          "removePulldown",
+          "loop"
+        ];
+        for (var __p = 0; __p < properties.length; __p++) {
+          var property = properties[__p];
+          try {
+            if (source[property] !== undefined) copy[property] = source[property];
+          } catch (__copyInterpretationError) {}
+        }
+      }
+
+      function __codexDuplicateFootageItem(item) {
+        if (item.duplicate) return item.duplicate();
+
+        var file = __codexFootageFile(item);
+        if (!file) {
+          throw new Error("Footage item cannot be duplicated or reimported because its source file is unavailable: " + item.name);
+        }
+
+        var options = new ImportOptions(file);
+        options.sequence = false;
+        if (!options.canImportAs(ImportAsType.FOOTAGE)) {
+          throw new Error("Footage file cannot be reimported as footage: " + file.fsName);
+        }
+        options.importAs = ImportAsType.FOOTAGE;
+        var copy = app.project.importFile(options);
+        __codexCopyFootageInterpretation(item, copy);
+        try { copy.parentFolder = item.parentFolder; } catch (__parentFolderError) {}
+        return copy;
+      }
+
       function __codexResolvePrecompLayer(parentComp, requestedIndex) {
         if (requestedIndex !== null) {
           var explicitLayer = parentComp.layer(requestedIndex);
@@ -8065,6 +8122,7 @@ async function callTool(name, args) {
 
       var duplicatedByKey = {};
       var duplicatedItems = [];
+      var duplicatedCopies = [];
       var relinkedLayerCount = 0;
 
       function __codexDuplicateItemDeep(item) {
@@ -8072,11 +8130,11 @@ async function callTool(name, args) {
         if (!(item instanceof CompItem) && !(item instanceof FootageItem)) return item;
         var key = __codexDuplicateKey(item);
         if (duplicatedByKey[key]) return duplicatedByKey[key];
-        if (!item.duplicate) throw new Error("Project item cannot be duplicated: " + item.name);
 
-        var copy = item.duplicate();
+        var copy = item instanceof FootageItem ? __codexDuplicateFootageItem(item) : item.duplicate();
         if (nameSuffix) copy.name = item.name + nameSuffix;
         duplicatedByKey[key] = copy;
+        duplicatedCopies.push(copy);
         duplicatedItems.push({
           source: item instanceof CompItem ? __codexCompReference(item) : __codexItemReference(item),
           duplicate: copy instanceof CompItem ? __codexCompReference(copy) : __codexItemReference(copy)
@@ -8127,6 +8185,20 @@ async function callTool(name, args) {
           duplicatedItems: duplicatedItems,
           nameSuffix: nameSuffix
         };
+      } catch (__deepDuplicateError) {
+        try {
+          if (selectedLayer && sourceComp && selectedLayer.source !== sourceComp && selectedLayer.replaceSource) {
+            selectedLayer.replaceSource(sourceComp, fixExpressions);
+          }
+        } catch (__restoreLayerSourceError) {}
+        for (var __removeIndex = 0; __removeIndex < duplicatedCopies.length; __removeIndex++) {
+          try {
+            if (duplicatedCopies[__removeIndex] && duplicatedCopies[__removeIndex].remove) {
+              duplicatedCopies[__removeIndex].remove();
+            }
+          } catch (__removeDuplicateError) {}
+        }
+        throw __deepDuplicateError;
       } finally {
         app.endUndoGroup();
       }

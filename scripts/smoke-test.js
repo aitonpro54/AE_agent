@@ -392,7 +392,7 @@ async function main() {
     sourceCompItemIndex: 3,
     nameSuffix: " Smoke Copy",
     verifyAfter: false
-  }, ["Codex Deep Duplicate Precomp Sources", "__codexDuplicateItemDeep", "replaceSource(newComp"], {
+  }, ["Codex Deep Duplicate Precomp Sources", "__codexDuplicateItemDeep", "__codexDuplicateFootageItem", "app.project.importFile(options)", "replaceSource(newComp"], {
     comp: { itemIndex: 1, name: "Smoke Comp" },
     layer: { index: 1, name: "Smoke Precomp Smoke Copy", source: { itemIndex: 4, name: "Smoke Precomp Smoke Copy", type: "comp" } },
     originalComp: { itemIndex: 3, name: "Smoke Precomp", type: "comp" },

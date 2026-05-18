@@ -58,6 +58,7 @@
 - [x] Milestone 88: Deep duplicate selected precomp typed tool.
 - [x] Milestone 89: Selected precomp layer runtime binding.
 - [x] Milestone 90: CEP cache-busting reload for installed panel updates.
+- [x] Milestone 91: Deep duplicate file-footage fallback.
 
 ## Current Stable Baseline
 
@@ -456,6 +457,13 @@
 - Make the panel Reload action navigate to the same `index.html` with a versioned timestamp query instead of relying on a normal Chromium reload.
 - After syncing an installed panel update, clear only the AE Agent CEP cache/code-cache/GPU cache directories while preserving Local Storage.
 
+### Milestone 91: Deep duplicate file-footage fallback
+
+- Fix `deep_duplicate_precomp_sources` when a nested footage project item, such as `.avi`, does not support AE's `duplicate()` API.
+- Reimport file-backed footage from the same source file, preserve basic interpretation settings where possible, keep it in the same project folder, and relink copied precomp layers to the new footage item.
+- Add rollback cleanup for partial duplicate items if the deep duplicate step fails after creating intermediate copies.
+- Extend smoke coverage so the generated typed command includes the file-footage reimport fallback.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -558,6 +566,7 @@
 - 2026-05-18: The selected-precomp deep duplicate workflow is now a typed mutating bridge tool (`deep_duplicate_precomp_sources`) rather than a raw ExtendScript plan step; it still requires the normal Agent mutation gates for real execution.
 - 2026-05-18: `{{selectedPrecompLayerIndex}}` resolves to the selected layer whose source is a comp, while `{{selectedPrecompItemIndex}}` resolves to that layer's source comp item. Deep duplicate plans should use both bindings with `deep_duplicate_precomp_sources`.
 - 2026-05-18: Installed CEP panel updates need cache-busting at the HTML/script level because AE can keep serving a stale Chromium cache even when the Roaming extension files are already synchronized.
+- 2026-05-18: Deep duplicate of selected precomps must handle file-backed footage as reimported project items, because AE may not expose `duplicate()` on `FootageItem` objects such as `.avi`.
 
 ## Validation
 
@@ -1723,5 +1732,14 @@
   - Synced the installed CEP panel again; `cep-sync-health --sync --check` reported installed panel/title/manifest `1.0.6` and copied the changed `index.html` and `panel.js`.
   - Verified installed `index.html` contains `AE Agent 1.0.6` and `panel.js?v=1.0.6`; installed `panel.js` contains `APP_VERSION = "1.0.6"` and the cache-busting reload.
   - Passed `node --check cep-panel\panel.js`.
+  - Passed `node scripts\smoke-test.js`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+- Milestone 91:
+  - Fixed the live `deep_duplicate_precomp_sources` failure `Project item cannot be duplicated: plashka.avi`.
+  - Added a file-footage fallback in the generated ExtendScript: if a `FootageItem` cannot be duplicated through AE's project-item API, the tool reimports the same source file as footage, copies basic interpretation settings where AE allows, assigns the duplicate to the same parent folder, applies the requested suffix, and relinks copied precomp layers to that new footage item.
+  - Added rollback cleanup inside the tool so partially duplicated project items are removed if a later nested source fails before the operation completes.
+  - Extended smoke coverage to require the generated deep duplicate command to include `__codexDuplicateFootageItem` and `app.project.importFile(options)`.
+  - Passed `node --check mcp-server\bridge-daemon.js`.
+  - Passed `node --check scripts\smoke-test.js`.
   - Passed `node scripts\smoke-test.js`.
   - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
