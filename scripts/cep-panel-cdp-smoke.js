@@ -1204,6 +1204,10 @@ function installHardcoreAutopilotFakeExpression() {
             status: "verified",
             sessionId: "hardcore-ui-smoke",
             maxAttempts: payload.maxAttempts || 3,
+            projectOwner: payload.projectOwner === true,
+            reasoningEffort: payload.reasoning_effort || null,
+            rawFallbackUsed: false,
+            typedToolFailures: [],
             attempts: [
               {
                 index: 1,
@@ -1992,10 +1996,10 @@ async function hardcoreAutopilotUiSmoke() {
     const ready = await waitFor(send, "hardcore autopilot controls", (state) => (
       state.mode === "hardcore" &&
       state.sendDisabled === false &&
-      state.planRunStatus === "Hardcore autopilot: send once" &&
-      state.recoverLastPlanVisible === false &&
-      state.dryRunVisible === false &&
-      state.runVisible === false &&
+      state.planRunStatus === "Hardcore owner: send once; no plan ready" &&
+      state.recoverLastPlanVisible === true &&
+      state.dryRunVisible === true &&
+      state.runVisible === true &&
       state.prepareDevRequestVisible === false &&
       state.dryRunDisabled === true &&
       state.runDisabled === true
@@ -2006,12 +2010,13 @@ async function hardcoreAutopilotUiSmoke() {
     await waitFor(send, "hardcore autopilot busy", (state) => (
       state.workingExists === true &&
       state.workingText.indexOf("Hardcore autopilot") >= 0 &&
-      state.planRunStatus === "Hardcore autopilot is running..."
+      state.planRunStatus === "Hardcore owner is running..."
     ), 5000);
     const finished = await waitFor(send, "hardcore autopilot finished", (state) => (
       state.sendDisabled === false &&
       state.transcript.indexOf("Agent Hardcore: verified") >= 0 &&
       state.transcript.indexOf("Protected run: ok") >= 0 &&
+      state.transcript.indexOf("Resource report: hardcore owner session") >= 0 &&
       state.transcript.indexOf("Session evidence: logs/hardcore-sessions/hardcore-ui-smoke/session.json") >= 0 &&
       state.hardcoreRequests.length === 1
     ), 30000);
@@ -2020,8 +2025,8 @@ async function hardcoreAutopilotUiSmoke() {
     if (payload.allowMutations !== true || payload.autoEditSession !== true || payload.autoPromoteKnowledge !== true) {
       throw new Error("Hardcore autopilot request must enable protected mutation/session/knowledge gates.");
     }
-    if (payload.maxAttempts !== 3 || payload.agentMode !== "hardcore") {
-      throw new Error("Hardcore autopilot request must keep maxAttempts=3 and agentMode=hardcore.");
+    if (payload.maxAttempts !== 5 || payload.agentMode !== "hardcore" || payload.reasoning_effort !== "xhigh" || payload.projectOwner !== true || payload.allowRawFallback !== true) {
+      throw new Error("Hardcore autopilot request must keep owner-mode xhigh Hardcore payload.");
     }
 
     console.log(JSON.stringify({
@@ -2038,6 +2043,9 @@ async function hardcoreAutopilotUiSmoke() {
         path: "/agents/hardcore/run",
         agentMode: payload.agentMode,
         maxAttempts: payload.maxAttempts,
+        reasoningEffort: payload.reasoning_effort,
+        projectOwner: payload.projectOwner,
+        allowRawFallback: payload.allowRawFallback,
         allowMutations: payload.allowMutations,
         autoEditSession: payload.autoEditSession,
         autoPromoteKnowledge: payload.autoPromoteKnowledge
@@ -2578,7 +2586,7 @@ async function brandingSmoke() {
   try {
     await reloadActivePage(send);
     const state = await waitFor(send, "AE Agent branding", (item) => (
-      item.title === "AE Agent 1.0.9" &&
+      item.title === "AE Agent 1.0.10" &&
       item.windowBarExists === false &&
       item.windowBarText === "" &&
       item.windowBarText.indexOf("AE GPT") < 0 &&
@@ -2613,8 +2621,8 @@ async function reloadButtonSmoke() {
     const clicked = await evaluate(send, clickExpression("reloadButton"));
     if (!clicked || !clicked.ok) throw new Error("Reload button was not clickable.");
     const state = await waitFor(send, "hard reload button result", (item) => (
-      item.title === "AE Agent 1.0.9" &&
-      item.locationHref.indexOf("v=1.0.9") >= 0 &&
+      item.title === "AE Agent 1.0.10" &&
+      item.locationHref.indexOf("v=1.0.10") >= 0 &&
       item.locationHref.indexOf("assets=") >= 0 &&
       item.locationHref.indexOf("reload=") >= 0 &&
       item.assetVersion &&

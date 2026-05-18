@@ -2,10 +2,12 @@
 
 (function () {
   var APP_NAME = "AE Agent";
-  var APP_VERSION = "1.0.9";
+  var APP_VERSION = "1.0.10";
   var CHAT_MODE_CHAT = "chat";
   var CHAT_MODE_AGENT = "plan";
   var CHAT_MODE_HARDCORE = "hardcore";
+  var FIVE_HOUR_LIMIT_MS = 5 * 60 * 60 * 1000;
+  var CONTEXT_WINDOW_TOKENS = 258000;
   var RECOVER_PLAN_TEXT = "Подхватить последний план из чата";
   var DRY_RUN_PLAN_TEXT = "Dry run / Проверить";
   var RUN_PLAN_TEXT = "Выполнить план";
@@ -100,6 +102,8 @@
   var lastAcceptedDryRun = null;
   var planRunInFlightMode = "";
   var inlinePlanActionRows = [];
+  var operationUsageReports = [];
+  var usageWindowStartedAt = Number(localStorage.getItem("codexAeUsageWindowStartedAt") || "0") || 0;
   var lastPollErrorMessage = "";
   var setupStatusTimer = null;
   var setupStatusUntil = 0;
@@ -1348,6 +1352,120 @@
     recordTranscriptMessage(role, text, options);
   }
 
+  function ensureUsageWindowStartedAt() {
+    var now = Date.now();
+    if (!usageWindowStartedAt || now - usageWindowStartedAt < 0 || now - usageWindowStartedAt > FIVE_HOUR_LIMIT_MS) {
+      usageWindowStartedAt = now;
+      localStorage.setItem("codexAeUsageWindowStartedAt", String(usageWindowStartedAt));
+    }
+    return usageWindowStartedAt;
+  }
+
+  function estimateTokensFromText(value) {
+    var text = String(value || "");
+    return Math.max(0, Math.ceil(text.length / 4));
+  }
+
+  function compactNumber(value) {
+    var number = Math.max(0, Math.round(Number(value || 0)));
+    return String(number).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  }
+
+  function formatPercent(value) {
+    var number = Math.max(0, Number(value || 0));
+    if (number >= 10) return number.toFixed(1) + "%";
+    return number.toFixed(2) + "%";
+  }
+
+  function formatDuration(ms) {
+    var totalSeconds = Math.max(0, Math.floor(Number(ms || 0) / 1000));
+    var hours = Math.floor(totalSeconds / 3600);
+    var minutes = Math.floor((totalSeconds % 3600) / 60);
+    var seconds = totalSeconds % 60;
+    if (hours > 0) return hours + "h " + minutes + "m";
+    if (minutes > 0) return minutes + "m " + seconds + "s";
+    return seconds + "s";
+  }
+
+  function usageTokensFromObject(value, depth) {
+    if (!value || typeof value !== "object" || depth > 5) return 0;
+    var total = 0;
+    if (value.usage && typeof value.usage === "object") {
+      var usage = value.usage;
+      total += Number(usage.total_tokens || usage.totalTokens || usage.tokens || 0);
+      if (!total) {
+        total += Number(usage.prompt_tokens || usage.input_tokens || usage.inputTokens || 0);
+        total += Number(usage.completion_tokens || usage.output_tokens || usage.outputTokens || 0);
+      }
+    }
+    if (value.finalPlanResult) total += usageTokensFromObject(value.finalPlanResult, depth + 1);
+    if (value.finalRun) total += usageTokensFromObject(value.finalRun, depth + 1);
+    if (value.finalAttempt) total += usageTokensFromObject(value.finalAttempt, depth + 1);
+    if (value.planResult) total += usageTokensFromObject(value.planResult, depth + 1);
+    if (value.run) total += usageTokensFromObject(value.run, depth + 1);
+    if (value.dryRun) total += usageTokensFromObject(value.dryRun, depth + 1);
+    if (value.attempts && typeof value.attempts.push === "function") {
+      for (var i = 0; i < value.attempts.length && i < 5; i++) {
+        total += usageTokensFromObject(value.attempts[i], depth + 1);
+      }
+    }
+    return total;
+  }
+
+  function estimateCurrentContextTokens(extra) {
+    var total = 0;
+    for (var i = 0; i < transcriptHistory.length; i++) {
+      var item = transcriptHistory[i] || {};
+      total += estimateTokensFromText(item.role) + estimateTokensFromText(item.text);
+      if (item.planResult) {
+        try {
+          total += estimateTokensFromText(JSON.stringify(item.planResult));
+        } catch (_error) {}
+      }
+    }
+    for (var j = 0; j < chatMessages.length; j++) {
+      total += estimateTokensFromText(chatMessages[j] && chatMessages[j].content);
+    }
+    try {
+      if (lastPlanResult) total += estimateTokensFromText(JSON.stringify(lastPlanResult));
+      if (lastPlanRunResult) total += estimateTokensFromText(JSON.stringify(lastPlanRunResult));
+      if (extra) total += estimateTokensFromText(JSON.stringify(extra));
+    } catch (_jsonError) {}
+    return total;
+  }
+
+  function buildOperationUsageReport(label, result) {
+    var startedAt = ensureUsageWindowStartedAt();
+    var elapsedMs = Date.now() - startedAt;
+    var windowPercent = Math.min(999, (elapsedMs / FIVE_HOUR_LIMIT_MS) * 100);
+    var contextTokens = estimateCurrentContextTokens(result);
+    var contextPercent = (contextTokens / CONTEXT_WINDOW_TOKENS) * 100;
+    var providerTokens = usageTokensFromObject(result, 0);
+    var lines = [
+      "Resource report: " + (label || "operation"),
+      "5h task window: " + formatPercent(windowPercent) + " used (" + formatDuration(elapsedMs) + " / 5h, local timer).",
+      "Context window: about " + compactNumber(contextTokens) + " / " + compactNumber(CONTEXT_WINDOW_TOKENS) + " tokens (" + formatPercent(contextPercent) + ", panel estimate)."
+    ];
+    if (providerTokens > 0) {
+      lines.push("Provider usage returned: " + compactNumber(providerTokens) + " tokens.");
+    } else {
+      lines.push("Provider usage returned: not available for this operation.");
+    }
+    return lines.join("\n");
+  }
+
+  function appendOperationUsageReport(label, result) {
+    var text = buildOperationUsageReport(label, result || null);
+    operationUsageReports.push({
+      label: label || "operation",
+      text: text,
+      createdAt: new Date().toISOString()
+    });
+    if (operationUsageReports.length > 20) operationUsageReports = operationUsageReports.slice(operationUsageReports.length - 20);
+    window.__aeAgentUsageReports = operationUsageReports;
+    appendChatMessage("assistant", text);
+  }
+
   function appendInlinePlanActions(parent, planResult) {
     if (!parent || !planResult || !planResult.plan) return;
 
@@ -2087,23 +2205,19 @@
     var hasPlan = !!(lastPlanResult && lastPlanResult.plan);
     var validation = hasPlan && lastPlanResult ? lastPlanResult.planValidation || null : null;
     if (hardcoreMode) {
-      if (recoverLastPlanButton) {
-        recoverLastPlanButton.style.display = "none";
-        recoverLastPlanButton.disabled = true;
+      if (recoverLastPlanButton) recoverLastPlanButton.style.display = "";
+      if (dryRunPlanButton) dryRunPlanButton.style.display = "";
+      if (runPlanButton) runPlanButton.style.display = "";
+      updateRecoverLastPlanButton(hasPlan);
+      if (dryRunPlanButton) dryRunPlanButton.disabled = chatInFlight || !hasPlan;
+      if (runPlanButton) runPlanButton.disabled = chatInFlight || !hasPlan || !validation || !validation.ok || planRunBlocksNormalRun(validation);
+      updateDevRequestButton(hasPlan, validation);
+      updatePlanRunControls(hasPlan, validation);
+      if (chatInFlight && !planRunInFlightMode) {
+        setPlanRunStatus("Hardcore owner is running...", "");
+      } else if (!chatInFlight && !hasPlan) {
+        setPlanRunStatus("Hardcore owner: send once; no plan ready", "mutating");
       }
-      if (dryRunPlanButton) {
-        dryRunPlanButton.style.display = "none";
-        dryRunPlanButton.disabled = true;
-      }
-      if (runPlanButton) {
-        runPlanButton.style.display = "none";
-        runPlanButton.disabled = true;
-      }
-      if (prepareDevRequestButton) {
-        prepareDevRequestButton.style.display = "none";
-        prepareDevRequestButton.disabled = true;
-      }
-      setPlanRunStatus(chatInFlight ? "Hardcore autopilot is running..." : "Hardcore autopilot: send once", chatInFlight ? "" : "mutating");
     } else {
       if (recoverLastPlanButton) recoverLastPlanButton.style.display = "";
       if (dryRunPlanButton) dryRunPlanButton.style.display = "";
@@ -2726,6 +2840,24 @@
         lines.push("Checkpoint: " + finalRun.editSession.checkpoint.checkpointFile);
       }
     }
+    if (session.projectOwner) lines.push("Owner mode: enabled; reasoning effort xhigh.");
+    if (session.typedToolFailures && session.typedToolFailures.length) {
+      lines.push("TypedTool failures:");
+      for (var failureIndex = 0; failureIndex < session.typedToolFailures.length; failureIndex++) {
+        var failure = session.typedToolFailures[failureIndex] || {};
+        var bundle = failure.bundle || {};
+        lines.push("- " + (failure.tool || "typed tool") + ": marked not working.");
+        if (failure.reason) lines.push("   reason: " + failure.reason);
+        if (bundle.startPromptFile) lines.push("   Codex App prompt file: " + bundle.startPromptFile);
+        if (bundle.startPrompt) {
+          lines.push("   Codex App prompt:");
+          lines.push(String(bundle.startPrompt).slice(0, 1400));
+        }
+      }
+    }
+    if (session.rawFallbackUsed) {
+      lines.push("Fallback: raw ExtendScript was used after a matching dry-run gate.");
+    }
     if (session.artifacts) {
       if (session.artifacts.sessionArtifact && session.artifacts.sessionArtifact.sessionFile) {
         lines.push("Session evidence: " + session.artifacts.sessionArtifact.sessionFile);
@@ -2769,6 +2901,10 @@
     if (bundle.directory) lines.push("Bundle: " + bundle.directory);
     if (bundle.requestFile) lines.push("Request: " + bundle.requestFile);
     if (bundle.startPromptFile) lines.push("Start prompt: " + bundle.startPromptFile);
+    if (bundle.startPrompt) {
+      lines.push("Codex App prompt:");
+      lines.push(bundle.startPrompt);
+    }
     if (bundle.candidateFile) lines.push("Candidate: " + bundle.candidateFile);
     if (codexApp.launched) {
       lines.push("Codex App: project launch requested; new chats are manual in v1.");
@@ -2819,6 +2955,7 @@
         return;
       }
       appendChatMessage("assistant", formatDevRequestResult(response || {}));
+      appendOperationUsageReport("dev request handoff", response || {});
       log("Dev request prepared");
     });
   }
@@ -2857,11 +2994,13 @@
           updateChatAvailability();
           appendChatMessage("assistant", formatPlanRun(errorRun));
           showPlanRunFinishedStatus(dryRun, errorRun, true);
+          appendOperationUsageReport(dryRun ? "dry run" : "run plan", errorRun);
           log("Plan run " + (errorRun.id || "") + " needs review");
           return;
         }
         appendChatMessage("error", error.message);
         showPlanRunFinishedStatus(dryRun, null, true);
+        appendOperationUsageReport(dryRun ? "dry run" : "run plan", error.body || error);
         log("Plan run failed: " + error.message);
         return;
       }
@@ -2870,6 +3009,7 @@
       updateChatAvailability();
       appendChatMessage("assistant", formatPlanRun(run));
       showPlanRunFinishedStatus(dryRun, run, false);
+      appendOperationUsageReport(dryRun ? "dry run" : "run plan", run);
       if (run && run.id) log("Plan run " + run.id + " finished");
     });
   }
@@ -2919,9 +3059,12 @@
       promptOptimization: optimizePrompt,
       hardcore: true,
       agentMode: "hardcore",
-      maxAttempts: 3,
+      projectOwner: true,
+      reasoning_effort: "xhigh",
+      maxAttempts: 5,
       allowMutations: true,
       autoEditSession: true,
+      allowRawFallback: true,
       autoPromoteKnowledge: true,
       timeoutMs: 120000
     } : agentPlanMode ? {
@@ -2951,12 +3094,14 @@
       var result = hardcoreMode ? (response && response.session ? response.session : {}) : (response && response.result ? response.result : {});
       var text = hardcoreMode ? formatHardcoreSession(result) : (agentPlanMode ? formatPlanResult(result) : result.text || "");
       if (hardcoreMode) {
-        lastPlanResult = null;
+        lastPlanResult = result.finalPlanResult || null;
         rememberPlanRun(result.finalRun || null);
       } else {
         lastPlanResult = agentPlanMode ? result : lastPlanResult;
       }
-      appendChatMessage("assistant", text, agentPlanMode && !hardcoreMode ? { planActions: result } : null);
+      var planActions = agentPlanMode ? (hardcoreMode ? lastPlanResult : result) : null;
+      appendChatMessage("assistant", text, planActions && planActions.plan ? { planActions: planActions } : null);
+      appendOperationUsageReport(hardcoreMode ? "hardcore owner session" : (agentPlanMode ? "agent plan" : "chat"), result);
       if (!agentPlanMode) {
         chatMessages.push({ role: "assistant", content: text });
         if (chatMessages.length > 16) chatMessages = chatMessages.slice(chatMessages.length - 16);

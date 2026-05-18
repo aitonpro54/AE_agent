@@ -166,6 +166,7 @@ async function main() {
       AE_BRIDGE_PORT: port,
       AE_BRIDGE_TOKEN: token,
       AE_AGENT_HARDCORE_SESSION_DIR: smokeDir,
+      AE_AGENT_DEV_REQUEST_DIR: path.join(smokeDir, "dev-requests"),
       AE_SOLUTION_CANDIDATE_DIR: path.join(smokeDir, "solution-candidates"),
       AE_SOLUTION_REGISTRY_PATH: smokeStores.registryPath,
       AE_PROJECT_INTENT_MEMORY_PATH: smokeStores.memoryPath
@@ -734,19 +735,24 @@ async function main() {
   }, {
     prompt: "Smoke-test Agent Hardcore retry loop and knowledge capture.",
     maxAttempts: 2,
+    projectOwner: true,
+    reasoning_effort: "xhigh",
     allowMutations: true,
     autoEditSession: true,
+    allowRawFallback: true,
     autoPromoteKnowledge: true,
     attemptPlans: [
       {
-        summary: "Invalid first attempt to exercise retry.",
+        summary: "Fail one typed tool to exercise dev handoff.",
         risk: "low",
         requiresCheckpoint: false,
         steps: [
           {
-            title: "Unsupported smoke tool",
-            tool: "not_a_real_tool",
-            args: {}
+            title: "Read missing checkpoint details",
+            tool: "get_project_checkpoint_details",
+            args: {
+              checkpointFile: "missing-hardcore-smoke-checkpoint.aep"
+            }
           }
         ]
       },
@@ -1342,7 +1348,7 @@ async function main() {
     throw new Error("Expected initialize, tools/list, and tool call responses");
   }
 
-  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "1.0.9") {
+  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "1.0.10") {
     throw new Error("Unexpected health response");
   }
   if (!agents.body.ok || !Array.isArray(agents.body.agents) || !agents.body.agents.length) {
@@ -1451,8 +1457,16 @@ async function main() {
     !hardcoreSession.body.session ||
     hardcoreSession.body.session.status !== "verified" ||
     hardcoreSession.body.session.attempts.length !== 2 ||
-    hardcoreSession.body.session.attempts[0].status !== "plan-needs-review" ||
+    hardcoreSession.body.session.attempts[0].status !== "run-needs-review" ||
     hardcoreSession.body.session.attempts[1].status !== "verified" ||
+    hardcoreSession.body.session.projectOwner !== true ||
+    hardcoreSession.body.session.reasoningEffort !== "xhigh" ||
+    !Array.isArray(hardcoreSession.body.session.typedToolFailures) ||
+    hardcoreSession.body.session.typedToolFailures.length !== 1 ||
+    hardcoreSession.body.session.typedToolFailures[0].tool !== "get_project_checkpoint_details" ||
+    !hardcoreSession.body.session.typedToolFailures[0].bundle ||
+    !hardcoreSession.body.session.typedToolFailures[0].bundle.startPrompt ||
+    String(hardcoreSession.body.session.typedToolFailures[0].bundle.startPrompt).indexOf("Continue development") < 0 ||
     !hardcoreSession.body.session.artifacts ||
     !hardcoreSession.body.session.artifacts.sessionArtifact ||
     !hardcoreSession.body.session.artifacts.candidate ||
@@ -1580,6 +1594,7 @@ async function main() {
     !devRequestBundle.requestFile ||
     !devRequestBundle.evidenceFile ||
     !devRequestBundle.startPromptFile ||
+    !devRequestBundle.startPrompt ||
     !devRequestBundle.candidateFile ||
     !fs.existsSync(devRequestFile) ||
     !fs.existsSync(devEvidenceFile) ||
@@ -1628,7 +1643,7 @@ async function main() {
     throw new Error("run_ai_agent_plan is missing run safety schema");
   }
   const hardcoreTool = lines[1].result.tools.find((tool) => tool.name === "run_agent_hardcore_session");
-  if (!hardcoreTool || !hardcoreTool.inputSchema.properties.maxAttempts || !hardcoreTool.inputSchema.properties.autoPromoteKnowledge || !hardcoreTool.inputSchema.properties.autoEditSession) {
+  if (!hardcoreTool || !hardcoreTool.inputSchema.properties.maxAttempts || !hardcoreTool.inputSchema.properties.autoPromoteKnowledge || !hardcoreTool.inputSchema.properties.autoEditSession || !hardcoreTool.inputSchema.properties.allowRawFallback || !hardcoreTool.inputSchema.properties.reasoning_effort) {
     throw new Error("run_agent_hardcore_session is missing autopilot schema");
   }
   const setWorkAreaTool = lines[1].result.tools.find((tool) => tool.name === "set_comp_work_area");
@@ -1665,6 +1680,7 @@ async function main() {
     hardcoreSession: {
       status: hardcoreSession.body.session.status,
       attempts: hardcoreSession.body.session.attempts.length,
+      typedToolFailure: hardcoreSession.body.session.typedToolFailures[0].tool,
       candidate: hardcoreSession.body.session.artifacts.candidate.path
     },
     ignoredBindingRun: ignoredBindingRun.body.run.steps[0].status,
@@ -1682,6 +1698,7 @@ async function main() {
     devRequest: {
       requestFile: devRequestBundle.requestFile,
       startPromptFile: devRequestBundle.startPromptFile,
+      startPromptReturned: devRequestBundle.startPrompt.indexOf("Continue development") >= 0,
       candidateFile: devRequestBundle.candidateFile
     },
     health: health.body,

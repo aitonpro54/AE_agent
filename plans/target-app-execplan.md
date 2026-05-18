@@ -2,7 +2,7 @@
 
 ## Progress
 
-- [x] Stable baseline: AE Agent 1.0.9 CEP panel, provider setup, Agent planning, Agent Hardcore autopilot, plan validation, protected execution, local history, diagnostics, reload hard-refresh, install/sync cache clearing, and installed-panel smoke coverage.
+- [x] Stable baseline: AE Agent 1.0.10 CEP panel, provider setup, Agent planning, Agent Hardcore owner mode, plan validation, protected execution, local history, diagnostics, reload hard-refresh, install/sync cache clearing, and installed-panel smoke coverage.
 - [x] Milestone 38: Repo cleanup and roadmap reset.
 - [x] Milestone 39: Agent planning quality.
 - [x] Milestone 40: Timeline and layer tools.
@@ -62,6 +62,7 @@
 - [x] Milestone 92: Selected source comp binding diagnostic hotfix.
 - [x] Milestone 93: Selected layer binding diagnostic hotfix.
 - [x] Milestone 94: Agent Hardcore Autopilot.
+- [x] Milestone 95: Hardcore owner controls, usage reporting, and TypedTool fallback.
 - [x] Hotfix: Version 1.0.7 and Hardcore installed-panel sync.
 - [x] Hotfix: Deep duplicate read-back binding aliases.
 - [x] Hotfix: Version 1.0.8 hard Reload button.
@@ -70,14 +71,15 @@
 ## Current Stable Baseline
 
 - The active repository is `C:\Users\Ant\Documents\Codex\AE_agent`.
-- The native CEP title/menu format is `AE Agent 1.0.9`.
+- The native CEP title/menu format is `AE Agent 1.0.10`.
 - The panel is a compact dark CEP client for the local bridge daemon.
 - Provider paths are separate: OpenAI API, OpenAI CLI, Gemini, Claude, OpenRouter, and Local/Ollama.
 - Agent mode drafts structured MCP plans, validates tool names and required fields, dry-runs plans, and executes only through explicit mutation gates.
-- Agent Hardcore is a visible composer mode next to Agent; its composer send button starts the full autopilot session directly, while manual `Dry run` / `Run plan` controls are hidden in Hardcore and remain available for ordinary Agent mode.
+- Agent Hardcore is a visible composer mode next to Agent; its composer send button starts the full owner-mode autopilot session with xhigh reasoning, while manual `Dry run` / `Run plan` controls remain visible for the latest active plan.
 - The latest valid Agent plan exposes inline `Dry run / Проверить` and `Выполнить план` controls inside the chat message, while keeping the same validated backend runner and project-change gates.
 - Raw ExtendScript plans stay blocked for normal Run until a successful dry run of the same current plan records a short-lived gate id; the enabled Run then sends `allowRawExtendscript:true` with the matching `rawExtendscriptDryRunId`.
-- Agent plans or runs that reveal a typed-tool gap can create an ignored `logs/dev-requests/<id>/` bundle for a targeted Codex App dev handoff instead of continuing repo development inside the AE chat; v1 does not auto-create a Codex App chat, so the user starts a new dev chat from `start-prompt.md`.
+- Agent plans or runs that reveal a typed-tool gap can create an ignored `logs/dev-requests/<id>/` bundle for a targeted Codex App dev handoff instead of continuing repo development inside the AE chat; v1 does not auto-create a Codex App chat, so the user starts a new dev chat from `start-prompt.md`. Hardcore also marks failed TypedTools as not working, returns the generated Codex App prompt, and may continue through a narrow raw ExtendScript fallback after the normal dry-run gate.
+- The panel appends a compact resource report after completed chat/plan/run/dev-request operations with local five-hour task-window usage, estimated current panel context, and provider token usage when the provider returned it.
 - Project-changing tools use idempotency, optional checkpoints, edit-session protection, and post-mutation verification.
 - Precomp/source workflows include `deep_duplicate_precomp_sources` for recursively duplicating a selected precomp layer's source comp and nested comp/footage project items without raw ExtendScript in Agent plans.
 - Raw ExtendScript remains available as an escape hatch, but normal product workflows should use typed bridge tools.
@@ -522,6 +524,14 @@
 - Update `scripts\install-cep-panel.ps1` so both full install and `-SyncOnly` clear only safe cache folders while preserving Local Storage.
 - Add `scripts\cep-sync-cache-smoke.js` to prove cache folders are removed and Local Storage survives.
 
+### Milestone 95: Hardcore owner controls, usage reporting, and TypedTool fallback
+
+- Treat `Agent Hardcore` as owner mode: panel requests send `projectOwner:true`, `reasoning_effort:"xhigh"`, up to five attempts, protected mutations, knowledge capture, and raw fallback permission only after a TypedTool failure.
+- Keep persistent and inline `Dry run / Проверить` and `Выполнить план` controls visible in Hardcore for the latest active plan; the send button remains the full autopilot entry point.
+- After completed chat, plan, dry-run, run, and dev-request operations, append a compact resource report with local five-hour task-window usage, panel-estimated context window, and provider token usage when available.
+- When a Hardcore run step fails on a typed tool, mark that TypedTool as not working, create a redacted `logs/dev-requests/<id>/` bundle with a returned Codex App start prompt, and let the next retry continue the AE task with another typed tool or a narrow raw ExtendScript fallback through the dry-run gate.
+- Bump CEP/bridge/MCP/smoke version expectations to `1.0.10` so installed panel cache-busting picks up the behavior change.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -636,8 +646,22 @@
 - 2026-05-18: `deep_duplicate_precomp_sources` must return top-level read-back binding aliases for its duplicated root comp and created project items, because Agent follow-up read steps resolve named bindings from previous payload fields rather than from informal `resultBindings` output declarations.
 - 2026-05-18: The CEP `Reload` button must be a hard panel refresh path, not a normal page reload; it uses a fresh asset nonce so the current installed `panel.js` wins over any old CEP cache entry.
 - 2026-05-18: CEP cache clearing belongs in install/sync, not in a manual rescue step. `--sync` clears this extension's cache even if installed files already match, because the stale state can live only in Chromium cache.
+- 2026-05-18: `Agent Hardcore` is promoted to owner mode: the composer send button still runs autopilot, but manual `Dry run` / `Run plan` controls stay visible for the latest plan so the user can inspect or replay the route without leaving Hardcore.
+- 2026-05-18: The panel cannot read the Codex App account quota meter directly, so five-hour limit monitoring is a local task-window timer plus panel context-token estimate; provider token usage is shown only when the provider returns usage metadata.
+- 2026-05-18: A failed TypedTool in Hardcore creates an ignored dev-request bundle and marks that tool as not working for the session; the AE task may continue through another typed tool or a narrow raw ExtendScript fallback, but raw execution still requires the same current-plan dry-run approval.
 
 ## Validation
+
+- Milestone 95:
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed bundled `node --check` for touched JavaScript files: `cep-panel\panel.js`, `mcp-server\ai-agents.js`, `mcp-server\bridge-daemon.js`, `mcp-server\mcp-adapter.js`, `scripts\agent-qa-audit-smoke.js`, `scripts\agent-scenario-report-smoke.js`, `scripts\bridge-only-smoke-test.js`, `scripts\cep-panel-cdp-smoke.js`, `scripts\chatgpt-connector-smoke.js`, `scripts\prompt-optimization-smoke.js`, `scripts\smoke-test.js`, `scripts\solution-library-validation-smoke.js`, `scripts\solution-promotion-helper.js`, `scripts\solution-promotion-smoke.js`, `scripts\solution-registry-smoke.js`, and `scripts\solution-retrieval-smoke.js`.
+  - Passed XML parsing for `cep-panel\CSXS\manifest.xml`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed `node scripts\smoke-test.js`; output included Hardcore owner `reasoningEffort:"xhigh"`, TypedTool failure handoff for `get_project_checkpoint_details`, returned dev-request start prompt, raw dry-run gate coverage, and bridge health `1.0.10`.
+  - Passed required local smokes: `provider-contract-smoke`, `solution-registry-smoke`, `solution-candidate-report-smoke`, `solution-promotion-smoke`, `solution-retrieval-smoke`, `solution-library-validation-smoke`, `project-intent-memory-smoke`, `plan-classification-smoke`, `plan-repair-smoke`, `semantic-verification-smoke`, `reliability-validation-suite-smoke`, `chatgpt-connector-smoke`, `provider-api-smoke`, `prompt-optimization-smoke`, and `bridge-only-smoke-test`.
+  - Synced the installed CEP extension with approved `scripts\cep-sync-health.js --sync --check --json`; installed `index.html`, `panel.js`, `style.css`, and `CSXS/manifest.xml` matched repo, and installed panel/title/manifest versions reported `1.0.10`.
+  - Restarted the live bridge daemon on `127.0.0.1:3456`; `/health` reported version `1.0.10`, `panelConnected:false`, `pending:0`, and `inflight:0`.
+  - Live CEP `node scripts\cep-panel-cdp-smoke.js hardcore-autopilot-ui-smoke` could not run because CDP refused connection on `127.0.0.1:8870`; open/reload After Effects with CEP remote debugging to rerun the prepared UI smoke.
 
 - Hotfix 1.0.9:
   - Passed bundled `node --check` for changed JavaScript files: `scripts\cep-sync-health.js`, `scripts\cep-sync-cache-smoke.js`, `cep-panel\panel.js`, `mcp-server\bridge-daemon.js`, `mcp-server\mcp-adapter.js`, `scripts\cep-panel-cdp-smoke.js`, `scripts\smoke-test.js`, `scripts\bridge-only-smoke-test.js`, `scripts\chatgpt-connector-smoke.js`, `scripts\prompt-optimization-smoke.js`, `scripts\solution-registry-smoke.js`, `scripts\solution-promotion-helper.js`, `scripts\solution-promotion-smoke.js`, `scripts\solution-retrieval-smoke.js`, `scripts\solution-library-validation-smoke.js`, `scripts\agent-qa-audit-smoke.js`, and `scripts\agent-scenario-report-smoke.js`.

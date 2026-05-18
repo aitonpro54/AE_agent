@@ -20,7 +20,7 @@ const {
 } = require("./project-intent-memory");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "1.0.9";
+const SERVER_VERSION = "1.0.10";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -2921,6 +2921,7 @@ const PLANNING_TOOL_NAMES = [
   "list_effect_presets",
   "list_effects",
   "get_effect_details",
+  "get_project_checkpoint_details",
   "checkpoint_project",
   "create_text_layer",
   "import_footage",
@@ -3270,6 +3271,10 @@ function planTools(plan) {
   return uniqueList(steps.map((step) => step && step.tool).filter(Boolean), 12);
 }
 
+function isRawExtendscriptTool(tool) {
+  return tool === "run_extendscript" || tool === "run_extendscript_file";
+}
+
 function hardcoreAttemptSucceeded(attempt) {
   const run = attempt && attempt.run;
   if (!run || run.ok !== true) return false;
@@ -3304,6 +3309,61 @@ function compactHardcoreRunFailure(run) {
   };
 }
 
+function typedToolFailuresFromRun(run) {
+  const steps = run && Array.isArray(run.steps) ? run.steps : [];
+  return steps
+    .filter((step) => step && step.tool && !isRawExtendscriptTool(step.tool) && step.status === "failed")
+    .map((step) => ({
+      tool: step.tool,
+      title: compactHardcoreText(step.title || step.tool, 120),
+      status: step.status,
+      reason: compactHardcoreText(step.error || step.reason || valueAtPath(step, "result.error") || "Typed tool returned an error.", 300),
+      targetSummary: compactHardcoreText(step.targetSummary || "", 200)
+    }));
+}
+
+function recordHardcoreTypedToolFailures(session, attempt) {
+  if (!session || !attempt || !attempt.run) return [];
+  const failures = typedToolFailuresFromRun(attempt.run);
+  const recorded = [];
+  for (const failure of failures) {
+    const alreadyKnown = session.typedToolFailures.some((item) => item && item.tool === failure.tool);
+    if (alreadyKnown) continue;
+    let bundle = null;
+    try {
+      bundle = createDevRequestBundle({
+        source: "agent-hardcore",
+        title: `TypedTool ${failure.tool} failed in Agent Hardcore`,
+        goal: `Repair TypedTool ${failure.tool} for this Agent Hardcore workflow: ${session.prompt}`,
+        reason: `${failure.tool} did not complete during Agent Hardcore protected execution: ${failure.reason}`,
+        desiredTool: `Fix the existing typed AE Agent tool ${failure.tool}, or replace it with one narrow typed bridge capability that covers this workflow so raw ExtendScript fallback is no longer needed.`,
+        acceptanceCriteria: [
+          `TypedTool ${failure.tool} succeeds for the captured workflow or reports a precise unsupported precondition.`,
+          "The workflow can return to typed-tool planning without raw ExtendScript fallback.",
+          "Add focused smoke coverage for the failure evidence in this bundle."
+        ],
+        targetFiles: ["mcp-server/bridge-daemon.js", "scripts/smoke-test.js", "cep-panel/panel.js"],
+        planResult: attempt.planResult,
+        runResult: attempt.run,
+        openCodexApp: false
+      });
+    } catch (error) {
+      bundle = {
+        error: error.message || String(error)
+      };
+    }
+    const record = {
+      ...failure,
+      markedAt: new Date().toISOString(),
+      bundle
+    };
+    session.typedToolFailures.push(record);
+    recorded.push(record);
+  }
+  if (recorded.length) attempt.typedToolFailures = recorded;
+  return recorded;
+}
+
 function compactHardcoreAttemptForPrompt(attempt) {
   return {
     attempt: attempt && attempt.index,
@@ -3316,17 +3376,26 @@ function compactHardcoreAttemptForPrompt(attempt) {
   };
 }
 
-function buildHardcoreRetryPrompt(originalPrompt, attempts) {
+function buildHardcoreRetryPrompt(originalPrompt, attempts, typedToolFailures) {
   const lastAttempts = attempts.slice(-2).map(compactHardcoreAttemptForPrompt);
+  const typedFailures = (typedToolFailures || []).slice(-4).map((failure) => ({
+    tool: failure.tool,
+    reason: failure.reason,
+    promptFile: failure.bundle && failure.bundle.startPromptFile || null
+  }));
   return [
     originalPrompt,
     "",
     "Agent Hardcore retry context:",
     "The previous protected attempt did not finish with verified success. Draft a repaired typed-tool AE plan.",
-    "Keep the original user intent, avoid raw ExtendScript, inspect targets before mutations, and add explicit read-back verification after mutations.",
+    typedFailures.length
+      ? "One or more TypedTools were marked not working and a Codex App dev prompt was prepared for each. Continue the AE task now: prefer another typed tool if possible; if no typed tool can finish this specific workflow, use one narrow raw ExtendScript fallback with explicit inspection and read-back verification."
+      : "Keep the original user intent, avoid raw ExtendScript, inspect targets before mutations, and add explicit read-back verification after mutations.",
+    typedFailures.length ? "TypedTool failure handoffs:" : "",
+    typedFailures.length ? JSON.stringify(typedFailures, null, 2) : "",
     "Previous attempt evidence:",
     JSON.stringify(lastAttempts, null, 2)
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 function injectedHardcorePlanResult(plan, requestId, options) {
@@ -3373,13 +3442,14 @@ async function draftHardcorePlan(source, args, attemptIndex, session) {
   if (injected) return injected;
 
   const retryPrompt = attemptIndex > 1
-    ? buildHardcoreRetryPrompt(session.prompt, session.attempts)
+    ? buildHardcoreRetryPrompt(session.prompt, session.attempts, session.typedToolFailures)
     : session.prompt;
   return runAgentPlanLogged(source, {
     ...(args || {}),
     prompt: retryPrompt,
     hardcore: true,
     agentMode: "hardcore",
+    reasoning_effort: optionalString(args || {}, "reasoning_effort", optionalString(args || {}, "reasoningEffort", "")) || "xhigh",
     repairPlan: args && args.repairPlan !== false,
     timeoutMs: hasArg(args || {}, "timeoutMs") ? args.timeoutMs : 120000
   });
@@ -3525,7 +3595,7 @@ function buildHardcoreSolution(session) {
     },
     testedAeContext: {
       aeVersion: null,
-      panelVersion: "AE Agent 1.0.9",
+      panelVersion: "AE Agent 1.0.10",
       bridgeVersion: SERVER_VERSION,
       projectKind: "agent-hardcore-session",
       notes: ["Auto-promoted only after local registry validation succeeds."]
@@ -3674,8 +3744,13 @@ async function runAgentHardcoreSession(source, args) {
     agentId: optionalString(args, "agentId", optionalString(args, "agent", "")) || null,
     model: optionalString(args, "model", "") || null,
     maxAttempts: Math.max(1, Math.min(5, Math.floor(optionalNumber(args, "maxAttempts", 3)))),
+    projectOwner: optionalBoolean(args, "projectOwner", true),
+    reasoningEffort: optionalString(args, "reasoning_effort", optionalString(args, "reasoningEffort", "")) || "xhigh",
     allowMutations: optionalBoolean(args, "allowMutations", true),
     autoEditSession: optionalBoolean(args, "autoEditSession", true),
+    allowRawFallback: optionalBoolean(args, "allowRawFallback", true),
+    rawFallbackUsed: false,
+    typedToolFailures: [],
     autoPromoteKnowledge: optionalBoolean(args, "autoPromoteKnowledge", true),
     attempts: [],
     repairHistory: [],
@@ -3692,7 +3767,9 @@ async function runAgentHardcoreSession(source, args) {
     source,
     agentId: session.agentId,
     model: session.model,
-    maxAttempts: session.maxAttempts
+    maxAttempts: session.maxAttempts,
+    reasoningEffort: session.reasoningEffort,
+    projectOwner: session.projectOwner
   });
 
   for (let attemptIndex = 1; attemptIndex <= session.maxAttempts; attemptIndex++) {
@@ -3720,6 +3797,8 @@ async function runAgentHardcoreSession(source, args) {
         attempt.blocker = attempt.planResult && attempt.planResult.planParseError || "Plan validation failed.";
         continue;
       }
+      const rawStepCount = rawExtendscriptStepCount(attempt.planResult.planValidation);
+      const rawFallbackAllowed = Boolean(session.allowRawFallback && session.typedToolFailures.length > 0 && rawStepCount > 0);
 
       attempt.dryRun = await runValidatedAgentPlan({
         plan: attempt.planResult.plan,
@@ -3733,6 +3812,9 @@ async function runAgentHardcoreSession(source, args) {
         attempt.blocker = attempt.dryRun.error || "Dry run failed.";
         continue;
       }
+      const rawDryRunId = rawFallbackAllowed && attempt.dryRun.safety && attempt.dryRun.safety.rawExtendscriptGate
+        ? attempt.dryRun.safety.rawExtendscriptGate.dryRunId
+        : "";
 
       attempt.run = await runValidatedAgentPlan({
         plan: attempt.planResult.plan,
@@ -3741,10 +3823,18 @@ async function runAgentHardcoreSession(source, args) {
         confirm: true,
         allowMutations: session.allowMutations,
         autoEditSession: session.autoEditSession,
-        allowRawExtendscript: false,
+        allowRawExtendscript: rawFallbackAllowed,
+        rawExtendscriptDryRunId: rawDryRunId,
         repairPlan: true,
         maxSteps: optionalNumber(args, "maxSteps", 30)
       });
+      if (rawFallbackAllowed) {
+        attempt.rawFallback = {
+          allowed: true,
+          dryRunId: rawDryRunId || null
+        };
+        if (attempt.run && attempt.run.executedCount > 0) session.rawFallbackUsed = true;
+      }
 
       if (hardcoreAttemptSucceeded(attempt)) {
         attempt.status = "verified";
@@ -3757,6 +3847,10 @@ async function runAgentHardcoreSession(source, args) {
 
       attempt.status = "run-needs-review";
       attempt.blocker = attempt.run && (attempt.run.error || attempt.run.recoveryHint) || "Run did not pass semantic verification.";
+      const typedFailures = recordHardcoreTypedToolFailures(session, attempt);
+      for (const failure of typedFailures) {
+        session.warnings.push(`TypedTool ${failure.tool} marked not working; Codex App prompt: ${failure.bundle && failure.bundle.startPromptFile || "bundle unavailable"}.`);
+      }
       if (attempt.run && attempt.run.safety && attempt.run.safety.saveProjectFirst) {
         break;
       }
@@ -3788,6 +3882,8 @@ async function runAgentHardcoreSession(source, args) {
     status: session.status,
     ok: session.ok,
     attempts: session.attempts.length,
+    typedToolFailures: session.typedToolFailures.length,
+    rawFallbackUsed: session.rawFallbackUsed,
     artifact: session.artifacts && session.artifacts.sessionArtifact ? session.artifacts.sessionArtifact.sessionFile : null,
     candidate: session.artifacts && session.artifacts.candidate ? session.artifacts.candidate.path : null
   });
@@ -4045,10 +4141,11 @@ function createDevRequestBundle(args) {
     startPromptFile: normalizeBundlePath(path.join(bundleDir, "start-prompt.md")),
     candidateFile: candidateFilePath ? normalizeBundlePath(candidateFilePath) : null
   };
+  const startPrompt = buildStartPromptMarkdown(bundle);
 
   fs.writeFileSync(path.join(bundleDir, "ae-evidence.json"), JSON.stringify(evidence, null, 2) + "\n", "utf8");
   fs.writeFileSync(path.join(bundleDir, "request.md"), buildDevRequestMarkdown(bundle) + "\n", "utf8");
-  fs.writeFileSync(path.join(bundleDir, "start-prompt.md"), buildStartPromptMarkdown(bundle) + "\n", "utf8");
+  fs.writeFileSync(path.join(bundleDir, "start-prompt.md"), startPrompt + "\n", "utf8");
 
   recordEvent("agent_dev_request_created", {
     id,
@@ -4060,7 +4157,8 @@ function createDevRequestBundle(args) {
 
   return {
     ...bundle,
-    directory: normalizeBundlePath(bundleDir)
+    directory: normalizeBundlePath(bundleDir),
+    startPrompt
   };
 }
 
@@ -4474,7 +4572,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     contextText,
     "",
     "Treat Russian/Cyrillic user text as a normal request. If a Russian phrase is ambiguous, infer cautiously from the After Effects context before asking for clarification.",
-    optionalBoolean(args || {}, "hardcore", false) || optionalString(args || {}, "agentMode", "") === "hardcore" ? "Agent Hardcore mode is enabled: act like an autonomous AE QA operator inside the existing safety model. Plan inspection, dry-run/read-back evidence, and verification steps explicitly. Ask clarifying questions only for risky irreversible ambiguity. If the workflow needs raw ExtendScript or an unsupported tool, keep that gap explicit and narrow so the panel can prepare a typed-tool dev request instead of doing repository work inside the AE chat." : "",
+    optionalBoolean(args || {}, "hardcore", false) || optionalString(args || {}, "agentMode", "") === "hardcore" ? "Agent Hardcore mode is enabled: act as the autonomous project owner inside the existing AE Agent safety model, using very high reasoning. Plan inspection, dry-run/read-back evidence, protected execution, and verification steps explicitly. Ask clarifying questions only for risky irreversible ambiguity. If a TypedTool fails, mark the exact tool gap, preserve compact evidence for a Codex App dev prompt, and continue the AE task with another typed tool when possible. If no typed tool can finish the current workflow, plan one narrow raw ExtendScript fallback with inspection and read-back verification; raw execution still requires the bridge dry-run gate." : "",
     optionalBoolean(args || {}, "promptOptimization", false) ? "Prompt Optimization is enabled: clarify the user's intent internally, choose conservative AE defaults, and do not expand the requested scope." : "",
     "Use get_bridge_status or ping_ae for bridge health checks. Use get_project_snapshot, get_active_comp, get_comp_details, and get_layer_details before choosing project targets.",
     "For any project-changing request, plan inspection steps first, then the narrow mutating step(s), then verification/readback steps.",
@@ -4594,6 +4692,8 @@ async function runAgentPlanLogged(source, args) {
   const requestId = crypto.randomUUID();
   const startedAtMs = Date.now();
   const startedAt = new Date(startedAtMs).toISOString();
+  const hardcoreMode = optionalBoolean(args || {}, "hardcore", false) || optionalString(args || {}, "agentMode", "") === "hardcore";
+  const reasoningEffort = optionalString(args || {}, "reasoning_effort", optionalString(args || {}, "reasoningEffort", "")) || (hardcoreMode ? "xhigh" : "");
   appendAiChatEvent("plan_started", {
     requestId,
     source,
@@ -4614,6 +4714,7 @@ async function runAgentPlanLogged(source, args) {
       prompt: planPrompt,
       system: optionalString(args || {}, "system", AE_PLAN_SYSTEM_PROMPT),
       temperature: hasArg(args || {}, "temperature") ? args.temperature : 0.2,
+      ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
       maxTokens: hasArg(args || {}, "maxTokens") ? args.maxTokens : 2200
     });
     let parsed = normalizeAgentPlan(result.text);
@@ -4678,7 +4779,8 @@ async function runAgentPlanLogged(source, args) {
     return {
       ...result,
       mode: "ae-plan",
-      agentMode: optionalBoolean(args || {}, "hardcore", false) || optionalString(args || {}, "agentMode", "") === "hardcore" ? "hardcore" : "agent",
+      agentMode: hardcoreMode ? "hardcore" : "agent",
+      reasoningEffort: reasoningEffort || null,
       requestId,
       startedAt,
       finishedAt: metadata.finishedAt,
@@ -5402,6 +5504,10 @@ const tools = [
           type: "boolean",
           description: "Whether to ask the model to repair malformed JSON plans. Defaults to true."
         },
+        reasoning_effort: {
+          type: "string",
+          description: "Optional model reasoning effort. Agent Hardcore defaults to xhigh."
+        },
         hardcore: {
           type: "boolean",
           description: "When true, draft the plan with Agent Hardcore guidance: explicit inspection, dry-run/read-back evidence, verification, and typed-tool gap handoff instead of repo work in AE chat."
@@ -5504,6 +5610,14 @@ const tools = [
           type: "number",
           description: "Maximum plan/dry-run/run/repair attempts. Defaults to 3, maximum 5."
         },
+        projectOwner: {
+          type: "boolean",
+          description: "When true, Hardcore treats the selected agent as the autonomous project owner inside bridge safety gates. Defaults to true."
+        },
+        reasoning_effort: {
+          type: "string",
+          description: "Optional model reasoning effort. Defaults to xhigh for Hardcore planning."
+        },
         allowMutations: {
           type: "boolean",
           description: "Whether protected project-changing steps may run. Defaults to true."
@@ -5511,6 +5625,10 @@ const tools = [
         autoEditSession: {
           type: "boolean",
           description: "Whether the runner should create and finish a protected edit session for mutating plans. Defaults to true."
+        },
+        allowRawFallback: {
+          type: "boolean",
+          description: "When a TypedTool fails, allow a later Hardcore retry to use a narrow raw ExtendScript fallback after the matching dry-run gate. Defaults to true."
         },
         autoPromoteKnowledge: {
           type: "boolean",

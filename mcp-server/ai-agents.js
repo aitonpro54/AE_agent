@@ -75,6 +75,14 @@ function boolArg(args, name, fallback) {
   return fallback;
 }
 
+function normalizeReasoningEffort(value) {
+  const text = compactString(value, 40).toLowerCase().replace(/[\s-]+/g, "_");
+  if (!text) return "";
+  if (text === "very_high" || text === "extra_high") return "xhigh";
+  if (["low", "medium", "high", "xhigh"].includes(text)) return text;
+  return "";
+}
+
 function splitList(value) {
   return String(value || "")
     .split(",")
@@ -1422,6 +1430,10 @@ function runCodexCli(agent, model, messages, options) {
     process.cwd(),
     prompt
   ];
+  const reasoningEffort = normalizeReasoningEffort(options && options.reasoningEffort);
+  if (reasoningEffort) {
+    args.splice(args.length - 1, 0, "--reasoning-effort", reasoningEffort);
+  }
   const timeoutMs = options && options.timeoutMs ? options.timeoutMs : DEFAULT_CODEX_CLI_TIMEOUT_MS;
 
   return new Promise((resolve, reject) => {
@@ -1649,11 +1661,13 @@ async function chatWithAgent(args) {
   const maxTokens = maybeNumber(args.maxTokens || args.max_tokens, "maxTokens");
   const includeRawResponse = Boolean(args.includeRawResponse);
   const timeoutMs = maybeNumber(args.timeoutMs, "timeoutMs") || DEFAULT_TIMEOUT_MS;
+  const requestedReasoningEffort = normalizeReasoningEffort(args.reasoning_effort || args.reasoningEffort);
 
   try {
     if (agent.apiStyle === "codex-cli") {
       const result = await runCodexCli(agent, model, messages, {
         timeoutMs: maybeNumber(args.timeoutMs, "timeoutMs") || DEFAULT_CODEX_CLI_TIMEOUT_MS,
+        reasoningEffort: requestedReasoningEffort,
         includeRawResponse
       });
       if (!includeRawResponse) delete result.rawResponse;
@@ -1703,7 +1717,8 @@ async function chatWithAgent(args) {
     if (temperature !== null) body.temperature = temperature;
     if (maxTokens !== null) body.max_tokens = Math.max(1, Math.floor(maxTokens));
     if (args.reasoning) body.reasoning = args.reasoning;
-    if (args.reasoning_effort) body.reasoning_effort = args.reasoning_effort;
+    if (requestedReasoningEffort) body.reasoning_effort = requestedReasoningEffort;
+    else if (args.reasoning_effort) body.reasoning_effort = args.reasoning_effort;
 
     const response = await requestJson("POST", joinUrl(agent.baseUrl, "/chat/completions"), body, openAiHeaders(agent), timeoutMs);
     return {
