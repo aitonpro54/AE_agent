@@ -62,6 +62,7 @@
 - [x] Milestone 92: Selected source comp binding diagnostic hotfix.
 - [x] Milestone 93: Selected layer binding diagnostic hotfix.
 - [x] Milestone 94: Agent Hardcore Autopilot.
+- [x] Hotfix: Deep duplicate read-back binding aliases.
 
 ## Current Stable Baseline
 
@@ -487,6 +488,14 @@
 - Save Hardcore session evidence under ignored `logs/hardcore-sessions/`, candidate reports under ignored solution-candidate paths, and promote only validated typed successful sessions into reviewed solution/project memory metadata.
 - Extend semantic verification and smoke coverage for deep duplicate, fileless-source fallback, Hardcore retry loop, and knowledge-capture gates.
 
+### Hotfix: Deep duplicate read-back binding aliases
+
+- Fix the dev-request workflow where `deep_duplicate_precomp_sources` succeeded but the next `get_comp_details` read-back step blocked on unresolved `{{duplicatedRootCompItemIndex}}`.
+- Keep the typed tool contract narrow: the deep duplicate result now exposes `rootCompItemIndex`, `duplicatedRootCompItemIndex`, `createdItemIndices`, and `duplicatedProjectItemIndices` derived from the existing duplicate comp and duplicated item evidence.
+- Extend runtime binding helpers so comp/project-item bindings can read those aliases without weakening plan validation, mutation gates, idempotency, checkpoint/edit-session protection, or semantic verification.
+- Update planner guidance to use the explicit deep-duplicate read-back binding after mutating runs.
+- Add smoke coverage that verifies the queued typed tool response exposes the read-back aliases.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -596,8 +605,16 @@
 - 2026-05-18: Hardcore knowledge capture is automatic but gated: raw session artifacts and candidates are ignored local files, while planner-visible solution registry updates are written only after local registry validation succeeds.
 - 2026-05-18: `deep_duplicate_precomp_sources` defaults to `unavailableFootagePolicy:"reuse"` so generated solids/placeholders/missing footage do not fail the entire selected-precomp duplicate workflow when safe reuse or reconstruction is possible.
 - 2026-05-18: Live AE showed `SolidSource` exposes an empty `mainSource.typename` but a usable `mainSource.constructor.name`; SolidSource reconstruction therefore detects both shapes and creates duplicate solid footage through a temporary comp layer using `layers.addSolid`.
+- 2026-05-18: `deep_duplicate_precomp_sources` must return top-level read-back binding aliases for its duplicated root comp and created project items, because Agent follow-up read steps resolve named bindings from previous payload fields rather than from informal `resultBindings` output declarations.
 
 ## Validation
+
+- Hotfix: Deep duplicate read-back binding aliases:
+  - Passed bundled `node --check` for `mcp-server\bridge-daemon.js` and `scripts\smoke-test.js` using `C:\Users\Ant\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe`; the plain `node.exe` on PATH failed with Access denied.
+  - Passed `git diff --check`.
+  - Passed `node scripts\provider-contract-smoke.js`, `node scripts\solution-registry-smoke.js`, `node scripts\solution-candidate-report-smoke.js`, `node scripts\solution-promotion-smoke.js`, `node scripts\solution-retrieval-smoke.js`, `node scripts\solution-library-validation-smoke.js`, `node scripts\project-intent-memory-smoke.js`, `node scripts\plan-classification-smoke.js`, `node scripts\plan-repair-smoke.js`, `node scripts\semantic-verification-smoke.js`, `node scripts\reliability-validation-suite-smoke.js`, `node scripts\chatgpt-connector-smoke.js`, `node scripts\provider-api-smoke.js`, `node scripts\prompt-optimization-smoke.js`, `node scripts\bridge-only-smoke-test.js`, and `node scripts\smoke-test.js` through the bundled Node runtime.
+  - `node scripts\smoke-test.js` verified `deep_duplicate_precomp_sources` now returns `rootCompItemIndex`, `duplicatedRootCompItemIndex`, `createdItemIndices`, and `duplicatedProjectItemIndices` for read-back bindings.
+  - Live CEP/AE smoke tests were not run in this dev thread because a live After Effects panel session was not confirmed; this hotfix is covered by offline bridge/runner smokes.
 
 - Milestone 94:
   - Passed bundled `node --check` for `mcp-server\bridge-daemon.js`, `mcp-server\semantic-verification.js`, `cep-panel\panel.js`, `scripts\smoke-test.js`, `scripts\semantic-verification-smoke.js`, `scripts\agent-scenario-fixtures.js`, `scripts\solution-registry-smoke.js`, `scripts\solution-promotion-helper.js`, and `scripts\solution-library-validation-smoke.js`.

@@ -408,7 +408,7 @@ async function main() {
     changedCount: 1,
     layers: [{ index: 1, name: "Layer 1" }]
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "deep_duplicate_precomp_sources", {
+  const deepDuplicateQueuedResponse = await callQueuedDevTool(port, token, "deep_duplicate_precomp_sources", {
     layerIndex: 1,
     sourceCompItemIndex: 3,
     nameSuffix: " Smoke Copy",
@@ -423,8 +423,13 @@ async function main() {
     duplicatedItemCount: 2,
     duplicatedFootageCount: 1,
     reusedFootageCount: 1,
-    relinkedLayerCount: 1
-  }));
+    relinkedLayerCount: 1,
+    duplicatedItems: [
+      { source: { itemIndex: 3, name: "Smoke Precomp" }, duplicate: { itemIndex: 4, name: "Smoke Precomp Smoke Copy" } },
+      { source: { itemIndex: 5, name: "Smoke Solid" }, duplicate: { itemIndex: 6, name: "Smoke Solid Smoke Copy" } }
+    ]
+  });
+  queuedToolResponses.push(deepDuplicateQueuedResponse);
   queuedToolResponses.push(await callQueuedDevTool(port, token, "rename_layers", {
     layerIndices: [1, 2],
     mode: "prefix",
@@ -1351,6 +1356,17 @@ async function main() {
   }
   if (queuedToolResponses.length !== 19 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
     throw new Error("Expected all new typed tool queue smokes to pass");
+  }
+  const deepDuplicateQueuedPayload = deepDuplicateQueuedResponse.response.body.result || {};
+  if (
+    deepDuplicateQueuedPayload.rootCompItemIndex !== 4 ||
+    deepDuplicateQueuedPayload.duplicatedRootCompItemIndex !== 4 ||
+    !Array.isArray(deepDuplicateQueuedPayload.createdItemIndices) ||
+    deepDuplicateQueuedPayload.createdItemIndices.join(",") !== "4,6" ||
+    !Array.isArray(deepDuplicateQueuedPayload.duplicatedProjectItemIndices) ||
+    deepDuplicateQueuedPayload.duplicatedProjectItemIndices.join(",") !== "4,6"
+  ) {
+    throw new Error("Deep duplicate result aliases did not expose read-back binding fields");
   }
   if (!agentsTool.body.ok || !agentsTool.body.result || !Array.isArray(agentsTool.body.result.agents)) {
     throw new Error("Unexpected list_ai_agents tool response");

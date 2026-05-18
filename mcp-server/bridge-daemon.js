@@ -2251,9 +2251,12 @@ function defaultPlanBindingValue(payload, targetField) {
   if (!payload || typeof payload !== "object") return payload;
   if (targetField === "compItemIndex") {
     return firstPresent([
+      payload.rootCompItemIndex,
+      payload.duplicatedRootCompItemIndex,
       payload.compItemIndex,
       payload.itemIndex,
       valueAtPath(payload, "duplicate.itemIndex"),
+      valueAtPath(payload, "duplicateComp.itemIndex"),
       valueAtPath(payload, "comp.itemIndex"),
       valueAtPath(payload, "activeComp.itemIndex"),
       valueAtPath(payload, "project.activeItem.itemIndex"),
@@ -2284,6 +2287,7 @@ function defaultPlanBindingValue(payload, targetField) {
   }
   if (targetField === "itemIndices" || targetField === "itemIndexes") {
     return firstPresent([
+      deepDuplicateCreatedItemIndicesFromPayload(payload),
       selectedSourceCompIndicesFromPayload(payload),
       projectItemIndicesFromPayload(payload)
     ]);
@@ -2367,9 +2371,14 @@ function projectItemIndicesFromPayload(payload) {
   return firstPresent([
     uniquePositiveIntegerList(payload.itemIndices),
     uniquePositiveIntegerList(payload.itemIndexes),
+    uniquePositiveIntegerList(payload.createdItemIndices),
+    uniquePositiveIntegerList(payload.duplicatedProjectItemIndices),
     uniquePositiveIntegerList([
       payload.itemIndex,
+      payload.rootCompItemIndex,
+      payload.duplicatedRootCompItemIndex,
       valueAtPath(payload, "duplicate.itemIndex"),
+      valueAtPath(payload, "duplicateComp.itemIndex"),
       valueAtPath(payload, "item.itemIndex"),
       valueAtPath(payload, "sourceItem.itemIndex"),
       valueAtPath(payload, "mutation.target.item.itemIndex")
@@ -2379,6 +2388,58 @@ function projectItemIndicesFromPayload(payload) {
     itemIndicesFromObjectList(payload.renamed),
     itemIndicesFromObjectList(payload.removed)
   ]);
+}
+
+function deepDuplicateRootCompItemIndexFromPayload(payload) {
+  if (!payload || typeof payload !== "object") return undefined;
+  return firstPresent([
+    positiveIntegerBindingValue(payload.rootCompItemIndex),
+    positiveIntegerBindingValue(payload.duplicatedRootCompItemIndex),
+    positiveIntegerBindingValue(valueAtPath(payload, "duplicateComp.itemIndex")),
+    positiveIntegerBindingValue(valueAtPath(payload, "layer.source.itemIndex"))
+  ]);
+}
+
+function deepDuplicateCreatedItemIndicesFromPayload(payload) {
+  if (!payload || typeof payload !== "object") return undefined;
+  const values = [];
+  const rootCompItemIndex = deepDuplicateRootCompItemIndexFromPayload(payload);
+  if (rootCompItemIndex) values.push(rootCompItemIndex);
+
+  if (Array.isArray(payload.duplicatedItems)) {
+    for (const item of payload.duplicatedItems) {
+      values.push(valueAtPath(item, "duplicate.itemIndex"));
+    }
+  }
+
+  return uniquePositiveIntegerList(values);
+}
+
+function withDeepDuplicateResultAliases(payload) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return payload;
+  const rootCompItemIndex = deepDuplicateRootCompItemIndexFromPayload(payload);
+  const createdItemIndices = deepDuplicateCreatedItemIndicesFromPayload(payload);
+  const result = { ...payload };
+
+  if (rootCompItemIndex) {
+    if (!positiveIntegerBindingValue(result.rootCompItemIndex)) {
+      result.rootCompItemIndex = rootCompItemIndex;
+    }
+    if (!positiveIntegerBindingValue(result.duplicatedRootCompItemIndex)) {
+      result.duplicatedRootCompItemIndex = rootCompItemIndex;
+    }
+  }
+
+  if (createdItemIndices && createdItemIndices.length) {
+    if (!Array.isArray(result.createdItemIndices) || !result.createdItemIndices.length) {
+      result.createdItemIndices = createdItemIndices;
+    }
+    if (!Array.isArray(result.duplicatedProjectItemIndices) || !result.duplicatedProjectItemIndices.length) {
+      result.duplicatedProjectItemIndices = createdItemIndices;
+    }
+  }
+
+  return result;
 }
 
 function selectedSourceCompRefsFromPayload(payload) {
@@ -4429,6 +4490,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For later steps that need the active comp, compItemIndex may use {{compItemIndex}} after get_active_comp, get_comp_details, or get_selected_layers.",
     "For requests about selected precomp/source comp(s), inspect with get_active_comp or get_selected_layers first, then use {{selectedPrecompLayerIndex}} for the selected precomp layer, {{selectedPrecompItemIndex}} for one source comp, or {{selectedPrecompItemIndices}} in itemIndices for rename_project_items.",
     "For deep duplicate of a selected precomp and its sources, prefer one deep_duplicate_precomp_sources step with layerIndex {{selectedPrecompLayerIndex}} and sourceCompItemIndex {{selectedPrecompItemIndex}} after inspection; do not use run_extendscript.",
+    "For read-back after deep_duplicate_precomp_sources, use get_comp_details with compItemIndex {{duplicatedRootCompItemIndex}} or {{rootCompItemIndex}}; the tool also returns createdItemIndices for project-item summaries.",
     "Use canonical schema field names such as itemIndices and layerIndices; do not use itemIndexes or layerIndexes.",
     "If a later step depends on a previous tool result, set dependsOnStep and resultBindings instead of inventing indices.",
     "If solution hints mention a typed-tool-candidate, prefer recommending a typed bridge tool implementation over repeating a workaround.",
@@ -9015,7 +9077,7 @@ async function callTool(name, args) {
       }
       return response;
     `);
-    return toolResult(result.result);
+    return toolResult(withDeepDuplicateResultAliases(result.result));
   }
 
   if (name === "list_effects") {
