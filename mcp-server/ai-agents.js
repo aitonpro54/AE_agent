@@ -1387,12 +1387,14 @@ function parseCodexJsonl(stdout) {
   const events = [];
   const assistantTexts = [];
   const errors = [];
+  const malformedLines = [];
   const lines = String(stdout || "").split(/\r?\n/).filter(Boolean);
   for (const line of lines) {
     let event = null;
     try {
       event = JSON.parse(line);
     } catch (_error) {
+      malformedLines.push(line);
       continue;
     }
     events.push(event);
@@ -1407,7 +1409,9 @@ function parseCodexJsonl(stdout) {
     text: assistantTexts.length ? assistantTexts[assistantTexts.length - 1] : "",
     errors,
     threadId: events.find((event) => event.thread_id) ? events.find((event) => event.thread_id).thread_id : null,
-    usage: events.reduce((usage, event) => event && event.usage ? event.usage : usage, null)
+    usage: events.reduce((usage, event) => event && event.usage ? event.usage : usage, null),
+    malformedLineCount: malformedLines.length,
+    malformedPreview: compactString(malformedLines.slice(0, 3).join("\n"), 1000)
   };
 }
 
@@ -1449,7 +1453,12 @@ function runCodexCli(agent, model, messages, options) {
     const timer = setTimeout(() => {
       if (finished) return;
       child.kill();
-      reject(new Error(`Codex CLI timed out after ${timeoutMs}ms.`));
+      const error = new Error(`Codex CLI timed out after ${timeoutMs}ms.`);
+      error.code = "model_timeout";
+      error.phase = "model_timeout";
+      error.stderr = stderr;
+      error.stdout = stdout;
+      reject(error);
     }, timeoutMs);
 
     child.stdout.setEncoding("utf8");
@@ -1473,11 +1482,29 @@ function runCodexCli(agent, model, messages, options) {
       const parsed = parseCodexJsonl(stdout);
       if (code !== 0) {
         const message = parsed.errors.length ? parsed.errors[parsed.errors.length - 1] : compactString(stderr || stdout || `Codex CLI exited with ${code}.`, 1000);
-        reject(new Error(message));
+        const error = new Error(message);
+        error.code = "codex_nonzero_exit";
+        error.phase = "codex_exec";
+        error.exitCode = code;
+        error.stderr = stderr;
+        error.stdout = stdout;
+        reject(error);
         return;
       }
       if (!parsed.text) {
-        reject(new Error(compactString(stderr || "Codex CLI did not return an assistant message.", 1000)));
+        const malformedJsonl = parsed.malformedLineCount > 0 && parsed.events.length === 0;
+        const error = new Error(compactString(
+          malformedJsonl
+            ? "Codex CLI returned malformed JSONL and no assistant message."
+            : stderr || "Codex CLI did not return an assistant message.",
+          1000
+        ));
+        error.code = malformedJsonl ? "codex_malformed_jsonl" : "codex_no_assistant_text";
+        error.phase = malformedJsonl ? "protocol_validation" : "codex_exec";
+        error.stderr = stderr;
+        error.stdout = stdout;
+        error.rawPreview = malformedJsonl ? parsed.malformedPreview : compactString(stderr || stdout, 1000);
+        reject(error);
         return;
       }
       resolve({

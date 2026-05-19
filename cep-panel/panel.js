@@ -188,9 +188,15 @@
   }
 
   function makeBridgeOfflineError(message) {
-    var error = new Error(message || BRIDGE_OFFLINE_MESSAGE);
+    var diagnostic = {
+      phase: "bridge_offline",
+      code: "bridge_offline",
+      message: message || BRIDGE_OFFLINE_MESSAGE
+    };
+    var error = new Error(formatM100DiagnosticBody({ diagnostic: diagnostic }, diagnostic.message));
     error.status = 0;
     error.bridgeOffline = true;
+    error.diagnostic = diagnostic;
     return error;
   }
 
@@ -247,6 +253,44 @@
     return path + separator + "token=" + encodeURIComponent(getToken());
   }
 
+  function compactPanelDiagnosticText(value, limit) {
+    var text = String(value || "").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+    var max = Math.max(1, Number(limit || 1000));
+    return text.length > max ? text.slice(0, max - 1) + "..." : text;
+  }
+
+  function diagnosticFromBody(body) {
+    if (!body || typeof body !== "object") return null;
+    if (body.diagnostic && typeof body.diagnostic === "object") return body.diagnostic;
+    if (body.run && body.run.diagnostic && typeof body.run.diagnostic === "object") return body.run.diagnostic;
+    if (body.m100Message && body.m100Message.error && typeof body.m100Message.error === "object") {
+      return body.m100Message.error;
+    }
+    if (body.run && body.run.m100Message && body.run.m100Message.error && typeof body.run.m100Message.error === "object") {
+      return body.run.m100Message.error;
+    }
+    return null;
+  }
+
+  function formatM100DiagnosticBody(body, fallback) {
+    var diagnostic = diagnosticFromBody(body);
+    if (!diagnostic) return fallback;
+    var envelope = body && body.m100Message ? body.m100Message : (body && body.run && body.run.m100Message ? body.run.m100Message : null);
+    var phase = compactPanelDiagnosticText(diagnostic.phase || body.phase || "unknown", 80);
+    var code = compactPanelDiagnosticText(diagnostic.code || body.code || "", 120);
+    var message = compactPanelDiagnosticText(diagnostic.message || body.error || fallback || "Request failed.", 1000);
+    var lines = [];
+    lines.push("Failure phase: " + phase + (code ? " / " + code : ""));
+    if (diagnostic.requestId || body.requestId || envelope && envelope.requestId) lines.push("Request: " + compactPanelDiagnosticText(diagnostic.requestId || body.requestId || envelope.requestId, 120));
+    if (diagnostic.actionId || body.actionId || envelope && envelope.actionId) lines.push("Action: " + compactPanelDiagnosticText(diagnostic.actionId || body.actionId || envelope.actionId, 120));
+    if (diagnostic.executionId || body.executionId || envelope && envelope.executionId) lines.push("Execution: " + compactPanelDiagnosticText(diagnostic.executionId || body.executionId || envelope.executionId, 120));
+    if (diagnostic.commandId || body.commandId) lines.push("Command: " + compactPanelDiagnosticText(diagnostic.commandId || body.commandId, 120));
+    lines.push("Detail: " + message);
+    if (diagnostic.rawPreview) lines.push("Preview: " + compactPanelDiagnosticText(diagnostic.rawPreview, 500));
+    if (diagnostic.logRef) lines.push("Log: " + compactPanelDiagnosticText(diagnostic.logRef, 240));
+    return lines.join("\n");
+  }
+
   function request(method, path, body, onDone) {
     var completed = false;
     var xhr = new XMLHttpRequest();
@@ -268,12 +312,23 @@
         try {
           errorBody = xhr.responseText ? JSON.parse(xhr.responseText) : null;
           if (errorBody) {
-            errorMessage = errorBody.error || (errorBody.run && errorBody.run.error) || errorMessage;
+            errorMessage = formatM100DiagnosticBody(errorBody, errorBody.error || (errorBody.run && errorBody.run.error) || errorMessage);
           }
         } catch (_parseError) {}
+        if (xhr.status === 0 && !errorBody) {
+          errorBody = {
+            diagnostic: {
+              phase: "bridge_offline",
+              code: "bridge_offline",
+              message: BRIDGE_OFFLINE_MESSAGE
+            }
+          };
+          errorMessage = formatM100DiagnosticBody(errorBody, BRIDGE_OFFLINE_MESSAGE);
+        }
         var requestError = new Error(errorMessage);
         requestError.status = xhr.status;
         requestError.body = errorBody;
+        requestError.diagnostic = diagnosticFromBody(errorBody);
         if (xhr.status === 0) requestError.bridgeOffline = true;
         finish(requestError);
         return;
@@ -2679,6 +2734,9 @@
 
   function formatPlanResult(result) {
     if (!result.planParseOk || !result.plan) {
+      if (diagnosticFromBody(result)) {
+        return formatM100DiagnosticBody(result, result.planParseError || "The agent returned a plan I could not parse.");
+      }
       return result.text || result.planParseError || "The agent returned a plan I could not parse.";
     }
 
@@ -2786,6 +2844,9 @@
     var runSteps = run.steps && typeof run.steps.push === "function" ? run.steps : [];
     var runMutatingCount = runValidation ? Number(runValidation.mutatingCount || 0) : 0;
     lines.push((run.dryRun ? "Dry run" : "Run") + ": " + (run.ok ? "ok" : "needs review"));
+    if (!run.ok && diagnosticFromBody({ run: run })) {
+      lines.push(formatM100DiagnosticBody({ run: run }, run.error || "Run failed."));
+    }
     if (run.dryRun) {
       lines.push("Mode: preview only; project was not changed.");
     } else if (runValidation && runValidation.ok === false) {
@@ -2795,7 +2856,7 @@
     } else {
       lines.push("Mode: read-only execution.");
     }
-    if (run.error) lines.push("Error: " + run.error);
+    if (run.error && !diagnosticFromBody({ run: run })) lines.push("Error: " + run.error);
     if (runValidation) {
       lines.push("Plan: " + countLabel(runValidation.stepCount || 0, "step", "steps") + ", " + runMutatingCount + " mutating");
     }
@@ -2870,7 +2931,11 @@
     }
     if (finalRun) {
       lines.push((finalRun.dryRun ? "Dry run" : "Protected run") + ": " + (finalRun.ok ? "ok" : "needs review"));
-      if (finalRun.error) lines.push("Error: " + finalRun.error);
+      if (!finalRun.ok && diagnosticFromBody({ run: finalRun })) {
+        lines.push(formatM100DiagnosticBody({ run: finalRun }, finalRun.error || "Protected run failed."));
+      } else if (finalRun.error) {
+        lines.push("Error: " + finalRun.error);
+      }
       if (finalRun.recoveryHint) lines.push("Recovery: " + finalRun.recoveryHint);
       var semanticText = formatSemanticVerification(finalRun.semanticVerification);
       if (semanticText) lines.push(semanticText);

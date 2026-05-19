@@ -9,6 +9,17 @@ const M100_ACTION_PROPOSAL_TTL_MS = 15 * 60 * 1000;
 const M100_RISK_LEVELS = ["read_only", "mutating", "destructive", "raw_jsx"];
 const M100_ACTION_KINDS = ["ae_tool", "ae_jsx"];
 const M100_CONFIRMATION_TOKEN_PREFIX = "confirm_";
+const M100_DIAGNOSTIC_PHASES = [
+  "bridge_offline",
+  "provider_readiness",
+  "model_timeout",
+  "codex_exec",
+  "protocol_validation",
+  "confirmation_validation",
+  "ae_queue",
+  "ae_execution",
+  "ae_result_parse"
+];
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -18,6 +29,20 @@ function compactText(value, maxLength) {
   const text = String(value === undefined || value === null ? "" : value).replace(/\s+/g, " ").trim();
   const limit = Math.max(1, Math.floor(Number(maxLength || 0)) || 1000);
   return text.length > limit ? `${text.slice(0, limit - 1)}...` : text;
+}
+
+function redactForUserDiagnostic(value, maxLength) {
+  const limit = Math.max(1, Math.floor(Number(maxLength || 0)) || 1000);
+  let text = String(value === undefined || value === null ? "" : value);
+  text = text
+    .replace(/\b(OPENAI_API_KEY|OPENAI_KEY|ANTHROPIC_API_KEY|CLAUDE_API_KEY|GEMINI_API_KEY|GOOGLE_API_KEY|OPENROUTER_API_KEY|OPENROUTER_KEY|AE_BRIDGE_TOKEN|CEP_PANEL_BRIDGE_TOKEN)\b\s*[:=]\s*["']?[^"',\s)]+/gi, "$1=<redacted>")
+    .replace(/\bBearer\s+[A-Za-z0-9._-]{12,}/gi, "Bearer <redacted>")
+    .replace(/\bsk-[A-Za-z0-9_-]{12,}/g, "<redacted-openai-key>")
+    .replace(/\bAIza[0-9A-Za-z_-]{20,}/g, "<redacted-google-key>")
+    .replace(/[A-Za-z]:\\(?:[^\\/:*?"<>|\r\n]+\\)*[^\\/:*?"<>|\r\n]*/g, "<path>")
+    .replace(/(^|[\s"'`(])\/(?:Users|home|tmp|var|private|mnt)\/[^\s"'`<>)]+/g, "$1<path>")
+    .replace(/\b(prompt|user request|message|input)\s*[:=]\s*["']?[^"'\r\n]{32,}/gi, "$1=<redacted prompt>");
+  return compactText(text, limit);
 }
 
 function compactArray(value, maxItems, maxLength) {
@@ -79,10 +104,39 @@ function normalizeLogs(logs) {
     return {
       phase: compactText(source.phase || "protocol_validation", 80),
       level: ["info", "warn", "error"].includes(source.level) ? source.level : "info",
-      message: compactText(source.message || "", 500),
-      logRef: source.logRef ? compactText(source.logRef, 240) : undefined
+      message: redactForUserDiagnostic(source.message || "", 500),
+      logRef: source.logRef ? redactForUserDiagnostic(source.logRef, 240) : undefined
     };
   }).filter((item) => item.message);
+}
+
+function normalizeDiagnosticPhase(value, fallback) {
+  const phase = compactText(value || "", 80);
+  if (M100_DIAGNOSTIC_PHASES.includes(phase)) return phase;
+  return M100_DIAGNOSTIC_PHASES.includes(fallback) ? fallback : "protocol_validation";
+}
+
+function normalizeDiagnosticCode(value, fallback) {
+  const source = compactText(value || fallback || "m100_diagnostic", 120).toLowerCase();
+  return source.replace(/[^a-z0-9_.-]+/g, "_").replace(/^_+|_+$/g, "") || "m100_diagnostic";
+}
+
+function createUserDiagnostic(options) {
+  const source = options || {};
+  const phase = normalizeDiagnosticPhase(source.phase, "protocol_validation");
+  const code = normalizeDiagnosticCode(source.code, `${phase}_failed`);
+  return {
+    phase,
+    code,
+    message: redactForUserDiagnostic(source.message || source.error || "Request failed.", source.messageMaxLength || 1000),
+    requestId: source.requestId ? compactText(source.requestId, 120) : undefined,
+    actionId: source.actionId ? compactText(source.actionId, 120) : undefined,
+    executionId: source.executionId ? compactText(source.executionId, 120) : undefined,
+    commandId: source.commandId ? compactText(source.commandId, 120) : undefined,
+    lifecycleState: source.lifecycleState ? compactText(source.lifecycleState, 80) : undefined,
+    rawPreview: Object.prototype.hasOwnProperty.call(source, "rawPreview") ? redactForUserDiagnostic(source.rawPreview, source.rawPreviewMaxLength || 1000) : undefined,
+    logRef: source.logRef ? redactForUserDiagnostic(source.logRef, 240) : undefined
+  };
 }
 
 function createAssistantResponseEnvelope(options) {
@@ -150,6 +204,15 @@ function createActionProposalEnvelope(options) {
 function createActionResultEnvelope(options) {
   const source = options || {};
   const ok = source.ok !== false;
+  const errorDiagnostic = ok ? null : createUserDiagnostic({
+    phase: source.phase || "protocol_validation",
+    code: source.code,
+    message: source.error || source.message || "Action failed.",
+    requestId: source.requestId,
+    actionId: source.actionId,
+    executionId: source.executionId,
+    rawPreview: source.rawPreview
+  });
   return {
     protocolVersion: M100_PROTOCOL_VERSION,
     messageType: ok ? "action_result" : "error",
@@ -159,17 +222,19 @@ function createActionResultEnvelope(options) {
     requestId: compactText(source.requestId || "", 120),
     actionId: source.actionId ? compactText(source.actionId, 120) : undefined,
     executionId: source.executionId ? compactText(source.executionId, 120) : undefined,
-    summary: compactText(source.summary || (ok ? "Action completed." : "Action failed."), 1000),
+    summary: ok
+      ? compactText(source.summary || "Action completed.", 1000)
+      : redactForUserDiagnostic(source.summary || (errorDiagnostic && errorDiagnostic.message) || "Action failed.", 1000),
     result: ok ? {
       ok: true,
       summary: compactText(source.resultSummary || source.summary || "Action completed.", 1000),
-      rawPreview: source.rawPreview ? compactText(source.rawPreview, 1000) : undefined
+      rawPreview: source.rawPreview ? redactForUserDiagnostic(source.rawPreview, 1000) : undefined
     } : undefined,
     error: ok ? undefined : {
-      phase: compactText(source.phase || "protocol_validation", 80),
-      code: source.code ? compactText(source.code, 120) : undefined,
-      message: compactText(source.error || source.message || "Action failed.", 1000),
-      rawPreview: source.rawPreview ? compactText(source.rawPreview, 1000) : undefined
+      phase: errorDiagnostic.phase,
+      code: errorDiagnostic.code,
+      message: errorDiagnostic.message,
+      rawPreview: errorDiagnostic.rawPreview
     },
     logs: normalizeLogs(source.logs)
   };
@@ -242,7 +307,12 @@ module.exports = {
   M100_ACTION_PROPOSAL_TTL_MS,
   M100_RISK_LEVELS,
   M100_CONFIRMATION_TOKEN_PREFIX,
+  M100_DIAGNOSTIC_PHASES,
   compactText,
+  redactForUserDiagnostic,
+  normalizeDiagnosticPhase,
+  normalizeDiagnosticCode,
+  createUserDiagnostic,
   sha256Payload,
   sha256Text,
   stableStringify,

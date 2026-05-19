@@ -76,6 +76,7 @@
 - [x] Milestone 100: M100 Patch 1b CEP/backend single-flight and strict AE wrapper parsing.
 - [x] Milestone 101: M100 Patch 2 server-owned action proposal registry and legacy-control removal.
 - [x] Milestone 102: M100 Patch 3 single-use confirmation gate and direct-tool proposal requirement.
+- [x] Milestone 103: M100 Patch 4 lifecycle diagnostics and redaction.
 
 ## Current Stable Baseline
 
@@ -611,8 +612,21 @@
 - Route ChatGPT connector `run_extendscript_candidate` through `propose -> dry-run -> confirmed run`, with the real run sending only proposal identifiers/proof plus runner safety flags, not the executable `plan` body.
 - Add `scripts/m100-confirmation-gate-smoke.js` and promote Patch 3 contracts for successful confirmation, replay rejection, expiry rejection, payload/risk/surface mismatch rejection, no-proposal mutating run rejection and direct raw JSX forged-confirmation rejection.
 
+### Milestone 103: M100 Patch 4 lifecycle diagnostics and redaction
+
+- Add shared M100 user-diagnostic helpers in `mcp-server/m100-protocol.js` for phase/code normalization, bounded redaction of stderr/provider errors/raw previews/log refs/paths/prompt fragments and redacted error envelopes.
+- Add backend diagnostic builders in `mcp-server/bridge-daemon.js` so HTTP failures and plan-run failures expose stable `phase`, `code`, request/action/execution/command ids, redacted preview and log hints.
+- Keep Patch 1a/1b AE lifecycle/single-flight behavior and Patch 3 confirmation semantics unchanged; diagnostics now wrap those failures without weakening gates.
+- Classify bridge/provider/model/CLI/protocol/confirmation/AE failures into explicit M100 phases: `bridge_offline`, `provider_readiness`, `model_timeout`, `codex_exec`, `protocol_validation`, `confirmation_validation`, `ae_queue`, `ae_execution` and `ae_result_parse`.
+- Add Codex CLI stable error codes for timeout, non-zero exit, no assistant text and malformed JSONL, while keeping raw stdout/stderr only as redacted/bounded diagnostic previews.
+- Update the CEP panel to render M100 diagnostics with compact phase/code/id/preview/log lines instead of raw HTTP response text.
+- Add `scripts/m100-lifecycle-diagnostics-smoke.js` and extend the protocol contract smoke to verify redaction, phase/code envelopes, confirmation diagnostics and AE parse diagnostics.
+
 ## Decision Log
 
+- 2026-05-19: M100 Patch 4 centralizes user-facing diagnostic redaction in `mcp-server/m100-protocol.js`; panel-visible diagnostics must pass `redactForUserDiagnostic()` instead of ad hoc truncation.
+- 2026-05-19: Diagnostic phase/code/id reporting is additive and must not alter AE command lifecycle/single-flight behavior or the Patch 3 server-owned confirmation gate.
+- 2026-05-19: Codex CLI failure classes are now stable diagnostic codes: `model_timeout`, `codex_nonzero_exit`, `codex_no_assistant_text` and `codex_malformed_jsonl`; provider readiness remains a separate phase from model execution.
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
 - 2026-05-13: `OpenAI -> API` remains separate and uses normal API billing.
 - 2026-05-13: Gemini and Claude use provider API keys and official HTTP APIs.
@@ -753,6 +767,14 @@
 - 2026-05-19: Client-authored `confirm:true`, `confirmed:true` or forged confirmation fields are not execution authority for mutating/destructive/raw paths. Direct `/tools/call`/MCP remain proposal-required, and `/agents/plan/run` now blocks mutating/destructive/raw inline real runs unless they resolve a server-side proposal record.
 
 ## Validation
+
+- Milestone 103:
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check` for touched JavaScript files: `mcp-server\m100-protocol.js`, `mcp-server\bridge-daemon.js`, `mcp-server\ai-agents.js`, `cep-panel\panel.js`, `scripts\m100-protocol-contract-smoke.js`, and `scripts\m100-lifecycle-diagnostics-smoke.js`.
+  - Passed M100 smokes: `node scripts\m100-protocol-contract-smoke.js`, `node scripts\m100-lifecycle-diagnostics-smoke.js`, `node scripts\m100-ae-command-contract-smoke.js`, and `node scripts\m100-confirmation-gate-smoke.js`.
+  - Passed required local smokes: `provider-contract-smoke`, `solution-registry-smoke`, `solution-candidate-report-smoke`, `solution-promotion-smoke`, `solution-retrieval-smoke`, `solution-library-validation-smoke`, `project-intent-memory-smoke`, `plan-classification-smoke`, `plan-repair-smoke`, `semantic-verification-smoke`, `reliability-validation-suite-smoke`, `chatgpt-connector-smoke`, `provider-api-smoke`, `prompt-optimization-smoke`, `bridge-only-smoke-test`, and `smoke-test`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
+  - Did not run live CEP/After Effects, external-provider/OpenAI CLI planner, or mutating-live checks because Patch 4 is local/non-live and no explicit approval was given for live or mutating validation.
 
 - Milestone 102:
   - No package manager check is configured because the repository has no `package.json`.

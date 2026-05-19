@@ -999,10 +999,15 @@ function m100DirectToolCallBlock(source, name, args) {
 }
 
 function m100BlockedToolResult(block) {
+  const diagnostic = m100Protocol.createUserDiagnostic({
+    phase: "confirmation_validation",
+    code: block.code,
+    message: block.message
+  });
   return toolResult({
     ok: false,
     code: block.code,
-    message: block.message,
+    message: diagnostic.message,
     m100: {
       policyVersion: block.policyVersion,
       surface: block.surface,
@@ -1011,7 +1016,8 @@ function m100BlockedToolResult(block) {
       knownTool: block.knownTool,
       requiresProposal: block.requiresProposal,
       ignoredClientConfirmation: block.ignoredClientConfirmation,
-      reasons: block.reasons
+      reasons: block.reasons,
+      diagnostic
     }
   }, true);
 }
@@ -1098,6 +1104,119 @@ function m100ProtocolError(code, message, details) {
     Object.assign(error, details);
   }
   return error;
+}
+
+function m100ErrorCode(error, fallback) {
+  const providerCode = error && error.providerError && error.providerError.code;
+  const ownCode = error && error.code ? String(error.code) : "";
+  if (ownCode && !/^(ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|ETIMEDOUT|ENOENT|EPERM|EACCES)$/i.test(ownCode)) {
+    return ownCode;
+  }
+  return String(providerCode || ownCode || fallback || "m100_request_failed");
+}
+
+function m100PhaseForError(error, fallback) {
+  const code = m100ErrorCode(error, "");
+  if (error && error.phase) return m100Protocol.normalizeDiagnosticPhase(error.phase, fallback || "protocol_validation");
+  if (/confirmation|proposal_required|proposal_not_found|proposal_expired|token|surface|session|risk_|payload_|preview_/.test(code)) {
+    return "confirmation_validation";
+  }
+  if (/ae_result_parse/.test(code)) return "ae_result_parse";
+  if (/ae_execution/.test(code)) return "ae_execution";
+  if (/expired_before_delivery|unknown_after_delivery|timed_out_after_submit|command|queue/.test(code)) return "ae_queue";
+  if (error && (error.readiness || error.providerError && ["setup", "models", "readiness"].includes(error.providerError.phase))) return "provider_readiness";
+  if (/model_timeout|timeout/.test(code) || /timed out|timeout/i.test(error && error.message || "")) return "model_timeout";
+  if (/codex_nonzero_exit|codex_no_assistant_text/.test(code)) return "codex_exec";
+  if (/codex_malformed_jsonl|malformed|validation|plan_not_valid/.test(code)) return "protocol_validation";
+  if (error && error.providerError) return "codex_exec";
+  return m100Protocol.normalizeDiagnosticPhase(fallback, "protocol_validation");
+}
+
+function m100RawPreviewForError(error) {
+  if (!error) return undefined;
+  if (Object.prototype.hasOwnProperty.call(error, "rawPreview")) return error.rawPreview;
+  if (error.stderr) return error.stderr;
+  if (error.stdout) return error.stdout;
+  if (error.providerError && error.providerError.rawProviderMessage) return error.providerError.rawProviderMessage;
+  if (error.providerError && error.providerError.response !== undefined) {
+    try {
+      return JSON.stringify(error.providerError.response);
+    } catch (_error) {
+      return String(error.providerError.response);
+    }
+  }
+  return undefined;
+}
+
+function m100UserDiagnosticFromError(error, options = {}) {
+  return m100Protocol.createUserDiagnostic({
+    phase: options.phase || m100PhaseForError(error, options.fallbackPhase),
+    code: options.code || m100ErrorCode(error, options.fallbackCode),
+    message: options.message || error && (error.message || String(error)) || "Request failed.",
+    requestId: options.requestId || error && error.requestId,
+    actionId: options.actionId || error && error.actionId,
+    executionId: options.executionId || error && error.executionId,
+    commandId: options.commandId || error && error.commandId,
+    lifecycleState: options.lifecycleState || error && error.lifecycleState,
+    rawPreview: Object.prototype.hasOwnProperty.call(options, "rawPreview") ? options.rawPreview : m100RawPreviewForError(error),
+    logRef: options.logRef || error && error.logRef
+  });
+}
+
+function m100SanitizedProviderError(providerError) {
+  if (!providerError || typeof providerError !== "object") return null;
+  return m100SanitizedDiagnosticObject(providerError, 1000);
+}
+
+function m100SanitizedDiagnosticObject(value, maxLength = 4000) {
+  if (value === undefined || value === null) return value;
+  if (typeof value === "string") return m100Protocol.redactForUserDiagnostic(value, maxLength);
+  if (Array.isArray(value)) return value.slice(0, 50).map((item) => m100SanitizedDiagnosticObject(item, maxLength));
+  if (typeof value === "object") {
+    const output = {};
+    for (const key of Object.keys(value)) {
+      output[key] = m100SanitizedDiagnosticObject(value[key], key === "rawProviderMessage" ? 600 : maxLength);
+    }
+    return output;
+  }
+  return value;
+}
+
+function m100HttpFailure(error, options = {}) {
+  const diagnostic = m100UserDiagnosticFromError(error, options);
+  return {
+    ok: false,
+    error: diagnostic.message,
+    code: diagnostic.code,
+    phase: diagnostic.phase,
+    requestId: diagnostic.requestId || null,
+    actionId: diagnostic.actionId || null,
+    executionId: diagnostic.executionId || null,
+    commandId: diagnostic.commandId || null,
+    lifecycleState: diagnostic.lifecycleState || null,
+    line: error && error.line || null,
+    rawPreview: Object.prototype.hasOwnProperty.call(diagnostic, "rawPreview") ? diagnostic.rawPreview : null,
+    readiness: m100SanitizedDiagnosticObject(error && error.readiness || null),
+    providerError: m100SanitizedProviderError(error && error.providerError),
+    diagnostic,
+    m100Message: m100Protocol.createErrorEnvelope({
+      requestId: diagnostic.requestId || "",
+      actionId: diagnostic.actionId,
+      executionId: diagnostic.executionId,
+      phase: diagnostic.phase,
+      code: diagnostic.code,
+      error: diagnostic.message,
+      rawPreview: diagnostic.rawPreview,
+      logs: [
+        {
+          phase: diagnostic.phase,
+          level: "error",
+          message: diagnostic.message,
+          logRef: diagnostic.logRef
+        }
+      ]
+    })
+  };
 }
 
 function m100StoredProposalCopy(proposal) {
@@ -4091,6 +4210,89 @@ function planRunRecoveryHint(run) {
   return "Review the failed step before retrying. If any AE change occurred, use the checkpoint or After Effects Undo path listed in the step details.";
 }
 
+function planRunFailedStep(run) {
+  const steps = run && Array.isArray(run.steps) ? run.steps : [];
+  return steps.find((step) => step && (step.status === "failed" || step.status === "blocked")) || null;
+}
+
+function m100PlanRunFailurePhase(run) {
+  if (!run) return "protocol_validation";
+  const status = run.safety && run.safety.status || "";
+  if (status === "blocked_m100_confirmation_required" || status === "blocked_m100_confirmation_failed") {
+    return "confirmation_validation";
+  }
+  if (status === "blocked_edit_session_failed" || status === "blocked_save_project_first" || status === "blocked_missing_edit_session") {
+    return "ae_queue";
+  }
+  if (run.validation && run.validation.ok === false) return "protocol_validation";
+  const failedStep = planRunFailedStep(run);
+  if (failedStep && failedStep.result && failedStep.result.phase) {
+    return m100Protocol.normalizeDiagnosticPhase(failedStep.result.phase, "ae_execution");
+  }
+  if (failedStep && failedStep.result && failedStep.result.code === "ae_result_parse_failed") return "ae_result_parse";
+  if (failedStep && (failedStep.error || failedStep.isError)) return "ae_execution";
+  return run.errorCode && /m100_|confirmation|proposal/.test(run.errorCode) ? "confirmation_validation" : "protocol_validation";
+}
+
+function m100PlanRunFailureCode(run) {
+  if (!run) return "plan_run_failed";
+  if (run.errorCode) return run.errorCode;
+  const status = run.safety && run.safety.status || "";
+  if (status) return status;
+  const failedStep = planRunFailedStep(run);
+  if (failedStep && failedStep.result && failedStep.result.code) return failedStep.result.code;
+  if (failedStep && failedStep.status === "blocked") return "plan_step_blocked";
+  if (failedStep && failedStep.status === "failed") return "plan_step_failed";
+  return "plan_run_failed";
+}
+
+function m100PlanRunRawPreview(run) {
+  const failedStep = planRunFailedStep(run);
+  if (failedStep && failedStep.result && Object.prototype.hasOwnProperty.call(failedStep.result, "rawPreview")) {
+    return failedStep.result.rawPreview;
+  }
+  if (failedStep && failedStep.error) return failedStep.error;
+  if (run && run.safety && run.safety.error) return run.safety.error;
+  return undefined;
+}
+
+function attachM100PlanRunDiagnostic(run, options) {
+  if (!run || run.ok) return run;
+  const diagnostic = m100Protocol.createUserDiagnostic({
+    phase: m100PlanRunFailurePhase(run),
+    code: m100PlanRunFailureCode(run),
+    message: run.error || "Agent plan run failed.",
+    requestId: options && options.requestId,
+    actionId: options && options._m100ActionProposal && options._m100ActionProposal.actionId,
+    executionId: run.id,
+    rawPreview: m100PlanRunRawPreview(run),
+    logRef: LOG_FILE
+  });
+  run.diagnostic = diagnostic;
+  run.error = diagnostic.message;
+  if (!run.errorCode) run.errorCode = diagnostic.code;
+  if (!run.m100Message) {
+    run.m100Message = m100Protocol.createErrorEnvelope({
+      requestId: diagnostic.requestId || "",
+      actionId: diagnostic.actionId,
+      executionId: diagnostic.executionId,
+      phase: diagnostic.phase,
+      code: diagnostic.code,
+      error: diagnostic.message,
+      rawPreview: diagnostic.rawPreview,
+      logs: [
+        {
+          phase: diagnostic.phase,
+          level: "error",
+          message: diagnostic.message,
+          logRef: diagnostic.logRef
+        }
+      ]
+    });
+  }
+  return run;
+}
+
 function hardcoreSessionSlug(value) {
   return String(value || "agent-hardcore-session")
     .trim()
@@ -5278,9 +5480,12 @@ async function runValidatedAgentPlan(options) {
         executionId: run.id,
         summary: run.ok ? "Agent plan run finished." : run.error || "Agent plan run failed.",
         error: run.error || "Agent plan run failed.",
-        phase: run.ok ? "ae_execution" : "protocol_validation"
+        phase: run.ok ? "ae_execution" : m100PlanRunFailurePhase(run),
+        code: run.ok ? undefined : m100PlanRunFailureCode(run),
+        rawPreview: run.ok ? undefined : m100PlanRunRawPreview(run)
       });
     }
+    attachM100PlanRunDiagnostic(run, options);
     return run;
   }
 
@@ -5794,6 +5999,32 @@ async function runAgentPlanLogged(source, args) {
     if (actionProposal) {
       planResponse.m100ActionProposal = actionProposal;
       planResponse.m100Message = actionProposal;
+    } else if (!parsed.ok) {
+      const diagnostic = m100Protocol.createUserDiagnostic({
+        phase: "protocol_validation",
+        code: "m100_plan_parse_failed",
+        message: parsed.error || "Agent response did not contain a valid AE plan.",
+        requestId,
+        rawPreview: result.text || "",
+        logRef: AI_CHAT_LOG_FILE
+      });
+      planResponse.diagnostic = diagnostic;
+      planResponse.planParseError = diagnostic.message;
+      planResponse.m100Message = m100Protocol.createErrorEnvelope({
+        requestId,
+        phase: diagnostic.phase,
+        code: diagnostic.code,
+        error: diagnostic.message,
+        rawPreview: diagnostic.rawPreview,
+        logs: [
+          {
+            phase: diagnostic.phase,
+            level: "error",
+            message: diagnostic.message,
+            logRef: diagnostic.logRef
+          }
+        ]
+      });
     } else {
       planResponse.m100Message = m100Protocol.createAssistantResponseEnvelope({
         requestId,
@@ -5892,10 +6123,9 @@ function startHttpBridge() {
           }))
         });
       } catch (error) {
-        writeJson(res, 500, {
-          ok: false,
-          error: error.message || String(error)
-        });
+        writeJson(res, 500, m100HttpFailure(error, {
+          fallbackPhase: "provider_readiness"
+        }));
       }
       return;
     }
@@ -5914,10 +6144,9 @@ function startHttpBridge() {
           })
         });
       } catch (error) {
-        writeJson(res, 500, {
-          ok: false,
-          error: error.message || String(error)
-        });
+        writeJson(res, 500, m100HttpFailure(error, {
+          fallbackPhase: "provider_readiness"
+        }));
       }
       return;
     }
@@ -5937,10 +6166,9 @@ function startHttpBridge() {
           })
         });
       } catch (error) {
-        writeJson(res, 400, {
-          ok: false,
-          error: error.message || String(error)
-        });
+        writeJson(res, 400, m100HttpFailure(error, {
+          fallbackPhase: "protocol_validation"
+        }));
       }
       return;
     }
@@ -5956,11 +6184,11 @@ function startHttpBridge() {
           setup
         });
       } catch (error) {
-        writeJson(res, 400, {
-          ok: false,
-          error: error.message || String(error),
-          codexStatus: error.status || null
+        const failure = m100HttpFailure(error, {
+          fallbackPhase: "provider_readiness"
         });
+        failure.codexStatus = m100SanitizedDiagnosticObject(error.status || null);
+        writeJson(res, 400, failure);
       }
       return;
     }
@@ -5992,13 +6220,10 @@ function startHttpBridge() {
           result
         });
       } catch (error) {
-        writeJson(res, 500, {
-          ok: false,
-          error: error.message || String(error),
-          requestId: error.requestId || null,
-          readiness: error.readiness || null,
-          providerError: error.providerError || null
-        });
+        writeJson(res, 500, m100HttpFailure(error, {
+          fallbackPhase: error.readiness ? "provider_readiness" : "codex_exec",
+          logRef: AI_CHAT_LOG_FILE
+        }));
       }
       return;
     }
@@ -6023,13 +6248,10 @@ function startHttpBridge() {
           result
         });
       } catch (error) {
-        writeJson(res, 500, {
-          ok: false,
-          error: error.message || String(error),
-          requestId: error.requestId || null,
-          readiness: error.readiness || null,
-          providerError: error.providerError || null
-        });
+        writeJson(res, 500, m100HttpFailure(error, {
+          fallbackPhase: error.readiness ? "provider_readiness" : "codex_exec",
+          logRef: AI_CHAT_LOG_FILE
+        }));
       }
       return;
     }
@@ -6047,12 +6269,12 @@ function startHttpBridge() {
           repairedPlan: proposed.repairedPlan
         });
       } catch (error) {
-        writeJson(res, 400, {
-          ok: false,
-          error: error.message || String(error),
-          code: error.code || null,
-          validation: error.validation || null
+        const failure = m100HttpFailure(error, {
+          fallbackPhase: "protocol_validation",
+          fallbackCode: error.code || "m100_action_proposal_create_failed"
         });
+        failure.validation = error.validation || null;
+        writeJson(res, 400, failure);
       }
       return;
     }
@@ -6092,13 +6314,16 @@ function startHttpBridge() {
         const run = await runValidatedAgentPlan(body || {});
         writeJson(res, run.ok ? 200 : 400, {
           ok: run.ok,
-          run
+          run,
+          diagnostic: run.diagnostic || null,
+          m100Message: run.m100Message || null,
+          code: run.errorCode || run.diagnostic && run.diagnostic.code || null,
+          phase: run.diagnostic && run.diagnostic.phase || null
         });
       } catch (error) {
-        writeJson(res, 400, {
-          ok: false,
-          error: error.message || String(error)
-        });
+        writeJson(res, 400, m100HttpFailure(error, {
+          fallbackPhase: m100PhaseForError(error, "protocol_validation")
+        }));
       }
       return;
     }
@@ -6113,13 +6338,10 @@ function startHttpBridge() {
           session
         });
       } catch (error) {
-        writeJson(res, 400, {
-          ok: false,
-          error: error.message || String(error),
-          requestId: error.requestId || null,
-          readiness: error.readiness || null,
-          providerError: error.providerError || null
-        });
+        writeJson(res, 400, m100HttpFailure(error, {
+          fallbackPhase: error.readiness ? "provider_readiness" : "codex_exec",
+          logRef: AI_CHAT_LOG_FILE
+        }));
       }
       return;
     }
@@ -6167,16 +6389,9 @@ function startHttpBridge() {
           result
         });
       } catch (error) {
-        writeJson(res, 500, {
-          ok: false,
-          error: error.message || String(error),
-          line: error.line || null,
-          code: error.code || null,
-          phase: error.phase || null,
-          rawPreview: Object.prototype.hasOwnProperty.call(error, "rawPreview") ? error.rawPreview : null,
-          lifecycleState: error.lifecycleState || null,
-          commandId: error.commandId || null
-        });
+        writeJson(res, 500, m100HttpFailure(error, {
+          fallbackPhase: "ae_execution"
+        }));
       }
       return;
     }
@@ -6204,15 +6419,10 @@ function startHttpBridge() {
         });
       } catch (error) {
         writeJson(res, 500, {
-          ok: false,
           tool: name,
-          error: error.message || String(error),
-          line: error.line || null,
-          code: error.code || null,
-          phase: error.phase || null,
-          rawPreview: Object.prototype.hasOwnProperty.call(error, "rawPreview") ? error.rawPreview : null,
-          lifecycleState: error.lifecycleState || null,
-          commandId: error.commandId || null
+          ...m100HttpFailure(error, {
+            fallbackPhase: "ae_execution"
+          })
         });
       }
       return;
@@ -6232,11 +6442,9 @@ function startHttpBridge() {
         `, 8000);
         writeJson(res, 200, { ok: true, result: result.result });
       } catch (error) {
-        writeJson(res, 500, {
-          ok: false,
-          error: error.message || String(error),
-          line: error.line || null
-        });
+        writeJson(res, 500, m100HttpFailure(error, {
+          fallbackPhase: "ae_execution"
+        }));
       }
       return;
     }

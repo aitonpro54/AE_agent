@@ -45,9 +45,13 @@ function main() {
   contains(bridge, "proposalExpiresAt", "proposal expiry marker");
   contains(bridge, "confirmationTokenHash", "server-side confirmation token hash marker");
   contains(bridge, "confirmM100ActionProposal", "single-use confirmation helper");
+  contains(bridge, "m100HttpFailure", "M100 HTTP diagnostic failure helper");
+  contains(bridge, "attachM100PlanRunDiagnostic", "M100 plan-run diagnostic helper");
+  contains(bridge, "m100UserDiagnosticFromError", "M100 backend diagnostic builder");
 
   contains(panel, "normalizeM100ActionProposal", "panel M100 proposal validator");
   contains(panel, "appendInlineActionProposalActions", "panel M100 action controls");
+  contains(panel, "formatM100DiagnosticBody", "panel M100 diagnostic renderer");
   assert(panel.indexOf("appendInlinePlanActions") < 0, "Panel must not expose legacy appendInlinePlanActions");
   assert(panel.indexOf("options.planActions") < 0, "Panel must not render controls from legacy options.planActions");
 
@@ -103,6 +107,37 @@ function main() {
   };
   assert(!protocol.validateActionProposalEnvelope(malformed).ok, "Malformed action proposal must be rejected");
 
+  const diagnosticText = protocol.redactForUserDiagnostic(
+    "User request: secret prompt fragment that should not leak. C:\\Users\\Ant\\Documents\\Codex\\AE_agent\\private.aep Bearer abcdefghijklmnopqrst",
+    180
+  );
+  assert(diagnosticText.length <= 180, "Diagnostic text should be bounded");
+  assert(!diagnosticText.includes("C:\\Users\\Ant"), "Diagnostic text should redact Windows absolute paths");
+  assert(!diagnosticText.includes("Bearer abcdefghijklmnopqrst"), "Diagnostic text should redact bearer tokens");
+  assert(!diagnosticText.includes("secret prompt fragment"), "Diagnostic text should redact prompt fragments");
+
+  const errorEnvelope = protocol.createErrorEnvelope({
+    requestId: "req_diagnostic_contract",
+    actionId: "act_diagnostic_contract",
+    executionId: "exec_diagnostic_contract",
+    phase: "ae_result_parse",
+    code: "ae_result_parse_failed",
+    error: diagnosticText,
+    rawPreview: "C:\\Users\\Ant\\Documents\\Codex\\AE_agent\\private.aep Bearer abcdefghijklmnopqrst",
+    logs: [
+      {
+        phase: "ae_result_parse",
+        level: "error",
+        message: "C:\\Users\\Ant\\Documents\\Codex\\AE_agent\\private.aep",
+        logRef: "C:\\Users\\Ant\\Documents\\Codex\\AE_agent\\logs\\bridge.log"
+      }
+    ]
+  });
+  assert.strictEqual(errorEnvelope.messageType, "error", "M100 diagnostic failures should be error envelopes");
+  assert.strictEqual(errorEnvelope.error.phase, "ae_result_parse", "M100 error envelope should preserve failure phase");
+  assert.strictEqual(errorEnvelope.error.code, "ae_result_parse_failed", "M100 error envelope should preserve stable code");
+  assert(!JSON.stringify(errorEnvelope).includes("C:\\Users\\Ant"), "M100 error envelope should redact absolute paths");
+
   const pendingContracts = [];
   if (bridge.indexOf("confirmationTokenHash") < 0 || bridge.indexOf("confirmedAt") < 0) {
     pendingContracts.push(pendingContract(
@@ -140,7 +175,8 @@ function main() {
       "backend-created action_proposal validates with actionId, payloadRef, hashes, risk and expiry",
       "backend-created action_proposal includes a server-issued confirmation token and surface",
       "model-authored and malformed action_proposal envelopes are rejected",
-      "panel executable controls are wired to M100 action proposals, not legacy result.plan"
+      "panel executable controls are wired to M100 action proposals, not legacy result.plan",
+      "user-facing diagnostics are redacted, bounded, phase-coded and panel-renderable"
     ],
     pendingContracts
   }, null, 2));
