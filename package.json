@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "codex:orchestrator": "node orchestrator/codex-sdk-orchestrator.mjs",
+    "codex:orchestrator:help": "node orchestrator/codex-sdk-orchestrator.mjs --help"
+  },
+  "dependencies": {
+    "@openai/codex-sdk": "^0.131.0"
+  }
+}

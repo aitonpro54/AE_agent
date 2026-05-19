@@ -79,6 +79,7 @@
 - [x] Milestone 103: M100 Patch 4 lifecycle diagnostics and redaction.
 - [x] Milestone 104: M100 Patch 5 deterministic vertical smoke.
 - [x] Milestone 105: M100 approval-gated live validation.
+- [x] Milestone 106: Codex SDK scaffold and orchestrator bootstrap.
 
 ## Current Stable Baseline
 
@@ -643,8 +644,20 @@
 - Escalate separately for mutating-live validation and use generated test prefixes, checkpoint/edit-session protection, post-run cleanup, and semantic/read-back evidence before marking live mutation behavior covered.
 - Record every live command, environment version, approval scope, result, skipped gate, and any generated asset cleanup in the plan and `.codex/handoff.md`.
 
+### Milestone 106: Codex SDK scaffold and orchestrator bootstrap
+
+- Add the first npm dependency scaffold for `@openai/codex-sdk`, keeping tracked dependency evidence in `package.json` and `package-lock.json`.
+- Add a minimal `orchestrator/` entry point that can start or resume Codex SDK threads from this repository.
+- Keep the initial orchestrator in plain `.mjs` so it works without `tsx` or `typescript` while npm registry access is unstable.
+- Use conservative default SDK thread options: read-only sandbox, no automatic approval, no network access, and disabled web search unless explicitly requested.
+- Ignore `node_modules/` and do not vendor installed package contents into git.
+- Record the `tsx`/`typescript` network blocker and leave dev dependency installation for a follow-up when `registry.npmjs.org:443` is reachable.
+
 ## Decision Log
 
+- 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
+- 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
+- 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
 - 2026-05-19: User approved all Milestone 105 approval-gated validation scopes in chat. Read-only live CEP/bridge validation proceeded; external-provider/OpenAI CLI planner validation was still blocked by the escalation reviewer/tenant policy because it would send prompts or project context outside the machine, so no workaround was attempted.
 - 2026-05-19: Milestone 105 found a stale live daemon symptom: bridge health reported `1.0.11` and M100 risk metadata, but `/agents/plan/propose` returned 404. The bridge process listening on `127.0.0.1:3456` was restarted from the current repository with `scripts/start-bridge-only.ps1`; after restart, `/agents/plan/propose` created a backend-owned `action_proposal` successfully.
 - 2026-05-19: Live mutating validation cannot complete while the current After Effects project is unsaved. `checkpoint_project` reported no `.aep` file to copy, and a deterministic proposal-backed mutating run stopped before mutation with `blocked_save_project_first`, phase `ae_queue`, and an M100 error envelope. This is treated as a live safety blocker, not a runtime failure to bypass.
@@ -798,6 +811,18 @@
 - 2026-05-19: Client-authored `confirm:true`, `confirmed:true` or forged confirmation fields are not execution authority for mutating/destructive/raw paths. Direct `/tools/call`/MCP remain proposal-required, and `/agents/plan/run` now blocks mutating/destructive/raw inline real runs unless they resolve a server-side proposal record.
 
 ## Validation
+
+- Milestone 106:
+  - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.
+  - Retried `npm.cmd install -D tsx typescript --no-audit --no-fund --prefer-offline --fetch-retries=1 --fetch-timeout=30000 --loglevel=warn`; sandbox run failed with `EACCES`, approved network retry failed with `EIDLETIMEOUT` for `registry.npmjs.org:443`.
+  - Passed SDK import smoke: `node --input-type=module -e "import { Codex } from '@openai/codex-sdk'; console.log(typeof Codex);"` returned `function`.
+  - Passed `node --check orchestrator\codex-sdk-orchestrator.mjs`.
+  - Passed `npm.cmd run codex:orchestrator:help`.
+  - Passed `npm.cmd ls @openai/codex-sdk tsx typescript --depth=0`; only `@openai/codex-sdk@0.131.0` is present.
+  - Passed required local smoke suite: `provider-contract-smoke`, `solution-registry-smoke`, `solution-candidate-report-smoke`, `solution-promotion-smoke`, `solution-retrieval-smoke`, `solution-library-validation-smoke`, `project-intent-memory-smoke`, `plan-classification-smoke`, `plan-repair-smoke`, `semantic-verification-smoke`, `reliability-validation-suite-smoke`, `chatgpt-connector-smoke`, `provider-api-smoke`, `prompt-optimization-smoke`, `bridge-only-smoke-test`, and `smoke-test`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Did not run live CEP/After Effects smokes because Milestone 106 changes only the local SDK scaffold/orchestrator and does not alter bridge, panel, or AE project behavior.
+  - Attempted to save a full validation log under `.codex\sdk\logs\m106-validation.log`, but PowerShell returned access denied for that new file; terminal PASS lines were captured in the session output.
 
 - Milestone 105:
   - User gave explicit approval in chat for live CEP/After Effects, external-provider/OpenAI CLI planner and mutating-live validation scopes.
