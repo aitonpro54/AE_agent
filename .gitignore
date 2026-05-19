@@ -7,6 +7,7 @@ logs/reliability-validation/
 logs/dev-requests/
 logs/hardcore-sessions/
 logs/solution-candidates/
+pro-review-bundles/
 backups/*.aep
 backups/*.aepx
 .codex/
