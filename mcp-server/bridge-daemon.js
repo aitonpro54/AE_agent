@@ -749,6 +749,7 @@ function getBridgeStatus() {
     server: SERVER_NAME,
     version: SERVER_VERSION,
     protocolVersion: PROTOCOL_VERSION,
+    m100RiskPolicy: m100RiskPolicyStatus(),
     host: HOST,
     port: PORT,
     uptimeMs: now - STARTED_AT,
@@ -864,6 +865,144 @@ const MUTATION_SUMMARY_TOOL_NAMES = new Set([
   "checkpoint_project",
   "delete_project_checkpoint"
 ]);
+
+const M100_RISK_POLICY_VERSION = "m100-risk-v1";
+const M100_RISK_LEVELS = ["read_only", "mutating", "destructive", "raw_jsx"];
+const M100_RAW_JSX_TOOL_NAMES = new Set([
+  "run_extendscript",
+  "run_extendscript_file"
+]);
+const M100_DESTRUCTIVE_TOOL_NAMES = new Set([
+  "cleanup_test_items",
+  "delete_project_checkpoint"
+]);
+const M100_DIRECT_TOOL_SOURCES = new Set([
+  "direct-tools-call"
+]);
+const M100_LOCAL_ADMIN_TOOL_SOURCES = new Set([
+  "dev-http"
+]);
+const M100_DIRECT_ESCAPE_HATCH_ENV = "AE_M100_ALLOW_DIRECT_TOOL_EXECUTION";
+const M100_DIRECT_ESCAPE_HATCH_ARG = "m100DirectExecutionEscapeHatch";
+
+function knownToolNames() {
+  return new Set(tools.map((tool) => tool.name));
+}
+
+function m100RiskPolicyStatus() {
+  return {
+    version: M100_RISK_POLICY_VERSION,
+    riskLevels: M100_RISK_LEVELS.slice(),
+    directToolPolicy: "default-deny for unknown, mutating, destructive and raw_jsx tools",
+    directToolSources: Array.from(M100_DIRECT_TOOL_SOURCES),
+    localAdminToolSources: Array.from(M100_LOCAL_ADMIN_TOOL_SOURCES),
+    escapeHatchEnv: M100_DIRECT_ESCAPE_HATCH_ENV,
+    escapeHatchArg: M100_DIRECT_ESCAPE_HATCH_ARG
+  };
+}
+
+function classifyM100ToolRisk(name) {
+  const toolName = String(name || "");
+  const known = knownToolNames().has(toolName);
+  if (!known) {
+    return {
+      policyVersion: M100_RISK_POLICY_VERSION,
+      toolName,
+      known: false,
+      riskLevel: null,
+      requiresProposal: true,
+      reasons: ["unknown_tool"]
+    };
+  }
+  if (M100_RAW_JSX_TOOL_NAMES.has(toolName)) {
+    return {
+      policyVersion: M100_RISK_POLICY_VERSION,
+      toolName,
+      known: true,
+      riskLevel: "raw_jsx",
+      requiresProposal: true,
+      reasons: ["raw ExtendScript execution requires a server-owned proposal"]
+    };
+  }
+  if (M100_DESTRUCTIVE_TOOL_NAMES.has(toolName)) {
+    return {
+      policyVersion: M100_RISK_POLICY_VERSION,
+      toolName,
+      known: true,
+      riskLevel: "destructive",
+      requiresProposal: true,
+      reasons: ["destructive tool requires a server-owned proposal"]
+    };
+  }
+  if (MUTATING_TOOL_NAMES.has(toolName) || toolName === "run_ai_agent_plan" || toolName === "run_agent_hardcore_session") {
+    return {
+      policyVersion: M100_RISK_POLICY_VERSION,
+      toolName,
+      known: true,
+      riskLevel: "mutating",
+      requiresProposal: true,
+      reasons: ["mutating execution path requires a server-owned proposal"]
+    };
+  }
+  return {
+    policyVersion: M100_RISK_POLICY_VERSION,
+    toolName,
+    known: true,
+    riskLevel: "read_only",
+    requiresProposal: false,
+    reasons: []
+  };
+}
+
+function m100DirectEscapeHatchAllowed(source, args) {
+  if (M100_LOCAL_ADMIN_TOOL_SOURCES.has(source)) return true;
+  if (process.env[M100_DIRECT_ESCAPE_HATCH_ENV] !== "1") return false;
+  return Boolean(args && args[M100_DIRECT_ESCAPE_HATCH_ARG] === true);
+}
+
+function m100DirectToolCallBlock(source, name, args) {
+  if (!M100_DIRECT_TOOL_SOURCES.has(source)) return null;
+  const risk = classifyM100ToolRisk(name);
+  if (risk.known && risk.riskLevel === "read_only") return null;
+  if (m100DirectEscapeHatchAllowed(source, args || {})) {
+    return null;
+  }
+  const clientProvidedConfirmation = Boolean(args && (args.confirm === true || args.confirmed === true));
+  return {
+    ok: false,
+    code: risk.known ? "proposal_required" : "unknown_tool_blocked",
+    message: risk.known
+      ? `${risk.toolName} requires a server-owned M100 proposal before direct execution.`
+      : `${risk.toolName || "Unknown tool"} is not in the M100 risk registry and is blocked by default.`,
+    policyVersion: M100_RISK_POLICY_VERSION,
+    surface: source,
+    toolName: risk.toolName,
+    riskLevel: risk.riskLevel,
+    knownTool: risk.known,
+    requiresProposal: true,
+    clientProvidedConfirmation,
+    ignoredClientConfirmation: clientProvidedConfirmation,
+    reasons: risk.reasons
+  };
+}
+
+function m100BlockedToolResult(block) {
+  return toolResult({
+    ok: false,
+    code: block.code,
+    message: block.message,
+    m100: {
+      policyVersion: block.policyVersion,
+      surface: block.surface,
+      toolName: block.toolName,
+      riskLevel: block.riskLevel,
+      knownTool: block.knownTool,
+      requiresProposal: block.requiresProposal,
+      ignoredClientConfirmation: block.ignoredClientConfirmation,
+      reasons: block.reasons
+    }
+  }, true);
+}
 
 function aeLiteral(value) {
   return JSON.stringify(value)
@@ -4899,7 +5038,8 @@ function startHttpBridge() {
         inflight: status.inflightCommands.length,
         panelConnected: status.panelConnected,
         lastPanelSeenAt: status.lastPanelSeenAt,
-        lastPanelInfo: status.lastPanelInfo
+        lastPanelInfo: status.lastPanelInfo,
+        m100RiskPolicy: status.m100RiskPolicy
       });
       return;
     }
@@ -5179,7 +5319,7 @@ function startHttpBridge() {
         const body = await readJsonBody(req);
         const name = String(body.name || "");
         const args = body.arguments || {};
-        const result = await callToolLogged("mcp-adapter", name, args);
+        const result = await callToolLogged("direct-tools-call", name, args);
         writeJson(res, 200, {
           ok: true,
           tool: name,
@@ -10739,6 +10879,32 @@ async function callToolLogged(source, name, args) {
   });
 
   try {
+    const m100Block = m100DirectToolCallBlock(source, name, args || {});
+    if (m100Block) {
+      const durationMs = Date.now() - startedAt;
+      recordEvent("m100_direct_tool_blocked", {
+        id: eventId,
+        source,
+        name,
+        durationMs,
+        code: m100Block.code,
+        riskLevel: m100Block.riskLevel,
+        knownTool: m100Block.knownTool,
+        ignoredClientConfirmation: m100Block.ignoredClientConfirmation
+      });
+      return m100BlockedToolResult(m100Block);
+    }
+
+    if (M100_DIRECT_TOOL_SOURCES.has(source) && m100DirectEscapeHatchAllowed(source, args || {})) {
+      recordEvent("m100_direct_tool_escape_hatch_used", {
+        id: eventId,
+        source,
+        name,
+        policyVersion: M100_RISK_POLICY_VERSION,
+        env: M100_DIRECT_ESCAPE_HATCH_ENV
+      });
+    }
+
     if (idContext) {
       const existing = idempotencyRecords.get(idContext.recordKey);
       if (existing) {

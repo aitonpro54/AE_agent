@@ -70,6 +70,7 @@
 - [x] Hotfix: Version 1.0.9 sync clears CEP cache.
 - [x] Hotfix: Executable Agent plan enforcement.
 - [x] Milestone 97: M100 Pro review integration and revised safety plan.
+- [x] Milestone 98: M100 Patch 0 safety inventory and direct default-deny.
 
 ## Current Stable Baseline
 
@@ -561,6 +562,14 @@
 - Add redaction-first diagnostics to the M100 plan: stderr, provider errors, raw previews, paths, prompt fragments and log refs are bounded before panel display.
 - Set the next implementation step to Patch 0, then the narrow production patch Patch 1a: AE command contract tests plus pre-delivery expiry fix.
 
+### Milestone 98: M100 Patch 0 safety inventory and direct default-deny
+
+- Add `.codex-audit/106-m100-execution-surface-inventory.md` with the reviewed endpoint/call graph for AE execution paths: `/agents/plan/run`, `/agents/hardcore/run`, direct `/tools/call`, MCP `tools/call`, `/dev/tool`, raw `run_extendscript`/`run_extendscript_file`, ChatGPT connector JSX Lab, `/bridge/next`, `/bridge/result`, CEP polling and legacy `result.plan` controls.
+- Add a minimal M100 risk policy in `mcp-server/bridge-daemon.js` with `read_only`, `mutating`, `destructive` and `raw_jsx` levels.
+- Default-deny direct `/tools/call` and MCP `tools/call` for unknown, mutating, destructive and raw JSX tools before AE queueing; client-supplied `confirm:true` or `confirmed:true` is recorded as ignored and does not authorize execution.
+- Keep read-only direct tools available, keep `/agents/plan/run` as the existing protected runner, and document `/dev/tool/:name` as a local-dev/admin escape hatch outside the M100 user-safe path.
+- Add dependency-free M100 contract smokes for Patch 0 direct blocking plus pending AE lifecycle/protocol contracts that become strict work for Patch 1a/1b/2/3.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -686,8 +695,20 @@
 - 2026-05-19: M100 action safety is server-owned. Model output may propose candidate actions, but only the backend can create canonical `action_proposal`, `actionId`, `payloadRef`, `executionId`, stored executable payload, `payloadHash`, `previewHash`, risk policy version and confirmation proof.
 - 2026-05-19: AE command timeout semantics are stateful. A `queued` command can expire with a non-execution guarantee before delivery; a `leased` or `submitted` command cannot be honestly reported as safely cancelled, so UI/diagnostics must show unknown/stale semantics.
 - 2026-05-19: Direct `/tools/call`, MCP `tools/call`, `run_extendscript` and `run_extendscript_file` must not execute mutating/destructive/raw JSX through client-supplied `confirmed:true`; they must return proposal-required/blocked results unless routed through an explicit local-dev/admin escape hatch.
+- 2026-05-19: M100 Patch 0 default-deny is enforced at the daemon direct-tool boundary: `/tools/call` and MCP adapter calls use the `direct-tools-call` surface, read-only tools remain callable, and unknown/mutating/destructive/raw JSX tools return structured `proposal_required` or `unknown_tool_blocked` results without queueing AE commands.
+- 2026-05-19: `/dev/tool/:name` remains a token-protected local-dev/admin escape hatch for repo smokes and operator debugging, but it is explicitly outside the M100 user-safe confirmation path and must not be presented as normal user approval.
+- 2026-05-19: M100 contract smokes run non-strict by default in Patch 0: they pass the implemented direct-deny checks and list AE lifecycle/protocol contracts as pending until Patch 1a/1b/2/3.
 
 ## Validation
+
+- Milestone 98:
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check` for touched JavaScript files: `mcp-server\bridge-daemon.js`, `scripts\m100-ae-command-contract-smoke.js`, and `scripts\m100-protocol-contract-smoke.js`.
+  - Passed `node scripts\m100-ae-command-contract-smoke.js`; it verified M100 risk policy exposure, read-only `/tools/call`, proposal-blocked direct raw JSX, proposal-blocked direct mutating typed tool, default-denied unknown direct tool, and no AE command queued after blocked direct calls. It reports pending contracts for pre-delivery expiry, timeout after lease/submit, late result, concurrent command, and malformed wrapper parsing.
+  - Passed `node scripts\m100-protocol-contract-smoke.js`; it verified direct-deny protocol markers and reports pending contracts for legacy `result.plan` controls, malformed envelope rejection, expired confirmation, replayed confirmation, and mismatched payload/preview hash.
+  - Passed required local smokes: `provider-contract-smoke`, `solution-registry-smoke`, `solution-candidate-report-smoke`, `solution-promotion-smoke`, `solution-retrieval-smoke`, `solution-library-validation-smoke`, `project-intent-memory-smoke`, `plan-classification-smoke`, `plan-repair-smoke`, `semantic-verification-smoke`, `reliability-validation-suite-smoke`, `chatgpt-connector-smoke`, `provider-api-smoke`, `prompt-optimization-smoke`, `bridge-only-smoke-test`, and `smoke-test`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for existing text files.
+  - Did not run live CEP/After Effects, external-provider, OpenAI/Codex CLI planner, or mutating-live checks because Patch 0 is local/non-live and no explicit approval was given for live or mutating validation.
 
 - Milestone 97:
   - Documentation-only milestone; no JavaScript files were changed, so `node --check` was not applicable.
