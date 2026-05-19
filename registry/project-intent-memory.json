@@ -1,7 +1,7 @@
 {
   "schema": "ae-project-intent-memory.v1",
   "entrySchema": "ae-project-intent-memory-entry.v1",
-  "updatedAt": "2026-05-18",
+  "updatedAt": "2026-05-19",
   "policy": {
     "plannerUse": "advisory-memory-enabled",
     "maxPromptChars": 1800,
@@ -126,6 +126,34 @@
       "source": {
         "kind": "agent-hardcore-session",
         "date": "2026-05-18",
+        "reviewed": true
+      },
+      "notes": [
+        "Memory is advisory only and never bypasses typed read tools or mutation gates."
+      ]
+    },
+    {
+      "schema": "ae-project-intent-memory-entry.v1",
+      "id": "agent-hardcore-autopilot-loop",
+      "status": "active",
+      "category": "workflow-hint",
+      "title": "Agent Hardcore Autopilot Loop",
+      "summary": "Agent Hardcore should plan, dry-run, execute protected mutations, read back results, and retry from compact failure evidence before stopping.",
+      "tags": [
+        "hardcore",
+        "autopilot",
+        "repair-loop",
+        "readback",
+        "checkpoint"
+      ],
+      "appliesWhen": [
+        "The user selects Agent Hardcore for an AE workflow and expects autonomous execution."
+      ],
+      "priority": 7,
+      "confidence": "medium",
+      "source": {
+        "kind": "agent-hardcore-session",
+        "date": "2026-05-19",
         "reviewed": true
       },
       "notes": [
