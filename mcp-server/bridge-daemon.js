@@ -979,7 +979,7 @@ function m100DirectToolCallBlock(source, name, args) {
   if (m100DirectEscapeHatchAllowed(source, args || {})) {
     return null;
   }
-  const clientProvidedConfirmation = Boolean(args && (args.confirm === true || args.confirmed === true));
+  const clientProvidedConfirmation = Boolean(args && (args.confirm === true || args.confirmed === true || args.confirmationToken || args.m100ConfirmationToken));
   return {
     ok: false,
     code: risk.known ? "proposal_required" : "unknown_tool_blocked",
@@ -1083,12 +1083,45 @@ function pruneM100ActionProposalStore(now = Date.now()) {
   for (const record of m100ActionProposalStore.values()) {
     if (!record || seen.has(record.actionId)) continue;
     seen.add(record.actionId);
-    const expiresAtMs = Date.parse(record.proposal && record.proposal.confirmation && record.proposal.confirmation.proposalExpiresAt || "");
+    const expiresAtMs = Date.parse(record.proposalExpiresAt || record.proposal && record.proposal.confirmation && record.proposal.confirmation.proposalExpiresAt || "");
     if (Number.isFinite(expiresAtMs) && expiresAtMs + m100Protocol.M100_ACTION_PROPOSAL_TTL_MS <= now) {
       m100ActionProposalStore.delete(record.actionId);
       m100ActionProposalStore.delete(record.payloadRef);
     }
   }
+}
+
+function m100ProtocolError(code, message, details) {
+  const error = new Error(message);
+  error.code = code;
+  if (details && typeof details === "object") {
+    Object.assign(error, details);
+  }
+  return error;
+}
+
+function m100StoredProposalCopy(proposal) {
+  const copy = JSON.parse(JSON.stringify(proposal || {}));
+  if (copy.confirmation) {
+    delete copy.confirmation.confirmationToken;
+  }
+  return copy;
+}
+
+function m100ProposalExpiresAtMs(record) {
+  return Date.parse(record && record.proposalExpiresAt || "");
+}
+
+function m100ActionProposalIsExpired(record, now = Date.now()) {
+  const expiresAtMs = m100ProposalExpiresAtMs(record);
+  return Number.isFinite(expiresAtMs) && expiresAtMs <= now;
+}
+
+function m100ActionRecordState(record) {
+  if (!record) return "missing";
+  if (record.cancelledAt) return "cancelled";
+  if (record.executionState) return record.executionState;
+  return record.confirmedAt ? "confirmed" : "pending";
 }
 
 function storeM100ActionProposal(proposal, payload) {
@@ -1101,13 +1134,27 @@ function storeM100ActionProposal(proposal, payload) {
     return null;
   }
   pruneM100ActionProposalStore();
+  const confirmation = proposal.confirmation || {};
+  const risk = proposal.risk || {};
   const record = {
+    requestId: proposal.requestId,
     actionId: proposal.actionId,
     payloadRef: proposal.action.payloadRef,
     payloadHash: proposal.action.payloadHash,
     previewHash: proposal.action.previewHash,
-    requestId: proposal.requestId,
-    proposal,
+    riskLevel: risk.level,
+    riskPolicyVersion: confirmation.riskPolicyVersion,
+    proposalExpiresAt: confirmation.proposalExpiresAt,
+    confirmationTokenHash: m100Protocol.hashConfirmationToken(confirmation.confirmationToken),
+    confirmedAt: null,
+    confirmedBySurface: null,
+    confirmedBySession: null,
+    confirmationSurface: confirmation.surface || "cep-panel",
+    confirmationSessionId: confirmation.sessionId || "",
+    executionState: "pending",
+    executionId: null,
+    cancelledAt: null,
+    proposal: m100StoredProposalCopy(proposal),
     payload,
     createdAt: new Date().toISOString()
   };
@@ -1117,13 +1164,15 @@ function storeM100ActionProposal(proposal, payload) {
     requestId: record.requestId,
     actionId: record.actionId,
     payloadRef: record.payloadRef,
-    riskLevel: proposal.risk && proposal.risk.level,
-    proposalExpiresAt: proposal.confirmation && proposal.confirmation.proposalExpiresAt
+    riskLevel: record.riskLevel,
+    proposalExpiresAt: record.proposalExpiresAt,
+    confirmationSurface: record.confirmationSurface,
+    confirmationSessionId: record.confirmationSessionId || null
   });
   return proposal;
 }
 
-function createM100AgentPlanProposal(planResult) {
+function createM100AgentPlanProposal(planResult, options = {}) {
   if (!planResult || !planResult.plan || !planResult.planValidation || planResult.planValidation.ok !== true) {
     return null;
   }
@@ -1144,6 +1193,9 @@ function createM100AgentPlanProposal(planResult) {
     },
     payload,
     preview,
+    ttlMs: options.ttlMs || planResult.m100ProposalTtlMs,
+    confirmationSurface: options.confirmationSurface || planResult.m100ConfirmationSurface || "cep-panel",
+    confirmationSessionId: options.confirmationSessionId || planResult.m100ConfirmationSessionId || "",
     logs: [
       {
         phase: "protocol_validation",
@@ -1155,13 +1207,56 @@ function createM100AgentPlanProposal(planResult) {
   return storeM100ActionProposal(proposal, payload);
 }
 
+function createM100AgentPlanProposalFromRequest(body) {
+  const args = body || {};
+  const plan = args.plan || args;
+  const requestId = optionalString(args, "requestId", "") || crypto.randomUUID();
+  const prepared = validateAgentPlanWithRepair(plan, requestId, {
+    solutionHints: args.solutionHints || args.planSolutionHints || null,
+    projectIntentMemory: args.projectIntentMemory || args.planProjectIntentMemory || null
+  }, {
+    repairPlan: args.repairPlan
+  });
+  const validation = prepared.validation;
+  if (!validation || validation.ok !== true) {
+    throw m100ProtocolError("m100_agent_plan_not_valid", "Agent plan must pass backend validation before an M100 action proposal can be created.", {
+      validation
+    });
+  }
+  const ttlMs = hasArg(args, "ttlMs") ? optionalNumber(args, "ttlMs", m100Protocol.M100_ACTION_PROPOSAL_TTL_MS) : undefined;
+  const planResult = {
+    requestId,
+    plan: prepared.plan,
+    planValidation: validation,
+    m100ProposalTtlMs: ttlMs,
+    m100ConfirmationSurface: optionalString(args, "m100ConfirmationSurface", optionalString(args, "confirmationSurface", optionalString(args, "confirmedBySurface", "cep-panel"))),
+    m100ConfirmationSessionId: optionalString(args, "m100ConfirmationSessionId", optionalString(args, "confirmationSessionId", optionalString(args, "confirmedBySession", "")))
+  };
+  const proposal = createM100AgentPlanProposal(planResult);
+  if (!proposal) {
+    throw m100ProtocolError("m100_action_proposal_create_failed", "Backend could not create an M100 action proposal for this plan.");
+  }
+  return {
+    proposal,
+    validation,
+    planRepair: prepared.repair || null,
+    repairedPlan: prepared.repair && prepared.repair.applied ? prepared.plan : null,
+    plan: prepared.plan
+  };
+}
+
 function m100PlanRunLookupKey(options) {
   const action = options && options.action && typeof options.action === "object" ? options.action : {};
   return {
     actionId: String(options && (options.actionId || options.m100ActionId) || action.actionId || "").trim(),
     payloadRef: String(options && (options.payloadRef || options.m100PayloadRef) || action.payloadRef || "").trim(),
     payloadHash: String(options && options.payloadHash || action.payloadHash || "").trim(),
-    previewHash: String(options && options.previewHash || action.previewHash || "").trim()
+    previewHash: String(options && options.previewHash || action.previewHash || "").trim(),
+    riskLevel: String(options && options.riskLevel || action.riskLevel || "").trim(),
+    riskPolicyVersion: String(options && options.riskPolicyVersion || action.riskPolicyVersion || "").trim(),
+    confirmationToken: String(options && (options.confirmationToken || options.m100ConfirmationToken) || "").trim(),
+    confirmedBySurface: String(options && (options.confirmedBySurface || options.confirmationSurface) || "").trim(),
+    confirmedBySession: String(options && (options.confirmedBySession || options.confirmationSessionId) || "").trim()
   };
 }
 
@@ -1171,37 +1266,138 @@ function resolveM100PlanRunOptions(options) {
   pruneM100ActionProposalStore();
   const record = m100ActionProposalStore.get(keys.payloadRef) || m100ActionProposalStore.get(keys.actionId);
   if (!record || record.payload && record.payload.kind !== "agent_plan") {
-    const error = new Error("M100 action proposal was not found. Create a fresh Agent proposal before running.");
-    error.code = "m100_action_proposal_not_found";
-    throw error;
+    throw m100ProtocolError("m100_action_proposal_not_found", "M100 action proposal was not found. Create a fresh Agent proposal before running.");
   }
   if (keys.actionId && keys.actionId !== record.actionId) {
-    const error = new Error("M100 actionId does not match the stored proposal.");
-    error.code = "m100_action_id_mismatch";
-    throw error;
+    throw m100ProtocolError("m100_action_id_mismatch", "M100 actionId does not match the stored proposal.");
   }
   if (keys.payloadRef && keys.payloadRef !== record.payloadRef) {
-    const error = new Error("M100 payloadRef does not match the stored proposal.");
-    error.code = "m100_payload_ref_mismatch";
-    throw error;
+    throw m100ProtocolError("m100_payload_ref_mismatch", "M100 payloadRef does not match the stored proposal.");
   }
   if (keys.payloadHash && keys.payloadHash !== record.payloadHash) {
-    const error = new Error("M100 payloadHash does not match the stored proposal.");
-    error.code = "m100_payload_hash_mismatch";
-    throw error;
+    throw m100ProtocolError("m100_payload_hash_mismatch", "M100 payloadHash does not match the stored proposal.");
   }
   if (keys.previewHash && keys.previewHash !== record.previewHash) {
-    const error = new Error("M100 previewHash does not match the stored proposal.");
-    error.code = "m100_preview_hash_mismatch";
-    throw error;
+    throw m100ProtocolError("m100_preview_hash_mismatch", "M100 previewHash does not match the stored proposal.");
+  }
+  if (m100ActionProposalIsExpired(record)) {
+    record.executionState = "expired";
+    throw m100ProtocolError("m100_action_proposal_expired", "M100 action proposal expired. Create a fresh Agent proposal before running.", {
+      actionId: record.actionId,
+      proposalExpiresAt: record.proposalExpiresAt
+    });
   }
   return {
     ...(options || {}),
     plan: record.payload.plan,
     requestId: record.requestId,
     _m100ActionProposal: record.proposal,
+    _m100ActionRecord: record,
     _m100PayloadRef: record.payloadRef
   };
+}
+
+function m100PlanRequiresConfirmation(validation) {
+  if (!validation) return false;
+  if (Number(validation.mutatingCount || 0) > 0) return true;
+  if (rawExtendscriptStepCount(validation) > 0) return true;
+  const steps = Array.isArray(validation.steps) ? validation.steps : [];
+  return steps.some((step) => step && M100_DESTRUCTIVE_TOOL_NAMES.has(String(step.tool || "")));
+}
+
+function confirmM100ActionProposal(record, options, run) {
+  const keys = m100PlanRunLookupKey(options || {});
+  if (!record) {
+    throw m100ProtocolError("m100_action_proposal_not_found", "M100 action proposal was not found. Create a fresh Agent proposal before running.");
+  }
+  if (record.executionState === "cancelled" || record.cancelledAt) {
+    throw m100ProtocolError("m100_action_proposal_cancelled", "M100 action proposal was already cancelled.");
+  }
+  if (record.confirmedAt || record.executionState === "confirmed" || record.executionState === "executing" || record.executionState === "completed" || record.executionState === "failed") {
+    throw m100ProtocolError("m100_confirmation_replayed", "M100 confirmation token was already used.", {
+      actionId: record.actionId,
+      state: m100ActionRecordState(record)
+    });
+  }
+  if (m100ActionProposalIsExpired(record)) {
+    record.executionState = "expired";
+    throw m100ProtocolError("m100_action_proposal_expired", "M100 action proposal expired. Create a fresh Agent proposal before running.", {
+      actionId: record.actionId,
+      proposalExpiresAt: record.proposalExpiresAt
+    });
+  }
+  if (record.riskPolicyVersion !== M100_RISK_POLICY_VERSION) {
+    throw m100ProtocolError("m100_risk_policy_changed", "M100 risk policy changed after this proposal was created. Create a fresh Agent proposal before running.", {
+      expectedRiskPolicyVersion: record.riskPolicyVersion,
+      currentRiskPolicyVersion: M100_RISK_POLICY_VERSION
+    });
+  }
+  if (!keys.payloadHash || keys.payloadHash !== record.payloadHash) {
+    throw m100ProtocolError("m100_payload_hash_mismatch", "M100 payloadHash does not match the stored proposal.");
+  }
+  if (!keys.previewHash || keys.previewHash !== record.previewHash) {
+    throw m100ProtocolError("m100_preview_hash_mismatch", "M100 previewHash does not match the stored proposal.");
+  }
+  if (!keys.riskLevel || keys.riskLevel !== record.riskLevel) {
+    throw m100ProtocolError("m100_risk_level_mismatch", "M100 risk level does not match the stored proposal.", {
+      expectedRiskLevel: record.riskLevel,
+      receivedRiskLevel: keys.riskLevel || null
+    });
+  }
+  if (!keys.riskPolicyVersion || keys.riskPolicyVersion !== record.riskPolicyVersion) {
+    throw m100ProtocolError("m100_risk_policy_mismatch", "M100 risk policy version does not match the stored proposal.", {
+      expectedRiskPolicyVersion: record.riskPolicyVersion,
+      receivedRiskPolicyVersion: keys.riskPolicyVersion || null
+    });
+  }
+  if (!keys.confirmationToken || m100Protocol.hashConfirmationToken(keys.confirmationToken) !== record.confirmationTokenHash) {
+    throw m100ProtocolError("m100_confirmation_token_mismatch", "M100 confirmation token does not match the stored proposal.");
+  }
+  if (!keys.confirmedBySurface || keys.confirmedBySurface !== record.confirmationSurface) {
+    throw m100ProtocolError("m100_confirmation_surface_mismatch", "M100 confirmation surface does not match the stored proposal.", {
+      expectedSurface: record.confirmationSurface,
+      receivedSurface: keys.confirmedBySurface || null
+    });
+  }
+  if (record.confirmationSessionId && keys.confirmedBySession !== record.confirmationSessionId) {
+    throw m100ProtocolError("m100_confirmation_session_mismatch", "M100 confirmation session does not match the stored proposal.", {
+      expectedSession: record.confirmationSessionId,
+      receivedSession: keys.confirmedBySession || null
+    });
+  }
+
+  record.confirmedAt = new Date().toISOString();
+  record.confirmedBySurface = keys.confirmedBySurface;
+  record.confirmedBySession = keys.confirmedBySession || "";
+  record.executionState = "confirmed";
+  record.executionId = run && run.id || null;
+  recordEvent("m100_action_proposal_confirmed", {
+    requestId: record.requestId,
+    actionId: record.actionId,
+    executionId: record.executionId,
+    confirmedBySurface: record.confirmedBySurface,
+    confirmedBySession: record.confirmedBySession || null
+  });
+  return record;
+}
+
+function m100RunFieldsForProposal(proposal, includeConfirmation) {
+  if (!proposal || !proposal.action || !proposal.confirmation || !proposal.risk) return {};
+  const fields = {
+    actionId: proposal.actionId,
+    payloadRef: proposal.action.payloadRef,
+    payloadHash: proposal.action.payloadHash,
+    previewHash: proposal.action.previewHash,
+    riskLevel: proposal.risk.level,
+    riskPolicyVersion: proposal.confirmation.riskPolicyVersion,
+    requestId: proposal.requestId
+  };
+  if (includeConfirmation) {
+    fields.confirmationToken = proposal.confirmation.confirmationToken;
+    fields.confirmedBySurface = proposal.confirmation.surface || "cep-panel";
+    fields.confirmedBySession = proposal.confirmation.sessionId || "";
+  }
+  return fields;
 }
 
 function aeLiteral(value) {
@@ -4501,10 +4697,17 @@ async function runAgentHardcoreSession(source, args) {
         attempt.blocker = attempt.planResult && attempt.planResult.planParseError || "Plan validation failed.";
         continue;
       }
+      if (!attempt.planResult.m100ActionProposal) {
+        attempt.planResult.m100ConfirmationSurface = "agent-hardcore";
+        attempt.planResult.m100ConfirmationSessionId = session.sessionId;
+        attempt.planResult.m100ActionProposal = createM100AgentPlanProposal(attempt.planResult);
+      }
+      const attemptM100Proposal = attempt.planResult.m100ActionProposal || null;
       const rawStepCount = rawExtendscriptStepCount(attempt.planResult.planValidation);
       const rawFallbackAllowed = Boolean(session.allowRawFallback && session.typedToolFailures.length > 0 && rawStepCount > 0);
 
       attempt.dryRun = await runValidatedAgentPlan({
+        ...m100RunFieldsForProposal(attemptM100Proposal, false),
         plan: attempt.planResult.plan,
         requestId: attempt.planResult.requestId,
         dryRun: true,
@@ -4521,6 +4724,7 @@ async function runAgentHardcoreSession(source, args) {
         : "";
 
       attempt.run = await runValidatedAgentPlan({
+        ...m100RunFieldsForProposal(attemptM100Proposal, true),
         plan: attempt.planResult.plan,
         requestId: attempt.planResult.requestId,
         dryRun: false,
@@ -5048,12 +5252,24 @@ async function runValidatedAgentPlan(options) {
       run.recoveryHint = planRunRecoveryHint(run);
     }
     if (options._m100ActionProposal) {
+      const actionRecord = options._m100ActionRecord || null;
+      if (actionRecord && !run.dryRun && actionRecord.executionState === "executing") {
+        actionRecord.executionState = run.ok ? "completed" : "failed";
+        actionRecord.executionId = run.id;
+        actionRecord.finishedAt = run.finishedAt;
+      }
       run.m100Action = {
         actionId: options._m100ActionProposal.actionId,
         payloadRef: options._m100PayloadRef || options._m100ActionProposal.action.payloadRef,
         payloadHash: options._m100ActionProposal.action.payloadHash,
         previewHash: options._m100ActionProposal.action.previewHash,
-        riskPolicyVersion: options._m100ActionProposal.confirmation.riskPolicyVersion
+        riskLevel: options._m100ActionProposal.risk && options._m100ActionProposal.risk.level || null,
+        riskPolicyVersion: options._m100ActionProposal.confirmation.riskPolicyVersion,
+        proposalExpiresAt: options._m100ActionProposal.confirmation.proposalExpiresAt,
+        confirmationState: actionRecord ? m100ActionRecordState(actionRecord) : "resolved",
+        confirmedAt: actionRecord && actionRecord.confirmedAt || null,
+        confirmedBySurface: actionRecord && actionRecord.confirmedBySurface || null,
+        confirmedBySession: actionRecord && actionRecord.confirmedBySession || null
       };
       run.m100Message = m100Protocol.createActionResultEnvelope({
         ok: run.ok,
@@ -5071,6 +5287,18 @@ async function runValidatedAgentPlan(options) {
   if (!validation.ok) {
     run.ok = false;
     run.error = "Plan validation failed.";
+    return finishRun();
+  }
+  if (!dryRun && m100PlanRequiresConfirmation(validation) && !options._m100ActionRecord) {
+    run.ok = false;
+    run.error = "A server-owned M100 action proposal is required to run mutating, destructive, or raw ExtendScript plan steps.";
+    run.errorCode = "m100_confirmation_required";
+    run.safety.status = "blocked_m100_confirmation_required";
+    run.safety.m100 = {
+      code: "proposal_required",
+      riskPolicyVersion: M100_RISK_POLICY_VERSION,
+      reason: "client-authored confirm:true is not an execution authority for mutating/destructive/raw plan steps"
+    };
     return finishRun();
   }
   if (dryRun && validation.ok !== true && validation.classification && validation.classification.allowsDryRun === false) {
@@ -5103,6 +5331,24 @@ async function runValidatedAgentPlan(options) {
     run.ok = false;
     run.error = "allowMutations:true is required to run mutating plan steps.";
     return finishRun();
+  }
+  if (!dryRun && options._m100ActionRecord) {
+    try {
+      confirmM100ActionProposal(options._m100ActionRecord, options, run);
+      options._m100ActionRecord.executionState = "executing";
+    } catch (error) {
+      run.ok = false;
+      run.error = error.message || String(error);
+      run.errorCode = error.code || "m100_confirmation_failed";
+      run.safety.status = "blocked_m100_confirmation_failed";
+      run.safety.m100 = {
+        code: run.errorCode,
+        actionId: options._m100ActionRecord.actionId,
+        state: m100ActionRecordState(options._m100ActionRecord),
+        proposalExpiresAt: options._m100ActionRecord.proposalExpiresAt
+      };
+      return finishRun();
+    }
   }
   if (mutatingExecution && !activeEditSessionAtStart && !checkpointStepPresent) {
     if (!autoEditSession) {
@@ -5540,7 +5786,9 @@ async function runAgentPlanLogged(source, args) {
       planProjectIntentMemory: projectIntentMemory.retrieval,
       planSolutionHints: solutionHints.retrieval,
       planRepairError: repairError,
-      planParseError: parsed.error || null
+      planParseError: parsed.error || null,
+      m100ConfirmationSurface: optionalString(args || {}, "m100ConfirmationSurface", optionalString(args || {}, "confirmationSurface", "cep-panel")),
+      m100ConfirmationSessionId: optionalString(args || {}, "m100ConfirmationSessionId", optionalString(args || {}, "confirmationSessionId", ""))
     };
     const actionProposal = createM100AgentPlanProposal(planResponse);
     if (actionProposal) {
@@ -5786,6 +6034,29 @@ function startHttpBridge() {
       return;
     }
 
+    if ((url.pathname === "/agents/plan/propose" || url.pathname === "/dev/agents/plan/propose") && req.method === "POST") {
+      if (!requireToken(req, res, url)) return;
+      try {
+        const body = await readJsonBody(req);
+        const proposed = createM100AgentPlanProposalFromRequest(body || {});
+        writeJson(res, 200, {
+          ok: true,
+          proposal: proposed.proposal,
+          validation: proposed.validation,
+          planRepair: proposed.planRepair,
+          repairedPlan: proposed.repairedPlan
+        });
+      } catch (error) {
+        writeJson(res, 400, {
+          ok: false,
+          error: error.message || String(error),
+          code: error.code || null,
+          validation: error.validation || null
+        });
+      }
+      return;
+    }
+
     if ((url.pathname === "/agents/plan/validate" || url.pathname === "/dev/agents/plan/validate") && req.method === "POST") {
       if (!requireToken(req, res, url)) return;
       try {
@@ -5869,7 +6140,8 @@ function startHttpBridge() {
       } catch (error) {
         writeJson(res, 400, {
           ok: false,
-          error: error.message || String(error)
+          error: error.message || String(error),
+          code: error.code || null
         });
       }
       return;
@@ -6444,13 +6716,49 @@ const tools = [
   },
   {
     name: "run_ai_agent_plan",
-    description: "Dry-run or execute a validated AE MCP plan. Real execution requires confirm:true; mutating plans also require allowMutations:true.",
+    description: "Dry-run or execute a validated AE MCP plan. Mutating/destructive/raw real execution requires a server-owned M100 action proposal, confirmation token, confirm:true, and allowMutations:true.",
     inputSchema: {
       type: "object",
       properties: {
         plan: {
           type: "object",
-          description: "Plan object returned by plan_with_ai_agent."
+          description: "Legacy dry-run/read-only plan object. Proposal-backed real runs resolve the executable plan from actionId/payloadRef instead of this body."
+        },
+        actionId: {
+          type: "string",
+          description: "Backend-created M100 action proposal id."
+        },
+        payloadRef: {
+          type: "string",
+          description: "Server-side M100 payload reference from the action proposal."
+        },
+        payloadHash: {
+          type: "string",
+          description: "Canonical payload hash from the action proposal."
+        },
+        previewHash: {
+          type: "string",
+          description: "Canonical preview hash from the action proposal."
+        },
+        riskLevel: {
+          type: "string",
+          description: "Risk level from the action proposal."
+        },
+        riskPolicyVersion: {
+          type: "string",
+          description: "Risk policy version from the action proposal."
+        },
+        confirmationToken: {
+          type: "string",
+          description: "Single-use server-issued confirmation token from the action proposal, required for real proposal-backed runs."
+        },
+        confirmedBySurface: {
+          type: "string",
+          description: "Surface echo for the proposal confirmation, such as cep-panel."
+        },
+        confirmedBySession: {
+          type: "string",
+          description: "Session echo for the proposal confirmation when present."
         },
         requestId: {
           type: "string",
@@ -6489,7 +6797,7 @@ const tools = [
           description: "Maximum steps to consider. Defaults to 20."
         }
       },
-      required: ["plan"]
+      required: []
     }
   },
   {

@@ -43,6 +43,8 @@ function main() {
   contains(bridge, "payloadHash", "canonical payload hash marker");
   contains(bridge, "previewHash", "canonical preview hash marker");
   contains(bridge, "proposalExpiresAt", "proposal expiry marker");
+  contains(bridge, "confirmationTokenHash", "server-side confirmation token hash marker");
+  contains(bridge, "confirmM100ActionProposal", "single-use confirmation helper");
 
   contains(panel, "normalizeM100ActionProposal", "panel M100 proposal validator");
   contains(panel, "appendInlineActionProposalActions", "panel M100 action controls");
@@ -85,6 +87,8 @@ function main() {
   assert(/^sha256:[a-f0-9]{64}$/.test(proposal.action.payloadHash), "Proposal must include payloadHash");
   assert(/^sha256:[a-f0-9]{64}$/.test(proposal.action.previewHash), "Proposal must include previewHash");
   assert(proposal.confirmation.proposalExpiresAt, "Proposal must include proposalExpiresAt");
+  assert(/^confirm_[a-f0-9]{48}$/.test(proposal.confirmation.confirmationToken), "Proposal must include a server-issued confirmation token");
+  assert.strictEqual(proposal.confirmation.surface, "cep-panel", "Proposal must include a confirmation surface");
 
   const modelAuthored = {
     ...proposal,
@@ -134,6 +138,7 @@ function main() {
       "proposal_required and unknown_tool_blocked are structured codes",
       "raw JSX tool names are listed in the policy surface",
       "backend-created action_proposal validates with actionId, payloadRef, hashes, risk and expiry",
+      "backend-created action_proposal includes a server-issued confirmation token and surface",
       "model-authored and malformed action_proposal envelopes are rejected",
       "panel executable controls are wired to M100 action proposals, not legacy result.plan"
     ],

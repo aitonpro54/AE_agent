@@ -8,6 +8,7 @@ const M100_BACKEND_SOURCE = "ae-agent-bridge";
 const M100_ACTION_PROPOSAL_TTL_MS = 15 * 60 * 1000;
 const M100_RISK_LEVELS = ["read_only", "mutating", "destructive", "raw_jsx"];
 const M100_ACTION_KINDS = ["ae_tool", "ae_jsx"];
+const M100_CONFIRMATION_TOKEN_PREFIX = "confirm_";
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -53,6 +54,14 @@ function createM100Id(prefix) {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, "")}`;
 }
 
+function createConfirmationToken() {
+  return `${M100_CONFIRMATION_TOKEN_PREFIX}${crypto.randomBytes(24).toString("hex")}`;
+}
+
+function hashConfirmationToken(value) {
+  return sha256Text(value);
+}
+
 function normalizeRisk(risk) {
   const source = isPlainObject(risk) ? risk : {};
   const level = M100_RISK_LEVELS.includes(source.level) ? source.level : "mutating";
@@ -93,6 +102,7 @@ function createAssistantResponseEnvelope(options) {
 
 function createActionProposalEnvelope(options) {
   const source = options || {};
+  const confirmationSource = isPlainObject(source.confirmation) ? source.confirmation : {};
   const nowMs = Number(source.nowMs || Date.now());
   const payload = source.payload === undefined ? null : source.payload;
   const preview = compactText(source.preview || source.summary || "AE action proposal", 2000);
@@ -102,6 +112,9 @@ function createActionProposalEnvelope(options) {
   const actionId = compactText(source.actionId || createM100Id("act"), 120);
   const payloadRef = compactText(action.payloadRef || source.payloadRef || createM100Id("payload"), 160);
   const proposalExpiresAt = new Date(nowMs + Math.max(1000, Number(source.ttlMs || M100_ACTION_PROPOSAL_TTL_MS))).toISOString();
+  const confirmationToken = compactText(source.confirmationToken || confirmationSource.confirmationToken || createConfirmationToken(), 160);
+  const confirmationSurface = compactText(source.confirmationSurface || confirmationSource.surface || "cep-panel", 80);
+  const confirmationSessionId = compactText(source.confirmationSessionId || confirmationSource.sessionId || "", 160);
   return {
     protocolVersion: M100_PROTOCOL_VERSION,
     messageType: "action_proposal",
@@ -125,7 +138,10 @@ function createActionProposalEnvelope(options) {
       required: true,
       state: "pending",
       proposalExpiresAt,
-      riskPolicyVersion: M100_RISK_POLICY_VERSION
+      riskPolicyVersion: M100_RISK_POLICY_VERSION,
+      confirmationToken,
+      surface: confirmationSurface,
+      sessionId: confirmationSessionId || undefined
     },
     logs: normalizeLogs(source.logs)
   };
@@ -171,6 +187,10 @@ function hashLooksValid(value) {
   return /^sha256:[a-f0-9]{64}$/.test(String(value || ""));
 }
 
+function confirmationTokenLooksValid(value) {
+  return /^confirm_[a-f0-9]{48}$/.test(String(value || ""));
+}
+
 function validateActionProposalEnvelope(envelope) {
   const errors = [];
   if (!isPlainObject(envelope)) {
@@ -205,6 +225,8 @@ function validateActionProposalEnvelope(envelope) {
     if (envelope.confirmation.state !== "pending") errors.push("invalid_confirmation_state");
     if (!envelope.confirmation.proposalExpiresAt || Number.isNaN(Date.parse(envelope.confirmation.proposalExpiresAt))) errors.push("invalid_proposal_expiry");
     if (envelope.confirmation.riskPolicyVersion !== M100_RISK_POLICY_VERSION) errors.push("invalid_risk_policy_version");
+    if (!confirmationTokenLooksValid(envelope.confirmation.confirmationToken)) errors.push("invalid_confirmation_token");
+    if (!envelope.confirmation.surface) errors.push("missing_confirmation_surface");
   }
   return { ok: errors.length === 0, errors };
 }
@@ -219,11 +241,14 @@ module.exports = {
   M100_BACKEND_SOURCE,
   M100_ACTION_PROPOSAL_TTL_MS,
   M100_RISK_LEVELS,
+  M100_CONFIRMATION_TOKEN_PREFIX,
   compactText,
   sha256Payload,
   sha256Text,
   stableStringify,
   createM100Id,
+  createConfirmationToken,
+  hashConfirmationToken,
   createAssistantResponseEnvelope,
   createActionProposalEnvelope,
   createActionResultEnvelope,

@@ -647,17 +647,65 @@ async function callBridgeTool(config, name, args) {
   return normalizeBridgeToolResult(name, response.body.result);
 }
 
+async function createBridgePlanProposal(config, prepared, timeoutMs) {
+  const response = await bridgeRequest(config, "POST", "/agents/plan/propose", {
+    plan: prepared.planRunPayload.plan,
+    requestId: prepared.planRunPayload.requestId,
+    repairPlan: true,
+    m100ConfirmationSurface: "chatgpt-connector",
+    m100ConfirmationSessionId: prepared.candidateId
+  }, timeoutMs);
+  if (response.status !== 200 || !response.body || response.body.ok !== true || !response.body.proposal) {
+    throw new Error(response.body && response.body.error ? response.body.error : `Bridge plan proposal failed with HTTP ${response.status}`);
+  }
+  return response.body.proposal;
+}
+
+function bridgePlanRunFieldsForProposal(proposal, includeConfirmation) {
+  const action = proposal && proposal.action || {};
+  const confirmation = proposal && proposal.confirmation || {};
+  const risk = proposal && proposal.risk || {};
+  const fields = {
+    actionId: proposal && proposal.actionId,
+    payloadRef: action.payloadRef,
+    payloadHash: action.payloadHash,
+    previewHash: action.previewHash,
+    riskLevel: risk.level,
+    riskPolicyVersion: confirmation.riskPolicyVersion,
+    requestId: proposal && proposal.requestId
+  };
+  if (includeConfirmation) {
+    fields.confirmationToken = confirmation.confirmationToken;
+    fields.confirmedBySurface = confirmation.surface || "chatgpt-connector";
+    fields.confirmedBySession = confirmation.sessionId || "";
+  }
+  return fields;
+}
+
+function bridgePlanRunPayloadForProposal(prepared, proposal, overrides) {
+  return Object.assign({
+    dryRun: prepared.dryRun,
+    confirm: prepared.planRunPayload.confirm,
+    allowMutations: prepared.planRunPayload.allowMutations,
+    autoEditSession: prepared.planRunPayload.autoEditSession,
+    allowRawExtendscript: prepared.planRunPayload.allowRawExtendscript,
+    maxSteps: prepared.planRunPayload.maxSteps
+  }, bridgePlanRunFieldsForProposal(proposal, prepared.dryRun !== true), overrides || {});
+}
+
 async function runExtendscriptCandidate(config, args) {
   const prepared = prepareExtendscriptCandidateRun(config, args || {});
   for (const call of prepared.readBackToolCalls) {
     assertReadBackAllowed(call);
   }
   const timeoutMs = Number(args && args.timeoutMs) || config.timeoutMs;
+  const actionProposal = await createBridgePlanProposal(config, prepared, timeoutMs);
   let preflightDryRun = null;
-  let planRunPayload = prepared.planRunPayload;
+  let planRunPayload = bridgePlanRunPayloadForProposal(prepared, actionProposal);
   if (!prepared.dryRun) {
-    const dryRunPayload = Object.assign({}, prepared.planRunPayload, {
+    const dryRunPayload = bridgePlanRunPayloadForProposal(prepared, actionProposal, {
       dryRun: true,
+      confirm: true,
       allowRawExtendscript: false
     });
     const dryRunResponse = await bridgeRequest(config, "POST", "/agents/plan/run", dryRunPayload, timeoutMs);
@@ -691,7 +739,7 @@ async function runExtendscriptCandidate(config, args) {
         })
       };
     }
-    planRunPayload = Object.assign({}, prepared.planRunPayload, {
+    planRunPayload = bridgePlanRunPayloadForProposal(prepared, actionProposal, {
       rawExtendscriptDryRunId: preflightDryRun.id || ""
     });
   }

@@ -1370,6 +1370,14 @@
     return /^sha256:[a-f0-9]{64}$/.test(String(value || ""));
   }
 
+  function m100ConfirmationTokenLooksValid(value) {
+    return /^confirm_[a-f0-9]{48}$/.test(String(value || ""));
+  }
+
+  function m100ConfirmationSessionId() {
+    return panelConnectionId + ":" + activeChatSessionId;
+  }
+
   function normalizeM100ActionProposal(value) {
     if (!isPlainObject(value)) return null;
     if (value.protocolVersion !== M100_PROTOCOL_VERSION) return null;
@@ -1384,6 +1392,8 @@
     if (!isPlainObject(value.confirmation)) return null;
     if (value.confirmation.required !== true || value.confirmation.state !== "pending") return null;
     if (value.confirmation.riskPolicyVersion !== M100_RISK_POLICY_VERSION) return null;
+    if (!m100ConfirmationTokenLooksValid(value.confirmation.confirmationToken)) return null;
+    if (!value.confirmation.surface) return null;
     if (!value.confirmation.proposalExpiresAt || isNaN(Date.parse(value.confirmation.proposalExpiresAt))) return null;
     return value;
   }
@@ -3005,6 +3015,8 @@
       payloadRef: proposal.action.payloadRef,
       payloadHash: proposal.action.payloadHash,
       previewHash: proposal.action.previewHash,
+      riskLevel: proposal.risk.level,
+      riskPolicyVersion: proposal.confirmation.riskPolicyVersion,
       requestId: proposal.requestId,
       dryRun: dryRun,
       confirm: !dryRun,
@@ -3012,6 +3024,11 @@
       autoEditSession: autoEditSession,
       timeoutMs: 120000
     };
+    if (!dryRun) {
+      body.confirmationToken = proposal.confirmation.confirmationToken;
+      body.confirmedBySurface = proposal.confirmation.surface || "cep-panel";
+      body.confirmedBySession = proposal.confirmation.sessionId || m100ConfirmationSessionId();
+    }
     if (allowRawExtendscript) {
       body.allowRawExtendscript = true;
       body.rawExtendscriptDryRunId = lastAcceptedDryRun.runId;
@@ -3110,6 +3127,8 @@
       promptOptimization: optimizePrompt,
       hardcore: hardcoreMode,
       agentMode: hardcoreMode ? "hardcore" : "agent",
+      m100ConfirmationSurface: "cep-panel",
+      m100ConfirmationSessionId: m100ConfirmationSessionId(),
       timeoutMs: 120000
     } : {
       agentId: agentId,
@@ -3118,6 +3137,10 @@
       promptOptimization: optimizePrompt,
       timeoutMs: 120000
     };
+    if (agentPlanMode) {
+      body.m100ConfirmationSurface = "cep-panel";
+      body.m100ConfirmationSessionId = m100ConfirmationSessionId();
+    }
 
     request("POST", path, body, function (error, response) {
       setChatBusy(false);

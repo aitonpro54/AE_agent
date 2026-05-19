@@ -109,9 +109,64 @@ function createFakeBridgeServer(captured) {
       return;
     }
 
+    if (req.url === "/agents/plan/propose" && req.method === "POST") {
+      const body = await readBody(req);
+      if (!Array.isArray(captured.proposals)) captured.proposals = [];
+      const actionId = `fake-action-${captured.proposals.length + 1}`;
+      const payloadRef = `fake-payload-${captured.proposals.length + 1}`;
+      const proposal = {
+        protocolVersion: "m100.v1",
+        messageType: "action_proposal",
+        status: "awaiting_confirmation",
+        createdBy: "ae-agent-bridge",
+        serverCreated: true,
+        requestId: body.requestId || `fake-request-${captured.proposals.length + 1}`,
+        actionId,
+        summary: "Fake connector proposal",
+        risk: {
+          level: "raw_jsx",
+          requiresConfirmation: true,
+          reasons: ["fake connector raw JSX proposal"]
+        },
+        action: {
+          kind: "ae_tool",
+          toolName: "run_ai_agent_plan",
+          preview: "Fake connector proposal",
+          payloadRef,
+          payloadHash: `sha256:${"a".repeat(64)}`,
+          previewHash: `sha256:${"b".repeat(64)}`
+        },
+        confirmation: {
+          required: true,
+          state: "pending",
+          proposalExpiresAt: new Date(Date.now() + 600000).toISOString(),
+          riskPolicyVersion: "m100-risk-v1",
+          confirmationToken: `confirm_${"c".repeat(48)}`,
+          surface: body.m100ConfirmationSurface || "chatgpt-connector",
+          sessionId: body.m100ConfirmationSessionId || ""
+        }
+      };
+      captured.proposals.push({ proposal, plan: body.plan });
+      captured.proposal = { proposal, plan: body.plan };
+      writeJson(res, 200, {
+        ok: true,
+        proposal,
+        validation: {
+          ok: true,
+          stepCount: body.plan && body.plan.steps ? body.plan.steps.length : 1,
+          mutatingCount: 1
+        }
+      });
+      return;
+    }
+
     if (req.url === "/agents/plan/run" && req.method === "POST") {
       const body = await readBody(req);
       if (!Array.isArray(captured.planRuns)) captured.planRuns = [];
+      const proposalRecord = Array.isArray(captured.proposals)
+        ? captured.proposals.find((item) => item && item.proposal && item.proposal.actionId === body.actionId)
+        : null;
+      const plan = body.plan || (proposalRecord && proposalRecord.plan) || null;
       const runId = body.dryRun === true ? `fake-dry-run-${captured.planRuns.length + 1}` : `fake-run-${captured.planRuns.length + 1}`;
       const approvedDryRunId = captured.planRuns
         .slice()
@@ -158,7 +213,7 @@ function createFakeBridgeServer(captured) {
               index: 1,
               tool: "run_extendscript_file",
               status: body.dryRun === true ? "ready" : "completed",
-              args: body.plan && body.plan.steps && body.plan.steps[0] ? body.plan.steps[0].args : {}
+              args: plan && plan.steps && plan.steps[0] ? plan.steps[0].args : {}
             }
           ]
         }
@@ -532,9 +587,11 @@ async function main() {
     assert(protectedPlanRun.allowRawExtendscript === true, "Expected connector wrapper to enable raw ExtendScript only inside the protected plan runner.");
     assert(protectedPlanRun.rawExtendscriptDryRunId === preflightPlanRun.__fakeRunId, "Expected real run to include the matching dry-run gate id.");
     assert(protectedPlanRun.autoEditSession === true, "Expected auto edit session in bridge payload.");
-    assert(protectedPlanRun.plan.steps[0].tool === "run_extendscript_file", "Expected file-based candidate execution.");
-    assert(protectedPlanRun.plan.steps[0].args.filePath === savedCandidate.structuredContent.jsxPath, "Expected saved candidate JSX path.");
-    assert(protectedPlanRun.plan.steps[0].args.verifyAfter === true, "Expected bridge verification enabled.");
+    assert(protectedPlanRun.actionId && protectedPlanRun.payloadRef && protectedPlanRun.confirmationToken, "Expected proposal-backed bridge payload.");
+    assert(!protectedPlanRun.plan, "Protected connector run must not post executable plan body.");
+    assert(captured.proposal.plan.steps[0].tool === "run_extendscript_file", "Expected file-based candidate execution.");
+    assert(captured.proposal.plan.steps[0].args.filePath === savedCandidate.structuredContent.jsxPath, "Expected saved candidate JSX path.");
+    assert(captured.proposal.plan.steps[0].args.verifyAfter === true, "Expected bridge verification enabled.");
     assert(captured.readBack.name === "get_active_comp", "Expected configured read-back tool call.");
     assert(!JSON.stringify(runCandidate.structuredContent).includes("app.beginUndoGroup"), "Run result must not return raw JSX.");
 

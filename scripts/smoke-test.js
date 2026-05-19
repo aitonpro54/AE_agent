@@ -1611,11 +1611,11 @@ async function main() {
     mutatingBlocked.status !== 400 ||
     mutatingBlocked.body.ok !== false ||
     !mutatingBlocked.body.run ||
-    mutatingBlocked.body.run.safety.status !== "blocked_missing_edit_session" ||
-    String(mutatingBlocked.body.run.error || "").indexOf("autoEditSession:true") < 0 ||
-    String(mutatingBlocked.body.run.recoveryHint || "").indexOf("No project change was started") < 0
+    mutatingBlocked.body.run.safety.status !== "blocked_m100_confirmation_required" ||
+    mutatingBlocked.body.run.errorCode !== "m100_confirmation_required" ||
+    String(mutatingBlocked.body.run.error || "").indexOf("server-owned M100 action proposal") < 0
   ) {
-    throw new Error("Mutating plan without checkpoint/edit session was not blocked");
+    throw new Error("Mutating plan without an M100 proposal was not blocked");
   }
   if (
     rawExtendscriptDryRun.status !== 200 ||
@@ -1633,21 +1633,19 @@ async function main() {
     rawExtendscriptWrongGate.status !== 400 ||
     rawExtendscriptWrongGate.body.ok !== false ||
     !rawExtendscriptWrongGate.body.run ||
-    rawExtendscriptWrongGate.body.run.safety.status !== "blocked_raw_extendscript_gate" ||
-    String(rawExtendscriptWrongGate.body.run.error || "").indexOf("same current plan") < 0
+    rawExtendscriptWrongGate.body.run.safety.status !== "blocked_m100_confirmation_required" ||
+    rawExtendscriptWrongGate.body.run.errorCode !== "m100_confirmation_required"
   ) {
-    throw new Error("Raw ExtendScript run without matching dry-run gate was not blocked");
+    throw new Error("Raw ExtendScript run without an M100 proposal was not blocked");
   }
   if (
     rawExtendscriptAfterDryRun.status !== 400 ||
     rawExtendscriptAfterDryRun.body.ok !== false ||
     !rawExtendscriptAfterDryRun.body.run ||
-    !rawExtendscriptAfterDryRun.body.run.safety.rawExtendscriptGate ||
-    rawExtendscriptAfterDryRun.body.run.safety.rawExtendscriptGate.status !== "approved" ||
-    rawExtendscriptAfterDryRun.body.run.safety.status !== "blocked_missing_edit_session" ||
-    String(rawExtendscriptAfterDryRun.body.run.error || "").indexOf("autoEditSession:true") < 0
+    rawExtendscriptAfterDryRun.body.run.safety.status !== "blocked_m100_confirmation_required" ||
+    rawExtendscriptAfterDryRun.body.run.errorCode !== "m100_confirmation_required"
   ) {
-    throw new Error("Raw ExtendScript dry-run gate did not unlock the normal edit-session safety check");
+    throw new Error("Raw ExtendScript dry-run gate bypassed the M100 proposal requirement");
   }
   if (
     devRequest.status !== 200 ||

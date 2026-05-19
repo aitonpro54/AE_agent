@@ -75,6 +75,7 @@
 - [x] Milestone 99: M100 Patch 1a AE command lifecycle and pre-delivery expiry.
 - [x] Milestone 100: M100 Patch 1b CEP/backend single-flight and strict AE wrapper parsing.
 - [x] Milestone 101: M100 Patch 2 server-owned action proposal registry and legacy-control removal.
+- [x] Milestone 102: M100 Patch 3 single-use confirmation gate and direct-tool proposal requirement.
 
 ## Current Stable Baseline
 
@@ -600,6 +601,16 @@
 - Remove live/transcript/localStorage execution-control creation from legacy `result.plan` shapes. Restored transcript text can still be converted into a fresh Agent proposal, but stale structured plan payloads no longer restore executable buttons.
 - Promote Patch 2 protocol smoke coverage for backend-created proposal validation, model-authored/malformed proposal rejection and legacy `result.plan` non-executable controls. Patch 3 pending contracts remain for expiry/replay/mismatched confirmation enforcement.
 
+### Milestone 102: M100 Patch 3 single-use confirmation gate and direct-tool proposal requirement
+
+- Extend backend-created M100 `action_proposal` envelopes with a server-issued `confirmationToken`, confirmation surface and optional session id. The daemon stores only `confirmationTokenHash` with canonical `requestId`, `actionId`, `payloadRef`, `payloadHash`, `previewHash`, `riskLevel`, `riskPolicyVersion`, `proposalExpiresAt`, `confirmedAt`, `confirmedBySurface`, `confirmedBySession` and execution state.
+- Add `/agents/plan/propose` as the backend canonicalization route for already-known candidate plans, so non-provider flows such as ChatGPT connector JSX Lab can create server-owned proposals without posting executable plan bodies to the run endpoint.
+- Enforce proposal-backed real runs through `confirmM100ActionProposal`: replayed tokens, expired proposals, payload/preview/risk/risk-policy mismatches, wrong confirmation surface/session and already-used records are rejected before any plan step can queue AE work.
+- Block mutating, destructive and raw ExtendScript `/agents/plan/run` attempts that rely only on client-authored `confirm:true`; dry-runs and read-only compatibility runs remain available, while proposal-backed controls resolve the executable plan from the server-side action store.
+- Update CEP proposal validation and run payloads to require/send confirmation token, risk level, risk policy version and CEP surface/session proof.
+- Route ChatGPT connector `run_extendscript_candidate` through `propose -> dry-run -> confirmed run`, with the real run sending only proposal identifiers/proof plus runner safety flags, not the executable `plan` body.
+- Add `scripts/m100-confirmation-gate-smoke.js` and promote Patch 3 contracts for successful confirmation, replay rejection, expiry rejection, payload/risk/surface mismatch rejection, no-proposal mutating run rejection and direct raw JSX forged-confirmation rejection.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -737,8 +748,19 @@
 - 2026-05-19: M100 Patch 2 makes executable Agent controls proposal-owned rather than plan-shape-owned. Backend-created `action_proposal` envelopes carry `actionId`, `payloadRef`, `payloadHash`, `previewHash`, risk, expiry and confirmation metadata; model output and CEP transcript data are candidates/display text only.
 - 2026-05-19: The CEP panel no longer restores or renders executable buttons from legacy `result.plan`, including live `options.planActions`, transcript/localStorage plan restoration and stale compatibility shapes. Proposal-backed controls must pass the panel's M100 envelope validator.
 - 2026-05-19: Proposal-backed `/agents/plan/run` calls now resolve the executable plan from the bridge's server-side proposal registry by `actionId`/`payloadRef`. Full single-use confirmation-token enforcement, expiry rejection and replay/mismatch handling remain Patch 3 scope.
+- 2026-05-19: M100 Patch 3 makes confirmation a single-use server proof. The panel receives a short-lived `confirmationToken`, but the daemon stores only `confirmationTokenHash` and rejects replay, expiry, payload/preview/risk/risk-policy mismatch and wrong confirmation surface/session before plan steps can execute.
+- 2026-05-19: `/agents/plan/propose` is the canonical backend route for validated candidate plans that need a server-owned proposal without a live provider call. ChatGPT connector JSX Lab uses this route before dry-run and real run, so the protected run no longer posts the executable plan body.
+- 2026-05-19: Client-authored `confirm:true`, `confirmed:true` or forged confirmation fields are not execution authority for mutating/destructive/raw paths. Direct `/tools/call`/MCP remain proposal-required, and `/agents/plan/run` now blocks mutating/destructive/raw inline real runs unless they resolve a server-side proposal record.
 
 ## Validation
+
+- Milestone 102:
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check` for touched JavaScript files: `mcp-server\m100-protocol.js`, `mcp-server\bridge-daemon.js`, `cep-panel\panel.js`, `chatgpt-connector\server.js`, `scripts\m100-protocol-contract-smoke.js`, `scripts\m100-confirmation-gate-smoke.js`, `scripts\chatgpt-connector-smoke.js`, and `scripts\smoke-test.js`.
+  - Passed M100 smokes: `node scripts\m100-protocol-contract-smoke.js`, `node scripts\m100-confirmation-gate-smoke.js`, and `node scripts\m100-ae-command-contract-smoke.js`.
+  - Passed required local smokes: `provider-contract-smoke`, `solution-registry-smoke`, `solution-candidate-report-smoke`, `solution-promotion-smoke`, `solution-retrieval-smoke`, `solution-library-validation-smoke`, `project-intent-memory-smoke`, `plan-classification-smoke`, `plan-repair-smoke`, `semantic-verification-smoke`, `reliability-validation-suite-smoke`, `chatgpt-connector-smoke`, `provider-api-smoke`, `prompt-optimization-smoke`, `bridge-only-smoke-test`, and `smoke-test`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
+  - Did not run live CEP/After Effects, external-provider, OpenAI/Codex CLI planner, or mutating-live checks because Patch 3 is local/non-live and no explicit approval was given for live or mutating validation.
 
 - Milestone 101:
   - No package manager check is configured because the repository has no `package.json`.
