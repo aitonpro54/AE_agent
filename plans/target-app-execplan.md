@@ -69,6 +69,7 @@
 - [x] Hotfix: Version 1.0.8 hard Reload button.
 - [x] Hotfix: Version 1.0.9 sync clears CEP cache.
 - [x] Hotfix: Executable Agent plan enforcement.
+- [x] Milestone 97: M100 Pro review integration and revised safety plan.
 
 ## Current Stable Baseline
 
@@ -549,6 +550,17 @@
 - Repair the common selected-precomp pseudo-command shape (`get_active_layers` / `execute_command` / `duplicate_layer`) into the typed `deep_duplicate_precomp_sources` workflow with inspection and read-back steps.
 - Show blocked invalid runs in the panel as `Mode: blocked before execution` instead of a misleading read-only execution mode.
 
+### Milestone 97: M100 Pro review integration and revised safety plan
+
+- Accept the GPT Pro verdict for `pro-review-bundles/m100-repair-plan-pro-review-bundle.md`: `revise`, not `go`.
+- Revise `.codex-audit/101-m100-repair-plan.md` before implementation so M100 starts with safety inventory, default-deny direct execution, and proof-oriented contract smokes.
+- Make backend ownership explicit: model output is only a candidate; the server creates canonical `action_proposal`, `actionId`, `payloadRef`, `executionId`, risk classification, stored executable payload, payload/preview hashes and confirmation proof.
+- Replace "timeout means safe" with the AE command lifecycle states `queued`, `expired_before_delivery`, `leased`, `submitted`, `completed`, `failed`, `timed_out_after_submit`, and `stale_result_ignored`.
+- Require confirmation to be single-use, expiry-bound and tied to `requestId`, `actionId`, `payloadHash`, `previewHash`, `riskLevel`, `riskPolicyVersion`, confirmation surface/session and token hash.
+- Remove or hard-disable executable controls from legacy `result.plan` shapes across live rendering, restored transcript/localStorage and fixtures.
+- Add redaction-first diagnostics to the M100 plan: stderr, provider errors, raw previews, paths, prompt fragments and log refs are bounded before panel display.
+- Set the next implementation step to Patch 0, then the narrow production patch Patch 1a: AE command contract tests plus pre-delivery expiry fix.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -670,8 +682,22 @@
 - 2026-05-18: For Milestone 96, `validation.ok` is the execution readiness boundary for normal typed-tool plans. `needs clarification` classification becomes a review warning instead of a dry-run/run blocker, while raw ExtendScript still requires a matching dry-run approval and real runner gates still enforce invalid tools, runtime bindings, mutation permission, checkpoints, and edit sessions.
 - 2026-05-18: Agent Hardcore must not mark no-op pseudo plans as verified. If a run only completes inspection/read-only context steps and skips `tool:null` or pseudo-conditional steps, the retry prompt asks for real MCP tool calls before the session can succeed.
 - 2026-05-18: `validation.ok` also requires at least one executable MCP tool step. Empty plans or pure pseudo-command plans are not runnable; selected-precomp duplicate pseudo output is repaired into the existing typed `deep_duplicate_precomp_sources` path instead of silently executing nothing.
+- 2026-05-19: GPT Pro review of the M100 repair bundle returned `revise`. Runtime implementation remains paused until the M100 plan is updated with server-owned proposal/confirmation state, truthful AE command timeout lifecycle, direct-tool default-deny behavior, legacy-control removal and early contract smokes.
+- 2026-05-19: M100 action safety is server-owned. Model output may propose candidate actions, but only the backend can create canonical `action_proposal`, `actionId`, `payloadRef`, `executionId`, stored executable payload, `payloadHash`, `previewHash`, risk policy version and confirmation proof.
+- 2026-05-19: AE command timeout semantics are stateful. A `queued` command can expire with a non-execution guarantee before delivery; a `leased` or `submitted` command cannot be honestly reported as safely cancelled, so UI/diagnostics must show unknown/stale semantics.
+- 2026-05-19: Direct `/tools/call`, MCP `tools/call`, `run_extendscript` and `run_extendscript_file` must not execute mutating/destructive/raw JSX through client-supplied `confirmed:true`; they must return proposal-required/blocked results unless routed through an explicit local-dev/admin escape hatch.
 
 ## Validation
+
+- Milestone 97:
+  - Documentation-only milestone; no JavaScript files were changed, so `node --check` was not applicable.
+  - Updated `.codex-audit/101-m100-repair-plan.md` with the GPT Pro `revise` verdict, revised M100 patch sequence, server-owned proposal/confirmation model, AE command lifecycle semantics, direct-tool default-deny requirements, diagnostics redaction and strengthened completion criteria.
+  - Updated `.codex-audit/104-m100-pro-review-decision-log.md` with accepted/deferred Pro findings and the final pre-implementation scope.
+  - Updated this execution plan with Milestone 97 progress, decisions and validation notes.
+  - Did not run M100 smoke scripts because planned files such as `scripts/m100-*.js` do not exist yet; Patch 0 is responsible for creating the first failing/contract smoke scaffolding.
+  - Did not run live CEP/After Effects, external-provider or mutating-live validation because this milestone changed only plan/audit documentation and implementation remains paused until Patch 0.
+  - Required repository smoke suite was not rerun for this docs-only plan revision; it will be required for runtime patches.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for existing text files.
 
 - Hotfix: Executable Agent plan enforcement:
   - No package manager check is configured because the repository has no `package.json`.
