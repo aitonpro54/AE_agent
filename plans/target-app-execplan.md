@@ -72,6 +72,7 @@
 - [x] Milestone 97: M100 Pro review integration and revised safety plan.
 - [x] Milestone 98: M100 Patch 0 safety inventory and direct default-deny.
 - [x] Hotfix: Windows PowerShell UTF-8 handoff readability.
+- [x] Milestone 99: M100 Patch 1a AE command lifecycle and pre-delivery expiry.
 
 ## Current Stable Baseline
 
@@ -571,6 +572,14 @@
 - Keep read-only direct tools available, keep `/agents/plan/run` as the existing protected runner, and document `/dev/tool/:name` as a local-dev/admin escape hatch outside the M100 user-safe path.
 - Add dependency-free M100 contract smokes for Patch 0 direct blocking plus pending AE lifecycle/protocol contracts that become strict work for Patch 1a/1b/2/3.
 
+### Milestone 99: M100 Patch 1a AE command lifecycle and pre-delivery expiry
+
+- Replace the old pending/inflight-only AE command queue with lifecycle records for `queued`, `expired_before_delivery`, `leased`, `submitted`, `completed`, `failed`, `timed_out_after_submit`, and `stale_result_ignored`.
+- Make `/bridge/next` lease only non-expired queued commands to a `panelConnectionId`/generation and ensure commands expired before delivery are skipped later with a truthful non-execution guarantee.
+- Add `/bridge/submitted` and have the CEP panel mark the command submitted before calling `evalScript`, so daemon timeouts can distinguish delivered-only from submitted-to-host commands.
+- Report leased timeout as `unknown_after_delivery`, submitted timeout as `timed_out_after_submit`, and acknowledge late `/bridge/result` payloads as `stale_result_ignored` without resolving the old command promise or changing the retained terminal result.
+- Promote the M100 AE command smoke cases for timeout-before-delivery, timeout-after-lease, timeout-after-submit, and late result from pending contracts into behavioral checks. Patch 1b still owns backend/CEP single-flight and strict malformed-wrapper failure.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -699,9 +708,21 @@
 - 2026-05-19: M100 Patch 0 default-deny is enforced at the daemon direct-tool boundary: `/tools/call` and MCP adapter calls use the `direct-tools-call` surface, read-only tools remain callable, and unknown/mutating/destructive/raw JSX tools return structured `proposal_required` or `unknown_tool_blocked` results without queueing AE commands.
 - 2026-05-19: `/dev/tool/:name` remains a token-protected local-dev/admin escape hatch for repo smokes and operator debugging, but it is explicitly outside the M100 user-safe confirmation path and must not be presented as normal user approval.
 - 2026-05-19: M100 contract smokes run non-strict by default in Patch 0: they pass the implemented direct-deny checks and list AE lifecycle/protocol contracts as pending until Patch 1a/1b/2/3.
+- 2026-05-19: M100 Patch 1a stores AE command lifecycle state server-side. `/bridge/next` can only lease non-expired queued commands; once a command is leased or submitted, timeout results use unknown/stale semantics instead of a safe-cancellation claim.
+- 2026-05-19: CEP marks a leased command submitted through `/bridge/submitted` before `evalScript`. If submit ownership does not match the lease or the command is already terminal, the panel does not execute the script.
+- 2026-05-19: Late `/bridge/result` payloads for terminal command IDs are acknowledged as `stale_result_ignored` and logged, but they do not resolve/reject the old promise again or replace the retained timeout/expiry result.
 - 2026-05-19: Operational Russian Markdown files that new chats read first use UTF-8 with BOM because this workspace still runs Windows PowerShell 5.1, whose plain `Get-Content` can misdecode UTF-8 without BOM.
 
 ## Validation
+
+- Milestone 99:
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check` for touched JavaScript files: `mcp-server\bridge-daemon.js`, `cep-panel\panel.js`, and `scripts\m100-ae-command-contract-smoke.js`.
+  - Passed `node scripts\m100-ae-command-contract-smoke.js`; it now verifies queued pre-delivery expiry, leased timeout `unknown_after_delivery`, submitted timeout `timed_out_after_submit`, and late result `stale_result_ignored`. Remaining pending contracts are Patch 1b scope: concurrent command single-flight and malformed wrapper parsing.
+  - Passed `node scripts\m100-protocol-contract-smoke.js`; protocol/proposal pending contracts remain Patch 2/3 scope.
+  - Passed required local smokes: `provider-contract-smoke`, `solution-registry-smoke`, `solution-candidate-report-smoke`, `solution-promotion-smoke`, `solution-retrieval-smoke`, `solution-library-validation-smoke`, `project-intent-memory-smoke`, `plan-classification-smoke`, `plan-repair-smoke`, `semantic-verification-smoke`, `reliability-validation-suite-smoke`, `chatgpt-connector-smoke`, `provider-api-smoke`, `prompt-optimization-smoke`, `bridge-only-smoke-test`, and `smoke-test`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
+  - Did not run live CEP/After Effects, external-provider, OpenAI/Codex CLI planner, or mutating-live checks because Patch 1a is local/non-live and no explicit approval was given for live or mutating validation.
 
 - Hotfix: Windows PowerShell UTF-8 handoff readability:
   - Added an `AGENTS.md` reminder to read Russian/UTF-8 Markdown with `Get-Content -Encoding UTF8` under Windows PowerShell 5.1.

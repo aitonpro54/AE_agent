@@ -105,6 +105,8 @@
   var operationUsageReports = [];
   var usageWindowStartedAt = Number(localStorage.getItem("codexAeUsageWindowStartedAt") || "0") || 0;
   var lastPollErrorMessage = "";
+  var panelConnectionId = loadPanelConnectionId();
+  var panelConnectionGeneration = 0;
   var setupStatusTimer = null;
   var setupStatusUntil = 0;
   var BRIDGE_OFFLINE_MESSAGE = "Bridge offline. Start the local bridge from Codex, then click Connect.";
@@ -211,6 +213,23 @@
 
   function getToken() {
     return tokenEl.value;
+  }
+
+  function makePanelConnectionId() {
+    return "panel-" + String(Date.now()) + "-" + String(Math.random()).slice(2);
+  }
+
+  function loadPanelConnectionId() {
+    var existing = localStorage.getItem("codexAePanelConnectionId") || "";
+    if (existing) return existing;
+    var created = makePanelConnectionId();
+    localStorage.setItem("codexAePanelConnectionId", created);
+    return created;
+  }
+
+  function bridgeNextPath() {
+    return "/bridge/next?panelConnectionId=" + encodeURIComponent(panelConnectionId)
+      + "&panelGeneration=" + encodeURIComponent(String(panelConnectionGeneration || 0));
   }
 
   function appendToken(path) {
@@ -3134,14 +3153,41 @@
     });
   }
 
-  function executeCommand(command) {
-    log("Executing command " + command.id);
-    cs.evalScript(command.script, function (result) {
-      if (typeof result === "string" && result.indexOf("EvalScript error.") === 0) {
-        postResult(command.id, false, null, result);
+  function commandLeaseOwner(command) {
+    var owner = command && command.leaseOwner ? command.leaseOwner : {};
+    return {
+      panelConnectionId: owner.panelConnectionId || panelConnectionId,
+      panelGeneration: owner.panelGeneration || String(panelConnectionGeneration || 0)
+    };
+  }
+
+  function markCommandSubmitted(command, onDone) {
+    var owner = commandLeaseOwner(command);
+    request("POST", "/bridge/submitted", {
+      id: command.id,
+      panelConnectionId: owner.panelConnectionId,
+      panelGeneration: owner.panelGeneration
+    }, function (error) {
+      if (error) {
+        log("Could not mark command submitted: " + error.message);
+        onDone(false);
         return;
       }
-      postResult(command.id, true, result, null);
+      onDone(true);
+    });
+  }
+
+  function executeCommand(command) {
+    log("Executing command " + command.id);
+    markCommandSubmitted(command, function (submitted) {
+      if (!submitted) return;
+      cs.evalScript(command.script, function (result) {
+        if (typeof result === "string" && result.indexOf("EvalScript error.") === 0) {
+          postResult(command.id, false, null, result);
+          return;
+        }
+        postResult(command.id, true, result, null);
+      });
     });
   }
 
@@ -3149,7 +3195,7 @@
     if (!running) return;
     if (pollInFlight) return;
     pollInFlight = true;
-    request("GET", "/bridge/next", null, function (error, response) {
+    request("GET", bridgeNextPath(), null, function (error, response) {
       pollInFlight = false;
       if (!running) return;
 
@@ -3180,6 +3226,7 @@
 
   function connect() {
     running = true;
+    panelConnectionGeneration = Date.now();
     lastPollErrorMessage = "";
     localStorage.setItem("codexAeBridgeUrl", urlEl.value);
     localStorage.setItem("codexAeBridgeToken", tokenEl.value);

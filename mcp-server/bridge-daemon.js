@@ -75,6 +75,17 @@ const rawExtendscriptDryRunApprovals = new Map();
 const RAW_EXTENDSCRIPT_DRY_RUN_APPROVAL_TTL_MS = 10 * 60 * 1000;
 let activeEditSession = null;
 
+const AE_COMMAND_LIFECYCLE_STATES = [
+  "queued",
+  "expired_before_delivery",
+  "leased",
+  "submitted",
+  "completed",
+  "failed",
+  "timed_out_after_submit",
+  "stale_result_ignored"
+];
+
 const EFFECT_PRESETS = [
   {
     id: "fill",
@@ -750,6 +761,7 @@ function getBridgeStatus() {
     version: SERVER_VERSION,
     protocolVersion: PROTOCOL_VERSION,
     m100RiskPolicy: m100RiskPolicyStatus(),
+    aeCommandLifecycleStates: AE_COMMAND_LIFECYCLE_STATES.slice(),
     host: HOST,
     port: PORT,
     uptimeMs: now - STARTED_AT,
@@ -757,11 +769,8 @@ function getBridgeStatus() {
     panelConnected: now - lastPanelSeenAt < 15000,
     lastPanelSeenAt,
     lastPanelInfo,
-    pendingCommands: pendingCommands.length,
-    inflightCommands: Array.from(inflightCommands.entries()).map(([id, command]) => ({
-      id,
-      ageMs: now - command.createdAt
-    })),
+    pendingCommands: countQueuedCommands(now),
+    inflightCommands: Array.from(inflightCommands.values()).map((command) => compactAeCommand(command, now)),
     retainedResults: completedResults.size,
     recentResults: Array.from(completedResults.values()).slice(-25).map((result) => ({
       id: result.id,
@@ -1876,20 +1885,100 @@ function requireToken(req, res, url) {
   return true;
 }
 
+function countQueuedCommands(now) {
+  expireQueuedCommands(now || Date.now(), "status");
+  return pendingCommands.reduce((count, id) => {
+    const command = inflightCommands.get(id);
+    return command && command.state === "queued" ? count + 1 : count;
+  }, 0);
+}
+
+function isoOrNull(value) {
+  return value ? new Date(value).toISOString() : null;
+}
+
+function compactAeCommand(command, now) {
+  const at = now || Date.now();
+  return {
+    id: command.id,
+    state: command.state,
+    lifecycleState: command.state,
+    ageMs: at - command.createdAt,
+    timeoutMs: command.timeoutMs,
+    createdAt: isoOrNull(command.createdAt),
+    expiresAt: isoOrNull(command.expiresAt),
+    leasedAt: isoOrNull(command.leasedAt),
+    submittedAt: isoOrNull(command.submittedAt),
+    leaseOwner: command.leaseOwner || null,
+    timedOutFrom: command.timedOutFrom || null,
+    errorCode: command.errorCode || null
+  };
+}
+
+function commandForPanel(command) {
+  return {
+    id: command.id,
+    script: command.script,
+    lifecycleState: command.state,
+    leaseOwner: command.leaseOwner || null
+  };
+}
+
+function removePendingCommand(id) {
+  const index = pendingCommands.indexOf(id);
+  if (index >= 0) pendingCommands.splice(index, 1);
+}
+
+function createCommandLifecycleError(command, code, message) {
+  const error = new Error(message);
+  error.code = code;
+  error.commandId = command.id;
+  error.lifecycleState = command.state;
+  error.timedOutFrom = command.timedOutFrom || null;
+  return error;
+}
+
+function settleCommandFailure(command, code, message) {
+  if (command.settled) return;
+  command.settled = true;
+  command.errorCode = code;
+  command.reject(createCommandLifecycleError(command, code, message));
+}
+
 function retainCommandResult(id, payload, command) {
   completedResults.set(id, {
     id,
     ok: Boolean(payload.ok),
     result: payload.result,
     error: payload.error || null,
+    code: payload.code || command.errorCode || null,
+    lifecycleState: payload.lifecycleState || command.state || null,
+    timedOutFrom: command.timedOutFrom || null,
     createdAt: command.createdAt,
-    completedAt: Date.now()
+    completedAt: Date.now(),
+    command: compactAeCommand(command)
   });
 
   while (completedResults.size > 200) {
     const oldestId = completedResults.keys().next().value;
     completedResults.delete(oldestId);
   }
+}
+
+function retainStaleCommandResult(id, payload, retained) {
+  const staleResult = {
+    id,
+    ok: Boolean(payload.ok),
+    result: payload.result,
+    error: payload.error || null,
+    lifecycleState: "stale_result_ignored",
+    ignoredAt: Date.now()
+  };
+  const nextRetained = Object.assign({}, retained, {
+    staleResult
+  });
+  completedResults.set(id, nextRetained);
+  return staleResult;
 }
 
 function removeWaitingPanel(waiter) {
@@ -1899,6 +1988,7 @@ function removeWaitingPanel(waiter) {
 }
 
 function drainWaitingPanels() {
+  expireQueuedCommands(Date.now(), "drain_waiting_panels");
   while (waitingPanels.length && pendingCommands.length) {
     const waiter = waitingPanels.shift();
     clearTimeout(waiter.timer);
@@ -1907,7 +1997,12 @@ function drainWaitingPanels() {
       continue;
     }
 
-    const command = pendingCommands.shift();
+    const command = leaseNextQueuedCommand(waiter.req, waiter.url);
+    if (!command) {
+      waiter.done = true;
+      writeJson(waiter.res, 200, { ok: true, command: null });
+      continue;
+    }
     waiter.done = true;
     writeJson(waiter.res, 200, { ok: true, command });
   }
@@ -1916,20 +2011,161 @@ function drainWaitingPanels() {
 function enqueueAeCommand(script, timeoutMs) {
   return new Promise((resolve, reject) => {
     const id = crypto.randomUUID();
-    const timeout = setTimeout(() => {
-      inflightCommands.delete(id);
-      reject(new Error(`After Effects command timed out after ${timeoutMs}ms`));
+    const createdAt = Date.now();
+    const command = {
+      id,
+      script,
+      state: "queued",
+      resolve,
+      reject,
+      timeout: null,
+      timeoutMs,
+      createdAt,
+      expiresAt: createdAt + timeoutMs,
+      leasedAt: null,
+      submittedAt: null,
+      completedAt: null,
+      leaseOwner: null,
+      timedOutFrom: null,
+      errorCode: null,
+      settled: false
+    };
+    command.timeout = setTimeout(() => {
+      timeoutAeCommand(id);
     }, timeoutMs);
 
-    inflightCommands.set(id, { resolve, reject, timeout, createdAt: Date.now(), script });
-    pendingCommands.push({ id, script });
+    inflightCommands.set(id, command);
+    pendingCommands.push(id);
     recordEvent("ae_command_queued", {
       id,
+      lifecycleState: command.state,
       timeoutMs,
+      expiresAt: new Date(command.expiresAt).toISOString(),
       script
     });
     drainWaitingPanels();
   });
+}
+
+function expireQueuedCommands(now, reason) {
+  const at = now || Date.now();
+  for (const id of pendingCommands.slice()) {
+    const command = inflightCommands.get(id);
+    if (!command || command.state !== "queued") {
+      removePendingCommand(id);
+      continue;
+    }
+    if (at >= command.expiresAt) {
+      expireQueuedCommand(command, reason || "timeout");
+    }
+  }
+}
+
+function expireQueuedCommand(command, reason) {
+  if (!command || command.state !== "queued") return false;
+  removePendingCommand(command.id);
+  clearTimeout(command.timeout);
+  command.state = "expired_before_delivery";
+  command.completedAt = Date.now();
+  inflightCommands.delete(command.id);
+  const message = "After Effects command expired before delivery to the panel; it was not executed.";
+  retainCommandResult(command.id, {
+    ok: false,
+    error: message,
+    code: "expired_before_delivery",
+    lifecycleState: command.state
+  }, command);
+  settleCommandFailure(command, "expired_before_delivery", message);
+  recordEvent("ae_command_expired_before_delivery", {
+    id: command.id,
+    reason,
+    ageMs: Date.now() - command.createdAt,
+    timeoutMs: command.timeoutMs
+  });
+  return true;
+}
+
+function timeoutAeCommand(id) {
+  const command = inflightCommands.get(id);
+  if (!command) return;
+  if (command.state === "queued") {
+    expireQueuedCommand(command, "timeout");
+    return;
+  }
+  const timedOutFrom = command.state;
+  command.timedOutFrom = timedOutFrom;
+  command.state = "timed_out_after_submit";
+  command.completedAt = Date.now();
+  command.errorCode = timedOutFrom === "submitted" ? "timed_out_after_submit" : "unknown_after_delivery";
+  inflightCommands.delete(id);
+  const message = timedOutFrom === "submitted"
+    ? "After Effects command timed out after submit to evalScript; execution may still finish later and any late result will be ignored as stale."
+    : "After Effects command timed out after delivery to the panel; execution state is unknown and any late result will be ignored as stale.";
+  retainCommandResult(id, {
+    ok: false,
+    error: message,
+    code: command.errorCode,
+    lifecycleState: command.state
+  }, command);
+  settleCommandFailure(command, command.errorCode, message);
+  recordEvent("ae_command_timeout_after_delivery", {
+    id,
+    timedOutFrom,
+    lifecycleState: command.state,
+    code: command.errorCode,
+    ageMs: Date.now() - command.createdAt,
+    leaseOwner: command.leaseOwner
+  });
+}
+
+function panelLeaseOwner(req, url) {
+  const requestHeaders = req && req.headers ? req.headers : {};
+  const searchParams = url && url.searchParams ? url.searchParams : new URLSearchParams();
+  const panelConnectionId = String(
+    searchParams.get("panelConnectionId")
+    || requestHeaders["x-ae-panel-connection-id"]
+    || "unknown-panel"
+  );
+  const panelGeneration = String(
+    searchParams.get("panelGeneration")
+    || requestHeaders["x-ae-panel-generation"]
+    || "unknown-generation"
+  );
+  return {
+    panelConnectionId,
+    panelGeneration,
+    userAgent: requestHeaders["user-agent"] || null
+  };
+}
+
+function leaseOwnerMatches(command, owner) {
+  if (!command || !command.leaseOwner || !owner) return false;
+  return command.leaseOwner.panelConnectionId === owner.panelConnectionId
+    && command.leaseOwner.panelGeneration === owner.panelGeneration;
+}
+
+function leaseNextQueuedCommand(req, url) {
+  expireQueuedCommands(Date.now(), "bridge_next");
+  while (pendingCommands.length) {
+    const id = pendingCommands.shift();
+    const command = inflightCommands.get(id);
+    if (!command || command.state !== "queued") continue;
+    if (Date.now() >= command.expiresAt) {
+      expireQueuedCommand(command, "bridge_next");
+      continue;
+    }
+    command.state = "leased";
+    command.leasedAt = Date.now();
+    command.leaseOwner = panelLeaseOwner(req, url);
+    recordEvent("ae_command_leased", {
+      id: command.id,
+      lifecycleState: command.state,
+      ageMs: Date.now() - command.createdAt,
+      leaseOwner: command.leaseOwner
+    });
+    return commandForPanel(command);
+  }
+  return null;
 }
 
 function wrapExtendScriptBody(body) {
@@ -5329,7 +5565,10 @@ function startHttpBridge() {
         writeJson(res, 500, {
           ok: false,
           error: error.message || String(error),
-          line: error.line || null
+          line: error.line || null,
+          code: error.code || null,
+          lifecycleState: error.lifecycleState || null,
+          commandId: error.commandId || null
         });
       }
       return;
@@ -5361,7 +5600,10 @@ function startHttpBridge() {
           ok: false,
           tool: name,
           error: error.message || String(error),
-          line: error.line || null
+          line: error.line || null,
+          code: error.code || null,
+          lifecycleState: error.lifecycleState || null,
+          commandId: error.commandId || null
         });
       }
       return;
@@ -5407,23 +5649,92 @@ function startHttpBridge() {
       lastPanelSeenAt = Date.now();
       lastPanelInfo = {
         userAgent: req.headers["user-agent"] || null,
+        panelConnectionId: url.searchParams.get("panelConnectionId") || req.headers["x-ae-panel-connection-id"] || null,
+        panelGeneration: url.searchParams.get("panelGeneration") || req.headers["x-ae-panel-generation"] || null,
         at: lastPanelSeenAt
       };
       if (pendingCommands.length || Date.now() - lastPanelPollLoggedAt > 60000) {
         lastPanelPollLoggedAt = Date.now();
         recordEvent("panel_poll", {
-          pendingCommands: pendingCommands.length,
+          pendingCommands: countQueuedCommands(),
           userAgent: lastPanelInfo.userAgent
         });
       }
 
-      if (pendingCommands.length) {
-        const command = pendingCommands.shift();
+      const command = leaseNextQueuedCommand(req, url);
+      if (command) {
         writeJson(res, 200, { ok: true, command });
         return;
       }
 
       writeJson(res, 200, { ok: true, command: null });
+      return;
+    }
+
+    if (url.pathname === "/bridge/submitted" && req.method === "POST") {
+      if (!requireToken(req, res, url)) return;
+      const payload = await readJsonBody(req);
+      const id = String(payload.id || "");
+      const command = inflightCommands.get(id);
+
+      if (!command) {
+        const retained = completedResults.get(id);
+        if (retained) {
+          writeJson(res, 409, {
+            ok: false,
+            error: "Command is already terminal.",
+            lifecycleState: retained.lifecycleState || null,
+            code: retained.code || null
+          });
+          return;
+        }
+        writeJson(res, 404, { ok: false, error: "Unknown command id" });
+        return;
+      }
+
+      const submittedOwner = {
+        panelConnectionId: String(payload.panelConnectionId || "unknown-panel"),
+        panelGeneration: String(payload.panelGeneration || "unknown-generation"),
+        userAgent: req.headers["user-agent"] || null
+      };
+
+      if (command.state === "submitted") {
+        writeJson(res, 200, { ok: true, lifecycleState: command.state });
+        return;
+      }
+
+      if (command.state !== "leased") {
+        writeJson(res, 409, {
+          ok: false,
+          error: `Command cannot be marked submitted from state ${command.state}.`,
+          lifecycleState: command.state
+        });
+        return;
+      }
+
+      if (!leaseOwnerMatches(command, submittedOwner)) {
+        recordEvent("ae_command_submit_owner_mismatch", {
+          id,
+          leaseOwner: command.leaseOwner,
+          submittedOwner
+        });
+        writeJson(res, 409, {
+          ok: false,
+          error: "Command submit owner does not match the lease owner.",
+          lifecycleState: command.state
+        });
+        return;
+      }
+
+      command.state = "submitted";
+      command.submittedAt = Date.now();
+      recordEvent("ae_command_submitted", {
+        id,
+        lifecycleState: command.state,
+        ageMs: command.submittedAt - command.createdAt,
+        leaseOwner: command.leaseOwner
+      });
+      writeJson(res, 200, { ok: true, lifecycleState: command.state });
       return;
     }
 
@@ -5434,26 +5745,49 @@ function startHttpBridge() {
       const command = inflightCommands.get(payload.id);
 
       if (!command) {
+        const retained = completedResults.get(payload.id);
+        if (retained) {
+          const staleResult = retainStaleCommandResult(payload.id, payload, retained);
+          recordEvent("ae_command_stale_result_ignored", {
+            id: payload.id,
+            previousLifecycleState: retained.lifecycleState || null,
+            ok: Boolean(payload.ok),
+            ageMs: retained.createdAt ? Date.now() - retained.createdAt : null
+          });
+          writeJson(res, 200, {
+            ok: true,
+            stale: true,
+            lifecycleState: staleResult.lifecycleState
+          });
+          return;
+        }
         writeJson(res, 404, { ok: false, error: "Unknown command id" });
         return;
       }
 
       clearTimeout(command.timeout);
       inflightCommands.delete(payload.id);
+      command.completedAt = Date.now();
+      command.state = payload.ok ? "completed" : "failed";
+      command.errorCode = payload.ok ? null : "ae_execution_failed";
       retainCommandResult(payload.id, payload, command);
 
       if (payload.ok) {
+        command.settled = true;
         command.resolve(payload.result);
         recordEvent("ae_command_result", {
           id: payload.id,
           ok: true,
+          lifecycleState: command.state,
           ageMs: Date.now() - command.createdAt
         });
       } else {
+        command.settled = true;
         command.reject(new Error(payload.error || "After Effects command failed"));
         recordEvent("ae_command_result", {
           id: payload.id,
           ok: false,
+          lifecycleState: command.state,
           ageMs: Date.now() - command.createdAt,
           error: payload.error || "After Effects command failed"
         });
