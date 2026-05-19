@@ -31,6 +31,11 @@ Avoid broad repository scans unless explicitly requested.
 Use targeted `rg`, `sed`, `head`, `tail`, and file-specific reads.
 For large command outputs, save full logs to a file and summarize only the relevant lines.
 
+## Windows PowerShell encoding
+
+- In Windows PowerShell 5.1, read Russian/UTF-8 Markdown files with `Get-Content -Encoding UTF8`.
+- Do not read `.codex/handoff.md` or `plans/target-app-execplan.md` with plain `Get-Content`; it can misdecode UTF-8 without BOM as mojibake.
+
 ## Engineering rules
 
 - Reuse existing components and design tokens.

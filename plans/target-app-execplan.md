@@ -1,4 +1,4 @@
-# Target App Execution Plan
+﻿# Target App Execution Plan
 
 ## Progress
 
@@ -71,6 +71,7 @@
 - [x] Hotfix: Executable Agent plan enforcement.
 - [x] Milestone 97: M100 Pro review integration and revised safety plan.
 - [x] Milestone 98: M100 Patch 0 safety inventory and direct default-deny.
+- [x] Hotfix: Windows PowerShell UTF-8 handoff readability.
 
 ## Current Stable Baseline
 
@@ -698,8 +699,19 @@
 - 2026-05-19: M100 Patch 0 default-deny is enforced at the daemon direct-tool boundary: `/tools/call` and MCP adapter calls use the `direct-tools-call` surface, read-only tools remain callable, and unknown/mutating/destructive/raw JSX tools return structured `proposal_required` or `unknown_tool_blocked` results without queueing AE commands.
 - 2026-05-19: `/dev/tool/:name` remains a token-protected local-dev/admin escape hatch for repo smokes and operator debugging, but it is explicitly outside the M100 user-safe confirmation path and must not be presented as normal user approval.
 - 2026-05-19: M100 contract smokes run non-strict by default in Patch 0: they pass the implemented direct-deny checks and list AE lifecycle/protocol contracts as pending until Patch 1a/1b/2/3.
+- 2026-05-19: Operational Russian Markdown files that new chats read first use UTF-8 with BOM because this workspace still runs Windows PowerShell 5.1, whose plain `Get-Content` can misdecode UTF-8 without BOM.
 
 ## Validation
+
+- Hotfix: Windows PowerShell UTF-8 handoff readability:
+  - Added an `AGENTS.md` reminder to read Russian/UTF-8 Markdown with `Get-Content -Encoding UTF8` under Windows PowerShell 5.1.
+  - Converted `.codex/handoff.md` and this execution plan to UTF-8 with BOM so plain `Get-Content` shows readable Russian text in new chats.
+  - Passed plain `Get-Content .codex\handoff.md -TotalCount 20` and `Get-Content plans\target-app-execplan.md -TotalCount 30` readability checks.
+  - No package manager check is configured because the repository has no `package.json`.
+  - No JavaScript files were touched, so `node --check` was not applicable.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for existing text files.
+  - Passed required local smokes: `provider-contract-smoke`, `solution-registry-smoke`, `solution-candidate-report-smoke`, `solution-promotion-smoke`, `solution-retrieval-smoke`, `solution-library-validation-smoke`, `project-intent-memory-smoke`, `plan-classification-smoke`, `plan-repair-smoke`, `semantic-verification-smoke`, `reliability-validation-suite-smoke`, `chatgpt-connector-smoke`, `provider-api-smoke`, `prompt-optimization-smoke`, `bridge-only-smoke-test`, and `smoke-test`.
+  - Live CEP/After Effects validation was not run because this is a docs/encoding-only hotfix.
 
 - Milestone 98:
   - No package manager check is configured because the repository has no `package.json`.
