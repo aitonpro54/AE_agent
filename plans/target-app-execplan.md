@@ -645,6 +645,9 @@
 
 ## Decision Log
 
+- 2026-05-19: User approved all Milestone 105 approval-gated validation scopes in chat. Read-only live CEP/bridge validation proceeded; external-provider/OpenAI CLI planner validation was still blocked by the escalation reviewer/tenant policy because it would send prompts or project context outside the machine, so no workaround was attempted.
+- 2026-05-19: Milestone 105 found a stale live daemon symptom: bridge health reported `1.0.11` and M100 risk metadata, but `/agents/plan/propose` returned 404. The bridge process listening on `127.0.0.1:3456` was restarted from the current repository with `scripts/start-bridge-only.ps1`; after restart, `/agents/plan/propose` created a backend-owned `action_proposal` successfully.
+- 2026-05-19: Live mutating validation cannot complete while the current After Effects project is unsaved. `checkpoint_project` reported no `.aep` file to copy, and a deterministic proposal-backed mutating run stopped before mutation with `blocked_save_project_first`, phase `ae_queue`, and an M100 error envelope. This is treated as a live safety blocker, not a runtime failure to bypass.
 - 2026-05-19: After M100 Patch 0-5 local completion, the next reviewable block is Milestone 105 approval-gated live validation. It must start with read-only bridge/CEP status checks after explicit approval, while external-provider/OpenAI CLI planner and mutating-live checks remain separate approvals.
 - 2026-05-19: M100 Patch 5 closes the local vertical proof with `scripts/m100-vertical-smoke.js`; the harness uses real bridge endpoints plus fake Codex/CEP/AE behavior, leaving Patch 1a/1b lifecycle, Patch 3 confirmation and Patch 4 diagnostics/redaction production semantics unchanged.
 - 2026-05-19: The deterministic M100 vertical smoke is non-live by design. It may queue commands only inside a throwaway bridge daemon and resolves them through fake `/bridge/result` payloads; live CEP/After Effects, external-provider and mutating-live validation remain approval-gated.
@@ -791,6 +794,22 @@
 - 2026-05-19: Client-authored `confirm:true`, `confirmed:true` or forged confirmation fields are not execution authority for mutating/destructive/raw paths. Direct `/tools/call`/MCP remain proposal-required, and `/agents/plan/run` now blocks mutating/destructive/raw inline real runs unless they resolve a server-side proposal record.
 
 ## Validation
+
+- Milestone 105:
+  - User gave explicit approval in chat for live CEP/After Effects, external-provider/OpenAI CLI planner and mutating-live validation scopes.
+  - Passed bridge/panel baseline via `get_bridge_status` and `/health`: bridge `1.0.11`, panel connected, pending queue `0`, inflight `0`, `m100-risk-v1`, and AE command lifecycle states present.
+  - Passed `node scripts\reliability-validation-suite.js provider-readiness --stop-on-fail`; readiness used `checkModels=0`, OpenAI CLI was installed/logged in, OpenRouter and Ollama were configured, and API-key providers were correctly reported as setup-needed.
+  - `get_active_comp` reported `Active item is not a composition`; this did not block read-only panel smokes but remains environment context for live project work.
+  - Passed `node scripts\cep-panel-cdp-smoke.js inspect`; installed panel reported `AE Agent 1.0.11`, asset version `1.0.11`, bridge connected and provider UI populated.
+  - Passed `node scripts\cep-panel-cdp-smoke.js connector-status-smoke`.
+  - Passed `node scripts\reliability-validation-suite.js read-only-live --stop-on-fail`; 7/7 read-only live checks passed, including inspect, read-only Agent smoke, plan-review smoke, generated QA audit, provider setup UI, provider self-test UI and connector status UI.
+  - Did not run external-provider/OpenAI CLI planner smoke. The escalation reviewer rejected `node scripts\reliability-validation-suite.js external-provider --allow-external-provider --stop-on-fail` because it can send prompts/project context outside the machine.
+  - Attempted `node scripts\reliability-validation-suite.js mutating-live --allow-mutating-live --stop-on-fail`; the first protected mutating smoke failed before mutation because local Ollama `gemma4:latest` returned an empty/non-executable plan for the generated `create_test_comp` request.
+  - `checkpoint_project` with label `m105-pre-mutating-live` reported that the current AE project has not been saved, so there is no `.aep` file to copy.
+  - Restarted the live bridge daemon from the current repo after `/agents/plan/propose` returned 404 on the previous process; after restart, an endpoint check created backend-owned `action_proposal` `act_c6e7fa76b47a4807803c6c38aa41e843`.
+  - Ran a deterministic proposal-backed mutating check against live bridge/CEP/AE: backend created mutating `action_proposal` `act_2603947fbfb440148147761d30f86849`, dry-run returned ok, and real run stopped before mutation with `blocked_save_project_first`, safety status `blocked_save_project_first`, M100 `error` envelope, phase `ae_queue`, and raw preview `The current After Effects project has not been saved yet, so there is no .aep file to copy.`
+  - Final bridge status after Milestone 105 work: panel connected, pending queue `0`, inflight `[]`, waiting panels `0`, active edit session `null`.
+  - Did not run actual mutating live Agent scenario checks after the save-project blocker; save the AE project first, then rerun mutating-live validation.
 
 - Milestone 104:
   - No package manager check is configured because the repository has no `package.json`.
