@@ -11,6 +11,7 @@ const { buildSolutionHintsForPrompt } = require("./solution-library");
 const { classifyAgentPlan } = require("./plan-risk-classifier");
 const { repairAgentPlan } = require("./plan-repair");
 const { buildSemanticVerification } = require("./semantic-verification");
+const m100Protocol = require("./m100-protocol");
 const { writeSolutionCandidateReport } = require("../scripts/solution-candidate-report");
 const { validateRegistry } = require("../scripts/solution-registry-smoke");
 const {
@@ -876,7 +877,7 @@ const MUTATION_SUMMARY_TOOL_NAMES = new Set([
   "delete_project_checkpoint"
 ]);
 
-const M100_RISK_POLICY_VERSION = "m100-risk-v1";
+const M100_RISK_POLICY_VERSION = m100Protocol.M100_RISK_POLICY_VERSION;
 const M100_RISK_LEVELS = ["read_only", "mutating", "destructive", "raw_jsx"];
 const M100_RAW_JSX_TOOL_NAMES = new Set([
   "run_extendscript",
@@ -894,6 +895,7 @@ const M100_LOCAL_ADMIN_TOOL_SOURCES = new Set([
 ]);
 const M100_DIRECT_ESCAPE_HATCH_ENV = "AE_M100_ALLOW_DIRECT_TOOL_EXECUTION";
 const M100_DIRECT_ESCAPE_HATCH_ARG = "m100DirectExecutionEscapeHatch";
+const m100ActionProposalStore = new Map();
 
 function knownToolNames() {
   return new Set(tools.map((tool) => tool.name));
@@ -1012,6 +1014,194 @@ function m100BlockedToolResult(block) {
       reasons: block.reasons
     }
   }, true);
+}
+
+function m100PlanSteps(plan, validation) {
+  if (validation && Array.isArray(validation.steps)) return validation.steps;
+  return plan && Array.isArray(plan.steps) ? plan.steps : [];
+}
+
+function m100RiskForAgentPlan(plan, validation) {
+  const steps = m100PlanSteps(plan, validation);
+  let hasRawJsx = rawExtendscriptStepCount(validation) > 0;
+  let hasDestructive = false;
+  let hasMutating = Number(validation && validation.mutatingCount || 0) > 0;
+  for (const step of steps) {
+    const tool = String(step && step.tool || "");
+    if (M100_RAW_JSX_TOOL_NAMES.has(tool)) hasRawJsx = true;
+    if (M100_DESTRUCTIVE_TOOL_NAMES.has(tool)) hasDestructive = true;
+    if (step && step.mutatesProject) hasMutating = true;
+  }
+  if (hasRawJsx) {
+    return {
+      level: "raw_jsx",
+      requiresConfirmation: true,
+      reasons: ["validated Agent plan includes raw ExtendScript"]
+    };
+  }
+  if (hasDestructive) {
+    return {
+      level: "destructive",
+      requiresConfirmation: true,
+      reasons: ["validated Agent plan includes a destructive tool"]
+    };
+  }
+  if (hasMutating) {
+    return {
+      level: "mutating",
+      requiresConfirmation: true,
+      reasons: ["validated Agent plan includes project-changing steps"]
+    };
+  }
+  return {
+    level: "read_only",
+    requiresConfirmation: true,
+    reasons: ["validated Agent plan is read-only"]
+  };
+}
+
+function m100PreviewForAgentPlan(plan, validation) {
+  const lines = [];
+  if (plan && plan.summary) lines.push(`Summary: ${plan.summary}`);
+  const steps = m100PlanSteps(plan, validation).slice(0, 6);
+  if (steps.length) {
+    lines.push("Steps:");
+    steps.forEach((step, index) => {
+      const title = step && (step.title || step.intent || step.tool) || "Step";
+      const tool = step && step.tool ? ` [${step.tool}]` : "";
+      lines.push(`${index + 1}. ${title}${tool}`);
+    });
+  }
+  if (validation) {
+    lines.push(`Validation: ${validation.ok ? "ok" : "needs review"}, ${Number(validation.stepCount || steps.length || 0)} step(s), ${Number(validation.mutatingCount || 0)} mutating.`);
+  }
+  return m100Protocol.compactText(lines.join("\n"), 2000);
+}
+
+function pruneM100ActionProposalStore(now = Date.now()) {
+  const seen = new Set();
+  for (const record of m100ActionProposalStore.values()) {
+    if (!record || seen.has(record.actionId)) continue;
+    seen.add(record.actionId);
+    const expiresAtMs = Date.parse(record.proposal && record.proposal.confirmation && record.proposal.confirmation.proposalExpiresAt || "");
+    if (Number.isFinite(expiresAtMs) && expiresAtMs + m100Protocol.M100_ACTION_PROPOSAL_TTL_MS <= now) {
+      m100ActionProposalStore.delete(record.actionId);
+      m100ActionProposalStore.delete(record.payloadRef);
+    }
+  }
+}
+
+function storeM100ActionProposal(proposal, payload) {
+  const validation = m100Protocol.validateActionProposalEnvelope(proposal);
+  if (!validation.ok) {
+    recordEvent("m100_action_proposal_rejected", {
+      actionId: proposal && proposal.actionId || null,
+      errors: validation.errors
+    });
+    return null;
+  }
+  pruneM100ActionProposalStore();
+  const record = {
+    actionId: proposal.actionId,
+    payloadRef: proposal.action.payloadRef,
+    payloadHash: proposal.action.payloadHash,
+    previewHash: proposal.action.previewHash,
+    requestId: proposal.requestId,
+    proposal,
+    payload,
+    createdAt: new Date().toISOString()
+  };
+  m100ActionProposalStore.set(record.actionId, record);
+  m100ActionProposalStore.set(record.payloadRef, record);
+  recordEvent("m100_action_proposal_created", {
+    requestId: record.requestId,
+    actionId: record.actionId,
+    payloadRef: record.payloadRef,
+    riskLevel: proposal.risk && proposal.risk.level,
+    proposalExpiresAt: proposal.confirmation && proposal.confirmation.proposalExpiresAt
+  });
+  return proposal;
+}
+
+function createM100AgentPlanProposal(planResult) {
+  if (!planResult || !planResult.plan || !planResult.planValidation || planResult.planValidation.ok !== true) {
+    return null;
+  }
+  const payload = {
+    kind: "agent_plan",
+    requestId: planResult.requestId || null,
+    plan: planResult.plan
+  };
+  const preview = m100PreviewForAgentPlan(planResult.plan, planResult.planValidation);
+  const proposal = m100Protocol.createActionProposalEnvelope({
+    requestId: planResult.requestId,
+    summary: planResult.plan.summary || "Validated AE Agent plan",
+    details: "Backend-created M100 proposal for the validated Agent plan.",
+    risk: m100RiskForAgentPlan(planResult.plan, planResult.planValidation),
+    action: {
+      kind: "ae_tool",
+      toolName: "run_ai_agent_plan"
+    },
+    payload,
+    preview,
+    logs: [
+      {
+        phase: "protocol_validation",
+        level: "info",
+        message: "Backend created a canonical M100 action proposal from a validated Agent plan."
+      }
+    ]
+  });
+  return storeM100ActionProposal(proposal, payload);
+}
+
+function m100PlanRunLookupKey(options) {
+  const action = options && options.action && typeof options.action === "object" ? options.action : {};
+  return {
+    actionId: String(options && (options.actionId || options.m100ActionId) || action.actionId || "").trim(),
+    payloadRef: String(options && (options.payloadRef || options.m100PayloadRef) || action.payloadRef || "").trim(),
+    payloadHash: String(options && options.payloadHash || action.payloadHash || "").trim(),
+    previewHash: String(options && options.previewHash || action.previewHash || "").trim()
+  };
+}
+
+function resolveM100PlanRunOptions(options) {
+  const keys = m100PlanRunLookupKey(options);
+  if (!keys.actionId && !keys.payloadRef) return options || {};
+  pruneM100ActionProposalStore();
+  const record = m100ActionProposalStore.get(keys.payloadRef) || m100ActionProposalStore.get(keys.actionId);
+  if (!record || record.payload && record.payload.kind !== "agent_plan") {
+    const error = new Error("M100 action proposal was not found. Create a fresh Agent proposal before running.");
+    error.code = "m100_action_proposal_not_found";
+    throw error;
+  }
+  if (keys.actionId && keys.actionId !== record.actionId) {
+    const error = new Error("M100 actionId does not match the stored proposal.");
+    error.code = "m100_action_id_mismatch";
+    throw error;
+  }
+  if (keys.payloadRef && keys.payloadRef !== record.payloadRef) {
+    const error = new Error("M100 payloadRef does not match the stored proposal.");
+    error.code = "m100_payload_ref_mismatch";
+    throw error;
+  }
+  if (keys.payloadHash && keys.payloadHash !== record.payloadHash) {
+    const error = new Error("M100 payloadHash does not match the stored proposal.");
+    error.code = "m100_payload_hash_mismatch";
+    throw error;
+  }
+  if (keys.previewHash && keys.previewHash !== record.previewHash) {
+    const error = new Error("M100 previewHash does not match the stored proposal.");
+    error.code = "m100_preview_hash_mismatch";
+    throw error;
+  }
+  return {
+    ...(options || {}),
+    plan: record.payload.plan,
+    requestId: record.requestId,
+    _m100ActionProposal: record.proposal,
+    _m100PayloadRef: record.payloadRef
+  };
 }
 
 function aeLiteral(value) {
@@ -4779,7 +4969,7 @@ function rawExtendscriptRunApproval(validation, plan, requestId, dryRunId, allow
 }
 
 async function runValidatedAgentPlan(options) {
-  options = options || {};
+  options = resolveM100PlanRunOptions(options || {});
   const prepared = validateAgentPlanWithRepair(options.plan, options.requestId || null, {
     solutionHints: options.solutionHints || options.planSolutionHints || null,
     projectIntentMemory: options.projectIntentMemory || options.planProjectIntentMemory || null
@@ -4856,6 +5046,24 @@ async function runValidatedAgentPlan(options) {
     }
     if (!run.ok && !run.recoveryHint) {
       run.recoveryHint = planRunRecoveryHint(run);
+    }
+    if (options._m100ActionProposal) {
+      run.m100Action = {
+        actionId: options._m100ActionProposal.actionId,
+        payloadRef: options._m100PayloadRef || options._m100ActionProposal.action.payloadRef,
+        payloadHash: options._m100ActionProposal.action.payloadHash,
+        previewHash: options._m100ActionProposal.action.previewHash,
+        riskPolicyVersion: options._m100ActionProposal.confirmation.riskPolicyVersion
+      };
+      run.m100Message = m100Protocol.createActionResultEnvelope({
+        ok: run.ok,
+        requestId: options.requestId || options._m100ActionProposal.requestId,
+        actionId: options._m100ActionProposal.actionId,
+        executionId: run.id,
+        summary: run.ok ? "Agent plan run finished." : run.error || "Agent plan run failed.",
+        error: run.error || "Agent plan run failed.",
+        phase: run.ok ? "ae_execution" : "protocol_validation"
+      });
     }
     return run;
   }
@@ -5184,7 +5392,19 @@ async function runAgentChatLogged(source, args) {
       startedAt,
       finishedAt: metadata.finishedAt,
       durationMs: metadata.durationMs,
-      runLogFile: AI_CHAT_LOG_FILE
+      runLogFile: AI_CHAT_LOG_FILE,
+      m100Message: m100Protocol.createAssistantResponseEnvelope({
+        requestId,
+        summary: result.text || "",
+        text: result.text || "",
+        logs: [
+          {
+            phase: "codex_exec",
+            level: "info",
+            message: "Assistant text response completed without executable controls."
+          }
+        ]
+      })
     };
   } catch (error) {
     const finishedAtMs = Date.now();
@@ -5297,7 +5517,7 @@ async function runAgentPlanLogged(source, args) {
       logFile: AI_CHAT_LOG_FILE
     };
     appendAiChatEvent("plan_finished", metadata);
-    return {
+    const planResponse = {
       ...result,
       mode: "ae-plan",
       agentMode: hardcoreMode ? "hardcore" : "agent",
@@ -5322,6 +5542,27 @@ async function runAgentPlanLogged(source, args) {
       planRepairError: repairError,
       planParseError: parsed.error || null
     };
+    const actionProposal = createM100AgentPlanProposal(planResponse);
+    if (actionProposal) {
+      planResponse.m100ActionProposal = actionProposal;
+      planResponse.m100Message = actionProposal;
+    } else {
+      planResponse.m100Message = m100Protocol.createAssistantResponseEnvelope({
+        requestId,
+        status: parsed.ok ? "agent_response_ready" : "failed",
+        summary: result.text || parsed.error || "Agent response did not create an executable proposal.",
+        logs: [
+          {
+            phase: "protocol_validation",
+            level: parsed.ok ? "warn" : "error",
+            message: validation && validation.ok !== true
+              ? "Agent plan did not pass validation, so no executable M100 controls were created."
+              : "Agent response is text-only for M100 executable-control purposes."
+          }
+        ]
+      });
+    }
+    return planResponse;
   } catch (error) {
     const finishedAtMs = Date.now();
     const metadata = {

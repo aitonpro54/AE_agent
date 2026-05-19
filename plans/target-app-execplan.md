@@ -74,6 +74,7 @@
 - [x] Hotfix: Windows PowerShell UTF-8 handoff readability.
 - [x] Milestone 99: M100 Patch 1a AE command lifecycle and pre-delivery expiry.
 - [x] Milestone 100: M100 Patch 1b CEP/backend single-flight and strict AE wrapper parsing.
+- [x] Milestone 101: M100 Patch 2 server-owned action proposal registry and legacy-control removal.
 
 ## Current Stable Baseline
 
@@ -590,6 +591,15 @@
 - Treat wrapped script errors and `EvalScript error.*` host failures as `failed` with `code:"ae_execution_failed"` and `phase:"ae_execution"`, instead of allowing raw success fallback.
 - Promote the M100 AE command smoke cases for `concurrent-command` and `malformed-wrapper` from pending contracts into behavioral checks; the smoke now reports no pending Patch 1b contracts.
 
+### Milestone 101: M100 Patch 2 server-owned action proposal registry and legacy-control removal
+
+- Add `mcp-server/m100-protocol.js` as the M100 envelope helper for backend-created `assistant_response`, `action_proposal`, `action_result` and `error` messages, including canonical IDs, risk, hashes, expiry, bounded previews and proposal validation.
+- Create canonical Agent-plan proposals in the bridge only after backend plan validation succeeds. The executable plan payload is stored server-side in `m100ActionProposalStore`, while the panel receives only `actionId`, `payloadRef`, `payloadHash`, `previewHash`, risk and confirmation metadata.
+- Resolve `/agents/plan/run` requests by `actionId`/`payloadRef` when a M100 proposal is supplied, so the CEP panel no longer posts the executable plan body for proposal-backed controls. Legacy direct plan posts remain for compatibility until Patch 3 normalizes the confirmation gate.
+- Switch CEP inline and persistent run controls to render/enable only for backend-stamped `messageType:"action_proposal"` envelopes with valid IDs, risk, hashes, expiry and confirmation fields.
+- Remove live/transcript/localStorage execution-control creation from legacy `result.plan` shapes. Restored transcript text can still be converted into a fresh Agent proposal, but stale structured plan payloads no longer restore executable buttons.
+- Promote Patch 2 protocol smoke coverage for backend-created proposal validation, model-authored/malformed proposal rejection and legacy `result.plan` non-executable controls. Patch 3 pending contracts remain for expiry/replay/mismatched confirmation enforcement.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -724,8 +734,20 @@
 - 2026-05-19: Operational Russian Markdown files that new chats read first use UTF-8 with BOM because this workspace still runs Windows PowerShell 5.1, whose plain `Get-Content` can misdecode UTF-8 without BOM.
 - 2026-05-19: M100 Patch 1b enforces `evalScript` single-flight in both places that can prevent overlap: daemon `/bridge/next` refuses a second lease for the same `panelConnectionId`/generation while one command is `leased` or `submitted`, and CEP stops polling while its active `evalScript` command is waiting for callback/result post.
 - 2026-05-19: AE wrapper parsing is now strict at `/bridge/result`, before a command can be retained as completed. Empty output, malformed JSON and wrapper mismatch are `ae_result_parse`; wrapped script errors and `EvalScript error.*` are `ae_execution`. The old `{ ok:true, raw:true }` fallback is removed.
+- 2026-05-19: M100 Patch 2 makes executable Agent controls proposal-owned rather than plan-shape-owned. Backend-created `action_proposal` envelopes carry `actionId`, `payloadRef`, `payloadHash`, `previewHash`, risk, expiry and confirmation metadata; model output and CEP transcript data are candidates/display text only.
+- 2026-05-19: The CEP panel no longer restores or renders executable buttons from legacy `result.plan`, including live `options.planActions`, transcript/localStorage plan restoration and stale compatibility shapes. Proposal-backed controls must pass the panel's M100 envelope validator.
+- 2026-05-19: Proposal-backed `/agents/plan/run` calls now resolve the executable plan from the bridge's server-side proposal registry by `actionId`/`payloadRef`. Full single-use confirmation-token enforcement, expiry rejection and replay/mismatch handling remain Patch 3 scope.
 
 ## Validation
+
+- Milestone 101:
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check` for touched JavaScript files: `mcp-server\m100-protocol.js`, `mcp-server\bridge-daemon.js`, `cep-panel\panel.js`, and `scripts\m100-protocol-contract-smoke.js`.
+  - Passed `node scripts\m100-ae-command-contract-smoke.js`; Patch 1a/1b AE queue contracts remain green with `pendingContracts: []`.
+  - Passed `node scripts\m100-protocol-contract-smoke.js`; it now verifies backend-created `action_proposal` validation, model-authored/malformed proposal rejection, and CEP controls wired to M100 proposals instead of legacy `result.plan`. Remaining pending contracts are Patch 3 scope: expired confirmation, replayed confirmation and mismatched confirmation payload enforcement.
+  - Passed required local smokes: `provider-contract-smoke`, `solution-registry-smoke`, `solution-candidate-report-smoke`, `solution-promotion-smoke`, `solution-retrieval-smoke`, `solution-library-validation-smoke`, `project-intent-memory-smoke`, `plan-classification-smoke`, `plan-repair-smoke`, `semantic-verification-smoke`, `reliability-validation-suite-smoke`, `chatgpt-connector-smoke`, `provider-api-smoke`, `prompt-optimization-smoke`, `bridge-only-smoke-test`, and `smoke-test`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
+  - Did not run live CEP/After Effects, external-provider, OpenAI/Codex CLI planner, or mutating-live checks because Patch 2 is local/non-live and no explicit approval was given for live or mutating validation.
 
 - Milestone 100:
   - No package manager check is configured because the repository has no `package.json`.

@@ -14,6 +14,15 @@
   var RUNNING_PLAN_TEXT = "Выполняю...";
   var DRY_RUN_PLAN_TITLE = "Dry run: проверить план без изменений в проекте After Effects.";
   var RUN_PLAN_TITLE = "Выполнить план через защищенный runner AE Agent.";
+  var M100_PROTOCOL_VERSION = "m100.v1";
+  var M100_BACKEND_SOURCE = "ae-agent-bridge";
+  var M100_RISK_POLICY_VERSION = "m100-risk-v1";
+  var M100_RISK_LEVELS = {
+    read_only: true,
+    mutating: true,
+    destructive: true,
+    raw_jsx: true
+  };
 
   var cs = new CSInterface();
   var appShellEl = document.getElementById("appShell");
@@ -1353,6 +1362,44 @@
     setTimeout(scrollNow, 80);
   }
 
+  function isPlainObject(value) {
+    return !!(value && typeof value === "object" && !(value && typeof value.push === "function"));
+  }
+
+  function m100HashLooksValid(value) {
+    return /^sha256:[a-f0-9]{64}$/.test(String(value || ""));
+  }
+
+  function normalizeM100ActionProposal(value) {
+    if (!isPlainObject(value)) return null;
+    if (value.protocolVersion !== M100_PROTOCOL_VERSION) return null;
+    if (value.messageType !== "action_proposal") return null;
+    if (value.status !== "awaiting_confirmation") return null;
+    if (value.serverCreated !== true || value.createdBy !== M100_BACKEND_SOURCE) return null;
+    if (!value.requestId || !value.actionId) return null;
+    if (!isPlainObject(value.risk) || !M100_RISK_LEVELS[value.risk.level] || value.risk.requiresConfirmation !== true) return null;
+    if (!isPlainObject(value.action)) return null;
+    if (value.action.kind !== "ae_tool" && value.action.kind !== "ae_jsx") return null;
+    if (!value.action.payloadRef || !m100HashLooksValid(value.action.payloadHash) || !m100HashLooksValid(value.action.previewHash)) return null;
+    if (!isPlainObject(value.confirmation)) return null;
+    if (value.confirmation.required !== true || value.confirmation.state !== "pending") return null;
+    if (value.confirmation.riskPolicyVersion !== M100_RISK_POLICY_VERSION) return null;
+    if (!value.confirmation.proposalExpiresAt || isNaN(Date.parse(value.confirmation.proposalExpiresAt))) return null;
+    return value;
+  }
+
+  function m100ActionProposalForResult(result) {
+    var proposal = normalizeM100ActionProposal(result && result.m100ActionProposal);
+    if (!proposal) proposal = normalizeM100ActionProposal(result);
+    if (!proposal) return null;
+    if (result && result.requestId && String(result.requestId) !== String(proposal.requestId)) return null;
+    return proposal;
+  }
+
+  function hasRunnableM100ActionProposal(result) {
+    return !!(result && result.plan && m100ActionProposalForResult(result));
+  }
+
   function appendChatMessage(role, text, options) {
     var messageEl = document.createElement("div");
     messageEl.className = "chat-message " + role;
@@ -1364,7 +1411,7 @@
 
     var textEl = document.createElement("span");
     renderChatText(textEl, role, text || "");
-    if (options && options.planActions) appendInlinePlanActions(textEl, options.planActions);
+    if (options && options.actionProposal) appendInlineActionProposalActions(textEl, options.actionProposal);
     messageEl.appendChild(textEl);
 
     chatTranscriptEl.appendChild(messageEl);
@@ -1486,15 +1533,16 @@
     appendChatMessage("assistant", text);
   }
 
-  function appendInlinePlanActions(parent, planResult) {
-    if (!parent || !planResult || !planResult.plan) return;
+  function appendInlineActionProposalActions(parent, actionProposal) {
+    var proposal = normalizeM100ActionProposal(actionProposal);
+    if (!parent || !proposal) return;
 
     var row = document.createElement("div");
     row.className = "inline-plan-actions";
 
     var status = document.createElement("span");
     status.className = "inline-plan-action-status";
-    status.textContent = "Plan ready";
+    status.textContent = "Action ready";
     row.appendChild(status);
 
     var dryRunButton = document.createElement("button");
@@ -1510,7 +1558,7 @@
     row.appendChild(runButton);
 
     var entry = {
-      planResult: planResult,
+      actionProposal: proposal,
       row: row,
       status: status,
       dryRunButton: dryRunButton,
@@ -1669,32 +1717,6 @@
     return [];
   }
 
-  function jsonClone(value) {
-    try {
-      return JSON.parse(JSON.stringify(value));
-    } catch (_error) {
-      return null;
-    }
-  }
-
-  function normalizeTranscriptPlanResult(result) {
-    if (!result || typeof result !== "object" || !result.plan || typeof result.plan !== "object") return null;
-    var normalized = {
-      planParseOk: result.planParseOk !== false,
-      plan: result.plan
-    };
-    if (result.requestId) normalized.requestId = String(result.requestId).slice(0, 180);
-    if (result.model) normalized.model = String(result.model).slice(0, 120);
-    if (typeof result.durationMs === "number") normalized.durationMs = result.durationMs;
-    if (result.planValidation && typeof result.planValidation === "object") normalized.planValidation = result.planValidation;
-    if (result.planClassification && typeof result.planClassification === "object") normalized.planClassification = result.planClassification;
-    if (result.planRepair && typeof result.planRepair === "object") normalized.planRepair = result.planRepair;
-    if (result.planRepaired) normalized.planRepaired = true;
-    if (result.planParseError) normalized.planParseError = compactTranscriptText(result.planParseError);
-    var cloned = jsonClone(normalized);
-    return cloned && cloned.plan ? cloned : null;
-  }
-
   function normalizeTranscriptItems(items, limit) {
     var source = items && typeof items.push === "function" ? items : [];
     var output = [];
@@ -1705,8 +1727,6 @@
         role: role,
         text: compactTranscriptText(item.text)
       };
-      var planResult = normalizeTranscriptPlanResult(item.planResult);
-      if (planResult) normalized.planResult = planResult;
       output.push(normalized);
     }
     if (limit && output.length > limit) return output.slice(output.length - limit);
@@ -1833,8 +1853,6 @@
       role: role || "assistant",
       text: compactTranscriptText(text)
     };
-    var planResult = normalizeTranscriptPlanResult(options && options.planActions);
-    if (planResult) item.planResult = planResult;
     transcriptHistory.push(item);
     if (transcriptHistory.length > 80) {
       transcriptHistory = transcriptHistory.slice(transcriptHistory.length - 80);
@@ -1848,8 +1866,7 @@
 
     transcriptRestoring = true;
     for (var i = 0; i < transcriptHistory.length; i++) {
-      var options = recoveredPlanResult && i === recoveredPlanIndex ? { planActions: recoveredPlanResult } : null;
-      appendChatMessage(transcriptHistory[i].role, transcriptHistory[i].text, options);
+      appendChatMessage(transcriptHistory[i].role, transcriptHistory[i].text, null);
     }
     transcriptRestoring = false;
   }
@@ -1967,7 +1984,8 @@
         continue;
       }
 
-      var isCurrentPlan = !!(lastPlanResult && entry.planResult === lastPlanResult);
+      var activeProposal = m100ActionProposalForResult(lastPlanResult);
+      var isCurrentPlan = !!(lastPlanResult && activeProposal && entry.actionProposal && entry.actionProposal.actionId === activeProposal.actionId);
       var validation = isCurrentPlan && lastPlanResult ? lastPlanResult.planValidation || null : null;
       var mutatingCount = validation ? Number(validation.mutatingCount || 0) : 0;
       var validationOk = !!(validation && validation.ok);
@@ -2130,12 +2148,12 @@
     var blocksRun = classificationBlocksRun(validation) && !rawGateReady;
     if (dryRunPlanButton) {
       dryRunPlanButton.textContent = chatInFlight && planRunInFlightMode === "dry-run" ? "Dry run..." : DRY_RUN_PLAN_TEXT;
-      dryRunPlanButton.title = hasPlan ? "Dry run: check this plan without changing the AE project." : "Create an Agent plan first.";
+      dryRunPlanButton.title = hasPlan ? "Dry run: check this backend-created action proposal without changing the AE project." : "Create a fresh Agent proposal first.";
     }
     if (runPlanButton) {
       runPlanButton.textContent = chatInFlight && planRunInFlightMode === "run" ? RUNNING_PLAN_TEXT : RUN_PLAN_TEXT;
       if (!hasPlan) {
-        runPlanButton.title = "Create and validate an Agent plan first.";
+        runPlanButton.title = "Create and validate a backend-owned Agent proposal first.";
       } else if (rawGateReady) {
         runPlanButton.title = "Dry run passed; execute through the explicit raw ExtendScript gate and protected runner.";
       } else if (blocksRun) {
@@ -2160,20 +2178,12 @@
         setPlanRunStatus("Working...", "");
       }
     } else if (!hasPlan) {
-      setPlanRunStatus("No plan ready", "");
+      setPlanRunStatus("No action proposal ready", "");
     } else if (!validation) {
       setPlanRunStatus("Plan needs review", "blocked");
     } else {
       setPlanRunStatus(classificationStatusText(classification, validationOk, mutatingCount, rawGateReady), classificationTone(classification, validationOk, mutatingCount));
     }
-  }
-
-  function findLastTranscriptPlanItem() {
-    for (var i = transcriptHistory.length - 1; i >= 0; i--) {
-      var planResult = normalizeTranscriptPlanResult(transcriptHistory[i] && transcriptHistory[i].planResult);
-      if (planResult) return { index: i, planResult: planResult };
-    }
-    return null;
   }
 
   function looksLikePlanText(text) {
@@ -2205,14 +2215,11 @@
   function updateRecoverLastPlanButton(hasPlan) {
     if (!recoverLastPlanButton) return;
     recoverLastPlanButton.textContent = RECOVER_PLAN_TEXT;
-    var recoverable = findLastTranscriptPlanItem();
     recoverLastPlanButton.disabled = chatInFlight || hasPlan || !transcriptHistory.length;
     if (chatInFlight) {
       recoverLastPlanButton.title = "Wait for the current Agent request to finish.";
     } else if (hasPlan) {
       recoverLastPlanButton.title = "A plan is already active.";
-    } else if (recoverable) {
-      recoverLastPlanButton.title = "Restore the latest saved structured Agent plan from this chat.";
     } else if (findLastPlanLikeTranscriptText()) {
       recoverLastPlanButton.title = "Ask Agent mode to convert the latest plan-like chat message into a validated plan.";
     } else if (transcriptHistory.length) {
@@ -2226,16 +2233,17 @@
     sendChatButton.disabled = chatInFlight || !selectedAgentReady();
     var hardcoreMode = chatModeEl.value === CHAT_MODE_HARDCORE;
     var hasPlan = !!(lastPlanResult && lastPlanResult.plan);
+    var hasActionProposal = hasRunnableM100ActionProposal(lastPlanResult);
     var validation = hasPlan && lastPlanResult ? lastPlanResult.planValidation || null : null;
     if (hardcoreMode) {
       if (recoverLastPlanButton) recoverLastPlanButton.style.display = "";
       if (dryRunPlanButton) dryRunPlanButton.style.display = "";
       if (runPlanButton) runPlanButton.style.display = "";
       updateRecoverLastPlanButton(hasPlan);
-      if (dryRunPlanButton) dryRunPlanButton.disabled = chatInFlight || !hasPlan;
-      if (runPlanButton) runPlanButton.disabled = chatInFlight || !hasPlan || !validation || !validation.ok || planRunBlocksNormalRun(validation);
+      if (dryRunPlanButton) dryRunPlanButton.disabled = chatInFlight || !hasActionProposal;
+      if (runPlanButton) runPlanButton.disabled = chatInFlight || !hasActionProposal || !validation || !validation.ok || planRunBlocksNormalRun(validation);
       updateDevRequestButton(hasPlan, validation);
-      updatePlanRunControls(hasPlan, validation);
+      updatePlanRunControls(hasActionProposal, validation);
       if (chatInFlight && !planRunInFlightMode) {
         setPlanRunStatus("Hardcore owner is running...", "");
       } else if (!chatInFlight && !hasPlan) {
@@ -2246,10 +2254,10 @@
       if (dryRunPlanButton) dryRunPlanButton.style.display = "";
       if (runPlanButton) runPlanButton.style.display = "";
       updateRecoverLastPlanButton(hasPlan);
-      dryRunPlanButton.disabled = chatInFlight || !hasPlan;
-      runPlanButton.disabled = chatInFlight || !hasPlan || !validation || !validation.ok || planRunBlocksNormalRun(validation);
+      dryRunPlanButton.disabled = chatInFlight || !hasActionProposal;
+      runPlanButton.disabled = chatInFlight || !hasActionProposal || !validation || !validation.ok || planRunBlocksNormalRun(validation);
       updateDevRequestButton(hasPlan, validation);
-      updatePlanRunControls(hasPlan, validation);
+      updatePlanRunControls(hasActionProposal, validation);
     }
     updateInlinePlanActionRows();
     if (applyWorkflowPresetButton && workflowPresetSelect) {
@@ -2352,16 +2360,6 @@
 
   function recoverLastPlanFromChat() {
     if (chatInFlight || (lastPlanResult && lastPlanResult.plan)) return;
-    var recovered = findLastTranscriptPlanItem();
-    if (recovered) {
-      lastPlanResult = recovered.planResult;
-      rememberPlanRun(null);
-      renderTranscriptHistory(recovered.index, recovered.planResult);
-      updateChatAvailability();
-      log("Recovered latest Agent plan from chat history");
-      return;
-    }
-
     var sourceText = findLastPlanLikeTranscriptText();
     if (!sourceText) {
       updateChatAvailability();
@@ -2398,7 +2396,7 @@
       var result = response && response.result ? response.result : {};
       var text = formatPlanResult(result);
       lastPlanResult = result && result.plan ? result : null;
-      appendChatMessage("assistant", text, lastPlanResult ? { planActions: result } : null);
+      appendChatMessage("assistant", text, hasRunnableM100ActionProposal(lastPlanResult) ? { actionProposal: m100ActionProposalForResult(lastPlanResult) } : null);
       if (result.requestId) {
         log("Recovered chat plan through Agent planner " + result.requestId);
       } else {
@@ -2677,11 +2675,17 @@
     var plan = result.plan;
     var validation = result.planValidation || null;
     var classification = result.planClassification || (validation ? validation.classification : null);
+    var actionProposal = m100ActionProposalForResult(result);
     var steps = reviewStepsForResult(result);
     var stepCount = validation ? Number(validation.stepCount || 0) : (steps ? steps.length : 0);
     var mutatingCount = validation ? Number(validation.mutatingCount || 0) : 0;
     var lines = [];
     if (validation) lines.push("Plan review: " + (validation.ok ? "ready" : "needs review"));
+    if (actionProposal) {
+      lines.push("Action: " + actionProposal.actionId + " / " + actionProposal.risk.level);
+      lines.push("Payload: " + actionProposal.action.payloadRef);
+      lines.push("Expires: " + actionProposal.confirmation.proposalExpiresAt);
+    }
     if (result.agentMode === "hardcore") lines.push("Mode: Agent Hardcore");
     if (classification) {
       lines.push("Confidence: " + (classification.verdict || ((classification.label || classification.category || "Plan") + " / " + (classification.confidence || "unknown"))));
@@ -2986,15 +2990,22 @@
   }
 
   function runLastPlan(dryRun) {
-    if (chatInFlight || !lastPlanResult || !lastPlanResult.plan) return;
+    var proposal = m100ActionProposalForResult(lastPlanResult);
+    if (chatInFlight || !lastPlanResult || !lastPlanResult.plan || !proposal) {
+      setPlanRunStatus("No backend action proposal ready", "blocked");
+      return;
+    }
     var validation = lastPlanResult.planValidation || {};
     var mutatingCount = Number(validation.mutatingCount || 0);
     var allowMutations = !dryRun && mutatingCount > 0;
     var autoEditSession = allowMutations;
     var allowRawExtendscript = !dryRun && rawExtendscriptDryRunGateReady(validation);
     var body = {
-      plan: lastPlanResult.plan,
-      requestId: lastPlanResult.requestId,
+      actionId: proposal.actionId,
+      payloadRef: proposal.action.payloadRef,
+      payloadHash: proposal.action.payloadHash,
+      previewHash: proposal.action.previewHash,
+      requestId: proposal.requestId,
       dryRun: dryRun,
       confirm: !dryRun,
       allowMutations: allowMutations,
@@ -3124,8 +3135,8 @@
       } else {
         lastPlanResult = agentPlanMode ? result : lastPlanResult;
       }
-      var planActions = agentPlanMode ? (hardcoreMode ? lastPlanResult : result) : null;
-      appendChatMessage("assistant", text, planActions && planActions.plan ? { planActions: planActions } : null);
+      var actionProposal = agentPlanMode ? m100ActionProposalForResult(hardcoreMode ? lastPlanResult : result) : null;
+      appendChatMessage("assistant", text, actionProposal ? { actionProposal: actionProposal } : null);
       appendOperationUsageReport(hardcoreMode ? "hardcore owner session" : (agentPlanMode ? "agent plan" : "chat"), result);
       if (!agentPlanMode) {
         chatMessages.push({ role: "assistant", content: text });

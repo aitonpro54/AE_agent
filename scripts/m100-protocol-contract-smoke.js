@@ -7,6 +7,7 @@ const path = require("path");
 const repoRoot = path.join(__dirname, "..");
 const bridgePath = path.join(repoRoot, "mcp-server", "bridge-daemon.js");
 const panelPath = path.join(repoRoot, "cep-panel", "panel.js");
+const protocol = require(path.join(repoRoot, "mcp-server", "m100-protocol"));
 const strict = process.argv.includes("--strict") || process.env.M100_STRICT_CONTRACTS === "1";
 
 function read(filePath) {
@@ -32,46 +33,92 @@ function main() {
 
   contains(bridge, "M100_RISK_POLICY_VERSION", "M100 risk policy constant");
   contains(bridge, "m100DirectToolCallBlock", "direct tool default-deny helper");
+  contains(bridge, "createM100AgentPlanProposal", "backend-owned proposal creation helper");
+  contains(bridge, "m100ActionProposalStore", "server-side proposal payload store");
   contains(bridge, "ignoredClientConfirmation", "ignored client confirmation marker");
   contains(bridge, "proposal_required", "proposal-required direct block code");
   contains(bridge, "unknown_tool_blocked", "unknown-tool direct block code");
   contains(bridge, "run_extendscript", "raw ExtendScript tool name");
   contains(bridge, "run_extendscript_file", "raw ExtendScript file tool name");
+  contains(bridge, "payloadHash", "canonical payload hash marker");
+  contains(bridge, "previewHash", "canonical preview hash marker");
+  contains(bridge, "proposalExpiresAt", "proposal expiry marker");
+
+  contains(panel, "normalizeM100ActionProposal", "panel M100 proposal validator");
+  contains(panel, "appendInlineActionProposalActions", "panel M100 action controls");
+  assert(panel.indexOf("appendInlinePlanActions") < 0, "Panel must not expose legacy appendInlinePlanActions");
+  assert(panel.indexOf("options.planActions") < 0, "Panel must not render controls from legacy options.planActions");
+
+  const proposal = protocol.createActionProposalEnvelope({
+    requestId: "req_smoke",
+    summary: "Smoke proposal",
+    risk: {
+      level: "mutating",
+      requiresConfirmation: true,
+      reasons: ["smoke mutating plan"]
+    },
+    action: {
+      kind: "ae_tool",
+      toolName: "run_ai_agent_plan"
+    },
+    payload: {
+      kind: "agent_plan",
+      requestId: "req_smoke",
+      plan: {
+        summary: "Smoke plan",
+        steps: [
+          {
+            title: "Read active comp",
+            tool: "get_active_comp",
+            args: {}
+          }
+        ]
+      }
+    },
+    preview: "Smoke preview"
+  });
+  assert(protocol.validateActionProposalEnvelope(proposal).ok, "Backend-created proposal should validate");
+  assert.strictEqual(proposal.messageType, "action_proposal");
+  assert.strictEqual(proposal.createdBy, protocol.M100_BACKEND_SOURCE);
+  assert.strictEqual(proposal.serverCreated, true);
+  assert(proposal.action.payloadRef, "Proposal must use a server-side payloadRef");
+  assert(/^sha256:[a-f0-9]{64}$/.test(proposal.action.payloadHash), "Proposal must include payloadHash");
+  assert(/^sha256:[a-f0-9]{64}$/.test(proposal.action.previewHash), "Proposal must include previewHash");
+  assert(proposal.confirmation.proposalExpiresAt, "Proposal must include proposalExpiresAt");
+
+  const modelAuthored = {
+    ...proposal,
+    createdBy: "model",
+    serverCreated: false
+  };
+  assert(!protocol.validateActionProposalEnvelope(modelAuthored).ok, "Model-authored proposal envelope must be rejected");
+
+  const malformed = {
+    ...proposal,
+    actionId: ""
+  };
+  assert(!protocol.validateActionProposalEnvelope(malformed).ok, "Malformed action proposal must be rejected");
 
   const pendingContracts = [];
-  if (panel.indexOf("normalizeTranscriptPlanResult") >= 0 && panel.indexOf("appendInlinePlanActions(parent, planResult)") >= 0) {
-    pendingContracts.push(pendingContract(
-      "legacy-result-plan-controls",
-      "Panel renders executable controls only from backend-created messageType:\"action_proposal\" envelopes.",
-      "panel.js still normalizes result.plan and appends inline plan actions from transcript/restore shapes."
-    ));
-  }
-  if (bridge.indexOf("messageType") < 0 || bridge.indexOf("action_proposal") < 0) {
-    pendingContracts.push(pendingContract(
-      "malformed-envelope",
-      "Malformed or model-authored action envelopes are rejected before controls render.",
-      "No M100 protocol envelope validator exists yet."
-    ));
-  }
-  if (bridge.indexOf("proposalExpiresAt") < 0 || bridge.indexOf("confirmationTokenHash") < 0) {
+  if (bridge.indexOf("confirmationTokenHash") < 0 || bridge.indexOf("confirmedAt") < 0) {
     pendingContracts.push(pendingContract(
       "expired-confirmation",
       "Expired proposals are rejected before AE queueing.",
-      "Server-owned proposal/confirmation store is not implemented yet."
+      "Patch 2 creates proposal expiry metadata, but Patch 3 owns confirmation token storage and expiry enforcement."
     ));
   }
   if (bridge.indexOf("confirmedAt") < 0 || bridge.indexOf("confirmationTokenHash") < 0) {
     pendingContracts.push(pendingContract(
       "replayed-confirmation",
       "Single-use confirmation tokens cannot be replayed.",
-      "Server-owned confirmation token hashing is not implemented yet."
+      "Patch 3 owns single-use confirmation token hashing and replay rejection."
     ));
   }
-  if (bridge.indexOf("payloadHash") < 0 || bridge.indexOf("previewHash") < 0) {
+  if (bridge.indexOf("confirmationTokenHash") < 0 || bridge.indexOf("confirmM100ActionProposal") < 0) {
     pendingContracts.push(pendingContract(
       "mismatched-confirmation-payload",
       "Confirmation is tied to payloadHash, previewHash and riskPolicyVersion.",
-      "Canonical proposal hashing is not implemented yet."
+      "Patch 2 computes proposal hashes; Patch 3 owns confirmation-time mismatch rejection."
     ));
   }
 
@@ -85,7 +132,10 @@ function main() {
       "M100 risk policy markers exist",
       "direct tool block ignores client confirmation",
       "proposal_required and unknown_tool_blocked are structured codes",
-      "raw JSX tool names are listed in the policy surface"
+      "raw JSX tool names are listed in the policy surface",
+      "backend-created action_proposal validates with actionId, payloadRef, hashes, risk and expiry",
+      "model-authored and malformed action_proposal envelopes are rejected",
+      "panel executable controls are wired to M100 action proposals, not legacy result.plan"
     ],
     pendingContracts
   }, null, 2));
