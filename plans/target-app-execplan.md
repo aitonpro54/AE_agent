@@ -78,6 +78,7 @@
 - [x] Milestone 102: M100 Patch 3 single-use confirmation gate and direct-tool proposal requirement.
 - [x] Milestone 103: M100 Patch 4 lifecycle diagnostics and redaction.
 - [x] Milestone 104: M100 Patch 5 deterministic vertical smoke.
+- [ ] Milestone 105: M100 approval-gated live validation.
 
 ## Current Stable Baseline
 
@@ -632,8 +633,19 @@
 - Assert correlation IDs across request, proposal, execution and result/error, and assert legacy `result.plan` / model-authored proposal-like shapes cannot create executable controls.
 - Keep the smoke local-only: no external provider, no live CEP/After Effects panel and no live AE mutation.
 
+### Milestone 105: M100 approval-gated live validation
+
+- Start only after explicit user approval for live CEP/After Effects validation; do not use this milestone as implicit approval for external-provider, OpenAI CLI planner, or mutating-live checks.
+- Begin with read-only environment checks: confirm bridge health, installed panel version, panel connection, pending/inflight queue counts, and M100 risk-policy metadata.
+- Run read-only CEP/CDP smokes first, such as `node scripts/cep-panel-cdp-smoke.js inspect`, `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`, and the read-only part of `node scripts/reliability-validation-suite.js read-only-live --stop-on-fail` when the panel CDP endpoint is available.
+- Stop and record the blocker if After Effects, CEP remote debugging, the bridge daemon, or installed-panel version is unavailable or mismatched; do not fall through into provider or mutation tests to compensate.
+- Escalate separately for external-provider/OpenAI CLI planner validation because it can send prompts/project context outside the machine.
+- Escalate separately for mutating-live validation and use generated test prefixes, checkpoint/edit-session protection, post-run cleanup, and semantic/read-back evidence before marking live mutation behavior covered.
+- Record every live command, environment version, approval scope, result, skipped gate, and any generated asset cleanup in the plan and `.codex/handoff.md`.
+
 ## Decision Log
 
+- 2026-05-19: After M100 Patch 0-5 local completion, the next reviewable block is Milestone 105 approval-gated live validation. It must start with read-only bridge/CEP status checks after explicit approval, while external-provider/OpenAI CLI planner and mutating-live checks remain separate approvals.
 - 2026-05-19: M100 Patch 5 closes the local vertical proof with `scripts/m100-vertical-smoke.js`; the harness uses real bridge endpoints plus fake Codex/CEP/AE behavior, leaving Patch 1a/1b lifecycle, Patch 3 confirmation and Patch 4 diagnostics/redaction production semantics unchanged.
 - 2026-05-19: The deterministic M100 vertical smoke is non-live by design. It may queue commands only inside a throwaway bridge daemon and resolves them through fake `/bridge/result` payloads; live CEP/After Effects, external-provider and mutating-live validation remain approval-gated.
 - 2026-05-19: M100 Patch 4 centralizes user-facing diagnostic redaction in `mcp-server/m100-protocol.js`; panel-visible diagnostics must pass `redactForUserDiagnostic()` instead of ad hoc truncation.
