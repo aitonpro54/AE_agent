@@ -77,6 +77,7 @@
 - [x] Milestone 101: M100 Patch 2 server-owned action proposal registry and legacy-control removal.
 - [x] Milestone 102: M100 Patch 3 single-use confirmation gate and direct-tool proposal requirement.
 - [x] Milestone 103: M100 Patch 4 lifecycle diagnostics and redaction.
+- [x] Milestone 104: M100 Patch 5 deterministic vertical smoke.
 
 ## Current Stable Baseline
 
@@ -622,8 +623,19 @@
 - Update the CEP panel to render M100 diagnostics with compact phase/code/id/preview/log lines instead of raw HTTP response text.
 - Add `scripts/m100-lifecycle-diagnostics-smoke.js` and extend the protocol contract smoke to verify redaction, phase/code envelopes, confirmation diagnostics and AE parse diagnostics.
 
+### Milestone 104: M100 Patch 5 deterministic vertical smoke
+
+- Add `scripts/m100-vertical-smoke.js` as a dependency-free local fake-agent/fake-CEP/fake-AE harness that starts the bridge daemon on a random local port.
+- Prove the M100 vertical path: prompt accepted, backend-created `action_proposal`, confirmation required, proposal-backed confirmed run, fake AE success/result display, fake AE host-error display and terminal `completed` / `failed` states.
+- Include deterministic fake Codex cases for text-only assistant response, candidate plan canonicalization, delayed output/model timeout, stderr/non-zero exit, no assistant text and malformed JSONL diagnostics.
+- Include fake AE lifecycle cases for pre-delivery expiry, lease/submit timeouts, late stale result, concurrent command single-flight, empty/malformed/wrapper-mismatch output and wrapped/evalScript host errors.
+- Assert correlation IDs across request, proposal, execution and result/error, and assert legacy `result.plan` / model-authored proposal-like shapes cannot create executable controls.
+- Keep the smoke local-only: no external provider, no live CEP/After Effects panel and no live AE mutation.
+
 ## Decision Log
 
+- 2026-05-19: M100 Patch 5 closes the local vertical proof with `scripts/m100-vertical-smoke.js`; the harness uses real bridge endpoints plus fake Codex/CEP/AE behavior, leaving Patch 1a/1b lifecycle, Patch 3 confirmation and Patch 4 diagnostics/redaction production semantics unchanged.
+- 2026-05-19: The deterministic M100 vertical smoke is non-live by design. It may queue commands only inside a throwaway bridge daemon and resolves them through fake `/bridge/result` payloads; live CEP/After Effects, external-provider and mutating-live validation remain approval-gated.
 - 2026-05-19: M100 Patch 4 centralizes user-facing diagnostic redaction in `mcp-server/m100-protocol.js`; panel-visible diagnostics must pass `redactForUserDiagnostic()` instead of ad hoc truncation.
 - 2026-05-19: Diagnostic phase/code/id reporting is additive and must not alter AE command lifecycle/single-flight behavior or the Patch 3 server-owned confirmation gate.
 - 2026-05-19: Codex CLI failure classes are now stable diagnostic codes: `model_timeout`, `codex_nonzero_exit`, `codex_no_assistant_text` and `codex_malformed_jsonl`; provider readiness remains a separate phase from model execution.
@@ -767,6 +779,14 @@
 - 2026-05-19: Client-authored `confirm:true`, `confirmed:true` or forged confirmation fields are not execution authority for mutating/destructive/raw paths. Direct `/tools/call`/MCP remain proposal-required, and `/agents/plan/run` now blocks mutating/destructive/raw inline real runs unless they resolve a server-side proposal record.
 
 ## Validation
+
+- Milestone 104:
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check` for the touched JavaScript file: `scripts\m100-vertical-smoke.js`.
+  - Passed M100 smokes: `node scripts\m100-protocol-contract-smoke.js`, `node scripts\m100-lifecycle-diagnostics-smoke.js`, `node scripts\m100-ae-command-contract-smoke.js`, `node scripts\m100-confirmation-gate-smoke.js`, and `node scripts\m100-vertical-smoke.js`.
+  - Passed required local smokes: `provider-contract-smoke`, `solution-registry-smoke`, `solution-candidate-report-smoke`, `solution-promotion-smoke`, `solution-retrieval-smoke`, `solution-library-validation-smoke`, `project-intent-memory-smoke`, `plan-classification-smoke`, `plan-repair-smoke`, `semantic-verification-smoke`, `reliability-validation-suite-smoke`, `chatgpt-connector-smoke`, `provider-api-smoke`, `prompt-optimization-smoke`, `bridge-only-smoke-test`, and `smoke-test`.
+  - Passed `git diff --check`; Git printed only the existing LF-to-CRLF working-copy warning for `plans/target-app-execplan.md`.
+  - Did not run live CEP/After Effects, external-provider/OpenAI CLI planner, or mutating-live checks because Patch 5 is local/fake-vertical and no explicit approval was given for live or mutating validation.
 
 - Milestone 103:
   - No package manager check is configured because the repository has no `package.json`.
