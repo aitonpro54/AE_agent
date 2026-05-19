@@ -73,6 +73,7 @@
 - [x] Milestone 98: M100 Patch 0 safety inventory and direct default-deny.
 - [x] Hotfix: Windows PowerShell UTF-8 handoff readability.
 - [x] Milestone 99: M100 Patch 1a AE command lifecycle and pre-delivery expiry.
+- [x] Milestone 100: M100 Patch 1b CEP/backend single-flight and strict AE wrapper parsing.
 
 ## Current Stable Baseline
 
@@ -580,6 +581,15 @@
 - Report leased timeout as `unknown_after_delivery`, submitted timeout as `timed_out_after_submit`, and acknowledge late `/bridge/result` payloads as `stale_result_ignored` without resolving the old command promise or changing the retained terminal result.
 - Promote the M100 AE command smoke cases for timeout-before-delivery, timeout-after-lease, timeout-after-submit, and late result from pending contracts into behavioral checks. Patch 1b still owns backend/CEP single-flight and strict malformed-wrapper failure.
 
+### Milestone 100: M100 Patch 1b CEP/backend single-flight and strict AE wrapper parsing
+
+- Add backend single-flight protection in `/bridge/next`: a panel connection/generation with a `leased` or `submitted` command cannot lease another queued command until the active command becomes terminal.
+- Add CEP-side single-flight protection: the panel tracks the active command submitted to `evalScript`, pauses bridge polling while it is active, and clears the active slot only after the result post completes or submit marking is rejected before host execution.
+- Move strict wrapper validation into `/bridge/result`, so commands are retained as `completed` only after the wrapped AE output parses and matches `{ ok:boolean, result }`.
+- Treat empty output, malformed JSON and wrapper mismatch as `failed` with `code:"ae_result_parse_failed"` and `phase:"ae_result_parse"` plus a bounded `rawPreview`.
+- Treat wrapped script errors and `EvalScript error.*` host failures as `failed` with `code:"ae_execution_failed"` and `phase:"ae_execution"`, instead of allowing raw success fallback.
+- Promote the M100 AE command smoke cases for `concurrent-command` and `malformed-wrapper` from pending contracts into behavioral checks; the smoke now reports no pending Patch 1b contracts.
+
 ## Decision Log
 
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
@@ -712,8 +722,19 @@
 - 2026-05-19: CEP marks a leased command submitted through `/bridge/submitted` before `evalScript`. If submit ownership does not match the lease or the command is already terminal, the panel does not execute the script.
 - 2026-05-19: Late `/bridge/result` payloads for terminal command IDs are acknowledged as `stale_result_ignored` and logged, but they do not resolve/reject the old promise again or replace the retained timeout/expiry result.
 - 2026-05-19: Operational Russian Markdown files that new chats read first use UTF-8 with BOM because this workspace still runs Windows PowerShell 5.1, whose plain `Get-Content` can misdecode UTF-8 without BOM.
+- 2026-05-19: M100 Patch 1b enforces `evalScript` single-flight in both places that can prevent overlap: daemon `/bridge/next` refuses a second lease for the same `panelConnectionId`/generation while one command is `leased` or `submitted`, and CEP stops polling while its active `evalScript` command is waiting for callback/result post.
+- 2026-05-19: AE wrapper parsing is now strict at `/bridge/result`, before a command can be retained as completed. Empty output, malformed JSON and wrapper mismatch are `ae_result_parse`; wrapped script errors and `EvalScript error.*` are `ae_execution`. The old `{ ok:true, raw:true }` fallback is removed.
 
 ## Validation
+
+- Milestone 100:
+  - No package manager check is configured because the repository has no `package.json`.
+  - Passed `node --check` for touched JavaScript files: `mcp-server\bridge-daemon.js`, `cep-panel\panel.js`, and `scripts\m100-ae-command-contract-smoke.js`.
+  - Passed `node scripts\m100-ae-command-contract-smoke.js`; it now verifies backend single-flight for one active panel connection, empty AE wrapper output, malformed wrapper JSON, wrapper mismatch, wrapped host errors and `EvalScript error.*` host failures. It reports `pendingContracts: []`.
+  - Passed `node scripts\m100-protocol-contract-smoke.js`; remaining pending contracts are still Patch 2/3 scope: legacy `result.plan` controls, malformed envelope rejection, expired/replayed confirmation and mismatched payload/preview hash.
+  - Passed required local smokes: `provider-contract-smoke`, `solution-registry-smoke`, `solution-candidate-report-smoke`, `solution-promotion-smoke`, `solution-retrieval-smoke`, `solution-library-validation-smoke`, `project-intent-memory-smoke`, `plan-classification-smoke`, `plan-repair-smoke`, `semantic-verification-smoke`, `reliability-validation-suite-smoke`, `chatgpt-connector-smoke`, `provider-api-smoke`, `prompt-optimization-smoke`, `bridge-only-smoke-test`, and `smoke-test`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
+  - Did not run live CEP/After Effects, external-provider, OpenAI/Codex CLI planner, or mutating-live checks because Patch 1b is local/non-live and no explicit approval was given for live or mutating validation.
 
 - Milestone 99:
   - No package manager check is configured because the repository has no `package.json`.

@@ -77,6 +77,7 @@
   var running = false;
   var pollTimer = null;
   var pollInFlight = false;
+  var activeEvalScriptCommandId = "";
   var agents = [];
   var chatSessions = [];
   var activeChatSessionId = "";
@@ -3140,7 +3141,13 @@
     });
   }
 
-  function postResult(id, ok, result, error) {
+  function clearActiveEvalScriptCommand(id) {
+    if (!id || activeEvalScriptCommandId === id) {
+      activeEvalScriptCommandId = "";
+    }
+  }
+
+  function postResult(id, ok, result, error, onDone) {
     request("POST", "/bridge/result", {
       id: id,
       ok: ok,
@@ -3150,6 +3157,7 @@
       if (postError) {
         log("Could not post result: " + postError.message);
       }
+      if (onDone) onDone(!postError);
     });
   }
 
@@ -3178,15 +3186,27 @@
   }
 
   function executeCommand(command) {
+    if (activeEvalScriptCommandId) {
+      log("Skipping command " + command.id + " while command " + activeEvalScriptCommandId + " is still active");
+      return;
+    }
+    activeEvalScriptCommandId = command.id;
     log("Executing command " + command.id);
     markCommandSubmitted(command, function (submitted) {
-      if (!submitted) return;
+      if (!submitted) {
+        clearActiveEvalScriptCommand(command.id);
+        return;
+      }
       cs.evalScript(command.script, function (result) {
         if (typeof result === "string" && result.indexOf("EvalScript error.") === 0) {
-          postResult(command.id, false, null, result);
+          postResult(command.id, false, null, result, function () {
+            clearActiveEvalScriptCommand(command.id);
+          });
           return;
         }
-        postResult(command.id, true, result, null);
+        postResult(command.id, true, result, null, function () {
+          clearActiveEvalScriptCommand(command.id);
+        });
       });
     });
   }
@@ -3194,6 +3214,10 @@
   function poll() {
     if (!running) return;
     if (pollInFlight) return;
+    if (activeEvalScriptCommandId) {
+      pollTimer = setTimeout(poll, 50);
+      return;
+    }
     pollInFlight = true;
     request("GET", bridgeNextPath(), null, function (error, response) {
       pollInFlight = false;
@@ -3227,6 +3251,7 @@
   function connect() {
     running = true;
     panelConnectionGeneration = Date.now();
+    activeEvalScriptCommandId = "";
     lastPollErrorMessage = "";
     localStorage.setItem("codexAeBridgeUrl", urlEl.value);
     localStorage.setItem("codexAeBridgeToken", tokenEl.value);
@@ -3242,6 +3267,7 @@
   function disconnect() {
     running = false;
     pollInFlight = false;
+    activeEvalScriptCommandId = "";
     lastPollErrorMessage = "";
     stopSetupStatusPolling();
     if (pollTimer) clearTimeout(pollTimer);
@@ -3272,6 +3298,7 @@
   function reloadApp() {
     running = false;
     pollInFlight = false;
+    activeEvalScriptCommandId = "";
     stopSetupStatusPolling();
     if (pollTimer) clearTimeout(pollTimer);
     if (reloadButton) {

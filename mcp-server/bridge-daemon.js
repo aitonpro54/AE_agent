@@ -26,6 +26,7 @@ const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
 const TOKEN = process.env.AE_BRIDGE_TOKEN || "codex-ae-local";
 const COMMAND_TIMEOUT_MS = Number(process.env.AE_COMMAND_TIMEOUT_MS || 30000);
+const AE_RESULT_RAW_PREVIEW_MAX = 500;
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const LOG_DIR = path.join(PROJECT_ROOT, "logs");
 const LOG_FILE = path.join(LOG_DIR, "bridge-events.jsonl");
@@ -1911,7 +1912,8 @@ function compactAeCommand(command, now) {
     submittedAt: isoOrNull(command.submittedAt),
     leaseOwner: command.leaseOwner || null,
     timedOutFrom: command.timedOutFrom || null,
-    errorCode: command.errorCode || null
+    errorCode: command.errorCode || null,
+    phase: command.phase || null
   };
 }
 
@@ -1938,6 +1940,19 @@ function createCommandLifecycleError(command, code, message) {
   return error;
 }
 
+function createAeCommandError(command, code, phase, message, details) {
+  const error = new Error(message);
+  error.code = code;
+  error.phase = phase;
+  error.commandId = command ? command.id : null;
+  error.lifecycleState = command ? command.state : null;
+  if (details && details.line !== undefined && details.line !== null) error.line = details.line;
+  if (details && Object.prototype.hasOwnProperty.call(details, "rawPreview")) {
+    error.rawPreview = details.rawPreview;
+  }
+  return error;
+}
+
 function settleCommandFailure(command, code, message) {
   if (command.settled) return;
   command.settled = true;
@@ -1952,6 +1967,9 @@ function retainCommandResult(id, payload, command) {
     result: payload.result,
     error: payload.error || null,
     code: payload.code || command.errorCode || null,
+    phase: payload.phase || command.phase || null,
+    rawPreview: Object.prototype.hasOwnProperty.call(payload, "rawPreview") ? payload.rawPreview : null,
+    line: payload.line || null,
     lifecycleState: payload.lifecycleState || command.state || null,
     timedOutFrom: command.timedOutFrom || null,
     createdAt: command.createdAt,
@@ -2028,6 +2046,7 @@ function enqueueAeCommand(script, timeoutMs) {
       leaseOwner: null,
       timedOutFrom: null,
       errorCode: null,
+      phase: null,
       settled: false
     };
     command.timeout = setTimeout(() => {
@@ -2144,8 +2163,93 @@ function leaseOwnerMatches(command, owner) {
     && command.leaseOwner.panelGeneration === owner.panelGeneration;
 }
 
+function findActiveEvalScriptCommandForOwner(owner) {
+  if (!owner) return null;
+  for (const command of inflightCommands.values()) {
+    if ((command.state === "leased" || command.state === "submitted") && leaseOwnerMatches(command, owner)) {
+      return command;
+    }
+  }
+  return null;
+}
+
+function boundedAeRawPreview(value) {
+  const text = value === null || value === undefined ? "" : String(value);
+  if (text.length <= AE_RESULT_RAW_PREVIEW_MAX) return text;
+  return `${text.slice(0, AE_RESULT_RAW_PREVIEW_MAX)}...<truncated>`;
+}
+
+function hasOwn(object, key) {
+  return Object.prototype.hasOwnProperty.call(object, key);
+}
+
+function parseStrictAeWrapperResult(command, raw) {
+  const rawPreview = boundedAeRawPreview(raw);
+  if (typeof raw !== "string" || !raw.trim()) {
+    throw createAeCommandError(
+      command,
+      "ae_result_parse_failed",
+      "ae_result_parse",
+      "After Effects returned an empty command result.",
+      { rawPreview }
+    );
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    throw createAeCommandError(
+      command,
+      "ae_result_parse_failed",
+      "ae_result_parse",
+      `After Effects returned malformed command JSON: ${error.message}`,
+      { rawPreview }
+    );
+  }
+
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || typeof parsed.ok !== "boolean") {
+    throw createAeCommandError(
+      command,
+      "ae_result_parse_failed",
+      "ae_result_parse",
+      "After Effects returned a command result that does not match the bridge wrapper.",
+      { rawPreview }
+    );
+  }
+
+  if (parsed.ok && !hasOwn(parsed, "result")) {
+    throw createAeCommandError(
+      command,
+      "ae_result_parse_failed",
+      "ae_result_parse",
+      "After Effects returned a successful wrapper without a result field.",
+      { rawPreview }
+    );
+  }
+
+  if (!parsed.ok) {
+    throw createAeCommandError(
+      command,
+      "ae_execution_failed",
+      "ae_execution",
+      parsed.error || "After Effects script failed.",
+      {
+        line: parsed.line,
+        rawPreview
+      }
+    );
+  }
+
+  return parsed;
+}
+
 function leaseNextQueuedCommand(req, url) {
   expireQueuedCommands(Date.now(), "bridge_next");
+  const leaseOwner = panelLeaseOwner(req, url);
+  const activeCommand = findActiveEvalScriptCommandForOwner(leaseOwner);
+  if (activeCommand) return null;
+
   while (pendingCommands.length) {
     const id = pendingCommands.shift();
     const command = inflightCommands.get(id);
@@ -2156,7 +2260,7 @@ function leaseNextQueuedCommand(req, url) {
     }
     command.state = "leased";
     command.leasedAt = Date.now();
-    command.leaseOwner = panelLeaseOwner(req, url);
+    command.leaseOwner = leaseOwner;
     recordEvent("ae_command_leased", {
       id: command.id,
       lifecycleState: command.state,
@@ -2237,19 +2341,7 @@ const EXTENDSCRIPT_BODY_LINE_OFFSET = (() => {
 })();
 
 async function runExtendScriptBody(body, timeoutMs) {
-  const raw = await enqueueAeCommand(wrapExtendScriptBody(body), timeoutMs || COMMAND_TIMEOUT_MS);
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (parseError) {
-    return { ok: true, result: raw, raw: true };
-  }
-  if (!parsed.ok) {
-    const error = new Error(parsed.error || "After Effects script failed");
-    error.line = parsed.line;
-    throw error;
-  }
-  return parsed;
+  return enqueueAeCommand(wrapExtendScriptBody(body), timeoutMs || COMMAND_TIMEOUT_MS);
 }
 
 function exposedTools() {
@@ -5567,6 +5659,8 @@ function startHttpBridge() {
           error: error.message || String(error),
           line: error.line || null,
           code: error.code || null,
+          phase: error.phase || null,
+          rawPreview: Object.prototype.hasOwnProperty.call(error, "rawPreview") ? error.rawPreview : null,
           lifecycleState: error.lifecycleState || null,
           commandId: error.commandId || null
         });
@@ -5602,6 +5696,8 @@ function startHttpBridge() {
           error: error.message || String(error),
           line: error.line || null,
           code: error.code || null,
+          phase: error.phase || null,
+          rawPreview: Object.prototype.hasOwnProperty.call(error, "rawPreview") ? error.rawPreview : null,
           lifecycleState: error.lifecycleState || null,
           commandId: error.commandId || null
         });
@@ -5768,28 +5864,67 @@ function startHttpBridge() {
       clearTimeout(command.timeout);
       inflightCommands.delete(payload.id);
       command.completedAt = Date.now();
-      command.state = payload.ok ? "completed" : "failed";
-      command.errorCode = payload.ok ? null : "ae_execution_failed";
-      retainCommandResult(payload.id, payload, command);
+      let parsedResult = null;
+      let failure = null;
 
       if (payload.ok) {
+        try {
+          parsedResult = parseStrictAeWrapperResult(command, payload.result);
+        } catch (error) {
+          failure = error;
+        }
+      } else {
+        failure = createAeCommandError(
+          command,
+          "ae_execution_failed",
+          "ae_execution",
+          payload.error || "After Effects command failed.",
+          { rawPreview: boundedAeRawPreview(payload.error || payload.result || "") }
+        );
+      }
+
+      if (failure) {
+        command.state = "failed";
+        command.errorCode = failure.code || "ae_execution_failed";
+        command.phase = failure.phase || "ae_execution";
+        failure.lifecycleState = command.state;
+        retainCommandResult(payload.id, {
+          ok: false,
+          error: failure.message || "After Effects command failed.",
+          code: command.errorCode,
+          phase: command.phase,
+          rawPreview: Object.prototype.hasOwnProperty.call(failure, "rawPreview") ? failure.rawPreview : null,
+          line: failure.line || null,
+          lifecycleState: command.state
+        }, command);
         command.settled = true;
-        command.resolve(payload.result);
+        command.reject(failure);
+        recordEvent("ae_command_result", {
+          id: payload.id,
+          ok: false,
+          lifecycleState: command.state,
+          phase: command.phase,
+          code: command.errorCode,
+          ageMs: Date.now() - command.createdAt,
+          error: failure.message || "After Effects command failed.",
+          rawPreview: Object.prototype.hasOwnProperty.call(failure, "rawPreview") ? failure.rawPreview : null
+        });
+      } else {
+        command.state = "completed";
+        command.errorCode = null;
+        command.phase = null;
+        retainCommandResult(payload.id, {
+          ok: true,
+          result: parsedResult.result,
+          lifecycleState: command.state
+        }, command);
+        command.settled = true;
+        command.resolve(parsedResult);
         recordEvent("ae_command_result", {
           id: payload.id,
           ok: true,
           lifecycleState: command.state,
           ageMs: Date.now() - command.createdAt
-        });
-      } else {
-        command.settled = true;
-        command.reject(new Error(payload.error || "After Effects command failed"));
-        recordEvent("ae_command_result", {
-          id: payload.id,
-          ok: false,
-          lifecycleState: command.state,
-          ageMs: Date.now() - command.createdAt,
-          error: payload.error || "After Effects command failed"
         });
       }
 

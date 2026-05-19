@@ -9,7 +9,6 @@ const repoRoot = path.join(__dirname, "..");
 const daemonPath = path.join(repoRoot, "mcp-server", "bridge-daemon.js");
 const port = String(3457 + Math.floor(Math.random() * 1000));
 const token = "m100-ae-command-contract-smoke";
-const strict = process.argv.includes("--strict") || process.env.M100_STRICT_CONTRACTS === "1";
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -28,7 +27,7 @@ function requestJson(method, requestPath, payload) {
         "content-length": Buffer.byteLength(body),
         "x-ae-bridge-token": token
       },
-      timeout: 5000
+      timeout: 15000
     }, (res) => {
       let responseBody = "";
       res.setEncoding("utf8");
@@ -98,10 +97,31 @@ function assertDevTimeoutResponse(response, expectedCode, expectedLifecycleState
   return response.body.commandId;
 }
 
+function assertDevSuccessResponse(response, expectedResult, label) {
+  assert.strictEqual(response.status, 200, `${label}: dev tool should succeed.`);
+  assert.strictEqual(response.body.ok, true, `${label}: response should be ok.`);
+  const actualResult = response.body.result && typeof response.body.result === "object" && Object.prototype.hasOwnProperty.call(response.body.result, "result")
+    ? response.body.result.result
+    : response.body.result;
+  assert.strictEqual(actualResult, expectedResult, `${label}: unexpected dev tool result.`);
+}
+
+function assertDevAeFailureResponse(response, expectedCode, expectedPhase, label) {
+  assert.strictEqual(response.status, 500, `${label}: dev tool should fail.`);
+  assert.strictEqual(response.body.ok, false, `${label}: response should be a failure.`);
+  assert.strictEqual(response.body.code, expectedCode, `${label}: unexpected failure code.`);
+  assert.strictEqual(response.body.phase, expectedPhase, `${label}: unexpected failure phase.`);
+  assert.strictEqual(response.body.lifecycleState, "failed", `${label}: unexpected lifecycle state.`);
+  assert(response.body.commandId, `${label}: response should expose command id for diagnostics.`);
+  assert(Object.prototype.hasOwnProperty.call(response.body, "rawPreview"), `${label}: response should include a bounded raw preview.`);
+  return response.body.commandId;
+}
+
 async function startDevExtendscript(script, timeoutMs) {
   return requestJson("POST", "/dev/tool/run_extendscript", {
     script,
-    timeoutMs
+    timeoutMs,
+    verifyAfter: false
   });
 }
 
@@ -175,6 +195,113 @@ async function assertTimeoutAfterSubmit() {
   return commandId;
 }
 
+async function leaseAndSubmitNextCommand(label, ownerGeneration) {
+  const panelConnectionId = "smoke-panel";
+  const panelGeneration = ownerGeneration || label.replace(/[^a-z0-9_-]+/gi, "-");
+  const next = await requestJson("GET", `/bridge/next?panelConnectionId=${encodeURIComponent(panelConnectionId)}&panelGeneration=${encodeURIComponent(panelGeneration)}`);
+  assert.strictEqual(next.status, 200, `${label}: bridge next should succeed.`);
+  assert(next.body.command && next.body.command.id, `${label}: expected a leased command.`);
+  const submitted = await requestJson("POST", "/bridge/submitted", {
+    id: next.body.command.id,
+    panelConnectionId,
+    panelGeneration
+  });
+  assert.strictEqual(submitted.status, 200, `${label}: submitted marker should be accepted.`);
+  assert.strictEqual(submitted.body.lifecycleState, "submitted", `${label}: command should be submitted.`);
+  return {
+    id: next.body.command.id,
+    panelConnectionId,
+    panelGeneration
+  };
+}
+
+async function postBridgeResult(label, commandId, payload) {
+  const response = await requestJson("POST", "/bridge/result", Object.assign({ id: commandId }, payload));
+  assert.strictEqual(response.status, 200, `${label}: bridge result should be acknowledged.`);
+  assert.strictEqual(response.body.ok, true, `${label}: bridge result wrapper should be ok.`);
+  return response;
+}
+
+async function assertConcurrentCommandSingleFlight() {
+  const firstRun = startDevExtendscript("return 'first single flight';", 5000);
+  await waitForInflightCommand("single-flight first queued", (command) => command.lifecycleState === "queued");
+  const first = await leaseAndSubmitNextCommand("single-flight first", "single-flight");
+  await waitForInflightCommand("single-flight first submitted", (command) => command.id === first.id && command.lifecycleState === "submitted");
+
+  const secondRun = startDevExtendscript("return 'second single flight';", 5000);
+  const secondQueued = await waitForInflightCommand("single-flight second queued", (command) => command.id !== first.id && command.lifecycleState === "queued");
+
+  const blockedNext = await requestJson("GET", "/bridge/next?panelConnectionId=smoke-panel&panelGeneration=single-flight");
+  assert.strictEqual(blockedNext.status, 200, "single-flight: blocked bridge next should succeed.");
+  assert.strictEqual(blockedNext.body.ok, true, "single-flight: blocked bridge next wrapper should be ok.");
+  assert.strictEqual(blockedNext.body.command, null, "single-flight: second command must not lease while first is submitted.");
+  const stillQueued = await waitForInflightCommand("single-flight second still queued", (command) => command.id === secondQueued.id && command.lifecycleState === "queued");
+  assert.strictEqual(stillQueued.id, secondQueued.id, "single-flight: second command should remain queued.");
+
+  await postBridgeResult("single-flight first", first.id, {
+    ok: true,
+    result: "{\"ok\":true,\"result\":\"first single flight\"}",
+    error: null
+  });
+  assertDevSuccessResponse(await firstRun, "first single flight", "single-flight first");
+
+  const second = await leaseAndSubmitNextCommand("single-flight second", "single-flight");
+  assert.strictEqual(second.id, secondQueued.id, "single-flight: second command should lease after first finishes.");
+  await postBridgeResult("single-flight second", second.id, {
+    ok: true,
+    result: "{\"ok\":true,\"result\":\"second single flight\"}",
+    error: null
+  });
+  assertDevSuccessResponse(await secondRun, "second single flight", "single-flight second");
+}
+
+async function assertStrictAeResultFailure(label, resultPayload, expectedCode, expectedPhase) {
+  const run = startDevExtendscript(`return '${label}';`, 5000);
+  await waitForInflightCommand(`${label} queued`, (command) => command.lifecycleState === "queued");
+  const command = await leaseAndSubmitNextCommand(label, label);
+  await postBridgeResult(label, command.id, resultPayload);
+  const response = await run;
+  const commandId = assertDevAeFailureResponse(response, expectedCode, expectedPhase, label);
+  assert.strictEqual(commandId, command.id, `${label}: response command id should match command.`);
+  const retained = await requestJson("GET", `/results/${encodeURIComponent(commandId)}`);
+  assert.strictEqual(retained.status, 200, `${label}: retained result should be readable.`);
+  assert.strictEqual(retained.body.result.lifecycleState, "failed", `${label}: retained lifecycle mismatch.`);
+  assert.strictEqual(retained.body.result.code, expectedCode, `${label}: retained code mismatch.`);
+  assert.strictEqual(retained.body.result.phase, expectedPhase, `${label}: retained phase mismatch.`);
+}
+
+async function assertStrictMalformedWrapperFailures() {
+  await assertStrictAeResultFailure("empty-wrapper", {
+    ok: true,
+    result: "",
+    error: null
+  }, "ae_result_parse_failed", "ae_result_parse");
+
+  await assertStrictAeResultFailure("malformed-json-wrapper", {
+    ok: true,
+    result: "not json",
+    error: null
+  }, "ae_result_parse_failed", "ae_result_parse");
+
+  await assertStrictAeResultFailure("wrapper-mismatch", {
+    ok: true,
+    result: "{\"ok\":true}",
+    error: null
+  }, "ae_result_parse_failed", "ae_result_parse");
+
+  await assertStrictAeResultFailure("wrapper-host-error", {
+    ok: true,
+    result: "{\"ok\":false,\"error\":\"Boom from host\",\"line\":7}",
+    error: null
+  }, "ae_execution_failed", "ae_execution");
+
+  await assertStrictAeResultFailure("evalscript-host-error", {
+    ok: false,
+    result: null,
+    error: "EvalScript error. Host rejected the command."
+  }, "ae_execution_failed", "ae_execution");
+}
+
 async function assertDirectToolBlocked(name, args, expectedRiskLevel) {
   const response = await requestJson("POST", "/tools/call", {
     name,
@@ -195,14 +322,6 @@ async function assertDirectToolBlocked(name, args, expectedRiskLevel) {
     assert.strictEqual(payload.m100.riskLevel, expectedRiskLevel, `${name}: unexpected risk level.`);
   }
   return payload;
-}
-
-function pendingContract(id, expected) {
-  return {
-    id,
-    status: "pending",
-    expected
-  };
 }
 
 async function main() {
@@ -256,15 +375,8 @@ async function main() {
     await assertTimeoutBeforeDelivery();
     await assertTimeoutAfterLease();
     await assertTimeoutAfterSubmit();
-
-    const pendingContracts = [
-      pendingContract("concurrent-command", "Backend/CEP enforce one active evalScript submission per panel connection."),
-      pendingContract("malformed-wrapper", "Empty or malformed wrapped AE output fails with ae_result_parse.")
-    ];
-
-    if (strict && pendingContracts.length) {
-      throw new Error(`Pending M100 AE command contracts: ${pendingContracts.map((item) => item.id).join(", ")}`);
-    }
+    await assertConcurrentCommandSingleFlight();
+    await assertStrictMalformedWrapperFailures();
 
     console.log(JSON.stringify({
       ok: true,
@@ -278,9 +390,15 @@ async function main() {
         "queued command expires before bridge delivery",
         "leased command timeout reports unknown_after_delivery",
         "submitted command timeout reports timed_out_after_submit",
-        "late bridge results are acknowledged as stale_result_ignored"
+        "late bridge results are acknowledged as stale_result_ignored",
+        "backend single-flight blocks a second command for one active panel connection",
+        "empty AE wrapper output fails with ae_result_parse",
+        "malformed AE wrapper JSON fails with ae_result_parse",
+        "AE wrapper mismatch fails with ae_result_parse",
+        "wrapped host errors fail with ae_execution",
+        "evalScript host errors fail with ae_execution"
       ],
-      pendingContracts
+      pendingContracts: []
     }, null, 2));
   } catch (error) {
     if (stderr.length) {
