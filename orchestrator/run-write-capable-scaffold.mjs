@@ -2,7 +2,7 @@
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
@@ -12,19 +12,22 @@ Codex SDK write-capable runner scaffold
 
 Usage:
   node orchestrator/run-write-capable-scaffold.mjs --scope orchestrator --prompt "Implement a narrow orchestrator change"
-  node orchestrator/run-write-capable-scaffold.mjs --dry-run --scope orchestrator --prompt "Implement a narrow orchestrator change" --planned-path orchestrator/README.md
+  node orchestrator/run-write-capable-scaffold.mjs --dry-run --operation-file .codex-audit/m114-operation.json
   node orchestrator/run-write-capable-scaffold.mjs --contract-smoke
 
 Required:
   --scope <name>             docs-audit, orchestrator, production-code, or cep-panel.
+                             Required for non-dry scaffold mode.
   --prompt <text>            Requested work. Policy-scanned before any SDK thread can exist.
+                             Required for non-dry scaffold mode.
 
 Options:
   --cwd <path>               Working directory. Defaults to the current directory.
   --acknowledge-existing-change <path>
                              Explicitly acknowledge one pre-existing dirty path.
   --dry-run                  Evaluate local safety/path policy only; do not run write work.
-  --planned-path <path>      Planned repo path for dry-run allowlist checks. Repeatable.
+  --operation-file <path>    Local JSON planned-operation envelope. Required with --dry-run.
+  --planned-path <path>      Planned repo path for programmatic allowlist checks. Repeatable.
   --json                     Print a JSON scaffold envelope.
   --contract-smoke           Run local scaffold contract checks only.
   --help                     Show this help.
@@ -123,9 +126,54 @@ export const WRITE_CAPABLE_THREAD_OPTION_CONTRACT = Object.freeze({
   webSearchMode: "disabled",
 });
 
+export const OPERATION_ENVELOPE_VERSION = 1;
+export const OPERATION_ENVELOPE_MODE = "dry-run";
+export const OPERATION_ENVELOPE_REQUIRED_FIELDS = Object.freeze([
+  "version",
+  "operationId",
+  "scope",
+  "mode",
+  "prompt",
+  "plannedPaths",
+]);
+
+const UNSAFE_OPERATION_ENVELOPE_FIELDS = Object.freeze([
+  "approval",
+  "approvalPolicy",
+  "auto-commit",
+  "autoCommit",
+  "commit",
+  "danger-full-access",
+  "dangerFullAccess",
+  "execute",
+  "external-provider",
+  "externalProvider",
+  "force",
+  "live",
+  "mutating-live",
+  "mutatingLive",
+  "network",
+  "networkAccessEnabled",
+  "openai-cli-planner",
+  "openaiCliPlanner",
+  "realWriteWork",
+  "sandbox",
+  "sandboxMode",
+  "sdkThreadCreated",
+  "skip-git-repo-check",
+  "skipGitRepoCheck",
+  "tenant-policy-bypass",
+  "tenantPolicyBypass",
+  "unsafe",
+  "web-search",
+  "webSearch",
+  "webSearchMode",
+]);
+
 const VALUE_OPTIONS = new Set([
   "acknowledge-existing-change",
   "cwd",
+  "operation-file",
   "planned-path",
   "prompt",
   "scope",
@@ -365,6 +413,176 @@ export function createPlannedPathCheck(scope, plannedPaths = []) {
   };
 }
 
+function isPathInsideDirectory(candidatePath, directoryPath) {
+  const relative = path.relative(directoryPath, candidatePath);
+  return relative === "" || (relative && !relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+export function resolveOperationFilePath(operationFile, cwd = process.cwd()) {
+  if (!operationFile) {
+    throw new Error("Missing required --operation-file for write-capable dry-run mode.");
+  }
+
+  const repoRoot = path.resolve(cwd);
+  const absolutePath = path.resolve(repoRoot, operationFile);
+
+  if (!isPathInsideDirectory(absolutePath, repoRoot)) {
+    throw new Error(`Operation file outside repo: ${operationFile}`);
+  }
+
+  return {
+    absolutePath,
+    repoPath: normalizeRepoPath(path.relative(repoRoot, absolutePath)),
+    repoRoot,
+  };
+}
+
+export function parseOperationEnvelopeJson(text, source = "operation file") {
+  let parsed = null;
+
+  try {
+    parsed = JSON.parse(text);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Malformed operation file JSON: ${source}. ${detail}`);
+  }
+
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error(`Malformed operation file JSON: ${source}. Expected a JSON object.`);
+  }
+
+  return validateOperationEnvelope(parsed);
+}
+
+export function validateOperationEnvelope(envelope) {
+  for (const field of UNSAFE_OPERATION_ENVELOPE_FIELDS) {
+    if (Object.hasOwn(envelope, field)) {
+      throw new Error(`Unsafe operation envelope field rejected: ${field}`);
+    }
+  }
+
+  if (envelope.version !== OPERATION_ENVELOPE_VERSION) {
+    throw new Error(
+      `Unsupported operation envelope version: ${String(
+        envelope.version,
+      )}. Expected ${OPERATION_ENVELOPE_VERSION}.`,
+    );
+  }
+
+  if (typeof envelope.operationId !== "string" || envelope.operationId.trim() === "") {
+    throw new Error("Missing operation envelope operationId.");
+  }
+
+  if (typeof envelope.scope !== "string" || envelope.scope.trim() === "") {
+    throw new Error(`Missing operation envelope scope. Expected one of: ${WRITE_SCOPES.join(", ")}.`);
+  }
+
+  validateScope(envelope.scope);
+
+  if (envelope.mode !== OPERATION_ENVELOPE_MODE) {
+    throw new Error(
+      `Unsupported operation envelope mode: ${String(envelope.mode)}. Only dry-run is supported.`,
+    );
+  }
+
+  if (typeof envelope.prompt !== "string" || envelope.prompt.trim() === "") {
+    throw new Error("Missing operation envelope prompt.");
+  }
+
+  if (!Array.isArray(envelope.plannedPaths) || envelope.plannedPaths.length === 0) {
+    throw new Error("Missing or empty operation envelope plannedPaths.");
+  }
+
+  if (envelope.plannedPaths.some((repoPath) => typeof repoPath !== "string")) {
+    throw new Error("Operation envelope plannedPaths entries must be strings.");
+  }
+
+  const plannedPaths = envelope.plannedPaths.map(normalizeRepoPath);
+  if (plannedPaths.some((repoPath) => repoPath === "")) {
+    throw new Error("Operation envelope plannedPaths contains an empty path.");
+  }
+
+  validatePromptPolicy(envelope.prompt);
+
+  const plannedPathCheck = createPlannedPathCheck(envelope.scope, plannedPaths);
+  if (!plannedPathCheck.allowed) {
+    const summary = plannedPathCheck.violations
+      .map((violation) => `${violation.path} (${violation.reason})`)
+      .join(", ");
+    const hasUnsafeShape = plannedPathCheck.violations.some(
+      (violation) => violation.reason === "unsafe-path-shape",
+    );
+    const hasForbiddenPath = plannedPathCheck.violations.some(
+      (violation) => violation.reason === "forbidden-path",
+    );
+
+    if (hasUnsafeShape) {
+      throw new Error(`Operation envelope plannedPaths include unsafe path shapes: ${summary}`);
+    }
+
+    if (hasForbiddenPath) {
+      throw new Error(`Operation envelope plannedPaths include forbidden paths: ${summary}`);
+    }
+
+    throw new Error(`Operation envelope plannedPaths outside scope allowlist: ${summary}`);
+  }
+
+  return {
+    mode: envelope.mode,
+    operationId: envelope.operationId.trim(),
+    plannedPathCheck,
+    plannedPaths,
+    prompt: envelope.prompt,
+    scope: envelope.scope,
+    version: envelope.version,
+  };
+}
+
+export function loadOperationEnvelopeOptions(options = {}, hooks = {}) {
+  const cwd = path.resolve(options.cwd || process.cwd());
+  const resolved = resolveOperationFilePath(options.operationFile, cwd);
+  const fileExists = hooks.existsSync || existsSync;
+  const fileStats = hooks.statSync || statSync;
+  const readFile = hooks.readFileSync || readFileSync;
+  const realpath = hooks.realpathSync || realpathSync;
+
+  if (!fileExists(resolved.absolutePath)) {
+    throw new Error(`Missing operation file: ${resolved.repoPath || options.operationFile}`);
+  }
+
+  if (!fileStats(resolved.absolutePath).isFile()) {
+    throw new Error(`Operation file is not a file: ${resolved.repoPath}`);
+  }
+
+  const realRepoRoot = realpath(resolved.repoRoot);
+  const realOperationFile = realpath(resolved.absolutePath);
+  if (!isPathInsideDirectory(realOperationFile, realRepoRoot)) {
+    throw new Error(`Operation file outside repo: ${options.operationFile}`);
+  }
+
+  const operationEnvelope = parseOperationEnvelopeJson(
+    readFile(resolved.absolutePath, "utf8"),
+    resolved.repoPath,
+  );
+
+  return {
+    ...options,
+    dryRun: true,
+    mode: OPERATION_ENVELOPE_MODE,
+    operationEnvelope: {
+      mode: operationEnvelope.mode,
+      operationId: operationEnvelope.operationId,
+      sourcePath: resolved.repoPath,
+      version: operationEnvelope.version,
+    },
+    operationFilePath: resolved.absolutePath,
+    operationFileRepoPath: resolved.repoPath,
+    plannedPaths: operationEnvelope.plannedPaths,
+    prompt: operationEnvelope.prompt,
+    scope: operationEnvelope.scope,
+  };
+}
+
 export function parseWriteRunnerArgs(argv) {
   const options = { acknowledgedExistingChanges: [], plannedPaths: [] };
   const positional = [];
@@ -403,6 +621,8 @@ export function parseWriteRunnerArgs(argv) {
 
     if (name === "acknowledge-existing-change") {
       options.acknowledgedExistingChanges.push(normalizeRepoPath(value));
+    } else if (name === "operation-file") {
+      options.operationFile = value;
     } else if (name === "planned-path") {
       options.plannedPaths.push(normalizeRepoPath(value));
     } else {
@@ -418,8 +638,33 @@ export function parseWriteRunnerArgs(argv) {
     throw new Error("Positional arguments are not supported in write-capable scaffold mode.");
   }
 
-  validateWriteRunnerOptions(options);
+  validateWriteRunnerCliOptions(options);
   return options;
+}
+
+export function validateWriteRunnerCliOptions(options) {
+  if (options.help || options.contractSmoke) {
+    return;
+  }
+
+  if (options.operationFile && !options.dryRun) {
+    throw new Error("Operation file is supported only with --dry-run in M114.");
+  }
+
+  if (options.dryRun && !options.operationFile) {
+    throw new Error("Missing required --operation-file for write-capable dry-run mode.");
+  }
+
+  if (options.operationFile) {
+    if (options.scope || options.prompt || options.plannedPaths.length > 0) {
+      throw new Error(
+        "Do not combine --operation-file with --scope, --prompt, or --planned-path; put those fields in the operation envelope.",
+      );
+    }
+    return;
+  }
+
+  validateWriteRunnerOptions(options);
 }
 
 export function validateWriteRunnerOptions(options) {
@@ -597,16 +842,23 @@ export function validatePostRunContract({ postSnapshot, preSnapshot, scope, vali
 }
 
 export function runWriteCapableDryRun(options, hooks = {}) {
-  validateWriteRunnerOptions(options);
-  validatePromptPolicy(options.prompt);
+  const preparedOptions = options.operationFile
+    ? loadOperationEnvelopeOptions(options, hooks)
+    : options;
 
-  const cwd = path.resolve(options.cwd || process.cwd());
+  validateWriteRunnerOptions(preparedOptions);
+  validatePromptPolicy(preparedOptions.prompt);
+
+  const cwd = path.resolve(preparedOptions.cwd || process.cwd());
   const captureSnapshot = hooks.captureGitSnapshot || captureGitSnapshot;
   const preSnapshot = captureSnapshot({ cwd, label: "dry-run-pre" });
   const preRunGitState = evaluatePreRunGitState(preSnapshot, {
-    acknowledgedExistingChanges: options.acknowledgedExistingChanges,
+    acknowledgedExistingChanges: preparedOptions.acknowledgedExistingChanges,
   });
-  const plannedPathCheck = createPlannedPathCheck(options.scope, options.plannedPaths);
+  const plannedPathCheck = createPlannedPathCheck(
+    preparedOptions.scope,
+    preparedOptions.plannedPaths,
+  );
   const threadOptions = createWriteCapableThreadOptions({ cwd });
   const wouldAllow = preRunGitState.ok && plannedPathCheck.allowed;
 
@@ -618,7 +870,8 @@ export function runWriteCapableDryRun(options, hooks = {}) {
     preSnapshot,
     realWriteWork: false,
     result: wouldAllow ? "dry-run-allowed" : "dry-run-denied",
-    scope: options.scope,
+    operationEnvelope: preparedOptions.operationEnvelope,
+    scope: preparedOptions.scope,
     sdkThreadCreated: false,
     threadOptions,
     wouldAllow,
@@ -714,22 +967,24 @@ export function runWriteCapableContractSmoke() {
     failures,
   );
 
+  const validOperationEnvelope = {
+    version: OPERATION_ENVELOPE_VERSION,
+    operationId: "m114-contract-smoke",
+    scope: "orchestrator",
+    mode: OPERATION_ENVELOPE_MODE,
+    prompt: "Check local operation envelope policy.",
+    plannedPaths: ["orchestrator/README.md", "package.json"],
+  };
   const parsedDryRun = parseWriteRunnerArgs([
     "--dry-run",
-    "--scope",
-    "orchestrator",
-    "--prompt",
-    "Check local dry-run policy.",
-    "--planned-path",
-    "orchestrator/README.md",
-    "--planned-path",
-    "package.json",
+    "--operation-file",
+    ".codex-audit/m114-operation-envelope.json",
   ]);
 
   assertContract(parsedDryRun.dryRun === true, "write runner did not parse dry-run mode", failures);
   assertContract(
-    parsedDryRun.plannedPaths.join(",") === "orchestrator/README.md,package.json",
-    "write runner did not parse dry-run planned paths",
+    parsedDryRun.operationFile === ".codex-audit/m114-operation-envelope.json",
+    "write runner did not parse dry-run operation file",
     failures,
   );
 
@@ -748,17 +1003,24 @@ export function runWriteCapableContractSmoke() {
   );
 
   assertRejects(
-    () => parseWriteRunnerArgs(["--dry-run", "--scope", "unknown", "--prompt", "No-op"]),
-    "Unknown write scope:",
+    () => parseWriteRunnerArgs(["--dry-run"]),
+    "Missing required --operation-file",
     failures,
-    "dry-run mode did not reject unknown scope",
+    "dry-run mode did not require an operation file",
   );
 
   assertRejects(
-    () => parseWriteRunnerArgs(["--dry-run", "--prompt", "No-op"]),
-    "Missing required --scope.",
+    () =>
+      parseWriteRunnerArgs([
+        "--dry-run",
+        "--operation-file",
+        ".codex-audit/m114-operation-envelope.json",
+        "--scope",
+        "orchestrator",
+      ]),
+    "Do not combine --operation-file",
     failures,
-    "dry-run mode did not require explicit scope",
+    "dry-run operation envelope mode allowed conflicting CLI scope",
   );
 
   const unsafeArgCases = [
@@ -811,6 +1073,143 @@ export function runWriteCapableContractSmoke() {
       `write runner did not reject forbidden prompt request: ${prompt}`,
     );
   }
+
+  const validatedEnvelope = validateOperationEnvelope(validOperationEnvelope);
+  assertContract(
+    validatedEnvelope.operationId === "m114-contract-smoke" &&
+      validatedEnvelope.scope === "orchestrator" &&
+      validatedEnvelope.mode === OPERATION_ENVELOPE_MODE &&
+      validatedEnvelope.plannedPaths.join(",") === "orchestrator/README.md,package.json",
+    "operation envelope did not validate the expected schema",
+    failures,
+  );
+
+  assertRejects(
+    () => resolveOperationFilePath(path.join("..", "outside-operation.json"), process.cwd()),
+    "Operation file outside repo:",
+    failures,
+    "operation envelope did not reject file outside repo",
+  );
+
+  assertRejects(
+    () =>
+      loadOperationEnvelopeOptions({
+        dryRun: true,
+        operationFile: ".codex-audit/missing-operation-envelope.json",
+      }),
+    "Missing operation file:",
+    failures,
+    "operation envelope did not reject a missing operation file",
+  );
+
+  assertRejects(
+    () => parseOperationEnvelopeJson("{not-json", "contract-smoke"),
+    "Malformed operation file JSON:",
+    failures,
+    "operation envelope did not reject malformed JSON",
+  );
+
+  assertRejects(
+    () => validateOperationEnvelope({ ...validOperationEnvelope, version: 2 }),
+    "Unsupported operation envelope version:",
+    failures,
+    "operation envelope did not reject unsupported version",
+  );
+
+  assertRejects(
+    () => validateOperationEnvelope({ ...validOperationEnvelope, operationId: "" }),
+    "Missing operation envelope operationId.",
+    failures,
+    "operation envelope did not reject missing operationId",
+  );
+
+  assertRejects(
+    () => validateOperationEnvelope({ ...validOperationEnvelope, scope: "" }),
+    "Missing operation envelope scope.",
+    failures,
+    "operation envelope did not reject missing scope",
+  );
+
+  assertRejects(
+    () => validateOperationEnvelope({ ...validOperationEnvelope, scope: "unknown" }),
+    "Unknown write scope:",
+    failures,
+    "operation envelope did not reject unknown scope",
+  );
+
+  assertRejects(
+    () => validateOperationEnvelope({ ...validOperationEnvelope, mode: "live" }),
+    "Unsupported operation envelope mode:",
+    failures,
+    "operation envelope did not reject non-dry-run mode",
+  );
+
+  assertRejects(
+    () => validateOperationEnvelope({ ...validOperationEnvelope, prompt: "" }),
+    "Missing operation envelope prompt.",
+    failures,
+    "operation envelope did not reject missing prompt",
+  );
+
+  assertRejects(
+    () => validateOperationEnvelope({ ...validOperationEnvelope, plannedPaths: [] }),
+    "Missing or empty operation envelope plannedPaths.",
+    failures,
+    "operation envelope did not reject empty plannedPaths",
+  );
+
+  assertRejects(
+    () =>
+      validateOperationEnvelope({
+        ...validOperationEnvelope,
+        plannedPaths: ["../outside.txt"],
+      }),
+    "Operation envelope plannedPaths include unsafe path shapes:",
+    failures,
+    "operation envelope did not reject unsafe planned path shape",
+  );
+
+  assertRejects(
+    () =>
+      validateOperationEnvelope({
+        ...validOperationEnvelope,
+        plannedPaths: ["node_modules/pkg/index.js"],
+      }),
+    "Operation envelope plannedPaths include forbidden paths:",
+    failures,
+    "operation envelope did not reject forbidden planned path",
+  );
+
+  assertRejects(
+    () =>
+      validateOperationEnvelope({
+        ...validOperationEnvelope,
+        plannedPaths: ["mcp-server/bridge-daemon.js"],
+      }),
+    "Operation envelope plannedPaths outside scope allowlist:",
+    failures,
+    "operation envelope did not reject outside-scope planned path",
+  );
+
+  assertRejects(
+    () => validateOperationEnvelope({ ...validOperationEnvelope, sandboxMode: "workspace-write" }),
+    "Unsafe operation envelope field rejected:",
+    failures,
+    "operation envelope did not reject unsafe bypass-capable fields",
+  );
+
+  assertRejects(
+    () =>
+      parseWriteRunnerArgs([
+        "--dry-run",
+        "--operation-file",
+        ".codex-audit/m114-operation-envelope.json",
+        "--network",
+      ]),
+    "Unsafe write-capable runner flag rejected:",
+    failures,
+    "operation envelope dry-run did not reject unsafe CLI flags",
+  );
 
   const threadOptions = createWriteCapableThreadOptions({ cwd: process.cwd() });
   assertContract(
@@ -935,6 +1334,30 @@ export function runWriteCapableContractSmoke() {
       dryRunAllowed.realWriteWork === false &&
       dryRunAllowed.autoCommit === false,
     "dry-run allowed result did not preserve local-only safety contract",
+    failures,
+  );
+
+  const dryRunEnvelopeAllowed = runWriteCapableDryRun(
+    {
+      dryRun: true,
+      operationFile: ".codex-audit/m114-operation-envelope.json",
+    },
+    {
+      captureGitSnapshot: () => syntheticCleanSnapshot,
+      existsSync: () => true,
+      readFileSync: () => JSON.stringify(validOperationEnvelope),
+      realpathSync: (value) => value,
+      statSync: () => ({ isFile: () => true }),
+    },
+  );
+
+  assertContract(
+    dryRunEnvelopeAllowed.result === "dry-run-allowed" &&
+      dryRunEnvelopeAllowed.operationEnvelope?.operationId === "m114-contract-smoke" &&
+      dryRunEnvelopeAllowed.sdkThreadCreated === false &&
+      dryRunEnvelopeAllowed.realWriteWork === false &&
+      dryRunEnvelopeAllowed.autoCommit === false,
+    "operation envelope dry-run did not preserve local-only safety report fields",
     failures,
   );
 
@@ -1071,7 +1494,7 @@ export function runWriteCapableContractSmoke() {
   );
 
   if (failures.length > 0) {
-    const message = ["M112 write-capable scaffold contract smoke failed:", ...failures.map((f) => `- ${f}`)].join(
+    const message = ["M114 write-capable scaffold contract smoke failed:", ...failures.map((f) => `- ${f}`)].join(
       "\n",
     );
     throw new Error(message);
@@ -1080,6 +1503,8 @@ export function runWriteCapableContractSmoke() {
   return {
     dryRunMode: "pass",
     forbiddenPaths: FORBIDDEN_PATH_PATTERNS,
+    operationEnvelopeMode: "pass",
+    operationEnvelopeVersion: OPERATION_ENVELOPE_VERSION,
     result: "pass",
     scopes: WRITE_SCOPES,
     unsafeFlags: UNSAFE_WRITE_RUNNER_FLAGS,
@@ -1094,6 +1519,10 @@ function printResult(result, asJson) {
 
   console.log(`Result: ${result.result}`);
   console.log(`Scope: ${result.scope}`);
+  if (result.operationEnvelope) {
+    console.log(`Operation: ${result.operationEnvelope.operationId}`);
+    console.log(`Operation file: ${result.operationEnvelope.sourcePath}`);
+  }
   console.log(`SDK thread created: ${result.sdkThreadCreated}`);
   console.log(`Auto-commit: ${result.autoCommit}`);
   if (result.dryRun) {
@@ -1132,7 +1561,7 @@ export async function main(argv = process.argv.slice(2)) {
       console.log(JSON.stringify(result, null, 2));
       return;
     }
-    console.log("PASS M113 write-capable runner scaffold contract smoke");
+    console.log("PASS M114 write-capable runner scaffold contract smoke");
     return;
   }
 
