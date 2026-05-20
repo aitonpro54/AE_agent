@@ -80,6 +80,8 @@
 - [x] Milestone 104: M100 Patch 5 deterministic vertical smoke.
 - [x] Milestone 105: M100 approval-gated live validation.
 - [x] Milestone 106: Codex SDK scaffold and orchestrator bootstrap.
+- [x] Milestone 114: SDK Write Runner Planned Operation Envelope.
+- [~] Milestone 115: SDK Docs-Audit Real Write Cutover partial; local contract passed, real SDK output was not created.
 
 ## Current Stable Baseline
 
@@ -653,8 +655,20 @@
 - Ignore `node_modules/` and do not vendor installed package contents into git.
 - Record the `tsx`/`typescript` network blocker and leave dev dependency installation for a follow-up when `registry.npmjs.org:443` is reachable.
 
+### Milestone 114: SDK Write Runner Planned Operation Envelope
+
+- Add a local JSON planned-operation envelope for the write-capable runner dry-run path.
+- Support `--operation-file <path>` only with `--dry-run`; require it for CLI dry-run mode.
+- Validate the envelope before any possible SDK thread creation and before any write-capable run path.
+- Keep M114 local-only: no SDK thread creation, no real write work, no network access, and no auto-commit.
+- Cover missing/malformed/unsupported envelope cases, unsafe flags, scope allowlists, forbidden paths, unsafe path shapes, and dry-run safety report fields in `npm.cmd run check:rules`.
+
 ## Decision Log
 
+- 2026-05-20: Milestone 114 makes the write-capable dry-run CLI envelope-first. `--dry-run` now requires `--operation-file`, and the envelope supplies `version`, `operationId`, `scope`, `mode`, `prompt`, and `plannedPaths`; M114 supports only `version: 1` and `mode: "dry-run"`.
+- 2026-05-20: Operation envelope validation rejects malformed JSON, missing local files, files outside the repo, unsupported versions/modes, missing IDs/prompts/paths, unknown scopes, unsafe path shapes, forbidden paths, outside-scope paths, and unsafe/bypass-capable CLI flags or envelope fields before any possible SDK thread creation.
+- 2026-05-20: M114 remains a local contract milestone. It does not introduce live SDK write execution, SDK thread creation, real writes, external-provider/OpenAI CLI planner validation, live CEP/AE smokes, network diagnostics, package installation, or commit automation.
+- 2026-05-20: M115 adds a guarded `sdk-write` envelope mode only for `docs-audit` and `.codex-audit/115-sdk-docs-audit-sdk-thread-output.md`; the first real cutover attempt did not create the planned output, so the milestone is recorded as partial.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -811,6 +825,19 @@
 - 2026-05-19: Client-authored `confirm:true`, `confirmed:true` or forged confirmation fields are not execution authority for mutating/destructive/raw paths. Direct `/tools/call`/MCP remain proposal-required, and `/agents/plan/run` now blocks mutating/destructive/raw inline real runs unless they resolve a server-side proposal record.
 
 ## Validation
+
+- Milestone 114:
+  - Passed `node --check orchestrator\codex-sdk-orchestrator.mjs`.
+  - Passed `node --check orchestrator\run-buffered-acceptance.mjs`.
+  - Passed `node --check orchestrator\run-write-capable-scaffold.mjs`.
+  - Passed `npm.cmd run codex:orchestrator:help`.
+  - Passed `npm.cmd run check:rules`; output included `Write-capable operation envelope mode: pass`.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
+  - Did not run external-provider validation, OpenAI CLI planner validation, mutating-live, live CEP / AE smoke tests, tenant-policy bypass, production code validation outside the allowed checks, CEP panel validation, network diagnostics, package installation, SDK thread creation, real write work, auto-commit, or commit.
+
+- Milestone 115:
+  - Passed allowed local checks including `node --check` for orchestrator files, `npm.cmd run codex:orchestrator:help`, `npm.cmd run check:rules`, and `git diff --check`.
+  - Real `docs-audit` `sdk-write` cutover did not create `.codex-audit/115-sdk-docs-audit-sdk-thread-output.md`; no auto-commit was performed.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.

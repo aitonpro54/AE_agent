@@ -390,6 +390,15 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    writeScaffoldSmoke?.sdkWriteMode === "pass" &&
+      writeScaffoldSmoke?.sdkWriteScope === "docs-audit" &&
+      writeScaffoldSmoke?.sdkWritePlannedPaths?.includes(
+        ".codex-audit/115-sdk-docs-audit-sdk-thread-output.md",
+      ),
+    "M115 write-capable docs-audit sdk-write contract smoke did not pass",
+    failures,
+  );
+  assertContract(
     WRITE_SCOPES.join(",") === "docs-audit,orchestrator,production-code,cep-panel",
     "M112 write-capable scopes are not the expected explicit set",
     failures,
@@ -495,6 +504,8 @@ async function runContractSmoke() {
       readme.includes("--dry-run") &&
       readme.includes("--operation-file") &&
       readme.includes("planned-operation envelope") &&
+      readme.includes('mode:"sdk-write"') &&
+      readme.includes(".codex-audit/115-sdk-docs-audit-sdk-thread-output.md") &&
       readme.includes("docs-audit") &&
       readme.includes("production-code") &&
       readme.includes("cep-panel") &&
@@ -512,7 +523,7 @@ async function runContractSmoke() {
     return;
   }
 
-  console.log("PASS M114 SDK orchestrator contract smoke");
+  console.log("PASS M115 SDK orchestrator contract smoke");
   console.log("Invalid general CLI values rejected before SDK thread creation");
   console.log("Write-capable scopes:");
   for (const scope of WRITE_SCOPES) {
@@ -528,6 +539,7 @@ async function runContractSmoke() {
   }
   console.log("Write-capable local dry-run mode: pass");
   console.log("Write-capable operation envelope mode: pass");
+  console.log("Write-capable docs-audit sdk-write mode: pass");
 }
 
 async function runBufferedAcceptance({ milestonePath, reportPath }) {

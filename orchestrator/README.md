@@ -49,6 +49,7 @@ M112 добавляет non-live scaffold для будущего write-capable 
 ```powershell
 npm.cmd run codex:orchestrator:write-scaffold -- --scope orchestrator --prompt "Implement a narrow orchestrator change"
 npm.cmd run codex:orchestrator:write-scaffold -- --dry-run --operation-file .codex-audit/m114-operation-envelope.json
+npm.cmd run codex:orchestrator:write-scaffold -- --operation-file .codex/sdk/operations/m115-docs-audit-sdk-write.json
 npm.cmd run codex:orchestrator:write-scaffold:contract
 ```
 
@@ -81,6 +82,8 @@ npm.cmd run codex:orchestrator:write-scaffold -- --dry-run --operation-file .cod
 Envelope file must live inside the repo and is validated before any possible SDK thread creation. M114 supports only `version: 1` and `mode: "dry-run"`. The envelope must include `operationId`, `scope`, `prompt`, and a non-empty `plannedPaths` array. Envelope validation rejects malformed JSON, missing/unknown scope, unsupported mode/version, missing prompt, missing/empty planned paths, unsafe path shapes, forbidden paths, paths outside the active scope allowlist, and unsafe/bypass-capable CLI flags or envelope fields.
 
 Envelope dry-run reports `sdkThreadCreated:false`, `realWriteWork:false`, and `autoCommit:false`. Planned paths outside the active scope allowlist or inside forbidden paths are rejected without touching the working tree.
+
+M115 adds one real `sdk-write` cutover path through the same operation envelope. It is accepted only when the envelope uses `scope:"docs-audit"`, `mode:"sdk-write"`, and the single planned path `.codex-audit/115-sdk-docs-audit-sdk-thread-output.md`. The envelope is validated before SDK thread creation. The SDK prompt is constrained to that planned path, auto-commit remains disabled, and the runner captures pre/post git snapshots plus `git diff --check`. After the SDK turn, the runner hard-stops if the changed-since-pre diff includes anything outside the planned path plus the explicit M115 implementation/report files.
 
 Обязательный `--scope` принимает только:
 
