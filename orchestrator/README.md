@@ -42,9 +42,46 @@ Boolean flags принимаются как bare flags или с явным `=tr
 npm.cmd run codex:orchestrator -- --resume <thread-id> --prompt "Continue from the previous result"
 ```
 
+## Write-capable runner scaffold
+
+M112 добавляет non-live scaffold для будущего write-capable SDK runner:
+
+```powershell
+npm.cmd run codex:orchestrator:write-scaffold -- --scope orchestrator --prompt "Implement a narrow orchestrator change"
+npm.cmd run codex:orchestrator:write-scaffold:contract
+```
+
+Scaffold deny-by-default: он не импортирует SDK, не создает thread, не выполняет реальную write-работу и не делает auto-commit. Он локально проверяет будущий contract, снимает pre/post git status and diff snapshots и возвращает would-be thread options с `sandboxMode: "workspace-write"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
+
+Обязательный `--scope` принимает только:
+
+- `docs-audit`
+- `orchestrator`
+- `production-code`
+- `cep-panel`
+
+Unknown scopes отклоняются до возможного SDK thread creation. То же правило действует для unsafe/bypass-capable flags: `--sandbox`, `--approval`, `--network`, `--web-search`, `--skip-git-repo-check`, `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass`, `--auto-commit`, `--commit`, `--force`, `--live`, `--execute` и близкие bypass flags.
+
+Path allowlist contract:
+
+- `docs-audit`: `.codex-audit/**`, `.codex/handoff.md`, docs/specs/plans/readme files.
+- `orchestrator`: `orchestrator/**`, `package.json`, audit/handoff files.
+- `production-code`: `mcp-server/**`, `chatgpt-connector/**`, `scripts/**`, `recipes/**`, `registry/**`, `package.json`, audit/handoff files.
+- `cep-panel`: `cep-panel/**`, audit/handoff files.
+
+Default forbidden paths включают `.git/**`, `node_modules/**`, `logs/**`, `backups/**`, `snapshots/**`, `pro-review-bundles/**`, `mcp-config.json`, root/nested `.env*`, `*.key`, `*.pem`, `*secret*` и `*token*` patterns.
+
+Hard-stop conditions:
+
+- dirty unexpected git state before the run;
+- forbidden path diff after the run;
+- path outside the active scope allowlist;
+- external-provider, live/mutating, OpenAI CLI planner, tenant-policy bypass, or auto-commit request;
+- failed validation result.
+
 ## Локальный contract smoke
 
-M108 проверяет только локальный non-mutating contract: help output, safe defaults, согласованность README/package scripts и запрет unsafe flags в buffered acceptance wrapper.
+Локальный smoke проверяет non-mutating orchestrator contract и M112 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, path allowlists, forbidden paths и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
 
 ```powershell
 npm.cmd run check:rules

@@ -184,6 +184,13 @@ async function runContractSmoke() {
   const { CLI_VALUE_CHOICES, createThreadOptions, parseArgs } = await import(
     "./codex-sdk-orchestrator.mjs"
   );
+  const {
+    FORBIDDEN_PATH_PATTERNS,
+    SCOPE_PATH_ALLOWLISTS,
+    UNSAFE_WRITE_RUNNER_FLAGS,
+    WRITE_SCOPES,
+    runWriteCapableContractSmoke,
+  } = await import("./run-write-capable-scaffold.mjs");
   const safeDefaults = createThreadOptions({});
 
   assertContract(
@@ -359,6 +366,52 @@ async function runContractSmoke() {
     failures,
   );
 
+  let writeScaffoldSmoke = null;
+  try {
+    writeScaffoldSmoke = runWriteCapableContractSmoke();
+  } catch (error) {
+    failures.push(error instanceof Error ? error.message : String(error));
+  }
+
+  assertContract(
+    writeScaffoldSmoke?.result === "pass",
+    "M112 write-capable scaffold contract smoke did not pass",
+    failures,
+  );
+  assertContract(
+    WRITE_SCOPES.join(",") === "docs-audit,orchestrator,production-code,cep-panel",
+    "M112 write-capable scopes are not the expected explicit set",
+    failures,
+  );
+  assertContract(
+    UNSAFE_WRITE_RUNNER_FLAGS.includes("external-provider") &&
+      UNSAFE_WRITE_RUNNER_FLAGS.includes("openai-cli-planner") &&
+      UNSAFE_WRITE_RUNNER_FLAGS.includes("mutating-live") &&
+      UNSAFE_WRITE_RUNNER_FLAGS.includes("tenant-policy-bypass") &&
+      UNSAFE_WRITE_RUNNER_FLAGS.includes("sandbox") &&
+      UNSAFE_WRITE_RUNNER_FLAGS.includes("approval") &&
+      UNSAFE_WRITE_RUNNER_FLAGS.includes("network") &&
+      UNSAFE_WRITE_RUNNER_FLAGS.includes("web-search"),
+    "M112 write-capable scaffold does not reject the required unsafe flags",
+    failures,
+  );
+  assertContract(
+    SCOPE_PATH_ALLOWLISTS.orchestrator.includes("orchestrator/**") &&
+      SCOPE_PATH_ALLOWLISTS["docs-audit"].includes(".codex-audit/**") &&
+      SCOPE_PATH_ALLOWLISTS["production-code"].includes("mcp-server/**") &&
+      SCOPE_PATH_ALLOWLISTS["cep-panel"].includes("cep-panel/**"),
+    "M112 write-capable scaffold path allowlists are incomplete",
+    failures,
+  );
+  assertContract(
+    FORBIDDEN_PATH_PATTERNS.includes("node_modules/**") &&
+      FORBIDDEN_PATH_PATTERNS.includes(".git/**") &&
+      FORBIDDEN_PATH_PATTERNS.includes("mcp-config.json") &&
+      FORBIDDEN_PATH_PATTERNS.includes("**/*.pem"),
+    "M112 write-capable scaffold forbidden paths are incomplete",
+    failures,
+  );
+
   const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
   assertContract(
     packageJson.scripts?.["codex:orchestrator"] ===
@@ -376,6 +429,18 @@ async function runContractSmoke() {
     packageJson.scripts?.["check:rules"] ===
       "node orchestrator/run-buffered-acceptance.mjs --contract-smoke",
     "package.json check:rules script is not wired to the local contract smoke",
+    failures,
+  );
+  assertContract(
+    packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
+      "node orchestrator/run-write-capable-scaffold.mjs",
+    "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
+    failures,
+  );
+  assertContract(
+    packageJson.scripts?.["codex:orchestrator:write-scaffold:contract"] ===
+      "node orchestrator/run-write-capable-scaffold.mjs --contract-smoke",
+    "package.json codex:orchestrator:write-scaffold:contract script is not wired to the local M112 contract smoke",
     failures,
   );
 
@@ -414,9 +479,18 @@ async function runContractSmoke() {
     "README does not document general CLI value validation",
     failures,
   );
+  assertContract(
+    readme.includes("Write-capable runner scaffold") &&
+      readme.includes("docs-audit") &&
+      readme.includes("production-code") &&
+      readme.includes("cep-panel") &&
+      readme.includes("forbidden paths"),
+    "README does not document the M112 write-capable runner scaffold",
+    failures,
+  );
 
   if (failures.length > 0) {
-    console.error("M109 contract smoke failed:");
+    console.error("M112 contract smoke failed:");
     for (const failure of failures) {
       console.error(`- ${failure}`);
     }
@@ -424,10 +498,18 @@ async function runContractSmoke() {
     return;
   }
 
-  console.log("PASS M109 SDK orchestrator contract smoke");
+  console.log("PASS M112 SDK orchestrator contract smoke");
   console.log("Invalid general CLI values rejected before SDK thread creation");
+  console.log("Write-capable scopes:");
+  for (const scope of WRITE_SCOPES) {
+    console.log(`- ${scope}`);
+  }
   console.log("Unsafe flags rejected:");
   for (const flag of REJECTED_BUFFERED_FLAGS) {
+    console.log(`- --${flag}`);
+  }
+  console.log("Write-capable unsafe flags rejected:");
+  for (const flag of UNSAFE_WRITE_RUNNER_FLAGS) {
     console.log(`- --${flag}`);
   }
 }

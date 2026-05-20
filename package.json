@@ -2,6 +2,8 @@
   "scripts": {
     "codex:orchestrator": "node orchestrator/codex-sdk-orchestrator.mjs",
     "codex:orchestrator:help": "node orchestrator/codex-sdk-orchestrator.mjs --help",
+    "codex:orchestrator:write-scaffold": "node orchestrator/run-write-capable-scaffold.mjs",
+    "codex:orchestrator:write-scaffold:contract": "node orchestrator/run-write-capable-scaffold.mjs --contract-smoke",
     "check:rules": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke"
   },
   "dependencies": {
