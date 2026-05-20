@@ -4,92 +4,66 @@
 pass
 
 ## What was checked
-Reviewed M110 scope, current handoff, target spec, execution plan excerpts, audit reports M106-M109, orchestrator README/source context, package scripts, and host pre-run validation.
-
-M105: live CEP/bridge/read-only validation passed; deterministic proposal-backed live mutation and cleanup passed after the AE project was saved; external-provider/OpenAI CLI planner remained tenant-policy blocked.
-
-M106: `@openai/codex-sdk` scaffold and plain `.mjs` orchestrator were added with conservative defaults; `tsx`/`typescript` remained blocked by npm registry timeout.
-
-M107: first orchestrator acceptance smoke was partial because `check:rules` did not yet exist and option-value validation was incomplete.
-
-M108: buffered acceptance contract smoke passed; unsafe/bypass-capable flags are rejected before SDK thread creation.
-
-M109: general CLI value validation passed; invalid `--sandbox`, `--approval`, `--web-search`, and boolean inline values are rejected before SDK thread creation.
+Reviewed the provided M110 milestone spec, current handoff, orchestrator README, orchestrator source, package scripts, pre-run git status/log, and host-run validation output.
 
 ## Pre-run validation
-Host pre-run `npm.cmd run check:rules`: pass.
+Host pre-run checks indicate the local contract path is healthy:
 
-Host pre-run `git diff --check`: pass.
+- `node --check orchestrator/codex-sdk-orchestrator.mjs`: no reported error
+- `node --check orchestrator/run-buffered-acceptance.mjs`: no reported error
+- `npm.cmd run check:rules`: pass
+- `git diff --check`: no reported error
 
-In-review `git diff --check`: pass.
-
-In-review `git status --short` showed only pre-existing untracked items:
-- `.codex-audit/110-sdk-controlled-repo-analysis-spec.md`
-- `test`
-
-No tracked production files were changed by this review.
+Working tree before this review already had `.codex-audit/110-sdk-controlled-repo-analysis-spec.md` modified and untracked `test`.
 
 ## Orchestrator readiness
-Ready for continued buffered read-only SDK repo-analysis milestones.
+Read-only analysis milestones are ready for controlled buffered SDK use.
 
-Not ready for write-capable SDK milestones. The safe contract currently depends on the buffered wrapper forcing `sandboxMode:"read-only"`, `approvalPolicy:"never"`, `networkAccessEnabled:false`, and `webSearchMode:"disabled"`, plus rejecting unsafe flags before thread creation. No SDK write flow has been accepted.
+The buffered wrapper forces:
+
+- `sandboxMode: "read-only"`
+- `approvalPolicy: "never"`
+- `networkAccessEnabled: false`
+- `webSearchMode: "disabled"`
+
+It also rejects unsafe or bypass-capable flags before SDK thread creation.
+
+M109 is present in git history as `822127f test: validate codex orchestrator cli options`, and the supplied source confirms invalid general CLI values are rejected in `parseArgs` before `createCodex`, `startThread`, or `resumeThread`.
 
 ## Risks
-The general `codex:orchestrator` CLI still intentionally exposes valid unsafe-capable values for explicit local experiments outside buffered acceptance.
+The general orchestrator CLI still supports unsafe-capable valid values such as `danger-full-access`, `on-request`, and `live` for explicit local use. That is acceptable for the general CLI, but write-capable SDK work needs separate controlled entry points and acceptance rules.
 
-No external-provider, OpenAI CLI planner, mutating-live, live CEP/AE, or write-capable SDK validation was run in M110.
-
-The SDK acceptance wrapper is proven for read-only report generation, not production or CEP panel edits.
+The current validation is local contract validation. It does not prove external provider availability, live AE behavior, tenant-policy bypass behavior, or mutating project safety.
 
 ## Blocked items
-External-provider validation and OpenAI CLI planner validation remain blocked by tenant policy.
+External-provider validation and OpenAI CLI planner validation remain blocked by tenant policy and must not be worked around.
 
-Mutating-live validation is forbidden for this milestone.
-
-Write-capable SDK milestones are blocked until a separate narrow write contract exists and is smoke-tested locally.
-
-Broad npm/cache/network diagnostics remain forbidden.
+Live, mutating, CEP, AE, network, and external-provider checks were intentionally not run.
 
 ## Next safe milestone
-M111: SDK Read-Only Next Project Milestone Selection.
+Define the next milestone as a write-capable SDK readiness design milestone, still non-mutating by default.
 
-Plan:
-1. Use the same buffered read-only wrapper settings.
-2. Read only AGENTS, handoff, plan, target spec, relevant `.codex-audit` reports, orchestrator README, and package scripts.
-3. Produce a concise audit report selecting one non-provider, non-live, non-mutating next project milestone.
-4. Keep SDK work read-only; any implementation should happen only after a separate approval and write-safety contract.
+It should specify exactly which repository paths may be written, which flags remain forbidden, what preflight checks are required, and how the wrapper proves no production or CEP panel files are modified unless explicitly in scope.
 
 ## Commands allowed next
-`npm.cmd run check:rules`
-
-`git diff --check`
-
-`git status --short`
-
-Targeted `Get-Content -Encoding UTF8` reads for the allowed docs and audit files.
-
-`npm.cmd run codex:orchestrator:help`
+- `node --check orchestrator/codex-sdk-orchestrator.mjs`
+- `node --check orchestrator/run-buffered-acceptance.mjs`
+- `npm.cmd run check:rules`
+- `git diff --check`
+- targeted read-only `git status`, `git log`, `git diff --name-only`
+- targeted reads of orchestrator, plan, spec, and audit files
 
 ## Commands forbidden
-External-provider validation.
-
-OpenAI CLI planner validation.
-
-Mutating-live validation.
-
-Live CEP / After Effects smoke tests.
-
-Tenant-policy bypass.
-
-Production code edits.
-
-CEP panel code edits.
-
-Broad npm/cache/network diagnostics.
-
-Commits from this acceptance review.
+- external-provider validation
+- OpenAI CLI planner validation
+- mutating-live
+- live CEP / AE smoke tests
+- tenant-policy bypass
+- network diagnostics
+- dependency installation
+- production code edits
+- CEP panel edits
+- commits without explicit user approval
 
 ## Notes
-This report body is intended for the host wrapper to write to `.codex-audit/110-sdk-controlled-repo-analysis.md`.
-
-The title is kept exactly as requested by the host structure, though the content covers M110 SDK Controlled Repo Analysis.
+This review performed analysis only. No files were edited, no commits were made, and no live, mutating, external-provider, network, or tenant-policy-bypass validation was run.
