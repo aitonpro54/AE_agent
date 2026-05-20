@@ -48,10 +48,22 @@ M112 добавляет non-live scaffold для будущего write-capable 
 
 ```powershell
 npm.cmd run codex:orchestrator:write-scaffold -- --scope orchestrator --prompt "Implement a narrow orchestrator change"
+npm.cmd run codex:orchestrator:write-scaffold -- --dry-run --scope orchestrator --prompt "Implement a narrow orchestrator change" --planned-path orchestrator/README.md
 npm.cmd run codex:orchestrator:write-scaffold:contract
 ```
 
 Scaffold deny-by-default: он не импортирует SDK, не создает thread, не выполняет реальную write-работу и не делает auto-commit. Он локально проверяет будущий contract, снимает pre/post git status and diff snapshots и возвращает would-be thread options с `sandboxMode: "workspace-write"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
+
+M113 dry-run mode включается только явным `--dry-run`. Он требует тот же explicit `--scope` и `--prompt`, локально policy-scan'ит prompt, снимает pre-run git snapshot, проверяет повторяемые `--planned-path` against active scope allowlist и default forbidden path patterns, затем возвращает `dry-run-allowed` или `dry-run-denied`. Dry-run не импортирует SDK, не создает thread, не редактирует target files, не выполняет real write work и не делает auto-commit.
+
+Для dry-run path-policy проверки передавайте planned repo paths явно:
+
+```powershell
+npm.cmd run codex:orchestrator:write-scaffold -- --dry-run --scope docs-audit --prompt "Prepare M113 audit note" --planned-path .codex-audit/113-sdk-write-runner-local-dry-run-mode.md
+npm.cmd run codex:orchestrator:write-scaffold -- --dry-run --scope orchestrator --prompt "Check forbidden path handling" --planned-path node_modules/pkg/index.js
+```
+
+Unknown scopes и unsafe/bypass-capable flags отклоняются during local argument parsing before any possible SDK thread creation. Planned paths outside the active scope allowlist or inside forbidden paths are reported as dry-run violations without touching the working tree.
 
 Обязательный `--scope` принимает только:
 
@@ -81,7 +93,7 @@ Hard-stop conditions:
 
 ## Локальный contract smoke
 
-Локальный smoke проверяет non-mutating orchestrator contract и M112 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, path allowlists, forbidden paths и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
+Локальный smoke проверяет non-mutating orchestrator contract и M113 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned path allowlists, forbidden paths и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
 
 ```powershell
 npm.cmd run check:rules

@@ -12,6 +12,7 @@ Codex SDK write-capable runner scaffold
 
 Usage:
   node orchestrator/run-write-capable-scaffold.mjs --scope orchestrator --prompt "Implement a narrow orchestrator change"
+  node orchestrator/run-write-capable-scaffold.mjs --dry-run --scope orchestrator --prompt "Implement a narrow orchestrator change" --planned-path orchestrator/README.md
   node orchestrator/run-write-capable-scaffold.mjs --contract-smoke
 
 Required:
@@ -22,13 +23,15 @@ Options:
   --cwd <path>               Working directory. Defaults to the current directory.
   --acknowledge-existing-change <path>
                              Explicitly acknowledge one pre-existing dirty path.
+  --dry-run                  Evaluate local safety/path policy only; do not run write work.
+  --planned-path <path>      Planned repo path for dry-run allowlist checks. Repeatable.
   --json                     Print a JSON scaffold envelope.
   --contract-smoke           Run local scaffold contract checks only.
   --help                     Show this help.
 
-This M112 scaffold is non-live. It validates the write contract, captures pre/post git
-snapshots, and reports would-be SDK thread options, but does not import the SDK or create
-a thread.
+This scaffold is non-live. It validates the write contract, captures git snapshots,
+reports would-be SDK thread options, and can run a guarded local dry-run, but does not
+import the SDK or create a thread.
 `;
 
 const COMMON_AUDIT_ALLOWLIST = Object.freeze([
@@ -120,8 +123,14 @@ export const WRITE_CAPABLE_THREAD_OPTION_CONTRACT = Object.freeze({
   webSearchMode: "disabled",
 });
 
-const VALUE_OPTIONS = new Set(["acknowledge-existing-change", "cwd", "prompt", "scope"]);
-const BOOLEAN_OPTIONS = new Set(["contract-smoke", "help", "json"]);
+const VALUE_OPTIONS = new Set([
+  "acknowledge-existing-change",
+  "cwd",
+  "planned-path",
+  "prompt",
+  "scope",
+]);
+const BOOLEAN_OPTIONS = new Set(["contract-smoke", "dry-run", "help", "json"]);
 
 const HARD_STOP_PROMPT_PATTERNS = Object.freeze([
   {
@@ -341,8 +350,23 @@ export function getPathContractViolations(scope, repoPaths) {
   });
 }
 
+export function createPlannedPathCheck(scope, plannedPaths = []) {
+  validateScope(scope);
+
+  const normalizedPlannedPaths = uniqueSorted(plannedPaths);
+  const violations = getPathContractViolations(scope, normalizedPlannedPaths);
+  const violationPaths = new Set(violations.map((violation) => violation.path));
+
+  return {
+    allowed: violations.length === 0,
+    allowedPaths: normalizedPlannedPaths.filter((repoPath) => !violationPaths.has(repoPath)),
+    plannedPaths: normalizedPlannedPaths,
+    violations,
+  };
+}
+
 export function parseWriteRunnerArgs(argv) {
-  const options = { acknowledgedExistingChanges: [] };
+  const options = { acknowledgedExistingChanges: [], plannedPaths: [] };
   const positional = [];
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -379,6 +403,8 @@ export function parseWriteRunnerArgs(argv) {
 
     if (name === "acknowledge-existing-change") {
       options.acknowledgedExistingChanges.push(normalizeRepoPath(value));
+    } else if (name === "planned-path") {
+      options.plannedPaths.push(normalizeRepoPath(value));
     } else {
       options[toCamelCase(name)] = value;
     }
@@ -469,38 +495,75 @@ export function collectPathsChangedSincePre(preSnapshot, postSnapshot) {
   );
 }
 
-export function assertPreRunGitState(snapshot, options = {}) {
+export function evaluatePreRunGitState(snapshot, options = {}) {
   const changedPaths = uniqueSorted(snapshot.changedPaths || []);
+  const acknowledged = uniqueSorted(options.acknowledgedExistingChanges || []);
 
   if (changedPaths.length === 0) {
+    return {
+      acknowledgedExistingChanges: acknowledged,
+      changedPaths,
+      forbiddenExisting: [],
+      ok: true,
+      staleAcknowledgements: [],
+      status: "clean",
+      unexpected: [],
+    };
+  }
+
+  const unexpected =
+    acknowledged.length === 0
+      ? changedPaths
+      : changedPaths.filter((repoPath) => !acknowledged.includes(repoPath));
+  const staleAcknowledgements =
+    acknowledged.length === 0
+      ? []
+      : acknowledged.filter((repoPath) => !changedPaths.includes(repoPath));
+  const forbiddenExisting = changedPaths.filter(isForbiddenPath);
+
+  return {
+    acknowledgedExistingChanges: acknowledged,
+    changedPaths,
+    forbiddenExisting,
+    ok:
+      unexpected.length === 0 &&
+      staleAcknowledgements.length === 0 &&
+      forbiddenExisting.length === 0,
+    staleAcknowledgements,
+    status: "dirty",
+    unexpected,
+  };
+}
+
+export function assertPreRunGitState(snapshot, options = {}) {
+  const state = evaluatePreRunGitState(snapshot, options);
+
+  if (state.ok) {
     return;
   }
 
-  const acknowledged = uniqueSorted(options.acknowledgedExistingChanges || []);
-
-  if (acknowledged.length === 0) {
+  if (state.acknowledgedExistingChanges.length === 0) {
     throw new Error(
-      `Dirty unexpected git state before write-capable run: ${changedPaths.join(", ")}`,
+      `Dirty unexpected git state before write-capable run: ${state.changedPaths.join(", ")}`,
     );
   }
 
-  const unexpected = changedPaths.filter((repoPath) => !acknowledged.includes(repoPath));
-  if (unexpected.length > 0) {
+  if (state.unexpected.length > 0) {
     throw new Error(
-      `Dirty unexpected git state before write-capable run: ${unexpected.join(", ")}`,
+      `Dirty unexpected git state before write-capable run: ${state.unexpected.join(", ")}`,
     );
   }
 
-  const staleAcknowledgements = acknowledged.filter((repoPath) => !changedPaths.includes(repoPath));
-  if (staleAcknowledgements.length > 0) {
+  if (state.staleAcknowledgements.length > 0) {
     throw new Error(
-      `Acknowledged paths are not dirty and may be stale: ${staleAcknowledgements.join(", ")}`,
+      `Acknowledged paths are not dirty and may be stale: ${state.staleAcknowledgements.join(", ")}`,
     );
   }
 
-  const forbiddenExisting = changedPaths.filter(isForbiddenPath);
-  if (forbiddenExisting.length > 0) {
-    throw new Error(`Forbidden path dirty before write-capable run: ${forbiddenExisting.join(", ")}`);
+  if (state.forbiddenExisting.length > 0) {
+    throw new Error(
+      `Forbidden path dirty before write-capable run: ${state.forbiddenExisting.join(", ")}`,
+    );
   }
 }
 
@@ -531,6 +594,35 @@ export function validatePostRunContract({ postSnapshot, preSnapshot, scope, vali
   }
 
   return { changedSincePre, violations };
+}
+
+export function runWriteCapableDryRun(options, hooks = {}) {
+  validateWriteRunnerOptions(options);
+  validatePromptPolicy(options.prompt);
+
+  const cwd = path.resolve(options.cwd || process.cwd());
+  const captureSnapshot = hooks.captureGitSnapshot || captureGitSnapshot;
+  const preSnapshot = captureSnapshot({ cwd, label: "dry-run-pre" });
+  const preRunGitState = evaluatePreRunGitState(preSnapshot, {
+    acknowledgedExistingChanges: options.acknowledgedExistingChanges,
+  });
+  const plannedPathCheck = createPlannedPathCheck(options.scope, options.plannedPaths);
+  const threadOptions = createWriteCapableThreadOptions({ cwd });
+  const wouldAllow = preRunGitState.ok && plannedPathCheck.allowed;
+
+  return {
+    autoCommit: false,
+    dryRun: true,
+    plannedPathCheck,
+    preRunGitState,
+    preSnapshot,
+    realWriteWork: false,
+    result: wouldAllow ? "dry-run-allowed" : "dry-run-denied",
+    scope: options.scope,
+    sdkThreadCreated: false,
+    threadOptions,
+    wouldAllow,
+  };
 }
 
 export async function runWriteCapableScaffold(options) {
@@ -622,6 +714,25 @@ export function runWriteCapableContractSmoke() {
     failures,
   );
 
+  const parsedDryRun = parseWriteRunnerArgs([
+    "--dry-run",
+    "--scope",
+    "orchestrator",
+    "--prompt",
+    "Check local dry-run policy.",
+    "--planned-path",
+    "orchestrator/README.md",
+    "--planned-path",
+    "package.json",
+  ]);
+
+  assertContract(parsedDryRun.dryRun === true, "write runner did not parse dry-run mode", failures);
+  assertContract(
+    parsedDryRun.plannedPaths.join(",") === "orchestrator/README.md,package.json",
+    "write runner did not parse dry-run planned paths",
+    failures,
+  );
+
   assertRejects(
     () => parseWriteRunnerArgs(["--scope", "unknown", "--prompt", "No-op"]),
     "Unknown write scope:",
@@ -634,6 +745,20 @@ export function runWriteCapableContractSmoke() {
     "Missing required --scope.",
     failures,
     "write runner did not require explicit scope",
+  );
+
+  assertRejects(
+    () => parseWriteRunnerArgs(["--dry-run", "--scope", "unknown", "--prompt", "No-op"]),
+    "Unknown write scope:",
+    failures,
+    "dry-run mode did not reject unknown scope",
+  );
+
+  assertRejects(
+    () => parseWriteRunnerArgs(["--dry-run", "--prompt", "No-op"]),
+    "Missing required --scope.",
+    failures,
+    "dry-run mode did not require explicit scope",
   );
 
   const unsafeArgCases = [
@@ -660,6 +785,15 @@ export function runWriteCapableContractSmoke() {
       "Unsafe write-capable runner flag rejected:",
       failures,
       `write runner did not reject unsafe args: ${unsafeArgs.join(" ")}`,
+    );
+  }
+
+  for (const unsafeArgs of unsafeArgCases) {
+    assertRejects(
+      () => parseWriteRunnerArgs(["--dry-run", ...unsafeArgs]),
+      "Unsafe write-capable runner flag rejected:",
+      failures,
+      `dry-run mode did not reject unsafe args: ${unsafeArgs.join(" ")}`,
     );
   }
 
@@ -738,6 +872,112 @@ export function runWriteCapableContractSmoke() {
       failures,
     );
   }
+
+  const plannedAllowed = createPlannedPathCheck("orchestrator", [
+    "orchestrator/run-write-capable-scaffold.mjs",
+    "package.json",
+  ]);
+  assertContract(
+    plannedAllowed.allowed &&
+      plannedAllowed.allowedPaths.length === 2 &&
+      plannedAllowed.violations.length === 0,
+    "dry-run planned allowlist check did not allow orchestrator paths",
+    failures,
+  );
+
+  const plannedForbidden = createPlannedPathCheck("orchestrator", [
+    "node_modules/pkg/index.js",
+  ]);
+  assertContract(
+    plannedForbidden.allowed === false &&
+      plannedForbidden.violations[0]?.reason === "forbidden-path",
+    "dry-run planned path check did not reject forbidden path",
+    failures,
+  );
+
+  const plannedOutsideScope = createPlannedPathCheck("orchestrator", [
+    "mcp-server/bridge-daemon.js",
+  ]);
+  assertContract(
+    plannedOutsideScope.allowed === false &&
+      plannedOutsideScope.violations[0]?.reason === "outside-scope-allowlist",
+    "dry-run planned path check did not reject outside-scope path",
+    failures,
+  );
+
+  const plannedUnsafeShape = createPlannedPathCheck("orchestrator", ["../outside.txt"]);
+  assertContract(
+    plannedUnsafeShape.allowed === false &&
+      plannedUnsafeShape.violations[0]?.reason === "unsafe-path-shape",
+    "dry-run planned path check did not reject unsafe path shape",
+    failures,
+  );
+
+  const syntheticCleanSnapshot = {
+    changedPaths: [],
+    cwd: process.cwd(),
+    pathSignatures: {},
+  };
+  const dryRunAllowed = runWriteCapableDryRun(
+    {
+      dryRun: true,
+      plannedPaths: ["orchestrator/README.md"],
+      prompt: "Check local dry-run policy.",
+      scope: "orchestrator",
+    },
+    { captureGitSnapshot: () => syntheticCleanSnapshot },
+  );
+
+  assertContract(
+    dryRunAllowed.result === "dry-run-allowed" &&
+      dryRunAllowed.wouldAllow === true &&
+      dryRunAllowed.sdkThreadCreated === false &&
+      dryRunAllowed.realWriteWork === false &&
+      dryRunAllowed.autoCommit === false,
+    "dry-run allowed result did not preserve local-only safety contract",
+    failures,
+  );
+
+  const dryRunDenied = runWriteCapableDryRun(
+    {
+      dryRun: true,
+      plannedPaths: ["node_modules/pkg/index.js"],
+      prompt: "Check local dry-run policy.",
+      scope: "orchestrator",
+    },
+    { captureGitSnapshot: () => syntheticCleanSnapshot },
+  );
+
+  assertContract(
+    dryRunDenied.result === "dry-run-denied" &&
+      dryRunDenied.wouldAllow === false &&
+      dryRunDenied.plannedPathCheck.violations[0]?.reason === "forbidden-path",
+    "dry-run denied result did not report forbidden planned path",
+    failures,
+  );
+
+  const dryRunDirtyDenied = runWriteCapableDryRun(
+    {
+      dryRun: true,
+      plannedPaths: ["orchestrator/README.md"],
+      prompt: "Check local dry-run policy.",
+      scope: "orchestrator",
+    },
+    {
+      captureGitSnapshot: () => ({
+        changedPaths: ["orchestrator/README.md"],
+        cwd: process.cwd(),
+        pathSignatures: {},
+      }),
+    },
+  );
+
+  assertContract(
+    dryRunDirtyDenied.result === "dry-run-denied" &&
+      dryRunDirtyDenied.preRunGitState.unexpected.includes("orchestrator/README.md"),
+    "dry-run did not report unacknowledged pre-run dirty state",
+    failures,
+  );
 
   const syntheticPre = {
     pathSignatures: {
@@ -838,6 +1078,7 @@ export function runWriteCapableContractSmoke() {
   }
 
   return {
+    dryRunMode: "pass",
     forbiddenPaths: FORBIDDEN_PATH_PATTERNS,
     result: "pass",
     scopes: WRITE_SCOPES,
@@ -855,6 +1096,25 @@ function printResult(result, asJson) {
   console.log(`Scope: ${result.scope}`);
   console.log(`SDK thread created: ${result.sdkThreadCreated}`);
   console.log(`Auto-commit: ${result.autoCommit}`);
+  if (result.dryRun) {
+    console.log(`Real write work: ${result.realWriteWork}`);
+    console.log(`Would allow: ${result.wouldAllow}`);
+    console.log(
+      `Planned paths: ${result.plannedPathCheck.plannedPaths.join(", ") || "(none supplied)"}`,
+    );
+    console.log(
+      `Path violations: ${
+        result.plannedPathCheck.violations
+          .map((violation) => `${violation.path} (${violation.reason})`)
+          .join(", ") || "(none)"
+      }`,
+    );
+    console.log(`Pre-run git state: ${result.preRunGitState.status}`);
+    if (result.preRunGitState.unexpected.length > 0) {
+      console.log(`Unexpected dirty paths: ${result.preRunGitState.unexpected.join(", ")}`);
+    }
+    return;
+  }
   console.log(`Changed since pre-run: ${result.postContract.changedSincePre.join(", ") || "(none)"}`);
 }
 
@@ -872,11 +1132,13 @@ export async function main(argv = process.argv.slice(2)) {
       console.log(JSON.stringify(result, null, 2));
       return;
     }
-    console.log("PASS M112 write-capable runner scaffold contract smoke");
+    console.log("PASS M113 write-capable runner scaffold contract smoke");
     return;
   }
 
-  const result = await runWriteCapableScaffold(options);
+  const result = options.dryRun
+    ? runWriteCapableDryRun(options)
+    : await runWriteCapableScaffold(options);
   printResult(result, Boolean(options.json));
 }
 
