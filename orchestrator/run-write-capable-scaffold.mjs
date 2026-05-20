@@ -151,6 +151,9 @@ export const M115_ALLOWED_IMPLEMENTATION_REPORT_PATHS = Object.freeze([
   ".codex-audit/115-sdk-docs-audit-real-write-cutover.md",
   ".codex-audit/115-chatgpt-return-packet.md",
 ]);
+export const SDK_WRITE_LOG_DIRECTORY = ".codex/sdk/logs";
+export const SDK_WRITE_OPERATION_DIRECTORY = ".codex/sdk/operations";
+export const SDK_WRITE_FALLBACK_REPORT_DIRECTORY = ".codex-audit";
 export const OPERATION_ENVELOPE_REQUIRED_FIELDS = Object.freeze([
   "version",
   "operationId",
@@ -907,6 +910,62 @@ function sanitizeLogId(value) {
     .slice(0, 80);
 }
 
+function errorDiagnostic(error) {
+  if (!error) {
+    return null;
+  }
+
+  if (typeof error === "string") {
+    return { message: error, name: "Error" };
+  }
+
+  if (error && typeof error === "object" && typeof error.message === "string") {
+    const diagnostic = {
+      message: error.message,
+      name: typeof error.name === "string" ? error.name : "Error",
+    };
+
+    if ("code" in error) {
+      diagnostic.code = String(error.code);
+    }
+
+    return diagnostic;
+  }
+
+  const diagnostic = {
+    message: error instanceof Error ? error.message : String(error),
+    name: error instanceof Error ? error.name : "Error",
+  };
+
+  if (error && typeof error === "object" && "code" in error) {
+    diagnostic.code = String(error.code);
+  }
+
+  return diagnostic;
+}
+
+function diagnosticMessage(error) {
+  return errorDiagnostic(error)?.message || null;
+}
+
+export function createSdkWriteFallbackReportPath(operationId) {
+  return normalizeRepoPath(
+    path.posix.join(
+      SDK_WRITE_FALLBACK_REPORT_DIRECTORY,
+      `${sanitizeLogId(operationId)}-sdk-write-failure-diagnostics.md`,
+    ),
+  );
+}
+
+export function createSdkWriteOperationFallbackPath(operationId) {
+  return normalizeRepoPath(
+    path.posix.join(
+      SDK_WRITE_FALLBACK_REPORT_DIRECTORY,
+      `${sanitizeLogId(operationId)}-operation.json`,
+    ),
+  );
+}
+
 function serialize(value) {
   if (typeof value === "string") {
     return value;
@@ -961,29 +1020,132 @@ function collectTurnFileChangePaths(turn) {
   );
 }
 
-function writeSdkWriteLog(cwd, operationId, payload) {
-  const logDirectory = path.join(cwd, ".codex", "sdk", "logs");
+export function createSdkWriteFallbackReport({
+  attemptedLogPath,
+  fallbackOperationPath,
+  logWriteError,
+  operationId,
+  payload,
+}) {
+  const failure = payload?.failure;
+  const sdkRunFailure = payload?.sdkRunFailure;
+  const postRunFailure = payload?.postRunFailure;
+  const originalFailure = sdkRunFailure || failure;
+  const outputPath = payload?.sdkThreadOutputPath || payload?.plannedPathCheck?.plannedPaths?.[0];
+  const logError = errorDiagnostic(logWriteError);
+
+  return [
+    "# SDK Write Failure Diagnostic Fallback",
+    "",
+    "## Result",
+    "diagnostic-fallback",
+    "",
+    "## Operation",
+    `- operationId: ${operationId || "(unknown)"}`,
+    `- operationFile: ${payload?.operationEnvelope?.sourcePath || "(unknown)"}`,
+    `- operation fallback path if ${SDK_WRITE_OPERATION_DIRECTORY}/ is unavailable: ${fallbackOperationPath}`,
+    `- attempted log path: ${attemptedLogPath}`,
+    "",
+    "## Original Failure",
+    `- message: ${diagnosticMessage(originalFailure)}`,
+    `- code: ${errorDiagnostic(originalFailure)?.code || "(none)"}`,
+    `- post-run failure: ${diagnosticMessage(postRunFailure) || "(none)"}`,
+    "",
+    "## SDK State",
+    `- sdkThreadCreated: ${Boolean(payload?.sdkThreadCreated)}`,
+    `- sdkThreadCompleted: ${Boolean(payload?.sdkThreadCompleted)}`,
+    `- sdkThreadId: ${payload?.sdkThreadId || "(not reported)"}`,
+    `- realWriteWork: ${Boolean(payload?.realWriteWork)}`,
+    `- outputPath: ${outputPath || "(unknown)"}`,
+    `- outputFileCreatedBySdk: ${Boolean(payload?.outputFileCreatedBySdk)}`,
+    "",
+    "## Log Write Failure",
+    `- message: ${logError?.message || "(unknown)"}`,
+    `- code: ${logError?.code || "(none)"}`,
+    "",
+    "## Safety",
+    "- This fallback report is written after a primary SDK log write failure.",
+    "- It does not create SDK threads, retry SDK writes, run provider validation, or commit changes.",
+    "- The original SDK/post-run failure above remains the primary failure; the log write failure is diagnostic metadata.",
+    "",
+  ].join("\n");
+}
+
+export function writeSdkWriteLog(cwd, operationId, payload, hooks = {}) {
+  const mkdir = hooks.mkdirSync || mkdirSync;
+  const writeFile = hooks.writeFileSync || writeFileSync;
+  const logDirectory = path.join(cwd, ...SDK_WRITE_LOG_DIRECTORY.split("/"));
   const logPath = path.join(
     logDirectory,
     `${stamp()}-${sanitizeLogId(operationId)}-sdk-write.json`,
   );
+  const attemptedPath = normalizeRepoPath(path.relative(cwd, logPath));
 
   try {
-    mkdirSync(logDirectory, { recursive: true });
-    writeFileSync(logPath, `${serialize(payload)}\n`, "utf8");
+    mkdir(logDirectory, { recursive: true });
+    writeFile(logPath, `${serialize(payload)}\n`, "utf8");
   } catch (error) {
+    const fallbackReportPath = createSdkWriteFallbackReportPath(operationId);
+    const fallbackOperationPath = createSdkWriteOperationFallbackPath(operationId);
+    const fallbackAbsolutePath = path.join(cwd, ...fallbackReportPath.split("/"));
+    const fallbackReport = createSdkWriteFallbackReport({
+      attemptedLogPath: attemptedPath,
+      fallbackOperationPath,
+      logWriteError: error,
+      operationId,
+      payload,
+    });
+    let fallbackReportWriteError = null;
+    let fallbackReportWritten = false;
+
+    try {
+      mkdir(path.dirname(fallbackAbsolutePath), { recursive: true });
+      writeFile(fallbackAbsolutePath, `${fallbackReport}\n`, "utf8");
+      fallbackReportWritten = true;
+    } catch (fallbackError) {
+      fallbackReportWriteError = diagnosticMessage(fallbackError);
+    }
+
     return {
-      error: error instanceof Error ? error.message : String(error),
+      error: diagnosticMessage(error),
+      errorCode: errorDiagnostic(error)?.code || null,
+      fallbackOperationPath,
+      fallbackReportPath: fallbackReportWritten ? fallbackReportPath : null,
+      fallbackReportWriteError,
+      fallbackReportWritten,
       path: null,
-      attemptedPath: normalizeRepoPath(path.relative(cwd, logPath)),
+      attemptedFallbackReportPath: fallbackReportPath,
+      attemptedPath,
     };
   }
 
   return {
     error: null,
-    path: normalizeRepoPath(path.relative(cwd, logPath)),
-    attemptedPath: normalizeRepoPath(path.relative(cwd, logPath)),
+    errorCode: null,
+    fallbackOperationPath: createSdkWriteOperationFallbackPath(operationId),
+    fallbackReportPath: null,
+    fallbackReportWriteError: null,
+    fallbackReportWritten: false,
+    path: attemptedPath,
+    attemptedFallbackReportPath: createSdkWriteFallbackReportPath(operationId),
+    attemptedPath,
   };
+}
+
+export function createSdkWriteFailureMessage(failure, logResult = {}) {
+  const parts = [`SDK thread write failed: ${diagnosticMessage(failure) || "unknown error"}`];
+
+  if (logResult.error) {
+    parts.push(`SDK log write failed: ${logResult.error}`);
+  }
+
+  if (logResult.fallbackReportPath) {
+    parts.push(`Fallback diagnostic report: ${logResult.fallbackReportPath}`);
+  } else if (logResult.fallbackReportWriteError) {
+    parts.push(`Fallback diagnostic report write failed: ${logResult.fallbackReportWriteError}`);
+  }
+
+  return parts.join(" ");
 }
 
 function assertSdkWriteOptions(options) {
@@ -1148,22 +1310,31 @@ export async function runWriteCapableSdkWrite(options) {
     failure = error instanceof Error ? error : new Error(String(error));
   }
 
-  const postSnapshot = captureGitSnapshot({ cwd, label: "sdk-write-post" });
-  const postDiffCheck = runGitDiffCheck(cwd);
-  const sdkReportedFileChanges = collectTurnFileChangePaths(turn);
+  let postSnapshot = null;
+  let postDiffCheck = null;
+  let postRunFailure = null;
+  let sdkReportedFileChanges = [];
+  let sdkWritePostContract = null;
   const validationResult = {
     ok: sdkThreadCompleted && !failure,
     source: "m115-sdk-write",
   };
-  let sdkWritePostContract = null;
 
-  if (!failure) {
-    sdkWritePostContract = validateSdkWriteDiffAllowlist({
-      plannedPaths,
-      postSnapshot,
-      preSnapshot,
-      validationResult,
-    });
+  try {
+    postSnapshot = captureGitSnapshot({ cwd, label: "sdk-write-post" });
+    postDiffCheck = runGitDiffCheck(cwd);
+    sdkReportedFileChanges = collectTurnFileChangePaths(turn);
+
+    if (!failure) {
+      sdkWritePostContract = validateSdkWriteDiffAllowlist({
+        plannedPaths,
+        postSnapshot,
+        preSnapshot,
+        validationResult,
+      });
+    }
+  } catch (error) {
+    postRunFailure = error instanceof Error ? error : new Error(String(error));
   }
 
   const outputPath = plannedPaths[0];
@@ -1172,36 +1343,45 @@ export async function runWriteCapableSdkWrite(options) {
     Boolean(sdkWritePostContract) &&
     outputExistsAfter &&
     sdkWritePostContract.actualChangedFiles.includes(outputPath);
+  const outputMissingFailure =
+    !failure && !postRunFailure && !outputFileCreatedBySdk
+      ? new Error(`SDK thread did not create planned output file: ${outputPath}`)
+      : null;
+  const terminalFailure = failure || postRunFailure || outputMissingFailure;
   const logResult = writeSdkWriteLog(cwd, preparedOptions.operationEnvelope?.operationId, {
-    failure: failure ? failure.message : null,
+    failure: terminalFailure ? errorDiagnostic(terminalFailure) : null,
     operationEnvelope: preparedOptions.operationEnvelope,
     outputFileCreatedBySdk,
     plannedPathCheck,
+    postRunFailure: postRunFailure ? errorDiagnostic(postRunFailure) : null,
     postDiffCheck,
     postSnapshot,
     preDiffCheck,
     preSnapshot,
     sdkReportedFileChanges,
+    sdkRunFailure: failure ? errorDiagnostic(failure) : null,
     sdkThreadCompleted,
     sdkThreadCreated,
     sdkThreadId: thread?.id || null,
+    sdkThreadOutputPath: outputPath,
     sdkWritePostContract,
     threadOptions,
     turn,
   });
 
-  if (failure) {
-    const logError = logResult.error ? ` Log write failed: ${logResult.error}` : "";
-    throw new Error(`SDK thread write failed: ${failure.message}${logError}`);
-  }
-
-  if (!outputFileCreatedBySdk) {
-    throw new Error(`SDK thread did not create planned output file: ${outputPath}`);
+  if (terminalFailure) {
+    throw new Error(createSdkWriteFailureMessage(terminalFailure, logResult), {
+      cause: terminalFailure,
+    });
   }
 
   return {
     autoCommit: false,
     dryRun: false,
+    fallbackOperationPath: logResult.fallbackOperationPath,
+    fallbackReportPath: logResult.fallbackReportPath,
+    fallbackReportWriteError: logResult.fallbackReportWriteError,
+    fallbackReportWritten: logResult.fallbackReportWritten,
     logPath: logResult.path,
     logWriteError: logResult.error,
     operationEnvelope: preparedOptions.operationEnvelope,
@@ -1507,6 +1687,85 @@ export function runWriteCapableContractSmoke() {
       validatedSdkWriteEnvelope.plannedPaths.join(",") ===
         SDK_WRITE_ALLOWED_PLANNED_PATHS.join(","),
     "sdk-write operation envelope did not validate the expected docs-audit schema",
+    failures,
+  );
+
+  const syntheticSdkError = new Error("synthetic original SDK failure preserved");
+  syntheticSdkError.code = "SYNTHETIC_SDK_FAILURE";
+  const syntheticLogError = new Error("EPERM: operation not permitted, open synthetic sdk log");
+  syntheticLogError.code = "EPERM";
+  const fallbackWrites = new Map();
+  const diagnosticOperationId = "m116-contract-smoke";
+  const diagnosticFallbackOperationPath = createSdkWriteOperationFallbackPath(
+    diagnosticOperationId,
+  );
+  const diagnosticLogResult = writeSdkWriteLog(
+    process.cwd(),
+    diagnosticOperationId,
+    {
+      failure: errorDiagnostic(syntheticSdkError),
+      operationEnvelope: {
+        operationId: diagnosticOperationId,
+        sourcePath: diagnosticFallbackOperationPath,
+      },
+      outputFileCreatedBySdk: false,
+      plannedPathCheck: { plannedPaths: SDK_WRITE_ALLOWED_PLANNED_PATHS },
+      realWriteWork: false,
+      sdkRunFailure: errorDiagnostic(syntheticSdkError),
+      sdkThreadCompleted: false,
+      sdkThreadCreated: false,
+      sdkThreadId: null,
+      sdkThreadOutputPath: SDK_WRITE_ALLOWED_PLANNED_PATHS[0],
+    },
+    {
+      mkdirSync: (directoryPath) => {
+        const repoPath = normalizeRepoPath(path.relative(process.cwd(), directoryPath));
+        if (repoPath === SDK_WRITE_LOG_DIRECTORY) {
+          throw syntheticLogError;
+        }
+      },
+      writeFileSync: (filePath, text) => {
+        fallbackWrites.set(normalizeRepoPath(path.relative(process.cwd(), filePath)), text);
+      },
+    },
+  );
+  const diagnosticFailureMessage = createSdkWriteFailureMessage(
+    syntheticSdkError,
+    diagnosticLogResult,
+  );
+
+  assertContract(
+    diagnosticFallbackOperationPath.startsWith(`${SDK_WRITE_FALLBACK_REPORT_DIRECTORY}/`) &&
+      diagnosticFallbackOperationPath.endsWith("-operation.json"),
+    "sdk-write operation fallback path was not reported under .codex-audit",
+    failures,
+  );
+  assertContract(
+    diagnosticLogResult.path === null &&
+      diagnosticLogResult.errorCode === "EPERM" &&
+      diagnosticLogResult.fallbackReportWritten === true &&
+      diagnosticLogResult.fallbackReportPath?.startsWith(
+        `${SDK_WRITE_FALLBACK_REPORT_DIRECTORY}/`,
+      ),
+    "sdk-write log write failure was not converted into a non-fatal fallback report",
+    failures,
+  );
+  assertContract(
+    fallbackWrites
+      .get(diagnosticLogResult.fallbackReportPath)
+      ?.includes("synthetic original SDK failure preserved") &&
+      fallbackWrites
+        .get(diagnosticLogResult.fallbackReportPath)
+        ?.includes("sdkThreadCreated: false") &&
+      fallbackWrites.get(diagnosticLogResult.fallbackReportPath)?.includes("realWriteWork: false"),
+    "sdk-write fallback report did not preserve the original failure and local-only smoke state",
+    failures,
+  );
+  assertContract(
+    diagnosticFailureMessage.includes("synthetic original SDK failure preserved") &&
+      diagnosticFailureMessage.includes("SDK log write failed: EPERM") &&
+      diagnosticFailureMessage.includes("Fallback diagnostic report:"),
+    "sdk-write failure console message did not preserve original error plus log fallback",
     failures,
   );
 
@@ -2053,7 +2312,7 @@ export function runWriteCapableContractSmoke() {
   );
 
   if (failures.length > 0) {
-    const message = ["M115 write-capable scaffold contract smoke failed:", ...failures.map((f) => `- ${f}`)].join(
+    const message = ["M116 write-capable scaffold contract smoke failed:", ...failures.map((f) => `- ${f}`)].join(
       "\n",
     );
     throw new Error(message);
@@ -2065,6 +2324,11 @@ export function runWriteCapableContractSmoke() {
     operationEnvelopeMode: "pass",
     operationEnvelopeVersion: OPERATION_ENVELOPE_VERSION,
     result: "pass",
+    sdkWriteDiagnosticsMode: "pass",
+    sdkWriteFallbackOperationPath: diagnosticFallbackOperationPath,
+    sdkWriteFallbackReportPath: diagnosticLogResult.fallbackReportPath,
+    sdkWriteDiagnosticSmokeRealWriteWork: false,
+    sdkWriteDiagnosticSmokeSdkThreadCreated: false,
     sdkWriteMode: "pass",
     sdkWriteScope: SDK_WRITE_ALLOWED_SCOPE,
     sdkWritePlannedPaths: SDK_WRITE_ALLOWED_PLANNED_PATHS,
@@ -2101,6 +2365,9 @@ function printResult(result, asJson) {
     console.log(`SDK log: ${result.logPath || "(not written)"}`);
     if (result.logWriteError) {
       console.log(`SDK log write error: ${result.logWriteError}`);
+    }
+    if (result.fallbackReportPath) {
+      console.log(`Fallback diagnostic report: ${result.fallbackReportPath}`);
     }
     return;
   }
@@ -2140,7 +2407,7 @@ export async function main(argv = process.argv.slice(2)) {
       console.log(JSON.stringify(result, null, 2));
       return;
     }
-    console.log("PASS M114 write-capable runner scaffold contract smoke");
+    console.log("PASS M116 write-capable runner scaffold contract smoke");
     return;
   }
 

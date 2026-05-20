@@ -85,6 +85,8 @@ Envelope dry-run reports `sdkThreadCreated:false`, `realWriteWork:false`, and `a
 
 M115 adds one real `sdk-write` cutover path through the same operation envelope. It is accepted only when the envelope uses `scope:"docs-audit"`, `mode:"sdk-write"`, and the single planned path `.codex-audit/115-sdk-docs-audit-sdk-thread-output.md`. The envelope is validated before SDK thread creation. The SDK prompt is constrained to that planned path, auto-commit remains disabled, and the runner captures pre/post git snapshots plus `git diff --check`. After the SDK turn, the runner hard-stops if the changed-since-pre diff includes anything outside the planned path plus the explicit M115 implementation/report files.
 
+M116 hardens SDK write diagnostics without retrying real write work. Primary SDK logs under `.codex/sdk/logs/` are best-effort and non-fatal: if log creation or JSON write fails, including `EPERM`, the original SDK/post-run error remains in the console failure message. The runner then attempts a fallback Markdown diagnostic report under `.codex-audit/<operation>-sdk-write-failure-diagnostics.md`. If `.codex/sdk/operations/` cannot be created, the operation envelope can be placed at the reported `.codex-audit/<operation>-operation.json` fallback path and passed with `--operation-file`.
+
 Обязательный `--scope` принимает только:
 
 - `docs-audit`
