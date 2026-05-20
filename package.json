@@ -1,7 +1,8 @@
 {
   "scripts": {
     "codex:orchestrator": "node orchestrator/codex-sdk-orchestrator.mjs",
-    "codex:orchestrator:help": "node orchestrator/codex-sdk-orchestrator.mjs --help"
+    "codex:orchestrator:help": "node orchestrator/codex-sdk-orchestrator.mjs --help",
+    "check:rules": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke"
   },
   "dependencies": {
     "@openai/codex-sdk": "^0.131.0"

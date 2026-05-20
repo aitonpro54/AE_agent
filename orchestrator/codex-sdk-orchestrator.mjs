@@ -3,6 +3,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { pathToFileURL } from "node:url";
 import { Codex } from "@openai/codex-sdk";
 
 const HELP = `
@@ -43,7 +44,7 @@ const VALUE_OPTIONS = new Set([
 
 const BOOLEAN_OPTIONS = new Set(["help", "json", "network", "skip-git-repo-check", "stream"]);
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const options = {};
   const positional = [];
 
@@ -118,7 +119,7 @@ function createThread(codex, options, threadOptions) {
   return codex.startThread(threadOptions);
 }
 
-function createThreadOptions(options) {
+export function createThreadOptions(options) {
   return removeUndefined({
     approvalPolicy: options.approval || "never",
     model: options.model,
@@ -177,8 +178,8 @@ async function runStreamed(thread, prompt, asJson) {
   return { finalResponse, threadId: thread.id, usage };
 }
 
-async function main() {
-  const options = parseArgs(process.argv.slice(2));
+export async function main(argv = process.argv.slice(2)) {
+  const options = parseArgs(argv);
 
   if (options.help || !options.prompt) {
     console.log(HELP.trim());
@@ -209,7 +210,13 @@ async function main() {
   );
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : String(error));
-  process.exitCode = 1;
-});
+function isMainModule() {
+  return process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+}
+
+if (isMainModule()) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  });
+}
