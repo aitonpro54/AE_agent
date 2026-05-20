@@ -181,7 +181,9 @@ async function runContractSmoke() {
   assertContract(helpOutput.includes("--sandbox <mode>"), "help output missing sandbox option", failures);
   assertContract(helpOutput.includes("--web-search <mode>"), "help output missing web-search option", failures);
 
-  const { createThreadOptions } = await import("./codex-sdk-orchestrator.mjs");
+  const { CLI_VALUE_CHOICES, createThreadOptions, parseArgs } = await import(
+    "./codex-sdk-orchestrator.mjs"
+  );
   const safeDefaults = createThreadOptions({});
 
   assertContract(
@@ -204,6 +206,105 @@ async function runContractSmoke() {
     "orchestrator default webSearchMode is not disabled",
     failures,
   );
+  assertContract(
+    CLI_VALUE_CHOICES.sandbox.includes("read-only") &&
+      CLI_VALUE_CHOICES.sandbox.includes("workspace-write") &&
+      CLI_VALUE_CHOICES.sandbox.includes("danger-full-access"),
+    "orchestrator sandbox value choices are incomplete",
+    failures,
+  );
+  assertContract(
+    CLI_VALUE_CHOICES.approval.includes("never") &&
+      CLI_VALUE_CHOICES.approval.includes("on-request") &&
+      CLI_VALUE_CHOICES.approval.includes("on-failure") &&
+      CLI_VALUE_CHOICES.approval.includes("untrusted"),
+    "orchestrator approval value choices are incomplete",
+    failures,
+  );
+  assertContract(
+    CLI_VALUE_CHOICES.webSearch.includes("disabled") &&
+      CLI_VALUE_CHOICES.webSearch.includes("cached") &&
+      CLI_VALUE_CHOICES.webSearch.includes("live"),
+    "orchestrator web-search value choices are incomplete",
+    failures,
+  );
+
+  const validCliValueCases = [
+    ["--prompt", "contract smoke", "--sandbox", "workspace-write"],
+    ["--prompt", "contract smoke", "--sandbox=danger-full-access"],
+    ["--prompt", "contract smoke", "--approval", "on-failure"],
+    ["--prompt", "contract smoke", "--approval=on-request"],
+    ["--prompt", "contract smoke", "--web-search", "cached"],
+    ["--prompt", "contract smoke", "--web-search=live"],
+  ];
+
+  for (const validArgs of validCliValueCases) {
+    let accepted = true;
+    try {
+      parseArgs(validArgs);
+    } catch {
+      accepted = false;
+    }
+
+    assertContract(
+      accepted,
+      `general CLI rejected valid value args during local parse: ${validArgs.join(" ")}`,
+      failures,
+    );
+  }
+
+  const deterministicBooleanCases = [
+    { args: ["--prompt", "contract smoke", "--network"], key: "network", value: true },
+    { args: ["--prompt", "contract smoke", "--network=false"], key: "network", value: false },
+    {
+      args: ["--prompt", "contract smoke", "--skip-git-repo-check"],
+      key: "skipGitRepoCheck",
+      value: true,
+    },
+    {
+      args: ["--prompt", "contract smoke", "--skip-git-repo-check=false"],
+      key: "skipGitRepoCheck",
+      value: false,
+    },
+  ];
+
+  for (const booleanCase of deterministicBooleanCases) {
+    const parsed = parseArgs(booleanCase.args);
+    assertContract(
+      parsed[booleanCase.key] === booleanCase.value,
+      `general CLI boolean parse mismatch for ${booleanCase.args.join(" ")}`,
+      failures,
+    );
+  }
+
+  const invalidCliValueCases = [
+    ["--prompt", "contract smoke", "--sandbox", "writable"],
+    ["--prompt", "contract smoke", "--sandbox="],
+    ["--prompt", "contract smoke", "--approval", "always"],
+    ["--prompt", "contract smoke", "--approval="],
+    ["--prompt", "contract smoke", "--web-search", "enabled"],
+    ["--prompt", "contract smoke", "--web-search="],
+    ["--prompt", "contract smoke", "--network=enabled"],
+    ["--prompt", "contract smoke", "--skip-git-repo-check=yes"],
+  ];
+
+  for (const invalidArgs of invalidCliValueCases) {
+    let rejected = false;
+    try {
+      parseArgs(invalidArgs);
+    } catch (error) {
+      rejected =
+        error instanceof Error &&
+        (error.message.startsWith("Invalid value for --") ||
+          error.message.startsWith("Missing value for --"));
+    }
+
+    assertContract(
+      rejected,
+      `general CLI did not reject invalid value args during local parse: ${invalidArgs.join(" ")}`,
+      failures,
+    );
+  }
 
   const unsafeArgCases = [
     ["--sandbox", "danger-full-access"],
@@ -305,9 +406,17 @@ async function runContractSmoke() {
     "README does not document the unsafe buffered-mode rejections",
     failures,
   );
+  assertContract(
+    readme.includes("General CLI value validation") &&
+      readme.includes("Invalid values are rejected before any SDK thread is created") &&
+      readme.includes("`--network=enabled`") &&
+      readme.includes("`--skip-git-repo-check=yes`"),
+    "README does not document general CLI value validation",
+    failures,
+  );
 
   if (failures.length > 0) {
-    console.error("M108 contract smoke failed:");
+    console.error("M109 contract smoke failed:");
     for (const failure of failures) {
       console.error(`- ${failure}`);
     }
@@ -315,7 +424,8 @@ async function runContractSmoke() {
     return;
   }
 
-  console.log("PASS M108 SDK orchestrator contract smoke");
+  console.log("PASS M109 SDK orchestrator contract smoke");
+  console.log("Invalid general CLI values rejected before SDK thread creation");
   console.log("Unsafe flags rejected:");
   for (const flag of REJECTED_BUFFERED_FLAGS) {
     console.log(`- --${flag}`);

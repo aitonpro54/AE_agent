@@ -24,6 +24,18 @@ npm.cmd run codex:orchestrator -- --prompt "Summarize this repository status"
 
 По умолчанию оркестратор использует безопасные параметры SDK: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
+## General CLI value validation
+
+Invalid values are rejected before any SDK thread is created. Это локальная проверка аргументов общего `codex:orchestrator` CLI; она не запускает provider/live/network validation.
+
+Проверяемые значения:
+
+- `--sandbox`: `read-only`, `workspace-write`, `danger-full-access`
+- `--approval`: `never`, `on-request`, `on-failure`, `untrusted`
+- `--web-search`: `disabled`, `cached`, `live`
+
+Boolean flags принимаются как bare flags или с явным `=true`/`=false`. Например, `--network` и `--network=false` валидны, а `--network=enabled` отклоняется. То же правило применяется к bypass-capable boolean flags, включая `--skip-git-repo-check=yes`.
+
 Если нужно продолжить существующую Codex thread:
 
 ```powershell

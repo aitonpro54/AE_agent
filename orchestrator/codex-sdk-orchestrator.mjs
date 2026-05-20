@@ -44,6 +44,18 @@ const VALUE_OPTIONS = new Set([
 
 const BOOLEAN_OPTIONS = new Set(["help", "json", "network", "skip-git-repo-check", "stream"]);
 
+export const CLI_VALUE_CHOICES = Object.freeze({
+  approval: Object.freeze(["never", "on-request", "on-failure", "untrusted"]),
+  sandbox: Object.freeze(["read-only", "workspace-write", "danger-full-access"]),
+  webSearch: Object.freeze(["disabled", "cached", "live"]),
+});
+
+const VALIDATED_VALUE_OPTIONS = Object.freeze({
+  approval: CLI_VALUE_CHOICES.approval,
+  sandbox: CLI_VALUE_CHOICES.sandbox,
+  "web-search": CLI_VALUE_CHOICES.webSearch,
+});
+
 export function parseArgs(argv) {
   const options = {};
   const positional = [];
@@ -57,10 +69,10 @@ export function parseArgs(argv) {
     }
 
     const raw = arg.slice(2);
-    const [name, inlineValue] = raw.split(/=(.*)/s, 2);
+    const { inlineValue, name } = splitInlineOption(raw);
 
     if (BOOLEAN_OPTIONS.has(name)) {
-      options[toCamelCase(name)] = inlineValue === undefined ? true : inlineValue !== "false";
+      options[toCamelCase(name)] = parseBooleanOption(name, inlineValue);
       continue;
     }
 
@@ -69,10 +81,11 @@ export function parseArgs(argv) {
     }
 
     const value = inlineValue ?? argv[index + 1];
-    if (value === undefined || value.startsWith("--")) {
+    if (value === undefined || value === "" || value.startsWith("--")) {
       throw new Error(`Missing value for --${name}`);
     }
 
+    validateCliOptionValue(name, value);
     options[toCamelCase(name)] = value;
     if (inlineValue === undefined) {
       index += 1;
@@ -84,6 +97,49 @@ export function parseArgs(argv) {
   }
 
   return options;
+}
+
+function splitInlineOption(raw) {
+  const equalsIndex = raw.indexOf("=");
+
+  if (equalsIndex === -1) {
+    return { inlineValue: undefined, name: raw };
+  }
+
+  return {
+    inlineValue: raw.slice(equalsIndex + 1),
+    name: raw.slice(0, equalsIndex),
+  };
+}
+
+function parseBooleanOption(name, inlineValue) {
+  if (inlineValue === undefined) {
+    return true;
+  }
+
+  if (inlineValue === "true") {
+    return true;
+  }
+
+  if (inlineValue === "false") {
+    return false;
+  }
+
+  throw new Error(`Invalid value for --${name}: ${inlineValue}. Expected true or false.`);
+}
+
+export function validateCliOptionValue(name, value) {
+  const allowedValues = VALIDATED_VALUE_OPTIONS[name];
+
+  if (!allowedValues) {
+    return;
+  }
+
+  if (!allowedValues.includes(value)) {
+    throw new Error(
+      `Invalid value for --${name}: ${value}. Expected one of: ${allowedValues.join(", ")}.`,
+    );
+  }
 }
 
 function toCamelCase(value) {
