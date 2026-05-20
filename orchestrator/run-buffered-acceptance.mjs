@@ -186,6 +186,7 @@ async function runContractSmoke() {
   );
   const {
     FORBIDDEN_PATH_PATTERNS,
+    SDK_WRITE_PLANNED_PATH_ALLOWLIST,
     SCOPE_PATH_ALLOWLISTS,
     UNSAFE_WRITE_RUNNER_FLAGS,
     WRITE_SCOPES,
@@ -392,10 +393,17 @@ async function runContractSmoke() {
   assertContract(
     writeScaffoldSmoke?.sdkWriteMode === "pass" &&
       writeScaffoldSmoke?.sdkWriteScope === "docs-audit" &&
+      writeScaffoldSmoke?.sdkWritePathAllowlist?.includes(".codex-audit/**") &&
       writeScaffoldSmoke?.sdkWritePlannedPaths?.includes(
         ".codex-audit/115-sdk-docs-audit-sdk-thread-output.md",
+      ) &&
+      writeScaffoldSmoke?.sdkWritePlannedPaths?.includes(
+        ".codex-audit/117-sdk-docs-audit-sdk-thread-output.md",
+      ) &&
+      writeScaffoldSmoke?.sdkWritePlannedPaths?.includes(
+        ".codex-audit/arbitrary-safe-sdk-write-output.md",
       ),
-    "M115 write-capable docs-audit sdk-write contract smoke did not pass",
+    "M117R write-capable docs-audit sdk-write contract smoke did not pass",
     failures,
   );
   assertContract(
@@ -430,6 +438,11 @@ async function runContractSmoke() {
       SCOPE_PATH_ALLOWLISTS["production-code"].includes("mcp-server/**") &&
       SCOPE_PATH_ALLOWLISTS["cep-panel"].includes("cep-panel/**"),
     "M112 write-capable scaffold path allowlists are incomplete",
+    failures,
+  );
+  assertContract(
+    SDK_WRITE_PLANNED_PATH_ALLOWLIST.join(",") === ".codex-audit/**",
+    "M117R docs-audit sdk-write planned path allowlist is not restricted to .codex-audit/**",
     failures,
   );
   assertContract(
@@ -514,7 +527,9 @@ async function runContractSmoke() {
       readme.includes("--operation-file") &&
       readme.includes("planned-operation envelope") &&
       readme.includes('mode:"sdk-write"') &&
-      readme.includes(".codex-audit/115-sdk-docs-audit-sdk-thread-output.md") &&
+      readme.includes(".codex-audit/**") &&
+      readme.includes("src/**") &&
+      readme.includes("orchestrator/**") &&
       readme.includes(".codex-audit/<operation>-sdk-write-failure-diagnostics.md") &&
       readme.includes(".codex-audit/<operation>-operation.json") &&
       readme.includes("docs-audit") &&
@@ -534,7 +549,7 @@ async function runContractSmoke() {
     return;
   }
 
-  console.log("PASS M116 SDK orchestrator contract smoke");
+  console.log("PASS M117R SDK orchestrator contract smoke");
   console.log("Invalid general CLI values rejected before SDK thread creation");
   console.log("Write-capable scopes:");
   for (const scope of WRITE_SCOPES) {

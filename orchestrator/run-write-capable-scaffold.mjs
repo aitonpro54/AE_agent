@@ -35,9 +35,9 @@ Options:
   --contract-smoke           Run local scaffold contract checks only.
   --help                     Show this help.
 
-The default scaffold and dry-run modes remain non-live. M115 adds one guarded
-sdk-write operation-envelope mode, limited to docs-audit and the single planned
-output path .codex-audit/115-sdk-docs-audit-sdk-thread-output.md.
+The default scaffold and dry-run modes remain non-live. The guarded sdk-write
+operation-envelope mode remains limited to docs-audit planned outputs under
+.codex-audit/**.
 `;
 
 const COMMON_AUDIT_ALLOWLIST = Object.freeze([
@@ -137,20 +137,15 @@ export const OPERATION_ENVELOPE_MODES = Object.freeze([
   SDK_WRITE_OPERATION_MODE,
 ]);
 export const SDK_WRITE_ALLOWED_SCOPE = "docs-audit";
-export const SDK_WRITE_ALLOWED_PLANNED_PATHS = Object.freeze([
+export const SDK_WRITE_PLANNED_PATH_ALLOWLIST = Object.freeze([
+  ".codex-audit/**",
+]);
+export const SDK_WRITE_CONTRACT_SMOKE_PLANNED_PATHS = Object.freeze([
   ".codex-audit/115-sdk-docs-audit-sdk-thread-output.md",
+  ".codex-audit/117-sdk-docs-audit-sdk-thread-output.md",
+  ".codex-audit/arbitrary-safe-sdk-write-output.md",
 ]);
-export const M115_ALLOWED_IMPLEMENTATION_REPORT_PATHS = Object.freeze([
-  "orchestrator/run-write-capable-scaffold.mjs",
-  "orchestrator/run-buffered-acceptance.mjs",
-  "orchestrator/README.md",
-  "package.json",
-  "plans/target-app-execplan.md",
-  ".codex/handoff.md",
-  ".codex-audit/115-sdk-docs-audit-real-write-cutover-spec.md",
-  ".codex-audit/115-sdk-docs-audit-real-write-cutover.md",
-  ".codex-audit/115-chatgpt-return-packet.md",
-]);
+export const SDK_WRITE_ALLOWED_HOST_REPORT_PATHS = Object.freeze([]);
 export const SDK_WRITE_LOG_DIRECTORY = ".codex/sdk/logs";
 export const SDK_WRITE_OPERATION_DIRECTORY = ".codex/sdk/operations";
 export const SDK_WRITE_FALLBACK_REPORT_DIRECTORY = ".codex-audit";
@@ -443,6 +438,72 @@ export function createPlannedPathCheck(scope, plannedPaths = []) {
   };
 }
 
+export function createSdkWritePlannedPathCheck(scope, plannedPaths = []) {
+  if (scope !== SDK_WRITE_ALLOWED_SCOPE) {
+    throw new Error(
+      `sdk-write operation envelope scope rejected: ${scope}. Only ${SDK_WRITE_ALLOWED_SCOPE} is supported.`,
+    );
+  }
+
+  const plannedPathCheck = createPlannedPathCheck(scope, plannedPaths);
+  if (!plannedPathCheck.allowed) {
+    return plannedPathCheck;
+  }
+
+  const sdkWriteViolations = plannedPathCheck.plannedPaths
+    .filter(
+      (repoPath) =>
+        !SDK_WRITE_PLANNED_PATH_ALLOWLIST.some((pattern) => matchesPathPattern(repoPath, pattern)),
+    )
+    .map((repoPath) => ({
+      path: repoPath,
+      reason: "outside-docs-audit-sdk-write-allowlist",
+    }));
+  const sdkWriteViolationPaths = new Set(
+    sdkWriteViolations.map((violation) => violation.path),
+  );
+
+  return {
+    ...plannedPathCheck,
+    allowed: sdkWriteViolations.length === 0,
+    allowedPaths: plannedPathCheck.allowedPaths.filter(
+      (repoPath) => !sdkWriteViolationPaths.has(repoPath),
+    ),
+    violations: sdkWriteViolations,
+  };
+}
+
+function summarizePathViolations(violations) {
+  return violations.map((violation) => `${violation.path} (${violation.reason})`).join(", ");
+}
+
+function throwPlannedPathCheckError(plannedPathCheck) {
+  const summary = summarizePathViolations(plannedPathCheck.violations);
+  const hasUnsafeShape = plannedPathCheck.violations.some(
+    (violation) => violation.reason === "unsafe-path-shape",
+  );
+  const hasForbiddenPath = plannedPathCheck.violations.some(
+    (violation) => violation.reason === "forbidden-path",
+  );
+  const hasOutsideScope = plannedPathCheck.violations.some(
+    (violation) => violation.reason === "outside-scope-allowlist",
+  );
+
+  if (hasUnsafeShape) {
+    throw new Error(`Operation envelope plannedPaths include unsafe path shapes: ${summary}`);
+  }
+
+  if (hasForbiddenPath) {
+    throw new Error(`Operation envelope plannedPaths include forbidden paths: ${summary}`);
+  }
+
+  if (hasOutsideScope) {
+    throw new Error(`Operation envelope plannedPaths outside scope allowlist: ${summary}`);
+  }
+
+  throw new Error(`sdk-write plannedPaths outside docs-audit output allowlist: ${summary}`);
+}
+
 function isPathInsideDirectory(candidatePath, directoryPath) {
   const relative = path.relative(directoryPath, candidatePath);
   return relative === "" || (relative && !relative.startsWith("..") && !path.isAbsolute(relative));
@@ -540,43 +601,14 @@ export function validateOperationEnvelope(envelope) {
     throw new Error("Operation envelope plannedPaths contains an empty path.");
   }
 
-  if (envelope.mode === SDK_WRITE_OPERATION_MODE) {
-    const outsideSdkWriteAllowlist = plannedPaths.filter(
-      (repoPath) => !SDK_WRITE_ALLOWED_PLANNED_PATHS.includes(repoPath),
-    );
-
-    if (outsideSdkWriteAllowlist.length > 0) {
-      throw new Error(
-        `sdk-write plannedPaths outside M115 docs-audit allowlist: ${outsideSdkWriteAllowlist.join(
-          ", ",
-        )}`,
-      );
-    }
-  }
-
   validatePromptPolicy(envelope.prompt);
 
-  const plannedPathCheck = createPlannedPathCheck(envelope.scope, plannedPaths);
+  const plannedPathCheck =
+    envelope.mode === SDK_WRITE_OPERATION_MODE
+      ? createSdkWritePlannedPathCheck(envelope.scope, plannedPaths)
+      : createPlannedPathCheck(envelope.scope, plannedPaths);
   if (!plannedPathCheck.allowed) {
-    const summary = plannedPathCheck.violations
-      .map((violation) => `${violation.path} (${violation.reason})`)
-      .join(", ");
-    const hasUnsafeShape = plannedPathCheck.violations.some(
-      (violation) => violation.reason === "unsafe-path-shape",
-    );
-    const hasForbiddenPath = plannedPathCheck.violations.some(
-      (violation) => violation.reason === "forbidden-path",
-    );
-
-    if (hasUnsafeShape) {
-      throw new Error(`Operation envelope plannedPaths include unsafe path shapes: ${summary}`);
-    }
-
-    if (hasForbiddenPath) {
-      throw new Error(`Operation envelope plannedPaths include forbidden paths: ${summary}`);
-    }
-
-    throw new Error(`Operation envelope plannedPaths outside scope allowlist: ${summary}`);
+    throwPlannedPathCheckError(plannedPathCheck);
   }
 
   return {
@@ -1162,23 +1194,10 @@ function assertSdkWriteOptions(options) {
     );
   }
 
-  const plannedPathCheck = createPlannedPathCheck(options.scope, options.plannedPaths);
+  const plannedPathCheck = createSdkWritePlannedPathCheck(options.scope, options.plannedPaths);
   if (!plannedPathCheck.allowed) {
-    const summary = plannedPathCheck.violations
-      .map((violation) => `${violation.path} (${violation.reason})`)
-      .join(", ");
+    const summary = summarizePathViolations(plannedPathCheck.violations);
     throw new Error(`sdk-write planned path contract failed: ${summary}`);
-  }
-
-  const outsideSdkWriteAllowlist = plannedPathCheck.plannedPaths.filter(
-    (repoPath) => !SDK_WRITE_ALLOWED_PLANNED_PATHS.includes(repoPath),
-  );
-  if (outsideSdkWriteAllowlist.length > 0) {
-    throw new Error(
-      `sdk-write plannedPaths outside M115 docs-audit allowlist: ${outsideSdkWriteAllowlist.join(
-        ", ",
-      )}`,
-    );
   }
 
   return plannedPathCheck;
@@ -1188,7 +1207,7 @@ export function createSdkWritePrompt(options) {
   const plannedPaths = uniqueSorted(options.plannedPaths);
 
   return [
-    "You are the M115 SDKThread docs-audit writer for this repository.",
+    "You are the SDKThread docs-audit writer for this repository.",
     "",
     "Hard boundary:",
     "- Create or update exactly the planned Markdown output file listed below.",
@@ -1204,7 +1223,7 @@ export function createSdkWritePrompt(options) {
     ...plannedPaths.map((repoPath) => `- ${repoPath}`),
     "",
     "Write the file with this structure:",
-    "# M115 SDKThread Docs-Audit Output",
+    "# SDKThread Docs-Audit Output",
     "",
     "## Result",
     "created-by-sdk-thread",
@@ -1221,7 +1240,7 @@ export function createSdkWritePrompt(options) {
 }
 
 export function validateSdkWriteDiffAllowlist({
-  allowedImplementationReportPaths = M115_ALLOWED_IMPLEMENTATION_REPORT_PATHS,
+  allowedImplementationReportPaths = SDK_WRITE_ALLOWED_HOST_REPORT_PATHS,
   plannedPaths,
   postSnapshot,
   preSnapshot,
@@ -1230,6 +1249,18 @@ export function validateSdkWriteDiffAllowlist({
   assertValidationResult(validationResult);
 
   const normalizedPlannedPaths = uniqueSorted(plannedPaths);
+  const plannedPathCheck = createSdkWritePlannedPathCheck(
+    SDK_WRITE_ALLOWED_SCOPE,
+    normalizedPlannedPaths,
+  );
+  if (!plannedPathCheck.allowed) {
+    throw new Error(
+      `sdk-write planned path contract failed: ${summarizePathViolations(
+        plannedPathCheck.violations,
+      )}`,
+    );
+  }
+
   const changedSincePre = collectPathsChangedSincePre(preSnapshot, postSnapshot);
   const allowedPaths = uniqueSorted([
     ...normalizedPlannedPaths,
@@ -1244,7 +1275,7 @@ export function validateSdkWriteDiffAllowlist({
   const outOfScopeFiles = changedSincePre.filter((repoPath) => !allowedPaths.includes(repoPath));
   if (outOfScopeFiles.length > 0) {
     throw new Error(
-      `Post-run diff outside M115 sdk-write allowlist: ${outOfScopeFiles.join(", ")}`,
+      `Post-run diff outside docs-audit sdk-write allowlist: ${outOfScopeFiles.join(", ")}`,
     );
   }
 
@@ -1553,13 +1584,15 @@ export function runWriteCapableContractSmoke() {
     prompt: "Check local operation envelope policy.",
     plannedPaths: ["orchestrator/README.md", "package.json"],
   };
+  const [m115SdkWritePath, m117SdkWritePath, arbitrarySdkWritePath] =
+    SDK_WRITE_CONTRACT_SMOKE_PLANNED_PATHS;
   const validSdkWriteEnvelope = {
     version: OPERATION_ENVELOPE_VERSION,
     operationId: "m115-contract-smoke",
     scope: SDK_WRITE_ALLOWED_SCOPE,
     mode: SDK_WRITE_OPERATION_MODE,
     prompt: "Create the M115 docs audit SDKThread output file.",
-    plannedPaths: [...SDK_WRITE_ALLOWED_PLANNED_PATHS],
+    plannedPaths: [m115SdkWritePath],
   };
   const parsedDryRun = parseWriteRunnerArgs([
     "--dry-run",
@@ -1679,16 +1712,27 @@ export function runWriteCapableContractSmoke() {
     "operation envelope did not validate the expected schema",
     failures,
   );
-  const validatedSdkWriteEnvelope = validateOperationEnvelope(validSdkWriteEnvelope);
-  assertContract(
-    validatedSdkWriteEnvelope.operationId === "m115-contract-smoke" &&
-      validatedSdkWriteEnvelope.scope === SDK_WRITE_ALLOWED_SCOPE &&
-      validatedSdkWriteEnvelope.mode === SDK_WRITE_OPERATION_MODE &&
-      validatedSdkWriteEnvelope.plannedPaths.join(",") ===
-        SDK_WRITE_ALLOWED_PLANNED_PATHS.join(","),
-    "sdk-write operation envelope did not validate the expected docs-audit schema",
-    failures,
-  );
+  const sdkWriteAcceptCases = [
+    ["m115-contract-smoke", m115SdkWritePath],
+    ["m117-contract-smoke", m117SdkWritePath],
+    ["arbitrary-contract-smoke", arbitrarySdkWritePath],
+  ];
+
+  for (const [operationId, plannedPath] of sdkWriteAcceptCases) {
+    const validatedSdkWriteEnvelope = validateOperationEnvelope({
+      ...validSdkWriteEnvelope,
+      operationId,
+      plannedPaths: [plannedPath],
+    });
+    assertContract(
+      validatedSdkWriteEnvelope.operationId === operationId &&
+        validatedSdkWriteEnvelope.scope === SDK_WRITE_ALLOWED_SCOPE &&
+        validatedSdkWriteEnvelope.mode === SDK_WRITE_OPERATION_MODE &&
+        validatedSdkWriteEnvelope.plannedPaths.join(",") === plannedPath,
+      `sdk-write operation envelope did not accept docs-audit planned path: ${plannedPath}`,
+      failures,
+    );
+  }
 
   const syntheticSdkError = new Error("synthetic original SDK failure preserved");
   syntheticSdkError.code = "SYNTHETIC_SDK_FAILURE";
@@ -1709,13 +1753,13 @@ export function runWriteCapableContractSmoke() {
         sourcePath: diagnosticFallbackOperationPath,
       },
       outputFileCreatedBySdk: false,
-      plannedPathCheck: { plannedPaths: SDK_WRITE_ALLOWED_PLANNED_PATHS },
+      plannedPathCheck: { plannedPaths: [m115SdkWritePath] },
       realWriteWork: false,
       sdkRunFailure: errorDiagnostic(syntheticSdkError),
       sdkThreadCompleted: false,
       sdkThreadCreated: false,
       sdkThreadId: null,
-      sdkThreadOutputPath: SDK_WRITE_ALLOWED_PLANNED_PATHS[0],
+      sdkThreadOutputPath: m115SdkWritePath,
     },
     {
       mkdirSync: (directoryPath) => {
@@ -1898,15 +1942,72 @@ export function runWriteCapableContractSmoke() {
     "sdk-write operation envelope did not reject non docs-audit scope",
   );
 
-  assertRejects(
-    () =>
-      validateOperationEnvelope({
-        ...validSdkWriteEnvelope,
-        plannedPaths: [".codex-audit/not-the-m115-output.md"],
-      }),
-    "sdk-write plannedPaths outside M115 docs-audit allowlist:",
+  let arbitraryAuditPathAccepted = true;
+  try {
+    validateOperationEnvelope({
+      ...validSdkWriteEnvelope,
+      plannedPaths: [".codex-audit/not-the-m115-output.md"],
+    });
+  } catch {
+    arbitraryAuditPathAccepted = false;
+  }
+  assertContract(
+    arbitraryAuditPathAccepted,
+    "sdk-write operation envelope rejected a safe arbitrary .codex-audit planned path",
     failures,
-    "sdk-write operation envelope did not reject planned paths outside the M115 allowlist",
+  );
+
+  const sdkWriteRejectedPathCases = [
+    {
+      expectedMessageStart: "Operation envelope plannedPaths outside scope allowlist:",
+      label: "sdk-write operation envelope did not reject src path",
+      plannedPaths: ["src/index.js"],
+    },
+    {
+      expectedMessageStart: "sdk-write plannedPaths outside docs-audit output allowlist:",
+      label: "sdk-write operation envelope did not reject orchestrator path",
+      plannedPaths: ["orchestrator/README.md"],
+    },
+    {
+      expectedMessageStart: "Operation envelope plannedPaths include unsafe path shapes:",
+      label: "sdk-write operation envelope did not reject unsafe outside path",
+      plannedPaths: ["../outside.md"],
+    },
+    {
+      expectedMessageStart: "Operation envelope plannedPaths include forbidden paths:",
+      label: "sdk-write operation envelope did not reject root .env path",
+      plannedPaths: [".env"],
+    },
+    {
+      expectedMessageStart: "Operation envelope plannedPaths include forbidden paths:",
+      label: "sdk-write operation envelope did not reject node_modules path",
+      plannedPaths: ["node_modules/pkg/index.js"],
+    },
+    {
+      expectedMessageStart: "Operation envelope plannedPaths include forbidden paths:",
+      label: "sdk-write operation envelope did not reject .git path",
+      plannedPaths: [".git/config"],
+    },
+  ];
+
+  for (const sdkWriteRejectedPathCase of sdkWriteRejectedPathCases) {
+    assertRejects(
+      () =>
+        validateOperationEnvelope({
+          ...validSdkWriteEnvelope,
+          plannedPaths: sdkWriteRejectedPathCase.plannedPaths,
+        }),
+      sdkWriteRejectedPathCase.expectedMessageStart,
+      failures,
+      sdkWriteRejectedPathCase.label,
+    );
+  }
+
+  assertRejects(
+    () => validateOperationEnvelope({ ...validSdkWriteEnvelope, plannedPaths: [] }),
+    "Missing or empty operation envelope plannedPaths.",
+    failures,
+    "sdk-write operation envelope did not reject empty plannedPaths",
   );
 
   assertRejects(
@@ -2201,10 +2302,10 @@ export function runWriteCapableContractSmoke() {
   );
 
   const sdkWritePostContract = validateSdkWriteDiffAllowlist({
-    plannedPaths: SDK_WRITE_ALLOWED_PLANNED_PATHS,
+    plannedPaths: [m115SdkWritePath],
     postSnapshot: {
       pathSignatures: {
-        [SDK_WRITE_ALLOWED_PLANNED_PATHS[0]]: "created",
+        [m115SdkWritePath]: "created",
       },
     },
     preSnapshot: { pathSignatures: {} },
@@ -2213,7 +2314,7 @@ export function runWriteCapableContractSmoke() {
 
   assertContract(
     sdkWritePostContract.verdict === "pass" &&
-      sdkWritePostContract.actualChangedFiles.join(",") === SDK_WRITE_ALLOWED_PLANNED_PATHS[0],
+      sdkWritePostContract.actualChangedFiles.join(",") === m115SdkWritePath,
     "sdk-write post-run allowlist did not accept the planned docs-audit output path",
     failures,
   );
@@ -2221,17 +2322,17 @@ export function runWriteCapableContractSmoke() {
   assertRejects(
     () =>
       validateSdkWriteDiffAllowlist({
-        plannedPaths: SDK_WRITE_ALLOWED_PLANNED_PATHS,
+        plannedPaths: [m115SdkWritePath],
         postSnapshot: {
           pathSignatures: {
-            [SDK_WRITE_ALLOWED_PLANNED_PATHS[0]]: "created",
+            [m115SdkWritePath]: "created",
             "mcp-server/bridge-daemon.js": "changed",
           },
         },
         preSnapshot: { pathSignatures: {} },
         validationResult: { ok: true },
       }),
-    "Post-run diff outside M115 sdk-write allowlist:",
+    "Post-run diff outside docs-audit sdk-write allowlist:",
     failures,
     "sdk-write post-run allowlist did not reject out-of-scope files",
   );
@@ -2239,12 +2340,25 @@ export function runWriteCapableContractSmoke() {
   assertRejects(
     () =>
       validateSdkWriteDiffAllowlist({
-        plannedPaths: SDK_WRITE_ALLOWED_PLANNED_PATHS,
+        plannedPaths: [m115SdkWritePath],
         postSnapshot: {
           pathSignatures: {
             "orchestrator/README.md": "changed",
           },
         },
+        preSnapshot: { pathSignatures: {} },
+        validationResult: { ok: true },
+      }),
+    "Post-run diff outside docs-audit sdk-write allowlist:",
+    failures,
+    "sdk-write post-run allowlist did not reject orchestrator files",
+  );
+
+  assertRejects(
+    () =>
+      validateSdkWriteDiffAllowlist({
+        plannedPaths: [m115SdkWritePath],
+        postSnapshot: { pathSignatures: {} },
         preSnapshot: { pathSignatures: {} },
         validationResult: { ok: true },
       }),
@@ -2312,7 +2426,7 @@ export function runWriteCapableContractSmoke() {
   );
 
   if (failures.length > 0) {
-    const message = ["M116 write-capable scaffold contract smoke failed:", ...failures.map((f) => `- ${f}`)].join(
+    const message = ["M117R write-capable scaffold contract smoke failed:", ...failures.map((f) => `- ${f}`)].join(
       "\n",
     );
     throw new Error(message);
@@ -2330,8 +2444,9 @@ export function runWriteCapableContractSmoke() {
     sdkWriteDiagnosticSmokeRealWriteWork: false,
     sdkWriteDiagnosticSmokeSdkThreadCreated: false,
     sdkWriteMode: "pass",
+    sdkWritePathAllowlist: SDK_WRITE_PLANNED_PATH_ALLOWLIST,
     sdkWriteScope: SDK_WRITE_ALLOWED_SCOPE,
-    sdkWritePlannedPaths: SDK_WRITE_ALLOWED_PLANNED_PATHS,
+    sdkWritePlannedPaths: SDK_WRITE_CONTRACT_SMOKE_PLANNED_PATHS,
     scopes: WRITE_SCOPES,
     unsafeFlags: UNSAFE_WRITE_RUNNER_FLAGS,
   };
@@ -2407,7 +2522,7 @@ export async function main(argv = process.argv.slice(2)) {
       console.log(JSON.stringify(result, null, 2));
       return;
     }
-    console.log("PASS M116 write-capable runner scaffold contract smoke");
+    console.log("PASS M117R write-capable runner scaffold contract smoke");
     return;
   }
 
