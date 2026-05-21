@@ -1,0 +1,23 @@
+{
+  "schema": "sdk-write-lane-enablement.v1",
+  "approvalState": "approved",
+  "explicitApprovalRecorded": true,
+  "scope": "production-code",
+  "sdkWriteEnabled": true,
+  "sourceApprovalDecisionPacket": ".codex-audit/sdk-write-lane-approval-decisions/134-production-code-smoke-harness-approval-decision.json",
+  "sourceReadinessPacket": ".codex-audit/sdk-write-lane-readiness/133-production-code-smoke-harness-readiness.json",
+  "sourceReviewPacket": ".codex-audit/sdk-scope-expansion-reviews/129-production-code-smoke-harness-review.json",
+  "summary": "Enable the first production-code SDK write lane only for scripts/provider-contract-smoke.js after explicit user approval.",
+  "plannedPathAllowlist": [
+    "scripts/provider-contract-smoke.js"
+  ],
+  "approvalRecord": "User explicitly approved: Разрешаю включить M129/M133/M134 production-code SDK write lane только для scripts/provider-contract-smoke.js",
+  "enablementChecks": [
+    "Run node --check scripts/provider-contract-smoke.js before any future SDKThread write for this lane.",
+    "Run node --check orchestrator/run-write-capable-scaffold.mjs and node --check orchestrator/run-buffered-acceptance.mjs after the enablement change.",
+    "Run npm.cmd run codex:orchestrator:write-scaffold:contract to prove only scripts/provider-contract-smoke.js is accepted for production-code sdk-write.",
+    "Run npm.cmd run check:rules to validate review, readiness, approval decision, and enablement packets.",
+    "Run the configured local smoke suite before creating any SDKThread for this production-code lane."
+  ],
+  "rollbackPlan": "Remove production-code from SDK_WRITE_ALLOWED_SCOPES and remove SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST if the lane must be disabled; keep the M129/M133/M134/M135 artifacts as audit evidence."
+}

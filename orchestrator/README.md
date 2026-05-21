@@ -89,19 +89,21 @@ M116 hardens SDK write diagnostics without retrying real write work. M120 adds a
 
 ## SDK scope expansion acceptance gate
 
-M127 adds a local-only acceptance gate for future SDK write scope expansion. `docs-audit` and controlled `orchestrator` outputs are the only enabled `sdk-write` scopes; `production-code` and `cep-panel` remain review-required and are rejected before any SDK thread can be created, even when their planned paths would be valid for ordinary dry-run scope checks.
+M127 adds a local-only acceptance gate for future SDK write scope expansion. `docs-audit` and controlled `orchestrator` outputs started as the only enabled `sdk-write` scopes; broad `production-code` and `cep-panel` remain review-required and rejected before any SDK thread can be created unless a later committed lane artifact enables a narrower path allowlist.
 
 ## SDK scope expansion review packet gate
 
 M128 adds a local review-packet contract for any future proposal to expand SDK write scopes. Review packets use schema `sdk-scope-expansion-review.v1` and should live under `.codex-audit/sdk-scope-expansion-reviews/`. A packet can describe a proposed `production-code` or `cep-panel` lane, but it must keep `sdkWriteEnabled:false`, include a narrow planned path allowlist, validation plan, and rollback plan, and it does not create an SDK thread or enable a write lane.
 
-M129 adds the first committed review packet, `.codex-audit/sdk-scope-expansion-reviews/129-production-code-smoke-harness-review.json`, for a future `production-code` scripts-only lane. `check:rules` validates committed review packet JSON files with the same local contract while production-code and CEP-panel SDK writes remain disabled.
+M129 adds the first committed review packet, `.codex-audit/sdk-scope-expansion-reviews/129-production-code-smoke-harness-review.json`, for a future `production-code` scripts-only lane. `check:rules` validates committed review packet JSON files with the same local contract while unapproved production-code and CEP-panel SDK writes remain disabled.
 
 M132 adds a second committed review packet, `.codex-audit/sdk-scope-expansion-reviews/132-cep-panel-composer-review.json`, for a future narrow `cep-panel` lane. This remains a proposed review artifact only: `sdkWriteEnabled:false`, no SDK thread creation, and no CEP-panel write enablement.
 
 M133 adds a local readiness gate for the first future `production-code` write lane proposed by M129. Readiness packets use schema `sdk-write-lane-readiness.v1` and live under `.codex-audit/sdk-write-lane-readiness/`. The first readiness artifact, `.codex-audit/sdk-write-lane-readiness/133-production-code-smoke-harness-readiness.json`, must point back to the M129 review packet, keep `approvalState:"pending-explicit-approval"` and `sdkWriteEnabled:false`, and match the reviewed allowlist `scripts/provider-contract-smoke.js`. It prepares a later approval milestone but does not create an SDK thread or enable production-code writes.
 
 M134 records the explicit approval decision state for that M129/M133 lane. Approval decision packets use schema `sdk-write-lane-approval-decision.v1` and live under `.codex-audit/sdk-write-lane-approval-decisions/`. The M134 decision artifact keeps `approvalState:"pending-explicit-approval"`, `explicitApprovalRecorded:false`, and `sdkWriteEnabled:false`; it proves that a continuation prompt without explicit approval cannot enable production-code writes or broaden the reviewed `scripts/provider-contract-smoke.js` lane.
+
+M135 enables the first `production-code` SDK write lane after explicit user approval. Enablement packets use schema `sdk-write-lane-enablement.v1` and live under `.codex-audit/sdk-write-lane-enablement/`. The first enablement artifact, `.codex-audit/sdk-write-lane-enablement/135-production-code-smoke-harness-enable.json`, points back to M134/M133/M129, records `approvalState:"approved"`, `explicitApprovalRecorded:true`, and `sdkWriteEnabled:true`, and allows only `scripts/provider-contract-smoke.js`. Other production-code paths, including `mcp-server/**`, `chatgpt-connector/**`, `scripts/smoke-test.js`, `recipes/**`, `registry/**`, and `package.json`, remain rejected for `sdk-write`.
 
 Обязательный `--scope` принимает только:
 
@@ -119,6 +121,13 @@ Path allowlist contract:
 - `production-code`: `mcp-server/**`, `chatgpt-connector/**`, `scripts/**`, `recipes/**`, `registry/**`, `package.json`, audit/handoff files.
 - `cep-panel`: `cep-panel/**`, audit/handoff files.
 
+SDK-write output allowlist contract:
+
+- `docs-audit`: `.codex-audit/**`.
+- `orchestrator`: Markdown files under `orchestrator/**` plus JSON fixture outputs under `orchestrator/fixtures/sdk-write/**`.
+- `production-code`: `scripts/provider-contract-smoke.js` only.
+- `cep-panel`: no enabled SDK-write lane.
+
 Default forbidden paths включают `.git/**`, `node_modules/**`, `logs/**`, `backups/**`, `snapshots/**`, `pro-review-bundles/**`, `mcp-config.json`, root/nested `.env*`, `*.key`, `*.pem`, `*secret*` и `*token*` patterns.
 
 Hard-stop conditions:
@@ -131,7 +140,7 @@ Hard-stop conditions:
 
 ## Локальный contract smoke
 
-Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate, SDK scope expansion review packet gate, committed review packet files, SDK write lane readiness packet gate, SDK write lane approval decision packet gate и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
+Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate, SDK scope expansion review packet gate, committed review packet files, SDK write lane readiness packet gate, SDK write lane approval decision packet gate, SDK write lane enablement packet gate и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
 
 ```powershell
 npm.cmd run check:rules

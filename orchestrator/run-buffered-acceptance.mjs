@@ -299,6 +299,51 @@ function collectSdkWriteLaneApprovalDecisionPackets(directory, validatePacket) {
   };
 }
 
+function collectSdkWriteLaneEnablementPackets(directory, validatePacket) {
+  const absoluteDirectory = path.join(repo, directory);
+  const failures = [];
+  const packets = [];
+
+  if (!fs.existsSync(absoluteDirectory)) {
+    return {
+      failures: [`missing SDK write lane enablement packet directory: ${directory}`],
+      packets,
+    };
+  }
+
+  for (const entry of fs.readdirSync(absoluteDirectory, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".json")) {
+      continue;
+    }
+
+    const absolutePath = path.join(absoluteDirectory, entry.name);
+    const repoPath = path.posix.join(directory, entry.name);
+
+    try {
+      const packet = JSON.parse(fs.readFileSync(absolutePath, "utf8"));
+      const validated = validatePacket(packet);
+      packets.push({
+        approvalState: validated.approvalState,
+        explicitApprovalRecorded: validated.explicitApprovalRecorded,
+        path: repoPath,
+        plannedPathAllowlist: validated.plannedPathAllowlist,
+        scope: validated.scope,
+        sdkWriteEnabled: validated.sdkWriteEnabled,
+        sourceApprovalDecisionPacket: validated.sourceApprovalDecisionPacket,
+        sourceReadinessPacket: validated.sourceReadinessPacket,
+        sourceReviewPacket: validated.sourceReviewPacket,
+      });
+    } catch (error) {
+      failures.push(`${repoPath}: ${error.message}`);
+    }
+  }
+
+  return {
+    failures,
+    packets: packets.sort((left, right) => left.path.localeCompare(right.path)),
+  };
+}
+
 async function runContractSmoke() {
   const failures = [];
   const helpResult = runNode([path.join("orchestrator", "codex-sdk-orchestrator.mjs"), "--help"]);
@@ -319,6 +364,9 @@ async function runContractSmoke() {
     SDK_WRITE_LANE_APPROVAL_DECISION_DIRECTORY,
     SDK_WRITE_LANE_APPROVAL_DECISION_SCHEMA,
     SDK_WRITE_LANE_APPROVAL_STATE,
+    SDK_WRITE_LANE_ENABLEMENT_APPROVAL_STATE,
+    SDK_WRITE_LANE_ENABLEMENT_DIRECTORY,
+    SDK_WRITE_LANE_ENABLEMENT_SCHEMA,
     SDK_WRITE_LANE_READINESS_DIRECTORY,
     SDK_WRITE_LANE_READINESS_SCHEMA,
     SDK_WRITE_LANE_READINESS_STATE,
@@ -326,6 +374,8 @@ async function runContractSmoke() {
     SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_PLANNED_PATH_ALLOWLIST,
     SDK_WRITE_ORCHESTRATOR_PLANNED_PATH_ALLOWLIST,
     SDK_WRITE_PLANNED_PATH_ALLOWLIST,
+    SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST,
+    SDK_WRITE_PRODUCTION_CODE_SCOPE,
     SDK_WRITE_REVIEW_REQUIRED_SCOPES,
     SCOPE_PATH_ALLOWLISTS,
     UNSAFE_WRITE_RUNNER_FLAGS,
@@ -333,6 +383,7 @@ async function runContractSmoke() {
     runWriteCapableContractSmoke,
     validateSdkScopeExpansionReviewPacket,
     validateSdkWriteLaneApprovalDecisionPacket,
+    validateSdkWriteLaneEnablementPacket,
     validateSdkWriteLaneReadinessPacket,
   } = await import("./run-write-capable-scaffold.mjs");
   const safeDefaults = createThreadOptions({});
@@ -536,7 +587,8 @@ async function runContractSmoke() {
   assertContract(
     writeScaffoldSmoke?.sdkWriteMode === "pass" &&
       writeScaffoldSmoke?.sdkWriteScope === "docs-audit" &&
-      writeScaffoldSmoke?.sdkWriteAllowedScopes?.join(",") === "docs-audit,orchestrator" &&
+      writeScaffoldSmoke?.sdkWriteAllowedScopes?.join(",") ===
+        "docs-audit,orchestrator,production-code" &&
       writeScaffoldSmoke?.sdkWritePathAllowlist?.includes(".codex-audit/**") &&
       writeScaffoldSmoke?.sdkWritePlannedPaths?.includes(
         ".codex-audit/115-sdk-docs-audit-sdk-thread-output.md",
@@ -601,13 +653,15 @@ async function runContractSmoke() {
   );
   assertContract(
     writeScaffoldSmoke?.sdkWriteScopeExpansionGate === "pass" &&
-      writeScaffoldSmoke?.sdkWriteProductionCodeEnabled === false &&
+      writeScaffoldSmoke?.sdkWriteProductionCodeEnabled === true &&
       writeScaffoldSmoke?.sdkWriteCepPanelEnabled === false &&
+      writeScaffoldSmoke?.sdkWriteProductionCodePathAllowlist?.join(",") ===
+        SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(",") &&
       writeScaffoldSmoke?.sdkWriteReviewRequiredScopes?.join(",") ===
         SDK_WRITE_REVIEW_REQUIRED_SCOPES.join(",") &&
       writeScaffoldSmoke?.sdkWriteScopeExpansionSdkThreadCreated === false &&
       writeScaffoldSmoke?.sdkWriteScopeExpansionRealWriteWork === false,
-    "M127 sdk-write scope expansion gate did not keep production-code and cep-panel review-required",
+    "M135 sdk-write scope expansion gate did not keep production-code narrow and CEP-panel disabled",
     failures,
   );
   assertContract(
@@ -642,6 +696,19 @@ async function runContractSmoke() {
       writeScaffoldSmoke?.sdkWriteLaneApprovalDecisionSdkThreadCreated === false &&
       writeScaffoldSmoke?.sdkWriteLaneApprovalDecisionRealWriteWork === false,
     "M134 SDK write lane approval decision packet contract smoke did not pass",
+    failures,
+  );
+  assertContract(
+    writeScaffoldSmoke?.sdkWriteLaneEnablementPacketMode === "pass" &&
+      writeScaffoldSmoke?.sdkWriteLaneEnablementSchema === SDK_WRITE_LANE_ENABLEMENT_SCHEMA &&
+      writeScaffoldSmoke?.sdkWriteLaneEnablementDirectory ===
+        SDK_WRITE_LANE_ENABLEMENT_DIRECTORY &&
+      writeScaffoldSmoke?.sdkWriteLaneEnablementApprovalState ===
+        SDK_WRITE_LANE_ENABLEMENT_APPROVAL_STATE &&
+      writeScaffoldSmoke?.sdkWriteLaneEnablementExplicitApprovalRecorded === true &&
+      writeScaffoldSmoke?.sdkWriteLaneEnablementSdkThreadCreated === false &&
+      writeScaffoldSmoke?.sdkWriteLaneEnablementRealWriteWork === false,
+    "M135 SDK write lane enablement packet contract smoke did not pass",
     failures,
   );
 
@@ -734,6 +801,34 @@ async function runContractSmoke() {
     "M134 production-code SDK write lane approval decision did not remain pending against M133/M129",
     failures,
   );
+  const enablementPacketFiles = collectSdkWriteLaneEnablementPackets(
+    SDK_WRITE_LANE_ENABLEMENT_DIRECTORY,
+    validateSdkWriteLaneEnablementPacket,
+  );
+  for (const failure of enablementPacketFiles.failures) {
+    assertContract(false, `M135 SDK write lane enablement packet file failed: ${failure}`, failures);
+  }
+  const productionLaneEnablement = enablementPacketFiles.packets.find(
+    (packet) =>
+      packet.path ===
+      `${SDK_WRITE_LANE_ENABLEMENT_DIRECTORY}/135-production-code-smoke-harness-enable.json`,
+  );
+  assertContract(
+    productionLaneEnablement?.approvalState === SDK_WRITE_LANE_ENABLEMENT_APPROVAL_STATE &&
+      productionLaneEnablement?.explicitApprovalRecorded === true &&
+      productionLaneEnablement?.scope === SDK_WRITE_PRODUCTION_CODE_SCOPE &&
+      productionLaneEnablement?.sdkWriteEnabled === true &&
+      productionLaneEnablement?.sourceApprovalDecisionPacket ===
+        productionLaneApprovalDecision?.path &&
+      productionLaneEnablement?.sourceReadinessPacket === productionLaneReadiness?.path &&
+      productionLaneEnablement?.sourceReviewPacket === firstReviewPacket?.path &&
+      productionLaneEnablement?.plannedPathAllowlist?.join(",") ===
+        SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(",") &&
+      productionLaneEnablement?.plannedPathAllowlist?.join(",") ===
+        productionLaneReadiness?.plannedPathAllowlist?.join(","),
+    "M135 production-code SDK write lane enablement did not remain narrow against M134/M133/M129",
+    failures,
+  );
   assertContract(
     WRITE_SCOPES.join(",") === "docs-audit,orchestrator,production-code,cep-panel",
     "M112 write-capable scopes are not the expected explicit set",
@@ -765,11 +860,13 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
-    SDK_WRITE_ALLOWED_SCOPES.join(",") === "docs-audit,orchestrator" &&
+    SDK_WRITE_ALLOWED_SCOPES.join(",") === "docs-audit,orchestrator,production-code" &&
       SDK_WRITE_ORCHESTRATOR_PLANNED_PATH_ALLOWLIST.join(",") === "orchestrator/**" &&
       SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_PLANNED_PATH_ALLOWLIST.join(",") ===
-        "orchestrator/fixtures/sdk-write/**",
-    "M125 orchestrator sdk-write scope allowlist is not restricted to orchestrator controlled outputs",
+        "orchestrator/fixtures/sdk-write/**" &&
+      SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(",") ===
+        "scripts/provider-contract-smoke.js",
+    "M135 sdk-write scope allowlists are not restricted to controlled outputs",
     failures,
   );
   assertContract(
@@ -877,6 +974,8 @@ async function runContractSmoke() {
       readme.includes(".codex-audit/sdk-write-lane-readiness") &&
       readme.includes(SDK_WRITE_LANE_APPROVAL_DECISION_SCHEMA) &&
       readme.includes(".codex-audit/sdk-write-lane-approval-decisions") &&
+      readme.includes(SDK_WRITE_LANE_ENABLEMENT_SCHEMA) &&
+      readme.includes(".codex-audit/sdk-write-lane-enablement") &&
       readme.includes("docs-audit") &&
       readme.includes("production-code") &&
       readme.includes("cep-panel") &&
@@ -894,7 +993,7 @@ async function runContractSmoke() {
     return;
   }
 
-  console.log("PASS M134 SDK orchestrator contract smoke");
+  console.log("PASS M135 SDK orchestrator contract smoke");
   console.log("Invalid general CLI values rejected before SDK thread creation");
   console.log("Write-capable scopes:");
   for (const scope of WRITE_SCOPES) {
@@ -921,6 +1020,8 @@ async function runContractSmoke() {
   console.log("SDK write lane readiness packet files: pass");
   console.log("SDK write lane approval decision packet gate: pass");
   console.log("SDK write lane approval decision packet files: pass");
+  console.log("SDK write lane enablement packet gate: pass");
+  console.log("SDK write lane enablement packet files: pass");
   console.log("Write-capable sdk-write diagnostic logging mode: pass");
   console.log("Write-capable sdk runtime fallback mode: pass");
 }
