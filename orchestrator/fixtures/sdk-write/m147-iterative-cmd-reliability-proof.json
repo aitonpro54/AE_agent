@@ -1,0 +1,56 @@
+{
+  "schema": "sdk-iterative-cmd-proof.v1",
+  "operationId": "m147-iterative-cmd-reliability-proof",
+  "result": "pass",
+  "scope": "orchestrator",
+  "mode": "sdk-write",
+  "plannedPath": "orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json",
+  "operation": {
+    "operationId": "m147-iterative-cmd-reliability-proof",
+    "scope": "orchestrator",
+    "mode": "sdk-write",
+    "plannedPath": "orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json"
+  },
+  "scopedContextRead": [
+    {
+      "path": "orchestrator/README.md",
+      "readType": "short",
+      "linesRead": "1-40"
+    },
+    {
+      "path": "scripts/provider-contract-smoke.js",
+      "readType": "short",
+      "linesRead": "1-40"
+    }
+  ],
+  "localChecksRun": [
+    {
+      "attempt": 1,
+      "check": "json-ready-check",
+      "command": "node -e \"const fs=require('fs'); const p='orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json'; const data=JSON.parse(fs.readFileSync(p,'utf8')); if (data.repairState !== 'ready') { console.error('JSON ready check failed: repairState=' + data.repairState); process.exit(1); } console.log('JSON ready check passed');\"",
+      "observedExitCode": 1,
+      "observedOutput": "JSON ready check failed: repairState=needs-repair"
+    },
+    {
+      "attempt": 2,
+      "check": "json-ready-check",
+      "command": "node -e \"const fs=require('fs'); const p='orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json'; const data=JSON.parse(fs.readFileSync(p,'utf8')); if (data.repairState !== 'ready') { console.error('JSON ready check failed: repairState=' + data.repairState); process.exit(1); } console.log('JSON ready check passed');\"",
+      "observedExitCode": 0,
+      "observedOutput": "JSON ready check passed"
+    }
+  ],
+  "repairState": "ready",
+  "repairIterations": 1,
+  "commandBoundary": {
+    "noPackageInstall": true,
+    "noGitCommand": true,
+    "noCepAeEndpoint": true,
+    "noSecretRead": true
+  },
+  "changedFiles": [
+    "orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json"
+  ],
+  "safetyNotes": [
+    "Only the planned orchestrator fixture JSON output file was edited by this SDKThread turn."
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "schema": "sdk-iterative-cmd-reliability-gate.v1",
+  "milestone": 147,
+  "sourceProductionReadinessArtifact": ".codex-audit/sdk-production-readiness/146-sdk-production-ready.json",
+  "operationArtifact": ".codex-audit/sdk-iterative-cmd/147-operation-envelope.json",
+  "proofArtifact": "orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json",
+  "verdict": {
+    "iterativeCmdReliability": "passed",
+    "boundedMultiStepLocalCommandIteration": true,
+    "generalSdkWorkflow": "not-production-ready",
+    "reason": "One approved M147 SDKThread proof read scoped context, created exactly one planned JSON fixture, recorded a failing local JSON readiness check, repaired the fixture once, reran the same check successfully, and passed the post-run sdk-write allowlist contract. This does not broaden production-code or CEP-panel SDK readiness."
+  },
+  "operation": {
+    "operationId": "m147-iterative-cmd-reliability-proof",
+    "operationFile": ".codex-runtime/sdk/operations/m147-iterative-cmd-reliability-proof.json",
+    "runtimeLog": ".codex/sdk/logs/2026-05-21T14-15-37-175Z-m147-iterative-cmd-reliability-proof-sdk-write.json",
+    "scope": "orchestrator",
+    "mode": "sdk-write",
+    "plannedPaths": [
+      "orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json"
+    ],
+    "localEnvelopeValidation": {
+      "allowed": true,
+      "violations": []
+    }
+  },
+  "sdkThread": {
+    "sdkThreadCreated": true,
+    "sdkThreadCompleted": true,
+    "sdkThreadId": "019e4add-ea80-7223-ae75-78200161ff46",
+    "result": "sdk-write-completed"
+  },
+  "threadOptions": {
+    "approvalPolicy": "never",
+    "networkAccessEnabled": false,
+    "sandboxMode": "workspace-write",
+    "webSearchMode": "disabled"
+  },
+  "commandExecutionEvidence": {
+    "scopedContextReads": [
+      {
+        "path": "scripts/provider-contract-smoke.js",
+        "exitCode": 0,
+        "status": "completed"
+      },
+      {
+        "path": "orchestrator/README.md",
+        "exitCode": 0,
+        "status": "completed"
+      }
+    ],
+    "plannedPathExistenceCheck": {
+      "path": "orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json",
+      "exitCode": 0,
+      "output": "False"
+    },
+    "repairLoop": [
+      {
+        "attempt": 1,
+        "check": "json-ready-check",
+        "observedExitCode": 1,
+        "status": "failed-before-repair",
+        "observedOutput": "JSON ready check failed: repairState=needs-repair"
+      },
+      {
+        "attempt": 2,
+        "check": "json-ready-check",
+        "observedExitCode": 0,
+        "status": "passed-after-repair",
+        "observedOutput": "JSON ready check passed"
+      }
+    ],
+    "disallowedCommandExecutions": []
+  },
+  "postRunContract": {
+    "verdict": "pass",
+    "actualChangedFiles": [
+      "orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json"
+    ],
+    "outOfScopeFiles": [],
+    "missingPlannedChanges": [],
+    "stagedDiffNameOnly": [],
+    "packageInstallOrDependencyChurn": false,
+    "gitMutationDetected": false,
+    "liveCepAeDetected": false,
+    "secretOrCredentialPathTouched": false
+  },
+  "approval": {
+    "userApprovalRecorded": true,
+    "approvalRecord": "The first sandboxed SDKThread/network attempt disconnected before completion. The M147 bounded retry was requested through the Codex escalation flow and completed successfully for only the planned orchestrator JSON fixture.",
+    "restrictedScope": "one bounded SDKThread/network proof for orchestrator planned path orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json"
+  },
+  "remainingExclusions": [
+    {
+      "id": "general-sdk-workflow",
+      "status": "not-production-ready",
+      "reason": "M147 proves iterative local command repair only for one orchestrator JSON fixture lane."
+    },
+    {
+      "id": "broader-production-code-sdk-writes",
+      "status": "not-production-ready",
+      "reason": "M147 does not change the production-code SDK write allowlist beyond scripts/provider-contract-smoke.js."
+    },
+    {
+      "id": "cep-panel-sdk-writes",
+      "status": "not-production-ready",
+      "reason": "CEP-panel SDK writes remain disabled and review-required."
+    },
+    {
+      "id": "external-provider-or-openai-cli-planner-validation",
+      "status": "not-run",
+      "reason": "Outside the M147 iterative command reliability proof."
+    },
+    {
+      "id": "live-cep-ae-or-mutating-live-validation",
+      "status": "not-run",
+      "reason": "Outside the M147 iterative command reliability proof."
+    }
+  ]
+}

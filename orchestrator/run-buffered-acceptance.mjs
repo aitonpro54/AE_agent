@@ -860,6 +860,18 @@ async function runContractSmoke() {
     `M145 SDK production readiness smoke failed: ${productionReadinessOutput.trim()}`,
     failures,
   );
+  const iterativeCmdReliabilitySmoke = runNode([
+    path.join("scripts", "sdk-iterative-cmd-reliability-smoke.js"),
+  ]);
+  const iterativeCmdReliabilityOutput = `${iterativeCmdReliabilitySmoke.stdout ?? ""}\n${
+    iterativeCmdReliabilitySmoke.stderr ?? ""
+  }`;
+  assertContract(
+    iterativeCmdReliabilitySmoke.status === 0 &&
+      iterativeCmdReliabilityOutput.includes("SDK iterative cmd reliability smoke: pass"),
+    `M147 SDK iterative cmd reliability smoke failed: ${iterativeCmdReliabilityOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1137,6 +1149,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:iterative-cmd:smoke"] ===
+      "node scripts/sdk-iterative-cmd-reliability-smoke.js",
+    "package.json codex:orchestrator:iterative-cmd:smoke script is not wired to the local iterative command reliability smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1181,6 +1199,13 @@ async function runContractSmoke() {
       readme.includes("146-sdk-production-ready.json") &&
       readme.includes('overall:"narrow-lane-production-ready"'),
     "README does not document the M146 production readiness smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:iterative-cmd:smoke") &&
+      readme.includes("147-sdk-iterative-cmd-reliability.json") &&
+      readme.includes("sdk-iterative-cmd-reliability-gate.v1"),
+    "README does not document the M147 iterative command reliability smoke",
     failures,
   );
   assertContract(

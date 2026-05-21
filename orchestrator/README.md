@@ -176,6 +176,12 @@ M146 supersedes the blocked M145 artifact with committed artifact `.codex-audit/
 npm.cmd run codex:orchestrator:production-readiness:smoke
 ```
 
+M147 adds a bounded iterative local-command reliability gate without broadening production-code or CEP-panel SDK writes. The committed gate `.codex-audit/sdk-iterative-cmd/147-sdk-iterative-cmd-reliability.json` uses schema `sdk-iterative-cmd-reliability-gate.v1` and points to the SDK-created JSON fixture `orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json`. The proof records scoped context reads, one failing local JSON check, one repair iteration, the same check passing, safe thread options, and a post-run allowlist contract where only the planned fixture changed.
+
+```powershell
+npm.cmd run codex:orchestrator:iterative-cmd:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.

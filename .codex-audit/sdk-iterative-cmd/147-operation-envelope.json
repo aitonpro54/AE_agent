@@ -1,0 +1,44 @@
+{
+  "schema": "sdk-iterative-cmd-operation.v1",
+  "milestone": 147,
+  "operationFile": ".codex-runtime/sdk/operations/m147-iterative-cmd-reliability-proof.json",
+  "envelope": {
+    "version": 1,
+    "operationId": "m147-iterative-cmd-reliability-proof",
+    "scope": "orchestrator",
+    "mode": "sdk-write",
+    "plannedPaths": [
+      "orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json"
+    ]
+  },
+  "localCommandPolicy": {
+    "scopedContextReads": [
+      "orchestrator/README.md",
+      "scripts/provider-contract-smoke.js"
+    ],
+    "allowedLocalCommandCategories": [
+      "scoped-file-read",
+      "planned-path-existence-check",
+      "json-ready-check"
+    ],
+    "requiredRepairLoop": {
+      "checkId": "json-ready-check",
+      "firstAttemptExitCode": 1,
+      "secondAttemptExitCode": 0,
+      "repairIterations": 1
+    },
+    "forbiddenCommandCategories": [
+      "package-install",
+      "git-mutation",
+      "cep-ae-endpoint",
+      "secret-or-env-read"
+    ]
+  },
+  "safetyBoundary": {
+    "packageInstallAllowed": false,
+    "gitMutationAllowed": false,
+    "liveCepAeAllowed": false,
+    "secretReadAllowed": false,
+    "autoCommitAllowed": false
+  }
+}

@@ -113,6 +113,7 @@
 - [x] Milestone 144: SDK Launch Readiness Summary.
 - [~] Milestone 145: SDK Narrow Production-Ready Cutover blocked by escalation policy.
 - [x] Milestone 146: SDK Narrow Production-Ready Retry after local Variant A config.
+- [x] Milestone 147: SDK Iterative Cmd Reliability Gate.
 
 ## Current Stable Baseline
 
@@ -906,6 +907,7 @@
 - 2026-05-21: M145 could not complete the production-ready cutover even after user approval because the required escalated SDKThread/network command was rejected by the escalation reviewer as unacceptable external-disclosure risk. M145 therefore commits a local `sdk-production-readiness.v1` blocked artifact and smoke with `productionReady:false`; no workaround, SDKThread creation, SDK write or production-code source edit was performed.
 - 2026-05-21: M146 is opened as a distinct post-config retry after the user rebooted Codex with local Variant A config (`approvals_reviewer:"user"`, workspace-write network enabled, network proxy limited to `api.openai.com`). The M146 definition remains `narrow-lane-production-ready` for only `scripts/provider-contract-smoke.js`; it may supersede M145 only if one explicitly approved bounded SDKThread/network proof succeeds and full validation passes.
 - 2026-05-21: M146 supersedes M145 for the narrow lane: the user approved one bounded SDKThread/network proof through the user-mode approval UI, SDKThread `019e4abe-638f-7bc1-901d-5bd7bbbbd6bf` completed, changed only `scripts/provider-contract-smoke.js`, and post-run contract passed. `.codex-audit/sdk-production-readiness/146-sdk-production-ready.json` may claim `productionReady:true` only for the exact single-file `production-code` lane; general SDK workflow, broader production-code writes and CEP-panel SDK writes remain not production-ready.
+- 2026-05-21: M147 proves a bounded iterative local-command SDK workflow only for one orchestrator JSON fixture path, not for general SDK repo edits. SDKThread `019e4add-ea80-7223-ae75-78200161ff46` read scoped context, created `orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json`, recorded a failing local JSON readiness check, repaired the fixture once, reran the same check successfully, and passed the post-run sdk-write allowlist with no out-of-scope files, package install/dependency churn, staged git changes, CEP/AE endpoint use, or secret-path touches.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -1339,6 +1341,24 @@
   - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
   - `npm.cmd run ...` commands printed `npm warn Unknown env config "http-proxy"` but exited successfully.
   - Did not run broader production-code SDK writes, CEP-panel SDK writes, external-provider/OpenAI CLI planner validation, live CEP/After Effects smokes, mutating-live validation, package install or push.
+- Milestone 147:
+  - Read `AGENTS.md`, `.codex/handoff.md`, `specs/target-app.md`, and targeted M145-M146 / Decision Log / Validation sections of this plan.
+  - Confirmed branch `codex/roadmap-1.3-planning` was synced with origin at `d949383` before starting M147.
+  - Prepared ignored operation envelope `.codex-runtime/sdk/operations/m147-iterative-cmd-reliability-proof.json` for exactly one orchestrator `sdk-write` planned path: `orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json`.
+  - Confirmed local exported validator accepted the M147 envelope with `allowed:true` and no planned path violations.
+  - First non-escalated M147 SDKThread/network attempt failed with `stream disconnected before completion`; it produced no committed evidence and was retried through the required escalation flow.
+  - The approved M147 SDKThread proof completed with thread id `019e4add-ea80-7223-ae75-78200161ff46`, result `sdk-write-completed`, runtime log `.codex/sdk/logs/2026-05-21T14-15-37-175Z-m147-iterative-cmd-reliability-proof-sdk-write.json`, and changed path `orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json`.
+  - SDKThread read scoped context from `scripts/provider-contract-smoke.js` and `orchestrator/README.md`, created the planned JSON fixture, ran one local JSON readiness check that failed with `repairState=needs-repair`, repaired the fixture once, and reran the same check successfully.
+  - Added committed operation artifact `.codex-audit/sdk-iterative-cmd/147-operation-envelope.json`.
+  - Added committed gate artifact `.codex-audit/sdk-iterative-cmd/147-sdk-iterative-cmd-reliability.json` with `schema:"sdk-iterative-cmd-reliability-gate.v1"` and `generalSdkWorkflow:"not-production-ready"`.
+  - Added SDK-created proof fixture `orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json`.
+  - Added `scripts/sdk-iterative-cmd-reliability-smoke.js`, package script `codex:orchestrator:iterative-cmd:smoke`, `check:rules` coverage, and README documentation.
+  - Passed `node --check scripts/sdk-iterative-cmd-reliability-smoke.js` and `node --check orchestrator/run-buffered-acceptance.mjs`.
+  - Passed `npm.cmd run codex:orchestrator:iterative-cmd:smoke`.
+  - Passed `npm.cmd run codex:orchestrator:governance-report`, `npm.cmd run codex:orchestrator:governance-report:smoke`, `npm.cmd run codex:orchestrator:launch-readiness:smoke`, `npm.cmd run codex:orchestrator:production-readiness:smoke`, `npm.cmd run codex:orchestrator:write-scaffold:contract`, and `npm.cmd run check:rules`.
+  - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
+  - Did not run broader production-code SDK writes, CEP-panel SDK writes, external-provider/OpenAI CLI planner validation, live CEP/After Effects smokes, mutating-live validation, package install, dependency changes, or git mutation inside the SDKThread.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.
