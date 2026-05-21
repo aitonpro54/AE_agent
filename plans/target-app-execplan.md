@@ -103,6 +103,7 @@
 - [x] Milestone 134: Production-Code SDK Lane Approval Decision.
 - [x] Milestone 135: Production-Code SDK Lane Enablement.
 - [x] Milestone 136: Production-Code Existing Source Update Hardening.
+- [~] Milestone 137: Production-Code SDKThread Write partial; SDKThread was created but disconnected before completion.
 
 ## Current Stable Baseline
 
@@ -801,6 +802,12 @@
 - Require production-code sdk-write planned source paths to exist before SDKThread creation, while docs-audit and orchestrator lanes continue rejecting pre-existing planned outputs.
 - Validate prompt wording, precondition behavior, and post-run diff allowlist locally without SDKThread creation or production-code source edits.
 
+### Milestone 137: Production-Code SDKThread Write
+
+- Run exactly one real SDKThread write through the M135/M136 production-code lane for `scripts/provider-contract-smoke.js`.
+- If the SDKThread disconnects or fails, do not retry in the same milestone; record diagnostics, diff state, thread id if available, and next retry requirements.
+- Keep CEP-panel disabled and keep production-code planned path limited to `scripts/provider-contract-smoke.js`.
+
 ## Decision Log
 
 - 2026-05-20: Milestone 114 makes the write-capable dry-run CLI envelope-first. `--dry-run` now requires `--operation-file`, and the envelope supplies `version`, `operationId`, `scope`, `mode`, `prompt`, and `plannedPaths`; M114 supports only `version: 1` and `mode: "dry-run"`.
@@ -828,6 +835,7 @@
 - 2026-05-21: M134 records that the current continuation prompt did not explicitly approve the M129/M133 production-code SDK write lane; the new approval decision packet keeps `approvalState:"pending-explicit-approval"`, `explicitApprovalRecorded:false`, `sdkWriteEnabled:false`, and production-code absent from `SDK_WRITE_ALLOWED_SCOPES`.
 - 2026-05-21: M135 records explicit user approval and enables the M129/M133/M134 production-code SDK write lane only for `scripts/provider-contract-smoke.js`; `production-code` enters `SDK_WRITE_ALLOWED_SCOPES` with an exact single-file sdk-write allowlist, while CEP-panel and all other production-code paths remain rejected.
 - 2026-05-21: M136 keeps docs-audit/orchestrator sdk-write lanes output-only, but treats the enabled production-code lane as an existing-source update lane: the planned source file must exist before SDKThread creation and the post-run diff may include only `scripts/provider-contract-smoke.js`.
+- 2026-05-21: M137 ran exactly one production-code SDKThread write attempt for `scripts/provider-contract-smoke.js`; the SDKThread was created but disconnected before completion, no source file changed, and an escalated retry was not run because it would have been a second real SDK/network attempt.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -1135,6 +1143,16 @@
   - Passed `npm.cmd run codex:orchestrator:write-scaffold:contract`, `npm.cmd run check:rules`, and `git diff --check`; contract output includes `PASS M136 write-capable runner scaffold contract smoke` and `PASS M136 SDK orchestrator contract smoke`, and Git printed only LF-to-CRLF working-copy warnings.
   - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
   - Did not run live CEP / After Effects smokes, external-provider validation, OpenAI CLI planner validation, mutating-live validation, package install, SDKThread creation, real SDK write work, CEP-panel write enablement, or production-code source edits because M136 only hardens the local runner before the real production-code write.
+- Milestone 137:
+  - Created ignored operation file `.codex-runtime/sdk/operations/m137-production-code-provider-contract-sdk-write.json` for `scope:"production-code"`, `mode:"sdk-write"`, and planned path `scripts/provider-contract-smoke.js`.
+  - Pre-attempt operation envelope validation passed and reported `sdkWrite:true`.
+  - Ran exactly one real SDKThread attempt with `npm.cmd run codex:orchestrator:write-scaffold -- --operation-file .codex-runtime/sdk/operations/m137-production-code-provider-contract-sdk-write.json`.
+  - The attempt failed with `stream disconnected before completion: error sending request for url (https://api.openai.com/v1/responses)`.
+  - Runtime log `.codex-runtime/sdk/logs/2026-05-21T11-25-51-773Z-m137-production-code-provider-contract-sdk-write-sdk-write.json` recorded `sdkThreadCreated:true`, `sdkThreadCompleted:false`, SDK thread id `019e4a48-6b4e-7703-a190-c82435911b6f`, `plannedPathCheck.allowed:true`, `plannedPathPrecondition.mode:"existing-source-update"`, and `plannedFileChangedBySdk:false`.
+  - A sandbox/network escalated retry was requested after the failure, but auto-review rejected it because it would have been a second real SDKThread/network attempt beyond the one-attempt M137 scope; no workaround was attempted.
+  - Post-attempt git status was clean and `git diff -- scripts/provider-contract-smoke.js` was empty.
+  - Added `.codex-audit/137-production-code-sdk-thread-write-partial.md` as reviewable diagnostics.
+  - Did not run full post-attempt validation because no file changed and M137 ended as a partial SDK disconnect diagnostic.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.
