@@ -94,6 +94,7 @@
 - [x] Milestone 125: First Orchestrator Fixture JSON SDKThread Write.
 - [x] Milestone 126: Second Orchestrator Fixture JSON SDKThread Write.
 - [x] Milestone 127: SDK Scope Expansion Acceptance Gate.
+- [x] Milestone 128: SDK Scope Expansion Review Packet Gate.
 
 ## Current Stable Baseline
 
@@ -738,6 +739,12 @@
 - Keep enabled SDK write lanes limited to docs-audit and controlled orchestrator outputs.
 - Do not create SDK threads, enable production-code writes, enable CEP-panel writes, install packages, or run live/external-provider validation.
 
+### Milestone 128: SDK Scope Expansion Review Packet Gate
+
+- Add a local review-packet contract for any future proposal to expand SDK write scopes.
+- Require proposed production-code or CEP-panel packets to keep `sdkWriteEnabled:false`, include a narrow planned path allowlist, validation plan, and rollback plan.
+- Keep the gate local-only: no SDK thread creation, no real write work, no new enabled SDK write scopes, and no live/external-provider validation.
+
 ## Decision Log
 
 - 2026-05-20: Milestone 114 makes the write-capable dry-run CLI envelope-first. `--dry-run` now requires `--operation-file`, and the envelope supplies `version`, `operationId`, `scope`, `mode`, `prompt`, and `plannedPaths`; M114 supports only `version: 1` and `mode: "dry-run"`.
@@ -756,6 +763,7 @@
 - 2026-05-21: M125 accepts orchestrator fixture JSON `sdk-write` outputs only under `orchestrator/fixtures/sdk-write/**`; the host post-run contract now safely normalizes newly-created parent directories after recursive child validation.
 - 2026-05-21: M126 repeated the orchestrator fixture JSON `sdk-write` lane in the already-created fixture directory; the post-run allowlist reported only the planned M126 JSON file.
 - 2026-05-21: M127 adds a local acceptance gate for SDK write scope expansion; `production-code` and `cep-panel` remain review-required and rejected for `sdk-write` before any SDK thread creation.
+- 2026-05-21: M128 adds a local `sdk-scope-expansion-review.v1` packet validator for future production-code or CEP-panel SDK write proposals; review packets can document proposed lanes but must keep `sdkWriteEnabled:false`.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -978,6 +986,15 @@
   - Passed `npm.cmd run codex:orchestrator:help`, `npm.cmd run codex:orchestrator:write-scaffold:contract`, `npm.cmd run check:rules`, and `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
   - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
   - Did not run live CEP / After Effects smokes, external-provider validation, OpenAI CLI planner validation, mutating-live validation, package install, SDKThread creation, or real SDK write work because M127 is a local-only acceptance gate.
+- Milestone 128:
+  - Added `sdk-scope-expansion-review.v1` review-packet validation for future `production-code` or `cep-panel` SDK scope expansion proposals.
+  - The review packet contract accepts narrow local proposals only when `sdkWriteEnabled:false`, planned paths stay inside the reviewed scope, validation steps are present, rollback plan is present, and unsafe execution override fields are absent.
+  - Extended `check:rules` to assert the M128 gate and report `SDK scope expansion review packet gate: pass`.
+  - Updated `orchestrator/README.md` to document the review-packet location `.codex-audit/sdk-scope-expansion-reviews/`.
+  - Passed `node --check orchestrator/run-write-capable-scaffold.mjs` and `node --check orchestrator/run-buffered-acceptance.mjs`.
+  - Passed `npm.cmd run codex:orchestrator:help`, `npm.cmd run codex:orchestrator:write-scaffold:contract`, `npm.cmd run check:rules`, and `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
+  - Did not run live CEP / After Effects smokes, external-provider validation, OpenAI CLI planner validation, mutating-live validation, package install, SDKThread creation, or real SDK write work because M128 is a local-only review-packet gate.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.
