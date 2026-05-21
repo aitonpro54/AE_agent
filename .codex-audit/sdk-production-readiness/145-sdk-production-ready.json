@@ -1,0 +1,111 @@
+{
+  "schema": "sdk-production-readiness.v1",
+  "sourceLaunchReadinessSummary": ".codex-audit/sdk-launch-readiness/144-sdk-launch-readiness-summary.json",
+  "sourceGovernanceReportSchema": "sdk-launch-governance-drift-report.v1",
+  "productionReadyDefinition": "narrow-lane-production-ready",
+  "claimedScope": {
+    "scope": "production-code",
+    "plannedPathAllowlist": [
+      "scripts/provider-contract-smoke.js"
+    ],
+    "generalSdkWorkflowIncluded": false,
+    "broaderProductionCodeWritesIncluded": false,
+    "cepPanelWritesIncluded": false
+  },
+  "verdict": {
+    "overall": "blocked-by-escalation-policy",
+    "productionReady": false,
+    "narrowProductionCodeLane": "blocked-not-production-ready",
+    "generalSdkWorkflow": "not-production-ready",
+    "reason": "M145 selected the narrow-lane production-ready definition and prepared an exact single-file SDKThread proof, but the required SDKThread/network attempt was rejected by the escalation reviewer because it could disclose private repository code or context to an external OpenAI endpoint."
+  },
+  "plannedProof": {
+    "operationId": "m145-production-code-provider-contract-production-ready-proof",
+    "operationFile": ".codex-runtime/sdk/operations/m145-production-code-provider-contract-production-ready-proof.json",
+    "scope": "production-code",
+    "mode": "sdk-write",
+    "plannedPaths": [
+      "scripts/provider-contract-smoke.js"
+    ],
+    "localEnvelopeValidation": {
+      "allowed": true,
+      "violations": []
+    }
+  },
+  "restrictedActionAttempt": {
+    "userApprovalRecorded": true,
+    "approvalRecord": "User wrote: Даю разрешение.",
+    "command": "npm.cmd run codex:orchestrator:write-scaffold -- --operation-file .codex-runtime/sdk/operations/m145-production-code-provider-contract-production-ready-proof.json --acknowledge-existing-change plans/target-app-execplan.md",
+    "escalationRequested": true,
+    "escalationReviewerDecision": "rejected",
+    "rejectionClass": "unacceptable-risk",
+    "rejectionReason": "The command would run a real SDKThread/network request to an external OpenAI endpoint and could transmit private repository code or context outside the local trusted system.",
+    "sdkThreadCreated": false,
+    "sdkThreadCompleted": false,
+    "realWriteWork": false
+  },
+  "localEvidence": [
+    {
+      "id": "m145-local-preflight-governance-report",
+      "status": "pass",
+      "evidence": [
+        "schema:sdk-launch-governance-drift-report.v1",
+        "launchGovernanceState:local-gated",
+        "driftDetected:false"
+      ]
+    },
+    {
+      "id": "m145-local-preflight-launch-readiness-smoke",
+      "status": "pass",
+      "evidence": [
+        "SDK launch readiness summary smoke: pass"
+      ]
+    },
+    {
+      "id": "m145-local-preflight-check-rules",
+      "status": "pass",
+      "evidence": [
+        "SDK governance report parser smoke: pass",
+        "SDK launch readiness summary smoke: pass"
+      ]
+    }
+  ],
+  "requiredBeforeProductionReady": [
+    "A completed bounded SDKThread/network proof for the claimed single-file production-code lane.",
+    "Post-run contract evidence with sdkThreadCreated:true, sdkThreadCompleted:true, plannedFileChangedBySdk:true and sdkWritePostContract.verdict:\"pass\".",
+    "Full required local validation after the SDKThread proof.",
+    "A superseding sdk-production-readiness artifact with productionReady:true only for the exact validated scope."
+  ],
+  "remainingExclusions": [
+    {
+      "id": "general-sdk-autopilot-repo-edits",
+      "status": "not-production-ready",
+      "reason": "The selected M145 definition excludes arbitrary SDK repo edits."
+    },
+    {
+      "id": "broader-production-code-sdk-writes",
+      "status": "not-production-ready",
+      "reason": "Only scripts/provider-contract-smoke.js is in the production-code SDK write allowlist."
+    },
+    {
+      "id": "cep-panel-sdk-writes",
+      "status": "not-production-ready",
+      "reason": "CEP-panel SDK writes remain disabled and review-required."
+    },
+    {
+      "id": "external-provider-or-openai-cli-planner-validation",
+      "status": "not-run",
+      "reason": "Outside the M145 local blocked artifact scope."
+    },
+    {
+      "id": "live-cep-ae-or-mutating-live-validation",
+      "status": "not-run",
+      "reason": "Outside the M145 local blocked artifact scope."
+    },
+    {
+      "id": "package-install-or-dependency-changes",
+      "status": "not-run",
+      "reason": "No package install or dependency change was needed for the local blocked artifact."
+    }
+  ]
+}

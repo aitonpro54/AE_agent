@@ -146,7 +146,7 @@ Hard-stop conditions:
 
 ## Локальный contract smoke
 
-Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate, SDK scope expansion review packet gate, committed review packet files, SDK write lane readiness packet gate, SDK write lane approval decision packet gate, SDK write lane enablement packet gate, SDK launch governance packet gate, SDK launch governance drift report, subprocess parser smoke для governance-report JSON и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
+Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate, SDK scope expansion review packet gate, committed review packet files, SDK write lane readiness packet gate, SDK write lane approval decision packet gate, SDK write lane enablement packet gate, SDK launch governance packet gate, SDK launch governance drift report, subprocess parser smoke для governance-report JSON, launch/production-readiness smoke и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
 
 ```powershell
 npm.cmd run check:rules
@@ -168,6 +168,12 @@ M144 фиксирует release-readiness boundary в committed summary `.codex-
 
 ```powershell
 npm.cmd run codex:orchestrator:launch-readiness:smoke
+```
+
+M145 фиксирует production-readiness boundary в committed artifact `.codex-audit/sdk-production-readiness/145-sdk-production-ready.json`. Этот artifact выбирает `narrow-lane-production-ready`, но сохраняет `productionReady:false` и `overall:"blocked-by-escalation-policy"`, потому что required SDKThread/network proof был отклонен escalation reviewer'ом до создания SDK thread.
+
+```powershell
+npm.cmd run codex:orchestrator:production-readiness:smoke
 ```
 
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.

@@ -848,6 +848,18 @@ async function runContractSmoke() {
     `M144 SDK launch readiness summary smoke failed: ${launchReadinessSummaryOutput.trim()}`,
     failures,
   );
+  const productionReadinessSmoke = runNode([
+    path.join("scripts", "sdk-production-readiness-smoke.js"),
+  ]);
+  const productionReadinessOutput = `${productionReadinessSmoke.stdout ?? ""}\n${
+    productionReadinessSmoke.stderr ?? ""
+  }`;
+  assertContract(
+    productionReadinessSmoke.status === 0 &&
+      productionReadinessOutput.includes("SDK production readiness smoke: pass"),
+    `M145 SDK production readiness smoke failed: ${productionReadinessOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1119,6 +1131,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:production-readiness:smoke"] ===
+      "node scripts/sdk-production-readiness-smoke.js",
+    "package.json codex:orchestrator:production-readiness:smoke script is not wired to the local production readiness smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1156,6 +1174,13 @@ async function runContractSmoke() {
     readme.includes("npm.cmd run codex:orchestrator:launch-readiness:smoke") &&
       readme.includes("144-sdk-launch-readiness-summary.json"),
     "README does not document the M144 launch readiness summary smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:production-readiness:smoke") &&
+      readme.includes("145-sdk-production-ready.json") &&
+      readme.includes('overall:"blocked-by-escalation-policy"'),
+    "README does not document the M145 production readiness smoke",
     failures,
   );
   assertContract(
@@ -1269,6 +1294,7 @@ async function runContractSmoke() {
   console.log("SDK launch governance report command: pass");
   console.log("SDK governance report parser smoke: pass");
   console.log("SDK launch readiness summary smoke: pass");
+  console.log("SDK production readiness smoke: pass");
   console.log("Write-capable sdk-write diagnostic logging mode: pass");
   console.log("Write-capable sdk runtime fallback mode: pass");
 }

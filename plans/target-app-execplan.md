@@ -111,6 +111,7 @@
 - [x] Milestone 142: SDK Governance Report Command.
 - [x] Milestone 143: SDK Governance Report Parser Smoke.
 - [x] Milestone 144: SDK Launch Readiness Summary.
+- [~] Milestone 145: SDK Narrow Production-Ready Cutover blocked by escalation policy.
 
 ## Current Stable Baseline
 
@@ -900,6 +901,8 @@
 - 2026-05-21: M142 exposes the M141 drift report through a local `codex:orchestrator:governance-report` command; it is report-only, does not create SDK threads, and does not approve network or broader write work.
 - 2026-05-21: M143 adds a local subprocess parser smoke for the governance-report package command; the smoke proves the JSON surface remains machine-readable and exact while keeping SDK state `local-gated`.
 - 2026-05-21: M144 adds a committed `sdk-launch-readiness-summary.v1` artifact and smoke; the summary states the narrow production-code lane is only `ready-local-gated`, while the general SDK workflow remains not production-ready without explicit SDKThread/network, broader write-scope, CEP-panel, external-provider or live-validation approvals.
+- 2026-05-21: M145 production-ready definition is `narrow-lane-production-ready`: only the existing single-file production-code SDK lane for `scripts/provider-contract-smoke.js` may be claimed production-ready if a bounded SDKThread/network proof and full local validation pass. General SDK autopilot repo edits, broader production-code writes, CEP-panel SDK writes, external-provider/OpenAI CLI planner validation, live CEP/AE or mutating-live validation, package installs and push remain outside the claim unless explicitly approved in this thread and actually run.
+- 2026-05-21: M145 could not complete the production-ready cutover even after user approval because the required escalated SDKThread/network command was rejected by the escalation reviewer as unacceptable external-disclosure risk. M145 therefore commits a local `sdk-production-readiness.v1` blocked artifact and smoke with `productionReady:false`; no workaround, SDKThread creation, SDK write or production-code source edit was performed.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -1293,6 +1296,27 @@
   - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
   - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
   - Did not run live CEP / After Effects smokes, external-provider validation, OpenAI CLI planner validation, mutating-live validation, package install, SDKThread creation, real SDK write work, CEP-panel write enablement, or production-code source edits because M144 is a local-only launch-readiness summary milestone.
+- Milestone 145:
+  - Read `AGENTS.md`, `.codex/handoff.md`, `specs/target-app.md`, and targeted M140-M144 / Decision Log / Validation sections of this plan.
+  - Confirmed current branch `codex/roadmap-1.3-planning` is ahead of origin by 6 commits and latest commit is `3352f9c` (`docs: add sdk launch readiness summary`).
+  - Chose `narrow-lane-production-ready` as the M145 production-ready definition before implementation.
+  - Passed local preflight `npm.cmd run codex:orchestrator:governance-report`; output kept `schema:"sdk-launch-governance-drift-report.v1"`, `launchGovernanceState:"local-gated"`, and `driftDetected:false`.
+  - Passed local preflight `npm.cmd run codex:orchestrator:launch-readiness:smoke`; output included `SDK launch readiness summary smoke: pass`.
+  - Passed local preflight `npm.cmd run check:rules`; output included governance, parser and launch-readiness checks as pass.
+  - Prepared ignored M145 operation envelope `.codex-runtime/sdk/operations/m145-production-code-provider-contract-production-ready-proof.json` for exactly one `production-code` `sdk-write` planned path: `scripts/provider-contract-smoke.js`.
+  - Confirmed `sdk-write` envelopes cannot be combined with runner `--dry-run`; local exported validator check accepted the M145 envelope with `allowed:true` and no planned path violations.
+  - Requested the approved real command through escalation: `npm.cmd run codex:orchestrator:write-scaffold -- --operation-file .codex-runtime/sdk/operations/m145-production-code-provider-contract-production-ready-proof.json --acknowledge-existing-change plans/target-app-execplan.md`.
+  - Escalation reviewer rejected the command as unacceptable risk because a real SDKThread/network request could disclose private repository code or context to an external OpenAI endpoint.
+  - Added `.codex-audit/sdk-production-readiness/145-sdk-production-ready.json` with `schema:"sdk-production-readiness.v1"`, `productionReady:false`, `overall:"blocked-by-escalation-policy"` and `narrowProductionCodeLane:"blocked-not-production-ready"`.
+  - Added `.codex-audit/145-sdk-production-ready-blocked.md`.
+  - Added `scripts/sdk-production-readiness-smoke.js`, package script `codex:orchestrator:production-readiness:smoke`, and `check:rules` coverage.
+  - Updated `orchestrator/README.md` to document the M145 blocked production-readiness artifact and smoke.
+  - Passed `node --check scripts/sdk-production-readiness-smoke.js` and `node --check orchestrator/run-buffered-acceptance.mjs`.
+  - Passed `npm.cmd run codex:orchestrator:governance-report`; output kept `schema:"sdk-launch-governance-drift-report.v1"`, `launchGovernanceState:"local-gated"` and `driftDetected:false`.
+  - Passed `npm.cmd run codex:orchestrator:governance-report:smoke`, `npm.cmd run codex:orchestrator:launch-readiness:smoke`, `npm.cmd run codex:orchestrator:production-readiness:smoke`, `npm.cmd run codex:orchestrator:write-scaffold:contract`, and `npm.cmd run check:rules`.
+  - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
+  - Did not run SDKThread creation, real SDK write work, broader production-code SDK writes, CEP-panel SDK writes, external-provider/OpenAI CLI planner validation, live CEP/After Effects smokes, mutating-live validation, package install or push. No production-code source file was changed.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.

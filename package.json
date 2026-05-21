@@ -7,6 +7,7 @@
     "codex:orchestrator:governance-report": "node orchestrator/run-buffered-acceptance.mjs --governance-report",
     "codex:orchestrator:governance-report:smoke": "node scripts/sdk-governance-report-smoke.js",
     "codex:orchestrator:launch-readiness:smoke": "node scripts/sdk-launch-readiness-summary-smoke.js",
+    "codex:orchestrator:production-readiness:smoke": "node scripts/sdk-production-readiness-smoke.js",
     "check:rules": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke"
   },
   "dependencies": {
