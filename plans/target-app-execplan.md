@@ -89,6 +89,7 @@
 - [x] Milestone 120: SDK Runtime Path Hardening.
 - [~] Milestone 121: SDK Docs-Audit Runtime Fallback Retry review-needed; planned output was created, but the runner selected writable `.codex/sdk` for the routine log.
 - [~] Milestone 122: Second Docs-Audit SDKThread Write complete; planned output was created and awaits ChatGPT Pro review before commit.
+- [~] Milestone 123: First Orchestrator-Scope SDKThread Write complete; planned Markdown output was created and awaits ChatGPT Pro review before commit.
 
 ## Current Stable Baseline
 
@@ -707,6 +708,11 @@
 - Run exactly one second controlled docs-audit `sdk-write` for `.codex-audit/122-sdk-docs-audit-sdk-thread-output.md`.
 - Do not change orchestrator, production, or CEP panel code, and do not commit M122 before ChatGPT Pro review.
 
+### Milestone 123: First Orchestrator-Scope SDKThread Write
+
+- Add the first orchestrator-scope `sdk-write` lane for docs-only Markdown planned paths under `orchestrator/**`.
+- Run exactly one controlled `sdk-write` for `orchestrator/m123-sdk-thread-orchestrator-scope-output.md`, then stop for ChatGPT Pro review before any M123 commit.
+
 ## Decision Log
 
 - 2026-05-20: Milestone 114 makes the write-capable dry-run CLI envelope-first. `--dry-run` now requires `--operation-file`, and the envelope supplies `version`, `operationId`, `scope`, `mode`, `prompt`, and `plannedPaths`; M114 supports only `version: 1` and `mode: "dry-run"`.
@@ -720,6 +726,7 @@
 - 2026-05-21: M120 keeps `.codex/sdk` as primary only when runtime preflight can write both logs and operations; otherwise routine runtime output moves to ignored `.codex-runtime/sdk`, while diagnostic reports stay in `.codex-audit/**`.
 - 2026-05-21: M121 ran exactly one docs-audit SDKThread retry and did not retry again; the planned SDK output was created, but runtime fallback was only used for the operation envelope because the runner selected writable `.codex/sdk` for the log.
 - 2026-05-21: M122 ran exactly one second docs-audit SDKThread write without orchestrator changes; the planned output was created, runtime again selected `.codex/sdk` for the log, and M122 remains uncommitted pending ChatGPT Pro review.
+- 2026-05-21: M123 allows `sdk-write` for `scope:"orchestrator"` only when every planned path is a Markdown file under `orchestrator/**`; orchestrator source files, production paths, CEP paths, forbidden paths, and unsafe/bypass fields are still rejected before SDK thread creation.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -917,6 +924,10 @@
   - Committed M121 as `dd77239` and tagged `sdk-m121-docs-audit-sdk-write-retry`, preserving the note that M121 was partial only because of the runtime selection mismatch.
   - Passed the M122 precondition gate, then ran exactly one second docs-audit `sdk-write`; SDK thread `019e4943-af74-7ea3-a4db-8882c1f78865` completed and created `.codex-audit/122-sdk-docs-audit-sdk-thread-output.md`.
   - Runtime again selected `.codex/sdk` for the routine log; no fallback diagnostic report, external-provider validation, OpenAI CLI planner validation, live CEP/AE smoke, production code change, CEP panel code change, or M122 commit was performed.
+- Milestone 123:
+  - Committed M122 as `0739213` and tagged `sdk-m122-docs-audit-second-sdk-write`.
+  - Passed syntax/help/contract checks, including the new orchestrator docs-only `sdk-write` acceptance/rejection cases.
+  - Ran exactly one orchestrator `sdk-write`; SDK thread `019e4977-9f0f-7cf1-92e7-3d43db356fc0` completed and created `orchestrator/m123-sdk-thread-orchestrator-scope-output.md`.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.
