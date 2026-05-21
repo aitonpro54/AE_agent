@@ -2,7 +2,15 @@
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
@@ -14,7 +22,7 @@ Codex SDK write-capable runner scaffold
 Usage:
   node orchestrator/run-write-capable-scaffold.mjs --scope orchestrator --prompt "Implement a narrow orchestrator change"
   node orchestrator/run-write-capable-scaffold.mjs --dry-run --operation-file .codex-audit/m114-operation.json
-  node orchestrator/run-write-capable-scaffold.mjs --operation-file .codex/sdk/operations/m115-docs-audit-sdk-write.json
+  node orchestrator/run-write-capable-scaffold.mjs --operation-file .codex-runtime/sdk/operations/m115-docs-audit-sdk-write.json
   node orchestrator/run-write-capable-scaffold.mjs --contract-smoke
 
 Required:
@@ -146,8 +154,11 @@ export const SDK_WRITE_CONTRACT_SMOKE_PLANNED_PATHS = Object.freeze([
   ".codex-audit/arbitrary-safe-sdk-write-output.md",
 ]);
 export const SDK_WRITE_ALLOWED_HOST_REPORT_PATHS = Object.freeze([]);
-export const SDK_WRITE_LOG_DIRECTORY = ".codex/sdk/logs";
-export const SDK_WRITE_OPERATION_DIRECTORY = ".codex/sdk/operations";
+export const SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY = ".codex/sdk";
+export const SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY = ".codex-runtime/sdk";
+export const SDK_WRITE_RUNTIME_SUBDIRECTORIES = Object.freeze(["logs", "operations"]);
+export const SDK_WRITE_LOG_DIRECTORY = `${SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY}/logs`;
+export const SDK_WRITE_OPERATION_DIRECTORY = `${SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY}/operations`;
 export const SDK_WRITE_FALLBACK_REPORT_DIRECTORY = ".codex-audit";
 export const OPERATION_ENVELOPE_REQUIRED_FIELDS = Object.freeze([
   "version",
@@ -980,6 +991,105 @@ function diagnosticMessage(error) {
   return errorDiagnostic(error)?.message || null;
 }
 
+function runtimeRepoPath(...parts) {
+  return normalizeRepoPath(path.posix.join(...parts.filter(Boolean)));
+}
+
+function repoPathToAbsolute(cwd, repoPath) {
+  return path.join(cwd, ...normalizeRepoPath(repoPath).split("/"));
+}
+
+function createRuntimeProbeFileName(label) {
+  return `.codex-runtime-probe-${process.pid}-${Date.now()}-${sanitizeLogId(label)}.tmp`;
+}
+
+function createRuntimeDirectories(runtimePath) {
+  return {
+    logs: runtimeRepoPath(runtimePath, "logs"),
+    operations: runtimeRepoPath(runtimePath, "operations"),
+  };
+}
+
+function probeSdkRuntime(cwd, runtimePath, hooks = {}) {
+  const mkdir = hooks.mkdirSync || mkdirSync;
+  const writeFile = hooks.writeFileSync || writeFileSync;
+  const unlink = hooks.unlinkSync || unlinkSync;
+  const directories = createRuntimeDirectories(runtimePath);
+  const checks = [];
+
+  for (const name of SDK_WRITE_RUNTIME_SUBDIRECTORIES) {
+    const directoryPath = directories[name];
+    const absoluteDirectoryPath = repoPathToAbsolute(cwd, directoryPath);
+    const absoluteProbePath = path.join(absoluteDirectoryPath, createRuntimeProbeFileName(name));
+    const probePath = normalizeRepoPath(path.relative(cwd, absoluteProbePath));
+
+    try {
+      mkdir(absoluteDirectoryPath, { recursive: true });
+      writeFile(absoluteProbePath, "sdk runtime write probe\n", "utf8");
+      unlink(absoluteProbePath);
+      checks.push({
+        directoryPath,
+        probePath,
+        probeWritten: true,
+        tempFileCleaned: true,
+        writable: true,
+      });
+    } catch (error) {
+      const message = diagnosticMessage(error) || "unknown runtime probe failure";
+      checks.push({
+        directoryPath,
+        error: message,
+        errorCode: errorDiagnostic(error)?.code || null,
+        probePath,
+        probeWritten: false,
+        tempFileCleaned: false,
+        writable: false,
+      });
+
+      return {
+        checks,
+        reason: `${name}-runtime-unavailable: ${message}`,
+        runtimePath,
+        writable: false,
+      };
+    }
+  }
+
+  return {
+    checks,
+    reason: "runtime-writable",
+    runtimePath,
+    writable: true,
+  };
+}
+
+export function resolveSdkRuntimePaths(cwd = process.cwd(), hooks = {}) {
+  const primaryProbe = probeSdkRuntime(cwd, SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY, hooks);
+  const fallbackProbe = probeSdkRuntime(cwd, SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY, hooks);
+  const selectedProbe = primaryProbe.writable ? primaryProbe : fallbackProbe;
+  const selectedRuntimePath = selectedProbe.runtimePath;
+  const selectedDirectories = createRuntimeDirectories(selectedRuntimePath);
+  const reasonSelected = primaryProbe.writable
+    ? "primary-runtime-writable"
+    : fallbackProbe.writable
+      ? `primary-runtime-unavailable; fallback-runtime-writable: ${primaryProbe.reason}`
+      : `primary-and-fallback-runtime-unavailable; diagnostic-report-only: primary=${primaryProbe.reason}; fallback=${fallbackProbe.reason}`;
+
+  return {
+    fallbackProbe,
+    fallbackRuntimePath: SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY,
+    fallbackWritable: fallbackProbe.writable,
+    primaryProbe,
+    primaryRuntimePath: SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY,
+    primaryWritable: primaryProbe.writable,
+    reasonSelected,
+    selectedLogDirectory: selectedDirectories.logs,
+    selectedOperationDirectory: selectedDirectories.operations,
+    selectedRuntimePath,
+    selectedRuntimeWritable: selectedProbe.writable,
+  };
+}
+
 export function createSdkWriteFallbackReportPath(operationId) {
   return normalizeRepoPath(
     path.posix.join(
@@ -989,13 +1099,11 @@ export function createSdkWriteFallbackReportPath(operationId) {
   );
 }
 
-export function createSdkWriteOperationFallbackPath(operationId) {
-  return normalizeRepoPath(
-    path.posix.join(
-      SDK_WRITE_FALLBACK_REPORT_DIRECTORY,
-      `${sanitizeLogId(operationId)}-operation.json`,
-    ),
-  );
+export function createSdkWriteOperationFallbackPath(operationId, runtimePreflight = null) {
+  const operationDirectory =
+    runtimePreflight?.selectedOperationDirectory ||
+    runtimeRepoPath(SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY, "operations");
+  return runtimeRepoPath(operationDirectory, `${sanitizeLogId(operationId)}-operation.json`);
 }
 
 function serialize(value) {
@@ -1065,6 +1173,7 @@ export function createSdkWriteFallbackReport({
   const originalFailure = sdkRunFailure || failure;
   const outputPath = payload?.sdkThreadOutputPath || payload?.plannedPathCheck?.plannedPaths?.[0];
   const logError = errorDiagnostic(logWriteError);
+  const runtimePreflight = payload?.runtimePreflight;
 
   return [
     "# SDK Write Failure Diagnostic Fallback",
@@ -1075,8 +1184,17 @@ export function createSdkWriteFallbackReport({
     "## Operation",
     `- operationId: ${operationId || "(unknown)"}`,
     `- operationFile: ${payload?.operationEnvelope?.sourcePath || "(unknown)"}`,
-    `- operation fallback path if ${SDK_WRITE_OPERATION_DIRECTORY}/ is unavailable: ${fallbackOperationPath}`,
+    `- operation runtime path if primary runtime is unavailable: ${fallbackOperationPath}`,
     `- attempted log path: ${attemptedLogPath}`,
+    "",
+    "## Runtime Preflight",
+    `- primary runtime path: ${runtimePreflight?.primaryRuntimePath || SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY}`,
+    `- primary runtime writable: ${runtimePreflight ? runtimePreflight.primaryWritable : "unknown"}`,
+    `- fallback runtime path: ${runtimePreflight?.fallbackRuntimePath || SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY}`,
+    `- fallback runtime writable: ${runtimePreflight ? runtimePreflight.fallbackWritable : "unknown"}`,
+    `- selected runtime path: ${runtimePreflight?.selectedRuntimePath || "(unknown)"}`,
+    `- selected runtime writable: ${runtimePreflight ? runtimePreflight.selectedRuntimeWritable : "unknown"}`,
+    `- reason selected: ${runtimePreflight?.reasonSelected || "(unknown)"}`,
     "",
     "## Original Failure",
     `- message: ${diagnosticMessage(originalFailure)}`,
@@ -1106,26 +1224,35 @@ export function createSdkWriteFallbackReport({
 export function writeSdkWriteLog(cwd, operationId, payload, hooks = {}) {
   const mkdir = hooks.mkdirSync || mkdirSync;
   const writeFile = hooks.writeFileSync || writeFileSync;
-  const logDirectory = path.join(cwd, ...SDK_WRITE_LOG_DIRECTORY.split("/"));
+  const runtimePreflight =
+    hooks.runtimePreflight ||
+    (hooks.resolveSdkRuntimePaths
+      ? hooks.resolveSdkRuntimePaths(cwd, hooks)
+      : resolveSdkRuntimePaths(cwd, hooks));
+  const logDirectory = repoPathToAbsolute(cwd, runtimePreflight.selectedLogDirectory);
   const logPath = path.join(
     logDirectory,
     `${stamp()}-${sanitizeLogId(operationId)}-sdk-write.json`,
   );
   const attemptedPath = normalizeRepoPath(path.relative(cwd, logPath));
+  const payloadWithRuntime = {
+    ...payload,
+    runtimePreflight,
+  };
 
   try {
     mkdir(logDirectory, { recursive: true });
-    writeFile(logPath, `${serialize(payload)}\n`, "utf8");
+    writeFile(logPath, `${serialize(payloadWithRuntime)}\n`, "utf8");
   } catch (error) {
     const fallbackReportPath = createSdkWriteFallbackReportPath(operationId);
-    const fallbackOperationPath = createSdkWriteOperationFallbackPath(operationId);
+    const fallbackOperationPath = createSdkWriteOperationFallbackPath(operationId, runtimePreflight);
     const fallbackAbsolutePath = path.join(cwd, ...fallbackReportPath.split("/"));
     const fallbackReport = createSdkWriteFallbackReport({
       attemptedLogPath: attemptedPath,
       fallbackOperationPath,
       logWriteError: error,
       operationId,
-      payload,
+      payload: payloadWithRuntime,
     });
     let fallbackReportWriteError = null;
     let fallbackReportWritten = false;
@@ -1146,6 +1273,7 @@ export function writeSdkWriteLog(cwd, operationId, payload, hooks = {}) {
       fallbackReportWriteError,
       fallbackReportWritten,
       path: null,
+      runtimePreflight,
       attemptedFallbackReportPath: fallbackReportPath,
       attemptedPath,
     };
@@ -1154,11 +1282,12 @@ export function writeSdkWriteLog(cwd, operationId, payload, hooks = {}) {
   return {
     error: null,
     errorCode: null,
-    fallbackOperationPath: createSdkWriteOperationFallbackPath(operationId),
+    fallbackOperationPath: createSdkWriteOperationFallbackPath(operationId, runtimePreflight),
     fallbackReportPath: null,
     fallbackReportWriteError: null,
     fallbackReportWritten: false,
     path: attemptedPath,
+    runtimePreflight,
     attemptedFallbackReportPath: createSdkWriteFallbackReportPath(operationId),
     attemptedPath,
   };
@@ -1424,6 +1553,7 @@ export async function runWriteCapableSdkWrite(options) {
     preSnapshot,
     realWriteWork: true,
     result: "sdk-write-completed",
+    runtimePreflight: logResult.runtimePreflight,
     scope: preparedOptions.scope,
     sdkReportedFileChanges,
     sdkThreadCompleted,
@@ -1601,7 +1731,7 @@ export function runWriteCapableContractSmoke() {
   ]);
   const parsedSdkWrite = parseWriteRunnerArgs([
     "--operation-file",
-    ".codex/sdk/operations/m115-docs-audit-sdk-write.json",
+    ".codex-runtime/sdk/operations/m115-docs-audit-sdk-write.json",
   ]);
 
   assertContract(parsedDryRun.dryRun === true, "write runner did not parse dry-run mode", failures);
@@ -1611,7 +1741,7 @@ export function runWriteCapableContractSmoke() {
     failures,
   );
   assertContract(
-    parsedSdkWrite.operationFile === ".codex/sdk/operations/m115-docs-audit-sdk-write.json" &&
+    parsedSdkWrite.operationFile === ".codex-runtime/sdk/operations/m115-docs-audit-sdk-write.json" &&
       parsedSdkWrite.dryRun !== true,
     "write runner did not parse sdk-write operation file mode",
     failures,
@@ -1736,13 +1866,53 @@ export function runWriteCapableContractSmoke() {
 
   const syntheticSdkError = new Error("synthetic original SDK failure preserved");
   syntheticSdkError.code = "SYNTHETIC_SDK_FAILURE";
-  const syntheticLogError = new Error("EPERM: operation not permitted, open synthetic sdk log");
+  const syntheticPrimaryRuntimeError = new Error("Access denied to synthetic primary runtime");
+  syntheticPrimaryRuntimeError.code = "EACCES";
+  const runtimeProbeWrites = [];
+  const runtimeProbeDeletes = [];
+  const fallbackRuntimePreflight = resolveSdkRuntimePaths(process.cwd(), {
+    mkdirSync: (directoryPath) => {
+      const repoPath = normalizeRepoPath(path.relative(process.cwd(), directoryPath));
+      if (repoPath.startsWith(SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY)) {
+        throw syntheticPrimaryRuntimeError;
+      }
+    },
+    unlinkSync: (filePath) => {
+      runtimeProbeDeletes.push(normalizeRepoPath(path.relative(process.cwd(), filePath)));
+    },
+    writeFileSync: (filePath) => {
+      runtimeProbeWrites.push(normalizeRepoPath(path.relative(process.cwd(), filePath)));
+    },
+  });
+
+  assertContract(
+    fallbackRuntimePreflight.primaryWritable === false &&
+      fallbackRuntimePreflight.fallbackWritable === true &&
+      fallbackRuntimePreflight.selectedRuntimePath === SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY,
+    "sdk runtime preflight did not select fallback when primary runtime was unavailable",
+    failures,
+  );
+  assertContract(
+    runtimeProbeWrites.some((repoPath) =>
+      repoPath.startsWith(`${SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY}/logs/`),
+    ) &&
+      runtimeProbeWrites.some((repoPath) =>
+        repoPath.startsWith(`${SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY}/operations/`),
+      ),
+    "sdk runtime preflight did not probe fallback logs and operations directories",
+    failures,
+  );
+  assertContract(
+    runtimeProbeWrites.length > 0 &&
+      runtimeProbeWrites.every((repoPath) => runtimeProbeDeletes.includes(repoPath)),
+    "sdk runtime preflight did not clean fallback temp probe files",
+    failures,
+  );
+
+  const syntheticLogError = new Error("EPERM: synthetic runtime write denied");
   syntheticLogError.code = "EPERM";
   const fallbackWrites = new Map();
   const diagnosticOperationId = "m116-contract-smoke";
-  const diagnosticFallbackOperationPath = createSdkWriteOperationFallbackPath(
-    diagnosticOperationId,
-  );
   const diagnosticLogResult = writeSdkWriteLog(
     process.cwd(),
     diagnosticOperationId,
@@ -1750,7 +1920,10 @@ export function runWriteCapableContractSmoke() {
       failure: errorDiagnostic(syntheticSdkError),
       operationEnvelope: {
         operationId: diagnosticOperationId,
-        sourcePath: diagnosticFallbackOperationPath,
+        sourcePath: createSdkWriteOperationFallbackPath(
+          diagnosticOperationId,
+          fallbackRuntimePreflight,
+        ),
       },
       outputFileCreatedBySdk: false,
       plannedPathCheck: { plannedPaths: [m115SdkWritePath] },
@@ -1764,34 +1937,51 @@ export function runWriteCapableContractSmoke() {
     {
       mkdirSync: (directoryPath) => {
         const repoPath = normalizeRepoPath(path.relative(process.cwd(), directoryPath));
-        if (repoPath === SDK_WRITE_LOG_DIRECTORY) {
+        if (
+          repoPath.startsWith(SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY) ||
+          repoPath.startsWith(SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY)
+        ) {
           throw syntheticLogError;
         }
       },
+      unlinkSync: () => {},
       writeFileSync: (filePath, text) => {
-        fallbackWrites.set(normalizeRepoPath(path.relative(process.cwd(), filePath)), text);
+        const repoPath = normalizeRepoPath(path.relative(process.cwd(), filePath));
+        if (
+          repoPath.startsWith(SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY) ||
+          repoPath.startsWith(SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY)
+        ) {
+          throw syntheticLogError;
+        }
+        fallbackWrites.set(repoPath, text);
       },
     },
   );
+  const diagnosticFallbackOperationPath = diagnosticLogResult.fallbackOperationPath;
   const diagnosticFailureMessage = createSdkWriteFailureMessage(
     syntheticSdkError,
     diagnosticLogResult,
   );
 
   assertContract(
-    diagnosticFallbackOperationPath.startsWith(`${SDK_WRITE_FALLBACK_REPORT_DIRECTORY}/`) &&
-      diagnosticFallbackOperationPath.endsWith("-operation.json"),
-    "sdk-write operation fallback path was not reported under .codex-audit",
+    diagnosticFallbackOperationPath.startsWith(
+      `${SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY}/operations/`,
+    ) && diagnosticFallbackOperationPath.endsWith("-operation.json"),
+    "sdk-write operation fallback path was not reported under .codex-runtime/sdk/operations",
     failures,
   );
   assertContract(
     diagnosticLogResult.path === null &&
       diagnosticLogResult.errorCode === "EPERM" &&
+      diagnosticLogResult.runtimePreflight?.primaryWritable === false &&
+      diagnosticLogResult.runtimePreflight?.fallbackWritable === false &&
+      diagnosticLogResult.runtimePreflight?.selectedRuntimePath ===
+        SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY &&
       diagnosticLogResult.fallbackReportWritten === true &&
       diagnosticLogResult.fallbackReportPath?.startsWith(
         `${SDK_WRITE_FALLBACK_REPORT_DIRECTORY}/`,
       ),
-    "sdk-write log write failure was not converted into a non-fatal fallback report",
+    "sdk-write log write failure was not converted into a non-fatal .codex-audit fallback report",
     failures,
   );
   assertContract(
@@ -1801,8 +1991,11 @@ export function runWriteCapableContractSmoke() {
       fallbackWrites
         .get(diagnosticLogResult.fallbackReportPath)
         ?.includes("sdkThreadCreated: false") &&
-      fallbackWrites.get(diagnosticLogResult.fallbackReportPath)?.includes("realWriteWork: false"),
-    "sdk-write fallback report did not preserve the original failure and local-only smoke state",
+      fallbackWrites.get(diagnosticLogResult.fallbackReportPath)?.includes("realWriteWork: false") &&
+      fallbackWrites
+        .get(diagnosticLogResult.fallbackReportPath)
+        ?.includes(`selected runtime path: ${SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY}`),
+    "sdk-write fallback report did not preserve the original failure, runtime preflight, and local-only smoke state",
     failures,
   );
   assertContract(
@@ -1833,7 +2026,7 @@ export function runWriteCapableContractSmoke() {
 
   const sdkWriteEnvelopeOptions = loadOperationEnvelopeOptions(
     {
-      operationFile: ".codex/sdk/operations/m115-docs-audit-sdk-write.json",
+      operationFile: ".codex-runtime/sdk/operations/m115-docs-audit-sdk-write.json",
     },
     {
       existsSync: () => true,
@@ -1856,7 +2049,7 @@ export function runWriteCapableContractSmoke() {
       loadOperationEnvelopeOptions(
         {
           dryRun: true,
-          operationFile: ".codex/sdk/operations/m115-docs-audit-sdk-write.json",
+          operationFile: ".codex-runtime/sdk/operations/m115-docs-audit-sdk-write.json",
         },
         {
           existsSync: () => true,
@@ -2447,6 +2640,17 @@ export function runWriteCapableContractSmoke() {
     sdkWritePathAllowlist: SDK_WRITE_PLANNED_PATH_ALLOWLIST,
     sdkWriteScope: SDK_WRITE_ALLOWED_SCOPE,
     sdkWritePlannedPaths: SDK_WRITE_CONTRACT_SMOKE_PLANNED_PATHS,
+    sdkWriteRuntimeFallbackMode: "pass",
+    sdkWriteRuntimeFallbackProbeCleaned: runtimeProbeWrites.every((repoPath) =>
+      runtimeProbeDeletes.includes(repoPath),
+    ),
+    sdkWriteRuntimeFallbackWritable: fallbackRuntimePreflight.fallbackWritable,
+    sdkWriteRuntimePrimaryUnavailableFallbackSelected:
+      fallbackRuntimePreflight.primaryWritable === false &&
+      fallbackRuntimePreflight.selectedRuntimePath === SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY,
+    sdkWriteRuntimeSmokeRealWriteWork: false,
+    sdkWriteRuntimeSmokeSdkThreadCreated: false,
+    sdkWriteSelectedRuntimePath: fallbackRuntimePreflight.selectedRuntimePath,
     scopes: WRITE_SCOPES,
     unsafeFlags: UNSAFE_WRITE_RUNNER_FLAGS,
   };
@@ -2470,6 +2674,7 @@ function printResult(result, asJson) {
     console.log(`SDK thread completed: ${result.sdkThreadCompleted}`);
     console.log(`Thread id: ${result.sdkThreadId || "(not reported)"}`);
     console.log(`Real write work: ${result.realWriteWork}`);
+    console.log(`SDK runtime: ${result.runtimePreflight?.selectedRuntimePath || "(not reported)"}`);
     console.log(`SDK output path: ${result.sdkThreadOutputPath}`);
     console.log(`SDK output file created: ${result.outputFileCreatedBySdk}`);
     console.log(

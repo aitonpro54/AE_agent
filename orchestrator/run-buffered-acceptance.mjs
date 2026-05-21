@@ -409,10 +409,22 @@ async function runContractSmoke() {
   assertContract(
     writeScaffoldSmoke?.sdkWriteDiagnosticsMode === "pass" &&
       writeScaffoldSmoke?.sdkWriteFallbackReportPath?.startsWith(".codex-audit/") &&
-      writeScaffoldSmoke?.sdkWriteFallbackOperationPath?.startsWith(".codex-audit/") &&
+      writeScaffoldSmoke?.sdkWriteFallbackOperationPath?.startsWith(
+        ".codex-runtime/sdk/operations/",
+      ) &&
       writeScaffoldSmoke?.sdkWriteDiagnosticSmokeSdkThreadCreated === false &&
       writeScaffoldSmoke?.sdkWriteDiagnosticSmokeRealWriteWork === false,
     "M116 sdk-write diagnostic logging fallback contract smoke did not pass",
+    failures,
+  );
+  assertContract(
+    writeScaffoldSmoke?.sdkWriteRuntimeFallbackMode === "pass" &&
+      writeScaffoldSmoke?.sdkWriteRuntimePrimaryUnavailableFallbackSelected === true &&
+      writeScaffoldSmoke?.sdkWriteRuntimeFallbackWritable === true &&
+      writeScaffoldSmoke?.sdkWriteRuntimeFallbackProbeCleaned === true &&
+      writeScaffoldSmoke?.sdkWriteRuntimeSmokeSdkThreadCreated === false &&
+      writeScaffoldSmoke?.sdkWriteRuntimeSmokeRealWriteWork === false,
+    "M120 sdk runtime fallback contract smoke did not pass",
     failures,
   );
   assertContract(
@@ -531,7 +543,8 @@ async function runContractSmoke() {
       readme.includes("src/**") &&
       readme.includes("orchestrator/**") &&
       readme.includes(".codex-audit/<operation>-sdk-write-failure-diagnostics.md") &&
-      readme.includes(".codex-audit/<operation>-operation.json") &&
+      readme.includes(".codex-runtime/sdk/operations/<operation>-operation.json") &&
+      readme.includes(".codex-runtime/sdk") &&
       readme.includes("docs-audit") &&
       readme.includes("production-code") &&
       readme.includes("cep-panel") &&
@@ -567,6 +580,7 @@ async function runContractSmoke() {
   console.log("Write-capable operation envelope mode: pass");
   console.log("Write-capable docs-audit sdk-write mode: pass");
   console.log("Write-capable sdk-write diagnostic logging mode: pass");
+  console.log("Write-capable sdk runtime fallback mode: pass");
 }
 
 async function runBufferedAcceptance({ milestonePath, reportPath }) {

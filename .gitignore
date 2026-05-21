@@ -12,3 +12,4 @@ pro-review-bundles/
 backups/*.aep
 backups/*.aepx
 .codex/
+.codex-runtime/

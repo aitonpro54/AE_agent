@@ -49,7 +49,7 @@ M112 добавляет non-live scaffold для будущего write-capable 
 ```powershell
 npm.cmd run codex:orchestrator:write-scaffold -- --scope orchestrator --prompt "Implement a narrow orchestrator change"
 npm.cmd run codex:orchestrator:write-scaffold -- --dry-run --operation-file .codex-audit/m114-operation-envelope.json
-npm.cmd run codex:orchestrator:write-scaffold -- --operation-file .codex/sdk/operations/m115-docs-audit-sdk-write.json
+npm.cmd run codex:orchestrator:write-scaffold -- --operation-file .codex-runtime/sdk/operations/m115-docs-audit-sdk-write.json
 npm.cmd run codex:orchestrator:write-scaffold:contract
 ```
 
@@ -85,7 +85,7 @@ Envelope dry-run reports `sdkThreadCreated:false`, `realWriteWork:false`, and `a
 
 `sdk-write` uses the same operation envelope and remains accepted only for `scope:"docs-audit"` with `mode:"sdk-write"`. M117R generalizes planned outputs from the original M115 single-file allowlist to any non-empty `plannedPaths` set under `.codex-audit/**`, after the same unsafe path shape checks, forbidden path checks, and docs-audit scope allowlist validation. Planned paths such as `src/**`, `orchestrator/**`, `../outside.md`, `.env`, `node_modules/**`, and `.git/**` are rejected before SDK thread creation. The SDK prompt is constrained to the validated planned path set, auto-commit remains disabled, and the runner captures pre/post git snapshots plus `git diff --check`. After the SDK turn, the runner hard-stops if the changed-since-pre diff includes anything outside the planned path set.
 
-M116 hardens SDK write diagnostics without retrying real write work. Primary SDK logs under `.codex/sdk/logs/` are best-effort and non-fatal: if log creation or JSON write fails, including `EPERM`, the original SDK/post-run error remains in the console failure message. The runner then attempts a fallback Markdown diagnostic report under `.codex-audit/<operation>-sdk-write-failure-diagnostics.md`. If `.codex/sdk/operations/` cannot be created, the operation envelope can be placed at the reported `.codex-audit/<operation>-operation.json` fallback path and passed with `--operation-file`.
+M116 hardens SDK write diagnostics without retrying real write work. M120 adds a runtime preflight for SDK write logs and operation envelopes: the runner prefers `.codex/sdk`, verifies that both `logs` and `operations` can be created and written, then falls back to the ignored `.codex-runtime/sdk` runtime when `.codex/sdk` is missing or not writable. Routine SDK logs and operation-envelope paths use the selected runtime, for example `.codex-runtime/sdk/operations/<operation>-operation.json` when the fallback is selected. If selected-runtime log writing still fails, including `EPERM`, the original SDK/post-run error remains in the console failure message and the runner attempts only the reviewable diagnostic report under `.codex-audit/<operation>-sdk-write-failure-diagnostics.md`.
 
 Обязательный `--scope` принимает только:
 
