@@ -105,6 +105,7 @@
 - [x] Milestone 136: Production-Code Existing Source Update Hardening.
 - [~] Milestone 137: Production-Code SDKThread Write partial; SDKThread was created but disconnected before completion.
 - [x] Milestone 138: Production-Code SDKThread Retry Completion.
+- [x] Milestone 139: Post-M138 SDK Operability Gate.
 
 ## Current Stable Baseline
 
@@ -816,6 +817,13 @@
 - Validate the touched provider contract smoke file locally and record the completed retry evidence.
 - Keep CEP-panel disabled and keep production-code planned path limited to `scripts/provider-contract-smoke.js`.
 
+### Milestone 139: Post-M138 SDK Operability Gate
+
+- Зафиксировать локальный post-M138 gate после первого успешного production-code SDKThread write.
+- Отделить успешность M138 от разрешения на новые SDKThread/network retries или расширение write-scope.
+- Сохранить production-code SDK writes ограниченными single-file lane `scripts/provider-contract-smoke.js`, а CEP-panel SDK writes disabled/review-required.
+- Подтвердить milestone только локальными checks/smokes без SDKThread creation, network retry, package install, live CEP/AE или mutating-live validation.
+
 ## Decision Log
 
 - 2026-05-20: Milestone 114 makes the write-capable dry-run CLI envelope-first. `--dry-run` now requires `--operation-file`, and the envelope supplies `version`, `operationId`, `scope`, `mode`, `prompt`, and `plannedPaths`; M114 supports only `version: 1` and `mode: "dry-run"`.
@@ -845,6 +853,7 @@
 - 2026-05-21: M136 keeps docs-audit/orchestrator sdk-write lanes output-only, but treats the enabled production-code lane as an existing-source update lane: the planned source file must exist before SDKThread creation and the post-run diff may include only `scripts/provider-contract-smoke.js`.
 - 2026-05-21: M137 ran exactly one production-code SDKThread write attempt for `scripts/provider-contract-smoke.js`; the SDKThread was created but disconnected before completion, no source file changed, and an escalated retry was not run because it would have been a second real SDK/network attempt.
 - 2026-05-21: M138 used the user's risk-informed approval for exactly one production-code SDKThread/network retry of the M137 operation file; the SDKThread completed, changed only `scripts/provider-contract-smoke.js`, and the post-run contract passed.
+- 2026-05-21: M139 records a local post-M138 operability gate: the successful single-file production-code SDK write is accepted as evidence, but it does not approve another SDKThread/network retry, does not broaden production-code writes beyond `scripts/provider-contract-smoke.js`, and keeps CEP-panel SDK writes disabled/review-required.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -1171,6 +1180,13 @@
   - Passed `node scripts/provider-contract-smoke.js`.
   - Passed `git diff --check`; Git printed only the existing LF-to-CRLF working-copy warning for `scripts/provider-contract-smoke.js`.
   - Added `.codex-audit/138-production-code-sdk-thread-write-retry-complete.md` as reviewable retry evidence.
+- Milestone 139:
+  - Added `.codex-audit/139-post-production-code-sdk-operability-gate.md` as a local post-M138 gate.
+  - Recorded that M138 proves the narrow `scripts/provider-contract-smoke.js` production-code lane can complete, but does not approve new SDKThread/network retries or broader production-code/CEP-panel SDK writes.
+  - No JavaScript files were changed, so `node --check` was not applicable.
+  - Passed `npm.cmd run codex:orchestrator:write-scaffold:contract`, `npm.cmd run check:rules`, and `git diff --check`; Git printed only an LF-to-CRLF working-copy warning for `plans/target-app-execplan.md`.
+  - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
+  - Did not run live CEP / After Effects smokes, external-provider validation, OpenAI CLI planner validation, mutating-live validation, package install, SDKThread creation, real SDK write work, CEP-panel write enablement, or production-code source edits because M139 is a local-only operability gate.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.
