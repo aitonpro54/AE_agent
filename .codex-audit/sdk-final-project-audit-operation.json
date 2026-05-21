@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "operationId": "final-project-audit",
+  "scope": "docs-audit",
+  "mode": "sdk-write",
+  "prompt": "Ты работаешь внутри проекта AE_agent. Абсолютный путь проекта: C:\\Users\\Ant\\Documents\\Codex\\AE_agent. Считай этот путь единственным корнем проекта. Не ищи проект в C:\\Users\\Ant, C:\\Users\\Ant\\Documents или других родительских каталогах. Не запускай Get-ChildItem, ls, dir, rg или другие обходы по родительским каталогам. Если текущая директория отличается, перейди строго в C:\\Users\\Ant\\Documents\\Codex\\AE_agent и продолжай только оттуда. Задача: завершить полный аудит проекта AE_agent в режиме audit-only. Можно читать только релевантные файлы внутри проекта: AGENTS.md, .codex/handoff.md, specs/target-app.md, plans/target-app-execplan.md, orchestrator/README.md, package.json, .codex-audit/** и узко необходимые orchestrator/scripts файлы для проверки SDK operability. Нельзя изменять production-code, CEP panel, scripts, package files, configs или любые файлы кроме заранее разрешенного отчета. Создай итоговый отчет строго в .codex-audit/final-project-audit-sdk-report.md. В отчете на русском дай: 1) текущее состояние SDK operability; 2) какие SDK lanes уже реально доказаны; 3) какие lanes пока только review-required; 4) что доказывают M127-M129; 5) оставшиеся риски и блокеры; 6) что нужно сделать дальше до полного закрытия SDK работоспособности; 7) какие проверки стоит выполнить после отчета. Не запрашивай разрешения на обход C:\\Users\\Ant. Если доступ к родительской директории нужен только для поиска проекта, остановись и используй указанный абсолютный путь.",
+  "plannedPaths": [
+    ".codex-audit/final-project-audit-sdk-report.md"
+  ]
+}
