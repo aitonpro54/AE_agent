@@ -1112,6 +1112,7 @@
   - Added `validateSdkWriteLaneEnablementPacket()` and contract coverage proving the approved lane accepts `scripts/provider-contract-smoke.js` while rejecting `mcp-server/**`, `chatgpt-connector/**`, unapproved `scripts/**`, `cep-panel/**`, and broadened enablement artifacts.
   - Extended `check:rules` to validate committed enablement JSON files against the M134 approval decision, M133 readiness packet, and M129 review packet.
   - Updated `orchestrator/README.md` and added `.codex-audit/135-production-code-sdk-lane-enablement.md`.
+  - After initial push, clarified the earlier README `sdk-write` overview sentence so it no longer describes docs-audit/orchestrator as the only enabled lanes after M135.
   - Passed `node --check orchestrator/run-write-capable-scaffold.mjs`, `node --check orchestrator/run-buffered-acceptance.mjs`, and `node --check scripts/provider-contract-smoke.js`.
   - Passed `npm.cmd run codex:orchestrator:help`, `npm.cmd run codex:orchestrator:write-scaffold:contract`, `npm.cmd run check:rules`, and `git diff --check`; contract output includes `PASS M135 write-capable runner scaffold contract smoke` and `PASS M135 SDK orchestrator contract smoke`, and Git printed only LF-to-CRLF working-copy warnings.
   - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
