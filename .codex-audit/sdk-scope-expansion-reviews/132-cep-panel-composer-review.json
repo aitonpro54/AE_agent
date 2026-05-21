@@ -1,0 +1,18 @@
+{
+  "schema": "sdk-scope-expansion-review.v1",
+  "decision": "proposed",
+  "scope": "cep-panel",
+  "sdkWriteEnabled": false,
+  "summary": "Review a future CEP-panel SDK write lane for narrow composer-control maintenance. This packet does not enable CEP-panel SDK writes.",
+  "plannedPathAllowlist": [
+    "cep-panel/panel.js"
+  ],
+  "validationPlan": [
+    "Run node --check cep-panel/panel.js before any future write-lane approval.",
+    "Run npm.cmd run codex:orchestrator:write-scaffold:contract to confirm CEP-panel remains review-required while this packet is only proposed.",
+    "Run npm.cmd run check:rules to validate committed review packets and SDK scope gates.",
+    "Run the configured local smoke suite before considering any separate approval to enable the lane.",
+    "Run relevant live CEP smoke tests, including reload and mode-toggle checks, only in a separate explicitly approved milestone."
+  ],
+  "rollbackPlan": "Keep SDK_WRITE_ALLOWED_SCOPES unchanged; remove this packet or mark it rejected if review does not approve the future cep-panel lane."
+}

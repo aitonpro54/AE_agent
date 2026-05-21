@@ -98,6 +98,7 @@
 - [x] Milestone 129: First SDK Scope Expansion Review Packet.
 - [x] Milestone 130: SDK Write Markdown Prompt Title Hotfix.
 - [x] Milestone 131: Final SDK Audit Report.
+- [x] Milestone 132: CEP Panel Scope Expansion Review Packet.
 
 ## Current Stable Baseline
 
@@ -766,6 +767,12 @@
 - Record the SDK log result: SDK thread created, completed, wrote the planned audit output, and passed post-run diff contract.
 - Keep this as audit-only: no production-code writes, no CEP-panel writes, and no new SDK write lanes.
 
+### Milestone 132: CEP Panel Scope Expansion Review Packet
+
+- Add a second committed local review packet for a future `cep-panel` SDK write lane.
+- Keep the packet proposed-only with `sdkWriteEnabled:false`; do not create SDK threads, enable CEP-panel writes, enable production-code writes, or run real SDK write work.
+- Validate committed review packet files through `check:rules` and the configured local smoke suite.
+
 ## Decision Log
 
 - 2026-05-20: Milestone 114 makes the write-capable dry-run CLI envelope-first. `--dry-run` now requires `--operation-file`, and the envelope supplies `version`, `operationId`, `scope`, `mode`, `prompt`, and `plannedPaths`; M114 supports only `version: 1` and `mode: "dry-run"`.
@@ -788,6 +795,7 @@
 - 2026-05-21: M129 adds the first committed proposed review packet for a future scripts-only `production-code` SDK write lane and extends `check:rules` to validate committed packet files; production-code and CEP-panel SDK writes remain disabled.
 - 2026-05-21: M130 fixes Markdown `sdk-write` prompt construction by defining the output title and adding direct prompt-render contract coverage; the user-created final-audit operation file remains uncommitted and should be acknowledged when rerunning the real SDK command.
 - 2026-05-21: M131 accepts the final docs-audit SDKThread report after verifying the SDK log showed thread creation, completion, planned output creation, and post-run contract pass; the earlier stream disconnect remains a reliability concern, not a blocker for the successful rerun.
+- 2026-05-21: M132 adds the first committed proposed review packet for a future narrow `cep-panel` SDK write lane and extends `check:rules` to require the CEP packet to remain proposed, scoped to `cep-panel`, and disabled.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -1047,6 +1055,15 @@
   - Passed `npm.cmd run codex:orchestrator:help`, `npm.cmd run codex:orchestrator:write-scaffold:contract`, `npm.cmd run check:rules`, and `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
   - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
   - Did not run live CEP / After Effects smokes, external-provider validation, OpenAI CLI planner validation, mutating-live validation, package install, or additional SDKThread creation because M131 only commits the already-created final docs-audit SDK report and operation evidence.
+- Milestone 132:
+  - Added `.codex-audit/sdk-scope-expansion-reviews/132-cep-panel-composer-review.json` as a proposed `sdk-scope-expansion-review.v1` packet.
+  - The packet proposes only a future narrow `cep-panel` lane for `cep-panel/panel.js`, keeps `sdkWriteEnabled:false`, and includes validation and rollback plans.
+  - Extended `check:rules` to require the M132 packet to remain proposed, CEP-panel scoped, and disabled.
+  - Updated `orchestrator/README.md` to document the second committed review packet.
+  - Passed `node --check orchestrator/run-buffered-acceptance.mjs` and `node --check orchestrator/run-write-capable-scaffold.mjs`.
+  - Passed `npm.cmd run codex:orchestrator:help`, `npm.cmd run codex:orchestrator:write-scaffold:contract`, `npm.cmd run check:rules`, and `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
+  - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
+  - Did not run live CEP / After Effects smokes, external-provider validation, OpenAI CLI planner validation, mutating-live validation, package install, SDKThread creation, or real SDK write work because M132 is a local-only review-packet artifact and validation gate.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.

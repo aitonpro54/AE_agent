@@ -545,6 +545,19 @@ async function runContractSmoke() {
     "M129 first SDK scope expansion review packet was not validated",
     failures,
   );
+  const secondReviewPacket = reviewPacketFiles.packets.find(
+    (packet) =>
+      packet.path ===
+      `${SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY}/132-cep-panel-composer-review.json`,
+  );
+  assertContract(
+    secondReviewPacket?.decision === "proposed" &&
+      secondReviewPacket?.scope === "cep-panel" &&
+      secondReviewPacket?.sdkWriteEnabled === false &&
+      secondReviewPacket?.plannedPathAllowlist?.includes("cep-panel/panel.js"),
+    "M132 CEP-panel SDK scope expansion review packet was not validated",
+    failures,
+  );
   assertContract(
     WRITE_SCOPES.join(",") === "docs-audit,orchestrator,production-code,cep-panel",
     "M112 write-capable scopes are not the expected explicit set",
@@ -701,7 +714,7 @@ async function runContractSmoke() {
     return;
   }
 
-  console.log("PASS M129 SDK orchestrator contract smoke");
+  console.log("PASS M132 SDK orchestrator contract smoke");
   console.log("Invalid general CLI values rejected before SDK thread creation");
   console.log("Write-capable scopes:");
   for (const scope of WRITE_SCOPES) {

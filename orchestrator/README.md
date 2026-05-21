@@ -97,6 +97,8 @@ M128 adds a local review-packet contract for any future proposal to expand SDK w
 
 M129 adds the first committed review packet, `.codex-audit/sdk-scope-expansion-reviews/129-production-code-smoke-harness-review.json`, for a future `production-code` scripts-only lane. `check:rules` validates committed review packet JSON files with the same local contract while production-code and CEP-panel SDK writes remain disabled.
 
+M132 adds a second committed review packet, `.codex-audit/sdk-scope-expansion-reviews/132-cep-panel-composer-review.json`, for a future narrow `cep-panel` lane. This remains a proposed review artifact only: `sdkWriteEnabled:false`, no SDK thread creation, and no CEP-panel write enablement.
+
 Обязательный `--scope` принимает только:
 
 - `docs-audit`
