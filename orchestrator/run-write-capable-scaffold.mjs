@@ -178,6 +178,9 @@ export const SDK_WRITE_LANE_ENABLEMENT_SCHEMA = "sdk-write-lane-enablement.v1";
 export const SDK_WRITE_LANE_ENABLEMENT_DIRECTORY =
   ".codex-audit/sdk-write-lane-enablement";
 export const SDK_WRITE_LANE_ENABLEMENT_APPROVAL_STATE = "approved";
+export const SDK_LAUNCH_GOVERNANCE_SCHEMA = "sdk-launch-governance.v1";
+export const SDK_LAUNCH_GOVERNANCE_DIRECTORY = ".codex-audit/sdk-launch-governance";
+export const SDK_LAUNCH_GOVERNANCE_STATE = "local-gated";
 export const SDK_WRITE_PLANNED_PATH_ALLOWLIST = Object.freeze([
   ".codex-audit/**",
 ]);
@@ -1138,6 +1141,138 @@ export function validateSdkWriteLaneEnablementPacket(packet) {
     sourceReadinessPacket,
     sourceReviewPacket,
     summary: packet.summary.trim(),
+  };
+}
+
+function normalizeNonEmptyStringList(value, label) {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error(`Missing ${label}.`);
+  }
+
+  const normalized = value.map((item) => (typeof item === "string" ? item.trim() : ""));
+  if (normalized.some((item) => item === "")) {
+    throw new Error(`${label} entries must be non-empty strings.`);
+  }
+
+  return normalized;
+}
+
+export function validateSdkLaunchGovernancePacket(packet) {
+  if (!packet || typeof packet !== "object" || Array.isArray(packet)) {
+    throw new Error("Malformed SDK launch governance packet. Expected a JSON object.");
+  }
+
+  for (const field of UNSAFE_SCOPE_EXPANSION_REVIEW_FIELDS) {
+    if (Object.hasOwn(packet, field)) {
+      throw new Error(`Unsafe SDK launch governance field rejected: ${field}`);
+    }
+  }
+
+  if (packet.schema !== SDK_LAUNCH_GOVERNANCE_SCHEMA) {
+    throw new Error(
+      `Unsupported SDK launch governance schema: ${String(
+        packet.schema,
+      )}. Expected ${SDK_LAUNCH_GOVERNANCE_SCHEMA}.`,
+    );
+  }
+
+  if (packet.state !== SDK_LAUNCH_GOVERNANCE_STATE) {
+    throw new Error(
+      `Unsupported SDK launch governance state: ${String(
+        packet.state,
+      )}. Expected ${SDK_LAUNCH_GOVERNANCE_STATE}.`,
+    );
+  }
+
+  if (typeof packet.summary !== "string" || packet.summary.trim() === "") {
+    throw new Error("Missing SDK launch governance summary.");
+  }
+
+  const sourceMilestones = normalizeNonEmptyStringList(
+    packet.sourceMilestones,
+    "SDK launch governance sourceMilestones",
+  );
+  if (!sourceMilestones.includes("M138") || !sourceMilestones.includes("M139")) {
+    throw new Error("SDK launch governance must cite M138 and M139 as source milestones.");
+  }
+
+  const allowedSdkWriteScopes = normalizeNonEmptyStringList(
+    packet.allowedSdkWriteScopes,
+    "SDK launch governance allowedSdkWriteScopes",
+  );
+  if (allowedSdkWriteScopes.join(",") !== SDK_WRITE_ALLOWED_SCOPES.join(",")) {
+    throw new Error(
+      `SDK launch governance allowedSdkWriteScopes must be exactly ${SDK_WRITE_ALLOWED_SCOPES.join(",")}.`,
+    );
+  }
+
+  const reviewRequiredScopes = normalizeNonEmptyStringList(
+    packet.reviewRequiredScopes,
+    "SDK launch governance reviewRequiredScopes",
+  );
+  if (reviewRequiredScopes.join(",") !== SDK_WRITE_REVIEW_REQUIRED_SCOPES.join(",")) {
+    throw new Error(
+      `SDK launch governance reviewRequiredScopes must be exactly ${SDK_WRITE_REVIEW_REQUIRED_SCOPES.join(",")}.`,
+    );
+  }
+
+  const productionCodePlannedPathAllowlist = normalizeNonEmptyStringList(
+    packet.productionCodePlannedPathAllowlist,
+    "SDK launch governance productionCodePlannedPathAllowlist",
+  ).map(normalizeRepoPath);
+  if (
+    productionCodePlannedPathAllowlist.join(",") !==
+    SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(",")
+  ) {
+    throw new Error(
+      `SDK launch governance productionCodePlannedPathAllowlist must be exactly ${SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(",")}.`,
+    );
+  }
+
+  if (packet.cepPanelSdkWriteEnabled !== false) {
+    throw new Error("SDK launch governance must keep cepPanelSdkWriteEnabled:false.");
+  }
+
+  if (packet.newSdkThreadRunApproved !== false) {
+    throw new Error("SDK launch governance must keep newSdkThreadRunApproved:false.");
+  }
+
+  if (packet.broadProductionCodeWritesApproved !== false) {
+    throw new Error("SDK launch governance must keep broadProductionCodeWritesApproved:false.");
+  }
+
+  if (packet.externalNetworkRetryApproved !== false) {
+    throw new Error("SDK launch governance must keep externalNetworkRetryApproved:false.");
+  }
+
+  const approvalRequiredFor = normalizeNonEmptyStringList(
+    packet.approvalRequiredFor,
+    "SDK launch governance approvalRequiredFor",
+  );
+  const validationPlan = normalizeNonEmptyStringList(
+    packet.validationPlan,
+    "SDK launch governance validationPlan",
+  );
+
+  if (typeof packet.rollbackPlan !== "string" || packet.rollbackPlan.trim() === "") {
+    throw new Error("Missing SDK launch governance rollbackPlan.");
+  }
+
+  return {
+    allowedSdkWriteScopes,
+    approvalRequiredFor,
+    broadProductionCodeWritesApproved: false,
+    cepPanelSdkWriteEnabled: false,
+    externalNetworkRetryApproved: false,
+    newSdkThreadRunApproved: false,
+    productionCodePlannedPathAllowlist,
+    reviewRequiredScopes,
+    rollbackPlan: packet.rollbackPlan.trim(),
+    schema: packet.schema,
+    sourceMilestones,
+    state: packet.state,
+    summary: packet.summary.trim(),
+    validationPlan,
   };
 }
 
@@ -3770,6 +3905,93 @@ export function runWriteCapableContractSmoke() {
     );
   }
 
+  const validSdkLaunchGovernance = {
+    schema: SDK_LAUNCH_GOVERNANCE_SCHEMA,
+    state: SDK_LAUNCH_GOVERNANCE_STATE,
+    summary:
+      "Record local SDK launch governance after the first successful production-code SDK write.",
+    sourceMilestones: ["M138", "M139"],
+    allowedSdkWriteScopes: SDK_WRITE_ALLOWED_SCOPES,
+    reviewRequiredScopes: SDK_WRITE_REVIEW_REQUIRED_SCOPES,
+    productionCodePlannedPathAllowlist: SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST,
+    cepPanelSdkWriteEnabled: false,
+    newSdkThreadRunApproved: false,
+    broadProductionCodeWritesApproved: false,
+    externalNetworkRetryApproved: false,
+    approvalRequiredFor: [
+      "Any new SDKThread/network write attempt.",
+      "Any production-code path beyond scripts/provider-contract-smoke.js.",
+      "Any CEP-panel SDK write enablement.",
+    ],
+    validationPlan: [
+      "Run npm.cmd run codex:orchestrator:write-scaffold:contract.",
+      "Run npm.cmd run check:rules.",
+    ],
+    rollbackPlan:
+      "Keep SDK writes limited to the previously approved single-file production-code lane unless a later milestone records a narrower approval.",
+  };
+
+  let sdkLaunchGovernanceAccepted = true;
+  try {
+    validateSdkLaunchGovernancePacket(validSdkLaunchGovernance);
+  } catch {
+    sdkLaunchGovernanceAccepted = false;
+  }
+  assertContract(
+    sdkLaunchGovernanceAccepted,
+    "SDK launch governance packet rejected a valid local-gated launch state",
+    failures,
+  );
+
+  const sdkLaunchGovernanceRejectedCases = [
+    {
+      expectedMessageStart:
+        "SDK launch governance must keep newSdkThreadRunApproved:false.",
+      label: "SDK launch governance packet accepted a hidden SDKThread approval",
+      patch: { newSdkThreadRunApproved: true },
+    },
+    {
+      expectedMessageStart:
+        "SDK launch governance productionCodePlannedPathAllowlist must be exactly scripts/provider-contract-smoke.js.",
+      label: "SDK launch governance packet accepted a broadened production-code allowlist",
+      patch: { productionCodePlannedPathAllowlist: ["scripts/**"] },
+    },
+    {
+      expectedMessageStart:
+        "SDK launch governance must keep cepPanelSdkWriteEnabled:false.",
+      label: "SDK launch governance packet accepted CEP-panel enablement",
+      patch: { cepPanelSdkWriteEnabled: true },
+    },
+    {
+      expectedMessageStart: "SDK launch governance must keep externalNetworkRetryApproved:false.",
+      label: "SDK launch governance packet accepted an external network retry approval",
+      patch: { externalNetworkRetryApproved: true },
+    },
+    {
+      expectedMessageStart: "SDK launch governance must cite M138 and M139 as source milestones.",
+      label: "SDK launch governance packet accepted missing M138/M139 evidence",
+      patch: { sourceMilestones: ["M138"] },
+    },
+    {
+      expectedMessageStart: "Unsafe SDK launch governance field rejected:",
+      label: "SDK launch governance packet accepted unsafe execution options",
+      patch: { networkAccessEnabled: true },
+    },
+  ];
+
+  for (const rejectedCase of sdkLaunchGovernanceRejectedCases) {
+    assertRejects(
+      () =>
+        validateSdkLaunchGovernancePacket({
+          ...validSdkLaunchGovernance,
+          ...rejectedCase.patch,
+        }),
+      rejectedCase.expectedMessageStart,
+      failures,
+      rejectedCase.label,
+    );
+  }
+
   let arbitraryAuditPathAccepted = true;
   try {
     validateOperationEnvelope({
@@ -4711,6 +4933,12 @@ export function runWriteCapableContractSmoke() {
     sdkScopeExpansionReviewRealWriteWork: false,
     sdkScopeExpansionReviewSchema: SDK_SCOPE_EXPANSION_REVIEW_SCHEMA,
     sdkScopeExpansionReviewSdkThreadCreated: false,
+    sdkLaunchGovernanceDirectory: SDK_LAUNCH_GOVERNANCE_DIRECTORY,
+    sdkLaunchGovernancePacketMode: "pass",
+    sdkLaunchGovernanceRealWriteWork: false,
+    sdkLaunchGovernanceSchema: SDK_LAUNCH_GOVERNANCE_SCHEMA,
+    sdkLaunchGovernanceSdkThreadCreated: false,
+    sdkLaunchGovernanceState: SDK_LAUNCH_GOVERNANCE_STATE,
     sdkWriteLaneApprovalDecisionApprovalState: SDK_WRITE_LANE_APPROVAL_STATE,
     sdkWriteLaneApprovalDecisionDirectory: SDK_WRITE_LANE_APPROVAL_DECISION_DIRECTORY,
     sdkWriteLaneApprovalDecisionExplicitApprovalRecorded: false,

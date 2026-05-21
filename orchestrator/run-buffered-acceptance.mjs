@@ -344,6 +344,52 @@ function collectSdkWriteLaneEnablementPackets(directory, validatePacket) {
   };
 }
 
+function collectSdkLaunchGovernancePackets(directory, validatePacket) {
+  const absoluteDirectory = path.join(repo, directory);
+  const failures = [];
+  const packets = [];
+
+  if (!fs.existsSync(absoluteDirectory)) {
+    return {
+      failures: [`missing SDK launch governance packet directory: ${directory}`],
+      packets,
+    };
+  }
+
+  for (const entry of fs.readdirSync(absoluteDirectory, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".json")) {
+      continue;
+    }
+
+    const absolutePath = path.join(absoluteDirectory, entry.name);
+    const repoPath = path.posix.join(directory, entry.name);
+
+    try {
+      const packet = JSON.parse(fs.readFileSync(absolutePath, "utf8"));
+      const validated = validatePacket(packet);
+      packets.push({
+        allowedSdkWriteScopes: validated.allowedSdkWriteScopes,
+        broadProductionCodeWritesApproved: validated.broadProductionCodeWritesApproved,
+        cepPanelSdkWriteEnabled: validated.cepPanelSdkWriteEnabled,
+        externalNetworkRetryApproved: validated.externalNetworkRetryApproved,
+        newSdkThreadRunApproved: validated.newSdkThreadRunApproved,
+        path: repoPath,
+        productionCodePlannedPathAllowlist: validated.productionCodePlannedPathAllowlist,
+        reviewRequiredScopes: validated.reviewRequiredScopes,
+        sourceMilestones: validated.sourceMilestones,
+        state: validated.state,
+      });
+    } catch (error) {
+      failures.push(`${repoPath}: ${error.message}`);
+    }
+  }
+
+  return {
+    failures,
+    packets: packets.sort((left, right) => left.path.localeCompare(right.path)),
+  };
+}
+
 async function runContractSmoke() {
   const failures = [];
   const helpResult = runNode([path.join("orchestrator", "codex-sdk-orchestrator.mjs"), "--help"]);
@@ -359,6 +405,9 @@ async function runContractSmoke() {
   );
   const {
     FORBIDDEN_PATH_PATTERNS,
+    SDK_LAUNCH_GOVERNANCE_DIRECTORY,
+    SDK_LAUNCH_GOVERNANCE_SCHEMA,
+    SDK_LAUNCH_GOVERNANCE_STATE,
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
     SDK_SCOPE_EXPANSION_REVIEW_SCHEMA,
     SDK_WRITE_LANE_APPROVAL_DECISION_DIRECTORY,
@@ -382,6 +431,7 @@ async function runContractSmoke() {
     WRITE_SCOPES,
     runWriteCapableContractSmoke,
     validateSdkScopeExpansionReviewPacket,
+    validateSdkLaunchGovernancePacket,
     validateSdkWriteLaneApprovalDecisionPacket,
     validateSdkWriteLaneEnablementPacket,
     validateSdkWriteLaneReadinessPacket,
@@ -712,6 +762,16 @@ async function runContractSmoke() {
     "M135 SDK write lane enablement packet contract smoke did not pass",
     failures,
   );
+  assertContract(
+    writeScaffoldSmoke?.sdkLaunchGovernancePacketMode === "pass" &&
+      writeScaffoldSmoke?.sdkLaunchGovernanceSchema === SDK_LAUNCH_GOVERNANCE_SCHEMA &&
+      writeScaffoldSmoke?.sdkLaunchGovernanceDirectory === SDK_LAUNCH_GOVERNANCE_DIRECTORY &&
+      writeScaffoldSmoke?.sdkLaunchGovernanceState === SDK_LAUNCH_GOVERNANCE_STATE &&
+      writeScaffoldSmoke?.sdkLaunchGovernanceSdkThreadCreated === false &&
+      writeScaffoldSmoke?.sdkLaunchGovernanceRealWriteWork === false,
+    "M140 SDK launch governance packet contract smoke did not pass",
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -828,6 +888,34 @@ async function runContractSmoke() {
       productionLaneEnablement?.plannedPathAllowlist?.join(",") ===
         productionLaneReadiness?.plannedPathAllowlist?.join(","),
     "M135 production-code SDK write lane enablement did not remain narrow against M134/M133/M129",
+    failures,
+  );
+
+  const launchGovernancePacketFiles = collectSdkLaunchGovernancePackets(
+    SDK_LAUNCH_GOVERNANCE_DIRECTORY,
+    validateSdkLaunchGovernancePacket,
+  );
+  for (const failure of launchGovernancePacketFiles.failures) {
+    assertContract(false, `M140 SDK launch governance packet file failed: ${failure}`, failures);
+  }
+  const sdkLaunchGovernance = launchGovernancePacketFiles.packets.find(
+    (packet) => packet.path === `${SDK_LAUNCH_GOVERNANCE_DIRECTORY}/140-sdk-launch-governance.json`,
+  );
+  assertContract(
+    sdkLaunchGovernance?.state === SDK_LAUNCH_GOVERNANCE_STATE &&
+      sdkLaunchGovernance?.allowedSdkWriteScopes?.join(",") ===
+        SDK_WRITE_ALLOWED_SCOPES.join(",") &&
+      sdkLaunchGovernance?.reviewRequiredScopes?.join(",") ===
+        SDK_WRITE_REVIEW_REQUIRED_SCOPES.join(",") &&
+      sdkLaunchGovernance?.productionCodePlannedPathAllowlist?.join(",") ===
+        SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(",") &&
+      sdkLaunchGovernance?.sourceMilestones?.includes("M138") &&
+      sdkLaunchGovernance?.sourceMilestones?.includes("M139") &&
+      sdkLaunchGovernance?.newSdkThreadRunApproved === false &&
+      sdkLaunchGovernance?.externalNetworkRetryApproved === false &&
+      sdkLaunchGovernance?.broadProductionCodeWritesApproved === false &&
+      sdkLaunchGovernance?.cepPanelSdkWriteEnabled === false,
+    "M140 SDK launch governance did not keep launch state local-gated and narrow",
     failures,
   );
   assertContract(
@@ -977,6 +1065,9 @@ async function runContractSmoke() {
       readme.includes(".codex-audit/sdk-write-lane-approval-decisions") &&
       readme.includes(SDK_WRITE_LANE_ENABLEMENT_SCHEMA) &&
       readme.includes(".codex-audit/sdk-write-lane-enablement") &&
+      readme.includes(SDK_LAUNCH_GOVERNANCE_SCHEMA) &&
+      readme.includes(SDK_LAUNCH_GOVERNANCE_DIRECTORY) &&
+      readme.includes('state:"local-gated"') &&
       readme.includes("docs-audit") &&
       readme.includes("production-code") &&
       readme.includes("cep-panel") &&
@@ -1023,6 +1114,8 @@ async function runContractSmoke() {
   console.log("SDK write lane approval decision packet files: pass");
   console.log("SDK write lane enablement packet gate: pass");
   console.log("SDK write lane enablement packet files: pass");
+  console.log("SDK launch governance packet gate: pass");
+  console.log("SDK launch governance packet files: pass");
   console.log("Write-capable sdk-write diagnostic logging mode: pass");
   console.log("Write-capable sdk runtime fallback mode: pass");
 }

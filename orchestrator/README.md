@@ -107,6 +107,8 @@ M135 enables the first `production-code` SDK write lane after explicit user appr
 
 M136 prepares that first production-code lane for existing-source updates. Unlike docs-audit and orchestrator sdk-write lanes, which still reject pre-existing planned outputs, production-code sdk-write requires the planned source file to exist before SDK thread creation and then requires the post-run diff to include only that planned source path.
 
+M140 adds a local SDK launch governance packet. Governance packets use schema `sdk-launch-governance.v1` and live under `.codex-audit/sdk-launch-governance/`. The first packet, `.codex-audit/sdk-launch-governance/140-sdk-launch-governance.json`, records `state:"local-gated"`, cites M138/M139, preserves the exact enabled `sdk-write` scopes, keeps production-code limited to `scripts/provider-contract-smoke.js`, keeps CEP-panel disabled, and records that new SDKThread/network writes still require a separate approval milestone.
+
 Обязательный `--scope` принимает только:
 
 - `docs-audit`
@@ -142,7 +144,7 @@ Hard-stop conditions:
 
 ## Локальный contract smoke
 
-Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate, SDK scope expansion review packet gate, committed review packet files, SDK write lane readiness packet gate, SDK write lane approval decision packet gate, SDK write lane enablement packet gate и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
+Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate, SDK scope expansion review packet gate, committed review packet files, SDK write lane readiness packet gate, SDK write lane approval decision packet gate, SDK write lane enablement packet gate, SDK launch governance packet gate и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
 
 ```powershell
 npm.cmd run check:rules

@@ -1,0 +1,38 @@
+{
+  "schema": "sdk-launch-governance.v1",
+  "state": "local-gated",
+  "summary": "Post-M138 SDK launch governance for the first narrow production-code SDK write lane.",
+  "sourceMilestones": [
+    "M138",
+    "M139"
+  ],
+  "allowedSdkWriteScopes": [
+    "docs-audit",
+    "orchestrator",
+    "production-code"
+  ],
+  "reviewRequiredScopes": [
+    "production-code",
+    "cep-panel"
+  ],
+  "productionCodePlannedPathAllowlist": [
+    "scripts/provider-contract-smoke.js"
+  ],
+  "cepPanelSdkWriteEnabled": false,
+  "newSdkThreadRunApproved": false,
+  "broadProductionCodeWritesApproved": false,
+  "externalNetworkRetryApproved": false,
+  "approvalRequiredFor": [
+    "Any new SDKThread/network write attempt.",
+    "Any production-code path beyond scripts/provider-contract-smoke.js.",
+    "Any CEP-panel SDK write enablement.",
+    "Any package install, live CEP/AE validation, mutating-live validation, external-provider validation, or OpenAI CLI planner validation."
+  ],
+  "validationPlan": [
+    "Run node --check for touched JavaScript files.",
+    "Run npm.cmd run codex:orchestrator:write-scaffold:contract.",
+    "Run npm.cmd run check:rules.",
+    "Run the configured local smoke suite."
+  ],
+  "rollbackPlan": "Keep SDK writes limited to the previously approved single-file production-code lane unless a later milestone records a narrower review packet, explicit approval, and local contract coverage."
+}
