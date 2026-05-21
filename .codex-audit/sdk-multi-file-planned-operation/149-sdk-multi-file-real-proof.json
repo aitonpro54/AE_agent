@@ -1,0 +1,98 @@
+{
+  "schema": "sdk-multi-file-real-proof-gate.v1",
+  "milestone": 149,
+  "sourceMultiFileContractArtifact": ".codex-audit/sdk-multi-file-planned-operation/148-sdk-multi-file-planned-operation-contract.json",
+  "sourceIterativeReliabilityArtifact": ".codex-audit/sdk-iterative-cmd/147-sdk-iterative-cmd-reliability.json",
+  "sourceProductionReadinessArtifact": ".codex-audit/sdk-production-readiness/146-sdk-production-ready.json",
+  "proofArtifacts": [
+    "orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json",
+    "orchestrator/fixtures/sdk-write/m149-multi-file-beta.json"
+  ],
+  "verdict": {
+    "multiFileSdkThreadProof": "passed",
+    "boundedMultiFileOrchestratorFixtureWrite": true,
+    "generalSdkWorkflow": "not-production-ready",
+    "reason": "One approved M149 SDKThread proof created exactly two predeclared orchestrator fixture JSON files and passed the post-run sdk-write allowlist contract. This proves only the bounded multi-file fixture JSON lane, not general SDK repo-edit autonomy."
+  },
+  "operation": {
+    "operationId": "m149-multi-file-planned-operation-real-proof",
+    "operationFile": ".codex-runtime/sdk/operations/m149-multi-file-planned-operation-real-proof.json",
+    "runtimeLog": ".codex/sdk/logs/2026-05-21T17-13-07-634Z-m149-multi-file-planned-operation-real-proof-sdk-write.json",
+    "scope": "orchestrator",
+    "mode": "sdk-write",
+    "plannedPaths": [
+      "orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json",
+      "orchestrator/fixtures/sdk-write/m149-multi-file-beta.json"
+    ],
+    "localEnvelopeValidation": {
+      "allowed": true,
+      "violations": []
+    },
+    "plannedPathPrecondition": {
+      "existingPlannedPaths": [],
+      "missingPlannedPaths": [
+        "orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json",
+        "orchestrator/fixtures/sdk-write/m149-multi-file-beta.json"
+      ],
+      "mode": "new-output-only"
+    }
+  },
+  "sdkThread": {
+    "sdkThreadCreated": true,
+    "sdkThreadCompleted": true,
+    "sdkThreadId": "019e4b85-aa54-7031-8dab-6f3ce23d2c68",
+    "result": "sdk-write-completed"
+  },
+  "threadOptions": {
+    "approvalPolicy": "never",
+    "networkAccessEnabled": false,
+    "sandboxMode": "workspace-write",
+    "webSearchMode": "disabled"
+  },
+  "postRunContract": {
+    "verdict": "pass",
+    "actualChangedFiles": [
+      "orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json",
+      "orchestrator/fixtures/sdk-write/m149-multi-file-beta.json"
+    ],
+    "outOfScopeFiles": [],
+    "missingPlannedChanges": [],
+    "stagedDiffNameOnly": [],
+    "packageInstallOrDependencyChurn": false,
+    "gitMutationDetected": false,
+    "liveCepAeDetected": false,
+    "secretOrCredentialPathTouched": false
+  },
+  "approval": {
+    "escalationApprovalRecorded": true,
+    "approvalRecord": "The M149 bounded SDKThread/network proof was requested through the Codex escalation flow and completed successfully for exactly two planned orchestrator JSON fixture paths.",
+    "restrictedScope": "one bounded SDKThread/network proof for orchestrator planned paths orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json and orchestrator/fixtures/sdk-write/m149-multi-file-beta.json"
+  },
+  "remainingExclusions": [
+    {
+      "id": "general-sdk-workflow",
+      "status": "not-production-ready",
+      "reason": "M149 proves only a bounded two-file orchestrator fixture JSON lane."
+    },
+    {
+      "id": "broader-production-code-sdk-writes",
+      "status": "not-production-ready",
+      "reason": "Production-code remains limited to scripts/provider-contract-smoke.js."
+    },
+    {
+      "id": "cep-panel-sdk-writes",
+      "status": "not-production-ready",
+      "reason": "CEP-panel SDK writes remain disabled and review-required."
+    },
+    {
+      "id": "external-provider-or-openai-cli-planner-validation",
+      "status": "not-run",
+      "reason": "Outside the M149 multi-file fixture proof."
+    },
+    {
+      "id": "live-cep-ae-or-mutating-live-validation",
+      "status": "not-run",
+      "reason": "Outside the M149 multi-file fixture proof."
+    }
+  ]
+}

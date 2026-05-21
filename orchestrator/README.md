@@ -188,6 +188,12 @@ M148 adds a local multi-file planned operation contract before any real SDKThrea
 npm.cmd run codex:orchestrator:multi-file-planned:smoke
 ```
 
+M149 adds the real bounded multi-file SDKThread proof for the orchestrator fixture JSON lane. The committed gate `.codex-audit/sdk-multi-file-planned-operation/149-sdk-multi-file-real-proof.json` uses schema `sdk-multi-file-real-proof-gate.v1` and points to the SDK-created fixtures `orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json` and `orchestrator/fixtures/sdk-write/m149-multi-file-beta.json`. The proof keeps general SDK workflow not production-ready, while recording that only those two planned fixture JSON files changed and the post-run allowlist contract passed.
+
+```powershell
+npm.cmd run codex:orchestrator:multi-file-real:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.

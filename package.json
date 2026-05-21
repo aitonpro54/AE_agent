@@ -10,6 +10,7 @@
     "codex:orchestrator:production-readiness:smoke": "node scripts/sdk-production-readiness-smoke.js",
     "codex:orchestrator:iterative-cmd:smoke": "node scripts/sdk-iterative-cmd-reliability-smoke.js",
     "codex:orchestrator:multi-file-planned:smoke": "node scripts/sdk-multi-file-planned-operation-smoke.js",
+    "codex:orchestrator:multi-file-real:smoke": "node scripts/sdk-multi-file-real-proof-smoke.js",
     "check:rules": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke"
   },
   "dependencies": {

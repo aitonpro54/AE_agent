@@ -875,6 +875,18 @@ async function runContractSmoke() {
     `M147 SDK iterative cmd reliability smoke failed: ${iterativeCmdReliabilityOutput.trim()}`,
     failures,
   );
+  const multiFileRealProofSmoke = runNode([
+    path.join("scripts", "sdk-multi-file-real-proof-smoke.js"),
+  ]);
+  const multiFileRealProofOutput = `${multiFileRealProofSmoke.stdout ?? ""}\n${
+    multiFileRealProofSmoke.stderr ?? ""
+  }`;
+  assertContract(
+    multiFileRealProofSmoke.status === 0 &&
+      multiFileRealProofOutput.includes("SDK multi-file real proof smoke: pass"),
+    `M149 SDK multi-file real proof smoke failed: ${multiFileRealProofOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1174,6 +1186,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:multi-file-real:smoke"] ===
+      "node scripts/sdk-multi-file-real-proof-smoke.js",
+    "package.json codex:orchestrator:multi-file-real:smoke script is not wired to the multi-file real proof smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1233,6 +1251,15 @@ async function runContractSmoke() {
       readme.includes(SDK_MULTI_FILE_PLANNED_OPERATION_CONTRACT_SCHEMA) &&
       readme.includes(SDK_MULTI_FILE_PLANNED_OPERATION_DIRECTORY),
     "README does not document the M148 multi-file planned operation smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:multi-file-real:smoke") &&
+      readme.includes("149-sdk-multi-file-real-proof.json") &&
+      readme.includes("sdk-multi-file-real-proof-gate.v1") &&
+      readme.includes("m149-multi-file-alpha.json") &&
+      readme.includes("m149-multi-file-beta.json"),
+    "README does not document the M149 multi-file real proof smoke",
     failures,
   );
   assertContract(

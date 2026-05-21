@@ -1,0 +1,29 @@
+{
+  "schema": "sdk-multi-file-real-proof.v1",
+  "result": "created-by-sdk-thread",
+  "variant": "beta",
+  "sequence": 2,
+  "operation": {
+    "operationId": "m149-multi-file-planned-operation-real-proof",
+    "scope": "orchestrator",
+    "mode": "sdk-write",
+    "plannedPath": "orchestrator/fixtures/sdk-write/m149-multi-file-beta.json"
+  },
+  "plannedPaths": [
+    "orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json",
+    "orchestrator/fixtures/sdk-write/m149-multi-file-beta.json"
+  ],
+  "changedFiles": [
+    "orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json",
+    "orchestrator/fixtures/sdk-write/m149-multi-file-beta.json"
+  ],
+  "safetyBoundary": {
+    "noPackageInstall": true,
+    "noGitMutation": true,
+    "noCepAeEndpoint": true,
+    "noSecretRead": true
+  },
+  "safetyNotes": [
+    "Only the planned orchestrator fixture JSON output files were edited by this SDKThread turn."
+  ]
+}
