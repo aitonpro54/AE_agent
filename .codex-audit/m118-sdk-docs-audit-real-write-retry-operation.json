@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "operationId": "m118-sdk-docs-audit-real-write-retry",
+  "scope": "docs-audit",
+  "mode": "sdk-write",
+  "prompt": "Create only `.codex-audit/118-sdk-docs-audit-sdk-thread-output.md`. Do not edit any other file.",
+  "plannedPaths": [
+    ".codex-audit/118-sdk-docs-audit-sdk-thread-output.md"
+  ]
+}
