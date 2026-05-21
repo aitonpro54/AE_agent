@@ -836,6 +836,18 @@ async function runContractSmoke() {
     `M143 SDK governance report parser smoke failed: ${governanceReportParserOutput.trim()}`,
     failures,
   );
+  const launchReadinessSummarySmoke = runNode([
+    path.join("scripts", "sdk-launch-readiness-summary-smoke.js"),
+  ]);
+  const launchReadinessSummaryOutput = `${launchReadinessSummarySmoke.stdout ?? ""}\n${
+    launchReadinessSummarySmoke.stderr ?? ""
+  }`;
+  assertContract(
+    launchReadinessSummarySmoke.status === 0 &&
+      launchReadinessSummaryOutput.includes("SDK launch readiness summary smoke: pass"),
+    `M144 SDK launch readiness summary smoke failed: ${launchReadinessSummaryOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1101,6 +1113,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:launch-readiness:smoke"] ===
+      "node scripts/sdk-launch-readiness-summary-smoke.js",
+    "package.json codex:orchestrator:launch-readiness:smoke script is not wired to the local readiness summary smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1132,6 +1150,12 @@ async function runContractSmoke() {
   assertContract(
     readme.includes("npm.cmd run codex:orchestrator:governance-report:smoke"),
     "README does not document codex:orchestrator:governance-report:smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:launch-readiness:smoke") &&
+      readme.includes("144-sdk-launch-readiness-summary.json"),
+    "README does not document the M144 launch readiness summary smoke",
     failures,
   );
   assertContract(
@@ -1244,6 +1268,7 @@ async function runContractSmoke() {
   console.log("SDK launch governance drift report: pass");
   console.log("SDK launch governance report command: pass");
   console.log("SDK governance report parser smoke: pass");
+  console.log("SDK launch readiness summary smoke: pass");
   console.log("Write-capable sdk-write diagnostic logging mode: pass");
   console.log("Write-capable sdk runtime fallback mode: pass");
 }

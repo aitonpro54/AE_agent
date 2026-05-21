@@ -1,0 +1,121 @@
+{
+  "schema": "sdk-launch-readiness-summary.v1",
+  "sourceGovernanceReportSchema": "sdk-launch-governance-drift-report.v1",
+  "sourceCommand": "npm.cmd run codex:orchestrator:governance-report",
+  "sourcePacketPaths": {
+    "launchGovernance": ".codex-audit/sdk-launch-governance/140-sdk-launch-governance.json",
+    "productionLaneEnablement": ".codex-audit/sdk-write-lane-enablement/135-production-code-smoke-harness-enable.json"
+  },
+  "sourceMilestones": [
+    "M138",
+    "M139"
+  ],
+  "verdict": {
+    "overall": "local-gated-production-candidate",
+    "productionReady": false,
+    "narrowProductionCodeLane": "ready-local-gated",
+    "generalSdkWorkflow": "not-production-ready",
+    "reason": "Governance, drift detection, report command and parser smoke are locally validated for the exact single-file production-code lane, but new SDKThread/network work, broader production-code writes, CEP-panel writes and live/external validation still require explicit approval."
+  },
+  "ready": [
+    {
+      "id": "governance-report-json-surface",
+      "status": "ready",
+      "evidence": [
+        "schema:sdk-launch-governance-drift-report.v1",
+        "launchGovernanceState:local-gated",
+        "driftDetected:false"
+      ]
+    },
+    {
+      "id": "local-governance-contract",
+      "status": "ready",
+      "evidence": [
+        "all governance report checks are ok",
+        "actual equals expected for every governance report check"
+      ]
+    }
+  ],
+  "localGated": [
+    {
+      "id": "production-code-sdk-write-lane",
+      "status": "local-gated",
+      "scope": "scripts/provider-contract-smoke.js",
+      "evidence": [
+        "allowedSdkWriteScopes includes production-code",
+        "productionCodePlannedPathAllowlist is exactly scripts/provider-contract-smoke.js"
+      ]
+    },
+    {
+      "id": "docs-audit-and-orchestrator-sdk-write-lanes",
+      "status": "local-gated",
+      "scope": "docs-audit, orchestrator",
+      "evidence": [
+        "allowedSdkWriteScopes includes docs-audit",
+        "allowedSdkWriteScopes includes orchestrator"
+      ]
+    }
+  ],
+  "requiresApproval": [
+    {
+      "id": "new-sdkthread-or-network-work",
+      "status": "requires-approval",
+      "evidence": [
+        "no-new-sdkthread-or-network-approval"
+      ]
+    },
+    {
+      "id": "broader-production-code-sdk-writes",
+      "status": "requires-approval",
+      "evidence": [
+        "no-broad-production-code-approval",
+        "production-code-governance-allowlist"
+      ]
+    },
+    {
+      "id": "cep-panel-sdk-writes",
+      "status": "requires-approval",
+      "evidence": [
+        "cep-panel-disabled"
+      ]
+    },
+    {
+      "id": "external-provider-or-openai-cli-planner-validation",
+      "status": "requires-approval",
+      "evidence": [
+        "outside local governance-report scope"
+      ]
+    },
+    {
+      "id": "live-cep-ae-or-mutating-live-validation",
+      "status": "requires-approval",
+      "evidence": [
+        "outside local governance-report scope"
+      ]
+    },
+    {
+      "id": "package-install-or-dependency-changes",
+      "status": "requires-approval",
+      "evidence": [
+        "outside local governance-report scope"
+      ]
+    }
+  ],
+  "notValidated": [
+    {
+      "id": "general-sdk-autopilot-repo-edits",
+      "status": "not-validated",
+      "reason": "Only narrow local-gated lanes are covered; arbitrary repo edits are not part of the approved SDK write contract."
+    },
+    {
+      "id": "cep-panel-sdk-write-lane",
+      "status": "not-validated",
+      "reason": "CEP-panel SDK writes remain disabled/review-required."
+    },
+    {
+      "id": "sdk-network-stream-stability",
+      "status": "not-validated",
+      "reason": "M143 and M144 are local-only; historical SDK stream disconnect risk remains."
+    }
+  ]
+}

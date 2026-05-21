@@ -110,6 +110,7 @@
 - [x] Milestone 141: SDK Governance Drift Report Gate.
 - [x] Milestone 142: SDK Governance Report Command.
 - [x] Milestone 143: SDK Governance Report Parser Smoke.
+- [x] Milestone 144: SDK Launch Readiness Summary.
 
 ## Current Stable Baseline
 
@@ -856,6 +857,14 @@
 - Подключить smoke к `check:rules` и отдельной package script команде.
 - Подтвердить milestone только локальными checks/smokes без SDKThread creation, network retry, package install, live CEP/AE или mutating-live validation.
 
+### Milestone 144: SDK Launch Readiness Summary
+
+- Добавить committed `sdk-launch-readiness-summary.v1` artifact, который потребляет текущий governance report state.
+- Явно классифицировать SDK readiness как `local-gated-production-candidate`, narrow production-code lane как `ready-local-gated`, а general SDK workflow как `not-production-ready`.
+- Отдельно перечислить `ready`, `localGated`, `requiresApproval` и `notValidated` buckets.
+- Подключить local smoke к `check:rules`, чтобы summary не расходился с текущим governance-report JSON.
+- Подтвердить milestone только локальными checks/smokes без SDKThread creation, network retry, package install, live CEP/AE или mutating-live validation.
+
 ## Decision Log
 
 - 2026-05-20: Milestone 114 makes the write-capable dry-run CLI envelope-first. `--dry-run` now requires `--operation-file`, and the envelope supplies `version`, `operationId`, `scope`, `mode`, `prompt`, and `plannedPaths`; M114 supports only `version: 1` and `mode: "dry-run"`.
@@ -890,6 +899,7 @@
 - 2026-05-21: M141 adds a local `sdk-launch-governance-drift-report.v1` report gate; `check:rules` now builds the report from committed governance and enablement packets and fails if launch governance drifts from runner constants or the approved single-file production-code lane.
 - 2026-05-21: M142 exposes the M141 drift report through a local `codex:orchestrator:governance-report` command; it is report-only, does not create SDK threads, and does not approve network or broader write work.
 - 2026-05-21: M143 adds a local subprocess parser smoke for the governance-report package command; the smoke proves the JSON surface remains machine-readable and exact while keeping SDK state `local-gated`.
+- 2026-05-21: M144 adds a committed `sdk-launch-readiness-summary.v1` artifact and smoke; the summary states the narrow production-code lane is only `ready-local-gated`, while the general SDK workflow remains not production-ready without explicit SDKThread/network, broader write-scope, CEP-panel, external-provider or live-validation approvals.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -1267,6 +1277,22 @@
   - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
   - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
   - Did not run live CEP / After Effects smokes, external-provider validation, OpenAI CLI planner validation, mutating-live validation, package install, SDKThread creation, real SDK write work, CEP-panel write enablement, or production-code source edits because M143 is a local-only parser-smoke milestone.
+- Milestone 144:
+  - Added `.codex-audit/144-sdk-launch-readiness-summary.md`.
+  - Added `.codex-audit/sdk-launch-readiness/144-sdk-launch-readiness-summary.json`.
+  - Added `scripts/sdk-launch-readiness-summary-smoke.js`.
+  - Added package script `codex:orchestrator:launch-readiness:smoke`.
+  - Extended `check:rules` to run the summary smoke and print `SDK launch readiness summary smoke: pass`.
+  - Updated `orchestrator/README.md` to document the readiness summary artifact and standalone smoke command.
+  - The summary records `overall:"local-gated-production-candidate"`, `productionReady:false`, `narrowProductionCodeLane:"ready-local-gated"` and `generalSdkWorkflow:"not-production-ready"`.
+  - Summary buckets explicitly separate `ready`, `localGated`, `requiresApproval` and `notValidated` SDK scopes.
+  - Passed `node --check scripts/sdk-launch-readiness-summary-smoke.js` and `node --check orchestrator/run-buffered-acceptance.mjs`.
+  - Passed `npm.cmd run codex:orchestrator:launch-readiness:smoke`; output includes `SDK launch readiness summary smoke: pass`.
+  - Passed `npm.cmd run codex:orchestrator:governance-report` and `npm.cmd run codex:orchestrator:governance-report:smoke`.
+  - Passed `npm.cmd run codex:orchestrator:write-scaffold:contract` and `npm.cmd run check:rules`; `check:rules` output includes `SDK launch readiness summary smoke: pass`.
+  - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
+  - Did not run live CEP / After Effects smokes, external-provider validation, OpenAI CLI planner validation, mutating-live validation, package install, SDKThread creation, real SDK write work, CEP-panel write enablement, or production-code source edits because M144 is a local-only launch-readiness summary milestone.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.

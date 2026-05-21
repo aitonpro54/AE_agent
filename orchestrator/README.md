@@ -164,6 +164,12 @@ npm.cmd run codex:orchestrator:governance-report
 npm.cmd run codex:orchestrator:governance-report:smoke
 ```
 
+M144 фиксирует release-readiness boundary в committed summary `.codex-audit/sdk-launch-readiness/144-sdk-launch-readiness-summary.json`. Этот artifact классифицирует SDK state как `local-gated-production-candidate`, отмечает узкую production-code lane как `ready-local-gated`, а broader production-code, CEP-panel, SDKThread/network, external-provider и live CEP/AE work как approval-required или not-validated.
+
+```powershell
+npm.cmd run codex:orchestrator:launch-readiness:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.
