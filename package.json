@@ -12,6 +12,7 @@
     "codex:orchestrator:multi-file-planned:smoke": "node scripts/sdk-multi-file-planned-operation-smoke.js",
     "codex:orchestrator:multi-file-real:smoke": "node scripts/sdk-multi-file-real-proof-smoke.js",
     "codex:orchestrator:post-multi-file:smoke": "node scripts/sdk-post-multi-file-governance-smoke.js",
+    "codex:orchestrator:boundary-closeout:smoke": "node scripts/sdk-boundary-closeout-smoke.js",
     "check:rules": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke"
   },
   "dependencies": {

@@ -117,6 +117,7 @@
 - [x] Milestone 148: SDK Multi-File Planned Operation Contract.
 - [x] Milestone 149: SDK Multi-File Planned Operation Real Proof.
 - [x] Milestone 150: SDK Post-Multi-File Governance Boundary.
+- [x] Milestone 151: SDK Boundary Closeout and Publish Decision.
 
 ## Current Stable Baseline
 
@@ -914,6 +915,7 @@
 - 2026-05-21: M148 adds a local pre-thread multi-file planned operation contract for the orchestrator fixture JSON `sdk-write` lane. It proves the envelope, prompt rendering, post-run diff allowlist, and parent-directory normalization can handle exactly two predeclared fixture JSON paths, while rejecting extra files, unplanned directory children, `.env`, credential paths, `package-lock.json` churn, and `.git/**` metadata churn before any real multi-file SDKThread proof. No SDKThread/network proof was run and general SDK workflow remains not production-ready.
 - 2026-05-21: M149 proves one real bounded multi-file SDKThread run only for the orchestrator fixture JSON `sdk-write` lane. SDKThread `019e4b85-aa54-7031-8dab-6f3ce23d2c68` created exactly `orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json` and `orchestrator/fixtures/sdk-write/m149-multi-file-beta.json`; the post-run allowlist passed with no out-of-scope files, missing planned changes, staged changes, package/dependency churn, git metadata mutation, CEP/AE endpoint use, or secret/credential path touches. General SDK workflow, broader production-code SDK writes and CEP-panel SDK writes remain not production-ready.
 - 2026-05-21: M150 closes the post-multi-file governance/readiness boundary with a local committed artifact and smoke. The boundary records `overall:"post-multi-file-local-gated"`, preserves the M146 single-file production-code production-ready claim, accepts M149 only as a bounded orchestrator fixture JSON proof, and explicitly keeps general SDK workflow, broader production-code writes, CEP-panel writes, external-provider/OpenAI CLI planner validation, live CEP/AE validation, mutating-live validation, package installs and dependency changes outside the approved scope.
+- 2026-05-21: M151 closes the SDK boundary block for publishing. The closeout artifact selects `push-branch-after-closeout-commit`, preserves the M150 boundary claims, and records that broader production-code, CEP-panel, external-provider/OpenAI CLI planner, live CEP/AE, mutating-live and dependency-change work must not start without a fresh bounded approval.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -1411,6 +1413,19 @@
   - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
   - `npm.cmd run ...` commands printed `npm warn Unknown env config "http-proxy"` but exited successfully.
   - Did not run any SDKThread/network proof, broader production-code SDK write, CEP-panel SDK write, external-provider/OpenAI CLI planner validation, live CEP/After Effects smoke, mutating-live validation, package install, dependency change, push or PR.
+
+- Milestone 151:
+  - Read `AGENTS.md`, `.codex/handoff.md`, `specs/target-app.md`, and targeted M146-M150 / Decision Log / Validation sections of this plan.
+  - Confirmed branch `codex/roadmap-1.3-planning` was clean and ahead of origin by 2 before starting M151.
+  - Added committed closeout artifact `.codex-audit/sdk-post-multi-file-readiness/151-sdk-boundary-closeout.json` with schema `sdk-boundary-closeout.v1`.
+  - The closeout artifact selects `push-branch-after-closeout-commit`, points to the M150 boundary artifact, preserves the M150 claims, and records that broader production-code, CEP-panel, external-provider/OpenAI CLI planner, live CEP/AE, mutating-live and dependency-change work must not start without fresh bounded approval.
+  - Added `scripts/sdk-boundary-closeout-smoke.js`, package script `codex:orchestrator:boundary-closeout:smoke`, `check:rules` coverage, and README documentation.
+  - Passed `node --check scripts/sdk-boundary-closeout-smoke.js` and `node --check orchestrator/run-buffered-acceptance.mjs`.
+  - Passed `npm.cmd run codex:orchestrator:boundary-closeout:smoke` and `npm.cmd run check:rules`.
+  - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
+  - `npm.cmd run ...` commands printed `npm warn Unknown env config "http-proxy"` but exited successfully.
+  - Push is selected as the post-commit closeout action; the final push result is recorded in `.codex/handoff.md` and the final response because the closeout commit must exist before it can be pushed.
+  - Did not run any SDKThread/network proof, broader production-code SDK write, CEP-panel SDK write, external-provider/OpenAI CLI planner validation, live CEP/After Effects smoke, mutating-live validation, package install, dependency change or PR creation.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.

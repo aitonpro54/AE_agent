@@ -899,6 +899,18 @@ async function runContractSmoke() {
     `M150 SDK post-multi-file governance smoke failed: ${postMultiFileGovernanceOutput.trim()}`,
     failures,
   );
+  const boundaryCloseoutSmoke = runNode([
+    path.join("scripts", "sdk-boundary-closeout-smoke.js"),
+  ]);
+  const boundaryCloseoutOutput = `${boundaryCloseoutSmoke.stdout ?? ""}\n${
+    boundaryCloseoutSmoke.stderr ?? ""
+  }`;
+  assertContract(
+    boundaryCloseoutSmoke.status === 0 &&
+      boundaryCloseoutOutput.includes("SDK boundary closeout smoke: pass"),
+    `M151 SDK boundary closeout smoke failed: ${boundaryCloseoutOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1210,6 +1222,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:boundary-closeout:smoke"] ===
+      "node scripts/sdk-boundary-closeout-smoke.js",
+    "package.json codex:orchestrator:boundary-closeout:smoke script is not wired to the boundary closeout smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1286,6 +1304,14 @@ async function runContractSmoke() {
       readme.includes("sdk-post-multi-file-governance-boundary.v1") &&
       readme.includes("post-multi-file-local-gated"),
     "README does not document the M150 post-multi-file governance smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:boundary-closeout:smoke") &&
+      readme.includes("151-sdk-boundary-closeout.json") &&
+      readme.includes("sdk-boundary-closeout.v1") &&
+      readme.includes("push-branch-after-closeout-commit"),
+    "README does not document the M151 boundary closeout smoke",
     failures,
   );
   assertContract(

@@ -200,6 +200,12 @@ M150 closes the post-multi-file readiness boundary without broadening the SDK pr
 npm.cmd run codex:orchestrator:post-multi-file:smoke
 ```
 
+M151 closes the SDK boundary block for publishing. The committed closeout `.codex-audit/sdk-post-multi-file-readiness/151-sdk-boundary-closeout.json` uses schema `sdk-boundary-closeout.v1`, selects `push-branch-after-closeout-commit`, and records that no broader production-code, CEP-panel, external-provider, live CEP/AE, mutating-live or dependency-change work should start without a fresh bounded approval.
+
+```powershell
+npm.cmd run codex:orchestrator:boundary-closeout:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.
