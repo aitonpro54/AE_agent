@@ -1,0 +1,12 @@
+{
+  "result": "created-by-sdk-thread",
+  "operation": {
+    "operationId": "m125-orchestrator-fixture-json-sdk-write",
+    "scope": "orchestrator",
+    "mode": "sdk-write",
+    "plannedPath": "orchestrator/fixtures/sdk-write/m125-sdk-thread-fixture.json"
+  },
+  "safetyNotes": [
+    "Only the planned orchestrator fixture JSON output file was edited by this SDKThread turn."
+  ]
+}

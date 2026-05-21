@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   statSync,
@@ -45,7 +46,7 @@ Options:
 
 The default scaffold and dry-run modes remain non-live. The guarded sdk-write
 operation-envelope mode remains limited to docs-audit planned outputs under
-.codex-audit/** and orchestrator docs-only planned outputs under orchestrator/**.
+.codex-audit/** and orchestrator controlled outputs under orchestrator/**.
 `;
 
 const COMMON_AUDIT_ALLOWLIST = Object.freeze([
@@ -156,11 +157,15 @@ export const SDK_WRITE_PLANNED_PATH_ALLOWLIST = Object.freeze([
 export const SDK_WRITE_ORCHESTRATOR_PLANNED_PATH_ALLOWLIST = Object.freeze([
   "orchestrator/**",
 ]);
+export const SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_PLANNED_PATH_ALLOWLIST = Object.freeze([
+  "orchestrator/fixtures/sdk-write/**",
+]);
 export const SDK_WRITE_SCOPE_PLANNED_PATH_ALLOWLISTS = Object.freeze({
   [SDK_WRITE_ALLOWED_SCOPE]: SDK_WRITE_PLANNED_PATH_ALLOWLIST,
   [SDK_WRITE_ORCHESTRATOR_SCOPE]: SDK_WRITE_ORCHESTRATOR_PLANNED_PATH_ALLOWLIST,
 });
-export const SDK_WRITE_ORCHESTRATOR_ALLOWED_EXTENSION = ".md";
+export const SDK_WRITE_ORCHESTRATOR_MARKDOWN_ALLOWED_EXTENSION = ".md";
+export const SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_ALLOWED_EXTENSION = ".json";
 export const SDK_WRITE_CONTRACT_SMOKE_PLANNED_PATHS = Object.freeze([
   ".codex-audit/115-sdk-docs-audit-sdk-thread-output.md",
   ".codex-audit/117-sdk-docs-audit-sdk-thread-output.md",
@@ -169,6 +174,8 @@ export const SDK_WRITE_CONTRACT_SMOKE_PLANNED_PATHS = Object.freeze([
 export const SDK_WRITE_ORCHESTRATOR_CONTRACT_SMOKE_PLANNED_PATHS = Object.freeze([
   "orchestrator/m123-sdk-thread-orchestrator-scope-output.md",
   "orchestrator/arbitrary-safe-sdk-write-output.md",
+  "orchestrator/fixtures/sdk-write/m125-sdk-thread-fixture.json",
+  "orchestrator/fixtures/sdk-write/arbitrary-safe-sdk-write-fixture.json",
 ]);
 export const SDK_WRITE_ALLOWED_HOST_REPORT_PATHS = Object.freeze([]);
 export const SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY = ".codex/sdk";
@@ -466,6 +473,47 @@ export function createPlannedPathCheck(scope, plannedPaths = []) {
   };
 }
 
+function isOrchestratorFixtureJsonSdkWritePath(repoPath) {
+  return SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_PLANNED_PATH_ALLOWLIST.some((pattern) =>
+    matchesPathPattern(repoPath, pattern),
+  );
+}
+
+function getOrchestratorSdkWriteViolations(repoPath) {
+  const extension = path.posix.extname(repoPath).toLowerCase();
+  const isFixtureJsonPath = isOrchestratorFixtureJsonSdkWritePath(repoPath);
+
+  if (isFixtureJsonPath) {
+    return extension === SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_ALLOWED_EXTENSION
+      ? []
+      : [
+          {
+            path: repoPath,
+            reason: "non-json-orchestrator-fixture-sdk-write-path",
+          },
+        ];
+  }
+
+  if (
+    SDK_WRITE_ORCHESTRATOR_PLANNED_PATH_ALLOWLIST.some((pattern) =>
+      matchesPathPattern(repoPath, pattern),
+    ) &&
+    extension === SDK_WRITE_ORCHESTRATOR_MARKDOWN_ALLOWED_EXTENSION
+  ) {
+    return [];
+  }
+
+  return [
+    {
+      path: repoPath,
+      reason:
+        extension === SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_ALLOWED_EXTENSION
+          ? "outside-orchestrator-fixture-json-sdk-write-allowlist"
+          : "non-markdown-orchestrator-sdk-write-path",
+    },
+  ];
+}
+
 export function createSdkWritePlannedPathCheck(scope, plannedPaths = []) {
   if (!SDK_WRITE_ALLOWED_SCOPES.includes(scope)) {
     throw new Error(
@@ -480,22 +528,16 @@ export function createSdkWritePlannedPathCheck(scope, plannedPaths = []) {
 
   const sdkWriteAllowlist = SDK_WRITE_SCOPE_PLANNED_PATH_ALLOWLISTS[scope] || [];
   const sdkWriteViolations = plannedPathCheck.plannedPaths.flatMap((repoPath) => {
+    if (scope === SDK_WRITE_ORCHESTRATOR_SCOPE) {
+      return getOrchestratorSdkWriteViolations(repoPath);
+    }
+
     const violations = [];
 
     if (!sdkWriteAllowlist.some((pattern) => matchesPathPattern(repoPath, pattern))) {
       violations.push({
         path: repoPath,
         reason: `outside-${scope}-sdk-write-allowlist`,
-      });
-    }
-
-    if (
-      scope === SDK_WRITE_ORCHESTRATOR_SCOPE &&
-      path.posix.extname(repoPath).toLowerCase() !== SDK_WRITE_ORCHESTRATOR_ALLOWED_EXTENSION
-    ) {
-      violations.push({
-        path: repoPath,
-        reason: "non-markdown-orchestrator-sdk-write-path",
       });
     }
 
@@ -553,11 +595,13 @@ function throwPlannedPathCheckError(plannedPathCheck) {
   const hasOrchestratorSdkWriteViolation = plannedPathCheck.violations.some(
     (violation) =>
       violation.reason === "outside-orchestrator-sdk-write-allowlist" ||
+      violation.reason === "outside-orchestrator-fixture-json-sdk-write-allowlist" ||
+      violation.reason === "non-json-orchestrator-fixture-sdk-write-path" ||
       violation.reason === "non-markdown-orchestrator-sdk-write-path",
   );
   if (hasOrchestratorSdkWriteViolation) {
     throw new Error(
-      `sdk-write plannedPaths outside orchestrator docs-only output allowlist: ${summary}`,
+      `sdk-write plannedPaths outside orchestrator controlled-output allowlist: ${summary}`,
     );
   }
 
@@ -891,6 +935,85 @@ export function collectPathsChangedSincePre(preSnapshot, postSnapshot) {
   return paths.filter(
     (repoPath) => preSnapshot.pathSignatures?.[repoPath] !== postSnapshot.pathSignatures?.[repoPath],
   );
+}
+
+function isDirectoryChangedPath(cwd, repoPath) {
+  const normalizedPath = normalizeRepoPath(repoPath);
+
+  if (normalizedPath.endsWith("/")) {
+    return true;
+  }
+
+  if (!cwd) {
+    return false;
+  }
+
+  try {
+    return statSync(path.resolve(cwd, normalizedPath)).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function assertPathInsideRepo(repoRoot, absolutePath, repoPath) {
+  if (!isPathInsideDirectory(absolutePath, repoRoot)) {
+    throw new Error(`Path resolved outside repo while enumerating directory: ${repoPath}`);
+  }
+}
+
+function enumerateDirectoryFileChildren(cwd, directoryRepoPath) {
+  const repoRoot = path.resolve(cwd || process.cwd());
+  const normalizedDirectoryPath = normalizeRepoPath(directoryRepoPath);
+  const absoluteDirectoryPath = path.resolve(repoRoot, normalizedDirectoryPath);
+
+  assertPathInsideRepo(repoRoot, absoluteDirectoryPath, normalizedDirectoryPath);
+
+  const directoryStats = statSync(absoluteDirectoryPath);
+  if (!directoryStats.isDirectory()) {
+    throw new Error(`Changed path is not a directory: ${normalizedDirectoryPath}`);
+  }
+
+  const children = [];
+
+  function visit(absoluteParentPath) {
+    const entries = readdirSync(absoluteParentPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const absoluteChildPath = path.join(absoluteParentPath, entry.name);
+      const repoPath = normalizeRepoPath(path.relative(repoRoot, absoluteChildPath));
+
+      assertPathInsideRepo(repoRoot, absoluteChildPath, repoPath);
+
+      const realChildPath = realpathSync(absoluteChildPath);
+      assertPathInsideRepo(repoRoot, realChildPath, repoPath);
+
+      if (entry.isDirectory()) {
+        visit(absoluteChildPath);
+        continue;
+      }
+
+      if (entry.isFile()) {
+        children.push(repoPath);
+        continue;
+      }
+
+      const childStats = statSync(absoluteChildPath);
+      if (childStats.isDirectory()) {
+        visit(absoluteChildPath);
+        continue;
+      }
+
+      if (childStats.isFile()) {
+        children.push(repoPath);
+        continue;
+      }
+
+      throw new Error(`Unsupported directory child type: ${repoPath}`);
+    }
+  }
+
+  visit(absoluteDirectoryPath);
+  return uniqueSorted(children);
 }
 
 export function evaluatePreRunGitState(snapshot, options = {}) {
@@ -1386,22 +1509,70 @@ function assertSdkWriteOptions(options) {
 
 export function createSdkWritePrompt(options) {
   const plannedPaths = uniqueSorted(options.plannedPaths);
-  const isOrchestratorDocsWrite = options.scope === SDK_WRITE_ORCHESTRATOR_SCOPE;
-  const writerRole = isOrchestratorDocsWrite
-    ? "orchestrator docs-only writer"
-    : "docs-audit writer";
-  const outputTitle = isOrchestratorDocsWrite
-    ? "# SDKThread Orchestrator-Scope Output"
-    : "# SDKThread Docs-Audit Output";
-  const safetyNote = isOrchestratorDocsWrite
-    ? "State that only the planned orchestrator Markdown output file was edited by this SDKThread turn."
-    : "State that only the planned docs-audit output file was edited by this SDKThread turn.";
+  const isOrchestratorWrite = options.scope === SDK_WRITE_ORCHESTRATOR_SCOPE;
+  const isOrchestratorFixtureJsonWrite =
+    isOrchestratorWrite && plannedPaths.every(isOrchestratorFixtureJsonSdkWritePath);
+  const writerRole = isOrchestratorFixtureJsonWrite
+    ? "orchestrator fixture JSON writer"
+    : isOrchestratorWrite
+      ? "orchestrator docs-only writer"
+      : "docs-audit writer";
+  const outputKind = isOrchestratorFixtureJsonWrite
+    ? "JSON fixture output file"
+    : isOrchestratorWrite
+      ? "Markdown output file"
+      : "Markdown output file";
+  const safetyNote = isOrchestratorFixtureJsonWrite
+    ? "Include a safetyNotes array stating that only the planned orchestrator fixture JSON output file was edited by this SDKThread turn."
+    : isOrchestratorWrite
+      ? "State that only the planned orchestrator Markdown output file was edited by this SDKThread turn."
+      : "State that only the planned docs-audit output file was edited by this SDKThread turn.";
+
+  if (isOrchestratorFixtureJsonWrite) {
+    return [
+      `You are the SDKThread ${writerRole} for this repository.`,
+      "",
+      "Hard boundary:",
+      `- Create or update exactly the planned ${outputKind} listed below.`,
+      "- Do not edit any other file.",
+      "- Do not stage, commit, install packages, run validation suites, run live checks, or change source code.",
+      "- Keep the output self-contained and short.",
+      "- Write valid JSON only. Do not wrap it in Markdown.",
+      "",
+      `Operation id: ${options.operationEnvelope?.operationId || "(unknown)"}`,
+      `Scope: ${options.scope}`,
+      `Mode: ${options.mode}`,
+      "",
+      "Allowed planned output path:",
+      ...plannedPaths.map((repoPath) => `- ${repoPath}`),
+      "",
+      "Write the JSON file with this object shape:",
+      "{",
+      '  "result": "created-by-sdk-thread",',
+      '  "operation": {',
+      '    "operationId": "<operation id>",',
+      '    "scope": "<scope>",',
+      '    "mode": "<mode>",',
+      '    "plannedPath": "<planned path>"',
+      "  },",
+      '  "safetyNotes": [',
+      '    "Only the planned orchestrator fixture JSON output file was edited by this SDKThread turn."',
+      "  ]",
+      "}",
+      "",
+      "Safety note requirement:",
+      safetyNote,
+      "",
+      "User operation prompt:",
+      options.prompt,
+    ].join("\n");
+  }
 
   return [
     `You are the SDKThread ${writerRole} for this repository.`,
     "",
     "Hard boundary:",
-    "- Create or update exactly the planned Markdown output file listed below.",
+    `- Create or update exactly the planned ${outputKind} listed below.`,
     "- Do not edit any other file.",
     "- Do not stage, commit, install packages, run validation suites, run live checks, or change source code.",
     "- Keep the output self-contained and short.",
@@ -1432,6 +1603,7 @@ export function createSdkWritePrompt(options) {
 
 export function validateSdkWriteDiffAllowlist({
   allowedImplementationReportPaths = SDK_WRITE_ALLOWED_HOST_REPORT_PATHS,
+  directoryChildEnumerator,
   plannedPaths,
   postSnapshot,
   preSnapshot,
@@ -1451,17 +1623,51 @@ export function validateSdkWriteDiffAllowlist({
   }
 
   const changedSincePre = collectPathsChangedSincePre(preSnapshot, postSnapshot);
+  const enumerator =
+    directoryChildEnumerator ||
+    ((repoPath) => enumerateDirectoryFileChildren(postSnapshot?.cwd || process.cwd(), repoPath));
+  const normalizedChangedFiles = [];
+  const normalizedDirectoryEntries = [];
+
+  for (const repoPath of changedSincePre) {
+    if (isForbiddenPath(repoPath) || !isDirectoryChangedPath(postSnapshot?.cwd, repoPath)) {
+      normalizedChangedFiles.push(repoPath);
+      continue;
+    }
+
+    normalizedDirectoryEntries.push(repoPath);
+
+    let childPaths = [];
+    try {
+      childPaths = uniqueSorted(enumerator(repoPath));
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new Error(
+        `Unable to enumerate changed directory after sdk-write run: ${repoPath}. ${detail}`,
+      );
+    }
+
+    if (childPaths.length === 0) {
+      throw new Error(
+        `Changed directory contains no planned sdk-write child files: ${repoPath}`,
+      );
+    }
+
+    normalizedChangedFiles.push(...childPaths);
+  }
+
+  const actualChangedFiles = uniqueSorted(normalizedChangedFiles);
   const allowedPaths = uniqueSorted([
     ...normalizedPlannedPaths,
     ...allowedImplementationReportPaths,
   ]);
-  const forbidden = changedSincePre.filter(isForbiddenPath);
+  const forbidden = actualChangedFiles.filter(isForbiddenPath);
 
   if (forbidden.length > 0) {
     throw new Error(`Forbidden path diff detected after sdk-write run: ${forbidden.join(", ")}`);
   }
 
-  const outOfScopeFiles = changedSincePre.filter((repoPath) => !allowedPaths.includes(repoPath));
+  const outOfScopeFiles = actualChangedFiles.filter((repoPath) => !allowedPaths.includes(repoPath));
   if (outOfScopeFiles.length > 0) {
     const allowlistLabel =
       scope === SDK_WRITE_ALLOWED_SCOPE ? "docs-audit sdk-write" : `${scope} sdk-write`;
@@ -1471,7 +1677,7 @@ export function validateSdkWriteDiffAllowlist({
   }
 
   const missingPlannedChanges = normalizedPlannedPaths.filter(
-    (repoPath) => !changedSincePre.includes(repoPath),
+    (repoPath) => !actualChangedFiles.includes(repoPath),
   );
   if (missingPlannedChanges.length > 0) {
     throw new Error(
@@ -1480,12 +1686,14 @@ export function validateSdkWriteDiffAllowlist({
   }
 
   return {
-    actualChangedFiles: changedSincePre,
+    actualChangedFiles,
     allowedImplementationReportPaths: uniqueSorted(allowedImplementationReportPaths),
     allowedPaths,
     missingPlannedChanges,
+    normalizedDirectoryEntries,
     outOfScopeFiles,
     plannedPaths: normalizedPlannedPaths,
+    rawChangedSincePre: changedSincePre,
     verdict: "pass",
   };
 }
@@ -1779,8 +1987,12 @@ export function runWriteCapableContractSmoke() {
   };
   const [m115SdkWritePath, m117SdkWritePath, arbitrarySdkWritePath] =
     SDK_WRITE_CONTRACT_SMOKE_PLANNED_PATHS;
-  const [m123OrchestratorSdkWritePath, arbitraryOrchestratorSdkWritePath] =
-    SDK_WRITE_ORCHESTRATOR_CONTRACT_SMOKE_PLANNED_PATHS;
+  const [
+    m123OrchestratorSdkWritePath,
+    arbitraryOrchestratorSdkWritePath,
+    m125OrchestratorFixtureSdkWritePath,
+    arbitraryOrchestratorFixtureSdkWritePath,
+  ] = SDK_WRITE_ORCHESTRATOR_CONTRACT_SMOKE_PLANNED_PATHS;
   const validSdkWriteEnvelope = {
     version: OPERATION_ENVELOPE_VERSION,
     operationId: "m115-contract-smoke",
@@ -1796,6 +2008,14 @@ export function runWriteCapableContractSmoke() {
     mode: SDK_WRITE_OPERATION_MODE,
     prompt: "Create the M123 orchestrator Markdown SDKThread output file.",
     plannedPaths: [m123OrchestratorSdkWritePath],
+  };
+  const validOrchestratorFixtureSdkWriteEnvelope = {
+    version: OPERATION_ENVELOPE_VERSION,
+    operationId: "m125-contract-smoke",
+    scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+    mode: SDK_WRITE_OPERATION_MODE,
+    prompt: "Create the M125 orchestrator fixture JSON SDKThread output file.",
+    plannedPaths: [m125OrchestratorFixtureSdkWritePath],
   };
   const parsedDryRun = parseWriteRunnerArgs([
     "--dry-run",
@@ -1940,11 +2160,15 @@ export function runWriteCapableContractSmoke() {
   const orchestratorSdkWriteAcceptCases = [
     ["m123-contract-smoke", m123OrchestratorSdkWritePath],
     ["orchestrator-arbitrary-contract-smoke", arbitraryOrchestratorSdkWritePath],
+    ["m125-contract-smoke", m125OrchestratorFixtureSdkWritePath],
+    ["orchestrator-arbitrary-fixture-contract-smoke", arbitraryOrchestratorFixtureSdkWritePath],
   ];
 
   for (const [operationId, plannedPath] of orchestratorSdkWriteAcceptCases) {
     const validatedSdkWriteEnvelope = validateOperationEnvelope({
-      ...validOrchestratorSdkWriteEnvelope,
+      ...(plannedPath.endsWith(".json")
+        ? validOrchestratorFixtureSdkWriteEnvelope
+        : validOrchestratorSdkWriteEnvelope),
       operationId,
       plannedPaths: [plannedPath],
     });
@@ -1953,7 +2177,7 @@ export function runWriteCapableContractSmoke() {
         validatedSdkWriteEnvelope.scope === SDK_WRITE_ORCHESTRATOR_SCOPE &&
         validatedSdkWriteEnvelope.mode === SDK_WRITE_OPERATION_MODE &&
         validatedSdkWriteEnvelope.plannedPaths.join(",") === plannedPath,
-      `sdk-write operation envelope did not accept orchestrator Markdown planned path: ${plannedPath}`,
+      `sdk-write operation envelope did not accept orchestrator planned path: ${plannedPath}`,
       failures,
     );
   }
@@ -2313,14 +2537,29 @@ export function runWriteCapableContractSmoke() {
 
   const orchestratorSdkWriteRejectedPathCases = [
     {
-      expectedMessageStart: "sdk-write plannedPaths outside orchestrator docs-only output allowlist:",
+      expectedMessageStart: "sdk-write plannedPaths outside orchestrator controlled-output allowlist:",
       label: "orchestrator sdk-write operation envelope did not reject run-write scaffold source",
       plannedPaths: ["orchestrator/run-write-capable-scaffold.mjs"],
     },
     {
-      expectedMessageStart: "sdk-write plannedPaths outside orchestrator docs-only output allowlist:",
+      expectedMessageStart: "sdk-write plannedPaths outside orchestrator controlled-output allowlist:",
       label: "orchestrator sdk-write operation envelope did not reject buffered acceptance source",
       plannedPaths: ["orchestrator/run-buffered-acceptance.mjs"],
+    },
+    {
+      expectedMessageStart: "sdk-write plannedPaths outside orchestrator controlled-output allowlist:",
+      label: "orchestrator sdk-write operation envelope did not reject package.json",
+      plannedPaths: ["package.json"],
+    },
+    {
+      expectedMessageStart: "Operation envelope plannedPaths outside scope allowlist:",
+      label: "orchestrator sdk-write operation envelope did not reject .codex-runtime path",
+      plannedPaths: [".codex-runtime/sdk/operations/out.json"],
+    },
+    {
+      expectedMessageStart: "Operation envelope plannedPaths outside scope allowlist:",
+      label: "orchestrator sdk-write operation envelope did not reject .codex runtime path",
+      plannedPaths: [".codex/sdk/logs/out.json"],
     },
     {
       expectedMessageStart: "Operation envelope plannedPaths outside scope allowlist:",
@@ -2363,6 +2602,14 @@ export function runWriteCapableContractSmoke() {
       plannedPaths: [".env"],
     },
   ];
+
+  for (const extension of [".js", ".mjs", ".ts", ".tsx", ".cmd", ".bat", ".ps1"]) {
+    orchestratorSdkWriteRejectedPathCases.push({
+      expectedMessageStart: "sdk-write plannedPaths outside orchestrator controlled-output allowlist:",
+      label: `orchestrator fixture sdk-write operation envelope did not reject ${extension} path`,
+      plannedPaths: [`orchestrator/fixtures/sdk-write/rejected${extension}`],
+    });
+  }
 
   for (const sdkWriteRejectedPathCase of orchestratorSdkWriteRejectedPathCases) {
     assertRejects(
@@ -2724,6 +2971,283 @@ export function runWriteCapableContractSmoke() {
     failures,
   );
 
+  const orchestratorFixtureSdkWritePostContract = validateSdkWriteDiffAllowlist({
+    plannedPaths: [m125OrchestratorFixtureSdkWritePath],
+    postSnapshot: {
+      pathSignatures: {
+        [m125OrchestratorFixtureSdkWritePath]: "created",
+      },
+    },
+    preSnapshot: { pathSignatures: {} },
+    scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+    validationResult: { ok: true },
+  });
+
+  assertContract(
+    orchestratorFixtureSdkWritePostContract.verdict === "pass" &&
+      orchestratorFixtureSdkWritePostContract.actualChangedFiles.join(",") ===
+        m125OrchestratorFixtureSdkWritePath,
+    "sdk-write post-run allowlist did not accept the planned orchestrator fixture JSON output path",
+    failures,
+  );
+
+  const fixtureParentDirectory = "orchestrator/fixtures/";
+  const createDirectoryChildEnumerator = (childrenByDirectory) => (repoPath) => {
+    const normalizedPath = normalizeRepoPath(repoPath);
+    const withoutTrailingSlash = normalizedPath.replace(/\/+$/u, "");
+
+    if (Object.hasOwn(childrenByDirectory, normalizedPath)) {
+      return childrenByDirectory[normalizedPath];
+    }
+
+    if (Object.hasOwn(childrenByDirectory, withoutTrailingSlash)) {
+      return childrenByDirectory[withoutTrailingSlash];
+    }
+
+    throw new Error(`unexpected directory enumeration request: ${repoPath}`);
+  };
+  const directoryParentOnlyPostContract = validateSdkWriteDiffAllowlist({
+    directoryChildEnumerator: createDirectoryChildEnumerator({
+      [fixtureParentDirectory]: [m125OrchestratorFixtureSdkWritePath],
+    }),
+    plannedPaths: [m125OrchestratorFixtureSdkWritePath],
+    postSnapshot: {
+      cwd: process.cwd(),
+      pathSignatures: {
+        [fixtureParentDirectory]: "created",
+      },
+    },
+    preSnapshot: { pathSignatures: {} },
+    scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+    validationResult: { ok: true },
+  });
+
+  assertContract(
+    directoryParentOnlyPostContract.verdict === "pass" &&
+      directoryParentOnlyPostContract.actualChangedFiles.join(",") ===
+        m125OrchestratorFixtureSdkWritePath &&
+      directoryParentOnlyPostContract.normalizedDirectoryEntries.join(",") ===
+        fixtureParentDirectory,
+    "sdk-write post-run allowlist did not normalize a newly-created parent directory for a planned fixture child",
+    failures,
+  );
+
+  const directoryParentAndChildPostContract = validateSdkWriteDiffAllowlist({
+    directoryChildEnumerator: createDirectoryChildEnumerator({
+      [fixtureParentDirectory]: [m125OrchestratorFixtureSdkWritePath],
+    }),
+    plannedPaths: [m125OrchestratorFixtureSdkWritePath],
+    postSnapshot: {
+      cwd: process.cwd(),
+      pathSignatures: {
+        [fixtureParentDirectory]: "created",
+        [m125OrchestratorFixtureSdkWritePath]: "created",
+      },
+    },
+    preSnapshot: { pathSignatures: {} },
+    scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+    validationResult: { ok: true },
+  });
+
+  assertContract(
+    directoryParentAndChildPostContract.verdict === "pass" &&
+      directoryParentAndChildPostContract.actualChangedFiles.join(",") ===
+        m125OrchestratorFixtureSdkWritePath,
+    "sdk-write post-run allowlist did not accept parent directory plus exactly one planned child",
+    failures,
+  );
+
+  assertRejects(
+    () =>
+      validateSdkWriteDiffAllowlist({
+        directoryChildEnumerator: createDirectoryChildEnumerator({
+          [fixtureParentDirectory]: [
+            m125OrchestratorFixtureSdkWritePath,
+            "orchestrator/fixtures/sdk-write/unplanned.json",
+          ],
+        }),
+        plannedPaths: [m125OrchestratorFixtureSdkWritePath],
+        postSnapshot: {
+          cwd: process.cwd(),
+          pathSignatures: {
+            [fixtureParentDirectory]: "created",
+            [m125OrchestratorFixtureSdkWritePath]: "created",
+          },
+        },
+        preSnapshot: { pathSignatures: {} },
+        scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+        validationResult: { ok: true },
+      }),
+    "Post-run diff outside orchestrator sdk-write allowlist:",
+    failures,
+    "sdk-write parent directory normalization did not reject an unplanned child",
+  );
+
+  assertRejects(
+    () =>
+      validateSdkWriteDiffAllowlist({
+        directoryChildEnumerator: createDirectoryChildEnumerator({
+          [fixtureParentDirectory]: [
+            m125OrchestratorFixtureSdkWritePath,
+            "orchestrator/fixtures/sdk-write/secret.pem",
+          ],
+        }),
+        plannedPaths: [m125OrchestratorFixtureSdkWritePath],
+        postSnapshot: {
+          cwd: process.cwd(),
+          pathSignatures: {
+            [fixtureParentDirectory]: "created",
+          },
+        },
+        preSnapshot: { pathSignatures: {} },
+        scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+        validationResult: { ok: true },
+      }),
+    "Forbidden path diff detected after sdk-write run:",
+    failures,
+    "sdk-write parent directory normalization did not reject a forbidden child",
+  );
+
+  assertRejects(
+    () =>
+      validateSdkWriteDiffAllowlist({
+        directoryChildEnumerator: createDirectoryChildEnumerator({
+          "src/": ["src/hidden.json"],
+        }),
+        plannedPaths: [m125OrchestratorFixtureSdkWritePath],
+        postSnapshot: {
+          cwd: process.cwd(),
+          pathSignatures: {
+            "src/": "created",
+          },
+        },
+        preSnapshot: { pathSignatures: {} },
+        scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+        validationResult: { ok: true },
+      }),
+    "Post-run diff outside orchestrator sdk-write allowlist:",
+    failures,
+    "sdk-write parent directory normalization did not reject a src child",
+  );
+
+  assertRejects(
+    () =>
+      validateSdkWriteDiffAllowlist({
+        directoryChildEnumerator: createDirectoryChildEnumerator({
+          [fixtureParentDirectory]: [
+            m125OrchestratorFixtureSdkWritePath,
+            "orchestrator/fixtures/sdk-write/.env",
+          ],
+        }),
+        plannedPaths: [m125OrchestratorFixtureSdkWritePath],
+        postSnapshot: {
+          cwd: process.cwd(),
+          pathSignatures: {
+            [fixtureParentDirectory]: "created",
+          },
+        },
+        preSnapshot: { pathSignatures: {} },
+        scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+        validationResult: { ok: true },
+      }),
+    "Forbidden path diff detected after sdk-write run:",
+    failures,
+    "sdk-write parent directory normalization did not reject a .env child",
+  );
+
+  for (const extension of [".js", ".mjs", ".ps1", ".cmd", ".bat", ".ts", ".tsx"]) {
+    assertRejects(
+      () =>
+        validateSdkWriteDiffAllowlist({
+          directoryChildEnumerator: createDirectoryChildEnumerator({
+            [fixtureParentDirectory]: [
+              m125OrchestratorFixtureSdkWritePath,
+              `orchestrator/fixtures/sdk-write/executable${extension}`,
+            ],
+          }),
+          plannedPaths: [m125OrchestratorFixtureSdkWritePath],
+          postSnapshot: {
+            cwd: process.cwd(),
+            pathSignatures: {
+              [fixtureParentDirectory]: "created",
+            },
+          },
+          preSnapshot: { pathSignatures: {} },
+          scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+          validationResult: { ok: true },
+        }),
+      "Post-run diff outside orchestrator sdk-write allowlist:",
+      failures,
+      `sdk-write parent directory normalization did not reject executable ${extension} child`,
+    );
+  }
+
+  assertRejects(
+    () =>
+      validateSdkWriteDiffAllowlist({
+        directoryChildEnumerator: createDirectoryChildEnumerator({
+          "mcp-server/": ["mcp-server/hidden.json"],
+        }),
+        plannedPaths: [m125OrchestratorFixtureSdkWritePath],
+        postSnapshot: {
+          cwd: process.cwd(),
+          pathSignatures: {
+            "mcp-server/": "created",
+          },
+        },
+        preSnapshot: { pathSignatures: {} },
+        scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+        validationResult: { ok: true },
+      }),
+    "Post-run diff outside orchestrator sdk-write allowlist:",
+    failures,
+    "sdk-write parent directory normalization did not reject an outside-scope parent directory",
+  );
+
+  assertRejects(
+    () =>
+      validateSdkWriteDiffAllowlist({
+        directoryChildEnumerator: createDirectoryChildEnumerator({
+          [fixtureParentDirectory]: [],
+        }),
+        plannedPaths: [m125OrchestratorFixtureSdkWritePath],
+        postSnapshot: {
+          cwd: process.cwd(),
+          pathSignatures: {
+            [fixtureParentDirectory]: "created",
+          },
+        },
+        preSnapshot: { pathSignatures: {} },
+        scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+        validationResult: { ok: true },
+      }),
+    "Changed directory contains no planned sdk-write child files:",
+    failures,
+    "sdk-write parent directory normalization did not reject an empty changed directory",
+  );
+
+  assertRejects(
+    () =>
+      validateSdkWriteDiffAllowlist({
+        directoryChildEnumerator: () => {
+          throw new Error("synthetic enumeration failure");
+        },
+        plannedPaths: [m125OrchestratorFixtureSdkWritePath],
+        postSnapshot: {
+          cwd: process.cwd(),
+          pathSignatures: {
+            [fixtureParentDirectory]: "created",
+          },
+        },
+        preSnapshot: { pathSignatures: {} },
+        scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+        validationResult: { ok: true },
+      }),
+    "Unable to enumerate changed directory after sdk-write run:",
+    failures,
+    "sdk-write parent directory normalization did not fail closed on enumeration failure",
+  );
+
   assertRejects(
     () =>
       validateSdkWriteDiffAllowlist({
@@ -2849,7 +3373,7 @@ export function runWriteCapableContractSmoke() {
   );
 
   if (failures.length > 0) {
-    const message = ["M123 write-capable scaffold contract smoke failed:", ...failures.map((f) => `- ${f}`)].join(
+    const message = ["M125 write-capable scaffold contract smoke failed:", ...failures.map((f) => `- ${f}`)].join(
       "\n",
     );
     throw new Error(message);
@@ -2871,7 +3395,14 @@ export function runWriteCapableContractSmoke() {
     sdkWritePathAllowlist: SDK_WRITE_PLANNED_PATH_ALLOWLIST,
     sdkWriteScope: SDK_WRITE_ALLOWED_SCOPE,
     sdkWritePlannedPaths: SDK_WRITE_CONTRACT_SMOKE_PLANNED_PATHS,
-    sdkWriteOrchestratorMarkdownOnly: true,
+    sdkWriteOrchestratorControlledOutputs: true,
+    sdkWriteOrchestratorFixtureJsonOnly: true,
+    sdkWriteOrchestratorFixtureJsonPathAllowlist:
+      SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_PLANNED_PATH_ALLOWLIST,
+    sdkWriteOrchestratorMarkdownOnly: false,
+    sdkWriteParentDirectoryNormalizationMode: "pass",
+    sdkWriteParentDirectoryNormalizationRealWriteWork: false,
+    sdkWriteParentDirectoryNormalizationSdkThreadCreated: false,
     sdkWriteOrchestratorPathAllowlist: SDK_WRITE_ORCHESTRATOR_PLANNED_PATH_ALLOWLIST,
     sdkWriteOrchestratorPlannedPaths: SDK_WRITE_ORCHESTRATOR_CONTRACT_SMOKE_PLANNED_PATHS,
     sdkWriteRuntimeFallbackMode: "pass",
@@ -2961,7 +3492,7 @@ export async function main(argv = process.argv.slice(2)) {
       console.log(JSON.stringify(result, null, 2));
       return;
     }
-    console.log("PASS M123 write-capable runner scaffold contract smoke");
+    console.log("PASS M125 write-capable runner scaffold contract smoke");
     return;
   }
 

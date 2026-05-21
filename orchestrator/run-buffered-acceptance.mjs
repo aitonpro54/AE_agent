@@ -187,6 +187,7 @@ async function runContractSmoke() {
   const {
     FORBIDDEN_PATH_PATTERNS,
     SDK_WRITE_ALLOWED_SCOPES,
+    SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_PLANNED_PATH_ALLOWLIST,
     SDK_WRITE_ORCHESTRATOR_PLANNED_PATH_ALLOWLIST,
     SDK_WRITE_PLANNED_PATH_ALLOWLIST,
     SCOPE_PATH_ALLOWLISTS,
@@ -410,15 +411,24 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
-    writeScaffoldSmoke?.sdkWriteOrchestratorMarkdownOnly === true &&
+    writeScaffoldSmoke?.sdkWriteOrchestratorControlledOutputs === true &&
       writeScaffoldSmoke?.sdkWriteOrchestratorPathAllowlist?.join(",") === "orchestrator/**" &&
       writeScaffoldSmoke?.sdkWriteOrchestratorPlannedPaths?.includes(
         "orchestrator/m123-sdk-thread-orchestrator-scope-output.md",
       ) &&
       writeScaffoldSmoke?.sdkWriteOrchestratorPlannedPaths?.includes(
         "orchestrator/arbitrary-safe-sdk-write-output.md",
+      ) &&
+      writeScaffoldSmoke?.sdkWriteOrchestratorFixtureJsonOnly === true &&
+      writeScaffoldSmoke?.sdkWriteOrchestratorFixtureJsonPathAllowlist?.join(",") ===
+        "orchestrator/fixtures/sdk-write/**" &&
+      writeScaffoldSmoke?.sdkWriteOrchestratorPlannedPaths?.includes(
+        "orchestrator/fixtures/sdk-write/m125-sdk-thread-fixture.json",
+      ) &&
+      writeScaffoldSmoke?.sdkWriteOrchestratorPlannedPaths?.includes(
+        "orchestrator/fixtures/sdk-write/arbitrary-safe-sdk-write-fixture.json",
       ),
-    "M123 write-capable orchestrator docs-only sdk-write contract smoke did not pass",
+    "M125 write-capable orchestrator controlled-output sdk-write contract smoke did not pass",
     failures,
   );
   assertContract(
@@ -440,6 +450,13 @@ async function runContractSmoke() {
       writeScaffoldSmoke?.sdkWriteRuntimeSmokeSdkThreadCreated === false &&
       writeScaffoldSmoke?.sdkWriteRuntimeSmokeRealWriteWork === false,
     "M120 sdk runtime fallback contract smoke did not pass",
+    failures,
+  );
+  assertContract(
+    writeScaffoldSmoke?.sdkWriteParentDirectoryNormalizationMode === "pass" &&
+      writeScaffoldSmoke?.sdkWriteParentDirectoryNormalizationSdkThreadCreated === false &&
+      writeScaffoldSmoke?.sdkWriteParentDirectoryNormalizationRealWriteWork === false,
+    "M125 sdk-write parent directory normalization contract smoke did not pass",
     failures,
   );
   assertContract(
@@ -474,8 +491,10 @@ async function runContractSmoke() {
   );
   assertContract(
     SDK_WRITE_ALLOWED_SCOPES.join(",") === "docs-audit,orchestrator" &&
-      SDK_WRITE_ORCHESTRATOR_PLANNED_PATH_ALLOWLIST.join(",") === "orchestrator/**",
-    "M123 orchestrator sdk-write scope allowlist is not restricted to orchestrator/**",
+      SDK_WRITE_ORCHESTRATOR_PLANNED_PATH_ALLOWLIST.join(",") === "orchestrator/**" &&
+      SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_PLANNED_PATH_ALLOWLIST.join(",") ===
+        "orchestrator/fixtures/sdk-write/**",
+    "M125 orchestrator sdk-write scope allowlist is not restricted to orchestrator controlled outputs",
     failures,
   );
   assertContract(
@@ -563,6 +582,10 @@ async function runContractSmoke() {
       readme.includes(".codex-audit/**") &&
       readme.includes("orchestrator/m123-sdk-thread-orchestrator-scope-output.md") &&
       readme.includes("docs-only Markdown planned paths under `orchestrator/**`") &&
+      readme.includes("orchestrator/fixtures/sdk-write/**") &&
+      readme.includes("orchestrator/fixtures/sdk-write/m125-sdk-thread-fixture.json") &&
+      readme.includes("non-executable JSON fixtures") &&
+      readme.includes("package.json` as a planned SDK output") &&
       readme.includes("src/**") &&
       readme.includes("scripts/**") &&
       readme.includes("specs/**") &&
@@ -587,7 +610,7 @@ async function runContractSmoke() {
     return;
   }
 
-  console.log("PASS M123 SDK orchestrator contract smoke");
+  console.log("PASS M125 SDK orchestrator contract smoke");
   console.log("Invalid general CLI values rejected before SDK thread creation");
   console.log("Write-capable scopes:");
   for (const scope of WRITE_SCOPES) {
@@ -604,7 +627,9 @@ async function runContractSmoke() {
   console.log("Write-capable local dry-run mode: pass");
   console.log("Write-capable operation envelope mode: pass");
   console.log("Write-capable docs-audit sdk-write mode: pass");
-  console.log("Write-capable orchestrator docs-only sdk-write mode: pass");
+  console.log("Write-capable orchestrator controlled-output sdk-write mode: pass");
+  console.log("Write-capable orchestrator fixture JSON sdk-write mode: pass");
+  console.log("Write-capable sdk-write parent directory normalization mode: pass");
   console.log("Write-capable sdk-write diagnostic logging mode: pass");
   console.log("Write-capable sdk runtime fallback mode: pass");
 }
