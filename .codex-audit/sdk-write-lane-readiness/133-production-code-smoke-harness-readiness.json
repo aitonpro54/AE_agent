@@ -1,0 +1,27 @@
+{
+  "schema": "sdk-write-lane-readiness.v1",
+  "readiness": "ready-for-approval",
+  "approvalState": "pending-explicit-approval",
+  "scope": "production-code",
+  "sdkWriteEnabled": false,
+  "sourceReviewPacket": ".codex-audit/sdk-scope-expansion-reviews/129-production-code-smoke-harness-review.json",
+  "summary": "Prepare the first real production-code SDK write lane for explicit approval review. This artifact does not enable production-code SDK writes.",
+  "plannedPathAllowlist": [
+    "scripts/provider-contract-smoke.js"
+  ],
+  "requiredApprovalRecord": "A later milestone must record an explicit approval decision in plans/target-app-execplan.md before SDK_WRITE_ALLOWED_SCOPES or production-code sdk-write acceptance can change.",
+  "preEnablementChecks": [
+    "Run node --check scripts/provider-contract-smoke.js before any future write-lane approval.",
+    "Run node --check orchestrator/run-write-capable-scaffold.mjs and node --check orchestrator/run-buffered-acceptance.mjs after the approval change.",
+    "Run npm.cmd run codex:orchestrator:write-scaffold:contract to prove the new lane behavior remains contract-gated.",
+    "Run npm.cmd run check:rules to validate review packets, readiness packets, and SDK scope gates.",
+    "Run the configured local smoke suite before creating any SDKThread for this production-code lane."
+  ],
+  "approvalEvidenceRequired": [
+    "Review this readiness artifact alongside the source M129 scope expansion packet.",
+    "Confirm the lane remains limited to scripts/provider-contract-smoke.js.",
+    "Confirm production-code remains absent from SDK_WRITE_ALLOWED_SCOPES until the later approval milestone.",
+    "Record validation and rollback evidence before creating any SDKThread for this lane."
+  ],
+  "rollbackPlan": "If explicit approval is not recorded, keep SDK_WRITE_ALLOWED_SCOPES unchanged and leave production-code rejected by the sdk-write operation envelope gate; remove this readiness artifact or supersede it in a later milestone if the lane scope changes."
+}

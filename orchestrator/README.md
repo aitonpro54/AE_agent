@@ -99,6 +99,8 @@ M129 adds the first committed review packet, `.codex-audit/sdk-scope-expansion-r
 
 M132 adds a second committed review packet, `.codex-audit/sdk-scope-expansion-reviews/132-cep-panel-composer-review.json`, for a future narrow `cep-panel` lane. This remains a proposed review artifact only: `sdkWriteEnabled:false`, no SDK thread creation, and no CEP-panel write enablement.
 
+M133 adds a local readiness gate for the first future `production-code` write lane proposed by M129. Readiness packets use schema `sdk-write-lane-readiness.v1` and live under `.codex-audit/sdk-write-lane-readiness/`. The first readiness artifact, `.codex-audit/sdk-write-lane-readiness/133-production-code-smoke-harness-readiness.json`, must point back to the M129 review packet, keep `approvalState:"pending-explicit-approval"` and `sdkWriteEnabled:false`, and match the reviewed allowlist `scripts/provider-contract-smoke.js`. It prepares a later approval milestone but does not create an SDK thread or enable production-code writes.
+
 Обязательный `--scope` принимает только:
 
 - `docs-audit`
@@ -127,7 +129,7 @@ Hard-stop conditions:
 
 ## Локальный contract smoke
 
-Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate, SDK scope expansion review packet gate, committed review packet files и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
+Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate, SDK scope expansion review packet gate, committed review packet files, SDK write lane readiness packet gate и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
 
 ```powershell
 npm.cmd run check:rules

@@ -163,6 +163,11 @@ export const SDK_SCOPE_EXPANSION_REVIEW_DECISIONS = Object.freeze([
   "approved",
   "rejected",
 ]);
+export const SDK_WRITE_LANE_READINESS_SCHEMA = "sdk-write-lane-readiness.v1";
+export const SDK_WRITE_LANE_READINESS_DIRECTORY =
+  ".codex-audit/sdk-write-lane-readiness";
+export const SDK_WRITE_LANE_READINESS_STATE = "ready-for-approval";
+export const SDK_WRITE_LANE_APPROVAL_STATE = "pending-explicit-approval";
 export const SDK_WRITE_PLANNED_PATH_ALLOWLIST = Object.freeze([
   ".codex-audit/**",
 ]);
@@ -688,6 +693,143 @@ export function validateSdkScopeExpansionReviewPacket(packet) {
   };
 }
 
+export function validateSdkWriteLaneReadinessPacket(packet) {
+  if (!packet || typeof packet !== "object" || Array.isArray(packet)) {
+    throw new Error("Malformed SDK write lane readiness packet. Expected a JSON object.");
+  }
+
+  for (const field of UNSAFE_SCOPE_EXPANSION_REVIEW_FIELDS) {
+    if (Object.hasOwn(packet, field)) {
+      throw new Error(`Unsafe SDK write lane readiness field rejected: ${field}`);
+    }
+  }
+
+  if (packet.schema !== SDK_WRITE_LANE_READINESS_SCHEMA) {
+    throw new Error(
+      `Unsupported SDK write lane readiness schema: ${String(
+        packet.schema,
+      )}. Expected ${SDK_WRITE_LANE_READINESS_SCHEMA}.`,
+    );
+  }
+
+  if (packet.readiness !== SDK_WRITE_LANE_READINESS_STATE) {
+    throw new Error(
+      `Unsupported SDK write lane readiness state: ${String(
+        packet.readiness,
+      )}. Expected ${SDK_WRITE_LANE_READINESS_STATE}.`,
+    );
+  }
+
+  if (packet.approvalState !== SDK_WRITE_LANE_APPROVAL_STATE) {
+    throw new Error(
+      `SDK write lane readiness approvalState must be ${SDK_WRITE_LANE_APPROVAL_STATE}.`,
+    );
+  }
+
+  if (!SDK_WRITE_REVIEW_REQUIRED_SCOPES.includes(packet.scope)) {
+    throw new Error(
+      `SDK write lane readiness scope rejected: ${String(
+        packet.scope,
+      )}. Expected one of: ${SDK_WRITE_REVIEW_REQUIRED_SCOPES.join(", ")}.`,
+    );
+  }
+
+  if (packet.sdkWriteEnabled !== false) {
+    throw new Error("SDK write lane readiness packet must keep sdkWriteEnabled:false.");
+  }
+
+  if (typeof packet.summary !== "string" || packet.summary.trim() === "") {
+    throw new Error("Missing SDK write lane readiness summary.");
+  }
+
+  const sourceReviewPacket = normalizeRepoPath(packet.sourceReviewPacket);
+  if (
+    sourceReviewPacket === "" ||
+    isUnsafePathShape(sourceReviewPacket) ||
+    isForbiddenPath(sourceReviewPacket) ||
+    !sourceReviewPacket.startsWith(`${SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY}/`) ||
+    !sourceReviewPacket.endsWith(".json")
+  ) {
+    throw new Error(
+      `SDK write lane readiness sourceReviewPacket must point to ${SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY}/*.json.`,
+    );
+  }
+
+  if (
+    !Array.isArray(packet.plannedPathAllowlist) ||
+    packet.plannedPathAllowlist.length === 0 ||
+    packet.plannedPathAllowlist.some((repoPath) => typeof repoPath !== "string")
+  ) {
+    throw new Error("Missing or invalid SDK write lane readiness plannedPathAllowlist.");
+  }
+
+  const plannedPathAllowlist = packet.plannedPathAllowlist.map(normalizeRepoPath);
+  if (plannedPathAllowlist.some((repoPath) => repoPath === "")) {
+    throw new Error("SDK write lane readiness plannedPathAllowlist contains an empty path.");
+  }
+
+  const plannedPathCheck = createPlannedPathCheck(packet.scope, plannedPathAllowlist);
+  if (!plannedPathCheck.allowed) {
+    throwSdkWriteLaneReadinessPathCheckError(plannedPathCheck);
+  }
+
+  if (
+    typeof packet.requiredApprovalRecord !== "string" ||
+    packet.requiredApprovalRecord.trim() === ""
+  ) {
+    throw new Error("Missing SDK write lane readiness requiredApprovalRecord.");
+  }
+
+  if (!Array.isArray(packet.preEnablementChecks) || packet.preEnablementChecks.length === 0) {
+    throw new Error("Missing SDK write lane readiness preEnablementChecks.");
+  }
+
+  if (
+    packet.preEnablementChecks.some((item) => typeof item !== "string" || item.trim() === "")
+  ) {
+    throw new Error(
+      "SDK write lane readiness preEnablementChecks entries must be non-empty strings.",
+    );
+  }
+
+  if (
+    !Array.isArray(packet.approvalEvidenceRequired) ||
+    packet.approvalEvidenceRequired.length === 0
+  ) {
+    throw new Error("Missing SDK write lane readiness approvalEvidenceRequired.");
+  }
+
+  if (
+    packet.approvalEvidenceRequired.some(
+      (item) => typeof item !== "string" || item.trim() === "",
+    )
+  ) {
+    throw new Error(
+      "SDK write lane readiness approvalEvidenceRequired entries must be non-empty strings.",
+    );
+  }
+
+  if (typeof packet.rollbackPlan !== "string" || packet.rollbackPlan.trim() === "") {
+    throw new Error("Missing SDK write lane readiness rollbackPlan.");
+  }
+
+  return {
+    approvalEvidenceRequired: packet.approvalEvidenceRequired.map((item) => item.trim()),
+    approvalState: packet.approvalState,
+    plannedPathAllowlist,
+    plannedPathCheck,
+    preEnablementChecks: packet.preEnablementChecks.map((item) => item.trim()),
+    readiness: packet.readiness,
+    requiredApprovalRecord: packet.requiredApprovalRecord.trim(),
+    rollbackPlan: packet.rollbackPlan.trim(),
+    schema: packet.schema,
+    scope: packet.scope,
+    sdkWriteEnabled: false,
+    sourceReviewPacket,
+    summary: packet.summary.trim(),
+  };
+}
+
 function summarizePathViolations(violations) {
   return violations.map((violation) => `${violation.path} (${violation.reason})`).join(", ");
 }
@@ -770,6 +912,39 @@ function throwScopeExpansionReviewPathCheckError(plannedPathCheck) {
   }
 
   throw new Error(`SDK scope expansion review plannedPathAllowlist rejected: ${summary}`);
+}
+
+function throwSdkWriteLaneReadinessPathCheckError(plannedPathCheck) {
+  const summary = summarizePathViolations(plannedPathCheck.violations);
+  const hasUnsafeShape = plannedPathCheck.violations.some(
+    (violation) => violation.reason === "unsafe-path-shape",
+  );
+  const hasForbiddenPath = plannedPathCheck.violations.some(
+    (violation) => violation.reason === "forbidden-path",
+  );
+  const hasOutsideScope = plannedPathCheck.violations.some(
+    (violation) => violation.reason === "outside-scope-allowlist",
+  );
+
+  if (hasUnsafeShape) {
+    throw new Error(
+      `SDK write lane readiness plannedPathAllowlist includes unsafe path shapes: ${summary}`,
+    );
+  }
+
+  if (hasForbiddenPath) {
+    throw new Error(
+      `SDK write lane readiness plannedPathAllowlist includes forbidden paths: ${summary}`,
+    );
+  }
+
+  if (hasOutsideScope) {
+    throw new Error(
+      `SDK write lane readiness plannedPathAllowlist outside scope allowlist: ${summary}`,
+    );
+  }
+
+  throw new Error(`SDK write lane readiness plannedPathAllowlist rejected: ${summary}`);
 }
 
 function isPathInsideDirectory(candidatePath, directoryPath) {
@@ -2808,6 +2983,88 @@ export function runWriteCapableContractSmoke() {
     );
   }
 
+  const validProductionLaneReadiness = {
+    schema: SDK_WRITE_LANE_READINESS_SCHEMA,
+    readiness: SDK_WRITE_LANE_READINESS_STATE,
+    approvalState: SDK_WRITE_LANE_APPROVAL_STATE,
+    scope: "production-code",
+    sdkWriteEnabled: false,
+    sourceReviewPacket: `${SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY}/129-production-code-smoke-harness-review.json`,
+    summary: "Prepare a scripts-only production-code SDK write lane for approval review.",
+    plannedPathAllowlist: ["scripts/provider-contract-smoke.js"],
+    requiredApprovalRecord:
+      "Record a separate explicit approval decision before enabling production-code sdk-write.",
+    preEnablementChecks: [
+      "Run node --check scripts/provider-contract-smoke.js.",
+      "Run npm.cmd run check:rules.",
+    ],
+    approvalEvidenceRequired: [
+      "Review the source M129 scope expansion packet.",
+      "Confirm the lane remains limited to scripts/provider-contract-smoke.js.",
+    ],
+    rollbackPlan: "Keep SDK_WRITE_ALLOWED_SCOPES unchanged unless approval is recorded.",
+  };
+
+  let productionLaneReadinessAccepted = true;
+  try {
+    validateSdkWriteLaneReadinessPacket(validProductionLaneReadiness);
+  } catch {
+    productionLaneReadinessAccepted = false;
+  }
+  assertContract(
+    productionLaneReadinessAccepted,
+    "SDK write lane readiness packet rejected a valid production-code readiness gate",
+    failures,
+  );
+
+  const laneReadinessRejectedCases = [
+    {
+      expectedMessageStart: "SDK write lane readiness packet must keep sdkWriteEnabled:false.",
+      label: "SDK write lane readiness packet allowed sdkWriteEnabled:true",
+      patch: { sdkWriteEnabled: true },
+    },
+    {
+      expectedMessageStart:
+        "SDK write lane readiness approvalState must be pending-explicit-approval.",
+      label: "SDK write lane readiness packet accepted an approved state",
+      patch: { approvalState: "approved" },
+    },
+    {
+      expectedMessageStart:
+        "SDK write lane readiness sourceReviewPacket must point to .codex-audit/sdk-scope-expansion-reviews/*.json.",
+      label: "SDK write lane readiness packet accepted an outside source review path",
+      patch: { sourceReviewPacket: ".codex-audit/not-a-review.json" },
+    },
+    {
+      expectedMessageStart: "SDK write lane readiness plannedPathAllowlist outside scope allowlist:",
+      label: "SDK write lane readiness packet accepted a path outside its review scope",
+      patch: { plannedPathAllowlist: ["cep-panel/panel.js"] },
+    },
+    {
+      expectedMessageStart: "Missing SDK write lane readiness preEnablementChecks.",
+      label: "SDK write lane readiness packet accepted missing pre-enablement checks",
+      patch: { preEnablementChecks: [] },
+    },
+    {
+      expectedMessageStart: "Unsafe SDK write lane readiness field rejected:",
+      label: "SDK write lane readiness packet accepted unsafe execution options",
+      patch: { networkAccessEnabled: true },
+    },
+  ];
+
+  for (const rejectedCase of laneReadinessRejectedCases) {
+    assertRejects(
+      () =>
+        validateSdkWriteLaneReadinessPacket({
+          ...validProductionLaneReadiness,
+          ...rejectedCase.patch,
+        }),
+      rejectedCase.expectedMessageStart,
+      failures,
+      rejectedCase.label,
+    );
+  }
+
   let arbitraryAuditPathAccepted = true;
   try {
     validateOperationEnvelope({
@@ -3707,7 +3964,7 @@ export function runWriteCapableContractSmoke() {
   );
 
   if (failures.length > 0) {
-    const message = ["M128 write-capable scaffold contract smoke failed:", ...failures.map((f) => `- ${f}`)].join(
+    const message = ["M133 write-capable scaffold contract smoke failed:", ...failures.map((f) => `- ${f}`)].join(
       "\n",
     );
     throw new Error(message);
@@ -3724,6 +3981,13 @@ export function runWriteCapableContractSmoke() {
     sdkScopeExpansionReviewRealWriteWork: false,
     sdkScopeExpansionReviewSchema: SDK_SCOPE_EXPANSION_REVIEW_SCHEMA,
     sdkScopeExpansionReviewSdkThreadCreated: false,
+    sdkWriteLaneReadinessApprovalState: SDK_WRITE_LANE_APPROVAL_STATE,
+    sdkWriteLaneReadinessDirectory: SDK_WRITE_LANE_READINESS_DIRECTORY,
+    sdkWriteLaneReadinessPacketMode: "pass",
+    sdkWriteLaneReadinessRealWriteWork: false,
+    sdkWriteLaneReadinessSchema: SDK_WRITE_LANE_READINESS_SCHEMA,
+    sdkWriteLaneReadinessSdkThreadCreated: false,
+    sdkWriteLaneReadinessState: SDK_WRITE_LANE_READINESS_STATE,
     sdkWriteDiagnosticsMode: "pass",
     sdkWriteFallbackOperationPath: diagnosticFallbackOperationPath,
     sdkWriteFallbackReportPath: diagnosticLogResult.fallbackReportPath,
@@ -3837,7 +4101,7 @@ export async function main(argv = process.argv.slice(2)) {
       console.log(JSON.stringify(result, null, 2));
       return;
     }
-    console.log("PASS M128 write-capable runner scaffold contract smoke");
+    console.log("PASS M133 write-capable runner scaffold contract smoke");
     return;
   }
 
