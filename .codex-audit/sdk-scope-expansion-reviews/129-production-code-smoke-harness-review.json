@@ -1,0 +1,17 @@
+{
+  "schema": "sdk-scope-expansion-review.v1",
+  "decision": "proposed",
+  "scope": "production-code",
+  "sdkWriteEnabled": false,
+  "summary": "Review a future scripts-only production-code SDK write lane for provider contract smoke maintenance. This packet does not enable production-code SDK writes.",
+  "plannedPathAllowlist": [
+    "scripts/provider-contract-smoke.js"
+  ],
+  "validationPlan": [
+    "Run node --check scripts/provider-contract-smoke.js before any future write-lane approval.",
+    "Run npm.cmd run codex:orchestrator:write-scaffold:contract to confirm production-code remains review-required while this packet is only proposed.",
+    "Run npm.cmd run check:rules to validate committed review packets and SDK scope gates.",
+    "Run the configured local smoke suite before considering any separate approval to enable the lane."
+  ],
+  "rollbackPlan": "Keep SDK_WRITE_ALLOWED_SCOPES unchanged; remove this packet or mark it rejected if review does not approve the future scripts-only lane."
+}

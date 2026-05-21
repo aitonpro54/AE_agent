@@ -171,6 +171,47 @@ function runNode(args, timeoutMs = 30000) {
   });
 }
 
+function collectSdkScopeExpansionReviewPackets(directory, validatePacket) {
+  const absoluteDirectory = path.join(repo, directory);
+  const failures = [];
+  const packets = [];
+
+  if (!fs.existsSync(absoluteDirectory)) {
+    return {
+      failures: [`missing SDK scope expansion review packet directory: ${directory}`],
+      packets,
+    };
+  }
+
+  for (const entry of fs.readdirSync(absoluteDirectory, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".json")) {
+      continue;
+    }
+
+    const absolutePath = path.join(absoluteDirectory, entry.name);
+    const repoPath = path.posix.join(directory, entry.name);
+
+    try {
+      const packet = JSON.parse(fs.readFileSync(absolutePath, "utf8"));
+      const validated = validatePacket(packet);
+      packets.push({
+        decision: validated.decision,
+        path: repoPath,
+        plannedPathAllowlist: validated.plannedPathAllowlist,
+        scope: validated.scope,
+        sdkWriteEnabled: validated.sdkWriteEnabled,
+      });
+    } catch (error) {
+      failures.push(`${repoPath}: ${error.message}`);
+    }
+  }
+
+  return {
+    failures,
+    packets: packets.sort((left, right) => left.path.localeCompare(right.path)),
+  };
+}
+
 async function runContractSmoke() {
   const failures = [];
   const helpResult = runNode([path.join("orchestrator", "codex-sdk-orchestrator.mjs"), "--help"]);
@@ -197,6 +238,7 @@ async function runContractSmoke() {
     UNSAFE_WRITE_RUNNER_FLAGS,
     WRITE_SCOPES,
     runWriteCapableContractSmoke,
+    validateSdkScopeExpansionReviewPacket,
   } = await import("./run-write-capable-scaffold.mjs");
   const safeDefaults = createThreadOptions({});
 
@@ -482,6 +524,27 @@ async function runContractSmoke() {
     "M128 SDK scope expansion review packet contract smoke did not pass",
     failures,
   );
+
+  const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
+    SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
+    validateSdkScopeExpansionReviewPacket,
+  );
+  for (const failure of reviewPacketFiles.failures) {
+    assertContract(false, `M129 SDK scope expansion review packet file failed: ${failure}`, failures);
+  }
+  const firstReviewPacket = reviewPacketFiles.packets.find(
+    (packet) =>
+      packet.path ===
+      `${SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY}/129-production-code-smoke-harness-review.json`,
+  );
+  assertContract(
+    firstReviewPacket?.decision === "proposed" &&
+      firstReviewPacket?.scope === "production-code" &&
+      firstReviewPacket?.sdkWriteEnabled === false &&
+      firstReviewPacket?.plannedPathAllowlist?.includes("scripts/provider-contract-smoke.js"),
+    "M129 first SDK scope expansion review packet was not validated",
+    failures,
+  );
   assertContract(
     WRITE_SCOPES.join(",") === "docs-audit,orchestrator,production-code,cep-panel",
     "M112 write-capable scopes are not the expected explicit set",
@@ -638,7 +701,7 @@ async function runContractSmoke() {
     return;
   }
 
-  console.log("PASS M128 SDK orchestrator contract smoke");
+  console.log("PASS M129 SDK orchestrator contract smoke");
   console.log("Invalid general CLI values rejected before SDK thread creation");
   console.log("Write-capable scopes:");
   for (const scope of WRITE_SCOPES) {
@@ -660,6 +723,7 @@ async function runContractSmoke() {
   console.log("Write-capable sdk-write parent directory normalization mode: pass");
   console.log("Write-capable sdk-write scope expansion gate: pass");
   console.log("SDK scope expansion review packet gate: pass");
+  console.log("SDK scope expansion review packet files: pass");
   console.log("Write-capable sdk-write diagnostic logging mode: pass");
   console.log("Write-capable sdk runtime fallback mode: pass");
 }

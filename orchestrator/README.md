@@ -95,6 +95,8 @@ M127 adds a local-only acceptance gate for future SDK write scope expansion. `do
 
 M128 adds a local review-packet contract for any future proposal to expand SDK write scopes. Review packets use schema `sdk-scope-expansion-review.v1` and should live under `.codex-audit/sdk-scope-expansion-reviews/`. A packet can describe a proposed `production-code` or `cep-panel` lane, but it must keep `sdkWriteEnabled:false`, include a narrow planned path allowlist, validation plan, and rollback plan, and it does not create an SDK thread or enable a write lane.
 
+M129 adds the first committed review packet, `.codex-audit/sdk-scope-expansion-reviews/129-production-code-smoke-harness-review.json`, for a future `production-code` scripts-only lane. `check:rules` validates committed review packet JSON files with the same local contract while production-code and CEP-panel SDK writes remain disabled.
+
 Обязательный `--scope` принимает только:
 
 - `docs-audit`
@@ -123,7 +125,7 @@ Hard-stop conditions:
 
 ## Локальный contract smoke
 
-Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate, SDK scope expansion review packet gate и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
+Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate, SDK scope expansion review packet gate, committed review packet files и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
 
 ```powershell
 npm.cmd run check:rules
