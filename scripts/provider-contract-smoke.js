@@ -15,6 +15,14 @@ const EXPECTED_OPENAI_CLI_MODELS = [
   "gpt-5.2"
 ];
 
+const EXPECTED_PROVIDER_AGENT_ORDER = [
+  "openai-api",
+  "openai-cli",
+  "gemini-api",
+  "claude-api",
+  "openrouter"
+];
+
 const MANAGED_ENV = [
   "CODEX_CLI_PATH",
   "CODEX_PATH",
@@ -116,6 +124,11 @@ async function main() {
     setEnv("OPENROUTER_MODELS", null);
 
     const listed = await listAgents({});
+    const providerAgentIds = listed.agents
+      .map((item) => item.id)
+      .filter((id) => EXPECTED_PROVIDER_AGENT_ORDER.includes(id));
+    assert.deepStrictEqual(providerAgentIds, EXPECTED_PROVIDER_AGENT_ORDER);
+
     const openAiApi = findAgent(listed.agents, "openai-api");
     const openAiCli = findAgent(listed.agents, "openai-cli");
     const geminiApi = findAgent(listed.agents, "gemini-api");
