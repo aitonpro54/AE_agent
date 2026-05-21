@@ -181,6 +181,8 @@ export const SDK_WRITE_LANE_ENABLEMENT_APPROVAL_STATE = "approved";
 export const SDK_LAUNCH_GOVERNANCE_SCHEMA = "sdk-launch-governance.v1";
 export const SDK_LAUNCH_GOVERNANCE_DIRECTORY = ".codex-audit/sdk-launch-governance";
 export const SDK_LAUNCH_GOVERNANCE_STATE = "local-gated";
+export const SDK_LAUNCH_GOVERNANCE_DRIFT_REPORT_SCHEMA =
+  "sdk-launch-governance-drift-report.v1";
 export const SDK_WRITE_PLANNED_PATH_ALLOWLIST = Object.freeze([
   ".codex-audit/**",
 ]);
@@ -1273,6 +1275,105 @@ export function validateSdkLaunchGovernancePacket(packet) {
     state: packet.state,
     summary: packet.summary.trim(),
     validationPlan,
+  };
+}
+
+function listEquals(left, right) {
+  return Array.isArray(left) && Array.isArray(right) && left.join(",") === right.join(",");
+}
+
+function createDriftCheck(id, ok, actual, expected) {
+  return {
+    actual,
+    expected,
+    id,
+    ok,
+  };
+}
+
+export function buildSdkLaunchGovernanceDriftReport({
+  launchGovernancePacket,
+  productionLaneEnablementPacket,
+} = {}) {
+  const launchGovernance = validateSdkLaunchGovernancePacket(launchGovernancePacket);
+  const productionLaneEnablement = validateSdkWriteLaneEnablementPacket(
+    productionLaneEnablementPacket,
+  );
+
+  const checks = [
+    createDriftCheck(
+      "allowed-sdk-write-scopes",
+      listEquals(launchGovernance.allowedSdkWriteScopes, SDK_WRITE_ALLOWED_SCOPES),
+      launchGovernance.allowedSdkWriteScopes,
+      SDK_WRITE_ALLOWED_SCOPES,
+    ),
+    createDriftCheck(
+      "review-required-scopes",
+      listEquals(launchGovernance.reviewRequiredScopes, SDK_WRITE_REVIEW_REQUIRED_SCOPES),
+      launchGovernance.reviewRequiredScopes,
+      SDK_WRITE_REVIEW_REQUIRED_SCOPES,
+    ),
+    createDriftCheck(
+      "production-code-governance-allowlist",
+      listEquals(
+        launchGovernance.productionCodePlannedPathAllowlist,
+        SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST,
+      ),
+      launchGovernance.productionCodePlannedPathAllowlist,
+      SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST,
+    ),
+    createDriftCheck(
+      "production-code-enable-governance-match",
+      listEquals(
+        launchGovernance.productionCodePlannedPathAllowlist,
+        productionLaneEnablement.plannedPathAllowlist,
+      ),
+      productionLaneEnablement.plannedPathAllowlist,
+      launchGovernance.productionCodePlannedPathAllowlist,
+    ),
+    createDriftCheck(
+      "cep-panel-disabled",
+      launchGovernance.cepPanelSdkWriteEnabled === false &&
+        !SDK_WRITE_ALLOWED_SCOPES.includes("cep-panel"),
+      {
+        governanceEnabled: launchGovernance.cepPanelSdkWriteEnabled,
+        runnerEnabled: SDK_WRITE_ALLOWED_SCOPES.includes("cep-panel"),
+      },
+      {
+        governanceEnabled: false,
+        runnerEnabled: false,
+      },
+    ),
+    createDriftCheck(
+      "no-new-sdkthread-or-network-approval",
+      launchGovernance.newSdkThreadRunApproved === false &&
+        launchGovernance.externalNetworkRetryApproved === false,
+      {
+        externalNetworkRetryApproved: launchGovernance.externalNetworkRetryApproved,
+        newSdkThreadRunApproved: launchGovernance.newSdkThreadRunApproved,
+      },
+      {
+        externalNetworkRetryApproved: false,
+        newSdkThreadRunApproved: false,
+      },
+    ),
+    createDriftCheck(
+      "no-broad-production-code-approval",
+      launchGovernance.broadProductionCodeWritesApproved === false,
+      launchGovernance.broadProductionCodeWritesApproved,
+      false,
+    ),
+  ];
+
+  return {
+    allowedSdkWriteScopes: launchGovernance.allowedSdkWriteScopes,
+    checks,
+    driftDetected: checks.some((check) => !check.ok),
+    launchGovernanceState: launchGovernance.state,
+    productionCodePlannedPathAllowlist: launchGovernance.productionCodePlannedPathAllowlist,
+    reviewRequiredScopes: launchGovernance.reviewRequiredScopes,
+    schema: SDK_LAUNCH_GOVERNANCE_DRIFT_REPORT_SCHEMA,
+    sourceMilestones: launchGovernance.sourceMilestones,
   };
 }
 
@@ -3992,6 +4093,52 @@ export function runWriteCapableContractSmoke() {
     );
   }
 
+  let sdkLaunchGovernanceDriftReport = null;
+  try {
+    sdkLaunchGovernanceDriftReport = buildSdkLaunchGovernanceDriftReport({
+      launchGovernancePacket: validSdkLaunchGovernance,
+      productionLaneEnablementPacket: validProductionLaneEnablement,
+    });
+  } catch (error) {
+    failures.push(`SDK launch governance drift report threw unexpectedly: ${error.message}`);
+  }
+  assertContract(
+    sdkLaunchGovernanceDriftReport?.schema === SDK_LAUNCH_GOVERNANCE_DRIFT_REPORT_SCHEMA &&
+      sdkLaunchGovernanceDriftReport?.launchGovernanceState ===
+        SDK_LAUNCH_GOVERNANCE_STATE &&
+      sdkLaunchGovernanceDriftReport?.driftDetected === false &&
+      sdkLaunchGovernanceDriftReport?.checks?.every((check) => check.ok),
+    "SDK launch governance drift report did not confirm the local-gated launch state",
+    failures,
+  );
+
+  assertRejects(
+    () =>
+      buildSdkLaunchGovernanceDriftReport({
+        launchGovernancePacket: {
+          ...validSdkLaunchGovernance,
+          allowedSdkWriteScopes: ["docs-audit", "orchestrator"],
+        },
+        productionLaneEnablementPacket: validProductionLaneEnablement,
+      }),
+    "SDK launch governance allowedSdkWriteScopes must be exactly",
+    failures,
+    "SDK launch governance drift report accepted missing production-code enabled scope",
+  );
+  assertRejects(
+    () =>
+      buildSdkLaunchGovernanceDriftReport({
+        launchGovernancePacket: validSdkLaunchGovernance,
+        productionLaneEnablementPacket: {
+          ...validProductionLaneEnablement,
+          plannedPathAllowlist: ["scripts/smoke-test.js"],
+        },
+      }),
+    "SDK write lane enablement plannedPathAllowlist must be exactly scripts/provider-contract-smoke.js.",
+    failures,
+    "SDK launch governance drift report accepted an enablement allowlist mismatch",
+  );
+
   let arbitraryAuditPathAccepted = true;
   try {
     validateOperationEnvelope({
@@ -4934,6 +5081,9 @@ export function runWriteCapableContractSmoke() {
     sdkScopeExpansionReviewSchema: SDK_SCOPE_EXPANSION_REVIEW_SCHEMA,
     sdkScopeExpansionReviewSdkThreadCreated: false,
     sdkLaunchGovernanceDirectory: SDK_LAUNCH_GOVERNANCE_DIRECTORY,
+    sdkLaunchGovernanceDriftDetected: false,
+    sdkLaunchGovernanceDriftReportMode: "pass",
+    sdkLaunchGovernanceDriftReportSchema: SDK_LAUNCH_GOVERNANCE_DRIFT_REPORT_SCHEMA,
     sdkLaunchGovernancePacketMode: "pass",
     sdkLaunchGovernanceRealWriteWork: false,
     sdkLaunchGovernanceSchema: SDK_LAUNCH_GOVERNANCE_SCHEMA,

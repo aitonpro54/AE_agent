@@ -109,6 +109,8 @@ M136 prepares that first production-code lane for existing-source updates. Unlik
 
 M140 adds a local SDK launch governance packet. Governance packets use schema `sdk-launch-governance.v1` and live under `.codex-audit/sdk-launch-governance/`. The first packet, `.codex-audit/sdk-launch-governance/140-sdk-launch-governance.json`, records `state:"local-gated"`, cites M138/M139, preserves the exact enabled `sdk-write` scopes, keeps production-code limited to `scripts/provider-contract-smoke.js`, keeps CEP-panel disabled, and records that new SDKThread/network writes still require a separate approval milestone.
 
+M141 adds an SDK launch governance drift report. The report uses schema `sdk-launch-governance-drift-report.v1` and is built during `check:rules` from the committed launch-governance packet plus the committed production-code enablement packet. It fails if enabled scopes, review-required scopes, production-code allowlist, CEP-panel disabled state, or SDKThread/network approval state drift away from the local-gated contract.
+
 Обязательный `--scope` принимает только:
 
 - `docs-audit`
@@ -144,7 +146,7 @@ Hard-stop conditions:
 
 ## Локальный contract smoke
 
-Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate, SDK scope expansion review packet gate, committed review packet files, SDK write lane readiness packet gate, SDK write lane approval decision packet gate, SDK write lane enablement packet gate, SDK launch governance packet gate и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
+Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate, SDK scope expansion review packet gate, committed review packet files, SDK write lane readiness packet gate, SDK write lane approval decision packet gate, SDK write lane enablement packet gate, SDK launch governance packet gate, SDK launch governance drift report и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
 
 ```powershell
 npm.cmd run check:rules

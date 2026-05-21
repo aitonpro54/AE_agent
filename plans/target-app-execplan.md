@@ -107,6 +107,7 @@
 - [x] Milestone 138: Production-Code SDKThread Retry Completion.
 - [x] Milestone 139: Post-M138 SDK Operability Gate.
 - [x] Milestone 140: SDK Launch Governance Gate.
+- [x] Milestone 141: SDK Governance Drift Report Gate.
 
 ## Current Stable Baseline
 
@@ -832,6 +833,13 @@
 - Обновить README/contract smoke так, чтобы future launch readiness не могла неявно расширить SDK writes.
 - Подтвердить milestone только локальными checks/smokes без SDKThread creation, network retry, package install, live CEP/AE или mutating-live validation.
 
+### Milestone 141: SDK Governance Drift Report Gate
+
+- Добавить local `sdk-launch-governance-drift-report.v1` report builder.
+- Строить drift report в `check:rules` из committed launch-governance packet и production-code enablement packet.
+- Fail locally if enabled scopes, review-required scopes, production-code allowlist, CEP-panel disabled state, or SDKThread/network approval state drift away from the local-gated contract.
+- Подтвердить milestone только локальными checks/smokes без SDKThread creation, network retry, package install, live CEP/AE или mutating-live validation.
+
 ## Decision Log
 
 - 2026-05-20: Milestone 114 makes the write-capable dry-run CLI envelope-first. `--dry-run` now requires `--operation-file`, and the envelope supplies `version`, `operationId`, `scope`, `mode`, `prompt`, and `plannedPaths`; M114 supports only `version: 1` and `mode: "dry-run"`.
@@ -863,6 +871,7 @@
 - 2026-05-21: M138 used the user's risk-informed approval for exactly one production-code SDKThread/network retry of the M137 operation file; the SDKThread completed, changed only `scripts/provider-contract-smoke.js`, and the post-run contract passed.
 - 2026-05-21: M139 records a local post-M138 operability gate: the successful single-file production-code SDK write is accepted as evidence, but it does not approve another SDKThread/network retry, does not broaden production-code writes beyond `scripts/provider-contract-smoke.js`, and keeps CEP-panel SDK writes disabled/review-required.
 - 2026-05-21: M140 adds a committed local `sdk-launch-governance.v1` gate so launch readiness remains explicit and contract-checked: enabled SDK write scopes stay exact, production-code remains single-file, CEP-panel remains disabled, and new SDKThread/network writes remain unapproved without a later milestone.
+- 2026-05-21: M141 adds a local `sdk-launch-governance-drift-report.v1` report gate; `check:rules` now builds the report from committed governance and enablement packets and fails if launch governance drifts from runner constants or the approved single-file production-code lane.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -1205,6 +1214,15 @@
   - Passed `npm.cmd run codex:orchestrator:write-scaffold:contract`, `npm.cmd run check:rules`, and `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
   - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
   - Did not run live CEP / After Effects smokes, external-provider validation, OpenAI CLI planner validation, mutating-live validation, package install, SDKThread creation, real SDK write work, CEP-panel write enablement, or production-code source edits beyond the governance/contract runner because M140 is a local-only launch governance gate.
+- Milestone 141:
+  - Added `.codex-audit/141-sdk-governance-drift-report-gate.md`.
+  - Added `SDK_LAUNCH_GOVERNANCE_DRIFT_REPORT_SCHEMA` and `buildSdkLaunchGovernanceDriftReport()`.
+  - Extended `check:rules` to build a drift report from committed launch-governance and production-code enablement packets; output includes `SDK launch governance drift report: pass`.
+  - Updated `orchestrator/README.md` to document the drift report schema/gate.
+  - Passed `node --check orchestrator/run-write-capable-scaffold.mjs` and `node --check orchestrator/run-buffered-acceptance.mjs`.
+  - Passed `npm.cmd run codex:orchestrator:write-scaffold:contract`, `npm.cmd run check:rules`, and `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
+  - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
+  - Did not run live CEP / After Effects smokes, external-provider validation, OpenAI CLI planner validation, mutating-live validation, package install, SDKThread creation, real SDK write work, CEP-panel write enablement, or production-code source edits beyond the governance/report contract runner because M141 is a local-only governance drift/report gate.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.

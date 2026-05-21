@@ -283,6 +283,7 @@ function collectSdkWriteLaneApprovalDecisionPackets(directory, validatePacket) {
         explicitApprovalRecorded: validated.explicitApprovalRecorded,
         path: repoPath,
         plannedPathAllowlist: validated.plannedPathAllowlist,
+        rawPacket: packet,
         scope: validated.scope,
         sdkWriteEnabled: validated.sdkWriteEnabled,
         sourceReadinessPacket: validated.sourceReadinessPacket,
@@ -327,6 +328,7 @@ function collectSdkWriteLaneEnablementPackets(directory, validatePacket) {
         explicitApprovalRecorded: validated.explicitApprovalRecorded,
         path: repoPath,
         plannedPathAllowlist: validated.plannedPathAllowlist,
+        rawPacket: packet,
         scope: validated.scope,
         sdkWriteEnabled: validated.sdkWriteEnabled,
         sourceApprovalDecisionPacket: validated.sourceApprovalDecisionPacket,
@@ -375,6 +377,7 @@ function collectSdkLaunchGovernancePackets(directory, validatePacket) {
         newSdkThreadRunApproved: validated.newSdkThreadRunApproved,
         path: repoPath,
         productionCodePlannedPathAllowlist: validated.productionCodePlannedPathAllowlist,
+        rawPacket: packet,
         reviewRequiredScopes: validated.reviewRequiredScopes,
         sourceMilestones: validated.sourceMilestones,
         state: validated.state,
@@ -406,6 +409,7 @@ async function runContractSmoke() {
   const {
     FORBIDDEN_PATH_PATTERNS,
     SDK_LAUNCH_GOVERNANCE_DIRECTORY,
+    SDK_LAUNCH_GOVERNANCE_DRIFT_REPORT_SCHEMA,
     SDK_LAUNCH_GOVERNANCE_SCHEMA,
     SDK_LAUNCH_GOVERNANCE_STATE,
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -429,6 +433,7 @@ async function runContractSmoke() {
     SCOPE_PATH_ALLOWLISTS,
     UNSAFE_WRITE_RUNNER_FLAGS,
     WRITE_SCOPES,
+    buildSdkLaunchGovernanceDriftReport,
     runWriteCapableContractSmoke,
     validateSdkScopeExpansionReviewPacket,
     validateSdkLaunchGovernancePacket,
@@ -772,6 +777,14 @@ async function runContractSmoke() {
     "M140 SDK launch governance packet contract smoke did not pass",
     failures,
   );
+  assertContract(
+    writeScaffoldSmoke?.sdkLaunchGovernanceDriftReportMode === "pass" &&
+      writeScaffoldSmoke?.sdkLaunchGovernanceDriftReportSchema ===
+        SDK_LAUNCH_GOVERNANCE_DRIFT_REPORT_SCHEMA &&
+      writeScaffoldSmoke?.sdkLaunchGovernanceDriftDetected === false,
+    "M141 SDK launch governance drift report contract smoke did not pass",
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -916,6 +929,26 @@ async function runContractSmoke() {
       sdkLaunchGovernance?.broadProductionCodeWritesApproved === false &&
       sdkLaunchGovernance?.cepPanelSdkWriteEnabled === false,
     "M140 SDK launch governance did not keep launch state local-gated and narrow",
+    failures,
+  );
+
+  let launchGovernanceDriftReport = null;
+  if (sdkLaunchGovernance?.rawPacket && productionLaneEnablement?.rawPacket) {
+    try {
+      launchGovernanceDriftReport = buildSdkLaunchGovernanceDriftReport({
+        launchGovernancePacket: sdkLaunchGovernance.rawPacket,
+        productionLaneEnablementPacket: productionLaneEnablement.rawPacket,
+      });
+    } catch (error) {
+      failures.push(`M141 SDK launch governance drift report failed: ${error.message}`);
+    }
+  }
+  assertContract(
+    launchGovernanceDriftReport?.schema === SDK_LAUNCH_GOVERNANCE_DRIFT_REPORT_SCHEMA &&
+      launchGovernanceDriftReport?.launchGovernanceState === SDK_LAUNCH_GOVERNANCE_STATE &&
+      launchGovernanceDriftReport?.driftDetected === false &&
+      launchGovernanceDriftReport?.checks?.every((check) => check.ok),
+    "M141 SDK launch governance drift report detected committed governance drift",
     failures,
   );
   assertContract(
@@ -1068,6 +1101,7 @@ async function runContractSmoke() {
       readme.includes(SDK_LAUNCH_GOVERNANCE_SCHEMA) &&
       readme.includes(SDK_LAUNCH_GOVERNANCE_DIRECTORY) &&
       readme.includes('state:"local-gated"') &&
+      readme.includes(SDK_LAUNCH_GOVERNANCE_DRIFT_REPORT_SCHEMA) &&
       readme.includes("docs-audit") &&
       readme.includes("production-code") &&
       readme.includes("cep-panel") &&
@@ -1116,6 +1150,7 @@ async function runContractSmoke() {
   console.log("SDK write lane enablement packet files: pass");
   console.log("SDK launch governance packet gate: pass");
   console.log("SDK launch governance packet files: pass");
+  console.log("SDK launch governance drift report: pass");
   console.log("Write-capable sdk-write diagnostic logging mode: pass");
   console.log("Write-capable sdk runtime fallback mode: pass");
 }
