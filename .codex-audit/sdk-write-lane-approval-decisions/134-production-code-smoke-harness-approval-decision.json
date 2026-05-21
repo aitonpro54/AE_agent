@@ -1,0 +1,21 @@
+{
+  "schema": "sdk-write-lane-approval-decision.v1",
+  "approvalState": "pending-explicit-approval",
+  "explicitApprovalRecorded": false,
+  "scope": "production-code",
+  "sdkWriteEnabled": false,
+  "sourceReadinessPacket": ".codex-audit/sdk-write-lane-readiness/133-production-code-smoke-harness-readiness.json",
+  "sourceReviewPacket": ".codex-audit/sdk-scope-expansion-reviews/129-production-code-smoke-harness-review.json",
+  "summary": "M134 records that the current continuation prompt did not explicitly approve enabling the production-code SDK write lane.",
+  "plannedPathAllowlist": [
+    "scripts/provider-contract-smoke.js"
+  ],
+  "requiredApprovalRecord": "A later milestone must include explicit user approval before SDK_WRITE_ALLOWED_SCOPES or production-code sdk-write acceptance can change.",
+  "decisionEvidence": [
+    "The current user prompt only provided the handoff file path.",
+    "No explicit approval to enable production-code SDK writes was provided in this chat.",
+    "The M133 readiness artifact remains pending explicit approval."
+  ],
+  "nextAllowedAction": "Keep production-code absent from SDK_WRITE_ALLOWED_SCOPES; a later explicitly approved milestone may enable only scripts/provider-contract-smoke.js.",
+  "rollbackPlan": "No production-code SDK write enablement was made in M134; if approval is later withheld or scope changes, supersede this decision with another pending or rejected decision packet."
+}

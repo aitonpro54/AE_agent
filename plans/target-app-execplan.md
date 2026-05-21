@@ -100,6 +100,7 @@
 - [x] Milestone 131: Final SDK Audit Report.
 - [x] Milestone 132: CEP Panel Scope Expansion Review Packet.
 - [x] Milestone 133: Production-Code SDK Lane Readiness Gate.
+- [x] Milestone 134: Production-Code SDK Lane Approval Decision.
 
 ## Current Stable Baseline
 
@@ -780,6 +781,12 @@
 - Keep `sdkWriteEnabled:false`, `approvalState:"pending-explicit-approval"`, and production-code SDK writes review-required; do not create SDK threads, run real SDK write work, enable CEP-panel writes, or touch production-code source.
 - Validate the readiness artifact through `check:rules`, `codex:orchestrator:write-scaffold:contract`, and the configured local smoke suite.
 
+### Milestone 134: Production-Code SDK Lane Approval Decision
+
+- Record the explicit approval decision state for the M129/M133 `production-code` SDK write lane.
+- Because the continuation prompt did not explicitly approve enabling production-code SDK writes, keep `approvalState:"pending-explicit-approval"`, `explicitApprovalRecorded:false`, and `sdkWriteEnabled:false`.
+- Validate the decision artifact through `check:rules`, `codex:orchestrator:write-scaffold:contract`, and the configured local smoke suite without SDKThread creation or production-code source edits.
+
 ## Decision Log
 
 - 2026-05-20: Milestone 114 makes the write-capable dry-run CLI envelope-first. `--dry-run` now requires `--operation-file`, and the envelope supplies `version`, `operationId`, `scope`, `mode`, `prompt`, and `plannedPaths`; M114 supports only `version: 1` and `mode: "dry-run"`.
@@ -804,6 +811,7 @@
 - 2026-05-21: M131 accepts the final docs-audit SDKThread report after verifying the SDK log showed thread creation, completion, planned output creation, and post-run contract pass; the earlier stream disconnect remains a reliability concern, not a blocker for the successful rerun.
 - 2026-05-21: M132 adds the first committed proposed review packet for a future narrow `cep-panel` SDK write lane and extends `check:rules` to require the CEP packet to remain proposed, scoped to `cep-panel`, and disabled.
 - 2026-05-21: M133 adds a local `sdk-write-lane-readiness.v1` approval/readiness gate for the future M129 production-code lane; it points to the M129 review packet, keeps `approvalState:"pending-explicit-approval"` and `sdkWriteEnabled:false`, and does not enable production-code SDK writes.
+- 2026-05-21: M134 records that the current continuation prompt did not explicitly approve the M129/M133 production-code SDK write lane; the new approval decision packet keeps `approvalState:"pending-explicit-approval"`, `explicitApprovalRecorded:false`, `sdkWriteEnabled:false`, and production-code absent from `SDK_WRITE_ALLOWED_SCOPES`.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -1081,6 +1089,15 @@
   - Passed `npm.cmd run codex:orchestrator:help`, `npm.cmd run codex:orchestrator:write-scaffold:contract`, `npm.cmd run check:rules`, and `git diff --check`; Git printed only LF-to-CRLF working-copy warnings.
   - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
   - Did not run live CEP / After Effects smokes, external-provider validation, OpenAI CLI planner validation, mutating-live validation, package install, SDKThread creation, real SDK write work, CEP-panel write enablement, or production-code source edits because M133 is a local-only readiness/approval gate.
+- Milestone 134:
+  - Added `.codex-audit/sdk-write-lane-approval-decisions/134-production-code-smoke-harness-approval-decision.json` as a local `sdk-write-lane-approval-decision.v1` pending decision artifact for the M129/M133 production-code lane.
+  - The decision artifact records that the current continuation prompt did not explicitly approve enabling production-code SDK writes; it keeps `approvalState:"pending-explicit-approval"`, `explicitApprovalRecorded:false`, `sdkWriteEnabled:false`, and the future reviewed path limited to `scripts/provider-contract-smoke.js`.
+  - Added `validateSdkWriteLaneApprovalDecisionPacket()` contract coverage and extended `check:rules` to validate committed approval decision JSON files against the M133 readiness packet and M129 review packet.
+  - Updated `orchestrator/README.md` and added `.codex-audit/134-production-code-sdk-lane-approval-decision.md`.
+  - Passed `node --check orchestrator/run-write-capable-scaffold.mjs` and `node --check orchestrator/run-buffered-acceptance.mjs`.
+  - Passed `npm.cmd run codex:orchestrator:help`, `npm.cmd run codex:orchestrator:write-scaffold:contract`, `npm.cmd run check:rules`, and `git diff --check`; contract output includes `PASS M134 write-capable runner scaffold contract smoke` and `PASS M134 SDK orchestrator contract smoke`, and Git printed only LF-to-CRLF working-copy warnings.
+  - The first local smoke-suite attempt had `node scripts/prompt-optimization-smoke.js` fail on bridge readiness timing after the earlier smokes passed; an immediate direct rerun passed, and a full second configured local smoke-suite run passed all checks.
+  - Did not run live CEP / After Effects smokes, external-provider validation, OpenAI CLI planner validation, mutating-live validation, package install, SDKThread creation, real SDK write work, CEP-panel write enablement, or production-code source edits because M134 is a local-only approval-decision gate.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.
