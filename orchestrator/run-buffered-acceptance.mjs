@@ -657,6 +657,7 @@ async function runContractSmoke() {
       writeScaffoldSmoke?.sdkWriteCepPanelEnabled === false &&
       writeScaffoldSmoke?.sdkWriteProductionCodePathAllowlist?.join(",") ===
         SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(",") &&
+      writeScaffoldSmoke?.sdkWriteProductionCodeExistingSourceUpdate === true &&
       writeScaffoldSmoke?.sdkWriteReviewRequiredScopes?.join(",") ===
         SDK_WRITE_REVIEW_REQUIRED_SCOPES.join(",") &&
       writeScaffoldSmoke?.sdkWriteScopeExpansionSdkThreadCreated === false &&
@@ -993,7 +994,7 @@ async function runContractSmoke() {
     return;
   }
 
-  console.log("PASS M135 SDK orchestrator contract smoke");
+  console.log("PASS M136 SDK orchestrator contract smoke");
   console.log("Invalid general CLI values rejected before SDK thread creation");
   console.log("Write-capable scopes:");
   for (const scope of WRITE_SCOPES) {

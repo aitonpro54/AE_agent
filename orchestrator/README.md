@@ -105,6 +105,8 @@ M134 records the explicit approval decision state for that M129/M133 lane. Appro
 
 M135 enables the first `production-code` SDK write lane after explicit user approval. Enablement packets use schema `sdk-write-lane-enablement.v1` and live under `.codex-audit/sdk-write-lane-enablement/`. The first enablement artifact, `.codex-audit/sdk-write-lane-enablement/135-production-code-smoke-harness-enable.json`, points back to M134/M133/M129, records `approvalState:"approved"`, `explicitApprovalRecorded:true`, and `sdkWriteEnabled:true`, and allows only `scripts/provider-contract-smoke.js`. Other production-code paths, including `mcp-server/**`, `chatgpt-connector/**`, `scripts/smoke-test.js`, `recipes/**`, `registry/**`, and `package.json`, remain rejected for `sdk-write`.
 
+M136 prepares that first production-code lane for existing-source updates. Unlike docs-audit and orchestrator sdk-write lanes, which still reject pre-existing planned outputs, production-code sdk-write requires the planned source file to exist before SDK thread creation and then requires the post-run diff to include only that planned source path.
+
 Обязательный `--scope` принимает только:
 
 - `docs-audit`

@@ -2240,18 +2240,23 @@ function assertSdkWriteOptions(options) {
 export function createSdkWritePrompt(options) {
   const plannedPaths = uniqueSorted(options.plannedPaths);
   const isOrchestratorWrite = options.scope === SDK_WRITE_ORCHESTRATOR_SCOPE;
+  const isProductionCodeWrite = options.scope === SDK_WRITE_PRODUCTION_CODE_SCOPE;
   const isOrchestratorFixtureJsonWrite =
     isOrchestratorWrite && plannedPaths.every(isOrchestratorFixtureJsonSdkWritePath);
   const writerRole = isOrchestratorFixtureJsonWrite
     ? "orchestrator fixture JSON writer"
     : isOrchestratorWrite
       ? "orchestrator docs-only writer"
-      : "docs-audit writer";
+      : isProductionCodeWrite
+        ? "production-code provider contract smoke maintainer"
+        : "docs-audit writer";
   const outputKind = isOrchestratorFixtureJsonWrite
     ? "JSON fixture output file"
     : isOrchestratorWrite
       ? "Markdown output file"
-      : "Markdown output file";
+      : isProductionCodeWrite
+        ? "existing production-code source file"
+        : "Markdown output file";
   const outputTitle = isOrchestratorWrite
     ? "# SDK Orchestrator Output"
     : "# SDK Docs Audit Output";
@@ -2295,6 +2300,31 @@ export function createSdkWritePrompt(options) {
       "",
       "Safety note requirement:",
       safetyNote,
+      "",
+      "User operation prompt:",
+      options.prompt,
+    ].join("\n");
+  }
+
+  if (isProductionCodeWrite) {
+    return [
+      `You are the SDKThread ${writerRole} for this repository.`,
+      "",
+      "Hard boundary:",
+      `- Update exactly the planned ${outputKind} listed below.`,
+      "- Do not edit any other file.",
+      "- Do not stage, commit, install packages, run validation suites, run live checks, or change unrelated source code.",
+      "- Keep the change minimal, CommonJS-compatible, and focused on the requested provider contract smoke maintenance.",
+      "",
+      `Operation id: ${options.operationEnvelope?.operationId || "(unknown)"}`,
+      `Scope: ${options.scope}`,
+      `Mode: ${options.mode}`,
+      "",
+      "Allowed planned source path:",
+      ...plannedPaths.map((repoPath) => `- ${repoPath}`),
+      "",
+      "Safety note requirement:",
+      "State that only the planned provider contract smoke source file was edited by this SDKThread turn.",
       "",
       "User operation prompt:",
       options.prompt,
@@ -2431,6 +2461,45 @@ export function validateSdkWriteDiffAllowlist({
   };
 }
 
+export function validateSdkWritePlannedPathPrecondition({
+  pathExists = () => false,
+  plannedPaths = [],
+  scope,
+} = {}) {
+  const existingPlannedPaths = plannedPaths.filter((repoPath) => pathExists(repoPath));
+  const missingPlannedPaths = plannedPaths.filter((repoPath) => !pathExists(repoPath));
+
+  if (scope === SDK_WRITE_PRODUCTION_CODE_SCOPE) {
+    if (missingPlannedPaths.length > 0) {
+      throw new Error(
+        `Planned production-code sdk-write source path missing before SDK thread creation: ${missingPlannedPaths.join(
+          ", ",
+        )}`,
+      );
+    }
+
+    return {
+      existingPlannedPaths,
+      missingPlannedPaths,
+      mode: "existing-source-update",
+    };
+  }
+
+  if (existingPlannedPaths.length > 0) {
+    throw new Error(
+      `Planned sdk-write output already exists before SDK thread creation: ${existingPlannedPaths.join(
+        ", ",
+      )}`,
+    );
+  }
+
+  return {
+    existingPlannedPaths,
+    missingPlannedPaths,
+    mode: "new-output-only",
+  };
+}
+
 export async function runWriteCapableSdkWrite(options) {
   const preparedOptions = options.operationEnvelope
     ? options
@@ -2438,17 +2507,11 @@ export async function runWriteCapableSdkWrite(options) {
   const plannedPathCheck = assertSdkWriteOptions(preparedOptions);
   const cwd = path.resolve(preparedOptions.cwd || process.cwd());
   const plannedPaths = plannedPathCheck.plannedPaths;
-  const preExistingPlannedOutputs = plannedPaths.filter((repoPath) =>
-    existsSync(path.resolve(cwd, repoPath)),
-  );
-
-  if (preExistingPlannedOutputs.length > 0) {
-    throw new Error(
-      `Planned sdk-write output already exists before SDK thread creation: ${preExistingPlannedOutputs.join(
-        ", ",
-      )}`,
-    );
-  }
+  const plannedPathPrecondition = validateSdkWritePlannedPathPrecondition({
+    pathExists: (repoPath) => existsSync(path.resolve(cwd, repoPath)),
+    plannedPaths,
+    scope: preparedOptions.scope,
+  });
 
   const preSnapshot = captureGitSnapshot({ cwd, label: "sdk-write-pre" });
   assertPreRunGitState(preSnapshot, {
@@ -2503,20 +2566,26 @@ export async function runWriteCapableSdkWrite(options) {
 
   const outputPath = plannedPaths[0];
   const outputExistsAfter = existsSync(path.resolve(cwd, outputPath));
-  const outputFileCreatedBySdk =
+  const plannedFileChangedBySdk =
     Boolean(sdkWritePostContract) &&
     outputExistsAfter &&
     sdkWritePostContract.actualChangedFiles.includes(outputPath);
   const outputMissingFailure =
-    !failure && !postRunFailure && !outputFileCreatedBySdk
-      ? new Error(`SDK thread did not create planned output file: ${outputPath}`)
+    !failure && !postRunFailure && !plannedFileChangedBySdk
+      ? new Error(
+          preparedOptions.scope === SDK_WRITE_PRODUCTION_CODE_SCOPE
+            ? `SDK thread did not change planned source file: ${outputPath}`
+            : `SDK thread did not create planned output file: ${outputPath}`,
+        )
       : null;
   const terminalFailure = failure || postRunFailure || outputMissingFailure;
   const logResult = writeSdkWriteLog(cwd, preparedOptions.operationEnvelope?.operationId, {
     failure: terminalFailure ? errorDiagnostic(terminalFailure) : null,
     operationEnvelope: preparedOptions.operationEnvelope,
-    outputFileCreatedBySdk,
+    outputFileCreatedBySdk: plannedFileChangedBySdk,
+    plannedFileChangedBySdk,
     plannedPathCheck,
+    plannedPathPrecondition,
     postRunFailure: postRunFailure ? errorDiagnostic(postRunFailure) : null,
     postDiffCheck,
     postSnapshot,
@@ -2549,8 +2618,10 @@ export async function runWriteCapableSdkWrite(options) {
     logPath: logResult.path,
     logWriteError: logResult.error,
     operationEnvelope: preparedOptions.operationEnvelope,
-    outputFileCreatedBySdk,
+    outputFileCreatedBySdk: plannedFileChangedBySdk,
+    plannedFileChangedBySdk,
     plannedPathCheck,
+    plannedPathPrecondition,
     postDiffCheck,
     postSnapshot,
     preDiffCheck,
@@ -2749,6 +2820,14 @@ export function runWriteCapableContractSmoke() {
     mode: SDK_WRITE_OPERATION_MODE,
     prompt: "Create the M125 orchestrator fixture JSON SDKThread output file.",
     plannedPaths: [m125OrchestratorFixtureSdkWritePath],
+  };
+  const validProductionCodeSdkWriteEnvelope = {
+    version: OPERATION_ENVELOPE_VERSION,
+    operationId: "m136-contract-smoke",
+    scope: SDK_WRITE_PRODUCTION_CODE_SCOPE,
+    mode: SDK_WRITE_OPERATION_MODE,
+    prompt: "Update the provider contract smoke with a narrow assertion.",
+    plannedPaths: SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST,
   };
   const parsedDryRun = parseWriteRunnerArgs([
     "--dry-run",
@@ -3235,12 +3314,7 @@ export function runWriteCapableContractSmoke() {
 
   let productionCodeProviderContractLaneAccepted = true;
   try {
-    validateOperationEnvelope({
-      ...validSdkWriteEnvelope,
-      operationId: "m135-production-code-provider-contract-lane",
-      plannedPaths: SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST,
-      scope: SDK_WRITE_PRODUCTION_CODE_SCOPE,
-    });
+    validateOperationEnvelope(validProductionCodeSdkWriteEnvelope);
   } catch {
     productionCodeProviderContractLaneAccepted = false;
   }
@@ -3248,6 +3322,55 @@ export function runWriteCapableContractSmoke() {
     productionCodeProviderContractLaneAccepted,
     "sdk-write operation envelope rejected the approved production-code provider-contract lane",
     failures,
+  );
+
+  const productionCodeSdkPrompt = createSdkWritePrompt({
+    ...validProductionCodeSdkWriteEnvelope,
+    operationEnvelope: validProductionCodeSdkWriteEnvelope,
+    sdkWrite: true,
+  });
+  assertContract(
+    productionCodeSdkPrompt.includes("production-code provider contract smoke maintainer") &&
+      productionCodeSdkPrompt.includes("Update exactly the planned existing production-code source file") &&
+      productionCodeSdkPrompt.includes("scripts/provider-contract-smoke.js") &&
+      !productionCodeSdkPrompt.includes("# SDK Docs Audit Output"),
+    "production-code sdk-write prompt did not use source-update constraints",
+    failures,
+  );
+
+  const productionPrecondition = validateSdkWritePlannedPathPrecondition({
+    pathExists: (repoPath) => repoPath === "scripts/provider-contract-smoke.js",
+    plannedPaths: SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST,
+    scope: SDK_WRITE_PRODUCTION_CODE_SCOPE,
+  });
+  assertContract(
+    productionPrecondition.mode === "existing-source-update" &&
+      productionPrecondition.existingPlannedPaths.join(",") ===
+        "scripts/provider-contract-smoke.js",
+    "production-code sdk-write precondition did not require an existing source file",
+    failures,
+  );
+  assertRejects(
+    () =>
+      validateSdkWritePlannedPathPrecondition({
+        pathExists: () => false,
+        plannedPaths: SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST,
+        scope: SDK_WRITE_PRODUCTION_CODE_SCOPE,
+      }),
+    "Planned production-code sdk-write source path missing before SDK thread creation:",
+    failures,
+    "production-code sdk-write precondition accepted a missing source file",
+  );
+  assertRejects(
+    () =>
+      validateSdkWritePlannedPathPrecondition({
+        pathExists: () => true,
+        plannedPaths: [m115SdkWritePath],
+        scope: SDK_WRITE_ALLOWED_SCOPE,
+      }),
+    "Planned sdk-write output already exists before SDK thread creation:",
+    failures,
+    "docs-audit sdk-write precondition accepted an existing output file",
   );
 
   const sdkWriteReviewRequiredScopeCases = [
@@ -4164,6 +4287,30 @@ export function runWriteCapableContractSmoke() {
     failures,
   );
 
+  const productionCodeSdkWritePostContract = validateSdkWriteDiffAllowlist({
+    plannedPaths: SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST,
+    postSnapshot: {
+      pathSignatures: {
+        "scripts/provider-contract-smoke.js": "changed",
+      },
+    },
+    preSnapshot: {
+      pathSignatures: {
+        "scripts/provider-contract-smoke.js": "before",
+      },
+    },
+    scope: SDK_WRITE_PRODUCTION_CODE_SCOPE,
+    validationResult: { ok: true },
+  });
+
+  assertContract(
+    productionCodeSdkWritePostContract.verdict === "pass" &&
+      productionCodeSdkWritePostContract.actualChangedFiles.join(",") ===
+        "scripts/provider-contract-smoke.js",
+    "sdk-write post-run allowlist did not accept the planned production-code source path",
+    failures,
+  );
+
   const fixtureParentDirectory = "orchestrator/fixtures/";
   const createDirectoryChildEnumerator = (childrenByDirectory) => (repoPath) => {
     const normalizedPath = normalizeRepoPath(repoPath);
@@ -4547,7 +4694,7 @@ export function runWriteCapableContractSmoke() {
 
   if (failures.length > 0) {
     const message = [
-      "M135 write-capable scaffold contract smoke failed:",
+      "M136 write-capable scaffold contract smoke failed:",
       ...failures.map((f) => `- ${f}`),
     ].join("\n");
     throw new Error(message);
@@ -4612,6 +4759,7 @@ export function runWriteCapableContractSmoke() {
     sdkWriteOrchestratorPathAllowlist: SDK_WRITE_ORCHESTRATOR_PLANNED_PATH_ALLOWLIST,
     sdkWriteOrchestratorPlannedPaths: SDK_WRITE_ORCHESTRATOR_CONTRACT_SMOKE_PLANNED_PATHS,
     sdkWriteProductionCodePathAllowlist: SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST,
+    sdkWriteProductionCodeExistingSourceUpdate: true,
     sdkWriteRuntimeFallbackMode: "pass",
     sdkWriteRuntimeFallbackProbeCleaned: runtimeProbeWrites.every((repoPath) =>
       runtimeProbeDeletes.includes(repoPath),
@@ -4699,7 +4847,7 @@ export async function main(argv = process.argv.slice(2)) {
       console.log(JSON.stringify(result, null, 2));
       return;
     }
-    console.log("PASS M135 write-capable runner scaffold contract smoke");
+    console.log("PASS M136 write-capable runner scaffold contract smoke");
     return;
   }
 
