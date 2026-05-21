@@ -1,0 +1,125 @@
+{
+  "schema": "sdk-production-readiness.v1",
+  "supersedes": ".codex-audit/sdk-production-readiness/145-sdk-production-ready.json",
+  "sourceLaunchReadinessSummary": ".codex-audit/sdk-launch-readiness/144-sdk-launch-readiness-summary.json",
+  "sourceGovernanceReportSchema": "sdk-launch-governance-drift-report.v1",
+  "productionReadyDefinition": "narrow-lane-production-ready",
+  "claimedScope": {
+    "scope": "production-code",
+    "plannedPathAllowlist": [
+      "scripts/provider-contract-smoke.js"
+    ],
+    "generalSdkWorkflowIncluded": false,
+    "broaderProductionCodeWritesIncluded": false,
+    "cepPanelWritesIncluded": false
+  },
+  "verdict": {
+    "overall": "narrow-lane-production-ready",
+    "productionReady": true,
+    "narrowProductionCodeLane": "production-ready",
+    "generalSdkWorkflow": "not-production-ready",
+    "reason": "The bounded M146 SDKThread/network proof completed for the exact single-file production-code lane, changed only scripts/provider-contract-smoke.js, and passed the post-run sdk-write contract. Broader production-code writes, CEP-panel writes and general SDK autopilot repo edits remain outside this production-ready claim."
+  },
+  "completedProof": {
+    "operationId": "m146-production-code-provider-contract-production-ready-proof",
+    "operationFile": ".codex-runtime/sdk/operations/m146-production-code-provider-contract-production-ready-proof.json",
+    "runtimeLog": ".codex/sdk/logs/2026-05-21T13-34-58-845Z-m146-production-code-provider-contract-production-ready-proof-sdk-write.json",
+    "scope": "production-code",
+    "mode": "sdk-write",
+    "plannedPaths": [
+      "scripts/provider-contract-smoke.js"
+    ],
+    "localEnvelopeValidation": {
+      "allowed": true,
+      "violations": []
+    },
+    "sdkThreadCreated": true,
+    "sdkThreadCompleted": true,
+    "sdkThreadId": "019e4abe-638f-7bc1-901d-5bd7bbbbd6bf",
+    "plannedFileChangedBySdk": true,
+    "sdkWritePostContract": {
+      "verdict": "pass",
+      "actualChangedFiles": [
+        "scripts/provider-contract-smoke.js"
+      ],
+      "outOfScopeFiles": [],
+      "missingPlannedChanges": []
+    },
+    "plannedPathPrecondition": {
+      "mode": "existing-source-update",
+      "existingPlannedPaths": [
+        "scripts/provider-contract-smoke.js"
+      ],
+      "missingPlannedPaths": []
+    }
+  },
+  "approval": {
+    "userApprovalRecorded": true,
+    "approvalRecord": "User confirmed local Variant A config and approved the M146 user-mode SDKThread/network prompt through the Codex approval UI.",
+    "restrictedScope": "one bounded SDKThread/network proof for production-code planned path scripts/provider-contract-smoke.js"
+  },
+  "localEvidence": [
+    {
+      "id": "m146-local-preflight-governance-report",
+      "status": "pass",
+      "evidence": [
+        "schema:sdk-launch-governance-drift-report.v1",
+        "launchGovernanceState:local-gated",
+        "driftDetected:false"
+      ]
+    },
+    {
+      "id": "m146-local-preflight-production-readiness-smoke",
+      "status": "pass",
+      "evidence": [
+        "SDK production readiness smoke: pass"
+      ]
+    },
+    {
+      "id": "m146-local-preflight-check-rules",
+      "status": "pass",
+      "evidence": [
+        "SDK production readiness smoke: pass"
+      ]
+    }
+  ],
+  "requiredBeforeGeneralSdkProductionReady": [
+    "Separate explicit definition and approval for general SDK autopilot repo edits.",
+    "Review packets, allowlists, SDKThread proofs and local contract coverage for any broader production-code paths.",
+    "Review packets, allowlists, SDKThread proofs and local contract coverage before enabling CEP-panel SDK writes.",
+    "External-provider/OpenAI CLI planner validation only if explicitly approved and actually run.",
+    "Live CEP/After Effects and mutating-live validation only if explicitly approved and actually run."
+  ],
+  "remainingExclusions": [
+    {
+      "id": "general-sdk-autopilot-repo-edits",
+      "status": "not-production-ready",
+      "reason": "The M146 claim covers only the narrow single-file production-code SDK lane."
+    },
+    {
+      "id": "broader-production-code-sdk-writes",
+      "status": "not-production-ready",
+      "reason": "Only scripts/provider-contract-smoke.js is in the production-code SDK write allowlist."
+    },
+    {
+      "id": "cep-panel-sdk-writes",
+      "status": "not-production-ready",
+      "reason": "CEP-panel SDK writes remain disabled and review-required."
+    },
+    {
+      "id": "external-provider-or-openai-cli-planner-validation",
+      "status": "not-run",
+      "reason": "Outside the M146 narrow-lane production-ready claim."
+    },
+    {
+      "id": "live-cep-ae-or-mutating-live-validation",
+      "status": "not-run",
+      "reason": "Outside the M146 narrow-lane production-ready claim."
+    },
+    {
+      "id": "package-install-or-dependency-changes",
+      "status": "not-run",
+      "reason": "No package install or dependency change was needed for M146."
+    }
+  ]
+}

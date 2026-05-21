@@ -112,6 +112,7 @@
 - [x] Milestone 143: SDK Governance Report Parser Smoke.
 - [x] Milestone 144: SDK Launch Readiness Summary.
 - [~] Milestone 145: SDK Narrow Production-Ready Cutover blocked by escalation policy.
+- [x] Milestone 146: SDK Narrow Production-Ready Retry after local Variant A config.
 
 ## Current Stable Baseline
 
@@ -903,6 +904,8 @@
 - 2026-05-21: M144 adds a committed `sdk-launch-readiness-summary.v1` artifact and smoke; the summary states the narrow production-code lane is only `ready-local-gated`, while the general SDK workflow remains not production-ready without explicit SDKThread/network, broader write-scope, CEP-panel, external-provider or live-validation approvals.
 - 2026-05-21: M145 production-ready definition is `narrow-lane-production-ready`: only the existing single-file production-code SDK lane for `scripts/provider-contract-smoke.js` may be claimed production-ready if a bounded SDKThread/network proof and full local validation pass. General SDK autopilot repo edits, broader production-code writes, CEP-panel SDK writes, external-provider/OpenAI CLI planner validation, live CEP/AE or mutating-live validation, package installs and push remain outside the claim unless explicitly approved in this thread and actually run.
 - 2026-05-21: M145 could not complete the production-ready cutover even after user approval because the required escalated SDKThread/network command was rejected by the escalation reviewer as unacceptable external-disclosure risk. M145 therefore commits a local `sdk-production-readiness.v1` blocked artifact and smoke with `productionReady:false`; no workaround, SDKThread creation, SDK write or production-code source edit was performed.
+- 2026-05-21: M146 is opened as a distinct post-config retry after the user rebooted Codex with local Variant A config (`approvals_reviewer:"user"`, workspace-write network enabled, network proxy limited to `api.openai.com`). The M146 definition remains `narrow-lane-production-ready` for only `scripts/provider-contract-smoke.js`; it may supersede M145 only if one explicitly approved bounded SDKThread/network proof succeeds and full validation passes.
+- 2026-05-21: M146 supersedes M145 for the narrow lane: the user approved one bounded SDKThread/network proof through the user-mode approval UI, SDKThread `019e4abe-638f-7bc1-901d-5bd7bbbbd6bf` completed, changed only `scripts/provider-contract-smoke.js`, and post-run contract passed. `.codex-audit/sdk-production-readiness/146-sdk-production-ready.json` may claim `productionReady:true` only for the exact single-file `production-code` lane; general SDK workflow, broader production-code writes and CEP-panel SDK writes remain not production-ready.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -1317,6 +1320,25 @@
   - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
   - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
   - Did not run SDKThread creation, real SDK write work, broader production-code SDK writes, CEP-panel SDK writes, external-provider/OpenAI CLI planner validation, live CEP/After Effects smokes, mutating-live validation, package install or push. No production-code source file was changed.
+- Milestone 146:
+  - Confirmed local Variant A config after Codex restart: `approval_policy:"on-request"`, `approvals_reviewer:"user"`, `sandbox_mode:"workspace-write"`, `[sandbox_workspace_write] network_access = true`, and `[features.network_proxy] domains = { "api.openai.com" = "allow" }`.
+  - Confirmed current branch `codex/roadmap-1.3-planning` was ahead of origin by 7 commits and latest commit was `62a3da1` (`docs: record sdk production readiness blockers`).
+  - Ran local preflight `npm.cmd run codex:orchestrator:governance-report`, `npm.cmd run codex:orchestrator:production-readiness:smoke`, and `npm.cmd run check:rules`; all passed.
+  - Prepared ignored M146 operation envelope `.codex-runtime/sdk/operations/m146-production-code-provider-contract-production-ready-proof.json` for exactly one `production-code` `sdk-write` planned path: `scripts/provider-contract-smoke.js`.
+  - Confirmed local exported validator accepted the M146 envelope with `allowed:true` and no planned path violations.
+  - Ran one user-approved M146 SDKThread/network proof: `npm.cmd run codex:orchestrator:write-scaffold -- --operation-file .codex-runtime/sdk/operations/m146-production-code-provider-contract-production-ready-proof.json --acknowledge-existing-change plans/target-app-execplan.md`.
+  - SDKThread proof completed with thread id `019e4abe-638f-7bc1-901d-5bd7bbbbd6bf`, result `sdk-write-completed`, runtime log `.codex/sdk/logs/2026-05-21T13-34-58-845Z-m146-production-code-provider-contract-production-ready-proof-sdk-write.json`, and changed path `scripts/provider-contract-smoke.js`.
+  - Runtime log recorded `sdkThreadCreated:true`, `sdkThreadCompleted:true`, `plannedFileChangedBySdk:true`, `plannedPathPrecondition.mode:"existing-source-update"`, `sdkWritePostContract.verdict:"pass"`, `actualChangedFiles:["scripts/provider-contract-smoke.js"]`, and no out-of-scope files.
+  - `scripts/provider-contract-smoke.js` now asserts provider agent ids are unique before asserting exact provider order.
+  - Added `.codex-audit/sdk-production-readiness/146-sdk-production-ready.json` with `productionReady:true` only for the exact narrow single-file `production-code` lane and `generalSdkWorkflow:"not-production-ready"`.
+  - Added `.codex-audit/146-sdk-narrow-production-ready.md`.
+  - Updated `scripts/sdk-production-readiness-smoke.js`, `orchestrator/run-buffered-acceptance.mjs`, and `orchestrator/README.md` for the M146 current production-readiness artifact.
+  - Passed `node --check scripts/provider-contract-smoke.js`, `node --check scripts/sdk-production-readiness-smoke.js`, and `node --check orchestrator/run-buffered-acceptance.mjs`.
+  - Passed `npm.cmd run codex:orchestrator:governance-report`, `npm.cmd run codex:orchestrator:governance-report:smoke`, `npm.cmd run codex:orchestrator:launch-readiness:smoke`, `npm.cmd run codex:orchestrator:production-readiness:smoke`, `npm.cmd run codex:orchestrator:write-scaffold:contract`, and `npm.cmd run check:rules`.
+  - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
+  - `npm.cmd run ...` commands printed `npm warn Unknown env config "http-proxy"` but exited successfully.
+  - Did not run broader production-code SDK writes, CEP-panel SDK writes, external-provider/OpenAI CLI planner validation, live CEP/After Effects smokes, mutating-live validation, package install or push.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.

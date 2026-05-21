@@ -9,7 +9,7 @@ const PRODUCTION_READINESS_PATH = path.join(
   repo,
   ".codex-audit",
   "sdk-production-readiness",
-  "145-sdk-production-ready.json",
+  "146-sdk-production-ready.json",
 );
 const LAUNCH_READINESS_PATH = path.join(
   repo,
@@ -34,6 +34,10 @@ function main() {
 
   assert.strictEqual(artifact.schema, "sdk-production-readiness.v1");
   assert.strictEqual(
+    artifact.supersedes,
+    ".codex-audit/sdk-production-readiness/145-sdk-production-ready.json",
+  );
+  assert.strictEqual(
     artifact.sourceLaunchReadinessSummary,
     ".codex-audit/sdk-launch-readiness/144-sdk-launch-readiness-summary.json",
   );
@@ -51,49 +55,55 @@ function main() {
     cepPanelWritesIncluded: false,
   });
 
-  assert.strictEqual(artifact.verdict.productionReady, false);
-  assert.strictEqual(artifact.verdict.overall, "blocked-by-escalation-policy");
-  assert.strictEqual(artifact.verdict.narrowProductionCodeLane, "blocked-not-production-ready");
+  assert.strictEqual(artifact.verdict.productionReady, true);
+  assert.strictEqual(artifact.verdict.overall, "narrow-lane-production-ready");
+  assert.strictEqual(artifact.verdict.narrowProductionCodeLane, "production-ready");
   assert.strictEqual(artifact.verdict.generalSdkWorkflow, "not-production-ready");
-  assert.match(artifact.verdict.reason, /SDKThread\/network attempt was rejected/);
+  assert.match(artifact.verdict.reason, /bounded M146 SDKThread\/network proof completed/);
 
-  assert.deepStrictEqual(artifact.plannedProof.plannedPaths, [
+  assert.deepStrictEqual(artifact.completedProof.plannedPaths, [
     "scripts/provider-contract-smoke.js",
   ]);
-  assert.strictEqual(artifact.plannedProof.scope, "production-code");
-  assert.strictEqual(artifact.plannedProof.mode, "sdk-write");
-  assert.strictEqual(artifact.plannedProof.localEnvelopeValidation.allowed, true);
-  assert.deepStrictEqual(artifact.plannedProof.localEnvelopeValidation.violations, []);
+  assert.strictEqual(artifact.completedProof.scope, "production-code");
+  assert.strictEqual(artifact.completedProof.mode, "sdk-write");
+  assert.strictEqual(artifact.completedProof.localEnvelopeValidation.allowed, true);
+  assert.deepStrictEqual(artifact.completedProof.localEnvelopeValidation.violations, []);
+  assert.strictEqual(artifact.completedProof.sdkThreadCreated, true);
+  assert.strictEqual(artifact.completedProof.sdkThreadCompleted, true);
+  assert.strictEqual(artifact.completedProof.sdkThreadId, "019e4abe-638f-7bc1-901d-5bd7bbbbd6bf");
+  assert.strictEqual(artifact.completedProof.plannedFileChangedBySdk, true);
+  assert.strictEqual(artifact.completedProof.sdkWritePostContract.verdict, "pass");
+  assert.deepStrictEqual(artifact.completedProof.sdkWritePostContract.actualChangedFiles, [
+    "scripts/provider-contract-smoke.js",
+  ]);
+  assert.deepStrictEqual(artifact.completedProof.sdkWritePostContract.outOfScopeFiles, []);
+  assert.deepStrictEqual(artifact.completedProof.sdkWritePostContract.missingPlannedChanges, []);
+  assert.strictEqual(artifact.completedProof.plannedPathPrecondition.mode, "existing-source-update");
 
-  assert.strictEqual(artifact.restrictedActionAttempt.userApprovalRecorded, true);
-  assert.strictEqual(artifact.restrictedActionAttempt.escalationRequested, true);
-  assert.strictEqual(artifact.restrictedActionAttempt.escalationReviewerDecision, "rejected");
-  assert.strictEqual(artifact.restrictedActionAttempt.rejectionClass, "unacceptable-risk");
-  assert.strictEqual(artifact.restrictedActionAttempt.sdkThreadCreated, false);
-  assert.strictEqual(artifact.restrictedActionAttempt.sdkThreadCompleted, false);
-  assert.strictEqual(artifact.restrictedActionAttempt.realWriteWork, false);
+  assert.strictEqual(artifact.approval.userApprovalRecorded, true);
+  assert.match(artifact.approval.restrictedScope, /one bounded SDKThread\/network proof/);
 
   const localEvidenceIds = artifact.localEvidence.map((item) => item.id);
   assert.deepStrictEqual(localEvidenceIds, [
-    "m145-local-preflight-governance-report",
-    "m145-local-preflight-launch-readiness-smoke",
-    "m145-local-preflight-check-rules",
+    "m146-local-preflight-governance-report",
+    "m146-local-preflight-production-readiness-smoke",
+    "m146-local-preflight-check-rules",
   ]);
   for (const item of artifact.localEvidence) {
     assert.strictEqual(item.status, "pass", `Local evidence did not pass: ${item.id}`);
   }
 
   assert(
-    artifact.requiredBeforeProductionReady.some((item) =>
-      item.includes("completed bounded SDKThread/network proof"),
+    artifact.requiredBeforeGeneralSdkProductionReady.some((item) =>
+      item.includes("general SDK autopilot repo edits"),
     ),
-    "Artifact must require a completed SDKThread/network proof before production-ready.",
+    "Artifact must keep general SDK production readiness gated.",
   );
   assert(
-    artifact.requiredBeforeProductionReady.some((item) =>
-      item.includes("productionReady:true only for the exact validated scope"),
+    artifact.requiredBeforeGeneralSdkProductionReady.some((item) =>
+      item.includes("CEP-panel SDK writes"),
     ),
-    "Artifact must require a superseding exact-scope production-ready artifact.",
+    "Artifact must keep CEP-panel SDK writes gated.",
   );
 
   assert.strictEqual(

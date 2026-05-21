@@ -127,6 +127,7 @@ async function main() {
     const providerAgentIds = listed.agents
       .map((item) => item.id)
       .filter((id) => EXPECTED_PROVIDER_AGENT_ORDER.includes(id));
+    assert.strictEqual(new Set(providerAgentIds).size, EXPECTED_PROVIDER_AGENT_ORDER.length);
     assert.deepStrictEqual(providerAgentIds, EXPECTED_PROVIDER_AGENT_ORDER);
 
     const openAiApi = findAgent(listed.agents, "openai-api");

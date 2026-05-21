@@ -1178,9 +1178,9 @@ async function runContractSmoke() {
   );
   assertContract(
     readme.includes("npm.cmd run codex:orchestrator:production-readiness:smoke") &&
-      readme.includes("145-sdk-production-ready.json") &&
-      readme.includes('overall:"blocked-by-escalation-policy"'),
-    "README does not document the M145 production readiness smoke",
+      readme.includes("146-sdk-production-ready.json") &&
+      readme.includes('overall:"narrow-lane-production-ready"'),
+    "README does not document the M146 production readiness smoke",
     failures,
   );
   assertContract(

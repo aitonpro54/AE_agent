@@ -170,7 +170,7 @@ M144 фиксирует release-readiness boundary в committed summary `.codex-
 npm.cmd run codex:orchestrator:launch-readiness:smoke
 ```
 
-M145 фиксирует production-readiness boundary в committed artifact `.codex-audit/sdk-production-readiness/145-sdk-production-ready.json`. Этот artifact выбирает `narrow-lane-production-ready`, но сохраняет `productionReady:false` и `overall:"blocked-by-escalation-policy"`, потому что required SDKThread/network proof был отклонен escalation reviewer'ом до создания SDK thread.
+M146 supersedes the blocked M145 artifact with committed artifact `.codex-audit/sdk-production-readiness/146-sdk-production-ready.json`. Этот artifact выбирает `narrow-lane-production-ready`, records `productionReady:true` and `overall:"narrow-lane-production-ready"` only for `scripts/provider-contract-smoke.js`; general SDK workflow, broader production-code writes and CEP-panel SDK writes remain not production-ready/out of scope.
 
 ```powershell
 npm.cmd run codex:orchestrator:production-readiness:smoke
