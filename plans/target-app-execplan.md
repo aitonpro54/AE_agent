@@ -116,6 +116,7 @@
 - [x] Milestone 147: SDK Iterative Cmd Reliability Gate.
 - [x] Milestone 148: SDK Multi-File Planned Operation Contract.
 - [x] Milestone 149: SDK Multi-File Planned Operation Real Proof.
+- [x] Milestone 150: SDK Post-Multi-File Governance Boundary.
 
 ## Current Stable Baseline
 
@@ -912,6 +913,7 @@
 - 2026-05-21: M147 proves a bounded iterative local-command SDK workflow only for one orchestrator JSON fixture path, not for general SDK repo edits. SDKThread `019e4add-ea80-7223-ae75-78200161ff46` read scoped context, created `orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json`, recorded a failing local JSON readiness check, repaired the fixture once, reran the same check successfully, and passed the post-run sdk-write allowlist with no out-of-scope files, package install/dependency churn, staged git changes, CEP/AE endpoint use, or secret-path touches.
 - 2026-05-21: M148 adds a local pre-thread multi-file planned operation contract for the orchestrator fixture JSON `sdk-write` lane. It proves the envelope, prompt rendering, post-run diff allowlist, and parent-directory normalization can handle exactly two predeclared fixture JSON paths, while rejecting extra files, unplanned directory children, `.env`, credential paths, `package-lock.json` churn, and `.git/**` metadata churn before any real multi-file SDKThread proof. No SDKThread/network proof was run and general SDK workflow remains not production-ready.
 - 2026-05-21: M149 proves one real bounded multi-file SDKThread run only for the orchestrator fixture JSON `sdk-write` lane. SDKThread `019e4b85-aa54-7031-8dab-6f3ce23d2c68` created exactly `orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json` and `orchestrator/fixtures/sdk-write/m149-multi-file-beta.json`; the post-run allowlist passed with no out-of-scope files, missing planned changes, staged changes, package/dependency churn, git metadata mutation, CEP/AE endpoint use, or secret/credential path touches. General SDK workflow, broader production-code SDK writes and CEP-panel SDK writes remain not production-ready.
+- 2026-05-21: M150 closes the post-multi-file governance/readiness boundary with a local committed artifact and smoke. The boundary records `overall:"post-multi-file-local-gated"`, preserves the M146 single-file production-code production-ready claim, accepts M149 only as a bounded orchestrator fixture JSON proof, and explicitly keeps general SDK workflow, broader production-code writes, CEP-panel writes, external-provider/OpenAI CLI planner validation, live CEP/AE validation, mutating-live validation, package installs and dependency changes outside the approved scope.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -1396,6 +1398,19 @@
   - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
   - `npm.cmd run ...` commands printed `npm warn Unknown env config "http-proxy"` but exited successfully.
   - Did not run broader production-code SDK writes, CEP-panel SDK writes, external-provider/OpenAI CLI planner validation, live CEP/After Effects smokes, mutating-live validation, package install, dependency changes, or push.
+
+- Milestone 150:
+  - Read `.codex/handoff.md`, targeted M146-M149 / Decision Log / Validation sections of this plan, and the relevant M144/M146/M149 readiness artifacts.
+  - Confirmed branch `codex/roadmap-1.3-planning` was clean except for the existing local M149 commit ahead of origin by 1 before starting M150.
+  - Added committed boundary artifact `.codex-audit/sdk-post-multi-file-readiness/150-sdk-post-multi-file-governance-boundary.json` with schema `sdk-post-multi-file-governance-boundary.v1`.
+  - The boundary cites M144, M146, M147, M148 and M149 artifacts, records `overall:"post-multi-file-local-gated"`, keeps `productionReady:false` for the overall SDK boundary, preserves the M146 narrow production-code claim for only `scripts/provider-contract-smoke.js`, and records the M149 multi-file orchestrator fixture JSON lane as `proof-passed-local-gated`.
+  - The boundary explicitly keeps general SDK workflow, broader production-code writes, CEP-panel SDK writes, external-provider/OpenAI CLI planner validation, live CEP/AE validation, mutating-live validation, package installs and dependency changes outside the approved scope.
+  - Added `scripts/sdk-post-multi-file-governance-smoke.js`, package script `codex:orchestrator:post-multi-file:smoke`, `check:rules` coverage, and README documentation.
+  - Passed `node --check scripts/sdk-post-multi-file-governance-smoke.js` and `node --check orchestrator/run-buffered-acceptance.mjs`.
+  - Passed `npm.cmd run codex:orchestrator:governance-report`, `npm.cmd run codex:orchestrator:governance-report:smoke`, `npm.cmd run codex:orchestrator:launch-readiness:smoke`, `npm.cmd run codex:orchestrator:production-readiness:smoke`, `npm.cmd run codex:orchestrator:iterative-cmd:smoke`, `npm.cmd run codex:orchestrator:multi-file-planned:smoke`, `npm.cmd run codex:orchestrator:multi-file-real:smoke`, `npm.cmd run codex:orchestrator:post-multi-file:smoke`, `npm.cmd run codex:orchestrator:write-scaffold:contract`, and `npm.cmd run check:rules`.
+  - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
+  - `npm.cmd run ...` commands printed `npm warn Unknown env config "http-proxy"` but exited successfully.
+  - Did not run any SDKThread/network proof, broader production-code SDK write, CEP-panel SDK write, external-provider/OpenAI CLI planner validation, live CEP/After Effects smoke, mutating-live validation, package install, dependency change, push or PR.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.

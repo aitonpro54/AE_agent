@@ -194,6 +194,12 @@ M149 adds the real bounded multi-file SDKThread proof for the orchestrator fixtu
 npm.cmd run codex:orchestrator:multi-file-real:smoke
 ```
 
+M150 closes the post-multi-file readiness boundary without broadening the SDK production-ready claim. The committed boundary `.codex-audit/sdk-post-multi-file-readiness/150-sdk-post-multi-file-governance-boundary.json` uses schema `sdk-post-multi-file-governance-boundary.v1`, records `overall:"post-multi-file-local-gated"`, preserves the M146 single-file production-code claim, and keeps general SDK workflow, broader production-code writes, CEP-panel writes, external-provider validation, live CEP/AE validation, mutating-live validation, package installs and dependency changes outside the approved scope.
+
+```powershell
+npm.cmd run codex:orchestrator:post-multi-file:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.

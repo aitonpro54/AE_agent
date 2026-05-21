@@ -11,6 +11,7 @@
     "codex:orchestrator:iterative-cmd:smoke": "node scripts/sdk-iterative-cmd-reliability-smoke.js",
     "codex:orchestrator:multi-file-planned:smoke": "node scripts/sdk-multi-file-planned-operation-smoke.js",
     "codex:orchestrator:multi-file-real:smoke": "node scripts/sdk-multi-file-real-proof-smoke.js",
+    "codex:orchestrator:post-multi-file:smoke": "node scripts/sdk-post-multi-file-governance-smoke.js",
     "check:rules": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke"
   },
   "dependencies": {

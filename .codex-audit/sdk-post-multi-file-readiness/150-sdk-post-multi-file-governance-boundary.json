@@ -1,0 +1,114 @@
+{
+  "schema": "sdk-post-multi-file-governance-boundary.v1",
+  "milestone": 150,
+  "sourceArtifacts": {
+    "launchReadinessSummary": ".codex-audit/sdk-launch-readiness/144-sdk-launch-readiness-summary.json",
+    "productionReadiness": ".codex-audit/sdk-production-readiness/146-sdk-production-ready.json",
+    "iterativeCommandReliability": ".codex-audit/sdk-iterative-cmd/147-sdk-iterative-cmd-reliability.json",
+    "multiFilePlannedContract": ".codex-audit/sdk-multi-file-planned-operation/148-sdk-multi-file-planned-operation-contract.json",
+    "multiFileRealProof": ".codex-audit/sdk-multi-file-planned-operation/149-sdk-multi-file-real-proof.json"
+  },
+  "verdict": {
+    "overall": "post-multi-file-local-gated",
+    "productionReady": false,
+    "narrowProductionCodeLane": "production-ready",
+    "multiFileOrchestratorFixtureLane": "proof-passed-local-gated",
+    "generalSdkWorkflow": "not-production-ready",
+    "reason": "M149 proves one bounded two-file orchestrator fixture JSON SDKThread run after the M148 local contract, while M146 remains the only production-ready production-code lane. This boundary does not approve general SDK repo-edit autonomy, broader production-code writes, CEP-panel writes, external-provider validation, live CEP/AE validation, mutating-live validation, package installs or dependency changes."
+  },
+  "validatedNarrowEvidence": [
+    {
+      "id": "m146-production-code-single-file",
+      "status": "production-ready",
+      "scope": "production-code",
+      "plannedPaths": [
+        "scripts/provider-contract-smoke.js"
+      ],
+      "sourceArtifact": ".codex-audit/sdk-production-readiness/146-sdk-production-ready.json"
+    },
+    {
+      "id": "m147-iterative-command-single-fixture",
+      "status": "passed",
+      "scope": "orchestrator",
+      "plannedPaths": [
+        "orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json"
+      ],
+      "sourceArtifact": ".codex-audit/sdk-iterative-cmd/147-sdk-iterative-cmd-reliability.json"
+    },
+    {
+      "id": "m148-multi-file-local-contract",
+      "status": "local-pass",
+      "scope": "orchestrator",
+      "plannedPaths": [
+        "orchestrator/fixtures/sdk-write/m148-multi-file-alpha.json",
+        "orchestrator/fixtures/sdk-write/m148-multi-file-beta.json"
+      ],
+      "sourceArtifact": ".codex-audit/sdk-multi-file-planned-operation/148-sdk-multi-file-planned-operation-contract.json"
+    },
+    {
+      "id": "m149-multi-file-real-proof",
+      "status": "proof-passed",
+      "scope": "orchestrator",
+      "plannedPaths": [
+        "orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json",
+        "orchestrator/fixtures/sdk-write/m149-multi-file-beta.json"
+      ],
+      "sourceArtifact": ".codex-audit/sdk-multi-file-planned-operation/149-sdk-multi-file-real-proof.json"
+    }
+  ],
+  "currentBoundary": {
+    "allowedProductionReadyClaims": [
+      "production-code:scripts/provider-contract-smoke.js"
+    ],
+    "allowedLocalGatedClaims": [
+      "orchestrator fixture JSON planned outputs under orchestrator/fixtures/sdk-write/**",
+      "docs-audit and orchestrator controlled output lanes subject to explicit operation envelopes"
+    ],
+    "mustNotClaim": [
+      "general SDK autopilot repo edits are production-ready",
+      "broader production-code SDK writes are production-ready",
+      "CEP-panel SDK writes are enabled or production-ready",
+      "external-provider or OpenAI CLI planner validation has run",
+      "live CEP/After Effects validation has run",
+      "mutating-live validation has run",
+      "package installs or dependency changes are approved"
+    ]
+  },
+  "remainingExclusions": [
+    {
+      "id": "general-sdk-workflow",
+      "status": "not-production-ready",
+      "reason": "Only narrow, predeclared lanes have committed proof artifacts."
+    },
+    {
+      "id": "broader-production-code-sdk-writes",
+      "status": "not-production-ready",
+      "reason": "Production-code remains limited to scripts/provider-contract-smoke.js."
+    },
+    {
+      "id": "cep-panel-sdk-writes",
+      "status": "not-production-ready",
+      "reason": "CEP-panel SDK writes remain disabled and review-required."
+    },
+    {
+      "id": "external-provider-or-openai-cli-planner-validation",
+      "status": "not-run",
+      "reason": "Outside the M150 local governance boundary."
+    },
+    {
+      "id": "live-cep-ae-or-mutating-live-validation",
+      "status": "not-run",
+      "reason": "Outside the M150 local governance boundary."
+    },
+    {
+      "id": "package-install-or-dependency-changes",
+      "status": "not-run",
+      "reason": "No package install or dependency change was needed for M150."
+    }
+  ],
+  "nextRecommendedMilestone": {
+    "id": "M151",
+    "title": "SDK boundary closeout and push/PR decision",
+    "recommendation": "Decide whether to push the M149-M150 local commits or open a review PR before starting any broader production-code, CEP-panel, external-provider, live CEP/AE, mutating-live or dependency-change milestone."
+  }
+}

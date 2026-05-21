@@ -887,6 +887,18 @@ async function runContractSmoke() {
     `M149 SDK multi-file real proof smoke failed: ${multiFileRealProofOutput.trim()}`,
     failures,
   );
+  const postMultiFileGovernanceSmoke = runNode([
+    path.join("scripts", "sdk-post-multi-file-governance-smoke.js"),
+  ]);
+  const postMultiFileGovernanceOutput = `${postMultiFileGovernanceSmoke.stdout ?? ""}\n${
+    postMultiFileGovernanceSmoke.stderr ?? ""
+  }`;
+  assertContract(
+    postMultiFileGovernanceSmoke.status === 0 &&
+      postMultiFileGovernanceOutput.includes("SDK post-multi-file governance smoke: pass"),
+    `M150 SDK post-multi-file governance smoke failed: ${postMultiFileGovernanceOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1192,6 +1204,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:post-multi-file:smoke"] ===
+      "node scripts/sdk-post-multi-file-governance-smoke.js",
+    "package.json codex:orchestrator:post-multi-file:smoke script is not wired to the post-multi-file governance smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1260,6 +1278,14 @@ async function runContractSmoke() {
       readme.includes("m149-multi-file-alpha.json") &&
       readme.includes("m149-multi-file-beta.json"),
     "README does not document the M149 multi-file real proof smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:post-multi-file:smoke") &&
+      readme.includes("150-sdk-post-multi-file-governance-boundary.json") &&
+      readme.includes("sdk-post-multi-file-governance-boundary.v1") &&
+      readme.includes("post-multi-file-local-gated"),
+    "README does not document the M150 post-multi-file governance smoke",
     failures,
   );
   assertContract(
