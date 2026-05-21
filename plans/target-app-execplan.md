@@ -92,6 +92,7 @@
 - [x] Milestone 123: First Orchestrator-Scope SDKThread Write.
 - [x] Milestone 124: Second Orchestrator-Scope SDKThread Write.
 - [x] Milestone 125: First Orchestrator Fixture JSON SDKThread Write.
+- [x] Milestone 126: Second Orchestrator Fixture JSON SDKThread Write.
 
 ## Current Stable Baseline
 
@@ -725,6 +726,11 @@
 - Accept non-executable JSON fixture outputs only under `orchestrator/fixtures/sdk-write/**`.
 - Normalize newly-created untracked parent directories only after recursively validating every actual child file against the explicit planned path set.
 
+### Milestone 126: Second Orchestrator Fixture JSON SDKThread Write
+
+- Repeat the orchestrator fixture JSON `sdk-write` lane for `orchestrator/fixtures/sdk-write/m126-sdk-thread-fixture.json`.
+- Commit the second fixture only after exactly one SDKThread write, valid JSON parsing, and clean post-run diff allowlist.
+
 ## Decision Log
 
 - 2026-05-20: Milestone 114 makes the write-capable dry-run CLI envelope-first. `--dry-run` now requires `--operation-file`, and the envelope supplies `version`, `operationId`, `scope`, `mode`, `prompt`, and `plannedPaths`; M114 supports only `version: 1` and `mode: "dry-run"`.
@@ -741,6 +747,7 @@
 - 2026-05-21: M123 allows `sdk-write` for `scope:"orchestrator"` only when every planned path is a Markdown file under `orchestrator/**`; orchestrator source files, production paths, CEP paths, forbidden paths, and unsafe/bypass fields are still rejected before SDK thread creation.
 - 2026-05-21: M124 reused the M123 orchestrator docs-only `sdk-write` lane without runner changes; exactly one SDKThread created the planned `orchestrator/m124-sdk-thread-orchestrator-scope-output.md` file.
 - 2026-05-21: M125 accepts orchestrator fixture JSON `sdk-write` outputs only under `orchestrator/fixtures/sdk-write/**`; the host post-run contract now safely normalizes newly-created parent directories after recursive child validation.
+- 2026-05-21: M126 repeated the orchestrator fixture JSON `sdk-write` lane in the already-created fixture directory; the post-run allowlist reported only the planned M126 JSON file.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -951,6 +958,10 @@
   - Fixed the host post-run diff contract so a newly-created parent directory passes only when recursive enumeration finds exactly planned SDK output children and no forbidden or out-of-scope files.
   - Replayed the saved M125 snapshot successfully; `orchestrator/fixtures/` normalized to `orchestrator/fixtures/sdk-write/m125-sdk-thread-fixture.json`.
   - Passed syntax checks, orchestrator help, `npm.cmd run check:rules`, `git diff --check`, JSON parse, and targeted forbidden-zone status checks.
+- Milestone 126:
+  - Committed M125 as `9c0cdf5` and tagged `sdk-m125-orchestrator-fixture-sdk-write`.
+  - Ran exactly one orchestrator fixture JSON `sdk-write`; SDK thread `019e49bc-b15f-7b71-a71c-51319fdaa08b` completed and created `orchestrator/fixtures/sdk-write/m126-sdk-thread-fixture.json`.
+  - Post-run contract passed with actual changed files limited to the planned M126 fixture JSON.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.
