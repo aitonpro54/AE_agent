@@ -152,6 +152,12 @@ Hard-stop conditions:
 npm.cmd run check:rules
 ```
 
+Для быстрого локального статуса без полного smoke можно вывести текущий launch-governance drift report:
+
+```powershell
+npm.cmd run codex:orchestrator:governance-report
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.

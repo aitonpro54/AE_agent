@@ -37,7 +37,7 @@ const REJECTED_BUFFERED_FLAGS = Object.freeze([
   "web-search",
 ]);
 
-const SUPPORTED_BUFFERED_FLAGS = new Set(["contract-smoke", "help"]);
+const SUPPORTED_BUFFERED_FLAGS = new Set(["contract-smoke", "governance-report", "help"]);
 
 function getOptionName(arg) {
   return arg.slice(2).split("=", 1)[0];
@@ -76,6 +76,7 @@ export function parseBufferedAcceptanceArgs(argv) {
 
   return {
     contractSmoke: Boolean(options.contractSmoke),
+    governanceReport: Boolean(options.governanceReport),
     help: Boolean(options.help),
     milestonePath: positional[0] ?? DEFAULT_MILESTONE_PATH,
     reportPath: positional[1] ?? DEFAULT_REPORT_PATH,
@@ -90,6 +91,7 @@ function printHelp() {
       "Usage:",
       "  node orchestrator/run-buffered-acceptance.mjs [milestone.md] [report.md]",
       "  node orchestrator/run-buffered-acceptance.mjs --contract-smoke",
+      "  node orchestrator/run-buffered-acceptance.mjs --governance-report",
       "",
       "Buffered acceptance mode always forces:",
       '  sandboxMode: "read-only"',
@@ -390,6 +392,38 @@ function collectSdkLaunchGovernancePackets(directory, validatePacket) {
   return {
     failures,
     packets: packets.sort((left, right) => left.path.localeCompare(right.path)),
+  };
+}
+
+async function buildCommittedSdkLaunchGovernanceReport() {
+  const {
+    SDK_LAUNCH_GOVERNANCE_DIRECTORY,
+    SDK_WRITE_LANE_ENABLEMENT_DIRECTORY,
+    buildSdkLaunchGovernanceDriftReport,
+  } = await import("./run-write-capable-scaffold.mjs");
+  const launchGovernancePacketPath = path.posix.join(
+    SDK_LAUNCH_GOVERNANCE_DIRECTORY,
+    "140-sdk-launch-governance.json",
+  );
+  const productionLaneEnablementPacketPath = path.posix.join(
+    SDK_WRITE_LANE_ENABLEMENT_DIRECTORY,
+    "135-production-code-smoke-harness-enable.json",
+  );
+  const launchGovernancePacket = JSON.parse(
+    fs.readFileSync(path.join(repo, launchGovernancePacketPath), "utf8"),
+  );
+  const productionLaneEnablementPacket = JSON.parse(
+    fs.readFileSync(path.join(repo, productionLaneEnablementPacketPath), "utf8"),
+  );
+  const report = buildSdkLaunchGovernanceDriftReport({
+    launchGovernancePacket,
+    productionLaneEnablementPacket,
+  });
+
+  return {
+    ...report,
+    launchGovernancePacketPath,
+    productionLaneEnablementPacketPath,
   };
 }
 
@@ -785,6 +819,11 @@ async function runContractSmoke() {
     "M141 SDK launch governance drift report contract smoke did not pass",
     failures,
   );
+  assertContract(
+    parseBufferedAcceptanceArgs(["--governance-report"]).governanceReport === true,
+    "M142 governance-report flag is not accepted by buffered acceptance parser",
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -951,6 +990,24 @@ async function runContractSmoke() {
     "M141 SDK launch governance drift report detected committed governance drift",
     failures,
   );
+  let onDemandLaunchGovernanceReport = null;
+  try {
+    onDemandLaunchGovernanceReport = await buildCommittedSdkLaunchGovernanceReport();
+  } catch (error) {
+    failures.push(`M142 SDK launch governance report command failed: ${error.message}`);
+  }
+  assertContract(
+    onDemandLaunchGovernanceReport?.schema === SDK_LAUNCH_GOVERNANCE_DRIFT_REPORT_SCHEMA &&
+      onDemandLaunchGovernanceReport?.launchGovernanceState ===
+        SDK_LAUNCH_GOVERNANCE_STATE &&
+      onDemandLaunchGovernanceReport?.driftDetected === false &&
+      onDemandLaunchGovernanceReport?.launchGovernancePacketPath ===
+        `${SDK_LAUNCH_GOVERNANCE_DIRECTORY}/140-sdk-launch-governance.json` &&
+      onDemandLaunchGovernanceReport?.productionLaneEnablementPacketPath ===
+        `${SDK_WRITE_LANE_ENABLEMENT_DIRECTORY}/135-production-code-smoke-harness-enable.json`,
+    "M142 SDK launch governance report command did not return the committed local-gated report",
+    failures,
+  );
   assertContract(
     WRITE_SCOPES.join(",") === "docs-audit,orchestrator,production-code,cep-panel",
     "M112 write-capable scopes are not the expected explicit set",
@@ -1020,6 +1077,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:governance-report"] ===
+      "node orchestrator/run-buffered-acceptance.mjs --governance-report",
+    "package.json codex:orchestrator:governance-report script is not wired to the local governance report",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1041,6 +1104,11 @@ async function runContractSmoke() {
   assertContract(
     readme.includes("npm.cmd run check:rules"),
     "README does not document check:rules",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:governance-report"),
+    "README does not document codex:orchestrator:governance-report",
     failures,
   );
   assertContract(
@@ -1151,8 +1219,14 @@ async function runContractSmoke() {
   console.log("SDK launch governance packet gate: pass");
   console.log("SDK launch governance packet files: pass");
   console.log("SDK launch governance drift report: pass");
+  console.log("SDK launch governance report command: pass");
   console.log("Write-capable sdk-write diagnostic logging mode: pass");
   console.log("Write-capable sdk runtime fallback mode: pass");
+}
+
+async function printGovernanceReport() {
+  const report = await buildCommittedSdkLaunchGovernanceReport();
+  console.log(JSON.stringify(report, null, 2));
 }
 
 async function runBufferedAcceptance({ milestonePath, reportPath }) {
@@ -1309,6 +1383,11 @@ export async function main(argv = process.argv.slice(2)) {
 
   if (options.contractSmoke) {
     await runContractSmoke();
+    return;
+  }
+
+  if (options.governanceReport) {
+    await printGovernanceReport();
     return;
   }
 
