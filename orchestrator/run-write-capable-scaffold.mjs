@@ -151,6 +151,10 @@ export const SDK_WRITE_ALLOWED_SCOPES = Object.freeze([
   SDK_WRITE_ALLOWED_SCOPE,
   SDK_WRITE_ORCHESTRATOR_SCOPE,
 ]);
+export const SDK_WRITE_REVIEW_REQUIRED_SCOPES = Object.freeze([
+  "production-code",
+  "cep-panel",
+]);
 export const SDK_WRITE_PLANNED_PATH_ALLOWLIST = Object.freeze([
   ".codex-audit/**",
 ]);
@@ -2474,6 +2478,45 @@ export function runWriteCapableContractSmoke() {
     "sdk-write operation envelope did not reject unsupported sdk-write scope",
   );
 
+  const sdkWriteReviewRequiredScopeCases = [
+    {
+      label: "sdk-write operation envelope did not keep production bridge code review-required",
+      plannedPaths: ["mcp-server/bridge-daemon.js"],
+      scope: "production-code",
+    },
+    {
+      label: "sdk-write operation envelope did not keep production connector code review-required",
+      plannedPaths: ["chatgpt-connector/server.js"],
+      scope: "production-code",
+    },
+    {
+      label: "sdk-write operation envelope did not keep production scripts review-required",
+      plannedPaths: ["scripts/smoke-test.js"],
+      scope: "production-code",
+    },
+    {
+      label: "sdk-write operation envelope did not keep CEP panel code review-required",
+      plannedPaths: ["cep-panel/panel.js"],
+      scope: "cep-panel",
+    },
+  ];
+
+  for (const reviewRequiredCase of sdkWriteReviewRequiredScopeCases) {
+    assertRejects(
+      () =>
+        validateOperationEnvelope({
+          ...validSdkWriteEnvelope,
+          operationId: `m127-${reviewRequiredCase.scope}-scope-expansion-gate`,
+          plannedPaths: reviewRequiredCase.plannedPaths,
+          prompt: "Attempt a review-required SDK write scope expansion.",
+          scope: reviewRequiredCase.scope,
+        }),
+      "sdk-write operation envelope scope rejected:",
+      failures,
+      reviewRequiredCase.label,
+    );
+  }
+
   let arbitraryAuditPathAccepted = true;
   try {
     validateOperationEnvelope({
@@ -3373,7 +3416,7 @@ export function runWriteCapableContractSmoke() {
   );
 
   if (failures.length > 0) {
-    const message = ["M125 write-capable scaffold contract smoke failed:", ...failures.map((f) => `- ${f}`)].join(
+    const message = ["M127 write-capable scaffold contract smoke failed:", ...failures.map((f) => `- ${f}`)].join(
       "\n",
     );
     throw new Error(message);
@@ -3392,8 +3435,14 @@ export function runWriteCapableContractSmoke() {
     sdkWriteDiagnosticSmokeSdkThreadCreated: false,
     sdkWriteMode: "pass",
     sdkWriteAllowedScopes: SDK_WRITE_ALLOWED_SCOPES,
+    sdkWriteCepPanelEnabled: SDK_WRITE_ALLOWED_SCOPES.includes("cep-panel"),
     sdkWritePathAllowlist: SDK_WRITE_PLANNED_PATH_ALLOWLIST,
+    sdkWriteProductionCodeEnabled: SDK_WRITE_ALLOWED_SCOPES.includes("production-code"),
+    sdkWriteReviewRequiredScopes: SDK_WRITE_REVIEW_REQUIRED_SCOPES,
     sdkWriteScope: SDK_WRITE_ALLOWED_SCOPE,
+    sdkWriteScopeExpansionGate: "pass",
+    sdkWriteScopeExpansionRealWriteWork: false,
+    sdkWriteScopeExpansionSdkThreadCreated: false,
     sdkWritePlannedPaths: SDK_WRITE_CONTRACT_SMOKE_PLANNED_PATHS,
     sdkWriteOrchestratorControlledOutputs: true,
     sdkWriteOrchestratorFixtureJsonOnly: true,
@@ -3492,7 +3541,7 @@ export async function main(argv = process.argv.slice(2)) {
       console.log(JSON.stringify(result, null, 2));
       return;
     }
-    console.log("PASS M125 write-capable runner scaffold contract smoke");
+    console.log("PASS M127 write-capable runner scaffold contract smoke");
     return;
   }
 

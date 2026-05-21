@@ -190,6 +190,7 @@ async function runContractSmoke() {
     SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_PLANNED_PATH_ALLOWLIST,
     SDK_WRITE_ORCHESTRATOR_PLANNED_PATH_ALLOWLIST,
     SDK_WRITE_PLANNED_PATH_ALLOWLIST,
+    SDK_WRITE_REVIEW_REQUIRED_SCOPES,
     SCOPE_PATH_ALLOWLISTS,
     UNSAFE_WRITE_RUNNER_FLAGS,
     WRITE_SCOPES,
@@ -460,6 +461,17 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    writeScaffoldSmoke?.sdkWriteScopeExpansionGate === "pass" &&
+      writeScaffoldSmoke?.sdkWriteProductionCodeEnabled === false &&
+      writeScaffoldSmoke?.sdkWriteCepPanelEnabled === false &&
+      writeScaffoldSmoke?.sdkWriteReviewRequiredScopes?.join(",") ===
+        SDK_WRITE_REVIEW_REQUIRED_SCOPES.join(",") &&
+      writeScaffoldSmoke?.sdkWriteScopeExpansionSdkThreadCreated === false &&
+      writeScaffoldSmoke?.sdkWriteScopeExpansionRealWriteWork === false,
+    "M127 sdk-write scope expansion gate did not keep production-code and cep-panel review-required",
+    failures,
+  );
+  assertContract(
     WRITE_SCOPES.join(",") === "docs-audit,orchestrator,production-code,cep-panel",
     "M112 write-capable scopes are not the expected explicit set",
     failures,
@@ -593,6 +605,8 @@ async function runContractSmoke() {
       readme.includes(".codex-audit/<operation>-sdk-write-failure-diagnostics.md") &&
       readme.includes(".codex-runtime/sdk/operations/<operation>-operation.json") &&
       readme.includes(".codex-runtime/sdk") &&
+      readme.includes("SDK scope expansion acceptance gate") &&
+      readme.includes("production-code` and `cep-panel` remain review-required") &&
       readme.includes("docs-audit") &&
       readme.includes("production-code") &&
       readme.includes("cep-panel") &&
@@ -610,7 +624,7 @@ async function runContractSmoke() {
     return;
   }
 
-  console.log("PASS M125 SDK orchestrator contract smoke");
+  console.log("PASS M127 SDK orchestrator contract smoke");
   console.log("Invalid general CLI values rejected before SDK thread creation");
   console.log("Write-capable scopes:");
   for (const scope of WRITE_SCOPES) {
@@ -630,6 +644,7 @@ async function runContractSmoke() {
   console.log("Write-capable orchestrator controlled-output sdk-write mode: pass");
   console.log("Write-capable orchestrator fixture JSON sdk-write mode: pass");
   console.log("Write-capable sdk-write parent directory normalization mode: pass");
+  console.log("Write-capable sdk-write scope expansion gate: pass");
   console.log("Write-capable sdk-write diagnostic logging mode: pass");
   console.log("Write-capable sdk runtime fallback mode: pass");
 }

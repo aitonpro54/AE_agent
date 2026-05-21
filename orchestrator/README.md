@@ -87,6 +87,10 @@ Envelope dry-run reports `sdkThreadCreated:false`, `realWriteWork:false`, and `a
 
 M116 hardens SDK write diagnostics without retrying real write work. M120 adds a runtime preflight for SDK write logs and operation envelopes: the runner prefers `.codex/sdk`, verifies that both `logs` and `operations` can be created and written, then falls back to the ignored `.codex-runtime/sdk` runtime when `.codex/sdk` is missing or not writable. Routine SDK logs and operation-envelope paths use the selected runtime, for example `.codex-runtime/sdk/operations/<operation>-operation.json` when the fallback is selected. If selected-runtime log writing still fails, including `EPERM`, the original SDK/post-run error remains in the console failure message and the runner attempts only the reviewable diagnostic report under `.codex-audit/<operation>-sdk-write-failure-diagnostics.md`.
 
+## SDK scope expansion acceptance gate
+
+M127 adds a local-only acceptance gate for future SDK write scope expansion. `docs-audit` and controlled `orchestrator` outputs are the only enabled `sdk-write` scopes; `production-code` and `cep-panel` remain review-required and are rejected before any SDK thread can be created, even when their planned paths would be valid for ordinary dry-run scope checks.
+
 Обязательный `--scope` принимает только:
 
 - `docs-audit`
@@ -115,7 +119,7 @@ Hard-stop conditions:
 
 ## Локальный contract smoke
 
-Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
+Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
 
 ```powershell
 npm.cmd run check:rules
