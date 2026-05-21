@@ -824,6 +824,18 @@ async function runContractSmoke() {
     "M142 governance-report flag is not accepted by buffered acceptance parser",
     failures,
   );
+  const governanceReportParserSmoke = runNode([
+    path.join("scripts", "sdk-governance-report-smoke.js"),
+  ]);
+  const governanceReportParserOutput = `${governanceReportParserSmoke.stdout ?? ""}\n${
+    governanceReportParserSmoke.stderr ?? ""
+  }`;
+  assertContract(
+    governanceReportParserSmoke.status === 0 &&
+      governanceReportParserOutput.includes("SDK governance report parser smoke: pass"),
+    `M143 SDK governance report parser smoke failed: ${governanceReportParserOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1083,6 +1095,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:governance-report:smoke"] ===
+      "node scripts/sdk-governance-report-smoke.js",
+    "package.json codex:orchestrator:governance-report:smoke script is not wired to the local report parser smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1109,6 +1127,11 @@ async function runContractSmoke() {
   assertContract(
     readme.includes("npm.cmd run codex:orchestrator:governance-report"),
     "README does not document codex:orchestrator:governance-report",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:governance-report:smoke"),
+    "README does not document codex:orchestrator:governance-report:smoke",
     failures,
   );
   assertContract(
@@ -1220,6 +1243,7 @@ async function runContractSmoke() {
   console.log("SDK launch governance packet files: pass");
   console.log("SDK launch governance drift report: pass");
   console.log("SDK launch governance report command: pass");
+  console.log("SDK governance report parser smoke: pass");
   console.log("Write-capable sdk-write diagnostic logging mode: pass");
   console.log("Write-capable sdk runtime fallback mode: pass");
 }

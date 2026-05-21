@@ -109,6 +109,7 @@
 - [x] Milestone 140: SDK Launch Governance Gate.
 - [x] Milestone 141: SDK Governance Drift Report Gate.
 - [x] Milestone 142: SDK Governance Report Command.
+- [x] Milestone 143: SDK Governance Report Parser Smoke.
 
 ## Current Stable Baseline
 
@@ -848,6 +849,13 @@
 - Валидировать command wiring and output через `check:rules`.
 - Подтвердить milestone только локальными checks/smokes без SDKThread creation, network retry, package install, live CEP/AE или mutating-live validation.
 
+### Milestone 143: SDK Governance Report Parser Smoke
+
+- Добавить локальный subprocess smoke для package command `codex:orchestrator:governance-report`.
+- Парсить JSON-вывод и утверждать exact `sdk-launch-governance-drift-report.v1` fields: local-gated state, no drift, enabled scopes, review-required scopes, production-code allowlist, source milestones, packet paths and all `checks[].ok`.
+- Подключить smoke к `check:rules` и отдельной package script команде.
+- Подтвердить milestone только локальными checks/smokes без SDKThread creation, network retry, package install, live CEP/AE или mutating-live validation.
+
 ## Decision Log
 
 - 2026-05-20: Milestone 114 makes the write-capable dry-run CLI envelope-first. `--dry-run` now requires `--operation-file`, and the envelope supplies `version`, `operationId`, `scope`, `mode`, `prompt`, and `plannedPaths`; M114 supports only `version: 1` and `mode: "dry-run"`.
@@ -881,6 +889,7 @@
 - 2026-05-21: M140 adds a committed local `sdk-launch-governance.v1` gate so launch readiness remains explicit and contract-checked: enabled SDK write scopes stay exact, production-code remains single-file, CEP-panel remains disabled, and new SDKThread/network writes remain unapproved without a later milestone.
 - 2026-05-21: M141 adds a local `sdk-launch-governance-drift-report.v1` report gate; `check:rules` now builds the report from committed governance and enablement packets and fails if launch governance drifts from runner constants or the approved single-file production-code lane.
 - 2026-05-21: M142 exposes the M141 drift report through a local `codex:orchestrator:governance-report` command; it is report-only, does not create SDK threads, and does not approve network or broader write work.
+- 2026-05-21: M143 adds a local subprocess parser smoke for the governance-report package command; the smoke proves the JSON surface remains machine-readable and exact while keeping SDK state `local-gated`.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -1244,6 +1253,20 @@
   - Passed `npm.cmd run codex:orchestrator:write-scaffold:contract`, `npm.cmd run check:rules`, and `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
   - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
   - Did not run live CEP / After Effects smokes, external-provider validation, OpenAI CLI planner validation, mutating-live validation, package install, SDKThread creation, real SDK write work, CEP-panel write enablement, or production-code source edits because M142 is a local-only report-surface milestone.
+- Milestone 143:
+  - Added `.codex-audit/143-sdk-governance-report-parser-smoke.md`.
+  - Added `scripts/sdk-governance-report-smoke.js`.
+  - Added package script `codex:orchestrator:governance-report:smoke`.
+  - Extended `check:rules` to run the parser smoke and print `SDK governance report parser smoke: pass`.
+  - Updated `orchestrator/README.md` to document the standalone parser smoke command.
+  - Parser smoke launches the governance-report package command as a subprocess, extracts the JSON report, and asserts exact schema, local-gated state, no drift, exact scopes, exact allowlist, source milestones, packet paths, and all check IDs/results.
+  - Passed `node --check scripts/sdk-governance-report-smoke.js` and `node --check orchestrator/run-buffered-acceptance.mjs`.
+  - Passed `npm.cmd run codex:orchestrator:governance-report`; output includes `schema:"sdk-launch-governance-drift-report.v1"`, `launchGovernanceState:"local-gated"`, and `driftDetected:false`.
+  - Passed `npm.cmd run codex:orchestrator:governance-report:smoke`; output includes `SDK governance report parser smoke: pass`.
+  - Passed `npm.cmd run codex:orchestrator:write-scaffold:contract` and `npm.cmd run check:rules`; `check:rules` output includes `SDK governance report parser smoke: pass`.
+  - Passed configured local smoke suite: provider contract, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, provider API, prompt optimization, bridge-only, and full smoke.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
+  - Did not run live CEP / After Effects smokes, external-provider validation, OpenAI CLI planner validation, mutating-live validation, package install, SDKThread creation, real SDK write work, CEP-panel write enablement, or production-code source edits because M143 is a local-only parser-smoke milestone.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.
