@@ -100,12 +100,16 @@ export const FORBIDDEN_PATH_PATTERNS = Object.freeze([
   "snapshots/**",
   "pro-review-bundles/**",
   "mcp-config.json",
+  "package-lock.json",
+  "**/package-lock.json",
   ".env*",
   "**/.env*",
   "*.key",
   "**/*.key",
   "*.pem",
   "**/*.pem",
+  "*credential*",
+  "**/*credential*",
   "*secret*",
   "**/*secret*",
   "*token*",
@@ -212,6 +216,14 @@ export const SDK_WRITE_ORCHESTRATOR_CONTRACT_SMOKE_PLANNED_PATHS = Object.freeze
   "orchestrator/arbitrary-safe-sdk-write-output.md",
   "orchestrator/fixtures/sdk-write/m125-sdk-thread-fixture.json",
   "orchestrator/fixtures/sdk-write/arbitrary-safe-sdk-write-fixture.json",
+]);
+export const SDK_MULTI_FILE_PLANNED_OPERATION_CONTRACT_SCHEMA =
+  "sdk-multi-file-planned-operation-contract.v1";
+export const SDK_MULTI_FILE_PLANNED_OPERATION_DIRECTORY =
+  ".codex-audit/sdk-multi-file-planned-operation";
+export const SDK_WRITE_ORCHESTRATOR_MULTI_FILE_CONTRACT_PLANNED_PATHS = Object.freeze([
+  "orchestrator/fixtures/sdk-write/m148-multi-file-alpha.json",
+  "orchestrator/fixtures/sdk-write/m148-multi-file-beta.json",
 ]);
 export const SDK_WRITE_ALLOWED_HOST_REPORT_PATHS = Object.freeze([]);
 export const SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY = ".codex/sdk";
@@ -2479,6 +2491,7 @@ export function createSdkWritePrompt(options) {
   const isProductionCodeWrite = options.scope === SDK_WRITE_PRODUCTION_CODE_SCOPE;
   const isOrchestratorFixtureJsonWrite =
     isOrchestratorWrite && plannedPaths.every(isOrchestratorFixtureJsonSdkWritePath);
+  const isMultiFileWrite = plannedPaths.length > 1;
   const writerRole = isOrchestratorFixtureJsonWrite
     ? "orchestrator fixture JSON writer"
     : isOrchestratorWrite
@@ -2487,12 +2500,21 @@ export function createSdkWritePrompt(options) {
         ? "production-code provider contract smoke maintainer"
         : "docs-audit writer";
   const outputKind = isOrchestratorFixtureJsonWrite
-    ? "JSON fixture output file"
-    : isOrchestratorWrite
-      ? "Markdown output file"
-      : isProductionCodeWrite
-        ? "existing production-code source file"
-        : "Markdown output file";
+      ? "JSON fixture output file"
+      : isOrchestratorWrite
+        ? "Markdown output file"
+        : isProductionCodeWrite
+          ? "existing production-code source file"
+          : "Markdown output file";
+  const plannedOutputKind = isMultiFileWrite
+    ? outputKind.replace(/ file$/u, " files")
+    : outputKind;
+  const plannedPathLabel = isMultiFileWrite
+    ? "Allowed planned output paths:"
+    : "Allowed planned output path:";
+  const plannedSourcePathLabel = isMultiFileWrite
+    ? "Allowed planned source paths:"
+    : "Allowed planned source path:";
   const outputTitle = isOrchestratorWrite
     ? "# SDK Orchestrator Output"
     : "# SDK Docs Audit Output";
@@ -2507,7 +2529,7 @@ export function createSdkWritePrompt(options) {
       `You are the SDKThread ${writerRole} for this repository.`,
       "",
       "Hard boundary:",
-      `- Create or update exactly the planned ${outputKind} listed below.`,
+      `- Create or update exactly the planned ${plannedOutputKind} listed below.`,
       "- Do not edit any other file.",
       "- Do not stage, commit, install packages, run validation suites, run live checks, or change source code.",
       "- Keep the output self-contained and focused on the requested artifact.",
@@ -2517,17 +2539,19 @@ export function createSdkWritePrompt(options) {
       `Scope: ${options.scope}`,
       `Mode: ${options.mode}`,
       "",
-      "Allowed planned output path:",
+      plannedPathLabel,
       ...plannedPaths.map((repoPath) => `- ${repoPath}`),
       "",
-      "Write the JSON file with this object shape:",
+      isMultiFileWrite
+        ? "Write each JSON file with this object shape:"
+        : "Write the JSON file with this object shape:",
       "{",
       '  "result": "created-by-sdk-thread",',
       '  "operation": {',
       '    "operationId": "<operation id>",',
       '    "scope": "<scope>",',
       '    "mode": "<mode>",',
-      '    "plannedPath": "<planned path>"',
+      '    "plannedPath": "<that file\'s planned path>"',
       "  },",
       '  "safetyNotes": [',
       '    "Only the planned orchestrator fixture JSON output file was edited by this SDKThread turn."',
@@ -2547,7 +2571,7 @@ export function createSdkWritePrompt(options) {
       `You are the SDKThread ${writerRole} for this repository.`,
       "",
       "Hard boundary:",
-      `- Update exactly the planned ${outputKind} listed below.`,
+      `- Update exactly the planned ${plannedOutputKind} listed below.`,
       "- Do not edit any other file.",
       "- Do not stage, commit, install packages, run validation suites, run live checks, or change unrelated source code.",
       "- Keep the change minimal, CommonJS-compatible, and focused on the requested provider contract smoke maintenance.",
@@ -2556,7 +2580,7 @@ export function createSdkWritePrompt(options) {
       `Scope: ${options.scope}`,
       `Mode: ${options.mode}`,
       "",
-      "Allowed planned source path:",
+      plannedSourcePathLabel,
       ...plannedPaths.map((repoPath) => `- ${repoPath}`),
       "",
       "Safety note requirement:",
@@ -2571,7 +2595,7 @@ export function createSdkWritePrompt(options) {
     `You are the SDKThread ${writerRole} for this repository.`,
     "",
     "Hard boundary:",
-    `- Create or update exactly the planned ${outputKind} listed below.`,
+    `- Create or update exactly the planned ${plannedOutputKind} listed below.`,
     "- Do not edit any other file.",
     "- Do not stage, commit, install packages, run validation suites, run live checks, or change source code.",
     "- Keep the output self-contained and focused on the requested artifact.",
@@ -2580,17 +2604,19 @@ export function createSdkWritePrompt(options) {
     `Scope: ${options.scope}`,
     `Mode: ${options.mode}`,
     "",
-    "Allowed planned output path:",
+    plannedPathLabel,
     ...plannedPaths.map((repoPath) => `- ${repoPath}`),
     "",
-    "Write the file with this structure:",
+    isMultiFileWrite ? "Write each file with this structure:" : "Write the file with this structure:",
     outputTitle,
     "",
     "## Result",
     "created-by-sdk-thread",
     "",
     "## Operation",
-    "State the operation id, scope, mode, and planned path.",
+    isMultiFileWrite
+      ? "State the operation id, scope, mode, and planned paths."
+      : "State the operation id, scope, mode, and planned path.",
     "",
     "## Safety Notes",
     safetyNote,
@@ -2801,17 +2827,28 @@ export async function runWriteCapableSdkWrite(options) {
   }
 
   const outputPath = plannedPaths[0];
-  const outputExistsAfter = existsSync(path.resolve(cwd, outputPath));
+  const missingOutputPathsAfterRun = plannedPaths.filter(
+    (repoPath) => !existsSync(path.resolve(cwd, repoPath)),
+  );
+  const missingChangedPlannedPaths = sdkWritePostContract
+    ? plannedPaths.filter((repoPath) => !sdkWritePostContract.actualChangedFiles.includes(repoPath))
+    : [];
   const plannedFileChangedBySdk =
     Boolean(sdkWritePostContract) &&
-    outputExistsAfter &&
-    sdkWritePostContract.actualChangedFiles.includes(outputPath);
+    missingOutputPathsAfterRun.length === 0 &&
+    missingChangedPlannedPaths.length === 0;
   const outputMissingFailure =
     !failure && !postRunFailure && !plannedFileChangedBySdk
       ? new Error(
           preparedOptions.scope === SDK_WRITE_PRODUCTION_CODE_SCOPE
-            ? `SDK thread did not change planned source file: ${outputPath}`
-            : `SDK thread did not create planned output file: ${outputPath}`,
+            ? `SDK thread did not change all planned source files: ${[
+                ...missingOutputPathsAfterRun,
+                ...missingChangedPlannedPaths,
+              ].join(", ")}`
+            : `SDK thread did not create all planned output files: ${[
+                ...missingOutputPathsAfterRun,
+                ...missingChangedPlannedPaths,
+              ].join(", ")}`,
         )
       : null;
   const terminalFailure = failure || postRunFailure || outputMissingFailure;
@@ -2833,6 +2870,7 @@ export async function runWriteCapableSdkWrite(options) {
     sdkThreadCreated,
     sdkThreadId: thread?.id || null,
     sdkThreadOutputPath: outputPath,
+    sdkThreadOutputPaths: plannedPaths,
     sdkWritePostContract,
     threadOptions,
     turn,
@@ -3033,6 +3071,7 @@ export function runWriteCapableContractSmoke() {
     m125OrchestratorFixtureSdkWritePath,
     arbitraryOrchestratorFixtureSdkWritePath,
   ] = SDK_WRITE_ORCHESTRATOR_CONTRACT_SMOKE_PLANNED_PATHS;
+  const m148MultiFilePlannedPaths = SDK_WRITE_ORCHESTRATOR_MULTI_FILE_CONTRACT_PLANNED_PATHS;
   const validSdkWriteEnvelope = {
     version: OPERATION_ENVELOPE_VERSION,
     operationId: "m115-contract-smoke",
@@ -3056,6 +3095,12 @@ export function runWriteCapableContractSmoke() {
     mode: SDK_WRITE_OPERATION_MODE,
     prompt: "Create the M125 orchestrator fixture JSON SDKThread output file.",
     plannedPaths: [m125OrchestratorFixtureSdkWritePath],
+  };
+  const validMultiFileOrchestratorFixtureSdkWriteEnvelope = {
+    ...validOrchestratorFixtureSdkWriteEnvelope,
+    operationId: "m148-contract-smoke",
+    prompt: "Validate the M148 multi-file orchestrator fixture JSON SDKThread contract.",
+    plannedPaths: m148MultiFilePlannedPaths,
   };
   const validProductionCodeSdkWriteEnvelope = {
     version: OPERATION_ENVELOPE_VERSION,
@@ -3230,6 +3275,25 @@ export function runWriteCapableContractSmoke() {
     );
   }
 
+  const validatedMultiFileSdkWriteEnvelope = validateOperationEnvelope(
+    validMultiFileOrchestratorFixtureSdkWriteEnvelope,
+  );
+  const multiFilePlannedPathCheck = createSdkWritePlannedPathCheck(
+    SDK_WRITE_ORCHESTRATOR_SCOPE,
+    m148MultiFilePlannedPaths,
+  );
+  assertContract(
+    validatedMultiFileSdkWriteEnvelope.operationId === "m148-contract-smoke" &&
+      validatedMultiFileSdkWriteEnvelope.scope === SDK_WRITE_ORCHESTRATOR_SCOPE &&
+      validatedMultiFileSdkWriteEnvelope.mode === SDK_WRITE_OPERATION_MODE &&
+      validatedMultiFileSdkWriteEnvelope.plannedPaths.join(",") ===
+        m148MultiFilePlannedPaths.join(",") &&
+      multiFilePlannedPathCheck.allowed === true &&
+      multiFilePlannedPathCheck.violations.length === 0,
+    "M148 multi-file sdk-write operation envelope did not accept the exact planned file set",
+    failures,
+  );
+
   const docsAuditSdkWritePrompt = createSdkWritePrompt({
     ...validSdkWriteEnvelope,
     operationEnvelope: validSdkWriteEnvelope,
@@ -3265,6 +3329,23 @@ export function runWriteCapableContractSmoke() {
     orchestratorFixtureSdkWritePrompt.includes('"result": "created-by-sdk-thread"') &&
       orchestratorFixtureSdkWritePrompt.includes("Write valid JSON only"),
     "orchestrator fixture sdk-write JSON prompt did not render its JSON structure",
+    failures,
+  );
+
+  const multiFileOrchestratorFixtureSdkWritePrompt = createSdkWritePrompt({
+    ...validMultiFileOrchestratorFixtureSdkWriteEnvelope,
+    operationEnvelope: validMultiFileOrchestratorFixtureSdkWriteEnvelope,
+    sdkWrite: true,
+  });
+  assertContract(
+    multiFileOrchestratorFixtureSdkWritePrompt.includes("Allowed planned output paths:") &&
+      multiFileOrchestratorFixtureSdkWritePrompt.includes(
+        "Write each JSON file with this object shape:",
+      ) &&
+      m148MultiFilePlannedPaths.every((repoPath) =>
+        multiFileOrchestratorFixtureSdkWritePrompt.includes(repoPath),
+      ),
+    "M148 multi-file orchestrator fixture sdk-write prompt did not render every planned path",
     failures,
   );
 
@@ -4185,6 +4266,16 @@ export function runWriteCapableContractSmoke() {
       label: "sdk-write operation envelope did not reject .git path",
       plannedPaths: [".git/config"],
     },
+    {
+      expectedMessageStart: "Operation envelope plannedPaths include forbidden paths:",
+      label: "sdk-write operation envelope did not reject credential path",
+      plannedPaths: [".codex-audit/credentials.json"],
+    },
+    {
+      expectedMessageStart: "Operation envelope plannedPaths include forbidden paths:",
+      label: "sdk-write operation envelope did not reject package-lock churn path",
+      plannedPaths: ["package-lock.json"],
+    },
   ];
 
   for (const sdkWriteRejectedPathCase of sdkWriteRejectedPathCases) {
@@ -4265,6 +4356,16 @@ export function runWriteCapableContractSmoke() {
       expectedMessageStart: "Operation envelope plannedPaths include forbidden paths:",
       label: "orchestrator sdk-write operation envelope did not reject root .env path",
       plannedPaths: [".env"],
+    },
+    {
+      expectedMessageStart: "Operation envelope plannedPaths include forbidden paths:",
+      label: "orchestrator sdk-write operation envelope did not reject credential path",
+      plannedPaths: ["orchestrator/fixtures/sdk-write/credentials.json"],
+    },
+    {
+      expectedMessageStart: "Operation envelope plannedPaths include forbidden paths:",
+      label: "orchestrator sdk-write operation envelope did not reject package-lock churn path",
+      plannedPaths: ["package-lock.json"],
     },
   ];
 
@@ -4656,6 +4757,27 @@ export function runWriteCapableContractSmoke() {
     failures,
   );
 
+  const multiFileSdkWritePostContract = validateSdkWriteDiffAllowlist({
+    plannedPaths: m148MultiFilePlannedPaths,
+    postSnapshot: {
+      pathSignatures: Object.fromEntries(
+        m148MultiFilePlannedPaths.map((repoPath) => [repoPath, "created"]),
+      ),
+    },
+    preSnapshot: { pathSignatures: {} },
+    scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+    validationResult: { ok: true },
+  });
+
+  assertContract(
+    multiFileSdkWritePostContract.verdict === "pass" &&
+      multiFileSdkWritePostContract.actualChangedFiles.join(",") ===
+        m148MultiFilePlannedPaths.join(",") &&
+      multiFileSdkWritePostContract.missingPlannedChanges.length === 0,
+    "M148 sdk-write post-run allowlist did not accept every planned multi-file output path",
+    failures,
+  );
+
   const productionCodeSdkWritePostContract = validateSdkWriteDiffAllowlist({
     plannedPaths: SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST,
     postSnapshot: {
@@ -4744,6 +4866,179 @@ export function runWriteCapableContractSmoke() {
         m125OrchestratorFixtureSdkWritePath,
     "sdk-write post-run allowlist did not accept parent directory plus exactly one planned child",
     failures,
+  );
+
+  const multiFileFixtureDirectory = "orchestrator/fixtures/sdk-write/";
+  const multiFileDirectoryPostContract = validateSdkWriteDiffAllowlist({
+    directoryChildEnumerator: createDirectoryChildEnumerator({
+      [multiFileFixtureDirectory]: m148MultiFilePlannedPaths,
+    }),
+    plannedPaths: m148MultiFilePlannedPaths,
+    postSnapshot: {
+      cwd: process.cwd(),
+      pathSignatures: {
+        [multiFileFixtureDirectory]: "created",
+      },
+    },
+    preSnapshot: { pathSignatures: {} },
+    scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+    validationResult: { ok: true },
+  });
+
+  assertContract(
+    multiFileDirectoryPostContract.verdict === "pass" &&
+      multiFileDirectoryPostContract.actualChangedFiles.join(",") ===
+        m148MultiFilePlannedPaths.join(",") &&
+      multiFileDirectoryPostContract.normalizedDirectoryEntries.join(",") ===
+        multiFileFixtureDirectory,
+    "M148 sdk-write directory normalization did not accept exactly the planned multi-file children",
+    failures,
+  );
+
+  assertRejects(
+    () =>
+      validateSdkWriteDiffAllowlist({
+        plannedPaths: m148MultiFilePlannedPaths,
+        postSnapshot: {
+          pathSignatures: {
+            ...Object.fromEntries(
+              m148MultiFilePlannedPaths.map((repoPath) => [repoPath, "created"]),
+            ),
+            "orchestrator/fixtures/sdk-write/m148-extra.json": "created",
+          },
+        },
+        preSnapshot: { pathSignatures: {} },
+        scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+        validationResult: { ok: true },
+      }),
+    "Post-run diff outside orchestrator sdk-write allowlist:",
+    failures,
+    "M148 multi-file sdk-write post-run contract did not reject an extra file",
+  );
+
+  assertRejects(
+    () =>
+      validateSdkWriteDiffAllowlist({
+        directoryChildEnumerator: createDirectoryChildEnumerator({
+          [multiFileFixtureDirectory]: [
+            ...m148MultiFilePlannedPaths,
+            "orchestrator/fixtures/sdk-write/m148-unplanned-child.json",
+          ],
+        }),
+        plannedPaths: m148MultiFilePlannedPaths,
+        postSnapshot: {
+          cwd: process.cwd(),
+          pathSignatures: {
+            [multiFileFixtureDirectory]: "created",
+          },
+        },
+        preSnapshot: { pathSignatures: {} },
+        scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+        validationResult: { ok: true },
+      }),
+    "Post-run diff outside orchestrator sdk-write allowlist:",
+    failures,
+    "M148 multi-file sdk-write directory normalization did not reject an unplanned child",
+  );
+
+  assertRejects(
+    () =>
+      validateSdkWriteDiffAllowlist({
+        directoryChildEnumerator: createDirectoryChildEnumerator({
+          [multiFileFixtureDirectory]: [
+            ...m148MultiFilePlannedPaths,
+            "orchestrator/fixtures/sdk-write/.env",
+          ],
+        }),
+        plannedPaths: m148MultiFilePlannedPaths,
+        postSnapshot: {
+          cwd: process.cwd(),
+          pathSignatures: {
+            [multiFileFixtureDirectory]: "created",
+          },
+        },
+        preSnapshot: { pathSignatures: {} },
+        scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+        validationResult: { ok: true },
+      }),
+    "Forbidden path diff detected after sdk-write run:",
+    failures,
+    "M148 multi-file sdk-write directory normalization did not reject a .env child",
+  );
+
+  assertRejects(
+    () =>
+      validateSdkWriteDiffAllowlist({
+        directoryChildEnumerator: createDirectoryChildEnumerator({
+          [multiFileFixtureDirectory]: [
+            ...m148MultiFilePlannedPaths,
+            "orchestrator/fixtures/sdk-write/credentials.json",
+          ],
+        }),
+        plannedPaths: m148MultiFilePlannedPaths,
+        postSnapshot: {
+          cwd: process.cwd(),
+          pathSignatures: {
+            [multiFileFixtureDirectory]: "created",
+          },
+        },
+        preSnapshot: { pathSignatures: {} },
+        scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+        validationResult: { ok: true },
+      }),
+    "Forbidden path diff detected after sdk-write run:",
+    failures,
+    "M148 multi-file sdk-write directory normalization did not reject a credential child",
+  );
+
+  assertRejects(
+    () =>
+      validateSdkWriteDiffAllowlist({
+        plannedPaths: m148MultiFilePlannedPaths,
+        postSnapshot: {
+          pathSignatures: {
+            ...Object.fromEntries(
+              m148MultiFilePlannedPaths.map((repoPath) => [repoPath, "created"]),
+            ),
+            "package-lock.json": "changed",
+          },
+        },
+        preSnapshot: {
+          pathSignatures: {
+            "package-lock.json": "before",
+          },
+        },
+        scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+        validationResult: { ok: true },
+      }),
+    "Forbidden path diff detected after sdk-write run:",
+    failures,
+    "M148 multi-file sdk-write post-run contract did not reject package-lock churn",
+  );
+
+  assertRejects(
+    () =>
+      validateSdkWriteDiffAllowlist({
+        plannedPaths: m148MultiFilePlannedPaths,
+        postSnapshot: {
+          pathSignatures: {
+            ...Object.fromEntries(
+              m148MultiFilePlannedPaths.map((repoPath) => [repoPath, "created"]),
+            ),
+            ".git/config": "changed",
+          },
+        },
+        preSnapshot: {
+          pathSignatures: {
+            ".git/config": "before",
+          },
+        },
+        scope: SDK_WRITE_ORCHESTRATOR_SCOPE,
+        validationResult: { ok: true },
+      }),
+    "Forbidden path diff detected after sdk-write run:",
+    failures,
+    "M148 multi-file sdk-write post-run contract did not reject git metadata churn",
   );
 
   assertRejects(

@@ -1,0 +1,117 @@
+{
+  "schema": "sdk-multi-file-planned-operation-contract.v1",
+  "milestone": 148,
+  "artifactDirectory": ".codex-audit/sdk-multi-file-planned-operation",
+  "sourceIterativeReliabilityArtifact": ".codex-audit/sdk-iterative-cmd/147-sdk-iterative-cmd-reliability.json",
+  "sourceProductionReadinessArtifact": ".codex-audit/sdk-production-readiness/146-sdk-production-ready.json",
+  "verdict": {
+    "multiFilePlannedOperationContract": "local-pass",
+    "sdkThreadProofRun": false,
+    "generalSdkWorkflow": "not-production-ready",
+    "reason": "M148 proves local envelope, prompt and post-run allowlist behavior for multiple predeclared orchestrator fixture JSON paths before any real SDKThread multi-file proof. It does not broaden production-code or CEP-panel SDK readiness."
+  },
+  "operation": {
+    "operationId": "m148-multi-file-planned-operation-contract",
+    "scope": "orchestrator",
+    "mode": "sdk-write",
+    "plannedPaths": [
+      "orchestrator/fixtures/sdk-write/m148-multi-file-alpha.json",
+      "orchestrator/fixtures/sdk-write/m148-multi-file-beta.json"
+    ],
+    "localEnvelopeValidation": {
+      "allowed": true,
+      "violations": []
+    },
+    "preThreadOnly": true
+  },
+  "acceptedCases": [
+    {
+      "id": "multi-file-envelope",
+      "contract": "validateOperationEnvelope",
+      "expected": "accepts exactly the two predeclared orchestrator fixture JSON paths"
+    },
+    {
+      "id": "multi-file-prompt",
+      "contract": "createSdkWritePrompt",
+      "expected": "renders every planned path and instructs the SDKThread to write each JSON file"
+    },
+    {
+      "id": "multi-file-post-run-diff",
+      "contract": "validateSdkWriteDiffAllowlist",
+      "expected": "passes only when every planned path is changed and no other path is changed"
+    },
+    {
+      "id": "multi-file-directory-normalization",
+      "contract": "validateSdkWriteDiffAllowlist",
+      "expected": "normalizes a changed parent directory only when every child is an explicitly planned path"
+    }
+  ],
+  "rejectedCases": [
+    {
+      "id": "extra-file-post-run-diff",
+      "contract": "validateSdkWriteDiffAllowlist",
+      "expectedErrorPrefix": "Post-run diff outside orchestrator sdk-write allowlist:"
+    },
+    {
+      "id": "forbidden-planned-env-path",
+      "contract": "validateOperationEnvelope",
+      "expectedErrorPrefix": "Operation envelope plannedPaths include forbidden paths:"
+    },
+    {
+      "id": "unplanned-directory-child",
+      "contract": "validateSdkWriteDiffAllowlist",
+      "expectedErrorPrefix": "Post-run diff outside orchestrator sdk-write allowlist:"
+    },
+    {
+      "id": "env-directory-child",
+      "contract": "validateSdkWriteDiffAllowlist",
+      "expectedErrorPrefix": "Forbidden path diff detected after sdk-write run:"
+    },
+    {
+      "id": "credential-directory-child",
+      "contract": "validateSdkWriteDiffAllowlist",
+      "expectedErrorPrefix": "Forbidden path diff detected after sdk-write run:"
+    },
+    {
+      "id": "package-lock-churn",
+      "contract": "validateSdkWriteDiffAllowlist",
+      "expectedErrorPrefix": "Forbidden path diff detected after sdk-write run:"
+    },
+    {
+      "id": "git-metadata-churn",
+      "contract": "validateSdkWriteDiffAllowlist",
+      "expectedErrorPrefix": "Forbidden path diff detected after sdk-write run:"
+    }
+  ],
+  "safetyBoundary": {
+    "sdkThreadCreated": false,
+    "networkUsed": false,
+    "packageInstallAllowed": false,
+    "gitMutationAllowed": false,
+    "liveCepAeAllowed": false,
+    "secretReadAllowed": false,
+    "autoCommitAllowed": false
+  },
+  "remainingExclusions": [
+    {
+      "id": "real-sdkthread-multi-file-proof",
+      "status": "not-run",
+      "reason": "M148 is a local pre-thread contract gate only."
+    },
+    {
+      "id": "general-sdk-workflow",
+      "status": "not-production-ready",
+      "reason": "M148 does not prove general SDK repo-edit autonomy."
+    },
+    {
+      "id": "broader-production-code-sdk-writes",
+      "status": "not-production-ready",
+      "reason": "Production-code remains limited to scripts/provider-contract-smoke.js."
+    },
+    {
+      "id": "cep-panel-sdk-writes",
+      "status": "not-production-ready",
+      "reason": "CEP-panel SDK writes remain disabled and review-required."
+    }
+  ]
+}

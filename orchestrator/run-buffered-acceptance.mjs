@@ -442,6 +442,8 @@ async function runContractSmoke() {
   );
   const {
     FORBIDDEN_PATH_PATTERNS,
+    SDK_MULTI_FILE_PLANNED_OPERATION_CONTRACT_SCHEMA,
+    SDK_MULTI_FILE_PLANNED_OPERATION_DIRECTORY,
     SDK_LAUNCH_GOVERNANCE_DIRECTORY,
     SDK_LAUNCH_GOVERNANCE_DRIFT_REPORT_SCHEMA,
     SDK_LAUNCH_GOVERNANCE_SCHEMA,
@@ -459,6 +461,7 @@ async function runContractSmoke() {
     SDK_WRITE_LANE_READINESS_STATE,
     SDK_WRITE_ALLOWED_SCOPES,
     SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_PLANNED_PATH_ALLOWLIST,
+    SDK_WRITE_ORCHESTRATOR_MULTI_FILE_CONTRACT_PLANNED_PATHS,
     SDK_WRITE_ORCHESTRATOR_PLANNED_PATH_ALLOWLIST,
     SDK_WRITE_PLANNED_PATH_ALLOWLIST,
     SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST,
@@ -1097,10 +1100,20 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    SDK_WRITE_ORCHESTRATOR_MULTI_FILE_CONTRACT_PLANNED_PATHS.length === 2 &&
+      SDK_WRITE_ORCHESTRATOR_MULTI_FILE_CONTRACT_PLANNED_PATHS.every((repoPath) =>
+        repoPath.startsWith("orchestrator/fixtures/sdk-write/m148-multi-file-"),
+      ),
+    "M148 multi-file planned path contract constants are not the expected orchestrator fixture paths",
+    failures,
+  );
+  assertContract(
     FORBIDDEN_PATH_PATTERNS.includes("node_modules/**") &&
       FORBIDDEN_PATH_PATTERNS.includes(".git/**") &&
       FORBIDDEN_PATH_PATTERNS.includes("mcp-config.json") &&
-      FORBIDDEN_PATH_PATTERNS.includes("**/*.pem"),
+      FORBIDDEN_PATH_PATTERNS.includes("**/*.pem") &&
+      FORBIDDEN_PATH_PATTERNS.includes("**/*credential*") &&
+      FORBIDDEN_PATH_PATTERNS.includes("package-lock.json"),
     "M112 write-capable scaffold forbidden paths are incomplete",
     failures,
   );
@@ -1155,6 +1168,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:multi-file-planned:smoke"] ===
+      "node scripts/sdk-multi-file-planned-operation-smoke.js",
+    "package.json codex:orchestrator:multi-file-planned:smoke script is not wired to the local multi-file planned operation smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1206,6 +1225,14 @@ async function runContractSmoke() {
       readme.includes("147-sdk-iterative-cmd-reliability.json") &&
       readme.includes("sdk-iterative-cmd-reliability-gate.v1"),
     "README does not document the M147 iterative command reliability smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:multi-file-planned:smoke") &&
+      readme.includes("148-sdk-multi-file-planned-operation-contract.json") &&
+      readme.includes(SDK_MULTI_FILE_PLANNED_OPERATION_CONTRACT_SCHEMA) &&
+      readme.includes(SDK_MULTI_FILE_PLANNED_OPERATION_DIRECTORY),
+    "README does not document the M148 multi-file planned operation smoke",
     failures,
   );
   assertContract(
@@ -1320,6 +1347,7 @@ async function runContractSmoke() {
   console.log("SDK governance report parser smoke: pass");
   console.log("SDK launch readiness summary smoke: pass");
   console.log("SDK production readiness smoke: pass");
+  console.log("SDK multi-file planned operation smoke: pass");
   console.log("Write-capable sdk-write diagnostic logging mode: pass");
   console.log("Write-capable sdk runtime fallback mode: pass");
 }
