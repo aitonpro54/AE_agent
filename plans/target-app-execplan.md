@@ -85,6 +85,7 @@
 - [x] Milestone 116: SDK Write Failure Diagnostics.
 - [x] Milestone 117R: SDK Write PlannedPath Generalization.
 - [~] Milestone 118: SDK Docs-Audit Real Write Retry partial; one SDKThread retry created a thread but disconnected before planned output.
+- [x] Milestone 119: SDK Disconnect / Local Permission Diagnostics.
 
 ## Current Stable Baseline
 
@@ -682,6 +683,11 @@
 - Repeat exactly one real docs-audit `sdk-write` retry for `.codex-audit/118-sdk-docs-audit-sdk-thread-output.md`.
 - Record the partial result without a second retry: SDK thread was created, stream disconnected before completion, and the planned output was not created.
 
+### Milestone 119: SDK Disconnect / Local Permission Diagnostics
+
+- Diagnose the M118 SDK stream disconnect and local `.codex/sdk/**` permission failures without creating SDK threads or running network diagnostics.
+- Record local ACL, existence, and write-probe evidence for `.codex/sdk/logs` and `.codex/sdk/operations`.
+
 ## Decision Log
 
 - 2026-05-20: Milestone 114 makes the write-capable dry-run CLI envelope-first. `--dry-run` now requires `--operation-file`, and the envelope supplies `version`, `operationId`, `scope`, `mode`, `prompt`, and `plannedPaths`; M114 supports only `version: 1` and `mode: "dry-run"`.
@@ -691,6 +697,7 @@
 - 2026-05-20: M116 hardens the M115 failure path without another SDKThread write: primary `.codex/sdk/logs` writes are best-effort, fallback diagnostics use `.codex-audit`, and contract smoke simulates EPERM locally.
 - 2026-05-20: M117R removes the M115-only `sdk-write` planned path check; docs-audit `sdk-write` now accepts validated non-empty `.codex-audit/**` planned paths while preserving forbidden path, unsafe shape, and bypass-field rejection.
 - 2026-05-20: M118 ran exactly one real docs-audit `sdk-write` retry; the SDK thread was created but disconnected before completion, primary log write hit EPERM, fallback diagnostics preserved the original SDK error, and no second retry was run.
+- 2026-05-21: M119 confirms no retry was run; `.codex/sdk/logs` exists but a temp write is denied, `.codex/sdk/operations` is absent, and inherited DENY ACLs on `.codex/**` are the likely local cause of Access denied / EPERM.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -873,6 +880,10 @@
   - Precondition gate passed with M115/M116/M117R tags present, clean tracked/staged diff, failed M117 artifacts absent, and M115/M117/M118 planned outputs absent before retry.
   - Exactly one `npm.cmd run codex:orchestrator:write-scaffold -- --operation-file .codex-audit/m118-sdk-docs-audit-real-write-retry-operation.json ...` retry was run; it created SDK thread `019e46a0-303c-7b40-afca-d76be0bcb61c` but failed with `stream disconnected before completion: error sending request for url (https://api.openai.com/v1/responses)`.
   - Planned output `.codex-audit/118-sdk-docs-audit-sdk-thread-output.md` was not created; primary log write failed with EPERM and fallback report `.codex-audit/m118-sdk-docs-audit-real-write-retry-sdk-write-failure-diagnostics.md` was written.
+- Milestone 119:
+  - Committed M118 partial diagnostics as `bab5451` and tagged `sdk-m118-docs-audit-sdk-write-retry-partial`.
+  - Passed local syntax/help/rules checks; no SDKThread retry, network diagnostics, provider validation, package install, production code change, or CEP panel change was performed.
+  - `.codex/sdk/logs` temp write probe failed with Access denied, `.codex/sdk/operations` was missing, and `icacls` showed inherited DENY write/create-child ACLs under `.codex/**`.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.
