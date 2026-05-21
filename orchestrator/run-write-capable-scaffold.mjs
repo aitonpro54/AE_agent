@@ -1686,6 +1686,9 @@ export function createSdkWritePrompt(options) {
     : isOrchestratorWrite
       ? "Markdown output file"
       : "Markdown output file";
+  const outputTitle = isOrchestratorWrite
+    ? "# SDK Orchestrator Output"
+    : "# SDK Docs Audit Output";
   const safetyNote = isOrchestratorFixtureJsonWrite
     ? "Include a safetyNotes array stating that only the planned orchestrator fixture JSON output file was edited by this SDKThread turn."
     : isOrchestratorWrite
@@ -1700,7 +1703,7 @@ export function createSdkWritePrompt(options) {
       `- Create or update exactly the planned ${outputKind} listed below.`,
       "- Do not edit any other file.",
       "- Do not stage, commit, install packages, run validation suites, run live checks, or change source code.",
-      "- Keep the output self-contained and short.",
+      "- Keep the output self-contained and focused on the requested artifact.",
       "- Write valid JSON only. Do not wrap it in Markdown.",
       "",
       `Operation id: ${options.operationEnvelope?.operationId || "(unknown)"}`,
@@ -1739,7 +1742,7 @@ export function createSdkWritePrompt(options) {
     `- Create or update exactly the planned ${outputKind} listed below.`,
     "- Do not edit any other file.",
     "- Do not stage, commit, install packages, run validation suites, run live checks, or change source code.",
-    "- Keep the output self-contained and short.",
+    "- Keep the output self-contained and focused on the requested artifact.",
     "",
     `Operation id: ${options.operationEnvelope?.operationId || "(unknown)"}`,
     `Scope: ${options.scope}`,
@@ -2345,6 +2348,44 @@ export function runWriteCapableContractSmoke() {
       failures,
     );
   }
+
+  const docsAuditSdkWritePrompt = createSdkWritePrompt({
+    ...validSdkWriteEnvelope,
+    operationEnvelope: validSdkWriteEnvelope,
+    sdkWrite: true,
+  });
+  assertContract(
+    docsAuditSdkWritePrompt.includes("# SDK Docs Audit Output") &&
+      docsAuditSdkWritePrompt.includes("State that only the planned docs-audit output file"),
+    "docs-audit sdk-write Markdown prompt did not render its output title",
+    failures,
+  );
+
+  const orchestratorMarkdownSdkWritePrompt = createSdkWritePrompt({
+    ...validOrchestratorSdkWriteEnvelope,
+    operationEnvelope: validOrchestratorSdkWriteEnvelope,
+    sdkWrite: true,
+  });
+  assertContract(
+    orchestratorMarkdownSdkWritePrompt.includes("# SDK Orchestrator Output") &&
+      orchestratorMarkdownSdkWritePrompt.includes(
+        "State that only the planned orchestrator Markdown output file",
+      ),
+    "orchestrator sdk-write Markdown prompt did not render its output title",
+    failures,
+  );
+
+  const orchestratorFixtureSdkWritePrompt = createSdkWritePrompt({
+    ...validOrchestratorFixtureSdkWriteEnvelope,
+    operationEnvelope: validOrchestratorFixtureSdkWriteEnvelope,
+    sdkWrite: true,
+  });
+  assertContract(
+    orchestratorFixtureSdkWritePrompt.includes('"result": "created-by-sdk-thread"') &&
+      orchestratorFixtureSdkWritePrompt.includes("Write valid JSON only"),
+    "orchestrator fixture sdk-write JSON prompt did not render its JSON structure",
+    failures,
+  );
 
   const syntheticSdkError = new Error("synthetic original SDK failure preserved");
   syntheticSdkError.code = "SYNTHETIC_SDK_FAILURE";
