@@ -214,6 +214,12 @@ M152 records the bounded two-file production-code provider smoke proof in `.code
 npm.cmd run codex:orchestrator:production-code-broader:smoke
 ```
 
+M153 records the next SDK lane selection in `.codex-audit/sdk-next-lane/153-sdk-next-lane-selection.json` with schema `sdk-next-lane-selection.v1`. It selects `cep-panel-composer-local-preflight` as the next candidate direction only; it keeps CEP-panel SDK writes disabled, creates no SDKThread/network approval, and requires a separate explicit approval before any CEP-panel enablement or proof.
+
+```powershell
+npm.cmd run codex:orchestrator:next-lane:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.

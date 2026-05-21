@@ -1,0 +1,69 @@
+{
+  "schema": "sdk-next-lane-selection.v1",
+  "milestone": 153,
+  "sourceCurrentReadiness": ".codex-audit/sdk-production-readiness/152-sdk-production-code-provider-smokes-ready.json",
+  "sourceCurrentGovernance": ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
+  "sourceCandidateReviewPacket": ".codex-audit/sdk-scope-expansion-reviews/132-cep-panel-composer-review.json",
+  "currentProductionReadyClaim": {
+    "scope": "production-code",
+    "status": "production-ready",
+    "plannedPathAllowlist": [
+      "scripts/provider-api-smoke.js",
+      "scripts/provider-contract-smoke.js"
+    ]
+  },
+  "selectedNextLane": {
+    "id": "cep-panel-composer-local-preflight",
+    "scope": "cep-panel",
+    "status": "candidate-only",
+    "sdkWriteEnabled": false,
+    "plannedPathAllowlist": [
+      "cep-panel/panel.js"
+    ],
+    "reason": "The target application is a CEP panel, and the existing M132 review packet already names a narrow composer-control maintenance path. M153 selects it only as the next reviewable SDK direction; it does not enable CEP-panel SDK writes or approve a new SDKThread/network proof."
+  },
+  "notApprovedByThisMilestone": [
+    "new SDKThread/network proof",
+    "cep-panel SDK write enablement",
+    "production-code writes outside scripts/provider-api-smoke.js and scripts/provider-contract-smoke.js",
+    "external-provider/OpenAI CLI planner validation",
+    "live CEP/After Effects validation",
+    "mutating-live validation",
+    "package install or dependency changes",
+    "general SDK autopilot repo edits"
+  ],
+  "requiredBeforeEnablement": [
+    "Create or refresh a CEP-panel lane readiness packet that still has sdkWriteEnabled:false.",
+    "Record explicit user approval naming the exact CEP-panel planned path set.",
+    "Add an approval-decision packet and only then an enablement packet if the approval is granted.",
+    "Update launch governance only after enablement, while keeping production-code and CEP-panel claims separate.",
+    "Prove locally that sdk-write rejects any CEP-panel path outside the exact planned allowlist before SDKThread creation.",
+    "Run node --check for every touched JavaScript file and npm.cmd run check:rules.",
+    "Run live CEP validation only as a separate explicitly approved validation milestone when After Effects and the panel are available."
+  ],
+  "recommendedNextMilestone": {
+    "id": "M154",
+    "title": "CEP-panel SDK Lane Local Preflight",
+    "allowedWork": [
+      "read the M132 proposed CEP-panel review packet",
+      "create a CEP-panel readiness packet with sdkWriteEnabled:false",
+      "add local contract coverage that keeps CEP-panel disabled until explicit approval",
+      "document exact approval text required for any later proof"
+    ],
+    "forbiddenWithoutFreshApproval": [
+      "run SDKThread/network proof",
+      "enable CEP-panel sdk-write",
+      "edit cep-panel/panel.js through SDK",
+      "run live CEP/AE validation",
+      "run external-provider/OpenAI CLI planner validation",
+      "run mutating-live validation",
+      "install packages or change dependencies"
+    ]
+  },
+  "validationPlan": [
+    "Run node --check scripts/sdk-next-lane-selection-smoke.js.",
+    "Run npm.cmd run codex:orchestrator:next-lane:smoke.",
+    "Run npm.cmd run check:rules.",
+    "Run git diff --check."
+  ]
+}

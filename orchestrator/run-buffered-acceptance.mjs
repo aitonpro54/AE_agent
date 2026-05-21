@@ -924,6 +924,15 @@ async function runContractSmoke() {
     `M152 SDK production-code broader readiness smoke failed: ${productionCodeBroaderOutput.trim()}`,
     failures,
   );
+  const nextLaneSmoke = runNode([
+    path.join("scripts", "sdk-next-lane-selection-smoke.js"),
+  ]);
+  const nextLaneOutput = `${nextLaneSmoke.stdout ?? ""}\n${nextLaneSmoke.stderr ?? ""}`;
+  assertContract(
+    nextLaneSmoke.status === 0 && nextLaneOutput.includes("SDK next-lane selection smoke: pass"),
+    `M153 SDK next-lane selection smoke failed: ${nextLaneOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1339,6 +1348,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:next-lane:smoke"] ===
+      "node scripts/sdk-next-lane-selection-smoke.js",
+    "package.json codex:orchestrator:next-lane:smoke script is not wired to the M153 next-lane selection smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1431,6 +1446,14 @@ async function runContractSmoke() {
       readme.includes("sdk-production-code-broader-readiness.v1") &&
       readme.includes("scripts/provider-api-smoke.js"),
     "README does not document the M152 production-code broader readiness smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:next-lane:smoke") &&
+      readme.includes("153-sdk-next-lane-selection.json") &&
+      readme.includes("sdk-next-lane-selection.v1") &&
+      readme.includes("cep-panel-composer-local-preflight"),
+    "README does not document the M153 SDK next-lane selection smoke",
     failures,
   );
   assertContract(
