@@ -139,6 +139,7 @@ async function main() {
     assert.strictEqual(openAiApi.providerGroup, "openai");
     assert.strictEqual(openAiApi.authMode, "api");
     assert.strictEqual(openAiApi.transport, "openai-chat-completions");
+    assert.deepStrictEqual(openAiApi.uiModes, ["api"]);
     assert.strictEqual(openAiApi.requiresApiKey, true);
     assert.strictEqual(openAiApi.canSaveKey, true);
     assert.strictEqual(openAiApi.setupAction, "save_api_key");

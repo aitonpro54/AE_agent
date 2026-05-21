@@ -403,11 +403,11 @@ async function buildCommittedSdkLaunchGovernanceReport() {
   } = await import("./run-write-capable-scaffold.mjs");
   const launchGovernancePacketPath = path.posix.join(
     SDK_LAUNCH_GOVERNANCE_DIRECTORY,
-    "140-sdk-launch-governance.json",
+    "152-sdk-production-code-provider-smokes-governance.json",
   );
   const productionLaneEnablementPacketPath = path.posix.join(
     SDK_WRITE_LANE_ENABLEMENT_DIRECTORY,
-    "135-production-code-smoke-harness-enable.json",
+    "152-production-code-provider-smokes-enable.json",
   );
   const launchGovernancePacket = JSON.parse(
     fs.readFileSync(path.join(repo, launchGovernancePacketPath), "utf8"),
@@ -464,6 +464,7 @@ async function runContractSmoke() {
     SDK_WRITE_ORCHESTRATOR_MULTI_FILE_CONTRACT_PLANNED_PATHS,
     SDK_WRITE_ORCHESTRATOR_PLANNED_PATH_ALLOWLIST,
     SDK_WRITE_PLANNED_PATH_ALLOWLIST,
+    SDK_WRITE_PRODUCTION_CODE_LEGACY_SINGLE_FILE_PLANNED_PATH_ALLOWLIST,
     SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST,
     SDK_WRITE_PRODUCTION_CODE_SCOPE,
     SDK_WRITE_REVIEW_REQUIRED_SCOPES,
@@ -911,6 +912,18 @@ async function runContractSmoke() {
     `M151 SDK boundary closeout smoke failed: ${boundaryCloseoutOutput.trim()}`,
     failures,
   );
+  const productionCodeBroaderSmoke = runNode([
+    path.join("scripts", "sdk-production-code-broader-readiness-smoke.js"),
+  ]);
+  const productionCodeBroaderOutput = `${productionCodeBroaderSmoke.stdout ?? ""}\n${
+    productionCodeBroaderSmoke.stderr ?? ""
+  }`;
+  assertContract(
+    productionCodeBroaderSmoke.status === 0 &&
+      productionCodeBroaderOutput.includes("SDK production-code broader readiness smoke: pass"),
+    `M152 SDK production-code broader readiness smoke failed: ${productionCodeBroaderOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -945,6 +958,20 @@ async function runContractSmoke() {
     "M132 CEP-panel SDK scope expansion review packet was not validated",
     failures,
   );
+  const m152ReviewPacket = reviewPacketFiles.packets.find(
+    (packet) =>
+      packet.path ===
+      `${SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY}/152-production-code-provider-smokes-review.json`,
+  );
+  assertContract(
+    m152ReviewPacket?.decision === "approved" &&
+      m152ReviewPacket?.scope === "production-code" &&
+      m152ReviewPacket?.sdkWriteEnabled === false &&
+      m152ReviewPacket?.plannedPathAllowlist?.join(",") ===
+        SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(","),
+    "M152 production-code provider smokes review packet was not validated",
+    failures,
+  );
 
   const readinessPacketFiles = collectSdkWriteLaneReadinessPackets(
     SDK_WRITE_LANE_READINESS_DIRECTORY,
@@ -968,6 +995,22 @@ async function runContractSmoke() {
         firstReviewPacket?.plannedPathAllowlist?.join(",") &&
       productionLaneReadiness?.plannedPathAllowlist?.includes("scripts/provider-contract-smoke.js"),
     "M133 production-code SDK write lane readiness gate was not validated against M129",
+    failures,
+  );
+  const m152ProductionLaneReadiness = readinessPacketFiles.packets.find(
+    (packet) =>
+      packet.path ===
+      `${SDK_WRITE_LANE_READINESS_DIRECTORY}/152-production-code-provider-smokes-readiness.json`,
+  );
+  assertContract(
+    m152ProductionLaneReadiness?.readiness === SDK_WRITE_LANE_READINESS_STATE &&
+      m152ProductionLaneReadiness?.approvalState === SDK_WRITE_LANE_APPROVAL_STATE &&
+      m152ProductionLaneReadiness?.scope === "production-code" &&
+      m152ProductionLaneReadiness?.sdkWriteEnabled === false &&
+      m152ProductionLaneReadiness?.sourceReviewPacket === m152ReviewPacket?.path &&
+      m152ProductionLaneReadiness?.plannedPathAllowlist?.join(",") ===
+        SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(","),
+    "M152 production-code SDK write lane readiness gate was not validated against its review packet",
     failures,
   );
   const approvalDecisionPacketFiles = collectSdkWriteLaneApprovalDecisionPackets(
@@ -1001,6 +1044,25 @@ async function runContractSmoke() {
     "M134 production-code SDK write lane approval decision did not remain pending against M133/M129",
     failures,
   );
+  const m152ProductionLaneApprovalDecision = approvalDecisionPacketFiles.packets.find(
+    (packet) =>
+      packet.path ===
+      `${SDK_WRITE_LANE_APPROVAL_DECISION_DIRECTORY}/152-production-code-provider-smokes-approval-decision.json`,
+  );
+  assertContract(
+    m152ProductionLaneApprovalDecision?.approvalState ===
+      SDK_WRITE_LANE_ENABLEMENT_APPROVAL_STATE &&
+      m152ProductionLaneApprovalDecision?.explicitApprovalRecorded === true &&
+      m152ProductionLaneApprovalDecision?.scope === "production-code" &&
+      m152ProductionLaneApprovalDecision?.sdkWriteEnabled === false &&
+      m152ProductionLaneApprovalDecision?.sourceReadinessPacket ===
+        m152ProductionLaneReadiness?.path &&
+      m152ProductionLaneApprovalDecision?.sourceReviewPacket === m152ReviewPacket?.path &&
+      m152ProductionLaneApprovalDecision?.plannedPathAllowlist?.join(",") ===
+        SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(","),
+    "M152 production-code SDK write lane approval decision did not record the explicit approval",
+    failures,
+  );
   const enablementPacketFiles = collectSdkWriteLaneEnablementPackets(
     SDK_WRITE_LANE_ENABLEMENT_DIRECTORY,
     validateSdkWriteLaneEnablementPacket,
@@ -1023,10 +1085,30 @@ async function runContractSmoke() {
       productionLaneEnablement?.sourceReadinessPacket === productionLaneReadiness?.path &&
       productionLaneEnablement?.sourceReviewPacket === firstReviewPacket?.path &&
       productionLaneEnablement?.plannedPathAllowlist?.join(",") ===
-        SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(",") &&
+        SDK_WRITE_PRODUCTION_CODE_LEGACY_SINGLE_FILE_PLANNED_PATH_ALLOWLIST.join(",") &&
       productionLaneEnablement?.plannedPathAllowlist?.join(",") ===
         productionLaneReadiness?.plannedPathAllowlist?.join(","),
     "M135 production-code SDK write lane enablement did not remain narrow against M134/M133/M129",
+    failures,
+  );
+  const m152ProductionLaneEnablement = enablementPacketFiles.packets.find(
+    (packet) =>
+      packet.path ===
+      `${SDK_WRITE_LANE_ENABLEMENT_DIRECTORY}/152-production-code-provider-smokes-enable.json`,
+  );
+  assertContract(
+    m152ProductionLaneEnablement?.approvalState === SDK_WRITE_LANE_ENABLEMENT_APPROVAL_STATE &&
+      m152ProductionLaneEnablement?.explicitApprovalRecorded === true &&
+      m152ProductionLaneEnablement?.scope === SDK_WRITE_PRODUCTION_CODE_SCOPE &&
+      m152ProductionLaneEnablement?.sdkWriteEnabled === true &&
+      m152ProductionLaneEnablement?.sourceApprovalDecisionPacket ===
+        m152ProductionLaneApprovalDecision?.path &&
+      m152ProductionLaneEnablement?.sourceReadinessPacket ===
+        m152ProductionLaneReadiness?.path &&
+      m152ProductionLaneEnablement?.sourceReviewPacket === m152ReviewPacket?.path &&
+      m152ProductionLaneEnablement?.plannedPathAllowlist?.join(",") ===
+        SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(","),
+    "M152 production-code SDK write lane enablement did not become the current two-file lane",
     failures,
   );
 
@@ -1047,7 +1129,7 @@ async function runContractSmoke() {
       sdkLaunchGovernance?.reviewRequiredScopes?.join(",") ===
         SDK_WRITE_REVIEW_REQUIRED_SCOPES.join(",") &&
       sdkLaunchGovernance?.productionCodePlannedPathAllowlist?.join(",") ===
-        SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(",") &&
+        SDK_WRITE_PRODUCTION_CODE_LEGACY_SINGLE_FILE_PLANNED_PATH_ALLOWLIST.join(",") &&
       sdkLaunchGovernance?.sourceMilestones?.includes("M138") &&
       sdkLaunchGovernance?.sourceMilestones?.includes("M139") &&
       sdkLaunchGovernance?.newSdkThreadRunApproved === false &&
@@ -1057,13 +1139,34 @@ async function runContractSmoke() {
     "M140 SDK launch governance did not keep launch state local-gated and narrow",
     failures,
   );
+  const m152SdkLaunchGovernance = launchGovernancePacketFiles.packets.find(
+    (packet) =>
+      packet.path ===
+      `${SDK_LAUNCH_GOVERNANCE_DIRECTORY}/152-sdk-production-code-provider-smokes-governance.json`,
+  );
+  assertContract(
+    m152SdkLaunchGovernance?.state === SDK_LAUNCH_GOVERNANCE_STATE &&
+      m152SdkLaunchGovernance?.allowedSdkWriteScopes?.join(",") ===
+        SDK_WRITE_ALLOWED_SCOPES.join(",") &&
+      m152SdkLaunchGovernance?.reviewRequiredScopes?.join(",") ===
+        SDK_WRITE_REVIEW_REQUIRED_SCOPES.join(",") &&
+      m152SdkLaunchGovernance?.productionCodePlannedPathAllowlist?.join(",") ===
+        SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(",") &&
+      m152SdkLaunchGovernance?.sourceMilestones?.includes("M152") &&
+      m152SdkLaunchGovernance?.newSdkThreadRunApproved === false &&
+      m152SdkLaunchGovernance?.externalNetworkRetryApproved === false &&
+      m152SdkLaunchGovernance?.broadProductionCodeWritesApproved === false &&
+      m152SdkLaunchGovernance?.cepPanelSdkWriteEnabled === false,
+    "M152 SDK launch governance did not keep the current two-file production-code lane local-gated",
+    failures,
+  );
 
   let launchGovernanceDriftReport = null;
-  if (sdkLaunchGovernance?.rawPacket && productionLaneEnablement?.rawPacket) {
+  if (m152SdkLaunchGovernance?.rawPacket && m152ProductionLaneEnablement?.rawPacket) {
     try {
       launchGovernanceDriftReport = buildSdkLaunchGovernanceDriftReport({
-        launchGovernancePacket: sdkLaunchGovernance.rawPacket,
-        productionLaneEnablementPacket: productionLaneEnablement.rawPacket,
+        launchGovernancePacket: m152SdkLaunchGovernance.rawPacket,
+        productionLaneEnablementPacket: m152ProductionLaneEnablement.rawPacket,
       });
     } catch (error) {
       failures.push(`M141 SDK launch governance drift report failed: ${error.message}`);
@@ -1089,9 +1192,9 @@ async function runContractSmoke() {
         SDK_LAUNCH_GOVERNANCE_STATE &&
       onDemandLaunchGovernanceReport?.driftDetected === false &&
       onDemandLaunchGovernanceReport?.launchGovernancePacketPath ===
-        `${SDK_LAUNCH_GOVERNANCE_DIRECTORY}/140-sdk-launch-governance.json` &&
+        `${SDK_LAUNCH_GOVERNANCE_DIRECTORY}/152-sdk-production-code-provider-smokes-governance.json` &&
       onDemandLaunchGovernanceReport?.productionLaneEnablementPacketPath ===
-        `${SDK_WRITE_LANE_ENABLEMENT_DIRECTORY}/135-production-code-smoke-harness-enable.json`,
+        `${SDK_WRITE_LANE_ENABLEMENT_DIRECTORY}/152-production-code-provider-smokes-enable.json`,
     "M142 SDK launch governance report command did not return the committed local-gated report",
     failures,
   );
@@ -1128,10 +1231,12 @@ async function runContractSmoke() {
   assertContract(
     SDK_WRITE_ALLOWED_SCOPES.join(",") === "docs-audit,orchestrator,production-code" &&
       SDK_WRITE_ORCHESTRATOR_PLANNED_PATH_ALLOWLIST.join(",") === "orchestrator/**" &&
-      SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_PLANNED_PATH_ALLOWLIST.join(",") ===
+    SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_PLANNED_PATH_ALLOWLIST.join(",") ===
         "orchestrator/fixtures/sdk-write/**" &&
+      SDK_WRITE_PRODUCTION_CODE_LEGACY_SINGLE_FILE_PLANNED_PATH_ALLOWLIST.join(",") ===
+        "scripts/provider-contract-smoke.js" &&
       SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(",") ===
-        "scripts/provider-contract-smoke.js",
+        "scripts/provider-api-smoke.js,scripts/provider-contract-smoke.js",
     "M135 sdk-write scope allowlists are not restricted to controlled outputs",
     failures,
   );
@@ -1228,6 +1333,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:production-code-broader:smoke"] ===
+      "node scripts/sdk-production-code-broader-readiness-smoke.js",
+    "package.json codex:orchestrator:production-code-broader:smoke script is not wired to the M152 production-code broader readiness smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1312,6 +1423,14 @@ async function runContractSmoke() {
       readme.includes("sdk-boundary-closeout.v1") &&
       readme.includes("push-branch-after-closeout-commit"),
     "README does not document the M151 boundary closeout smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:production-code-broader:smoke") &&
+      readme.includes("152-sdk-production-code-provider-smokes-ready.json") &&
+      readme.includes("sdk-production-code-broader-readiness.v1") &&
+      readme.includes("scripts/provider-api-smoke.js"),
+    "README does not document the M152 production-code broader readiness smoke",
     failures,
   );
   assertContract(

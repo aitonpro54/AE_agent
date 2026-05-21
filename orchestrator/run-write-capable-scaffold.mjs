@@ -196,7 +196,11 @@ export const SDK_WRITE_ORCHESTRATOR_PLANNED_PATH_ALLOWLIST = Object.freeze([
 export const SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_PLANNED_PATH_ALLOWLIST = Object.freeze([
   "orchestrator/fixtures/sdk-write/**",
 ]);
+export const SDK_WRITE_PRODUCTION_CODE_LEGACY_SINGLE_FILE_PLANNED_PATH_ALLOWLIST = Object.freeze([
+  "scripts/provider-contract-smoke.js",
+]);
 export const SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST = Object.freeze([
+  "scripts/provider-api-smoke.js",
   "scripts/provider-contract-smoke.js",
 ]);
 export const SDK_WRITE_SCOPE_PLANNED_PATH_ALLOWLISTS = Object.freeze({
@@ -882,15 +886,15 @@ export function validateSdkWriteLaneApprovalDecisionPacket(packet) {
     );
   }
 
-  if (packet.approvalState !== SDK_WRITE_LANE_APPROVAL_STATE) {
+  const isPendingApprovalDecision =
+    packet.approvalState === SDK_WRITE_LANE_APPROVAL_STATE &&
+    packet.explicitApprovalRecorded === false;
+  const isApprovedApprovalDecision =
+    packet.approvalState === SDK_WRITE_LANE_ENABLEMENT_APPROVAL_STATE &&
+    packet.explicitApprovalRecorded === true;
+  if (!isPendingApprovalDecision && !isApprovedApprovalDecision) {
     throw new Error(
-      `SDK write lane approval decision approvalState must be ${SDK_WRITE_LANE_APPROVAL_STATE}.`,
-    );
-  }
-
-  if (packet.explicitApprovalRecorded !== false) {
-    throw new Error(
-      "SDK write lane approval decision must keep explicitApprovalRecorded:false.",
+      "SDK write lane approval decision must be pending-explicit-approval with explicitApprovalRecorded:false or approved with explicitApprovalRecorded:true.",
     );
   }
 
@@ -982,14 +986,21 @@ export function validateSdkWriteLaneApprovalDecisionPacket(packet) {
     throw new Error("Missing SDK write lane approval decision nextAllowedAction.");
   }
 
+  const approvalRecord =
+    typeof packet.approvalRecord === "string" ? packet.approvalRecord.trim() : "";
+  if (isApprovedApprovalDecision && approvalRecord === "") {
+    throw new Error("Missing SDK write lane approval decision approvalRecord.");
+  }
+
   if (typeof packet.rollbackPlan !== "string" || packet.rollbackPlan.trim() === "") {
     throw new Error("Missing SDK write lane approval decision rollbackPlan.");
   }
 
   return {
     approvalState: packet.approvalState,
+    approvalRecord,
     decisionEvidence: packet.decisionEvidence.map((item) => item.trim()),
-    explicitApprovalRecorded: false,
+    explicitApprovalRecorded: packet.explicitApprovalRecorded,
     nextAllowedAction: packet.nextAllowedAction.trim(),
     plannedPathAllowlist,
     plannedPathCheck,
@@ -1105,12 +1116,9 @@ export function validateSdkWriteLaneEnablementPacket(packet) {
     throw new Error("SDK write lane enablement plannedPathAllowlist contains an empty path.");
   }
 
-  if (
-    plannedPathAllowlist.join(",") !==
-    SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(",")
-  ) {
+  if (!isApprovedProductionCodePlannedPathAllowlist(plannedPathAllowlist)) {
     throw new Error(
-      `SDK write lane enablement plannedPathAllowlist must be exactly ${SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(",")}.`,
+      `SDK write lane enablement plannedPathAllowlist must match an approved production-code allowlist: ${approvedProductionCodeAllowlistSummary()}.`,
     );
   }
 
@@ -1234,12 +1242,9 @@ export function validateSdkLaunchGovernancePacket(packet) {
     packet.productionCodePlannedPathAllowlist,
     "SDK launch governance productionCodePlannedPathAllowlist",
   ).map(normalizeRepoPath);
-  if (
-    productionCodePlannedPathAllowlist.join(",") !==
-    SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(",")
-  ) {
+  if (!isApprovedProductionCodePlannedPathAllowlist(productionCodePlannedPathAllowlist)) {
     throw new Error(
-      `SDK launch governance productionCodePlannedPathAllowlist must be exactly ${SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(",")}.`,
+      `SDK launch governance productionCodePlannedPathAllowlist must match an approved production-code allowlist: ${approvedProductionCodeAllowlistSummary()}.`,
     );
   }
 
@@ -1292,6 +1297,22 @@ export function validateSdkLaunchGovernancePacket(packet) {
 
 function listEquals(left, right) {
   return Array.isArray(left) && Array.isArray(right) && left.join(",") === right.join(",");
+}
+
+function isApprovedProductionCodePlannedPathAllowlist(plannedPathAllowlist) {
+  return [
+    SDK_WRITE_PRODUCTION_CODE_LEGACY_SINGLE_FILE_PLANNED_PATH_ALLOWLIST,
+    SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST,
+  ].some((approvedAllowlist) => listEquals(plannedPathAllowlist, approvedAllowlist));
+}
+
+function approvedProductionCodeAllowlistSummary() {
+  return [
+    SDK_WRITE_PRODUCTION_CODE_LEGACY_SINGLE_FILE_PLANNED_PATH_ALLOWLIST,
+    SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST,
+  ]
+    .map((approvedAllowlist) => approvedAllowlist.join(","))
+    .join(" or ");
 }
 
 function createDriftCheck(id, ok, actual, expected) {
@@ -2497,7 +2518,7 @@ export function createSdkWritePrompt(options) {
     : isOrchestratorWrite
       ? "orchestrator docs-only writer"
       : isProductionCodeWrite
-        ? "production-code provider contract smoke maintainer"
+        ? "production-code provider smoke maintainer"
         : "docs-audit writer";
   const outputKind = isOrchestratorFixtureJsonWrite
       ? "JSON fixture output file"
@@ -2574,7 +2595,7 @@ export function createSdkWritePrompt(options) {
       `- Update exactly the planned ${plannedOutputKind} listed below.`,
       "- Do not edit any other file.",
       "- Do not stage, commit, install packages, run validation suites, run live checks, or change unrelated source code.",
-      "- Keep the change minimal, CommonJS-compatible, and focused on the requested provider contract smoke maintenance.",
+      "- Keep the change minimal, CommonJS-compatible, and focused on the requested provider smoke maintenance.",
       "",
       `Operation id: ${options.operationEnvelope?.operationId || "(unknown)"}`,
       `Scope: ${options.scope}`,
@@ -2584,7 +2605,7 @@ export function createSdkWritePrompt(options) {
       ...plannedPaths.map((repoPath) => `- ${repoPath}`),
       "",
       "Safety note requirement:",
-      "State that only the planned provider contract smoke source file was edited by this SDKThread turn.",
+      "State that only the planned provider smoke source path set was edited by this SDKThread turn.",
       "",
       "User operation prompt:",
       options.prompt,
@@ -3647,23 +3668,24 @@ export function runWriteCapableContractSmoke() {
     sdkWrite: true,
   });
   assertContract(
-    productionCodeSdkPrompt.includes("production-code provider contract smoke maintainer") &&
-      productionCodeSdkPrompt.includes("Update exactly the planned existing production-code source file") &&
+    productionCodeSdkPrompt.includes("production-code provider smoke maintainer") &&
+      productionCodeSdkPrompt.includes("Update exactly the planned existing production-code source files") &&
       productionCodeSdkPrompt.includes("scripts/provider-contract-smoke.js") &&
+      productionCodeSdkPrompt.includes("scripts/provider-api-smoke.js") &&
       !productionCodeSdkPrompt.includes("# SDK Docs Audit Output"),
     "production-code sdk-write prompt did not use source-update constraints",
     failures,
   );
 
   const productionPrecondition = validateSdkWritePlannedPathPrecondition({
-    pathExists: (repoPath) => repoPath === "scripts/provider-contract-smoke.js",
+    pathExists: (repoPath) => SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.includes(repoPath),
     plannedPaths: SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST,
     scope: SDK_WRITE_PRODUCTION_CODE_SCOPE,
   });
   assertContract(
     productionPrecondition.mode === "existing-source-update" &&
       productionPrecondition.existingPlannedPaths.join(",") ===
-        "scripts/provider-contract-smoke.js",
+        SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(","),
     "production-code sdk-write precondition did not require an existing source file",
     failures,
   );
@@ -3945,13 +3967,13 @@ export function runWriteCapableContractSmoke() {
   const laneApprovalDecisionRejectedCases = [
     {
       expectedMessageStart:
-        "SDK write lane approval decision must keep explicitApprovalRecorded:false.",
+        "SDK write lane approval decision must be pending-explicit-approval with explicitApprovalRecorded:false or approved with explicitApprovalRecorded:true.",
       label: "SDK write lane approval decision accepted explicitApprovalRecorded:true",
       patch: { explicitApprovalRecorded: true },
     },
     {
       expectedMessageStart:
-        "SDK write lane approval decision approvalState must be pending-explicit-approval.",
+        "SDK write lane approval decision must be pending-explicit-approval with explicitApprovalRecorded:false or approved with explicitApprovalRecorded:true.",
       label: "SDK write lane approval decision accepted an approved state",
       patch: { approvalState: "approved" },
     },
@@ -4051,13 +4073,13 @@ export function runWriteCapableContractSmoke() {
     },
     {
       expectedMessageStart:
-        "SDK write lane enablement plannedPathAllowlist must be exactly scripts/provider-contract-smoke.js.",
+        "SDK write lane enablement plannedPathAllowlist must match an approved production-code allowlist:",
       label: "SDK write lane enablement accepted a broadened scripts allowlist",
       patch: { plannedPathAllowlist: ["scripts/**"] },
     },
     {
       expectedMessageStart:
-        "SDK write lane enablement plannedPathAllowlist must be exactly scripts/provider-contract-smoke.js.",
+        "SDK write lane enablement plannedPathAllowlist must match an approved production-code allowlist:",
       label: "SDK write lane enablement accepted an unapproved production script",
       patch: { plannedPathAllowlist: ["scripts/smoke-test.js"] },
     },
@@ -4134,7 +4156,7 @@ export function runWriteCapableContractSmoke() {
     },
     {
       expectedMessageStart:
-        "SDK launch governance productionCodePlannedPathAllowlist must be exactly scripts/provider-contract-smoke.js.",
+        "SDK launch governance productionCodePlannedPathAllowlist must match an approved production-code allowlist:",
       label: "SDK launch governance packet accepted a broadened production-code allowlist",
       patch: { productionCodePlannedPathAllowlist: ["scripts/**"] },
     },
@@ -4215,7 +4237,7 @@ export function runWriteCapableContractSmoke() {
           plannedPathAllowlist: ["scripts/smoke-test.js"],
         },
       }),
-    "SDK write lane enablement plannedPathAllowlist must be exactly scripts/provider-contract-smoke.js.",
+    "SDK write lane enablement plannedPathAllowlist must match an approved production-code allowlist:",
     failures,
     "SDK launch governance drift report accepted an enablement allowlist mismatch",
   );
@@ -4783,11 +4805,13 @@ export function runWriteCapableContractSmoke() {
     postSnapshot: {
       pathSignatures: {
         "scripts/provider-contract-smoke.js": "changed",
+        "scripts/provider-api-smoke.js": "changed",
       },
     },
     preSnapshot: {
       pathSignatures: {
         "scripts/provider-contract-smoke.js": "before",
+        "scripts/provider-api-smoke.js": "before",
       },
     },
     scope: SDK_WRITE_PRODUCTION_CODE_SCOPE,
@@ -4797,8 +4821,8 @@ export function runWriteCapableContractSmoke() {
   assertContract(
     productionCodeSdkWritePostContract.verdict === "pass" &&
       productionCodeSdkWritePostContract.actualChangedFiles.join(",") ===
-        "scripts/provider-contract-smoke.js",
-    "sdk-write post-run allowlist did not accept the planned production-code source path",
+        SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST.join(","),
+    "sdk-write post-run allowlist did not accept the planned production-code source paths",
     failures,
   );
 

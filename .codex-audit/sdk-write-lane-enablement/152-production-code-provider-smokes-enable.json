@@ -1,0 +1,24 @@
+{
+  "schema": "sdk-write-lane-enablement.v1",
+  "approvalState": "approved",
+  "explicitApprovalRecorded": true,
+  "scope": "production-code",
+  "sdkWriteEnabled": true,
+  "sourceApprovalDecisionPacket": ".codex-audit/sdk-write-lane-approval-decisions/152-production-code-provider-smokes-approval-decision.json",
+  "sourceReadinessPacket": ".codex-audit/sdk-write-lane-readiness/152-production-code-provider-smokes-readiness.json",
+  "sourceReviewPacket": ".codex-audit/sdk-scope-expansion-reviews/152-production-code-provider-smokes-review.json",
+  "summary": "Enable the M152 production-code SDK write lane only for the two provider smoke files.",
+  "plannedPathAllowlist": [
+    "scripts/provider-api-smoke.js",
+    "scripts/provider-contract-smoke.js"
+  ],
+  "approvalRecord": "User explicitly approved M152 for only scripts/provider-contract-smoke.js and scripts/provider-api-smoke.js, including one bounded SDKThread proof and excluding CEP-panel, external-provider/OpenAI CLI planner, live CEP/AE, mutating-live and dependency changes.",
+  "enablementChecks": [
+    "Run node --check scripts/provider-api-smoke.js and node --check scripts/provider-contract-smoke.js before claiming M152 stable.",
+    "Run node --check orchestrator/run-write-capable-scaffold.mjs and node --check orchestrator/run-buffered-acceptance.mjs after local contract changes.",
+    "Run npm.cmd run codex:orchestrator:write-scaffold:contract to prove the M152 allowlist is exact.",
+    "Run npm.cmd run codex:orchestrator:production-code-broader:smoke after recording the bounded proof.",
+    "Run npm.cmd run check:rules and the configured local smoke suite."
+  ],
+  "rollbackPlan": "Revert SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST to the M135/M146 single-file lane and remove or supersede the M152 audit packets if the proof does not pass cleanly."
+}

@@ -83,7 +83,7 @@ Envelope file must live inside the repo and is validated before any possible SDK
 
 Envelope dry-run reports `sdkThreadCreated:false`, `realWriteWork:false`, and `autoCommit:false`. Planned paths outside the active scope allowlist or inside forbidden paths are rejected without touching the working tree.
 
-`sdk-write` uses the same operation envelope and is accepted only for enabled scope-specific lanes with `mode:"sdk-write"`. M117R generalizes docs-audit planned outputs from the original M115 single-file allowlist to any non-empty `plannedPaths` set under `.codex-audit/**`, after the same unsafe path shape checks, forbidden path checks, and docs-audit scope allowlist validation. M123 adds the first orchestrator-scope SDK write lane for docs-only Markdown planned paths under `orchestrator/**`, such as `orchestrator/m123-sdk-thread-orchestrator-scope-output.md`. M125 adds a second orchestrator lane for non-executable JSON fixtures only under `orchestrator/fixtures/sdk-write/**`, such as `orchestrator/fixtures/sdk-write/m125-sdk-thread-fixture.json`; `.js`, `.mjs`, `.ts`, `.tsx`, `.cmd`, `.bat`, and `.ps1` fixture paths are rejected. M135 adds the first production-code lane only for `scripts/provider-contract-smoke.js`; broad `scripts/**`, `package.json` as a planned SDK output, other production-code paths, CEP paths such as `cep-panel/**`, runtime paths, and paths such as `src/**`, `specs/**`, `../outside.json`, `.env`, `node_modules/**`, `.git/**`, credential paths, and `package-lock.json` are rejected before SDK thread creation. The SDK prompt is constrained to the validated planned path set, auto-commit remains disabled, and the runner captures pre/post git snapshots plus `git diff --check`. After the SDK turn, the runner hard-stops if the changed-since-pre diff includes anything outside the planned path set. If Git reports a newly-created untracked parent directory for a planned nested output, the runner recursively enumerates that directory and normalizes the parent away only when every actual child file is an explicitly planned SDK output; enumeration failure, empty directories, unplanned children, executable children, forbidden paths, sensitive paths, package-lock churn, git metadata churn, or out-of-scope children still fail closed.
+`sdk-write` uses the same operation envelope and is accepted only for enabled scope-specific lanes with `mode:"sdk-write"`. M117R generalizes docs-audit planned outputs from the original M115 single-file allowlist to any non-empty `plannedPaths` set under `.codex-audit/**`, after the same unsafe path shape checks, forbidden path checks, and docs-audit scope allowlist validation. M123 adds the first orchestrator-scope SDK write lane for docs-only Markdown planned paths under `orchestrator/**`, such as `orchestrator/m123-sdk-thread-orchestrator-scope-output.md`. M125 adds a second orchestrator lane for non-executable JSON fixtures only under `orchestrator/fixtures/sdk-write/**`, such as `orchestrator/fixtures/sdk-write/m125-sdk-thread-fixture.json`; `.js`, `.mjs`, `.ts`, `.tsx`, `.cmd`, `.bat`, and `.ps1` fixture paths are rejected. M135 adds the first production-code lane only for `scripts/provider-contract-smoke.js`; M152 supersedes the current production-code SDK-write allowlist with exactly `scripts/provider-api-smoke.js` and `scripts/provider-contract-smoke.js`. Broad `scripts/**`, `package.json` as a planned SDK output, other production-code paths, CEP paths such as `cep-panel/**`, runtime paths, and paths such as `src/**`, `specs/**`, `../outside.json`, `.env`, `node_modules/**`, `.git/**`, credential paths, and `package-lock.json` are rejected before SDK thread creation. The SDK prompt is constrained to the validated planned path set, auto-commit remains disabled, and the runner captures pre/post git snapshots plus `git diff --check`. After the SDK turn, the runner hard-stops if the changed-since-pre diff includes anything outside the planned path set. If Git reports a newly-created untracked parent directory for a planned nested output, the runner recursively enumerates that directory and normalizes the parent away only when every actual child file is an explicitly planned SDK output; enumeration failure, empty directories, unplanned children, executable children, forbidden paths, sensitive paths, package-lock churn, git metadata churn, or out-of-scope children still fail closed.
 
 M116 hardens SDK write diagnostics without retrying real write work. M120 adds a runtime preflight for SDK write logs and operation envelopes: the runner prefers `.codex/sdk`, verifies that both `logs` and `operations` can be created and written, then falls back to the ignored `.codex-runtime/sdk` runtime when `.codex/sdk` is missing or not writable. Routine SDK logs and operation-envelope paths use the selected runtime, for example `.codex-runtime/sdk/operations/<operation>-operation.json` when the fallback is selected. If selected-runtime log writing still fails, including `EPERM`, the original SDK/post-run error remains in the console failure message and the runner attempts only the reviewable diagnostic report under `.codex-audit/<operation>-sdk-write-failure-diagnostics.md`.
 
@@ -111,6 +111,8 @@ M140 adds a local SDK launch governance packet. Governance packets use schema `s
 
 M141 adds an SDK launch governance drift report. The report uses schema `sdk-launch-governance-drift-report.v1` and is built during `check:rules` from the committed launch-governance packet plus the committed production-code enablement packet. It fails if enabled scopes, review-required scopes, production-code allowlist, CEP-panel disabled state, or SDKThread/network approval state drift away from the local-gated contract.
 
+M152 adds the current two-file production-code provider smoke lane through committed review, readiness, approval-decision, enablement, and launch-governance packets. The M135/M140 single-file packets remain historical evidence; current governance reports read `.codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json` and `.codex-audit/sdk-write-lane-enablement/152-production-code-provider-smokes-enable.json`.
+
 Обязательный `--scope` принимает только:
 
 - `docs-audit`
@@ -131,7 +133,7 @@ SDK-write output allowlist contract:
 
 - `docs-audit`: `.codex-audit/**`.
 - `orchestrator`: Markdown files under `orchestrator/**` plus JSON fixture outputs under `orchestrator/fixtures/sdk-write/**`.
-- `production-code`: `scripts/provider-contract-smoke.js` only.
+- `production-code`: `scripts/provider-api-smoke.js` and `scripts/provider-contract-smoke.js` only.
 - `cep-panel`: no enabled SDK-write lane.
 
 Default forbidden paths включают `.git/**`, `node_modules/**`, `logs/**`, `backups/**`, `snapshots/**`, `pro-review-bundles/**`, `mcp-config.json`, `package-lock.json`, root/nested `.env*`, `*.key`, `*.pem`, `*credential*`, `*secret*` и `*token*` patterns.
@@ -204,6 +206,12 @@ M151 closes the SDK boundary block for publishing. The committed closeout `.code
 
 ```powershell
 npm.cmd run codex:orchestrator:boundary-closeout:smoke
+```
+
+M152 records the bounded two-file production-code provider smoke proof in `.codex-audit/sdk-production-readiness/152-sdk-production-code-provider-smokes-ready.json` with schema `sdk-production-code-broader-readiness.v1`. It may claim production-code SDK-write readiness only for `scripts/provider-api-smoke.js` and `scripts/provider-contract-smoke.js`; general SDK workflow, CEP-panel writes, external-provider/OpenAI CLI planner validation, live CEP/AE validation, mutating-live validation, package installs and dependency changes remain out of scope.
+
+```powershell
+npm.cmd run codex:orchestrator:production-code-broader:smoke
 ```
 
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.

@@ -1,0 +1,23 @@
+{
+  "schema": "sdk-write-lane-approval-decision.v1",
+  "approvalState": "approved",
+  "explicitApprovalRecorded": true,
+  "scope": "production-code",
+  "sdkWriteEnabled": false,
+  "sourceReadinessPacket": ".codex-audit/sdk-write-lane-readiness/152-production-code-provider-smokes-readiness.json",
+  "sourceReviewPacket": ".codex-audit/sdk-scope-expansion-reviews/152-production-code-provider-smokes-review.json",
+  "summary": "M152 records explicit user approval for one bounded two-file production-code SDK write proof.",
+  "plannedPathAllowlist": [
+    "scripts/provider-api-smoke.js",
+    "scripts/provider-contract-smoke.js"
+  ],
+  "requiredApprovalRecord": "Explicit approval is required before enabling the M152 broader production-code SDK write lane.",
+  "approvalRecord": "User approved: Разрешаю M152 broader production-code SDK write lane только для scripts/provider-contract-smoke.js и scripts/provider-api-smoke.js, включая bounded SDKThread/network proof, без CEP-panel, external-provider/OpenAI CLI planner, live CEP/AE, mutating-live и dependency changes.",
+  "decisionEvidence": [
+    "The user provided the exact approval text in the current chat.",
+    "The approval names only scripts/provider-contract-smoke.js and scripts/provider-api-smoke.js.",
+    "The approval excludes CEP-panel, external-provider/OpenAI CLI planner, live CEP/AE, mutating-live and dependency changes."
+  ],
+  "nextAllowedAction": "Enable only the two-file M152 production-code sdk-write allowlist and run one bounded SDKThread proof for those two planned files.",
+  "rollbackPlan": "If validation or the SDKThread proof fails, revert the M152 enablement and keep the M146 single-file lane as the only production-ready production-code claim."
+}

@@ -1,0 +1,174 @@
+{
+  "schema": "sdk-production-code-broader-readiness.v1",
+  "milestone": 152,
+  "supersedes": ".codex-audit/sdk-production-readiness/146-sdk-production-ready.json",
+  "sourceGovernancePacket": ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
+  "sourceEnablementPacket": ".codex-audit/sdk-write-lane-enablement/152-production-code-provider-smokes-enable.json",
+  "sourceReviewPacket": ".codex-audit/sdk-scope-expansion-reviews/152-production-code-provider-smokes-review.json",
+  "sourceReadinessPacket": ".codex-audit/sdk-write-lane-readiness/152-production-code-provider-smokes-readiness.json",
+  "sourceApprovalDecisionPacket": ".codex-audit/sdk-write-lane-approval-decisions/152-production-code-provider-smokes-approval-decision.json",
+  "productionReadyDefinition": "two-file-provider-smoke-production-code-ready",
+  "claimedScope": {
+    "scope": "production-code",
+    "plannedPathAllowlist": [
+      "scripts/provider-api-smoke.js",
+      "scripts/provider-contract-smoke.js"
+    ],
+    "providerSmokeFilesIncluded": true,
+    "generalSdkWorkflowIncluded": false,
+    "broadProductionCodeWritesIncluded": false,
+    "cepPanelWritesIncluded": false,
+    "externalProviderOrOpenAiCliPlannerValidationIncluded": false,
+    "liveCepAeOrMutatingLiveValidationIncluded": false,
+    "dependencyChangesIncluded": false
+  },
+  "verdict": {
+    "overall": "two-file-provider-smoke-lane-ready",
+    "productionReady": true,
+    "productionCodeProviderSmokeLane": "production-ready",
+    "narrowProductionCodeLane": "superseded-by-two-file-provider-smoke-lane",
+    "generalSdkWorkflow": "not-production-ready",
+    "reason": "The bounded M152 SDKThread/network proof completed for the exact two-file production-code provider smoke lane, changed only scripts/provider-api-smoke.js and scripts/provider-contract-smoke.js, and passed the post-run sdk-write contract. General SDK workflow, broad production-code writes, CEP-panel writes, external-provider/OpenAI CLI planner validation, live CEP/AE validation, mutating-live validation, package installs and dependency changes remain outside this claim."
+  },
+  "completedProof": {
+    "operationId": "m152-production-code-provider-smokes-broader-proof",
+    "operationFile": ".codex-runtime/sdk/operations/m152-production-code-provider-smokes-broader-proof.json",
+    "runtimeLog": ".codex/sdk/logs/2026-05-21T18-39-26-878Z-m152-production-code-provider-smokes-broader-proof-sdk-write.json",
+    "scope": "production-code",
+    "mode": "sdk-write",
+    "plannedPaths": [
+      "scripts/provider-api-smoke.js",
+      "scripts/provider-contract-smoke.js"
+    ],
+    "localEnvelopeValidation": {
+      "allowed": true,
+      "violations": []
+    },
+    "sdkThreadCreated": true,
+    "sdkThreadCompleted": true,
+    "sdkThreadId": "019e4bd4-abe1-7fa3-944f-e962361bee9f",
+    "plannedFileChangedBySdk": true,
+    "sdkWritePostContract": {
+      "verdict": "pass",
+      "actualChangedFiles": [
+        "scripts/provider-api-smoke.js",
+        "scripts/provider-contract-smoke.js"
+      ],
+      "outOfScopeFiles": [],
+      "missingPlannedChanges": []
+    },
+    "plannedPathPrecondition": {
+      "mode": "existing-source-update",
+      "existingPlannedPaths": [
+        "scripts/provider-api-smoke.js",
+        "scripts/provider-contract-smoke.js"
+      ],
+      "missingPlannedPaths": []
+    },
+    "threadOptions": {
+      "approvalPolicy": "never",
+      "networkAccessEnabled": false,
+      "sandboxMode": "workspace-write",
+      "webSearchMode": "disabled"
+    },
+    "postDiffCheck": {
+      "ok": true
+    }
+  },
+  "sdkChanges": [
+    {
+      "path": "scripts/provider-api-smoke.js",
+      "summary": "Added a deterministic assertion that the Gemini request content role remains user."
+    },
+    {
+      "path": "scripts/provider-contract-smoke.js",
+      "summary": "Added a deterministic assertion that the OpenAI API provider exposes uiModes:[\"api\"]."
+    }
+  ],
+  "approval": {
+    "userApprovalRecorded": true,
+    "approvalRecordSource": ".codex-audit/sdk-write-lane-approval-decisions/152-production-code-provider-smokes-approval-decision.json",
+    "restrictedScope": "one bounded SDKThread/network proof for production-code planned paths scripts/provider-api-smoke.js and scripts/provider-contract-smoke.js"
+  },
+  "localEvidence": [
+    {
+      "id": "m152-local-preflight-node-checks",
+      "status": "pass",
+      "evidence": [
+        "node --check orchestrator/run-write-capable-scaffold.mjs",
+        "node --check orchestrator/run-buffered-acceptance.mjs"
+      ]
+    },
+    {
+      "id": "m152-local-preflight-write-scaffold-contract",
+      "status": "pass",
+      "evidence": [
+        "npm.cmd run codex:orchestrator:write-scaffold:contract"
+      ]
+    },
+    {
+      "id": "m152-local-preflight-operation-envelope",
+      "status": "pass",
+      "evidence": [
+        "operation envelope accepted with allowed:true and no planned path violations"
+      ]
+    },
+    {
+      "id": "m152-local-preflight-governance-report",
+      "status": "pass",
+      "evidence": [
+        "schema:sdk-launch-governance-drift-report.v1",
+        "launchGovernanceState:local-gated",
+        "driftDetected:false"
+      ]
+    },
+    {
+      "id": "m152-sdkthread-proof",
+      "status": "pass",
+      "evidence": [
+        "sdk-write-completed",
+        "sdkWritePostContract.verdict:pass",
+        "actualChangedFiles:scripts/provider-api-smoke.js,scripts/provider-contract-smoke.js"
+      ]
+    }
+  ],
+  "remainingExclusions": [
+    {
+      "id": "general-sdk-autopilot-repo-edits",
+      "status": "not-production-ready",
+      "reason": "The M152 claim covers only the two provider smoke production-code files."
+    },
+    {
+      "id": "production-code-outside-provider-smokes",
+      "status": "not-production-ready",
+      "reason": "No production-code path outside scripts/provider-api-smoke.js and scripts/provider-contract-smoke.js is in the M152 allowlist."
+    },
+    {
+      "id": "cep-panel-sdk-writes",
+      "status": "not-production-ready",
+      "reason": "CEP-panel SDK writes remain disabled and review-required."
+    },
+    {
+      "id": "external-provider-or-openai-cli-planner-validation",
+      "status": "not-run",
+      "reason": "Outside the M152 two-file provider smoke production-ready claim."
+    },
+    {
+      "id": "live-cep-ae-or-mutating-live-validation",
+      "status": "not-run",
+      "reason": "Outside the M152 two-file provider smoke production-ready claim."
+    },
+    {
+      "id": "package-install-or-dependency-changes",
+      "status": "not-run",
+      "reason": "No package install or dependency change was needed for M152."
+    }
+  ],
+  "requiredBeforeGeneralSdkProductionReady": [
+    "Separate explicit definition and approval for general SDK autopilot repo edits.",
+    "Review packets, allowlists, SDKThread proofs and local contract coverage for any production-code paths outside the two M152 provider smoke files.",
+    "Review packets, allowlists, SDKThread proofs and local contract coverage before enabling CEP-panel SDK writes.",
+    "External-provider/OpenAI CLI planner validation only if explicitly approved and actually run.",
+    "Live CEP/After Effects and mutating-live validation only if explicitly approved and actually run."
+  ]
+}

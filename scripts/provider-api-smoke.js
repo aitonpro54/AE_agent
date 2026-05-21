@@ -413,6 +413,7 @@ async function main() {
     assert.strictEqual(openRouterChat.text, "OpenRouter provider smoke ok");
     assert.strictEqual(geminiRequests[0].headers["x-goog-api-key"], "gemini-smoke-key");
     assert.strictEqual(geminiRequests[0].body.systemInstruction.parts[0].text, "Gemini system smoke");
+    assert.strictEqual(geminiRequests[0].body.contents[0].role, "user");
     assert.strictEqual(geminiRequests[0].body.contents[0].parts[0].text, "Hello Gemini");
     const claudePost = claudeRequests.find((item) => item.body);
     assert(claudePost, "Expected Claude messages request.");

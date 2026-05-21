@@ -1,0 +1,40 @@
+{
+  "schema": "sdk-launch-governance.v1",
+  "state": "local-gated",
+  "summary": "M152 current SDK launch governance for the bounded two-file production-code provider smoke lane.",
+  "sourceMilestones": [
+    "M138",
+    "M139",
+    "M152"
+  ],
+  "allowedSdkWriteScopes": [
+    "docs-audit",
+    "orchestrator",
+    "production-code"
+  ],
+  "reviewRequiredScopes": [
+    "production-code",
+    "cep-panel"
+  ],
+  "productionCodePlannedPathAllowlist": [
+    "scripts/provider-api-smoke.js",
+    "scripts/provider-contract-smoke.js"
+  ],
+  "cepPanelSdkWriteEnabled": false,
+  "newSdkThreadRunApproved": false,
+  "broadProductionCodeWritesApproved": false,
+  "externalNetworkRetryApproved": false,
+  "approvalRequiredFor": [
+    "Any SDKThread/network write attempt after the single M152 bounded proof.",
+    "Any production-code path beyond scripts/provider-api-smoke.js and scripts/provider-contract-smoke.js.",
+    "Any CEP-panel SDK write enablement.",
+    "Any package install, dependency change, live CEP/AE validation, mutating-live validation, external-provider validation, or OpenAI CLI planner validation."
+  ],
+  "validationPlan": [
+    "Run node --check for touched JavaScript files.",
+    "Run npm.cmd run codex:orchestrator:write-scaffold:contract.",
+    "Run npm.cmd run codex:orchestrator:production-code-broader:smoke.",
+    "Run npm.cmd run check:rules and the configured local smoke suite."
+  ],
+  "rollbackPlan": "Revert to the M140 single-file production-code governance packet as the current committed source for governance reports if the M152 proof or validation fails."
+}

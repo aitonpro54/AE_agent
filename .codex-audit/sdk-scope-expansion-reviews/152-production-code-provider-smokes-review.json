@@ -1,0 +1,18 @@
+{
+  "schema": "sdk-scope-expansion-review.v1",
+  "decision": "approved",
+  "scope": "production-code",
+  "sdkWriteEnabled": false,
+  "summary": "Review and approve the M152 bounded production-code SDK write lane for provider smoke maintenance only. This packet records the reviewed scope but does not by itself create an SDKThread.",
+  "plannedPathAllowlist": [
+    "scripts/provider-api-smoke.js",
+    "scripts/provider-contract-smoke.js"
+  ],
+  "validationPlan": [
+    "Run node --check for every touched JavaScript file.",
+    "Run npm.cmd run codex:orchestrator:write-scaffold:contract to prove only the two M152 provider smoke files are accepted for production-code sdk-write.",
+    "Run npm.cmd run codex:orchestrator:production-code-broader:smoke after the bounded SDKThread proof artifact is recorded.",
+    "Run npm.cmd run check:rules and the configured local smoke suite before claiming the M152 lane stable."
+  ],
+  "rollbackPlan": "Revert the M152 current allowlist, M152 audit packets, and M152 proof artifact; keep M135/M146 as the prior single-file production-code production-ready lane."
+}

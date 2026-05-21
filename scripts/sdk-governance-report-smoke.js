@@ -15,6 +15,10 @@ const EXPECTED_CHECK_IDS = [
   "no-new-sdkthread-or-network-approval",
   "no-broad-production-code-approval",
 ];
+const EXPECTED_PRODUCTION_CODE_ALLOWLIST = [
+  "scripts/provider-api-smoke.js",
+  "scripts/provider-contract-smoke.js",
+];
 
 function extractJsonObject(output) {
   const text = String(output || "").trim();
@@ -77,17 +81,15 @@ function assertGovernanceReport(report) {
     "production-code",
   ]);
   assert.deepStrictEqual(report.reviewRequiredScopes, ["production-code", "cep-panel"]);
-  assert.deepStrictEqual(report.productionCodePlannedPathAllowlist, [
-    "scripts/provider-contract-smoke.js",
-  ]);
-  assert.deepStrictEqual(report.sourceMilestones, ["M138", "M139"]);
+  assert.deepStrictEqual(report.productionCodePlannedPathAllowlist, EXPECTED_PRODUCTION_CODE_ALLOWLIST);
+  assert.deepStrictEqual(report.sourceMilestones, ["M138", "M139", "M152"]);
   assert.strictEqual(
     report.launchGovernancePacketPath,
-    ".codex-audit/sdk-launch-governance/140-sdk-launch-governance.json",
+    ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
   );
   assert.strictEqual(
     report.productionLaneEnablementPacketPath,
-    ".codex-audit/sdk-write-lane-enablement/135-production-code-smoke-harness-enable.json",
+    ".codex-audit/sdk-write-lane-enablement/152-production-code-provider-smokes-enable.json",
   );
 
   assert(Array.isArray(report.checks), "Governance report checks must be an array.");

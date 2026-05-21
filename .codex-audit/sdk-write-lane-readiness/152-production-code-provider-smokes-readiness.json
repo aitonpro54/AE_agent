@@ -1,0 +1,27 @@
+{
+  "schema": "sdk-write-lane-readiness.v1",
+  "readiness": "ready-for-approval",
+  "approvalState": "pending-explicit-approval",
+  "scope": "production-code",
+  "sdkWriteEnabled": false,
+  "sourceReviewPacket": ".codex-audit/sdk-scope-expansion-reviews/152-production-code-provider-smokes-review.json",
+  "summary": "Prepare the M152 two-file provider smoke production-code SDK write lane for explicit approval.",
+  "plannedPathAllowlist": [
+    "scripts/provider-api-smoke.js",
+    "scripts/provider-contract-smoke.js"
+  ],
+  "requiredApprovalRecord": "The user must explicitly approve M152 for only scripts/provider-contract-smoke.js and scripts/provider-api-smoke.js, including one bounded SDKThread proof and excluding CEP-panel, external-provider/OpenAI CLI planner, live CEP/AE, mutating-live and dependency changes.",
+  "preEnablementChecks": [
+    "Confirm both planned production-code source files already exist before SDKThread creation.",
+    "Confirm the operation envelope validates with no planned path violations.",
+    "Run npm.cmd run codex:orchestrator:write-scaffold:contract after updating the local allowlist.",
+    "Run node --check orchestrator/run-write-capable-scaffold.mjs and node --check orchestrator/run-buffered-acceptance.mjs after local contract changes."
+  ],
+  "approvalEvidenceRequired": [
+    "User approval text must include the exact two planned production-code smoke files.",
+    "Approval must exclude CEP-panel, external-provider/OpenAI CLI planner, live CEP/AE, mutating-live and dependency changes.",
+    "The bounded SDKThread proof must report only the two planned files changed after the pre-run snapshot.",
+    "The M152 smoke and check:rules must pass after the proof artifact is recorded."
+  ],
+  "rollbackPlan": "If the bounded proof fails or edits any out-of-scope path, revert the M152 allowlist and audit packets and leave the prior M146 single-file production-code lane as the only production-ready claim."
+}

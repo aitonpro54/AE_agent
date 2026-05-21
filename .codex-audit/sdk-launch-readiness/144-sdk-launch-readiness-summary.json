@@ -3,19 +3,20 @@
   "sourceGovernanceReportSchema": "sdk-launch-governance-drift-report.v1",
   "sourceCommand": "npm.cmd run codex:orchestrator:governance-report",
   "sourcePacketPaths": {
-    "launchGovernance": ".codex-audit/sdk-launch-governance/140-sdk-launch-governance.json",
-    "productionLaneEnablement": ".codex-audit/sdk-write-lane-enablement/135-production-code-smoke-harness-enable.json"
+    "launchGovernance": ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
+    "productionLaneEnablement": ".codex-audit/sdk-write-lane-enablement/152-production-code-provider-smokes-enable.json"
   },
   "sourceMilestones": [
     "M138",
-    "M139"
+    "M139",
+    "M152"
   ],
   "verdict": {
     "overall": "local-gated-production-candidate",
     "productionReady": false,
     "narrowProductionCodeLane": "ready-local-gated",
     "generalSdkWorkflow": "not-production-ready",
-    "reason": "Governance, drift detection, report command and parser smoke are locally validated for the exact single-file production-code lane, but new SDKThread/network work, broader production-code writes, CEP-panel writes and live/external validation still require explicit approval."
+    "reason": "Governance, drift detection, report command and parser smoke are locally validated for the exact two-file provider smoke production-code lane, but new SDKThread/network work after the bounded M152 proof, production-code writes outside that lane, CEP-panel writes and live/external validation still require explicit approval."
   },
   "ready": [
     {
@@ -40,10 +41,10 @@
     {
       "id": "production-code-sdk-write-lane",
       "status": "local-gated",
-      "scope": "scripts/provider-contract-smoke.js",
+      "scope": "scripts/provider-api-smoke.js, scripts/provider-contract-smoke.js",
       "evidence": [
         "allowedSdkWriteScopes includes production-code",
-        "productionCodePlannedPathAllowlist is exactly scripts/provider-contract-smoke.js"
+        "productionCodePlannedPathAllowlist is exactly scripts/provider-api-smoke.js, scripts/provider-contract-smoke.js"
       ]
     },
     {
@@ -115,7 +116,7 @@
     {
       "id": "sdk-network-stream-stability",
       "status": "not-validated",
-      "reason": "M143 and M144 are local-only; historical SDK stream disconnect risk remains."
+      "reason": "The launch summary does not make general SDK stream stability claims beyond the bounded M152 proof."
     }
   ]
 }

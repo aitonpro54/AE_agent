@@ -12,6 +12,10 @@ const SUMMARY_PATH = path.join(
   "sdk-launch-readiness",
   "144-sdk-launch-readiness-summary.json",
 );
+const EXPECTED_PRODUCTION_CODE_ALLOWLIST = [
+  "scripts/provider-api-smoke.js",
+  "scripts/provider-contract-smoke.js",
+];
 
 function extractJsonObject(output) {
   const text = String(output || "").trim();
@@ -79,10 +83,8 @@ function assertGovernanceReport(report) {
     "production-code",
   ]);
   assert.deepStrictEqual(report.reviewRequiredScopes, ["production-code", "cep-panel"]);
-  assert.deepStrictEqual(report.productionCodePlannedPathAllowlist, [
-    "scripts/provider-contract-smoke.js",
-  ]);
-  assert.deepStrictEqual(report.sourceMilestones, ["M138", "M139"]);
+  assert.deepStrictEqual(report.productionCodePlannedPathAllowlist, EXPECTED_PRODUCTION_CODE_ALLOWLIST);
+  assert.deepStrictEqual(report.sourceMilestones, ["M138", "M139", "M152"]);
 
   for (const check of report.checks) {
     assert.strictEqual(check.ok, true, `Governance report check failed: ${check.id}`);
@@ -110,7 +112,7 @@ function buildExpectedSummary(report) {
       narrowProductionCodeLane: "ready-local-gated",
       generalSdkWorkflow: "not-production-ready",
       reason:
-        "Governance, drift detection, report command and parser smoke are locally validated for the exact single-file production-code lane, but new SDKThread/network work, broader production-code writes, CEP-panel writes and live/external validation still require explicit approval.",
+        "Governance, drift detection, report command and parser smoke are locally validated for the exact two-file provider smoke production-code lane, but new SDKThread/network work after the bounded M152 proof, production-code writes outside that lane, CEP-panel writes and live/external validation still require explicit approval.",
     },
     ready: [
       {
@@ -138,7 +140,9 @@ function buildExpectedSummary(report) {
         scope: report.productionCodePlannedPathAllowlist.join(", "),
         evidence: [
           "allowedSdkWriteScopes includes production-code",
-          "productionCodePlannedPathAllowlist is exactly scripts/provider-contract-smoke.js",
+          `productionCodePlannedPathAllowlist is exactly ${report.productionCodePlannedPathAllowlist.join(
+            ", ",
+          )}`,
         ],
       },
       {
@@ -198,7 +202,8 @@ function buildExpectedSummary(report) {
       {
         id: "sdk-network-stream-stability",
         status: "not-validated",
-        reason: "M143 and M144 are local-only; historical SDK stream disconnect risk remains.",
+        reason:
+          "The launch summary does not make general SDK stream stability claims beyond the bounded M152 proof.",
       },
     ],
   };
