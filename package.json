@@ -20,6 +20,7 @@
     "codex:orchestrator:historical-smoke-migration:smoke": "node scripts/sdk-historical-smoke-migration-smoke.js",
     "codex:orchestrator:historical-archive-review:smoke": "node scripts/sdk-historical-archive-review-smoke.js",
     "codex:orchestrator:historical-archive-move:smoke": "node scripts/sdk-historical-archive-move-smoke.js",
+    "codex:orchestrator:runner-split-review:smoke": "node scripts/sdk-runner-split-review-smoke.js",
     "check:rules": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke"
   },
   "dependencies": {

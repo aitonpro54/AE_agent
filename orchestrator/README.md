@@ -256,6 +256,12 @@ M165 moves the M164-reviewed historical archive candidates into `.codex-audit/sd
 npm.cmd run codex:orchestrator:historical-archive-move:smoke
 ```
 
+M166 reviews the remaining AE Agent-specific runner split candidates in `.codex-audit/sdk-orchestrator-extraction/166-sdk-runner-split-review.json` with schema `sdk-runner-split-review.v1`. The review records which code should stay adapter-side, which operation-envelope/runtime/post-run pieces are future core candidates, and the next safe extraction order. This is a review-only milestone with no behavior-changing extraction, no wrapper command changes, no SDKThread/network proof, no CEP-panel SDK write, no dependency change, no archive/delete/squash cleanup, and no push.
+
+```powershell
+npm.cmd run codex:orchestrator:runner-split-review:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.

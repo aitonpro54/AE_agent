@@ -1,0 +1,323 @@
+{
+  "schema": "sdk-runner-split-review.v1",
+  "milestone": 166,
+  "title": "SDK Runner Split Review",
+  "createdAt": "2026-05-22",
+  "purpose": "Review the remaining AE Agent-specific runner code after the reusable core, adapter config, and historical archive cleanup milestones, without changing runner behavior.",
+  "sourceContext": {
+    "previousMilestone": 165,
+    "previousArtifact": ".codex-audit/sdk-orchestrator-extraction/165-sdk-historical-archive-move.json",
+    "relatedExtractionPlan": ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+    "relatedReusableCoreArtifact": ".codex-audit/sdk-orchestrator-extraction/160-sdk-reusable-core-extraction.json",
+    "relatedAdapterConfigArtifact": ".codex-audit/sdk-orchestrator-extraction/161-ae-agent-adapter-config.json",
+    "safeAeAgentCleanupPlanPhase": "phase-2-follow-up-review-without-behavior-change",
+    "branch": "codex/roadmap-1.3-planning",
+    "lastCompletedCommit": "1d188b3",
+    "behaviorBoundary": {
+      "reviewOnly": true,
+      "runnerBehaviorChanged": false,
+      "wrapperCommandsChanged": false,
+      "runnableCodeRefactorPerformed": false,
+      "sdkThreadCreated": false,
+      "networkAccessed": false,
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditedThroughSdk": false,
+      "liveCepOrAfterEffectsRun": false,
+      "externalProviderValidationRun": false,
+      "mutatingLiveValidationRun": false,
+      "packageInstallRun": false,
+      "dependencyChanged": false,
+      "archiveMovePerformed": false,
+      "deletionPerformed": false,
+      "squashPerformed": false,
+      "pushPerformed": false
+    }
+  },
+  "filesReviewed": [
+    "orchestrator/run-write-capable-scaffold.mjs",
+    "orchestrator/run-buffered-acceptance.mjs",
+    "orchestrator/adapters/ae-agent-sdk-policy.mjs",
+    "orchestrator/core/path-policy.mjs",
+    "orchestrator/core/git-snapshot.mjs",
+    "orchestrator/core/thread-options.mjs",
+    "orchestrator/README.md",
+    ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+    ".codex-audit/sdk-orchestrator-extraction/160-sdk-reusable-core-extraction.json",
+    ".codex-audit/sdk-orchestrator-extraction/161-ae-agent-adapter-config.json",
+    ".codex-audit/sdk-orchestrator-extraction/165-sdk-historical-archive-move.json"
+  ],
+  "currentSeparation": {
+    "alreadyReusableCore": [
+      {
+        "path": "orchestrator/core/path-policy.mjs",
+        "status": "policy-neutral core",
+        "responsibilities": [
+          "repo path normalization",
+          "unsafe path-shape rejection",
+          "path pattern matching",
+          "scope allowlist checks through injected policy"
+        ]
+      },
+      {
+        "path": "orchestrator/core/git-snapshot.mjs",
+        "status": "policy-neutral core",
+        "responsibilities": [
+          "git status path parsing",
+          "pre/post git snapshot capture",
+          "changed-since-pre comparison"
+        ]
+      },
+      {
+        "path": "orchestrator/core/thread-options.mjs",
+        "status": "policy-neutral core",
+        "responsibilities": [
+          "thread option creation from an injected contract",
+          "working directory resolution"
+        ]
+      }
+    ],
+    "alreadyAdapterOwned": [
+      {
+        "path": "orchestrator/adapters/ae-agent-sdk-policy.mjs",
+        "status": "active AE Agent adapter config",
+        "responsibilities": [
+          "AE Agent scope names and scope path allowlists",
+          "forbidden path patterns and unsafe runner flags",
+          "current SDK-write allowlists",
+          "CEP-panel SDK write disabled state",
+          "current governance, conveyor, and runtime paths"
+        ]
+      }
+    ]
+  },
+  "remainingProjectSpecificRunnerMaterial": [
+    {
+      "id": "write-runner-evidence-packet-validators",
+      "currentPath": "orchestrator/run-write-capable-scaffold.mjs",
+      "projectSpecificReasons": [
+        "M129-M152 lane review, readiness, approval-decision, enablement, and launch-governance packet schemas are AE Agent milestone evidence.",
+        "The validators enforce the current AE Agent production-code provider smoke allowlist and CEP-panel disabled state.",
+        "The exact packet directories are AE Agent audit directories, not generic SDK tool state."
+      ],
+      "recommendedDisposition": "Keep as AE Agent adapter-side validators unless a future standalone tool adds an adapter validation plugin interface.",
+      "extractability": "low as reusable core, high as adapter plugin"
+    },
+    {
+      "id": "write-runner-operation-envelope-core",
+      "currentPath": "orchestrator/run-write-capable-scaffold.mjs",
+      "reusableResponsibilities": [
+        "operation envelope JSON parsing",
+        "required field validation",
+        "mode validation",
+        "planned path normalization",
+        "operation file path resolution inside the repo"
+      ],
+      "adapterInputsNeeded": [
+        "operation envelope version",
+        "accepted modes",
+        "required fields",
+        "scope policy"
+      ],
+      "recommendedDisposition": "Good next behavior-preserving extraction candidate as orchestrator/core/operation-envelope.mjs with adapter-injected contract.",
+      "extractability": "high"
+    },
+    {
+      "id": "write-runner-runtime-store-and-failure-diagnostics",
+      "currentPath": "orchestrator/run-write-capable-scaffold.mjs",
+      "reusableResponsibilities": [
+        "runtime directory probing",
+        "primary/fallback runtime selection",
+        "SDK write log serialization",
+        "fallback report path construction",
+        "diagnostic message shaping"
+      ],
+      "adapterInputsNeeded": [
+        "primary runtime directory",
+        "fallback runtime directory",
+        "runtime subdirectories",
+        "fallback report directory",
+        "project-specific report wording"
+      ],
+      "recommendedDisposition": "Extract after operation-envelope parity, keeping AE Agent runtime paths injected from the adapter config.",
+      "extractability": "medium-high"
+    },
+    {
+      "id": "write-runner-post-run-contract",
+      "currentPath": "orchestrator/run-write-capable-scaffold.mjs",
+      "reusableResponsibilities": [
+        "pre-run dirty state evaluation",
+        "post-run changed-file allowlist",
+        "untracked parent directory normalization",
+        "git diff --check capture",
+        "validation result hard-stop"
+      ],
+      "adapterInputsNeeded": [
+        "scope policy",
+        "SDK-write planned path allowlists",
+        "forbidden path policy",
+        "existing-source requirements for selected scopes"
+      ],
+      "recommendedDisposition": "Extract only with explicit parity tests because this code is safety-critical.",
+      "extractability": "medium"
+    },
+    {
+      "id": "buffered-acceptance-governance-and-readme-smoke",
+      "currentPath": "orchestrator/run-buffered-acceptance.mjs",
+      "projectSpecificReasons": [
+        "Collectors and assertions know AE Agent packet directories and milestone numbers.",
+        "README checks intentionally assert exact AE Agent documentation snippets.",
+        "check:rules wires the current AE Agent governance, conveyor, extraction, and archive smoke suite."
+      ],
+      "recommendedDisposition": "Keep project-local; only the generic forced-read-only option pattern may be reusable later.",
+      "extractability": "low for current checks, medium for a generic harness shell"
+    },
+    {
+      "id": "package-plan-handoff-continuity",
+      "currentPaths": [
+        "package.json",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "projectSpecificReasons": [
+        "Package scripts, plan progress, validation notes, and handoff prompts are AE Agent continuity artifacts.",
+        "They should call any future standalone CLI rather than move into generic SDK core."
+      ],
+      "recommendedDisposition": "Remain in AE Agent repository.",
+      "extractability": "none"
+    }
+  ],
+  "recommendedNextExtractionOrder": [
+    {
+      "order": 1,
+      "candidate": "operation-envelope-core",
+      "targetPath": "orchestrator/core/operation-envelope.mjs",
+      "sourceFunctions": [
+        "resolveOperationFilePath",
+        "parseOperationEnvelopeJson",
+        "validateOperationEnvelope",
+        "loadOperationEnvelopeOptions"
+      ],
+      "minimumParityChecks": [
+        "valid dry-run and sdk-write envelopes still parse the same way",
+        "unsafe envelope fields stay rejected before SDK thread creation",
+        "planned path checks still use the injected AE Agent adapter policy",
+        "public runner exports and package command entrypoints stay unchanged"
+      ]
+    },
+    {
+      "order": 2,
+      "candidate": "runtime-store-and-diagnostics-core",
+      "targetPaths": [
+        "orchestrator/core/runtime-store.mjs",
+        "orchestrator/core/failure-diagnostics.mjs"
+      ],
+      "sourceFunctions": [
+        "resolveSdkRuntimePaths",
+        "writeSdkWriteLog",
+        "createSdkWriteFallbackReport",
+        "createSdkWriteFailureMessage"
+      ],
+      "minimumParityChecks": [
+        "primary/fallback runtime selection remains unchanged",
+        "fallback report paths remain under the injected AE Agent audit directory",
+        "SDK/post-run error text remains available in failure messages"
+      ]
+    },
+    {
+      "order": 3,
+      "candidate": "post-run-contract-core",
+      "targetPath": "orchestrator/core/post-run-contract.mjs",
+      "sourceFunctions": [
+        "evaluatePreRunGitState",
+        "assertPreRunGitState",
+        "validateSdkWriteDiffAllowlist",
+        "validateSdkWritePlannedPathPrecondition"
+      ],
+      "minimumParityChecks": [
+        "unexpected dirty state still hard-stops",
+        "unplanned post-run changes still fail closed",
+        "package-lock and forbidden path churn remain rejected",
+        "production-code existing-source precondition still applies"
+      ]
+    }
+  ],
+  "nextRecommendedMilestone": {
+    "title": "SDK Operation Envelope Core Extraction",
+    "type": "behavior-preserving extraction",
+    "approvalRequiredBeforeStart": false,
+    "allowedWork": [
+      "extract operation envelope helpers into a new core module",
+      "keep public runner exports and package command entrypoints unchanged",
+      "add parity smoke coverage"
+    ],
+    "blockedWork": [
+      "SDKThread/network proof",
+      "CEP-panel SDK write",
+      "live CEP/After Effects validation",
+      "external-provider/OpenAI CLI planner validation",
+      "mutating-live validation",
+      "package install",
+      "dependency change",
+      "delete/squash cleanup",
+      "push"
+    ]
+  },
+  "machineCheck": {
+    "requiredPackageScript": "codex:orchestrator:runner-split-review:smoke",
+    "requiredPackageScriptCommand": "node scripts/sdk-runner-split-review-smoke.js",
+    "requiredReadmeSnippets": [
+      "M166 reviews the remaining AE Agent-specific runner split candidates",
+      "166-sdk-runner-split-review.json",
+      "sdk-runner-split-review.v1",
+      "codex:orchestrator:runner-split-review:smoke",
+      "no behavior-changing extraction"
+    ],
+    "mustExist": [
+      "orchestrator/run-write-capable-scaffold.mjs",
+      "orchestrator/run-buffered-acceptance.mjs",
+      "orchestrator/adapters/ae-agent-sdk-policy.mjs",
+      "orchestrator/core/path-policy.mjs",
+      "orchestrator/core/git-snapshot.mjs",
+      "orchestrator/core/thread-options.mjs",
+      ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+      ".codex-audit/sdk-orchestrator-extraction/160-sdk-reusable-core-extraction.json",
+      ".codex-audit/sdk-orchestrator-extraction/161-ae-agent-adapter-config.json",
+      ".codex-audit/sdk-orchestrator-extraction/165-sdk-historical-archive-move.json"
+    ],
+    "requiredSourceSnippets": {
+      "orchestrator/run-write-capable-scaffold.mjs": [
+        "export function validateOperationEnvelope",
+        "export function resolveSdkRuntimePaths",
+        "export function validateSdkWriteDiffAllowlist",
+        "export function validateSdkScopeExpansionReviewPacket",
+        "export function validateSdkLaunchGovernancePacket",
+        "export async function runWriteCapableSdkWrite",
+        "import { AE_AGENT_SDK_ADAPTER_CONFIG }"
+      ],
+      "orchestrator/run-buffered-acceptance.mjs": [
+        "function collectSdkScopeExpansionReviewPackets",
+        "async function buildCommittedSdkLaunchGovernanceReport",
+        "readme.includes(\"165-sdk-historical-archive-move.json\")",
+        "path.join(\"scripts\", \"sdk-historical-archive-move-smoke.js\")"
+      ]
+    },
+    "requiredFalseBoundaryFlags": [
+      "runnerBehaviorChanged",
+      "wrapperCommandsChanged",
+      "runnableCodeRefactorPerformed",
+      "sdkThreadCreated",
+      "networkAccessed",
+      "cepPanelSdkWritesEnabled",
+      "cepPanelPanelJsEditedThroughSdk",
+      "liveCepOrAfterEffectsRun",
+      "externalProviderValidationRun",
+      "mutatingLiveValidationRun",
+      "packageInstallRun",
+      "dependencyChanged",
+      "archiveMovePerformed",
+      "deletionPerformed",
+      "squashPerformed",
+      "pushPerformed"
+    ]
+  }
+}

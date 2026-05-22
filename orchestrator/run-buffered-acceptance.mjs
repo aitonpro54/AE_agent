@@ -1011,6 +1011,18 @@ async function runContractSmoke() {
     `M165 SDK historical archive move smoke failed: ${historicalArchiveMoveOutput.trim()}`,
     failures,
   );
+  const runnerSplitReviewSmoke = runNode([
+    path.join("scripts", "sdk-runner-split-review-smoke.js"),
+  ]);
+  const runnerSplitReviewOutput = `${runnerSplitReviewSmoke.stdout ?? ""}\n${
+    runnerSplitReviewSmoke.stderr ?? ""
+  }`;
+  assertContract(
+    runnerSplitReviewSmoke.status === 0 &&
+      runnerSplitReviewOutput.includes("SDK runner split review smoke: pass"),
+    `M166 SDK runner split review smoke failed: ${runnerSplitReviewOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1463,6 +1475,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:runner-split-review:smoke"] ===
+      "node scripts/sdk-runner-split-review-smoke.js",
+    "package.json codex:orchestrator:runner-split-review:smoke script is not wired to the M166 runner split review smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1618,6 +1636,15 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:runner-split-review:smoke") &&
+      readme.includes("166-sdk-runner-split-review.json") &&
+      readme.includes("sdk-runner-split-review.v1") &&
+      readme.includes("M166 reviews the remaining AE Agent-specific runner split candidates") &&
+      readme.includes("no behavior-changing extraction"),
+    "README does not document the M166 runner split review smoke",
+    failures,
+  );
+  assertContract(
     readme.includes('sandboxMode: "read-only"') &&
       readme.includes('approvalPolicy: "never"') &&
       readme.includes("networkAccessEnabled: false") &&
@@ -1734,6 +1761,7 @@ async function runContractSmoke() {
   console.log("SDK AE Agent adapter config smoke: pass");
   console.log("SDK historical smoke migration smoke: pass");
   console.log("SDK historical archive move smoke: pass");
+  console.log("SDK runner split review smoke: pass");
 }
 
 async function printGovernanceReport() {
