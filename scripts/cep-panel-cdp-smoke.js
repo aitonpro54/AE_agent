@@ -55,6 +55,10 @@ function shortDiagnosticText(value, maxLength) {
   return String(value || "").trim().slice(0, maxLength || 300) || null;
 }
 
+function hasNoActionProposalReadyStatus(state) {
+  return state.planRunStatus === "No action proposal ready";
+}
+
 function commandCheckReport(check) {
   if (!check) return null;
   return {
@@ -1702,7 +1706,7 @@ async function smoke() {
     await waitFor(send, "panel online after plan reload", (state) => state.badge === "online", 15000);
     await waitFor(send, "saved plan recoverable after reload", (state) => (
       state.transcript.indexOf("Plan review: ready") >= 0 &&
-      state.planRunStatus === "No plan ready" &&
+      hasNoActionProposalReadyStatus(state) &&
       state.recoverLastPlanText === "Подхватить последний план из чата" &&
       state.recoverLastPlanDisabled === false &&
       state.dryRunDisabled === true &&
@@ -1797,7 +1801,7 @@ async function devRequestButtonSmoke() {
       const loaded = await waitFor(send, `${label} plan transcript loaded`, (state) => (
         state.transcript.indexOf("Plan review: ready") >= 0 &&
         state.recoverLastPlanDisabled === false &&
-        state.planRunStatus === "No plan ready" &&
+        hasNoActionProposalReadyStatus(state) &&
         state.prepareDevRequestVisible === false &&
         state.prepareDevRequestDisabled === true
       ), 15000);
@@ -1885,7 +1889,7 @@ async function rawRunGateSmoke() {
     const loaded = await waitFor(send, "raw run gate plan loaded", (state) => (
       state.transcript.indexOf("Plan review: ready") >= 0 &&
       state.recoverLastPlanDisabled === false &&
-      state.planRunStatus === "No plan ready" &&
+      hasNoActionProposalReadyStatus(state) &&
       state.dryRunDisabled === true &&
       state.runDisabled === true
     ), 15000);
@@ -2000,7 +2004,7 @@ async function classificationWarningControlsSmoke() {
     await waitFor(send, "classification warning plan loaded", (state) => (
       state.transcript.indexOf("Plan review: ready") >= 0 &&
       state.recoverLastPlanDisabled === false &&
-      state.planRunStatus === "No plan ready" &&
+      hasNoActionProposalReadyStatus(state) &&
       state.dryRunDisabled === true &&
       state.runDisabled === true
     ), 15000);

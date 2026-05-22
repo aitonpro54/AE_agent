@@ -11,6 +11,7 @@
 - [x] Milestone 178: Cleanup conveyor quiet output, runtime logs, and commit-aware post-run allowlist.
 - [x] Milestone 179: AE Agent 2.0.0 version bump for new GitHub home.
 - [x] Milestone 180: Installed CEP sync to AE Agent 2.0.0 and bounded live validation.
+- [x] Milestone 181: Live AE panel validation with connected 2.0.0 panel and recover-flow smoke finding.
 
 ## Current Stable Baseline
 
@@ -30,7 +31,9 @@
 - Raw ExtendScript remains available as an escape hatch, but normal product workflows should use typed bridge tools.
 - CEP `Reload` forces a cache-busted reload of installed `index.html` and passes a fresh asset nonce to CSS/JS, so an already-open panel can pick up synced files without stale `panel.js?v=<old>` cache entries.
 - CEP install/sync clears only this extension's Chromium cache folders (`Cache`, `Code Cache`, `GPUCache`, `blob_storage`) while preserving Local Storage.
-- Installed CEP tracked files now match the repository at `AE Agent 2.0.0`; live AE panel validation still requires After Effects with the extension opened.
+- Installed CEP tracked files now match the repository at `AE Agent 2.0.0`.
+- Live AE/CEP connectivity with the opened `AE Agent 2.0.0` panel is verified: bridge status, `ping_ae`, CDP inspect, and connector-status smoke pass.
+- The broad local-Ollama CDP smoke currently reaches plan generation but fails in the recover-last-plan branch because the local planner returns a `needs review` recovery result with no executable steps; this is the next live validation gap.
 
 ## Current SDK Baseline
 
@@ -106,6 +109,16 @@
 - Completed: strengthened `scripts/cep-sync-health.js` so a stale repo HTML title is reported as a version mismatch.
 - Live AE/CDP validation was attempted but could not connect because After Effects was not running/open with the CEP panel in this environment.
 
+### Milestone 181: Connected live AE panel validation
+
+- Completed: verified local repository and remote state before live checks: latest local commit was `9b3a361 fix: sync CEP install version title`; `ae-agent` points to `https://github.com/aitonpro54/AE_agent.git`; remote HEAD remained `refs/heads/master` at `494745c94c53e27f7b38b3677300f693473b9368`.
+- Completed: detected running After Effects 2026 with project `SETKI.aep` and verified bridge daemon `2.0.0` with `panelConnected:true`.
+- Completed: `ping_ae` returned After Effects `26.2x49` and 263 project items.
+- Completed: CDP `inspect` sees the installed panel at `%APPDATA%\Adobe\CEP\extensions\com.codex.aemcpbridge\index.html` with title and asset version `AE Agent 2.0.0`.
+- Completed: `connector-status-smoke` passed against the live CEP panel.
+- Completed: updated `scripts/cep-panel-cdp-smoke.js` recover-state expectations from the retired `No plan ready` label to the current `No action proposal ready` panel label.
+- Broad `node scripts/cep-panel-cdp-smoke.js smoke` remains a live validation gap: after the label fix it reaches the recover-last-plan branch, but local Ollama recovery returns `Plan review: needs review` with 0 executable steps instead of restoring a runnable read-only plan.
+
 ## Recent Milestone Summary
 
 - M152: Current production-code SDK write readiness superseded the older single-file claim and is limited to `scripts/provider-api-smoke.js` plus `scripts/provider-contract-smoke.js`.
@@ -124,9 +137,12 @@
 - M178: Made the cleanup conveyor less transcript-heavy by logging full child output to ignored runtime logs, adding compact terminal summaries, and making post-run path validation commit-aware.
 - M179: Bumped AE Agent to `2.0.0` and prepared direct push to the new `aitonpro54/AE_agent` repository without PR.
 - M180: Synced the installed CEP extension to `2.0.0`, fixed the remaining static HTML/install text version tail, and recorded that live AE/CDP validation needs After Effects opened with the panel.
+- M181: Verified the opened AE Agent 2.0.0 CEP panel through bridge status, `ping_ae`, CDP inspect, and connector-status smoke; aligned CDP smoke status expectations and recorded the remaining local-Ollama recover-flow smoke failure.
 
 ## Decision Log
 
+- 2026-05-22: M181 treats connected live AE/CEP validation as a validation/docs/test-maintenance milestone. It does not push, create a PR, touch old `origin`, or change installed CEP files.
+- 2026-05-22: M181 updates CDP smoke recover-state checks to the current panel status text `No action proposal ready`; the wider smoke remains strict and still fails when the local planner cannot recover a runnable plan.
 - 2026-05-22: M179 treats `2.0.0` as the new current AE Agent version and updates current runtime/version sources plus active docs and smoke expectations. Historical archive files are not rewritten.
 - 2026-05-22: M179 publishes to the new `aitonpro54/AE_agent` GitHub repository by direct push to `master`; PR is intentionally skipped because the new repository is the initial publication target.
 - 2026-05-22: M180 treats installed CEP sync as local machine state plus a small repo hardening fix. The repo keeps `cep-panel/index.html`, install prompts, manifest menu, panel runtime title, and sync-health expectations aligned on `AE Agent 2.0.0`.
@@ -178,7 +194,8 @@
 | `git diff --check` | Required by selected cleanup conveyor items and M179 version bump. | Passed on 2026-05-22; Git printed only LF-to-CRLF working-copy warnings for touched text files. |
 | `node scripts/cep-sync-health.js --check --json` | Required for M180 installed CEP sync and version alignment. | Passed on 2026-05-22 after sync; installed tracked files and versions match repo `2.0.0`. |
 | `node scripts/cep-sync-cache-smoke.js` | Required because M180 hardens sync-health/title expectations. | Passed on 2026-05-22. |
-| Live CEP/AE validation | Requested for M180 when After Effects and the panel are available. | Bounded attempt on 2026-05-22: bridge daemon `2.0.0` is healthy, but `panelConnected:false`; `ping_ae` reported the panel has not connected; CDP inspect and connector-status smoke failed with `ECONNREFUSED 127.0.0.1:8870`; `AfterFX` process was not running. |
+| `node --check scripts/cep-panel-cdp-smoke.js` | Required because M181 changes CDP recover-state smoke expectations. | Passed on 2026-05-22. |
+| Live CEP/AE validation | Requested for M180/M181 when After Effects and the panel are available. | M181 connected pass on 2026-05-22: `get_bridge_status` returned bridge `2.0.0` with `panelConnected:true`; `ping_ae` returned AE `26.2x49` and 263 project items; CDP `inspect` saw installed `AE Agent 2.0.0`; `connector-status-smoke` passed. Broad `node scripts/cep-panel-cdp-smoke.js smoke` still failed in recover-last-plan because local Ollama returned `needs review` / 0 executable steps. |
 | SDKThread/network/external-provider/OpenAI CLI planner/mutating-live validation | Forbidden/out of scope for this turn. | Not run. |
 | Package install/dependency change validation | Out of scope because no dependency change is allowed. | Not run. |
 
@@ -238,6 +255,19 @@
 - Passed the AGENTS non-live smoke suite:
   `check:rules`, provider contract/API, solution registry/candidate/promotion/retrieval/library, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only smoke, and main smoke.
 - Live CEP/CDP validation could not complete because After Effects was not running and the panel was not connected.
+
+### Milestone 181
+
+- Verified initial git state and remote state exactly as expected for the post-M180 local repository.
+- Confirmed After Effects was running and the installed `AE Agent 2.0.0` CEP panel was connected.
+- Passed `get_bridge_status`, `ping_ae`, `node scripts/cep-panel-cdp-smoke.js inspect`, and `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`.
+- Updated `scripts/cep-panel-cdp-smoke.js` so recover-state checks expect the current `No action proposal ready` UI status.
+- Passed `node --check scripts/cep-panel-cdp-smoke.js`.
+- Passed the AGENTS non-live smoke suite:
+  `check:rules`, provider contract/API, solution registry/candidate/promotion/retrieval/library, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only smoke, and main smoke.
+- Full non-live validation log: `.codex-runtime/validation/m181-non-live-20260522-213658.log`.
+- Passed `git diff --check`; Git printed only the existing LF-to-CRLF working-copy warnings for touched text files.
+- `node scripts/cep-panel-cdp-smoke.js smoke` did not pass: after the status-expectation fix, it failed waiting for recovered plan readiness because local Ollama returned a `needs review` recovery result with no executable MCP steps.
 
 ### Handoff
 
