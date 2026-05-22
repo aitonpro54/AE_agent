@@ -280,6 +280,12 @@ M169 extracts SDK post-run contract helpers into `orchestrator/core/post-run-con
 npm.cmd run codex:orchestrator:post-run-contract:smoke
 ```
 
+M170 reviews buffered acceptance split boundaries in `.codex-audit/sdk-orchestrator-extraction/170-sdk-buffered-acceptance-split-review.json` with schema `sdk-buffered-acceptance-split-review.v1`. The review keeps governance packet validators, current M152+ direct checks, package script assertions, README assertions, and AE Agent project evidence policy project-local; no reusable extraction is performed because the only neutral candidates are too small or too coupled to the local acceptance wrapper to justify behavior risk.
+
+```powershell
+npm.cmd run codex:orchestrator:buffered-acceptance-split-review:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.

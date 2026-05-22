@@ -1065,6 +1065,20 @@ async function runContractSmoke() {
     `M169 SDK post-run contract extraction smoke failed: ${postRunContractExtractionOutput.trim()}`,
     failures,
   );
+  const bufferedAcceptanceSplitReviewSmoke = runNode([
+    path.join("scripts", "sdk-buffered-acceptance-split-review-smoke.js"),
+  ]);
+  const bufferedAcceptanceSplitReviewOutput = `${
+    bufferedAcceptanceSplitReviewSmoke.stdout ?? ""
+  }\n${bufferedAcceptanceSplitReviewSmoke.stderr ?? ""}`;
+  assertContract(
+    bufferedAcceptanceSplitReviewSmoke.status === 0 &&
+      bufferedAcceptanceSplitReviewOutput.includes(
+        "SDK buffered acceptance split review smoke: pass",
+      ),
+    `M170 SDK buffered acceptance split review smoke failed: ${bufferedAcceptanceSplitReviewOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1541,6 +1555,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:buffered-acceptance-split-review:smoke"] ===
+      "node scripts/sdk-buffered-acceptance-split-review-smoke.js",
+    "package.json codex:orchestrator:buffered-acceptance-split-review:smoke script is not wired to the M170 buffered acceptance split review smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1733,6 +1753,15 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:buffered-acceptance-split-review:smoke") &&
+      readme.includes("170-sdk-buffered-acceptance-split-review.json") &&
+      readme.includes("sdk-buffered-acceptance-split-review.v1") &&
+      readme.includes("M170 reviews buffered acceptance split boundaries") &&
+      readme.includes("project-local"),
+    "README does not document the M170 buffered acceptance split review smoke",
+    failures,
+  );
+  assertContract(
     readme.includes('sandboxMode: "read-only"') &&
       readme.includes('approvalPolicy: "never"') &&
       readme.includes("networkAccessEnabled: false") &&
@@ -1850,6 +1879,7 @@ async function runContractSmoke() {
   console.log("SDK historical smoke migration smoke: pass");
   console.log("SDK historical archive move smoke: pass");
   console.log("SDK runner split review smoke: pass");
+  console.log("SDK buffered acceptance split review smoke: pass");
 }
 
 async function printGovernanceReport() {

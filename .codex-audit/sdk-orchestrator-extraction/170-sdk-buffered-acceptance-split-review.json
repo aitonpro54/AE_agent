@@ -1,0 +1,268 @@
+{
+  "schema": "sdk-buffered-acceptance-split-review.v1",
+  "milestone": 170,
+  "title": "SDK Buffered Acceptance Project-Local Split Review",
+  "createdAt": "2026-05-22",
+  "purpose": "Review orchestrator/run-buffered-acceptance.mjs for any safe reusable SDK core boundary while preserving AE Agent governance, documentation, package-script, and evidence-policy checks.",
+  "decision": {
+    "type": "review-only-no-extraction",
+    "reviewFirstResult": "keep-buffered-acceptance-project-local",
+    "rationale": [
+      "The runner's durable value is the AE Agent local governance contract: M152+ packet validators, direct current smoke checks, README assertions, package script assertions, and exact evidence paths.",
+      "The only neutral candidates are small forced-read-only defaults and argument rejection mechanics, but extracting them would add an interface without reducing current complexity or validation risk.",
+      "The buffered SDK acceptance path still owns live SDKThread creation for acceptance reports; this milestone does not have approval to run or refactor SDKThread/network behavior.",
+      "Keeping the file project-local avoids diluting fail-closed governance checks while the reusable write-runner core has already been separated in M160-M169."
+    ]
+  },
+  "sourceContext": {
+    "previousMilestone": 169,
+    "previousArtifact": ".codex-audit/sdk-orchestrator-extraction/169-sdk-post-run-contract-review-or-extraction.json",
+    "relatedRunnerSplitReviewArtifact": ".codex-audit/sdk-orchestrator-extraction/166-sdk-runner-split-review.json",
+    "relatedExtractionPlan": ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+    "relatedAdapterConfigArtifact": ".codex-audit/sdk-orchestrator-extraction/161-ae-agent-adapter-config.json",
+    "branch": "codex/roadmap-1.3-planning",
+    "lastCompletedCommit": "ab3c787",
+    "behaviorBoundary": {
+      "reviewOnly": true,
+      "extractionPerformed": false,
+      "runnerBehaviorChanged": false,
+      "wrapperCommandsChanged": false,
+      "publicExportsPreserved": true,
+      "packageCommandEntrypointsPreserved": true,
+      "governancePacketValidatorsProjectLocal": true,
+      "currentM152PlusDirectChecksProjectLocal": true,
+      "packageScriptAssertionsProjectLocal": true,
+      "readmeAssertionsProjectLocal": true,
+      "aeAgentProjectEvidencePolicyProjectLocal": true,
+      "sdkThreadCreated": false,
+      "networkAccessed": false,
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditedThroughSdk": false,
+      "liveCepOrAfterEffectsRun": false,
+      "externalProviderValidationRun": false,
+      "mutatingLiveValidationRun": false,
+      "packageInstallRun": false,
+      "dependencyChanged": false,
+      "archiveMovePerformed": false,
+      "deletionPerformed": false,
+      "squashPerformed": false,
+      "pushPerformed": false
+    }
+  },
+  "filesReviewed": [
+    "orchestrator/run-buffered-acceptance.mjs",
+    "orchestrator/run-write-capable-scaffold.mjs",
+    "orchestrator/core/path-policy.mjs",
+    "orchestrator/core/git-snapshot.mjs",
+    "orchestrator/core/thread-options.mjs",
+    "orchestrator/core/operation-envelope.mjs",
+    "orchestrator/core/runtime-store.mjs",
+    "orchestrator/core/failure-diagnostics.mjs",
+    "orchestrator/core/post-run-contract.mjs",
+    "orchestrator/adapters/ae-agent-sdk-policy.mjs",
+    "orchestrator/README.md",
+    "package.json",
+    ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+    ".codex-audit/sdk-orchestrator-extraction/166-sdk-runner-split-review.json",
+    ".codex-audit/sdk-orchestrator-extraction/169-sdk-post-run-contract-review-or-extraction.json"
+  ],
+  "projectLocalMaterial": [
+    {
+      "id": "governance-packet-validators",
+      "currentPath": "orchestrator/run-buffered-acceptance.mjs",
+      "keepProjectLocalReasons": [
+        "The collectors hard-code AE Agent audit directories for scope review, readiness, approval-decision, enablement, and launch-governance packets.",
+        "The validation expectations intentionally know M152 production-code provider smoke governance and the disabled CEP-panel lane.",
+        "Moving them to neutral core would require an adapter plugin interface but would not reduce the current runner's active risk."
+      ],
+      "neutralBoundaryVerdict": "not extracted"
+    },
+    {
+      "id": "current-m152-plus-direct-checks",
+      "currentPath": "orchestrator/run-buffered-acceptance.mjs",
+      "keepProjectLocalReasons": [
+        "The contract smoke directly calls current M152+ governance, conveyor, extraction, archive, and provider-lane smoke scripts.",
+        "Those checks are AE Agent continuity evidence rather than reusable SDK orchestration semantics.",
+        "Retiring or moving any of them would be cleanup work, not a behavior-preserving neutral extraction."
+      ],
+      "neutralBoundaryVerdict": "not extracted"
+    },
+    {
+      "id": "package-script-assertions",
+      "currentPath": "orchestrator/run-buffered-acceptance.mjs",
+      "keepProjectLocalReasons": [
+        "The assertions pin this repository's package command names and entrypoints.",
+        "They guard AE Agent review and handoff workflow expectations.",
+        "A standalone tool should be called by these scripts, not own these repository-specific script names."
+      ],
+      "neutralBoundaryVerdict": "not extracted"
+    },
+    {
+      "id": "readme-assertions",
+      "currentPath": "orchestrator/run-buffered-acceptance.mjs",
+      "keepProjectLocalReasons": [
+        "The README checks intentionally assert exact AE Agent milestone snippets and audit artifact names.",
+        "They preserve documentation/governance parity for this project.",
+        "A generic README checker would either be too weak or need the same project-specific data injected back in."
+      ],
+      "neutralBoundaryVerdict": "not extracted"
+    },
+    {
+      "id": "ae-agent-project-evidence-policy",
+      "currentPaths": [
+        "orchestrator/run-buffered-acceptance.mjs",
+        ".codex-audit/**",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "keepProjectLocalReasons": [
+        "The evidence policy is tied to this repository's milestone chain, forbidden work boundaries, and reviewable commit cadence.",
+        "The active governance report must keep reading the committed AE Agent M152 packets.",
+        "The handoff and plan updates are project continuity artifacts, not reusable SDK core."
+      ],
+      "neutralBoundaryVerdict": "not extracted"
+    }
+  ],
+  "neutralBoundaryAssessment": [
+    {
+      "candidate": "buffered-acceptance-thread-options",
+      "currentPath": "orchestrator/run-buffered-acceptance.mjs",
+      "reusableResponsibilities": [
+        "force read-only sandbox",
+        "force approvalPolicy never",
+        "force network off",
+        "force web search disabled"
+      ],
+      "verdict": "defer-no-extraction",
+      "reason": "The contract is tiny, already source-visible, and coupled to the acceptance wrapper's local SDKThread prompt/report path; extraction would add churn without meaningful reuse today."
+    },
+    {
+      "candidate": "buffered-argument-rejection",
+      "currentPath": "orchestrator/run-buffered-acceptance.mjs",
+      "reusableResponsibilities": [
+        "reject unsafe override flags",
+        "reject unsupported flags",
+        "reject flag values for boolean modes",
+        "limit positional milestone/report paths"
+      ],
+      "verdict": "defer-no-extraction",
+      "reason": "The parser is small and exported already; a neutral parser would still need the AE Agent unsafe-flag set and command modes injected."
+    },
+    {
+      "candidate": "local-contract-smoke-harness-shell",
+      "currentPath": "orchestrator/run-buffered-acceptance.mjs",
+      "reusableResponsibilities": [
+        "run subprocess checks",
+        "collect failures",
+        "print a compact pass/fail summary"
+      ],
+      "verdict": "not-extracted",
+      "reason": "The actual checks are dominated by AE Agent package, README, governance, and artifact assertions; a generic shell would leave the hard parts project-local."
+    }
+  ],
+  "preservedContracts": [
+    "parseBufferedAcceptanceArgs remains exported from orchestrator/run-buffered-acceptance.mjs",
+    "main remains exported from orchestrator/run-buffered-acceptance.mjs",
+    "codex:orchestrator:governance-report still points to node orchestrator/run-buffered-acceptance.mjs --governance-report",
+    "check:rules still points to node orchestrator/run-buffered-acceptance.mjs --contract-smoke",
+    "governance report output remains sdk-launch-governance-drift-report.v1 from the M152 launch governance packet and M152 production-code enablement packet",
+    "buffered acceptance unsafe overrides remain rejected before SDK thread creation"
+  ],
+  "filesChanged": [
+    ".codex-audit/sdk-orchestrator-extraction/170-sdk-buffered-acceptance-split-review.json",
+    "scripts/sdk-buffered-acceptance-split-review-smoke.js",
+    "orchestrator/run-buffered-acceptance.mjs",
+    "orchestrator/README.md",
+    "package.json",
+    "plans/target-app-execplan.md",
+    ".codex/handoff.md"
+  ],
+  "validationPlan": [
+    "node --check orchestrator/run-buffered-acceptance.mjs",
+    "node --check scripts/sdk-buffered-acceptance-split-review-smoke.js",
+    "node scripts/sdk-buffered-acceptance-split-review-smoke.js",
+    "npm.cmd run codex:orchestrator:buffered-acceptance-split-review:smoke",
+    "npm.cmd run codex:orchestrator:governance-report",
+    "npm.cmd run check:rules",
+    "configured local smoke suite from AGENTS.md",
+    "git diff --check"
+  ],
+  "nextRecommendedMilestone": {
+    "title": "SDK Orchestrator Extraction Closeout Review",
+    "type": "review-first",
+    "approvalRequiredBeforeStart": false,
+    "allowedWork": [
+      "summarize M160-M170 reusable-core extraction and project-local boundaries",
+      "confirm which active AE Agent wrappers still block standalone-tool packaging",
+      "keep package command entrypoints and local governance checks unchanged unless a neutral boundary is proven"
+    ],
+    "blockedWork": [
+      "SDKThread/network proof",
+      "CEP-panel SDK write",
+      "live CEP/After Effects validation",
+      "external-provider/OpenAI CLI planner validation",
+      "mutating-live validation",
+      "package install",
+      "dependency change",
+      "archive/delete/squash cleanup",
+      "push"
+    ]
+  },
+  "machineCheck": {
+    "requiredPackageScript": "codex:orchestrator:buffered-acceptance-split-review:smoke",
+    "requiredPackageScriptCommand": "node scripts/sdk-buffered-acceptance-split-review-smoke.js",
+    "requiredReadmeSnippets": [
+      "M170 reviews buffered acceptance split boundaries",
+      "170-sdk-buffered-acceptance-split-review.json",
+      "sdk-buffered-acceptance-split-review.v1",
+      "codex:orchestrator:buffered-acceptance-split-review:smoke",
+      "project-local"
+    ],
+    "mustExist": [
+      "orchestrator/run-buffered-acceptance.mjs",
+      "orchestrator/run-write-capable-scaffold.mjs",
+      "orchestrator/core/post-run-contract.mjs",
+      "orchestrator/adapters/ae-agent-sdk-policy.mjs",
+      ".codex-audit/sdk-orchestrator-extraction/166-sdk-runner-split-review.json",
+      ".codex-audit/sdk-orchestrator-extraction/169-sdk-post-run-contract-review-or-extraction.json"
+    ],
+    "requiredSourceSnippets": {
+      "orchestrator/run-buffered-acceptance.mjs": [
+        "export function parseBufferedAcceptanceArgs",
+        "export async function main",
+        "function collectSdkScopeExpansionReviewPackets",
+        "function collectSdkWriteLaneReadinessPackets",
+        "function collectSdkWriteLaneApprovalDecisionPackets",
+        "function collectSdkWriteLaneEnablementPackets",
+        "function collectSdkLaunchGovernancePackets",
+        "async function buildCommittedSdkLaunchGovernanceReport",
+        "path.join(\"scripts\", \"sdk-production-code-broader-readiness-smoke.js\")",
+        "path.join(\"scripts\", \"sdk-post-run-contract-extraction-smoke.js\")",
+        "readme.includes(\"169-sdk-post-run-contract-review-or-extraction.json\")",
+        "packageJson.scripts?.[\"check:rules\"]"
+      ],
+      "package.json": [
+        "\"check:rules\": \"node orchestrator/run-buffered-acceptance.mjs --contract-smoke\"",
+        "\"codex:orchestrator:governance-report\": \"node orchestrator/run-buffered-acceptance.mjs --governance-report\""
+      ]
+    },
+    "requiredFalseBoundaryFlags": [
+      "extractionPerformed",
+      "runnerBehaviorChanged",
+      "wrapperCommandsChanged",
+      "sdkThreadCreated",
+      "networkAccessed",
+      "cepPanelSdkWritesEnabled",
+      "cepPanelPanelJsEditedThroughSdk",
+      "liveCepOrAfterEffectsRun",
+      "externalProviderValidationRun",
+      "mutatingLiveValidationRun",
+      "packageInstallRun",
+      "dependencyChanged",
+      "archiveMovePerformed",
+      "deletionPerformed",
+      "squashPerformed",
+      "pushPerformed"
+    ]
+  }
+}
