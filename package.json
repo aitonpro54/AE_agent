@@ -30,6 +30,9 @@
     "codex:orchestrator:ae-agent-cleanup-queue:smoke": "node scripts/sdk-ae-agent-cleanup-conveyor-queue-smoke.js",
     "codex:orchestrator:ae-agent-cleanup-conveyor": "node orchestrator/run-ae-agent-cleanup-conveyor.mjs",
     "codex:orchestrator:ae-agent-cleanup-conveyor:smoke": "node scripts/sdk-ae-agent-cleanup-conveyor-command-smoke.js",
+    "codex:orchestrator:current-history-index:smoke": "node scripts/sdk-current-history-index-smoke.js",
+    "codex:orchestrator:current-governance:smoke": "node scripts/sdk-current-governance-smoke.js",
+    "codex:orchestrator:history-index:smoke": "node scripts/sdk-history-index-smoke.js",
     "check:rules": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke"
   },
   "dependencies": {

@@ -1,0 +1,137 @@
+{
+  "schema": "sdk-smoke-consolidation-plan.v1",
+  "milestone": 177,
+  "title": "SDK Smoke Consolidation Plan",
+  "createdAt": "2026-05-22",
+  "purpose": "Plan a smaller manifest-driven SDK smoke surface while retaining existing milestone-specific coverage until replacement coverage is green.",
+  "sourceContext": {
+    "previousMilestone": 176,
+    "currentStateArtifact": ".codex-audit/sdk-current-state.json",
+    "historyIndexArtifact": ".codex-audit/sdk-history-index.json",
+    "queueArtifact": ".codex-audit/sdk-milestone-conveyor/173-ae-agent-cleanup-conveyor-queue.json",
+    "behaviorBoundary": {
+      "planOnly": true,
+      "localOnly": true,
+      "sdkThreadCreated": false,
+      "networkAccessed": false,
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditedThroughSdk": false,
+      "liveCepOrAfterEffectsRun": false,
+      "externalProviderValidationRun": false,
+      "mutatingLiveValidationRun": false,
+      "packageInstallRun": false,
+      "dependencyChanged": false,
+      "oldSmokeScriptDeleted": false,
+      "runtimeBehaviorChanged": false,
+      "pushPerformed": false,
+      "prCreated": false
+    }
+  },
+  "consolidationPolicy": {
+    "replacementCoverageReady": false,
+    "existingMilestoneSpecificSmokesRetained": true,
+    "checkRulesCoverageKeptUntilReplacementGreen": true,
+    "deleteOldSmokeScriptsBeforeReplacementGreen": false,
+    "dropCheckRulesAssertionsWithoutEquivalentCoverage": false,
+    "futureManifestOwner": "codex-sdk-orchestrator-tool",
+    "migrationRequiresSeparateMilestone": true
+  },
+  "smokeSurfaceStatus": [
+    {
+      "id": "current-governance",
+      "status": "active",
+      "entrypoint": "codex:orchestrator:current-governance:smoke",
+      "scriptPath": "scripts/sdk-current-governance-smoke.js",
+      "coverage": "Checks .codex-audit/sdk-current-state.json, current M152+ evidence, narrow production-code allowlist, package scripts, README snippets, and check:rules wiring."
+    },
+    {
+      "id": "current-history-index",
+      "status": "active",
+      "entrypoint": "codex:orchestrator:current-history-index:smoke",
+      "scriptPath": "scripts/sdk-current-history-index-smoke.js",
+      "coverage": "Checks M176 current/history split and keeps historical verdicts available without rereading old packets by default."
+    },
+    {
+      "id": "history-index-and-consolidation-plan",
+      "status": "active",
+      "entrypoint": "codex:orchestrator:history-index:smoke",
+      "scriptPath": "scripts/sdk-history-index-smoke.js",
+      "coverage": "Checks .codex-audit/sdk-history-index.json plus this M177 consolidation policy."
+    },
+    {
+      "id": "m152-m173-milestone-specific-smokes",
+      "status": "active-retained-until-equivalent-coverage",
+      "coverage": "Existing milestone-specific package scripts and direct check:rules calls remain in place."
+    },
+    {
+      "id": "m144-m151-retired-historical-smokes",
+      "status": "archived-history",
+      "coverage": "Retired historical scripts are represented by M162/M163/M165 history artifacts and not reactivated."
+    },
+    {
+      "id": "future-manifest-driven-smoke-catalog",
+      "status": "planned-not-implemented",
+      "coverage": "A later dedicated milestone may move generic manifest-driven smoke catalog behavior to codex-sdk-orchestrator-tool after equivalent fail-closed coverage passes."
+    }
+  ],
+  "futureManifestShape": {
+    "schema": "codex-sdk-orchestrator-smoke-catalog.v1",
+    "requiredFields": [
+      "adapterId",
+      "currentChecks",
+      "historyChecks",
+      "packageScriptAssertions",
+      "readmeAssertions",
+      "blockedWorkAssertions",
+      "migrationStatus"
+    ],
+    "notImplementedHere": true
+  },
+  "machineCheck": {
+    "requiredPackageScripts": {
+      "codex:orchestrator:current-governance:smoke": "node scripts/sdk-current-governance-smoke.js",
+      "codex:orchestrator:current-history-index:smoke": "node scripts/sdk-current-history-index-smoke.js",
+      "codex:orchestrator:history-index:smoke": "node scripts/sdk-history-index-smoke.js"
+    },
+    "requiredReadmeSnippets": [
+      "M177 records the SDK smoke consolidation plan",
+      ".codex-audit/sdk-smoke-consolidation-plan.json",
+      "codex:orchestrator:current-governance:smoke",
+      "codex:orchestrator:history-index:smoke",
+      "existing milestone-specific smokes stay active until replacement coverage is green"
+    ],
+    "requiredSourceSnippets": {
+      "orchestrator/run-buffered-acceptance.mjs": [
+        "sdk-current-governance-smoke.js",
+        "sdk-history-index-smoke.js",
+        "M177 SDK current governance smoke failed",
+        "M177 SDK history index smoke failed"
+      ],
+      "package.json": [
+        "\"codex:orchestrator:current-governance:smoke\": \"node scripts/sdk-current-governance-smoke.js\"",
+        "\"codex:orchestrator:history-index:smoke\": \"node scripts/sdk-history-index-smoke.js\""
+      ]
+    },
+    "requiredActiveSmokeIds": [
+      "current-governance",
+      "current-history-index",
+      "history-index-and-consolidation-plan",
+      "m152-m173-milestone-specific-smokes"
+    ],
+    "requiredFalseBoundaryFlags": [
+      "sdkThreadCreated",
+      "networkAccessed",
+      "cepPanelSdkWritesEnabled",
+      "cepPanelPanelJsEditedThroughSdk",
+      "liveCepOrAfterEffectsRun",
+      "externalProviderValidationRun",
+      "mutatingLiveValidationRun",
+      "packageInstallRun",
+      "dependencyChanged",
+      "oldSmokeScriptDeleted",
+      "runtimeBehaviorChanged",
+      "pushPerformed",
+      "prCreated"
+    ]
+  }
+}

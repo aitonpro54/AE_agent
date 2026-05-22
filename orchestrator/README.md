@@ -148,7 +148,7 @@ Hard-stop conditions:
 
 ## Локальный contract smoke
 
-Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate, SDK scope expansion review packet gate, committed review packet files, SDK write lane readiness packet gate, SDK write lane approval decision packet gate, SDK write lane enablement packet gate, SDK launch governance packet gate, SDK launch governance drift report, subprocess parser smoke для governance-report JSON, current M152+ governance/conveyor/extraction smokes, historical smoke migration, historical archive review, historical archive move и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
+Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate, SDK scope expansion review packet gate, committed review packet files, SDK write lane readiness packet gate, SDK write lane approval decision packet gate, SDK write lane enablement packet gate, SDK launch governance packet gate, SDK launch governance drift report, subprocess parser smoke для governance-report JSON, current M152+ governance/conveyor/extraction smokes, historical smoke migration, historical archive review, historical archive move, M176 current/history split, M177 smoke consolidation checks и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
 
 ```powershell
 npm.cmd run check:rules
@@ -329,6 +329,21 @@ npm.cmd run codex:orchestrator:ae-agent-cleanup-conveyor:smoke
 ```
 
 M174 executes the first cleanup conveyor item as a docs-only active/archive split. The active execution plan now stays compact in `plans/target-app-execplan.md`; full pre-M174 milestone history is preserved in `plans/archive/target-app-execplan-history-2026-05.md`. The split changes no orchestrator runtime behavior, starts no SDKThread/network work, and does not enable CEP-panel SDK writes. The next cleanup conveyor item is M175 runtime artifact cleanup note/policy.
+
+M175 records the runtime artifact cleanup policy in `plans/archive/runtime-artifact-cleanup-policy-2026-05.md`. The policy covers ignored runtime artifact areas such as `backups/`, `logs/`, `snapshots/`, `.codex-runtime/`, and `pro-review-bundles/`, but it performs no delete, move, archive transfer, `.gitignore` change, live CEP/AE validation, SDKThread/network work, or provider validation. Future runtime cleanup still requires read-only inventory evidence and separate explicit approval before any filesystem mutation.
+
+M176 splits current SDK state from historical proof references. Current governance and readiness live in `.codex-audit/sdk-current-state.json`; `.codex-audit/sdk-history-index.json` keeps historical proof references available without rereading old packets by default. The split keeps M152+ governance/readiness/conveyor/extraction evidence directly checked by `check:rules` through `codex:orchestrator:current-history-index:smoke`.
+
+```powershell
+npm.cmd run codex:orchestrator:current-history-index:smoke
+```
+
+M177 records the SDK smoke consolidation plan in `.codex-audit/sdk-smoke-consolidation-plan.json`. The plan adds `codex:orchestrator:current-governance:smoke` and `codex:orchestrator:history-index:smoke` as smaller current/history checks, while existing milestone-specific smokes stay active until replacement coverage is green. Generic manifest-driven smoke catalog work is reserved for a later dedicated `codex-sdk-orchestrator-tool` milestone.
+
+```powershell
+npm.cmd run codex:orchestrator:current-governance:smoke
+npm.cmd run codex:orchestrator:history-index:smoke
+```
 
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 

@@ -1133,6 +1133,40 @@ async function runContractSmoke() {
     `M173 AE Agent cleanup conveyor command smoke failed: ${aeAgentCleanupConveyorCommandOutput.trim()}`,
     failures,
   );
+  const sdkCurrentHistoryIndexSmoke = runNode([
+    path.join("scripts", "sdk-current-history-index-smoke.js"),
+  ]);
+  const sdkCurrentHistoryIndexOutput = `${
+    sdkCurrentHistoryIndexSmoke.stdout ?? ""
+  }\n${sdkCurrentHistoryIndexSmoke.stderr ?? ""}`;
+  assertContract(
+    sdkCurrentHistoryIndexSmoke.status === 0 &&
+      sdkCurrentHistoryIndexOutput.includes("SDK current/history index smoke: pass"),
+    `M176 SDK current/history index smoke failed: ${sdkCurrentHistoryIndexOutput.trim()}`,
+    failures,
+  );
+  const sdkCurrentGovernanceSmoke = runNode([
+    path.join("scripts", "sdk-current-governance-smoke.js"),
+  ]);
+  const sdkCurrentGovernanceOutput = `${
+    sdkCurrentGovernanceSmoke.stdout ?? ""
+  }\n${sdkCurrentGovernanceSmoke.stderr ?? ""}`;
+  assertContract(
+    sdkCurrentGovernanceSmoke.status === 0 &&
+      sdkCurrentGovernanceOutput.includes("SDK current governance smoke: pass"),
+    `M177 SDK current governance smoke failed: ${sdkCurrentGovernanceOutput.trim()}`,
+    failures,
+  );
+  const sdkHistoryIndexSmoke = runNode([path.join("scripts", "sdk-history-index-smoke.js")]);
+  const sdkHistoryIndexOutput = `${sdkHistoryIndexSmoke.stdout ?? ""}\n${
+    sdkHistoryIndexSmoke.stderr ?? ""
+  }`;
+  assertContract(
+    sdkHistoryIndexSmoke.status === 0 &&
+      sdkHistoryIndexOutput.includes("SDK history index smoke: pass"),
+    `M177 SDK history index smoke failed: ${sdkHistoryIndexOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,

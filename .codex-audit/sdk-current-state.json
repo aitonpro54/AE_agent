@@ -1,0 +1,226 @@
+{
+  "schema": "sdk-current-state.v1",
+  "milestone": 176,
+  "title": "SDK Current State",
+  "createdAt": "2026-05-22",
+  "purpose": "Keep the current AE Agent SDK governance and readiness state directly machine-checked while older proof packets move behind a history index.",
+  "sourceContext": {
+    "previousMilestone": 175,
+    "previousPolicy": "plans/archive/runtime-artifact-cleanup-policy-2026-05.md",
+    "queueArtifact": ".codex-audit/sdk-milestone-conveyor/173-ae-agent-cleanup-conveyor-queue.json",
+    "branch": "codex/roadmap-1.3-planning",
+    "behaviorBoundary": {
+      "localOnly": true,
+      "sdkThreadCreated": false,
+      "networkAccessed": false,
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditedThroughSdk": false,
+      "liveCepOrAfterEffectsRun": false,
+      "externalProviderValidationRun": false,
+      "mutatingLiveValidationRun": false,
+      "packageInstallRun": false,
+      "dependencyChanged": false,
+      "runtimeArtifactDeleted": false,
+      "runtimeArtifactMoved": false,
+      "pushPerformed": false,
+      "prCreated": false
+    }
+  },
+  "currentSdkBaseline": {
+    "state": "local-gated-ae-agent-specific",
+    "productionCodeSdkWriteAllowlist": [
+      "scripts/provider-api-smoke.js",
+      "scripts/provider-contract-smoke.js"
+    ],
+    "cepPanelSdkWritesEnabled": false,
+    "checkRulesEntrypoint": "npm.cmd run check:rules",
+    "checkRulesCommand": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke",
+    "historicalProofReadPolicy": "Use .codex-audit/sdk-history-index.json first; reread old packets only for a specific audit question."
+  },
+  "currentDirectCheckSets": [
+    {
+      "id": "m152-provider-smoke-governance",
+      "milestones": [
+        152
+      ],
+      "status": "current-direct-check",
+      "verdict": "current two-file production-code provider smoke lane remains the only production-code SDK write readiness claim",
+      "artifacts": [
+        ".codex-audit/sdk-production-readiness/152-sdk-production-code-provider-smokes-ready.json",
+        ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
+        ".codex-audit/sdk-write-lane-enablement/152-production-code-provider-smokes-enable.json",
+        ".codex-audit/sdk-write-lane-readiness/152-production-code-provider-smokes-readiness.json",
+        ".codex-audit/sdk-write-lane-approval-decisions/152-production-code-provider-smokes-approval-decision.json",
+        ".codex-audit/sdk-scope-expansion-reviews/152-production-code-provider-smokes-review.json"
+      ],
+      "scriptPaths": [
+        "scripts/sdk-production-code-broader-readiness-smoke.js",
+        "scripts/provider-api-smoke.js",
+        "scripts/provider-contract-smoke.js"
+      ],
+      "packageScripts": [
+        "codex:orchestrator:production-code-broader:smoke",
+        "codex:orchestrator:governance-report",
+        "check:rules"
+      ]
+    },
+    {
+      "id": "m153-m157-conveyor-governance",
+      "milestones": [
+        153,
+        154,
+        155,
+        156,
+        157
+      ],
+      "status": "current-direct-check",
+      "verdict": "next-lane and milestone conveyor gates remain local-gated and fail closed before SDKThread/network work",
+      "artifacts": [
+        ".codex-audit/sdk-next-lane/153-sdk-next-lane-selection.json",
+        ".codex-audit/sdk-milestone-conveyor/154-sdk-milestone-conveyor-spec.json",
+        ".codex-audit/sdk-milestone-conveyor/155-sdk-milestone-conveyor-local-dry-run.json",
+        ".codex-audit/sdk-milestone-conveyor/156-sdk-conveyor-sdkthread-proof.json",
+        ".codex-audit/sdk-milestone-conveyor/157-sdk-conveyor-commit-handoff-loop-gate.json"
+      ],
+      "scriptPaths": [
+        "scripts/sdk-next-lane-selection-smoke.js",
+        "scripts/sdk-milestone-conveyor-spec-smoke.js",
+        "scripts/sdk-milestone-conveyor-local-dry-run-smoke.js",
+        "scripts/sdk-milestone-conveyor-sdkthread-proof-smoke.js",
+        "scripts/sdk-milestone-conveyor-loop-gate-smoke.js"
+      ],
+      "packageScripts": [
+        "codex:orchestrator:next-lane:smoke",
+        "codex:orchestrator:milestone-conveyor-spec:smoke",
+        "codex:orchestrator:milestone-conveyor-dry-run:smoke",
+        "codex:orchestrator:milestone-conveyor-sdkthread-proof:smoke",
+        "codex:orchestrator:milestone-conveyor-loop-gate:smoke",
+        "check:rules"
+      ]
+    },
+    {
+      "id": "m158-m173-extraction-and-cleanup-queue",
+      "milestones": [
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173
+      ],
+      "status": "current-direct-check",
+      "verdict": "AE Agent project-local SDK extraction, adapter boundaries, historical archive movement, and cleanup conveyor queue remain checked without enabling broader writes",
+      "artifacts": [
+        ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+        ".codex-audit/sdk-orchestrator-extraction/159-sdk-orchestrator-inventory-freeze.json",
+        ".codex-audit/sdk-orchestrator-extraction/160-sdk-reusable-core-extraction.json",
+        ".codex-audit/sdk-orchestrator-extraction/161-ae-agent-adapter-config.json",
+        ".codex-audit/sdk-orchestrator-extraction/162-sdk-historical-evidence-index.json",
+        ".codex-audit/sdk-orchestrator-extraction/163-sdk-historical-smoke-migration.json",
+        ".codex-audit/sdk-orchestrator-extraction/164-sdk-historical-archive-review.json",
+        ".codex-audit/sdk-orchestrator-extraction/165-sdk-historical-archive-move.json",
+        ".codex-audit/sdk-orchestrator-extraction/166-sdk-runner-split-review.json",
+        ".codex-audit/sdk-orchestrator-extraction/167-sdk-operation-envelope-core-extraction.json",
+        ".codex-audit/sdk-orchestrator-extraction/168-sdk-runtime-diagnostics-review-or-extraction.json",
+        ".codex-audit/sdk-orchestrator-extraction/169-sdk-post-run-contract-review-or-extraction.json",
+        ".codex-audit/sdk-orchestrator-extraction/170-sdk-buffered-acceptance-split-review.json",
+        ".codex-audit/sdk-orchestrator-extraction/171-sdk-orchestrator-extraction-closeout-review.json",
+        ".codex-audit/sdk-orchestrator-extraction/172-sdk-adapter-interface-design-review.json",
+        ".codex-audit/sdk-milestone-conveyor/173-ae-agent-cleanup-conveyor-queue.json"
+      ],
+      "scriptPaths": [
+        "scripts/sdk-orchestrator-extraction-cleanup-smoke.js",
+        "scripts/sdk-orchestrator-inventory-freeze-smoke.js",
+        "scripts/sdk-reusable-core-extraction-smoke.js",
+        "scripts/sdk-ae-agent-adapter-config-smoke.js",
+        "scripts/sdk-historical-evidence-index-smoke.js",
+        "scripts/sdk-historical-smoke-migration-smoke.js",
+        "scripts/sdk-historical-archive-review-smoke.js",
+        "scripts/sdk-historical-archive-move-smoke.js",
+        "scripts/sdk-runner-split-review-smoke.js",
+        "scripts/sdk-operation-envelope-core-extraction-smoke.js",
+        "scripts/sdk-runtime-diagnostics-extraction-smoke.js",
+        "scripts/sdk-post-run-contract-extraction-smoke.js",
+        "scripts/sdk-buffered-acceptance-split-review-smoke.js",
+        "scripts/sdk-orchestrator-extraction-closeout-smoke.js",
+        "scripts/sdk-adapter-interface-design-smoke.js",
+        "scripts/sdk-ae-agent-cleanup-conveyor-queue-smoke.js",
+        "scripts/sdk-ae-agent-cleanup-conveyor-command-smoke.js"
+      ],
+      "packageScripts": [
+        "codex:orchestrator:extraction-cleanup:smoke",
+        "codex:orchestrator:inventory-freeze:smoke",
+        "codex:orchestrator:reusable-core:smoke",
+        "codex:orchestrator:adapter-config:smoke",
+        "codex:orchestrator:historical-evidence:smoke",
+        "codex:orchestrator:historical-smoke-migration:smoke",
+        "codex:orchestrator:historical-archive-review:smoke",
+        "codex:orchestrator:historical-archive-move:smoke",
+        "codex:orchestrator:runner-split-review:smoke",
+        "codex:orchestrator:operation-envelope-core:smoke",
+        "codex:orchestrator:runtime-diagnostics:smoke",
+        "codex:orchestrator:post-run-contract:smoke",
+        "codex:orchestrator:buffered-acceptance-split-review:smoke",
+        "codex:orchestrator:extraction-closeout:smoke",
+        "codex:orchestrator:adapter-interface-design:smoke",
+        "codex:orchestrator:ae-agent-cleanup-queue:smoke",
+        "codex:orchestrator:ae-agent-cleanup-conveyor:smoke",
+        "check:rules"
+      ]
+    }
+  ],
+  "machineCheck": {
+    "requiredPackageScript": "codex:orchestrator:current-history-index:smoke",
+    "requiredPackageScriptCommand": "node scripts/sdk-current-history-index-smoke.js",
+    "requiredCurrentSetIds": [
+      "m152-provider-smoke-governance",
+      "m153-m157-conveyor-governance",
+      "m158-m173-extraction-and-cleanup-queue"
+    ],
+    "requiredProductionCodeSdkWriteAllowlist": [
+      "scripts/provider-api-smoke.js",
+      "scripts/provider-contract-smoke.js"
+    ],
+    "requiredReadmeSnippets": [
+      "M176 splits current SDK state from historical proof references",
+      ".codex-audit/sdk-current-state.json",
+      ".codex-audit/sdk-history-index.json",
+      "codex:orchestrator:current-history-index:smoke"
+    ],
+    "requiredSourceSnippets": {
+      "orchestrator/run-buffered-acceptance.mjs": [
+        "sdk-current-history-index-smoke.js",
+        "M176 SDK current/history index smoke failed"
+      ],
+      "package.json": [
+        "\"codex:orchestrator:current-history-index:smoke\": \"node scripts/sdk-current-history-index-smoke.js\"",
+        "\"check:rules\": \"node orchestrator/run-buffered-acceptance.mjs --contract-smoke\""
+      ]
+    },
+    "requiredFalseBoundaryFlags": [
+      "sdkThreadCreated",
+      "networkAccessed",
+      "cepPanelSdkWritesEnabled",
+      "cepPanelPanelJsEditedThroughSdk",
+      "liveCepOrAfterEffectsRun",
+      "externalProviderValidationRun",
+      "mutatingLiveValidationRun",
+      "packageInstallRun",
+      "dependencyChanged",
+      "runtimeArtifactDeleted",
+      "runtimeArtifactMoved",
+      "pushPerformed",
+      "prCreated"
+    ]
+  }
+}

@@ -4,10 +4,11 @@
 
 - [x] Stable baseline: AE Agent 1.0.11 CEP panel, provider setup, Agent planning, Agent Hardcore owner mode, plan validation, protected execution, local history, diagnostics, reload hard-refresh, install/sync cache clearing, and installed-panel smoke coverage.
 - [x] Historical milestone detail through M173 is archived in `plans/archive/target-app-execplan-history-2026-05.md`.
-- [~] Milestone 174: AE Agent roadmap reset and active-state split; active plan/archive/README done, `.codex/handoff.md` update blocked by Access denied.
-- [ ] Milestone 175: Runtime artifact cleanup note and archive policy.
-- [ ] Milestone 176: SDK current/history split.
-- [ ] Milestone 177: SDK smoke consolidation plan.
+- [x] Milestone 174: AE Agent roadmap reset and active-state split.
+- [x] Milestone 175: Runtime artifact cleanup note and archive policy.
+- [x] Milestone 176: SDK current/history split.
+- [x] Milestone 177: SDK smoke consolidation plan.
+- [ ] Next review block: review and commit the local-only M175-M177 cleanup conveyor changes after validation.
 
 ## Current Stable Baseline
 
@@ -34,45 +35,47 @@
 - Current production-code SDK write readiness is limited to exactly `scripts/provider-api-smoke.js` and `scripts/provider-contract-smoke.js`.
 - General SDK autopilot repo edits, broad production-code writes, CEP-panel SDK writes, live CEP/AE validation, external-provider/OpenAI CLI planner validation, mutating-live validation, package installs, dependency changes, push, and PR creation remain out of scope without fresh bounded approval.
 - CEP-panel SDK writes remain disabled; `cep-panel/panel.js` must not be edited through the SDK lane.
-- Current M152+ governance/readiness/conveyor/extraction evidence remains directly checked by `npm.cmd run check:rules`.
-- Historical SDK proof details are summarized in current plan sections and preserved in the archive; old details should not be reread by default unless needed for a specific audit.
+- Current M152+ governance/readiness/conveyor/extraction evidence is directly checked through `npm.cmd run check:rules` and summarized in `.codex-audit/sdk-current-state.json`.
+- Historical SDK proof references are summarized in `.codex-audit/sdk-history-index.json`; old proof packets should not be reread by default unless a specific audit needs them.
+- SDK smoke consolidation is planned in `.codex-audit/sdk-smoke-consolidation-plan.json`; existing milestone-specific smokes stay active until replacement coverage is green.
 
 ## Historical Archive
 
 - Active plan history through M173 is preserved at `plans/archive/target-app-execplan-history-2026-05.md`.
-- The archive was created before this active-plan reset and includes the former Progress list, milestone detail, Decision Log, and Validation history.
-- Use the archive for historical investigation. Keep this active plan focused on current baseline, current decisions, validation matrix, and the next reviewable roadmap.
+- Runtime artifact cleanup policy for M175 is preserved at `plans/archive/runtime-artifact-cleanup-policy-2026-05.md`.
+- Use archives for historical investigation. Keep this active plan focused on current baseline, current decisions, validation matrix, and the next reviewable roadmap.
 
 ## Active Roadmap
 
 ### Milestone 174: AE Agent roadmap reset and active-state split
 
-- Preserve the complete pre-M174 execution plan in `plans/archive/target-app-execplan-history-2026-05.md`.
-- Compress `plans/target-app-execplan.md` into the active state: current baseline, active roadmap, current decisions, validation matrix, and recent milestone summary.
-- Keep links from active state to archived history.
-- Update `orchestrator/README.md` with the active/archive plan split.
-- Update `.codex/handoff.md` with M174 results and the next exact prompt, or record the blocker if `.codex/**` ACL denies writes.
-- Do not change CEP panel, bridge, provider, AE runtime behavior, runtime artifacts, package dependencies, push, or PR state.
+- Completed: active plan compressed into current-state roadmap.
+- Completed: full pre-M174 plan preserved in `plans/archive/target-app-execplan-history-2026-05.md`.
+- Completed: `orchestrator/README.md` documents the active/archive split.
+- Runtime behavior is unchanged.
 
 ### Milestone 175: Runtime artifact cleanup note and archive policy
 
-- Write a cleanup/archive policy for ignored runtime artifacts such as `backups/`, `logs/`, `snapshots/`, `.codex-runtime/`, and `pro-review-bundles/`.
-- Summarize already-collected size/count evidence where available.
-- Recommend external archive locations and operator steps without deleting or moving runtime artifacts.
-- Keep `.gitignore` unchanged unless a later milestone proves the need.
+- Completed: wrote `plans/archive/runtime-artifact-cleanup-policy-2026-05.md`.
+- The policy covers ignored runtime artifact areas: `backups/`, `logs/`, `snapshots/`, `.codex-runtime/`, and `pro-review-bundles/`.
+- No runtime artifacts were deleted, moved, archived externally, or scanned for a new large inventory in this bounded turn.
+- `.gitignore` is unchanged.
 
 ### Milestone 176: SDK current/history split
 
-- Create machine-checked current SDK state and history index artifacts.
-- Keep current M152+ governance/readiness/conveyor/extraction evidence directly checked.
-- Keep historical proof references available without requiring every old packet to be reread by default.
-- Do not run SDKThread/network or enable CEP-panel SDK writes.
+- Completed: added `.codex-audit/sdk-current-state.json`.
+- Completed: added `.codex-audit/sdk-history-index.json`.
+- Completed: added `scripts/sdk-current-history-index-smoke.js` and package/check:rules wiring.
+- Current M152+ evidence remains directly checked; historical proof verdicts remain available without routine rereads of every old packet.
+- SDKThread/network and CEP-panel SDK writes remain out of scope.
 
 ### Milestone 177: SDK smoke consolidation plan
 
-- Plan how to consolidate milestone-specific SDK smokes after current/history separation.
-- Keep replacement coverage fail-closed before retiring old smoke scripts.
-- Keep generic reusable checks targeted for the sibling `codex-sdk-orchestrator-tool` only through a later dedicated milestone.
+- Completed: added `.codex-audit/sdk-smoke-consolidation-plan.json`.
+- Completed: added `scripts/sdk-current-governance-smoke.js` and `scripts/sdk-history-index-smoke.js`.
+- Completed: wired the new current/history smokes into `package.json`, `orchestrator/run-buffered-acceptance.mjs`, and `orchestrator/README.md`.
+- Existing milestone-specific smoke scripts and check:rules assertions remain active until equivalent replacement coverage is green.
+- Generic manifest-driven smoke catalog work is deferred to a future dedicated `codex-sdk-orchestrator-tool` milestone.
 
 ## Recent Milestone Summary
 
@@ -84,23 +87,27 @@
 - M162-M165: Indexed historical SDK evidence, migrated retired smoke coverage, reviewed archive candidates, and moved only reviewed historical candidates into `.codex-audit/sdk-history-archive/`.
 - M166-M170: Reviewed and extracted operation-envelope, runtime diagnostics, and post-run contract helpers where behavior-preserving; kept buffered acceptance project-local.
 - M171-M172: Closed the SDK orchestrator extraction block as `closed-local-gated` and designed the future standalone adapter/plugin interface without implementing a standalone package.
-- M173: Charged four AE Agent cleanup stages into the local-only cleanup conveyor and added the command-line runner plus Codex CLI fallback; no queued cleanup item was executed in M173.
+- M173: Charged four AE Agent cleanup stages into the local-only cleanup conveyor and added the command-line runner plus Codex CLI fallback.
 - M174: Split active plan state from historical detail. Runtime behavior is unchanged.
-- Handoff update attempt: `.codex/handoff.md` could not be written because Windows returned `Access denied`; no ACL or delete/recreate workaround was attempted.
+- M175: Added runtime artifact cleanup/archive policy without deleting, moving, scanning, or archiving runtime files.
+- M176: Split current SDK state from history index and added machine checks for the split.
+- M177: Added SDK smoke consolidation plan and current/history smoke entrypoints while keeping existing milestone-specific coverage.
 
 ## Decision Log
 
+- 2026-05-22: M177 only plans smoke consolidation. It does not delete old smoke scripts or remove check:rules assertions because replacement coverage is not yet green.
+- 2026-05-22: M177 keeps generic manifest-driven smoke catalog behavior targeted for a later dedicated `codex-sdk-orchestrator-tool` milestone.
+- 2026-05-22: `.codex/handoff.md` remains blocked for this M175-M177 turn: both `apply_patch` and PowerShell UTF-8 write failed. The handoff state is recorded in this active plan instead of changing ACLs or recreating the file.
+- 2026-05-22: M176 treats `.codex-audit/sdk-current-state.json` as the current directly checked SDK state and `.codex-audit/sdk-history-index.json` as the default historical proof index.
+- 2026-05-22: M176 keeps current M152+ governance/readiness/conveyor/extraction evidence directly checked by `check:rules`; historical proof details remain linked but not reread by default.
+- 2026-05-22: M175 documents runtime artifact cleanup policy only. It does not delete, move, externally archive, scan, or clear `backups/`, `logs/`, `snapshots/`, `.codex-runtime/`, or `pro-review-bundles/`.
+- 2026-05-22: M175 leaves `.gitignore` unchanged; any future runtime artifact move/delete requires separate read-only inventory evidence and explicit approval.
 - 2026-05-22: M174 preserves the complete pre-M174 plan in `plans/archive/target-app-execplan-history-2026-05.md` and treats `plans/target-app-execplan.md` as the current active-state plan. Historical milestone detail must be linked, not deleted.
-- 2026-05-22: M174 is docs-only. It does not change CEP panel, bridge, provider, AE runtime behavior, runtime artifacts, SDKThread/network policy, dependencies, push, or PR state.
-- 2026-05-22: `.codex/handoff.md` remains blocked by local filesystem permissions for this turn. The M174 handoff state is therefore recorded in this active plan instead of changing ACLs, deleting/recreating the handoff file, or touching unplanned paths.
-- 2026-05-22: The active roadmap is the M173 cleanup conveyor sequence: M174 roadmap active-state split, M175 runtime artifact cleanup note, M176 SDK current/history split, and M177 SDK smoke consolidation plan.
-- 2026-05-22: M173 charges the four AE Agent cleanup stages into the SDK milestone conveyor as local-only queued work, not as execution approval. Each item keeps `maxSdkThreadRuns:0`, no live CEP/AE, no runtime deletion/move, no dependency change, no push, and no PR without fresh explicit approval.
-- 2026-05-22: M173 command runner adds `codex:orchestrator:ae-agent-cleanup-conveyor`; it dry-runs by default, refuses pre-existing git dirt for execution, enforces the post-run git path allowlist from selected planned paths, and does not auto-commit or push.
-- 2026-05-22: M173 Codex CLI fallback uses `--engine cli --execute` through `cmd.exe` when the SDK backend disconnects, requires separate exact approval text, and keeps the same planned-path allowlist.
+- 2026-05-22: M174-M177 are local-only cleanup conveyor work. They do not change CEP panel, bridge, provider, AE runtime behavior, SDKThread/network policy, dependencies, push, or PR state.
+- 2026-05-22: The active roadmap came from the M173 cleanup conveyor sequence: M174 roadmap active-state split, M175 runtime artifact cleanup note, M176 SDK current/history split, and M177 SDK smoke consolidation plan.
+- 2026-05-22: M173 charges the four AE Agent cleanup stages into the SDK milestone conveyor as local-only queued work, not as broad execution approval. Each item keeps `maxSdkThreadRuns:0`, no live CEP/AE, no runtime deletion/move, no dependency change, no push, and no PR without fresh explicit approval.
 - 2026-05-22: M172 defines a future standalone adapter/plugin interface, but AE Agent governance packet validators, current M152+ direct checks, package script assertions, README assertions, and project evidence policy remain project-local until a separate implementation milestone proves equivalent fail-closed behavior.
-- 2026-05-22: M171 closes the SDK orchestrator extraction block as `closed-local-gated`; no new extraction, SDKThread/network work, CEP-panel SDK write, package install, archive/delete/squash cleanup, push, or PR is introduced by closeout.
 - 2026-05-22: M165 historical archive cleanup moved only M164-reviewed candidates into `.codex-audit/sdk-history-archive/`; current M152+ evidence, active command files, provider smoke targets, `package.json`/`package-lock.json`, and `cep-panel/panel.js` remain in place.
-- 2026-05-22: M162 historical evidence index keeps M152 governance/readiness, M153-M157 conveyor packets, M158-M161 extraction artifacts, provider smoke targets, and `cep-panel/panel.js` as current directly checked evidence rather than historical-only evidence.
 - 2026-05-21: M152 supersedes the production-code SDK write allowlist with exactly `scripts/provider-api-smoke.js` and `scripts/provider-contract-smoke.js`; general SDK workflow, production-code outside those files, CEP-panel writes, external-provider/OpenAI CLI planner validation, live CEP/AE validation, mutating-live validation, package installs, and dependency changes remain outside the claim.
 - 2026-05-13: ChatGPT subscription access uses Codex CLI auth, not a normal OpenAI API key.
 - 2026-05-13: OpenAI API key access remains separate and uses normal API billing.
@@ -116,37 +123,51 @@
 
 | Check | Current requirement | Latest result |
 | --- | --- | --- |
-| `npm.cmd run check:rules` | Required for M174 cleanup docs. | Passed on 2026-05-22; output reported all buffered acceptance/governance/extraction checks as pass. |
-| `git diff --check` | Required for M174 cleanup docs. | Passed on 2026-05-22; Git printed only LF-to-CRLF working-copy warnings for touched text files. |
-| `node --check` for touched JavaScript | Not applicable for M174 because no JavaScript is edited. | Not run. |
-| Configured local smoke suite from AGENTS.md | Not required by selected M174 queue item; no runtime/code behavior changed. | Not run. |
-| Live CEP/AE validation | Forbidden/out of scope for M174. | Not run. |
-| SDKThread/network/external-provider/OpenAI CLI planner/mutating-live validation | Forbidden/out of scope for M174. | Not run. |
+| `node --check orchestrator/run-buffered-acceptance.mjs` | Required because M176/M177 wire new check:rules smoke calls. | Passed on 2026-05-22. |
+| `node --check scripts/sdk-current-history-index-smoke.js` | Required for M176 touched JavaScript. | Passed on 2026-05-22. |
+| `node --check scripts/sdk-current-governance-smoke.js` | Required for M177 touched JavaScript. | Passed on 2026-05-22. |
+| `node --check scripts/sdk-history-index-smoke.js` | Required for M177 touched JavaScript. | Passed on 2026-05-22. |
+| `node scripts/sdk-current-history-index-smoke.js` | Required for M176 current/history split. | Passed on 2026-05-22. |
+| `node scripts/sdk-current-governance-smoke.js` | Required for M177 current-governance check. | Passed on 2026-05-22. |
+| `node scripts/sdk-history-index-smoke.js` | Required for M177 history/consolidation check. | Passed on 2026-05-22. |
+| `npm.cmd run check:rules` | Required by selected cleanup conveyor items and keeps current M152+ direct checks active. | Passed on 2026-05-22; npm printed only the existing `Unknown env config "http-proxy"` warning. |
+| `git diff --check` | Required by selected cleanup conveyor items. | Passed on 2026-05-22; Git printed only LF-to-CRLF working-copy warnings for touched text files. |
+| Configured local smoke suite from AGENTS.md | Not run in full because this bounded conveyor turn is limited to selected local SDK cleanup items; no runtime AE Agent behavior changed. | Not run; selected SDK validation is listed above. |
+| Live CEP/AE validation | Forbidden/out of scope for this turn. | Not run. |
+| SDKThread/network/external-provider/OpenAI CLI planner/mutating-live validation | Forbidden/out of scope for this turn. | Not run. |
 | Package install/dependency change validation | Out of scope because no dependency change is allowed. | Not run. |
 
-### Milestone 174
+### Milestone 175
 
-- Created `plans/archive/target-app-execplan-history-2026-05.md` as the complete pre-M174 plan archive.
-- Replaced `plans/target-app-execplan.md` with active state, archive link, M174-M177 roadmap, current decisions, validation matrix, and recent milestone summary.
-- Updated `orchestrator/README.md` with the M174 active/archive split note.
-- Attempted to update `.codex/handoff.md`, but both `apply_patch` and PowerShell UTF-8 write failed because the path is access-denied in this workspace. The blocker is recorded here.
-- Passed `npm.cmd run check:rules`.
-- Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
-- Runtime behavior is unchanged.
-- No live CEP/AE, SDKThread/network, external-provider/OpenAI CLI planner, mutating-live validation, package install, dependency change, push, or PR was performed.
+- Added `plans/archive/runtime-artifact-cleanup-policy-2026-05.md`.
+- The policy records affected ignored runtime directories and a future archive checklist.
+- No runtime files were deleted, moved, externally archived, scanned, or cleared.
+- `.gitignore` is unchanged.
 
-### M174 handoff blocker and next prompt
+### Milestone 176
 
-Because `.codex/handoff.md` is not writable in this turn, use this section as the M174 handoff record.
+- Added `.codex-audit/sdk-current-state.json`.
+- Added `.codex-audit/sdk-history-index.json`.
+- Added `scripts/sdk-current-history-index-smoke.js`.
+- Added package script `codex:orchestrator:current-history-index:smoke`.
+- Wired M176 smoke into `orchestrator/run-buffered-acceptance.mjs`.
+- Updated `orchestrator/README.md`.
 
-Current state:
+### Milestone 177
 
-- M174 active/archive split is implemented as far as filesystem permissions allow.
-- Changed planned docs: `plans/target-app-execplan.md`, `plans/archive/target-app-execplan-history-2026-05.md`, and `orchestrator/README.md`.
-- `.codex/handoff.md` remains unchanged due to Access denied.
-- No commit was created because the wrapper explicitly said `Do not commit`.
-- No runtime, SDKThread/network, live CEP/AE, external-provider, mutating-live, dependency, push, or PR work was performed.
-- Validation passed: `npm.cmd run check:rules` and `git diff --check`.
+- Added `.codex-audit/sdk-smoke-consolidation-plan.json`.
+- Added `scripts/sdk-current-governance-smoke.js`.
+- Added `scripts/sdk-history-index-smoke.js`.
+- Added package scripts `codex:orchestrator:current-governance:smoke` and `codex:orchestrator:history-index:smoke`.
+- Wired M177 smokes into `orchestrator/run-buffered-acceptance.mjs`.
+- Updated `orchestrator/README.md`.
+- Existing milestone-specific smokes remain active; no old smoke script was deleted.
+
+### Handoff
+
+`.codex/handoff.md` could not be updated in this turn: `apply_patch` rejected the path as outside the project boundary and PowerShell `Set-Content -Encoding UTF8 -LiteralPath .codex\handoff.md` returned `Access denied`. No ACL change, delete/recreate workaround, or unplanned path write was attempted.
+
+Use this active plan as the M175-M177 handoff record until `.codex/handoff.md` is writable again. No commit was created in this turn because the wrapper explicitly said `Do not commit`.
 
 Exact next prompt:
 
@@ -157,15 +178,34 @@ Exact next prompt:
 - `git status --short --branch`
 - `git log -1 --oneline`
 
-Прочитай UTF-8:
-- `AGENTS.md`
-- `specs/target-app.md`
+Ожидаемый HEAD: `b4cfc6f docs: split roadmap active state`.
+Ожидаемые uncommitted M175-M177 local-only изменения:
+- `.codex-audit/sdk-current-state.json`
+- `.codex-audit/sdk-history-index.json`
+- `.codex-audit/sdk-smoke-consolidation-plan.json`
+- `orchestrator/README.md`
+- `orchestrator/run-buffered-acceptance.mjs`
+- `package.json`
+- `plans/archive/runtime-artifact-cleanup-policy-2026-05.md`
 - `plans/target-app-execplan.md`
-- targeted M174/M175 sections of `.codex-audit/sdk-milestone-conveyor/173-ae-agent-cleanup-conveyor-queue.json`
+- `scripts/sdk-current-governance-smoke.js`
+- `scripts/sdk-current-history-index-smoke.js`
+- `scripts/sdk-history-index-smoke.js`
 
-M174 был выполнен как docs-only active/archive split настолько, насколько позволили права workspace: активный план сжат, полная история сохранена в `plans/archive/target-app-execplan-history-2026-05.md`, README обновлен. `.codex/handoff.md` не был обновлен из-за `Access denied`; handoff записан в `plans/target-app-execplan.md`.
+`.codex/handoff.md` still contains the older M174 handoff because writes to that path returned Access denied in the M175-M177 turn. Do not change ACLs, delete/recreate it, or touch unplanned paths unless explicitly approved.
 
-Не запускай SDKThread/network, CEP-panel SDK writes, live CEP/AE, external-provider/OpenAI CLI planner, mutating-live validation, dependency changes, package installs, push или PR без отдельного explicit approval. Не удаляй и не перемещай runtime artifacts.
+Проверь diff и финальную validation:
+- `node --check orchestrator/run-buffered-acceptance.mjs`
+- `node --check scripts/sdk-current-history-index-smoke.js`
+- `node --check scripts/sdk-current-governance-smoke.js`
+- `node --check scripts/sdk-history-index-smoke.js`
+- `node scripts/sdk-current-history-index-smoke.js`
+- `node scripts/sdk-current-governance-smoke.js`
+- `node scripts/sdk-history-index-smoke.js`
+- `npm.cmd run check:rules`
+- `git diff --check`
 
-Следующий разрешенный local-only milestone: M175 runtime artifact cleanup note and archive policy. Выполни только M175: напиши policy/notes для ignored runtime artifacts (`backups/`, `logs/`, `snapshots/`, `.codex-runtime/`, `pro-review-bundles/`) без удаления или перемещения файлов, обнови `plans/target-app-execplan.md` и, если права позволяют, `.codex/handoff.md`, выполни validation commands из queue item и не трогай runtime AE Agent.
+Если всё проходит, создай один локальный commit для M175-M177. Не push и не создавай PR без отдельного explicit approval.
+
+Не запускай SDKThread/network, CEP-panel SDK writes, live CEP/AE, external-provider/OpenAI CLI planner, mutating-live validation, dependency changes, package installs, runtime artifact delete/move, push или PR без отдельного explicit approval.
 ```

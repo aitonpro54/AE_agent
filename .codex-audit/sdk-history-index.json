@@ -1,0 +1,150 @@
+{
+  "schema": "sdk-history-index.v1",
+  "milestone": 176,
+  "title": "SDK History Index",
+  "createdAt": "2026-05-22",
+  "purpose": "Keep historical SDK proof verdicts available without rereading every old packet during routine current-state validation.",
+  "sourceContext": {
+    "previousMilestone": 175,
+    "historicalEvidenceIndex": ".codex-audit/sdk-orchestrator-extraction/162-sdk-historical-evidence-index.json",
+    "historicalSmokeMigration": ".codex-audit/sdk-orchestrator-extraction/163-sdk-historical-smoke-migration.json",
+    "historicalArchiveMove": ".codex-audit/sdk-orchestrator-extraction/165-sdk-historical-archive-move.json",
+    "cleanupQueue": ".codex-audit/sdk-milestone-conveyor/173-ae-agent-cleanup-conveyor-queue.json",
+    "activePlanArchive": "plans/archive/target-app-execplan-history-2026-05.md",
+    "behaviorBoundary": {
+      "localOnly": true,
+      "sdkThreadCreated": false,
+      "networkAccessed": false,
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditedThroughSdk": false,
+      "liveCepOrAfterEffectsRun": false,
+      "externalProviderValidationRun": false,
+      "mutatingLiveValidationRun": false,
+      "packageInstallRun": false,
+      "dependencyChanged": false,
+      "archiveMovePerformed": false,
+      "deletionPerformed": false,
+      "squashPerformed": false,
+      "pushPerformed": false,
+      "prCreated": false
+    }
+  },
+  "defaultReadPolicy": {
+    "routineValidation": "Read this index and the current-state artifact first.",
+    "deepAudit": "Reread archived historical packets only when a concrete audit question needs source-level detail.",
+    "currentEvidence": "Current M152+ evidence stays in .codex-audit/sdk-current-state.json and remains directly checked."
+  },
+  "historySets": [
+    {
+      "id": "early-docs-audit-and-orchestrator-sdkthread-proofs",
+      "sourceIndexId": "early-docs-audit-and-orchestrator-sdkthread-proofs",
+      "milestones": [
+        115,
+        118,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126
+      ],
+      "status": "historical-indexed-archived",
+      "verdict": "Useful early SDKThread proof chain for docs-audit/orchestrator outputs, superseded by current M152+ governance and conveyor checks.",
+      "defaultAction": "do-not-reread-by-default",
+      "supersededByCurrentSetIds": [
+        "m152-provider-smoke-governance",
+        "m153-m157-conveyor-governance",
+        "m158-m173-extraction-and-cleanup-queue"
+      ]
+    },
+    {
+      "id": "superseded-single-file-production-readiness",
+      "sourceIndexId": "superseded-single-file-production-readiness",
+      "milestones": [
+        129,
+        133,
+        134,
+        135,
+        140,
+        145,
+        146
+      ],
+      "status": "historical-indexed-archived",
+      "verdict": "Single-file production-code readiness is superseded by the current M152 two-file provider smoke lane and must not be used to broaden production-code writes.",
+      "defaultAction": "do-not-reread-by-default",
+      "supersededByCurrentSetIds": [
+        "m152-provider-smoke-governance"
+      ]
+    },
+    {
+      "id": "bounded-reliability-and-multifile-proofs",
+      "sourceIndexId": "bounded-reliability-and-multifile-proofs",
+      "milestones": [
+        147,
+        148,
+        149,
+        150,
+        151
+      ],
+      "status": "historical-indexed-archived",
+      "verdict": "Bounded reliability and multi-file proof history remains design evidence only; it does not approve broad repo writes or CEP-panel SDK writes.",
+      "defaultAction": "do-not-reread-by-default",
+      "supersededByCurrentSetIds": [
+        "m153-m157-conveyor-governance",
+        "m158-m173-extraction-and-cleanup-queue"
+      ]
+    },
+    {
+      "id": "pre-m174-active-plan-history",
+      "sourceIndexId": "target-app-execplan-history-2026-05",
+      "milestones": [
+        38,
+        173
+      ],
+      "status": "historical-plan-archive",
+      "verdict": "The full pre-M174 target-app execution history is preserved in the archive while the active plan stays focused on current baseline and roadmap.",
+      "defaultAction": "read-only-when-needed",
+      "archivePath": "plans/archive/target-app-execplan-history-2026-05.md"
+    }
+  ],
+  "machineCheck": {
+    "requiredPackageScript": "codex:orchestrator:current-history-index:smoke",
+    "requiredPackageScriptCommand": "node scripts/sdk-current-history-index-smoke.js",
+    "requiredHistorySetIds": [
+      "early-docs-audit-and-orchestrator-sdkthread-proofs",
+      "superseded-single-file-production-readiness",
+      "bounded-reliability-and-multifile-proofs",
+      "pre-m174-active-plan-history"
+    ],
+    "requiredReadmeSnippets": [
+      "M176 splits current SDK state from historical proof references",
+      "historical proof references available without rereading old packets by default",
+      "codex:orchestrator:current-history-index:smoke"
+    ],
+    "requiredSourceSnippets": {
+      "orchestrator/run-buffered-acceptance.mjs": [
+        "sdk-current-history-index-smoke.js",
+        "M176 SDK current/history index smoke failed"
+      ],
+      "package.json": [
+        "\"codex:orchestrator:current-history-index:smoke\": \"node scripts/sdk-current-history-index-smoke.js\""
+      ]
+    },
+    "requiredFalseBoundaryFlags": [
+      "sdkThreadCreated",
+      "networkAccessed",
+      "cepPanelSdkWritesEnabled",
+      "cepPanelPanelJsEditedThroughSdk",
+      "liveCepOrAfterEffectsRun",
+      "externalProviderValidationRun",
+      "mutatingLiveValidationRun",
+      "packageInstallRun",
+      "dependencyChanged",
+      "archiveMovePerformed",
+      "deletionPerformed",
+      "squashPerformed",
+      "pushPerformed",
+      "prCreated"
+    ]
+  }
+}
