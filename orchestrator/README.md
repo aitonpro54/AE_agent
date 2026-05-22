@@ -250,6 +250,12 @@ M158 records the SDK orchestrator extraction/cleanup plan in `.codex-audit/sdk-o
 npm.cmd run codex:orchestrator:extraction-cleanup:smoke
 ```
 
+M159 freezes the current SDK orchestrator inventory in `.codex-audit/sdk-orchestrator-extraction/159-sdk-orchestrator-inventory-freeze.json` with schema `sdk-orchestrator-inventory-freeze.v1`. It follows the M158 safe cleanup phase named `Freeze current inventory`, records active command-surface files, current governance/conveyor evidence, historical evidence kept until a future index, and check entrypoints. It does not delete, move, archive, squash, run SDKThread/network, enable CEP-panel SDK writes, install packages, change dependencies, push, or edit `cep-panel/panel.js` through SDK. The next allowed direction remains `Extract reusable core without behavior change`.
+
+```powershell
+npm.cmd run codex:orchestrator:inventory-freeze:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.

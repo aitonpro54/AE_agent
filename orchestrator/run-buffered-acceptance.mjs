@@ -999,6 +999,18 @@ async function runContractSmoke() {
     `M158 SDK orchestrator extraction cleanup smoke failed: ${extractionCleanupOutput.trim()}`,
     failures,
   );
+  const inventoryFreezeSmoke = runNode([
+    path.join("scripts", "sdk-orchestrator-inventory-freeze-smoke.js"),
+  ]);
+  const inventoryFreezeOutput = `${inventoryFreezeSmoke.stdout ?? ""}\n${
+    inventoryFreezeSmoke.stderr ?? ""
+  }`;
+  assertContract(
+    inventoryFreezeSmoke.status === 0 &&
+      inventoryFreezeOutput.includes("SDK orchestrator inventory freeze smoke: pass"),
+    `M159 SDK orchestrator inventory freeze smoke failed: ${inventoryFreezeOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1450,6 +1462,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:inventory-freeze:smoke"] ===
+      "node scripts/sdk-orchestrator-inventory-freeze-smoke.js",
+    "package.json codex:orchestrator:inventory-freeze:smoke script is not wired to the M159 inventory freeze smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1592,6 +1610,15 @@ async function runContractSmoke() {
       readme.includes("recommended standalone tool structure") &&
       readme.includes("safe AE Agent cleanup plan"),
     "README does not document the M158 SDK orchestrator extraction cleanup smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:inventory-freeze:smoke") &&
+      readme.includes("159-sdk-orchestrator-inventory-freeze.json") &&
+      readme.includes("sdk-orchestrator-inventory-freeze.v1") &&
+      readme.includes("Freeze current inventory") &&
+      readme.includes("Extract reusable core without behavior change"),
+    "README does not document the M159 SDK orchestrator inventory freeze smoke",
     failures,
   );
   assertContract(

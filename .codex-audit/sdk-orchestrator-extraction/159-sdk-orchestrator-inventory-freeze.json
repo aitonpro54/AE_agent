@@ -1,0 +1,287 @@
+{
+  "schema": "sdk-orchestrator-inventory-freeze.v1",
+  "milestone": 159,
+  "title": "SDK Orchestrator Inventory Freeze",
+  "createdAt": "2026-05-22",
+  "purpose": "Freeze the current SDK orchestrator file and evidence inventory before any reusable-core extraction, adapter split, archive move, deletion, or cleanup work.",
+  "sourceContext": {
+    "previousMilestone": 158,
+    "previousArtifact": ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+    "lastCompletedCommit": "e51d1e7",
+    "branch": "codex/roadmap-1.3-planning",
+    "safeAeAgentCleanupPlanPhase": "phase-1-freeze-current-inventory",
+    "noCleanupBoundary": {
+      "sdkState": "controlled milestone conveyor, not general repo autopilot",
+      "cleanupPerformed": false,
+      "deletionPerformed": false,
+      "archiveMovePerformed": false,
+      "squashPerformed": false,
+      "sdkThreadCreated": false,
+      "networkAccessed": false,
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditedThroughSdk": false,
+      "dependencyChanged": false,
+      "packageInstallRun": false,
+      "pushPerformed": false
+    }
+  },
+  "frozenInventory": {
+    "activeCommandSurface": [
+      {
+        "name": "read-only SDK turn wrapper",
+        "paths": [
+          "orchestrator/codex-sdk-orchestrator.mjs",
+          "orchestrator/README.md",
+          "package.json",
+          "package-lock.json"
+        ],
+        "status": "active",
+        "futureDisposition": "extract core behavior only after parity tests exist"
+      },
+      {
+        "name": "write runner safety engine",
+        "paths": [
+          "orchestrator/run-write-capable-scaffold.mjs",
+          "orchestrator/run-buffered-acceptance.mjs"
+        ],
+        "status": "active",
+        "futureDisposition": "split reusable policy-neutral modules from AE Agent adapter constants"
+      },
+      {
+        "name": "current provider-smoke production-code lane",
+        "paths": [
+          "scripts/provider-api-smoke.js",
+          "scripts/provider-contract-smoke.js"
+        ],
+        "status": "active-ae-agent-source",
+        "futureDisposition": "remain AE Agent source, not generic SDK tool source"
+      },
+      {
+        "name": "CEP-panel candidate lane",
+        "paths": [
+          "cep-panel/panel.js",
+          ".codex-audit/sdk-scope-expansion-reviews/132-cep-panel-composer-review.json",
+          ".codex-audit/sdk-next-lane/153-sdk-next-lane-selection.json"
+        ],
+        "status": "candidate-only-disabled",
+        "futureDisposition": "requires fresh explicit approval before any SDK write proof"
+      }
+    ],
+    "currentGovernanceEvidence": [
+      {
+        "name": "M152 current production-code provider-smoke governance",
+        "paths": [
+          ".codex-audit/sdk-production-readiness/152-sdk-production-code-provider-smokes-ready.json",
+          ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
+          ".codex-audit/sdk-write-lane-enablement/152-production-code-provider-smokes-enable.json",
+          ".codex-audit/sdk-write-lane-readiness/152-production-code-provider-smokes-readiness.json",
+          ".codex-audit/sdk-write-lane-approval-decisions/152-production-code-provider-smokes-approval-decision.json",
+          ".codex-audit/sdk-scope-expansion-reviews/152-production-code-provider-smokes-review.json",
+          "scripts/sdk-production-code-broader-readiness-smoke.js",
+          "scripts/sdk-governance-report-smoke.js"
+        ],
+        "status": "current"
+      },
+      {
+        "name": "M153-M157 current next-lane and conveyor evidence",
+        "paths": [
+          ".codex-audit/sdk-next-lane/153-sdk-next-lane-selection.json",
+          ".codex-audit/sdk-milestone-conveyor/154-sdk-milestone-conveyor-spec.json",
+          ".codex-audit/sdk-milestone-conveyor/155-sdk-milestone-conveyor-local-dry-run.json",
+          ".codex-audit/sdk-milestone-conveyor/156-sdk-conveyor-sdkthread-proof.json",
+          ".codex-audit/sdk-milestone-conveyor/157-sdk-conveyor-commit-handoff-loop-gate.json",
+          "scripts/sdk-next-lane-selection-smoke.js",
+          "scripts/sdk-milestone-conveyor-spec-smoke.js",
+          "scripts/sdk-milestone-conveyor-local-dry-run-smoke.js",
+          "scripts/sdk-milestone-conveyor-sdkthread-proof-smoke.js",
+          "scripts/sdk-milestone-conveyor-loop-gate-smoke.js"
+        ],
+        "status": "current"
+      },
+      {
+        "name": "M158 extraction classification evidence",
+        "paths": [
+          ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+          "scripts/sdk-orchestrator-extraction-cleanup-smoke.js"
+        ],
+        "status": "current"
+      },
+      {
+        "name": "M159 inventory freeze evidence",
+        "paths": [
+          ".codex-audit/sdk-orchestrator-extraction/159-sdk-orchestrator-inventory-freeze.json",
+          "scripts/sdk-orchestrator-inventory-freeze-smoke.js"
+        ],
+        "status": "current"
+      }
+    ],
+    "historicalEvidenceKeptUntilIndexed": [
+      {
+        "name": "early SDKThread docs/orchestrator proofs",
+        "paths": [
+          ".codex-audit/sdk-final-project-audit-operation.json",
+          ".codex-audit/sdk-autopilot-readiness-report.md",
+          "orchestrator/m123-sdk-thread-orchestrator-scope-output.md",
+          "orchestrator/m124-sdk-thread-orchestrator-scope-output.md",
+          "orchestrator/fixtures/sdk-write/m125-sdk-thread-fixture.json",
+          "orchestrator/fixtures/sdk-write/m126-sdk-thread-fixture.json"
+        ],
+        "status": "historical-keep"
+      },
+      {
+        "name": "superseded production-code readiness and governance packets",
+        "paths": [
+          ".codex-audit/sdk-production-readiness/145-sdk-production-ready.json",
+          ".codex-audit/sdk-production-readiness/146-sdk-production-ready.json",
+          ".codex-audit/sdk-launch-governance/140-sdk-launch-governance.json",
+          ".codex-audit/sdk-write-lane-enablement/135-production-code-smoke-harness-enable.json",
+          ".codex-audit/sdk-write-lane-readiness/133-production-code-smoke-harness-readiness.json",
+          ".codex-audit/sdk-write-lane-approval-decisions/134-production-code-smoke-harness-approval-decision.json",
+          ".codex-audit/sdk-scope-expansion-reviews/129-production-code-smoke-harness-review.json"
+        ],
+        "status": "historical-keep"
+      },
+      {
+        "name": "bounded reliability and multi-file proof history",
+        "paths": [
+          ".codex-audit/sdk-iterative-cmd/147-sdk-iterative-cmd-reliability.json",
+          ".codex-audit/sdk-multi-file-planned-operation/148-sdk-multi-file-planned-operation-contract.json",
+          ".codex-audit/sdk-multi-file-planned-operation/149-sdk-multi-file-real-proof.json",
+          ".codex-audit/sdk-post-multi-file-readiness/150-sdk-post-multi-file-governance-boundary.json",
+          ".codex-audit/sdk-post-multi-file-readiness/151-sdk-boundary-closeout.json",
+          "orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json",
+          "orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json",
+          "orchestrator/fixtures/sdk-write/m149-multi-file-beta.json"
+        ],
+        "status": "historical-keep"
+      }
+    ],
+    "projectContinuityFiles": [
+      "AGENTS.md",
+      "specs/target-app.md",
+      "plans/target-app-execplan.md",
+      ".codex/handoff.md"
+    ]
+  },
+  "checkEntrypoints": [
+    {
+      "command": "npm.cmd run codex:orchestrator:inventory-freeze:smoke",
+      "covers": [
+        "M159 inventory artifact schema",
+        "current file existence",
+        "no-cleanup boundary",
+        "previous M158 classification linkage"
+      ]
+    },
+    {
+      "command": "npm.cmd run codex:orchestrator:extraction-cleanup:smoke",
+      "covers": [
+        "M158 classification artifact",
+        "must-not-remove paths",
+        "safe cleanup phase plan"
+      ]
+    },
+    {
+      "command": "npm.cmd run codex:orchestrator:governance-report",
+      "covers": [
+        "current M152 launch governance",
+        "CEP-panel SDK writes disabled",
+        "no SDKThread/network approval drift"
+      ]
+    },
+    {
+      "command": "npm.cmd run check:rules",
+      "covers": [
+        "orchestrator contract smoke",
+        "current governance and conveyor smokes",
+        "M158 and M159 extraction/inventory smokes"
+      ]
+    }
+  ],
+  "extractionReadiness": {
+    "nextAllowedMilestone": "Extract reusable core without behavior change",
+    "cleanupAllowedNow": false,
+    "archiveMoveAllowedNow": false,
+    "deleteAllowedNow": false,
+    "blockedWithoutFreshApproval": [
+      "SDKThread/network proof",
+      "CEP-panel SDK write",
+      "edit cep-panel/panel.js through SDK",
+      "live CEP/After Effects validation",
+      "external-provider/OpenAI CLI planner validation",
+      "mutating-live validation",
+      "package install",
+      "dependency change",
+      "push"
+    ],
+    "phase2Preconditions": [
+      "keep AE Agent wrappers behaviorally unchanged",
+      "keep M152 governance report local-gated with no drift",
+      "keep CEP-panel SDK writes disabled",
+      "do not move or delete historical artifacts until a committed history index exists"
+    ]
+  },
+  "machineCheck": {
+    "requiredInventorySections": [
+      "activeCommandSurface",
+      "currentGovernanceEvidence",
+      "historicalEvidenceKeptUntilIndexed",
+      "projectContinuityFiles"
+    ],
+    "requiredCommands": [
+      "npm.cmd run codex:orchestrator:inventory-freeze:smoke",
+      "npm.cmd run codex:orchestrator:extraction-cleanup:smoke",
+      "npm.cmd run codex:orchestrator:governance-report",
+      "npm.cmd run check:rules"
+    ],
+    "mustExist": [
+      "orchestrator/codex-sdk-orchestrator.mjs",
+      "orchestrator/run-write-capable-scaffold.mjs",
+      "orchestrator/run-buffered-acceptance.mjs",
+      "orchestrator/README.md",
+      "package.json",
+      "package-lock.json",
+      ".codex-audit/sdk-production-readiness/152-sdk-production-code-provider-smokes-ready.json",
+      ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
+      ".codex-audit/sdk-next-lane/153-sdk-next-lane-selection.json",
+      ".codex-audit/sdk-milestone-conveyor/154-sdk-milestone-conveyor-spec.json",
+      ".codex-audit/sdk-milestone-conveyor/155-sdk-milestone-conveyor-local-dry-run.json",
+      ".codex-audit/sdk-milestone-conveyor/156-sdk-conveyor-sdkthread-proof.json",
+      ".codex-audit/sdk-milestone-conveyor/157-sdk-conveyor-commit-handoff-loop-gate.json",
+      ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+      ".codex-audit/sdk-orchestrator-extraction/159-sdk-orchestrator-inventory-freeze.json",
+      "scripts/sdk-orchestrator-extraction-cleanup-smoke.js",
+      "scripts/sdk-orchestrator-inventory-freeze-smoke.js",
+      "scripts/provider-api-smoke.js",
+      "scripts/provider-contract-smoke.js",
+      "cep-panel/panel.js",
+      "AGENTS.md",
+      "plans/target-app-execplan.md",
+      ".codex/handoff.md"
+    ],
+    "currentEvidenceMustNotBeHistoricalOnly": [
+      ".codex-audit/sdk-production-readiness/152-sdk-production-code-provider-smokes-ready.json",
+      ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
+      ".codex-audit/sdk-next-lane/153-sdk-next-lane-selection.json",
+      ".codex-audit/sdk-milestone-conveyor/157-sdk-conveyor-commit-handoff-loop-gate.json",
+      ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+      ".codex-audit/sdk-orchestrator-extraction/159-sdk-orchestrator-inventory-freeze.json",
+      "scripts/provider-api-smoke.js",
+      "scripts/provider-contract-smoke.js",
+      "cep-panel/panel.js"
+    ],
+    "requiredFalseBoundaryFlags": [
+      "cleanupPerformed",
+      "deletionPerformed",
+      "archiveMovePerformed",
+      "squashPerformed",
+      "sdkThreadCreated",
+      "networkAccessed",
+      "cepPanelSdkWritesEnabled",
+      "cepPanelPanelJsEditedThroughSdk",
+      "dependencyChanged",
+      "packageInstallRun",
+      "pushPerformed"
+    ]
+  }
+}
