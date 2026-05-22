@@ -933,6 +933,18 @@ async function runContractSmoke() {
     `M153 SDK next-lane selection smoke failed: ${nextLaneOutput.trim()}`,
     failures,
   );
+  const milestoneConveyorSpecSmoke = runNode([
+    path.join("scripts", "sdk-milestone-conveyor-spec-smoke.js"),
+  ]);
+  const milestoneConveyorSpecOutput = `${milestoneConveyorSpecSmoke.stdout ?? ""}\n${
+    milestoneConveyorSpecSmoke.stderr ?? ""
+  }`;
+  assertContract(
+    milestoneConveyorSpecSmoke.status === 0 &&
+      milestoneConveyorSpecOutput.includes("SDK milestone conveyor spec smoke: pass"),
+    `M154 SDK milestone conveyor spec smoke failed: ${milestoneConveyorSpecOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1354,6 +1366,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:milestone-conveyor-spec:smoke"] ===
+      "node scripts/sdk-milestone-conveyor-spec-smoke.js",
+    "package.json codex:orchestrator:milestone-conveyor-spec:smoke script is not wired to the M154 milestone conveyor spec smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1454,6 +1472,14 @@ async function runContractSmoke() {
       readme.includes("sdk-next-lane-selection.v1") &&
       readme.includes("cep-panel-composer-local-preflight"),
     "README does not document the M153 SDK next-lane selection smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:milestone-conveyor-spec:smoke") &&
+      readme.includes("154-sdk-milestone-conveyor-spec.json") &&
+      readme.includes("sdk-milestone-conveyor-spec.v1") &&
+      readme.includes("no-push-by-default"),
+    "README does not document the M154 SDK milestone conveyor spec smoke",
     failures,
   );
   assertContract(

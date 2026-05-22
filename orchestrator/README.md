@@ -220,6 +220,12 @@ M153 records the next SDK lane selection in `.codex-audit/sdk-next-lane/153-sdk-
 npm.cmd run codex:orchestrator:next-lane:smoke
 ```
 
+M154 defines the SDK milestone conveyor contract in `.codex-audit/sdk-milestone-conveyor/154-sdk-milestone-conveyor-spec.json` with schema `sdk-milestone-conveyor-spec.v1`. Queue items must name scope, mode, planned paths, stop gates, validation commands, commit and handoff expectations, and the no-push-by-default policy. The M154-M157 series allows only local conveyor artifacts plus one explicitly approved M156 `docs-audit` `sdk-write` proof under `.codex-audit/sdk-milestone-conveyor/**`; CEP-panel SDK writes, production-code writes, live CEP/AE checks, external-provider/OpenAI CLI planner validation, mutating-live validation, dependency changes, and push remain disabled by default.
+
+```powershell
+npm.cmd run codex:orchestrator:milestone-conveyor-spec:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.

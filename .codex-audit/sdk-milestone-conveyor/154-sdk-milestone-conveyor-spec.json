@@ -1,0 +1,214 @@
+{
+  "schema": "sdk-milestone-conveyor-spec.v1",
+  "milestone": 154,
+  "title": "SDK Milestone Conveyor Spec",
+  "createdAt": "2026-05-22",
+  "purpose": "Define the local contract for running future SDK milestones as compact queued work items with explicit stop gates, deterministic validation, per-milestone commits, and handoff updates instead of relying on a long Codex chat.",
+  "sourceMilestones": [
+    ".codex-audit/sdk-next-lane/153-sdk-next-lane-selection.json"
+  ],
+  "queueItemSchema": {
+    "requiredFields": [
+      "id",
+      "milestone",
+      "title",
+      "laneId",
+      "scope",
+      "mode",
+      "plannedPaths",
+      "approvalRequired",
+      "explicitApprovalText",
+      "maxSdkThreadRuns",
+      "allowedCommands",
+      "validationCommands",
+      "stopGates",
+      "commitExpectation",
+      "handoffExpectation",
+      "pushPolicy",
+      "contextPolicy",
+      "status"
+    ],
+    "fieldContracts": {
+      "id": "Stable queue identifier, for example m156-docs-audit-sdkthread-proof.",
+      "milestone": "Integer milestone number; exactly one milestone is handled per queue item.",
+      "title": "Human-readable milestone title.",
+      "laneId": "Named conveyor lane, such as local-audit-only or docs-audit-sdkwrite-proof.",
+      "scope": "One of the allowed conveyor scopes recorded in allowedScopes.",
+      "mode": "local-only, dry-run, or sdk-write. sdk-write requires explicitApprovalText and maxSdkThreadRuns:1.",
+      "plannedPaths": "Non-empty repo-relative paths. Paths must stay inside the lane allowlist and must not include CEP-panel paths unless a later committed approval enables such a lane.",
+      "approvalRequired": "Boolean guard for SDKThread/network, live validation, external providers, dependency changes, push, or scope expansion.",
+      "explicitApprovalText": "Exact approval sentence or null for local-only work. Approval must name scope, mode, planned paths, and maximum SDKThread count.",
+      "maxSdkThreadRuns": "0 for local-only and dry-run items; 1 only for a user-approved bounded sdk-write item.",
+      "allowedCommands": "Exact local commands the conveyor may run for the item.",
+      "validationCommands": "Commands that must pass or be recorded with a clear blocked reason before the milestone can complete.",
+      "stopGates": "Named conditions that stop the item before SDKThread creation, validation, commit, or handoff continuation.",
+      "commitExpectation": "Reviewable commit required after an independently working milestone unless explicitly marked partial.",
+      "handoffExpectation": "Update plans/target-app-execplan.md and .codex/handoff.md after every milestone.",
+      "pushPolicy": "no-push-by-default; pushing requires a separate explicit user command.",
+      "contextPolicy": "Stop after the current atomic step and write handoff if context is above 70 percent or compaction pressure is felt.",
+      "status": "queued, running, partial, blocked, or completed."
+    }
+  },
+  "allowedScopes": [
+    {
+      "scope": "local-audit",
+      "modes": [
+        "local-only",
+        "dry-run"
+      ],
+      "plannedPathAllowlist": [
+        ".codex-audit/sdk-milestone-conveyor/**"
+      ],
+      "sdkThreadAllowed": false,
+      "networkAllowed": false,
+      "purpose": "Committed conveyor specs, fixtures, dry-run state, and smoke evidence."
+    },
+    {
+      "scope": "docs-audit",
+      "modes": [
+        "sdk-write"
+      ],
+      "plannedPathAllowlist": [
+        ".codex-audit/sdk-milestone-conveyor/**"
+      ],
+      "sdkThreadAllowed": true,
+      "networkAllowed": true,
+      "requiresExplicitApproval": true,
+      "maxSdkThreadRuns": 1,
+      "purpose": "A single bounded M156 proof may create one docs-audit artifact under the conveyor audit directory."
+    },
+    {
+      "scope": "production-code-provider-smokes-current",
+      "modes": [
+        "sdk-write"
+      ],
+      "plannedPathAllowlist": [
+        "scripts/provider-api-smoke.js",
+        "scripts/provider-contract-smoke.js"
+      ],
+      "sdkThreadAllowed": false,
+      "networkAllowed": false,
+      "purpose": "Current M152 production-code lane is recognized as existing governance only; the M154-M157 conveyor series does not run it."
+    },
+    {
+      "scope": "cep-panel",
+      "modes": [],
+      "plannedPathAllowlist": [],
+      "sdkThreadAllowed": false,
+      "networkAllowed": false,
+      "purpose": "CEP-panel SDK writes remain disabled; M153 selected a candidate-only preflight direction but did not approve enablement."
+    }
+  ],
+  "defaultStopGates": [
+    {
+      "id": "no-explicit-approval",
+      "stopsBefore": "SDKThread creation",
+      "rule": "Any sdk-write item with approvalRequired:true must include exact approval text naming scope, mode, planned paths, and maxSdkThreadRuns:1."
+    },
+    {
+      "id": "scope-or-path-outside-allowlist",
+      "stopsBefore": "runner invocation",
+      "rule": "Reject queue items whose scope, mode, or plannedPaths are outside allowedScopes."
+    },
+    {
+      "id": "cep-panel-sdk-write-disabled",
+      "stopsBefore": "runner invocation",
+      "rule": "Reject any CEP-panel planned path or sdk-write request until a later committed approval and enablement packet exists."
+    },
+    {
+      "id": "live-or-external-validation-requested",
+      "stopsBefore": "validation",
+      "rule": "Do not run live CEP/AE, external-provider/OpenAI CLI planner, or mutating-live validation from this conveyor unless a future queue item records separate explicit approval."
+    },
+    {
+      "id": "dependency-or-package-change",
+      "stopsBefore": "commit",
+      "rule": "Stop on package install, dependency change, lockfile churn, or package manager mutation unless separately approved."
+    },
+    {
+      "id": "dirty-tree-unrelated-changes",
+      "stopsBefore": "commit",
+      "rule": "Do not stage or revert unrelated user changes; commit only the milestone-owned files."
+    },
+    {
+      "id": "validation-failed",
+      "stopsBefore": "completion",
+      "rule": "Record the failing command and keep the milestone partial or blocked instead of continuing to the next item."
+    },
+    {
+      "id": "context-pressure",
+      "stopsBefore": "next milestone",
+      "rule": "If context is above 70 percent or compaction pressure is felt, update handoff and ask for a fresh thread."
+    },
+    {
+      "id": "push-requested-by-conveyor",
+      "stopsBefore": "push",
+      "rule": "The conveyor never pushes by default; push only after a separate explicit user command."
+    }
+  ],
+  "validationContract": {
+    "requiredBeforeComplete": [
+      "node --check for every touched JavaScript file",
+      "milestone smoke package script",
+      "npm.cmd run check:rules",
+      "git diff --check",
+      "configured local smoke suite from AGENTS.md unless blocked with a recorded reason"
+    ],
+    "forbiddenByDefault": [
+      "live CEP/After Effects validation",
+      "external-provider/OpenAI CLI planner validation",
+      "mutating-live validation",
+      "package install or dependency change",
+      "SDKThread/network retry beyond the queue item's maxSdkThreadRuns",
+      "push"
+    ],
+    "evidenceRequired": [
+      "committed proof or spec artifact under .codex-audit/sdk-milestone-conveyor/**",
+      "smoke script output",
+      "plan Progress, Decision Log, and Validation notes",
+      ".codex/handoff.md update",
+      "commit id or explicit reason no commit was made"
+    ]
+  },
+  "commitAndHandoffContract": {
+    "commitPerMilestone": true,
+    "commitStyle": "One independently working milestone per reviewable commit.",
+    "handoffFile": ".codex/handoff.md",
+    "planFile": "plans/target-app-execplan.md",
+    "handoffMustInclude": [
+      "current goal",
+      "current state",
+      "files touched",
+      "validation run and results",
+      "decisions made",
+      "known risks or blockers",
+      "commit id or reason no commit was created",
+      "exact next prompt"
+    ],
+    "pushPolicy": "no-push-by-default"
+  },
+  "m154SeriesBoundary": {
+    "allowedSdkThreadProofs": [
+      {
+        "milestone": 156,
+        "scope": "docs-audit",
+        "mode": "sdk-write",
+        "maxSdkThreadRuns": 1,
+        "plannedPathAllowlist": [
+          ".codex-audit/sdk-milestone-conveyor/**"
+        ]
+      }
+    ],
+    "notApproved": [
+      "CEP-panel SDK writes",
+      "editing cep-panel/panel.js through SDK",
+      "production-code SDK writes",
+      "production-code allowlist expansion",
+      "live CEP/AE checks",
+      "external-provider/OpenAI CLI planner",
+      "mutating-live validation",
+      "package install or dependency changes",
+      "push"
+    ]
+  }
+}
