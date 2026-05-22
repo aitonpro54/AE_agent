@@ -1023,6 +1023,20 @@ async function runContractSmoke() {
     `M166 SDK runner split review smoke failed: ${runnerSplitReviewOutput.trim()}`,
     failures,
   );
+  const operationEnvelopeCoreExtractionSmoke = runNode([
+    path.join("scripts", "sdk-operation-envelope-core-extraction-smoke.js"),
+  ]);
+  const operationEnvelopeCoreExtractionOutput = `${
+    operationEnvelopeCoreExtractionSmoke.stdout ?? ""
+  }\n${operationEnvelopeCoreExtractionSmoke.stderr ?? ""}`;
+  assertContract(
+    operationEnvelopeCoreExtractionSmoke.status === 0 &&
+      operationEnvelopeCoreExtractionOutput.includes(
+        "SDK operation envelope core extraction smoke: pass",
+      ),
+    `M167 SDK operation envelope core extraction smoke failed: ${operationEnvelopeCoreExtractionOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1481,6 +1495,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:operation-envelope-core:smoke"] ===
+      "node scripts/sdk-operation-envelope-core-extraction-smoke.js",
+    "package.json codex:orchestrator:operation-envelope-core:smoke script is not wired to the M167 operation envelope core extraction smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1642,6 +1662,15 @@ async function runContractSmoke() {
       readme.includes("M166 reviews the remaining AE Agent-specific runner split candidates") &&
       readme.includes("no behavior-changing extraction"),
     "README does not document the M166 runner split review smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:operation-envelope-core:smoke") &&
+      readme.includes("167-sdk-operation-envelope-core-extraction.json") &&
+      readme.includes("sdk-operation-envelope-core-extraction.v1") &&
+      readme.includes("M167 extracts the operation-envelope helpers") &&
+      readme.includes("orchestrator/core/operation-envelope.mjs"),
+    "README does not document the M167 operation envelope core extraction smoke",
     failures,
   );
   assertContract(

@@ -23,6 +23,10 @@ import {
   uniqueSortedRepoPaths,
 } from "./core/path-policy.mjs";
 import {
+  createOperationEnvelopeHelpers,
+  isPathInsideDirectory,
+} from "./core/operation-envelope.mjs";
+import {
   captureGitSnapshot as captureCoreGitSnapshot,
   collectPathsChangedSincePre as collectCorePathsChangedSincePre,
   parseStatusPaths,
@@ -1330,180 +1334,37 @@ function throwSdkWriteLaneEnablementPathCheckError(plannedPathCheck) {
   throw new Error(`SDK write lane enablement plannedPathAllowlist rejected: ${summary}`);
 }
 
-function isPathInsideDirectory(candidatePath, directoryPath) {
-  const relative = path.relative(directoryPath, candidatePath);
-  return relative === "" || (relative && !relative.startsWith("..") && !path.isAbsolute(relative));
-}
+const operationEnvelopeCore = createOperationEnvelopeHelpers({
+  createPlannedPathCheck,
+  createSdkWritePlannedPathCheck,
+  dryRunMode: OPERATION_ENVELOPE_MODE,
+  modes: OPERATION_ENVELOPE_MODES,
+  normalizeRepoPath,
+  requiredFields: OPERATION_ENVELOPE_REQUIRED_FIELDS,
+  sdkWriteAllowedScopes: SDK_WRITE_ALLOWED_SCOPES,
+  sdkWriteMode: SDK_WRITE_OPERATION_MODE,
+  scopes: WRITE_SCOPES,
+  throwPlannedPathCheckError,
+  unsafeFields: UNSAFE_OPERATION_ENVELOPE_FIELDS,
+  validatePromptPolicy,
+  validateScope,
+  version: OPERATION_ENVELOPE_VERSION,
+});
 
 export function resolveOperationFilePath(operationFile, cwd = process.cwd()) {
-  if (!operationFile) {
-    throw new Error("Missing required --operation-file for write-capable dry-run mode.");
-  }
-
-  const repoRoot = path.resolve(cwd);
-  const absolutePath = path.resolve(repoRoot, operationFile);
-
-  if (!isPathInsideDirectory(absolutePath, repoRoot)) {
-    throw new Error(`Operation file outside repo: ${operationFile}`);
-  }
-
-  return {
-    absolutePath,
-    repoPath: normalizeRepoPath(path.relative(repoRoot, absolutePath)),
-    repoRoot,
-  };
+  return operationEnvelopeCore.resolveOperationFilePath(operationFile, cwd);
 }
 
 export function parseOperationEnvelopeJson(text, source = "operation file") {
-  let parsed = null;
-
-  try {
-    parsed = JSON.parse(text);
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`Malformed operation file JSON: ${source}. ${detail}`);
-  }
-
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error(`Malformed operation file JSON: ${source}. Expected a JSON object.`);
-  }
-
-  return validateOperationEnvelope(parsed);
+  return operationEnvelopeCore.parseOperationEnvelopeJson(text, source);
 }
 
 export function validateOperationEnvelope(envelope) {
-  for (const field of UNSAFE_OPERATION_ENVELOPE_FIELDS) {
-    if (Object.hasOwn(envelope, field)) {
-      throw new Error(`Unsafe operation envelope field rejected: ${field}`);
-    }
-  }
-
-  if (envelope.version !== OPERATION_ENVELOPE_VERSION) {
-    throw new Error(
-      `Unsupported operation envelope version: ${String(
-        envelope.version,
-      )}. Expected ${OPERATION_ENVELOPE_VERSION}.`,
-    );
-  }
-
-  if (typeof envelope.operationId !== "string" || envelope.operationId.trim() === "") {
-    throw new Error("Missing operation envelope operationId.");
-  }
-
-  if (typeof envelope.scope !== "string" || envelope.scope.trim() === "") {
-    throw new Error(`Missing operation envelope scope. Expected one of: ${WRITE_SCOPES.join(", ")}.`);
-  }
-
-  validateScope(envelope.scope);
-
-  if (!OPERATION_ENVELOPE_MODES.includes(envelope.mode)) {
-    throw new Error(
-      `Unsupported operation envelope mode: ${String(
-        envelope.mode,
-      )}. Expected one of: ${OPERATION_ENVELOPE_MODES.join(", ")}.`,
-    );
-  }
-
-  if (
-    envelope.mode === SDK_WRITE_OPERATION_MODE &&
-    !SDK_WRITE_ALLOWED_SCOPES.includes(envelope.scope)
-  ) {
-    throw new Error(
-      `sdk-write operation envelope scope rejected: ${envelope.scope}. Supported scopes: ${SDK_WRITE_ALLOWED_SCOPES.join(", ")}.`,
-    );
-  }
-
-  if (typeof envelope.prompt !== "string" || envelope.prompt.trim() === "") {
-    throw new Error("Missing operation envelope prompt.");
-  }
-
-  if (!Array.isArray(envelope.plannedPaths) || envelope.plannedPaths.length === 0) {
-    throw new Error("Missing or empty operation envelope plannedPaths.");
-  }
-
-  if (envelope.plannedPaths.some((repoPath) => typeof repoPath !== "string")) {
-    throw new Error("Operation envelope plannedPaths entries must be strings.");
-  }
-
-  const plannedPaths = envelope.plannedPaths.map(normalizeRepoPath);
-  if (plannedPaths.some((repoPath) => repoPath === "")) {
-    throw new Error("Operation envelope plannedPaths contains an empty path.");
-  }
-
-  validatePromptPolicy(envelope.prompt);
-
-  const plannedPathCheck =
-    envelope.mode === SDK_WRITE_OPERATION_MODE
-      ? createSdkWritePlannedPathCheck(envelope.scope, plannedPaths)
-      : createPlannedPathCheck(envelope.scope, plannedPaths);
-  if (!plannedPathCheck.allowed) {
-    throwPlannedPathCheckError(plannedPathCheck);
-  }
-
-  return {
-    mode: envelope.mode,
-    operationId: envelope.operationId.trim(),
-    plannedPathCheck,
-    plannedPaths,
-    prompt: envelope.prompt,
-    scope: envelope.scope,
-    version: envelope.version,
-  };
+  return operationEnvelopeCore.validateOperationEnvelope(envelope);
 }
 
 export function loadOperationEnvelopeOptions(options = {}, hooks = {}) {
-  const cwd = path.resolve(options.cwd || process.cwd());
-  const resolved = resolveOperationFilePath(options.operationFile, cwd);
-  const fileExists = hooks.existsSync || existsSync;
-  const fileStats = hooks.statSync || statSync;
-  const readFile = hooks.readFileSync || readFileSync;
-  const realpath = hooks.realpathSync || realpathSync;
-
-  if (!fileExists(resolved.absolutePath)) {
-    throw new Error(`Missing operation file: ${resolved.repoPath || options.operationFile}`);
-  }
-
-  if (!fileStats(resolved.absolutePath).isFile()) {
-    throw new Error(`Operation file is not a file: ${resolved.repoPath}`);
-  }
-
-  const realRepoRoot = realpath(resolved.repoRoot);
-  const realOperationFile = realpath(resolved.absolutePath);
-  if (!isPathInsideDirectory(realOperationFile, realRepoRoot)) {
-    throw new Error(`Operation file outside repo: ${options.operationFile}`);
-  }
-
-  const operationEnvelope = parseOperationEnvelopeJson(
-    readFile(resolved.absolutePath, "utf8"),
-    resolved.repoPath,
-  );
-  if (options.dryRun && operationEnvelope.mode !== OPERATION_ENVELOPE_MODE) {
-    throw new Error(
-      `Operation envelope mode ${operationEnvelope.mode} cannot be combined with --dry-run.`,
-    );
-  }
-
-  if (!options.dryRun && operationEnvelope.mode === OPERATION_ENVELOPE_MODE) {
-    throw new Error("Operation envelope mode dry-run requires --dry-run.");
-  }
-
-  return {
-    ...options,
-    dryRun: operationEnvelope.mode === OPERATION_ENVELOPE_MODE,
-    mode: operationEnvelope.mode,
-    operationEnvelope: {
-      mode: operationEnvelope.mode,
-      operationId: operationEnvelope.operationId,
-      sourcePath: resolved.repoPath,
-      version: operationEnvelope.version,
-    },
-    operationFilePath: resolved.absolutePath,
-    operationFileRepoPath: resolved.repoPath,
-    plannedPaths: operationEnvelope.plannedPaths,
-    prompt: operationEnvelope.prompt,
-    sdkWrite: operationEnvelope.mode === SDK_WRITE_OPERATION_MODE,
-    scope: operationEnvelope.scope,
-  };
+  return operationEnvelopeCore.loadOperationEnvelopeOptions(options, hooks);
 }
 
 export function parseWriteRunnerArgs(argv) {

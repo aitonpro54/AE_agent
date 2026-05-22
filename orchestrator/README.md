@@ -262,6 +262,12 @@ M166 reviews the remaining AE Agent-specific runner split candidates in `.codex-
 npm.cmd run codex:orchestrator:runner-split-review:smoke
 ```
 
+M167 extracts the operation-envelope helpers into `orchestrator/core/operation-envelope.mjs` and records the behavior-preserving split in `.codex-audit/sdk-orchestrator-extraction/167-sdk-operation-envelope-core-extraction.json` with schema `sdk-operation-envelope-core-extraction.v1`. The write-runner remains the compatibility facade: public exports, package command entrypoints, operation envelope version/modes/required fields from the AE Agent adapter config, planned path policy, and dry-run/sdk-write safety checks stay unchanged. Runtime-store diagnostics and post-run contract helpers remain deferred follow-up candidates.
+
+```powershell
+npm.cmd run codex:orchestrator:operation-envelope-core:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.
