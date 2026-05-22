@@ -268,6 +268,12 @@ M167 extracts the operation-envelope helpers into `orchestrator/core/operation-e
 npm.cmd run codex:orchestrator:operation-envelope-core:smoke
 ```
 
+M168 extracts SDK runtime-store and failure-diagnostics helpers into `orchestrator/core/runtime-store.mjs` and `orchestrator/core/failure-diagnostics.mjs`, then records the behavior-preserving split in `.codex-audit/sdk-orchestrator-extraction/168-sdk-runtime-diagnostics-review-or-extraction.json` with schema `sdk-runtime-diagnostics-review-or-extraction.v1`. The write-runner remains the compatibility facade: public exports and package command entrypoints stay unchanged, while runtime paths, runtime subdirectories, and fallback report directory remain injected from the AE Agent adapter config. Post-run contract extraction remains deferred.
+
+```powershell
+npm.cmd run codex:orchestrator:runtime-diagnostics:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.

@@ -1037,6 +1037,20 @@ async function runContractSmoke() {
     `M167 SDK operation envelope core extraction smoke failed: ${operationEnvelopeCoreExtractionOutput.trim()}`,
     failures,
   );
+  const runtimeDiagnosticsExtractionSmoke = runNode([
+    path.join("scripts", "sdk-runtime-diagnostics-extraction-smoke.js"),
+  ]);
+  const runtimeDiagnosticsExtractionOutput = `${
+    runtimeDiagnosticsExtractionSmoke.stdout ?? ""
+  }\n${runtimeDiagnosticsExtractionSmoke.stderr ?? ""}`;
+  assertContract(
+    runtimeDiagnosticsExtractionSmoke.status === 0 &&
+      runtimeDiagnosticsExtractionOutput.includes(
+        "SDK runtime diagnostics extraction smoke: pass",
+      ),
+    `M168 SDK runtime diagnostics extraction smoke failed: ${runtimeDiagnosticsExtractionOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1501,6 +1515,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:runtime-diagnostics:smoke"] ===
+      "node scripts/sdk-runtime-diagnostics-extraction-smoke.js",
+    "package.json codex:orchestrator:runtime-diagnostics:smoke script is not wired to the M168 runtime diagnostics extraction smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1671,6 +1691,16 @@ async function runContractSmoke() {
       readme.includes("M167 extracts the operation-envelope helpers") &&
       readme.includes("orchestrator/core/operation-envelope.mjs"),
     "README does not document the M167 operation envelope core extraction smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:runtime-diagnostics:smoke") &&
+      readme.includes("168-sdk-runtime-diagnostics-review-or-extraction.json") &&
+      readme.includes("sdk-runtime-diagnostics-review-or-extraction.v1") &&
+      readme.includes("M168 extracts SDK runtime-store and failure-diagnostics helpers") &&
+      readme.includes("orchestrator/core/runtime-store.mjs") &&
+      readme.includes("orchestrator/core/failure-diagnostics.mjs"),
+    "README does not document the M168 runtime diagnostics extraction smoke",
     failures,
   );
   assertContract(

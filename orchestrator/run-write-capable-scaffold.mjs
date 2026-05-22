@@ -3,13 +3,10 @@
 import { spawnSync } from "node:child_process";
 import {
   existsSync,
-  mkdirSync,
   readdirSync,
   readFileSync,
   realpathSync,
   statSync,
-  unlinkSync,
-  writeFileSync,
 } from "node:fs";
 import path from "node:path";
 import process from "node:process";
@@ -27,10 +24,16 @@ import {
   isPathInsideDirectory,
 } from "./core/operation-envelope.mjs";
 import {
+  createSdkWriteFallbackReport as createCoreSdkWriteFallbackReport,
+  createSdkWriteFailureMessage as createCoreSdkWriteFailureMessage,
+  errorDiagnostic,
+} from "./core/failure-diagnostics.mjs";
+import {
   captureGitSnapshot as captureCoreGitSnapshot,
   collectPathsChangedSincePre as collectCorePathsChangedSincePre,
   parseStatusPaths,
 } from "./core/git-snapshot.mjs";
+import { createSdkRuntimeStoreHelpers } from "./core/runtime-store.mjs";
 import { createThreadOptionsFromContract } from "./core/thread-options.mjs";
 import { AE_AGENT_SDK_ADAPTER_CONFIG } from "./adapters/ae-agent-sdk-policy.mjs";
 
@@ -1660,184 +1663,38 @@ export function validatePostRunContract({ postSnapshot, preSnapshot, scope, vali
   return { changedSincePre, violations };
 }
 
-function stamp() {
-  return new Date().toISOString().replace(/[:.]/g, "-");
-}
+const sdkRuntimeStorePolicy = Object.freeze({
+  fallbackReportDirectory: SDK_WRITE_FALLBACK_REPORT_DIRECTORY,
+  fallbackRuntimeDirectory: SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY,
+  normalizeRepoPath,
+  primaryRuntimeDirectory: SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY,
+  runtimeSubdirectories: SDK_WRITE_RUNTIME_SUBDIRECTORIES,
+});
 
-function sanitizeLogId(value) {
-  return String(value ?? "operation")
-    .replace(/[^A-Za-z0-9_.-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
-}
-
-function errorDiagnostic(error) {
-  if (!error) {
-    return null;
-  }
-
-  if (typeof error === "string") {
-    return { message: error, name: "Error" };
-  }
-
-  if (error && typeof error === "object" && typeof error.message === "string") {
-    const diagnostic = {
-      message: error.message,
-      name: typeof error.name === "string" ? error.name : "Error",
-    };
-
-    if ("code" in error) {
-      diagnostic.code = String(error.code);
-    }
-
-    return diagnostic;
-  }
-
-  const diagnostic = {
-    message: error instanceof Error ? error.message : String(error),
-    name: error instanceof Error ? error.name : "Error",
-  };
-
-  if (error && typeof error === "object" && "code" in error) {
-    diagnostic.code = String(error.code);
-  }
-
-  return diagnostic;
-}
-
-function diagnosticMessage(error) {
-  return errorDiagnostic(error)?.message || null;
-}
-
-function runtimeRepoPath(...parts) {
-  return normalizeRepoPath(path.posix.join(...parts.filter(Boolean)));
-}
-
-function repoPathToAbsolute(cwd, repoPath) {
-  return path.join(cwd, ...normalizeRepoPath(repoPath).split("/"));
-}
-
-function createRuntimeProbeFileName(label) {
-  return `.codex-runtime-probe-${process.pid}-${Date.now()}-${sanitizeLogId(label)}.tmp`;
-}
-
-function createRuntimeDirectories(runtimePath) {
-  return {
-    logs: runtimeRepoPath(runtimePath, "logs"),
-    operations: runtimeRepoPath(runtimePath, "operations"),
-  };
-}
-
-function probeSdkRuntime(cwd, runtimePath, hooks = {}) {
-  const mkdir = hooks.mkdirSync || mkdirSync;
-  const writeFile = hooks.writeFileSync || writeFileSync;
-  const unlink = hooks.unlinkSync || unlinkSync;
-  const directories = createRuntimeDirectories(runtimePath);
-  const checks = [];
-
-  for (const name of SDK_WRITE_RUNTIME_SUBDIRECTORIES) {
-    const directoryPath = directories[name];
-    const absoluteDirectoryPath = repoPathToAbsolute(cwd, directoryPath);
-    const absoluteProbePath = path.join(absoluteDirectoryPath, createRuntimeProbeFileName(name));
-    const probePath = normalizeRepoPath(path.relative(cwd, absoluteProbePath));
-
-    try {
-      mkdir(absoluteDirectoryPath, { recursive: true });
-      writeFile(absoluteProbePath, "sdk runtime write probe\n", "utf8");
-      unlink(absoluteProbePath);
-      checks.push({
-        directoryPath,
-        probePath,
-        probeWritten: true,
-        tempFileCleaned: true,
-        writable: true,
-      });
-    } catch (error) {
-      const message = diagnosticMessage(error) || "unknown runtime probe failure";
-      checks.push({
-        directoryPath,
-        error: message,
-        errorCode: errorDiagnostic(error)?.code || null,
-        probePath,
-        probeWritten: false,
-        tempFileCleaned: false,
-        writable: false,
-      });
-
-      return {
-        checks,
-        reason: `${name}-runtime-unavailable: ${message}`,
-        runtimePath,
-        writable: false,
-      };
-    }
-  }
-
-  return {
-    checks,
-    reason: "runtime-writable",
-    runtimePath,
-    writable: true,
-  };
-}
+const sdkRuntimeStoreCore = createSdkRuntimeStoreHelpers(sdkRuntimeStorePolicy);
 
 export function resolveSdkRuntimePaths(cwd = process.cwd(), hooks = {}) {
-  const primaryProbe = probeSdkRuntime(cwd, SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY, hooks);
-  const fallbackProbe = probeSdkRuntime(cwd, SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY, hooks);
-  const selectedProbe = primaryProbe.writable ? primaryProbe : fallbackProbe;
-  const selectedRuntimePath = selectedProbe.runtimePath;
-  const selectedDirectories = createRuntimeDirectories(selectedRuntimePath);
-  const reasonSelected = primaryProbe.writable
-    ? "primary-runtime-writable"
-    : fallbackProbe.writable
-      ? `primary-runtime-unavailable; fallback-runtime-writable: ${primaryProbe.reason}`
-      : `primary-and-fallback-runtime-unavailable; diagnostic-report-only: primary=${primaryProbe.reason}; fallback=${fallbackProbe.reason}`;
-
-  return {
-    fallbackProbe,
-    fallbackRuntimePath: SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY,
-    fallbackWritable: fallbackProbe.writable,
-    primaryProbe,
-    primaryRuntimePath: SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY,
-    primaryWritable: primaryProbe.writable,
-    reasonSelected,
-    selectedLogDirectory: selectedDirectories.logs,
-    selectedOperationDirectory: selectedDirectories.operations,
-    selectedRuntimePath,
-    selectedRuntimeWritable: selectedProbe.writable,
-  };
+  return sdkRuntimeStoreCore.resolveSdkRuntimePaths(cwd, hooks);
 }
 
 export function createSdkWriteFallbackReportPath(operationId) {
-  return normalizeRepoPath(
-    path.posix.join(
-      SDK_WRITE_FALLBACK_REPORT_DIRECTORY,
-      `${sanitizeLogId(operationId)}-sdk-write-failure-diagnostics.md`,
-    ),
-  );
+  return sdkRuntimeStoreCore.createSdkWriteFallbackReportPath(operationId);
 }
 
 export function createSdkWriteOperationFallbackPath(operationId, runtimePreflight = null) {
-  const operationDirectory =
-    runtimePreflight?.selectedOperationDirectory ||
-    runtimeRepoPath(SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY, "operations");
-  return runtimeRepoPath(operationDirectory, `${sanitizeLogId(operationId)}-operation.json`);
+  return sdkRuntimeStoreCore.createSdkWriteOperationFallbackPath(operationId, runtimePreflight);
 }
 
-function serialize(value) {
-  if (typeof value === "string") {
-    return value;
-  }
+export function createSdkWriteFallbackReport(payload) {
+  return createCoreSdkWriteFallbackReport(payload, sdkRuntimeStorePolicy);
+}
 
-  try {
-    return JSON.stringify(
-      value,
-      (_key, entry) => (typeof entry === "bigint" ? entry.toString() : entry),
-      2,
-    );
-  } catch {
-    return String(value);
-  }
+export function writeSdkWriteLog(cwd, operationId, payload, hooks = {}) {
+  return sdkRuntimeStoreCore.writeSdkWriteLog(cwd, operationId, payload, hooks);
+}
+
+export function createSdkWriteFailureMessage(failure, logResult = {}) {
+  return createCoreSdkWriteFailureMessage(failure, logResult);
 }
 
 function runGitDiffCheck(cwd) {
@@ -1876,155 +1733,6 @@ function collectTurnFileChangePaths(turn) {
       return item.changes.map((change) => change.path);
     }),
   );
-}
-
-export function createSdkWriteFallbackReport({
-  attemptedLogPath,
-  fallbackOperationPath,
-  logWriteError,
-  operationId,
-  payload,
-}) {
-  const failure = payload?.failure;
-  const sdkRunFailure = payload?.sdkRunFailure;
-  const postRunFailure = payload?.postRunFailure;
-  const originalFailure = sdkRunFailure || failure;
-  const outputPath = payload?.sdkThreadOutputPath || payload?.plannedPathCheck?.plannedPaths?.[0];
-  const logError = errorDiagnostic(logWriteError);
-  const runtimePreflight = payload?.runtimePreflight;
-
-  return [
-    "# SDK Write Failure Diagnostic Fallback",
-    "",
-    "## Result",
-    "diagnostic-fallback",
-    "",
-    "## Operation",
-    `- operationId: ${operationId || "(unknown)"}`,
-    `- operationFile: ${payload?.operationEnvelope?.sourcePath || "(unknown)"}`,
-    `- operation runtime path if primary runtime is unavailable: ${fallbackOperationPath}`,
-    `- attempted log path: ${attemptedLogPath}`,
-    "",
-    "## Runtime Preflight",
-    `- primary runtime path: ${runtimePreflight?.primaryRuntimePath || SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY}`,
-    `- primary runtime writable: ${runtimePreflight ? runtimePreflight.primaryWritable : "unknown"}`,
-    `- fallback runtime path: ${runtimePreflight?.fallbackRuntimePath || SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY}`,
-    `- fallback runtime writable: ${runtimePreflight ? runtimePreflight.fallbackWritable : "unknown"}`,
-    `- selected runtime path: ${runtimePreflight?.selectedRuntimePath || "(unknown)"}`,
-    `- selected runtime writable: ${runtimePreflight ? runtimePreflight.selectedRuntimeWritable : "unknown"}`,
-    `- reason selected: ${runtimePreflight?.reasonSelected || "(unknown)"}`,
-    "",
-    "## Original Failure",
-    `- message: ${diagnosticMessage(originalFailure)}`,
-    `- code: ${errorDiagnostic(originalFailure)?.code || "(none)"}`,
-    `- post-run failure: ${diagnosticMessage(postRunFailure) || "(none)"}`,
-    "",
-    "## SDK State",
-    `- sdkThreadCreated: ${Boolean(payload?.sdkThreadCreated)}`,
-    `- sdkThreadCompleted: ${Boolean(payload?.sdkThreadCompleted)}`,
-    `- sdkThreadId: ${payload?.sdkThreadId || "(not reported)"}`,
-    `- realWriteWork: ${Boolean(payload?.realWriteWork)}`,
-    `- outputPath: ${outputPath || "(unknown)"}`,
-    `- outputFileCreatedBySdk: ${Boolean(payload?.outputFileCreatedBySdk)}`,
-    "",
-    "## Log Write Failure",
-    `- message: ${logError?.message || "(unknown)"}`,
-    `- code: ${logError?.code || "(none)"}`,
-    "",
-    "## Safety",
-    "- This fallback report is written after a primary SDK log write failure.",
-    "- It does not create SDK threads, retry SDK writes, run provider validation, or commit changes.",
-    "- The original SDK/post-run failure above remains the primary failure; the log write failure is diagnostic metadata.",
-    "",
-  ].join("\n");
-}
-
-export function writeSdkWriteLog(cwd, operationId, payload, hooks = {}) {
-  const mkdir = hooks.mkdirSync || mkdirSync;
-  const writeFile = hooks.writeFileSync || writeFileSync;
-  const runtimePreflight =
-    hooks.runtimePreflight ||
-    (hooks.resolveSdkRuntimePaths
-      ? hooks.resolveSdkRuntimePaths(cwd, hooks)
-      : resolveSdkRuntimePaths(cwd, hooks));
-  const logDirectory = repoPathToAbsolute(cwd, runtimePreflight.selectedLogDirectory);
-  const logPath = path.join(
-    logDirectory,
-    `${stamp()}-${sanitizeLogId(operationId)}-sdk-write.json`,
-  );
-  const attemptedPath = normalizeRepoPath(path.relative(cwd, logPath));
-  const payloadWithRuntime = {
-    ...payload,
-    runtimePreflight,
-  };
-
-  try {
-    mkdir(logDirectory, { recursive: true });
-    writeFile(logPath, `${serialize(payloadWithRuntime)}\n`, "utf8");
-  } catch (error) {
-    const fallbackReportPath = createSdkWriteFallbackReportPath(operationId);
-    const fallbackOperationPath = createSdkWriteOperationFallbackPath(operationId, runtimePreflight);
-    const fallbackAbsolutePath = path.join(cwd, ...fallbackReportPath.split("/"));
-    const fallbackReport = createSdkWriteFallbackReport({
-      attemptedLogPath: attemptedPath,
-      fallbackOperationPath,
-      logWriteError: error,
-      operationId,
-      payload: payloadWithRuntime,
-    });
-    let fallbackReportWriteError = null;
-    let fallbackReportWritten = false;
-
-    try {
-      mkdir(path.dirname(fallbackAbsolutePath), { recursive: true });
-      writeFile(fallbackAbsolutePath, `${fallbackReport}\n`, "utf8");
-      fallbackReportWritten = true;
-    } catch (fallbackError) {
-      fallbackReportWriteError = diagnosticMessage(fallbackError);
-    }
-
-    return {
-      error: diagnosticMessage(error),
-      errorCode: errorDiagnostic(error)?.code || null,
-      fallbackOperationPath,
-      fallbackReportPath: fallbackReportWritten ? fallbackReportPath : null,
-      fallbackReportWriteError,
-      fallbackReportWritten,
-      path: null,
-      runtimePreflight,
-      attemptedFallbackReportPath: fallbackReportPath,
-      attemptedPath,
-    };
-  }
-
-  return {
-    error: null,
-    errorCode: null,
-    fallbackOperationPath: createSdkWriteOperationFallbackPath(operationId, runtimePreflight),
-    fallbackReportPath: null,
-    fallbackReportWriteError: null,
-    fallbackReportWritten: false,
-    path: attemptedPath,
-    runtimePreflight,
-    attemptedFallbackReportPath: createSdkWriteFallbackReportPath(operationId),
-    attemptedPath,
-  };
-}
-
-export function createSdkWriteFailureMessage(failure, logResult = {}) {
-  const parts = [`SDK thread write failed: ${diagnosticMessage(failure) || "unknown error"}`];
-
-  if (logResult.error) {
-    parts.push(`SDK log write failed: ${logResult.error}`);
-  }
-
-  if (logResult.fallbackReportPath) {
-    parts.push(`Fallback diagnostic report: ${logResult.fallbackReportPath}`);
-  } else if (logResult.fallbackReportWriteError) {
-    parts.push(`Fallback diagnostic report write failed: ${logResult.fallbackReportWriteError}`);
-  }
-
-  return parts.join(" ");
 }
 
 function assertSdkWriteOptions(options) {

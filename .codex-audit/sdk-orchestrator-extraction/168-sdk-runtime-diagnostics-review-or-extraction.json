@@ -1,0 +1,188 @@
+{
+  "schema": "sdk-runtime-diagnostics-review-or-extraction.v1",
+  "milestone": 168,
+  "title": "SDK Runtime Store / Diagnostics Core Extraction",
+  "createdAt": "2026-05-22",
+  "purpose": "Extract SDK runtime path probing, write-log fallback handling, and failure diagnostic message shaping into reusable core modules while preserving the AE Agent write-runner facade and adapter-owned runtime paths.",
+  "decision": {
+    "type": "behavior-preserving-extraction",
+    "reviewFirstResult": "extractable-with-focused-parity-smoke",
+    "rationale": [
+      "The runtime-store helpers form a compact block around runtime preflight, log-path construction, and fallback report writing.",
+      "The failure diagnostics helpers are policy-neutral when runtime directories are injected.",
+      "Runtime directories and fallback report directory remain owned by the AE Agent adapter config and are passed into the core helpers by the runner facade."
+    ]
+  },
+  "sourceContext": {
+    "previousMilestone": 167,
+    "previousArtifact": ".codex-audit/sdk-orchestrator-extraction/167-sdk-operation-envelope-core-extraction.json",
+    "relatedSplitReviewArtifact": ".codex-audit/sdk-orchestrator-extraction/166-sdk-runner-split-review.json",
+    "relatedExtractionPlan": ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+    "relatedAdapterConfigArtifact": ".codex-audit/sdk-orchestrator-extraction/161-ae-agent-adapter-config.json",
+    "branch": "codex/roadmap-1.3-planning",
+    "lastCompletedCommit": "ddbbc32",
+    "behaviorBoundary": {
+      "behaviorPreservingExtraction": true,
+      "runnerBehaviorChanged": false,
+      "wrapperCommandsChanged": false,
+      "publicExportsPreserved": true,
+      "runtimePathsAdapterInjected": true,
+      "fallbackReportDirectoryAdapterInjected": true,
+      "sdkThreadCreated": false,
+      "networkAccessed": false,
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditedThroughSdk": false,
+      "liveCepOrAfterEffectsRun": false,
+      "externalProviderValidationRun": false,
+      "mutatingLiveValidationRun": false,
+      "packageInstallRun": false,
+      "dependencyChanged": false,
+      "archiveMovePerformed": false,
+      "deletionPerformed": false,
+      "squashPerformed": false,
+      "pushPerformed": false
+    }
+  },
+  "extraction": {
+    "newCoreModules": [
+      "orchestrator/core/runtime-store.mjs",
+      "orchestrator/core/failure-diagnostics.mjs"
+    ],
+    "facadeModule": "orchestrator/run-write-capable-scaffold.mjs",
+    "movedOrWrappedFunctions": [
+      "resolveSdkRuntimePaths",
+      "writeSdkWriteLog",
+      "createSdkWriteFallbackReport",
+      "createSdkWriteFailureMessage",
+      "createSdkWriteFallbackReportPath",
+      "createSdkWriteOperationFallbackPath"
+    ],
+    "publicRunnerExportsPreserved": [
+      "resolveSdkRuntimePaths",
+      "writeSdkWriteLog",
+      "createSdkWriteFallbackReport",
+      "createSdkWriteFailureMessage",
+      "createSdkWriteFallbackReportPath",
+      "createSdkWriteOperationFallbackPath"
+    ],
+    "adapterInjectedContract": {
+      "primaryRuntimeDirectorySource": "AE_AGENT_SDK_ADAPTER_CONFIG.runtime.primaryRuntimeDirectory",
+      "fallbackRuntimeDirectorySource": "AE_AGENT_SDK_ADAPTER_CONFIG.runtime.fallbackRuntimeDirectory",
+      "runtimeSubdirectoriesSource": "AE_AGENT_SDK_ADAPTER_CONFIG.runtime.runtimeSubdirectories",
+      "fallbackReportDirectorySource": "AE_AGENT_SDK_ADAPTER_CONFIG.runtime.fallbackReportDirectory"
+    },
+    "preservedBehavior": [
+      "primary runtime is probed before fallback runtime",
+      "both logs and operations runtime subdirectories are probed",
+      "probe temp files are cleaned through the injected fs hooks",
+      "routine SDK logs use the selected runtime log directory",
+      "operation fallback paths use the selected runtime operations directory",
+      "fallback diagnostic reports are written under the injected fallback report directory",
+      "SDK/post-run failure messages still include the original error and diagnostic fallback status"
+    ],
+    "deferredCandidates": [
+      "post-run-contract-core",
+      "buffered-acceptance project-local split review"
+    ]
+  },
+  "filesChanged": [
+    "orchestrator/core/runtime-store.mjs",
+    "orchestrator/core/failure-diagnostics.mjs",
+    "orchestrator/run-write-capable-scaffold.mjs",
+    ".codex-audit/sdk-orchestrator-extraction/168-sdk-runtime-diagnostics-review-or-extraction.json",
+    "scripts/sdk-runtime-diagnostics-extraction-smoke.js",
+    "orchestrator/run-buffered-acceptance.mjs",
+    "orchestrator/README.md",
+    "package.json",
+    "plans/target-app-execplan.md",
+    ".codex/handoff.md"
+  ],
+  "validationPlan": [
+    "node --check for touched JavaScript files",
+    "node scripts/sdk-runtime-diagnostics-extraction-smoke.js",
+    "npm.cmd run codex:orchestrator:runtime-diagnostics:smoke",
+    "npm.cmd run codex:orchestrator:governance-report",
+    "npm.cmd run check:rules",
+    "configured local smoke suite from AGENTS.md",
+    "git diff --check"
+  ],
+  "nextRecommendedMilestone": {
+    "title": "SDK Post-Run Contract Review or Extraction",
+    "type": "review-or-behavior-preserving-extraction",
+    "approvalRequiredBeforeStart": false,
+    "allowedWork": [
+      "review or extract post-run contract helpers with dedicated parity tests",
+      "keep AE Agent scope, forbidden-path, and existing-source policy adapter-injected",
+      "preserve runner public exports and package command entrypoints"
+    ],
+    "blockedWork": [
+      "SDKThread/network proof",
+      "CEP-panel SDK write",
+      "live CEP/After Effects validation",
+      "external-provider/OpenAI CLI planner validation",
+      "mutating-live validation",
+      "package install",
+      "dependency change",
+      "archive/delete/squash cleanup",
+      "push"
+    ]
+  },
+  "machineCheck": {
+    "requiredPackageScript": "codex:orchestrator:runtime-diagnostics:smoke",
+    "requiredPackageScriptCommand": "node scripts/sdk-runtime-diagnostics-extraction-smoke.js",
+    "requiredReadmeSnippets": [
+      "M168 extracts SDK runtime-store and failure-diagnostics helpers",
+      "168-sdk-runtime-diagnostics-review-or-extraction.json",
+      "sdk-runtime-diagnostics-review-or-extraction.v1",
+      "codex:orchestrator:runtime-diagnostics:smoke",
+      "orchestrator/core/runtime-store.mjs",
+      "orchestrator/core/failure-diagnostics.mjs"
+    ],
+    "mustExist": [
+      "orchestrator/core/runtime-store.mjs",
+      "orchestrator/core/failure-diagnostics.mjs",
+      "orchestrator/run-write-capable-scaffold.mjs",
+      "orchestrator/adapters/ae-agent-sdk-policy.mjs",
+      ".codex-audit/sdk-orchestrator-extraction/167-sdk-operation-envelope-core-extraction.json"
+    ],
+    "requiredSourceSnippets": {
+      "orchestrator/core/runtime-store.mjs": [
+        "export function createSdkRuntimeStoreHelpers",
+        "fallbackReportDirectory",
+        "export function writeSdkWriteLog"
+      ],
+      "orchestrator/core/failure-diagnostics.mjs": [
+        "export function createSdkWriteFallbackReport",
+        "export function createSdkWriteFailureMessage",
+        "export function errorDiagnostic"
+      ],
+      "orchestrator/run-write-capable-scaffold.mjs": [
+        "import { createSdkRuntimeStoreHelpers }",
+        "const sdkRuntimeStorePolicy = Object.freeze",
+        "export function resolveSdkRuntimePaths(cwd = process.cwd(), hooks = {})",
+        "return sdkRuntimeStoreCore.writeSdkWriteLog(cwd, operationId, payload, hooks);"
+      ],
+      "orchestrator/run-buffered-acceptance.mjs": [
+        "sdk-runtime-diagnostics-extraction-smoke.js",
+        "M168 SDK runtime diagnostics extraction smoke failed"
+      ]
+    },
+    "requiredFalseBoundaryFlags": [
+      "runnerBehaviorChanged",
+      "wrapperCommandsChanged",
+      "sdkThreadCreated",
+      "networkAccessed",
+      "cepPanelSdkWritesEnabled",
+      "cepPanelPanelJsEditedThroughSdk",
+      "liveCepOrAfterEffectsRun",
+      "externalProviderValidationRun",
+      "mutatingLiveValidationRun",
+      "packageInstallRun",
+      "dependencyChanged",
+      "archiveMovePerformed",
+      "deletionPerformed",
+      "squashPerformed",
+      "pushPerformed"
+    ]
+  }
+}
