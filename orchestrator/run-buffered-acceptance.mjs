@@ -1035,6 +1035,18 @@ async function runContractSmoke() {
     `M161 SDK AE Agent adapter config smoke failed: ${adapterConfigOutput.trim()}`,
     failures,
   );
+  const historicalEvidenceSmoke = runNode([
+    path.join("scripts", "sdk-historical-evidence-index-smoke.js"),
+  ]);
+  const historicalEvidenceOutput = `${historicalEvidenceSmoke.stdout ?? ""}\n${
+    historicalEvidenceSmoke.stderr ?? ""
+  }`;
+  assertContract(
+    historicalEvidenceSmoke.status === 0 &&
+      historicalEvidenceOutput.includes("SDK historical evidence index smoke: pass"),
+    `M162 SDK historical evidence index smoke failed: ${historicalEvidenceOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1498,6 +1510,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:historical-evidence:smoke"] ===
+      "node scripts/sdk-historical-evidence-index-smoke.js",
+    "package.json codex:orchestrator:historical-evidence:smoke script is not wired to the M162 historical evidence index smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1667,6 +1685,15 @@ async function runContractSmoke() {
       readme.includes("orchestrator/adapters/ae-agent-sdk-policy.mjs") &&
       readme.includes("CEP-panel SDK writes remain disabled"),
     "README does not document the M161 AE Agent adapter config smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:historical-evidence:smoke") &&
+      readme.includes("162-sdk-historical-evidence-index.json") &&
+      readme.includes("sdk-historical-evidence-index.v1") &&
+      readme.includes("current evidence remains directly checked") &&
+      readme.includes("no archive move"),
+    "README does not document the M162 historical evidence index smoke",
     failures,
   );
   assertContract(

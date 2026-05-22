@@ -23,6 +23,7 @@
     "codex:orchestrator:inventory-freeze:smoke": "node scripts/sdk-orchestrator-inventory-freeze-smoke.js",
     "codex:orchestrator:reusable-core:smoke": "node scripts/sdk-reusable-core-extraction-smoke.js",
     "codex:orchestrator:adapter-config:smoke": "node scripts/sdk-ae-agent-adapter-config-smoke.js",
+    "codex:orchestrator:historical-evidence:smoke": "node scripts/sdk-historical-evidence-index-smoke.js",
     "check:rules": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke"
   },
   "dependencies": {

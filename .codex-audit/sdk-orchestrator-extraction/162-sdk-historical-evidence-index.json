@@ -1,0 +1,478 @@
+{
+  "schema": "sdk-historical-evidence-index.v1",
+  "milestone": 162,
+  "title": "SDK Historical Evidence Summary",
+  "createdAt": "2026-05-22",
+  "purpose": "Create a machine-checked history index for superseded SDK evidence before any archive move, deletion, or smoke migration.",
+  "sourceContext": {
+    "previousMilestone": 161,
+    "previousArtifact": ".codex-audit/sdk-orchestrator-extraction/161-ae-agent-adapter-config.json",
+    "safeAeAgentCleanupPlanPhase": "phase-4-summarize-historical-sdk-evidence",
+    "branch": "codex/roadmap-1.3-planning",
+    "lastCompletedCommit": "c295fff",
+    "behaviorBoundary": {
+      "sdkThreadCreated": false,
+      "networkAccessed": false,
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditedThroughSdk": false,
+      "liveCepOrAfterEffectsRun": false,
+      "externalProviderValidationRun": false,
+      "mutatingLiveValidationRun": false,
+      "packageInstallRun": false,
+      "dependencyChanged": false,
+      "archiveMovePerformed": false,
+      "deletionPerformed": false,
+      "squashPerformed": false,
+      "pushPerformed": false
+    }
+  },
+  "currentEvidenceStillDirectlyChecked": [
+    {
+      "id": "current-production-code-provider-smoke-lane",
+      "milestones": [
+        152
+      ],
+      "status": "current-direct-check",
+      "verdict": "two-file-provider-smoke-lane-ready",
+      "commitRefs": [
+        {
+          "milestone": 152,
+          "commit": "9ede7ab",
+          "summary": "feat: mark provider smokes sdk lane ready"
+        }
+      ],
+      "artifacts": [
+        ".codex-audit/sdk-production-readiness/152-sdk-production-code-provider-smokes-ready.json",
+        ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
+        ".codex-audit/sdk-write-lane-enablement/152-production-code-provider-smokes-enable.json",
+        ".codex-audit/sdk-write-lane-readiness/152-production-code-provider-smokes-readiness.json",
+        ".codex-audit/sdk-write-lane-approval-decisions/152-production-code-provider-smokes-approval-decision.json",
+        ".codex-audit/sdk-scope-expansion-reviews/152-production-code-provider-smokes-review.json"
+      ],
+      "smokeEntrypoints": [
+        "npm.cmd run codex:orchestrator:production-code-broader:smoke",
+        "npm.cmd run codex:orchestrator:governance-report",
+        "npm.cmd run check:rules"
+      ]
+    },
+    {
+      "id": "current-next-lane-and-conveyor",
+      "milestones": [
+        153,
+        154,
+        155,
+        156,
+        157
+      ],
+      "status": "current-direct-check",
+      "verdict": "local-gated-controlled-milestone-conveyor",
+      "commitRefs": [
+        {
+          "milestone": 153,
+          "commit": "3329407",
+          "summary": "docs: select next sdk lane"
+        },
+        {
+          "milestone": 154,
+          "commit": "f3da1ab",
+          "summary": "docs: define sdk milestone conveyor spec"
+        },
+        {
+          "milestone": 155,
+          "commit": "8a3e17b",
+          "summary": "test: add sdk milestone conveyor dry run"
+        },
+        {
+          "milestone": 156,
+          "commit": "03a6429",
+          "summary": "test: record sdk conveyor sdkthread proof"
+        },
+        {
+          "milestone": 157,
+          "commit": "083f2bc",
+          "summary": "test: add sdk conveyor handoff loop gate"
+        }
+      ],
+      "artifacts": [
+        ".codex-audit/sdk-next-lane/153-sdk-next-lane-selection.json",
+        ".codex-audit/sdk-milestone-conveyor/154-sdk-milestone-conveyor-spec.json",
+        ".codex-audit/sdk-milestone-conveyor/155-sdk-milestone-conveyor-local-dry-run.json",
+        ".codex-audit/sdk-milestone-conveyor/156-sdk-conveyor-sdkthread-proof.json",
+        ".codex-audit/sdk-milestone-conveyor/157-sdk-conveyor-commit-handoff-loop-gate.json"
+      ],
+      "smokeEntrypoints": [
+        "npm.cmd run codex:orchestrator:next-lane:smoke",
+        "npm.cmd run codex:orchestrator:milestone-conveyor-spec:smoke",
+        "npm.cmd run codex:orchestrator:milestone-conveyor-dry-run:smoke",
+        "npm.cmd run codex:orchestrator:milestone-conveyor-sdkthread-proof:smoke",
+        "npm.cmd run codex:orchestrator:milestone-conveyor-loop-gate:smoke",
+        "npm.cmd run check:rules"
+      ]
+    },
+    {
+      "id": "current-extraction-and-adapter-boundary",
+      "milestones": [
+        158,
+        159,
+        160,
+        161,
+        162
+      ],
+      "status": "current-direct-check",
+      "verdict": "behavior-preserving-extraction-boundary",
+      "commitRefs": [
+        {
+          "milestone": 158,
+          "commit": "e51d1e7",
+          "summary": "docs: plan sdk orchestrator extraction cleanup"
+        },
+        {
+          "milestone": 159,
+          "commit": "26c14ac",
+          "summary": "docs: freeze sdk orchestrator inventory"
+        },
+        {
+          "milestone": 160,
+          "commit": "ad673e9",
+          "summary": "refactor: extract sdk reusable core"
+        },
+        {
+          "milestone": 161,
+          "commit": "c295fff",
+          "summary": "refactor: introduce ae agent sdk adapter config"
+        }
+      ],
+      "artifacts": [
+        ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+        ".codex-audit/sdk-orchestrator-extraction/159-sdk-orchestrator-inventory-freeze.json",
+        ".codex-audit/sdk-orchestrator-extraction/160-sdk-reusable-core-extraction.json",
+        ".codex-audit/sdk-orchestrator-extraction/161-ae-agent-adapter-config.json",
+        ".codex-audit/sdk-orchestrator-extraction/162-sdk-historical-evidence-index.json"
+      ],
+      "smokeEntrypoints": [
+        "npm.cmd run codex:orchestrator:extraction-cleanup:smoke",
+        "npm.cmd run codex:orchestrator:inventory-freeze:smoke",
+        "npm.cmd run codex:orchestrator:reusable-core:smoke",
+        "npm.cmd run codex:orchestrator:adapter-config:smoke",
+        "npm.cmd run codex:orchestrator:historical-evidence:smoke",
+        "npm.cmd run check:rules"
+      ]
+    }
+  ],
+  "historicalEvidenceIndex": [
+    {
+      "id": "early-docs-audit-and-orchestrator-sdkthread-proofs",
+      "milestones": [
+        115,
+        118,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126
+      ],
+      "status": "historical-indexed-keep-in-place",
+      "verdict": "early proof sequence captured docs-audit retries, runtime fallback, orchestrator docs output, and orchestrator fixture JSON outputs; it is useful historical evidence but not the current launch governance source.",
+      "supersededBy": [
+        "current-production-code-provider-smoke-lane",
+        "current-next-lane-and-conveyor",
+        "current-extraction-and-adapter-boundary"
+      ],
+      "commitRefs": [
+        {
+          "milestone": 115,
+          "commit": "69a1d12",
+          "summary": "test: harden sdk write failure diagnostics"
+        },
+        {
+          "milestone": 118,
+          "commit": "bab5451",
+          "summary": "test: record docs-audit sdk write retry diagnostics"
+        },
+        {
+          "milestone": 121,
+          "commit": "dd77239",
+          "summary": "docs: record successful docs-audit sdk write retry"
+        },
+        {
+          "milestone": 122,
+          "commit": "0739213",
+          "summary": "docs: record second docs-audit sdk write"
+        },
+        {
+          "milestone": 123,
+          "commit": "e7de0e3",
+          "summary": "test: enable orchestrator docs sdk write"
+        },
+        {
+          "milestone": 124,
+          "commit": "aa3039e",
+          "summary": "docs: record second orchestrator docs sdk write"
+        },
+        {
+          "milestone": 125,
+          "commit": "9c0cdf5",
+          "summary": "test: enable orchestrator fixture sdk write"
+        },
+        {
+          "milestone": 126,
+          "commit": "8723e8e",
+          "summary": "test: record second orchestrator fixture sdk write"
+        }
+      ],
+      "artifacts": [
+        ".codex-audit/115-sdk-docs-audit-real-write-cutover.md",
+        ".codex-audit/118-sdk-docs-audit-real-write-retry.md",
+        ".codex-audit/121-sdk-docs-audit-runtime-fallback-retry.md",
+        ".codex-audit/122-sdk-docs-audit-second-write.md",
+        ".codex-audit/123-first-orchestrator-scope-sdk-write.md",
+        ".codex-audit/124-second-orchestrator-scope-sdk-write.md",
+        ".codex-audit/125-first-orchestrator-fixture-sdk-write.md",
+        ".codex-audit/126-second-orchestrator-fixture-sdk-write.md",
+        "orchestrator/m123-sdk-thread-orchestrator-scope-output.md",
+        "orchestrator/m124-sdk-thread-orchestrator-scope-output.md",
+        "orchestrator/fixtures/sdk-write/m125-sdk-thread-fixture.json",
+        "orchestrator/fixtures/sdk-write/m126-sdk-thread-fixture.json"
+      ],
+      "retention": {
+        "keepInPlace": true,
+        "archiveCandidateAfterSmokeMigration": true,
+        "immediateAction": "none"
+      }
+    },
+    {
+      "id": "superseded-single-file-production-readiness",
+      "milestones": [
+        129,
+        133,
+        134,
+        135,
+        140,
+        145,
+        146
+      ],
+      "status": "historical-indexed-keep-in-place",
+      "verdict": "single-file production-code lane progressed from review/readiness/approval-gate packets through a blocked M145 attempt and successful M146 narrow readiness, then was superseded by the current M152 two-file provider-smoke lane.",
+      "supersededBy": [
+        "current-production-code-provider-smoke-lane"
+      ],
+      "commitRefs": [
+        {
+          "milestone": 129,
+          "commit": "8a157f8",
+          "summary": "test: add first sdk scope review packet"
+        },
+        {
+          "milestone": 133,
+          "commit": "d14f395",
+          "summary": "test: add production-code sdk lane readiness gate"
+        },
+        {
+          "milestone": 134,
+          "commit": "d3e4a86",
+          "summary": "test: record production-code sdk lane approval decision"
+        },
+        {
+          "milestone": 135,
+          "commit": "b070720",
+          "summary": "test: enable production-code sdk lane narrowly"
+        },
+        {
+          "milestone": 140,
+          "commit": "82c7470",
+          "summary": "feat: add sdk launch governance gate"
+        },
+        {
+          "milestone": 145,
+          "commit": "62a3da1",
+          "summary": "docs: record sdk production readiness blockers"
+        },
+        {
+          "milestone": 146,
+          "commit": "d949383",
+          "summary": "feat: mark sdk narrow lane production ready"
+        }
+      ],
+      "artifacts": [
+        ".codex-audit/sdk-scope-expansion-reviews/129-production-code-smoke-harness-review.json",
+        ".codex-audit/sdk-write-lane-readiness/133-production-code-smoke-harness-readiness.json",
+        ".codex-audit/sdk-write-lane-approval-decisions/134-production-code-smoke-harness-approval-decision.json",
+        ".codex-audit/sdk-write-lane-enablement/135-production-code-smoke-harness-enable.json",
+        ".codex-audit/sdk-launch-governance/140-sdk-launch-governance.json",
+        ".codex-audit/sdk-production-readiness/145-sdk-production-ready.json",
+        ".codex-audit/sdk-production-readiness/146-sdk-production-ready.json"
+      ],
+      "retention": {
+        "keepInPlace": true,
+        "archiveCandidateAfterSmokeMigration": true,
+        "immediateAction": "none"
+      }
+    },
+    {
+      "id": "bounded-reliability-and-multifile-proofs",
+      "milestones": [
+        147,
+        148,
+        149,
+        150,
+        151
+      ],
+      "status": "historical-indexed-keep-in-place",
+      "verdict": "bounded local-command repair, multi-file planned operation, multi-file SDKThread proof, and boundary closeout are reusable-tool design evidence; they do not broaden current production-code or CEP-panel SDK readiness.",
+      "supersededBy": [
+        "current-next-lane-and-conveyor",
+        "current-extraction-and-adapter-boundary"
+      ],
+      "commitRefs": [
+        {
+          "milestone": 147,
+          "commit": "b61bdc1",
+          "summary": "feat: add sdk iterative cmd reliability gate"
+        },
+        {
+          "milestone": 148,
+          "commit": "adaade9",
+          "summary": "feat: add sdk multi-file planned operation gate"
+        },
+        {
+          "milestone": 149,
+          "commit": "500b973",
+          "summary": "feat: add sdk multi-file real proof"
+        },
+        {
+          "milestone": 150,
+          "commit": "e42fa6a",
+          "summary": "docs: add sdk post multi-file boundary"
+        },
+        {
+          "milestone": 151,
+          "commit": "221cb22",
+          "summary": "docs: close sdk boundary block"
+        }
+      ],
+      "artifacts": [
+        ".codex-audit/sdk-iterative-cmd/147-sdk-iterative-cmd-reliability.json",
+        ".codex-audit/sdk-iterative-cmd/147-operation-envelope.json",
+        ".codex-audit/sdk-multi-file-planned-operation/148-sdk-multi-file-planned-operation-contract.json",
+        ".codex-audit/sdk-multi-file-planned-operation/149-sdk-multi-file-real-proof.json",
+        ".codex-audit/sdk-post-multi-file-readiness/150-sdk-post-multi-file-governance-boundary.json",
+        ".codex-audit/sdk-post-multi-file-readiness/151-sdk-boundary-closeout.json",
+        "orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json",
+        "orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json",
+        "orchestrator/fixtures/sdk-write/m149-multi-file-beta.json"
+      ],
+      "retention": {
+        "keepInPlace": true,
+        "archiveCandidateAfterSmokeMigration": true,
+        "immediateAction": "none"
+      }
+    }
+  ],
+  "supersessionChain": [
+    {
+      "from": "M145 blocked single-file production-ready attempt",
+      "to": "M146 successful single-file production-ready proof",
+      "currentStatus": "superseded"
+    },
+    {
+      "from": "M146 single-file production-code lane",
+      "to": "M152 two-file provider-smoke production-code lane",
+      "currentStatus": "superseded-by-current"
+    },
+    {
+      "from": "M140 launch governance",
+      "to": "M152 launch governance",
+      "currentStatus": "superseded-by-current"
+    },
+    {
+      "from": "M147-M151 reliability and multi-file proof history",
+      "to": "M154-M157 controlled milestone conveyor and M158-M161 extraction boundary",
+      "currentStatus": "historical-design-input"
+    }
+  ],
+  "historyAction": {
+    "indexCreated": true,
+    "smokeMigratedToIndex": false,
+    "currentEvidenceRemainsDirectlyChecked": true,
+    "archiveMoveAllowedNow": false,
+    "deleteAllowedNow": false,
+    "squashAllowedNow": false,
+    "nextAllowedCleanupStep": "Review this index and migrate only superseded historical smoke coverage before any archive move."
+  },
+  "machineCheck": {
+    "requiredCurrentSetIds": [
+      "current-production-code-provider-smoke-lane",
+      "current-next-lane-and-conveyor",
+      "current-extraction-and-adapter-boundary"
+    ],
+    "requiredHistoricalSetIds": [
+      "early-docs-audit-and-orchestrator-sdkthread-proofs",
+      "superseded-single-file-production-readiness",
+      "bounded-reliability-and-multifile-proofs"
+    ],
+    "requiredSupersessionEdges": [
+      "M145 blocked single-file production-ready attempt -> M146 successful single-file production-ready proof",
+      "M146 single-file production-code lane -> M152 two-file provider-smoke production-code lane",
+      "M140 launch governance -> M152 launch governance"
+    ],
+    "currentEvidenceMustRemainDirectlyChecked": [
+      ".codex-audit/sdk-production-readiness/152-sdk-production-code-provider-smokes-ready.json",
+      ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
+      ".codex-audit/sdk-next-lane/153-sdk-next-lane-selection.json",
+      ".codex-audit/sdk-milestone-conveyor/154-sdk-milestone-conveyor-spec.json",
+      ".codex-audit/sdk-milestone-conveyor/155-sdk-milestone-conveyor-local-dry-run.json",
+      ".codex-audit/sdk-milestone-conveyor/156-sdk-conveyor-sdkthread-proof.json",
+      ".codex-audit/sdk-milestone-conveyor/157-sdk-conveyor-commit-handoff-loop-gate.json",
+      ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+      ".codex-audit/sdk-orchestrator-extraction/159-sdk-orchestrator-inventory-freeze.json",
+      ".codex-audit/sdk-orchestrator-extraction/160-sdk-reusable-core-extraction.json",
+      ".codex-audit/sdk-orchestrator-extraction/161-ae-agent-adapter-config.json",
+      ".codex-audit/sdk-orchestrator-extraction/162-sdk-historical-evidence-index.json",
+      "scripts/provider-api-smoke.js",
+      "scripts/provider-contract-smoke.js",
+      "cep-panel/panel.js"
+    ],
+    "mustExist": [
+      ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+      ".codex-audit/sdk-orchestrator-extraction/159-sdk-orchestrator-inventory-freeze.json",
+      ".codex-audit/sdk-orchestrator-extraction/160-sdk-reusable-core-extraction.json",
+      ".codex-audit/sdk-orchestrator-extraction/161-ae-agent-adapter-config.json",
+      ".codex-audit/sdk-orchestrator-extraction/162-sdk-historical-evidence-index.json",
+      ".codex-audit/sdk-production-readiness/145-sdk-production-ready.json",
+      ".codex-audit/sdk-production-readiness/146-sdk-production-ready.json",
+      ".codex-audit/sdk-production-readiness/152-sdk-production-code-provider-smokes-ready.json",
+      ".codex-audit/sdk-launch-governance/140-sdk-launch-governance.json",
+      ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
+      ".codex-audit/sdk-write-lane-enablement/135-production-code-smoke-harness-enable.json",
+      ".codex-audit/sdk-write-lane-enablement/152-production-code-provider-smokes-enable.json",
+      ".codex-audit/sdk-milestone-conveyor/157-sdk-conveyor-commit-handoff-loop-gate.json",
+      ".codex-audit/sdk-iterative-cmd/147-sdk-iterative-cmd-reliability.json",
+      ".codex-audit/sdk-multi-file-planned-operation/148-sdk-multi-file-planned-operation-contract.json",
+      ".codex-audit/sdk-multi-file-planned-operation/149-sdk-multi-file-real-proof.json",
+      ".codex-audit/sdk-post-multi-file-readiness/151-sdk-boundary-closeout.json",
+      "orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json",
+      "orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json",
+      "orchestrator/fixtures/sdk-write/m149-multi-file-beta.json",
+      "scripts/provider-api-smoke.js",
+      "scripts/provider-contract-smoke.js",
+      "cep-panel/panel.js"
+    ],
+    "requiredPackageScript": "codex:orchestrator:historical-evidence:smoke",
+    "requiredFalseBoundaryFlags": [
+      "sdkThreadCreated",
+      "networkAccessed",
+      "cepPanelSdkWritesEnabled",
+      "cepPanelPanelJsEditedThroughSdk",
+      "liveCepOrAfterEffectsRun",
+      "externalProviderValidationRun",
+      "mutatingLiveValidationRun",
+      "packageInstallRun",
+      "dependencyChanged",
+      "archiveMovePerformed",
+      "deletionPerformed",
+      "squashPerformed",
+      "pushPerformed"
+    ]
+  }
+}

@@ -268,6 +268,12 @@ M161 introduces the active AE Agent adapter config in `.codex-audit/sdk-orchestr
 npm.cmd run codex:orchestrator:adapter-config:smoke
 ```
 
+M162 adds the historical SDK evidence index in `.codex-audit/sdk-orchestrator-extraction/162-sdk-historical-evidence-index.json` with schema `sdk-historical-evidence-index.v1`. The index records historical artifacts, verdicts, supersession chain, and commit refs for early docs-audit/orchestrator SDKThread proofs, superseded single-file production readiness, and bounded reliability/multi-file proofs. The current evidence remains directly checked: M152 governance/readiness, M153-M157 conveyor packets, M158-M161 extraction artifacts, provider smoke targets, and `cep-panel/panel.js` are not treated as historical-only. This is a summary milestone only: no archive move, deletion, squash, SDKThread/network proof, CEP-panel SDK write, dependency change, push, live CEP/AE validation, external-provider/OpenAI CLI planner validation, or mutating-live validation is performed.
+
+```powershell
+npm.cmd run codex:orchestrator:historical-evidence:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.
