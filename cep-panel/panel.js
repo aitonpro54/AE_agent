@@ -2,7 +2,7 @@
 
 (function () {
   var APP_NAME = "AE Agent";
-  var APP_VERSION = "1.0.11";
+  var APP_VERSION = "2.0.0";
   var CHAT_MODE_CHAT = "chat";
   var CHAT_MODE_AGENT = "plan";
   var CHAT_MODE_HARDCORE = "hardcore";

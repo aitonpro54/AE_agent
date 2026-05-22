@@ -21,7 +21,7 @@ const {
 } = require("./project-intent-memory");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "1.0.11";
+const SERVER_VERSION = "2.0.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -4697,7 +4697,7 @@ function buildHardcoreSolution(session) {
     },
     testedAeContext: {
       aeVersion: null,
-      panelVersion: "AE Agent 1.0.11",
+      panelVersion: "AE Agent 2.0.0",
       bridgeVersion: SERVER_VERSION,
       projectKind: "agent-hardcore-session",
       notes: ["Auto-promoted only after local registry validation succeeds."]

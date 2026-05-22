@@ -2,18 +2,19 @@
 
 ## Progress
 
-- [x] Stable baseline: AE Agent 1.0.11 CEP panel, provider setup, Agent planning, Agent Hardcore owner mode, plan validation, protected execution, local history, diagnostics, reload hard-refresh, install/sync cache clearing, and installed-panel smoke coverage.
+- [x] Stable baseline: AE Agent 2.0.0 CEP panel, provider setup, Agent planning, Agent Hardcore owner mode, plan validation, protected execution, local history, diagnostics, reload hard-refresh, install/sync cache clearing, and installed-panel smoke coverage.
 - [x] Historical milestone detail through M173 is archived in `plans/archive/target-app-execplan-history-2026-05.md`.
 - [x] Milestone 174: AE Agent roadmap reset and active-state split.
 - [x] Milestone 175: Runtime artifact cleanup note and archive policy.
 - [x] Milestone 176: SDK current/history split.
 - [x] Milestone 177: SDK smoke consolidation plan.
 - [x] Milestone 178: Cleanup conveyor quiet output, runtime logs, and commit-aware post-run allowlist.
+- [x] Milestone 179: AE Agent 2.0.0 version bump for new GitHub home.
 
 ## Current Stable Baseline
 
 - The active repository is `C:\Users\Ant\Documents\Codex\AE_agent`.
-- The native CEP title/menu format is `AE Agent 1.0.11`.
+- The native CEP title/menu format is `AE Agent 2.0.0`.
 - The panel is a compact dark CEP client for the local bridge daemon.
 - Provider paths are separate: OpenAI API, OpenAI CLI, Gemini, Claude, OpenRouter, and Local/Ollama.
 - Agent mode drafts structured MCP plans, validates tool names and required fields, dry-runs plans, and executes only through explicit mutation gates.
@@ -86,6 +87,14 @@
 - Completed: post-run path allowlist now checks both dirty working-tree paths and files changed by commits created since pre-run `HEAD`.
 - Runtime AE Agent behavior, CEP panel, bridge, provider behavior, dependencies, push, and PR state are unchanged.
 
+### Milestone 179: AE Agent 2.0.0 version bump
+
+- Completed: bumped current CEP panel, CEP manifest, bridge daemon, MCP adapter, versioned smoke expectations, active target spec, README, and active execution plan from `1.0.11` to `2.0.0`.
+- Historical archive files are unchanged and keep their original `1.0.11` evidence.
+- Target publish repository is `https://github.com/aitonpro54/AE_agent`.
+- Push target is direct `master` in the new repository; PR creation is intentionally skipped for the initial repository fill.
+- Live CEP/AE sync is not part of this milestone unless separately requested.
+
 ## Recent Milestone Summary
 
 - M152: Current production-code SDK write readiness superseded the older single-file claim and is limited to `scripts/provider-api-smoke.js` plus `scripts/provider-contract-smoke.js`.
@@ -102,9 +111,12 @@
 - M176: Split current SDK state from history index and added machine checks for the split.
 - M177: Added SDK smoke consolidation plan and current/history smoke entrypoints while keeping existing milestone-specific coverage.
 - M178: Made the cleanup conveyor less transcript-heavy by logging full child output to ignored runtime logs, adding compact terminal summaries, and making post-run path validation commit-aware.
+- M179: Bumped AE Agent to `2.0.0` and prepared direct push to the new `aitonpro54/AE_agent` repository without PR.
 
 ## Decision Log
 
+- 2026-05-22: M179 treats `2.0.0` as the new current AE Agent version and updates current runtime/version sources plus active docs and smoke expectations. Historical archive files are not rewritten.
+- 2026-05-22: M179 publishes to the new `aitonpro54/AE_agent` GitHub repository by direct push to `master`; PR is intentionally skipped because the new repository is the initial publication target.
 - 2026-05-22: M178 makes cleanup conveyor execution quiet by default. Full child stdout/stderr is written under `.codex-runtime/sdk/cleanup-conveyor-logs`; terminal output should stay to summary, log path, changed paths, and bounded failure tails.
 - 2026-05-22: M178 treats commits created by a CLI/SDK worker as part of the post-run path contract. The runner compares pre-run and post-run `HEAD` and fails if committed paths or working-tree paths fall outside the selected queue planned-path allowlist.
 - 2026-05-22: M177 only plans smoke consolidation. It does not delete old smoke scripts or remove check:rules assertions because replacement coverage is not yet green.
@@ -147,9 +159,10 @@
 | `node scripts/sdk-current-governance-smoke.js` | Required for M177 current-governance check. | Passed on 2026-05-22. |
 | `node scripts/sdk-history-index-smoke.js` | Required for M177 history/consolidation check. | Passed on 2026-05-22. |
 | `npm.cmd run check:rules` | Required by selected cleanup conveyor items and keeps current M152+ direct checks active. | Passed on 2026-05-22; npm printed only the existing `Unknown env config "http-proxy"` warning. |
-| `git diff --check` | Required by selected cleanup conveyor items. | Passed on 2026-05-22; Git printed only LF-to-CRLF working-copy warnings for touched text files. |
-| Configured local smoke suite from AGENTS.md | Not run in full because this bounded conveyor turn is limited to selected local SDK cleanup items; no runtime AE Agent behavior changed. | Not run; selected SDK validation is listed above. |
-| Live CEP/AE validation | Forbidden/out of scope for this turn. | Not run. |
+| `node --check` for M179 touched JavaScript | Required because M179 bumps runtime and smoke expectation JS files. | Passed on 2026-05-22 for CEP panel, bridge/MCP, and touched smoke/helper scripts. |
+| Configured local smoke suite from AGENTS.md | Required for M179 version bump because bridge/panel/version expectations changed. | Passed on 2026-05-22 for all listed non-live checks. |
+| `git diff --check` | Required by selected cleanup conveyor items and M179 version bump. | Passed on 2026-05-22; Git printed only LF-to-CRLF working-copy warnings for touched text files. |
+| Live CEP/AE validation | Out of scope unless separately requested. | Not run for M179. |
 | SDKThread/network/external-provider/OpenAI CLI planner/mutating-live validation | Forbidden/out of scope for this turn. | Not run. |
 | Package install/dependency change validation | Out of scope because no dependency change is allowed. | Not run. |
 
@@ -188,6 +201,15 @@
 - Updated `scripts/sdk-ae-agent-cleanup-conveyor-command-smoke.js` to assert quiet/log-file defaults, custom tail/log-dir parsing, and invalid option rejection.
 - Updated `orchestrator/README.md` and this plan.
 
+### Milestone 179
+
+- Bumped current AE Agent version from `1.0.11` to `2.0.0` in CEP panel, CEP manifest, bridge daemon, MCP adapter, smoke expectations, active README/spec/plan docs.
+- Preserved historical archive files without rewriting older `1.0.11` evidence.
+- Passed `node --check` for touched JavaScript files.
+- Passed the AGENTS non-live smoke suite:
+  `check:rules`, provider contract/API, solution registry/candidate/promotion/retrieval/library, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only smoke, and main smoke.
+- Live CEP/AE sync was not run because the user requested repo publication only.
+
 ### Handoff
 
-`.codex/handoff.md` is writable again from the parent Codex process and is updated after M178. Use it as the primary continuation record. No live CEP/AE, SDKThread/network proof, provider validation, dependency change, package install, push, or PR was performed for M178.
+`.codex/handoff.md` is writable from the parent Codex process and is updated after milestone work. Use it as the primary continuation record.
