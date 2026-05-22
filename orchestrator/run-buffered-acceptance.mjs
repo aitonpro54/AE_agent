@@ -1079,6 +1079,20 @@ async function runContractSmoke() {
     `M170 SDK buffered acceptance split review smoke failed: ${bufferedAcceptanceSplitReviewOutput.trim()}`,
     failures,
   );
+  const orchestratorExtractionCloseoutSmoke = runNode([
+    path.join("scripts", "sdk-orchestrator-extraction-closeout-smoke.js"),
+  ]);
+  const orchestratorExtractionCloseoutOutput = `${
+    orchestratorExtractionCloseoutSmoke.stdout ?? ""
+  }\n${orchestratorExtractionCloseoutSmoke.stderr ?? ""}`;
+  assertContract(
+    orchestratorExtractionCloseoutSmoke.status === 0 &&
+      orchestratorExtractionCloseoutOutput.includes(
+        "SDK orchestrator extraction closeout smoke: pass",
+      ),
+    `M171 SDK orchestrator extraction closeout smoke failed: ${orchestratorExtractionCloseoutOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1561,6 +1575,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:extraction-closeout:smoke"] ===
+      "node scripts/sdk-orchestrator-extraction-closeout-smoke.js",
+    "package.json codex:orchestrator:extraction-closeout:smoke script is not wired to the M171 SDK orchestrator extraction closeout smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1762,6 +1782,15 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:extraction-closeout:smoke") &&
+      readme.includes("171-sdk-orchestrator-extraction-closeout-review.json") &&
+      readme.includes("sdk-orchestrator-extraction-closeout-review.v1") &&
+      readme.includes("M171 closes the SDK orchestrator extraction block") &&
+      readme.includes("closed-local-gated"),
+    "README does not document the M171 SDK orchestrator extraction closeout smoke",
+    failures,
+  );
+  assertContract(
     readme.includes('sandboxMode: "read-only"') &&
       readme.includes('approvalPolicy: "never"') &&
       readme.includes("networkAccessEnabled: false") &&
@@ -1880,6 +1909,7 @@ async function runContractSmoke() {
   console.log("SDK historical archive move smoke: pass");
   console.log("SDK runner split review smoke: pass");
   console.log("SDK buffered acceptance split review smoke: pass");
+  console.log("SDK orchestrator extraction closeout smoke: pass");
 }
 
 async function printGovernanceReport() {

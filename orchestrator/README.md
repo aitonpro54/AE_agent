@@ -286,6 +286,12 @@ M170 reviews buffered acceptance split boundaries in `.codex-audit/sdk-orchestra
 npm.cmd run codex:orchestrator:buffered-acceptance-split-review:smoke
 ```
 
+M171 closes the SDK orchestrator extraction block in `.codex-audit/sdk-orchestrator-extraction/171-sdk-orchestrator-extraction-closeout-review.json` with schema `sdk-orchestrator-extraction-closeout-review.v1`. The closeout records the M160-M170 reusable core modules, the AE Agent adapter/project-local boundaries, and the remaining standalone-packaging blockers; the block status is `closed-local-gated`, with no new extraction, SDKThread/network work, CEP-panel SDK write, package install, archive/delete/squash cleanup, or push.
+
+```powershell
+npm.cmd run codex:orchestrator:extraction-closeout:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.

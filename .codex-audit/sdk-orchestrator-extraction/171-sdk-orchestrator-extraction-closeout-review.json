@@ -1,0 +1,317 @@
+{
+  "schema": "sdk-orchestrator-extraction-closeout-review.v1",
+  "milestone": 171,
+  "title": "SDK Orchestrator Extraction Closeout Review",
+  "createdAt": "2026-05-22",
+  "purpose": "Close the M160-M170 SDK orchestrator extraction block by summarizing reusable core separation, AE Agent adapter/project-local boundaries, and remaining blockers for standalone packaging without starting new extraction work.",
+  "decision": {
+    "type": "closeout-review-no-extraction",
+    "reviewFirstResult": "sdk-extraction-block-closed-local-gated",
+    "rationale": [
+      "M160-M169 already extracted the compact behavior-preserving write-runner core modules with adapter-injected policy and focused parity smokes.",
+      "M170 reviewed buffered acceptance and confirmed its active governance, documentation, package-script, and evidence checks should stay project-local.",
+      "No additional small neutral boundary is obvious enough to justify extraction risk inside this closeout milestone.",
+      "Standalone packaging now needs an explicit adapter/plugin interface and a separate packaging milestone, not more in-place AE Agent cleanup."
+    ]
+  },
+  "sourceContext": {
+    "previousMilestone": 170,
+    "previousArtifact": ".codex-audit/sdk-orchestrator-extraction/170-sdk-buffered-acceptance-split-review.json",
+    "sourceArtifacts": [
+      ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+      ".codex-audit/sdk-orchestrator-extraction/160-sdk-reusable-core-extraction.json",
+      ".codex-audit/sdk-orchestrator-extraction/161-ae-agent-adapter-config.json",
+      ".codex-audit/sdk-orchestrator-extraction/166-sdk-runner-split-review.json",
+      ".codex-audit/sdk-orchestrator-extraction/167-sdk-operation-envelope-core-extraction.json",
+      ".codex-audit/sdk-orchestrator-extraction/168-sdk-runtime-diagnostics-review-or-extraction.json",
+      ".codex-audit/sdk-orchestrator-extraction/169-sdk-post-run-contract-review-or-extraction.json",
+      ".codex-audit/sdk-orchestrator-extraction/170-sdk-buffered-acceptance-split-review.json"
+    ],
+    "branch": "codex/roadmap-1.3-planning",
+    "lastCompletedCommit": "11efbe5",
+    "behaviorBoundary": {
+      "reviewOnly": true,
+      "extractionPerformed": false,
+      "runnerBehaviorChanged": false,
+      "wrapperCommandsChanged": false,
+      "publicExportsPreserved": true,
+      "packageCommandEntrypointsPreserved": true,
+      "standalonePackageCreated": false,
+      "sdkThreadCreated": false,
+      "networkAccessed": false,
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditedThroughSdk": false,
+      "liveCepOrAfterEffectsRun": false,
+      "externalProviderValidationRun": false,
+      "mutatingLiveValidationRun": false,
+      "packageInstallRun": false,
+      "dependencyChanged": false,
+      "archiveMovePerformed": false,
+      "deletionPerformed": false,
+      "squashPerformed": false,
+      "pushPerformed": false
+    }
+  },
+  "closedExtractionBlock": {
+    "milestones": [
+      "M160 reusable core extraction",
+      "M161 AE Agent adapter config",
+      "M166 runner split review",
+      "M167 operation-envelope core extraction",
+      "M168 runtime diagnostics core extraction",
+      "M169 post-run contract core extraction",
+      "M170 buffered acceptance project-local split review"
+    ],
+    "status": "closed-local-gated",
+    "closeoutStatement": "The AE Agent repository now has reusable write-runner core modules plus an explicit adapter/project-local boundary. No standalone package or additional extraction is introduced by this closeout."
+  },
+  "reusableCoreNowExtracted": [
+    {
+      "path": "orchestrator/core/path-policy.mjs",
+      "sourceMilestone": 160,
+      "responsibilities": [
+        "repo path normalization",
+        "unsafe path shape rejection",
+        "path pattern checks",
+        "policy-injected scope and planned-path checks"
+      ]
+    },
+    {
+      "path": "orchestrator/core/git-snapshot.mjs",
+      "sourceMilestone": 160,
+      "responsibilities": [
+        "git status parsing",
+        "pre/post git snapshot capture",
+        "changed-since-pre comparison"
+      ]
+    },
+    {
+      "path": "orchestrator/core/thread-options.mjs",
+      "sourceMilestone": 160,
+      "responsibilities": [
+        "thread option creation from injected safety contract",
+        "working directory resolution"
+      ]
+    },
+    {
+      "path": "orchestrator/core/operation-envelope.mjs",
+      "sourceMilestone": 167,
+      "responsibilities": [
+        "operation file path resolution",
+        "operation envelope JSON parsing",
+        "required field and mode validation",
+        "adapter-injected version/mode contract"
+      ]
+    },
+    {
+      "path": "orchestrator/core/runtime-store.mjs",
+      "sourceMilestone": 168,
+      "responsibilities": [
+        "runtime directory probing",
+        "primary/fallback runtime selection",
+        "SDK write log serialization",
+        "operation fallback path construction"
+      ]
+    },
+    {
+      "path": "orchestrator/core/failure-diagnostics.mjs",
+      "sourceMilestone": 168,
+      "responsibilities": [
+        "SDK write fallback diagnostic report generation",
+        "failure message shaping",
+        "original SDK/post-run error preservation"
+      ]
+    },
+    {
+      "path": "orchestrator/core/post-run-contract.mjs",
+      "sourceMilestone": 169,
+      "responsibilities": [
+        "pre-run dirty-state checks",
+        "post-run scope checks",
+        "sdk-write diff allowlist checks",
+        "planned-path preconditions"
+      ]
+    }
+  ],
+  "adapterAndProjectLocalBoundaries": [
+    {
+      "id": "ae-agent-sdk-policy-adapter",
+      "paths": [
+        "orchestrator/adapters/ae-agent-sdk-policy.mjs",
+        "orchestrator/adapters/ae-agent-policy.example.json"
+      ],
+      "keeps": [
+        "AE Agent scope names and scope path allowlists",
+        "forbidden path patterns and unsafe runner flags",
+        "current SDK-write enabled scopes",
+        "production-code allowlist scripts/provider-api-smoke.js and scripts/provider-contract-smoke.js",
+        "CEP-panel SDK write disabled state",
+        "current governance, lane, runtime, and conveyor evidence paths"
+      ]
+    },
+    {
+      "id": "write-runner-compatibility-facade",
+      "paths": [
+        "orchestrator/run-write-capable-scaffold.mjs"
+      ],
+      "keeps": [
+        "public runner exports",
+        "package command entrypoints",
+        "AE Agent evidence packet validators",
+        "SDK write facade behavior around adapter policy"
+      ]
+    },
+    {
+      "id": "buffered-acceptance-project-local-runner",
+      "paths": [
+        "orchestrator/run-buffered-acceptance.mjs"
+      ],
+      "keeps": [
+        "governance packet validators",
+        "current M152+ direct checks",
+        "package script assertions",
+        "README assertions",
+        "AE Agent project evidence policy"
+      ]
+    },
+    {
+      "id": "continuity-and-governance-docs",
+      "paths": [
+        "orchestrator/README.md",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "keeps": [
+        "Russian milestone continuity",
+        "validation notes",
+        "handoff prompt",
+        "blocked-work boundaries"
+      ]
+    }
+  ],
+  "standalonePackagingBlockers": [
+    {
+      "id": "standalone-package-not-created",
+      "status": "blocked-out-of-scope",
+      "neededBeforePackaging": "Create a separate package/workspace plan for codex-sdk-orchestrator-tool with its own tests and release boundary."
+    },
+    {
+      "id": "adapter-plugin-interface-missing",
+      "status": "blocked-needs-design",
+      "neededBeforePackaging": "Design how project-specific packet validators, package script assertions, README assertions, and evidence policy are injected into a generic harness."
+    },
+    {
+      "id": "read-only-turn-wrapper-not-extracted",
+      "status": "deferred",
+      "neededBeforePackaging": "Review orchestrator/codex-sdk-orchestrator.mjs separately if a standalone read-only CLI is still desired."
+    },
+    {
+      "id": "buffered-acceptance-remains-project-local",
+      "status": "intentional",
+      "neededBeforePackaging": "Keep AE Agent local checks here unless a generic harness shell proves it can preserve the same fail-closed governance behavior."
+    },
+    {
+      "id": "approval-gated-work-not-run",
+      "status": "blocked-by-policy",
+      "neededBeforePackaging": "Do not run SDKThread/network, CEP-panel SDK writes, live CEP/AE, external-provider validation, mutating-live validation, package installs, or push without separate explicit approval."
+    }
+  ],
+  "preservedContracts": [
+    "orchestrator/run-write-capable-scaffold.mjs remains the write-runner compatibility facade",
+    "orchestrator/run-buffered-acceptance.mjs remains the project-local contract/governance runner",
+    "package command entrypoints are preserved",
+    "check:rules remains wired to node orchestrator/run-buffered-acceptance.mjs --contract-smoke",
+    "codex:orchestrator:governance-report remains local and non-SDKThread",
+    "production-code SDK-write allowlist remains exactly scripts/provider-api-smoke.js and scripts/provider-contract-smoke.js",
+    "CEP-panel SDK writes remain disabled"
+  ],
+  "filesChanged": [
+    ".codex-audit/sdk-orchestrator-extraction/171-sdk-orchestrator-extraction-closeout-review.json",
+    "scripts/sdk-orchestrator-extraction-closeout-smoke.js",
+    "orchestrator/run-buffered-acceptance.mjs",
+    "orchestrator/README.md",
+    "package.json",
+    "plans/target-app-execplan.md",
+    ".codex/handoff.md"
+  ],
+  "validationPlan": [
+    "node --check orchestrator/run-buffered-acceptance.mjs",
+    "node --check scripts/sdk-orchestrator-extraction-closeout-smoke.js",
+    "node scripts/sdk-orchestrator-extraction-closeout-smoke.js",
+    "npm.cmd run codex:orchestrator:extraction-closeout:smoke",
+    "npm.cmd run codex:orchestrator:governance-report",
+    "npm.cmd run check:rules",
+    "configured local smoke suite from AGENTS.md",
+    "git diff --check"
+  ],
+  "nextRecommendedState": {
+    "title": "Stop SDK extraction block",
+    "type": "closeout",
+    "approvalRequiredBeforeStart": true,
+    "recommendedAction": "Do not start M172 SDK extraction by default. Continue only with an explicit new goal, such as standalone packaging design, approved SDKThread/network proof, or returning to product roadmap work.",
+    "blockedWorkWithoutSeparateApproval": [
+      "SDKThread/network proof",
+      "CEP-panel SDK write",
+      "live CEP/After Effects validation",
+      "external-provider/OpenAI CLI planner validation",
+      "mutating-live validation",
+      "package install",
+      "dependency change",
+      "archive/delete/squash cleanup",
+      "push"
+    ]
+  },
+  "machineCheck": {
+    "requiredPackageScript": "codex:orchestrator:extraction-closeout:smoke",
+    "requiredPackageScriptCommand": "node scripts/sdk-orchestrator-extraction-closeout-smoke.js",
+    "requiredReadmeSnippets": [
+      "M171 closes the SDK orchestrator extraction block",
+      "171-sdk-orchestrator-extraction-closeout-review.json",
+      "sdk-orchestrator-extraction-closeout-review.v1",
+      "codex:orchestrator:extraction-closeout:smoke",
+      "closed-local-gated"
+    ],
+    "mustExist": [
+      "orchestrator/core/path-policy.mjs",
+      "orchestrator/core/git-snapshot.mjs",
+      "orchestrator/core/thread-options.mjs",
+      "orchestrator/core/operation-envelope.mjs",
+      "orchestrator/core/runtime-store.mjs",
+      "orchestrator/core/failure-diagnostics.mjs",
+      "orchestrator/core/post-run-contract.mjs",
+      "orchestrator/adapters/ae-agent-sdk-policy.mjs",
+      "orchestrator/run-write-capable-scaffold.mjs",
+      "orchestrator/run-buffered-acceptance.mjs",
+      ".codex-audit/sdk-orchestrator-extraction/170-sdk-buffered-acceptance-split-review.json"
+    ],
+    "requiredSourceSnippets": {
+      "orchestrator/run-buffered-acceptance.mjs": [
+        "sdk-orchestrator-extraction-closeout-smoke.js",
+        "M171 SDK orchestrator extraction closeout smoke failed"
+      ],
+      "package.json": [
+        "\"codex:orchestrator:extraction-closeout:smoke\": \"node scripts/sdk-orchestrator-extraction-closeout-smoke.js\"",
+        "\"check:rules\": \"node orchestrator/run-buffered-acceptance.mjs --contract-smoke\""
+      ]
+    },
+    "requiredFalseBoundaryFlags": [
+      "extractionPerformed",
+      "runnerBehaviorChanged",
+      "wrapperCommandsChanged",
+      "standalonePackageCreated",
+      "sdkThreadCreated",
+      "networkAccessed",
+      "cepPanelSdkWritesEnabled",
+      "cepPanelPanelJsEditedThroughSdk",
+      "liveCepOrAfterEffectsRun",
+      "externalProviderValidationRun",
+      "mutatingLiveValidationRun",
+      "packageInstallRun",
+      "dependencyChanged",
+      "archiveMovePerformed",
+      "deletionPerformed",
+      "squashPerformed",
+      "pushPerformed"
+    ]
+  }
+}
