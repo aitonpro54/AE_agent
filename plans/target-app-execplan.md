@@ -141,6 +141,7 @@
 - [x] Milestone 172: SDK Adapter Interface Design Review.
 - [x] Milestone 173: AE Agent Cleanup Conveyor Queue.
 - [x] Hotfix: M173 cleanup conveyor command runner.
+- [x] Hotfix: M173 cleanup conveyor Codex CLI fallback.
 
 ## Current Stable Baseline
 
@@ -899,6 +900,7 @@
 
 - 2026-05-22: M173 charges the four AE Agent cleanup stages into the SDK milestone conveyor as local-only queued work, not as execution approval. The queued sequence is M174 roadmap active-state split, M175 runtime artifact cleanup note, M176 SDK current/history split, and M177 SDK smoke consolidation plan; each item keeps `maxSdkThreadRuns:0`, no live CEP/AE, no runtime deletion/move, no dependency change, no push, and no PR without fresh explicit approval.
 - 2026-05-22: M173 command runner adds `codex:orchestrator:ae-agent-cleanup-conveyor` so the charged queue can be launched from PowerShell. The runner dry-runs by default, starts exactly one workspace-write SDK turn only with `--execute-sdk` plus exact approval text, refuses pre-existing git dirt, enforces the post-run git path allowlist from selected queue planned paths, and still does not auto-commit or push.
+- 2026-05-22: After both all-item and single-item SDK cleanup conveyor runs hit `stream disconnected before completion`, M173 adds a Codex CLI engine fallback: `--engine cli --execute` invokes `codex exec` through `cmd.exe` to avoid PowerShell `codex.ps1` ExecutionPolicy blocking, requires a separate exact CLI approval text, refuses dirty git state, and keeps the same post-run planned-path allowlist.
 - 2026-05-20: Milestone 114 makes the write-capable dry-run CLI envelope-first. `--dry-run` now requires `--operation-file`, and the envelope supplies `version`, `operationId`, `scope`, `mode`, `prompt`, and `plannedPaths`; M114 supports only `version: 1` and `mode: "dry-run"`.
 - 2026-05-20: Operation envelope validation rejects malformed JSON, missing local files, files outside the repo, unsupported versions/modes, missing IDs/prompts/paths, unknown scopes, unsafe path shapes, forbidden paths, outside-scope paths, and unsafe/bypass-capable CLI flags or envelope fields before any possible SDK thread creation.
 - 2026-05-20: M114 remains a local contract milestone. It does not introduce live SDK write execution, SDK thread creation, real writes, external-provider/OpenAI CLI planner validation, live CEP/AE smokes, network diagnostics, package installation, or commit automation.
@@ -1737,6 +1739,13 @@
   - The runner refuses pre-existing dirty git state, starts one workspace-write SDK turn through `orchestrator/codex-sdk-orchestrator.mjs`, does not auto-commit, and fails after the run if changed git paths fall outside the union of selected queue `plannedPaths`.
   - Added `scripts/sdk-ae-agent-cleanup-conveyor-command-smoke.js`, package script `codex:orchestrator:ae-agent-cleanup-conveyor:smoke`, `check:rules` coverage, and README command documentation.
   - Passed `node --check orchestrator/run-ae-agent-cleanup-conveyor.mjs`, `node --check scripts/sdk-ae-agent-cleanup-conveyor-command-smoke.js`, dry-run command, direct command smoke, package command smoke, and `npm.cmd run check:rules`.
+
+- Hotfix M173 cleanup conveyor Codex CLI fallback:
+  - Added `--engine sdk|cli`; default remains `sdk`, while `cli` runs one `codex exec` turn through `cmd.exe`.
+  - Kept dry-run safe: `npm.cmd run codex:orchestrator:ae-agent-cleanup-conveyor -- --all --engine cli --json` reports `mode:"dry-run"`, `engine:"cli"`, and `sdkThreadCreated:false`.
+  - CLI execution requires exact approval text `I approve one Codex CLI cleanup conveyor workspace-write run for M174-M177 planned paths only`.
+  - The CLI engine uses `--sandbox workspace-write`, `--ephemeral`, and `-c approval_policy="never"`, then applies the same clean-pre-run and post-run planned-path checks as the SDK engine.
+  - Passed `node --check orchestrator/run-ae-agent-cleanup-conveyor.mjs`, `node --check scripts/sdk-ae-agent-cleanup-conveyor-command-smoke.js`, direct command smoke, package command smoke, `npm.cmd run check:rules`, configured local smoke suite from AGENTS.md, and `git diff --check`.
 
 - Milestone 160:
   - Added policy-neutral reusable core modules `orchestrator/core/path-policy.mjs`, `orchestrator/core/git-snapshot.mjs`, and `orchestrator/core/thread-options.mjs`.

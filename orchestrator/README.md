@@ -316,6 +316,12 @@ To run one bounded SDK workspace-write turn from the command line, use the expli
 npm.cmd run codex:orchestrator:ae-agent-cleanup-conveyor -- --all --execute-sdk --approval-text "I approve one SDK cleanup conveyor workspace-write run for M174-M177 planned paths only"
 ```
 
+If the SDK backend disconnects before completion, use the Codex CLI engine instead. It invokes `codex exec` through `cmd.exe` to avoid PowerShell `codex.ps1` execution-policy blocking, still refuses dirty git state, and keeps the same post-run path allowlist.
+
+```powershell
+npm.cmd run codex:orchestrator:ae-agent-cleanup-conveyor -- --item m174-roadmap-active-state-split --engine cli --execute --approval-text "I approve one Codex CLI cleanup conveyor workspace-write run for M174-M177 planned paths only"
+```
+
 The command smoke stays local and does not create an SDK thread:
 
 ```powershell

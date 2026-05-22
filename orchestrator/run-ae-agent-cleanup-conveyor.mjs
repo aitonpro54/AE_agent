@@ -11,6 +11,8 @@ const DEFAULT_QUEUE_PATH =
 
 export const EXECUTE_APPROVAL_TEXT =
   "I approve one SDK cleanup conveyor workspace-write run for M174-M177 planned paths only";
+export const CLI_EXECUTE_APPROVAL_TEXT =
+  "I approve one Codex CLI cleanup conveyor workspace-write run for M174-M177 planned paths only";
 
 const HELP = `
 AE Agent cleanup conveyor runner
@@ -19,11 +21,15 @@ Usage:
   node orchestrator/run-ae-agent-cleanup-conveyor.mjs --all
   node orchestrator/run-ae-agent-cleanup-conveyor.mjs --item m174-roadmap-active-state-split
   node orchestrator/run-ae-agent-cleanup-conveyor.mjs --all --execute-sdk --approval-text "${EXECUTE_APPROVAL_TEXT}"
+  node orchestrator/run-ae-agent-cleanup-conveyor.mjs --item m174-roadmap-active-state-split --engine cli --execute --approval-text "${CLI_EXECUTE_APPROVAL_TEXT}"
 
 Options:
   --queue <path>             Queue artifact path. Defaults to M173 cleanup queue.
   --item <id>                Select one queue item. Repeatable.
   --all                      Select all queue items in queue order.
+  --engine <sdk|cli>         Execution backend. Default: sdk.
+                             Use cli to avoid @openai/codex-sdk stream transport.
+  --execute                  Start one AI workspace-write turn with the selected engine.
   --execute-sdk              Start one workspace-write Codex SDK turn. Omit for dry-run.
   --approval-text <text>     Required exact approval text for --execute-sdk.
   --model <name>             Optional Codex model override.
@@ -32,20 +38,21 @@ Options:
   --json                     Print machine-readable dry-run/execution metadata.
   --help                     Show this help.
 
-Dry-run never starts an SDK thread. Execution starts exactly one SDK turn, forbids
-pre-existing git dirt, asks the SDK to edit only the selected planned paths, and
+Dry-run never starts an SDK thread. Execution starts exactly one AI turn, forbids
+pre-existing git dirt, asks the selected backend to edit only the planned paths, and
 fails after the run if git reports changes outside those paths.
 `;
 
 const VALUE_OPTIONS = new Set([
   "approval-text",
   "codex-path",
+  "engine",
   "item",
   "model",
   "queue",
   "reasoning",
 ]);
-const BOOLEAN_OPTIONS = new Set(["all", "execute-sdk", "help", "json"]);
+const BOOLEAN_OPTIONS = new Set(["all", "execute", "execute-sdk", "help", "json"]);
 
 function splitInlineOption(raw) {
   const equalsIndex = raw.indexOf("=");
@@ -92,6 +99,11 @@ function parseArgs(argv) {
 
     if (name === "item") {
       options.items.push(value);
+    } else if (name === "engine") {
+      if (!["sdk", "cli"].includes(value)) {
+        throw new Error(`Invalid value for --engine: ${value}. Expected sdk or cli.`);
+      }
+      options.engine = value;
     } else {
       options[toCamelCase(name)] = value;
     }
@@ -293,6 +305,32 @@ function buildSdkCommand(options, prompt) {
   return args;
 }
 
+function buildCliCommand(options) {
+  const args = [
+    "exec",
+    "--cd",
+    process.cwd(),
+    "--sandbox",
+    "workspace-write",
+    "--ephemeral",
+    "-c",
+    "approval_policy=\"never\"",
+  ];
+
+  if (options.model) {
+    args.push("--model", options.model);
+  }
+
+  args.push("-");
+  return args;
+}
+
+function renderCommandLine(command, args) {
+  return [command, ...args]
+    .map((part) => (/\s|"/.test(part) ? `"${part.replace(/"/g, '\\"')}"` : part))
+    .join(" ");
+}
+
 function printResult(result, asJson) {
   if (asJson) {
     console.log(JSON.stringify(result, null, 2));
@@ -311,6 +349,11 @@ function printResult(result, asJson) {
     console.log("");
     console.log("Execute command:");
     console.log(result.executeCommand);
+  }
+  if (result.executeCliCommand) {
+    console.log("");
+    console.log("Execute command via Codex CLI:");
+    console.log(result.executeCliCommand);
   }
   if (result.changedPaths) {
     console.log("");
@@ -336,7 +379,8 @@ export function prepareRun(argv = process.argv.slice(2), cwd = process.cwd()) {
   const prompt = buildPrompt(queue, selectedItems, plannedPaths);
 
   return {
-    executeSdk: Boolean(options.executeSdk),
+    engine: options.engine || "sdk",
+    executeSdk: Boolean(options.executeSdk || options.execute),
     json: Boolean(options.json),
     options,
     plannedPaths,
@@ -350,6 +394,8 @@ export function prepareRun(argv = process.argv.slice(2), cwd = process.cwd()) {
 export function dryRunEnvelope(prepared) {
   return {
     executeCommand: `npm.cmd run codex:orchestrator:ae-agent-cleanup-conveyor -- --all --execute-sdk --approval-text "${EXECUTE_APPROVAL_TEXT}"`,
+    executeCliCommand: `npm.cmd run codex:orchestrator:ae-agent-cleanup-conveyor -- --all --engine cli --execute --approval-text "${CLI_EXECUTE_APPROVAL_TEXT}"`,
+    engine: prepared.engine,
     items: prepared.selectedItems.map((item) => item.id),
     mode: "dry-run",
     plannedPaths: prepared.plannedPaths,
@@ -359,8 +405,10 @@ export function dryRunEnvelope(prepared) {
 }
 
 export function runSdk(prepared, cwd = process.cwd()) {
-  if (prepared.options.approvalText !== EXECUTE_APPROVAL_TEXT) {
-    throw new Error(`Missing exact --approval-text: ${EXECUTE_APPROVAL_TEXT}`);
+  const expectedApproval =
+    prepared.engine === "cli" ? CLI_EXECUTE_APPROVAL_TEXT : EXECUTE_APPROVAL_TEXT;
+  if (prepared.options.approvalText !== expectedApproval) {
+    throw new Error(`Missing exact --approval-text: ${expectedApproval}`);
   }
 
   const preStatus = gitStatus(cwd);
@@ -368,13 +416,21 @@ export function runSdk(prepared, cwd = process.cwd()) {
     throw new Error(`Refusing SDK cleanup conveyor run with dirty git state: ${preStatus.join("; ")}`);
   }
 
-  const sdkArgs = buildSdkCommand(prepared.options, prepared.prompt);
-  const result = spawnSync(process.execPath, sdkArgs, {
-    cwd,
-    encoding: "utf8",
-    stdio: "inherit",
-    timeout: 30 * 60 * 1000,
-  });
+  const result =
+    prepared.engine === "cli"
+      ? spawnSync("cmd.exe", ["/d", "/s", "/c", "codex", ...buildCliCommand(prepared.options)], {
+          cwd,
+          encoding: "utf8",
+          input: prepared.prompt,
+          stdio: ["pipe", "inherit", "inherit"],
+          timeout: 30 * 60 * 1000,
+        })
+      : spawnSync(process.execPath, buildSdkCommand(prepared.options, prepared.prompt), {
+          cwd,
+          encoding: "utf8",
+          stdio: "inherit",
+          timeout: 30 * 60 * 1000,
+        });
 
   const changedPaths = validatePostRunChanges(cwd, prepared.plannedPaths);
 
@@ -384,8 +440,9 @@ export function runSdk(prepared, cwd = process.cwd()) {
 
   return {
     changedPaths,
+    engine: prepared.engine,
     items: prepared.selectedItems.map((item) => item.id),
-    mode: "executed-sdk",
+    mode: prepared.engine === "cli" ? "executed-cli" : "executed-sdk",
     plannedPaths: prepared.plannedPaths,
     queuePath: prepared.queuePath,
     sdkThreadCreated: true,

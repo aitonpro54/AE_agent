@@ -47,6 +47,13 @@ function main() {
   assert(dryRun.plannedPaths.includes(".codex-audit/sdk-smoke-consolidation-plan.json"));
   assert.match(dryRun.executeCommand, /--execute-sdk/);
   assert.match(dryRun.executeCommand, /I approve one SDK cleanup conveyor workspace-write run/);
+  assert.match(dryRun.executeCliCommand, /--engine cli/);
+  assert.match(dryRun.executeCliCommand, /I approve one Codex CLI cleanup conveyor workspace-write run/);
+
+  const cliDryRun = parseJson(run(["--all", "--engine", "cli", "--json"]));
+  assert.strictEqual(cliDryRun.mode, "dry-run");
+  assert.strictEqual(cliDryRun.engine, "cli");
+  assert.strictEqual(cliDryRun.sdkThreadCreated, false);
 
   const single = parseJson(run(["--item", "m174-roadmap-active-state-split", "--json"]));
   assert.deepStrictEqual(single.items, ["m174-roadmap-active-state-split"]);
@@ -55,6 +62,10 @@ function main() {
   const missingApproval = run(["--all", "--execute-sdk", "--approval-text", "wrong"]);
   assert.notStrictEqual(missingApproval.status, 0);
   assert.match(missingApproval.stderr, /Missing exact --approval-text/);
+
+  const missingCliApproval = run(["--all", "--engine", "cli", "--execute", "--approval-text", "wrong"]);
+  assert.notStrictEqual(missingCliApproval.status, 0);
+  assert.match(missingCliApproval.stderr, /Codex CLI cleanup conveyor/);
 
   const unknown = run(["--item", "missing"]);
   assert.notStrictEqual(unknown.status, 0);
