@@ -18,6 +18,7 @@
     "codex:orchestrator:adapter-config:smoke": "node scripts/sdk-ae-agent-adapter-config-smoke.js",
     "codex:orchestrator:historical-evidence:smoke": "node scripts/sdk-historical-evidence-index-smoke.js",
     "codex:orchestrator:historical-smoke-migration:smoke": "node scripts/sdk-historical-smoke-migration-smoke.js",
+    "codex:orchestrator:historical-archive-review:smoke": "node scripts/sdk-historical-archive-review-smoke.js",
     "check:rules": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke"
   },
   "dependencies": {

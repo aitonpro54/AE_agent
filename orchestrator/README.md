@@ -148,7 +148,7 @@ Hard-stop conditions:
 
 ## Локальный contract smoke
 
-Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate, SDK scope expansion review packet gate, committed review packet files, SDK write lane readiness packet gate, SDK write lane approval decision packet gate, SDK write lane enablement packet gate, SDK launch governance packet gate, SDK launch governance drift report, subprocess parser smoke для governance-report JSON, current M152+ governance/conveyor/extraction smokes, historical smoke migration и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
+Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate, SDK scope expansion review packet gate, committed review packet files, SDK write lane readiness packet gate, SDK write lane approval decision packet gate, SDK write lane enablement packet gate, SDK launch governance packet gate, SDK launch governance drift report, subprocess parser smoke для governance-report JSON, current M152+ governance/conveyor/extraction smokes, historical smoke migration, historical archive review и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
 
 ```powershell
 npm.cmd run check:rules
@@ -242,6 +242,12 @@ M163 migrates superseded historical smoke coverage to `.codex-audit/sdk-orchestr
 
 ```powershell
 npm.cmd run codex:orchestrator:historical-smoke-migration:smoke
+```
+
+M164 reviews historical archive move candidates in `.codex-audit/sdk-orchestrator-extraction/164-sdk-historical-archive-review.json` with schema `sdk-historical-archive-review.v1`. The review maps only historical indexed or smoke-migrated files to future archive batches, excludes current M152+ governance/conveyor/extraction evidence and active command-surface files, keeps all files in place, and confirms archive move remains blocked until a separate reviewed cleanup milestone.
+
+```powershell
+npm.cmd run codex:orchestrator:historical-archive-review:smoke
 ```
 
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.

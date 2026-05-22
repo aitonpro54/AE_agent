@@ -987,6 +987,18 @@ async function runContractSmoke() {
     `M163 SDK historical smoke migration smoke failed: ${historicalSmokeMigrationOutput.trim()}`,
     failures,
   );
+  const historicalArchiveReviewSmoke = runNode([
+    path.join("scripts", "sdk-historical-archive-review-smoke.js"),
+  ]);
+  const historicalArchiveReviewOutput = `${historicalArchiveReviewSmoke.stdout ?? ""}\n${
+    historicalArchiveReviewSmoke.stderr ?? ""
+  }`;
+  assertContract(
+    historicalArchiveReviewSmoke.status === 0 &&
+      historicalArchiveReviewOutput.includes("SDK historical archive review smoke: pass"),
+    `M164 SDK historical archive review smoke failed: ${historicalArchiveReviewOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1420,6 +1432,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:historical-archive-review:smoke"] ===
+      "node scripts/sdk-historical-archive-review-smoke.js",
+    "package.json codex:orchestrator:historical-archive-review:smoke script is not wired to the M164 historical archive review smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1554,6 +1572,15 @@ async function runContractSmoke() {
       readme.includes("M163 migrates superseded historical smoke coverage") &&
       readme.includes("archive move remains blocked"),
     "README does not document the M163 historical smoke migration smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:historical-archive-review:smoke") &&
+      readme.includes("164-sdk-historical-archive-review.json") &&
+      readme.includes("sdk-historical-archive-review.v1") &&
+      readme.includes("M164 reviews historical archive move candidates") &&
+      readme.includes("archive move remains blocked"),
+    "README does not document the M164 historical archive review smoke",
     failures,
   );
   assertContract(
