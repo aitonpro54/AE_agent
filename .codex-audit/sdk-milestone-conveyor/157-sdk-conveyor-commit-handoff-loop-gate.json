@@ -1,0 +1,137 @@
+{
+  "schema": "sdk-conveyor-commit-handoff-loop-gate.v1",
+  "milestone": 157,
+  "title": "SDK Conveyor Commit/Handoff Loop Gate",
+  "createdAt": "2026-05-22",
+  "sourceArtifacts": [
+    ".codex-audit/sdk-milestone-conveyor/154-sdk-milestone-conveyor-spec.json",
+    ".codex-audit/sdk-milestone-conveyor/155-sdk-milestone-conveyor-local-dry-run.json",
+    ".codex-audit/sdk-milestone-conveyor/156-sdk-conveyor-sdkthread-proof.json"
+  ],
+  "localOnly": true,
+  "sdkThreadAllowed": false,
+  "networkAllowed": false,
+  "loopContract": {
+    "oneMilestonePerLoop": true,
+    "orderedSteps": [
+      "select one queued milestone",
+      "apply only milestone-owned edits",
+      "run required validation",
+      "create one reviewable commit",
+      "update .codex/handoff.md with exact continuation state",
+      "start next milestone only when context is healthy"
+    ],
+    "validationBeforeCommit": true,
+    "commitBeforeHandoff": true,
+    "handoffAfterEveryMilestone": true,
+    "autoPush": false,
+    "pushPolicy": "no-push-by-default"
+  },
+  "stopConditions": [
+    {
+      "id": "validation-failed",
+      "action": "stop current milestone as partial or blocked, record failing command, do not continue to next queue item"
+    },
+    {
+      "id": "dirty-tree-unrelated-changes",
+      "action": "stage only milestone-owned files; never revert unrelated user changes"
+    },
+    {
+      "id": "dirty-tree-overlap",
+      "action": "stop and ask only if unrelated changes overlap files required for the milestone and cannot be safely separated"
+    },
+    {
+      "id": "context-pressure",
+      "action": "finish only the current atomic step, update handoff, and ask for a fresh thread"
+    },
+    {
+      "id": "sdkthread-requested-without-explicit-approval",
+      "action": "do not create operation file or SDKThread; record blocked state"
+    },
+    {
+      "id": "forbidden-work-requested",
+      "action": "stop before live CEP/AE, external-provider/OpenAI CLI planner, mutating-live, dependency changes, CEP-panel writes, production-code writes, or push"
+    },
+    {
+      "id": "push-requested-by-conveyor",
+      "action": "do not push; require a separate explicit user command"
+    }
+  ],
+  "dirtyTreeHandling": {
+    "preCommitStatusRequired": true,
+    "stageOnlyMilestoneOwnedFiles": true,
+    "neverRevertUserChanges": true,
+    "overlapRequiresStop": true,
+    "commitMessageRequired": true
+  },
+  "contextPressureHandoff": {
+    "threshold": "context > 70 percent or compaction pressure felt",
+    "allowedWork": [
+      "finish current atomic file write",
+      "summarize current command result",
+      "update .codex/handoff.md"
+    ],
+    "forbiddenWork": [
+      "new investigation",
+      "large edit",
+      "dependency install",
+      "live smoke",
+      "full validation",
+      "new SDKThread"
+    ]
+  },
+  "exactNextPromptGeneration": {
+    "templateId": "sdk-conveyor-fresh-thread-continuation.v1",
+    "requiredInputs": [
+      "cwd",
+      "language",
+      "readFiles",
+      "lastCompletedMilestone",
+      "lastCommitId",
+      "nextMilestone",
+      "forbiddenWork"
+    ],
+    "sampleInputs": {
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent",
+      "language": "ru",
+      "readFiles": [
+        "AGENTS.md",
+        ".codex/handoff.md",
+        "specs/target-app.md",
+        "targeted current SDK sections of plans/target-app-execplan.md"
+      ],
+      "lastCompletedMilestone": "M157",
+      "lastCommitId": "<commit-id>",
+      "nextMilestone": "next plan-defined SDK milestone",
+      "forbiddenWork": [
+        "SDKThread/network without fresh explicit approval",
+        "CEP-panel SDK writes",
+        "production-code writes",
+        "live CEP/AE validation",
+        "external-provider/OpenAI CLI planner validation",
+        "mutating-live validation",
+        "package installs or dependency changes",
+        "push"
+      ]
+    },
+    "expectedSamplePrompt": "Продолжай в `C:\\Users\\Ant\\Documents\\Codex\\AE_agent`.\n\nРаботай по-русски. Сначала прочитай UTF-8:\n- `AGENTS.md`\n- `.codex/handoff.md`\n- `specs/target-app.md`\n- targeted current SDK sections of `plans/target-app-execplan.md`\n\nM157 завершен commit `<commit-id>` and is not pushed. Continue with the next plan-defined SDK milestone only if context is healthy. Do not run SDKThread/network without fresh explicit approval, enable CEP-panel SDK writes, perform production-code writes, run live CEP/AE, external-provider/OpenAI CLI planner, mutating-live validation, package installs, dependency changes, or push."
+  },
+  "proofExpectations": {
+    "oneMilestoneValidationCommitHandoff": true,
+    "exactNextPromptGenerated": true,
+    "contextPressureStopsBeforeNextMilestone": true,
+    "dirtyTreePolicyRecorded": true,
+    "noAutoPush": true
+  },
+  "notPerformed": [
+    "SDKThread creation",
+    "network access",
+    "CEP-panel SDK write",
+    "production-code SDK write",
+    "live CEP/AE validation",
+    "external-provider/OpenAI CLI planner validation",
+    "mutating-live validation",
+    "package install or dependency change",
+    "push"
+  ]
+}

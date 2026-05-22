@@ -973,6 +973,20 @@ async function runContractSmoke() {
     `M156 SDK milestone conveyor SDKThread proof smoke failed: ${milestoneConveyorSdkThreadProofOutput.trim()}`,
     failures,
   );
+  const milestoneConveyorLoopGateSmoke = runNode([
+    path.join("scripts", "sdk-milestone-conveyor-loop-gate-smoke.js"),
+  ]);
+  const milestoneConveyorLoopGateOutput = `${milestoneConveyorLoopGateSmoke.stdout ?? ""}\n${
+    milestoneConveyorLoopGateSmoke.stderr ?? ""
+  }`;
+  assertContract(
+    milestoneConveyorLoopGateSmoke.status === 0 &&
+      milestoneConveyorLoopGateOutput.includes(
+        "SDK milestone conveyor loop gate smoke: pass",
+      ),
+    `M157 SDK milestone conveyor loop gate smoke failed: ${milestoneConveyorLoopGateOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1412,6 +1426,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:milestone-conveyor-loop-gate:smoke"] ===
+      "node scripts/sdk-milestone-conveyor-loop-gate-smoke.js",
+    "package.json codex:orchestrator:milestone-conveyor-loop-gate:smoke script is not wired to the M157 milestone conveyor loop gate smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1536,6 +1556,15 @@ async function runContractSmoke() {
       readme.includes("sdk-milestone-conveyor-sdkthread-proof.v1") &&
       readme.includes("019e4dcd-dd6f-7651-8882-b0c014894633"),
     "README does not document the M156 SDK milestone conveyor SDKThread proof smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:milestone-conveyor-loop-gate:smoke") &&
+      readme.includes("157-sdk-conveyor-commit-handoff-loop-gate.json") &&
+      readme.includes("sdk-conveyor-commit-handoff-loop-gate.v1") &&
+      readme.includes("one reviewable commit") &&
+      readme.includes("context-pressure"),
+    "README does not document the M157 SDK milestone conveyor loop gate smoke",
     failures,
   );
   assertContract(

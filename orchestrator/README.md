@@ -238,6 +238,12 @@ M156 records the one approved real `docs-audit` SDKThread conveyor proof in `.co
 npm.cmd run codex:orchestrator:milestone-conveyor-sdkthread-proof:smoke
 ```
 
+M157 closes the conveyor loop gate in `.codex-audit/sdk-milestone-conveyor/157-sdk-conveyor-commit-handoff-loop-gate.json` with schema `sdk-conveyor-commit-handoff-loop-gate.v1`. It proves the local per-milestone loop contract: select one queued milestone, validate, create one reviewable commit, update handoff with an exact next prompt, and stop before the next milestone on `context-pressure`. The gate also records dirty-tree handling, no auto-push, and stop conditions for validation failure, missing SDKThread approval, forbidden work, dependency changes, and push.
+
+```powershell
+npm.cmd run codex:orchestrator:milestone-conveyor-loop-gate:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.

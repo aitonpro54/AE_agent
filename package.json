@@ -18,6 +18,7 @@
     "codex:orchestrator:milestone-conveyor-spec:smoke": "node scripts/sdk-milestone-conveyor-spec-smoke.js",
     "codex:orchestrator:milestone-conveyor-dry-run:smoke": "node scripts/sdk-milestone-conveyor-local-dry-run-smoke.js",
     "codex:orchestrator:milestone-conveyor-sdkthread-proof:smoke": "node scripts/sdk-milestone-conveyor-sdkthread-proof-smoke.js",
+    "codex:orchestrator:milestone-conveyor-loop-gate:smoke": "node scripts/sdk-milestone-conveyor-loop-gate-smoke.js",
     "check:rules": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke"
   },
   "dependencies": {
