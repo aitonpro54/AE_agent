@@ -1,0 +1,85 @@
+{
+  "schema": "sdk-milestone-conveyor-local-dry-run-proof.v1",
+  "milestone": 155,
+  "title": "SDK Milestone Conveyor Local Dry Run",
+  "createdAt": "2026-05-22",
+  "sourceSpec": ".codex-audit/sdk-milestone-conveyor/154-sdk-milestone-conveyor-spec.json",
+  "localOnly": true,
+  "sdkThreadAllowed": false,
+  "networkAllowed": false,
+  "queueItem": {
+    "id": "m155-simulated-docs-audit-sdkwrite-without-approval",
+    "milestone": 155,
+    "title": "Simulate one docs-audit sdk-write queue item without explicit approval",
+    "laneId": "docs-audit-sdkwrite-proof",
+    "scope": "docs-audit",
+    "mode": "sdk-write",
+    "plannedPaths": [
+      ".codex-audit/sdk-milestone-conveyor/156-sdk-conveyor-sdkthread-proof.json"
+    ],
+    "approvalRequired": true,
+    "explicitApprovalText": null,
+    "maxSdkThreadRuns": 1,
+    "allowedCommands": [
+      "node scripts/sdk-milestone-conveyor-local-dry-run-smoke.js"
+    ],
+    "validationCommands": [
+      "node --check scripts/sdk-milestone-conveyor-local-dry-run-smoke.js",
+      "npm.cmd run codex:orchestrator:milestone-conveyor-dry-run:smoke",
+      "npm.cmd run check:rules",
+      "git diff --check"
+    ],
+    "stopGates": [
+      "no-explicit-approval",
+      "scope-or-path-outside-allowlist",
+      "cep-panel-sdk-write-disabled",
+      "validation-failed",
+      "context-pressure",
+      "push-requested-by-conveyor"
+    ],
+    "commitExpectation": "Commit only the M155 local dry-run proof, smoke, README/package/check wiring, plan update, and handoff.",
+    "handoffExpectation": "Update plans/target-app-execplan.md and .codex/handoff.md after validation.",
+    "pushPolicy": "no-push-by-default",
+    "contextPolicy": "Stop after the current atomic step and write handoff if context is above 70 percent or compaction pressure is felt.",
+    "status": "queued"
+  },
+  "expectedLocalState": {
+    "schema": "sdk-milestone-conveyor-local-state.v1",
+    "queueItemId": "m155-simulated-docs-audit-sdkwrite-without-approval",
+    "sourceSpecSchema": "sdk-milestone-conveyor-spec.v1",
+    "dryRun": true,
+    "deterministic": true,
+    "status": "stopped",
+    "stopGate": "no-explicit-approval",
+    "stopReason": "sdk-write queue item is missing explicitApprovalText",
+    "scopeAllowed": true,
+    "plannedPathsAllowed": true,
+    "wouldInvokeRunner": false,
+    "sdkThreadCreated": false,
+    "networkAccessed": false,
+    "operationFileWritten": false,
+    "changedPaths": [],
+    "autoCommit": false,
+    "autoPush": false,
+    "nextAction": "Record exact explicit approval before creating an operation file or invoking SDKThread."
+  },
+  "approvalFieldsRequiredBeforeSdkThread": [
+    "scope: docs-audit",
+    "mode: sdk-write",
+    "planned path: .codex-audit/sdk-milestone-conveyor/156-sdk-conveyor-sdkthread-proof.json",
+    "maxSdkThreadRuns: 1",
+    "no retry on disconnect/failure"
+  ],
+  "notPerformed": [
+    "SDKThread creation",
+    "network access",
+    "operation file write",
+    "CEP-panel SDK write",
+    "production-code SDK write",
+    "live CEP/AE validation",
+    "external-provider/OpenAI CLI planner validation",
+    "mutating-live validation",
+    "package install or dependency change",
+    "push"
+  ]
+}

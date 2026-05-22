@@ -121,6 +121,7 @@
 - [x] Milestone 152: SDK Production-Code Provider Smoke Broader Readiness.
 - [x] Milestone 153: SDK Next-Lane Selection.
 - [x] Milestone 154: SDK Milestone Conveyor Spec.
+- [x] Milestone 155: SDK Milestone Conveyor Local Dry Run.
 
 ## Current Stable Baseline
 
@@ -922,6 +923,7 @@
 - 2026-05-21: M152 supersedes the current production-code SDK write allowlist with exactly two provider smoke files: `scripts/provider-api-smoke.js` and `scripts/provider-contract-smoke.js`. The M135/M140 single-file packets remain historical/legacy evidence, while current governance reports read the M152 governance and enablement packets. SDKThread `019e4bd4-abe1-7fa3-944f-e962361bee9f` completed the single user-approved bounded proof, changed only the two planned files, and passed the post-run sdk-write contract; general SDK workflow, production-code outside the two provider smoke files, CEP-panel writes, external-provider/OpenAI CLI planner validation, live CEP/AE validation, mutating-live validation, package installs and dependency changes remain outside the claim.
 - 2026-05-21: M153 selects the next SDK direction without enabling it: `cep-panel-composer-local-preflight` is recorded as a candidate-only lane based on the existing M132 proposed CEP-panel review packet for `cep-panel/panel.js`. M153 does not approve SDKThread/network work, CEP-panel SDK writes, live CEP/AE validation, external-provider/OpenAI CLI planner validation, mutating-live validation, package installs, dependency changes, or general SDK autopilot repo edits; M154 should be a local CEP-panel readiness preflight only unless fresh explicit approval expands scope.
 - 2026-05-22: M154 pivots the next block from CEP-panel enablement toward an SDK milestone conveyor contract. The committed `sdk-milestone-conveyor-spec.v1` artifact defines queue item fields, allowed local/docs-audit scopes, stop gates, validation, per-milestone commit/handoff expectations, and `no-push-by-default`; it permits only one future explicitly approved M156 `docs-audit` SDKThread proof under `.codex-audit/sdk-milestone-conveyor/**` and keeps CEP-panel SDK writes, production-code writes, live/external/mutating validation, dependency changes, and push disabled.
+- 2026-05-22: M155 adds a local-only dry-run proof for the SDK milestone conveyor. The committed `sdk-milestone-conveyor-local-dry-run-proof.v1` artifact simulates one `docs-audit` `sdk-write` queue item for the future M156 proof without explicit approval text, produces deterministic local state stopped at `no-explicit-approval`, and proves no SDKThread, network, operation-file write, auto-commit, auto-push, CEP-panel write, production-code write, live/external/mutating validation, or dependency change occurs.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -1471,6 +1473,18 @@
   - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
   - `npm.cmd run ...` commands printed `npm warn Unknown env config "http-proxy"` but exited successfully.
   - Did not run SDKThread/network proof, enable CEP-panel SDK writes, edit `cep-panel/panel.js` through SDK, run live CEP/After Effects validation, run external-provider/OpenAI CLI planner validation, run mutating-live validation, install packages, change dependencies, push, or create a PR.
+
+- Milestone 155:
+  - Added committed local dry-run proof artifact `.codex-audit/sdk-milestone-conveyor/155-sdk-milestone-conveyor-local-dry-run.json` with schema `sdk-milestone-conveyor-local-dry-run-proof.v1`.
+  - Simulated one future `docs-audit` `sdk-write` queue item for `.codex-audit/sdk-milestone-conveyor/156-sdk-conveyor-sdkthread-proof.json` without explicit approval text.
+  - Produced deterministic local state stopped at `no-explicit-approval` with `wouldInvokeRunner:false`, `sdkThreadCreated:false`, `networkAccessed:false`, `operationFileWritten:false`, `autoCommit:false`, and `autoPush:false`.
+  - Added `scripts/sdk-milestone-conveyor-local-dry-run-smoke.js`, package script `codex:orchestrator:milestone-conveyor-dry-run:smoke`, `check:rules` coverage, and README documentation.
+  - Passed `node --check scripts/sdk-milestone-conveyor-local-dry-run-smoke.js` and `node --check orchestrator/run-buffered-acceptance.mjs`.
+  - Passed `npm.cmd run codex:orchestrator:milestone-conveyor-dry-run:smoke`, `npm.cmd run codex:orchestrator:governance-report`, and `npm.cmd run check:rules`.
+  - Passed configured local smoke suite: provider contract, provider API, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only, and full smoke.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
+  - `npm.cmd run ...` commands printed `npm warn Unknown env config "http-proxy"` but exited successfully.
+  - Did not run SDKThread/network proof, write an operation file, enable CEP-panel SDK writes, edit `cep-panel/panel.js` through SDK, run live CEP/After Effects validation, run external-provider/OpenAI CLI planner validation, run mutating-live validation, install packages, change dependencies, push, or create a PR.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.

@@ -16,6 +16,7 @@
     "codex:orchestrator:production-code-broader:smoke": "node scripts/sdk-production-code-broader-readiness-smoke.js",
     "codex:orchestrator:next-lane:smoke": "node scripts/sdk-next-lane-selection-smoke.js",
     "codex:orchestrator:milestone-conveyor-spec:smoke": "node scripts/sdk-milestone-conveyor-spec-smoke.js",
+    "codex:orchestrator:milestone-conveyor-dry-run:smoke": "node scripts/sdk-milestone-conveyor-local-dry-run-smoke.js",
     "check:rules": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke"
   },
   "dependencies": {

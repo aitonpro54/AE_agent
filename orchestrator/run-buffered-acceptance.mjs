@@ -945,6 +945,20 @@ async function runContractSmoke() {
     `M154 SDK milestone conveyor spec smoke failed: ${milestoneConveyorSpecOutput.trim()}`,
     failures,
   );
+  const milestoneConveyorDryRunSmoke = runNode([
+    path.join("scripts", "sdk-milestone-conveyor-local-dry-run-smoke.js"),
+  ]);
+  const milestoneConveyorDryRunOutput = `${milestoneConveyorDryRunSmoke.stdout ?? ""}\n${
+    milestoneConveyorDryRunSmoke.stderr ?? ""
+  }`;
+  assertContract(
+    milestoneConveyorDryRunSmoke.status === 0 &&
+      milestoneConveyorDryRunOutput.includes(
+        "SDK milestone conveyor local dry-run smoke: pass",
+      ),
+    `M155 SDK milestone conveyor local dry-run smoke failed: ${milestoneConveyorDryRunOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1372,6 +1386,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:milestone-conveyor-dry-run:smoke"] ===
+      "node scripts/sdk-milestone-conveyor-local-dry-run-smoke.js",
+    "package.json codex:orchestrator:milestone-conveyor-dry-run:smoke script is not wired to the M155 milestone conveyor local dry-run smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1480,6 +1500,14 @@ async function runContractSmoke() {
       readme.includes("sdk-milestone-conveyor-spec.v1") &&
       readme.includes("no-push-by-default"),
     "README does not document the M154 SDK milestone conveyor spec smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:milestone-conveyor-dry-run:smoke") &&
+      readme.includes("155-sdk-milestone-conveyor-local-dry-run.json") &&
+      readme.includes("sdk-milestone-conveyor-local-dry-run-proof.v1") &&
+      readme.includes("no-explicit-approval"),
+    "README does not document the M155 SDK milestone conveyor local dry-run smoke",
     failures,
   );
   assertContract(

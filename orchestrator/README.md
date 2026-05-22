@@ -226,6 +226,12 @@ M154 defines the SDK milestone conveyor contract in `.codex-audit/sdk-milestone-
 npm.cmd run codex:orchestrator:milestone-conveyor-spec:smoke
 ```
 
+M155 adds a local-only dry-run proof in `.codex-audit/sdk-milestone-conveyor/155-sdk-milestone-conveyor-local-dry-run.json` with schema `sdk-milestone-conveyor-local-dry-run-proof.v1`. The smoke reads the M154 spec, simulates one `docs-audit` `sdk-write` queue item for the planned M156 proof, and deterministically stops at `no-explicit-approval` with `sdkThreadCreated:false`, `networkAccessed:false`, `operationFileWritten:false`, `autoCommit:false`, and `autoPush:false`.
+
+```powershell
+npm.cmd run codex:orchestrator:milestone-conveyor-dry-run:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.
