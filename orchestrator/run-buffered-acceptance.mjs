@@ -1119,6 +1119,20 @@ async function runContractSmoke() {
     `M173 AE Agent cleanup conveyor queue smoke failed: ${aeAgentCleanupConveyorQueueOutput.trim()}`,
     failures,
   );
+  const aeAgentCleanupConveyorCommandSmoke = runNode([
+    path.join("scripts", "sdk-ae-agent-cleanup-conveyor-command-smoke.js"),
+  ]);
+  const aeAgentCleanupConveyorCommandOutput = `${
+    aeAgentCleanupConveyorCommandSmoke.stdout ?? ""
+  }\n${aeAgentCleanupConveyorCommandSmoke.stderr ?? ""}`;
+  assertContract(
+    aeAgentCleanupConveyorCommandSmoke.status === 0 &&
+      aeAgentCleanupConveyorCommandOutput.includes(
+        "SDK AE Agent cleanup conveyor command smoke: pass",
+      ),
+    `M173 AE Agent cleanup conveyor command smoke failed: ${aeAgentCleanupConveyorCommandOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1619,6 +1633,18 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:ae-agent-cleanup-conveyor"] ===
+      "node orchestrator/run-ae-agent-cleanup-conveyor.mjs",
+    "package.json codex:orchestrator:ae-agent-cleanup-conveyor script is not wired to the M173 AE Agent cleanup conveyor runner",
+    failures,
+  );
+  assertContract(
+    packageJson.scripts?.["codex:orchestrator:ae-agent-cleanup-conveyor:smoke"] ===
+      "node scripts/sdk-ae-agent-cleanup-conveyor-command-smoke.js",
+    "package.json codex:orchestrator:ae-agent-cleanup-conveyor:smoke script is not wired to the M173 AE Agent cleanup conveyor command smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1844,6 +1870,14 @@ async function runContractSmoke() {
       readme.includes("M173 charges the AE Agent cleanup conveyor queue") &&
       readme.includes("M174 roadmap active-state split"),
     "README does not document the M173 AE Agent cleanup conveyor queue smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:ae-agent-cleanup-conveyor -- --all") &&
+      readme.includes("--execute-sdk") &&
+      readme.includes("I approve one SDK cleanup conveyor workspace-write run") &&
+      readme.includes("post-run git path allowlist"),
+    "README does not document the M173 AE Agent cleanup conveyor command",
     failures,
   );
   assertContract(

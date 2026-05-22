@@ -68,6 +68,25 @@
       "status"
     ]
   },
+  "commandRunner": {
+    "script": "orchestrator/run-ae-agent-cleanup-conveyor.mjs",
+    "packageScript": "codex:orchestrator:ae-agent-cleanup-conveyor",
+    "smokeScript": "scripts/sdk-ae-agent-cleanup-conveyor-command-smoke.js",
+    "smokePackageScript": "codex:orchestrator:ae-agent-cleanup-conveyor:smoke",
+    "dryRunCommand": "npm.cmd run codex:orchestrator:ae-agent-cleanup-conveyor -- --all",
+    "executeCommand": "npm.cmd run codex:orchestrator:ae-agent-cleanup-conveyor -- --all --execute-sdk --approval-text \"I approve one SDK cleanup conveyor workspace-write run for M174-M177 planned paths only\"",
+    "executeRequiresExactApprovalText": "I approve one SDK cleanup conveyor workspace-write run for M174-M177 planned paths only",
+    "sdkThreadCreatedByDryRun": false,
+    "sdkThreadCreatedByExecute": "one workspace-write SDK turn only after --execute-sdk and exact approval text",
+    "approvalPolicy": "never",
+    "sandboxMode": "workspace-write",
+    "webSearchMode": "disabled",
+    "networkAccessEnabled": false,
+    "preRunDirtyGitAllowed": false,
+    "postRunPathAllowlist": "union of selected queue item plannedPaths",
+    "autoCommit": false,
+    "autoPush": false
+  },
   "queueItems": [
     {
       "id": "m174-roadmap-active-state-split",
@@ -286,10 +305,13 @@
     "requiredSourceSnippets": {
       "orchestrator/run-buffered-acceptance.mjs": [
         "sdk-ae-agent-cleanup-conveyor-queue-smoke.js",
+        "sdk-ae-agent-cleanup-conveyor-command-smoke.js",
         "M173 AE Agent cleanup conveyor queue smoke failed"
       ],
       "package.json": [
         "\"codex:orchestrator:ae-agent-cleanup-queue:smoke\": \"node scripts/sdk-ae-agent-cleanup-conveyor-queue-smoke.js\"",
+        "\"codex:orchestrator:ae-agent-cleanup-conveyor\": \"node orchestrator/run-ae-agent-cleanup-conveyor.mjs\"",
+        "\"codex:orchestrator:ae-agent-cleanup-conveyor:smoke\": \"node scripts/sdk-ae-agent-cleanup-conveyor-command-smoke.js\"",
         "\"check:rules\": \"node orchestrator/run-buffered-acceptance.mjs --contract-smoke\""
       ]
     },

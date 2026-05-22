@@ -304,6 +304,24 @@ M173 charges the AE Agent cleanup conveyor queue in `.codex-audit/sdk-milestone-
 npm.cmd run codex:orchestrator:ae-agent-cleanup-queue:smoke
 ```
 
+The command-line cleanup conveyor runner previews the selected queue item(s) by default:
+
+```powershell
+npm.cmd run codex:orchestrator:ae-agent-cleanup-conveyor -- --all
+```
+
+To run one bounded SDK workspace-write turn from the command line, use the explicit approval text below. The runner refuses pre-existing git dirt and enforces a post-run git path allowlist built from the selected queue item planned paths.
+
+```powershell
+npm.cmd run codex:orchestrator:ae-agent-cleanup-conveyor -- --all --execute-sdk --approval-text "I approve one SDK cleanup conveyor workspace-write run for M174-M177 planned paths only"
+```
+
+The command smoke stays local and does not create an SDK thread:
+
+```powershell
+npm.cmd run codex:orchestrator:ae-agent-cleanup-conveyor:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.
