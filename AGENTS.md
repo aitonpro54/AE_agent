@@ -45,6 +45,14 @@ For large command outputs, save full logs to a file and summarize only the relev
 - Keep API contracts explicit.
 - Do not remove existing tests unless replacing them with better coverage.
 
+## SDK orchestrator strategy
+
+- Treat AE Agent as the real-task adapter and proving ground for SDK-orchestrator needs, not as the permanent home for every generic SDK tool concern.
+- Do not pause AE Agent product work to make the SDK orchestrator broadly production-ready in one abstract block.
+- Improve SDK orchestration incrementally when a concrete AE Agent task needs it: one narrow lane, one contract, one proof, one reviewable milestone.
+- Keep broad SDK repo-editing, CEP-panel SDK writes, live CEP/AE validation, external-provider/OpenAI CLI planner validation, mutating-live validation, dependency changes, push, and PR creation approval-gated.
+- Move generic, reusable SDK orchestration behavior toward the sibling `codex-sdk-orchestrator-tool`; keep AE Agent-specific policy, evidence, and safety gates in this repository unless a separate migration milestone proves equivalent fail-closed behavior.
+
 ## Verification
 
 Before marking a milestone complete, run:
