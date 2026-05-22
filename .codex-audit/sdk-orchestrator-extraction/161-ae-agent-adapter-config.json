@@ -1,0 +1,111 @@
+{
+  "schema": "sdk-ae-agent-adapter-config.v1",
+  "milestone": 161,
+  "title": "AE Agent Adapter Config",
+  "createdAt": "2026-05-22",
+  "purpose": "Introduce the active AE Agent SDK adapter policy config consumed by the existing orchestrator wrapper while preserving current command behavior and governance boundaries.",
+  "sourceContext": {
+    "previousMilestone": 160,
+    "previousArtifact": ".codex-audit/sdk-orchestrator-extraction/160-sdk-reusable-core-extraction.json",
+    "safeAeAgentCleanupPlanPhase": "phase-3-introduce-ae-agent-adapter-config",
+    "branch": "codex/roadmap-1.3-planning",
+    "lastCompletedCommit": "ad673e9",
+    "behaviorBoundary": {
+      "wrapperCommandsChanged": false,
+      "sdkThreadCreated": false,
+      "networkAccessed": false,
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditedThroughSdk": false,
+      "liveCepOrAfterEffectsRun": false,
+      "externalProviderValidationRun": false,
+      "mutatingLiveValidationRun": false,
+      "packageInstallRun": false,
+      "dependencyChanged": false,
+      "archiveMovePerformed": false,
+      "deletionPerformed": false,
+      "pushPerformed": false
+    }
+  },
+  "adapterConfig": {
+    "path": "orchestrator/adapters/ae-agent-sdk-policy.mjs",
+    "schema": "codex-sdk-orchestrator-adapter-policy.v1",
+    "status": "active-runtime-config",
+    "consumedBy": [
+      "orchestrator/run-write-capable-scaffold.mjs",
+      "orchestrator/run-buffered-acceptance.mjs through the write runner exports"
+    ],
+    "keepsInAdapter": [
+      "docs-audit, orchestrator, production-code, and cep-panel scope names",
+      "AE Agent scope path allowlists",
+      "forbidden path patterns and unsafe runner flags",
+      "current SDK-write enabled scopes",
+      "current production-code allowlist scripts/provider-api-smoke.js and scripts/provider-contract-smoke.js",
+      "CEP-panel SDK write disabled state",
+      "current governance, lane, runtime, and conveyor evidence paths"
+    ]
+  },
+  "facadeCompatibility": {
+    "behaviorPreserving": true,
+    "keptCommandEntrypoints": [
+      "node orchestrator/run-write-capable-scaffold.mjs",
+      "node orchestrator/run-write-capable-scaffold.mjs --contract-smoke",
+      "node orchestrator/run-buffered-acceptance.mjs --contract-smoke"
+    ],
+    "keptPublicExports": [
+      "WRITE_SCOPES",
+      "SCOPE_PATH_ALLOWLISTS",
+      "FORBIDDEN_PATH_PATTERNS",
+      "UNSAFE_WRITE_RUNNER_FLAGS",
+      "WRITE_CAPABLE_THREAD_OPTION_CONTRACT",
+      "SDK_WRITE_ALLOWED_SCOPES",
+      "SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST",
+      "SDK_WRITE_REVIEW_REQUIRED_SCOPES",
+      "buildSdkLaunchGovernanceDriftReport"
+    ]
+  },
+  "governanceParity": {
+    "currentGovernancePacket": ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
+    "currentEnablementPacket": ".codex-audit/sdk-write-lane-enablement/152-production-code-provider-smokes-enable.json",
+    "expectedLaunchGovernanceState": "local-gated",
+    "expectedProductionCodePlannedPathAllowlist": [
+      "scripts/provider-api-smoke.js",
+      "scripts/provider-contract-smoke.js"
+    ],
+    "expectedCepPanelSdkWritesEnabled": false,
+    "expectedSdkThreadCreated": false,
+    "expectedNetworkAccessed": false
+  },
+  "machineCheck": {
+    "mustExist": [
+      "orchestrator/adapters/ae-agent-sdk-policy.mjs",
+      "orchestrator/adapters/ae-agent-policy.example.json",
+      "orchestrator/run-write-capable-scaffold.mjs",
+      "orchestrator/run-buffered-acceptance.mjs",
+      ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+      ".codex-audit/sdk-orchestrator-extraction/159-sdk-orchestrator-inventory-freeze.json",
+      ".codex-audit/sdk-orchestrator-extraction/160-sdk-reusable-core-extraction.json",
+      ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
+      ".codex-audit/sdk-write-lane-enablement/152-production-code-provider-smokes-enable.json",
+      ".codex-audit/sdk-milestone-conveyor/154-sdk-milestone-conveyor-spec.json",
+      ".codex-audit/sdk-milestone-conveyor/155-sdk-milestone-conveyor-local-dry-run.json",
+      ".codex-audit/sdk-milestone-conveyor/156-sdk-conveyor-sdkthread-proof.json",
+      ".codex-audit/sdk-milestone-conveyor/157-sdk-conveyor-commit-handoff-loop-gate.json"
+    ],
+    "requiredPackageScript": "codex:orchestrator:adapter-config:smoke",
+    "requiredFalseBoundaryFlags": [
+      "wrapperCommandsChanged",
+      "sdkThreadCreated",
+      "networkAccessed",
+      "cepPanelSdkWritesEnabled",
+      "cepPanelPanelJsEditedThroughSdk",
+      "liveCepOrAfterEffectsRun",
+      "externalProviderValidationRun",
+      "mutatingLiveValidationRun",
+      "packageInstallRun",
+      "dependencyChanged",
+      "archiveMovePerformed",
+      "deletionPerformed",
+      "pushPerformed"
+    ]
+  }
+}

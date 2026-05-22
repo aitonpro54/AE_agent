@@ -1023,6 +1023,18 @@ async function runContractSmoke() {
     `M160 SDK reusable core extraction smoke failed: ${reusableCoreOutput.trim()}`,
     failures,
   );
+  const adapterConfigSmoke = runNode([
+    path.join("scripts", "sdk-ae-agent-adapter-config-smoke.js"),
+  ]);
+  const adapterConfigOutput = `${adapterConfigSmoke.stdout ?? ""}\n${
+    adapterConfigSmoke.stderr ?? ""
+  }`;
+  assertContract(
+    adapterConfigSmoke.status === 0 &&
+      adapterConfigOutput.includes("SDK AE Agent adapter config smoke: pass"),
+    `M161 SDK AE Agent adapter config smoke failed: ${adapterConfigOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1649,6 +1661,15 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:adapter-config:smoke") &&
+      readme.includes("161-ae-agent-adapter-config.json") &&
+      readme.includes("sdk-ae-agent-adapter-config.v1") &&
+      readme.includes("orchestrator/adapters/ae-agent-sdk-policy.mjs") &&
+      readme.includes("CEP-panel SDK writes remain disabled"),
+    "README does not document the M161 AE Agent adapter config smoke",
+    failures,
+  );
+  assertContract(
     readme.includes('sandboxMode: "read-only"') &&
       readme.includes('approvalPolicy: "never"') &&
       readme.includes("networkAccessEnabled: false") &&
@@ -1764,6 +1785,7 @@ async function runContractSmoke() {
   console.log("Write-capable sdk-write diagnostic logging mode: pass");
   console.log("Write-capable sdk runtime fallback mode: pass");
   console.log("SDK reusable core extraction smoke: pass");
+  console.log("SDK AE Agent adapter config smoke: pass");
 }
 
 async function printGovernanceReport() {

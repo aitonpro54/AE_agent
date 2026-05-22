@@ -262,6 +262,12 @@ M160 performs the first behavior-preserving reusable-core extraction in `.codex-
 npm.cmd run codex:orchestrator:reusable-core:smoke
 ```
 
+M161 introduces the active AE Agent adapter config in `.codex-audit/sdk-orchestrator-extraction/161-ae-agent-adapter-config.json` with schema `sdk-ae-agent-adapter-config.v1`. The runtime policy now lives in `orchestrator/adapters/ae-agent-sdk-policy.mjs` and is consumed by the existing write-runner facade, while `orchestrator/adapters/ae-agent-policy.example.json` remains the documented example shape. The adapter keeps the current `docs-audit`, `orchestrator`, `production-code`, and `cep-panel` lanes, validates current M152/M154-M157 evidence against that policy, keeps production-code limited to `scripts/provider-api-smoke.js` and `scripts/provider-contract-smoke.js`, and CEP-panel SDK writes remain disabled. This milestone does not run SDKThread/network, change wrapper command entrypoints, enable CEP-panel SDK writes, install packages, change dependencies, move/archive/delete historical evidence, push, or edit `cep-panel/panel.js`.
+
+```powershell
+npm.cmd run codex:orchestrator:adapter-config:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.

@@ -127,6 +127,7 @@
 - [x] Milestone 158: SDK Orchestrator Extraction/Cleanup Plan.
 - [x] Milestone 159: SDK Orchestrator Inventory Freeze.
 - [x] Milestone 160: SDK Reusable Core Extraction.
+- [x] Milestone 161: AE Agent Adapter Config.
 
 ## Current Stable Baseline
 
@@ -934,6 +935,7 @@
 - 2026-05-22: M158 classifies the SDK orchestrator extraction/cleanup boundary before any cleanup. The committed `sdk-orchestrator-extraction-cleanup-plan.v1` artifact separates reusable orchestrator core from AE Agent adapter policy, marks M152/M153/M154-M157 as active governance/conveyor evidence, keeps older packets as historical audit trail, lists archive/squash candidates only for later summary/move work, and records files that must not be removed. No files were deleted, no SDKThread/network proof was run, CEP-panel SDK writes remain disabled, and `cep-panel/panel.js` remains outside SDK writes.
 - 2026-05-22: M159 freezes the current SDK orchestrator inventory before any extraction or cleanup. The committed `sdk-orchestrator-inventory-freeze.v1` artifact records active command-surface files, current M152/M153-M158 governance/conveyor/extraction evidence, historical evidence kept until a future history index, continuity files, and check entrypoints. It performs no deletion, archive move, squash, SDKThread/network proof, CEP-panel SDK write, dependency change, package install, push, or `cep-panel/panel.js` SDK edit.
 - 2026-05-22: M160 performs the first behavior-preserving SDK reusable-core extraction. The committed `sdk-reusable-core-extraction.v1` artifact records policy-neutral `orchestrator/core/path-policy.mjs`, `orchestrator/core/git-snapshot.mjs`, and `orchestrator/core/thread-options.mjs`, keeps the old `run-write-capable-scaffold.mjs` public exports and package commands as the compatibility facade, and adds `orchestrator/adapters/ae-agent-policy.example.json` for current AE Agent scope/lane policy. No wrapper command entrypoints, dependencies, SDKThread/network proof, CEP-panel SDK writes, `cep-panel/panel.js`, cleanup/archive/delete, package install, push, live CEP/AE, external-provider/OpenAI CLI planner, or mutating-live validation changed.
+- 2026-05-22: M161 introduces `orchestrator/adapters/ae-agent-sdk-policy.mjs` as the active AE Agent SDK adapter config and rewires the existing write-runner facade to consume it while preserving public exports and package command entrypoints. The config owns the current docs-audit/orchestrator/production-code/cep-panel lanes, forbidden path patterns, unsafe runner flags, thread option contract, runtime paths, and current M152/M154-M157 evidence pointers. Governance remains local-gated, production-code SDK writes remain limited to `scripts/provider-api-smoke.js` and `scripts/provider-contract-smoke.js`, CEP-panel SDK writes remain disabled, and no SDKThread/network proof, `cep-panel/panel.js` edit, live CEP/AE validation, external-provider/OpenAI CLI planner, mutating-live validation, dependency change, cleanup/archive/delete, package install, push, or PR was performed.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -1543,6 +1545,18 @@
   - Passed configured local smoke suite: provider contract, provider API, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only, and full smoke.
   - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
   - `npm.cmd run ...` commands printed `npm warn Unknown env config "http-proxy"` but exited successfully.
+
+- Milestone 161:
+  - Added active adapter config module `orchestrator/adapters/ae-agent-sdk-policy.mjs` with schema `codex-sdk-orchestrator-adapter-policy.v1`.
+  - Rewired `orchestrator/run-write-capable-scaffold.mjs` to consume the adapter config for AE Agent scopes, scope allowlists, forbidden path patterns, unsafe runner flags, thread option contract, SDK-write allowlists, governance schemas/directories, runtime directories, and current evidence pointers while keeping the existing facade exports.
+  - Added committed extraction artifact `.codex-audit/sdk-orchestrator-extraction/161-ae-agent-adapter-config.json` with schema `sdk-ae-agent-adapter-config.v1`.
+  - Added `scripts/sdk-ae-agent-adapter-config-smoke.js`, package script `codex:orchestrator:adapter-config:smoke`, `check:rules` coverage, and README documentation.
+  - Passed `node --check orchestrator/run-write-capable-scaffold.mjs`, `node --check orchestrator/run-buffered-acceptance.mjs`, `node --check orchestrator/adapters/ae-agent-sdk-policy.mjs`, and `node --check scripts/sdk-ae-agent-adapter-config-smoke.js`.
+  - Passed `npm.cmd run codex:orchestrator:adapter-config:smoke`, `npm.cmd run codex:orchestrator:reusable-core:smoke`, `npm.cmd run codex:orchestrator:inventory-freeze:smoke`, `npm.cmd run codex:orchestrator:extraction-cleanup:smoke`, `npm.cmd run codex:orchestrator:governance-report`, and `npm.cmd run check:rules`; governance report stayed `driftDetected:false`, production-code allowlist stayed exactly `scripts/provider-api-smoke.js` plus `scripts/provider-contract-smoke.js`, and CEP-panel SDK writes stayed disabled.
+  - Passed configured local smoke suite: provider contract, provider API, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only, and full smoke.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
+  - `npm.cmd run ...` commands printed `npm warn Unknown env config "http-proxy"` but exited successfully.
+  - Did not run SDKThread/network, enable CEP-panel SDK writes, edit `cep-panel/panel.js`, run live CEP/After Effects validation, run external-provider/OpenAI CLI planner validation, run mutating-live validation, install packages, change dependencies, archive/delete files, push, or create a PR.
 
 - Milestone 160:
   - Added policy-neutral reusable core modules `orchestrator/core/path-policy.mjs`, `orchestrator/core/git-snapshot.mjs`, and `orchestrator/core/thread-options.mjs`.

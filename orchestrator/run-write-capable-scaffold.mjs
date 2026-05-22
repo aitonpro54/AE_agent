@@ -28,6 +28,7 @@ import {
   parseStatusPaths,
 } from "./core/git-snapshot.mjs";
 import { createThreadOptionsFromContract } from "./core/thread-options.mjs";
+import { AE_AGENT_SDK_ADAPTER_CONFIG } from "./adapters/ae-agent-sdk-policy.mjs";
 
 const HELP = `
 Codex SDK write-capable runner scaffold
@@ -61,201 +62,92 @@ operation-envelope mode remains limited to docs-audit planned outputs under
 .codex-audit/** and orchestrator controlled outputs under orchestrator/**.
 `;
 
-const COMMON_AUDIT_ALLOWLIST = Object.freeze([
-  ".codex-audit/**",
-  ".codex/handoff.md",
-]);
+const ADAPTER_EVIDENCE = AE_AGENT_SDK_ADAPTER_CONFIG.evidence;
+const ADAPTER_OPERATION_ENVELOPE = AE_AGENT_SDK_ADAPTER_CONFIG.operationEnvelope;
+const ADAPTER_RUNTIME = AE_AGENT_SDK_ADAPTER_CONFIG.runtime;
+const ADAPTER_SDK_WRITE = AE_AGENT_SDK_ADAPTER_CONFIG.sdkWrite;
 
-export const WRITE_SCOPES = Object.freeze([
-  "docs-audit",
-  "orchestrator",
-  "production-code",
-  "cep-panel",
-]);
+export { AE_AGENT_SDK_ADAPTER_CONFIG };
 
-export const SCOPE_PATH_ALLOWLISTS = Object.freeze({
-  "docs-audit": Object.freeze([
-    ...COMMON_AUDIT_ALLOWLIST,
-    "AGENTS.md",
-    "README.md",
-    "RELEASES.md",
-    "docs/**",
-    "plans/**",
-    "specs/**",
-    "orchestrator/README.md",
-  ]),
-  orchestrator: Object.freeze([
-    ...COMMON_AUDIT_ALLOWLIST,
-    "orchestrator/**",
-    "package.json",
-  ]),
-  "production-code": Object.freeze([
-    ...COMMON_AUDIT_ALLOWLIST,
-    "chatgpt-connector/**",
-    "mcp-server/**",
-    "recipes/**",
-    "registry/**",
-    "scripts/**",
-    "package.json",
-  ]),
-  "cep-panel": Object.freeze([
-    ...COMMON_AUDIT_ALLOWLIST,
-    "cep-panel/**",
-  ]),
-});
+export const WRITE_SCOPES = AE_AGENT_SDK_ADAPTER_CONFIG.scopes;
+export const SCOPE_PATH_ALLOWLISTS = AE_AGENT_SDK_ADAPTER_CONFIG.scopePathAllowlists;
+export const FORBIDDEN_PATH_PATTERNS = AE_AGENT_SDK_ADAPTER_CONFIG.forbiddenPathPatterns;
+export const UNSAFE_WRITE_RUNNER_FLAGS = AE_AGENT_SDK_ADAPTER_CONFIG.unsafeWriteRunnerFlags;
+export const WRITE_CAPABLE_THREAD_OPTION_CONTRACT =
+  AE_AGENT_SDK_ADAPTER_CONFIG.threadOptionContracts.writeCapable;
 
-export const FORBIDDEN_PATH_PATTERNS = Object.freeze([
-  ".git/**",
-  "node_modules/**",
-  "logs/**",
-  "backups/**",
-  "snapshots/**",
-  "pro-review-bundles/**",
-  "mcp-config.json",
-  "package-lock.json",
-  "**/package-lock.json",
-  ".env*",
-  "**/.env*",
-  "*.key",
-  "**/*.key",
-  "*.pem",
-  "**/*.pem",
-  "*credential*",
-  "**/*credential*",
-  "*secret*",
-  "**/*secret*",
-  "*token*",
-  "**/*token*",
-]);
-
-export const UNSAFE_WRITE_RUNNER_FLAGS = Object.freeze([
-  "approval",
-  "auto-commit",
-  "commit",
-  "danger-full-access",
-  "execute",
-  "external-provider",
-  "force",
-  "live",
-  "mutating-live",
-  "network",
-  "openai-cli-planner",
-  "sandbox",
-  "skip-git-repo-check",
-  "tenant-policy-bypass",
-  "unsafe",
-  "web-search",
-]);
-
-export const WRITE_CAPABLE_THREAD_OPTION_CONTRACT = Object.freeze({
-  approvalPolicy: "never",
-  networkAccessEnabled: false,
-  sandboxMode: "workspace-write",
-  webSearchMode: "disabled",
-});
-
-export const OPERATION_ENVELOPE_VERSION = 1;
-export const OPERATION_ENVELOPE_MODE = "dry-run";
-export const SDK_WRITE_OPERATION_MODE = "sdk-write";
+export const OPERATION_ENVELOPE_VERSION = ADAPTER_OPERATION_ENVELOPE.version;
+export const OPERATION_ENVELOPE_MODE = ADAPTER_OPERATION_ENVELOPE.dryRunMode;
+export const SDK_WRITE_OPERATION_MODE = ADAPTER_OPERATION_ENVELOPE.sdkWriteMode;
 export const OPERATION_ENVELOPE_MODES = Object.freeze([
   OPERATION_ENVELOPE_MODE,
   SDK_WRITE_OPERATION_MODE,
 ]);
-export const SDK_WRITE_ALLOWED_SCOPE = "docs-audit";
-export const SDK_WRITE_ORCHESTRATOR_SCOPE = "orchestrator";
-export const SDK_WRITE_PRODUCTION_CODE_SCOPE = "production-code";
-export const SDK_WRITE_ALLOWED_SCOPES = Object.freeze([
-  SDK_WRITE_ALLOWED_SCOPE,
-  SDK_WRITE_ORCHESTRATOR_SCOPE,
-  SDK_WRITE_PRODUCTION_CODE_SCOPE,
-]);
-export const SDK_WRITE_REVIEW_REQUIRED_SCOPES = Object.freeze([
-  SDK_WRITE_PRODUCTION_CODE_SCOPE,
-  "cep-panel",
-]);
-export const SDK_SCOPE_EXPANSION_REVIEW_SCHEMA = "sdk-scope-expansion-review.v1";
+export const SDK_WRITE_ALLOWED_SCOPE = ADAPTER_SDK_WRITE.docsAuditScope;
+export const SDK_WRITE_ORCHESTRATOR_SCOPE = ADAPTER_SDK_WRITE.orchestratorScope;
+export const SDK_WRITE_PRODUCTION_CODE_SCOPE = ADAPTER_SDK_WRITE.productionCodeScope;
+export const SDK_WRITE_ALLOWED_SCOPES = ADAPTER_SDK_WRITE.enabledScopes;
+export const SDK_WRITE_REVIEW_REQUIRED_SCOPES = ADAPTER_SDK_WRITE.reviewRequiredScopes;
+export const SDK_SCOPE_EXPANSION_REVIEW_SCHEMA =
+  ADAPTER_EVIDENCE.scopeExpansionReviewSchema;
 export const SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY =
-  ".codex-audit/sdk-scope-expansion-reviews";
-export const SDK_SCOPE_EXPANSION_REVIEW_DECISIONS = Object.freeze([
-  "proposed",
-  "approved",
-  "rejected",
-]);
-export const SDK_WRITE_LANE_READINESS_SCHEMA = "sdk-write-lane-readiness.v1";
+  ADAPTER_EVIDENCE.scopeExpansionReviewDirectory;
+export const SDK_SCOPE_EXPANSION_REVIEW_DECISIONS =
+  ADAPTER_EVIDENCE.scopeExpansionReviewDecisions;
+export const SDK_WRITE_LANE_READINESS_SCHEMA = ADAPTER_EVIDENCE.writeLaneReadinessSchema;
 export const SDK_WRITE_LANE_READINESS_DIRECTORY =
-  ".codex-audit/sdk-write-lane-readiness";
-export const SDK_WRITE_LANE_READINESS_STATE = "ready-for-approval";
-export const SDK_WRITE_LANE_APPROVAL_STATE = "pending-explicit-approval";
+  ADAPTER_EVIDENCE.writeLaneReadinessDirectory;
+export const SDK_WRITE_LANE_READINESS_STATE = ADAPTER_EVIDENCE.writeLaneReadinessState;
+export const SDK_WRITE_LANE_APPROVAL_STATE = ADAPTER_EVIDENCE.writeLaneApprovalState;
 export const SDK_WRITE_LANE_APPROVAL_DECISION_SCHEMA =
-  "sdk-write-lane-approval-decision.v1";
+  ADAPTER_EVIDENCE.writeLaneApprovalDecisionSchema;
 export const SDK_WRITE_LANE_APPROVAL_DECISION_DIRECTORY =
-  ".codex-audit/sdk-write-lane-approval-decisions";
-export const SDK_WRITE_LANE_ENABLEMENT_SCHEMA = "sdk-write-lane-enablement.v1";
+  ADAPTER_EVIDENCE.writeLaneApprovalDecisionDirectory;
+export const SDK_WRITE_LANE_ENABLEMENT_SCHEMA = ADAPTER_EVIDENCE.writeLaneEnablementSchema;
 export const SDK_WRITE_LANE_ENABLEMENT_DIRECTORY =
-  ".codex-audit/sdk-write-lane-enablement";
-export const SDK_WRITE_LANE_ENABLEMENT_APPROVAL_STATE = "approved";
-export const SDK_LAUNCH_GOVERNANCE_SCHEMA = "sdk-launch-governance.v1";
-export const SDK_LAUNCH_GOVERNANCE_DIRECTORY = ".codex-audit/sdk-launch-governance";
-export const SDK_LAUNCH_GOVERNANCE_STATE = "local-gated";
+  ADAPTER_EVIDENCE.writeLaneEnablementDirectory;
+export const SDK_WRITE_LANE_ENABLEMENT_APPROVAL_STATE =
+  ADAPTER_EVIDENCE.writeLaneEnablementApprovalState;
+export const SDK_LAUNCH_GOVERNANCE_SCHEMA = ADAPTER_EVIDENCE.launchGovernanceSchema;
+export const SDK_LAUNCH_GOVERNANCE_DIRECTORY = ADAPTER_EVIDENCE.launchGovernanceDirectory;
+export const SDK_LAUNCH_GOVERNANCE_STATE = ADAPTER_EVIDENCE.launchGovernanceState;
 export const SDK_LAUNCH_GOVERNANCE_DRIFT_REPORT_SCHEMA =
-  "sdk-launch-governance-drift-report.v1";
-export const SDK_WRITE_PLANNED_PATH_ALLOWLIST = Object.freeze([
-  ".codex-audit/**",
-]);
-export const SDK_WRITE_ORCHESTRATOR_PLANNED_PATH_ALLOWLIST = Object.freeze([
-  "orchestrator/**",
-]);
-export const SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_PLANNED_PATH_ALLOWLIST = Object.freeze([
-  "orchestrator/fixtures/sdk-write/**",
-]);
-export const SDK_WRITE_PRODUCTION_CODE_LEGACY_SINGLE_FILE_PLANNED_PATH_ALLOWLIST = Object.freeze([
-  "scripts/provider-contract-smoke.js",
-]);
-export const SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST = Object.freeze([
-  "scripts/provider-api-smoke.js",
-  "scripts/provider-contract-smoke.js",
-]);
-export const SDK_WRITE_SCOPE_PLANNED_PATH_ALLOWLISTS = Object.freeze({
-  [SDK_WRITE_ALLOWED_SCOPE]: SDK_WRITE_PLANNED_PATH_ALLOWLIST,
-  [SDK_WRITE_ORCHESTRATOR_SCOPE]: SDK_WRITE_ORCHESTRATOR_PLANNED_PATH_ALLOWLIST,
-  [SDK_WRITE_PRODUCTION_CODE_SCOPE]: SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST,
-});
-export const SDK_WRITE_ORCHESTRATOR_MARKDOWN_ALLOWED_EXTENSION = ".md";
-export const SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_ALLOWED_EXTENSION = ".json";
-export const SDK_WRITE_CONTRACT_SMOKE_PLANNED_PATHS = Object.freeze([
-  ".codex-audit/115-sdk-docs-audit-sdk-thread-output.md",
-  ".codex-audit/117-sdk-docs-audit-sdk-thread-output.md",
-  ".codex-audit/arbitrary-safe-sdk-write-output.md",
-]);
-export const SDK_WRITE_ORCHESTRATOR_CONTRACT_SMOKE_PLANNED_PATHS = Object.freeze([
-  "orchestrator/m123-sdk-thread-orchestrator-scope-output.md",
-  "orchestrator/arbitrary-safe-sdk-write-output.md",
-  "orchestrator/fixtures/sdk-write/m125-sdk-thread-fixture.json",
-  "orchestrator/fixtures/sdk-write/arbitrary-safe-sdk-write-fixture.json",
-]);
+  ADAPTER_EVIDENCE.launchGovernanceDriftReportSchema;
+export const SDK_WRITE_PLANNED_PATH_ALLOWLIST =
+  ADAPTER_SDK_WRITE.plannedPathAllowlists[SDK_WRITE_ALLOWED_SCOPE];
+export const SDK_WRITE_ORCHESTRATOR_PLANNED_PATH_ALLOWLIST =
+  ADAPTER_SDK_WRITE.plannedPathAllowlists[SDK_WRITE_ORCHESTRATOR_SCOPE];
+export const SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_PLANNED_PATH_ALLOWLIST =
+  ADAPTER_SDK_WRITE.orchestratorFixtureJsonPlannedPathAllowlist;
+export const SDK_WRITE_PRODUCTION_CODE_LEGACY_SINGLE_FILE_PLANNED_PATH_ALLOWLIST =
+  ADAPTER_SDK_WRITE.productionCodeLegacySingleFilePlannedPathAllowlist;
+export const SDK_WRITE_PRODUCTION_CODE_PLANNED_PATH_ALLOWLIST =
+  ADAPTER_SDK_WRITE.plannedPathAllowlists[SDK_WRITE_PRODUCTION_CODE_SCOPE];
+export const SDK_WRITE_SCOPE_PLANNED_PATH_ALLOWLISTS =
+  ADAPTER_SDK_WRITE.enabledScopePlannedPathAllowlists;
+export const SDK_WRITE_ORCHESTRATOR_MARKDOWN_ALLOWED_EXTENSION =
+  ADAPTER_SDK_WRITE.orchestratorMarkdownAllowedExtension;
+export const SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_ALLOWED_EXTENSION =
+  ADAPTER_SDK_WRITE.orchestratorFixtureJsonAllowedExtension;
+export const SDK_WRITE_CONTRACT_SMOKE_PLANNED_PATHS =
+  ADAPTER_SDK_WRITE.contractSmokePlannedPaths;
+export const SDK_WRITE_ORCHESTRATOR_CONTRACT_SMOKE_PLANNED_PATHS =
+  ADAPTER_SDK_WRITE.orchestratorContractSmokePlannedPaths;
 export const SDK_MULTI_FILE_PLANNED_OPERATION_CONTRACT_SCHEMA =
-  "sdk-multi-file-planned-operation-contract.v1";
+  ADAPTER_EVIDENCE.multiFilePlannedOperationContractSchema;
 export const SDK_MULTI_FILE_PLANNED_OPERATION_DIRECTORY =
-  ".codex-audit/sdk-multi-file-planned-operation";
-export const SDK_WRITE_ORCHESTRATOR_MULTI_FILE_CONTRACT_PLANNED_PATHS = Object.freeze([
-  "orchestrator/fixtures/sdk-write/m148-multi-file-alpha.json",
-  "orchestrator/fixtures/sdk-write/m148-multi-file-beta.json",
-]);
-export const SDK_WRITE_ALLOWED_HOST_REPORT_PATHS = Object.freeze([]);
-export const SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY = ".codex/sdk";
-export const SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY = ".codex-runtime/sdk";
-export const SDK_WRITE_RUNTIME_SUBDIRECTORIES = Object.freeze(["logs", "operations"]);
+  ADAPTER_EVIDENCE.multiFilePlannedOperationDirectory;
+export const SDK_WRITE_ORCHESTRATOR_MULTI_FILE_CONTRACT_PLANNED_PATHS =
+  ADAPTER_SDK_WRITE.orchestratorMultiFileContractPlannedPaths;
+export const SDK_WRITE_ALLOWED_HOST_REPORT_PATHS = ADAPTER_SDK_WRITE.allowedHostReportPaths;
+export const SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY = ADAPTER_RUNTIME.primaryRuntimeDirectory;
+export const SDK_WRITE_FALLBACK_RUNTIME_DIRECTORY = ADAPTER_RUNTIME.fallbackRuntimeDirectory;
+export const SDK_WRITE_RUNTIME_SUBDIRECTORIES = ADAPTER_RUNTIME.runtimeSubdirectories;
 export const SDK_WRITE_LOG_DIRECTORY = `${SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY}/logs`;
 export const SDK_WRITE_OPERATION_DIRECTORY = `${SDK_WRITE_PRIMARY_RUNTIME_DIRECTORY}/operations`;
-export const SDK_WRITE_FALLBACK_REPORT_DIRECTORY = ".codex-audit";
-export const OPERATION_ENVELOPE_REQUIRED_FIELDS = Object.freeze([
-  "version",
-  "operationId",
-  "scope",
-  "mode",
-  "prompt",
-  "plannedPaths",
-]);
+export const SDK_WRITE_FALLBACK_REPORT_DIRECTORY = ADAPTER_RUNTIME.fallbackReportDirectory;
+export const OPERATION_ENVELOPE_REQUIRED_FIELDS =
+  ADAPTER_OPERATION_ENVELOPE.requiredFields;
 
 const UNSAFE_OPERATION_ENVELOPE_FIELDS = Object.freeze([
   "approval",
