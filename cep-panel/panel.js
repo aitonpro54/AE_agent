@@ -1773,6 +1773,18 @@
     return value;
   }
 
+  function storablePlanResultForTranscript(result) {
+    if (!isPlainObject(result) || !isPlainObject(result.plan)) return null;
+    return {
+      requestId: String(result.requestId || ""),
+      agentMode: result.agentMode ? String(result.agentMode) : "",
+      model: result.model ? String(result.model) : "",
+      planParseOk: result.planParseOk !== false,
+      planRepaired: result.planRepaired === true,
+      plan: result.plan
+    };
+  }
+
   function safeJsonArray(value) {
     if (!value) return [];
     try {
@@ -1792,6 +1804,8 @@
         role: role,
         text: compactTranscriptText(item.text)
       };
+      var planResult = storablePlanResultForTranscript(item.planResult);
+      if (planResult) normalized.planResult = planResult;
       output.push(normalized);
     }
     if (limit && output.length > limit) return output.slice(output.length - limit);
@@ -1918,6 +1932,8 @@
       role: role || "assistant",
       text: compactTranscriptText(text)
     };
+    var planResult = storablePlanResultForTranscript(options && options.planResult);
+    if (planResult) item.planResult = planResult;
     transcriptHistory.push(item);
     if (transcriptHistory.length > 80) {
       transcriptHistory = transcriptHistory.slice(transcriptHistory.length - 80);
@@ -2268,6 +2284,16 @@
     return "";
   }
 
+  function findLastStoredPlanResult() {
+    for (var i = transcriptHistory.length - 1; i >= 0; i--) {
+      var item = transcriptHistory[i] || {};
+      if (item.role !== "assistant") continue;
+      var planResult = storablePlanResultForTranscript(item.planResult);
+      if (planResult) return planResult;
+    }
+    return null;
+  }
+
   function buildPlanRecoveryPrompt(sourceText) {
     return [
       "Подхвати последний план из чата и преврати его в валидный структурированный AE Agent plan.",
@@ -2285,6 +2311,8 @@
       recoverLastPlanButton.title = "Wait for the current Agent request to finish.";
     } else if (hasPlan) {
       recoverLastPlanButton.title = "A plan is already active.";
+    } else if (findLastStoredPlanResult()) {
+      recoverLastPlanButton.title = "Restore the latest saved structured Agent plan through the bridge.";
     } else if (findLastPlanLikeTranscriptText()) {
       recoverLastPlanButton.title = "Ask Agent mode to convert the latest plan-like chat message into a validated plan.";
     } else if (transcriptHistory.length) {
@@ -2425,6 +2453,11 @@
 
   function recoverLastPlanFromChat() {
     if (chatInFlight || (lastPlanResult && lastPlanResult.plan)) return;
+    var storedPlanResult = findLastStoredPlanResult();
+    if (storedPlanResult) {
+      recoverStoredPlanResult(storedPlanResult);
+      return;
+    }
     var sourceText = findLastPlanLikeTranscriptText();
     if (!sourceText) {
       updateChatAvailability();
@@ -2461,12 +2494,67 @@
       var result = response && response.result ? response.result : {};
       var text = formatPlanResult(result);
       lastPlanResult = result && result.plan ? result : null;
-      appendChatMessage("assistant", text, hasRunnableM100ActionProposal(lastPlanResult) ? { actionProposal: m100ActionProposalForResult(lastPlanResult) } : null);
+      appendChatMessage("assistant", text, hasRunnableM100ActionProposal(lastPlanResult) ? {
+        actionProposal: m100ActionProposalForResult(lastPlanResult),
+        planResult: lastPlanResult
+      } : null);
       if (result.requestId) {
         log("Recovered chat plan through Agent planner " + result.requestId);
       } else {
         log("Recovered chat plan through Agent planner");
       }
+      updateChatAvailability();
+    });
+  }
+
+  function recoverStoredPlanResult(storedPlanResult) {
+    var requestId = storedPlanResult.requestId || ("recovered-plan-" + Date.now());
+    rememberPlanRun(null);
+    setChatBusy(true, "Preparing plan");
+    request("POST", "/agents/plan/propose", {
+      requestId: requestId,
+      plan: storedPlanResult.plan,
+      repairPlan: true,
+      m100ConfirmationSurface: "cep-panel",
+      m100ConfirmationSessionId: m100ConfirmationSessionId()
+    }, function (error, response) {
+      setChatBusy(false);
+      if (error) {
+        appendChatMessage("error", error.message);
+        log("Stored plan recovery failed: " + error.message);
+        updateChatAvailability();
+        return;
+      }
+
+      var proposal = response && response.proposal ? response.proposal : null;
+      var validation = response && response.validation ? response.validation : null;
+      if (!proposal || !validation) {
+        appendChatMessage("error", "Plan recovery failed: bridge did not return a runnable action proposal.");
+        log("Stored plan recovery failed: missing action proposal");
+        updateChatAvailability();
+        return;
+      }
+
+      var result = {
+        planParseOk: true,
+        requestId: proposal.requestId || requestId,
+        agentMode: storedPlanResult.agentMode || "agent",
+        model: storedPlanResult.model || "local recovery",
+        planRepaired: !!(response && response.planRepair && response.planRepair.applied),
+        planRepair: response && response.planRepair ? response.planRepair : null,
+        plan: response && response.repairedPlan ? response.repairedPlan : storedPlanResult.plan,
+        planValidation: validation,
+        planClassification: validation.classification || null,
+        m100ActionProposal: proposal,
+        m100Message: proposal
+      };
+      var text = formatPlanResult(result);
+      lastPlanResult = result;
+      appendChatMessage("assistant", text, {
+        actionProposal: m100ActionProposalForResult(lastPlanResult),
+        planResult: lastPlanResult
+      });
+      log("Recovered saved structured plan through bridge proposal " + result.requestId);
       updateChatAvailability();
     });
   }
@@ -3224,7 +3312,10 @@
         lastPlanResult = agentPlanMode ? result : lastPlanResult;
       }
       var actionProposal = agentPlanMode ? m100ActionProposalForResult(hardcoreMode ? lastPlanResult : result) : null;
-      appendChatMessage("assistant", text, actionProposal ? { actionProposal: actionProposal } : null);
+      appendChatMessage("assistant", text, actionProposal ? {
+        actionProposal: actionProposal,
+        planResult: hardcoreMode ? lastPlanResult : result
+      } : null);
       appendOperationUsageReport(hardcoreMode ? "hardcore owner session" : (agentPlanMode ? "agent plan" : "chat"), result);
       if (!agentPlanMode) {
         chatMessages.push({ role: "assistant", content: text });

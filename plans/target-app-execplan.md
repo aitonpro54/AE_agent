@@ -12,6 +12,7 @@
 - [x] Milestone 179: AE Agent 2.0.0 version bump for new GitHub home.
 - [x] Milestone 180: Installed CEP sync to AE Agent 2.0.0 and bounded live validation.
 - [x] Milestone 181: Live AE panel validation with connected 2.0.0 panel and recover-flow smoke finding.
+- [x] Milestone 182: Deterministic saved-plan recovery and passing broad local-Ollama live smoke.
 
 ## Current Stable Baseline
 
@@ -33,7 +34,7 @@
 - CEP install/sync clears only this extension's Chromium cache folders (`Cache`, `Code Cache`, `GPUCache`, `blob_storage`) while preserving Local Storage.
 - Installed CEP tracked files now match the repository at `AE Agent 2.0.0`.
 - Live AE/CEP connectivity with the opened `AE Agent 2.0.0` panel is verified: bridge status, `ping_ae`, CDP inspect, and connector-status smoke pass.
-- The broad local-Ollama CDP smoke currently reaches plan generation but fails in the recover-last-plan branch because the local planner returns a `needs review` recovery result with no executable steps; this is the next live validation gap.
+- The broad local-Ollama CDP smoke now passes through plan generation, saved-plan recovery, dry run, and read-only run. Recovery of saved structured Agent plans is deterministic: the panel stores only the structured plan in chat history, then asks the bridge `/agents/plan/propose` endpoint to revalidate it and mint a fresh M100 action proposal instead of re-prompting the local planner.
 
 ## Current SDK Baseline
 
@@ -119,6 +120,14 @@
 - Completed: updated `scripts/cep-panel-cdp-smoke.js` recover-state expectations from the retired `No plan ready` label to the current `No action proposal ready` panel label.
 - Broad `node scripts/cep-panel-cdp-smoke.js smoke` remains a live validation gap: after the label fix it reaches the recover-last-plan branch, but local Ollama recovery returns `Plan review: needs review` with 0 executable steps instead of restoring a runnable read-only plan.
 
+### Milestone 182: Deterministic saved-plan recovery
+
+- Completed: updated `cep-panel/panel.js` so Agent plan chat history stores a minimal structured plan snapshot, excluding the backend-created M100 proposal and confirmation token.
+- Completed: changed `Recover last plan` to prefer stored structured plans and call `/agents/plan/propose`, which revalidates the plan and creates a fresh server-owned M100 action proposal without sending a recovery prompt to Local/Ollama.
+- Completed: kept the older text-to-plan Agent planner recovery path only as fallback for legacy chat history that has no stored structured plan.
+- Completed: synced the installed CEP panel after the repo change; only installed `panel.js` changed, and CEP cache folders were cleared while Local Storage was preserved.
+- Completed: broad `node scripts/cep-panel-cdp-smoke.js smoke` now passes against the connected installed `AE Agent 2.0.0` panel.
+
 ## Recent Milestone Summary
 
 - M152: Current production-code SDK write readiness superseded the older single-file claim and is limited to `scripts/provider-api-smoke.js` plus `scripts/provider-contract-smoke.js`.
@@ -138,9 +147,13 @@
 - M179: Bumped AE Agent to `2.0.0` and prepared direct push to the new `aitonpro54/AE_agent` repository without PR.
 - M180: Synced the installed CEP extension to `2.0.0`, fixed the remaining static HTML/install text version tail, and recorded that live AE/CDP validation needs After Effects opened with the panel.
 - M181: Verified the opened AE Agent 2.0.0 CEP panel through bridge status, `ping_ae`, CDP inspect, and connector-status smoke; aligned CDP smoke status expectations and recorded the remaining local-Ollama recover-flow smoke failure.
+- M182: Made saved-plan recovery deterministic by re-proposing the stored structured plan through the bridge instead of re-prompting Local/Ollama; synced the installed panel and passed the broad live CDP smoke.
 
 ## Decision Log
 
+- 2026-05-22: M182 fixes the recover-last-plan smoke gap in product behavior instead of weakening the broad CDP smoke. Saved structured Agent plans recover through bridge `/agents/plan/propose`, which creates a fresh M100 proposal without any provider call.
+- 2026-05-22: M182 stores only the minimal structured plan snapshot in chat history. Backend-created M100 action proposals and confirmation tokens are not persisted in Local Storage; they are reissued by the bridge during recovery.
+- 2026-05-22: M182 keeps text-only recovery as a legacy fallback for old chat history, so existing user-visible recovery behavior remains available when no structured plan snapshot exists.
 - 2026-05-22: M181 treats connected live AE/CEP validation as a validation/docs/test-maintenance milestone. It does not push, create a PR, touch old `origin`, or change installed CEP files.
 - 2026-05-22: M181 updates CDP smoke recover-state checks to the current panel status text `No action proposal ready`; the wider smoke remains strict and still fails when the local planner cannot recover a runnable plan.
 - 2026-05-22: M179 treats `2.0.0` as the new current AE Agent version and updates current runtime/version sources plus active docs and smoke expectations. Historical archive files are not rewritten.
@@ -195,7 +208,9 @@
 | `node scripts/cep-sync-health.js --check --json` | Required for M180 installed CEP sync and version alignment. | Passed on 2026-05-22 after sync; installed tracked files and versions match repo `2.0.0`. |
 | `node scripts/cep-sync-cache-smoke.js` | Required because M180 hardens sync-health/title expectations. | Passed on 2026-05-22. |
 | `node --check scripts/cep-panel-cdp-smoke.js` | Required because M181 changes CDP recover-state smoke expectations. | Passed on 2026-05-22. |
-| Live CEP/AE validation | Requested for M180/M181 when After Effects and the panel are available. | M181 connected pass on 2026-05-22: `get_bridge_status` returned bridge `2.0.0` with `panelConnected:true`; `ping_ae` returned AE `26.2x49` and 263 project items; CDP `inspect` saw installed `AE Agent 2.0.0`; `connector-status-smoke` passed. Broad `node scripts/cep-panel-cdp-smoke.js smoke` still failed in recover-last-plan because local Ollama returned `needs review` / 0 executable steps. |
+| `node --check cep-panel/panel.js` | Required because M182 changes saved-plan recovery in the CEP panel. | Passed on 2026-05-22. |
+| `node scripts/m100-protocol-contract-smoke.js` | Required because M182 keeps recovery on server-owned M100 proposals and avoids persisted client proposal tokens. | Passed on 2026-05-22. |
+| Live CEP/AE validation | Requested for M180-M182 when After Effects and the panel are available. | M182 connected pass on 2026-05-22: `get_bridge_status` returned bridge `2.0.0` with `panelConnected:true`; `ping_ae` returned AE `26.2x49` and 263 project items; CDP `inspect` saw installed `AE Agent 2.0.0`; `connector-status-smoke` passed; broad `node scripts/cep-panel-cdp-smoke.js smoke` passed through Local/Ollama plan generation, stored structured plan recovery via bridge proposal, dry run, and read-only run. |
 | SDKThread/network/external-provider/OpenAI CLI planner/mutating-live validation | Forbidden/out of scope for this turn. | Not run. |
 | Package install/dependency change validation | Out of scope because no dependency change is allowed. | Not run. |
 
@@ -268,6 +283,18 @@
 - Full non-live validation log: `.codex-runtime/validation/m181-non-live-20260522-213658.log`.
 - Passed `git diff --check`; Git printed only the existing LF-to-CRLF working-copy warnings for touched text files.
 - `node scripts/cep-panel-cdp-smoke.js smoke` did not pass: after the status-expectation fix, it failed waiting for recovered plan readiness because local Ollama returned a `needs review` recovery result with no executable MCP steps.
+
+### Milestone 182
+
+- Updated `cep-panel/panel.js` so new Agent plan transcript entries retain a minimal structured plan snapshot for deterministic recovery.
+- Recovery now calls `/agents/plan/propose` for stored structured plans, receives a fresh backend-owned M100 proposal, and avoids a second Local/Ollama planning call. The legacy text-recovery path remains available when no stored structured plan exists.
+- Synced the installed CEP extension with `node scripts/cep-sync-health.js --sync --json`; only installed `panel.js` was copied and CEP cache folders were cleared while Local Storage was preserved.
+- Passed `node --check cep-panel/panel.js`.
+- Passed the AGENTS non-live smoke suite plus M100 and sync checks:
+  `check:rules`, provider contract/API, solution registry/candidate/promotion/retrieval/library, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only smoke, main smoke, `m100-protocol-contract-smoke`, `cep-sync-health --check --json`, and `cep-sync-cache-smoke`.
+- Full non-live validation log: `.codex-runtime/validation/m182-non-live-20260522-215347.log`.
+- Passed live `get_bridge_status`, `ping_ae`, `node scripts/cep-panel-cdp-smoke.js inspect`, `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`, and broad `node scripts/cep-panel-cdp-smoke.js smoke`.
+- The broad live smoke generated a read-only Local/Ollama plan, recovered it through `Recovered saved structured plan through bridge proposal ...`, then completed dry run and read-only run without project mutation.
 
 ### Handoff
 
