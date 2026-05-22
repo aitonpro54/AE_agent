@@ -10,6 +10,7 @@
 - [x] Milestone 177: SDK smoke consolidation plan.
 - [x] Milestone 178: Cleanup conveyor quiet output, runtime logs, and commit-aware post-run allowlist.
 - [x] Milestone 179: AE Agent 2.0.0 version bump for new GitHub home.
+- [x] Milestone 180: Installed CEP sync to AE Agent 2.0.0 and bounded live validation.
 
 ## Current Stable Baseline
 
@@ -29,6 +30,7 @@
 - Raw ExtendScript remains available as an escape hatch, but normal product workflows should use typed bridge tools.
 - CEP `Reload` forces a cache-busted reload of installed `index.html` and passes a fresh asset nonce to CSS/JS, so an already-open panel can pick up synced files without stale `panel.js?v=<old>` cache entries.
 - CEP install/sync clears only this extension's Chromium cache folders (`Cache`, `Code Cache`, `GPUCache`, `blob_storage`) while preserving Local Storage.
+- Installed CEP tracked files now match the repository at `AE Agent 2.0.0`; live AE panel validation still requires After Effects with the extension opened.
 
 ## Current SDK Baseline
 
@@ -95,6 +97,15 @@
 - Push target is direct `master` in the new repository; PR creation is intentionally skipped for the initial repository fill.
 - Live CEP/AE sync is not part of this milestone unless separately requested.
 
+### Milestone 180: Installed CEP sync and bounded live validation
+
+- Completed: synced the installed CEP extension under `%APPDATA%\Adobe\CEP\extensions\com.codex.aemcpbridge` to the current repository files.
+- Completed: copied the missing `2.0.0` updates into the installed `index.html`, `panel.js`, and `CSXS/manifest.xml` across the milestone sync passes.
+- Completed: aligned the static `cep-panel/index.html` title and asset-version fallback with `AE Agent 2.0.0`.
+- Completed: updated `scripts/install-cep-panel.ps1` user-facing restart/menu hint to `AE Agent 2.0.0`.
+- Completed: strengthened `scripts/cep-sync-health.js` so a stale repo HTML title is reported as a version mismatch.
+- Live AE/CDP validation was attempted but could not connect because After Effects was not running/open with the CEP panel in this environment.
+
 ## Recent Milestone Summary
 
 - M152: Current production-code SDK write readiness superseded the older single-file claim and is limited to `scripts/provider-api-smoke.js` plus `scripts/provider-contract-smoke.js`.
@@ -112,11 +123,14 @@
 - M177: Added SDK smoke consolidation plan and current/history smoke entrypoints while keeping existing milestone-specific coverage.
 - M178: Made the cleanup conveyor less transcript-heavy by logging full child output to ignored runtime logs, adding compact terminal summaries, and making post-run path validation commit-aware.
 - M179: Bumped AE Agent to `2.0.0` and prepared direct push to the new `aitonpro54/AE_agent` repository without PR.
+- M180: Synced the installed CEP extension to `2.0.0`, fixed the remaining static HTML/install text version tail, and recorded that live AE/CDP validation needs After Effects opened with the panel.
 
 ## Decision Log
 
 - 2026-05-22: M179 treats `2.0.0` as the new current AE Agent version and updates current runtime/version sources plus active docs and smoke expectations. Historical archive files are not rewritten.
 - 2026-05-22: M179 publishes to the new `aitonpro54/AE_agent` GitHub repository by direct push to `master`; PR is intentionally skipped because the new repository is the initial publication target.
+- 2026-05-22: M180 treats installed CEP sync as local machine state plus a small repo hardening fix. The repo keeps `cep-panel/index.html`, install prompts, manifest menu, panel runtime title, and sync-health expectations aligned on `AE Agent 2.0.0`.
+- 2026-05-22: M180 does not launch After Effects automatically. Live validation is limited to available read-only checks; AE/CDP remains blocked until the user opens After Effects and the AE Agent panel.
 - 2026-05-22: M178 makes cleanup conveyor execution quiet by default. Full child stdout/stderr is written under `.codex-runtime/sdk/cleanup-conveyor-logs`; terminal output should stay to summary, log path, changed paths, and bounded failure tails.
 - 2026-05-22: M178 treats commits created by a CLI/SDK worker as part of the post-run path contract. The runner compares pre-run and post-run `HEAD` and fails if committed paths or working-tree paths fall outside the selected queue planned-path allowlist.
 - 2026-05-22: M177 only plans smoke consolidation. It does not delete old smoke scripts or remove check:rules assertions because replacement coverage is not yet green.
@@ -162,7 +176,9 @@
 | `node --check` for M179 touched JavaScript | Required because M179 bumps runtime and smoke expectation JS files. | Passed on 2026-05-22 for CEP panel, bridge/MCP, and touched smoke/helper scripts. |
 | Configured local smoke suite from AGENTS.md | Required for M179 version bump because bridge/panel/version expectations changed. | Passed on 2026-05-22 for all listed non-live checks. |
 | `git diff --check` | Required by selected cleanup conveyor items and M179 version bump. | Passed on 2026-05-22; Git printed only LF-to-CRLF working-copy warnings for touched text files. |
-| Live CEP/AE validation | Out of scope unless separately requested. | Not run for M179. |
+| `node scripts/cep-sync-health.js --check --json` | Required for M180 installed CEP sync and version alignment. | Passed on 2026-05-22 after sync; installed tracked files and versions match repo `2.0.0`. |
+| `node scripts/cep-sync-cache-smoke.js` | Required because M180 hardens sync-health/title expectations. | Passed on 2026-05-22. |
+| Live CEP/AE validation | Requested for M180 when After Effects and the panel are available. | Bounded attempt on 2026-05-22: bridge daemon `2.0.0` is healthy, but `panelConnected:false`; `ping_ae` reported the panel has not connected; CDP inspect and connector-status smoke failed with `ECONNREFUSED 127.0.0.1:8870`; `AfterFX` process was not running. |
 | SDKThread/network/external-provider/OpenAI CLI planner/mutating-live validation | Forbidden/out of scope for this turn. | Not run. |
 | Package install/dependency change validation | Out of scope because no dependency change is allowed. | Not run. |
 
@@ -209,6 +225,19 @@
 - Passed the AGENTS non-live smoke suite:
   `check:rules`, provider contract/API, solution registry/candidate/promotion/retrieval/library, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only smoke, and main smoke.
 - Live CEP/AE sync was not run because the user requested repo publication only.
+
+### Milestone 180
+
+- Synced the installed CEP extension to repo `2.0.0` files with `node scripts/cep-sync-health.js --sync --json`.
+- Fixed the remaining repo static title/version fallback in `cep-panel/index.html`.
+- Updated `scripts/install-cep-panel.ps1` restart/menu hints to `AE Agent 2.0.0`.
+- Added sync-health protection for stale repo HTML title vs current panel version.
+- Updated `scripts/cep-sync-cache-smoke.js` to assert the current repo title and no version mismatches after sync.
+- Passed `node --check` for touched JavaScript files.
+- Passed `node scripts/cep-sync-health.js --check --json` and `node scripts/cep-sync-cache-smoke.js`.
+- Passed the AGENTS non-live smoke suite:
+  `check:rules`, provider contract/API, solution registry/candidate/promotion/retrieval/library, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only smoke, and main smoke.
+- Live CEP/CDP validation could not complete because After Effects was not running and the panel was not connected.
 
 ### Handoff
 

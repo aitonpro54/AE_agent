@@ -54,6 +54,8 @@ function main() {
     assert(result.status === 0, result.stderr || result.stdout || "cep-sync-health failed");
     const report = JSON.parse(result.stdout);
     assert(report.ok === true, "sync report was not ok");
+    assert(report.versions.repo.indexTitle === "AE Agent 2.0.0", "expected repo index title to match current panel version");
+    assert(report.versions.mismatches.length === 0, "expected no version mismatches after sync");
     assert(report.sync.copied >= 4, "expected tracked panel files to be copied");
     assert(report.cache && report.cache.attempted === true, "expected cache clear to run");
     assert(report.cache.cleared === cacheSubdirs.length, "expected all stale cache subdirs to be cleared");

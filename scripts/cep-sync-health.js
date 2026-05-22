@@ -233,6 +233,10 @@ function addVersionMismatch(mismatches, name, expected, actual) {
   mismatches.push({ name, expected, actual });
 }
 
+function appTitle(version) {
+  return version ? `AE Agent ${version}` : null;
+}
+
 function collectVersions(sourceDir, installDir) {
   const repo = {
     daemon: daemonVersion(),
@@ -247,6 +251,7 @@ function collectVersions(sourceDir, installDir) {
   };
   const mismatches = [];
   addVersionMismatch(mismatches, "repo daemon vs repo panel", repo.daemon, repo.panel);
+  addVersionMismatch(mismatches, "repo index title vs repo panel title", appTitle(repo.panel), repo.indexTitle);
   addVersionMismatch(mismatches, "repo daemon vs repo manifest bundle", repo.daemon, repo.manifest.bundleVersion);
   addVersionMismatch(mismatches, "repo panel vs repo manifest extension", repo.panel, repo.manifest.extensionVersion);
   addVersionMismatch(mismatches, "installed panel vs repo panel", repo.panel, installed.panel);
