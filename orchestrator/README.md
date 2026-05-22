@@ -322,6 +322,8 @@ If the SDK backend disconnects before completion, use the Codex CLI engine inste
 npm.cmd run codex:orchestrator:ae-agent-cleanup-conveyor -- --item m174-roadmap-active-state-split --engine cli --execute --approval-text "I approve one Codex CLI cleanup conveyor workspace-write run for M174-M177 planned paths only"
 ```
 
+Executed cleanup conveyor runs now capture full child stdout/stderr to ignored runtime logs under `.codex-runtime/sdk/cleanup-conveyor-logs` by default and print only a compact summary in the terminal. `--tail-lines <n>` controls how much stdout/stderr tail is included in failure messages, and `--stream-output` is a debug escape hatch for explicitly replaying captured child output. The post-run allowlist is commit-aware: it checks both working-tree changes and files changed by commits created since pre-run `HEAD`, so a worker cannot hide out-of-scope edits by committing them.
+
 The command smoke stays local and does not create an SDK thread:
 
 ```powershell

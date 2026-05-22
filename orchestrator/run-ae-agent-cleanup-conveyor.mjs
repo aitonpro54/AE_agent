@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 
 const DEFAULT_QUEUE_PATH =
   ".codex-audit/sdk-milestone-conveyor/173-ae-agent-cleanup-conveyor-queue.json";
+const DEFAULT_EXECUTION_LOG_DIR = ".codex-runtime/sdk/cleanup-conveyor-logs";
+const DEFAULT_TAIL_LINES = 80;
+const CHILD_OUTPUT_MAX_BUFFER_BYTES = 50 * 1024 * 1024;
 
 export const EXECUTE_APPROVAL_TEXT =
   "I approve one SDK cleanup conveyor workspace-write run for M174-M177 planned paths only";
@@ -35,12 +38,19 @@ Options:
   --model <name>             Optional Codex model override.
   --reasoning <effort>       minimal, low, medium, high, or xhigh. Default: high.
   --codex-path <path>        Optional Codex executable override.
+  --log-dir <path>           Full child stdout/stderr log directory.
+                             Must stay under .codex-runtime/.
+                             Default: ${DEFAULT_EXECUTION_LOG_DIR}
+  --tail-lines <n>           Failure tail lines printed to terminal. Default: ${DEFAULT_TAIL_LINES}.
+  --stream-output            Debug escape hatch: print captured child output after run.
   --json                     Print machine-readable dry-run/execution metadata.
   --help                     Show this help.
 
 Dry-run never starts an SDK thread. Execution starts exactly one AI turn, forbids
-pre-existing git dirt, asks the selected backend to edit only the planned paths, and
-fails after the run if git reports changes outside those paths.
+pre-existing git dirt, captures full child output into an ignored runtime log,
+asks the selected backend to edit only the planned paths, and fails after the run
+if the working tree or commits created since pre-run HEAD contain paths outside
+that allowlist.
 `;
 
 const VALUE_OPTIONS = new Set([
@@ -48,11 +58,20 @@ const VALUE_OPTIONS = new Set([
   "codex-path",
   "engine",
   "item",
+  "log-dir",
   "model",
   "queue",
   "reasoning",
+  "tail-lines",
 ]);
-const BOOLEAN_OPTIONS = new Set(["all", "execute", "execute-sdk", "help", "json"]);
+const BOOLEAN_OPTIONS = new Set([
+  "all",
+  "execute",
+  "execute-sdk",
+  "help",
+  "json",
+  "stream-output",
+]);
 
 function splitInlineOption(raw) {
   const equalsIndex = raw.indexOf("=");
@@ -104,6 +123,12 @@ function parseArgs(argv) {
         throw new Error(`Invalid value for --engine: ${value}. Expected sdk or cli.`);
       }
       options.engine = value;
+    } else if (name === "tail-lines") {
+      const parsed = Number.parseInt(value, 10);
+      if (!Number.isInteger(parsed) || parsed < 1 || parsed > 1000) {
+        throw new Error(`Invalid value for --tail-lines: ${value}. Expected 1..1000.`);
+      }
+      options.tailLines = parsed;
     } else {
       options[toCamelCase(name)] = value;
     }
@@ -126,6 +151,28 @@ function readQueue(cwd, queuePath) {
     throw new Error(`Queue path must stay inside repository: ${queuePath}`);
   }
   return JSON.parse(readFileSync(resolved, "utf8"));
+}
+
+function normalizeRuntimeLogDirectory(cwd, logDir = DEFAULT_EXECUTION_LOG_DIR) {
+  const normalized = normalizeRepoPath(logDir).replace(/\/+$/, "");
+  if (
+    normalized === "" ||
+    normalized === "." ||
+    normalized.startsWith("../") ||
+    /^[A-Za-z]:\//.test(normalized) ||
+    path.isAbsolute(logDir)
+  ) {
+    throw new Error(`Execution log directory must stay inside repository: ${logDir}`);
+  }
+  if (normalized !== ".codex-runtime" && !normalized.startsWith(".codex-runtime/")) {
+    throw new Error(`Execution log directory must stay under .codex-runtime/: ${logDir}`);
+  }
+
+  const resolved = path.resolve(cwd, normalized);
+  if (!resolved.startsWith(`${cwd}${path.sep}`)) {
+    throw new Error(`Execution log directory must stay inside repository: ${logDir}`);
+  }
+  return normalized;
 }
 
 function uniqueSorted(values) {
@@ -183,6 +230,22 @@ function gitStatus(cwd) {
     .filter(Boolean);
 }
 
+function gitOutput(cwd, args) {
+  const result = spawnSync("git", args, {
+    cwd,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (result.status !== 0) {
+    throw new Error(`git ${args.join(" ")} failed: ${result.stderr || result.stdout}`);
+  }
+  return result.stdout;
+}
+
+function gitHead(cwd) {
+  return gitOutput(cwd, ["rev-parse", "HEAD"]).trim();
+}
+
 function parseStatusPath(line) {
   const raw = line.slice(3).trim();
   const renameIndex = raw.indexOf(" -> ");
@@ -229,15 +292,38 @@ function collectActualChangedPaths(cwd, statusLines) {
   return uniqueSorted(paths);
 }
 
-function validatePostRunChanges(cwd, plannedPaths) {
+function collectCommittedChangedPaths(cwd, preHead, postHead) {
+  if (!preHead || preHead === postHead) {
+    return [];
+  }
+
+  return uniqueSorted(
+    gitOutput(cwd, ["diff", "--name-only", `${preHead}..${postHead}`])
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean),
+  );
+}
+
+export function validatePostRunChanges(cwd, plannedPaths, preHead) {
   const statusLines = gitStatus(cwd);
-  const actualChangedPaths = collectActualChangedPaths(cwd, statusLines);
+  const workingTreeChangedPaths = collectActualChangedPaths(cwd, statusLines);
+  const postHead = preHead ? gitHead(cwd) : null;
+  const committedChangedPaths = collectCommittedChangedPaths(cwd, preHead, postHead);
+  const actualChangedPaths = uniqueSorted([...workingTreeChangedPaths, ...committedChangedPaths]);
   const allowed = new Set(plannedPaths);
   const outOfScope = actualChangedPaths.filter((repoPath) => !allowed.has(repoPath));
   if (outOfScope.length > 0) {
     throw new Error(`Cleanup conveyor changed paths outside queue allowlist: ${outOfScope.join(", ")}`);
   }
-  return actualChangedPaths;
+  return {
+    changedPaths: actualChangedPaths,
+    committedChangedPaths,
+    headChanged: Boolean(preHead && postHead && preHead !== postHead),
+    postHead,
+    preHead,
+    workingTreeChangedPaths,
+  };
 }
 
 function buildPrompt(queue, selectedItems, plannedPaths) {
@@ -258,7 +344,9 @@ function buildPrompt(queue, selectedItems, plannedPaths) {
     "Work in Russian for project docs and handoff text.",
     "Follow AGENTS.md. Preserve user changes. Do not push, create a PR, install packages, run live CEP/AE, run external providers, or delete/move runtime artifacts.",
     "This is one bounded workspace-write SDK turn. Edit only the planned paths listed below.",
-    "Do not commit. The wrapper will enforce the post-run git path allowlist.",
+    "Keep command output compact: summarize command results, save detailed logs to files when needed, and do not paste large diffs or validation logs into the terminal transcript.",
+    "The wrapper captures full child stdout/stderr into an ignored runtime log and enforces the post-run git path allowlist against both working-tree changes and commits created since pre-run HEAD.",
+    "Do not stop only because the terminal log is large; finish the selected items, record handoff, and end with a concise summary.",
     "",
     `Queue artifact: ${DEFAULT_QUEUE_PATH}`,
     `Queue schema: ${queue.schema}`,
@@ -331,6 +419,113 @@ function renderCommandLine(command, args) {
     .join(" ");
 }
 
+function sanitizeLogToken(value) {
+  return value.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
+}
+
+function createExecutionLogPath(cwd, prepared) {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const itemToken =
+    prepared.selectedItems.length === 1
+      ? sanitizeLogToken(prepared.selectedItems[0].id)
+      : `${prepared.selectedItems.length}-items`;
+  const fileName = `${timestamp}-${prepared.engine}-${itemToken}.log`;
+  const repoPath = normalizeRepoPath(path.posix.join(prepared.executionLogDirectory, fileName));
+  const absolute = path.resolve(cwd, repoPath);
+  mkdirSync(path.dirname(absolute), { recursive: true });
+  return { absolute, repoPath };
+}
+
+function normalizeChildOutput(value) {
+  if (!value) {
+    return "";
+  }
+  return typeof value === "string" ? value : value.toString("utf8");
+}
+
+function tailLines(value, maxLines) {
+  const output = normalizeChildOutput(value).trimEnd();
+  if (!output) {
+    return "";
+  }
+  return output.split(/\r?\n/).slice(-maxLines).join("\n").trim();
+}
+
+function formatExecutionLog({ commandLine, prepared, result }) {
+  const stdout = normalizeChildOutput(result.stdout);
+  const stderr = normalizeChildOutput(result.stderr);
+  const error = result.error ? result.error.message : "";
+  return [
+    "# AE Agent cleanup conveyor execution log",
+    "",
+    `createdAt: ${new Date().toISOString()}`,
+    `engine: ${prepared.engine}`,
+    `items: ${prepared.selectedItems.map((item) => item.id).join(", ")}`,
+    `queuePath: ${prepared.queuePath}`,
+    `status: ${result.status}`,
+    `signal: ${result.signal || ""}`,
+    `error: ${error}`,
+    `command: ${commandLine}`,
+    "",
+    "## stdout",
+    "",
+    stdout || "(empty)",
+    "",
+    "## stderr",
+    "",
+    stderr || "(empty)",
+    "",
+  ].join("\n");
+}
+
+function writeExecutionLog(cwd, prepared, commandLine, result) {
+  const logPath = createExecutionLogPath(cwd, prepared);
+  writeFileSync(logPath.absolute, formatExecutionLog({ commandLine, prepared, result }), "utf8");
+  return logPath;
+}
+
+function runChildProcess(prepared, cwd) {
+  if (prepared.engine === "cli") {
+    const args = ["/d", "/s", "/c", "codex", ...buildCliCommand(prepared.options)];
+    return {
+      commandLine: renderCommandLine("cmd.exe", args),
+      result: spawnSync("cmd.exe", args, {
+        cwd,
+        encoding: "utf8",
+        input: prepared.prompt,
+        maxBuffer: CHILD_OUTPUT_MAX_BUFFER_BYTES,
+        stdio: ["pipe", "pipe", "pipe"],
+        timeout: 30 * 60 * 1000,
+      }),
+    };
+  }
+
+  const args = buildSdkCommand(prepared.options, prepared.prompt);
+  return {
+    commandLine: renderCommandLine(process.execPath, args),
+    result: spawnSync(process.execPath, args, {
+      cwd,
+      encoding: "utf8",
+      maxBuffer: CHILD_OUTPUT_MAX_BUFFER_BYTES,
+      stdio: ["pipe", "pipe", "pipe"],
+      timeout: 30 * 60 * 1000,
+    }),
+  };
+}
+
+function buildFailureTail(result, tailLineCount) {
+  const stderrTail = tailLines(result.stderr, tailLineCount);
+  const stdoutTail = tailLines(result.stdout, tailLineCount);
+  const sections = [];
+  if (stderrTail) {
+    sections.push(`stderr tail:\n${stderrTail}`);
+  }
+  if (stdoutTail) {
+    sections.push(`stdout tail:\n${stdoutTail}`);
+  }
+  return sections.length > 0 ? `\n\n${sections.join("\n\n")}` : "";
+}
+
 function printResult(result, asJson) {
   if (asJson) {
     console.log(JSON.stringify(result, null, 2));
@@ -340,6 +535,14 @@ function printResult(result, asJson) {
   console.log(`Queue: ${result.queuePath}`);
   console.log(`Items: ${result.items.join(", ")}`);
   console.log(`Mode: ${result.mode}`);
+  if (result.executionLogMode) {
+    console.log(`Execution output: ${result.executionLogMode}`);
+  }
+  if (result.logPath) {
+    console.log(`Full execution log: ${result.logPath}`);
+  } else if (result.executionLogDirectory) {
+    console.log(`Execution log directory: ${result.executionLogDirectory}`);
+  }
   console.log("");
   console.log("Planned paths:");
   for (const repoPath of result.plannedPaths) {
@@ -357,9 +560,13 @@ function printResult(result, asJson) {
   }
   if (result.changedPaths) {
     console.log("");
-    console.log("Changed paths:");
+    console.log("Changed paths since pre-run HEAD:");
     for (const repoPath of result.changedPaths) {
       console.log(`- ${repoPath}`);
+    }
+    if (result.headChanged) {
+      console.log("");
+      console.log(`HEAD changed: ${result.preHead} -> ${result.postHead}`);
     }
   }
 }
@@ -377,9 +584,12 @@ export function prepareRun(argv = process.argv.slice(2), cwd = process.cwd()) {
 
   const plannedPaths = uniqueSorted(selectedItems.flatMap((item) => item.plannedPaths));
   const prompt = buildPrompt(queue, selectedItems, plannedPaths);
+  const executionLogDirectory = normalizeRuntimeLogDirectory(cwd, options.logDir);
+  const tailLineCount = options.tailLines || DEFAULT_TAIL_LINES;
 
   return {
     engine: options.engine || "sdk",
+    executionLogDirectory,
     executeSdk: Boolean(options.executeSdk || options.execute),
     json: Boolean(options.json),
     options,
@@ -388,6 +598,7 @@ export function prepareRun(argv = process.argv.slice(2), cwd = process.cwd()) {
     queue,
     queuePath,
     selectedItems,
+    tailLineCount,
   };
 }
 
@@ -396,11 +607,14 @@ export function dryRunEnvelope(prepared) {
     executeCommand: `npm.cmd run codex:orchestrator:ae-agent-cleanup-conveyor -- --all --execute-sdk --approval-text "${EXECUTE_APPROVAL_TEXT}"`,
     executeCliCommand: `npm.cmd run codex:orchestrator:ae-agent-cleanup-conveyor -- --all --engine cli --execute --approval-text "${CLI_EXECUTE_APPROVAL_TEXT}"`,
     engine: prepared.engine,
+    executionLogDirectory: prepared.executionLogDirectory,
+    executionLogMode: "log-file-on-execute",
     items: prepared.selectedItems.map((item) => item.id),
     mode: "dry-run",
     plannedPaths: prepared.plannedPaths,
     queuePath: prepared.queuePath,
     sdkThreadCreated: false,
+    tailLines: prepared.tailLineCount,
   };
 }
 
@@ -415,37 +629,53 @@ export function runSdk(prepared, cwd = process.cwd()) {
   if (preStatus.length > 0) {
     throw new Error(`Refusing SDK cleanup conveyor run with dirty git state: ${preStatus.join("; ")}`);
   }
+  const preHead = gitHead(cwd);
 
-  const result =
-    prepared.engine === "cli"
-      ? spawnSync("cmd.exe", ["/d", "/s", "/c", "codex", ...buildCliCommand(prepared.options)], {
-          cwd,
-          encoding: "utf8",
-          input: prepared.prompt,
-          stdio: ["pipe", "inherit", "inherit"],
-          timeout: 30 * 60 * 1000,
-        })
-      : spawnSync(process.execPath, buildSdkCommand(prepared.options, prepared.prompt), {
-          cwd,
-          encoding: "utf8",
-          stdio: "inherit",
-          timeout: 30 * 60 * 1000,
-        });
+  const { commandLine, result } = runChildProcess(prepared, cwd);
+  const logPath = writeExecutionLog(cwd, prepared, commandLine, result);
 
-  const changedPaths = validatePostRunChanges(cwd, prepared.plannedPaths);
+  if (prepared.options.streamOutput) {
+    const stdout = normalizeChildOutput(result.stdout);
+    const stderr = normalizeChildOutput(result.stderr);
+    if (stdout) {
+      process.stdout.write(stdout);
+    }
+    if (stderr) {
+      process.stderr.write(stderr);
+    }
+  }
+
+  const postRunChanges = validatePostRunChanges(cwd, prepared.plannedPaths, preHead);
+
+  if (result.error) {
+    throw new Error(
+      `Codex SDK cleanup conveyor run failed before completion: ${result.error.message}. Full log: ${logPath.repoPath}${buildFailureTail(result, prepared.tailLineCount)}`,
+    );
+  }
 
   if (result.status !== 0) {
-    throw new Error(`Codex SDK cleanup conveyor run failed with exit code ${result.status}.`);
+    throw new Error(
+      `Codex SDK cleanup conveyor run failed with exit code ${result.status}. Full log: ${logPath.repoPath}${buildFailureTail(result, prepared.tailLineCount)}`,
+    );
   }
 
   return {
-    changedPaths,
+    changedPaths: postRunChanges.changedPaths,
+    committedChangedPaths: postRunChanges.committedChangedPaths,
+    executionLogDirectory: prepared.executionLogDirectory,
+    executionLogMode: "log-file",
     engine: prepared.engine,
+    headChanged: postRunChanges.headChanged,
     items: prepared.selectedItems.map((item) => item.id),
+    logPath: logPath.repoPath,
     mode: prepared.engine === "cli" ? "executed-cli" : "executed-sdk",
     plannedPaths: prepared.plannedPaths,
+    postHead: postRunChanges.postHead,
+    preHead: postRunChanges.preHead,
     queuePath: prepared.queuePath,
     sdkThreadCreated: true,
+    tailLines: prepared.tailLineCount,
+    workingTreeChangedPaths: postRunChanges.workingTreeChangedPaths,
   };
 }
 

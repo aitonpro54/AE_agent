@@ -90,8 +90,13 @@
     "sandboxMode": "workspace-write",
     "webSearchMode": "disabled",
     "networkAccessEnabled": false,
+    "executionOutputMode": "log-file-by-default",
+    "executionLogDirectory": ".codex-runtime/sdk/cleanup-conveyor-logs",
+    "terminalTailLinesDefault": 80,
+    "streamOutputFlag": "--stream-output",
     "preRunDirtyGitAllowed": false,
     "postRunPathAllowlist": "union of selected queue item plannedPaths",
+    "postRunCommitAwarePathAllowlist": true,
     "autoCommit": false,
     "autoPush": false
   },

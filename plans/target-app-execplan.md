@@ -8,7 +8,7 @@
 - [x] Milestone 175: Runtime artifact cleanup note and archive policy.
 - [x] Milestone 176: SDK current/history split.
 - [x] Milestone 177: SDK smoke consolidation plan.
-- [ ] Next review block: review and commit the local-only M175-M177 cleanup conveyor changes after validation.
+- [x] Milestone 178: Cleanup conveyor quiet output, runtime logs, and commit-aware post-run allowlist.
 
 ## Current Stable Baseline
 
@@ -38,6 +38,7 @@
 - Current M152+ governance/readiness/conveyor/extraction evidence is directly checked through `npm.cmd run check:rules` and summarized in `.codex-audit/sdk-current-state.json`.
 - Historical SDK proof references are summarized in `.codex-audit/sdk-history-index.json`; old proof packets should not be reread by default unless a specific audit needs them.
 - SDK smoke consolidation is planned in `.codex-audit/sdk-smoke-consolidation-plan.json`; existing milestone-specific smokes stay active until replacement coverage is green.
+- The AE Agent cleanup conveyor command captures full child stdout/stderr into ignored `.codex-runtime/sdk/cleanup-conveyor-logs` execution logs by default, prints compact terminal summaries, and validates both working-tree changes and commits created since pre-run `HEAD` against the selected planned-path allowlist.
 
 ## Historical Archive
 
@@ -77,6 +78,14 @@
 - Existing milestone-specific smoke scripts and check:rules assertions remain active until equivalent replacement coverage is green.
 - Generic manifest-driven smoke catalog work is deferred to a future dedicated `codex-sdk-orchestrator-tool` milestone.
 
+### Milestone 178: Cleanup conveyor output discipline
+
+- Completed: execution runs capture full child stdout/stderr into `.codex-runtime/sdk/cleanup-conveyor-logs` by default.
+- Completed: dry-run JSON reports the execution log mode, log directory, and failure tail-line budget.
+- Completed: `--tail-lines <n>` limits failure output in the terminal, while `--stream-output` remains an explicit debug escape hatch.
+- Completed: post-run path allowlist now checks both dirty working-tree paths and files changed by commits created since pre-run `HEAD`.
+- Runtime AE Agent behavior, CEP panel, bridge, provider behavior, dependencies, push, and PR state are unchanged.
+
 ## Recent Milestone Summary
 
 - M152: Current production-code SDK write readiness superseded the older single-file claim and is limited to `scripts/provider-api-smoke.js` plus `scripts/provider-contract-smoke.js`.
@@ -92,9 +101,12 @@
 - M175: Added runtime artifact cleanup/archive policy without deleting, moving, scanning, or archiving runtime files.
 - M176: Split current SDK state from history index and added machine checks for the split.
 - M177: Added SDK smoke consolidation plan and current/history smoke entrypoints while keeping existing milestone-specific coverage.
+- M178: Made the cleanup conveyor less transcript-heavy by logging full child output to ignored runtime logs, adding compact terminal summaries, and making post-run path validation commit-aware.
 
 ## Decision Log
 
+- 2026-05-22: M178 makes cleanup conveyor execution quiet by default. Full child stdout/stderr is written under `.codex-runtime/sdk/cleanup-conveyor-logs`; terminal output should stay to summary, log path, changed paths, and bounded failure tails.
+- 2026-05-22: M178 treats commits created by a CLI/SDK worker as part of the post-run path contract. The runner compares pre-run and post-run `HEAD` and fails if committed paths or working-tree paths fall outside the selected queue planned-path allowlist.
 - 2026-05-22: M177 only plans smoke consolidation. It does not delete old smoke scripts or remove check:rules assertions because replacement coverage is not yet green.
 - 2026-05-22: M177 keeps generic manifest-driven smoke catalog behavior targeted for a later dedicated `codex-sdk-orchestrator-tool` milestone.
 - 2026-05-22: `.codex/handoff.md` remains blocked for this M175-M177 turn: both `apply_patch` and PowerShell UTF-8 write failed. The handoff state is recorded in this active plan instead of changing ACLs or recreating the file.
@@ -124,6 +136,10 @@
 | Check | Current requirement | Latest result |
 | --- | --- | --- |
 | `node --check orchestrator/run-buffered-acceptance.mjs` | Required because M176/M177 wire new check:rules smoke calls. | Passed on 2026-05-22. |
+| `node --check orchestrator/run-ae-agent-cleanup-conveyor.mjs` | Required because M178 changes the cleanup conveyor runner. | Passed on 2026-05-22. |
+| `node --check scripts/sdk-ae-agent-cleanup-conveyor-command-smoke.js` | Required because M178 extends the command smoke. | Passed on 2026-05-22. |
+| `node scripts/sdk-ae-agent-cleanup-conveyor-command-smoke.js` | Required because M178 adds quiet/log-file and commit-aware contract assertions. | Passed on 2026-05-22. |
+| `npm.cmd run codex:orchestrator:ae-agent-cleanup-conveyor -- --item m174-roadmap-active-state-split --json` | Required to verify dry-run output exposes log mode without creating a child run. | Passed on 2026-05-22. |
 | `node --check scripts/sdk-current-history-index-smoke.js` | Required for M176 touched JavaScript. | Passed on 2026-05-22. |
 | `node --check scripts/sdk-current-governance-smoke.js` | Required for M177 touched JavaScript. | Passed on 2026-05-22. |
 | `node --check scripts/sdk-history-index-smoke.js` | Required for M177 touched JavaScript. | Passed on 2026-05-22. |
@@ -163,49 +179,15 @@
 - Updated `orchestrator/README.md`.
 - Existing milestone-specific smokes remain active; no old smoke script was deleted.
 
+### Milestone 178
+
+- Updated `orchestrator/run-ae-agent-cleanup-conveyor.mjs` to capture execution output into `.codex-runtime/sdk/cleanup-conveyor-logs`.
+- Added `--log-dir`, `--tail-lines`, and `--stream-output` command options.
+- Added commit-aware validation by comparing pre-run and post-run `HEAD` paths in addition to working-tree status paths.
+- Updated `.codex-audit/sdk-milestone-conveyor/173-ae-agent-cleanup-conveyor-queue.json` command runner metadata.
+- Updated `scripts/sdk-ae-agent-cleanup-conveyor-command-smoke.js` to assert quiet/log-file defaults, custom tail/log-dir parsing, and invalid option rejection.
+- Updated `orchestrator/README.md` and this plan.
+
 ### Handoff
 
-`.codex/handoff.md` could not be updated in this turn: `apply_patch` rejected the path as outside the project boundary and PowerShell `Set-Content -Encoding UTF8 -LiteralPath .codex\handoff.md` returned `Access denied`. No ACL change, delete/recreate workaround, or unplanned path write was attempted.
-
-Use this active plan as the M175-M177 handoff record until `.codex/handoff.md` is writable again. No commit was created in this turn because the wrapper explicitly said `Do not commit`.
-
-Exact next prompt:
-
-```text
-Продолжай в `C:\Users\Ant\Documents\Codex\AE_agent`.
-
-Работай по-русски. Сначала проверь:
-- `git status --short --branch`
-- `git log -1 --oneline`
-
-Ожидаемый HEAD: `b4cfc6f docs: split roadmap active state`.
-Ожидаемые uncommitted M175-M177 local-only изменения:
-- `.codex-audit/sdk-current-state.json`
-- `.codex-audit/sdk-history-index.json`
-- `.codex-audit/sdk-smoke-consolidation-plan.json`
-- `orchestrator/README.md`
-- `orchestrator/run-buffered-acceptance.mjs`
-- `package.json`
-- `plans/archive/runtime-artifact-cleanup-policy-2026-05.md`
-- `plans/target-app-execplan.md`
-- `scripts/sdk-current-governance-smoke.js`
-- `scripts/sdk-current-history-index-smoke.js`
-- `scripts/sdk-history-index-smoke.js`
-
-`.codex/handoff.md` still contains the older M174 handoff because writes to that path returned Access denied in the M175-M177 turn. Do not change ACLs, delete/recreate it, or touch unplanned paths unless explicitly approved.
-
-Проверь diff и финальную validation:
-- `node --check orchestrator/run-buffered-acceptance.mjs`
-- `node --check scripts/sdk-current-history-index-smoke.js`
-- `node --check scripts/sdk-current-governance-smoke.js`
-- `node --check scripts/sdk-history-index-smoke.js`
-- `node scripts/sdk-current-history-index-smoke.js`
-- `node scripts/sdk-current-governance-smoke.js`
-- `node scripts/sdk-history-index-smoke.js`
-- `npm.cmd run check:rules`
-- `git diff --check`
-
-Если всё проходит, создай один локальный commit для M175-M177. Не push и не создавай PR без отдельного explicit approval.
-
-Не запускай SDKThread/network, CEP-panel SDK writes, live CEP/AE, external-provider/OpenAI CLI planner, mutating-live validation, dependency changes, package installs, runtime artifact delete/move, push или PR без отдельного explicit approval.
-```
+`.codex/handoff.md` is writable again from the parent Codex process and is updated after M178. Use it as the primary continuation record. No live CEP/AE, SDKThread/network proof, provider validation, dependency change, package install, push, or PR was performed for M178.
