@@ -1,0 +1,112 @@
+{
+  "schema": "codex-sdk-orchestrator-adapter-policy.example.v1",
+  "adapter": "ae-agent",
+  "description": "Example adapter policy for keeping AE Agent-specific scopes outside the reusable SDK orchestrator core.",
+  "scopes": [
+    "docs-audit",
+    "orchestrator",
+    "production-code",
+    "cep-panel"
+  ],
+  "scopePathAllowlists": {
+    "docs-audit": [
+      ".codex-audit/**",
+      ".codex/handoff.md",
+      "AGENTS.md",
+      "README.md",
+      "RELEASES.md",
+      "docs/**",
+      "plans/**",
+      "specs/**",
+      "orchestrator/README.md"
+    ],
+    "orchestrator": [
+      ".codex-audit/**",
+      ".codex/handoff.md",
+      "orchestrator/**",
+      "package.json"
+    ],
+    "production-code": [
+      ".codex-audit/**",
+      ".codex/handoff.md",
+      "chatgpt-connector/**",
+      "mcp-server/**",
+      "recipes/**",
+      "registry/**",
+      "scripts/**",
+      "package.json"
+    ],
+    "cep-panel": [
+      ".codex-audit/**",
+      ".codex/handoff.md",
+      "cep-panel/**"
+    ]
+  },
+  "forbiddenPathPatterns": [
+    ".git/**",
+    "node_modules/**",
+    "logs/**",
+    "backups/**",
+    "snapshots/**",
+    "pro-review-bundles/**",
+    "mcp-config.json",
+    "package-lock.json",
+    "**/package-lock.json",
+    ".env*",
+    "**/.env*",
+    "*.key",
+    "**/*.key",
+    "*.pem",
+    "**/*.pem",
+    "*credential*",
+    "**/*credential*",
+    "*secret*",
+    "**/*secret*",
+    "*token*",
+    "**/*token*"
+  ],
+  "sdkWrite": {
+    "enabledScopes": [
+      "docs-audit",
+      "orchestrator",
+      "production-code"
+    ],
+    "reviewRequiredScopes": [
+      "production-code",
+      "cep-panel"
+    ],
+    "plannedPathAllowlists": {
+      "docs-audit": [
+        ".codex-audit/**"
+      ],
+      "orchestrator": [
+        "orchestrator/**"
+      ],
+      "production-code": [
+        "scripts/provider-api-smoke.js",
+        "scripts/provider-contract-smoke.js"
+      ],
+      "cep-panel": []
+    },
+    "cepPanelSdkWritesEnabled": false
+  },
+  "threadOptionContracts": {
+    "writeCapable": {
+      "approvalPolicy": "never",
+      "networkAccessEnabled": false,
+      "sandboxMode": "workspace-write",
+      "webSearchMode": "disabled"
+    }
+  },
+  "blockedWithoutFreshApproval": [
+    "SDKThread/network proof",
+    "CEP-panel SDK write",
+    "edit cep-panel/panel.js through SDK",
+    "live CEP/After Effects validation",
+    "external-provider/OpenAI CLI planner validation",
+    "mutating-live validation",
+    "package install",
+    "dependency change",
+    "push"
+  ]
+}

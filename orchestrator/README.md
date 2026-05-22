@@ -256,6 +256,12 @@ M159 freezes the current SDK orchestrator inventory in `.codex-audit/sdk-orchest
 npm.cmd run codex:orchestrator:inventory-freeze:smoke
 ```
 
+M160 performs the first behavior-preserving reusable-core extraction in `.codex-audit/sdk-orchestrator-extraction/160-sdk-reusable-core-extraction.json` with schema `sdk-reusable-core-extraction.v1`. The existing wrapper commands stay unchanged, while policy-neutral helpers now live in `orchestrator/core/path-policy.mjs`, `orchestrator/core/git-snapshot.mjs`, and `orchestrator/core/thread-options.mjs`. AE Agent-specific scope and lane material remains adapter-side, with the current shape documented in `orchestrator/adapters/ae-agent-policy.example.json`. This milestone does not run SDKThread/network, enable CEP-panel SDK writes, install packages, change dependencies, move/archive/delete historical evidence, push, or change wrapper command entrypoints.
+
+```powershell
+npm.cmd run codex:orchestrator:reusable-core:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.

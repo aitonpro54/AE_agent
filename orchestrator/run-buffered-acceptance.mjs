@@ -1011,6 +1011,18 @@ async function runContractSmoke() {
     `M159 SDK orchestrator inventory freeze smoke failed: ${inventoryFreezeOutput.trim()}`,
     failures,
   );
+  const reusableCoreSmoke = runNode([
+    path.join("scripts", "sdk-reusable-core-extraction-smoke.js"),
+  ]);
+  const reusableCoreOutput = `${reusableCoreSmoke.stdout ?? ""}\n${
+    reusableCoreSmoke.stderr ?? ""
+  }`;
+  assertContract(
+    reusableCoreSmoke.status === 0 &&
+      reusableCoreOutput.includes("SDK reusable core extraction smoke: pass"),
+    `M160 SDK reusable core extraction smoke failed: ${reusableCoreOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1468,6 +1480,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:reusable-core:smoke"] ===
+      "node scripts/sdk-reusable-core-extraction-smoke.js",
+    "package.json codex:orchestrator:reusable-core:smoke script is not wired to the M160 reusable core extraction smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1622,6 +1640,15 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:reusable-core:smoke") &&
+      readme.includes("160-sdk-reusable-core-extraction.json") &&
+      readme.includes("sdk-reusable-core-extraction.v1") &&
+      readme.includes("orchestrator/core/path-policy.mjs") &&
+      readme.includes("orchestrator/adapters/ae-agent-policy.example.json"),
+    "README does not document the M160 SDK reusable core extraction smoke",
+    failures,
+  );
+  assertContract(
     readme.includes('sandboxMode: "read-only"') &&
       readme.includes('approvalPolicy: "never"') &&
       readme.includes("networkAccessEnabled: false") &&
@@ -1736,6 +1763,7 @@ async function runContractSmoke() {
   console.log("SDK multi-file planned operation smoke: pass");
   console.log("Write-capable sdk-write diagnostic logging mode: pass");
   console.log("Write-capable sdk runtime fallback mode: pass");
+  console.log("SDK reusable core extraction smoke: pass");
 }
 
 async function printGovernanceReport() {

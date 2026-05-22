@@ -21,6 +21,7 @@
     "codex:orchestrator:milestone-conveyor-loop-gate:smoke": "node scripts/sdk-milestone-conveyor-loop-gate-smoke.js",
     "codex:orchestrator:extraction-cleanup:smoke": "node scripts/sdk-orchestrator-extraction-cleanup-smoke.js",
     "codex:orchestrator:inventory-freeze:smoke": "node scripts/sdk-orchestrator-inventory-freeze-smoke.js",
+    "codex:orchestrator:reusable-core:smoke": "node scripts/sdk-reusable-core-extraction-smoke.js",
     "check:rules": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke"
   },
   "dependencies": {

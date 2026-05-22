@@ -1,0 +1,134 @@
+{
+  "schema": "sdk-reusable-core-extraction.v1",
+  "milestone": 160,
+  "title": "SDK Reusable Core Extraction",
+  "createdAt": "2026-05-22",
+  "purpose": "Extract the first policy-neutral SDK orchestrator core modules while preserving the existing AE Agent command surface and behavioral contracts.",
+  "sourceContext": {
+    "previousMilestone": 159,
+    "previousArtifact": ".codex-audit/sdk-orchestrator-extraction/159-sdk-orchestrator-inventory-freeze.json",
+    "safeAeAgentCleanupPlanPhase": "phase-2-extract-reusable-core-without-behavior-change",
+    "branch": "codex/roadmap-1.3-planning",
+    "lastCompletedCommit": "26c14ac",
+    "behaviorBoundary": {
+      "wrapperCommandsChanged": false,
+      "sdkThreadCreated": false,
+      "networkAccessed": false,
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditedThroughSdk": false,
+      "liveCepOrAfterEffectsRun": false,
+      "externalProviderValidationRun": false,
+      "mutatingLiveValidationRun": false,
+      "packageInstallRun": false,
+      "dependencyChanged": false,
+      "archiveMovePerformed": false,
+      "deletionPerformed": false,
+      "pushPerformed": false
+    }
+  },
+  "extractedCoreModules": [
+    {
+      "path": "orchestrator/core/path-policy.mjs",
+      "status": "wired-through-existing-runner",
+      "responsibilities": [
+        "repo path normalization",
+        "unsafe path-shape rejection",
+        "glob-like path-pattern matching",
+        "policy-injected scope allowlist checks",
+        "planned path check construction"
+      ],
+      "policyNeutral": true
+    },
+    {
+      "path": "orchestrator/core/git-snapshot.mjs",
+      "status": "wired-through-existing-runner",
+      "responsibilities": [
+        "git status path parsing",
+        "pre/post git snapshot capture",
+        "changed-since-pre comparison"
+      ],
+      "policyNeutral": true
+    },
+    {
+      "path": "orchestrator/core/thread-options.mjs",
+      "status": "wired-through-existing-runner",
+      "responsibilities": [
+        "thread option creation from an injected safety contract",
+        "working directory resolution"
+      ],
+      "policyNeutral": true
+    }
+  ],
+  "adapterMaterial": {
+    "examplePolicyPath": "orchestrator/adapters/ae-agent-policy.example.json",
+    "keptInAeAgentWrapper": [
+      "docs-audit, orchestrator, production-code, and cep-panel scope names",
+      "current production-code allowlist scripts/provider-api-smoke.js and scripts/provider-contract-smoke.js",
+      "CEP-panel SDK write disabled state",
+      "AE Agent artifact directories and milestone schema names",
+      "package script names"
+    ]
+  },
+  "facadeCompatibility": {
+    "keptCommandEntrypoints": [
+      "node orchestrator/run-write-capable-scaffold.mjs",
+      "node orchestrator/run-write-capable-scaffold.mjs --contract-smoke",
+      "node orchestrator/run-buffered-acceptance.mjs --contract-smoke"
+    ],
+    "keptPublicExports": [
+      "normalizeRepoPath",
+      "isUnsafePathShape",
+      "validateScope",
+      "isForbiddenPath",
+      "isPathAllowedForScope",
+      "getPathContractViolations",
+      "createPlannedPathCheck",
+      "captureGitSnapshot",
+      "collectPathsChangedSincePre",
+      "createWriteCapableThreadOptions"
+    ],
+    "behaviorPreserving": true
+  },
+  "deferredExtraction": [
+    {
+      "area": "operation envelope",
+      "reason": "Keep M114-M152 milestone-specific schema checks in the AE Agent wrapper until adapter config parity exists."
+    },
+    {
+      "area": "runtime store and failure diagnostics",
+      "reason": "These still mix reusable mechanics with AE Agent fallback report paths and should move in a later small milestone."
+    },
+    {
+      "area": "buffered acceptance governance report",
+      "reason": "It still owns AE Agent-specific evidence collectors and exact README assertions."
+    }
+  ],
+  "machineCheck": {
+    "mustExist": [
+      "orchestrator/core/path-policy.mjs",
+      "orchestrator/core/git-snapshot.mjs",
+      "orchestrator/core/thread-options.mjs",
+      "orchestrator/adapters/ae-agent-policy.example.json",
+      "orchestrator/run-write-capable-scaffold.mjs",
+      "orchestrator/run-buffered-acceptance.mjs",
+      ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+      ".codex-audit/sdk-orchestrator-extraction/159-sdk-orchestrator-inventory-freeze.json"
+    ],
+    "requiredPackageScript": "codex:orchestrator:reusable-core:smoke",
+    "requiredFalseBoundaryFlags": [
+      "wrapperCommandsChanged",
+      "sdkThreadCreated",
+      "networkAccessed",
+      "cepPanelSdkWritesEnabled",
+      "cepPanelPanelJsEditedThroughSdk",
+      "liveCepOrAfterEffectsRun",
+      "externalProviderValidationRun",
+      "mutatingLiveValidationRun",
+      "packageInstallRun",
+      "dependencyChanged",
+      "archiveMovePerformed",
+      "deletionPerformed",
+      "pushPerformed"
+    ]
+  }
+}
