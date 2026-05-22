@@ -1,0 +1,316 @@
+{
+  "schema": "sdk-ae-agent-cleanup-conveyor-queue.v1",
+  "milestone": 173,
+  "title": "AE Agent Cleanup Conveyor Queue",
+  "createdAt": "2026-05-22",
+  "purpose": "Charge the four proposed AE Agent cleanup stages into the local SDK milestone conveyor as queued, reviewable, local-only work items without running SDKThread/network or changing runtime behavior.",
+  "sourceContext": {
+    "previousMilestone": 172,
+    "previousArtifact": ".codex-audit/sdk-orchestrator-extraction/172-sdk-adapter-interface-design-review.json",
+    "baseConveyorSpec": ".codex-audit/sdk-milestone-conveyor/154-sdk-milestone-conveyor-spec.json",
+    "cleanupPlanSource": ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+    "strategyCommit": "25f8d61",
+    "branch": "codex/roadmap-1.3-planning",
+    "behaviorBoundary": {
+      "queueOnly": true,
+      "localOnly": true,
+      "queueItemsExecuted": false,
+      "runtimeBehaviorChanged": false,
+      "panelOrBridgeChanged": false,
+      "planHistoryDeleted": false,
+      "runtimeArtifactsDeleted": false,
+      "archiveMovePerformed": false,
+      "sdkThreadCreated": false,
+      "networkAccessed": false,
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditedThroughSdk": false,
+      "liveCepOrAfterEffectsRun": false,
+      "externalProviderValidationRun": false,
+      "mutatingLiveValidationRun": false,
+      "packageInstallRun": false,
+      "dependencyChanged": false,
+      "pushPerformed": false,
+      "prCreated": false
+    }
+  },
+  "queueContract": {
+    "executionModel": "The conveyor records the next cleanup stages as queue items. A future milestone must pick exactly one item, validate it, update plan/handoff, and create one reviewable commit.",
+    "defaultMode": "local-only",
+    "defaultApprovalRequired": false,
+    "defaultMaxSdkThreadRuns": 0,
+    "notAnApprovalFor": [
+      "SDKThread/network proof",
+      "CEP-panel SDK write",
+      "live CEP/After Effects validation",
+      "external-provider/OpenAI CLI planner validation",
+      "mutating-live validation",
+      "package install",
+      "dependency change",
+      "archive/delete/squash cleanup",
+      "push",
+      "PR creation"
+    ],
+    "requiredPerItemFields": [
+      "id",
+      "milestone",
+      "title",
+      "laneId",
+      "scope",
+      "mode",
+      "plannedPaths",
+      "approvalRequired",
+      "explicitApprovalText",
+      "maxSdkThreadRuns",
+      "allowedActions",
+      "forbiddenActions",
+      "validationCommands",
+      "stopGates",
+      "status"
+    ]
+  },
+  "queueItems": [
+    {
+      "id": "m174-roadmap-active-state-split",
+      "milestone": 174,
+      "title": "AE Agent roadmap reset and active-state split",
+      "laneId": "ae-agent-cleanup-local",
+      "scope": "project-docs",
+      "mode": "local-only",
+      "plannedPaths": [
+        "plans/target-app-execplan.md",
+        "plans/archive/target-app-execplan-history-2026-05.md",
+        "orchestrator/README.md",
+        ".codex/handoff.md"
+      ],
+      "approvalRequired": false,
+      "explicitApprovalText": null,
+      "maxSdkThreadRuns": 0,
+      "allowedActions": [
+        "preserve current baseline, active roadmap, current decisions, validation matrix, and recent milestone summary in the active plan",
+        "move historical milestone detail into an archive file instead of deleting it",
+        "keep links from active plan to archived history"
+      ],
+      "forbiddenActions": [
+        "delete plan history without an archive copy",
+        "change CEP panel, bridge, provider, or AE runtime behavior",
+        "run live CEP/AE validation"
+      ],
+      "validationCommands": [
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "stopGates": [
+        "history-not-preserved",
+        "active-plan-missing-current-baseline",
+        "runtime-file-change-detected",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "m175-runtime-artifact-cleanup-note",
+      "milestone": 175,
+      "title": "Runtime artifact cleanup note and archive policy",
+      "laneId": "ae-agent-cleanup-local",
+      "scope": "runtime-artifact-docs",
+      "mode": "local-only",
+      "plannedPaths": [
+        "plans/archive/runtime-artifact-cleanup-policy-2026-05.md",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "affectedIgnoredRuntimeDirs": [
+        "backups/",
+        "logs/",
+        "snapshots/",
+        ".codex-runtime/",
+        "pro-review-bundles/"
+      ],
+      "approvalRequired": false,
+      "explicitApprovalText": null,
+      "maxSdkThreadRuns": 0,
+      "allowedActions": [
+        "write a cleanup policy and archive checklist for ignored runtime artifacts",
+        "summarize size/count evidence already collected",
+        "recommend external archive locations without moving or deleting files"
+      ],
+      "forbiddenActions": [
+        "delete ignored runtime artifacts",
+        "move backups/logs/snapshots to another location",
+        "clear user data",
+        "change .gitignore unless a future milestone proves the need"
+      ],
+      "validationCommands": [
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "stopGates": [
+        "destructive-cleanup-requested",
+        "external-archive-move-needs-approval",
+        "runtime-file-change-detected",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "m176-sdk-current-history-split",
+      "milestone": 176,
+      "title": "SDK current/history split",
+      "laneId": "ae-agent-cleanup-local",
+      "scope": "sdk-audit-index",
+      "mode": "local-only",
+      "plannedPaths": [
+        ".codex-audit/sdk-current-state.json",
+        ".codex-audit/sdk-history-index.json",
+        "scripts/sdk-current-history-index-smoke.js",
+        "orchestrator/run-buffered-acceptance.mjs",
+        "orchestrator/README.md",
+        "package.json",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "approvalRequired": false,
+      "explicitApprovalText": null,
+      "maxSdkThreadRuns": 0,
+      "allowedActions": [
+        "create machine-checked current SDK state and history index artifacts",
+        "keep current M152+ governance/readiness evidence directly checked",
+        "keep historical proof references available without rereading every old packet by default"
+      ],
+      "forbiddenActions": [
+        "remove current governance artifacts",
+        "disable current check:rules coverage",
+        "run SDKThread/network",
+        "enable CEP-panel SDK writes"
+      ],
+      "validationCommands": [
+        "node --check scripts/sdk-current-history-index-smoke.js",
+        "node scripts/sdk-current-history-index-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "stopGates": [
+        "current-evidence-not-directly-checked",
+        "history-index-missing-verdicts",
+        "sdkthread-requested-without-approval",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "m177-sdk-smoke-consolidation-plan",
+      "milestone": 177,
+      "title": "SDK smoke consolidation plan",
+      "laneId": "ae-agent-cleanup-local",
+      "scope": "sdk-smoke-consolidation",
+      "mode": "local-only",
+      "plannedPaths": [
+        ".codex-audit/sdk-smoke-consolidation-plan.json",
+        "scripts/sdk-current-governance-smoke.js",
+        "scripts/sdk-history-index-smoke.js",
+        "orchestrator/run-buffered-acceptance.mjs",
+        "orchestrator/README.md",
+        "package.json",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "approvalRequired": false,
+      "explicitApprovalText": null,
+      "maxSdkThreadRuns": 0,
+      "allowedActions": [
+        "plan and prove a smaller manifest-driven smoke surface",
+        "keep existing milestone-specific smokes until replacement coverage is green",
+        "record which checks remain active, archived, or migrated to codex-sdk-orchestrator-tool"
+      ],
+      "forbiddenActions": [
+        "delete old smoke scripts before replacement coverage passes",
+        "drop check:rules assertions without equivalent coverage",
+        "change runtime AE Agent behavior",
+        "push or create a PR"
+      ],
+      "validationCommands": [
+        "node --check for every touched JavaScript file",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "stopGates": [
+        "replacement-coverage-not-equivalent",
+        "check-rules-drift",
+        "runtime-file-change-detected",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    }
+  ],
+  "globalStopGates": [
+    "one-queue-item-per-milestone",
+    "no-sdkthread-without-fresh-explicit-approval",
+    "no-live-cep-ae-without-fresh-explicit-approval",
+    "no-mutating-live-validation-without-fresh-explicit-approval",
+    "no-runtime-artifact-delete-or-move-without-fresh-explicit-approval",
+    "no-push-by-default",
+    "context-pressure"
+  ],
+  "nextRecommendedState": {
+    "title": "Start M174 roadmap active-state split",
+    "type": "local-only-follow-up",
+    "approvalRequiredBeforeStart": false,
+    "recommendedAction": "Pick only the first queued item, M174 roadmap active-state split, and complete it as a docs-only reviewable milestone before touching runtime artifact cleanup, SDK index split, or smoke consolidation.",
+    "blockedWorkWithoutSeparateApproval": [
+      "SDKThread/network proof",
+      "CEP-panel SDK write",
+      "live CEP/After Effects validation",
+      "external-provider/OpenAI CLI planner validation",
+      "mutating-live validation",
+      "package install",
+      "dependency change",
+      "archive/delete/squash cleanup",
+      "push",
+      "PR creation"
+    ]
+  },
+  "machineCheck": {
+    "requiredPackageScript": "codex:orchestrator:ae-agent-cleanup-queue:smoke",
+    "requiredPackageScriptCommand": "node scripts/sdk-ae-agent-cleanup-conveyor-queue-smoke.js",
+    "requiredReadmeSnippets": [
+      "M173 charges the AE Agent cleanup conveyor queue",
+      "173-ae-agent-cleanup-conveyor-queue.json",
+      "sdk-ae-agent-cleanup-conveyor-queue.v1",
+      "codex:orchestrator:ae-agent-cleanup-queue:smoke",
+      "M174 roadmap active-state split"
+    ],
+    "requiredSourceSnippets": {
+      "orchestrator/run-buffered-acceptance.mjs": [
+        "sdk-ae-agent-cleanup-conveyor-queue-smoke.js",
+        "M173 AE Agent cleanup conveyor queue smoke failed"
+      ],
+      "package.json": [
+        "\"codex:orchestrator:ae-agent-cleanup-queue:smoke\": \"node scripts/sdk-ae-agent-cleanup-conveyor-queue-smoke.js\"",
+        "\"check:rules\": \"node orchestrator/run-buffered-acceptance.mjs --contract-smoke\""
+      ]
+    },
+    "requiredFalseBoundaryFlags": [
+      "queueItemsExecuted",
+      "runtimeBehaviorChanged",
+      "panelOrBridgeChanged",
+      "planHistoryDeleted",
+      "runtimeArtifactsDeleted",
+      "archiveMovePerformed",
+      "sdkThreadCreated",
+      "networkAccessed",
+      "cepPanelSdkWritesEnabled",
+      "cepPanelPanelJsEditedThroughSdk",
+      "liveCepOrAfterEffectsRun",
+      "externalProviderValidationRun",
+      "mutatingLiveValidationRun",
+      "packageInstallRun",
+      "dependencyChanged",
+      "pushPerformed",
+      "prCreated"
+    ]
+  }
+}

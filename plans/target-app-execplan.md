@@ -139,6 +139,7 @@
 - [x] Milestone 170: SDK Buffered Acceptance Project-Local Split Review.
 - [x] Milestone 171: SDK Orchestrator Extraction Closeout Review.
 - [x] Milestone 172: SDK Adapter Interface Design Review.
+- [x] Milestone 173: AE Agent Cleanup Conveyor Queue.
 
 ## Current Stable Baseline
 
@@ -895,6 +896,7 @@
 
 ## Decision Log
 
+- 2026-05-22: M173 charges the four AE Agent cleanup stages into the SDK milestone conveyor as local-only queued work, not as execution approval. The queued sequence is M174 roadmap active-state split, M175 runtime artifact cleanup note, M176 SDK current/history split, and M177 SDK smoke consolidation plan; each item keeps `maxSdkThreadRuns:0`, no live CEP/AE, no runtime deletion/move, no dependency change, no push, and no PR without fresh explicit approval.
 - 2026-05-20: Milestone 114 makes the write-capable dry-run CLI envelope-first. `--dry-run` now requires `--operation-file`, and the envelope supplies `version`, `operationId`, `scope`, `mode`, `prompt`, and `plannedPaths`; M114 supports only `version: 1` and `mode: "dry-run"`.
 - 2026-05-20: Operation envelope validation rejects malformed JSON, missing local files, files outside the repo, unsupported versions/modes, missing IDs/prompts/paths, unknown scopes, unsafe path shapes, forbidden paths, outside-scope paths, and unsafe/bypass-capable CLI flags or envelope fields before any possible SDK thread creation.
 - 2026-05-20: M114 remains a local contract milestone. It does not introduce live SDK write execution, SDK thread creation, real writes, external-provider/OpenAI CLI planner validation, live CEP/AE smokes, network diagnostics, package installation, or commit automation.
@@ -1717,6 +1719,14 @@
   - `npm.cmd run ...` commands printed `npm warn Unknown env config "http-proxy"` but exited successfully.
   - Did not run live CEP/After Effects validation because this milestone is review-only design for SDK adapter interface packaging and does not alter panel, bridge, or AE project behavior.
   - Did not run SDKThread/network, enable CEP-panel SDK writes, edit `cep-panel/panel.js`, run external-provider/OpenAI CLI planner validation, run mutating-live validation, install packages, change dependencies, archive/delete/squash cleanup, push, or create a PR.
+
+- Milestone 173:
+  - Added committed local-only queue artifact `.codex-audit/sdk-milestone-conveyor/173-ae-agent-cleanup-conveyor-queue.json` with schema `sdk-ae-agent-cleanup-conveyor-queue.v1`.
+  - Charged four cleanup stages into the SDK milestone conveyor: M174 roadmap active-state split, M175 runtime artifact cleanup note, M176 SDK current/history split, and M177 SDK smoke consolidation plan.
+  - Kept all four queue items `mode:"local-only"`, `approvalRequired:false`, `explicitApprovalText:null`, `maxSdkThreadRuns:0`, and `status:"queued"`; this milestone does not execute the queued cleanup work.
+  - Added `scripts/sdk-ae-agent-cleanup-conveyor-queue-smoke.js`, package script `codex:orchestrator:ae-agent-cleanup-queue:smoke`, `check:rules` coverage, and README documentation.
+  - Passed `node --check orchestrator/run-buffered-acceptance.mjs`, `node --check scripts/sdk-ae-agent-cleanup-conveyor-queue-smoke.js`, `node scripts/sdk-ae-agent-cleanup-conveyor-queue-smoke.js`, `npm.cmd run codex:orchestrator:ae-agent-cleanup-queue:smoke`, `npm.cmd run codex:orchestrator:governance-report`, `npm.cmd run check:rules`, configured local smoke suite from AGENTS.md, and `git diff --check`.
+  - No SDKThread/network, queued cleanup execution, runtime artifact delete/move, plan history deletion, CEP-panel SDK write, live CEP/AE validation, external-provider/OpenAI CLI planner validation, mutating-live validation, package install, dependency change, push, or PR is approved or performed by this milestone.
 
 - Milestone 160:
   - Added policy-neutral reusable core modules `orchestrator/core/path-policy.mjs`, `orchestrator/core/git-snapshot.mjs`, and `orchestrator/core/thread-options.mjs`.

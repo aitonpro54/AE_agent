@@ -27,6 +27,7 @@
     "codex:orchestrator:buffered-acceptance-split-review:smoke": "node scripts/sdk-buffered-acceptance-split-review-smoke.js",
     "codex:orchestrator:extraction-closeout:smoke": "node scripts/sdk-orchestrator-extraction-closeout-smoke.js",
     "codex:orchestrator:adapter-interface-design:smoke": "node scripts/sdk-adapter-interface-design-smoke.js",
+    "codex:orchestrator:ae-agent-cleanup-queue:smoke": "node scripts/sdk-ae-agent-cleanup-conveyor-queue-smoke.js",
     "check:rules": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke"
   },
   "dependencies": {

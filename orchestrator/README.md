@@ -298,6 +298,12 @@ M172 designs the standalone adapter/plugin interface in `.codex-audit/sdk-orches
 npm.cmd run codex:orchestrator:adapter-interface-design:smoke
 ```
 
+M173 charges the AE Agent cleanup conveyor queue in `.codex-audit/sdk-milestone-conveyor/173-ae-agent-cleanup-conveyor-queue.json` with schema `sdk-ae-agent-cleanup-conveyor-queue.v1`. The queue records four local-only cleanup stages: M174 roadmap active-state split, M175 runtime artifact cleanup note, M176 SDK current/history split, and M177 SDK smoke consolidation plan. This is queue setup only: no queued item is executed, no SDKThread/network proof is run, no runtime artifacts are deleted or moved, no CEP-panel SDK write is enabled, and no push or PR is performed.
+
+```powershell
+npm.cmd run codex:orchestrator:ae-agent-cleanup-queue:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.

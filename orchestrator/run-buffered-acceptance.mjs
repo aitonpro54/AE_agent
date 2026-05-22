@@ -1105,6 +1105,20 @@ async function runContractSmoke() {
     `M172 SDK adapter interface design smoke failed: ${adapterInterfaceDesignOutput.trim()}`,
     failures,
   );
+  const aeAgentCleanupConveyorQueueSmoke = runNode([
+    path.join("scripts", "sdk-ae-agent-cleanup-conveyor-queue-smoke.js"),
+  ]);
+  const aeAgentCleanupConveyorQueueOutput = `${
+    aeAgentCleanupConveyorQueueSmoke.stdout ?? ""
+  }\n${aeAgentCleanupConveyorQueueSmoke.stderr ?? ""}`;
+  assertContract(
+    aeAgentCleanupConveyorQueueSmoke.status === 0 &&
+      aeAgentCleanupConveyorQueueOutput.includes(
+        "SDK AE Agent cleanup conveyor queue smoke: pass",
+      ),
+    `M173 AE Agent cleanup conveyor queue smoke failed: ${aeAgentCleanupConveyorQueueOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1599,6 +1613,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:ae-agent-cleanup-queue:smoke"] ===
+      "node scripts/sdk-ae-agent-cleanup-conveyor-queue-smoke.js",
+    "package.json codex:orchestrator:ae-agent-cleanup-queue:smoke script is not wired to the M173 AE Agent cleanup conveyor queue smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1815,6 +1835,15 @@ async function runContractSmoke() {
       readme.includes("M172 designs the standalone adapter/plugin interface") &&
       readme.includes("adapter/plugin interface"),
     "README does not document the M172 SDK adapter interface design smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:ae-agent-cleanup-queue:smoke") &&
+      readme.includes("173-ae-agent-cleanup-conveyor-queue.json") &&
+      readme.includes("sdk-ae-agent-cleanup-conveyor-queue.v1") &&
+      readme.includes("M173 charges the AE Agent cleanup conveyor queue") &&
+      readme.includes("M174 roadmap active-state split"),
+    "README does not document the M173 AE Agent cleanup conveyor queue smoke",
     failures,
   );
   assertContract(
