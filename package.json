@@ -23,6 +23,7 @@
     "codex:orchestrator:runner-split-review:smoke": "node scripts/sdk-runner-split-review-smoke.js",
     "codex:orchestrator:operation-envelope-core:smoke": "node scripts/sdk-operation-envelope-core-extraction-smoke.js",
     "codex:orchestrator:runtime-diagnostics:smoke": "node scripts/sdk-runtime-diagnostics-extraction-smoke.js",
+    "codex:orchestrator:post-run-contract:smoke": "node scripts/sdk-post-run-contract-extraction-smoke.js",
     "check:rules": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke"
   },
   "dependencies": {

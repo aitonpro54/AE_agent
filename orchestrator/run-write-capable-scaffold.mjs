@@ -3,10 +3,7 @@
 import { spawnSync } from "node:child_process";
 import {
   existsSync,
-  readdirSync,
   readFileSync,
-  realpathSync,
-  statSync,
 } from "node:fs";
 import path from "node:path";
 import process from "node:process";
@@ -21,8 +18,8 @@ import {
 } from "./core/path-policy.mjs";
 import {
   createOperationEnvelopeHelpers,
-  isPathInsideDirectory,
 } from "./core/operation-envelope.mjs";
+import { createPostRunContractHelpers } from "./core/post-run-contract.mjs";
 import {
   createSdkWriteFallbackReport as createCoreSdkWriteFallbackReport,
   createSdkWriteFailureMessage as createCoreSdkWriteFailureMessage,
@@ -287,6 +284,18 @@ export const isForbiddenPath = pathPolicy.isForbiddenPath;
 export const isPathAllowedForScope = pathPolicy.isPathAllowedForScope;
 export const getPathContractViolations = pathPolicy.getPathContractViolations;
 export const createPlannedPathCheck = pathPolicy.createPlannedPathCheck;
+
+const postRunContractCore = createPostRunContractHelpers({
+  allowedImplementationReportPaths: SDK_WRITE_ALLOWED_HOST_REPORT_PATHS,
+  collectPathsChangedSincePre: collectCorePathsChangedSincePre,
+  createSdkWritePlannedPathCheck,
+  docsAuditScope: SDK_WRITE_ALLOWED_SCOPE,
+  getPathContractViolations,
+  isForbiddenPath,
+  normalizeRepoPath,
+  productionCodeScope: SDK_WRITE_PRODUCTION_CODE_SCOPE,
+  validateScope,
+});
 
 function isOrchestratorFixtureJsonSdkWritePath(repoPath) {
   return SDK_WRITE_ORCHESTRATOR_FIXTURE_JSON_PLANNED_PATH_ALLOWLIST.some((pattern) =>
@@ -1483,184 +1492,25 @@ export function createWriteCapableThreadOptions(options = {}) {
 export const captureGitSnapshot = captureCoreGitSnapshot;
 export const collectPathsChangedSincePre = collectCorePathsChangedSincePre;
 
-function isDirectoryChangedPath(cwd, repoPath) {
-  const normalizedPath = normalizeRepoPath(repoPath);
-
-  if (normalizedPath.endsWith("/")) {
-    return true;
-  }
-
-  if (!cwd) {
-    return false;
-  }
-
-  try {
-    return statSync(path.resolve(cwd, normalizedPath)).isDirectory();
-  } catch {
-    return false;
-  }
-}
-
-function assertPathInsideRepo(repoRoot, absolutePath, repoPath) {
-  if (!isPathInsideDirectory(absolutePath, repoRoot)) {
-    throw new Error(`Path resolved outside repo while enumerating directory: ${repoPath}`);
-  }
-}
-
-function enumerateDirectoryFileChildren(cwd, directoryRepoPath) {
-  const repoRoot = path.resolve(cwd || process.cwd());
-  const normalizedDirectoryPath = normalizeRepoPath(directoryRepoPath);
-  const absoluteDirectoryPath = path.resolve(repoRoot, normalizedDirectoryPath);
-
-  assertPathInsideRepo(repoRoot, absoluteDirectoryPath, normalizedDirectoryPath);
-
-  const directoryStats = statSync(absoluteDirectoryPath);
-  if (!directoryStats.isDirectory()) {
-    throw new Error(`Changed path is not a directory: ${normalizedDirectoryPath}`);
-  }
-
-  const children = [];
-
-  function visit(absoluteParentPath) {
-    const entries = readdirSync(absoluteParentPath, { withFileTypes: true });
-
-    for (const entry of entries) {
-      const absoluteChildPath = path.join(absoluteParentPath, entry.name);
-      const repoPath = normalizeRepoPath(path.relative(repoRoot, absoluteChildPath));
-
-      assertPathInsideRepo(repoRoot, absoluteChildPath, repoPath);
-
-      const realChildPath = realpathSync(absoluteChildPath);
-      assertPathInsideRepo(repoRoot, realChildPath, repoPath);
-
-      if (entry.isDirectory()) {
-        visit(absoluteChildPath);
-        continue;
-      }
-
-      if (entry.isFile()) {
-        children.push(repoPath);
-        continue;
-      }
-
-      const childStats = statSync(absoluteChildPath);
-      if (childStats.isDirectory()) {
-        visit(absoluteChildPath);
-        continue;
-      }
-
-      if (childStats.isFile()) {
-        children.push(repoPath);
-        continue;
-      }
-
-      throw new Error(`Unsupported directory child type: ${repoPath}`);
-    }
-  }
-
-  visit(absoluteDirectoryPath);
-  return uniqueSorted(children);
-}
-
 export function evaluatePreRunGitState(snapshot, options = {}) {
-  const changedPaths = uniqueSorted(snapshot.changedPaths || []);
-  const acknowledged = uniqueSorted(options.acknowledgedExistingChanges || []);
-
-  if (changedPaths.length === 0) {
-    return {
-      acknowledgedExistingChanges: acknowledged,
-      changedPaths,
-      forbiddenExisting: [],
-      ok: true,
-      staleAcknowledgements: [],
-      status: "clean",
-      unexpected: [],
-    };
-  }
-
-  const unexpected =
-    acknowledged.length === 0
-      ? changedPaths
-      : changedPaths.filter((repoPath) => !acknowledged.includes(repoPath));
-  const staleAcknowledgements =
-    acknowledged.length === 0
-      ? []
-      : acknowledged.filter((repoPath) => !changedPaths.includes(repoPath));
-  const forbiddenExisting = changedPaths.filter(isForbiddenPath);
-
-  return {
-    acknowledgedExistingChanges: acknowledged,
-    changedPaths,
-    forbiddenExisting,
-    ok:
-      unexpected.length === 0 &&
-      staleAcknowledgements.length === 0 &&
-      forbiddenExisting.length === 0,
-    staleAcknowledgements,
-    status: "dirty",
-    unexpected,
-  };
+  return postRunContractCore.evaluatePreRunGitState(snapshot, options);
 }
 
 export function assertPreRunGitState(snapshot, options = {}) {
-  const state = evaluatePreRunGitState(snapshot, options);
-
-  if (state.ok) {
-    return;
-  }
-
-  if (state.acknowledgedExistingChanges.length === 0) {
-    throw new Error(
-      `Dirty unexpected git state before write-capable run: ${state.changedPaths.join(", ")}`,
-    );
-  }
-
-  if (state.unexpected.length > 0) {
-    throw new Error(
-      `Dirty unexpected git state before write-capable run: ${state.unexpected.join(", ")}`,
-    );
-  }
-
-  if (state.staleAcknowledgements.length > 0) {
-    throw new Error(
-      `Acknowledged paths are not dirty and may be stale: ${state.staleAcknowledgements.join(", ")}`,
-    );
-  }
-
-  if (state.forbiddenExisting.length > 0) {
-    throw new Error(
-      `Forbidden path dirty before write-capable run: ${state.forbiddenExisting.join(", ")}`,
-    );
-  }
+  return postRunContractCore.assertPreRunGitState(snapshot, options);
 }
 
 export function assertValidationResult(validationResult) {
-  if (!validationResult || validationResult.ok !== true) {
-    throw new Error("Hard-stop policy rejected failed validation result.");
-  }
+  return postRunContractCore.assertValidationResult(validationResult);
 }
 
 export function validatePostRunContract({ postSnapshot, preSnapshot, scope, validationResult }) {
-  validateScope(scope);
-  assertValidationResult(validationResult);
-
-  const changedSincePre = collectPathsChangedSincePre(preSnapshot, postSnapshot);
-  const violations = getPathContractViolations(scope, changedSincePre);
-
-  if (violations.length > 0) {
-    const forbidden = violations.filter((violation) => violation.reason === "forbidden-path");
-    const summary = violations
-      .map((violation) => `${violation.path} (${violation.reason})`)
-      .join(", ");
-
-    if (forbidden.length > 0) {
-      throw new Error(`Forbidden path diff detected after write-capable run: ${summary}`);
-    }
-
-    throw new Error(`Path allowlist violation after write-capable run: ${summary}`);
-  }
-
-  return { changedSincePre, violations };
+  return postRunContractCore.validatePostRunContract({
+    postSnapshot,
+    preSnapshot,
+    scope,
+    validationResult,
+  });
 }
 
 const sdkRuntimeStorePolicy = Object.freeze({
@@ -1908,92 +1758,15 @@ export function validateSdkWriteDiffAllowlist({
   scope = SDK_WRITE_ALLOWED_SCOPE,
   validationResult,
 }) {
-  assertValidationResult(validationResult);
-
-  const normalizedPlannedPaths = uniqueSorted(plannedPaths);
-  const plannedPathCheck = createSdkWritePlannedPathCheck(scope, normalizedPlannedPaths);
-  if (!plannedPathCheck.allowed) {
-    throw new Error(
-      `sdk-write planned path contract failed: ${summarizePathViolations(
-        plannedPathCheck.violations,
-      )}`,
-    );
-  }
-
-  const changedSincePre = collectPathsChangedSincePre(preSnapshot, postSnapshot);
-  const enumerator =
-    directoryChildEnumerator ||
-    ((repoPath) => enumerateDirectoryFileChildren(postSnapshot?.cwd || process.cwd(), repoPath));
-  const normalizedChangedFiles = [];
-  const normalizedDirectoryEntries = [];
-
-  for (const repoPath of changedSincePre) {
-    if (isForbiddenPath(repoPath) || !isDirectoryChangedPath(postSnapshot?.cwd, repoPath)) {
-      normalizedChangedFiles.push(repoPath);
-      continue;
-    }
-
-    normalizedDirectoryEntries.push(repoPath);
-
-    let childPaths = [];
-    try {
-      childPaths = uniqueSorted(enumerator(repoPath));
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-      throw new Error(
-        `Unable to enumerate changed directory after sdk-write run: ${repoPath}. ${detail}`,
-      );
-    }
-
-    if (childPaths.length === 0) {
-      throw new Error(
-        `Changed directory contains no planned sdk-write child files: ${repoPath}`,
-      );
-    }
-
-    normalizedChangedFiles.push(...childPaths);
-  }
-
-  const actualChangedFiles = uniqueSorted(normalizedChangedFiles);
-  const allowedPaths = uniqueSorted([
-    ...normalizedPlannedPaths,
-    ...allowedImplementationReportPaths,
-  ]);
-  const forbidden = actualChangedFiles.filter(isForbiddenPath);
-
-  if (forbidden.length > 0) {
-    throw new Error(`Forbidden path diff detected after sdk-write run: ${forbidden.join(", ")}`);
-  }
-
-  const outOfScopeFiles = actualChangedFiles.filter((repoPath) => !allowedPaths.includes(repoPath));
-  if (outOfScopeFiles.length > 0) {
-    const allowlistLabel =
-      scope === SDK_WRITE_ALLOWED_SCOPE ? "docs-audit sdk-write" : `${scope} sdk-write`;
-    throw new Error(
-      `Post-run diff outside ${allowlistLabel} allowlist: ${outOfScopeFiles.join(", ")}`,
-    );
-  }
-
-  const missingPlannedChanges = normalizedPlannedPaths.filter(
-    (repoPath) => !actualChangedFiles.includes(repoPath),
-  );
-  if (missingPlannedChanges.length > 0) {
-    throw new Error(
-      `SDK write did not change planned output path: ${missingPlannedChanges.join(", ")}`,
-    );
-  }
-
-  return {
-    actualChangedFiles,
-    allowedImplementationReportPaths: uniqueSorted(allowedImplementationReportPaths),
-    allowedPaths,
-    missingPlannedChanges,
-    normalizedDirectoryEntries,
-    outOfScopeFiles,
-    plannedPaths: normalizedPlannedPaths,
-    rawChangedSincePre: changedSincePre,
-    verdict: "pass",
-  };
+  return postRunContractCore.validateSdkWriteDiffAllowlist({
+    allowedImplementationReportPaths,
+    directoryChildEnumerator,
+    plannedPaths,
+    postSnapshot,
+    preSnapshot,
+    scope,
+    validationResult,
+  });
 }
 
 export function validateSdkWritePlannedPathPrecondition({
@@ -2001,38 +1774,11 @@ export function validateSdkWritePlannedPathPrecondition({
   plannedPaths = [],
   scope,
 } = {}) {
-  const existingPlannedPaths = plannedPaths.filter((repoPath) => pathExists(repoPath));
-  const missingPlannedPaths = plannedPaths.filter((repoPath) => !pathExists(repoPath));
-
-  if (scope === SDK_WRITE_PRODUCTION_CODE_SCOPE) {
-    if (missingPlannedPaths.length > 0) {
-      throw new Error(
-        `Planned production-code sdk-write source path missing before SDK thread creation: ${missingPlannedPaths.join(
-          ", ",
-        )}`,
-      );
-    }
-
-    return {
-      existingPlannedPaths,
-      missingPlannedPaths,
-      mode: "existing-source-update",
-    };
-  }
-
-  if (existingPlannedPaths.length > 0) {
-    throw new Error(
-      `Planned sdk-write output already exists before SDK thread creation: ${existingPlannedPaths.join(
-        ", ",
-      )}`,
-    );
-  }
-
-  return {
-    existingPlannedPaths,
-    missingPlannedPaths,
-    mode: "new-output-only",
-  };
+  return postRunContractCore.validateSdkWritePlannedPathPrecondition({
+    pathExists,
+    plannedPaths,
+    scope,
+  });
 }
 
 export async function runWriteCapableSdkWrite(options) {

@@ -1051,6 +1051,20 @@ async function runContractSmoke() {
     `M168 SDK runtime diagnostics extraction smoke failed: ${runtimeDiagnosticsExtractionOutput.trim()}`,
     failures,
   );
+  const postRunContractExtractionSmoke = runNode([
+    path.join("scripts", "sdk-post-run-contract-extraction-smoke.js"),
+  ]);
+  const postRunContractExtractionOutput = `${
+    postRunContractExtractionSmoke.stdout ?? ""
+  }\n${postRunContractExtractionSmoke.stderr ?? ""}`;
+  assertContract(
+    postRunContractExtractionSmoke.status === 0 &&
+      postRunContractExtractionOutput.includes(
+        "SDK post-run contract extraction smoke: pass",
+      ),
+    `M169 SDK post-run contract extraction smoke failed: ${postRunContractExtractionOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1521,6 +1535,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:post-run-contract:smoke"] ===
+      "node scripts/sdk-post-run-contract-extraction-smoke.js",
+    "package.json codex:orchestrator:post-run-contract:smoke script is not wired to the M169 post-run contract extraction smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1701,6 +1721,15 @@ async function runContractSmoke() {
       readme.includes("orchestrator/core/runtime-store.mjs") &&
       readme.includes("orchestrator/core/failure-diagnostics.mjs"),
     "README does not document the M168 runtime diagnostics extraction smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:post-run-contract:smoke") &&
+      readme.includes("169-sdk-post-run-contract-review-or-extraction.json") &&
+      readme.includes("sdk-post-run-contract-review-or-extraction.v1") &&
+      readme.includes("M169 extracts SDK post-run contract helpers") &&
+      readme.includes("orchestrator/core/post-run-contract.mjs"),
+    "README does not document the M169 post-run contract extraction smoke",
     failures,
   );
   assertContract(

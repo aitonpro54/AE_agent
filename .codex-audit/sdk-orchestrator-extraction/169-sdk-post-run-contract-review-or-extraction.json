@@ -1,0 +1,179 @@
+{
+  "schema": "sdk-post-run-contract-review-or-extraction.v1",
+  "milestone": 169,
+  "title": "SDK Post-Run Contract Core Extraction",
+  "createdAt": "2026-05-22",
+  "purpose": "Extract SDK pre-run dirty-state checks, post-run scope checks, sdk-write diff allowlist checks, and planned-path preconditions into reusable core while preserving the AE Agent write-runner facade and adapter-owned policy.",
+  "decision": {
+    "type": "behavior-preserving-extraction",
+    "reviewFirstResult": "extractable-with-focused-parity-smoke",
+    "rationale": [
+      "The target helpers share a narrow contract around pre/post git snapshots, validation result gating, diff allowlists, and planned-path preconditions.",
+      "The safety-critical parts are policy inputs: scope validation, forbidden paths, sdk-write planned path allowlists, and the production-code existing-source rule.",
+      "The runner facade can inject those policy inputs from the active AE Agent adapter while preserving the public helper exports and existing package command entrypoints."
+    ]
+  },
+  "sourceContext": {
+    "previousMilestone": 168,
+    "previousArtifact": ".codex-audit/sdk-orchestrator-extraction/168-sdk-runtime-diagnostics-review-or-extraction.json",
+    "relatedSplitReviewArtifact": ".codex-audit/sdk-orchestrator-extraction/166-sdk-runner-split-review.json",
+    "relatedExtractionPlan": ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+    "relatedAdapterConfigArtifact": ".codex-audit/sdk-orchestrator-extraction/161-ae-agent-adapter-config.json",
+    "branch": "codex/roadmap-1.3-planning",
+    "lastCompletedCommit": "bc42ad2",
+    "behaviorBoundary": {
+      "behaviorPreservingExtraction": true,
+      "runnerBehaviorChanged": false,
+      "wrapperCommandsChanged": false,
+      "publicExportsPreserved": true,
+      "scopePolicyAdapterInjected": true,
+      "forbiddenPathPolicyAdapterInjected": true,
+      "sdkWritePlannedPathAllowlistsAdapterInjected": true,
+      "productionCodeExistingSourceRequirementAdapterInjected": true,
+      "sdkThreadCreated": false,
+      "networkAccessed": false,
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditedThroughSdk": false,
+      "liveCepOrAfterEffectsRun": false,
+      "externalProviderValidationRun": false,
+      "mutatingLiveValidationRun": false,
+      "packageInstallRun": false,
+      "dependencyChanged": false,
+      "archiveMovePerformed": false,
+      "deletionPerformed": false,
+      "squashPerformed": false,
+      "pushPerformed": false
+    }
+  },
+  "extraction": {
+    "newCoreModule": "orchestrator/core/post-run-contract.mjs",
+    "facadeModule": "orchestrator/run-write-capable-scaffold.mjs",
+    "movedOrWrappedFunctions": [
+      "evaluatePreRunGitState",
+      "assertPreRunGitState",
+      "assertValidationResult",
+      "validatePostRunContract",
+      "validateSdkWriteDiffAllowlist",
+      "validateSdkWritePlannedPathPrecondition"
+    ],
+    "publicRunnerExportsPreserved": [
+      "evaluatePreRunGitState",
+      "assertPreRunGitState",
+      "assertValidationResult",
+      "validatePostRunContract",
+      "validateSdkWriteDiffAllowlist",
+      "validateSdkWritePlannedPathPrecondition"
+    ],
+    "adapterInjectedContract": {
+      "scopePolicySource": "AE_AGENT_SDK_ADAPTER_CONFIG.scopes and AE_AGENT_SDK_ADAPTER_CONFIG.scopePathAllowlists via the runner facade",
+      "forbiddenPathPolicySource": "AE_AGENT_SDK_ADAPTER_CONFIG.forbiddenPathPatterns via the runner facade",
+      "sdkWritePlannedPathAllowlistSource": "AE_AGENT_SDK_ADAPTER_CONFIG.sdkWrite.plannedPathAllowlists via createSdkWritePlannedPathCheck",
+      "productionCodeExistingSourceRequirementSource": "AE_AGENT_SDK_ADAPTER_CONFIG.sdkWrite.productionCodeScope injected as productionCodeScope"
+    },
+    "preservedBehavior": [
+      "dirty pre-run state remains fail-closed unless every dirty path is acknowledged and no acknowledgement is stale",
+      "forbidden dirty paths remain rejected even when acknowledged",
+      "post-run write-capable diffs remain scoped by the active scope allowlist and forbidden path policy",
+      "sdk-write planned paths are validated before comparing post-run diffs",
+      "newly-created directory parents are normalized only after child enumeration proves every actual changed child is explicitly planned",
+      "production-code sdk-write planned paths must already exist before SDK thread creation",
+      "docs-audit and orchestrator sdk-write planned outputs remain new-output-only"
+    ],
+    "deferredCandidates": [
+      "buffered-acceptance project-local split review"
+    ]
+  },
+  "filesChanged": [
+    "orchestrator/core/post-run-contract.mjs",
+    "orchestrator/run-write-capable-scaffold.mjs",
+    ".codex-audit/sdk-orchestrator-extraction/169-sdk-post-run-contract-review-or-extraction.json",
+    "scripts/sdk-post-run-contract-extraction-smoke.js",
+    "orchestrator/run-buffered-acceptance.mjs",
+    "orchestrator/README.md",
+    "package.json",
+    "plans/target-app-execplan.md",
+    ".codex/handoff.md"
+  ],
+  "validationPlan": [
+    "node --check for touched JavaScript files",
+    "node scripts/sdk-post-run-contract-extraction-smoke.js",
+    "npm.cmd run codex:orchestrator:post-run-contract:smoke",
+    "npm.cmd run codex:orchestrator:governance-report",
+    "npm.cmd run check:rules",
+    "configured local smoke suite from AGENTS.md",
+    "git diff --check"
+  ],
+  "nextRecommendedMilestone": {
+    "title": "SDK Buffered Acceptance Project-Local Split Review",
+    "type": "review-first",
+    "approvalRequiredBeforeStart": false,
+    "allowedWork": [
+      "review whether buffered acceptance governance/check wiring has any safe reusable-core split",
+      "keep AE Agent evidence packet validators and README/package command assertions project-local unless a smaller neutral boundary is proven",
+      "preserve runner public exports and package command entrypoints"
+    ],
+    "blockedWork": [
+      "SDKThread/network proof",
+      "CEP-panel SDK write",
+      "live CEP/After Effects validation",
+      "external-provider/OpenAI CLI planner validation",
+      "mutating-live validation",
+      "package install",
+      "dependency change",
+      "archive/delete/squash cleanup",
+      "push"
+    ]
+  },
+  "machineCheck": {
+    "requiredPackageScript": "codex:orchestrator:post-run-contract:smoke",
+    "requiredPackageScriptCommand": "node scripts/sdk-post-run-contract-extraction-smoke.js",
+    "requiredReadmeSnippets": [
+      "M169 extracts SDK post-run contract helpers",
+      "169-sdk-post-run-contract-review-or-extraction.json",
+      "sdk-post-run-contract-review-or-extraction.v1",
+      "codex:orchestrator:post-run-contract:smoke",
+      "orchestrator/core/post-run-contract.mjs"
+    ],
+    "mustExist": [
+      "orchestrator/core/post-run-contract.mjs",
+      "orchestrator/run-write-capable-scaffold.mjs",
+      "orchestrator/adapters/ae-agent-sdk-policy.mjs",
+      ".codex-audit/sdk-orchestrator-extraction/168-sdk-runtime-diagnostics-review-or-extraction.json"
+    ],
+    "requiredSourceSnippets": {
+      "orchestrator/core/post-run-contract.mjs": [
+        "export function createPostRunContractHelpers",
+        "productionCodeScope",
+        "export function validateSdkWriteDiffAllowlist",
+        "export function validateSdkWritePlannedPathPrecondition"
+      ],
+      "orchestrator/run-write-capable-scaffold.mjs": [
+        "import { createPostRunContractHelpers }",
+        "const postRunContractCore = createPostRunContractHelpers",
+        "export function evaluatePreRunGitState(snapshot, options = {})",
+        "return postRunContractCore.validateSdkWriteDiffAllowlist"
+      ],
+      "orchestrator/run-buffered-acceptance.mjs": [
+        "sdk-post-run-contract-extraction-smoke.js",
+        "M169 SDK post-run contract extraction smoke failed"
+      ]
+    },
+    "requiredFalseBoundaryFlags": [
+      "runnerBehaviorChanged",
+      "wrapperCommandsChanged",
+      "sdkThreadCreated",
+      "networkAccessed",
+      "cepPanelSdkWritesEnabled",
+      "cepPanelPanelJsEditedThroughSdk",
+      "liveCepOrAfterEffectsRun",
+      "externalProviderValidationRun",
+      "mutatingLiveValidationRun",
+      "packageInstallRun",
+      "dependencyChanged",
+      "archiveMovePerformed",
+      "deletionPerformed",
+      "squashPerformed",
+      "pushPerformed"
+    ]
+  }
+}

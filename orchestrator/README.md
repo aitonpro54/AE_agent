@@ -274,6 +274,12 @@ M168 extracts SDK runtime-store and failure-diagnostics helpers into `orchestrat
 npm.cmd run codex:orchestrator:runtime-diagnostics:smoke
 ```
 
+M169 extracts SDK post-run contract helpers into `orchestrator/core/post-run-contract.mjs`, then records the behavior-preserving split in `.codex-audit/sdk-orchestrator-extraction/169-sdk-post-run-contract-review-or-extraction.json` with schema `sdk-post-run-contract-review-or-extraction.v1`. The write-runner remains the compatibility facade: public exports and package command entrypoints stay unchanged, while scope policy, forbidden path policy, sdk-write planned path allowlists, and the production-code existing-source requirement remain injected from the AE Agent adapter-backed facade.
+
+```powershell
+npm.cmd run codex:orchestrator:post-run-contract:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.
