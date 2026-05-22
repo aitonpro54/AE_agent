@@ -6,13 +6,6 @@
     "codex:orchestrator:write-scaffold:contract": "node orchestrator/run-write-capable-scaffold.mjs --contract-smoke",
     "codex:orchestrator:governance-report": "node orchestrator/run-buffered-acceptance.mjs --governance-report",
     "codex:orchestrator:governance-report:smoke": "node scripts/sdk-governance-report-smoke.js",
-    "codex:orchestrator:launch-readiness:smoke": "node scripts/sdk-launch-readiness-summary-smoke.js",
-    "codex:orchestrator:production-readiness:smoke": "node scripts/sdk-production-readiness-smoke.js",
-    "codex:orchestrator:iterative-cmd:smoke": "node scripts/sdk-iterative-cmd-reliability-smoke.js",
-    "codex:orchestrator:multi-file-planned:smoke": "node scripts/sdk-multi-file-planned-operation-smoke.js",
-    "codex:orchestrator:multi-file-real:smoke": "node scripts/sdk-multi-file-real-proof-smoke.js",
-    "codex:orchestrator:post-multi-file:smoke": "node scripts/sdk-post-multi-file-governance-smoke.js",
-    "codex:orchestrator:boundary-closeout:smoke": "node scripts/sdk-boundary-closeout-smoke.js",
     "codex:orchestrator:production-code-broader:smoke": "node scripts/sdk-production-code-broader-readiness-smoke.js",
     "codex:orchestrator:next-lane:smoke": "node scripts/sdk-next-lane-selection-smoke.js",
     "codex:orchestrator:milestone-conveyor-spec:smoke": "node scripts/sdk-milestone-conveyor-spec-smoke.js",
@@ -24,6 +17,7 @@
     "codex:orchestrator:reusable-core:smoke": "node scripts/sdk-reusable-core-extraction-smoke.js",
     "codex:orchestrator:adapter-config:smoke": "node scripts/sdk-ae-agent-adapter-config-smoke.js",
     "codex:orchestrator:historical-evidence:smoke": "node scripts/sdk-historical-evidence-index-smoke.js",
+    "codex:orchestrator:historical-smoke-migration:smoke": "node scripts/sdk-historical-smoke-migration-smoke.js",
     "check:rules": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke"
   },
   "dependencies": {

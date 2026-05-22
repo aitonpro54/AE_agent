@@ -148,7 +148,7 @@ Hard-stop conditions:
 
 ## Локальный contract smoke
 
-Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate, SDK scope expansion review packet gate, committed review packet files, SDK write lane readiness packet gate, SDK write lane approval decision packet gate, SDK write lane enablement packet gate, SDK launch governance packet gate, SDK launch governance drift report, subprocess parser smoke для governance-report JSON, launch/production-readiness smoke и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
+Локальный smoke проверяет non-mutating orchestrator contract и M114 write-capable runner scaffold: help output, safe defaults, согласованность README/package scripts, запрет unsafe flags, explicit write scopes, dry-run mode, planned-operation envelope validation, planned path allowlists, forbidden paths, SDK scope expansion acceptance gate, SDK scope expansion review packet gate, committed review packet files, SDK write lane readiness packet gate, SDK write lane approval decision packet gate, SDK write lane enablement packet gate, SDK launch governance packet gate, SDK launch governance drift report, subprocess parser smoke для governance-report JSON, current M152+ governance/conveyor/extraction smokes, historical smoke migration и pre/post snapshot comparison. Он не запускает provider/live/network validation и не выполняет real SDK write work.
 
 ```powershell
 npm.cmd run check:rules
@@ -166,46 +166,10 @@ npm.cmd run codex:orchestrator:governance-report
 npm.cmd run codex:orchestrator:governance-report:smoke
 ```
 
-M144 фиксирует release-readiness boundary в committed summary `.codex-audit/sdk-launch-readiness/144-sdk-launch-readiness-summary.json`. Этот artifact классифицирует SDK state как `local-gated-production-candidate`, отмечает узкую production-code lane как `ready-local-gated`, а broader production-code, CEP-panel, SDKThread/network, external-provider и live CEP/AE work как approval-required или not-validated.
+M144-M151 остаются историческими доказательствами: launch readiness, superseded single-file production readiness, bounded iterative-command reliability, multi-file planned/real proofs, post-multi-file boundary and closeout are kept in place but no longer have active package smoke entrypoints. M163 migrates superseded historical smoke coverage into `.codex-audit/sdk-orchestrator-extraction/163-sdk-historical-smoke-migration.json` with schema `sdk-historical-smoke-migration.v1`; the old script files remain available as historical source material, while `check:rules` keeps current M152+ governance/conveyor/extraction checks direct. The archive move remains blocked.
 
 ```powershell
-npm.cmd run codex:orchestrator:launch-readiness:smoke
-```
-
-M146 supersedes the blocked M145 artifact with committed artifact `.codex-audit/sdk-production-readiness/146-sdk-production-ready.json`. Этот artifact выбирает `narrow-lane-production-ready`, records `productionReady:true` and `overall:"narrow-lane-production-ready"` only for `scripts/provider-contract-smoke.js`; general SDK workflow, broader production-code writes and CEP-panel SDK writes remain not production-ready/out of scope.
-
-```powershell
-npm.cmd run codex:orchestrator:production-readiness:smoke
-```
-
-M147 adds a bounded iterative local-command reliability gate without broadening production-code or CEP-panel SDK writes. The committed gate `.codex-audit/sdk-iterative-cmd/147-sdk-iterative-cmd-reliability.json` uses schema `sdk-iterative-cmd-reliability-gate.v1` and points to the SDK-created JSON fixture `orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json`. The proof records scoped context reads, one failing local JSON check, one repair iteration, the same check passing, safe thread options, and a post-run allowlist contract where only the planned fixture changed.
-
-```powershell
-npm.cmd run codex:orchestrator:iterative-cmd:smoke
-```
-
-M148 adds a local multi-file planned operation contract before any real SDKThread multi-file proof. The committed artifact `.codex-audit/sdk-multi-file-planned-operation/148-sdk-multi-file-planned-operation-contract.json` uses schema `sdk-multi-file-planned-operation-contract.v1` and proves that an orchestrator `sdk-write` envelope can predeclare two fixture JSON outputs, render both planned paths into the prompt, and pass post-run validation only when both planned files changed. The same smoke proves rejection for extra files, unplanned directory children, `.env`, credential paths, `package-lock.json` churn, and `.git/**` metadata churn.
-
-```powershell
-npm.cmd run codex:orchestrator:multi-file-planned:smoke
-```
-
-M149 adds the real bounded multi-file SDKThread proof for the orchestrator fixture JSON lane. The committed gate `.codex-audit/sdk-multi-file-planned-operation/149-sdk-multi-file-real-proof.json` uses schema `sdk-multi-file-real-proof-gate.v1` and points to the SDK-created fixtures `orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json` and `orchestrator/fixtures/sdk-write/m149-multi-file-beta.json`. The proof keeps general SDK workflow not production-ready, while recording that only those two planned fixture JSON files changed and the post-run allowlist contract passed.
-
-```powershell
-npm.cmd run codex:orchestrator:multi-file-real:smoke
-```
-
-M150 closes the post-multi-file readiness boundary without broadening the SDK production-ready claim. The committed boundary `.codex-audit/sdk-post-multi-file-readiness/150-sdk-post-multi-file-governance-boundary.json` uses schema `sdk-post-multi-file-governance-boundary.v1`, records `overall:"post-multi-file-local-gated"`, preserves the M146 single-file production-code claim, and keeps general SDK workflow, broader production-code writes, CEP-panel writes, external-provider validation, live CEP/AE validation, mutating-live validation, package installs and dependency changes outside the approved scope.
-
-```powershell
-npm.cmd run codex:orchestrator:post-multi-file:smoke
-```
-
-M151 closes the SDK boundary block for publishing. The committed closeout `.codex-audit/sdk-post-multi-file-readiness/151-sdk-boundary-closeout.json` uses schema `sdk-boundary-closeout.v1`, selects `push-branch-after-closeout-commit`, and records that no broader production-code, CEP-panel, external-provider, live CEP/AE, mutating-live or dependency-change work should start without a fresh bounded approval.
-
-```powershell
-npm.cmd run codex:orchestrator:boundary-closeout:smoke
+npm.cmd run codex:orchestrator:historical-smoke-migration:smoke
 ```
 
 M152 records the bounded two-file production-code provider smoke proof in `.codex-audit/sdk-production-readiness/152-sdk-production-code-provider-smokes-ready.json` with schema `sdk-production-code-broader-readiness.v1`. It may claim production-code SDK-write readiness only for `scripts/provider-api-smoke.js` and `scripts/provider-contract-smoke.js`; general SDK workflow, CEP-panel writes, external-provider/OpenAI CLI planner validation, live CEP/AE validation, mutating-live validation, package installs and dependency changes remain out of scope.
@@ -272,6 +236,12 @@ M162 adds the historical SDK evidence index in `.codex-audit/sdk-orchestrator-ex
 
 ```powershell
 npm.cmd run codex:orchestrator:historical-evidence:smoke
+```
+
+M163 migrates superseded historical smoke coverage to `.codex-audit/sdk-orchestrator-extraction/163-sdk-historical-smoke-migration.json` with schema `sdk-historical-smoke-migration.v1`. The migration retires active package/check:rules entrypoints for M144-M151 historical smokes, keeps the old script files and artifacts in place, keeps M152+ current evidence directly checked, and confirms archive move remains blocked.
+
+```powershell
+npm.cmd run codex:orchestrator:historical-smoke-migration:smoke
 ```
 
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.

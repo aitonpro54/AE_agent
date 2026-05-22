@@ -1,0 +1,265 @@
+{
+  "schema": "sdk-historical-smoke-migration.v1",
+  "milestone": 163,
+  "title": "SDK Historical Smoke Coverage Migration",
+  "createdAt": "2026-05-22",
+  "purpose": "Move superseded historical smoke coverage out of the active check:rules path and into a machine-checked migration record while keeping historical files in place.",
+  "sourceContext": {
+    "previousMilestone": 162,
+    "previousArtifact": ".codex-audit/sdk-orchestrator-extraction/162-sdk-historical-evidence-index.json",
+    "safeAeAgentCleanupPlanPhase": "phase-4-summarize-historical-sdk-evidence",
+    "branch": "codex/roadmap-1.3-planning",
+    "lastCompletedCommit": "0fe15c1",
+    "behaviorBoundary": {
+      "sdkThreadCreated": false,
+      "networkAccessed": false,
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditedThroughSdk": false,
+      "liveCepOrAfterEffectsRun": false,
+      "externalProviderValidationRun": false,
+      "mutatingLiveValidationRun": false,
+      "packageInstallRun": false,
+      "dependencyChanged": false,
+      "archiveMovePerformed": false,
+      "deletionPerformed": false,
+      "squashPerformed": false,
+      "pushPerformed": false
+    }
+  },
+  "migrationAction": {
+    "smokeMigratedToIndex": true,
+    "historicalSmokeScriptsRetainedInPlace": true,
+    "historicalPackageScriptsRetired": true,
+    "checkRulesDirectHistoricalRunsRemoved": true,
+    "currentEvidenceRemainsDirectlyChecked": true,
+    "archiveMoveAllowedNow": false,
+    "deleteAllowedNow": false,
+    "squashAllowedNow": false,
+    "nextAllowedCleanupStep": "Review the M163 migration, then perform any archive move as a separate reviewed cleanup milestone."
+  },
+  "historicalSmokeCoverageMigrated": [
+    {
+      "id": "m144-launch-readiness-summary-smoke",
+      "retiredPackageScript": "codex:orchestrator:launch-readiness:smoke",
+      "scriptPath": "scripts/sdk-launch-readiness-summary-smoke.js",
+      "introducedBy": {
+        "commit": "3352f9c",
+        "summary": "docs: add sdk launch readiness summary"
+      },
+      "coveredArtifacts": [
+        ".codex-audit/sdk-launch-readiness/144-sdk-launch-readiness-summary.json"
+      ],
+      "historicalStatus": "covered-by-migration-record"
+    },
+    {
+      "id": "m145-m146-production-readiness-smoke",
+      "retiredPackageScript": "codex:orchestrator:production-readiness:smoke",
+      "scriptPath": "scripts/sdk-production-readiness-smoke.js",
+      "introducedBy": {
+        "commit": "62a3da1",
+        "summary": "docs: record sdk production readiness blockers"
+      },
+      "lastUpdatedBy": {
+        "commit": "d949383",
+        "summary": "feat: mark sdk narrow lane production ready"
+      },
+      "coveredArtifacts": [
+        ".codex-audit/sdk-production-readiness/145-sdk-production-ready.json",
+        ".codex-audit/sdk-production-readiness/146-sdk-production-ready.json",
+        ".codex-audit/sdk-launch-readiness/144-sdk-launch-readiness-summary.json"
+      ],
+      "historicalIndexSet": "superseded-single-file-production-readiness",
+      "supersededByCurrentEvidence": "current-production-code-provider-smoke-lane"
+    },
+    {
+      "id": "m147-iterative-cmd-reliability-smoke",
+      "retiredPackageScript": "codex:orchestrator:iterative-cmd:smoke",
+      "scriptPath": "scripts/sdk-iterative-cmd-reliability-smoke.js",
+      "introducedBy": {
+        "commit": "b61bdc1",
+        "summary": "feat: add sdk iterative cmd reliability gate"
+      },
+      "coveredArtifacts": [
+        ".codex-audit/sdk-iterative-cmd/147-sdk-iterative-cmd-reliability.json",
+        ".codex-audit/sdk-iterative-cmd/147-operation-envelope.json",
+        "orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json"
+      ],
+      "historicalIndexSet": "bounded-reliability-and-multifile-proofs",
+      "supersededByCurrentEvidence": "current-next-lane-and-conveyor"
+    },
+    {
+      "id": "m148-multi-file-planned-operation-smoke",
+      "retiredPackageScript": "codex:orchestrator:multi-file-planned:smoke",
+      "scriptPath": "scripts/sdk-multi-file-planned-operation-smoke.js",
+      "introducedBy": {
+        "commit": "adaade9",
+        "summary": "feat: add sdk multi-file planned operation gate"
+      },
+      "coveredArtifacts": [
+        ".codex-audit/sdk-multi-file-planned-operation/148-sdk-multi-file-planned-operation-contract.json"
+      ],
+      "historicalIndexSet": "bounded-reliability-and-multifile-proofs",
+      "supersededByCurrentEvidence": "current-extraction-and-adapter-boundary"
+    },
+    {
+      "id": "m149-multi-file-real-proof-smoke",
+      "retiredPackageScript": "codex:orchestrator:multi-file-real:smoke",
+      "scriptPath": "scripts/sdk-multi-file-real-proof-smoke.js",
+      "introducedBy": {
+        "commit": "500b973",
+        "summary": "feat: add sdk multi-file real proof"
+      },
+      "coveredArtifacts": [
+        ".codex-audit/sdk-multi-file-planned-operation/149-sdk-multi-file-real-proof.json",
+        "orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json",
+        "orchestrator/fixtures/sdk-write/m149-multi-file-beta.json"
+      ],
+      "historicalIndexSet": "bounded-reliability-and-multifile-proofs",
+      "supersededByCurrentEvidence": "current-extraction-and-adapter-boundary"
+    },
+    {
+      "id": "m150-post-multi-file-governance-smoke",
+      "retiredPackageScript": "codex:orchestrator:post-multi-file:smoke",
+      "scriptPath": "scripts/sdk-post-multi-file-governance-smoke.js",
+      "introducedBy": {
+        "commit": "e42fa6a",
+        "summary": "docs: add sdk post multi-file boundary"
+      },
+      "coveredArtifacts": [
+        ".codex-audit/sdk-post-multi-file-readiness/150-sdk-post-multi-file-governance-boundary.json"
+      ],
+      "historicalIndexSet": "bounded-reliability-and-multifile-proofs",
+      "supersededByCurrentEvidence": "current-extraction-and-adapter-boundary"
+    },
+    {
+      "id": "m151-boundary-closeout-smoke",
+      "retiredPackageScript": "codex:orchestrator:boundary-closeout:smoke",
+      "scriptPath": "scripts/sdk-boundary-closeout-smoke.js",
+      "introducedBy": {
+        "commit": "221cb22",
+        "summary": "docs: close sdk boundary block"
+      },
+      "coveredArtifacts": [
+        ".codex-audit/sdk-post-multi-file-readiness/151-sdk-boundary-closeout.json"
+      ],
+      "historicalIndexSet": "bounded-reliability-and-multifile-proofs",
+      "supersededByCurrentEvidence": "current-extraction-and-adapter-boundary"
+    }
+  ],
+  "currentSmokeCoverageStillDirectlyChecked": [
+    {
+      "id": "m152-current-provider-smoke-lane",
+      "packageScript": "codex:orchestrator:production-code-broader:smoke",
+      "scriptPath": "scripts/sdk-production-code-broader-readiness-smoke.js"
+    },
+    {
+      "id": "m153-next-lane",
+      "packageScript": "codex:orchestrator:next-lane:smoke",
+      "scriptPath": "scripts/sdk-next-lane-selection-smoke.js"
+    },
+    {
+      "id": "m154-m157-milestone-conveyor",
+      "packageScripts": [
+        "codex:orchestrator:milestone-conveyor-spec:smoke",
+        "codex:orchestrator:milestone-conveyor-dry-run:smoke",
+        "codex:orchestrator:milestone-conveyor-sdkthread-proof:smoke",
+        "codex:orchestrator:milestone-conveyor-loop-gate:smoke"
+      ]
+    },
+    {
+      "id": "m158-m163-extraction-boundary",
+      "packageScripts": [
+        "codex:orchestrator:extraction-cleanup:smoke",
+        "codex:orchestrator:inventory-freeze:smoke",
+        "codex:orchestrator:reusable-core:smoke",
+        "codex:orchestrator:adapter-config:smoke",
+        "codex:orchestrator:historical-evidence:smoke",
+        "codex:orchestrator:historical-smoke-migration:smoke"
+      ]
+    }
+  ],
+  "machineCheck": {
+    "requiredPackageScript": "codex:orchestrator:historical-smoke-migration:smoke",
+    "requiredPackageScriptCommand": "node scripts/sdk-historical-smoke-migration-smoke.js",
+    "requiredPreviousIndexAction": {
+      "path": ".codex-audit/sdk-orchestrator-extraction/162-sdk-historical-evidence-index.json",
+      "smokeMigratedToIndex": false
+    },
+    "retiredPackageScripts": [
+      "codex:orchestrator:launch-readiness:smoke",
+      "codex:orchestrator:production-readiness:smoke",
+      "codex:orchestrator:iterative-cmd:smoke",
+      "codex:orchestrator:multi-file-planned:smoke",
+      "codex:orchestrator:multi-file-real:smoke",
+      "codex:orchestrator:post-multi-file:smoke",
+      "codex:orchestrator:boundary-closeout:smoke"
+    ],
+    "retainedHistoricalSmokeScripts": [
+      "scripts/sdk-launch-readiness-summary-smoke.js",
+      "scripts/sdk-production-readiness-smoke.js",
+      "scripts/sdk-iterative-cmd-reliability-smoke.js",
+      "scripts/sdk-multi-file-planned-operation-smoke.js",
+      "scripts/sdk-multi-file-real-proof-smoke.js",
+      "scripts/sdk-post-multi-file-governance-smoke.js",
+      "scripts/sdk-boundary-closeout-smoke.js"
+    ],
+    "currentPackageScriptsMustRemain": [
+      "codex:orchestrator:production-code-broader:smoke",
+      "codex:orchestrator:next-lane:smoke",
+      "codex:orchestrator:milestone-conveyor-spec:smoke",
+      "codex:orchestrator:milestone-conveyor-dry-run:smoke",
+      "codex:orchestrator:milestone-conveyor-sdkthread-proof:smoke",
+      "codex:orchestrator:milestone-conveyor-loop-gate:smoke",
+      "codex:orchestrator:extraction-cleanup:smoke",
+      "codex:orchestrator:inventory-freeze:smoke",
+      "codex:orchestrator:reusable-core:smoke",
+      "codex:orchestrator:adapter-config:smoke",
+      "codex:orchestrator:historical-evidence:smoke",
+      "codex:orchestrator:historical-smoke-migration:smoke"
+    ],
+    "directRunScriptPathsMustRemain": [
+      "scripts/sdk-production-code-broader-readiness-smoke.js",
+      "scripts/sdk-next-lane-selection-smoke.js",
+      "scripts/sdk-milestone-conveyor-spec-smoke.js",
+      "scripts/sdk-milestone-conveyor-local-dry-run-smoke.js",
+      "scripts/sdk-milestone-conveyor-sdkthread-proof-smoke.js",
+      "scripts/sdk-milestone-conveyor-loop-gate-smoke.js",
+      "scripts/sdk-orchestrator-extraction-cleanup-smoke.js",
+      "scripts/sdk-orchestrator-inventory-freeze-smoke.js",
+      "scripts/sdk-reusable-core-extraction-smoke.js",
+      "scripts/sdk-ae-agent-adapter-config-smoke.js",
+      "scripts/sdk-historical-evidence-index-smoke.js",
+      "scripts/sdk-historical-smoke-migration-smoke.js"
+    ],
+    "directRunScriptPathsMustBeRemoved": [
+      "scripts/sdk-launch-readiness-summary-smoke.js",
+      "scripts/sdk-production-readiness-smoke.js",
+      "scripts/sdk-iterative-cmd-reliability-smoke.js",
+      "scripts/sdk-multi-file-planned-operation-smoke.js",
+      "scripts/sdk-multi-file-real-proof-smoke.js",
+      "scripts/sdk-post-multi-file-governance-smoke.js",
+      "scripts/sdk-boundary-closeout-smoke.js"
+    ],
+    "requiredReadmeSnippets": [
+      "M163 migrates superseded historical smoke coverage",
+      "163-sdk-historical-smoke-migration.json",
+      "codex:orchestrator:historical-smoke-migration:smoke",
+      "archive move remains blocked"
+    ],
+    "requiredFalseBoundaryFlags": [
+      "sdkThreadCreated",
+      "networkAccessed",
+      "cepPanelSdkWritesEnabled",
+      "cepPanelPanelJsEditedThroughSdk",
+      "liveCepOrAfterEffectsRun",
+      "externalProviderValidationRun",
+      "mutatingLiveValidationRun",
+      "packageInstallRun",
+      "dependencyChanged",
+      "archiveMovePerformed",
+      "deletionPerformed",
+      "squashPerformed",
+      "pushPerformed"
+    ]
+  }
+}
