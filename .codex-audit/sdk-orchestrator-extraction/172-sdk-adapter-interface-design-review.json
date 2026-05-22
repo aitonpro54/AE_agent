@@ -1,0 +1,272 @@
+{
+  "schema": "sdk-adapter-interface-design-review.v1",
+  "milestone": 172,
+  "title": "SDK Adapter Interface Design Review",
+  "createdAt": "2026-05-22",
+  "purpose": "Design the standalone codex-sdk-orchestrator-tool adapter/plugin interface without creating a package, changing runner behavior, or moving AE Agent project-local governance checks.",
+  "decision": {
+    "type": "review-only-design-no-implementation",
+    "reviewFirstResult": "standalone-adapter-interface-designed-local-only",
+    "rationale": [
+      "M171 closed the extraction block with adapter/plugin interface design as the next standalone-packaging blocker.",
+      "The reusable write-runner core already exists, but package-independent execution still needs a stable way to inject project policy, evidence validators, package assertions, README assertions, and handoff rules.",
+      "A design artifact can reduce ambiguity before a future standalone package milestone while staying inside the no-approval local-only runway.",
+      "Implementation, package creation, SDKThread/network proof, CEP-panel writes, dependency changes, and push remain out of scope."
+    ]
+  },
+  "sourceContext": {
+    "previousMilestone": 171,
+    "previousArtifact": ".codex-audit/sdk-orchestrator-extraction/171-sdk-orchestrator-extraction-closeout-review.json",
+    "taskFile": ".codex/sdk-no-approval-autonomous-task.md",
+    "branch": "codex/roadmap-1.3-planning",
+    "lastCompletedCommit": "f0cf9ac",
+    "behaviorBoundary": {
+      "reviewOnly": true,
+      "designOnly": true,
+      "implementationPerformed": false,
+      "extractionPerformed": false,
+      "runnerBehaviorChanged": false,
+      "wrapperCommandsChanged": false,
+      "publicExportsPreserved": true,
+      "packageCommandEntrypointsPreserved": true,
+      "standalonePackageCreated": false,
+      "governancePacketValidatorsProjectLocal": true,
+      "currentM152PlusDirectChecksProjectLocal": true,
+      "packageScriptAssertionsProjectLocal": true,
+      "readmeAssertionsProjectLocal": true,
+      "aeAgentProjectEvidencePolicyProjectLocal": true,
+      "sdkThreadCreated": false,
+      "networkAccessed": false,
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditedThroughSdk": false,
+      "liveCepOrAfterEffectsRun": false,
+      "externalProviderValidationRun": false,
+      "mutatingLiveValidationRun": false,
+      "packageInstallRun": false,
+      "dependencyChanged": false,
+      "archiveMovePerformed": false,
+      "deletionPerformed": false,
+      "squashPerformed": false,
+      "pushPerformed": false
+    }
+  },
+  "standaloneAdapterInterface": {
+    "interfaceSchema": "codex-sdk-orchestrator-standalone-adapter-interface.v1",
+    "loadModel": "A standalone tool loads one project adapter module or JSON-compatible config, validates it locally, then passes its policy and project-check hooks into the neutral orchestrator core.",
+    "adapterModuleShape": {
+      "identity": [
+        "adapterId",
+        "projectName",
+        "projectRootPolicy",
+        "schemaVersion"
+      ],
+      "policy": [
+        "scopeNames",
+        "scopePathAllowlists",
+        "sdkWriteAllowedScopes",
+        "sdkWritePlannedPathAllowlists",
+        "sdkWriteReviewRequiredScopes",
+        "forbiddenPathPatterns",
+        "unsafeRunnerFlags",
+        "threadOptionContract",
+        "runtimePathPolicy",
+        "operationEnvelopeContract",
+        "postRunDiffContract"
+      ],
+      "projectChecks": [
+        "governancePacketValidators",
+        "currentEvidenceChecks",
+        "packageScriptAssertions",
+        "readmeAssertions",
+        "evidencePolicyAssertions",
+        "handoffAndPlanContinuityRules",
+        "localSmokeCatalog"
+      ],
+      "reporting": [
+        "governanceReportBuilder",
+        "validationPlanFormatter",
+        "blockedWorkClassifier",
+        "handoffPromptBuilder"
+      ]
+    },
+    "neutralCoreBoundary": [
+      "path normalization and forbidden path matching",
+      "git snapshot and changed-since-pre comparison",
+      "thread option construction from injected safety contract",
+      "operation envelope loading and mode validation",
+      "runtime store selection and failure diagnostic serialization",
+      "post-run diff and planned-path contract checks"
+    ],
+    "projectAdapterBoundary": [
+      "project scope names and path allowlists",
+      "which sdk-write lanes are enabled or review-required",
+      "project evidence packet schemas and committed artifact paths",
+      "package script names and command assertions",
+      "README milestone snippets and documentation assertions",
+      "plan and handoff update expectations",
+      "local smoke catalog and live/external/mutating approval gates"
+    ]
+  },
+  "aeAgentMapping": {
+    "adapterRuntimeConfig": "orchestrator/adapters/ae-agent-sdk-policy.mjs",
+    "compatibilityFacade": "orchestrator/run-write-capable-scaffold.mjs",
+    "projectLocalAcceptanceRunner": "orchestrator/run-buffered-acceptance.mjs",
+    "mustRemainProjectLocalUntilImplementation": [
+      "governance packet validators",
+      "current M152+ direct checks",
+      "package script assertions",
+      "README assertions",
+      "AE Agent project evidence policy",
+      "plan and handoff continuity rules",
+      "blocked-work policy for SDKThread/network, CEP-panel writes, live CEP/AE, external-provider/OpenAI CLI planner, mutating-live validation, dependency changes, push, PR, and cleanup"
+    ],
+    "currentProductionCodeSdkWriteAllowlist": [
+      "scripts/provider-api-smoke.js",
+      "scripts/provider-contract-smoke.js"
+    ],
+    "cepPanelSdkWritesEnabled": false
+  },
+  "futureStandalonePackagingContract": {
+    "minimumPackagePieces": [
+      "standalone CLI package/workspace boundary",
+      "adapter loader and adapter self-check command",
+      "neutral core imports from orchestrator/core or copied package sources",
+      "project adapter fixture for AE Agent",
+      "local contract smoke proving project hooks remain injected and fail closed",
+      "documentation that separates generic tool behavior from project adapter policy"
+    ],
+    "implementationOrder": [
+      "create adapter interface fixture without moving current runner entrypoints",
+      "build adapter self-check smoke around the fixture",
+      "introduce standalone package/workspace only after the fixture contract is stable",
+      "wire AE Agent scripts to call the standalone package through the adapter only in a later behavior-preserving milestone"
+    ],
+    "blockedUntilSeparateGoal": [
+      "creating a standalone package/workspace",
+      "moving buffered acceptance checks out of AE Agent",
+      "extracting read-only turn wrapper behavior",
+      "running SDKThread/network proof",
+      "enabling CEP-panel SDK writes",
+      "installing packages or changing dependencies",
+      "pushing or creating a PR"
+    ]
+  },
+  "standalonePackagingBlockers": [
+    {
+      "id": "standalone-package-not-created",
+      "status": "blocked-out-of-scope",
+      "neededBeforePackaging": "Create a separate package/workspace plan for codex-sdk-orchestrator-tool with its own tests and release boundary."
+    },
+    {
+      "id": "adapter-plugin-interface-missing",
+      "status": "designed-not-implemented",
+      "neededBeforePackaging": "Use this M172 interface design to build a real adapter loader, adapter fixture, and self-check in a separate implementation milestone."
+    },
+    {
+      "id": "read-only-turn-wrapper-not-extracted",
+      "status": "deferred",
+      "neededBeforePackaging": "Review orchestrator/codex-sdk-orchestrator.mjs separately if a standalone read-only CLI is still desired."
+    },
+    {
+      "id": "buffered-acceptance-remains-project-local",
+      "status": "intentional",
+      "neededBeforePackaging": "Keep AE Agent local checks here until a real adapter hook implementation proves equivalent fail-closed behavior."
+    },
+    {
+      "id": "approval-gated-work-not-run",
+      "status": "blocked-by-policy",
+      "neededBeforePackaging": "Do not run SDKThread/network, CEP-panel SDK writes, live CEP/AE, external-provider validation, mutating-live validation, package installs, or push without separate explicit approval."
+    }
+  ],
+  "filesChanged": [
+    ".codex-audit/sdk-orchestrator-extraction/172-sdk-adapter-interface-design-review.json",
+    "scripts/sdk-adapter-interface-design-smoke.js",
+    "orchestrator/run-buffered-acceptance.mjs",
+    "orchestrator/README.md",
+    "package.json",
+    "plans/target-app-execplan.md",
+    ".codex/handoff.md"
+  ],
+  "validationPlan": [
+    "node --check orchestrator/run-buffered-acceptance.mjs",
+    "node --check scripts/sdk-adapter-interface-design-smoke.js",
+    "node scripts/sdk-adapter-interface-design-smoke.js",
+    "npm.cmd run codex:orchestrator:adapter-interface-design:smoke",
+    "npm.cmd run codex:orchestrator:governance-report",
+    "npm.cmd run check:rules",
+    "git diff --check"
+  ],
+  "nextRecommendedState": {
+    "title": "Standalone integration notes or adapter self-check fixture",
+    "type": "local-only-follow-up",
+    "approvalRequiredBeforeStart": false,
+    "recommendedAction": "Continue only with a small local-only documentation or fixture milestone that does not create a standalone package, change dependencies, run SDKThread/network, or move AE Agent project-local acceptance checks.",
+    "blockedWorkWithoutSeparateApproval": [
+      "SDKThread/network proof",
+      "CEP-panel SDK write",
+      "live CEP/After Effects validation",
+      "external-provider/OpenAI CLI planner validation",
+      "mutating-live validation",
+      "package install",
+      "dependency change",
+      "archive/delete/squash cleanup",
+      "push",
+      "PR creation"
+    ]
+  },
+  "machineCheck": {
+    "requiredPackageScript": "codex:orchestrator:adapter-interface-design:smoke",
+    "requiredPackageScriptCommand": "node scripts/sdk-adapter-interface-design-smoke.js",
+    "requiredReadmeSnippets": [
+      "M172 designs the standalone adapter/plugin interface",
+      "172-sdk-adapter-interface-design-review.json",
+      "sdk-adapter-interface-design-review.v1",
+      "codex:orchestrator:adapter-interface-design:smoke",
+      "adapter/plugin interface"
+    ],
+    "mustExist": [
+      "orchestrator/core/path-policy.mjs",
+      "orchestrator/core/git-snapshot.mjs",
+      "orchestrator/core/thread-options.mjs",
+      "orchestrator/core/operation-envelope.mjs",
+      "orchestrator/core/runtime-store.mjs",
+      "orchestrator/core/failure-diagnostics.mjs",
+      "orchestrator/core/post-run-contract.mjs",
+      "orchestrator/adapters/ae-agent-sdk-policy.mjs",
+      "orchestrator/run-write-capable-scaffold.mjs",
+      "orchestrator/run-buffered-acceptance.mjs",
+      ".codex-audit/sdk-orchestrator-extraction/171-sdk-orchestrator-extraction-closeout-review.json",
+      ".codex/sdk-no-approval-autonomous-task.md"
+    ],
+    "requiredSourceSnippets": {
+      "orchestrator/run-buffered-acceptance.mjs": [
+        "sdk-adapter-interface-design-smoke.js",
+        "M172 SDK adapter interface design smoke failed"
+      ],
+      "package.json": [
+        "\"codex:orchestrator:adapter-interface-design:smoke\": \"node scripts/sdk-adapter-interface-design-smoke.js\"",
+        "\"check:rules\": \"node orchestrator/run-buffered-acceptance.mjs --contract-smoke\""
+      ]
+    },
+    "requiredFalseBoundaryFlags": [
+      "implementationPerformed",
+      "extractionPerformed",
+      "runnerBehaviorChanged",
+      "wrapperCommandsChanged",
+      "standalonePackageCreated",
+      "sdkThreadCreated",
+      "networkAccessed",
+      "cepPanelSdkWritesEnabled",
+      "cepPanelPanelJsEditedThroughSdk",
+      "liveCepOrAfterEffectsRun",
+      "externalProviderValidationRun",
+      "mutatingLiveValidationRun",
+      "packageInstallRun",
+      "dependencyChanged",
+      "archiveMovePerformed",
+      "deletionPerformed",
+      "squashPerformed",
+      "pushPerformed"
+    ]
+  }
+}

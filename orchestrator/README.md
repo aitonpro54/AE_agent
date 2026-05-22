@@ -292,6 +292,12 @@ M171 closes the SDK orchestrator extraction block in `.codex-audit/sdk-orchestra
 npm.cmd run codex:orchestrator:extraction-closeout:smoke
 ```
 
+M172 designs the standalone adapter/plugin interface in `.codex-audit/sdk-orchestrator-extraction/172-sdk-adapter-interface-design-review.json` with schema `sdk-adapter-interface-design-review.v1`. The review defines how a future `codex-sdk-orchestrator-tool` could load project policy, evidence validators, package script assertions, README assertions, smoke catalogs, and handoff rules through an adapter/plugin interface while keeping AE Agent governance packet validators, current M152+ checks, package script assertions, README assertions, and project evidence policy project-local until a separate implementation milestone. No standalone package, new extraction, SDKThread/network work, CEP-panel SDK write, package install, dependency change, archive/delete/squash cleanup, push, or PR is introduced.
+
+```powershell
+npm.cmd run codex:orchestrator:adapter-interface-design:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.

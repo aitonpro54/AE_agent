@@ -1093,6 +1093,18 @@ async function runContractSmoke() {
     `M171 SDK orchestrator extraction closeout smoke failed: ${orchestratorExtractionCloseoutOutput.trim()}`,
     failures,
   );
+  const adapterInterfaceDesignSmoke = runNode([
+    path.join("scripts", "sdk-adapter-interface-design-smoke.js"),
+  ]);
+  const adapterInterfaceDesignOutput = `${
+    adapterInterfaceDesignSmoke.stdout ?? ""
+  }\n${adapterInterfaceDesignSmoke.stderr ?? ""}`;
+  assertContract(
+    adapterInterfaceDesignSmoke.status === 0 &&
+      adapterInterfaceDesignOutput.includes("SDK adapter interface design smoke: pass"),
+    `M172 SDK adapter interface design smoke failed: ${adapterInterfaceDesignOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1581,6 +1593,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:adapter-interface-design:smoke"] ===
+      "node scripts/sdk-adapter-interface-design-smoke.js",
+    "package.json codex:orchestrator:adapter-interface-design:smoke script is not wired to the M172 SDK adapter interface design smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1791,6 +1809,15 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:adapter-interface-design:smoke") &&
+      readme.includes("172-sdk-adapter-interface-design-review.json") &&
+      readme.includes("sdk-adapter-interface-design-review.v1") &&
+      readme.includes("M172 designs the standalone adapter/plugin interface") &&
+      readme.includes("adapter/plugin interface"),
+    "README does not document the M172 SDK adapter interface design smoke",
+    failures,
+  );
+  assertContract(
     readme.includes('sandboxMode: "read-only"') &&
       readme.includes('approvalPolicy: "never"') &&
       readme.includes("networkAccessEnabled: false") &&
@@ -1910,6 +1937,7 @@ async function runContractSmoke() {
   console.log("SDK runner split review smoke: pass");
   console.log("SDK buffered acceptance split review smoke: pass");
   console.log("SDK orchestrator extraction closeout smoke: pass");
+  console.log("SDK adapter interface design smoke: pass");
 }
 
 async function printGovernanceReport() {
