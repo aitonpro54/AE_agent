@@ -244,6 +244,12 @@ M157 closes the conveyor loop gate in `.codex-audit/sdk-milestone-conveyor/157-s
 npm.cmd run codex:orchestrator:milestone-conveyor-loop-gate:smoke
 ```
 
+M158 records the SDK orchestrator extraction/cleanup plan in `.codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json` with schema `sdk-orchestrator-extraction-cleanup-plan.v1`. It classifies reusable SDK orchestrator core, AE Agent project adapter material, active governance/readiness evidence, historical audit trail, archive/squash/summary candidates, and files that must not be removed. It also records a recommended standalone tool structure and a safe AE Agent cleanup plan. This is classification only: no files are deleted, CEP-panel SDK writes remain disabled, no SDKThread/network proof is run, and `cep-panel/panel.js` remains outside SDK writes.
+
+```powershell
+npm.cmd run codex:orchestrator:extraction-cleanup:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.

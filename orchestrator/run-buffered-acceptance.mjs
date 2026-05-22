@@ -987,6 +987,18 @@ async function runContractSmoke() {
     `M157 SDK milestone conveyor loop gate smoke failed: ${milestoneConveyorLoopGateOutput.trim()}`,
     failures,
   );
+  const extractionCleanupSmoke = runNode([
+    path.join("scripts", "sdk-orchestrator-extraction-cleanup-smoke.js"),
+  ]);
+  const extractionCleanupOutput = `${extractionCleanupSmoke.stdout ?? ""}\n${
+    extractionCleanupSmoke.stderr ?? ""
+  }`;
+  assertContract(
+    extractionCleanupSmoke.status === 0 &&
+      extractionCleanupOutput.includes("SDK orchestrator extraction cleanup smoke: pass"),
+    `M158 SDK orchestrator extraction cleanup smoke failed: ${extractionCleanupOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1432,6 +1444,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:extraction-cleanup:smoke"] ===
+      "node scripts/sdk-orchestrator-extraction-cleanup-smoke.js",
+    "package.json codex:orchestrator:extraction-cleanup:smoke script is not wired to the M158 extraction cleanup smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1565,6 +1583,15 @@ async function runContractSmoke() {
       readme.includes("one reviewable commit") &&
       readme.includes("context-pressure"),
     "README does not document the M157 SDK milestone conveyor loop gate smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:extraction-cleanup:smoke") &&
+      readme.includes("158-sdk-orchestrator-extraction-cleanup-plan.json") &&
+      readme.includes("sdk-orchestrator-extraction-cleanup-plan.v1") &&
+      readme.includes("recommended standalone tool structure") &&
+      readme.includes("safe AE Agent cleanup plan"),
+    "README does not document the M158 SDK orchestrator extraction cleanup smoke",
     failures,
   );
   assertContract(

@@ -124,6 +124,7 @@
 - [x] Milestone 155: SDK Milestone Conveyor Local Dry Run.
 - [x] Milestone 156: One Bounded SDKThread Docs-Audit Conveyor Proof.
 - [x] Milestone 157: SDK Conveyor Commit/Handoff Loop Gate.
+- [x] Milestone 158: SDK Orchestrator Extraction/Cleanup Plan.
 
 ## Current Stable Baseline
 
@@ -928,6 +929,7 @@
 - 2026-05-22: M155 adds a local-only dry-run proof for the SDK milestone conveyor. The committed `sdk-milestone-conveyor-local-dry-run-proof.v1` artifact simulates one `docs-audit` `sdk-write` queue item for the future M156 proof without explicit approval text, produces deterministic local state stopped at `no-explicit-approval`, and proves no SDKThread, network, operation-file write, auto-commit, auto-push, CEP-panel write, production-code write, live/external/mutating validation, or dependency change occurs.
 - 2026-05-22: M156 used the user's explicit bounded approval for exactly one real SDKThread/network proof with `scope:"docs-audit"`, `mode:"sdk-write"`, and planned path `.codex-audit/sdk-milestone-conveyor/156-sdk-conveyor-sdkthread-proof.json`. SDKThread `019e4dcd-dd6f-7651-8882-b0c014894633` completed as `sdk-write-completed`, created only the planned proof artifact, and no retry was run. The proof does not approve CEP-panel writes, production-code writes, external-provider/OpenAI CLI planner validation, live CEP/AE checks, mutating-live validation, dependency changes, or push.
 - 2026-05-22: M157 closes the SDK milestone conveyor loop gate locally. The committed `sdk-conveyor-commit-handoff-loop-gate.v1` artifact proves the one-milestone loop contract: validation before commit, one reviewable commit, handoff after each milestone, exact next prompt generation, dirty-tree separation, context-pressure handoff, no auto-push, and stop conditions for failed validation, missing SDKThread approval, forbidden work, dependency changes, and push.
+- 2026-05-22: M158 classifies the SDK orchestrator extraction/cleanup boundary before any cleanup. The committed `sdk-orchestrator-extraction-cleanup-plan.v1` artifact separates reusable orchestrator core from AE Agent adapter policy, marks M152/M153/M154-M157 as active governance/conveyor evidence, keeps older packets as historical audit trail, lists archive/squash candidates only for later summary/move work, and records files that must not be removed. No files were deleted, no SDKThread/network proof was run, CEP-panel SDK writes remain disabled, and `cep-panel/panel.js` remains outside SDK writes.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -1515,6 +1517,18 @@
   - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
   - `npm.cmd run ...` commands printed `npm warn Unknown env config "http-proxy"` but exited successfully.
   - Did not run SDKThread/network, enable CEP-panel SDK writes, edit `cep-panel/panel.js` through SDK, run live CEP/After Effects validation, run external-provider/OpenAI CLI planner validation, run mutating-live validation, install packages, change dependencies, push, or create a PR.
+
+- Milestone 158:
+  - Added committed classification artifact `.codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json` with schema `sdk-orchestrator-extraction-cleanup-plan.v1`.
+  - Classified current SDK material into reusable orchestrator core, AE Agent project adapter, active governance/readiness evidence, historical audit trail, archive/squash/summary candidates, and files that must not be removed.
+  - Recorded the recommended future standalone tool structure and a phased safe cleanup plan for AE Agent that starts with summary/index preservation before any archive move.
+  - Added `scripts/sdk-orchestrator-extraction-cleanup-smoke.js`, package script `codex:orchestrator:extraction-cleanup:smoke`, `check:rules` coverage, and README documentation.
+  - Passed `node --check scripts/sdk-orchestrator-extraction-cleanup-smoke.js` and `node --check orchestrator/run-buffered-acceptance.mjs`.
+  - Passed `npm.cmd run codex:orchestrator:extraction-cleanup:smoke`, `npm.cmd run codex:orchestrator:governance-report`, and `npm.cmd run check:rules`.
+  - Passed configured local smoke suite: provider contract, provider API, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only, and full smoke.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
+  - `npm.cmd run ...` commands printed `npm warn Unknown env config "http-proxy"` but exited successfully.
+  - Did not delete/archive/squash files, run SDKThread/network, enable CEP-panel SDK writes, edit `cep-panel/panel.js` through SDK, run live CEP/After Effects validation, run external-provider/OpenAI CLI planner validation, run mutating-live validation, install packages, change dependencies, push, or create a PR.
 
 - Milestone 106:
   - Read `.codex\handoff.md` and ran the requested continuation checks: current branch `codex/roadmap-1.3-planning` ahead of origin by 18 commits; `@openai/codex-sdk@0.131.0` installed; `tsx` and `typescript` not installed; `orchestrator/` initially absent; `.codex\sdk\logs` present.

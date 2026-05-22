@@ -1,0 +1,525 @@
+{
+  "schema": "sdk-orchestrator-extraction-cleanup-plan.v1",
+  "milestone": 158,
+  "title": "SDK Orchestrator Extraction/Cleanup Plan",
+  "createdAt": "2026-05-22",
+  "purpose": "Classify the current SDK orchestrator material before any cleanup, identify which parts should become a reusable standalone tool, and preserve AE Agent audit evidence while reducing future repository noise.",
+  "sourceContext": {
+    "lastCompletedCommit": "083f2bc",
+    "branch": "codex/roadmap-1.3-planning",
+    "inputsReadUtf8": [
+      "AGENTS.md",
+      ".codex/handoff.md",
+      "specs/target-app.md",
+      "plans/target-app-execplan.md targeted SDK sections",
+      "orchestrator/README.md"
+    ],
+    "currentBoundary": {
+      "sdkState": "controlled milestone conveyor, not general repo autopilot",
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditableThroughSdk": false,
+      "newSdkThreadOrNetworkProofApproved": false,
+      "cleanupPerformed": false,
+      "deletionPerformed": false
+    }
+  },
+  "classification": {
+    "reusableSdkOrchestratorCore": [
+      {
+        "component": "read-only SDK turn wrapper",
+        "currentPaths": [
+          "orchestrator/codex-sdk-orchestrator.mjs"
+        ],
+        "extractability": "high",
+        "keepInCore": [
+          "Codex SDK client/thread creation",
+          "resume support",
+          "safe default thread options",
+          "CLI value parsing and validation",
+          "streamed and non-streamed result normalization"
+        ],
+        "removeFromCoreWhenExtracted": [
+          "AE Agent package script naming",
+          "project-specific README wording"
+        ]
+      },
+      {
+        "component": "write runner safety engine",
+        "currentPaths": [
+          "orchestrator/run-write-capable-scaffold.mjs"
+        ],
+        "extractability": "high after policy injection",
+        "keepInCore": [
+          "operation envelope parsing",
+          "path normalization and unsafe path shape rejection",
+          "forbidden path pattern checks",
+          "scope allowlist evaluation as injected policy",
+          "pre-run git snapshot",
+          "dirty-tree acknowledgement contract",
+          "SDK runtime preflight and fallback log paths",
+          "SDK write prompt assembly from validated planned paths",
+          "post-run changed-file allowlist",
+          "git diff --check capture",
+          "failure diagnostics and no auto-commit default"
+        ],
+        "removeFromCoreWhenExtracted": [
+          "hard-coded AE Agent scopes",
+          "hard-coded provider smoke source paths",
+          "hard-coded .codex-audit packet directories",
+          "milestone-specific schemas M129-M157"
+        ]
+      },
+      {
+        "component": "buffered acceptance and local governance smoke wrapper",
+        "currentPaths": [
+          "orchestrator/run-buffered-acceptance.mjs"
+        ],
+        "extractability": "medium",
+        "keepInCore": [
+          "forced read-only thread options",
+          "unsafe override rejection before thread creation",
+          "local contract smoke runner pattern",
+          "machine-readable governance report command pattern"
+        ],
+        "removeFromCoreWhenExtracted": [
+          "AE Agent-specific packet collectors",
+          "README exact-string assertions",
+          "M152/M154-M157 artifact expectations",
+          "configured smoke suite names"
+        ]
+      },
+      {
+        "component": "local smoke/test idioms",
+        "currentPaths": [
+          "scripts/sdk-governance-report-smoke.js",
+          "scripts/sdk-milestone-conveyor-spec-smoke.js",
+          "scripts/sdk-milestone-conveyor-local-dry-run-smoke.js",
+          "scripts/sdk-milestone-conveyor-loop-gate-smoke.js"
+        ],
+        "extractability": "medium",
+        "keepInCore": [
+          "assertive JSON artifact validation",
+          "subprocess JSON parse checks",
+          "explicit forbidden-work assertions"
+        ],
+        "removeFromCoreWhenExtracted": [
+          "AE Agent milestone numbers",
+          "AE Agent artifact paths",
+          "CEP-panel and provider-smoke lane names"
+        ]
+      }
+    ],
+    "aeAgentProjectAdapter": [
+      {
+        "component": "AE Agent SDK policy",
+        "currentPaths": [
+          "orchestrator/run-write-capable-scaffold.mjs",
+          "orchestrator/run-buffered-acceptance.mjs"
+        ],
+        "adapterResponsibilities": [
+          "define scopes docs-audit, orchestrator, production-code, and cep-panel",
+          "keep cep-panel sdk-write disabled",
+          "keep production-code sdk-write limited to scripts/provider-api-smoke.js and scripts/provider-contract-smoke.js",
+          "define .codex-audit packet directories",
+          "map AE Agent validation commands and local smoke suite",
+          "own plan/handoff update expectations"
+        ],
+        "futureShape": "Move these constants into an AE Agent adapter config consumed by the reusable core."
+      },
+      {
+        "component": "project docs and continuation policy",
+        "currentPaths": [
+          "AGENTS.md",
+          ".codex/handoff.md",
+          "plans/target-app-execplan.md",
+          "orchestrator/README.md"
+        ],
+        "adapterResponsibilities": [
+          "Russian continuation workflow",
+          "milestone commit/handoff discipline",
+          "target app safety boundaries",
+          "AE Agent-specific forbidden work list"
+        ]
+      },
+      {
+        "component": "AE Agent production-code lane targets",
+        "currentPaths": [
+          "scripts/provider-api-smoke.js",
+          "scripts/provider-contract-smoke.js"
+        ],
+        "adapterResponsibilities": [
+          "remain AE Agent repository source files",
+          "serve as the only current production-code SDK write lane evidence",
+          "not become generic tool source"
+        ]
+      },
+      {
+        "component": "CEP-panel candidate lane",
+        "currentPaths": [
+          "cep-panel/panel.js",
+          ".codex-audit/sdk-scope-expansion-reviews/132-cep-panel-composer-review.json",
+          ".codex-audit/sdk-next-lane/153-sdk-next-lane-selection.json"
+        ],
+        "adapterResponsibilities": [
+          "record candidate-only state",
+          "keep sdkWriteEnabled:false",
+          "require fresh explicit approval before any CEP-panel proof"
+        ]
+      }
+    ],
+    "activeGovernanceReadinessEvidence": [
+      {
+        "evidenceSet": "current production-code provider smoke lane",
+        "paths": [
+          ".codex-audit/sdk-production-readiness/152-sdk-production-code-provider-smokes-ready.json",
+          ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
+          ".codex-audit/sdk-write-lane-enablement/152-production-code-provider-smokes-enable.json",
+          ".codex-audit/sdk-write-lane-readiness/152-production-code-provider-smokes-readiness.json",
+          ".codex-audit/sdk-write-lane-approval-decisions/152-production-code-provider-smokes-approval-decision.json",
+          ".codex-audit/sdk-scope-expansion-reviews/152-production-code-provider-smokes-review.json",
+          "scripts/sdk-production-code-broader-readiness-smoke.js",
+          "scripts/sdk-governance-report-smoke.js"
+        ],
+        "reason": "These define the current two-file production-code provider smoke readiness claim and current launch governance."
+      },
+      {
+        "evidenceSet": "current next-lane and conveyor foundation",
+        "paths": [
+          ".codex-audit/sdk-next-lane/153-sdk-next-lane-selection.json",
+          ".codex-audit/sdk-milestone-conveyor/154-sdk-milestone-conveyor-spec.json",
+          ".codex-audit/sdk-milestone-conveyor/155-sdk-milestone-conveyor-local-dry-run.json",
+          ".codex-audit/sdk-milestone-conveyor/156-sdk-conveyor-sdkthread-proof.json",
+          ".codex-audit/sdk-milestone-conveyor/157-sdk-conveyor-commit-handoff-loop-gate.json",
+          "scripts/sdk-next-lane-selection-smoke.js",
+          "scripts/sdk-milestone-conveyor-spec-smoke.js",
+          "scripts/sdk-milestone-conveyor-local-dry-run-smoke.js",
+          "scripts/sdk-milestone-conveyor-sdkthread-proof-smoke.js",
+          "scripts/sdk-milestone-conveyor-loop-gate-smoke.js"
+        ],
+        "reason": "These are the current controlled milestone conveyor boundary; they are not old noise."
+      },
+      {
+        "evidenceSet": "current runtime/tool core implementation",
+        "paths": [
+          "orchestrator/codex-sdk-orchestrator.mjs",
+          "orchestrator/run-write-capable-scaffold.mjs",
+          "orchestrator/run-buffered-acceptance.mjs",
+          "package.json",
+          "package-lock.json"
+        ],
+        "reason": "These are still the active command surface and dependency record."
+      }
+    ],
+    "historicalAuditTrail": [
+      {
+        "evidenceSet": "early docs-audit and orchestrator SDKThread proof history",
+        "paths": [
+          ".codex-audit/sdk-final-project-audit-operation.json",
+          ".codex-audit/sdk-autopilot-readiness-report.md",
+          "orchestrator/m123-sdk-thread-orchestrator-scope-output.md",
+          "orchestrator/m124-sdk-thread-orchestrator-scope-output.md",
+          "orchestrator/fixtures/sdk-write/m125-sdk-thread-fixture.json",
+          "orchestrator/fixtures/sdk-write/m126-sdk-thread-fixture.json"
+        ],
+        "status": "historical, keep until summarized and referenced by a replacement index"
+      },
+      {
+        "evidenceSet": "superseded single-file and blocked production-readiness packets",
+        "paths": [
+          ".codex-audit/sdk-production-readiness/145-sdk-production-ready.json",
+          ".codex-audit/sdk-production-readiness/146-sdk-production-ready.json",
+          ".codex-audit/sdk-launch-governance/140-sdk-launch-governance.json",
+          ".codex-audit/sdk-write-lane-enablement/135-production-code-smoke-harness-enable.json",
+          ".codex-audit/sdk-write-lane-readiness/133-production-code-smoke-harness-readiness.json",
+          ".codex-audit/sdk-write-lane-approval-decisions/134-production-code-smoke-harness-approval-decision.json",
+          ".codex-audit/sdk-scope-expansion-reviews/129-production-code-smoke-harness-review.json"
+        ],
+        "status": "historical but currently referenced by local contract checks; do not remove before check migration"
+      },
+      {
+        "evidenceSet": "bounded reliability and multi-file proof history",
+        "paths": [
+          ".codex-audit/sdk-iterative-cmd/147-sdk-iterative-cmd-reliability.json",
+          ".codex-audit/sdk-iterative-cmd/147-operation-envelope.json",
+          ".codex-audit/sdk-multi-file-planned-operation/148-sdk-multi-file-planned-operation-contract.json",
+          ".codex-audit/sdk-multi-file-planned-operation/149-sdk-multi-file-real-proof.json",
+          ".codex-audit/sdk-post-multi-file-readiness/150-sdk-post-multi-file-governance-boundary.json",
+          ".codex-audit/sdk-post-multi-file-readiness/151-sdk-boundary-closeout.json",
+          "orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json",
+          "orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json",
+          "orchestrator/fixtures/sdk-write/m149-multi-file-beta.json"
+        ],
+        "status": "historical evidence for reusable tool design; good candidate for summary after extraction"
+      }
+    ],
+    "candidatesForArchiveSquashSummary": [
+      {
+        "candidateSet": "superseded readiness/governance packets",
+        "paths": [
+          ".codex-audit/sdk-production-readiness/145-sdk-production-ready.json",
+          ".codex-audit/sdk-production-readiness/146-sdk-production-ready.json",
+          ".codex-audit/sdk-launch-governance/140-sdk-launch-governance.json",
+          ".codex-audit/sdk-write-lane-enablement/135-production-code-smoke-harness-enable.json",
+          ".codex-audit/sdk-write-lane-readiness/133-production-code-smoke-harness-readiness.json",
+          ".codex-audit/sdk-write-lane-approval-decisions/134-production-code-smoke-harness-approval-decision.json"
+        ],
+        "safeOnlyAfter": [
+          "a committed sdk-history index preserves verdicts, commit ids, and supersession chain",
+          "check:rules no longer requires these exact files",
+          "current M152 governance remains validated"
+        ],
+        "immediateAction": "none"
+      },
+      {
+        "candidateSet": "early proof fixtures and docs outputs",
+        "paths": [
+          "orchestrator/m123-sdk-thread-orchestrator-scope-output.md",
+          "orchestrator/m124-sdk-thread-orchestrator-scope-output.md",
+          "orchestrator/fixtures/sdk-write/m125-sdk-thread-fixture.json",
+          "orchestrator/fixtures/sdk-write/m126-sdk-thread-fixture.json",
+          "orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json",
+          "orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json",
+          "orchestrator/fixtures/sdk-write/m149-multi-file-beta.json"
+        ],
+        "safeOnlyAfter": [
+          "standalone tool tests cover equivalent fixture behavior",
+          "AE Agent keeps a short historical pointer to the original commits",
+          "no current smoke reads these exact proof files"
+        ],
+        "immediateAction": "none"
+      },
+      {
+        "candidateSet": "verbose historical smoke scripts",
+        "paths": [
+          "scripts/sdk-launch-readiness-summary-smoke.js",
+          "scripts/sdk-production-readiness-smoke.js",
+          "scripts/sdk-iterative-cmd-reliability-smoke.js",
+          "scripts/sdk-multi-file-planned-operation-smoke.js",
+          "scripts/sdk-multi-file-real-proof-smoke.js",
+          "scripts/sdk-post-multi-file-governance-smoke.js",
+          "scripts/sdk-boundary-closeout-smoke.js"
+        ],
+        "safeOnlyAfter": [
+          "the reusable tool owns generic regression coverage",
+          "AE Agent check:rules keeps only current governance/conveyor smokes",
+          "a migration commit explains what evidence each retired smoke covered"
+        ],
+        "immediateAction": "none"
+      }
+    ],
+    "filesMustNotBeRemoved": [
+      {
+        "paths": [
+          "orchestrator/codex-sdk-orchestrator.mjs",
+          "orchestrator/run-write-capable-scaffold.mjs",
+          "orchestrator/run-buffered-acceptance.mjs",
+          "orchestrator/README.md"
+        ],
+        "reason": "Active SDK command surface until the standalone tool and AE adapter wrappers replace it."
+      },
+      {
+        "paths": [
+          ".codex-audit/sdk-production-readiness/152-sdk-production-code-provider-smokes-ready.json",
+          ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
+          ".codex-audit/sdk-next-lane/153-sdk-next-lane-selection.json",
+          ".codex-audit/sdk-milestone-conveyor/154-sdk-milestone-conveyor-spec.json",
+          ".codex-audit/sdk-milestone-conveyor/155-sdk-milestone-conveyor-local-dry-run.json",
+          ".codex-audit/sdk-milestone-conveyor/156-sdk-conveyor-sdkthread-proof.json",
+          ".codex-audit/sdk-milestone-conveyor/157-sdk-conveyor-commit-handoff-loop-gate.json"
+        ],
+        "reason": "Current governance/readiness and conveyor evidence."
+      },
+      {
+        "paths": [
+          "scripts/provider-api-smoke.js",
+          "scripts/provider-contract-smoke.js",
+          "cep-panel/panel.js",
+          "package.json",
+          "package-lock.json",
+          "AGENTS.md",
+          "plans/target-app-execplan.md",
+          ".codex/handoff.md"
+        ],
+        "reason": "AE Agent source, dependency record, and continuity files; cep-panel/panel.js remains outside SDK writes."
+      }
+    ]
+  },
+  "recommendedStandaloneToolStructure": {
+    "packageName": "codex-sdk-orchestrator-tool",
+    "proposedTree": [
+      "package.json",
+      "src/cli/read-only-turn.mjs",
+      "src/cli/write-runner.mjs",
+      "src/cli/conveyor-runner.mjs",
+      "src/core/sdk-client.mjs",
+      "src/core/thread-options.mjs",
+      "src/core/operation-envelope.mjs",
+      "src/core/path-policy.mjs",
+      "src/core/git-snapshot.mjs",
+      "src/core/runtime-store.mjs",
+      "src/core/post-run-contract.mjs",
+      "src/core/failure-diagnostics.mjs",
+      "src/core/governance-report.mjs",
+      "src/core/milestone-conveyor.mjs",
+      "src/adapters/config-loader.mjs",
+      "src/adapters/ae-agent-policy.example.json",
+      "schemas/operation-envelope.v1.json",
+      "schemas/governance-report.v1.json",
+      "test/core/*.test.js",
+      "test/fixtures/*"
+    ],
+    "publicSurfaces": [
+      "read-only-turn CLI",
+      "write-runner CLI",
+      "conveyor-runner CLI",
+      "policy config schema",
+      "operation envelope schema",
+      "governance report JSON"
+    ],
+    "aeAgentKeeps": [
+      "a small adapter policy file or wrapper module",
+      "AE Agent package scripts that call the standalone CLI",
+      "current governance/conveyor artifacts",
+      "AE Agent validation command list",
+      "manual approval boundaries for SDKThread/network, CEP-panel writes, live CEP/AE, external providers, and dependency changes"
+    ]
+  },
+  "safeAeAgentCleanupPlan": [
+    {
+      "phase": 1,
+      "name": "Freeze current inventory",
+      "actions": [
+        "Commit this classification plan and smoke coverage.",
+        "Do not delete, move, squash, or archive files in the same milestone."
+      ],
+      "exitCriteria": [
+        "M158 smoke passes",
+        "check:rules passes",
+        "handoff records no cleanup was performed"
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Extract reusable core without behavior change",
+      "actions": [
+        "Create a standalone tool workspace or repository from the core modules.",
+        "Move generic policy-neutral logic first: envelope, path policy, git snapshots, runtime store, post-run contract, diagnostics, thread options.",
+        "Keep AE Agent wrappers pointing at the existing local implementation until parity tests pass."
+      ],
+      "exitCriteria": [
+        "standalone core tests pass locally",
+        "AE Agent check:rules still passes without changing current governance artifacts"
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "Introduce AE Agent adapter config",
+      "actions": [
+        "Represent docs-audit, orchestrator, production-code, and cep-panel lanes as project adapter config.",
+        "Keep cep-panel sdk-write disabled in the adapter.",
+        "Generate or validate current M152/M154-M157 evidence against the adapter."
+      ],
+      "exitCriteria": [
+        "current governance report remains local-gated with no drift",
+        "production-code allowlist remains exactly scripts/provider-api-smoke.js and scripts/provider-contract-smoke.js",
+        "CEP-panel remains disabled"
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "Summarize historical SDK evidence",
+      "actions": [
+        "Create a committed sdk-history index that records historical artifacts, verdicts, supersession chain, and commit ids.",
+        "Update smokes to validate the index plus current evidence instead of every superseded packet.",
+        "Only then consider moving historical files into a clearly named archive directory."
+      ],
+      "exitCriteria": [
+        "history index is machine-checked",
+        "current evidence remains directly checked",
+        "git diff shows moves only after review"
+      ]
+    },
+    {
+      "phase": 5,
+      "name": "Optional archive or squash follow-up",
+      "actions": [
+        "Archive candidates by move, not deletion, in a dedicated cleanup commit.",
+        "Keep a short README or index linking to the original evidence.",
+        "Do not archive current M152 governance, M153 next-lane, M154-M157 conveyor, provider smoke targets, or cep-panel/panel.js."
+      ],
+      "exitCriteria": [
+        "node --check for touched JS files passes",
+        "check:rules passes",
+        "full configured local smoke suite passes or records a precise blocked reason"
+      ]
+    }
+  ],
+  "validationPlan": {
+    "machineCheckedArtifact": true,
+    "commands": [
+      "node --check scripts/sdk-orchestrator-extraction-cleanup-smoke.js",
+      "node --check orchestrator/run-buffered-acceptance.mjs",
+      "npm.cmd run codex:orchestrator:extraction-cleanup:smoke",
+      "npm.cmd run check:rules",
+      "git diff --check"
+    ],
+    "notRunByDesign": [
+      "SDKThread/network proof",
+      "CEP-panel SDK write",
+      "edit cep-panel/panel.js through SDK",
+      "live CEP/After Effects validation",
+      "external-provider/OpenAI CLI planner validation",
+      "mutating-live validation",
+      "package install",
+      "dependency change",
+      "push"
+    ]
+  },
+  "machineCheck": {
+    "requiredBuckets": [
+      "reusableSdkOrchestratorCore",
+      "aeAgentProjectAdapter",
+      "activeGovernanceReadinessEvidence",
+      "historicalAuditTrail",
+      "candidatesForArchiveSquashSummary",
+      "filesMustNotBeRemoved"
+    ],
+    "mustExist": [
+      "orchestrator/codex-sdk-orchestrator.mjs",
+      "orchestrator/run-write-capable-scaffold.mjs",
+      "orchestrator/run-buffered-acceptance.mjs",
+      ".codex-audit/sdk-production-readiness/152-sdk-production-code-provider-smokes-ready.json",
+      ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
+      ".codex-audit/sdk-next-lane/153-sdk-next-lane-selection.json",
+      ".codex-audit/sdk-milestone-conveyor/157-sdk-conveyor-commit-handoff-loop-gate.json",
+      "scripts/provider-api-smoke.js",
+      "scripts/provider-contract-smoke.js",
+      "cep-panel/panel.js"
+    ],
+    "currentEvidenceMustNotBeArchiveCandidates": [
+      ".codex-audit/sdk-production-readiness/152-sdk-production-code-provider-smokes-ready.json",
+      ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
+      ".codex-audit/sdk-next-lane/153-sdk-next-lane-selection.json",
+      ".codex-audit/sdk-milestone-conveyor/157-sdk-conveyor-commit-handoff-loop-gate.json",
+      "scripts/provider-api-smoke.js",
+      "scripts/provider-contract-smoke.js",
+      "cep-panel/panel.js"
+    ],
+    "forbiddenImmediateActions": [
+      "delete-now",
+      "remove-now",
+      "cleanup-now",
+      "enable-cep-panel-sdk-write",
+      "run-sdkthread",
+      "run-network-proof"
+    ],
+    "requiredStandaloneModules": [
+      "src/core/operation-envelope.mjs",
+      "src/core/path-policy.mjs",
+      "src/core/git-snapshot.mjs",
+      "src/core/runtime-store.mjs",
+      "src/core/post-run-contract.mjs",
+      "src/adapters/ae-agent-policy.example.json"
+    ]
+  }
+}
