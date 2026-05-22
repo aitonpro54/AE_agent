@@ -999,6 +999,18 @@ async function runContractSmoke() {
     `M164 SDK historical archive review smoke failed: ${historicalArchiveReviewOutput.trim()}`,
     failures,
   );
+  const historicalArchiveMoveSmoke = runNode([
+    path.join("scripts", "sdk-historical-archive-move-smoke.js"),
+  ]);
+  const historicalArchiveMoveOutput = `${historicalArchiveMoveSmoke.stdout ?? ""}\n${
+    historicalArchiveMoveSmoke.stderr ?? ""
+  }`;
+  assertContract(
+    historicalArchiveMoveSmoke.status === 0 &&
+      historicalArchiveMoveOutput.includes("SDK historical archive move smoke: pass"),
+    `M165 SDK historical archive move smoke failed: ${historicalArchiveMoveOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1007,17 +1019,18 @@ async function runContractSmoke() {
   for (const failure of reviewPacketFiles.failures) {
     assertContract(false, `M129 SDK scope expansion review packet file failed: ${failure}`, failures);
   }
+  const legacyProductionReviewPacketPath =
+    `${SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY}/129-production-code-smoke-harness-review.json`;
   const firstReviewPacket = reviewPacketFiles.packets.find(
-    (packet) =>
-      packet.path ===
-      `${SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY}/129-production-code-smoke-harness-review.json`,
+    (packet) => packet.path === legacyProductionReviewPacketPath,
   );
   assertContract(
-    firstReviewPacket?.decision === "proposed" &&
+    !firstReviewPacket ||
+      (firstReviewPacket.decision === "proposed" &&
       firstReviewPacket?.scope === "production-code" &&
       firstReviewPacket?.sdkWriteEnabled === false &&
-      firstReviewPacket?.plannedPathAllowlist?.includes("scripts/provider-contract-smoke.js"),
-    "M129 first SDK scope expansion review packet was not validated",
+      firstReviewPacket?.plannedPathAllowlist?.includes("scripts/provider-contract-smoke.js")),
+    "M129 first SDK scope expansion review packet was invalid when present",
     failures,
   );
   const secondReviewPacket = reviewPacketFiles.packets.find(
@@ -1061,15 +1074,16 @@ async function runContractSmoke() {
       `${SDK_WRITE_LANE_READINESS_DIRECTORY}/133-production-code-smoke-harness-readiness.json`,
   );
   assertContract(
-    productionLaneReadiness?.readiness === SDK_WRITE_LANE_READINESS_STATE &&
+    !productionLaneReadiness ||
+      (productionLaneReadiness.readiness === SDK_WRITE_LANE_READINESS_STATE &&
       productionLaneReadiness?.approvalState === SDK_WRITE_LANE_APPROVAL_STATE &&
       productionLaneReadiness?.scope === "production-code" &&
       productionLaneReadiness?.sdkWriteEnabled === false &&
-      productionLaneReadiness?.sourceReviewPacket === firstReviewPacket?.path &&
+      productionLaneReadiness?.sourceReviewPacket === legacyProductionReviewPacketPath &&
       productionLaneReadiness?.plannedPathAllowlist?.join(",") ===
-        firstReviewPacket?.plannedPathAllowlist?.join(",") &&
-      productionLaneReadiness?.plannedPathAllowlist?.includes("scripts/provider-contract-smoke.js"),
-    "M133 production-code SDK write lane readiness gate was not validated against M129",
+        SDK_WRITE_PRODUCTION_CODE_LEGACY_SINGLE_FILE_PLANNED_PATH_ALLOWLIST.join(",") &&
+      productionLaneReadiness?.plannedPathAllowlist?.includes("scripts/provider-contract-smoke.js")),
+    "M133 production-code SDK write lane readiness gate was invalid when present",
     failures,
   );
   const m152ProductionLaneReadiness = readinessPacketFiles.packets.find(
@@ -1105,18 +1119,20 @@ async function runContractSmoke() {
       `${SDK_WRITE_LANE_APPROVAL_DECISION_DIRECTORY}/134-production-code-smoke-harness-approval-decision.json`,
   );
   assertContract(
-    productionLaneApprovalDecision?.approvalState === SDK_WRITE_LANE_APPROVAL_STATE &&
+    !productionLaneApprovalDecision ||
+      (productionLaneApprovalDecision.approvalState === SDK_WRITE_LANE_APPROVAL_STATE &&
       productionLaneApprovalDecision?.explicitApprovalRecorded === false &&
       productionLaneApprovalDecision?.scope === "production-code" &&
       productionLaneApprovalDecision?.sdkWriteEnabled === false &&
-      productionLaneApprovalDecision?.sourceReadinessPacket === productionLaneReadiness?.path &&
-      productionLaneApprovalDecision?.sourceReviewPacket === firstReviewPacket?.path &&
+      productionLaneApprovalDecision?.sourceReadinessPacket ===
+        `${SDK_WRITE_LANE_READINESS_DIRECTORY}/133-production-code-smoke-harness-readiness.json` &&
+      productionLaneApprovalDecision?.sourceReviewPacket === legacyProductionReviewPacketPath &&
       productionLaneApprovalDecision?.plannedPathAllowlist?.join(",") ===
-        productionLaneReadiness?.plannedPathAllowlist?.join(",") &&
+        SDK_WRITE_PRODUCTION_CODE_LEGACY_SINGLE_FILE_PLANNED_PATH_ALLOWLIST.join(",") &&
       productionLaneApprovalDecision?.plannedPathAllowlist?.includes(
         "scripts/provider-contract-smoke.js",
-      ),
-    "M134 production-code SDK write lane approval decision did not remain pending against M133/M129",
+      )),
+    "M134 production-code SDK write lane approval decision was invalid when present",
     failures,
   );
   const m152ProductionLaneApprovalDecision = approvalDecisionPacketFiles.packets.find(
@@ -1151,19 +1167,21 @@ async function runContractSmoke() {
       `${SDK_WRITE_LANE_ENABLEMENT_DIRECTORY}/135-production-code-smoke-harness-enable.json`,
   );
   assertContract(
-    productionLaneEnablement?.approvalState === SDK_WRITE_LANE_ENABLEMENT_APPROVAL_STATE &&
+    !productionLaneEnablement ||
+      (productionLaneEnablement.approvalState === SDK_WRITE_LANE_ENABLEMENT_APPROVAL_STATE &&
       productionLaneEnablement?.explicitApprovalRecorded === true &&
       productionLaneEnablement?.scope === SDK_WRITE_PRODUCTION_CODE_SCOPE &&
       productionLaneEnablement?.sdkWriteEnabled === true &&
       productionLaneEnablement?.sourceApprovalDecisionPacket ===
-        productionLaneApprovalDecision?.path &&
-      productionLaneEnablement?.sourceReadinessPacket === productionLaneReadiness?.path &&
-      productionLaneEnablement?.sourceReviewPacket === firstReviewPacket?.path &&
+        `${SDK_WRITE_LANE_APPROVAL_DECISION_DIRECTORY}/134-production-code-smoke-harness-approval-decision.json` &&
+      productionLaneEnablement?.sourceReadinessPacket ===
+        `${SDK_WRITE_LANE_READINESS_DIRECTORY}/133-production-code-smoke-harness-readiness.json` &&
+      productionLaneEnablement?.sourceReviewPacket === legacyProductionReviewPacketPath &&
       productionLaneEnablement?.plannedPathAllowlist?.join(",") ===
         SDK_WRITE_PRODUCTION_CODE_LEGACY_SINGLE_FILE_PLANNED_PATH_ALLOWLIST.join(",") &&
       productionLaneEnablement?.plannedPathAllowlist?.join(",") ===
-        productionLaneReadiness?.plannedPathAllowlist?.join(","),
-    "M135 production-code SDK write lane enablement did not remain narrow against M134/M133/M129",
+        SDK_WRITE_PRODUCTION_CODE_LEGACY_SINGLE_FILE_PLANNED_PATH_ALLOWLIST.join(",")),
+    "M135 production-code SDK write lane enablement was invalid when present",
     failures,
   );
   const m152ProductionLaneEnablement = enablementPacketFiles.packets.find(
@@ -1198,7 +1216,8 @@ async function runContractSmoke() {
     (packet) => packet.path === `${SDK_LAUNCH_GOVERNANCE_DIRECTORY}/140-sdk-launch-governance.json`,
   );
   assertContract(
-    sdkLaunchGovernance?.state === SDK_LAUNCH_GOVERNANCE_STATE &&
+    !sdkLaunchGovernance ||
+      (sdkLaunchGovernance.state === SDK_LAUNCH_GOVERNANCE_STATE &&
       sdkLaunchGovernance?.allowedSdkWriteScopes?.join(",") ===
         SDK_WRITE_ALLOWED_SCOPES.join(",") &&
       sdkLaunchGovernance?.reviewRequiredScopes?.join(",") ===
@@ -1210,8 +1229,8 @@ async function runContractSmoke() {
       sdkLaunchGovernance?.newSdkThreadRunApproved === false &&
       sdkLaunchGovernance?.externalNetworkRetryApproved === false &&
       sdkLaunchGovernance?.broadProductionCodeWritesApproved === false &&
-      sdkLaunchGovernance?.cepPanelSdkWriteEnabled === false,
-    "M140 SDK launch governance did not keep launch state local-gated and narrow",
+      sdkLaunchGovernance?.cepPanelSdkWriteEnabled === false),
+    "M140 SDK launch governance was invalid when present",
     failures,
   );
   const m152SdkLaunchGovernance = launchGovernancePacketFiles.packets.find(
@@ -1438,6 +1457,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:historical-archive-move:smoke"] ===
+      "node scripts/sdk-historical-archive-move-smoke.js",
+    "package.json codex:orchestrator:historical-archive-move:smoke script is not wired to the M165 historical archive move smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1584,6 +1609,15 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:historical-archive-move:smoke") &&
+      readme.includes("165-sdk-historical-archive-move.json") &&
+      readme.includes("sdk-historical-archive-move.v1") &&
+      readme.includes("M165 moves the M164-reviewed historical archive candidates") &&
+      readme.includes("delete and squash remain blocked"),
+    "README does not document the M165 historical archive move smoke",
+    failures,
+  );
+  assertContract(
     readme.includes('sandboxMode: "read-only"') &&
       readme.includes('approvalPolicy: "never"') &&
       readme.includes("networkAccessEnabled: false") &&
@@ -1699,6 +1733,7 @@ async function runContractSmoke() {
   console.log("SDK reusable core extraction smoke: pass");
   console.log("SDK AE Agent adapter config smoke: pass");
   console.log("SDK historical smoke migration smoke: pass");
+  console.log("SDK historical archive move smoke: pass");
 }
 
 async function printGovernanceReport() {

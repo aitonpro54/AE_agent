@@ -131,6 +131,7 @@
 - [x] Milestone 162: SDK Historical Evidence Summary.
 - [x] Milestone 163: SDK Historical Smoke Migration.
 - [x] Milestone 164: SDK Historical Archive Move Review.
+- [x] Milestone 165: SDK Historical Archive Move.
 
 ## Current Stable Baseline
 
@@ -942,6 +943,7 @@
 - 2026-05-22: M162 creates a committed `sdk-historical-evidence-index.v1` artifact for historical SDK evidence before any archive move. The index records historical artifacts, verdicts, supersession chain, and commit refs for early docs-audit/orchestrator SDKThread proofs, superseded single-file production readiness, and bounded reliability/multi-file proofs, while keeping M152 governance/readiness, M153-M157 conveyor packets, M158-M161 extraction artifacts, provider smoke targets, and `cep-panel/panel.js` as current directly checked evidence. No archive/delete/squash, SDKThread/network proof, CEP-panel SDK write, `cep-panel/panel.js` edit, live CEP/AE validation, external-provider/OpenAI CLI planner, mutating-live validation, dependency change, package install, push, or PR was performed.
 - 2026-05-22: M163 migrates superseded M144-M151 historical smoke coverage out of active package/check:rules entrypoints into committed `sdk-historical-smoke-migration.v1` evidence. The old historical smoke scripts and artifacts remain in place, M152+ current governance/conveyor/extraction smokes remain directly checked, and archive/delete/squash cleanup remains blocked for a separate reviewed milestone. No SDKThread/network proof, CEP-panel SDK write, `cep-panel/panel.js` edit, live CEP/AE validation, external-provider/OpenAI CLI planner validation, mutating-live validation, dependency change, package install, push, or PR was performed.
 - 2026-05-22: M164 reviews historical archive move candidates without moving anything. The committed `sdk-historical-archive-review.v1` artifact groups only M162-indexed and M163-smoke-migrated historical files into future archive batches, excludes current M152 governance/readiness, M153-M157 conveyor packets, M158-M164 extraction artifacts, active command-surface files, provider smoke targets, `package.json`/`package-lock.json`, and `cep-panel/panel.js`, and keeps archive/delete/squash blocked until a separate reviewed cleanup milestone. No SDKThread/network proof, CEP-panel SDK write, `cep-panel/panel.js` edit, live CEP/AE validation, external-provider/OpenAI CLI planner validation, mutating-live validation, dependency change, package install, push, or PR was performed.
+- 2026-05-22: M165 performs the separately approved move-only historical archive cleanup for the exact M164-reviewed candidates. The committed `sdk-historical-archive-move.v1` artifact moves 36 historical files into `.codex-audit/sdk-history-archive/`, preserves original paths in the M165 index, keeps M162 verdicts/commit refs/supersession chain as the metadata source, keeps M152+ current evidence and active command files in place, and keeps delete/squash blocked. No SDKThread/network proof, CEP-panel SDK write, `cep-panel/panel.js` edit, live CEP/AE validation, external-provider/OpenAI CLI planner validation, mutating-live validation, dependency change, package install, push, or PR was performed.
 - 2026-05-19: Milestone 106 keeps the bootstrap orchestrator in plain `.mjs` because `tsx` and `typescript` could not be installed. Sandboxed npm failed with `EACCES` for `https://registry.npmjs.org/tsx`; the approved network retry reached `registry.npmjs.org:443` but ended with `EIDLETIMEOUT`.
 - 2026-05-19: `@openai/codex-sdk` is kept as a production dependency because the orchestrator should be runnable directly with Node and the SDK wraps the local Codex CLI path used by this project. `tsx`/`typescript` should not be hand-added to `devDependencies` until npm can fetch and lock them normally.
 - 2026-05-19: `node_modules/` is now ignored; reviewable dependency state is `package.json` plus `package-lock.json`, not vendored installed packages.
@@ -1600,6 +1602,19 @@
   - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
   - `npm.cmd run ...` commands printed `npm warn Unknown env config "http-proxy"` but exited successfully.
   - Did not run SDKThread/network, enable CEP-panel SDK writes, edit `cep-panel/panel.js`, run live CEP/After Effects validation, run external-provider/OpenAI CLI planner validation, run mutating-live validation, install packages, change dependencies, archive/delete/squash files, push, or create a PR.
+
+- Milestone 165:
+  - Moved exactly the M164-reviewed historical archive candidates into `.codex-audit/sdk-history-archive/` using Git renames.
+  - Added committed move artifact `.codex-audit/sdk-orchestrator-extraction/165-sdk-historical-archive-move.json` with schema `sdk-historical-archive-move.v1`.
+  - Added archive README `.codex-audit/sdk-history-archive/README.md`, helper `scripts/sdk-history-archive-paths.js`, and `scripts/sdk-historical-archive-move-smoke.js`.
+  - Updated M162-M164 historical smokes to resolve moved historical files through the M165 archive index while keeping current evidence checks on active paths.
+  - Updated `check:rules`, package script `codex:orchestrator:historical-archive-move:smoke`, and README documentation.
+  - Passed `node --check` for all touched `.js`/`.mjs` files, including moved retired historical smoke scripts under `.codex-audit/sdk-history-archive/**`.
+  - Passed `node scripts/sdk-historical-evidence-index-smoke.js`, `node scripts/sdk-historical-smoke-migration-smoke.js`, `node scripts/sdk-historical-archive-review-smoke.js`, and `node scripts/sdk-historical-archive-move-smoke.js`.
+  - Passed `npm.cmd run codex:orchestrator:historical-archive-move:smoke`, `npm.cmd run codex:orchestrator:governance-report`, and `npm.cmd run check:rules`; governance report stayed `driftDetected:false`, production-code allowlist stayed exactly `scripts/provider-api-smoke.js` plus `scripts/provider-contract-smoke.js`, and CEP-panel SDK writes stayed disabled.
+  - Passed configured local smoke suite: provider contract, provider API, solution registry/candidate/promotion/retrieval/library validation, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only, and full smoke.
+  - Passed `git diff --check`; Git printed only LF-to-CRLF working-copy warnings for touched text files.
+  - Did not run SDKThread/network, enable CEP-panel SDK writes, edit `cep-panel/panel.js`, run live CEP/After Effects validation, run external-provider/OpenAI CLI planner validation, run mutating-live validation, install packages, change dependencies, delete/squash files, push, or create a PR.
 
 - Milestone 160:
   - Added policy-neutral reusable core modules `orchestrator/core/path-policy.mjs`, `orchestrator/core/git-snapshot.mjs`, and `orchestrator/core/thread-options.mjs`.

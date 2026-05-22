@@ -3,6 +3,9 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
+const {
+  assertFileExistsAtCurrentOrArchive,
+} = require("./sdk-history-archive-paths");
 
 const repo = path.resolve(__dirname, "..");
 const MIGRATION_PATH =
@@ -22,7 +25,7 @@ function assertIncludes(list, value, label) {
 }
 
 function assertFileExists(repoPath, label) {
-  assert(fs.existsSync(path.join(repo, repoPath)), `${label} must exist: ${repoPath}`);
+  assertFileExistsAtCurrentOrArchive(repo, repoPath, label);
 }
 
 function packageScriptsFromCurrent(entry) {

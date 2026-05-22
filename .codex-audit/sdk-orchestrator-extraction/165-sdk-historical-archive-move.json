@@ -1,0 +1,189 @@
+{
+  "schema": "sdk-historical-archive-move.v1",
+  "milestone": 165,
+  "title": "SDK Historical Archive Move",
+  "createdAt": "2026-05-22",
+  "purpose": "Move only M164-reviewed historical SDK evidence and retired smoke files into the committed history archive, preserving original paths in this index and leaving current evidence in place.",
+  "sourceContext": {
+    "previousMilestone": 164,
+    "previousArtifact": ".codex-audit/sdk-orchestrator-extraction/164-sdk-historical-archive-review.json",
+    "historicalIndexArtifact": ".codex-audit/sdk-orchestrator-extraction/162-sdk-historical-evidence-index.json",
+    "historicalSmokeMigrationArtifact": ".codex-audit/sdk-orchestrator-extraction/163-sdk-historical-smoke-migration.json",
+    "safeAeAgentCleanupPlanPhase": "phase-5-optional-archive-move",
+    "branch": "codex/roadmap-1.3-planning",
+    "lastCompletedCommit": "59a141a",
+    "behaviorBoundary": {
+      "sdkThreadCreated": false,
+      "networkAccessed": false,
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditedThroughSdk": false,
+      "liveCepOrAfterEffectsRun": false,
+      "externalProviderValidationRun": false,
+      "mutatingLiveValidationRun": false,
+      "packageInstallRun": false,
+      "dependencyChanged": false,
+      "archiveMovePerformed": true,
+      "deletionPerformed": false,
+      "squashPerformed": false,
+      "pushPerformed": false
+    }
+  },
+  "archiveRoot": ".codex-audit/sdk-history-archive",
+  "archivePathRule": "archiveRoot + '/' + candidate archiveSubdir + '/' + original path with a leading dot removed",
+  "moveAction": {
+    "moveByGitOnly": true,
+    "archiveMovePerformed": true,
+    "movedOnlyReviewedM164Candidates": true,
+    "currentEvidenceRemainsDirectlyChecked": true,
+    "retiredHistoricalSmokeScriptsMoved": true,
+    "deleteAllowedNow": false,
+    "deletionPerformed": false,
+    "squashAllowedNow": false,
+    "squashPerformed": false,
+    "pushPerformed": false
+  },
+  "metadataPreservation": {
+    "originalPathsPreservedHere": true,
+    "verdictsCommitRefsAndSupersessionChainPreservedIn": ".codex-audit/sdk-orchestrator-extraction/162-sdk-historical-evidence-index.json",
+    "retiredSmokeCoveragePreservedIn": ".codex-audit/sdk-orchestrator-extraction/163-sdk-historical-smoke-migration.json",
+    "reviewedCandidateSetsPreservedIn": ".codex-audit/sdk-orchestrator-extraction/164-sdk-historical-archive-review.json",
+    "humanReadableArchiveReadme": ".codex-audit/sdk-history-archive/README.md"
+  },
+  "movedCandidateSets": [
+    {
+      "id": "early-docs-audit-and-orchestrator-sdkthread-proofs",
+      "archiveSubdir": "early-docs-audit-and-orchestrator-sdkthread-proofs",
+      "sourceHistoricalIndexId": "early-docs-audit-and-orchestrator-sdkthread-proofs",
+      "originalPaths": [
+        ".codex-audit/115-sdk-docs-audit-real-write-cutover.md",
+        ".codex-audit/118-sdk-docs-audit-real-write-retry.md",
+        ".codex-audit/121-sdk-docs-audit-runtime-fallback-retry.md",
+        ".codex-audit/122-sdk-docs-audit-second-write.md",
+        ".codex-audit/123-first-orchestrator-scope-sdk-write.md",
+        ".codex-audit/124-second-orchestrator-scope-sdk-write.md",
+        ".codex-audit/125-first-orchestrator-fixture-sdk-write.md",
+        ".codex-audit/126-second-orchestrator-fixture-sdk-write.md",
+        "orchestrator/m123-sdk-thread-orchestrator-scope-output.md",
+        "orchestrator/m124-sdk-thread-orchestrator-scope-output.md",
+        "orchestrator/fixtures/sdk-write/m125-sdk-thread-fixture.json",
+        "orchestrator/fixtures/sdk-write/m126-sdk-thread-fixture.json"
+      ]
+    },
+    {
+      "id": "superseded-launch-and-single-file-production-readiness",
+      "archiveSubdir": "superseded-launch-and-single-file-production-readiness",
+      "sourceHistoricalIndexId": "superseded-single-file-production-readiness",
+      "originalPaths": [
+        ".codex-audit/sdk-launch-readiness/144-sdk-launch-readiness-summary.json",
+        ".codex-audit/sdk-scope-expansion-reviews/129-production-code-smoke-harness-review.json",
+        ".codex-audit/sdk-write-lane-readiness/133-production-code-smoke-harness-readiness.json",
+        ".codex-audit/sdk-write-lane-approval-decisions/134-production-code-smoke-harness-approval-decision.json",
+        ".codex-audit/sdk-write-lane-enablement/135-production-code-smoke-harness-enable.json",
+        ".codex-audit/sdk-launch-governance/140-sdk-launch-governance.json",
+        ".codex-audit/sdk-production-readiness/145-sdk-production-ready.json",
+        ".codex-audit/sdk-production-readiness/146-sdk-production-ready.json",
+        "scripts/sdk-launch-readiness-summary-smoke.js",
+        "scripts/sdk-production-readiness-smoke.js"
+      ]
+    },
+    {
+      "id": "bounded-reliability-and-multifile-proofs",
+      "archiveSubdir": "bounded-reliability-and-multifile-proofs",
+      "sourceHistoricalIndexId": "bounded-reliability-and-multifile-proofs",
+      "originalPaths": [
+        ".codex-audit/sdk-iterative-cmd/147-sdk-iterative-cmd-reliability.json",
+        ".codex-audit/sdk-iterative-cmd/147-operation-envelope.json",
+        ".codex-audit/sdk-multi-file-planned-operation/148-sdk-multi-file-planned-operation-contract.json",
+        ".codex-audit/sdk-multi-file-planned-operation/149-sdk-multi-file-real-proof.json",
+        ".codex-audit/sdk-post-multi-file-readiness/150-sdk-post-multi-file-governance-boundary.json",
+        ".codex-audit/sdk-post-multi-file-readiness/151-sdk-boundary-closeout.json",
+        "orchestrator/fixtures/sdk-write/m147-iterative-cmd-reliability-proof.json",
+        "orchestrator/fixtures/sdk-write/m149-multi-file-alpha.json",
+        "orchestrator/fixtures/sdk-write/m149-multi-file-beta.json",
+        "scripts/sdk-iterative-cmd-reliability-smoke.js",
+        "scripts/sdk-multi-file-planned-operation-smoke.js",
+        "scripts/sdk-multi-file-real-proof-smoke.js",
+        "scripts/sdk-post-multi-file-governance-smoke.js",
+        "scripts/sdk-boundary-closeout-smoke.js"
+      ]
+    }
+  ],
+  "currentEvidenceStillInPlace": [
+    ".codex-audit/sdk-production-readiness/152-sdk-production-code-provider-smokes-ready.json",
+    ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
+    ".codex-audit/sdk-write-lane-enablement/152-production-code-provider-smokes-enable.json",
+    ".codex-audit/sdk-write-lane-readiness/152-production-code-provider-smokes-readiness.json",
+    ".codex-audit/sdk-write-lane-approval-decisions/152-production-code-provider-smokes-approval-decision.json",
+    ".codex-audit/sdk-scope-expansion-reviews/152-production-code-provider-smokes-review.json",
+    ".codex-audit/sdk-next-lane/153-sdk-next-lane-selection.json",
+    ".codex-audit/sdk-milestone-conveyor/154-sdk-milestone-conveyor-spec.json",
+    ".codex-audit/sdk-milestone-conveyor/155-sdk-milestone-conveyor-local-dry-run.json",
+    ".codex-audit/sdk-milestone-conveyor/156-sdk-conveyor-sdkthread-proof.json",
+    ".codex-audit/sdk-milestone-conveyor/157-sdk-conveyor-commit-handoff-loop-gate.json",
+    ".codex-audit/sdk-orchestrator-extraction/158-sdk-orchestrator-extraction-cleanup-plan.json",
+    ".codex-audit/sdk-orchestrator-extraction/159-sdk-orchestrator-inventory-freeze.json",
+    ".codex-audit/sdk-orchestrator-extraction/160-sdk-reusable-core-extraction.json",
+    ".codex-audit/sdk-orchestrator-extraction/161-ae-agent-adapter-config.json",
+    ".codex-audit/sdk-orchestrator-extraction/162-sdk-historical-evidence-index.json",
+    ".codex-audit/sdk-orchestrator-extraction/163-sdk-historical-smoke-migration.json",
+    ".codex-audit/sdk-orchestrator-extraction/164-sdk-historical-archive-review.json",
+    ".codex-audit/sdk-orchestrator-extraction/165-sdk-historical-archive-move.json",
+    "orchestrator/codex-sdk-orchestrator.mjs",
+    "orchestrator/run-write-capable-scaffold.mjs",
+    "orchestrator/run-buffered-acceptance.mjs",
+    "orchestrator/README.md",
+    "package.json",
+    "package-lock.json",
+    "scripts/provider-api-smoke.js",
+    "scripts/provider-contract-smoke.js",
+    "cep-panel/panel.js",
+    "plans/target-app-execplan.md",
+    ".codex/handoff.md"
+  ],
+  "machineCheck": {
+    "requiredPackageScript": "codex:orchestrator:historical-archive-move:smoke",
+    "requiredPackageScriptCommand": "node scripts/sdk-historical-archive-move-smoke.js",
+    "requiredCandidateSetIds": [
+      "early-docs-audit-and-orchestrator-sdkthread-proofs",
+      "superseded-launch-and-single-file-production-readiness",
+      "bounded-reliability-and-multifile-proofs"
+    ],
+    "requiredMoveCount": 36,
+    "requiredArchiveRoot": ".codex-audit/sdk-history-archive",
+    "requiredArchiveReadme": ".codex-audit/sdk-history-archive/README.md",
+    "requiredReadmeSnippets": [
+      "M165 moves the M164-reviewed historical archive candidates",
+      "165-sdk-historical-archive-move.json",
+      "sdk-historical-archive-move.v1",
+      "codex:orchestrator:historical-archive-move:smoke",
+      "delete and squash remain blocked"
+    ],
+    "currentEvidenceMustRemainInPlace": [
+      ".codex-audit/sdk-production-readiness/152-sdk-production-code-provider-smokes-ready.json",
+      ".codex-audit/sdk-launch-governance/152-sdk-production-code-provider-smokes-governance.json",
+      ".codex-audit/sdk-next-lane/153-sdk-next-lane-selection.json",
+      ".codex-audit/sdk-milestone-conveyor/157-sdk-conveyor-commit-handoff-loop-gate.json",
+      ".codex-audit/sdk-orchestrator-extraction/164-sdk-historical-archive-review.json",
+      ".codex-audit/sdk-orchestrator-extraction/165-sdk-historical-archive-move.json",
+      "scripts/provider-api-smoke.js",
+      "scripts/provider-contract-smoke.js",
+      "cep-panel/panel.js",
+      "package.json",
+      "package-lock.json"
+    ],
+    "requiredFalseBoundaryFlags": [
+      "sdkThreadCreated",
+      "networkAccessed",
+      "cepPanelSdkWritesEnabled",
+      "cepPanelPanelJsEditedThroughSdk",
+      "liveCepOrAfterEffectsRun",
+      "externalProviderValidationRun",
+      "mutatingLiveValidationRun",
+      "packageInstallRun",
+      "dependencyChanged",
+      "deletionPerformed",
+      "squashPerformed",
+      "pushPerformed"
+    ]
+  }
+}

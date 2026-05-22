@@ -3,6 +3,9 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
+const {
+  assertFileExistsAtCurrentOrArchive,
+} = require("./sdk-history-archive-paths");
 
 const repo = path.resolve(__dirname, "..");
 const INDEX_PATH =
@@ -58,7 +61,7 @@ function main() {
   );
 
   for (const repoPath of index.machineCheck.mustExist) {
-    assert(fs.existsSync(path.join(repo, repoPath)), `machineCheck.mustExist missing: ${repoPath}`);
+    assertFileExistsAtCurrentOrArchive(repo, repoPath, "machineCheck.mustExist");
   }
 
   const currentIds = index.currentEvidenceStillDirectlyChecked.map((entry) => entry.id);
