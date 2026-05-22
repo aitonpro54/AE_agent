@@ -328,6 +328,8 @@ The command smoke stays local and does not create an SDK thread:
 npm.cmd run codex:orchestrator:ae-agent-cleanup-conveyor:smoke
 ```
 
+M174 executes the first cleanup conveyor item as a docs-only active/archive split. The active execution plan now stays compact in `plans/target-app-execplan.md`; full pre-M174 milestone history is preserved in `plans/archive/target-app-execplan-history-2026-05.md`. The split changes no orchestrator runtime behavior, starts no SDKThread/network work, and does not enable CEP-panel SDK writes. The next cleanup conveyor item is M175 runtime artifact cleanup note/policy.
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.
