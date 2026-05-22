@@ -959,6 +959,20 @@ async function runContractSmoke() {
     `M155 SDK milestone conveyor local dry-run smoke failed: ${milestoneConveyorDryRunOutput.trim()}`,
     failures,
   );
+  const milestoneConveyorSdkThreadProofSmoke = runNode([
+    path.join("scripts", "sdk-milestone-conveyor-sdkthread-proof-smoke.js"),
+  ]);
+  const milestoneConveyorSdkThreadProofOutput = `${
+    milestoneConveyorSdkThreadProofSmoke.stdout ?? ""
+  }\n${milestoneConveyorSdkThreadProofSmoke.stderr ?? ""}`;
+  assertContract(
+    milestoneConveyorSdkThreadProofSmoke.status === 0 &&
+      milestoneConveyorSdkThreadProofOutput.includes(
+        "SDK milestone conveyor SDKThread proof smoke: pass",
+      ),
+    `M156 SDK milestone conveyor SDKThread proof smoke failed: ${milestoneConveyorSdkThreadProofOutput.trim()}`,
+    failures,
+  );
 
   const reviewPacketFiles = collectSdkScopeExpansionReviewPackets(
     SDK_SCOPE_EXPANSION_REVIEW_DIRECTORY,
@@ -1392,6 +1406,12 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:milestone-conveyor-sdkthread-proof:smoke"] ===
+      "node scripts/sdk-milestone-conveyor-sdkthread-proof-smoke.js",
+    "package.json codex:orchestrator:milestone-conveyor-sdkthread-proof:smoke script is not wired to the M156 milestone conveyor SDKThread proof smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1508,6 +1528,14 @@ async function runContractSmoke() {
       readme.includes("sdk-milestone-conveyor-local-dry-run-proof.v1") &&
       readme.includes("no-explicit-approval"),
     "README does not document the M155 SDK milestone conveyor local dry-run smoke",
+    failures,
+  );
+  assertContract(
+    readme.includes("npm.cmd run codex:orchestrator:milestone-conveyor-sdkthread-proof:smoke") &&
+      readme.includes("156-sdk-conveyor-sdkthread-proof.json") &&
+      readme.includes("sdk-milestone-conveyor-sdkthread-proof.v1") &&
+      readme.includes("019e4dcd-dd6f-7651-8882-b0c014894633"),
+    "README does not document the M156 SDK milestone conveyor SDKThread proof smoke",
     failures,
   );
   assertContract(

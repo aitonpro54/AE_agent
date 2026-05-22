@@ -232,6 +232,12 @@ M155 adds a local-only dry-run proof in `.codex-audit/sdk-milestone-conveyor/155
 npm.cmd run codex:orchestrator:milestone-conveyor-dry-run:smoke
 ```
 
+M156 records the one approved real `docs-audit` SDKThread conveyor proof in `.codex-audit/sdk-milestone-conveyor/156-sdk-conveyor-sdkthread-proof.json` with schema `sdk-milestone-conveyor-sdkthread-proof.v1`. The single allowed run used SDKThread `019e4dcd-dd6f-7651-8882-b0c014894633`, completed as `sdk-write-completed`, changed only the planned docs-audit proof artifact, and kept `autoPush:false`. No retry, CEP-panel write, production-code write, live CEP/AE check, external-provider/OpenAI CLI planner validation, mutating-live validation, dependency change, or push was performed.
+
+```powershell
+npm.cmd run codex:orchestrator:milestone-conveyor-sdkthread-proof:smoke
+```
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.
