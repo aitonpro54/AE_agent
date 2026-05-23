@@ -20,6 +20,7 @@ const MUTATING_TOOLS = new Set([
   "apply_keyframe_ease",
   "set_expression",
   "clear_expression",
+  "duplicate_layer",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
   "precompose_layers",
@@ -607,6 +608,20 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "duplicate_comp") {
     checkName(checks, step, args.name, payload.duplicate && payload.duplicate.name, evidence, "Duplicated comp name matches request");
+    return;
+  }
+
+  if (step.tool === "duplicate_layer") {
+    const duplicate = payload.duplicate || payload.layer || {};
+    checkName(checks, step, args.name, duplicate.name, evidence, "Duplicated layer name matches request");
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:duplicate`,
+      title: "Layer duplicate was created from explicit source layer",
+      expected: `source layer ${args.layerIndex || "specified"}`,
+      observed: `source=${payload.source && payload.source.name || "missing"}, duplicate=${duplicate.name || "missing"}`,
+      passed: Boolean(payload.source) && Boolean(duplicate && duplicate.index),
+      evidence: stepLabel(step)
+    });
     return;
   }
 

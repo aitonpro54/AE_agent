@@ -846,6 +846,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "create_camera_layer",
   "create_layer_mask",
   "add_project_item_to_comp",
+  "duplicate_layer",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
   "add_effect",
@@ -1837,7 +1838,7 @@ function compactCheckpoint(checkpoint) {
 function inferMutationTarget(toolName, args, payload) {
   const target = { tool: toolName };
   const request = {};
-  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "targetTime", "time", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "itemType", "sourceItemIndex", "sourceItemName", "sourceCompItemIndex", "sourceCompName", "nameSuffix", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "renderQueueItemIndex", "outputPath"]) {
+  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "layerName", "sourceName", "targetTime", "time", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "itemType", "sourceItemIndex", "sourceItemName", "sourceCompItemIndex", "sourceCompName", "nameSuffix", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "renderQueueItemIndex", "outputPath"]) {
     if (hasArg(args || {}, key)) request[key] = args[key];
   }
   if (Object.keys(request).length) target.request = request;
@@ -3952,6 +3953,7 @@ const PLANNING_TOOL_NAMES = [
   "create_camera_layer",
   "create_layer_mask",
   "add_project_item_to_comp",
+  "duplicate_layer",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
   "add_effect",
@@ -5810,6 +5812,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For requests to align selected layers, clips, or precomps to the current time indicator, use align_layers_to_time with no layerIndices and omit targetTime so it uses the active comp CTI.",
     "For timeline trims, work areas, sequencing, splitting, and offsets, use set_comp_work_area, set_layer_time_range, stagger_layers, or split_layers_at_time.",
     "For precomp/source workflows, use precompose_layers, replace_layer_source, deep_duplicate_precomp_sources, rename_layers, and rename_project_items before considering raw ExtendScript.",
+    "For explicit single-layer duplication, use duplicate_layer after inspecting the target comp/layer; do not use it for delete operations or selection-only ambiguity.",
     "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, and fit_layer_to_comp.",
     "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, set_expression, and clear_expression.",
     "For render queue setup, use add_comp_to_render_queue, set_render_queue_output, and get_render_queue_status. Do not start a render.",
@@ -8044,6 +8047,36 @@ const tools = [
           description: "Optional layer duration in seconds."
         }
       }
+    }
+  },
+  {
+    name: "duplicate_layer",
+    description: "Duplicate one explicit layer in the active comp or a comp by project item index/name. This bounded slice does not delete layers or rely on current selection.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "Required 1-based source layer index in the target composition."
+        },
+        sourceName: {
+          type: "string",
+          description: "Optional exact expected source layer name. When provided, duplication fails if the indexed layer has a different name."
+        },
+        name: {
+          type: "string",
+          description: "Optional name for the duplicated layer. Defaults to After Effects duplicate naming."
+        }
+      },
+      required: ["layerIndex"]
     }
   },
   {
@@ -10984,6 +11017,51 @@ async function callTool(name, args) {
           frameRate: duplicate.frameRate,
           numLayers: duplicate.numLayers
         }
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "duplicate_layer") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const expectedSourceName = optionalString(args, "sourceName", "");
+    const duplicateName = optionalString(args, "name", "");
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var sourceLayer = comp.layer(${layerIndex});
+      if (!sourceLayer) throw new Error("Layer not found.");
+      var expectedSourceName = ${aeLiteral(expectedSourceName)};
+      var duplicateName = ${aeLiteral(duplicateName)};
+      if (expectedSourceName && sourceLayer.name !== expectedSourceName) {
+        throw new Error("Layer name mismatch. Expected '" + expectedSourceName + "' but found '" + sourceLayer.name + "'.");
+      }
+      if (sourceLayer.locked === true) {
+        throw new Error("Layer is locked and cannot be duplicated safely.");
+      }
+
+      app.beginUndoGroup("Codex Duplicate Layer");
+      var sourceBefore = __codexLayerInfo(sourceLayer);
+      var duplicate = sourceLayer.duplicate();
+      if (!duplicate) throw new Error("After Effects did not return a duplicated layer.");
+      if (duplicateName) duplicate.name = duplicateName;
+      var duplicateInfo = __codexLayerInfo(duplicate);
+      var sourceAfter = __codexLayerInfo(sourceLayer);
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          numLayers: comp.numLayers
+        },
+        source: sourceBefore,
+        sourceAfter: sourceAfter,
+        duplicate: duplicateInfo,
+        layer: duplicateInfo
       };
       app.endUndoGroup();
       return response;

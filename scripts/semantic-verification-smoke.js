@@ -132,6 +132,17 @@ function fakeMutationResult(step, state) {
       }
     }, compName, layer);
   }
+  if (step.tool === "duplicate_layer") {
+    const source = layerInfo(args.sourceName || "Duplicate Fixture Source", { index: args.layerIndex || 1 });
+    const duplicate = layerInfo(args.name || `${source.name} copy`, { index: 1 });
+    return withVerification({
+      comp: { name: compName, numLayers: state.nextLayerIndex + 1 },
+      source,
+      sourceAfter: { ...source, index: source.index + 1 },
+      duplicate,
+      layer: duplicate
+    }, compName, duplicate);
+  }
   if (step.tool === "set_comp_work_area") {
     return withVerification({
       comp: { name: compName },
@@ -480,6 +491,36 @@ function assertLayerMaskPasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("create_layer_mask:vertices") >= 0), "mask vertices check should be reported.");
 }
 
+function assertDuplicateLayerPasses() {
+  const plan = {
+    summary: "Duplicate one generated layer and inspect the duplicate.",
+    risk: "low",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Duplicate generated layer",
+        tool: "duplicate_layer",
+        args: {
+          compName: "Duplicate Fixture",
+          layerIndex: 1,
+          sourceName: "Duplicate Fixture Source",
+          name: "Duplicate Fixture Copy"
+        }
+      },
+      {
+        title: "Read duplicate layer",
+        tool: "get_layer_details",
+        args: { compName: "Duplicate Fixture" },
+        resultBindings: { layerIndex: "{{layerIndex}}" }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `duplicate layer semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("duplicate_layer:duplicate") >= 0), "duplicate layer check should be reported.");
+}
+
 function main() {
   const scenarios = agentScenarioPlans("Codex Semantic Fixture", 0);
   const results = scenarios.map(assertScenarioPasses);
@@ -490,6 +531,7 @@ function main() {
   assertDeepDuplicatePasses();
   assertCameraLayerPasses();
   assertLayerMaskPasses();
+  assertDuplicateLayerPasses();
 
   console.log(JSON.stringify({
     ok: true,

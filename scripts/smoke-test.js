@@ -492,6 +492,19 @@ async function main() {
       shape: { vertexCount: 4, vertices: [[120, 80], [520, 80], [520, 280], [120, 280]] }
     }
   }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "duplicate_layer", {
+    compName: "Smoke Comp",
+    layerIndex: 1,
+    sourceName: "Smoke Source",
+    name: "Smoke Source Copy",
+    verifyAfter: false
+  }, ["Codex Duplicate Layer", "sourceLayer.duplicate()"], {
+    comp: { itemIndex: 1, name: "Smoke Comp", numLayers: 2 },
+    source: { index: 1, name: "Smoke Source" },
+    sourceAfter: { index: 2, name: "Smoke Source" },
+    duplicate: { index: 1, name: "Smoke Source Copy" },
+    layer: { index: 1, name: "Smoke Source Copy" }
+  }));
   queuedToolResponses.push(await callQueuedDevTool(port, token, "fit_layer_to_comp", {
     layerIndices: [1],
     mode: "contain",
@@ -1432,7 +1445,7 @@ async function main() {
   if (alignLayers.status !== 200 || !alignLayers.body.ok || alignLayers.body.result.changedCount !== 2) {
     throw new Error("Expected align_layers_to_time to align multiple layer timings");
   }
-  if (queuedToolResponses.length !== 21 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
+  if (queuedToolResponses.length !== 22 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
     throw new Error("Expected all new typed tool queue smokes to pass");
   }
   const deepDuplicateQueuedPayload = deepDuplicateQueuedResponse.response.body.result || {};
@@ -1710,7 +1723,7 @@ async function main() {
   }
 
   const toolNames = lines[1].result.tools.map((tool) => tool.name);
-  for (const expectedTool of ["get_ai_agent_log", "get_project_intent_memory", "update_project_intent_memory", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "run_agent_hardcore_session", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint", "list_project_folder_items", "create_comp", "create_project_folder", "move_project_items_to_folder", "set_comp_work_area", "set_layer_time_range", "stagger_layers", "split_layers_at_time", "precompose_layers", "replace_layer_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer", "create_camera_layer", "create_layer_mask", "create_shape_layer", "fit_layer_to_comp", "set_property_keyframes", "apply_keyframe_ease", "set_expression", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"]) {
+  for (const expectedTool of ["get_ai_agent_log", "get_project_intent_memory", "update_project_intent_memory", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "run_agent_hardcore_session", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint", "list_project_folder_items", "create_comp", "create_project_folder", "move_project_items_to_folder", "set_comp_work_area", "set_layer_time_range", "stagger_layers", "split_layers_at_time", "precompose_layers", "replace_layer_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer", "create_camera_layer", "create_layer_mask", "duplicate_layer", "create_shape_layer", "fit_layer_to_comp", "set_property_keyframes", "apply_keyframe_ease", "set_expression", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"]) {
     if (!toolNames.includes(expectedTool)) {
       throw new Error("Missing expected tool: " + expectedTool);
     }
@@ -1726,6 +1739,10 @@ async function main() {
   const createMaskTool = lines[1].result.tools.find((tool) => tool.name === "create_layer_mask");
   if (!createMaskTool || !createMaskTool.inputSchema.properties.autoCheckpoint || !createMaskTool.inputSchema.properties.checkpointLabel || !createMaskTool.inputSchema.properties.idempotencyKey || !createMaskTool.inputSchema.properties.verifyAfter) {
     throw new Error("create_layer_mask is missing safety schema fields");
+  }
+  const duplicateLayerTool = lines[1].result.tools.find((tool) => tool.name === "duplicate_layer");
+  if (!duplicateLayerTool || !duplicateLayerTool.inputSchema.properties.autoCheckpoint || !duplicateLayerTool.inputSchema.properties.checkpointLabel || !duplicateLayerTool.inputSchema.properties.idempotencyKey || !duplicateLayerTool.inputSchema.properties.verifyAfter || !duplicateLayerTool.inputSchema.properties.sourceName) {
+    throw new Error("duplicate_layer is missing safety schema fields");
   }
   for (const mutatingProjectToolName of ["create_comp", "create_project_folder", "move_project_items_to_folder"]) {
     const mutatingProjectTool = lines[1].result.tools.find((tool) => tool.name === mutatingProjectToolName);

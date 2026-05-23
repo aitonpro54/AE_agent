@@ -37,6 +37,9 @@ const TOOL_ALIASES = {
   addmask: "create_layer_mask",
   createlayermask: "create_layer_mask",
   addlayermask: "create_layer_mask",
+  duplicatelayer: "duplicate_layer",
+  copylayer: "duplicate_layer",
+  clonelayer: "duplicate_layer",
   fitlayer: "fit_layer_to_comp",
   fittocomp: "fit_layer_to_comp",
   fitlayertocomp: "fit_layer_to_comp",
@@ -119,6 +122,7 @@ const COMP_RESULT_TOOLS = new Set([
   "create_adjustment_layer",
   "create_camera_layer",
   "create_shape_layer",
+  "duplicate_layer",
   "add_project_item_to_comp"
 ]);
 
@@ -134,6 +138,7 @@ const LAYER_RESULT_TOOLS = new Set([
   "create_adjustment_layer",
   "create_camera_layer",
   "create_shape_layer",
+  "duplicate_layer",
   "add_project_item_to_comp"
 ]);
 
@@ -220,6 +225,10 @@ function propertyCandidates(field) {
     selectedlayerindices: ["layerIndices", "layerIndex"],
     layers: ["layerIndices", "layerIndex"],
     layer: ["layerIndex", "layerIndices"],
+    source: ["sourceName", "sourceItemIndex", "sourceItemName"],
+    sourcelayer: ["sourceName", "layerIndex"],
+    sourcelayername: ["sourceName"],
+    layername: ["sourceName", "name"],
     points: ["vertices"],
     maskpoints: ["vertices"],
     pathpoints: ["vertices"],
@@ -384,6 +393,7 @@ function repairSelectedPrecompDuplicateWorkflow(plan, catalog, actions) {
     return null;
   }
   if (planHasTool(plan, "deep_duplicate_precomp_sources")) return null;
+  if (planHasTool(plan, "duplicate_layer")) return null;
   if (!hasSelectedPrecompDuplicateIntent(plan) || !planHasPseudoExecution(plan)) return null;
 
   addPlanAction(

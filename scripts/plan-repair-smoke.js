@@ -194,6 +194,24 @@ async function main() {
     assert.deepStrictEqual(maskRepair.repairedPlan.steps[0].args.vertices, [[120, 80], [520, 80], [520, 280], [120, 280]]);
     assert.strictEqual(maskRepair.repairedPlan.steps[0].args.maskMode, "add");
 
+    const duplicateLayerRepair = await validatePlan("duplicate-layer-alias", {
+      summary: "Duplicate one explicit generated layer.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Copy layer", tool: "copyLayer", args: { compName: "Repair Smoke Comp", layer: 1, layerName: "Repair Smoke Source", newName: "Repair Smoke Copy" } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["duplicate_layer"],
+      actionTypes: ["tool-alias", "arg-alias"]
+    });
+    assert.strictEqual(duplicateLayerRepair.repairedPlan.steps[0].args.layerIndex, 1);
+    assert.strictEqual(duplicateLayerRepair.repairedPlan.steps[0].args.sourceName, "Repair Smoke Source");
+    assert.strictEqual(duplicateLayerRepair.repairedPlan.steps[0].args.name, "Repair Smoke Copy");
+
     const bindingAliasRepair = await validatePlan("binding-alias", {
       summary: "Set selected layers 3D using common aliases.",
       risk: "medium",
