@@ -15,6 +15,7 @@
 - [x] Milestone 182: Deterministic saved-plan recovery and passing broad local-Ollama live smoke.
 - [x] Milestone 183: External TypeTools intake into safe comp/folder typed bridge tools.
 - [x] Milestone 184: AE Agent feature conveyor readiness for gated future Dakkshin intake.
+- [x] Milestone 185: Dakkshin intake scope brief.
 
 ## Current Stable Baseline
 
@@ -149,6 +150,14 @@
 - Completed: added feature conveyor readiness/command smokes and wired them into `package.json`, `orchestrator/run-buffered-acceptance.mjs`, `orchestrator/README.md`, and `.codex-audit/sdk-current-state.json`.
 - Current Dakkshin queue items are preview-only; no Dakkshin product behavior, CEP-panel SDK write, live CEP/AE validation, external-provider/OpenAI CLI planner validation, mutating-live validation, package install, dependency change, push, or PR is approved by M184.
 
+### Milestone 185: Dakkshin intake scope brief
+
+- Completed: added `.codex-audit/sdk-feature-conveyor/dakkshin-intake/m185-scope-brief.md`.
+- Completed: summarized the existing repository Dakkshin references from `docs/ready-solutions-research.md` and `docs/daemon-split-handoff.md`.
+- Completed: recorded hard implementation boundaries, possible future lanes, and questions that must be answered before product work.
+- User approval was given in-chat for this local-only intake step; no child SDK/CLI workspace-write execution was run because the M184 runner remains fail-closed until queue state is separately updated.
+- No Dakkshin product behavior, CEP panel, bridge runtime, dependencies, package-lock, live CEP/AE validation, external-provider/OpenAI CLI planner validation, push, or PR changed.
+
 ## Recent Milestone Summary
 
 - M152: Current production-code SDK write readiness superseded the older single-file claim and is limited to `scripts/provider-api-smoke.js` plus `scripts/provider-contract-smoke.js`.
@@ -171,11 +180,14 @@
 - M182: Made saved-plan recovery deterministic by re-proposing the stored structured plan through the bridge instead of re-prompting Local/Ollama; synced the installed panel and passed the broad live CDP smoke.
 - M183: Converted the useful `after-effects-automation` TypeTools gap into safe native bridge tools for production comp creation and explicit project-folder organization, while leaving unsafe external script execution patterns out.
 - M184: Added a local-gated feature conveyor for future Dakkshin intake preview with review/readiness/governance evidence, a non-executable intake queue, a fail-closed command runner, and smokes wired into `check:rules`.
+- M185: Completed the first Dakkshin intake artifact as a scope brief only; no product implementation or live/provider/dependency work was performed.
 
 ## Decision Log
 
 - 2026-05-23: M184 prepares only the feature conveyor infrastructure for future Dakkshin intake. It does not implement Dakkshin product behavior, enable CEP-panel SDK writes, run live CEP/AE, run external-provider/OpenAI CLI planner validation, install packages, change dependencies, push, or create a PR.
 - 2026-05-23: M184 feature conveyor execution remains fail-closed. Current Dakkshin queue items have `executionApprovalState:"pending-explicit-approval"` and `maxAiTurns:0`; the runner may preview them but rejects execution until a future milestone records per-item approval.
+- 2026-05-23: M185 treats the user's approval as approval for the local-only Dakkshin intake scope brief, not for product implementation, CEP-panel SDK writes, live CEP/AE, external providers, dependency changes, push, or PR.
+- 2026-05-23: M185 records that a child SDK/CLI workspace-write run was not used because the M184 runner's queue state remains fail-closed; the parent Codex turn completed only the planned intake brief and documentation.
 - 2026-05-23: M183 adopts only low-risk capability ideas from `jhd3197/after-effects-automation`: production comp creation plus explicit project folder list/create/move tools. It does not adopt the external eval queue, startup script runner, broad plugin installer, destructive new-project close behavior, or direct CEP `evalScript` string-construction pattern.
 - 2026-05-23: M183 defers transition and template-value batch tools. They are plausible future typed recipes, but require AE Agent-specific target selection, semantic verification, and user-facing review before promotion.
 - 2026-05-23: `architecture-vNext.md` now treats vNext 1.1 as the current architecture baseline for brainstorming and future planning. The accepted direction is safety-aware RAG/retrieval plus explicit promotion, not autonomous external script execution.
@@ -244,6 +256,7 @@
 | `node --check cep-panel/panel.js` | Required because M182 changes saved-plan recovery in the CEP panel. | Passed on 2026-05-22. |
 | `node scripts/m100-protocol-contract-smoke.js` | Required because M182 keeps recovery on server-owned M100 proposals and avoids persisted client proposal tokens. | Passed on 2026-05-22. |
 | Live CEP/AE validation | Requested for M180-M182 when After Effects and the panel are available. | M182 connected pass on 2026-05-22: `get_bridge_status` returned bridge `2.0.0` with `panelConnected:true`; `ping_ae` returned AE `26.2x49` and 263 project items; CDP `inspect` saw installed `AE Agent 2.0.0`; `connector-status-smoke` passed; broad `node scripts/cep-panel-cdp-smoke.js smoke` passed through Local/Ollama plan generation, stored structured plan recovery via bridge proposal, dry run, and read-only run. |
+| M185 AGENTS non-live suite | Required because M185 adds a Dakkshin intake scope brief and updates the active plan. | Passed on 2026-05-23 in `.codex-runtime/validation/m185-non-live-20260523-183139.log`: feature conveyor readiness smoke, `npm.cmd run check:rules`, `git diff --check`, provider contract/API, solution registry/candidate/promotion/retrieval/library, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only smoke, and main smoke. `git diff --check` printed only existing LF-to-CRLF working-copy warnings. |
 | SDKThread/network/external-provider/OpenAI CLI planner/mutating-live validation | Forbidden/out of scope for this turn. | Not run. |
 | Package install/dependency change validation | Out of scope because no dependency change is allowed. | Not run. |
 
@@ -259,6 +272,14 @@
 - Passed touched-JavaScript `node --check`, feature conveyor readiness/command smokes, current-history smoke, `npm.cmd run check:rules`, `git diff --check`, provider contract/API, solution registry/candidate/promotion/retrieval/library, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only smoke, and main smoke.
 - Full non-live validation log: `.codex-runtime/validation/m184-non-live-20260523-181941.log`.
 - Live CEP/AE, external-provider/OpenAI CLI planner validation, mutating-live validation, package install/dependency validation, push, and PR were not run because M184 keeps them out of scope.
+
+### Milestone 185
+
+- Added `.codex-audit/sdk-feature-conveyor/dakkshin-intake/m185-scope-brief.md`.
+- Updated `plans/target-app-execplan.md` and `.codex/handoff.md`.
+- Passed feature conveyor readiness smoke, `npm.cmd run check:rules`, `git diff --check`, provider contract/API, solution registry/candidate/promotion/retrieval/library, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only smoke, and main smoke.
+- Full non-live validation log: `.codex-runtime/validation/m185-non-live-20260523-183139.log`.
+- SDKThread/network child execution, live CEP/AE, external-provider/OpenAI CLI planner validation, mutating-live validation, package install/dependency validation, push, and PR were not run because M185 is a local-only intake brief.
 
 ### Milestone 175
 
