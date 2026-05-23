@@ -347,15 +347,16 @@ npm.cmd run codex:orchestrator:current-governance:smoke
 npm.cmd run codex:orchestrator:history-index:smoke
 ```
 
-M184 adds the AE Agent feature conveyor readiness gate for future Dakkshin intake work. The evidence lives under `.codex-audit/sdk-feature-conveyor/` with schemas `sdk-feature-conveyor-review.v1`, `sdk-feature-conveyor-readiness.v1`, `sdk-feature-conveyor-governance.v1`, and `sdk-ae-agent-feature-conveyor-queue.v1`; the active queue is `.codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json`. M186 records one per-item SDK execution approval for `m186-dakkshin-intake-tool-gap-map` in `.codex-audit/sdk-feature-conveyor/186-dakkshin-tool-gap-map-approval.json`; Dakkshin product features are still not approved.
+M184 adds the AE Agent feature conveyor readiness gate for future Dakkshin intake work. The evidence lives under `.codex-audit/sdk-feature-conveyor/` with schemas `sdk-feature-conveyor-review.v1`, `sdk-feature-conveyor-readiness.v1`, `sdk-feature-conveyor-governance.v1`, and `sdk-ae-agent-feature-conveyor-queue.v1`; the active queue is `.codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json`. M186 records one per-item SDK execution approval for `m186-dakkshin-intake-tool-gap-map` in `.codex-audit/sdk-feature-conveyor/186-dakkshin-tool-gap-map-approval.json`; Dakkshin product features are still not approved. M188 adds `m188-dakkshin-advisory-field-validation` as a separate fail-closed local live-validation lane for the M187 advisory recipes; it creates no SDKThread/Codex child run and does not run external-provider/OpenAI CLI planner validation.
 
 ```powershell
 npm.cmd run codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke
 npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --all
 npm.cmd run codex:orchestrator:ae-agent-feature-conveyor:smoke
+npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item m188-dakkshin-advisory-field-validation --validate-live --stage both --allow-mutating-live --approval-text "I approve one M188 staged live AE validation run for M187 advisory recipes using generated-only mutations"
 ```
 
-The feature conveyor command runner is `orchestrator/run-ae-agent-feature-conveyor.mjs`. Dry-run preview never creates an SDK thread or Codex CLI session. Execution is bounded to one selected approved item, exact approval text, a clean pre-run git state, full child-output logs under `.codex-runtime/sdk/feature-conveyor-logs`, no auto-commit, no push, and a commit-aware post-run path allowlist. Unapproved items still fail closed with `Feature conveyor execution is not approved`.
+The feature conveyor command runner is `orchestrator/run-ae-agent-feature-conveyor.mjs`. Dry-run preview never creates an SDK thread or Codex CLI session. Execution is bounded to one selected approved item, exact approval text, a clean pre-run git state, full child-output logs under `.codex-runtime/sdk/feature-conveyor-logs`, no auto-commit, no push, and a commit-aware post-run path allowlist. Unapproved items still fail closed with `Feature conveyor execution is not approved`. The M188 `--validate-live` path is not SDK workspace-write execution: it runs local validation commands in staged order, writes child logs under `.codex-runtime/sdk/feature-conveyor-live-logs`, writes a JSON report under `.codex-runtime/sdk/feature-conveyor-live-reports`, and fails closed when AE, bridge, CEP panel, or saved-project preflight is unavailable.
 
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 

@@ -19,6 +19,7 @@
 - [x] Milestone 186 approval gate: Dakkshin tool gap map approved for one SDK run, not executed yet.
 - [x] Milestone 186: Dakkshin intake tool gap map.
 - [x] Milestone 187: Dakkshin advisory solution-library entries.
+- [x] Milestone 188: Staged live conveyor validation for M187 advisory recipes.
 
 ## Current Stable Baseline
 
@@ -49,13 +50,13 @@
 
 - Current SDK orchestrator work is local-gated and AE Agent-specific until a separate milestone proves equivalent fail-closed behavior in the sibling `codex-sdk-orchestrator-tool`.
 - Current production-code SDK write readiness is limited to exactly `scripts/provider-api-smoke.js` and `scripts/provider-contract-smoke.js`.
-- General SDK autopilot repo edits, broad production-code writes, CEP-panel SDK writes, live CEP/AE validation, external-provider/OpenAI CLI planner validation, mutating-live validation, package installs, dependency changes, push, and PR creation remain out of scope without fresh bounded approval.
+- General SDK autopilot repo edits, broad production-code writes, CEP-panel SDK writes, external-provider/OpenAI CLI planner validation, mutating-live validation outside the M188 generated-only lane, package installs, dependency changes, push, and PR creation remain out of scope without fresh bounded approval.
 - CEP-panel SDK writes remain disabled; `cep-panel/panel.js` must not be edited through the SDK lane.
 - Current M152+ governance/readiness/conveyor/extraction evidence is directly checked through `npm.cmd run check:rules` and summarized in `.codex-audit/sdk-current-state.json`.
 - Historical SDK proof references are summarized in `.codex-audit/sdk-history-index.json`; old proof packets should not be reread by default unless a specific audit needs them.
 - SDK smoke consolidation is planned in `.codex-audit/sdk-smoke-consolidation-plan.json`; existing milestone-specific smokes stay active until replacement coverage is green.
 - The AE Agent cleanup conveyor command captures full child stdout/stderr into ignored `.codex-runtime/sdk/cleanup-conveyor-logs` execution logs by default, prints compact terminal summaries, and validates both working-tree changes and commits created since pre-run `HEAD` against the selected planned-path allowlist.
-- The AE Agent feature conveyor is now locally smoke-checked for future Dakkshin intake preview through `.codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json` and `orchestrator/run-ae-agent-feature-conveyor.mjs`; current queue items remain non-executable with `executionApprovalState:"pending-explicit-approval"` and `maxAiTurns:0`.
+- The AE Agent feature conveyor is now locally smoke-checked for Dakkshin intake and M187 field validation through `.codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json` and `orchestrator/run-ae-agent-feature-conveyor.mjs`; SDK workspace-write execution remains separate from the M188 `--validate-live` lane.
 
 ## Historical Archive
 
@@ -187,6 +188,15 @@
 - Existing `active-comp-context-review` continues to cover the inspect-comp advisory prompt, so M187 did not duplicate that entry.
 - No new bridge tools, CEP panel changes, raw ExtendScript, mask/destructive/audio/broad comp changes, live CEP/AE validation, external-provider/OpenAI CLI planner validation, package/dependency changes, push, or PR were added by the product slice itself.
 
+### Milestone 188: Staged live conveyor validation for M187 advisory recipes
+
+- Completed: added `m188-dakkshin-advisory-field-validation` to the feature conveyor queue as a separate local-live-validation item with its own exact live approval text and no SDK/CLI child execution.
+- Completed: extended `orchestrator/run-ae-agent-feature-conveyor.mjs` with `--validate-live`, `--stage read-only|mutating|both`, `--allow-mutating-live`, live dry-run JSON, dirty-git blocking, staged local command orchestration, child logs, and JSON report output.
+- Completed: added `scripts/m187-advisory-field-smoke.js` for M187 field validation. Read-only mode checks bridge health, CEP inspect, `ping_ae`, saved project preflight, Solution Library retrieval for the three M187 prompts, and typed-plan validation/dry-runs. Mutating mode uses generated prefixes, allowlisted effect discovery, M100 proposal/run gates, read-back verification, cleanup, and render queue drift checks.
+- Completed: extended `scripts/reliability-validation-suite.js` with `mutating-live-local`, which includes the protected mutating smoke and local Agent scenario smoke while excluding OpenAI CLI/external-provider planner validation.
+- Completed: updated feature conveyor readiness/command smokes, current SDK state, current/history smoke, and orchestrator README for the M188 lane.
+- No external-provider/OpenAI CLI planner validation, package/dependency changes, mask/destructive/audio/broad comp changes, SDK workspace-write execution, push, or PR were added by this milestone.
+
 ## Recent Milestone Summary
 
 - M152: Current production-code SDK write readiness superseded the older single-file claim and is limited to `scripts/provider-api-smoke.js` plus `scripts/provider-contract-smoke.js`.
@@ -213,9 +223,13 @@
 - M186 approval gate: Approved exactly one SDK execution for the Dakkshin tool gap map queue item and updated smokes to prove all other feature conveyor items remain pending.
 - M186: Completed the local-only Dakkshin tool gap map; it is intake evidence only and does not implement product behavior.
 - M187: Implemented the smallest advisory product slice from M186 by adding typed-plan Solution Library entries for basic comp creation, safe effect addition, and selected-layer animation.
+- M188: Added a staged fail-closed local live-validation lane to the feature conveyor for M187 advisory recipes, with read-only live checks, generated-only mutating field smoke, and mutating-live-local reliability scenarios kept separate from SDK workspace-write and external-provider/OpenAI CLI planner validation.
 
 ## Decision Log
 
+- 2026-05-23: M188 treats the user's live-validation approval as separate from SDK workspace-write approval. `m188-dakkshin-advisory-field-validation` uses `--validate-live`, creates no SDKThread/Codex child run, and keeps `executionApprovalState:"pending-explicit-approval"` with `maxAiTurns:0` for SDK execution.
+- 2026-05-23: M188 mutating validation is generated-only and fail-closed: AE, bridge, CEP panel, and saved project must already be available; the runner does not auto-launch AE or treat unavailable live context as a green skip.
+- 2026-05-23: M188 excludes external-provider/OpenAI CLI planner validation, package/dependency changes, PR creation, and mask/destructive/audio/broad comp changes. The new `mutating-live-local` reliability scope includes only local mutating checks.
 - 2026-05-23: M184 prepares only the feature conveyor infrastructure for future Dakkshin intake. It does not implement Dakkshin product behavior, enable CEP-panel SDK writes, run live CEP/AE, run external-provider/OpenAI CLI planner validation, install packages, change dependencies, push, or create a PR.
 - 2026-05-23: M184 feature conveyor execution remains fail-closed. Current Dakkshin queue items have `executionApprovalState:"pending-explicit-approval"` and `maxAiTurns:0`; the runner may preview them but rejects execution until a future milestone records per-item approval.
 - 2026-05-23: M185 treats the user's approval as approval for the local-only Dakkshin intake scope brief, not for product implementation, CEP-panel SDK writes, live CEP/AE, external providers, dependency changes, push, or PR.
@@ -297,7 +311,9 @@
 | M185 AGENTS non-live suite | Required because M185 adds a Dakkshin intake scope brief and updates the active plan. | Passed on 2026-05-23 in `.codex-runtime/validation/m185-non-live-20260523-183139.log`: feature conveyor readiness smoke, `npm.cmd run check:rules`, `git diff --check`, provider contract/API, solution registry/candidate/promotion/retrieval/library, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only smoke, and main smoke. `git diff --check` printed only existing LF-to-CRLF working-copy warnings. |
 | M186 selected feature conveyor validation | Required because M186 adds the Dakkshin tool gap map and updates active plan docs. | Passed on 2026-05-23: `npm.cmd run codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke`, `npm.cmd run check:rules`, and `git diff --check`. `git diff --check` printed only the existing LF-to-CRLF working-copy warning for `plans/target-app-execplan.md`. |
 | M187 AGENTS non-live suite | Required because M187 adds Solution Library recipes, updates registry retrieval smoke coverage, and updates the active plan. | Passed on 2026-05-23 in `.codex-runtime/validation/m187-non-live-20260523-191353.log`: touched JS `node --check`, `npm.cmd run check:rules`, `git diff --check`, provider contract/API, solution registry/candidate/promotion/retrieval/library, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only smoke, and main smoke. Final `git diff --check` printed only LF-to-CRLF working-copy warnings for touched text files. |
-| SDKThread/network/external-provider/OpenAI CLI planner/mutating-live validation | Forbidden/out of scope for this turn. | Not run. |
+| M188 static/local suite | Required because M188 adds a new live-validation command surface, M187 field smoke, reliability scope, and feature conveyor queue item. | Passed on 2026-05-23: touched JS `node --check`; `node scripts/m187-advisory-field-smoke.js both --mock-bridge --dry-run --json`; `node scripts/reliability-validation-suite.js mutating-live-local --dry-run --allow-mutating-live`; M188 conveyor live dry-run with exact approval text; feature conveyor readiness/command smokes; current/history smoke; reliability suite smoke; `npm.cmd run check:rules`; `git diff --check`; provider contract/API; solution registry/candidate/promotion/retrieval/library; project intent memory; plan classification/repair; semantic verification; ChatGPT connector; prompt optimization; bridge-only smoke; and main smoke. `git diff --check` printed only LF-to-CRLF working-copy warnings for touched text files. |
+| M188 live acceptance | Required only when AE, bridge, CEP panel, and a saved project are already available and the exact live approval command is intentionally run from a clean tree. | Not run during implementation. The dry-run command passed and planned the four required stages without SDKThread creation; the actual `--validate-live --stage both` command remains fail-closed and should be run only from a clean tree with the already-open AE/CEP/bridge/project preflight available. |
+| SDKThread/network/external-provider/OpenAI CLI planner/non-M188 mutating-live validation | Forbidden/out of scope for this turn. | Not run. |
 | Package install/dependency change validation | Out of scope because no dependency change is allowed. | Not run. |
 
 ### Milestone 184
@@ -348,6 +364,15 @@
 - Updated `plans/target-app-execplan.md` and `.codex/handoff.md`.
 - Passed M187 AGENTS non-live suite in `.codex-runtime/validation/m187-non-live-20260523-191353.log`.
 - Live CEP/AE, external-provider/OpenAI CLI planner validation, mutating-live validation, mask/destructive/audio/broad comp changes, package/dependency changes, and PR creation were not run; push is allowed by the user and handled separately after commit.
+
+### Milestone 188
+
+- Added the `m188-dakkshin-advisory-field-validation` queue item with separate local live-validation approval metadata, exact mutating-live approval text, fail-closed unavailable policy, and explicit bans on SDKThread/Codex child execution, external-provider/OpenAI CLI planner validation, dependency changes, PR creation, masks, destructive edits, audio, and broad comp mutation.
+- Updated `orchestrator/run-ae-agent-feature-conveyor.mjs` with `--validate-live`, `--stage read-only|mutating|both`, `--allow-mutating-live`, exact approval enforcement, dirty-git blocking for actual live runs, staged local command orchestration, child logs, reports, and dry-run JSON.
+- Added `scripts/m187-advisory-field-smoke.js` for M187 read-only live checks and generated-only mutating field smoke with stable prefixes, safe effect allowlist, dry-run before run, read-back verification, cleanup, and render queue drift detection.
+- Updated `scripts/reliability-validation-suite.js` and its smoke so `mutating-live-local` includes only protected local mutating scenarios and excludes external-provider/OpenAI CLI planner checks.
+- Updated feature conveyor readiness/command smokes, current SDK state, current/history smoke, and `orchestrator/README.md` for the M188 command surface.
+- Passed the M188 static/local validation suite recorded in the validation matrix. Actual live acceptance was not run during implementation; it remains a clean-tree, exact-approval, already-open AE/CEP/bridge/saved-project operation.
 
 ### Milestone 175
 

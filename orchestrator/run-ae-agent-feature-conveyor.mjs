@@ -9,13 +9,18 @@ import { pathToFileURL } from "node:url";
 const DEFAULT_QUEUE_PATH =
   ".codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json";
 const DEFAULT_EXECUTION_LOG_DIR = ".codex-runtime/sdk/feature-conveyor-logs";
+const DEFAULT_LIVE_VALIDATION_LOG_DIR = ".codex-runtime/sdk/feature-conveyor-live-logs";
+const DEFAULT_LIVE_VALIDATION_REPORT_DIR = ".codex-runtime/sdk/feature-conveyor-live-reports";
 const DEFAULT_TAIL_LINES = 80;
 const CHILD_OUTPUT_MAX_BUFFER_BYTES = 50 * 1024 * 1024;
+const LIVE_VALIDATION_CHILD_TIMEOUT_MS = 20 * 60 * 1000;
 
 export const EXECUTE_APPROVAL_TEXT =
   "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only";
 export const CLI_EXECUTE_APPROVAL_TEXT =
   "I approve one Codex CLI feature conveyor workspace-write run for the selected queued feature item planned paths only";
+export const LIVE_VALIDATION_APPROVAL_TEXT =
+  "I approve one M188 staged live AE validation run for M187 advisory recipes using generated-only mutations";
 
 const HELP = `
 AE Agent feature conveyor runner
@@ -25,6 +30,7 @@ Usage:
   node orchestrator/run-ae-agent-feature-conveyor.mjs --item m185-dakkshin-intake-scope-brief
   node orchestrator/run-ae-agent-feature-conveyor.mjs --item <future-approved-item> --execute-sdk --approval-text "${EXECUTE_APPROVAL_TEXT}"
   node orchestrator/run-ae-agent-feature-conveyor.mjs --item <future-approved-item> --engine cli --execute --approval-text "${CLI_EXECUTE_APPROVAL_TEXT}"
+  node orchestrator/run-ae-agent-feature-conveyor.mjs --item m188-dakkshin-advisory-field-validation --validate-live --stage both --allow-mutating-live --approval-text "${LIVE_VALIDATION_APPROVAL_TEXT}"
 
 Options:
   --queue <path>             Queue artifact path. Defaults to M184 feature queue.
@@ -33,6 +39,11 @@ Options:
   --engine <sdk|cli>         Future execution backend. Default: sdk.
   --execute                  Start one AI workspace-write turn with the selected engine.
   --execute-sdk              Start one workspace-write Codex SDK turn.
+  --validate-live            Run the M188 staged local live-validation lane. Does not create SDKThread/Codex child runs.
+  --stage <read-only|mutating|both>
+                             Live-validation stage. Default: both.
+  --allow-mutating-live      Required with exact approval text for mutating live stage.
+  --dry-run                  With --validate-live, print planned local validation commands without running them.
   --approval-text <text>     Required exact approval text for execution.
   --model <name>             Optional Codex model override.
   --reasoning <effort>       minimal, low, medium, high, or xhigh. Default: high.
@@ -49,6 +60,9 @@ M184 dry-run never starts an SDK thread or Codex CLI session. Execution is also
 fail-closed for the current Dakkshin intake queue: each item has
 executionApprovalState:"pending-explicit-approval" and maxAiTurns:0. A future
 milestone must approve exactly one item before this runner can start an AI turn.
+M188 live validation is separate from SDK workspace-write execution: it runs local
+validation commands only, fails closed when AE/CEP/bridge/project preflight is not
+ready, and never runs external-provider/OpenAI CLI planner validation.
 `;
 
 const VALUE_OPTIONS = new Set([
@@ -60,15 +74,19 @@ const VALUE_OPTIONS = new Set([
   "model",
   "queue",
   "reasoning",
+  "stage",
   "tail-lines",
 ]);
 const BOOLEAN_OPTIONS = new Set([
+  "allow-mutating-live",
   "all",
+  "dry-run",
   "execute",
   "execute-sdk",
   "help",
   "json",
   "stream-output",
+  "validate-live",
 ]);
 
 function splitInlineOption(raw) {
@@ -121,6 +139,11 @@ function parseArgs(argv) {
         throw new Error(`Invalid value for --engine: ${value}. Expected sdk or cli.`);
       }
       options.engine = value;
+    } else if (name === "stage") {
+      if (!["read-only", "mutating", "both"].includes(value)) {
+        throw new Error(`Invalid value for --stage: ${value}. Expected read-only, mutating, or both.`);
+      }
+      options.stage = value;
     } else if (name === "tail-lines") {
       const parsed = Number.parseInt(value, 10);
       if (!Number.isInteger(parsed) || parsed < 1 || parsed > 1000) {
@@ -201,13 +224,14 @@ function selectQueueItems(queue, options) {
   });
 }
 
-function validateSelectedItems(items) {
+function validateSelectedItems(items, options = {}) {
   for (const item of items) {
     if (item.status !== "queued") {
       throw new Error(`Feature queue item is not queued: ${item.id}`);
     }
-    if (item.mode !== "local-only") {
-      throw new Error(`Feature queue item mode is not local-only: ${item.id}`);
+    const allowedModes = options.validateLive ? ["local-live-validation"] : ["local-only", "local-live-validation"];
+    if (!allowedModes.includes(item.mode)) {
+      throw new Error(`Feature queue item mode is not allowed for this runner mode: ${item.id}`);
     }
     if (!Array.isArray(item.plannedPaths) || item.plannedPaths.length === 0) {
       throw new Error(`Feature queue item has no planned paths: ${item.id}`);
@@ -230,6 +254,54 @@ function assertExecutionApproved(prepared) {
     throw new Error(
       `Feature conveyor execution is not approved for ${item.id}: executionApprovalState=${item.executionApprovalState}, maxAiTurns=${item.maxAiTurns}`,
     );
+  }
+}
+
+function liveStageIncludesMutating(stage) {
+  return stage === "mutating" || stage === "both";
+}
+
+function assertLiveValidationSelection(prepared) {
+  if (prepared.selectedItems.length !== 1) {
+    throw new Error("M188 live validation requires exactly one selected queue item.");
+  }
+  const item = prepared.selectedItems[0];
+  if (item.id !== "m188-dakkshin-advisory-field-validation") {
+    throw new Error(`M188 live validation can only run m188-dakkshin-advisory-field-validation, not ${item.id}.`);
+  }
+  if (!item.liveValidation || item.liveValidation.approvalState !== "approved") {
+    throw new Error(`M188 live validation is not approved in the queue item: ${item.id}.`);
+  }
+}
+
+function liveValidationBlockedBy(prepared) {
+  const blocked = [];
+  if (prepared.selectedItems.length !== 1 || prepared.selectedItems[0].id !== "m188-dakkshin-advisory-field-validation") {
+    blocked.push("m188-live-validation-item-not-selected");
+  }
+  const item = prepared.selectedItems[0] || {};
+  if (!item.liveValidation || item.liveValidation.approvalState !== "approved") {
+    blocked.push("per-item-live-validation-approval-missing");
+  }
+  if (liveStageIncludesMutating(prepared.liveStage)) {
+    if (prepared.options.allowMutatingLive !== true) {
+      blocked.push("allow-mutating-live-flag-missing");
+    }
+    if (prepared.options.approvalText !== LIVE_VALIDATION_APPROVAL_TEXT) {
+      blocked.push("exact-mutating-live-approval-text-missing");
+    }
+  }
+  return blocked;
+}
+
+function assertLiveValidationApproved(prepared) {
+  assertLiveValidationSelection(prepared);
+  const blocked = liveValidationBlockedBy(prepared);
+  if (blocked.length > 0) {
+    if (blocked.includes("exact-mutating-live-approval-text-missing")) {
+      throw new Error(`Missing exact --approval-text: ${LIVE_VALIDATION_APPROVAL_TEXT}`);
+    }
+    throw new Error(`M188 live validation is blocked: ${blocked.join(", ")}`);
   }
 }
 
@@ -530,6 +602,144 @@ function runChildProcess(prepared, cwd) {
   };
 }
 
+function liveValidationCommands(prepared) {
+  const commands = [];
+  if (prepared.liveStage === "read-only" || prepared.liveStage === "both") {
+    commands.push({
+      id: "read-only-live-reliability",
+      stage: "read-only",
+      command: process.execPath,
+      args: [
+        path.join("scripts", "reliability-validation-suite.js"),
+        "read-only-live",
+        "--write-report",
+        "--stop-on-fail"
+      ],
+      timeoutMs: LIVE_VALIDATION_CHILD_TIMEOUT_MS
+    });
+    commands.push({
+      id: "m187-read-only-field-smoke",
+      stage: "read-only",
+      command: process.execPath,
+      args: [
+        path.join("scripts", "m187-advisory-field-smoke.js"),
+        "read-only",
+        "--json"
+      ],
+      timeoutMs: LIVE_VALIDATION_CHILD_TIMEOUT_MS
+    });
+  }
+  if (prepared.liveStage === "mutating" || prepared.liveStage === "both") {
+    commands.push({
+      id: "m187-generated-mutating-field-smoke",
+      stage: "mutating",
+      command: process.execPath,
+      args: [
+        path.join("scripts", "m187-advisory-field-smoke.js"),
+        "mutating",
+        "--json"
+      ],
+      timeoutMs: LIVE_VALIDATION_CHILD_TIMEOUT_MS
+    });
+    commands.push({
+      id: "mutating-live-local-reliability",
+      stage: "mutating",
+      command: process.execPath,
+      args: [
+        path.join("scripts", "reliability-validation-suite.js"),
+        "mutating-live-local",
+        "--allow-mutating-live",
+        "--write-report",
+        "--stop-on-fail"
+      ],
+      timeoutMs: LIVE_VALIDATION_CHILD_TIMEOUT_MS
+    });
+  }
+  return commands;
+}
+
+function createLiveValidationArtifactPath(cwd, prepared, directory, suffix) {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const itemToken = sanitizeLogToken(prepared.selectedItems[0].id);
+  const fileName = `${timestamp}-${itemToken}-${prepared.liveStage}.${suffix}`;
+  const repoPath = normalizeRepoPath(path.posix.join(directory, fileName));
+  const absolute = path.resolve(cwd, repoPath);
+  mkdirSync(path.dirname(absolute), { recursive: true });
+  return { absolute, repoPath };
+}
+
+function commandResultSummary(command, result, logPath) {
+  return {
+    id: command.id,
+    stage: command.stage,
+    command: renderCommandLine(command.command, command.args),
+    status: result.status,
+    signal: result.signal || null,
+    error: result.error ? result.error.message : null,
+    durationMs: result.durationMs,
+    logPath: logPath.repoPath,
+    stdoutTail: tailLines(result.stdout, 60),
+    stderrTail: tailLines(result.stderr, 60),
+    ok: !result.error && result.status === 0
+  };
+}
+
+function formatLiveValidationChildLog(command, result) {
+  return [
+    "# AE Agent feature conveyor live validation child log",
+    "",
+    `createdAt: ${new Date().toISOString()}`,
+    `id: ${command.id}`,
+    `stage: ${command.stage}`,
+    `status: ${result.status}`,
+    `signal: ${result.signal || ""}`,
+    `error: ${result.error ? result.error.message : ""}`,
+    `durationMs: ${result.durationMs}`,
+    `command: ${renderCommandLine(command.command, command.args)}`,
+    "",
+    "## stdout",
+    "",
+    normalizeChildOutput(result.stdout) || "(empty)",
+    "",
+    "## stderr",
+    "",
+    normalizeChildOutput(result.stderr) || "(empty)",
+    "",
+  ].join("\n");
+}
+
+function runLiveValidationCommand(cwd, prepared, command) {
+  const startedAt = Date.now();
+  const result = spawnSync(command.command, command.args, {
+    cwd,
+    encoding: "utf8",
+    maxBuffer: CHILD_OUTPUT_MAX_BUFFER_BYTES,
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: command.timeoutMs,
+    windowsHide: true
+  });
+  result.durationMs = Date.now() - startedAt;
+  const logPath = createLiveValidationArtifactPath(
+    cwd,
+    prepared,
+    prepared.liveValidationLogDirectory,
+    `${sanitizeLogToken(command.id)}.log`
+  );
+  writeFileSync(logPath.absolute, formatLiveValidationChildLog(command, result), "utf8");
+  return commandResultSummary(command, result, logPath);
+}
+
+function writeLiveValidationReport(cwd, prepared, report) {
+  const reportPath = createLiveValidationArtifactPath(
+    cwd,
+    prepared,
+    prepared.liveValidationReportDirectory,
+    "json"
+  );
+  writeFileSync(reportPath.absolute, JSON.stringify(report, null, 2) + "\n", "utf8");
+  return reportPath;
+}
+
 function buildFailureTail(result, tailLineCount) {
   const stderrTail = tailLines(result.stderr, tailLineCount);
   const stdoutTail = tailLines(result.stdout, tailLineCount);
@@ -558,16 +768,33 @@ function printResult(result, asJson) {
   console.log(`Queue: ${result.queuePath}`);
   console.log(`Items: ${result.items.join(", ")}`);
   console.log(`Mode: ${result.mode}`);
+  if (result.status) {
+    console.log(`Status: ${result.status}`);
+  }
   if (result.executionApproved === false) {
     console.log("Execution approved: false");
   }
+  if (result.liveValidationApproved === false) {
+    console.log("Live validation approved: false");
+  }
+  if (result.liveValidationStage) {
+    console.log(`Live validation stage: ${result.liveValidationStage}`);
+  } else if (result.stage) {
+    console.log(`Live validation stage: ${result.stage}`);
+  }
   if (result.executionLogMode) {
     console.log(`Execution output: ${result.executionLogMode}`);
+  }
+  if (result.liveValidationReportPath) {
+    console.log(`Live validation report: ${result.liveValidationReportPath}`);
   }
   if (result.logPath) {
     console.log(`Full execution log: ${result.logPath}`);
   } else if (result.executionLogDirectory) {
     console.log(`Execution log directory: ${result.executionLogDirectory}`);
+  }
+  if (result.liveValidationLogDirectory) {
+    console.log(`Live validation log directory: ${result.liveValidationLogDirectory}`);
   }
   console.log("");
   console.log("Planned paths:");
@@ -584,6 +811,20 @@ function printResult(result, asJson) {
     console.log("Future execute command via Codex CLI:");
     console.log(result.executeCliCommand);
   }
+  if (result.plannedCommands) {
+    console.log("");
+    console.log("Planned live validation commands:");
+    for (const command of result.plannedCommands) {
+      console.log(`- ${command.id}: ${command.command}`);
+    }
+  }
+  if (result.commands) {
+    console.log("");
+    console.log("Live validation commands:");
+    for (const command of result.commands) {
+      console.log(`- ${command.id}: ${command.ok ? "passed" : "failed"} (${command.logPath})`);
+    }
+  }
   if (result.changedPaths) {
     console.log("");
     console.log("Changed paths since pre-run HEAD:");
@@ -598,15 +839,23 @@ export function prepareRun(argv = process.argv.slice(2), cwd = process.cwd()) {
   if (options.help) {
     return { help: true };
   }
+  if (options.validateLive && (options.execute || options.executeSdk)) {
+    throw new Error("--validate-live cannot be combined with --execute or --execute-sdk.");
+  }
+  if (options.validateLive && options.engine && options.engine !== "sdk") {
+    throw new Error("--validate-live does not use --engine; it runs local validation commands only.");
+  }
 
   const queuePath = options.queue || DEFAULT_QUEUE_PATH;
   const queue = readQueue(cwd, queuePath);
   const selectedItems = selectQueueItems(queue, options);
-  validateSelectedItems(selectedItems);
+  validateSelectedItems(selectedItems, { validateLive: Boolean(options.validateLive) });
 
   const plannedPaths = uniqueSorted(selectedItems.flatMap((item) => item.plannedPaths));
   const prompt = buildPrompt(queue, selectedItems, plannedPaths);
   const executionLogDirectory = normalizeRuntimeLogDirectory(cwd, options.logDir);
+  const liveValidationLogDirectory = normalizeRuntimeLogDirectory(cwd, options.logDir || DEFAULT_LIVE_VALIDATION_LOG_DIR);
+  const liveValidationReportDirectory = normalizeRuntimeLogDirectory(cwd, DEFAULT_LIVE_VALIDATION_REPORT_DIR);
   const tailLineCount = options.tailLines || DEFAULT_TAIL_LINES;
 
   return {
@@ -615,6 +864,9 @@ export function prepareRun(argv = process.argv.slice(2), cwd = process.cwd()) {
     executionLogDirectory,
     executeSdk: Boolean(options.executeSdk || options.execute),
     json: Boolean(options.json),
+    liveStage: options.stage || "both",
+    liveValidationLogDirectory,
+    liveValidationReportDirectory,
     options,
     plannedPaths,
     prompt,
@@ -622,6 +874,7 @@ export function prepareRun(argv = process.argv.slice(2), cwd = process.cwd()) {
     queuePath,
     selectedItems,
     tailLineCount,
+    validateLive: Boolean(options.validateLive),
   };
 }
 
@@ -642,6 +895,33 @@ export function dryRunEnvelope(prepared) {
     queuePath: prepared.queuePath,
     sdkThreadCreated: false,
     tailLines: prepared.tailLineCount,
+  };
+}
+
+export function liveValidationDryRunEnvelope(prepared) {
+  assertLiveValidationSelection(prepared);
+  const blockedBy = liveValidationBlockedBy(prepared);
+  const commands = liveValidationCommands(prepared).map((command) => ({
+    id: command.id,
+    stage: command.stage,
+    command: renderCommandLine(command.command, command.args),
+    timeoutMs: command.timeoutMs
+  }));
+  return {
+    blockedBy,
+    engine: "local-live-validation",
+    executionApproved: false,
+    items: prepared.selectedItems.map((item) => item.id),
+    liveValidationApproved: blockedBy.length === 0,
+    liveValidationLogDirectory: prepared.liveValidationLogDirectory,
+    liveValidationReportDirectory: prepared.liveValidationReportDirectory,
+    liveValidationStage: prepared.liveStage,
+    mode: "live-validation-dry-run",
+    plannedCommands: commands,
+    plannedPaths: prepared.plannedPaths,
+    queuePath: prepared.queuePath,
+    sdkThreadCreated: false,
+    tailLines: prepared.tailLineCount
   };
 }
 
@@ -703,6 +983,58 @@ export function runFeatureConveyor(prepared, cwd = process.cwd()) {
   };
 }
 
+export function runLiveValidation(prepared, cwd = process.cwd()) {
+  assertLiveValidationApproved(prepared);
+
+  const preStatus = gitStatus(cwd);
+  if (preStatus.length > 0) {
+    throw new Error(`Refusing M188 live validation with dirty git state: ${preStatus.join("; ")}`);
+  }
+
+  const startedAt = new Date().toISOString();
+  const commands = liveValidationCommands(prepared);
+  const commandResults = [];
+  let failed = false;
+  for (const command of commands) {
+    const result = runLiveValidationCommand(cwd, prepared, command);
+    commandResults.push(result);
+    if (!result.ok) {
+      failed = true;
+      break;
+    }
+  }
+
+  const report = {
+    schemaVersion: "ae-agent-feature-conveyor-live-validation.v1",
+    generatedAt: new Date().toISOString(),
+    startedAt,
+    ok: !failed,
+    status: failed ? "failed" : "passed",
+    item: prepared.selectedItems[0].id,
+    items: prepared.selectedItems.map((item) => item.id),
+    queuePath: prepared.queuePath,
+    stage: prepared.liveStage,
+    sdkThreadCreated: false,
+    externalProviderValidationRun: false,
+    openAiCliPlannerValidationRun: false,
+    packageOrDependencyChangesAllowed: false,
+    commands: commandResults,
+    summary: {
+      total: commandResults.length,
+      passed: commandResults.filter((item) => item.ok).length,
+      failed: commandResults.filter((item) => !item.ok).length
+    }
+  };
+  const reportPath = writeLiveValidationReport(cwd, prepared, report);
+  return {
+    ...report,
+    liveValidationLogDirectory: prepared.liveValidationLogDirectory,
+    liveValidationReportPath: reportPath.repoPath,
+    mode: failed ? "live-validation-failed" : "live-validation-passed",
+    plannedPaths: prepared.plannedPaths
+  };
+}
+
 export function main(argv = process.argv.slice(2)) {
   const prepared = prepareRun(argv);
   if (prepared.help) {
@@ -710,8 +1042,16 @@ export function main(argv = process.argv.slice(2)) {
     return;
   }
 
-  const result = prepared.executeSdk ? runFeatureConveyor(prepared) : dryRunEnvelope(prepared);
+  let result;
+  if (prepared.validateLive) {
+    result = prepared.options.dryRun ? liveValidationDryRunEnvelope(prepared) : runLiveValidation(prepared);
+  } else {
+    result = prepared.executeSdk ? runFeatureConveyor(prepared) : dryRunEnvelope(prepared);
+  }
   printResult(result, prepared.json);
+  if (result && result.ok === false) {
+    process.exitCode = 1;
+  }
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {

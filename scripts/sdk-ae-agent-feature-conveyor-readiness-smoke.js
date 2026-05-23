@@ -48,7 +48,6 @@ function assertFalseBoundaryFlags(artifact, boundaryPath = "sourceContext.behavi
 }
 
 function assertQueueItem(item) {
-  assert.strictEqual(item.mode, "local-only", `${item.id} must be local-only.`);
   assert.strictEqual(item.status, "queued", `${item.id} must stay queued.`);
   assert(Array.isArray(item.plannedPaths) && item.plannedPaths.length > 0);
   assertIncludes(item.stopGates, "validation-failed", `${item.id} stop gates`);
@@ -57,6 +56,7 @@ function assertQueueItem(item) {
 
 function assertPendingQueueItem(item) {
   assertQueueItem(item);
+  assert.strictEqual(item.mode, "local-only", `${item.id} must stay local-only.`);
   assert.strictEqual(
     item.executionApprovalState,
     "pending-explicit-approval",
@@ -69,12 +69,38 @@ function assertPendingQueueItem(item) {
 function assertApprovedM186Item(item) {
   assertQueueItem(item);
   assert.strictEqual(item.id, "m186-dakkshin-intake-tool-gap-map");
+  assert.strictEqual(item.mode, "local-only");
   assert.strictEqual(item.executionApprovalState, "approved");
   assert.strictEqual(
     item.explicitApprovalText,
     "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only",
   );
   assert.strictEqual(item.maxAiTurns, 1);
+}
+
+function assertLiveValidationM188Item(item) {
+  assertQueueItem(item);
+  assert.strictEqual(item.id, "m188-dakkshin-advisory-field-validation");
+  assert.strictEqual(item.mode, "local-live-validation");
+  assert.strictEqual(item.executionApprovalState, "pending-explicit-approval");
+  assert.strictEqual(item.explicitApprovalText, null);
+  assert.strictEqual(item.maxAiTurns, 0);
+  assert(item.liveValidation, "M188 item must carry separate liveValidation approval metadata.");
+  assert.strictEqual(item.liveValidation.approvalState, "approved");
+  assert.strictEqual(
+    item.liveValidation.approvalText,
+    "I approve one M188 staged live AE validation run for M187 advisory recipes using generated-only mutations",
+  );
+  assert.strictEqual(item.liveValidation.sdkThreadCreated, false);
+  assert.strictEqual(item.liveValidation.codexCliChildCreated, false);
+  assert.strictEqual(item.liveValidation.failClosedUnavailablePolicy, true);
+  assertIncludes(item.allowedActions, "run generated-only M187 mutating field smoke with stable generated prefixes, read-back verification, and cleanup", `${item.id} allowed actions`);
+  assertIncludes(item.forbiddenActions, "run external-provider/OpenAI CLI planner validation", `${item.id} forbidden actions`);
+  assertIncludes(item.forbiddenActions, "make package/dependency changes", `${item.id} forbidden actions`);
+  assertIncludes(item.forbiddenActions, "create masks, destructive project edits, audio changes, or broad comp changes", `${item.id} forbidden actions`);
+  assertIncludes(item.stopGates, "project-not-saved", `${item.id} stop gates`);
+  assertIncludes(item.stopGates, "generated-cleanup-leftovers", `${item.id} stop gates`);
+  assertIncludes(item.stopGates, "render-queue-drift", `${item.id} stop gates`);
 }
 
 function main() {
@@ -108,8 +134,13 @@ function main() {
   assert.strictEqual(governance.dakkshinFeatureImplementationApproved, false);
   assert.strictEqual(queue.commandRunner.executionApprovedNow, true);
   assert.strictEqual(queue.commandRunner.sdkThreadCreatedByDryRun, false);
+  assert.strictEqual(queue.commandRunner.sdkThreadCreatedByLiveValidation, false);
   assert.strictEqual(queue.commandRunner.autoCommit, false);
   assert.strictEqual(queue.commandRunner.autoPush, false);
+  assert.strictEqual(
+    queue.commandRunner.validateLiveRequiresExactApprovalText,
+    "I approve one M188 staged live AE validation run for M187 advisory recipes using generated-only mutations",
+  );
 
   assert.deepStrictEqual(
     queue.queueItems.map((item) => item.id),
@@ -117,11 +148,14 @@ function main() {
       "m185-dakkshin-intake-scope-brief",
       "m186-dakkshin-intake-tool-gap-map",
       "m187-dakkshin-intake-implementation-slice-plan",
+      "m188-dakkshin-advisory-field-validation",
     ],
   );
   for (const item of queue.queueItems) {
     if (item.id === "m186-dakkshin-intake-tool-gap-map") {
       assertApprovedM186Item(item);
+    } else if (item.id === "m188-dakkshin-advisory-field-validation") {
+      assertLiveValidationM188Item(item);
     } else {
       assertPendingQueueItem(item);
     }
@@ -129,11 +163,13 @@ function main() {
       item.plannedPaths.every((repoPath) => !repoPath.startsWith("cep-panel/")),
       `${item.id} must not plan CEP-panel paths.`,
     );
-    assertIncludes(
-      item.forbiddenActions,
-      "run live CEP/After Effects validation",
-      `${item.id} forbidden actions`,
-    );
+    if (item.id !== "m188-dakkshin-advisory-field-validation") {
+      assertIncludes(
+        item.forbiddenActions,
+        "run live CEP/After Effects validation",
+        `${item.id} forbidden actions`,
+      );
+    }
   }
 
   assertIncludes(
@@ -142,6 +178,16 @@ function main() {
     "global stop gates",
   );
   assertIncludes(queue.globalStopGates, "no-cep-panel-sdk-write", "global stop gates");
+  assertIncludes(
+    queue.globalStopGates,
+    "no-live-cep-ae-outside-m188-live-validation-approval",
+    "global stop gates",
+  );
+  assertIncludes(
+    queue.globalStopGates,
+    "no-mutating-live-outside-generated-m188-lane",
+    "global stop gates",
+  );
   assertIncludes(queue.globalStopGates, "no-package-install", "global stop gates");
   assertIncludes(queue.globalStopGates, "no-dependency-change", "global stop gates");
   assertIncludes(queue.globalStopGates, "no-push-by-default", "global stop gates");

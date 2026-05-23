@@ -12,10 +12,15 @@ const queue = require(path.join(
   repo,
   ".codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json",
 ));
+const LIVE_VALIDATION_APPROVAL_TEXT =
+  "I approve one M188 staged live AE validation run for M187 advisory recipes using generated-only mutations";
 
-function run(args) {
-  return spawnSync(process.execPath, ["orchestrator/run-ae-agent-feature-conveyor.mjs", ...args], {
-    cwd: repo,
+function run(args, cwd = repo) {
+  const runner = cwd === repo
+    ? "orchestrator/run-ae-agent-feature-conveyor.mjs"
+    : path.join(repo, "orchestrator/run-ae-agent-feature-conveyor.mjs");
+  return spawnSync(process.execPath, [runner, ...args], {
+    cwd,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -108,6 +113,54 @@ async function assertCommitAwareAllowlist() {
   }
 }
 
+function writeTempLiveQueue(temp) {
+  const queuePath = path.join(
+    temp,
+    ".codex-audit",
+    "sdk-feature-conveyor",
+    "184-dakkshin-intake-feature-queue.json",
+  );
+  fs.mkdirSync(path.dirname(queuePath), { recursive: true });
+  fs.writeFileSync(queuePath, JSON.stringify({
+    schema: queue.schema,
+    queueItems: [
+      queue.queueItems.find((item) => item.id === "m188-dakkshin-advisory-field-validation"),
+    ],
+  }, null, 2), "utf8");
+}
+
+function assertLiveValidationDirtyGitBlock() {
+  const tempParent = path.resolve(os.tmpdir());
+  const tempRoot = fs.mkdtempSync(path.join(tempParent, "ae-agent-feature-live-"));
+  const temp = path.resolve(tempRoot);
+  assert(
+    temp.startsWith(`${tempParent}${path.sep}`) &&
+      path.basename(temp).startsWith("ae-agent-feature-live-"),
+    `unexpected temp path: ${temp}`,
+  );
+  try {
+    sh(temp, ["git", "init"]);
+    writeTempLiveQueue(temp);
+    fs.writeFileSync(path.join(temp, "dirty.txt"), "dirty\n", "utf8");
+    const result = run([
+      "--item",
+      "m188-dakkshin-advisory-field-validation",
+      "--validate-live",
+      "--stage",
+      "read-only",
+    ], temp);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /dirty git state/);
+  } finally {
+    if (
+      temp.startsWith(`${tempParent}${path.sep}`) &&
+      path.basename(temp).startsWith("ae-agent-feature-live-")
+    ) {
+      fs.rmSync(temp, { recursive: true, force: true });
+    }
+  }
+}
+
 async function main() {
   assert.strictEqual(queue.commandRunner.packageScript, "codex:orchestrator:ae-agent-feature-conveyor");
   assert.strictEqual(queue.commandRunner.sdkThreadCreatedByDryRun, false);
@@ -128,6 +181,7 @@ async function main() {
     "m185-dakkshin-intake-scope-brief",
     "m186-dakkshin-intake-tool-gap-map",
     "m187-dakkshin-intake-implementation-slice-plan",
+    "m188-dakkshin-advisory-field-validation",
   ]);
   assert(dryRun.plannedPaths.includes(".codex/handoff.md"));
   assert(dryRun.plannedPaths.includes("plans/target-app-execplan.md"));
@@ -162,6 +216,52 @@ async function main() {
   assert.deepStrictEqual(approvedSingle.blockedBy, []);
   assert(approvedSingle.plannedPaths.includes(".codex-audit/sdk-feature-conveyor/dakkshin-intake/m186-tool-gap-map.md"));
 
+  const liveSingle = parseJson(run(["--item", "m188-dakkshin-advisory-field-validation", "--json"]));
+  assert.deepStrictEqual(liveSingle.items, ["m188-dakkshin-advisory-field-validation"]);
+  assert.strictEqual(liveSingle.executionApproved, false);
+  assert(liveSingle.plannedPaths.includes(".codex-runtime/sdk/feature-conveyor-live-logs/"));
+
+  const liveDryRunBlocked = parseJson(run([
+    "--item",
+    "m188-dakkshin-advisory-field-validation",
+    "--validate-live",
+    "--stage",
+    "mutating",
+    "--dry-run",
+    "--json",
+  ]));
+  assert.strictEqual(liveDryRunBlocked.mode, "live-validation-dry-run");
+  assert.strictEqual(liveDryRunBlocked.sdkThreadCreated, false);
+  assert.strictEqual(liveDryRunBlocked.liveValidationStage, "mutating");
+  assert(liveDryRunBlocked.blockedBy.includes("allow-mutating-live-flag-missing"));
+  assert(liveDryRunBlocked.blockedBy.includes("exact-mutating-live-approval-text-missing"));
+  assert(liveDryRunBlocked.plannedCommands.some((command) => command.id === "m187-generated-mutating-field-smoke"));
+  assert(!liveDryRunBlocked.plannedCommands.some((command) => /openai-cli/i.test(command.command)));
+
+  const liveDryRunApproved = parseJson(run([
+    "--item",
+    "m188-dakkshin-advisory-field-validation",
+    "--validate-live",
+    "--stage",
+    "both",
+    "--allow-mutating-live",
+    "--approval-text",
+    LIVE_VALIDATION_APPROVAL_TEXT,
+    "--dry-run",
+    "--json",
+  ]));
+  assert.strictEqual(liveDryRunApproved.liveValidationApproved, true);
+  assert.deepStrictEqual(liveDryRunApproved.blockedBy, []);
+  assert.deepStrictEqual(
+    liveDryRunApproved.plannedCommands.map((command) => command.id),
+    [
+      "read-only-live-reliability",
+      "m187-read-only-field-smoke",
+      "m187-generated-mutating-field-smoke",
+      "mutating-live-local-reliability",
+    ],
+  );
+
   const missingApproval = run(["--item", "m185-dakkshin-intake-scope-brief", "--execute-sdk", "--approval-text", "wrong"]);
   assert.notStrictEqual(missingApproval.status, 0);
   assert.match(missingApproval.stderr, /Missing exact --approval-text/);
@@ -188,6 +288,29 @@ async function main() {
   assert.notStrictEqual(missingCliApproval.status, 0);
   assert.match(missingCliApproval.stderr, /Codex CLI feature conveyor/);
 
+  const missingLiveApproval = run([
+    "--item",
+    "m188-dakkshin-advisory-field-validation",
+    "--validate-live",
+    "--stage",
+    "mutating",
+    "--allow-mutating-live",
+    "--approval-text",
+    "wrong",
+  ]);
+  assert.notStrictEqual(missingLiveApproval.status, 0);
+  assert.match(missingLiveApproval.stderr, /M188 staged live AE validation/);
+
+  const sdkExecuteLiveItem = run([
+    "--item",
+    "m188-dakkshin-advisory-field-validation",
+    "--execute-sdk",
+    "--approval-text",
+    "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only",
+  ]);
+  assert.notStrictEqual(sdkExecuteLiveItem.status, 0);
+  assert.match(sdkExecuteLiveItem.stderr, /Feature conveyor execution is not approved/);
+
   const unknown = run(["--item", "missing"]);
   assert.notStrictEqual(unknown.status, 0);
   assert.match(unknown.stderr, /Unknown feature queue item/);
@@ -205,6 +328,7 @@ async function main() {
   assert.match(unsafeNetwork.stderr, /Unknown option: --network/);
 
   await assertCommitAwareAllowlist();
+  assertLiveValidationDirtyGitBlock();
 
   console.log("SDK AE Agent feature conveyor command smoke: pass");
 }

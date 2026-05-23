@@ -76,16 +76,26 @@
     "dryRunCommand": "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --all",
     "executeCommand": "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item <future-approved-item> --execute-sdk --approval-text \"I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only\"",
     "executeCliCommand": "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item <future-approved-item> --engine cli --execute --approval-text \"I approve one Codex CLI feature conveyor workspace-write run for the selected queued feature item planned paths only\"",
+    "validateLiveCommand": "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item m188-dakkshin-advisory-field-validation --validate-live --stage both --allow-mutating-live --approval-text \"I approve one M188 staged live AE validation run for M187 advisory recipes using generated-only mutations\"",
     "executeRequiresExactApprovalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only",
     "executeCliRequiresExactApprovalText": "I approve one Codex CLI feature conveyor workspace-write run for the selected queued feature item planned paths only",
+    "validateLiveRequiresExactApprovalText": "I approve one M188 staged live AE validation run for M187 advisory recipes using generated-only mutations",
     "supportedEngines": [
       "sdk",
       "cli"
     ],
+    "supportedLiveStages": [
+      "read-only",
+      "mutating",
+      "both"
+    ],
     "sdkThreadCreatedByDryRun": false,
+    "sdkThreadCreatedByLiveValidation": false,
     "executionApprovedNow": true,
     "executionOutputMode": "log-file-by-default",
     "executionLogDirectory": ".codex-runtime/sdk/feature-conveyor-logs",
+    "liveValidationLogDirectory": ".codex-runtime/sdk/feature-conveyor-live-logs",
+    "liveValidationReportDirectory": ".codex-runtime/sdk/feature-conveyor-live-reports",
     "terminalTailLinesDefault": 80,
     "streamOutputFlag": "--stream-output",
     "preRunDirtyGitAllowed": false,
@@ -221,6 +231,66 @@
         "context-pressure"
       ],
       "status": "queued"
+    },
+    {
+      "id": "m188-dakkshin-advisory-field-validation",
+      "milestone": 188,
+      "title": "Staged live conveyor validation for M187 advisory recipes",
+      "laneId": "dakkshin-advisory-live-validation",
+      "scope": "m187-advisory-field-validation",
+      "mode": "local-live-validation",
+      "plannedPaths": [
+        ".codex-runtime/sdk/feature-conveyor-live-logs/",
+        ".codex-runtime/sdk/feature-conveyor-live-reports/",
+        "logs/reliability-validation/"
+      ],
+      "executionApprovalState": "pending-explicit-approval",
+      "explicitApprovalText": null,
+      "maxAiTurns": 0,
+      "liveValidation": {
+        "approvalState": "approved",
+        "approvalText": "I approve one M188 staged live AE validation run for M187 advisory recipes using generated-only mutations",
+        "runnerMode": "--validate-live",
+        "defaultStage": "both",
+        "requiresAllowMutatingLiveFlagForMutatingStage": true,
+        "sdkThreadCreated": false,
+        "codexCliChildCreated": false,
+        "failClosedUnavailablePolicy": true
+      },
+      "allowedActions": [
+        "run read-only-live reliability checks against an already-open AE Agent CEP panel",
+        "run M187 read-only field smoke for bridge health, CEP inspect, ping_ae, Solution Library retrieval, and typed-plan dry-runs",
+        "run generated-only M187 mutating field smoke with stable generated prefixes, read-back verification, and cleanup",
+        "run mutating-live-local reliability checks for protected local Agent scenarios only"
+      ],
+      "forbiddenActions": [
+        "start an SDKThread or Codex CLI workspace-write child run",
+        "run external-provider/OpenAI CLI planner validation",
+        "edit cep-panel/** through the SDK lane",
+        "make package/dependency changes",
+        "create masks, destructive project edits, audio changes, or broad comp changes",
+        "push or create a PR"
+      ],
+      "validationCommands": [
+        "node scripts/m187-advisory-field-smoke.js both --mock-bridge --dry-run --json",
+        "node scripts/reliability-validation-suite.js mutating-live-local --dry-run --allow-mutating-live",
+        "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item m188-dakkshin-advisory-field-validation --validate-live --stage both --dry-run --allow-mutating-live --approval-text \"I approve one M188 staged live AE validation run for M187 advisory recipes using generated-only mutations\" --json",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "stopGates": [
+        "ae-not-running",
+        "cep-panel-not-open-or-not-connected",
+        "bridge-unavailable",
+        "project-not-saved",
+        "active-edit-session-already-open",
+        "generated-cleanup-leftovers",
+        "render-queue-drift",
+        "external-provider-or-openai-cli-planner-requested",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
     }
   ],
   "globalStopGates": [
@@ -228,9 +298,9 @@
     "one-approved-feature-execution-item-only",
     "no-dakkshin-implementation-in-m184",
     "no-cep-panel-sdk-write",
-    "no-live-cep-ae-without-fresh-explicit-approval",
+    "no-live-cep-ae-outside-m188-live-validation-approval",
     "no-external-provider-openai-cli-planner",
-    "no-mutating-live-validation",
+    "no-mutating-live-outside-generated-m188-lane",
     "no-package-install",
     "no-dependency-change",
     "no-push-by-default",
@@ -265,7 +335,9 @@
       "sdk-ae-agent-feature-conveyor-queue.v1",
       "codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke",
       "codex:orchestrator:ae-agent-feature-conveyor -- --all",
-      "Dakkshin intake"
+      "Dakkshin intake",
+      "m188-dakkshin-advisory-field-validation",
+      "--validate-live"
     ],
     "requiredSourceSnippets": {
       "orchestrator/run-buffered-acceptance.mjs": [
@@ -283,6 +355,12 @@
         "\"codex:orchestrator:ae-agent-feature-conveyor\": \"node orchestrator/run-ae-agent-feature-conveyor.mjs\"",
         "\"codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke\": \"node scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js\"",
         "\"codex:orchestrator:ae-agent-feature-conveyor:smoke\": \"node scripts/sdk-ae-agent-feature-conveyor-command-smoke.js\""
+      ],
+      "orchestrator/run-ae-agent-feature-conveyor.mjs": [
+        "--validate-live",
+        "LIVE_VALIDATION_APPROVAL_TEXT",
+        "mutating-live-local",
+        "m187-advisory-field-smoke.js"
       ]
     },
     "requiredFalseBoundaryFlags": [

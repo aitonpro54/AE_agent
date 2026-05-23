@@ -88,6 +88,7 @@ function normalizeScope(scope) {
   const value = String(scope || "local").trim();
   if (value === "live-readonly") return "read-only-live";
   if (value === "readiness") return "provider-readiness";
+  if (value === "mutating-local") return "mutating-live-local";
   return value || "local";
 }
 
@@ -95,6 +96,7 @@ function categoriesForScope(scope) {
   const value = normalizeScope(scope);
   if (value === "all") return CATEGORIES.slice();
   if (value === "list") return [];
+  if (value === "mutating-live-local") return ["mutating-live"];
   if (CATEGORIES.includes(value)) return [value];
   throw new Error(`Unknown reliability validation scope: ${scope}`);
 }
@@ -112,9 +114,11 @@ function blockedReason(check, opts = {}) {
 }
 
 function selectedChecks(opts = {}, catalog = buildCheckCatalog()) {
+  const scope = normalizeScope(opts.scope);
   const categories = categoriesForScope(opts.scope);
   return catalog
     .filter((check) => categories.includes(check.category))
+    .filter((check) => scope !== "mutating-live-local" || !(check.gates || []).includes("externalProvider"))
     .map((check) => ({ ...check, blockedReason: blockedReason(check, opts) }));
 }
 
@@ -397,9 +401,9 @@ function parseArgs(argv) {
 function usage() {
   return [
     "Usage: node scripts\\reliability-validation-suite.js [scope] [options]",
-    "Scopes: local, provider-readiness, read-only-live, external-provider, mutating-live, all, list.",
+    "Scopes: local, provider-readiness, read-only-live, external-provider, mutating-live, mutating-live-local, all, list.",
     "Options: --dry-run, --write-report, --allow-external-provider, --allow-mutating-live, --stop-on-fail.",
-    "Live readiness uses checkModels=0. External provider and live mutation checks stay gated."
+    "Live readiness uses checkModels=0. External provider and live mutation checks stay gated; mutating-live-local excludes external-provider/OpenAI CLI planner checks."
   ].join("\n");
 }
 
