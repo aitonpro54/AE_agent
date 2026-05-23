@@ -53,7 +53,7 @@ function main() {
   assert.strictEqual(current.currentSdkBaseline.state, "local-gated-ae-agent-specific");
   assert.strictEqual(
     current.currentSdkBaseline.featureConveyorState,
-    "local-gated-preview-only",
+    "m186-approved-not-executed",
   );
   assert.strictEqual(current.currentSdkBaseline.cepPanelSdkWritesEnabled, false);
   assert.deepStrictEqual(

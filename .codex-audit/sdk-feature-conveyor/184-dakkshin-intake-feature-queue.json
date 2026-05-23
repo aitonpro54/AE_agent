@@ -83,7 +83,7 @@
       "cli"
     ],
     "sdkThreadCreatedByDryRun": false,
-    "executionApprovedNow": false,
+    "executionApprovedNow": true,
     "executionOutputMode": "log-file-by-default",
     "executionLogDirectory": ".codex-runtime/sdk/feature-conveyor-logs",
     "terminalTailLinesDefault": 80,
@@ -150,9 +150,9 @@
         "plans/target-app-execplan.md",
         ".codex/handoff.md"
       ],
-      "executionApprovalState": "pending-explicit-approval",
-      "explicitApprovalText": null,
-      "maxAiTurns": 0,
+      "executionApprovalState": "approved",
+      "explicitApprovalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only",
+      "maxAiTurns": 1,
       "allowedActions": [
         "map Dakkshin intake needs to existing typed bridge tools and safe missing capabilities",
         "separate advisory/RAG needs from mutating AE tool needs",
@@ -225,7 +225,7 @@
   ],
   "globalStopGates": [
     "one-feature-item-per-milestone",
-    "no-feature-execution-without-future-per-item-approval",
+    "one-approved-feature-execution-item-only",
     "no-dakkshin-implementation-in-m184",
     "no-cep-panel-sdk-write",
     "no-live-cep-ae-without-fresh-explicit-approval",
@@ -240,7 +240,7 @@
     "title": "Start Dakkshin intake scope brief only after fresh approval",
     "type": "local-only-follow-up",
     "approvalRequiredBeforeExecution": true,
-    "recommendedAction": "Use the feature conveyor only to preview M185 until a future prompt explicitly approves one Dakkshin intake item. Do not implement Dakkshin product behavior from M184.",
+    "recommendedAction": "Run only the approved M186 Dakkshin tool gap map item through the feature conveyor. Do not implement Dakkshin product behavior from this approval.",
     "blockedWorkWithoutSeparateApproval": [
       "Dakkshin feature implementation",
       "CEP-panel SDK write",

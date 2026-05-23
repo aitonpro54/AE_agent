@@ -1,0 +1,36 @@
+{
+  "schema": "sdk-feature-conveyor-item-approval.v1",
+  "milestone": 186,
+  "title": "Dakkshin Tool Gap Map SDK Execution Approval",
+  "createdAt": "2026-05-23",
+  "approvedQueueItem": "m186-dakkshin-intake-tool-gap-map",
+  "queueArtifact": ".codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json",
+  "approvalSource": "user-chat",
+  "approvalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only",
+  "maxAiTurns": 1,
+  "approvedEngine": "sdk",
+  "approvedPlannedPaths": [
+    ".codex-audit/sdk-feature-conveyor/dakkshin-intake/m186-tool-gap-map.md",
+    "plans/target-app-execplan.md",
+    ".codex/handoff.md"
+  ],
+  "notApprovedFor": [
+    "Dakkshin product implementation",
+    "CEP-panel SDK write",
+    "mcp-server or bridge runtime changes",
+    "live CEP/After Effects validation",
+    "external-provider/OpenAI CLI planner validation",
+    "mutating-live validation",
+    "package install",
+    "dependency change",
+    "push",
+    "PR creation"
+  ],
+  "preExecutionRequirement": "Feature conveyor execution still requires a clean git status before the command can run.",
+  "validationPlan": [
+    "Run feature conveyor readiness and command smokes.",
+    "Run npm.cmd run check:rules.",
+    "Run git diff --check."
+  ],
+  "rollbackPlan": "Set m186-dakkshin-intake-tool-gap-map back to executionApprovalState pending-explicit-approval, explicitApprovalText null, and maxAiTurns 0; remove this approval packet."
+}

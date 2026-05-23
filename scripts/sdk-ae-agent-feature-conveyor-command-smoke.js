@@ -111,7 +111,7 @@ async function assertCommitAwareAllowlist() {
 async function main() {
   assert.strictEqual(queue.commandRunner.packageScript, "codex:orchestrator:ae-agent-feature-conveyor");
   assert.strictEqual(queue.commandRunner.sdkThreadCreatedByDryRun, false);
-  assert.strictEqual(queue.commandRunner.executionApprovedNow, false);
+  assert.strictEqual(queue.commandRunner.executionApprovedNow, true);
   assert.strictEqual(queue.commandRunner.preRunDirtyGitAllowed, false);
   assert.strictEqual(queue.commandRunner.autoCommit, false);
   assert.strictEqual(queue.commandRunner.autoPush, false);
@@ -119,8 +119,8 @@ async function main() {
   const dryRun = parseJson(run(["--all", "--json"]));
   assert.strictEqual(dryRun.mode, "dry-run");
   assert.strictEqual(dryRun.sdkThreadCreated, false);
-  assert.strictEqual(dryRun.executionApproved, false);
-  assert.deepStrictEqual(dryRun.blockedBy, ["per-item-feature-execution-approval-missing"]);
+  assert.strictEqual(dryRun.executionApproved, true);
+  assert.deepStrictEqual(dryRun.blockedBy, []);
   assert.strictEqual(dryRun.executionLogMode, "log-file-on-execute");
   assert.strictEqual(dryRun.executionLogDirectory, ".codex-runtime/sdk/feature-conveyor-logs");
   assert.strictEqual(dryRun.tailLines, 80);
@@ -138,7 +138,7 @@ async function main() {
   assert.strictEqual(cliDryRun.mode, "dry-run");
   assert.strictEqual(cliDryRun.engine, "cli");
   assert.strictEqual(cliDryRun.sdkThreadCreated, false);
-  assert.strictEqual(cliDryRun.executionApproved, false);
+  assert.strictEqual(cliDryRun.executionApproved, true);
 
   const customTail = parseJson(run(["--all", "--tail-lines", "12", "--json"]));
   assert.strictEqual(customTail.tailLines, 12);
@@ -153,7 +153,14 @@ async function main() {
 
   const single = parseJson(run(["--item", "m185-dakkshin-intake-scope-brief", "--json"]));
   assert.deepStrictEqual(single.items, ["m185-dakkshin-intake-scope-brief"]);
+  assert.strictEqual(single.executionApproved, false);
   assert(single.plannedPaths.includes(".codex-audit/sdk-feature-conveyor/dakkshin-intake/m185-scope-brief.md"));
+
+  const approvedSingle = parseJson(run(["--item", "m186-dakkshin-intake-tool-gap-map", "--json"]));
+  assert.deepStrictEqual(approvedSingle.items, ["m186-dakkshin-intake-tool-gap-map"]);
+  assert.strictEqual(approvedSingle.executionApproved, true);
+  assert.deepStrictEqual(approvedSingle.blockedBy, []);
+  assert(approvedSingle.plannedPaths.includes(".codex-audit/sdk-feature-conveyor/dakkshin-intake/m186-tool-gap-map.md"));
 
   const missingApproval = run(["--item", "m185-dakkshin-intake-scope-brief", "--execute-sdk", "--approval-text", "wrong"]);
   assert.notStrictEqual(missingApproval.status, 0);

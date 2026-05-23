@@ -50,16 +50,31 @@ function assertFalseBoundaryFlags(artifact, boundaryPath = "sourceContext.behavi
 function assertQueueItem(item) {
   assert.strictEqual(item.mode, "local-only", `${item.id} must be local-only.`);
   assert.strictEqual(item.status, "queued", `${item.id} must stay queued.`);
-  assert.strictEqual(
-    item.executionApprovalState,
-    "pending-explicit-approval",
-    `${item.id} must not be executable in M184.`,
-  );
-  assert.strictEqual(item.explicitApprovalText, null, `${item.id} must not carry approval text.`);
-  assert.strictEqual(item.maxAiTurns, 0, `${item.id} must not allow AI turns.`);
   assert(Array.isArray(item.plannedPaths) && item.plannedPaths.length > 0);
   assertIncludes(item.stopGates, "validation-failed", `${item.id} stop gates`);
   assertIncludes(item.stopGates, "context-pressure", `${item.id} stop gates`);
+}
+
+function assertPendingQueueItem(item) {
+  assertQueueItem(item);
+  assert.strictEqual(
+    item.executionApprovalState,
+    "pending-explicit-approval",
+    `${item.id} must stay pending.`,
+  );
+  assert.strictEqual(item.explicitApprovalText, null, `${item.id} must not carry approval text.`);
+  assert.strictEqual(item.maxAiTurns, 0, `${item.id} must not allow AI turns.`);
+}
+
+function assertApprovedM186Item(item) {
+  assertQueueItem(item);
+  assert.strictEqual(item.id, "m186-dakkshin-intake-tool-gap-map");
+  assert.strictEqual(item.executionApprovalState, "approved");
+  assert.strictEqual(
+    item.explicitApprovalText,
+    "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only",
+  );
+  assert.strictEqual(item.maxAiTurns, 1);
 }
 
 function main() {
@@ -91,7 +106,7 @@ function main() {
   assert.strictEqual(readiness.featureExecutionApproved, false);
   assert.strictEqual(governance.featureConveyorExecutionApproved, false);
   assert.strictEqual(governance.dakkshinFeatureImplementationApproved, false);
-  assert.strictEqual(queue.commandRunner.executionApprovedNow, false);
+  assert.strictEqual(queue.commandRunner.executionApprovedNow, true);
   assert.strictEqual(queue.commandRunner.sdkThreadCreatedByDryRun, false);
   assert.strictEqual(queue.commandRunner.autoCommit, false);
   assert.strictEqual(queue.commandRunner.autoPush, false);
@@ -105,7 +120,11 @@ function main() {
     ],
   );
   for (const item of queue.queueItems) {
-    assertQueueItem(item);
+    if (item.id === "m186-dakkshin-intake-tool-gap-map") {
+      assertApprovedM186Item(item);
+    } else {
+      assertPendingQueueItem(item);
+    }
     assert(
       item.plannedPaths.every((repoPath) => !repoPath.startsWith("cep-panel/")),
       `${item.id} must not plan CEP-panel paths.`,

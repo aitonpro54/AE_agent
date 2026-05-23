@@ -16,6 +16,7 @@
 - [x] Milestone 183: External TypeTools intake into safe comp/folder typed bridge tools.
 - [x] Milestone 184: AE Agent feature conveyor readiness for gated future Dakkshin intake.
 - [x] Milestone 185: Dakkshin intake scope brief.
+- [x] Milestone 186 approval gate: Dakkshin tool gap map approved for one SDK run, not executed yet.
 
 ## Current Stable Baseline
 
@@ -158,6 +159,14 @@
 - User approval was given in-chat for this local-only intake step; no child SDK/CLI workspace-write execution was run because the M184 runner remains fail-closed until queue state is separately updated.
 - No Dakkshin product behavior, CEP panel, bridge runtime, dependencies, package-lock, live CEP/AE validation, external-provider/OpenAI CLI planner validation, push, or PR changed.
 
+### Milestone 186 approval gate: Dakkshin tool gap map
+
+- Completed: recorded user approval in `.codex-audit/sdk-feature-conveyor/186-dakkshin-tool-gap-map-approval.json`.
+- Completed: updated `.codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json` so only `m186-dakkshin-intake-tool-gap-map` has `executionApprovalState:"approved"` and `maxAiTurns:1`.
+- Completed: kept `m185-dakkshin-intake-scope-brief` and `m187-dakkshin-intake-implementation-slice-plan` pending with `maxAiTurns:0`.
+- Completed: updated feature conveyor readiness/command smokes and current SDK state docs for the one-approved-item state.
+- The approved run is limited to `.codex-audit/sdk-feature-conveyor/dakkshin-intake/m186-tool-gap-map.md`, `plans/target-app-execplan.md`, and `.codex/handoff.md`; it does not approve Dakkshin product implementation, CEP-panel SDK writes, bridge runtime changes, live CEP/AE, external providers, dependency changes, push, or PR.
+
 ## Recent Milestone Summary
 
 - M152: Current production-code SDK write readiness superseded the older single-file claim and is limited to `scripts/provider-api-smoke.js` plus `scripts/provider-contract-smoke.js`.
@@ -181,6 +190,7 @@
 - M183: Converted the useful `after-effects-automation` TypeTools gap into safe native bridge tools for production comp creation and explicit project-folder organization, while leaving unsafe external script execution patterns out.
 - M184: Added a local-gated feature conveyor for future Dakkshin intake preview with review/readiness/governance evidence, a non-executable intake queue, a fail-closed command runner, and smokes wired into `check:rules`.
 - M185: Completed the first Dakkshin intake artifact as a scope brief only; no product implementation or live/provider/dependency work was performed.
+- M186 approval gate: Approved exactly one SDK execution for the Dakkshin tool gap map queue item and updated smokes to prove all other feature conveyor items remain pending.
 
 ## Decision Log
 
@@ -188,6 +198,8 @@
 - 2026-05-23: M184 feature conveyor execution remains fail-closed. Current Dakkshin queue items have `executionApprovalState:"pending-explicit-approval"` and `maxAiTurns:0`; the runner may preview them but rejects execution until a future milestone records per-item approval.
 - 2026-05-23: M185 treats the user's approval as approval for the local-only Dakkshin intake scope brief, not for product implementation, CEP-panel SDK writes, live CEP/AE, external providers, dependency changes, push, or PR.
 - 2026-05-23: M185 records that a child SDK/CLI workspace-write run was not used because the M184 runner's queue state remains fail-closed; the parent Codex turn completed only the planned intake brief and documentation.
+- 2026-05-23: M186 approval gate treats the user's latest approval as permission for exactly one SDK workspace-write run of `m186-dakkshin-intake-tool-gap-map`; it does not approve Dakkshin product implementation, CEP-panel SDK writes, bridge runtime changes, live CEP/AE, external providers, dependency changes, push, or PR.
+- 2026-05-23: The feature conveyor clean-git preflight remains enforced. Existing unrelated untracked files must be handled separately before running the approved SDK command.
 - 2026-05-23: M183 adopts only low-risk capability ideas from `jhd3197/after-effects-automation`: production comp creation plus explicit project folder list/create/move tools. It does not adopt the external eval queue, startup script runner, broad plugin installer, destructive new-project close behavior, or direct CEP `evalScript` string-construction pattern.
 - 2026-05-23: M183 defers transition and template-value batch tools. They are plausible future typed recipes, but require AE Agent-specific target selection, semantic verification, and user-facing review before promotion.
 - 2026-05-23: `architecture-vNext.md` now treats vNext 1.1 as the current architecture baseline for brainstorming and future planning. The accepted direction is safety-aware RAG/retrieval plus explicit promotion, not autonomous external script execution.
@@ -280,6 +292,15 @@
 - Passed feature conveyor readiness smoke, `npm.cmd run check:rules`, `git diff --check`, provider contract/API, solution registry/candidate/promotion/retrieval/library, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only smoke, and main smoke.
 - Full non-live validation log: `.codex-runtime/validation/m185-non-live-20260523-183139.log`.
 - SDKThread/network child execution, live CEP/AE, external-provider/OpenAI CLI planner validation, mutating-live validation, package install/dependency validation, push, and PR were not run because M185 is a local-only intake brief.
+
+### Milestone 186 approval gate
+
+- Added `.codex-audit/sdk-feature-conveyor/186-dakkshin-tool-gap-map-approval.json`.
+- Updated `.codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json`.
+- Updated `.codex-audit/sdk-current-state.json`, `orchestrator/README.md`, `orchestrator/run-buffered-acceptance.mjs`, `scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js`, `scripts/sdk-ae-agent-feature-conveyor-command-smoke.js`, `scripts/sdk-current-history-index-smoke.js`, and this plan.
+- Passed touched-JavaScript `node --check`, feature conveyor readiness/command smokes, current-history smoke, `npm.cmd run check:rules`, and `git diff --check`.
+- Full approval-gate validation log: `.codex-runtime/validation/m186-approval-gate-20260523-184319.log`.
+- SDK execution, live CEP/AE, external-provider/OpenAI CLI planner validation, mutating-live validation, package install/dependency validation, push, and PR were not run as part of this approval gate.
 
 ### Milestone 175
 

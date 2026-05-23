@@ -39,7 +39,7 @@
     "cepPanelSdkWritesEnabled": false,
     "checkRulesEntrypoint": "npm.cmd run check:rules",
     "checkRulesCommand": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke",
-    "featureConveyorState": "local-gated-preview-only",
+    "featureConveyorState": "m186-approved-not-executed",
     "historicalProofReadPolicy": "Use .codex-audit/sdk-history-index.json first; reread old packets only for a specific audit question."
   },
   "currentDirectCheckSets": [
@@ -189,12 +189,13 @@
         184
       ],
       "status": "current-direct-check",
-      "verdict": "AE Agent feature conveyor readiness is available for local preview and smoke validation only; Dakkshin intake items remain queued and non-executable until future per-item approval.",
+      "verdict": "AE Agent feature conveyor readiness is available for local preview and smoke validation; exactly one Dakkshin intake item, m186-dakkshin-intake-tool-gap-map, has per-item SDK execution approval and remains not yet executed.",
       "artifacts": [
         ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-review.json",
         ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-readiness.json",
         ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-governance.json",
-        ".codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json"
+        ".codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json",
+        ".codex-audit/sdk-feature-conveyor/186-dakkshin-tool-gap-map-approval.json"
       ],
       "scriptPaths": [
         "orchestrator/run-ae-agent-feature-conveyor.mjs",

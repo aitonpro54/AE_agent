@@ -347,7 +347,7 @@ npm.cmd run codex:orchestrator:current-governance:smoke
 npm.cmd run codex:orchestrator:history-index:smoke
 ```
 
-M184 adds the AE Agent feature conveyor readiness gate for future Dakkshin intake work. The evidence lives under `.codex-audit/sdk-feature-conveyor/` with schemas `sdk-feature-conveyor-review.v1`, `sdk-feature-conveyor-readiness.v1`, `sdk-feature-conveyor-governance.v1`, and `sdk-ae-agent-feature-conveyor-queue.v1`; the active queue is `.codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json`. This milestone is readiness only: Dakkshin intake items are queued for preview, Dakkshin product features are not implemented, and current items remain non-executable with `executionApprovalState:"pending-explicit-approval"` plus `maxAiTurns:0`.
+M184 adds the AE Agent feature conveyor readiness gate for future Dakkshin intake work. The evidence lives under `.codex-audit/sdk-feature-conveyor/` with schemas `sdk-feature-conveyor-review.v1`, `sdk-feature-conveyor-readiness.v1`, `sdk-feature-conveyor-governance.v1`, and `sdk-ae-agent-feature-conveyor-queue.v1`; the active queue is `.codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json`. M186 records one per-item SDK execution approval for `m186-dakkshin-intake-tool-gap-map` in `.codex-audit/sdk-feature-conveyor/186-dakkshin-tool-gap-map-approval.json`; Dakkshin product features are still not approved.
 
 ```powershell
 npm.cmd run codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke
@@ -355,7 +355,7 @@ npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --all
 npm.cmd run codex:orchestrator:ae-agent-feature-conveyor:smoke
 ```
 
-The feature conveyor command runner is `orchestrator/run-ae-agent-feature-conveyor.mjs`. Dry-run preview never creates an SDK thread or Codex CLI session. Current execution attempts fail closed with `Feature conveyor execution is not approved` even when the exact future approval text is supplied, because no M184 Dakkshin intake queue item grants per-item execution approval. Future execution, if separately approved, is still bounded to one selected item, exact approval text, a clean pre-run git state, full child-output logs under `.codex-runtime/sdk/feature-conveyor-logs`, no auto-commit, no push, and a commit-aware post-run path allowlist.
+The feature conveyor command runner is `orchestrator/run-ae-agent-feature-conveyor.mjs`. Dry-run preview never creates an SDK thread or Codex CLI session. Execution is bounded to one selected approved item, exact approval text, a clean pre-run git state, full child-output logs under `.codex-runtime/sdk/feature-conveyor-logs`, no auto-commit, no push, and a commit-aware post-run path allowlist. Unapproved items still fail closed with `Feature conveyor execution is not approved`.
 
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 

@@ -1967,7 +1967,8 @@ async function runContractSmoke() {
       readme.includes("npm.cmd run codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke") &&
       readme.includes("npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --all") &&
       readme.includes("Dakkshin intake") &&
-      readme.includes("Feature conveyor execution is not approved"),
+      readme.includes("186-dakkshin-tool-gap-map-approval.json") &&
+      readme.includes("one selected approved item"),
     "README does not document the M184 AE Agent feature conveyor readiness gate",
     failures,
   );
