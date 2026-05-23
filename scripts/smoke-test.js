@@ -1685,7 +1685,7 @@ async function main() {
   }
 
   const toolNames = lines[1].result.tools.map((tool) => tool.name);
-  for (const expectedTool of ["get_ai_agent_log", "get_project_intent_memory", "update_project_intent_memory", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "run_agent_hardcore_session", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint", "set_comp_work_area", "set_layer_time_range", "stagger_layers", "split_layers_at_time", "precompose_layers", "replace_layer_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer", "create_shape_layer", "fit_layer_to_comp", "set_property_keyframes", "apply_keyframe_ease", "set_expression", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"]) {
+  for (const expectedTool of ["get_ai_agent_log", "get_project_intent_memory", "update_project_intent_memory", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "run_agent_hardcore_session", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint", "list_project_folder_items", "create_comp", "create_project_folder", "move_project_items_to_folder", "set_comp_work_area", "set_layer_time_range", "stagger_layers", "split_layers_at_time", "precompose_layers", "replace_layer_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer", "create_shape_layer", "fit_layer_to_comp", "set_property_keyframes", "apply_keyframe_ease", "set_expression", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"]) {
     if (!toolNames.includes(expectedTool)) {
       throw new Error("Missing expected tool: " + expectedTool);
     }
@@ -1693,6 +1693,12 @@ async function main() {
   const createTextTool = lines[1].result.tools.find((tool) => tool.name === "create_text_layer");
   if (!createTextTool.inputSchema.properties.autoCheckpoint || !createTextTool.inputSchema.properties.checkpointLabel || !createTextTool.inputSchema.properties.idempotencyKey || !createTextTool.inputSchema.properties.verifyAfter) {
     throw new Error("create_text_layer is missing safety schema fields");
+  }
+  for (const mutatingProjectToolName of ["create_comp", "create_project_folder", "move_project_items_to_folder"]) {
+    const mutatingProjectTool = lines[1].result.tools.find((tool) => tool.name === mutatingProjectToolName);
+    if (!mutatingProjectTool || !mutatingProjectTool.inputSchema.properties.autoCheckpoint || !mutatingProjectTool.inputSchema.properties.checkpointLabel || !mutatingProjectTool.inputSchema.properties.idempotencyKey || !mutatingProjectTool.inputSchema.properties.verifyAfter) {
+      throw new Error(mutatingProjectToolName + " is missing safety schema fields");
+    }
   }
   const validatePlanTool = lines[1].result.tools.find((tool) => tool.name === "validate_ai_agent_plan");
   if (!validatePlanTool || !validatePlanTool.inputSchema.properties.plan) {
@@ -1717,6 +1723,10 @@ async function main() {
   const renderQueueStatusTool = lines[1].result.tools.find((tool) => tool.name === "get_render_queue_status");
   if (renderQueueStatusTool.inputSchema.properties.idempotencyKey) {
     throw new Error("get_render_queue_status should remain read-only");
+  }
+  const folderListTool = lines[1].result.tools.find((tool) => tool.name === "list_project_folder_items");
+  if (!folderListTool || folderListTool.inputSchema.properties.idempotencyKey) {
+    throw new Error("list_project_folder_items should remain read-only");
   }
 
   console.log(JSON.stringify({

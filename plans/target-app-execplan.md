@@ -13,6 +13,7 @@
 - [x] Milestone 180: Installed CEP sync to AE Agent 2.0.0 and bounded live validation.
 - [x] Milestone 181: Live AE panel validation with connected 2.0.0 panel and recover-flow smoke finding.
 - [x] Milestone 182: Deterministic saved-plan recovery and passing broad local-Ollama live smoke.
+- [x] Milestone 183: External TypeTools intake into safe comp/folder typed bridge tools.
 
 ## Current Stable Baseline
 
@@ -28,6 +29,8 @@
 - Agent plans or runs that reveal a typed-tool gap can create an ignored `logs/dev-requests/<id>/` bundle for a targeted Codex App dev handoff instead of continuing repo development inside the AE chat; v1 does not auto-create a Codex App chat.
 - The panel appends a compact resource report after completed chat/plan/run/dev-request operations with local five-hour task-window usage, estimated current panel context, and provider token usage when the provider returned it.
 - Project-changing tools use idempotency, optional checkpoints, edit-session protection, and post-mutation verification.
+- The typed bridge catalog includes production project-structure tools: `create_comp`, `create_project_folder`, `list_project_folder_items`, and `move_project_items_to_folder`.
+- New project-structure mutations are M100-gated and inherit checkpoint/idempotency/post-verification safety fields; the folder listing tool remains read-only.
 - Precomp/source workflows include `deep_duplicate_precomp_sources` for recursively duplicating a selected precomp layer's source comp and nested comp/footage project items without raw ExtendScript in Agent plans.
 - Raw ExtendScript remains available as an escape hatch, but normal product workflows should use typed bridge tools.
 - CEP `Reload` forces a cache-busted reload of installed `index.html` and passes a fresh asset nonce to CSS/JS, so an already-open panel can pick up synced files without stale `panel.js?v=<old>` cache entries.
@@ -128,6 +131,14 @@
 - Completed: synced the installed CEP panel after the repo change; only installed `panel.js` changed, and CEP cache folders were cleared while Local Storage was preserved.
 - Completed: broad `node scripts/cep-panel-cdp-smoke.js smoke` now passes against the connected installed `AE Agent 2.0.0` panel.
 
+### Milestone 183: External TypeTools intake
+
+- Completed: reviewed `jhd3197/after-effects-automation` TypeTools/actions against vNext 1.1 safety boundaries and adopted only low-risk typed capability gaps, not its eval queue, startup runner, plugin-install, project-close, or direct CEP eval patterns.
+- Completed: added `create_comp` as a production typed tool with explicit size, duration, frame rate, background color, duplicate-name guard, optional folder placement, and optional viewer open.
+- Completed: added project folder tools: read-only `list_project_folder_items`, mutating `create_project_folder`, and mutating explicit-index `move_project_items_to_folder`.
+- Completed: wired new mutating tools into the existing M100/checkpoint/idempotency/verification model and planning tool list; `list_project_folder_items` stays read-only.
+- Deferred: template-value batch application and transition recipes remain candidates for a later recipe/tool milestone because they need stronger UX semantics and read-back expectations than the external scripts provide.
+
 ## Recent Milestone Summary
 
 - M152: Current production-code SDK write readiness superseded the older single-file claim and is limited to `scripts/provider-api-smoke.js` plus `scripts/provider-contract-smoke.js`.
@@ -148,9 +159,14 @@
 - M180: Synced the installed CEP extension to `2.0.0`, fixed the remaining static HTML/install text version tail, and recorded that live AE/CDP validation needs After Effects opened with the panel.
 - M181: Verified the opened AE Agent 2.0.0 CEP panel through bridge status, `ping_ae`, CDP inspect, and connector-status smoke; aligned CDP smoke status expectations and recorded the remaining local-Ollama recover-flow smoke failure.
 - M182: Made saved-plan recovery deterministic by re-proposing the stored structured plan through the bridge instead of re-prompting Local/Ollama; synced the installed panel and passed the broad live CDP smoke.
+- M183: Converted the useful `after-effects-automation` TypeTools gap into safe native bridge tools for production comp creation and explicit project-folder organization, while leaving unsafe external script execution patterns out.
 
 ## Decision Log
 
+- 2026-05-23: M183 adopts only low-risk capability ideas from `jhd3197/after-effects-automation`: production comp creation plus explicit project folder list/create/move tools. It does not adopt the external eval queue, startup script runner, broad plugin installer, destructive new-project close behavior, or direct CEP `evalScript` string-construction pattern.
+- 2026-05-23: M183 defers transition and template-value batch tools. They are plausible future typed recipes, but require AE Agent-specific target selection, semantic verification, and user-facing review before promotion.
+- 2026-05-23: `architecture-vNext.md` now treats vNext 1.1 as the current architecture baseline for brainstorming and future planning. The accepted direction is safety-aware RAG/retrieval plus explicit promotion, not autonomous external script execution.
+- 2026-05-23: vNext 1.1 keeps M100 as the absolute boundary for mutating/destructive/raw JSX execution, keeps RAG advisory-only, and keeps SDK production-code/CEP-panel write expansion approval-gated until a separate scope-expansion review proves fail-closed behavior.
 - 2026-05-22: M182 fixes the recover-last-plan smoke gap in product behavior instead of weakening the broad CDP smoke. Saved structured Agent plans recover through bridge `/agents/plan/propose`, which creates a fresh M100 proposal without any provider call.
 - 2026-05-22: M182 stores only the minimal structured plan snapshot in chat history. Backend-created M100 action proposals and confirmation tokens are not persisted in Local Storage; they are reissued by the bridge during recovery.
 - 2026-05-22: M182 keeps text-only recovery as a legacy fallback for old chat history, so existing user-visible recovery behavior remains available when no structured plan snapshot exists.
@@ -190,6 +206,9 @@
 
 | Check | Current requirement | Latest result |
 | --- | --- | --- |
+| `node --check mcp-server/bridge-daemon.js` and `node --check scripts/smoke-test.js` | Required because M183 changes bridge tool implementation and smoke assertions. | Passed on 2026-05-23. |
+| M183 AGENTS non-live suite | Required because M183 adds typed bridge tools and updates the main smoke catalog. | Passed on 2026-05-23 across `.codex-runtime/validation/m183-non-live-20260523-165746.log` and `.codex-runtime/validation/m183-non-live-remaining-20260523-165806.log`: `npm.cmd run check:rules`, `git diff --check`, provider contract/API, solution registry/candidate/promotion/retrieval/library, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only smoke, and main smoke. `git diff --check` printed only existing LF-to-CRLF working-copy warnings. |
+| M183 live CEP availability check | Required before deciding whether live CEP smoke is available. | `node scripts/cep-panel-cdp-smoke.js inspect` could not connect to CDP on 2026-05-23 (`connect ECONNREFUSED 127.0.0.1:8870`), so live CEP smoke was skipped for this milestone. Log: `.codex-runtime/validation/m183-live-availability-20260523-165831.log`. |
 | `node --check orchestrator/run-buffered-acceptance.mjs` | Required because M176/M177 wire new check:rules smoke calls. | Passed on 2026-05-22. |
 | `node --check orchestrator/run-ae-agent-cleanup-conveyor.mjs` | Required because M178 changes the cleanup conveyor runner. | Passed on 2026-05-22. |
 | `node --check scripts/sdk-ae-agent-cleanup-conveyor-command-smoke.js` | Required because M178 extends the command smoke. | Passed on 2026-05-22. |

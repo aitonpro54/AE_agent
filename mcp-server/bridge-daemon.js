@@ -835,6 +835,9 @@ const MUTATION_CHECKPOINT_SCHEMA_PROPERTIES = {
 const MUTATING_TOOL_NAMES = new Set([
   "run_extendscript",
   "run_extendscript_file",
+  "create_comp",
+  "create_project_folder",
+  "move_project_items_to_folder",
   "create_text_layer",
   "import_footage",
   "create_solid_layer",
@@ -2046,7 +2049,7 @@ function inferVerificationTarget(toolName, args, payload) {
     if (hasArg(payload, "name")) {
       const payloadName = String(payload.name || "");
       target.itemName = payloadName;
-      if (toolName === "create_test_comp" && !target.compName) target.compName = payloadName;
+      if ((toolName === "create_test_comp" || toolName === "create_comp") && !target.compName) target.compName = payloadName;
     }
     if (!target.compItemIndex && payload.item && hasArg(payload.item, "itemIndex")) {
       target.compItemIndex = Number(payload.item.itemIndex) || null;
@@ -2056,6 +2059,10 @@ function inferVerificationTarget(toolName, args, payload) {
       target.itemIndex = Number(payload.item.itemIndex) || null;
     }
     if (!target.itemName && payload.item && payload.item.name) target.itemName = payload.item.name;
+    if (!target.itemIndex && payload.folder && hasArg(payload.folder, "itemIndex")) {
+      target.itemIndex = Number(payload.folder.itemIndex) || null;
+    }
+    if (!target.itemName && payload.folder && payload.folder.name) target.itemName = payload.folder.name;
   }
 
   const rawArgs = args || {};
@@ -2065,8 +2072,10 @@ function inferVerificationTarget(toolName, args, payload) {
   if (!target.layerName && hasArg(rawArgs, "layerName")) target.layerName = String(rawArgs.layerName || "");
   if (hasArg(rawArgs, "name")) {
     const argName = String(rawArgs.name || "");
-    if (toolName === "create_test_comp") {
+    if (toolName === "create_test_comp" || toolName === "create_comp") {
       if (!target.compName) target.compName = argName;
+      if (!target.itemName) target.itemName = argName;
+    } else if (toolName === "create_project_folder") {
       if (!target.itemName) target.itemName = argName;
     } else if (!target.layerName) {
       target.layerName = argName;
@@ -2949,6 +2958,15 @@ function planStepTargetSummary(toolName, args) {
   if (hasArg(args, "itemIndices")) parts.push(formatTargetPart("items", args.itemIndices));
   if (hasArg(args, "itemIndex")) parts.push(formatTargetPart("item", `#${args.itemIndex}`));
   if (args.itemName) parts.push(formatTargetPart("item", args.itemName));
+  if (toolName === "create_comp" && args.name) parts.push(formatTargetPart("comp", args.name));
+  if (toolName === "create_project_folder" && args.name) parts.push(formatTargetPart("folder", args.name));
+  if (hasArg(args, "folderItemIndex")) parts.push(formatTargetPart("folder", `#${args.folderItemIndex}`));
+  if (args.folderName) parts.push(formatTargetPart("folder", args.folderName));
+  if (hasArg(args, "targetFolderItemIndex")) parts.push(formatTargetPart("target folder", `#${args.targetFolderItemIndex}`));
+  if (args.targetFolderName) parts.push(formatTargetPart("target folder", args.targetFolderName));
+  if (args.targetRoot) parts.push(formatTargetPart("target folder", "project root"));
+  if (hasArg(args, "parentFolderItemIndex")) parts.push(formatTargetPart("parent folder", `#${args.parentFolderItemIndex}`));
+  if (args.parentFolderName) parts.push(formatTargetPart("parent folder", args.parentFolderName));
   if (hasArg(args, "sourceItemIndex")) parts.push(formatTargetPart("source", `#${args.sourceItemIndex}`));
   if (args.sourceItemName) parts.push(formatTargetPart("source", args.sourceItemName));
   if (hasArg(args, "sourceCompItemIndex")) parts.push(formatTargetPart("source comp", `#${args.sourceCompItemIndex}`));
@@ -3886,6 +3904,7 @@ const PLANNING_TOOL_NAMES = [
   "get_project_info",
   "get_active_comp",
   "list_comps",
+  "list_project_folder_items",
   "list_layers",
   "get_comp_details",
   "get_layer_details",
@@ -3898,6 +3917,9 @@ const PLANNING_TOOL_NAMES = [
   "get_effect_details",
   "get_project_checkpoint_details",
   "checkpoint_project",
+  "create_comp",
+  "create_project_folder",
+  "move_project_items_to_folder",
   "create_text_layer",
   "import_footage",
   "create_solid_layer",
@@ -4344,6 +4366,7 @@ const HARDCORE_INSPECTION_ONLY_TOOLS = new Set([
   "get_layer_details",
   "list_layers",
   "find_project_items",
+  "list_project_folder_items",
   "get_render_queue_status"
 ]);
 
@@ -7319,6 +7342,151 @@ const tools = [
     }
   },
   {
+    name: "list_project_folder_items",
+    description: "List direct or recursive contents of a project folder. Defaults to the project root when no folder is provided.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        folderItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the folder to list."
+        },
+        folderName: {
+          type: "string",
+          description: "Optional exact folder name to list when folderItemIndex is not provided."
+        },
+        recursive: {
+          type: "boolean",
+          description: "Whether to include nested folder contents. Defaults to false."
+        },
+        type: {
+          type: "string",
+          enum: ["comp", "footage", "folder"],
+          description: "Optional project item type filter."
+        },
+        limit: {
+          type: "number",
+          description: "Maximum number of items to return. Defaults to 200, maximum 2000."
+        }
+      }
+    }
+  },
+  {
+    name: "create_comp",
+    description: "Create a production composition with explicit dimensions, duration, frame rate, and optional project folder placement.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description: "Composition name to create."
+        },
+        width: {
+          type: "number",
+          description: "Composition width in pixels. Defaults to 1920."
+        },
+        height: {
+          type: "number",
+          description: "Composition height in pixels. Defaults to 1080."
+        },
+        pixelAspect: {
+          type: "number",
+          description: "Pixel aspect ratio. Defaults to 1."
+        },
+        duration: {
+          type: "number",
+          description: "Composition duration in seconds. Defaults to 5."
+        },
+        frameRate: {
+          type: "number",
+          description: "Composition frame rate. Defaults to 30."
+        },
+        bgColor: {
+          type: "array",
+          items: { type: "number" },
+          description: "Optional RGB background color with values from 0 to 1. Defaults to black."
+        },
+        parentFolderItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the destination folder."
+        },
+        parentFolderName: {
+          type: "string",
+          description: "Optional exact folder name for the destination folder when parentFolderItemIndex is not provided."
+        },
+        allowDuplicateName: {
+          type: "boolean",
+          description: "Whether to allow creating a comp when another comp already has the same name. Defaults to false."
+        },
+        openInViewer: {
+          type: "boolean",
+          description: "Whether to open the new composition in the viewer. Defaults to true."
+        },
+        comment: {
+          type: "string",
+          description: "Optional project item comment to store on the created composition."
+        }
+      },
+      required: ["name"]
+    }
+  },
+  {
+    name: "create_project_folder",
+    description: "Create a project folder, optionally inside another project folder.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description: "Folder name to create."
+        },
+        parentFolderItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the parent folder."
+        },
+        parentFolderName: {
+          type: "string",
+          description: "Optional exact parent folder name when parentFolderItemIndex is not provided."
+        },
+        allowExisting: {
+          type: "boolean",
+          description: "Whether to return an existing same-name child folder instead of failing. Defaults to true."
+        }
+      },
+      required: ["name"]
+    }
+  },
+  {
+    name: "move_project_items_to_folder",
+    description: "Move explicit project items into an existing project folder or the project root.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        itemIndices: {
+          type: ["number", "array"],
+          description: "1-based project item index or indexes to move."
+        },
+        targetFolderItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target folder."
+        },
+        targetFolderName: {
+          type: "string",
+          description: "Optional exact target folder name when targetFolderItemIndex is not provided."
+        },
+        targetRoot: {
+          type: "boolean",
+          description: "Move items to the project root when no target folder is provided. Defaults to false."
+        },
+        includeFolders: {
+          type: "boolean",
+          description: "Whether itemIndices may include folder items. Defaults to false."
+        }
+      },
+      required: ["itemIndices"]
+    }
+  },
+  {
     name: "list_comps",
     description: "List compositions in the current After Effects project.",
     inputSchema: {
@@ -8601,6 +8769,56 @@ async function callTool(name, args) {
         return app.project.item(matches[0].itemIndex);
       }
 
+      function __codexResolveProjectFolder(index, name, allowRoot) {
+        if (index !== null && index !== undefined) {
+          var indexedFolder = app.project.item(index);
+          if (!(indexedFolder instanceof FolderItem)) {
+            throw new Error("Project item is not a folder.");
+          }
+          return indexedFolder;
+        }
+        if (name) {
+          return __codexResolveProjectItem(null, name, "folder");
+        }
+        if (allowRoot) {
+          return app.project.rootFolder;
+        }
+        throw new Error("Provide folderItemIndex or folderName.");
+      }
+
+      function __codexFolderFullPath(folder) {
+        if (!folder || folder === app.project.rootFolder) return "";
+        var parentPath = __codexFolderPath(folder);
+        return parentPath ? parentPath + "/" + folder.name : folder.name;
+      }
+
+      function __codexFindChildFolder(parentFolder, folderName) {
+        for (var __f = 1; __f <= app.project.numItems; __f++) {
+          var item = app.project.item(__f);
+          if (!(item instanceof FolderItem)) continue;
+          if (item.name !== folderName) continue;
+          try {
+            if (item.parentFolder === parentFolder) return item;
+          } catch (__childFolderParentError) {}
+        }
+        return null;
+      }
+
+      function __codexIsItemInsideFolder(item, folder) {
+        if (!item || !folder) return false;
+        if (folder === app.project.rootFolder) return item !== app.project.rootFolder;
+        var parent = null;
+        try { parent = item.parentFolder; } catch (__insideParentError) {}
+        var guard = 0;
+        while (parent && guard < 50) {
+          if (parent === folder) return true;
+          if (parent === app.project.rootFolder) return false;
+          try { parent = parent.parentFolder; } catch (__insideNextParentError) { parent = null; }
+          guard++;
+        }
+        return false;
+      }
+
       function __codexResolveComp(index, name) {
         var item = null;
         if (index !== null && index !== undefined) {
@@ -9502,6 +9720,249 @@ async function callTool(name, args) {
         caseSensitive: ${caseSensitive ? "true" : "false"},
         matches: __codexFindProjectItems(${aeLiteral(query)}, ${aeLiteral(type)}, ${exactName ? "true" : "false"}, ${caseSensitive ? "true" : "false"}, ${limit})
       };
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "list_project_folder_items") {
+    const folderItemIndex = optionalPositiveInteger(args, "folderItemIndex");
+    const folderName = optionalString(args, "folderName", "");
+    const recursive = optionalBoolean(args, "recursive", false);
+    const type = optionalString(args, "type", "");
+    const limit = Math.max(1, Math.min(2000, Math.floor(optionalNumber(args, "limit", 200))));
+
+    if (type && !["comp", "footage", "folder"].includes(type)) {
+      return toolResult("type must be one of: comp, footage, folder.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var folder = __codexResolveProjectFolder(${folderItemIndex === null ? "null" : folderItemIndex}, ${aeLiteral(folderName)}, true);
+      var recursive = ${recursive ? "true" : "false"};
+      var itemType = ${aeLiteral(type)};
+      var limit = ${limit};
+      var items = [];
+      var totalMatched = 0;
+
+      for (var i = 1; i <= app.project.numItems; i++) {
+        var item = app.project.item(i);
+        var directChild = false;
+        try { directChild = item.parentFolder === folder; } catch (__directChildError) {}
+        var matchedFolder = recursive ? __codexIsItemInsideFolder(item, folder) : directChild;
+        if (!matchedFolder) continue;
+        if (!__codexMatchesItemType(item, itemType)) continue;
+        totalMatched++;
+        if (items.length >= limit) continue;
+        var ref = __codexItemReference(item);
+        try { ref.folderPath = __codexFolderPath(item); } catch (__folderPathError) {}
+        try { ref.fullPath = item instanceof FolderItem ? __codexFolderFullPath(item) : (ref.folderPath ? ref.folderPath + "/" + ref.name : ref.name); } catch (__fullPathError) {}
+        items.push(ref);
+      }
+
+      var folderRef = __codexItemReference(folder);
+      folderRef.folderPath = __codexFolderFullPath(folder);
+      return {
+        folder: folderRef,
+        recursive: recursive,
+        type: itemType || null,
+        totalMatched: totalMatched,
+        returned: items.length,
+        truncated: totalMatched > items.length,
+        items: items
+      };
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "create_comp") {
+    const compName = optionalString(args, "name", "").trim();
+    const width = Math.floor(optionalNumber(args, "width", 1920));
+    const height = Math.floor(optionalNumber(args, "height", 1080));
+    const pixelAspect = optionalNumber(args, "pixelAspect", 1);
+    const duration = optionalNumber(args, "duration", 5);
+    const frameRate = optionalNumber(args, "frameRate", 30);
+    const bgColor = optionalNumberArray(args, "bgColor", [0, 0, 0], 3, 3);
+    const parentFolderItemIndex = optionalPositiveInteger(args, "parentFolderItemIndex");
+    const parentFolderName = optionalString(args, "parentFolderName", "");
+    const allowDuplicateName = optionalBoolean(args, "allowDuplicateName", false);
+    const openInViewer = optionalBoolean(args, "openInViewer", true);
+    const comment = optionalString(args, "comment", "");
+
+    if (!compName) return toolResult("name is required.", true);
+    if (width < 4) return toolResult("width must be at least 4 pixels.", true);
+    if (height < 4) return toolResult("height must be at least 4 pixels.", true);
+    if (pixelAspect <= 0) return toolResult("pixelAspect must be greater than 0.", true);
+    if (duration <= 0) return toolResult("duration must be greater than 0.", true);
+    if (frameRate <= 0) return toolResult("frameRate must be greater than 0.", true);
+    if (bgColor.some((value) => value < 0 || value > 1)) return toolResult("bgColor values must be between 0 and 1.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var compName = ${aeLiteral(compName)};
+      var width = ${width};
+      var height = ${height};
+      var pixelAspect = ${pixelAspect};
+      var duration = ${duration};
+      var frameRate = ${frameRate};
+      var bgColor = ${aeLiteral(bgColor)};
+      var parentFolder = __codexResolveProjectFolder(${parentFolderItemIndex === null ? "null" : parentFolderItemIndex}, ${aeLiteral(parentFolderName)}, true);
+      var allowDuplicateName = ${allowDuplicateName ? "true" : "false"};
+      var openInViewer = ${openInViewer ? "true" : "false"};
+      var comment = ${aeLiteral(comment)};
+
+      if (!allowDuplicateName) {
+        for (var i = 1; i <= app.project.numItems; i++) {
+          var existing = app.project.item(i);
+          if (existing instanceof CompItem && existing.name === compName) {
+            throw new Error("Composition already exists: " + compName + ". Pass allowDuplicateName:true to create another.");
+          }
+        }
+      }
+
+      app.beginUndoGroup("Codex Create Comp");
+      try {
+        var comp = app.project.items.addComp(compName, width, height, pixelAspect, duration, frameRate);
+        comp.bgColor = bgColor;
+        if (parentFolder && parentFolder !== app.project.rootFolder) comp.parentFolder = parentFolder;
+        if (comment) {
+          try { comp.comment = comment; } catch (__commentError) {}
+        } else {
+          try { comp.comment = "Created by AE Agent create_comp"; } catch (__defaultCommentError) {}
+        }
+        if (openInViewer) comp.openInViewer();
+        var response = {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          type: "comp",
+          width: comp.width,
+          height: comp.height,
+          pixelAspect: comp.pixelAspect,
+          duration: comp.duration,
+          frameRate: comp.frameRate,
+          bgColor: comp.bgColor,
+          numLayers: comp.numLayers,
+          folderPath: __codexFolderPath(comp)
+        };
+        return response;
+      } finally {
+        app.endUndoGroup();
+      }
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "create_project_folder") {
+    const folderName = optionalString(args, "name", "").trim();
+    const parentFolderItemIndex = optionalPositiveInteger(args, "parentFolderItemIndex");
+    const parentFolderName = optionalString(args, "parentFolderName", "");
+    const allowExisting = optionalBoolean(args, "allowExisting", true);
+
+    if (!folderName) return toolResult("name is required.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var folderName = ${aeLiteral(folderName)};
+      var parentFolder = __codexResolveProjectFolder(${parentFolderItemIndex === null ? "null" : parentFolderItemIndex}, ${aeLiteral(parentFolderName)}, true);
+      var allowExisting = ${allowExisting ? "true" : "false"};
+      var existingFolder = __codexFindChildFolder(parentFolder, folderName);
+
+      if (existingFolder) {
+        if (!allowExisting) {
+          throw new Error("Folder already exists in target parent: " + folderName + ".");
+        }
+        var existingRef = __codexItemReference(existingFolder);
+        existingRef.folderPath = __codexFolderFullPath(existingFolder);
+        return {
+          folder: existingRef,
+          parentFolder: __codexItemReference(parentFolder),
+          existed: true
+        };
+      }
+
+      app.beginUndoGroup("Codex Create Project Folder");
+      try {
+        var folder = app.project.items.addFolder(folderName);
+        if (parentFolder && parentFolder !== app.project.rootFolder) folder.parentFolder = parentFolder;
+        var ref = __codexItemReference(folder);
+        ref.folderPath = __codexFolderFullPath(folder);
+        return {
+          folder: ref,
+          parentFolder: __codexItemReference(parentFolder),
+          existed: false
+        };
+      } finally {
+        app.endUndoGroup();
+      }
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "move_project_items_to_folder") {
+    const itemIndices = requiredPositiveIntegerList(args, "itemIndices");
+    const targetFolderItemIndex = optionalPositiveInteger(args, "targetFolderItemIndex");
+    const targetFolderName = optionalString(args, "targetFolderName", "");
+    const targetRoot = optionalBoolean(args, "targetRoot", false);
+    const includeFolders = optionalBoolean(args, "includeFolders", false);
+
+    if (targetFolderItemIndex === null && !targetFolderName && !targetRoot) {
+      return toolResult("Provide targetFolderItemIndex, targetFolderName, or targetRoot:true.", true);
+    }
+    if (targetRoot && (targetFolderItemIndex !== null || targetFolderName)) {
+      return toolResult("targetRoot cannot be combined with targetFolderItemIndex or targetFolderName.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var itemIndices = ${aeLiteral(itemIndices)};
+      var targetFolder = ${targetRoot ? "app.project.rootFolder" : `__codexResolveProjectFolder(${targetFolderItemIndex === null ? "null" : targetFolderItemIndex}, ${aeLiteral(targetFolderName)}, false)`};
+      var includeFolders = ${includeFolders ? "true" : "false"};
+      var moved = [];
+      var skipped = [];
+
+      app.beginUndoGroup("Codex Move Project Items To Folder");
+      try {
+        for (var i = 0; i < itemIndices.length; i++) {
+          var item = app.project.item(itemIndices[i]);
+          if (!item) throw new Error("Project item not found at index " + itemIndices[i] + ".");
+          if (item === targetFolder) throw new Error("Cannot move the target folder into itself.");
+          if (item instanceof FolderItem && !includeFolders) {
+            throw new Error("Item #" + itemIndices[i] + " is a folder. Pass includeFolders:true to move folders intentionally.");
+          }
+          if (item instanceof FolderItem && __codexIsItemInsideFolder(targetFolder, item)) {
+            throw new Error("Cannot move a folder into itself or one of its descendants: " + item.name + ".");
+          }
+
+          var previousFolderPath = "";
+          try { previousFolderPath = __codexFolderPath(item); } catch (__previousFolderPathError) {}
+          var alreadyInTarget = false;
+          try { alreadyInTarget = item.parentFolder === targetFolder; } catch (__alreadyInTargetError) {}
+
+          if (alreadyInTarget) {
+            var skippedRef = __codexItemReference(item);
+            skippedRef.folderPath = previousFolderPath;
+            skipped.push(skippedRef);
+            continue;
+          }
+
+          item.parentFolder = targetFolder;
+          var ref = __codexItemReference(item);
+          ref.previousFolderPath = previousFolderPath;
+          ref.folderPath = __codexFolderPath(item);
+          moved.push(ref);
+        }
+
+        var targetRef = __codexItemReference(targetFolder);
+        targetRef.folderPath = __codexFolderFullPath(targetFolder);
+        return {
+          targetFolder: targetRef,
+          movedCount: moved.length,
+          skippedCount: skipped.length,
+          moved: moved,
+          skipped: skipped
+        };
+      } finally {
+        app.endUndoGroup();
+      }
     `);
     return toolResult(result.result);
   }

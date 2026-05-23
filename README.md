@@ -42,6 +42,7 @@ It has these main parts:
 - `get_project_info` - returns basic project info.
 - `get_project_snapshot` - returns a compact snapshot of comps, footage, and folders.
 - `find_project_items` - finds project items by name and optional type.
+- `list_project_folder_items` - lists direct or recursive contents of a project folder.
 - `get_comp_details` - returns detailed comp settings and optional layer summaries.
 - `get_layer_details` - returns one layer's source, transform, text, effects, masks, and optional property tree.
 - `list_effect_presets` - returns curated effect matchName presets and automation hints.
@@ -51,6 +52,9 @@ It has these main parts:
 - `get_selected_layers` - returns selected layers in the active composition.
 - `get_selected_properties` - returns selected properties with path, expression, and optional value previews.
 - `find_comps` - finds compositions by name substring.
+- `create_comp` - creates a production composition with explicit settings.
+- `create_project_folder` - creates a project folder with optional parent folder placement.
+- `move_project_items_to_folder` - moves explicit project items into an existing folder or the project root.
 - `create_text_layer` - creates a text layer in the active comp or a comp by project item index.
 - `import_footage` - imports a local file as footage.
 - `create_solid_layer` - creates a solid layer.
