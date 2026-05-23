@@ -53,6 +53,7 @@ function compactScenarioOutcome(result) {
       expectedStepCount: numberOrNull(panelPlan.expectedStepCount),
       expectedMutatingCount: numberOrNull(panelPlan.expectedMutatingCount),
       expectedTools: Array.isArray(panelPlan.expectedTools) ? panelPlan.expectedTools.slice() : [],
+      missingTools: Array.isArray(panelPlan.missingTools) ? panelPlan.missingTools.slice() : [],
       checks: panelPlan.checks || {}
     },
     dryRun: {
@@ -67,6 +68,7 @@ function compactScenarioOutcome(result) {
       safety: run.safety || null,
       checkpoint: run.checkpoint || null,
       statusCount: Array.isArray(run.statuses) ? run.statuses.length : null,
+      readBackVerification: run.readBackVerification || null,
       semanticVerification: compactSemanticVerification(run.semanticVerification)
     }
   };

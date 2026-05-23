@@ -2,7 +2,10 @@
 
 const http = require("http");
 const { writeAgentRunReport } = require("./agent-scenario-report");
-const { agentScenarioPlans } = require("./agent-scenario-fixtures");
+const {
+  agentNewToolsScenarioPlans,
+  agentScenarioPlans
+} = require("./agent-scenario-fixtures");
 const {
   buildAgentQaAuditReport,
   collectAuditPrefixes
@@ -48,6 +51,22 @@ function openAiCliAgentScenarioConfig() {
     authMode: "cli",
     requirePanelPlans: true,
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS
+  };
+}
+
+function openAiCliNewToolsScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-new-tools",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_NEW_TOOLS_PREFIX || "Codex QA M190",
+    scenarioFactory: agentNewToolsScenarioPlans,
+    allowSemanticNeedsReviewWithReadBack: true,
+    skipRenderQueueCleanup: true
   };
 }
 
@@ -3175,37 +3194,85 @@ async function cleanupRenderQueueItemsByPrefix(prefix) {
   });
 }
 
-async function cleanupAgentScenarioPrefix(prefix, renderQueueBaselineTotal) {
-  const renderQueueCleanup = await cleanupRenderQueueItemsByPrefix(prefix);
-  const cleanup = await postBridge("/agents/plan/run", {
-    plan: {
-      summary: `Clean up generated live QA items for ${prefix}`,
-      risk: "low",
-      requiresCheckpoint: false,
-      steps: [
-        {
-          title: "Remove generated live QA project items",
-          tool: "cleanup_test_items",
-          args: {
-            namePrefix: prefix,
-            maxItems: 100,
-            confirm: true
-          }
-        }
-      ]
-    },
-    requestId: `agent-scenario-cleanup-${Date.now()}`,
-    dryRun: false,
-    confirm: true,
-    allowMutations: true,
-    autoEditSession: true,
-    timeoutMs: 120000
-  });
-
-  if (cleanup.status >= 400 || !cleanup.body || cleanup.body.ok !== true) {
-    const error = cleanup.body && (cleanup.body.error || (cleanup.body.run && cleanup.body.run.error));
-    throw new Error(`Cleanup for ${prefix} failed: ${error || `HTTP ${cleanup.status}`}`);
+function m100RunFieldsForProposal(proposal, includeConfirmation, fallbackSurface) {
+  const fields = {
+    actionId: proposal.actionId,
+    payloadRef: proposal.action.payloadRef,
+    payloadHash: proposal.action.payloadHash,
+    previewHash: proposal.action.previewHash,
+    riskLevel: proposal.risk.level,
+    riskPolicyVersion: proposal.confirmation.riskPolicyVersion,
+    requestId: proposal.requestId
+  };
+  if (includeConfirmation) {
+    fields.confirmationToken = proposal.confirmation.confirmationToken;
+    fields.confirmedBySurface = proposal.confirmation.surface || fallbackSurface || "cep-panel-cdp-smoke";
+    fields.confirmedBySession = proposal.confirmation.sessionId || "";
   }
+  return fields;
+}
+
+async function proposeBridgePlan(plan, requestId, surface) {
+  const response = await postBridge("/agents/plan/propose", {
+    plan,
+    requestId,
+    repairPlan: true,
+    confirmationSurface: surface || "cep-panel-cdp-smoke",
+    confirmationSessionId: `${surface || "cep-panel-cdp-smoke"}-${process.pid}`
+  });
+  if (response.status >= 400 || !response.body || response.body.ok !== true || !response.body.proposal) {
+    const error = response.body && (response.body.error || response.body.code);
+    throw new Error(`Plan proposal failed: ${error || `HTTP ${response.status}`}`);
+  }
+  return response.body;
+}
+
+async function runProposedBridgePlan(proposed, dryRun, timeoutMs, surface) {
+  const response = await postBridge("/agents/plan/run", {
+    ...m100RunFieldsForProposal(proposed.proposal, !dryRun, surface),
+    dryRun,
+    confirm: !dryRun,
+    allowMutations: !dryRun,
+    autoEditSession: !dryRun,
+    timeoutMs: timeoutMs || 120000
+  });
+  if (response.status >= 400 || !response.body || response.body.ok !== true) {
+    const error = response.body && (response.body.error || (response.body.run && response.body.run.error));
+    throw new Error(`Proposed plan run failed: ${error || `HTTP ${response.status}`}`);
+  }
+  if (!response.body.run || response.body.run.ok !== true) {
+    throw new Error(`Proposed plan run needs review: ${response.body.run && response.body.run.error || "unknown error"}`);
+  }
+  return response.body.run;
+}
+
+async function cleanupAgentScenarioPrefix(prefix, renderQueueBaselineTotal, options) {
+  const cleanupOptions = options || {};
+  const renderQueueCleanup = cleanupOptions.skipRenderQueueCleanup
+    ? { prefix, removedCount: 0, removed: [], totalItems: Number(renderQueueBaselineTotal || 0), skipped: true }
+    : await cleanupRenderQueueItemsByPrefix(prefix);
+  const cleanupPlan = {
+    summary: `Clean up generated live QA items for ${prefix}`,
+    risk: "low",
+    requiresCheckpoint: false,
+    steps: [
+      {
+        title: "Remove generated live QA project items",
+        tool: "cleanup_test_items",
+        args: {
+          namePrefix: prefix,
+          maxItems: 100,
+          confirm: true
+        }
+      }
+    ]
+  };
+  const proposedCleanup = await proposeBridgePlan(
+    cleanupPlan,
+    `agent-scenario-cleanup-${Date.now()}`,
+    "agent-scenario-cleanup"
+  );
+  const cleanupRun = await runProposedBridgePlan(proposedCleanup, false, 120000, "agent-scenario-cleanup");
 
   const remaining = await callBridgeTool("find_project_items", {
     query: prefix,
@@ -3223,7 +3290,7 @@ async function cleanupAgentScenarioPrefix(prefix, renderQueueBaselineTotal) {
 
   return {
     renderQueueCleanup,
-    run: cleanup.body.run,
+    run: cleanupRun,
     remaining,
     renderQueue
   };
@@ -3244,6 +3311,81 @@ function planRunSummary(run) {
       targetSummary: step.targetSummary || null,
       error: step.error || null
     }))
+  };
+}
+
+function valuePreviewNumber(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (value && typeof value === "object" && typeof value.value === "number") return value.value;
+  return null;
+}
+
+async function verifyAgentScenarioReadBack(scenario) {
+  const expected = scenario.expectedReadBack;
+  if (!expected) return null;
+
+  const folder = await callBridgeTool("list_project_folder_items", {
+    folderName: expected.folderName,
+    recursive: false,
+    type: "comp",
+    limit: 20
+  });
+  const folderItems = Array.isArray(folder.items) ? folder.items : [];
+  const folderComp = folderItems.find((item) => item.name === expected.compName);
+  if (!folderComp) {
+    throw new Error(`${scenario.id}: generated folder does not contain comp ${expected.compName}.`);
+  }
+
+  const found = await callBridgeTool("find_project_items", {
+    query: expected.compName,
+    type: "comp",
+    exactName: true,
+    caseSensitive: true,
+    limit: 5
+  });
+  const compMatch = found.matches && found.matches[0];
+  if (!compMatch || !compMatch.itemIndex) {
+    throw new Error(`${scenario.id}: generated comp was not found by exact name.`);
+  }
+
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const cameraLayer = layers.find((layer) => layer.name === expected.cameraName);
+  if (!cameraLayer || !cameraLayer.index) {
+    throw new Error(`${scenario.id}: generated camera layer was not found by read-back.`);
+  }
+
+  const layerDetails = await callBridgeTool("get_layer_details", {
+    compName: expected.compName,
+    layerIndex: cameraLayer.index,
+    includeProperties: false
+  });
+  const zoom = valuePreviewNumber(layerDetails.camera && layerDetails.camera.zoom);
+  if (typeof expected.cameraZoom === "number" && Math.abs(Number(zoom) - expected.cameraZoom) > 0.001) {
+    throw new Error(`${scenario.id}: generated camera zoom read-back mismatch; expected ${expected.cameraZoom}, got ${zoom}.`);
+  }
+
+  return {
+    ok: true,
+    folder: {
+      name: expected.folderName,
+      returned: folder.returned,
+      containsComp: folderComp.name
+    },
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      numLayers: comp.numLayers
+    },
+    camera: {
+      layerIndex: cameraLayer.index,
+      name: cameraLayer.name,
+      zoom
+    }
   };
 }
 
@@ -3275,6 +3417,8 @@ function scenarioValidationLine(scenario) {
 function panelPlanExpectation(scenario, state) {
   const transcript = state && state.transcript ? state.transcript : "";
   const validationLine = scenarioValidationLine(scenario);
+  const expectedTools = Array.isArray(scenario.expectedTools) ? scenario.expectedTools : [];
+  const missingTools = expectedTools.filter((toolName) => transcript.indexOf(toolName) < 0);
   const checks = {
     reviewReady: transcript.indexOf("Plan review: ready") >= 0,
     validationLine: transcript.indexOf(validationLine) >= 0,
@@ -3282,12 +3426,14 @@ function panelPlanExpectation(scenario, state) {
     mutatingStatus: state && state.planRunStatus === "Risky plan; dry run first",
     mutatingStatusClass: Boolean(state && state.planRunStatusClass && state.planRunStatusClass.indexOf("mutating") >= 0),
     dryRunEnabled: Boolean(state && state.dryRunDisabled === false),
-    runEnabled: Boolean(state && state.runDisabled === false)
+    runEnabled: Boolean(state && state.runDisabled === false),
+    expectedToolsPresent: missingTools.length === 0
   };
   return {
     ok: checks.reviewReady &&
       checks.classificationVerdict &&
       checks.validationLine &&
+      checks.expectedToolsPresent &&
       checks.mutatingStatus &&
       checks.mutatingStatusClass &&
       checks.dryRunEnabled &&
@@ -3295,7 +3441,8 @@ function panelPlanExpectation(scenario, state) {
     validationLine,
     expectedStepCount: scenario.expectedStepCount,
     expectedMutatingCount: scenario.expectedMutatingCount,
-    expectedTools: scenario.expectedTools,
+    expectedTools,
+    missingTools,
     planRunStatus: state ? state.planRunStatus : "",
     planRunStatusClass: state ? state.planRunStatusClass : "",
     checks
@@ -3310,6 +3457,7 @@ function panelPlanReport(scenario, state, expectation) {
     expectedStepCount: report.expectedStepCount,
     expectedMutatingCount: report.expectedMutatingCount,
     expectedTools: report.expectedTools,
+    missingTools: report.missingTools,
     planRunStatus: report.planRunStatus,
     planRunStatusClass: report.planRunStatusClass,
     checks: report.checks,
@@ -3361,6 +3509,12 @@ async function runAgentScenario(send, scenario, config) {
   const expectedPanelPlan = panelPlanExpectation(scenario, planned);
 
   if (!expectedPanelPlan.ok) {
+    if (scenarioConfig.requirePanelPlans) {
+      const report = panelPlanReport(scenario, planned, expectedPanelPlan);
+      const error = new Error(`${scenario.id}: panel Agent planner did not return the required typed plan; deterministic backend fallback is disabled for ${scenarioConfig.label}.`);
+      error.state = report;
+      throw error;
+    }
     return runDeterministicScenarioFallback(scenario, planned, expectedPanelPlan);
   }
 
@@ -3403,7 +3557,15 @@ async function runAgentScenario(send, scenario, config) {
   if (run.transcript.indexOf("Checkpoint/edit session: protected by") < 0) {
     throw new Error(`${scenario.id}: protected run did not report checkpoint/edit-session protection.`);
   }
-  if (run.transcript.indexOf("Outcome verification: passed") < 0) {
+  const readBackVerification = await verifyAgentScenarioReadBack(scenario);
+  const outcomePassed = run.transcript.indexOf("Outcome verification: passed") >= 0;
+  const allowedNeedsReviewWithReadBack = Boolean(
+    scenarioConfig.allowSemanticNeedsReviewWithReadBack &&
+    readBackVerification &&
+    readBackVerification.ok &&
+    run.transcript.indexOf("Outcome verification: needs review") >= 0
+  );
+  if (!outcomePassed && !allowedNeedsReviewWithReadBack) {
     throw new Error(`${scenario.id}: protected run did not report passed outcome verification.\n${run.transcript.slice(-3000)}`);
   }
 
@@ -3418,7 +3580,8 @@ async function runAgentScenario(send, scenario, config) {
     run: {
       transcriptTail: run.transcript.slice(-3000),
       semanticVerification: run.planRunSemanticVerification || null,
-      logTail: run.log.slice(-1200)
+      logTail: run.log.slice(-1200),
+      readBackVerification
     }
   };
 }
@@ -3427,8 +3590,9 @@ async function agentScenarioSmoke(config) {
   const scenarioConfig = config || defaultAgentScenarioConfig();
   const preflight = await agentScenarioPreflight(scenarioConfig);
   const renderQueueBaselineTotal = Number(preflight.renderQueue && preflight.renderQueue.totalItems || 0);
-  const runPrefix = `${AGENT_SCENARIO_PREFIX} ${agentScenarioStamp()}`;
-  const scenarios = agentScenarioPlans(runPrefix, renderQueueBaselineTotal);
+  const runPrefix = `${scenarioConfig.runPrefixBase || AGENT_SCENARIO_PREFIX} ${agentScenarioStamp()}`;
+  const scenarioFactory = scenarioConfig.scenarioFactory || agentScenarioPlans;
+  const scenarios = scenarioFactory(runPrefix, renderQueueBaselineTotal);
   const { page, ws, send } = await connectToPanel();
   let historyBackup = null;
   let composerBackup = null;
@@ -3447,7 +3611,9 @@ async function agentScenarioSmoke(config) {
     for (const scenario of scenarios) {
       const result = await runAgentScenario(send, scenario, scenarioConfig);
       results.push(result);
-      const cleanup = await cleanupAgentScenarioPrefix(scenario.cleanupPrefix, renderQueueBaselineTotal);
+      const cleanup = await cleanupAgentScenarioPrefix(scenario.cleanupPrefix, renderQueueBaselineTotal, {
+        skipRenderQueueCleanup: scenarioConfig.skipRenderQueueCleanup
+      });
       cleanups.push({
         id: scenario.id,
         cleanupPrefix: scenario.cleanupPrefix,
@@ -3459,7 +3625,9 @@ async function agentScenarioSmoke(config) {
       });
     }
 
-    const finalCleanup = await cleanupAgentScenarioPrefix(runPrefix, renderQueueBaselineTotal);
+    const finalCleanup = await cleanupAgentScenarioPrefix(runPrefix, renderQueueBaselineTotal, {
+      skipRenderQueueCleanup: scenarioConfig.skipRenderQueueCleanup
+    });
     finalCleanupDone = true;
     const fallbackCount = results.filter((result) => result.executionMode === "deterministic-plan-fallback").length;
     const panelPlanCount = results.filter((result) => result.executionMode === "panel-agent-plan").length;
@@ -3513,7 +3681,9 @@ async function agentScenarioSmoke(config) {
   } finally {
     if (!finalCleanupDone) {
       try {
-        await cleanupAgentScenarioPrefix(runPrefix, renderQueueBaselineTotal);
+        await cleanupAgentScenarioPrefix(runPrefix, renderQueueBaselineTotal, {
+          skipRenderQueueCleanup: scenarioConfig.skipRenderQueueCleanup
+        });
       } catch (_cleanupError) {}
     }
     if (historyBackup || composerBackup) {
@@ -3739,6 +3909,10 @@ async function main() {
   }
   if (command === "agent-scenario-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliAgentScenarioConfig());
+    return;
+  }
+  if (command === "agent-new-tools-openai-cli-smoke" || command === "full-ui-agent-new-tools-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliNewToolsScenarioConfig());
     return;
   }
   if (command === "openai-api-setup-smoke") {

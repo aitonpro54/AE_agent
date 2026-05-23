@@ -4,10 +4,13 @@ const DEFAULT_PLANNER_FIXTURE_PREFIX = "Codex QA Planner Fixture";
 const DEFAULT_RENDER_QUEUE_BASELINE_TOTAL = 0;
 
 const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
+  "create_comp",
+  "create_project_folder",
   "create_test_comp",
   "create_solid_layer",
   "create_text_layer",
   "create_camera_layer",
+  "move_project_items_to_folder",
   "set_comp_work_area",
   "set_layer_time_range",
   "stagger_layers",
@@ -183,6 +186,113 @@ function agentScenarioPlans(runPrefix, renderQueueBaselineTotal) {
   }));
 }
 
+function agentNewToolsScenarioPlans(runPrefix) {
+  const base = `${runPrefix} New Tools`;
+  const folderName = `${base} Folder`;
+  const compName = `${base} Comp`;
+  const cameraName = `${base} Camera`;
+
+  return [
+    {
+      id: "project-folder-comp-camera-matrix",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_project_folder",
+        "create_comp",
+        "move_project_items_to_folder",
+        "list_project_folder_items",
+        "create_camera_layer",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        folderName,
+        compName,
+        cameraName,
+        cameraZoom: 800
+      },
+      plan: {
+        summary: "Live QA for production comp, project folder, folder listing, explicit project-item move, and camera layer tools on generated assets.",
+        risk: "low",
+        requiresCheckpoint: true,
+        steps: [
+          {
+            title: "Create generated project folder",
+            tool: "create_project_folder",
+            args: {
+              name: folderName,
+              allowExisting: false
+            }
+          },
+          {
+            title: "Create generated production comp",
+            tool: "create_comp",
+            args: {
+              name: compName,
+              width: 640,
+              height: 360,
+              pixelAspect: 1,
+              duration: 2,
+              frameRate: 24,
+              bgColor: [0.08, 0.1, 0.12],
+              allowDuplicateName: false,
+              openInViewer: false,
+              comment: "M190 generated-only Full UI Agent validation"
+            }
+          },
+          {
+            title: "Move generated comp into generated folder",
+            tool: "move_project_items_to_folder",
+            args: {
+              targetFolderName: folderName
+            },
+            resultBindings: {
+              itemIndices: "{{steps.2.itemIndex}}"
+            }
+          },
+          {
+            title: "List generated folder contents",
+            tool: "list_project_folder_items",
+            args: {
+              folderName,
+              recursive: false,
+              type: "comp",
+              limit: 10
+            }
+          },
+          {
+            title: "Create generated camera layer",
+            tool: "create_camera_layer",
+            args: {
+              compName,
+              name: cameraName,
+              pointOfInterest: [320, 180, 0],
+              position: [320, 180, -850],
+              zoom: 800,
+              startTime: 0,
+              duration: 2
+            }
+          },
+          {
+            title: "Read back generated camera details",
+            tool: "get_layer_details",
+            args: {
+              compName
+            },
+            resultBindings: {
+              layerIndex: "{{steps.5.layer.index}}"
+            }
+          }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function buildAgentPlannerRegressionCorpus(options) {
   const config = options || {};
   const renderQueueBaselineTotal = Number.isFinite(Number(config.renderQueueBaselineTotal))
@@ -216,6 +326,7 @@ module.exports = {
   AGENT_SCENARIO_MUTATING_TOOLS,
   DEFAULT_PLANNER_FIXTURE_PREFIX,
   DEFAULT_RENDER_QUEUE_BASELINE_TOTAL,
+  agentNewToolsScenarioPlans,
   agentScenarioPlans,
   buildAgentPlannerRegressionCorpus,
   exactPlanPrompt,

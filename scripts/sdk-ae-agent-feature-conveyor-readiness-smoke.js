@@ -103,6 +103,35 @@ function assertLiveValidationM188Item(item) {
   assertIncludes(item.stopGates, "render-queue-drift", `${item.id} stop gates`);
 }
 
+function assertLiveValidationM190Item(item) {
+  assertQueueItem(item);
+  assert.strictEqual(item.id, "m190-full-ui-agent-new-tools-validation");
+  assert.strictEqual(item.mode, "local-live-validation");
+  assert.strictEqual(item.executionApprovalState, "pending-explicit-approval");
+  assert.strictEqual(item.explicitApprovalText, null);
+  assert.strictEqual(item.maxAiTurns, 0);
+  assert(item.liveValidation, "M190 item must carry separate liveValidation approval metadata.");
+  assert.strictEqual(item.liveValidation.approvalState, "approved");
+  assert.strictEqual(
+    item.liveValidation.approvalText,
+    "I approve one M190 Full UI Agent live conveyor validation run for new typed tools using OpenAI CLI and generated-only mutations",
+  );
+  assert.strictEqual(item.liveValidation.openAiCliProviderUsed, true);
+  assert.strictEqual(item.liveValidation.externalProviderValidationRun, true);
+  assert.strictEqual(item.liveValidation.openAiCliPlannerValidationRun, true);
+  assert.strictEqual(item.liveValidation.deterministicBackendFallbackAllowed, false);
+  assert.strictEqual(item.liveValidation.localProviderFallbackAllowed, false);
+  assert.strictEqual(item.liveValidation.openRouterFallbackAllowed, false);
+  assertIncludes(item.allowedActions, "run Full UI Agent validation through CDP with provider openai-cli, model gpt-5.5, and Agent mode", `${item.id} allowed actions`);
+  assertIncludes(item.allowedActions, "require the panel-generated plan to cover create_comp, create_project_folder, list_project_folder_items, move_project_items_to_folder, and create_camera_layer", `${item.id} allowed actions`);
+  assertIncludes(item.forbiddenActions, "accept deterministic backend fallback as live validation evidence", `${item.id} forbidden actions`);
+  assertIncludes(item.forbiddenActions, "fall back to ollama-local, Local/Ollama, OpenRouter, or openrouter/free planners", `${item.id} forbidden actions`);
+  assertIncludes(item.stopGates, "openai-cli-not-ready", `${item.id} stop gates`);
+  assertIncludes(item.stopGates, "panel-generated-plan-missing-required-typed-tools", `${item.id} stop gates`);
+  assertIncludes(item.stopGates, "deterministic-backend-fallback-attempted", `${item.id} stop gates`);
+  assertIncludes(item.stopGates, "ollama-openrouter-fallback-attempted", `${item.id} stop gates`);
+}
+
 function main() {
   const review = readJson(REVIEW_PATH);
   const readiness = readJson(READINESS_PATH);
@@ -141,6 +170,10 @@ function main() {
     queue.commandRunner.validateLiveRequiresExactApprovalText,
     "I approve one M188 staged live AE validation run for M187 advisory recipes using generated-only mutations",
   );
+  assert.strictEqual(
+    queue.commandRunner.m190ValidateLiveRequiresExactApprovalText,
+    "I approve one M190 Full UI Agent live conveyor validation run for new typed tools using OpenAI CLI and generated-only mutations",
+  );
 
   assert.deepStrictEqual(
     queue.queueItems.map((item) => item.id),
@@ -149,6 +182,7 @@ function main() {
       "m186-dakkshin-intake-tool-gap-map",
       "m187-dakkshin-intake-implementation-slice-plan",
       "m188-dakkshin-advisory-field-validation",
+      "m190-full-ui-agent-new-tools-validation",
     ],
   );
   for (const item of queue.queueItems) {
@@ -156,6 +190,8 @@ function main() {
       assertApprovedM186Item(item);
     } else if (item.id === "m188-dakkshin-advisory-field-validation") {
       assertLiveValidationM188Item(item);
+    } else if (item.id === "m190-full-ui-agent-new-tools-validation") {
+      assertLiveValidationM190Item(item);
     } else {
       assertPendingQueueItem(item);
     }
@@ -163,7 +199,7 @@ function main() {
       item.plannedPaths.every((repoPath) => !repoPath.startsWith("cep-panel/")),
       `${item.id} must not plan CEP-panel paths.`,
     );
-    if (item.id !== "m188-dakkshin-advisory-field-validation") {
+    if (item.mode !== "local-live-validation") {
       assertIncludes(
         item.forbiddenActions,
         "run live CEP/After Effects validation",
@@ -180,12 +216,22 @@ function main() {
   assertIncludes(queue.globalStopGates, "no-cep-panel-sdk-write", "global stop gates");
   assertIncludes(
     queue.globalStopGates,
-    "no-live-cep-ae-outside-m188-live-validation-approval",
+    "no-live-cep-ae-outside-approved-live-validation-items",
     "global stop gates",
   );
   assertIncludes(
     queue.globalStopGates,
-    "no-mutating-live-outside-generated-m188-lane",
+    "no-external-provider-openai-cli-planner-outside-approved-m190-live-validation",
+    "global stop gates",
+  );
+  assertIncludes(
+    queue.globalStopGates,
+    "no-ollama-openrouter-fallback-for-full-ui-agent-live-validation",
+    "global stop gates",
+  );
+  assertIncludes(
+    queue.globalStopGates,
+    "no-mutating-live-outside-generated-approved-live-validation-lanes",
     "global stop gates",
   );
   assertIncludes(queue.globalStopGates, "no-package-install", "global stop gates");

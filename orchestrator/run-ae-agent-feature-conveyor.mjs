@@ -21,6 +21,8 @@ export const CLI_EXECUTE_APPROVAL_TEXT =
   "I approve one Codex CLI feature conveyor workspace-write run for the selected queued feature item planned paths only";
 export const LIVE_VALIDATION_APPROVAL_TEXT =
   "I approve one M188 staged live AE validation run for M187 advisory recipes using generated-only mutations";
+export const M190_LIVE_VALIDATION_APPROVAL_TEXT =
+  "I approve one M190 Full UI Agent live conveyor validation run for new typed tools using OpenAI CLI and generated-only mutations";
 
 const HELP = `
 AE Agent feature conveyor runner
@@ -31,6 +33,7 @@ Usage:
   node orchestrator/run-ae-agent-feature-conveyor.mjs --item <future-approved-item> --execute-sdk --approval-text "${EXECUTE_APPROVAL_TEXT}"
   node orchestrator/run-ae-agent-feature-conveyor.mjs --item <future-approved-item> --engine cli --execute --approval-text "${CLI_EXECUTE_APPROVAL_TEXT}"
   node orchestrator/run-ae-agent-feature-conveyor.mjs --item m188-dakkshin-advisory-field-validation --validate-live --stage both --allow-mutating-live --approval-text "${LIVE_VALIDATION_APPROVAL_TEXT}"
+  node orchestrator/run-ae-agent-feature-conveyor.mjs --item m190-full-ui-agent-new-tools-validation --validate-live --stage both --allow-mutating-live --approval-text "${M190_LIVE_VALIDATION_APPROVAL_TEXT}"
 
 Options:
   --queue <path>             Queue artifact path. Defaults to M184 feature queue.
@@ -60,9 +63,11 @@ M184 dry-run never starts an SDK thread or Codex CLI session. Execution is also
 fail-closed for the current Dakkshin intake queue: each item has
 executionApprovalState:"pending-explicit-approval" and maxAiTurns:0. A future
 milestone must approve exactly one item before this runner can start an AI turn.
-M188 live validation is separate from SDK workspace-write execution: it runs local
-validation commands only, fails closed when AE/CEP/bridge/project preflight is not
-ready, and never runs external-provider/OpenAI CLI planner validation.
+Live validation is separate from SDK workspace-write execution: it runs local
+validation commands only and fails closed when AE/CEP/bridge/project preflight is
+not ready. M188 never runs external-provider/OpenAI CLI planner validation; M190
+uses only the OpenAI CLI Full UI Agent path and does not run Ollama/OpenRouter
+fallbacks.
 `;
 
 const VALUE_OPTIONS = new Set([
@@ -261,33 +266,41 @@ function liveStageIncludesMutating(stage) {
   return stage === "mutating" || stage === "both";
 }
 
-function assertLiveValidationSelection(prepared) {
+function selectedLiveValidationItem(prepared) {
   if (prepared.selectedItems.length !== 1) {
-    throw new Error("M188 live validation requires exactly one selected queue item.");
+    throw new Error("Live validation requires exactly one selected queue item.");
   }
   const item = prepared.selectedItems[0];
-  if (item.id !== "m188-dakkshin-advisory-field-validation") {
-    throw new Error(`M188 live validation can only run m188-dakkshin-advisory-field-validation, not ${item.id}.`);
+  if (item.mode !== "local-live-validation") {
+    throw new Error(`Live validation can only run local-live-validation queue items, not ${item.id}.`);
   }
   if (!item.liveValidation || item.liveValidation.approvalState !== "approved") {
-    throw new Error(`M188 live validation is not approved in the queue item: ${item.id}.`);
+    throw new Error(`Live validation is not approved in the queue item: ${item.id}.`);
   }
+  return item;
+}
+
+function assertLiveValidationSelection(prepared) {
+  selectedLiveValidationItem(prepared);
 }
 
 function liveValidationBlockedBy(prepared) {
   const blocked = [];
-  if (prepared.selectedItems.length !== 1 || prepared.selectedItems[0].id !== "m188-dakkshin-advisory-field-validation") {
-    blocked.push("m188-live-validation-item-not-selected");
+  if (prepared.selectedItems.length !== 1 || prepared.selectedItems[0].mode !== "local-live-validation") {
+    blocked.push("local-live-validation-item-not-selected");
   }
   const item = prepared.selectedItems[0] || {};
   if (!item.liveValidation || item.liveValidation.approvalState !== "approved") {
     blocked.push("per-item-live-validation-approval-missing");
   }
   if (liveStageIncludesMutating(prepared.liveStage)) {
+    const expectedApprovalText = item.liveValidation && item.liveValidation.approvalText
+      ? item.liveValidation.approvalText
+      : LIVE_VALIDATION_APPROVAL_TEXT;
     if (prepared.options.allowMutatingLive !== true) {
       blocked.push("allow-mutating-live-flag-missing");
     }
-    if (prepared.options.approvalText !== LIVE_VALIDATION_APPROVAL_TEXT) {
+    if (prepared.options.approvalText !== expectedApprovalText) {
       blocked.push("exact-mutating-live-approval-text-missing");
     }
   }
@@ -299,9 +312,13 @@ function assertLiveValidationApproved(prepared) {
   const blocked = liveValidationBlockedBy(prepared);
   if (blocked.length > 0) {
     if (blocked.includes("exact-mutating-live-approval-text-missing")) {
-      throw new Error(`Missing exact --approval-text: ${LIVE_VALIDATION_APPROVAL_TEXT}`);
+      const item = prepared.selectedItems[0] || {};
+      const expectedApprovalText = item.liveValidation && item.liveValidation.approvalText
+        ? item.liveValidation.approvalText
+        : LIVE_VALIDATION_APPROVAL_TEXT;
+      throw new Error(`Missing exact --approval-text: ${expectedApprovalText}`);
     }
-    throw new Error(`M188 live validation is blocked: ${blocked.join(", ")}`);
+    throw new Error(`Live validation is blocked: ${blocked.join(", ")}`);
   }
 }
 
@@ -603,6 +620,40 @@ function runChildProcess(prepared, cwd) {
 }
 
 function liveValidationCommands(prepared) {
+  const item = selectedLiveValidationItem(prepared);
+  if (item.id === "m190-full-ui-agent-new-tools-validation") {
+    const commands = [];
+    if (prepared.liveStage === "read-only" || prepared.liveStage === "both") {
+      commands.push({
+        id: "m190-live-cep-inspect",
+        stage: "read-only",
+        command: process.execPath,
+        args: [
+          path.join("scripts", "cep-panel-cdp-smoke.js"),
+          "inspect"
+        ],
+        timeoutMs: LIVE_VALIDATION_CHILD_TIMEOUT_MS
+      });
+    }
+    if (prepared.liveStage === "mutating" || prepared.liveStage === "both") {
+      commands.push({
+        id: "m190-full-ui-agent-openai-cli-new-tools-smoke",
+        stage: "mutating",
+        command: process.execPath,
+        args: [
+          path.join("scripts", "cep-panel-cdp-smoke.js"),
+          "full-ui-agent-new-tools-openai-cli-smoke"
+        ],
+        timeoutMs: LIVE_VALIDATION_CHILD_TIMEOUT_MS
+      });
+    }
+    return commands;
+  }
+
+  if (item.id !== "m188-dakkshin-advisory-field-validation") {
+    throw new Error(`No live validation command plan is registered for ${item.id}.`);
+  }
+
   const commands = [];
   if (prepared.liveStage === "read-only" || prepared.liveStage === "both") {
     commands.push({
@@ -988,9 +1039,10 @@ export function runLiveValidation(prepared, cwd = process.cwd()) {
 
   const preStatus = gitStatus(cwd);
   if (preStatus.length > 0) {
-    throw new Error(`Refusing M188 live validation with dirty git state: ${preStatus.join("; ")}`);
+    throw new Error(`Refusing live validation with dirty git state: ${preStatus.join("; ")}`);
   }
 
+  const item = selectedLiveValidationItem(prepared);
   const startedAt = new Date().toISOString();
   const commands = liveValidationCommands(prepared);
   const commandResults = [];
@@ -1010,13 +1062,16 @@ export function runLiveValidation(prepared, cwd = process.cwd()) {
     startedAt,
     ok: !failed,
     status: failed ? "failed" : "passed",
-    item: prepared.selectedItems[0].id,
+    item: item.id,
     items: prepared.selectedItems.map((item) => item.id),
     queuePath: prepared.queuePath,
     stage: prepared.liveStage,
     sdkThreadCreated: false,
-    externalProviderValidationRun: false,
-    openAiCliPlannerValidationRun: false,
+    externalProviderValidationRun: item.liveValidation.externalProviderValidationRun === true,
+    openAiCliPlannerValidationRun: item.liveValidation.openAiCliPlannerValidationRun === true,
+    deterministicBackendFallbackAllowed: item.liveValidation.deterministicBackendFallbackAllowed === true,
+    localProviderFallbackAllowed: item.liveValidation.localProviderFallbackAllowed === true,
+    openRouterFallbackAllowed: item.liveValidation.openRouterFallbackAllowed === true,
     packageOrDependencyChangesAllowed: false,
     commands: commandResults,
     summary: {

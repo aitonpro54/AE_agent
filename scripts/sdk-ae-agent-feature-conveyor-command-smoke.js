@@ -14,6 +14,8 @@ const queue = require(path.join(
 ));
 const LIVE_VALIDATION_APPROVAL_TEXT =
   "I approve one M188 staged live AE validation run for M187 advisory recipes using generated-only mutations";
+const M190_LIVE_VALIDATION_APPROVAL_TEXT =
+  "I approve one M190 Full UI Agent live conveyor validation run for new typed tools using OpenAI CLI and generated-only mutations";
 
 function run(args, cwd = repo) {
   const runner = cwd === repo
@@ -125,6 +127,7 @@ function writeTempLiveQueue(temp) {
     schema: queue.schema,
     queueItems: [
       queue.queueItems.find((item) => item.id === "m188-dakkshin-advisory-field-validation"),
+      queue.queueItems.find((item) => item.id === "m190-full-ui-agent-new-tools-validation"),
     ],
   }, null, 2), "utf8");
 }
@@ -182,6 +185,7 @@ async function main() {
     "m186-dakkshin-intake-tool-gap-map",
     "m187-dakkshin-intake-implementation-slice-plan",
     "m188-dakkshin-advisory-field-validation",
+    "m190-full-ui-agent-new-tools-validation",
   ]);
   assert(dryRun.plannedPaths.includes(".codex/handoff.md"));
   assert(dryRun.plannedPaths.includes("plans/target-app-execplan.md"));
@@ -220,6 +224,11 @@ async function main() {
   assert.deepStrictEqual(liveSingle.items, ["m188-dakkshin-advisory-field-validation"]);
   assert.strictEqual(liveSingle.executionApproved, false);
   assert(liveSingle.plannedPaths.includes(".codex-runtime/sdk/feature-conveyor-live-logs/"));
+
+  const m190Single = parseJson(run(["--item", "m190-full-ui-agent-new-tools-validation", "--json"]));
+  assert.deepStrictEqual(m190Single.items, ["m190-full-ui-agent-new-tools-validation"]);
+  assert.strictEqual(m190Single.executionApproved, false);
+  assert(m190Single.plannedPaths.includes("logs/agent-run-reports/"));
 
   const liveDryRunBlocked = parseJson(run([
     "--item",
@@ -262,6 +271,30 @@ async function main() {
     ],
   );
 
+  const m190LiveDryRunApproved = parseJson(run([
+    "--item",
+    "m190-full-ui-agent-new-tools-validation",
+    "--validate-live",
+    "--stage",
+    "both",
+    "--allow-mutating-live",
+    "--approval-text",
+    M190_LIVE_VALIDATION_APPROVAL_TEXT,
+    "--dry-run",
+    "--json",
+  ]));
+  assert.strictEqual(m190LiveDryRunApproved.liveValidationApproved, true);
+  assert.deepStrictEqual(m190LiveDryRunApproved.blockedBy, []);
+  assert.deepStrictEqual(
+    m190LiveDryRunApproved.plannedCommands.map((command) => command.id),
+    [
+      "m190-live-cep-inspect",
+      "m190-full-ui-agent-openai-cli-new-tools-smoke",
+    ],
+  );
+  assert(m190LiveDryRunApproved.plannedCommands.some((command) => /full-ui-agent-new-tools-openai-cli-smoke/.test(command.command)));
+  assert(!m190LiveDryRunApproved.plannedCommands.some((command) => /ollama|openrouter/i.test(command.command)));
+
   const missingApproval = run(["--item", "m185-dakkshin-intake-scope-brief", "--execute-sdk", "--approval-text", "wrong"]);
   assert.notStrictEqual(missingApproval.status, 0);
   assert.match(missingApproval.stderr, /Missing exact --approval-text/);
@@ -300,6 +333,19 @@ async function main() {
   ]);
   assert.notStrictEqual(missingLiveApproval.status, 0);
   assert.match(missingLiveApproval.stderr, /M188 staged live AE validation/);
+
+  const missingM190LiveApproval = run([
+    "--item",
+    "m190-full-ui-agent-new-tools-validation",
+    "--validate-live",
+    "--stage",
+    "mutating",
+    "--allow-mutating-live",
+    "--approval-text",
+    "wrong",
+  ]);
+  assert.notStrictEqual(missingM190LiveApproval.status, 0);
+  assert.match(missingM190LiveApproval.stderr, /M190 Full UI Agent live conveyor validation/);
 
   const sdkExecuteLiveItem = run([
     "--item",
