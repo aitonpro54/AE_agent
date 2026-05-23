@@ -41,7 +41,7 @@
       "SDKThread/network proof",
       "CEP-panel SDK write",
       "live CEP/After Effects validation",
-      "external-provider/OpenAI CLI planner validation outside the approved M190 Full UI Agent live lane",
+      "external-provider/OpenAI CLI planner validation outside the approved M190/M191 Full UI Agent live lanes",
       "mutating-live validation",
       "package install",
       "dependency change",
@@ -78,10 +78,12 @@
     "executeCliCommand": "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item <future-approved-item> --engine cli --execute --approval-text \"I approve one Codex CLI feature conveyor workspace-write run for the selected queued feature item planned paths only\"",
     "validateLiveCommand": "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item m188-dakkshin-advisory-field-validation --validate-live --stage both --allow-mutating-live --approval-text \"I approve one M188 staged live AE validation run for M187 advisory recipes using generated-only mutations\"",
     "m190FullUiAgentValidateLiveCommand": "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item m190-full-ui-agent-new-tools-validation --validate-live --stage both --allow-mutating-live --approval-text \"I approve one M190 Full UI Agent live conveyor validation run for new typed tools using OpenAI CLI and generated-only mutations\"",
+    "m191MaskSafetyValidateLiveCommand": "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item m191-mask-safety-live-validation --validate-live --stage both --allow-mutating-live --approval-text \"I approve one M191 live CEP AE validation run for generated-only mask safety checks inside After Effects\"",
     "executeRequiresExactApprovalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only",
     "executeCliRequiresExactApprovalText": "I approve one Codex CLI feature conveyor workspace-write run for the selected queued feature item planned paths only",
     "validateLiveRequiresExactApprovalText": "I approve one M188 staged live AE validation run for M187 advisory recipes using generated-only mutations",
     "m190ValidateLiveRequiresExactApprovalText": "I approve one M190 Full UI Agent live conveyor validation run for new typed tools using OpenAI CLI and generated-only mutations",
+    "m191ValidateLiveRequiresExactApprovalText": "I approve one M191 live CEP AE validation run for generated-only mask safety checks inside After Effects",
     "supportedEngines": [
       "sdk",
       "cli"
@@ -363,6 +365,80 @@
         "context-pressure"
       ],
       "status": "queued"
+    },
+    {
+      "id": "m191-mask-safety-live-validation",
+      "milestone": 191,
+      "title": "Mask safety live CEP/AE validation",
+      "laneId": "mask-safety-openai-cli-live-validation",
+      "scope": "m191-mask-safety-live-validation",
+      "mode": "local-live-validation",
+      "plannedPaths": [
+        ".codex-audit/sdk-feature-conveyor/dakkshin-intake/m191-mask-safety-design.md",
+        ".codex-runtime/sdk/feature-conveyor-live-logs/",
+        ".codex-runtime/sdk/feature-conveyor-live-reports/",
+        "logs/agent-run-reports/"
+      ],
+      "executionApprovalState": "pending-explicit-approval",
+      "explicitApprovalText": null,
+      "maxAiTurns": 0,
+      "liveValidation": {
+        "approvalState": "approved",
+        "approvalText": "I approve one M191 live CEP AE validation run for generated-only mask safety checks inside After Effects",
+        "runnerMode": "--validate-live",
+        "defaultStage": "both",
+        "requiresAllowMutatingLiveFlagForMutatingStage": true,
+        "sdkThreadCreated": false,
+        "codexCliChildCreated": false,
+        "openAiCliProviderUsed": true,
+        "externalProviderValidationRun": true,
+        "openAiCliPlannerValidationRun": true,
+        "deterministicBackendFallbackAllowed": false,
+        "localProviderFallbackAllowed": false,
+        "openRouterFallbackAllowed": false,
+        "failClosedUnavailablePolicy": true
+      },
+      "allowedActions": [
+        "run read-only CEP inspect against an already-open AE Agent CEP panel",
+        "run Full UI Agent validation through CDP with provider openai-cli, model gpt-5.5, and Agent mode",
+        "require the panel-generated plan to cover create_comp, create_solid_layer, create_layer_mask, and get_layer_details",
+        "run dry run, protected run, read-back verification, semantic verification, and generated-prefix cleanup for generated-only mask safety items"
+      ],
+      "forbiddenActions": [
+        "start an SDKThread or Codex CLI workspace-write child run",
+        "accept deterministic backend fallback as live validation evidence",
+        "fall back to ollama-local, Local/Ollama, OpenRouter, or openrouter/free planners",
+        "edit cep-panel/** through the SDK lane",
+        "make package/dependency changes",
+        "delete masks, invert masks, edit arbitrary existing mask paths, mutate user assets, create destructive project edits, audio changes, or broad comp changes",
+        "push or create a PR"
+      ],
+      "validationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item m191-mask-safety-live-validation --validate-live --stage both --dry-run --allow-mutating-live --approval-text \"I approve one M191 live CEP AE validation run for generated-only mask safety checks inside After Effects\" --json",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "stopGates": [
+        "ae-not-running",
+        "cep-panel-not-open-or-not-connected",
+        "bridge-unavailable",
+        "openai-cli-not-ready",
+        "project-not-saved",
+        "active-comp-unavailable",
+        "active-edit-session-already-open",
+        "panel-generated-plan-missing-required-typed-tools",
+        "deterministic-backend-fallback-attempted",
+        "ollama-openrouter-fallback-attempted",
+        "generated-cleanup-leftovers",
+        "render-queue-drift",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
     }
   ],
   "globalStopGates": [
@@ -371,7 +447,7 @@
     "no-dakkshin-implementation-in-m184",
     "no-cep-panel-sdk-write",
     "no-live-cep-ae-outside-approved-live-validation-items",
-    "no-external-provider-openai-cli-planner-outside-approved-m190-live-validation",
+    "no-external-provider-openai-cli-planner-outside-approved-m190-m191-live-validation",
     "no-ollama-openrouter-fallback-for-full-ui-agent-live-validation",
     "no-mutating-live-outside-generated-approved-live-validation-lanes",
     "no-package-install",
@@ -383,12 +459,12 @@
     "title": "Continue typed-tool UI validation or the next bounded Dakkshin slice after review",
     "type": "reviewable-follow-up",
     "approvalRequiredBeforeExecution": true,
-    "recommendedAction": "Review the M190 Full UI Agent live evidence, then choose the next plan-defined typed-tool slice without enabling broad SDK writes.",
+    "recommendedAction": "Review the M190/M191 Full UI Agent live evidence, then choose the next plan-defined typed-tool slice without enabling broad SDK writes.",
     "blockedWorkWithoutSeparateApproval": [
       "Dakkshin feature implementation",
       "CEP-panel SDK write",
       "live CEP/After Effects validation outside approved generated-only lanes",
-      "external-provider/OpenAI CLI planner validation outside the approved M190 live lane",
+      "external-provider/OpenAI CLI planner validation outside the approved M190/M191 live lanes",
       "Ollama/OpenRouter fallback acceptance for Full UI Agent live validation",
       "mutating-live validation",
       "package install",
@@ -412,6 +488,7 @@
       "Dakkshin intake",
       "m188-dakkshin-advisory-field-validation",
       "m190-full-ui-agent-new-tools-validation",
+      "m191-mask-safety-live-validation",
       "OpenAI CLI Full UI Agent",
       "--validate-live"
     ],
@@ -436,22 +513,33 @@
         "--validate-live",
         "LIVE_VALIDATION_APPROVAL_TEXT",
         "M190_LIVE_VALIDATION_APPROVAL_TEXT",
+        "M191_LIVE_VALIDATION_APPROVAL_TEXT",
         "mutating-live-local",
         "m187-advisory-field-smoke.js",
-        "full-ui-agent-new-tools-openai-cli-smoke"
+        "full-ui-agent-new-tools-openai-cli-smoke",
+        "full-ui-agent-mask-safety-openai-cli-smoke"
       ],
       "scripts/cep-panel-cdp-smoke.js": [
         "openAiCliNewToolsScenarioConfig",
+        "openAiCliMaskSafetyScenarioConfig",
         "full-ui-agent-new-tools-openai-cli-smoke",
+        "full-ui-agent-mask-safety-openai-cli-smoke",
         "deterministic backend fallback is disabled"
       ],
       "scripts/agent-scenario-fixtures.js": [
         "agentNewToolsScenarioPlans",
+        "agentMaskSafetyScenarioPlans",
         "create_comp",
         "create_project_folder",
         "list_project_folder_items",
         "move_project_items_to_folder",
-        "create_camera_layer"
+        "create_camera_layer",
+        "create_layer_mask"
+      ],
+      "mcp-server/bridge-daemon.js": [
+        "create_layer_mask",
+        "ADBE Mask Shape",
+        "MaskMode.ADD"
       ]
     },
     "requiredFalseBoundaryFlags": [

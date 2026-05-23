@@ -176,6 +176,24 @@ async function main() {
       actionTypes: ["tool-alias"]
     });
 
+    const maskRepair = await validatePlan("mask-layer-alias", {
+      summary: "Create a bounded generated mask on the first layer.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Add mask", tool: "addMask", args: { compName: "Repair Smoke Comp", layerIndex: 1, maskName: "Repair Smoke Mask", points: [[120, 80], [520, 80], [520, 280], [120, 280]], mode: "add" } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["create_layer_mask"],
+      actionTypes: ["tool-alias", "arg-alias"]
+    });
+    assert.strictEqual(maskRepair.repairedPlan.steps[0].args.name, "Repair Smoke Mask");
+    assert.deepStrictEqual(maskRepair.repairedPlan.steps[0].args.vertices, [[120, 80], [520, 80], [520, 280], [120, 280]]);
+    assert.strictEqual(maskRepair.repairedPlan.steps[0].args.maskMode, "add");
+
     const bindingAliasRepair = await validatePlan("binding-alias", {
       summary: "Set selected layers 3D using common aliases.",
       risk: "medium",
@@ -321,6 +339,7 @@ async function main() {
       repairs: {
         precomposeActions: precomposeRepair.planRepair.actions.length,
         textActions: textRepair.planRepair.actions.length,
+        maskActions: maskRepair.planRepair.actions.length,
         bindingAliasActions: bindingAliasRepair.planRepair.actions.length,
         selectedPrecompDuplicateActions: selectedPrecompDuplicateRepair.planRepair.actions.length,
         emptyRunStatus: emptyRunResponse.body.run.error,

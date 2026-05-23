@@ -14,6 +14,7 @@ const MUTATING_TOOLS = new Set([
   "split_layers_at_time",
   "update_text_layer",
   "create_shape_layer",
+  "create_layer_mask",
   "fit_layer_to_comp",
   "set_property_keyframes",
   "apply_keyframe_ease",
@@ -269,6 +270,28 @@ function checkNumberArrayField(checks, step, arg, observedValue, title) {
   });
 }
 
+function checkPointListField(checks, step, arg, observedValue, title) {
+  if (!hasOwn(step.args, arg)) return;
+  const expected = Array.isArray(step.args[arg]) ? step.args[arg] : [];
+  const observed = Array.isArray(observedValue) ? observedValue : [];
+  const mismatch = expected.length <= 0 ||
+    observed.length < expected.length ||
+    expected.some((point, index) => (
+      !Array.isArray(point) ||
+      !Array.isArray(observed[index]) ||
+      !nearlyEqual(point[0], observed[index][0]) ||
+      !nearlyEqual(point[1], observed[index][1])
+    ));
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:${arg}`,
+    title,
+    expected: expected.map((point) => Array.isArray(point) ? point.join(",") : String(point)).join(" | "),
+    observed: observed.length ? observed.slice(0, expected.length).map((point) => Array.isArray(point) ? point.join(",") : String(point)).join(" | ") : "missing",
+    passed: !mismatch,
+    evidence: !mismatch ? stepLabel(step) : `${arg} read-back did not match requested points.`
+  });
+}
+
 function arrayLength(value) {
   return Array.isArray(value) ? value.length : 0;
 }
@@ -497,6 +520,21 @@ function verifyStep(checks, step, evidence) {
       expected: `${args.shape || "rectangle"} ${Array.isArray(args.size) ? args.size.join("x") : ""}`.trim(),
       observed: payload.shape ? `${payload.shape.type || ""} ${Array.isArray(payload.shape.size) ? payload.shape.size.join("x") : ""}`.trim() : "missing shape summary",
       passed: Boolean(payload.shape) && (!args.shape || payload.shape.type === args.shape),
+      evidence: stepLabel(step)
+    });
+    return;
+  }
+
+  if (step.tool === "create_layer_mask") {
+    const mask = payload.mask || {};
+    checkName(checks, step, args.name, mask.name, evidence, "Created mask name matches request");
+    checkPointListField(checks, step, "vertices", mask.shape && mask.shape.vertices, "Created mask vertices match request");
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:mode`,
+      title: "Created mask mode is additive and non-inverted",
+      expected: "maskMode: add, inverted: false",
+      observed: `maskMode: ${mask.maskMode || "missing"}, inverted: ${mask.inverted === true}`,
+      passed: mask.maskMode === "add" && mask.inverted !== true,
       evidence: stepLabel(step)
     });
     return;

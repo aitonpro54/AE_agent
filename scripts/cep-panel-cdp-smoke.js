@@ -3,6 +3,7 @@
 const http = require("http");
 const { writeAgentRunReport } = require("./agent-scenario-report");
 const {
+  agentMaskSafetyScenarioPlans,
   agentNewToolsScenarioPlans,
   agentScenarioPlans
 } = require("./agent-scenario-fixtures");
@@ -66,6 +67,21 @@ function openAiCliNewToolsScenarioConfig() {
     runPrefixBase: process.env.CEP_PANEL_AGENT_NEW_TOOLS_PREFIX || "Codex QA M190",
     scenarioFactory: agentNewToolsScenarioPlans,
     allowSemanticNeedsReviewWithReadBack: true,
+    skipRenderQueueCleanup: true
+  };
+}
+
+function openAiCliMaskSafetyScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-mask-safety",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_MASK_SAFETY_PREFIX || "Codex QA M191",
+    scenarioFactory: agentMaskSafetyScenarioPlans,
     skipRenderQueueCleanup: true
   };
 }
@@ -3134,6 +3150,11 @@ async function agentScenarioPreflight(config) {
 
   const readiness = await agentScenarioReadiness(config);
   const codexStatus = readiness && readiness.agent ? readiness.agent.codexStatus : null;
+  const ping = await callBridgeTool("ping_ae");
+  const projectInfo = await callBridgeTool("get_project_info");
+  if (!projectInfo || !projectInfo.file) {
+    throw new Error("After Effects project must be saved before live QA mutations can run.");
+  }
   const activeComp = await callBridgeTool("get_active_comp");
   const editSession = await callBridgeTool("get_edit_session_status");
   if (editSession && editSession.active) {
@@ -3155,6 +3176,12 @@ async function agentScenarioPreflight(config) {
       modelSource: readiness.modelSource,
       modelCount: readiness.modelCount || 0,
       codexStatus: codexStatusReport(codexStatus)
+    },
+    ping,
+    projectInfo: {
+      file: projectInfo.file,
+      name: projectInfo.name,
+      numItems: projectInfo.numItems
     },
     activeComp,
     editSession,
@@ -3320,9 +3347,90 @@ function valuePreviewNumber(value) {
   return null;
 }
 
+function pointsMatch(expected, observed) {
+  if (!Array.isArray(expected) || !Array.isArray(observed) || observed.length < expected.length) return false;
+  return expected.every((point, index) => {
+    const actual = observed[index];
+    return Array.isArray(point) &&
+      Array.isArray(actual) &&
+      Math.abs(Number(point[0]) - Number(actual[0])) <= 0.001 &&
+      Math.abs(Number(point[1]) - Number(actual[1])) <= 0.001;
+  });
+}
+
+async function verifyMaskScenarioReadBack(scenario, expected) {
+  const found = await callBridgeTool("find_project_items", {
+    query: expected.compName,
+    type: "comp",
+    exactName: true,
+    caseSensitive: true,
+    limit: 5
+  });
+  const compMatch = found.matches && found.matches[0];
+  if (!compMatch || !compMatch.itemIndex) {
+    throw new Error(`${scenario.id}: generated mask comp was not found by exact name.`);
+  }
+
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const layer = layers.find((item) => item.name === expected.layerName);
+  if (!layer || !layer.index) {
+    throw new Error(`${scenario.id}: generated mask target layer was not found by read-back.`);
+  }
+
+  const layerDetails = await callBridgeTool("get_layer_details", {
+    compName: expected.compName,
+    layerIndex: layer.index,
+    includeProperties: false
+  });
+  const masks = Array.isArray(layerDetails.masks) ? layerDetails.masks : [];
+  if (typeof expected.maskCount === "number" && masks.length !== expected.maskCount) {
+    throw new Error(`${scenario.id}: expected ${expected.maskCount} mask(s), got ${masks.length}.`);
+  }
+  const mask = masks.find((item) => item.name === expected.maskName);
+  if (!mask) {
+    throw new Error(`${scenario.id}: generated mask ${expected.maskName} was not found by read-back.`);
+  }
+  if (expected.maskMode && mask.maskMode !== expected.maskMode) {
+    throw new Error(`${scenario.id}: generated mask mode mismatch; expected ${expected.maskMode}, got ${mask.maskMode}.`);
+  }
+  const vertices = mask.shape && mask.shape.vertices;
+  if (!pointsMatch(expected.maskVertices, vertices)) {
+    throw new Error(`${scenario.id}: generated mask vertices read-back mismatch.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      numLayers: comp.numLayers
+    },
+    layer: {
+      index: layer.index,
+      name: layer.name
+    },
+    mask: {
+      name: mask.name,
+      maskMode: mask.maskMode,
+      inverted: mask.inverted,
+      vertexCount: mask.shape ? mask.shape.vertexCount : null,
+      vertices
+    }
+  };
+}
+
 async function verifyAgentScenarioReadBack(scenario) {
   const expected = scenario.expectedReadBack;
   if (!expected) return null;
+
+  if (expected.maskName) {
+    return verifyMaskScenarioReadBack(scenario, expected);
+  }
 
   const folder = await callBridgeTool("list_project_folder_items", {
     folderName: expected.folderName,
@@ -3913,6 +4021,10 @@ async function main() {
   }
   if (command === "agent-new-tools-openai-cli-smoke" || command === "full-ui-agent-new-tools-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliNewToolsScenarioConfig());
+    return;
+  }
+  if (command === "agent-mask-safety-openai-cli-smoke" || command === "full-ui-agent-mask-safety-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliMaskSafetyScenarioConfig());
     return;
   }
   if (command === "openai-api-setup-smoke") {

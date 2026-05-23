@@ -844,6 +844,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "create_null_layer",
   "create_adjustment_layer",
   "create_camera_layer",
+  "create_layer_mask",
   "add_project_item_to_comp",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
@@ -1633,6 +1634,26 @@ function optionalNumberArray(args, name, fallback, minLength, maxLength) {
     throw new Error(`${name} must have no more than ${maxLength} numbers.`);
   }
   return values;
+}
+
+function requiredPointArray(args, name, minLength, maxLength) {
+  if (!hasArg(args, name)) throw new Error(`${name} is required.`);
+  let raw = args[name];
+  if (typeof raw === "string") raw = JSON.parse(raw);
+  if (!Array.isArray(raw)) throw new Error(`${name} must be an array of [x, y] points.`);
+  if (minLength && raw.length < minLength) throw new Error(`${name} must include at least ${minLength} points.`);
+  if (maxLength && raw.length > maxLength) throw new Error(`${name} must include no more than ${maxLength} points.`);
+  return raw.map((point, index) => {
+    if (!Array.isArray(point) || point.length < 2) {
+      throw new Error(`${name}[${index}] must be an [x, y] point.`);
+    }
+    const x = Number(point[0]);
+    const y = Number(point[1]);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      throw new Error(`${name}[${index}] must contain finite coordinates.`);
+    }
+    return [x, y];
+  });
 }
 
 function sanitizeFilenamePart(value) {
@@ -3929,6 +3950,7 @@ const PLANNING_TOOL_NAMES = [
   "create_null_layer",
   "create_adjustment_layer",
   "create_camera_layer",
+  "create_layer_mask",
   "add_project_item_to_comp",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
@@ -5788,7 +5810,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For requests to align selected layers, clips, or precomps to the current time indicator, use align_layers_to_time with no layerIndices and omit targetTime so it uses the active comp CTI.",
     "For timeline trims, work areas, sequencing, splitting, and offsets, use set_comp_work_area, set_layer_time_range, stagger_layers, or split_layers_at_time.",
     "For precomp/source workflows, use precompose_layers, replace_layer_source, deep_duplicate_precomp_sources, rename_layers, and rename_project_items before considering raw ExtendScript.",
-    "For camera, text, shape, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, and fit_layer_to_comp.",
+    "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, and fit_layer_to_comp.",
     "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, set_expression, and clear_expression.",
     "For render queue setup, use add_comp_to_render_queue, set_render_queue_output, and get_render_queue_status. Do not start a render.",
     "For requests about selected layers, inspect with get_active_comp or get_selected_layers first. A later layerIndex field may use {{selectedLayerIndices}} to target the selected layers.",
@@ -8442,6 +8464,29 @@ const tools = [
     }
   },
   {
+    name: "create_layer_mask",
+    description: "Create one bounded additive polygon mask on an existing layer. This first mask slice does not delete masks, invert masks, or edit arbitrary existing mask paths.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndex: { type: "number", description: "1-based layer index in the target composition." },
+        name: { type: "string", description: "Optional mask name. Defaults to Codex Mask." },
+        vertices: {
+          type: "array",
+          description: "Polygon vertices as an array of [x, y] layer-space points. Supports 3 to 50 points.",
+          items: { type: "array", items: { type: "number" } }
+        },
+        maskMode: { type: "string", enum: ["add"], description: "Mask mode. M191 supports only add." },
+        opacity: { type: "number", description: "Optional mask opacity from 0 to 100." },
+        feather: { type: "array", items: { type: "number" }, description: "Optional [x, y] mask feather values, 0 or greater." },
+        expansion: { type: "number", description: "Optional mask expansion in pixels." }
+      },
+      required: ["layerIndex", "vertices"]
+    }
+  },
+  {
     name: "fit_layer_to_comp",
     description: "Scale selected or specified layers to contain, cover, or stretch to the comp frame.",
     inputSchema: {
@@ -10218,6 +10263,67 @@ async function callTool(name, args) {
         }
       } catch (__effectsError) {}
 
+      function __codexMaskModeName(value) {
+        try { if (value === MaskMode.ADD) return "add"; } catch (__maskModeAddError) {}
+        try { if (value === MaskMode.SUBTRACT) return "subtract"; } catch (__maskModeSubtractError) {}
+        try { if (value === MaskMode.INTERSECT) return "intersect"; } catch (__maskModeIntersectError) {}
+        try { if (value === MaskMode.LIGHTEN) return "lighten"; } catch (__maskModeLightenError) {}
+        try { if (value === MaskMode.DARKEN) return "darken"; } catch (__maskModeDarkenError) {}
+        try { if (value === MaskMode.DIFFERENCE) return "difference"; } catch (__maskModeDifferenceError) {}
+        try { if (value === MaskMode.NONE) return "none"; } catch (__maskModeNoneError) {}
+        return String(value);
+      }
+
+      function __codexMaskPointList(points, limit) {
+        var list = [];
+        if (!points) return list;
+        for (var __mp = 0; __mp < points.length && __mp < limit; __mp++) {
+          var point = points[__mp];
+          list.push([point[0], point[1]]);
+        }
+        return list;
+      }
+
+      function __codexFindChildProperty(group, matchName, fallbackName) {
+        if (!group) return null;
+        try {
+          var direct = group.property(matchName);
+          if (direct) return direct;
+        } catch (__directPropertyError) {}
+        if (fallbackName) {
+          try {
+            var fallback = group.property(fallbackName);
+            if (fallback) return fallback;
+          } catch (__fallbackPropertyError) {}
+        }
+        try {
+          for (var __cp = 1; __cp <= group.numProperties; __cp++) {
+            var child = group.property(__cp);
+            if (child && (child.matchName === matchName || child.name === fallbackName)) return child;
+          }
+        } catch (__childPropertyError) {}
+        return null;
+      }
+
+      function __codexMaskShapeInfo(mask) {
+        try {
+          var shapeProp = __codexFindChildProperty(mask, "ADBE Mask Shape", "Mask Path");
+          if (!shapeProp) return null;
+          var shape = shapeProp.value;
+          if (!shape) return null;
+          return {
+            closed: shape.closed === true,
+            vertexCount: shape.vertices ? shape.vertices.length : 0,
+            vertices: __codexMaskPointList(shape.vertices, 50),
+            inTangents: __codexMaskPointList(shape.inTangents, 50),
+            outTangents: __codexMaskPointList(shape.outTangents, 50),
+            truncated: shape.vertices && shape.vertices.length > 50
+          };
+        } catch (__maskShapeError) {
+          return null;
+        }
+      }
+
       var masks = [];
       try {
         var maskGroup = layer.property("ADBE Mask Parade");
@@ -10228,8 +10334,12 @@ async function callTool(name, args) {
               propertyIndex: mask.propertyIndex,
               name: mask.name,
               matchName: mask.matchName,
-              maskMode: mask.maskMode,
-              inverted: mask.inverted
+              maskMode: __codexMaskModeName(mask.maskMode),
+              inverted: mask.inverted,
+              shape: __codexMaskShapeInfo(mask),
+              opacity: __codexReadProperty(mask, "ADBE Mask Opacity") || __codexReadProperty(mask, "Mask Opacity"),
+              feather: __codexReadProperty(mask, "ADBE Mask Feather") || __codexReadProperty(mask, "Mask Feather"),
+              expansion: __codexReadProperty(mask, "ADBE Mask Expansion") || __codexReadProperty(mask, "Mask Expansion")
             });
           }
         }
@@ -12119,6 +12229,166 @@ async function callTool(name, args) {
         comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
         layer: __codexLayerInfo(layer),
         shape: { type: shapeType, size: requestedSize, fillColor: fillColor, strokeColor: strokeColor, strokeWidth: strokeWidth }
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "create_layer_mask") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const maskName = optionalString(args, "name", "Codex Mask");
+    const vertices = requiredPointArray(args, "vertices", 3, 50);
+    const maskMode = optionalString(args, "maskMode", "add").toLowerCase();
+    const opacity = optionalNumber(args, "opacity", null);
+    const feather = optionalNumberArray(args, "feather", null, 2, 2);
+    const expansion = optionalNumber(args, "expansion", null);
+    const coordinateLimit = 1000000;
+
+    if (maskMode !== "add") return toolResult("maskMode must be add for the first mask safety slice.", true);
+    if (vertices.some((point) => Math.abs(point[0]) > coordinateLimit || Math.abs(point[1]) > coordinateLimit)) {
+      return toolResult("vertices values must be between -1000000 and 1000000.", true);
+    }
+    if (opacity !== null && (opacity < 0 || opacity > 100)) return toolResult("opacity must be between 0 and 100.", true);
+    if (feather && feather.some((value) => value < 0)) return toolResult("feather values must be 0 or greater.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      var maskName = ${aeLiteral(maskName)};
+      var requestedVertices = ${aeLiteral(vertices)};
+      var requestedOpacity = ${opacity === null ? "null" : opacity};
+      var requestedFeather = ${feather ? aeLiteral(feather) : "null"};
+      var requestedExpansion = ${expansion === null ? "null" : expansion};
+
+      function __codexMaskPointList(points, limit) {
+        var list = [];
+        if (!points) return list;
+        for (var __mp = 0; __mp < points.length && __mp < limit; __mp++) {
+          var point = points[__mp];
+          list.push([point[0], point[1]]);
+        }
+        return list;
+      }
+
+      function __codexZeroTangents(points) {
+        var tangents = [];
+        for (var __zt = 0; __zt < points.length; __zt++) tangents.push([0, 0]);
+        return tangents;
+      }
+
+      function __codexFindChildProperty(group, matchName, fallbackName) {
+        if (!group) return null;
+        try {
+          var direct = group.property(matchName);
+          if (direct) return direct;
+        } catch (__directPropertyError) {}
+        if (fallbackName) {
+          try {
+            var fallback = group.property(fallbackName);
+            if (fallback) return fallback;
+          } catch (__fallbackPropertyError) {}
+        }
+        try {
+          for (var __cp = 1; __cp <= group.numProperties; __cp++) {
+            var child = group.property(__cp);
+            if (child && (child.matchName === matchName || child.name === fallbackName)) return child;
+          }
+        } catch (__childPropertyError) {}
+        return null;
+      }
+
+      function __codexAddMask(maskGroup) {
+        var mask = null;
+        try { mask = maskGroup.addProperty("ADBE Mask Atom"); } catch (__addMatchNameError) {}
+        if (!mask) {
+          try { mask = maskGroup.addProperty("Mask"); } catch (__addDisplayNameError) {}
+        }
+        if (!mask) throw new Error("Could not create mask atom on layer.");
+        return mask;
+      }
+
+      function __codexMaskShapeInfo(mask) {
+        var shapeProp = __codexFindChildProperty(mask, "ADBE Mask Shape", "Mask Path");
+        var shape = shapeProp ? shapeProp.value : null;
+        if (!shape) return null;
+        return {
+          closed: shape.closed === true,
+          vertexCount: shape.vertices ? shape.vertices.length : 0,
+          vertices: __codexMaskPointList(shape.vertices, 50),
+          inTangents: __codexMaskPointList(shape.inTangents, 50),
+          outTangents: __codexMaskPointList(shape.outTangents, 50),
+          truncated: shape.vertices && shape.vertices.length > 50
+        };
+      }
+
+      function __codexReadValue(prop) {
+        try {
+          if (!prop) return null;
+          var value = prop.value;
+          if (value instanceof Array) {
+            var copy = [];
+            for (var __rv = 0; __rv < value.length; __rv++) copy.push(value[__rv]);
+            return copy;
+          }
+          return value;
+        } catch (__readValueError) {
+          return null;
+        }
+      }
+
+      app.beginUndoGroup("Codex Create Layer Mask");
+      var maskGroup = layer.property("ADBE Mask Parade");
+      if (!maskGroup) throw new Error("Layer does not support masks.");
+      var mask = __codexAddMask(maskGroup);
+      if (maskName) mask.name = maskName;
+      mask.maskMode = MaskMode.ADD;
+      mask.inverted = false;
+
+      var shape = new Shape();
+      shape.vertices = requestedVertices;
+      shape.inTangents = __codexZeroTangents(requestedVertices);
+      shape.outTangents = __codexZeroTangents(requestedVertices);
+      shape.closed = true;
+      var shapeProperty = __codexFindChildProperty(mask, "ADBE Mask Shape", "Mask Path");
+      if (!shapeProperty) throw new Error("Mask shape property was not found.");
+      shapeProperty.setValue(shape);
+
+      var opacityProperty = __codexFindChildProperty(mask, "ADBE Mask Opacity", "Mask Opacity");
+      var featherProperty = __codexFindChildProperty(mask, "ADBE Mask Feather", "Mask Feather");
+      var expansionProperty = __codexFindChildProperty(mask, "ADBE Mask Expansion", "Mask Expansion");
+      if (requestedOpacity !== null) {
+        if (!opacityProperty) throw new Error("Mask opacity property was not found.");
+        opacityProperty.setValue(requestedOpacity);
+      }
+      if (requestedFeather !== null) {
+        if (!featherProperty) throw new Error("Mask feather property was not found.");
+        featherProperty.setValue(requestedFeather);
+      }
+      if (requestedExpansion !== null) {
+        if (!expansionProperty) throw new Error("Mask expansion property was not found.");
+        expansionProperty.setValue(requestedExpansion);
+      }
+
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        layer: __codexLayerInfo(layer),
+        mask: {
+          propertyIndex: mask.propertyIndex,
+          name: mask.name,
+          matchName: mask.matchName,
+          maskMode: "add",
+          inverted: mask.inverted,
+          shape: __codexMaskShapeInfo(mask),
+          opacity: __codexReadValue(opacityProperty),
+          feather: __codexReadValue(featherProperty),
+          expansion: __codexReadValue(expansionProperty)
+        }
       };
       app.endUndoGroup();
       return response;

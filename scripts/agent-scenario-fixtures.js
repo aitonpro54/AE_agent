@@ -10,6 +10,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "create_solid_layer",
   "create_text_layer",
   "create_camera_layer",
+  "create_layer_mask",
   "move_project_items_to_folder",
   "set_comp_work_area",
   "set_layer_time_range",
@@ -293,6 +294,105 @@ function agentNewToolsScenarioPlans(runPrefix) {
   }));
 }
 
+function agentMaskSafetyScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Mask Safety`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Solid`;
+  const maskName = `${base} Polygon Mask`;
+  const maskVertices = [
+    [120, 80],
+    [520, 80],
+    [520, 280],
+    [120, 280]
+  ];
+
+  return [
+    {
+      id: "generated-mask-safety-matrix",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "create_layer_mask",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        compName,
+        layerName,
+        maskName,
+        maskVertices,
+        maskMode: "add",
+        maskCount: 1
+      },
+      plan: {
+        summary: "Live QA for generated-only mask creation and read-back inside After Effects.",
+        risk: "low",
+        requiresCheckpoint: true,
+        steps: [
+          {
+            title: "Create generated mask QA comp",
+            tool: "create_comp",
+            args: {
+              name: compName,
+              width: 640,
+              height: 360,
+              pixelAspect: 1,
+              duration: 2,
+              frameRate: 24,
+              bgColor: [0.08, 0.1, 0.12],
+              allowDuplicateName: false,
+              openInViewer: false,
+              comment: "M191 generated-only mask safety validation"
+            }
+          },
+          {
+            title: "Create generated mask target layer",
+            tool: "create_solid_layer",
+            args: {
+              compName,
+              name: layerName,
+              color: [0.18, 0.48, 0.86],
+              width: 640,
+              height: 360,
+              pixelAspect: 1,
+              startTime: 0,
+              duration: 2
+            }
+          },
+          {
+            title: "Create generated additive polygon mask",
+            tool: "create_layer_mask",
+            args: {
+              compName,
+              layerIndex: 1,
+              name: maskName,
+              vertices: maskVertices,
+              maskMode: "add",
+              opacity: 100,
+              feather: [0, 0],
+              expansion: 0
+            }
+          },
+          {
+            title: "Read back generated mask details",
+            tool: "get_layer_details",
+            args: {
+              compName,
+              layerIndex: 1,
+              includeProperties: false
+            }
+          }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function buildAgentPlannerRegressionCorpus(options) {
   const config = options || {};
   const renderQueueBaselineTotal = Number.isFinite(Number(config.renderQueueBaselineTotal))
@@ -326,6 +426,7 @@ module.exports = {
   AGENT_SCENARIO_MUTATING_TOOLS,
   DEFAULT_PLANNER_FIXTURE_PREFIX,
   DEFAULT_RENDER_QUEUE_BASELINE_TOTAL,
+  agentMaskSafetyScenarioPlans,
   agentNewToolsScenarioPlans,
   agentScenarioPlans,
   buildAgentPlannerRegressionCorpus,

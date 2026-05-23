@@ -23,6 +23,8 @@ export const LIVE_VALIDATION_APPROVAL_TEXT =
   "I approve one M188 staged live AE validation run for M187 advisory recipes using generated-only mutations";
 export const M190_LIVE_VALIDATION_APPROVAL_TEXT =
   "I approve one M190 Full UI Agent live conveyor validation run for new typed tools using OpenAI CLI and generated-only mutations";
+export const M191_LIVE_VALIDATION_APPROVAL_TEXT =
+  "I approve one M191 live CEP AE validation run for generated-only mask safety checks inside After Effects";
 
 const HELP = `
 AE Agent feature conveyor runner
@@ -34,6 +36,7 @@ Usage:
   node orchestrator/run-ae-agent-feature-conveyor.mjs --item <future-approved-item> --engine cli --execute --approval-text "${CLI_EXECUTE_APPROVAL_TEXT}"
   node orchestrator/run-ae-agent-feature-conveyor.mjs --item m188-dakkshin-advisory-field-validation --validate-live --stage both --allow-mutating-live --approval-text "${LIVE_VALIDATION_APPROVAL_TEXT}"
   node orchestrator/run-ae-agent-feature-conveyor.mjs --item m190-full-ui-agent-new-tools-validation --validate-live --stage both --allow-mutating-live --approval-text "${M190_LIVE_VALIDATION_APPROVAL_TEXT}"
+  node orchestrator/run-ae-agent-feature-conveyor.mjs --item m191-mask-safety-live-validation --validate-live --stage both --allow-mutating-live --approval-text "${M191_LIVE_VALIDATION_APPROVAL_TEXT}"
 
 Options:
   --queue <path>             Queue artifact path. Defaults to M184 feature queue.
@@ -66,8 +69,8 @@ milestone must approve exactly one item before this runner can start an AI turn.
 Live validation is separate from SDK workspace-write execution: it runs local
 validation commands only and fails closed when AE/CEP/bridge/project preflight is
 not ready. M188 never runs external-provider/OpenAI CLI planner validation; M190
-uses only the OpenAI CLI Full UI Agent path and does not run Ollama/OpenRouter
-fallbacks.
+and M191 use only the OpenAI CLI Full UI Agent path and do not run
+Ollama/OpenRouter fallbacks.
 `;
 
 const VALUE_OPTIONS = new Set([
@@ -621,6 +624,35 @@ function runChildProcess(prepared, cwd) {
 
 function liveValidationCommands(prepared) {
   const item = selectedLiveValidationItem(prepared);
+  if (item.id === "m191-mask-safety-live-validation") {
+    const commands = [];
+    if (prepared.liveStage === "read-only" || prepared.liveStage === "both") {
+      commands.push({
+        id: "m191-live-cep-inspect",
+        stage: "read-only",
+        command: process.execPath,
+        args: [
+          path.join("scripts", "cep-panel-cdp-smoke.js"),
+          "inspect"
+        ],
+        timeoutMs: LIVE_VALIDATION_CHILD_TIMEOUT_MS
+      });
+    }
+    if (prepared.liveStage === "mutating" || prepared.liveStage === "both") {
+      commands.push({
+        id: "m191-full-ui-agent-openai-cli-mask-safety-smoke",
+        stage: "mutating",
+        command: process.execPath,
+        args: [
+          path.join("scripts", "cep-panel-cdp-smoke.js"),
+          "full-ui-agent-mask-safety-openai-cli-smoke"
+        ],
+        timeoutMs: LIVE_VALIDATION_CHILD_TIMEOUT_MS
+      });
+    }
+    return commands;
+  }
+
   if (item.id === "m190-full-ui-agent-new-tools-validation") {
     const commands = [];
     if (prepared.liveStage === "read-only" || prepared.liveStage === "both") {

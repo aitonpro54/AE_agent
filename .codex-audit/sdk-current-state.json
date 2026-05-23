@@ -39,7 +39,7 @@
     "cepPanelSdkWritesEnabled": false,
     "checkRulesEntrypoint": "npm.cmd run check:rules",
     "checkRulesCommand": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke",
-    "featureConveyorState": "m186-sdk-approved-not-executed-and-m188-m190-live-validation-approved",
+    "featureConveyorState": "m186-sdk-approved-not-executed-and-m188-m190-m191-live-validation-approved",
     "historicalProofReadPolicy": "Use .codex-audit/sdk-history-index.json first; reread old packets only for a specific audit question."
   },
   "currentDirectCheckSets": [
@@ -189,7 +189,7 @@
         184
       ],
       "status": "current-direct-check",
-      "verdict": "AE Agent feature conveyor readiness is available for local preview and smoke validation; exactly one Dakkshin intake item, m186-dakkshin-intake-tool-gap-map, has per-item SDK execution approval and remains not yet executed, while m188-dakkshin-advisory-field-validation and m190-full-ui-agent-new-tools-validation have separate local live-validation approvals that create no SDKThread/Codex workspace-write child run.",
+      "verdict": "AE Agent feature conveyor readiness is available for local preview and smoke validation; exactly one Dakkshin intake item, m186-dakkshin-intake-tool-gap-map, has per-item SDK execution approval and remains not yet executed, while m188-dakkshin-advisory-field-validation, m190-full-ui-agent-new-tools-validation, and m191-mask-safety-live-validation have separate local live-validation approvals that create no SDKThread/Codex workspace-write child run.",
       "artifacts": [
         ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-review.json",
         ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-readiness.json",
@@ -199,6 +199,8 @@
       ],
       "scriptPaths": [
         "orchestrator/run-ae-agent-feature-conveyor.mjs",
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
         "scripts/cep-panel-cdp-smoke.js",
         "scripts/agent-scenario-fixtures.js",
         "scripts/m187-advisory-field-smoke.js",

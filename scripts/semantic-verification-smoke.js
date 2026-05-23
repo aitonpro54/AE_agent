@@ -114,6 +114,24 @@ function fakeMutationResult(step, state) {
       }
     }, compName, layer);
   }
+  if (step.tool === "create_layer_mask") {
+    const layer = layerInfo("Mask Fixture Solid", { index: args.layerIndex || 1 });
+    return withVerification({
+      comp: { name: compName },
+      layer,
+      mask: {
+        propertyIndex: 1,
+        name: args.name || "Codex Mask",
+        maskMode: args.maskMode || "add",
+        inverted: false,
+        shape: {
+          closed: true,
+          vertexCount: Array.isArray(args.vertices) ? args.vertices.length : 0,
+          vertices: args.vertices || []
+        }
+      }
+    }, compName, layer);
+  }
   if (step.tool === "set_comp_work_area") {
     return withVerification({
       comp: { name: compName },
@@ -432,6 +450,36 @@ function assertCameraLayerPasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("create_camera_layer:numbers") >= 0), "camera zoom check should be reported.");
 }
 
+function assertLayerMaskPasses() {
+  const plan = {
+    summary: "Create a generated layer mask and inspect the layer.",
+    risk: "low",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Create generated mask",
+        tool: "create_layer_mask",
+        args: {
+          compName: "Mask Fixture",
+          layerIndex: 1,
+          name: "Mask Fixture Polygon",
+          vertices: [[120, 80], [520, 80], [520, 280], [120, 280]],
+          maskMode: "add"
+        }
+      },
+      {
+        title: "Read mask layer",
+        tool: "get_layer_details",
+        args: { compName: "Mask Fixture", layerIndex: 1 }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `layer mask semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("create_layer_mask:vertices") >= 0), "mask vertices check should be reported.");
+}
+
 function main() {
   const scenarios = agentScenarioPlans("Codex Semantic Fixture", 0);
   const results = scenarios.map(assertScenarioPasses);
@@ -441,6 +489,7 @@ function main() {
   assertMissingReadBackNeedsReview(timingScenario);
   assertDeepDuplicatePasses();
   assertCameraLayerPasses();
+  assertLayerMaskPasses();
 
   console.log(JSON.stringify({
     ok: true,
