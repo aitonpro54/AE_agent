@@ -18,6 +18,7 @@
 - [x] Milestone 185: Dakkshin intake scope brief.
 - [x] Milestone 186 approval gate: Dakkshin tool gap map approved for one SDK run, not executed yet.
 - [x] Milestone 186: Dakkshin intake tool gap map.
+- [x] Milestone 187: Dakkshin advisory solution-library entries.
 
 ## Current Stable Baseline
 
@@ -37,6 +38,7 @@
 - New project-structure mutations are M100-gated and inherit checkpoint/idempotency/post-verification safety fields; the folder listing tool remains read-only.
 - Precomp/source workflows include `deep_duplicate_precomp_sources` for recursively duplicating a selected precomp layer's source comp and nested comp/footage project items without raw ExtendScript in Agent plans.
 - Raw ExtendScript remains available as an escape hatch, but normal product workflows should use typed bridge tools.
+- The Solution Library includes Dakkshin-inspired advisory typed-plan recipes for basic comp setup, safe effect addition, and selected-layer animation; these are planner hints only and still execute through normal Agent validation and protected run gates.
 - CEP `Reload` forces a cache-busted reload of installed `index.html` and passes a fresh asset nonce to CSS/JS, so an already-open panel can pick up synced files without stale `panel.js?v=<old>` cache entries.
 - CEP install/sync clears only this extension's Chromium cache folders (`Cache`, `Code Cache`, `GPUCache`, `blob_storage`) while preserving Local Storage.
 - Installed CEP tracked files now match the repository at `AE Agent 2.0.0`.
@@ -177,6 +179,14 @@
 - Child SDK run could not update `.codex/handoff.md` or create its own commit because of local permission errors, but the parent Codex process completed handoff/commit finalization after the SDK run.
 - No Dakkshin product behavior, CEP panel, bridge runtime, dependencies, package-lock, live CEP/AE validation, external-provider/OpenAI CLI planner validation, mutating-live validation, push, or PR changed.
 
+### Milestone 187: Dakkshin advisory solution-library entries
+
+- Completed: added reviewed typed-plan recipes for basic comp setup, safe effect addition, and selected-layer animation.
+- Completed: registered the recipes in `registry/solutions.json` with `dakkshin-advisory` tags and normal mutating safety gates.
+- Completed: extended `scripts/solution-library-validation-smoke.js` so the new entries must remain raw-free, dedicated-recipe-backed, and retrievable for comp/effect/animation prompts.
+- Existing `active-comp-context-review` continues to cover the inspect-comp advisory prompt, so M187 did not duplicate that entry.
+- No new bridge tools, CEP panel changes, raw ExtendScript, mask/destructive/audio/broad comp changes, live CEP/AE validation, external-provider/OpenAI CLI planner validation, package/dependency changes, push, or PR were added by the product slice itself.
+
 ## Recent Milestone Summary
 
 - M152: Current production-code SDK write readiness superseded the older single-file claim and is limited to `scripts/provider-api-smoke.js` plus `scripts/provider-contract-smoke.js`.
@@ -202,6 +212,7 @@
 - M185: Completed the first Dakkshin intake artifact as a scope brief only; no product implementation or live/provider/dependency work was performed.
 - M186 approval gate: Approved exactly one SDK execution for the Dakkshin tool gap map queue item and updated smokes to prove all other feature conveyor items remain pending.
 - M186: Completed the local-only Dakkshin tool gap map; it is intake evidence only and does not implement product behavior.
+- M187: Implemented the smallest advisory product slice from M186 by adding typed-plan Solution Library entries for basic comp creation, safe effect addition, and selected-layer animation.
 
 ## Decision Log
 
@@ -214,6 +225,7 @@
 - 2026-05-23: M186 treats Dakkshin help/prompt and file-bridge notes as advisory/RAG or reliability evidence unless a later slice proves a concrete product need. They must not become raw ExtendScript workflows by default.
 - 2026-05-23: M186 identifies camera-layer creation as the smallest plausible typed-tool product gap if visible AE capability expansion is desired; mask mutation, destructive layer operations, audio-marker generation, and broad comp updates require separate schema and verification design before implementation.
 - 2026-05-23: The M186 child SDK run could not update `.codex/handoff.md` or create a commit because the child process hit local permission errors, including `.git/index.lock` creation failure. The parent Codex process completed the handoff update and commit finalization instead.
+- 2026-05-23: M187 chooses the advisory help/prompt slice over camera-layer tool work because it expands visible planner guidance with no bridge mutation contract change. Mutating recipes remain advisory metadata and must still produce normal MCP plans through validation, confirmation, idempotency, checkpoint/edit-session protection, and read-back.
 - 2026-05-23: M183 adopts only low-risk capability ideas from `jhd3197/after-effects-automation`: production comp creation plus explicit project folder list/create/move tools. It does not adopt the external eval queue, startup script runner, broad plugin installer, destructive new-project close behavior, or direct CEP `evalScript` string-construction pattern.
 - 2026-05-23: M183 defers transition and template-value batch tools. They are plausible future typed recipes, but require AE Agent-specific target selection, semantic verification, and user-facing review before promotion.
 - 2026-05-23: `architecture-vNext.md` now treats vNext 1.1 as the current architecture baseline for brainstorming and future planning. The accepted direction is safety-aware RAG/retrieval plus explicit promotion, not autonomous external script execution.
@@ -284,6 +296,7 @@
 | Live CEP/AE validation | Requested for M180-M182 when After Effects and the panel are available. | M182 connected pass on 2026-05-22: `get_bridge_status` returned bridge `2.0.0` with `panelConnected:true`; `ping_ae` returned AE `26.2x49` and 263 project items; CDP `inspect` saw installed `AE Agent 2.0.0`; `connector-status-smoke` passed; broad `node scripts/cep-panel-cdp-smoke.js smoke` passed through Local/Ollama plan generation, stored structured plan recovery via bridge proposal, dry run, and read-only run. |
 | M185 AGENTS non-live suite | Required because M185 adds a Dakkshin intake scope brief and updates the active plan. | Passed on 2026-05-23 in `.codex-runtime/validation/m185-non-live-20260523-183139.log`: feature conveyor readiness smoke, `npm.cmd run check:rules`, `git diff --check`, provider contract/API, solution registry/candidate/promotion/retrieval/library, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only smoke, and main smoke. `git diff --check` printed only existing LF-to-CRLF working-copy warnings. |
 | M186 selected feature conveyor validation | Required because M186 adds the Dakkshin tool gap map and updates active plan docs. | Passed on 2026-05-23: `npm.cmd run codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke`, `npm.cmd run check:rules`, and `git diff --check`. `git diff --check` printed only the existing LF-to-CRLF working-copy warning for `plans/target-app-execplan.md`. |
+| M187 AGENTS non-live suite | Required because M187 adds Solution Library recipes, updates registry retrieval smoke coverage, and updates the active plan. | Passed on 2026-05-23 in `.codex-runtime/validation/m187-non-live-20260523-191353.log`: touched JS `node --check`, `npm.cmd run check:rules`, `git diff --check`, provider contract/API, solution registry/candidate/promotion/retrieval/library, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only smoke, and main smoke. Final `git diff --check` printed only LF-to-CRLF working-copy warnings for touched text files. |
 | SDKThread/network/external-provider/OpenAI CLI planner/mutating-live validation | Forbidden/out of scope for this turn. | Not run. |
 | Package install/dependency change validation | Out of scope because no dependency change is allowed. | Not run. |
 
@@ -324,6 +337,17 @@
 - Child SDK run was blocked from updating `.codex/handoff.md` and creating its own commit by local permission errors; the parent Codex process handled handoff update and commit finalization.
 - Passed feature conveyor readiness smoke, `npm.cmd run check:rules`, and `git diff --check` in the child SDK run; parent final `npm.cmd run check:rules` and `git diff --check` also passed. `git diff --check` printed only the existing LF-to-CRLF working-copy warning for `plans/target-app-execplan.md`.
 - No product code, CEP panel, bridge runtime, dependencies, package-lock, live CEP/AE validation, external-provider/OpenAI CLI planner validation, mutating-live validation, push, or PR changed.
+
+### Milestone 187
+
+- Added `recipes/basic-comp-setup-typed-plan.md`.
+- Added `recipes/safe-effect-addition-typed-plan.md`.
+- Added `recipes/selected-layers-animation-typed-plan.md`.
+- Updated `registry/solutions.json` with three `dakkshin-advisory` typed-plan recipes and bumped `updatedAt` to `2026-05-23`.
+- Updated `scripts/solution-library-validation-smoke.js` to assert the new advisory recipes are raw-free, use dedicated recipe files, keep protected mutation gates, and retrieve for basic comp/effect/animation prompts.
+- Updated `plans/target-app-execplan.md` and `.codex/handoff.md`.
+- Passed M187 AGENTS non-live suite in `.codex-runtime/validation/m187-non-live-20260523-191353.log`.
+- Live CEP/AE, external-provider/OpenAI CLI planner validation, mutating-live validation, mask/destructive/audio/broad comp changes, package/dependency changes, and PR creation were not run; push is allowed by the user and handled separately after commit.
 
 ### Milestone 175
 

@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-05-18",
+  "updatedAt": "2026-05-23",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -83,6 +83,290 @@
       ],
       "notes": [
         "This recipe is advisory context only and must not add mutation steps."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "basic-comp-setup-typed-plan",
+      "title": "Basic Comp Setup Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "comp",
+        "create",
+        "setup",
+        "dakkshin-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Create one basic composition with explicit size, duration and frame rate, then read it back.",
+        "appliesWhen": [
+          "The user asks to create a simple or basic composition.",
+          "The planner needs a narrow comp creation pattern before adding layers or effects."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "compName",
+          "type": "string",
+          "required": true,
+          "description": "Requested composition name."
+        },
+        {
+          "name": "compSettings",
+          "type": "object",
+          "required": true,
+          "description": "Explicit width, height, duration, frame rate and optional background color."
+        }
+      ],
+      "targetAssumptions": [
+        "The requested comp is a new generated project item.",
+        "The workflow does not require broad comp updates or template batch changes."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/basic-comp-setup-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_project_info",
+          "create_comp",
+          "get_comp_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read back the created comp and confirm name, dimensions, duration and frame rate.",
+        "steps": [
+          "Run get_comp_details after create_comp.",
+          "Compare the returned comp metadata with the requested settings."
+        ],
+        "expectedEvidence": [
+          "The created comp reports the expected name, size, duration and frame rate.",
+          "The mutating step includes idempotency and read-back verification."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded as a Dakkshin-inspired advisory recipe using existing create_comp typed-tool coverage."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-23",
+          "from": "dakkshin-tool-gap-map",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Milestone 187 advisory solution-library slice from M186 recommended help/prompt entries.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation and protected run gates."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "safe-effect-addition-typed-plan",
+      "title": "Safe Effect Addition Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "effects",
+        "effect",
+        "matchname",
+        "selected-layers",
+        "dakkshin-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Add an effect to a verified layer with matchName-oriented discovery and effect read-back.",
+        "appliesWhen": [
+          "The user asks to add an effect safely to a selected or explicit layer.",
+          "The planner needs effect property details before changing effect values."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetLayer",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Selected layer or explicit layer target verified before adding the effect."
+        },
+        {
+          "name": "effectMatchName",
+          "type": "string",
+          "required": false,
+          "description": "Known effect matchName; omit when discovery must run first."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists.",
+        "The target layer is selected or explicitly identified before mutation."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/safe-effect-addition-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "list_effect_presets",
+          "list_effects",
+          "add_effect",
+          "get_effect_details",
+          "set_effect_property"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read back the effect instance and, when properties change, verify the exact property target before and after mutation.",
+        "steps": [
+          "Run get_effect_details after add_effect.",
+          "Use set_effect_property only after get_effect_details identifies the target property.",
+          "Run get_effect_details again after property mutation."
+        ],
+        "expectedEvidence": [
+          "The expected effect is present on the verified layer.",
+          "Any property change uses property evidence from get_effect_details."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded as a Dakkshin-inspired advisory recipe using existing effect typed-tool coverage."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-23",
+          "from": "dakkshin-tool-gap-map",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Milestone 187 advisory solution-library slice from M186 recommended help/prompt entries.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "The recipe prefers matchName/read-back and must not use display-name-only raw execution."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "selected-layers-animation-typed-plan",
+      "title": "Selected Layers Animation Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "animation",
+        "keyframes",
+        "transform",
+        "selected-layers",
+        "dakkshin-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Animate selected layers with typed property keyframes, optional ease and read-back verification.",
+        "appliesWhen": [
+          "The user asks to animate selected layers or add basic transform keyframes.",
+          "The requested animation fits typed transform or property-keyframe tools."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedLayerIndices",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Selected layers verified before the animation mutation."
+        },
+        {
+          "name": "animatedProperties",
+          "type": "array",
+          "required": true,
+          "description": "Requested properties and keyframe values, such as opacity, position, scale or rotation."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists.",
+        "The selected layers are verified before creating keyframes."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/selected-layers-animation-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "set_property_keyframes",
+          "apply_keyframe_ease",
+          "set_layer_transform",
+          "list_layers"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read back selected layer timing and transform/property evidence after the animation mutation.",
+        "steps": [
+          "Run get_selected_layers or list_layers after setting keyframes.",
+          "Confirm affected layers and properties match the requested animation intent."
+        ],
+        "expectedEvidence": [
+          "The selected layers report the expected animated or adjusted properties.",
+          "The plan uses only typed property/transform tools."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded as a Dakkshin-inspired advisory recipe using existing transform and keyframe typed-tool coverage."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-23",
+          "from": "dakkshin-tool-gap-map",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Milestone 187 advisory solution-library slice from M186 recommended help/prompt entries.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Mask, destructive layer, audio-marker and broad comp changes remain outside this recipe."
       ]
     },
     {

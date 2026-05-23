@@ -15,12 +15,29 @@ const {
 const REPO_ROOT = path.join(__dirname, "..");
 const REGISTRY_PATH = path.join(REPO_ROOT, "registry", "solutions.json");
 const SEEDED_IDS = ["active-comp-context-review", "selected-layers-align-to-cti"];
+const DAKKSHIN_ADVISORY_IDS = [
+  "basic-comp-setup-typed-plan",
+  "safe-effect-addition-typed-plan",
+  "selected-layers-animation-typed-plan"
+];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
+  "get_project_info",
   "get_active_comp",
   "get_selected_layers",
+  "list_layers",
+  "get_comp_details",
   "get_render_queue_status",
+  "create_comp",
+  "list_effect_presets",
+  "list_effects",
+  "add_effect",
+  "get_effect_details",
+  "set_effect_property",
   "align_layers_to_time",
+  "set_property_keyframes",
+  "apply_keyframe_ease",
+  "set_layer_transform",
   "deep_duplicate_precomp_sources",
   "run_extendscript_file"
 ];
@@ -87,6 +104,39 @@ function assertSeedQuality(registry) {
   return summary;
 }
 
+function assertDakkshinAdvisoryQuality(registry) {
+  for (const id of DAKKSHIN_ADVISORY_IDS) {
+    const solution = solutionById(registry, id);
+    assert(solution, `Missing Dakkshin advisory solution: ${id}`);
+    assert.strictEqual(solution.status, "recipe", `${id}: advisory entries should be reviewed recipes.`);
+    assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: advisory entries should use typed-plan execution.`);
+    assert.strictEqual(solution.execution.scriptPath, null, `${id}: advisory entries must not use raw JSX.`);
+    assert(!solution.execution.preferredTools.includes("run_extendscript"), `${id}: inline ExtendScript must not be preferred.`);
+    assert(!solution.execution.preferredTools.includes("run_extendscript_file"), `${id}: raw file execution must not be preferred.`);
+    assert(solution.execution.recipePath !== "recipes/README.md", `${id}: advisory entries should have dedicated recipe files.`);
+    assert(solution.tags.includes("dakkshin-advisory"), `${id}: Dakkshin advisory tag should be present for retrieval/audit.`);
+    assert(solution.promotionHistory.some((entry) => /Milestone 187/i.test(entry.evidence)), `${id}: promotion evidence should mention Milestone 187.`);
+
+    const text = recipeText(solution);
+    assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+    assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+    assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+    assert(!/run_extendscript/i.test(text), `${id}: advisory recipe should not recommend raw ExtendScript.`);
+    assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+
+    const gates = solution.requiredSafetyGates;
+    assert.strictEqual(solution.execution.mutating, true, `${id}: these advisory recipes describe protected mutations.`);
+    assert.strictEqual(gates.planValidation, true, `${id}: mutating recipe needs plan validation.`);
+    assert.strictEqual(gates.explicitConfirmation, true, `${id}: mutating recipe needs explicit confirmation.`);
+    assert.strictEqual(gates.allowMutations, true, `${id}: mutating recipe needs mutation permission.`);
+    assert.strictEqual(gates.idempotency, true, `${id}: mutating recipe needs idempotency.`);
+    assert.strictEqual(gates.checkpointOrEditSession, true, `${id}: mutating recipe should keep checkpoint/edit-session protection.`);
+    assert.strictEqual(gates.postMutationReadBack, true, `${id}: mutating recipe needs read-back verification.`);
+    assert(solution.verificationRecipe.steps.length > 0, `${id}: mutating recipe should have verification steps.`);
+    assert(solution.verificationRecipe.expectedEvidence.length > 0, `${id}: mutating recipe should have expected evidence.`);
+  }
+}
+
 function assertActualRetrieval(registry) {
   const contextRetrieval = retrieveSolutionHints("Summarize the active comp, selected layers and render queue state.", {
     registry,
@@ -113,7 +163,40 @@ function assertActualRetrieval(registry) {
   assert(!promptSection.includes("testedAeContext"), "prompt section must not expose full tested context metadata.");
   assert(promptSection.length < 2200, "prompt section should remain compact.");
 
-  return { contextRetrieval, alignRetrieval, promptSectionLength: promptSection.length };
+  const basicCompRetrieval = retrieveSolutionHints("Create a basic 1920 by 1080 composition at 24 fps.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(basicCompRetrieval.ok, true);
+  assert(ids(basicCompRetrieval).includes("basic-comp-setup-typed-plan"), "basic comp advisory recipe should surface for comp creation prompt.");
+
+  const effectRetrieval = retrieveSolutionHints("Add a blur effect safely to the selected layer and inspect effect properties.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(effectRetrieval.ok, true);
+  assert(ids(effectRetrieval).includes("safe-effect-addition-typed-plan"), "safe effect advisory recipe should surface for effect prompt.");
+
+  const animationRetrieval = retrieveSolutionHints("Animate the selected layers with opacity and position keyframes.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(animationRetrieval.ok, true);
+  assert(ids(animationRetrieval).includes("selected-layers-animation-typed-plan"), "selected layer animation recipe should surface for animation prompt.");
+
+  return {
+    contextRetrieval,
+    alignRetrieval,
+    promptSectionLength: promptSection.length,
+    dakkshinAdvisoryRetrieval: {
+      basicComp: ids(basicCompRetrieval),
+      effect: ids(effectRetrieval),
+      animation: ids(animationRetrieval)
+    }
+  };
 }
 
 function fixtureSolution(overrides = {}) {
@@ -313,6 +396,7 @@ function assertPromptBounds() {
 function main() {
   const registry = readRegistry();
   const registrySummary = assertSeedQuality(registry);
+  assertDakkshinAdvisoryQuality(registry);
   const actualRetrieval = assertActualRetrieval(registry);
   const candidateOmitted = assertCandidateInvisibility(registry);
   const staleAndEquivalent = assertStaleAndToolEquivalentBehavior();
@@ -323,10 +407,12 @@ function main() {
     registryPath: path.relative(REPO_ROOT, REGISTRY_PATH),
     solutionCount: registrySummary.solutionCount,
     seeded: SEEDED_IDS,
+    dakkshinAdvisory: DAKKSHIN_ADVISORY_IDS,
     actualRetrieval: {
       contextReturned: actualRetrieval.contextRetrieval.returned,
       alignReturned: actualRetrieval.alignRetrieval.returned,
-      promptSectionLength: actualRetrieval.promptSectionLength
+      promptSectionLength: actualRetrieval.promptSectionLength,
+      dakkshinAdvisoryRetrieval: actualRetrieval.dakkshinAdvisoryRetrieval
     },
     candidateOmitted,
     staleAndEquivalent,
