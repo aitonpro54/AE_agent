@@ -216,6 +216,17 @@ export const AE_AGENT_SDK_ADAPTER_CONFIG = deepFreeze({
       ".codex-audit/sdk-milestone-conveyor/156-sdk-conveyor-sdkthread-proof.json",
       ".codex-audit/sdk-milestone-conveyor/157-sdk-conveyor-commit-handoff-loop-gate.json",
     ],
+    featureConveyorReviewSchema: "sdk-feature-conveyor-review.v1",
+    featureConveyorReadinessSchema: "sdk-feature-conveyor-readiness.v1",
+    featureConveyorGovernanceSchema: "sdk-feature-conveyor-governance.v1",
+    featureConveyorQueueSchema: "sdk-ae-agent-feature-conveyor-queue.v1",
+    featureConveyorDirectory: ".codex-audit/sdk-feature-conveyor",
+    currentFeatureConveyorPackets: [
+      ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-review.json",
+      ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-readiness.json",
+      ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-governance.json",
+      ".codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json",
+    ],
   },
   runtime: {
     primaryRuntimeDirectory: ".codex/sdk",
@@ -232,6 +243,8 @@ export const AE_AGENT_SDK_ADAPTER_CONFIG = deepFreeze({
     "mutating-live validation",
     "package install",
     "dependency change",
+    "feature conveyor execution",
+    "Dakkshin feature implementation",
     "push",
   ],
 });

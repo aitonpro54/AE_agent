@@ -1,0 +1,111 @@
+{
+  "schema": "sdk-feature-conveyor-review.v1",
+  "milestone": 184,
+  "title": "AE Agent Feature Conveyor Review",
+  "createdAt": "2026-05-23",
+  "purpose": "Review a new AE Agent feature conveyor lane for future local CLI-assisted feature milestones while keeping current Dakkshin intake as queue/readiness work only.",
+  "sourceContext": {
+    "previousMilestone": 183,
+    "currentSdkState": ".codex-audit/sdk-current-state.json",
+    "baseConveyorSpec": ".codex-audit/sdk-milestone-conveyor/154-sdk-milestone-conveyor-spec.json",
+    "cleanupConveyorQueue": ".codex-audit/sdk-milestone-conveyor/173-ae-agent-cleanup-conveyor-queue.json",
+    "branch": "road-map-2.0",
+    "behaviorBoundary": {
+      "reviewOnly": true,
+      "localOnly": true,
+      "featureItemsExecuted": false,
+      "dakkshinFeatureImplemented": false,
+      "runtimeBehaviorChanged": false,
+      "panelOrBridgeChanged": false,
+      "sdkThreadCreated": false,
+      "networkAccessed": false,
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditedThroughSdk": false,
+      "liveCepOrAfterEffectsRun": false,
+      "externalProviderValidationRun": false,
+      "mutatingLiveValidationRun": false,
+      "packageInstallRun": false,
+      "dependencyChanged": false,
+      "pushPerformed": false,
+      "prCreated": false
+    }
+  },
+  "reviewedLane": {
+    "laneId": "ae-agent-feature-conveyor-local-cli",
+    "status": "reviewed-local-gated",
+    "sdkWriteEnabled": false,
+    "featureExecutionApproved": false,
+    "queuePreviewApproved": true,
+    "commandRunnerApprovedForDryRun": true,
+    "commandRunnerApprovedForExecution": false,
+    "allowedNow": [
+      "record feature conveyor review/readiness/governance evidence",
+      "record Dakkshin intake queue items without implementing Dakkshin product behavior",
+      "preview selected queue items from the command line",
+      "run local queue and command smokes"
+    ],
+    "notApprovedFor": [
+      "Dakkshin feature implementation",
+      "CEP-panel SDK write",
+      "live CEP/After Effects validation",
+      "external-provider/OpenAI CLI planner validation",
+      "mutating-live validation",
+      "package install",
+      "dependency change",
+      "push",
+      "PR creation"
+    ]
+  },
+  "plannedPathPolicy": {
+    "currentMilestonePlannedPaths": [
+      ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-review.json",
+      ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-readiness.json",
+      ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-governance.json",
+      ".codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json",
+      "orchestrator/run-ae-agent-feature-conveyor.mjs",
+      "orchestrator/adapters/ae-agent-sdk-policy.mjs",
+      "orchestrator/run-buffered-acceptance.mjs",
+      "orchestrator/README.md",
+      "scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js",
+      "scripts/sdk-ae-agent-feature-conveyor-command-smoke.js",
+      "scripts/sdk-current-history-index-smoke.js",
+      ".codex-audit/sdk-current-state.json",
+      "package.json",
+      "plans/target-app-execplan.md",
+      ".codex/handoff.md"
+    ],
+    "futureQueueItemPathsMustBeExplicit": true,
+    "futureQueueItemExecutionRequiresFreshApproval": true,
+    "cepPanelPlannedPathsAllowed": false,
+    "packageJsonDependencyChangesAllowed": false,
+    "packageLockChangesAllowed": false
+  },
+  "validationPlan": [
+    "Run node --check for touched JavaScript files.",
+    "Run node scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js.",
+    "Run node scripts/sdk-ae-agent-feature-conveyor-command-smoke.js.",
+    "Run npm.cmd run check:rules.",
+    "Run the AGENTS non-live validation suite and git diff --check.",
+    "Do not run live CEP/AE, external-provider/OpenAI CLI planner, mutating-live, dependency install, push, or PR validation for this milestone."
+  ],
+  "rollbackPlan": "Revert the M184 feature conveyor evidence, queue, runner, smoke wiring, README, plan, handoff, and current-state references. This leaves the M173 cleanup conveyor as the only command conveyor.",
+  "machineCheck": {
+    "requiredFalseBoundaryFlags": [
+      "featureItemsExecuted",
+      "dakkshinFeatureImplemented",
+      "runtimeBehaviorChanged",
+      "panelOrBridgeChanged",
+      "sdkThreadCreated",
+      "networkAccessed",
+      "cepPanelSdkWritesEnabled",
+      "cepPanelPanelJsEditedThroughSdk",
+      "liveCepOrAfterEffectsRun",
+      "externalProviderValidationRun",
+      "mutatingLiveValidationRun",
+      "packageInstallRun",
+      "dependencyChanged",
+      "pushPerformed",
+      "prCreated"
+    ]
+  }
+}

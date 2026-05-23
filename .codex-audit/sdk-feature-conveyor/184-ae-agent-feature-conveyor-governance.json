@@ -1,0 +1,52 @@
+{
+  "schema": "sdk-feature-conveyor-governance.v1",
+  "milestone": 184,
+  "title": "AE Agent Feature Conveyor Governance",
+  "createdAt": "2026-05-23",
+  "state": "local-gated",
+  "summary": "M184 governs the AE Agent feature conveyor as a preview/readiness path for future Dakkshin intake milestones. It does not approve feature implementation or any live/provider/dependency/push work.",
+  "sourcePackets": [
+    ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-review.json",
+    ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-readiness.json",
+    ".codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json"
+  ],
+  "allowedNow": [
+    "dry-run preview of queued Dakkshin intake items",
+    "local smoke validation of the feature conveyor contract",
+    "plan and handoff documentation for the conveyor itself"
+  ],
+  "featureConveyorExecutionApproved": false,
+  "dakkshinFeatureImplementationApproved": false,
+  "cepPanelSdkWriteEnabled": false,
+  "newSdkThreadRunApproved": false,
+  "externalNetworkRetryApproved": false,
+  "broadProductionCodeWritesApproved": false,
+  "approvalRequiredFor": [
+    "Any feature conveyor AI turn.",
+    "Any Dakkshin implementation milestone.",
+    "Any production-code planned path beyond the current two provider smoke files.",
+    "Any CEP-panel SDK write.",
+    "Any live CEP/After Effects validation.",
+    "Any external-provider/OpenAI CLI planner validation.",
+    "Any mutating-live validation.",
+    "Any package install or dependency change.",
+    "Any push or PR creation."
+  ],
+  "validationPlan": [
+    "Run feature conveyor readiness and command smokes.",
+    "Run npm.cmd run check:rules so M184 coverage is part of the local acceptance wrapper.",
+    "Run the required AGENTS non-live validation suite.",
+    "Record skipped live/provider/dependency/push checks as out of scope."
+  ],
+  "rollbackPlan": "Revert M184 feature conveyor artifacts and check:rules wiring; no runtime or product rollback is required because no Dakkshin feature behavior is introduced.",
+  "machineCheck": {
+    "requiredFalseFields": [
+      "featureConveyorExecutionApproved",
+      "dakkshinFeatureImplementationApproved",
+      "cepPanelSdkWriteEnabled",
+      "newSdkThreadRunApproved",
+      "externalNetworkRetryApproved",
+      "broadProductionCodeWritesApproved"
+    ]
+  }
+}

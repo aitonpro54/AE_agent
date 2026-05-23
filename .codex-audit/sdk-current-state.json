@@ -1,16 +1,20 @@
 {
   "schema": "sdk-current-state.v1",
-  "milestone": 176,
-  "title": "SDK Current State",
+  "milestone": 184,
+  "title": "SDK Current State with Feature Conveyor Readiness",
   "createdAt": "2026-05-22",
-  "purpose": "Keep the current AE Agent SDK governance and readiness state directly machine-checked while older proof packets move behind a history index.",
+  "purpose": "Keep the current AE Agent SDK governance, readiness, and local-gated feature conveyor state directly machine-checked while older proof packets move behind a history index.",
   "sourceContext": {
-    "previousMilestone": 175,
+    "previousMilestone": 183,
     "previousPolicy": "plans/archive/runtime-artifact-cleanup-policy-2026-05.md",
     "queueArtifact": ".codex-audit/sdk-milestone-conveyor/173-ae-agent-cleanup-conveyor-queue.json",
-    "branch": "codex/roadmap-1.3-planning",
+    "featureConveyorQueueArtifact": ".codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json",
+    "featureConveyorGovernanceArtifact": ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-governance.json",
+    "branch": "road-map-2.0",
     "behaviorBoundary": {
       "localOnly": true,
+      "featureItemsExecuted": false,
+      "dakkshinFeatureImplemented": false,
       "sdkThreadCreated": false,
       "networkAccessed": false,
       "cepPanelSdkWritesEnabled": false,
@@ -35,6 +39,7 @@
     "cepPanelSdkWritesEnabled": false,
     "checkRulesEntrypoint": "npm.cmd run check:rules",
     "checkRulesCommand": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke",
+    "featureConveyorState": "local-gated-preview-only",
     "historicalProofReadPolicy": "Use .codex-audit/sdk-history-index.json first; reread old packets only for a specific audit question."
   },
   "currentDirectCheckSets": [
@@ -177,6 +182,31 @@
         "codex:orchestrator:ae-agent-cleanup-conveyor:smoke",
         "check:rules"
       ]
+    },
+    {
+      "id": "m184-feature-conveyor-readiness",
+      "milestones": [
+        184
+      ],
+      "status": "current-direct-check",
+      "verdict": "AE Agent feature conveyor readiness is available for local preview and smoke validation only; Dakkshin intake items remain queued and non-executable until future per-item approval.",
+      "artifacts": [
+        ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-review.json",
+        ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-readiness.json",
+        ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-governance.json",
+        ".codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json"
+      ],
+      "scriptPaths": [
+        "orchestrator/run-ae-agent-feature-conveyor.mjs",
+        "scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js",
+        "scripts/sdk-ae-agent-feature-conveyor-command-smoke.js"
+      ],
+      "packageScripts": [
+        "codex:orchestrator:ae-agent-feature-conveyor",
+        "codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke",
+        "codex:orchestrator:ae-agent-feature-conveyor:smoke",
+        "check:rules"
+      ]
     }
   ],
   "machineCheck": {
@@ -185,7 +215,8 @@
     "requiredCurrentSetIds": [
       "m152-provider-smoke-governance",
       "m153-m157-conveyor-governance",
-      "m158-m173-extraction-and-cleanup-queue"
+      "m158-m173-extraction-and-cleanup-queue",
+      "m184-feature-conveyor-readiness"
     ],
     "requiredProductionCodeSdkWriteAllowlist": [
       "scripts/provider-api-smoke.js",
@@ -193,21 +224,30 @@
     ],
     "requiredReadmeSnippets": [
       "M176 splits current SDK state from historical proof references",
+      "M184 adds the AE Agent feature conveyor readiness gate",
       ".codex-audit/sdk-current-state.json",
       ".codex-audit/sdk-history-index.json",
+      ".codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json",
       "codex:orchestrator:current-history-index:smoke"
     ],
     "requiredSourceSnippets": {
       "orchestrator/run-buffered-acceptance.mjs": [
         "sdk-current-history-index-smoke.js",
+        "sdk-ae-agent-feature-conveyor-readiness-smoke.js",
+        "sdk-ae-agent-feature-conveyor-command-smoke.js",
         "M176 SDK current/history index smoke failed"
       ],
       "package.json": [
+        "\"codex:orchestrator:ae-agent-feature-conveyor\": \"node orchestrator/run-ae-agent-feature-conveyor.mjs\"",
+        "\"codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke\": \"node scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js\"",
+        "\"codex:orchestrator:ae-agent-feature-conveyor:smoke\": \"node scripts/sdk-ae-agent-feature-conveyor-command-smoke.js\"",
         "\"codex:orchestrator:current-history-index:smoke\": \"node scripts/sdk-current-history-index-smoke.js\"",
         "\"check:rules\": \"node orchestrator/run-buffered-acceptance.mjs --contract-smoke\""
       ]
     },
     "requiredFalseBoundaryFlags": [
+      "featureItemsExecuted",
+      "dakkshinFeatureImplemented",
       "sdkThreadCreated",
       "networkAccessed",
       "cepPanelSdkWritesEnabled",

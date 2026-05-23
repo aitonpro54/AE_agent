@@ -1,0 +1,306 @@
+{
+  "schema": "sdk-ae-agent-feature-conveyor-queue.v1",
+  "milestone": 184,
+  "title": "Dakkshin Intake Feature Conveyor Queue",
+  "createdAt": "2026-05-23",
+  "purpose": "Queue future Dakkshin intake milestones for reviewable local CLI preview without implementing Dakkshin features in M184.",
+  "sourceContext": {
+    "previousMilestone": 183,
+    "reviewPacket": ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-review.json",
+    "readinessPacket": ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-readiness.json",
+    "governancePacket": ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-governance.json",
+    "baseConveyorSpec": ".codex-audit/sdk-milestone-conveyor/154-sdk-milestone-conveyor-spec.json",
+    "branch": "road-map-2.0",
+    "behaviorBoundary": {
+      "queueOnly": true,
+      "localOnly": true,
+      "featureItemsExecuted": false,
+      "dakkshinFeatureImplemented": false,
+      "runtimeBehaviorChanged": false,
+      "panelOrBridgeChanged": false,
+      "sdkThreadCreated": false,
+      "networkAccessed": false,
+      "cepPanelSdkWritesEnabled": false,
+      "cepPanelPanelJsEditedThroughSdk": false,
+      "liveCepOrAfterEffectsRun": false,
+      "externalProviderValidationRun": false,
+      "mutatingLiveValidationRun": false,
+      "packageInstallRun": false,
+      "dependencyChanged": false,
+      "pushPerformed": false,
+      "prCreated": false
+    }
+  },
+  "queueContract": {
+    "executionModel": "The feature conveyor records future Dakkshin intake items. M184 may preview and validate the queue only. A future milestone must approve exactly one item before any AI workspace-write turn can run.",
+    "defaultMode": "local-only",
+    "defaultExecutionApprovalState": "pending-explicit-approval",
+    "defaultMaxAiTurns": 0,
+    "notAnApprovalFor": [
+      "Dakkshin feature implementation",
+      "SDKThread/network proof",
+      "CEP-panel SDK write",
+      "live CEP/After Effects validation",
+      "external-provider/OpenAI CLI planner validation",
+      "mutating-live validation",
+      "package install",
+      "dependency change",
+      "push",
+      "PR creation"
+    ],
+    "requiredPerItemFields": [
+      "id",
+      "milestone",
+      "title",
+      "laneId",
+      "scope",
+      "mode",
+      "plannedPaths",
+      "executionApprovalState",
+      "explicitApprovalText",
+      "maxAiTurns",
+      "allowedActions",
+      "forbiddenActions",
+      "validationCommands",
+      "stopGates",
+      "status"
+    ]
+  },
+  "commandRunner": {
+    "script": "orchestrator/run-ae-agent-feature-conveyor.mjs",
+    "packageScript": "codex:orchestrator:ae-agent-feature-conveyor",
+    "readinessSmokeScript": "scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js",
+    "readinessSmokePackageScript": "codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke",
+    "commandSmokeScript": "scripts/sdk-ae-agent-feature-conveyor-command-smoke.js",
+    "commandSmokePackageScript": "codex:orchestrator:ae-agent-feature-conveyor:smoke",
+    "dryRunCommand": "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --all",
+    "executeCommand": "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item <future-approved-item> --execute-sdk --approval-text \"I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only\"",
+    "executeCliCommand": "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item <future-approved-item> --engine cli --execute --approval-text \"I approve one Codex CLI feature conveyor workspace-write run for the selected queued feature item planned paths only\"",
+    "executeRequiresExactApprovalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only",
+    "executeCliRequiresExactApprovalText": "I approve one Codex CLI feature conveyor workspace-write run for the selected queued feature item planned paths only",
+    "supportedEngines": [
+      "sdk",
+      "cli"
+    ],
+    "sdkThreadCreatedByDryRun": false,
+    "executionApprovedNow": false,
+    "executionOutputMode": "log-file-by-default",
+    "executionLogDirectory": ".codex-runtime/sdk/feature-conveyor-logs",
+    "terminalTailLinesDefault": 80,
+    "streamOutputFlag": "--stream-output",
+    "preRunDirtyGitAllowed": false,
+    "postRunPathAllowlist": "selected queue item plannedPaths only",
+    "postRunCommitAwarePathAllowlist": true,
+    "autoCommit": false,
+    "autoPush": false
+  },
+  "queueItems": [
+    {
+      "id": "m185-dakkshin-intake-scope-brief",
+      "milestone": 185,
+      "title": "Dakkshin intake scope brief",
+      "laneId": "dakkshin-intake-local",
+      "scope": "feature-intake-docs",
+      "mode": "local-only",
+      "plannedPaths": [
+        ".codex-audit/sdk-feature-conveyor/dakkshin-intake/m185-scope-brief.md",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "executionApprovalState": "pending-explicit-approval",
+      "explicitApprovalText": null,
+      "maxAiTurns": 0,
+      "allowedActions": [
+        "summarize Dakkshin user goals, constraints, and known source material as an intake brief",
+        "identify which questions must be answered before implementation",
+        "record that no product code or CEP panel code is changed"
+      ],
+      "forbiddenActions": [
+        "implement Dakkshin product behavior",
+        "edit cep-panel/**",
+        "edit mcp-server/**",
+        "run live CEP/After Effects validation",
+        "run external-provider/OpenAI CLI planner validation",
+        "install packages or change dependencies",
+        "push or create a PR"
+      ],
+      "validationCommands": [
+        "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "stopGates": [
+        "implementation-requested-before-intake",
+        "feature-source-unclear",
+        "unplanned-product-file-change",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "m186-dakkshin-intake-tool-gap-map",
+      "milestone": 186,
+      "title": "Dakkshin intake tool gap map",
+      "laneId": "dakkshin-intake-local",
+      "scope": "feature-intake-analysis",
+      "mode": "local-only",
+      "plannedPaths": [
+        ".codex-audit/sdk-feature-conveyor/dakkshin-intake/m186-tool-gap-map.md",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "executionApprovalState": "pending-explicit-approval",
+      "explicitApprovalText": null,
+      "maxAiTurns": 0,
+      "allowedActions": [
+        "map Dakkshin intake needs to existing typed bridge tools and safe missing capabilities",
+        "separate advisory/RAG needs from mutating AE tool needs",
+        "recommend the smallest later implementation slices without editing product code"
+      ],
+      "forbiddenActions": [
+        "add bridge tools",
+        "edit cep-panel/**",
+        "edit package.json dependencies",
+        "run live CEP/After Effects validation",
+        "run external-provider/OpenAI CLI planner validation",
+        "push or create a PR"
+      ],
+      "validationCommands": [
+        "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "stopGates": [
+        "tool-gap-unclear",
+        "implementation-requested-before-approval",
+        "unplanned-product-file-change",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "m187-dakkshin-intake-implementation-slice-plan",
+      "milestone": 187,
+      "title": "Dakkshin intake implementation slice plan",
+      "laneId": "dakkshin-intake-local",
+      "scope": "feature-intake-plan",
+      "mode": "local-only",
+      "plannedPaths": [
+        ".codex-audit/sdk-feature-conveyor/dakkshin-intake/m187-implementation-slice-plan.md",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "executionApprovalState": "pending-explicit-approval",
+      "explicitApprovalText": null,
+      "maxAiTurns": 0,
+      "allowedActions": [
+        "turn the accepted Dakkshin intake and gap map into one or more reviewable implementation candidates",
+        "define per-slice planned paths and validation gates for later explicit approval",
+        "keep feature implementation out of this intake queue item"
+      ],
+      "forbiddenActions": [
+        "implement Dakkshin product behavior",
+        "enable CEP-panel SDK writes",
+        "run live CEP/After Effects validation",
+        "run mutating-live validation",
+        "install packages or change dependencies",
+        "push or create a PR"
+      ],
+      "validationCommands": [
+        "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "stopGates": [
+        "slice-too-broad",
+        "planned-paths-unsafe",
+        "implementation-requested-before-approval",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    }
+  ],
+  "globalStopGates": [
+    "one-feature-item-per-milestone",
+    "no-feature-execution-without-future-per-item-approval",
+    "no-dakkshin-implementation-in-m184",
+    "no-cep-panel-sdk-write",
+    "no-live-cep-ae-without-fresh-explicit-approval",
+    "no-external-provider-openai-cli-planner",
+    "no-mutating-live-validation",
+    "no-package-install",
+    "no-dependency-change",
+    "no-push-by-default",
+    "context-pressure"
+  ],
+  "nextRecommendedState": {
+    "title": "Start Dakkshin intake scope brief only after fresh approval",
+    "type": "local-only-follow-up",
+    "approvalRequiredBeforeExecution": true,
+    "recommendedAction": "Use the feature conveyor only to preview M185 until a future prompt explicitly approves one Dakkshin intake item. Do not implement Dakkshin product behavior from M184.",
+    "blockedWorkWithoutSeparateApproval": [
+      "Dakkshin feature implementation",
+      "CEP-panel SDK write",
+      "live CEP/After Effects validation",
+      "external-provider/OpenAI CLI planner validation",
+      "mutating-live validation",
+      "package install",
+      "dependency change",
+      "push",
+      "PR creation"
+    ]
+  },
+  "machineCheck": {
+    "requiredPackageScripts": {
+      "codex:orchestrator:ae-agent-feature-conveyor": "node orchestrator/run-ae-agent-feature-conveyor.mjs",
+      "codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke": "node scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js",
+      "codex:orchestrator:ae-agent-feature-conveyor:smoke": "node scripts/sdk-ae-agent-feature-conveyor-command-smoke.js"
+    },
+    "requiredReadmeSnippets": [
+      "M184 adds the AE Agent feature conveyor readiness gate",
+      "184-dakkshin-intake-feature-queue.json",
+      "sdk-ae-agent-feature-conveyor-queue.v1",
+      "codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke",
+      "codex:orchestrator:ae-agent-feature-conveyor -- --all",
+      "Dakkshin intake"
+    ],
+    "requiredSourceSnippets": {
+      "orchestrator/run-buffered-acceptance.mjs": [
+        "sdk-ae-agent-feature-conveyor-readiness-smoke.js",
+        "sdk-ae-agent-feature-conveyor-command-smoke.js",
+        "M184 AE Agent feature conveyor readiness smoke failed",
+        "M184 AE Agent feature conveyor command smoke failed"
+      ],
+      "orchestrator/adapters/ae-agent-sdk-policy.mjs": [
+        "sdk-feature-conveyor-review.v1",
+        "184-dakkshin-intake-feature-queue.json",
+        "currentFeatureConveyorPackets"
+      ],
+      "package.json": [
+        "\"codex:orchestrator:ae-agent-feature-conveyor\": \"node orchestrator/run-ae-agent-feature-conveyor.mjs\"",
+        "\"codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke\": \"node scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js\"",
+        "\"codex:orchestrator:ae-agent-feature-conveyor:smoke\": \"node scripts/sdk-ae-agent-feature-conveyor-command-smoke.js\""
+      ]
+    },
+    "requiredFalseBoundaryFlags": [
+      "featureItemsExecuted",
+      "dakkshinFeatureImplemented",
+      "runtimeBehaviorChanged",
+      "panelOrBridgeChanged",
+      "sdkThreadCreated",
+      "networkAccessed",
+      "cepPanelSdkWritesEnabled",
+      "cepPanelPanelJsEditedThroughSdk",
+      "liveCepOrAfterEffectsRun",
+      "externalProviderValidationRun",
+      "mutatingLiveValidationRun",
+      "packageInstallRun",
+      "dependencyChanged",
+      "pushPerformed",
+      "prCreated"
+    ]
+  }
+}

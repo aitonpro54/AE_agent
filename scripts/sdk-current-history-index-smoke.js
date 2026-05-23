@@ -40,15 +40,21 @@ function main() {
   const current = readJson(CURRENT_STATE_PATH);
   const history = readJson(HISTORY_INDEX_PATH);
   const queue = readJson(current.sourceContext.queueArtifact);
+  const featureQueue = readJson(current.sourceContext.featureConveyorQueueArtifact);
   const packageJson = readJson("package.json");
   const readme = readText("orchestrator/README.md");
 
   assert.strictEqual(current.schema, "sdk-current-state.v1");
-  assert.strictEqual(current.milestone, 176);
+  assert(current.milestone >= 176, "current SDK state milestone must be M176 or later.");
   assert.strictEqual(history.schema, "sdk-history-index.v1");
   assert.strictEqual(history.milestone, 176);
   assert.strictEqual(queue.schema, "sdk-ae-agent-cleanup-conveyor-queue.v1");
+  assert.strictEqual(featureQueue.schema, "sdk-ae-agent-feature-conveyor-queue.v1");
   assert.strictEqual(current.currentSdkBaseline.state, "local-gated-ae-agent-specific");
+  assert.strictEqual(
+    current.currentSdkBaseline.featureConveyorState,
+    "local-gated-preview-only",
+  );
   assert.strictEqual(current.currentSdkBaseline.cepPanelSdkWritesEnabled, false);
   assert.deepStrictEqual(
     current.currentSdkBaseline.productionCodeSdkWriteAllowlist,

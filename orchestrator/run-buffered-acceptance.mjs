@@ -1133,6 +1133,34 @@ async function runContractSmoke() {
     `M173 AE Agent cleanup conveyor command smoke failed: ${aeAgentCleanupConveyorCommandOutput.trim()}`,
     failures,
   );
+  const aeAgentFeatureConveyorReadinessSmoke = runNode([
+    path.join("scripts", "sdk-ae-agent-feature-conveyor-readiness-smoke.js"),
+  ]);
+  const aeAgentFeatureConveyorReadinessOutput = `${
+    aeAgentFeatureConveyorReadinessSmoke.stdout ?? ""
+  }\n${aeAgentFeatureConveyorReadinessSmoke.stderr ?? ""}`;
+  assertContract(
+    aeAgentFeatureConveyorReadinessSmoke.status === 0 &&
+      aeAgentFeatureConveyorReadinessOutput.includes(
+        "SDK AE Agent feature conveyor readiness smoke: pass",
+      ),
+    `M184 AE Agent feature conveyor readiness smoke failed: ${aeAgentFeatureConveyorReadinessOutput.trim()}`,
+    failures,
+  );
+  const aeAgentFeatureConveyorCommandSmoke = runNode([
+    path.join("scripts", "sdk-ae-agent-feature-conveyor-command-smoke.js"),
+  ]);
+  const aeAgentFeatureConveyorCommandOutput = `${
+    aeAgentFeatureConveyorCommandSmoke.stdout ?? ""
+  }\n${aeAgentFeatureConveyorCommandSmoke.stderr ?? ""}`;
+  assertContract(
+    aeAgentFeatureConveyorCommandSmoke.status === 0 &&
+      aeAgentFeatureConveyorCommandOutput.includes(
+        "SDK AE Agent feature conveyor command smoke: pass",
+      ),
+    `M184 AE Agent feature conveyor command smoke failed: ${aeAgentFeatureConveyorCommandOutput.trim()}`,
+    failures,
+  );
   const sdkCurrentHistoryIndexSmoke = runNode([
     path.join("scripts", "sdk-current-history-index-smoke.js"),
   ]);
@@ -1679,6 +1707,24 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:ae-agent-feature-conveyor"] ===
+      "node orchestrator/run-ae-agent-feature-conveyor.mjs",
+    "package.json codex:orchestrator:ae-agent-feature-conveyor script is not wired to the M184 AE Agent feature conveyor runner",
+    failures,
+  );
+  assertContract(
+    packageJson.scripts?.["codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke"] ===
+      "node scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js",
+    "package.json codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke script is not wired to the M184 AE Agent feature conveyor readiness smoke",
+    failures,
+  );
+  assertContract(
+    packageJson.scripts?.["codex:orchestrator:ae-agent-feature-conveyor:smoke"] ===
+      "node scripts/sdk-ae-agent-feature-conveyor-command-smoke.js",
+    "package.json codex:orchestrator:ae-agent-feature-conveyor:smoke script is not wired to the M184 AE Agent feature conveyor command smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1915,6 +1961,17 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    readme.includes("M184 adds the AE Agent feature conveyor readiness gate") &&
+      readme.includes("184-dakkshin-intake-feature-queue.json") &&
+      readme.includes("sdk-ae-agent-feature-conveyor-queue.v1") &&
+      readme.includes("npm.cmd run codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke") &&
+      readme.includes("npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --all") &&
+      readme.includes("Dakkshin intake") &&
+      readme.includes("Feature conveyor execution is not approved"),
+    "README does not document the M184 AE Agent feature conveyor readiness gate",
+    failures,
+  );
+  assertContract(
     readme.includes('sandboxMode: "read-only"') &&
       readme.includes('approvalPolicy: "never"') &&
       readme.includes("networkAccessEnabled: false") &&
@@ -2035,6 +2092,8 @@ async function runContractSmoke() {
   console.log("SDK buffered acceptance split review smoke: pass");
   console.log("SDK orchestrator extraction closeout smoke: pass");
   console.log("SDK adapter interface design smoke: pass");
+  console.log("SDK AE Agent feature conveyor readiness smoke: pass");
+  console.log("SDK AE Agent feature conveyor command smoke: pass");
 }
 
 async function printGovernanceReport() {

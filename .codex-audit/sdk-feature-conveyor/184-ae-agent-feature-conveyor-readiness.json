@@ -1,0 +1,70 @@
+{
+  "schema": "sdk-feature-conveyor-readiness.v1",
+  "milestone": 184,
+  "title": "AE Agent Feature Conveyor Readiness",
+  "createdAt": "2026-05-23",
+  "readiness": "ready-for-local-preview",
+  "approvalState": "pending-per-item-explicit-approval",
+  "featureExecutionApproved": false,
+  "sourceReviewPacket": ".codex-audit/sdk-feature-conveyor/184-ae-agent-feature-conveyor-review.json",
+  "queueArtifact": ".codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json",
+  "commandRunner": {
+    "script": "orchestrator/run-ae-agent-feature-conveyor.mjs",
+    "packageScript": "codex:orchestrator:ae-agent-feature-conveyor",
+    "readinessSmokeScript": "scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js",
+    "readinessSmokePackageScript": "codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke",
+    "commandSmokeScript": "scripts/sdk-ae-agent-feature-conveyor-command-smoke.js",
+    "commandSmokePackageScript": "codex:orchestrator:ae-agent-feature-conveyor:smoke",
+    "dryRunCommand": "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --all",
+    "executionCurrentState": "blocked-until-future-per-item-approval",
+    "sdkThreadCreatedByDryRun": false,
+    "aiTurnCreatedByDryRun": false,
+    "approvalPolicy": "never",
+    "sandboxMode": "workspace-write",
+    "webSearchMode": "disabled",
+    "networkAccessEnabled": false,
+    "executionOutputMode": "log-file-by-default",
+    "executionLogDirectory": ".codex-runtime/sdk/feature-conveyor-logs",
+    "terminalTailLinesDefault": 80,
+    "preRunDirtyGitAllowed": false,
+    "postRunCommitAwarePathAllowlist": true,
+    "autoCommit": false,
+    "autoPush": false
+  },
+  "preExecutionGates": [
+    "queue item must be selected explicitly",
+    "queue item status must be queued",
+    "queue item executionApprovalState must be approved",
+    "queue item maxAiTurns must be 1",
+    "exact approval text must be supplied",
+    "git status must be clean before execution",
+    "post-run working-tree and committed paths must stay inside selected item plannedPaths"
+  ],
+  "notReadyFor": [
+    "Dakkshin feature implementation",
+    "CEP-panel SDK write",
+    "live CEP/After Effects validation",
+    "external-provider/OpenAI CLI planner validation",
+    "mutating-live validation",
+    "package install",
+    "dependency change",
+    "push",
+    "PR creation"
+  ],
+  "validationPlan": [
+    "node --check orchestrator/run-ae-agent-feature-conveyor.mjs",
+    "node --check scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js",
+    "node --check scripts/sdk-ae-agent-feature-conveyor-command-smoke.js",
+    "node scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js",
+    "node scripts/sdk-ae-agent-feature-conveyor-command-smoke.js",
+    "npm.cmd run check:rules"
+  ],
+  "rollbackPlan": "Remove the M184 feature conveyor runner and package scripts, then remove this readiness packet and the linked review/governance/queue artifacts.",
+  "machineCheck": {
+    "requiredPackageScripts": {
+      "codex:orchestrator:ae-agent-feature-conveyor": "node orchestrator/run-ae-agent-feature-conveyor.mjs",
+      "codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke": "node scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js",
+      "codex:orchestrator:ae-agent-feature-conveyor:smoke": "node scripts/sdk-ae-agent-feature-conveyor-command-smoke.js"
+    }
+  }
+}
