@@ -17,6 +17,7 @@
 - [x] Milestone 184: AE Agent feature conveyor readiness for gated future Dakkshin intake.
 - [x] Milestone 185: Dakkshin intake scope brief.
 - [x] Milestone 186 approval gate: Dakkshin tool gap map approved for one SDK run, not executed yet.
+- [x] Milestone 186: Dakkshin intake tool gap map.
 
 ## Current Stable Baseline
 
@@ -167,6 +168,15 @@
 - Completed: updated feature conveyor readiness/command smokes and current SDK state docs for the one-approved-item state.
 - The approved run is limited to `.codex-audit/sdk-feature-conveyor/dakkshin-intake/m186-tool-gap-map.md`, `plans/target-app-execplan.md`, and `.codex/handoff.md`; it does not approve Dakkshin product implementation, CEP-panel SDK writes, bridge runtime changes, live CEP/AE, external providers, dependency changes, push, or PR.
 
+### Milestone 186: Dakkshin intake tool gap map
+
+- Completed: added `.codex-audit/sdk-feature-conveyor/dakkshin-intake/m186-tool-gap-map.md`.
+- Completed: mapped known Dakkshin-inspired needs to the current typed bridge catalog using existing repo evidence only.
+- Completed: separated advisory/RAG needs from mutating AE tool needs.
+- Completed: recommended the smallest later slices: advisory help/prompt entries, a narrow camera-layer creation tool, a cautious mask read/write slice, and reliability evidence refinement.
+- Child SDK run could not update `.codex/handoff.md` or create its own commit because of local permission errors, but the parent Codex process completed handoff/commit finalization after the SDK run.
+- No Dakkshin product behavior, CEP panel, bridge runtime, dependencies, package-lock, live CEP/AE validation, external-provider/OpenAI CLI planner validation, mutating-live validation, push, or PR changed.
+
 ## Recent Milestone Summary
 
 - M152: Current production-code SDK write readiness superseded the older single-file claim and is limited to `scripts/provider-api-smoke.js` plus `scripts/provider-contract-smoke.js`.
@@ -191,6 +201,7 @@
 - M184: Added a local-gated feature conveyor for future Dakkshin intake preview with review/readiness/governance evidence, a non-executable intake queue, a fail-closed command runner, and smokes wired into `check:rules`.
 - M185: Completed the first Dakkshin intake artifact as a scope brief only; no product implementation or live/provider/dependency work was performed.
 - M186 approval gate: Approved exactly one SDK execution for the Dakkshin tool gap map queue item and updated smokes to prove all other feature conveyor items remain pending.
+- M186: Completed the local-only Dakkshin tool gap map; it is intake evidence only and does not implement product behavior.
 
 ## Decision Log
 
@@ -200,6 +211,9 @@
 - 2026-05-23: M185 records that a child SDK/CLI workspace-write run was not used because the M184 runner's queue state remains fail-closed; the parent Codex turn completed only the planned intake brief and documentation.
 - 2026-05-23: M186 approval gate treats the user's latest approval as permission for exactly one SDK workspace-write run of `m186-dakkshin-intake-tool-gap-map`; it does not approve Dakkshin product implementation, CEP-panel SDK writes, bridge runtime changes, live CEP/AE, external providers, dependency changes, push, or PR.
 - 2026-05-23: The feature conveyor clean-git preflight remains enforced. Existing unrelated untracked files must be handled separately before running the approved SDK command.
+- 2026-05-23: M186 treats Dakkshin help/prompt and file-bridge notes as advisory/RAG or reliability evidence unless a later slice proves a concrete product need. They must not become raw ExtendScript workflows by default.
+- 2026-05-23: M186 identifies camera-layer creation as the smallest plausible typed-tool product gap if visible AE capability expansion is desired; mask mutation, destructive layer operations, audio-marker generation, and broad comp updates require separate schema and verification design before implementation.
+- 2026-05-23: The M186 child SDK run could not update `.codex/handoff.md` or create a commit because the child process hit local permission errors, including `.git/index.lock` creation failure. The parent Codex process completed the handoff update and commit finalization instead.
 - 2026-05-23: M183 adopts only low-risk capability ideas from `jhd3197/after-effects-automation`: production comp creation plus explicit project folder list/create/move tools. It does not adopt the external eval queue, startup script runner, broad plugin installer, destructive new-project close behavior, or direct CEP `evalScript` string-construction pattern.
 - 2026-05-23: M183 defers transition and template-value batch tools. They are plausible future typed recipes, but require AE Agent-specific target selection, semantic verification, and user-facing review before promotion.
 - 2026-05-23: `architecture-vNext.md` now treats vNext 1.1 as the current architecture baseline for brainstorming and future planning. The accepted direction is safety-aware RAG/retrieval plus explicit promotion, not autonomous external script execution.
@@ -269,6 +283,7 @@
 | `node scripts/m100-protocol-contract-smoke.js` | Required because M182 keeps recovery on server-owned M100 proposals and avoids persisted client proposal tokens. | Passed on 2026-05-22. |
 | Live CEP/AE validation | Requested for M180-M182 when After Effects and the panel are available. | M182 connected pass on 2026-05-22: `get_bridge_status` returned bridge `2.0.0` with `panelConnected:true`; `ping_ae` returned AE `26.2x49` and 263 project items; CDP `inspect` saw installed `AE Agent 2.0.0`; `connector-status-smoke` passed; broad `node scripts/cep-panel-cdp-smoke.js smoke` passed through Local/Ollama plan generation, stored structured plan recovery via bridge proposal, dry run, and read-only run. |
 | M185 AGENTS non-live suite | Required because M185 adds a Dakkshin intake scope brief and updates the active plan. | Passed on 2026-05-23 in `.codex-runtime/validation/m185-non-live-20260523-183139.log`: feature conveyor readiness smoke, `npm.cmd run check:rules`, `git diff --check`, provider contract/API, solution registry/candidate/promotion/retrieval/library, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only smoke, and main smoke. `git diff --check` printed only existing LF-to-CRLF working-copy warnings. |
+| M186 selected feature conveyor validation | Required because M186 adds the Dakkshin tool gap map and updates active plan docs. | Passed on 2026-05-23: `npm.cmd run codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke`, `npm.cmd run check:rules`, and `git diff --check`. `git diff --check` printed only the existing LF-to-CRLF working-copy warning for `plans/target-app-execplan.md`. |
 | SDKThread/network/external-provider/OpenAI CLI planner/mutating-live validation | Forbidden/out of scope for this turn. | Not run. |
 | Package install/dependency change validation | Out of scope because no dependency change is allowed. | Not run. |
 
@@ -301,6 +316,14 @@
 - Passed touched-JavaScript `node --check`, feature conveyor readiness/command smokes, current-history smoke, `npm.cmd run check:rules`, and `git diff --check`.
 - Full approval-gate validation log: `.codex-runtime/validation/m186-approval-gate-20260523-184319.log`.
 - SDK execution, live CEP/AE, external-provider/OpenAI CLI planner validation, mutating-live validation, package install/dependency validation, push, and PR were not run as part of this approval gate.
+
+### Milestone 186
+
+- Added `.codex-audit/sdk-feature-conveyor/dakkshin-intake/m186-tool-gap-map.md`.
+- Updated `plans/target-app-execplan.md`.
+- Child SDK run was blocked from updating `.codex/handoff.md` and creating its own commit by local permission errors; the parent Codex process handled handoff update and commit finalization.
+- Passed feature conveyor readiness smoke, `npm.cmd run check:rules`, and `git diff --check` in the child SDK run; parent final `npm.cmd run check:rules` and `git diff --check` also passed. `git diff --check` printed only the existing LF-to-CRLF working-copy warning for `plans/target-app-execplan.md`.
+- No product code, CEP panel, bridge runtime, dependencies, package-lock, live CEP/AE validation, external-provider/OpenAI CLI planner validation, mutating-live validation, push, or PR changed.
 
 ### Milestone 175
 
