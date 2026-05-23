@@ -94,6 +94,8 @@ const TOOL_ALIASES = {
   getrenderqueuestatus: "get_render_queue_status",
   settransform: "set_layer_transform",
   setlayertransform: "set_layer_transform",
+  createmarker: "add_layer_marker",
+  createlayermarker: "add_layer_marker",
   addmarker: "add_layer_marker",
   addlayermarker: "add_layer_marker"
 };
@@ -267,7 +269,12 @@ function propertyCandidates(field) {
     renderitemindex: ["renderQueueItemIndex"],
     newname: ["newCompName", "name"],
     newcomp: ["newCompName"],
-    newcompname: ["newCompName"]
+    newcompname: ["newCompName"],
+    markercomment: ["comment"],
+    markertext: ["comment"],
+    markerlabel: ["comment"],
+    markertime: ["time"],
+    markerduration: ["duration"]
   };
   return aliases[token] || [];
 }

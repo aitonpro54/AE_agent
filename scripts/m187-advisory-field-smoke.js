@@ -79,6 +79,7 @@ const MUTATING_TOOLS = new Set([
   "apply_keyframe_ease",
   "set_expression",
   "clear_expression",
+  "add_layer_marker",
   "add_comp_to_render_queue",
   "set_render_queue_output",
   "cleanup_test_items",

@@ -26,6 +26,7 @@ function layerInfo(name, overrides = {}) {
     startTime,
     inPoint,
     outPoint,
+    markerCount: overrides.markerCount || 0,
     transform: overrides.transform || null,
     text: overrides.text ? { text: overrides.text, fontSize: overrides.fontSize || null } : null,
     source: overrides.source || null
@@ -142,6 +143,30 @@ function fakeMutationResult(step, state) {
       duplicate,
       layer: duplicate
     }, compName, duplicate);
+  }
+  if (step.tool === "add_layer_marker") {
+    const marker = {
+      keyIndex: state.layerMarkers.length + 1,
+      time: args.time === undefined ? 0 : args.time,
+      comment: args.comment,
+      duration: args.duration || 0
+    };
+    state.layerMarkers.push(marker);
+    const layer = layerInfo("Marker Fixture Layer", {
+      index: args.layerIndex || 1,
+      markerCount: state.layerMarkers.length
+    });
+    return withVerification({
+      comp: { name: compName },
+      layer,
+      marker,
+      markers: {
+        count: state.layerMarkers.length,
+        returned: state.layerMarkers.length,
+        truncated: false,
+        items: state.layerMarkers.slice()
+      }
+    }, compName, layer);
   }
   if (step.tool === "set_comp_work_area") {
     return withVerification({
@@ -330,6 +355,21 @@ function fakeReadBackResult(step, state) {
       items: state.renderQueueItems
     };
   }
+  if (step.tool === "get_layer_details") {
+    return {
+      comp: { name: step.args && step.args.compName || state.lastCompName || "Fixture Comp" },
+      layer: layerInfo("Marker Fixture Layer", {
+        index: step.args && step.args.layerIndex || 1,
+        markerCount: state.layerMarkers.length
+      }),
+      markers: {
+        count: state.layerMarkers.length,
+        returned: state.layerMarkers.length,
+        truncated: false,
+        items: state.layerMarkers.slice()
+      }
+    };
+  }
   return { ok: true };
 }
 
@@ -340,7 +380,8 @@ function fakeRunForPlan(plan) {
     nextRenderQueueIndex: 1,
     lastCompName: "",
     projectItems: [],
-    renderQueueItems: []
+    renderQueueItems: [],
+    layerMarkers: []
   };
   const steps = (plan.steps || []).map((step, index) => {
     const mutatesProject = AGENT_SCENARIO_MUTATING_TOOLS.has(step.tool);
@@ -521,6 +562,39 @@ function assertDuplicateLayerPasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("duplicate_layer:duplicate") >= 0), "duplicate layer check should be reported.");
 }
 
+function assertAddLayerMarkerPasses() {
+  const plan = {
+    summary: "Add one explicit timeline marker to a generated layer and inspect marker read-back.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Add layer marker",
+        tool: "add_layer_marker",
+        args: {
+          compName: "Marker Fixture",
+          layerIndex: 1,
+          time: 1.25,
+          comment: "Marker Fixture Beat",
+          duration: 0.5
+        }
+      },
+      {
+        title: "Read marker layer",
+        tool: "get_layer_details",
+        args: {
+          compName: "Marker Fixture",
+          layerIndex: 1
+        }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `add layer marker semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("add_layer_marker:marker") >= 0), "add layer marker check should be reported.");
+}
+
 function main() {
   const scenarios = agentScenarioPlans("Codex Semantic Fixture", 0);
   const results = scenarios.map(assertScenarioPasses);
@@ -532,6 +606,7 @@ function main() {
   assertCameraLayerPasses();
   assertLayerMaskPasses();
   assertDuplicateLayerPasses();
+  assertAddLayerMarkerPasses();
 
   console.log(JSON.stringify({
     ok: true,

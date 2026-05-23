@@ -2130,6 +2130,15 @@ async function verifyMutationResult(toolName, args, payload) {
         }
       }
 
+      function __codexLayerMarkerCount(layer) {
+        try {
+          var markerProp = layer.property("ADBE Marker");
+          return markerProp ? markerProp.numKeys : 0;
+        } catch (__markerCountError) {
+          return 0;
+        }
+      }
+
       function __codexLayerInfo(layer) {
         if (!layer) return null;
         var transform = layer.property("ADBE Transform Group");
@@ -2149,6 +2158,7 @@ async function verifyMutationResult(toolName, args, payload) {
           startTime: layer.startTime,
           inPoint: layer.inPoint,
           outPoint: layer.outPoint,
+          markerCount: __codexLayerMarkerCount(layer),
           transform: transform ? {
             position: __codexValue(transform.property("ADBE Position")),
             pointOfInterest: __codexValue(transform.property("ADBE Point of Interest")),
@@ -5813,6 +5823,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For timeline trims, work areas, sequencing, splitting, and offsets, use set_comp_work_area, set_layer_time_range, stagger_layers, or split_layers_at_time.",
     "For precomp/source workflows, use precompose_layers, replace_layer_source, deep_duplicate_precomp_sources, rename_layers, and rename_project_items before considering raw ExtendScript.",
     "For explicit single-layer duplication, use duplicate_layer after inspecting the target comp/layer; do not use it for delete operations or selection-only ambiguity.",
+    "For timeline marker workflows, use add_layer_marker only with explicit layer/time/comment evidence; do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
     "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, and fit_layer_to_comp.",
     "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, set_expression, and clear_expression.",
     "For render queue setup, use add_comp_to_render_queue, set_render_queue_output, and get_render_queue_status. Do not start a render.",
@@ -8976,6 +8987,50 @@ async function callTool(name, args) {
         };
       }
 
+      function __codexMarkerInfo(markerProp, keyIndex) {
+        var info = {
+          keyIndex: keyIndex,
+          time: null,
+          comment: "",
+          duration: 0
+        };
+        try { info.time = markerProp.keyTime(keyIndex); } catch (__markerTimeError) {}
+        try {
+          var markerValue = markerProp.keyValue(keyIndex);
+          try { info.comment = markerValue.comment || ""; } catch (__markerCommentError) {}
+          try { info.duration = markerValue.duration || 0; } catch (__markerDurationError) {}
+          try { if (markerValue.chapter) info.chapter = markerValue.chapter; } catch (__markerChapterError) {}
+          try { if (markerValue.url) info.url = markerValue.url; } catch (__markerUrlError) {}
+          try { if (markerValue.frameTarget) info.frameTarget = markerValue.frameTarget; } catch (__markerFrameTargetError) {}
+          try { if (markerValue.cuePointName) info.cuePointName = markerValue.cuePointName; } catch (__markerCuePointError) {}
+          try { if (markerValue.eventCuePoint !== undefined) info.eventCuePoint = markerValue.eventCuePoint; } catch (__markerEventCueError) {}
+          try { if (markerValue.protectedRegion !== undefined) info.protectedRegion = markerValue.protectedRegion; } catch (__markerProtectedError) {}
+        } catch (__markerValueError) {}
+        return info;
+      }
+
+      function __codexLayerMarkers(layer, limit) {
+        var summary = {
+          count: 0,
+          returned: 0,
+          truncated: false,
+          items: []
+        };
+        try {
+          var markerProp = layer.property("ADBE Marker");
+          if (!markerProp) return summary;
+          summary.count = markerProp.numKeys;
+          var effectiveLimit = limit === undefined || limit === null ? 50 : limit;
+          var max = Math.max(0, Math.min(summary.count, effectiveLimit));
+          for (var __mk = 1; __mk <= max; __mk++) {
+            summary.items.push(__codexMarkerInfo(markerProp, __mk));
+          }
+          summary.returned = summary.items.length;
+          summary.truncated = summary.count > summary.returned;
+        } catch (__layerMarkersError) {}
+        return summary;
+      }
+
       function __codexLayerInfo(layer) {
         var info = {
           index: layer.index,
@@ -8999,6 +9054,7 @@ async function callTool(name, args) {
         try { info.adjustmentLayer = !!layer.adjustmentLayer; } catch (__adjustmentLayerError) {}
         try { info.threeDLayer = !!layer.threeDLayer; } catch (__threeDError) {}
         try { info.blendingMode = layer.blendingMode; } catch (__blendError) {}
+        try { info.markerCount = __codexLayerMarkers(layer, 0).count; } catch (__markerCountError) {}
         try { info.parent = layer.parent ? __codexLayerInfo(layer.parent) : null; } catch (__parentError) {}
         try { info.source = layer.source ? __codexItemReference(layer.source) : null; } catch (__sourceError) {}
 
@@ -10378,6 +10434,8 @@ async function callTool(name, args) {
         }
       } catch (__masksError) {}
 
+      var markers = __codexLayerMarkers(layer, 50);
+
       var propertyTree = [];
       var propertyState = { count: 0, max: propertyLimit };
       if (includeProperties) {
@@ -10402,6 +10460,7 @@ async function callTool(name, args) {
         text: text,
         effects: effects,
         masks: masks,
+        markers: markers,
         propertyTree: propertyTree,
         propertyTreeTruncated: propertyState.count >= propertyState.max
       };
@@ -12943,6 +13002,7 @@ async function callTool(name, args) {
     const duration = optionalNumber(args, "duration", null);
 
     if (!comment) return toolResult("comment is required.", true);
+    if (time !== null && time < 0) return toolResult("time must be 0 or greater.", true);
     if (duration !== null && duration < 0) return toolResult("duration must be 0 or greater.", true);
 
     const result = await runExtendScriptBody(`
@@ -12958,18 +13018,31 @@ async function callTool(name, args) {
       app.beginUndoGroup("Codex Add Layer Marker");
       var markerValue = new MarkerValue(markerComment);
       if (markerDuration !== null) markerValue.duration = markerDuration;
-      layer.property("ADBE Marker").setValueAtTime(markerTime, markerValue);
+      var markerProp = layer.property("ADBE Marker");
+      markerProp.setValueAtTime(markerTime, markerValue);
+      var markerInfo = null;
+      try {
+        var markerKeyIndex = markerProp.nearestKeyIndex(markerTime);
+        if (markerKeyIndex > 0 && Math.abs(markerProp.keyTime(markerKeyIndex) - markerTime) < 0.001) {
+          markerInfo = __codexMarkerInfo(markerProp, markerKeyIndex);
+        }
+      } catch (__markerReadBackError) {}
+      if (!markerInfo) {
+        markerInfo = {
+          keyIndex: null,
+          time: markerTime,
+          comment: markerComment,
+          duration: markerDuration || 0
+        };
+      }
       var response = {
         comp: {
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name
         },
         layer: __codexLayerInfo(layer),
-        marker: {
-          time: markerTime,
-          comment: markerComment,
-          duration: markerDuration || 0
-        }
+        marker: markerInfo,
+        markers: __codexLayerMarkers(layer, 50)
       };
       app.endUndoGroup();
       return response;

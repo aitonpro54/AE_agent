@@ -21,6 +21,7 @@ const MUTATING_TOOLS = new Set([
   "set_expression",
   "clear_expression",
   "duplicate_layer",
+  "add_layer_marker",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
   "precompose_layers",
@@ -120,6 +121,44 @@ function addOutputPath(target, value, source) {
   if (source) target.outputPathSources[text].push(source);
 }
 
+function markerSignature(marker) {
+  if (!marker) return "";
+  const comment = compactText(marker.comment, 180);
+  const time = numberValue(marker.time);
+  const duration = numberValue(marker.duration);
+  return [
+    comment,
+    time === null ? "" : time.toFixed(3),
+    duration === null ? "" : duration.toFixed(3)
+  ].join("\u0001");
+}
+
+function addMarker(target, value, source) {
+  if (!isPlainObject(value)) return;
+  const comment = String(value.comment === undefined || value.comment === null ? "" : value.comment);
+  if (!comment && !hasOwn(value, "time")) return;
+  const marker = {
+    comment,
+    time: numberValue(value.time),
+    duration: numberValue(value.duration) || 0,
+    source: source || "observed marker"
+  };
+  const signature = markerSignature(marker);
+  if (target.markerSignatures.has(signature)) return;
+  target.markerSignatures.add(signature);
+  target.markers.push(marker);
+}
+
+function collectMarkerPayload(payload, evidence, source) {
+  if (!isPlainObject(payload)) return;
+  if (isPlainObject(payload.marker)) addMarker(evidence, payload.marker, source);
+  if (Array.isArray(payload.markers)) {
+    for (const marker of payload.markers) addMarker(evidence, marker, source);
+  } else if (isPlainObject(payload.markers) && Array.isArray(payload.markers.items)) {
+    for (const marker of payload.markers.items) addMarker(evidence, marker, source);
+  }
+}
+
 function collectPayloadEvidence(payload, evidence, source, depth = 0) {
   if (!payload || depth > 6) return;
   if (Array.isArray(payload)) {
@@ -133,6 +172,7 @@ function collectPayloadEvidence(payload, evidence, source, depth = 0) {
   if (typeof payload.after === "string") addName(evidence, payload.after, source);
   if (typeof payload.file === "string") addOutputPath(evidence, payload.file, source);
   if (typeof payload.outputPath === "string") addOutputPath(evidence, payload.outputPath, source);
+  collectMarkerPayload(payload, evidence, source);
 
   for (const key of Object.keys(payload)) {
     collectPayloadEvidence(payload[key], evidence, source, depth + 1);
@@ -162,7 +202,9 @@ function collectReadBackEvidence(steps, afterOrder) {
     names: new Set(),
     nameSources: {},
     outputPaths: new Set(),
-    outputPathSources: {}
+    outputPathSources: {},
+    markers: [],
+    markerSignatures: new Set()
   };
 
   for (const step of readBackSteps) {
@@ -177,7 +219,9 @@ function collectAllEvidence(steps) {
     names: new Set(),
     nameSources: {},
     outputPaths: new Set(),
-    outputPathSources: {}
+    outputPathSources: {},
+    markers: [],
+    markerSignatures: new Set()
   };
   for (const step of steps) {
     if (step && step.status === "completed") {
@@ -205,6 +249,37 @@ function observedOutputEvidence(evidence, expectedPath) {
     }
   }
   return null;
+}
+
+function markerMatchesArgs(marker, args) {
+  if (!marker || !args) return false;
+  if (!sameString(marker.comment, args.comment)) return false;
+  if (hasOwn(args, "time") && !nearlyEqual(marker.time, args.time)) return false;
+  if (hasOwn(args, "duration") && !nearlyEqual(marker.duration, args.duration)) return false;
+  return true;
+}
+
+function observedMarkerEvidence(evidence, args) {
+  if (!evidence || !Array.isArray(evidence.markers)) return null;
+  for (const marker of evidence.markers) {
+    if (markerMatchesArgs(marker, args)) return marker.source || "observed marker";
+  }
+  return null;
+}
+
+function markerText(marker) {
+  if (!marker) return "missing";
+  const parts = [`comment: ${marker.comment || ""}`];
+  if (marker.time !== null && marker.time !== undefined) parts.push(`time: ${marker.time}`);
+  if (marker.duration !== null && marker.duration !== undefined) parts.push(`duration: ${marker.duration}`);
+  return parts.join(", ");
+}
+
+function expectedMarkerText(args) {
+  const parts = [`comment: ${args.comment || ""}`];
+  if (hasOwn(args, "time")) parts.push(`time: ${args.time}`);
+  if (hasOwn(args, "duration")) parts.push(`duration: ${args.duration}`);
+  return parts.join(", ");
 }
 
 function pushCheck(checks, fields) {
@@ -621,6 +696,20 @@ function verifyStep(checks, step, evidence) {
       observed: `source=${payload.source && payload.source.name || "missing"}, duplicate=${duplicate.name || "missing"}`,
       passed: Boolean(payload.source) && Boolean(duplicate && duplicate.index),
       evidence: stepLabel(step)
+    });
+    return;
+  }
+
+  if (step.tool === "add_layer_marker") {
+    const marker = payload.marker || {};
+    const readBackEvidence = observedMarkerEvidence(evidence.readBack, args);
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:marker`,
+      title: "Layer marker comment and timing match request",
+      expected: expectedMarkerText(args),
+      observed: markerText(marker),
+      passed: markerMatchesArgs(marker, args) && Boolean(readBackEvidence),
+      evidence: readBackEvidence || "No matching marker read-back after mutation."
     });
     return;
   }

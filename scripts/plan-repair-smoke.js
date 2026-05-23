@@ -212,6 +212,25 @@ async function main() {
     assert.strictEqual(duplicateLayerRepair.repairedPlan.steps[0].args.sourceName, "Repair Smoke Source");
     assert.strictEqual(duplicateLayerRepair.repairedPlan.steps[0].args.name, "Repair Smoke Copy");
 
+    const markerRepair = await validatePlan("layer-marker-alias", {
+      summary: "Add one explicit marker to the generated layer.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Create marker", tool: "createLayerMarker", args: { compName: "Repair Smoke Comp", layer: 1, markerText: "Repair Smoke Marker", markerTime: 1.25, markerDuration: 0.5 } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["add_layer_marker"],
+      actionTypes: ["tool-alias", "arg-alias"]
+    });
+    assert.strictEqual(markerRepair.repairedPlan.steps[0].args.layerIndex, 1);
+    assert.strictEqual(markerRepair.repairedPlan.steps[0].args.comment, "Repair Smoke Marker");
+    assert.strictEqual(markerRepair.repairedPlan.steps[0].args.time, 1.25);
+    assert.strictEqual(markerRepair.repairedPlan.steps[0].args.duration, 0.5);
+
     const bindingAliasRepair = await validatePlan("binding-alias", {
       summary: "Set selected layers 3D using common aliases.",
       risk: "medium",
