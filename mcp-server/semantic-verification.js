@@ -6,6 +6,7 @@ const MUTATING_TOOLS = new Set([
   "create_test_comp",
   "create_solid_layer",
   "create_text_layer",
+  "create_camera_layer",
   "set_comp_work_area",
   "set_layer_time_range",
   "stagger_layers",
@@ -253,6 +254,21 @@ function checkNumberFields(checks, step, fields, payload, title) {
   });
 }
 
+function checkNumberArrayField(checks, step, arg, observedValue, title) {
+  if (!hasOwn(step.args, arg)) return;
+  const expected = Array.isArray(step.args[arg]) ? step.args[arg] : [];
+  const observed = Array.isArray(observedValue) ? observedValue.slice(0, expected.length) : [];
+  const passed = expected.length > 0 && expected.every((value, index) => nearlyEqual(value, observed[index]));
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:${arg}`,
+    title,
+    expected: expected.join(","),
+    observed: observed.length ? observed.join(",") : "missing",
+    passed,
+    evidence: passed ? stepLabel(step) : `${arg} read-back did not match requested values.`
+  });
+}
+
 function arrayLength(value) {
   return Array.isArray(value) ? value.length : 0;
 }
@@ -418,6 +434,16 @@ function verifyStep(checks, step, evidence) {
         evidence: stepLabel(step)
       });
     }
+    return;
+  }
+
+  if (step.tool === "create_camera_layer") {
+    checkName(checks, step, args.name, payload.layer && payload.layer.name, evidence, "Created camera layer name matches request");
+    checkNumberArrayField(checks, step, "position", payload.camera && payload.camera.position, "Created camera position matches request");
+    checkNumberArrayField(checks, step, "pointOfInterest", payload.camera && payload.camera.pointOfInterest, "Created camera point of interest matches request");
+    checkNumberFields(checks, step, [
+      { arg: "zoom", label: "zoom", read: (value) => value && value.camera && value.camera.zoom }
+    ], payload, "Created camera options match request");
     return;
   }
 

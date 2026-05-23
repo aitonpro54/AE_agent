@@ -92,6 +92,28 @@ function fakeMutationResult(step, state) {
     });
     return withVerification({ comp: { name: compName }, layer, text: args.text }, compName, layer);
   }
+  if (step.tool === "create_camera_layer") {
+    const layer = layerInfo(args.name, {
+      index: state.nextLayerIndex++,
+      matchName: "ADBE Camera Layer",
+      startTime: args.startTime || 0,
+      inPoint: args.startTime || 0,
+      outPoint: (args.startTime || 0) + (args.duration || 1),
+      transform: {
+        position: args.position || [320, 180, -900],
+        pointOfInterest: args.pointOfInterest || [320, 180, 0]
+      }
+    });
+    return withVerification({
+      comp: { name: compName },
+      layer,
+      camera: {
+        position: args.position || [320, 180, -900],
+        pointOfInterest: args.pointOfInterest || [320, 180, 0],
+        zoom: args.zoom || 600
+      }
+    }, compName, layer);
+  }
   if (step.tool === "set_comp_work_area") {
     return withVerification({
       comp: { name: compName },
@@ -380,6 +402,36 @@ function assertDeepDuplicatePasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("deep_duplicate_precomp_sources:duplicate") >= 0), "deep duplicate check should be reported.");
 }
 
+function assertCameraLayerPasses() {
+  const plan = {
+    summary: "Create a generated camera layer and inspect the active comp.",
+    risk: "low",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Create generated camera",
+        tool: "create_camera_layer",
+        args: {
+          compName: "Camera Fixture",
+          name: "Camera Fixture Camera",
+          pointOfInterest: [320, 180, 0],
+          position: [320, 180, -900],
+          zoom: 600
+        }
+      },
+      {
+        title: "Read active comp",
+        tool: "get_active_comp",
+        args: {}
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `camera layer semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("create_camera_layer:numbers") >= 0), "camera zoom check should be reported.");
+}
+
 function main() {
   const scenarios = agentScenarioPlans("Codex Semantic Fixture", 0);
   const results = scenarios.map(assertScenarioPasses);
@@ -388,6 +440,7 @@ function main() {
   assertMismatchNeedsReview(layoutScenario);
   assertMissingReadBackNeedsReview(timingScenario);
   assertDeepDuplicatePasses();
+  assertCameraLayerPasses();
 
   console.log(JSON.stringify({
     ok: true,

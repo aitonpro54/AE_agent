@@ -55,6 +55,7 @@ const MUTATING_TOOLS = new Set([
   "create_solid_layer",
   "create_null_layer",
   "create_adjustment_layer",
+  "create_camera_layer",
   "add_project_item_to_comp",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",

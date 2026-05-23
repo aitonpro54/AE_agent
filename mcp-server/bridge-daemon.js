@@ -843,6 +843,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "create_solid_layer",
   "create_null_layer",
   "create_adjustment_layer",
+  "create_camera_layer",
   "add_project_item_to_comp",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
@@ -2128,7 +2129,9 @@ async function verifyMutationResult(toolName, args, payload) {
           outPoint: layer.outPoint,
           transform: transform ? {
             position: __codexValue(transform.property("ADBE Position")),
+            pointOfInterest: __codexValue(transform.property("ADBE Point of Interest")),
             scale: __codexValue(transform.property("ADBE Scale")),
+            orientation: __codexValue(transform.property("ADBE Orientation")),
             anchorPoint: __codexValue(transform.property("ADBE Anchor Point")),
             opacity: __codexValue(transform.property("ADBE Opacity")),
             rotation: __codexValue(transform.property("ADBE Rotate Z"))
@@ -3925,6 +3928,7 @@ const PLANNING_TOOL_NAMES = [
   "create_solid_layer",
   "create_null_layer",
   "create_adjustment_layer",
+  "create_camera_layer",
   "add_project_item_to_comp",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
@@ -5784,7 +5788,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For requests to align selected layers, clips, or precomps to the current time indicator, use align_layers_to_time with no layerIndices and omit targetTime so it uses the active comp CTI.",
     "For timeline trims, work areas, sequencing, splitting, and offsets, use set_comp_work_area, set_layer_time_range, stagger_layers, or split_layers_at_time.",
     "For precomp/source workflows, use precompose_layers, replace_layer_source, deep_duplicate_precomp_sources, rename_layers, and rename_project_items before considering raw ExtendScript.",
-    "For text, shape, and fitting workflows, use update_text_layer, create_shape_layer, and fit_layer_to_comp.",
+    "For camera, text, shape, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, and fit_layer_to_comp.",
     "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, set_expression, and clear_expression.",
     "For render queue setup, use add_comp_to_render_queue, set_render_queue_output, and get_render_queue_status. Do not start a render.",
     "For requests about selected layers, inspect with get_active_comp or get_selected_layers first. A later layerIndex field may use {{selectedLayerIndices}} to target the selected layers.",
@@ -7913,6 +7917,49 @@ const tools = [
         pixelAspect: {
           type: "number",
           description: "Optional pixel aspect ratio. Defaults to comp pixel aspect."
+        },
+        startTime: {
+          type: "number",
+          description: "Optional layer start time in seconds."
+        },
+        duration: {
+          type: "number",
+          description: "Optional layer duration in seconds. Defaults to the composition duration."
+        }
+      }
+    }
+  },
+  {
+    name: "create_camera_layer",
+    description: "Create a camera layer in the active comp or a comp by project item index.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        name: {
+          type: "string",
+          description: "Optional camera layer name. Defaults to Codex Camera."
+        },
+        pointOfInterest: {
+          type: "array",
+          items: { type: "number" },
+          description: "Optional [x, y] or [x, y, z] point of interest. Defaults to comp center."
+        },
+        position: {
+          type: "array",
+          items: { type: "number" },
+          description: "Optional [x, y, z] camera position. Defaults to After Effects camera placement."
+        },
+        zoom: {
+          type: "number",
+          description: "Optional camera zoom in pixels. Must be greater than 0."
         },
         startTime: {
           type: "number",
@@ -10126,12 +10173,28 @@ async function callTool(name, args) {
         var transformGroup = layer.property("ADBE Transform Group");
         transform = {
           anchorPoint: __codexReadProperty(transformGroup, "ADBE Anchor Point"),
+          pointOfInterest: __codexReadProperty(transformGroup, "ADBE Point of Interest"),
           position: __codexReadProperty(transformGroup, "ADBE Position"),
           scale: __codexReadProperty(transformGroup, "ADBE Scale"),
+          orientation: __codexReadProperty(transformGroup, "ADBE Orientation"),
           rotation: __codexReadProperty(transformGroup, "ADBE Rotate Z"),
           opacity: __codexReadProperty(transformGroup, "ADBE Opacity")
         };
       } catch (__transformError) {}
+
+      var camera = null;
+      try {
+        var cameraGroup = layer.property("ADBE Camera Options Group");
+        if (cameraGroup) {
+          camera = {
+            zoom: __codexReadProperty(cameraGroup, "ADBE Camera Zoom"),
+            depthOfField: __codexReadProperty(cameraGroup, "ADBE Camera Depth of Field"),
+            focusDistance: __codexReadProperty(cameraGroup, "ADBE Camera Focus Distance"),
+            aperture: __codexReadProperty(cameraGroup, "ADBE Camera Aperture"),
+            blurLevel: __codexReadProperty(cameraGroup, "ADBE Camera Blur Level")
+          };
+        }
+      } catch (__cameraError) {}
 
       var text = null;
       try {
@@ -10192,6 +10255,7 @@ async function callTool(name, args) {
         },
         layer: __codexLayerInfo(layer),
         transform: transform,
+        camera: camera,
         text: text,
         effects: effects,
         masks: masks,
@@ -10619,6 +10683,99 @@ async function callTool(name, args) {
           width: width,
           height: height,
           pixelAspect: pixelAspect
+        }
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "create_camera_layer") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerName = optionalString(args, "name", "Codex Camera");
+    const pointOfInterest = optionalNumberArray(args, "pointOfInterest", null, 2, 3);
+    const position = optionalNumberArray(args, "position", null, 3, 3);
+    const zoom = optionalNumber(args, "zoom", null);
+    const startTime = optionalNumber(args, "startTime", null);
+    const duration = optionalNumber(args, "duration", null);
+    const coordinateLimit = 1000000;
+
+    if (pointOfInterest && pointOfInterest.some((value) => Math.abs(value) > coordinateLimit)) {
+      return toolResult("pointOfInterest values must be between -1000000 and 1000000.", true);
+    }
+    if (position && position.some((value) => Math.abs(value) > coordinateLimit)) {
+      return toolResult("position values must be between -1000000 and 1000000.", true);
+    }
+    if (zoom !== null && zoom <= 0) return toolResult("zoom must be greater than 0.", true);
+    if (duration !== null && duration <= 0) return toolResult("duration must be greater than 0.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layerName = ${aeLiteral(layerName)};
+      var requestedPointOfInterest = ${pointOfInterest ? aeLiteral(pointOfInterest) : "null"};
+      var requestedPosition = ${position ? aeLiteral(position) : "null"};
+      var requestedZoom = ${zoom === null ? "null" : zoom};
+      var requestedStartTime = ${startTime === null ? "null" : startTime};
+      var requestedDuration = ${duration === null ? "null" : duration};
+
+      function __codexCameraPoint3(value) {
+        if (!value) return null;
+        return value.length >= 3 ? value : [value[0], value[1], 0];
+      }
+
+      function __codexReadValue(prop) {
+        try {
+          if (!prop) return null;
+          var value = prop.value;
+          if (value instanceof Array) {
+            var copy = [];
+            for (var __v = 0; __v < value.length; __v++) copy.push(value[__v]);
+            return copy;
+          }
+          return value;
+        } catch (__readValueError) {
+          return null;
+        }
+      }
+
+      app.beginUndoGroup("Codex Create Camera Layer");
+      var centerPoint = requestedPointOfInterest ? [requestedPointOfInterest[0], requestedPointOfInterest[1]] : [comp.width / 2, comp.height / 2];
+      var layer = comp.layers.addCamera(layerName || "Codex Camera", centerPoint);
+      if (layerName) layer.name = layerName;
+
+      var transform = layer.property("ADBE Transform Group");
+      if (requestedPointOfInterest !== null) {
+        var pointProp = transform.property("ADBE Point of Interest");
+        if (pointProp) pointProp.setValue(__codexCameraPoint3(requestedPointOfInterest));
+      }
+      if (requestedPosition !== null) transform.property("ADBE Position").setValue(requestedPosition);
+
+      var cameraOptions = layer.property("ADBE Camera Options Group");
+      if (requestedZoom !== null && cameraOptions) {
+        var zoomProp = cameraOptions.property("ADBE Camera Zoom");
+        if (zoomProp) zoomProp.setValue(requestedZoom);
+      }
+      if (requestedStartTime !== null) {
+        layer.startTime = requestedStartTime;
+        layer.inPoint = requestedStartTime;
+      }
+      if (requestedDuration !== null) {
+        var baseTime = requestedStartTime !== null ? requestedStartTime : layer.inPoint;
+        layer.outPoint = Math.min(baseTime + requestedDuration, comp.duration);
+      }
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name
+        },
+        layer: __codexLayerInfo(layer),
+        camera: {
+          pointOfInterest: transform ? __codexReadValue(transform.property("ADBE Point of Interest")) : null,
+          position: transform ? __codexReadValue(transform.property("ADBE Position")) : null,
+          zoom: cameraOptions ? __codexReadValue(cameraOptions.property("ADBE Camera Zoom")) : null
         }
       };
       app.endUndoGroup();

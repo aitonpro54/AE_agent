@@ -284,6 +284,7 @@ function assertReadOnlyTools(tools) {
     "create_solid_layer",
     "create_null_layer",
     "create_adjustment_layer",
+    "create_camera_layer",
     "create_shape_layer",
     "import_footage",
     "add_project_item_to_comp",

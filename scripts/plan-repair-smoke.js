@@ -161,6 +161,21 @@ async function main() {
     });
     assert.strictEqual(textRepair.repairedPlan.steps[1].resultBindings.layerIndex, "{{layerIndex}}");
 
+    await validatePlan("camera-layer-alias", {
+      summary: "Create a simple generated camera.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Add camera", tool: "addCameraLayer", args: { name: "Repair Smoke Camera", pointOfInterest: [320, 180, 0], position: [320, 180, -900], zoom: 600 } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["create_camera_layer"],
+      actionTypes: ["tool-alias"]
+    });
+
     const bindingAliasRepair = await validatePlan("binding-alias", {
       summary: "Set selected layers 3D using common aliases.",
       risk: "medium",

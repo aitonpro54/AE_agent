@@ -20,6 +20,7 @@
 - [x] Milestone 186: Dakkshin intake tool gap map.
 - [x] Milestone 187: Dakkshin advisory solution-library entries.
 - [x] Milestone 188: Staged live conveyor validation for M187 advisory recipes.
+- [x] Milestone 189: Camera layer typed bridge tool.
 
 ## Current Stable Baseline
 
@@ -36,6 +37,7 @@
 - The panel appends a compact resource report after completed chat/plan/run/dev-request operations with local five-hour task-window usage, estimated current panel context, and provider token usage when the provider returned it.
 - Project-changing tools use idempotency, optional checkpoints, edit-session protection, and post-mutation verification.
 - The typed bridge catalog includes production project-structure tools: `create_comp`, `create_project_folder`, `list_project_folder_items`, and `move_project_items_to_folder`.
+- Common layer creation now includes a narrow `create_camera_layer` typed tool alongside text, solid, null, adjustment, shape, and project-item layer creation. Camera creation is M100-gated, supports explicit comp target or active comp, generated/default naming, point-of-interest, position, zoom, timing, idempotency/checkpoint fields, and read-back verification.
 - New project-structure mutations are M100-gated and inherit checkpoint/idempotency/post-verification safety fields; the folder listing tool remains read-only.
 - Precomp/source workflows include `deep_duplicate_precomp_sources` for recursively duplicating a selected precomp layer's source comp and nested comp/footage project items without raw ExtendScript in Agent plans.
 - Raw ExtendScript remains available as an escape hatch, but normal product workflows should use typed bridge tools.
@@ -198,6 +200,16 @@
 - Live acceptance attempt on 2026-05-23 failed at the read-only preflight: `live-cep-inspect` could not connect to CEP CDP at `127.0.0.1:8870` (`ECONNREFUSED`). The generated-only mutating stage did not run.
 - No external-provider/OpenAI CLI planner validation, package/dependency changes, mask/destructive/audio/broad comp changes, SDK workspace-write execution, push, or PR were added by this milestone.
 
+### Milestone 189: Camera layer typed bridge tool
+
+- Completed: added `create_camera_layer` as the next narrow Dakkshin-inspired typed bridge capability from the M186 gap map.
+- Completed: kept the scope to one camera layer only: explicit comp target or active comp, optional generated/default name, point-of-interest, position, zoom, start time, and duration.
+- Completed: registered the tool as mutating/planning-visible so it inherits M100 proposal blocking, idempotency, optional checkpoint, edit-session protection, and post-mutation verification.
+- Completed: extended `get_layer_details` and mutation verification read-back with camera-friendly transform/camera fields.
+- Completed: added plan-repair aliases, semantic verification checks, ChatGPT connector read-only filtering, solution-promotion known/mutating tool lists, M187 field-smoke mutating classification, and main smoke catalog coverage.
+- Live AE/CDP validation was not run because `node scripts/cep-panel-cdp-smoke.js inspect` still cannot connect to `127.0.0.1:8870`.
+- No CEP panel UI, external-provider/OpenAI CLI planner validation, package/dependency changes, mask/destructive/audio/broad comp changes, SDK workspace-write execution, push, or PR were added by this milestone.
+
 ## Recent Milestone Summary
 
 - M152: Current production-code SDK write readiness superseded the older single-file claim and is limited to `scripts/provider-api-smoke.js` plus `scripts/provider-contract-smoke.js`.
@@ -225,9 +237,12 @@
 - M186: Completed the local-only Dakkshin tool gap map; it is intake evidence only and does not implement product behavior.
 - M187: Implemented the smallest advisory product slice from M186 by adding typed-plan Solution Library entries for basic comp creation, safe effect addition, and selected-layer animation.
 - M188: Added a staged fail-closed local live-validation lane to the feature conveyor for M187 advisory recipes, with read-only live checks, generated-only mutating field smoke, and mutating-live-local reliability scenarios kept separate from SDK workspace-write and external-provider/OpenAI CLI planner validation.
+- M189: Added a narrow M100-gated `create_camera_layer` typed bridge tool with camera read-back, plan-repair aliases, semantic verification, and local smoke coverage.
 
 ## Decision Log
 
+- 2026-05-23: M189 implements the camera-layer typed tool as the next smallest visible AE capability from the M186 gap map. It intentionally does not bundle lights, camera rigs, masks, destructive layer operations, audio workflows, broad comp updates, CEP panel UI, or live mutating validation.
+- 2026-05-23: `create_camera_layer` is a normal mutating bridge tool, not a raw ExtendScript workaround. It is planning-visible, M100-gated, idempotency/checkpoint aware, and verified by read-back through the bridge.
 - 2026-05-23: M188 treats the user's live-validation approval as separate from SDK workspace-write approval. `m188-dakkshin-advisory-field-validation` uses `--validate-live`, creates no SDKThread/Codex child run, and keeps `executionApprovalState:"pending-explicit-approval"` with `maxAiTurns:0` for SDK execution.
 - 2026-05-23: M188 mutating validation is generated-only and fail-closed: AE, bridge, CEP panel, and saved project must already be available; the runner does not auto-launch AE or treat unavailable live context as a green skip.
 - 2026-05-23: M188 excludes external-provider/OpenAI CLI planner validation, package/dependency changes, PR creation, and mask/destructive/audio/broad comp changes. The new `mutating-live-local` reliability scope includes only local mutating checks.
@@ -315,6 +330,7 @@
 | M187 AGENTS non-live suite | Required because M187 adds Solution Library recipes, updates registry retrieval smoke coverage, and updates the active plan. | Passed on 2026-05-23 in `.codex-runtime/validation/m187-non-live-20260523-191353.log`: touched JS `node --check`, `npm.cmd run check:rules`, `git diff --check`, provider contract/API, solution registry/candidate/promotion/retrieval/library, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only smoke, and main smoke. Final `git diff --check` printed only LF-to-CRLF working-copy warnings for touched text files. |
 | M188 static/local suite | Required because M188 adds a new live-validation command surface, M187 field smoke, reliability scope, and feature conveyor queue item. | Passed on 2026-05-23: touched JS `node --check`; `node scripts/m187-advisory-field-smoke.js both --mock-bridge --dry-run --json`; `node scripts/reliability-validation-suite.js mutating-live-local --dry-run --allow-mutating-live`; M188 conveyor live dry-run with exact approval text; feature conveyor readiness/command smokes; current/history smoke; reliability suite smoke; `npm.cmd run check:rules`; `git diff --check`; provider contract/API; solution registry/candidate/promotion/retrieval/library; project intent memory; plan classification/repair; semantic verification; ChatGPT connector; prompt optimization; bridge-only smoke; and main smoke. `git diff --check` printed only LF-to-CRLF working-copy warnings for touched text files. |
 | M188 live acceptance | Required only when AE, bridge, CEP panel, and a saved project are already available and the exact live approval command is intentionally run from a clean tree. | Failed on 2026-05-23 at the first read-only preflight check. Command: `npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item m188-dakkshin-advisory-field-validation --validate-live --stage both --allow-mutating-live --approval-text "I approve one M188 staged live AE validation run for M187 advisory recipes using generated-only mutations"`. `live-cep-inspect` returned `connect ECONNREFUSED 127.0.0.1:8870`, so no mutating stage ran. Live report: `.codex-runtime/sdk/feature-conveyor-live-reports/2026-05-23T15-02-33-044Z-m188-dakkshin-advisory-field-validation-both.json`; child log: `.codex-runtime/sdk/feature-conveyor-live-logs/2026-05-23T15-02-33-039Z-m188-dakkshin-advisory-field-validation-both.read-only-live-reliability.log`; reliability report: `logs/reliability-validation/2026-05-23T15-02-33.029Z-read-only-live.json`. |
+| M189 AGENTS non-live suite | Required because M189 adds a new mutating bridge tool, planning/repair/semantic verification coverage, and local smoke assertions. | Passed on 2026-05-23: touched JS `node --check`; `node scripts/agent-planner-corpus-smoke.js`; `node scripts/solution-promotion-smoke.js`; `node scripts/m187-advisory-field-smoke.js both --mock-bridge --dry-run --json`; `npm.cmd run check:rules`; `git diff --check`; provider contract/API; solution registry/candidate/promotion/retrieval/library; project intent memory; plan classification/repair; semantic verification; reliability validation suite smoke; ChatGPT connector; prompt optimization; bridge-only smoke; and main smoke. `git diff --check` printed only LF-to-CRLF working-copy warnings for touched files. Live CEP/CDP availability check still failed with `connect ECONNREFUSED 127.0.0.1:8870`, so live AE validation was not run. |
 | SDKThread/network/external-provider/OpenAI CLI planner/non-M188 mutating-live validation | Forbidden/out of scope for this turn. | Not run. |
 | Package install/dependency change validation | Out of scope because no dependency change is allowed. | Not run. |
 
@@ -375,6 +391,16 @@
 - Updated `scripts/reliability-validation-suite.js` and its smoke so `mutating-live-local` includes only protected local mutating scenarios and excludes external-provider/OpenAI CLI planner checks.
 - Updated feature conveyor readiness/command smokes, current SDK state, current/history smoke, and `orchestrator/README.md` for the M188 command surface.
 - Passed the M188 static/local validation suite recorded in the validation matrix. Actual live acceptance was attempted on 2026-05-23 and failed at read-only CEP inspection because CDP on `127.0.0.1:8870` refused the connection; mutating validation did not run.
+
+### Milestone 189
+
+- Added `create_camera_layer` to `mcp-server/bridge-daemon.js` with comp targeting, optional layer name, point-of-interest, position, zoom, start time, duration, coordinate/zoom validation, undo grouping, and response read-back.
+- Registered `create_camera_layer` in mutating/planning tool lists so direct execution remains M100-blocked while Agent plans can validate and dry-run it through normal protected run gates.
+- Extended `get_layer_details` and mutation verification read-back with camera point-of-interest, orientation, and camera option fields.
+- Added repair aliases for common camera tool names in `mcp-server/plan-repair.js`.
+- Added semantic verification for camera layer name, position, point-of-interest, and zoom.
+- Updated local smoke/helper coverage in `scripts/smoke-test.js`, `scripts/semantic-verification-smoke.js`, `scripts/plan-repair-smoke.js`, `scripts/chatgpt-connector-smoke.js`, `scripts/agent-scenario-fixtures.js`, `scripts/m187-advisory-field-smoke.js`, and `scripts/solution-promotion-helper.js`.
+- Passed the M189 AGENTS non-live suite recorded in the validation matrix. Live AE/CDP validation was blocked because CEP CDP on `127.0.0.1:8870` was unavailable.
 
 ### Milestone 175
 

@@ -7,6 +7,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "create_test_comp",
   "create_solid_layer",
   "create_text_layer",
+  "create_camera_layer",
   "set_comp_work_area",
   "set_layer_time_range",
   "stagger_layers",

@@ -29,6 +29,10 @@ const TOOL_ALIASES = {
   createshape: "create_shape_layer",
   addshapelayer: "create_shape_layer",
   createshapelayer: "create_shape_layer",
+  createcamera: "create_camera_layer",
+  addcamera: "create_camera_layer",
+  addcameralayer: "create_camera_layer",
+  createcameralayer: "create_camera_layer",
   fitlayer: "fit_layer_to_comp",
   fittocomp: "fit_layer_to_comp",
   fitlayertocomp: "fit_layer_to_comp",
@@ -109,6 +113,7 @@ const COMP_RESULT_TOOLS = new Set([
   "create_solid_layer",
   "create_null_layer",
   "create_adjustment_layer",
+  "create_camera_layer",
   "create_shape_layer",
   "add_project_item_to_comp"
 ]);
@@ -123,6 +128,7 @@ const LAYER_RESULT_TOOLS = new Set([
   "create_solid_layer",
   "create_null_layer",
   "create_adjustment_layer",
+  "create_camera_layer",
   "create_shape_layer",
   "add_project_item_to_comp"
 ]);
