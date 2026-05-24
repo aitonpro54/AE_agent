@@ -1,11 +1,11 @@
 {
   "schema": "sdk-current-state.v1",
-  "milestone": 184,
-  "title": "SDK Current State with Feature Conveyor Readiness",
+  "milestone": 210,
+  "title": "SDK Current State with Duplicate Layers Closeout Pending Handoff ACL",
   "createdAt": "2026-05-22",
   "purpose": "Keep the current AE Agent SDK governance, readiness, and local-gated feature conveyor state directly machine-checked while older proof packets move behind a history index.",
   "sourceContext": {
-    "previousMilestone": 183,
+    "previousMilestone": 209,
     "previousPolicy": "plans/archive/runtime-artifact-cleanup-policy-2026-05.md",
     "queueArtifact": ".codex-audit/sdk-milestone-conveyor/173-ae-agent-cleanup-conveyor-queue.json",
     "featureConveyorQueueArtifact": ".codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json",
@@ -40,7 +40,7 @@
     "checkRulesEntrypoint": "npm.cmd run check:rules",
     "checkRulesCommand": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke",
     "featureConveyorState": "m186-sdk-approved-not-executed-and-m188-m190-m191-m198-live-validation-approved",
-    "roadmapSupervisorState": "m199-m209-local-gated-supervisor-with-duplicate-layers-queue-proof",
+    "roadmapSupervisorState": "m199-m210-local-gated-supervisor-with-duplicate-layers-closeout-pending-handoff-acl",
     "historicalProofReadPolicy": "Use .codex-audit/sdk-history-index.json first; reread old packets only for a specific audit question."
   },
   "currentDirectCheckSets": [
@@ -225,10 +225,11 @@
         202,
         203,
         204,
-        209
+        209,
+        210
       ],
       "status": "current-direct-check",
-      "verdict": "AE Agent roadmap supervisor is available as a local-gated aggressive autopilot layer: plan-only preview, queueSha256-bound single approval for roadmap-sdk chains, SDK writer path plus --engine cli writer fallback for SDK stream/parser failures, read-only live-check against open AE/CEP, execute-one, run-until-budget, runtime session state, one writer child at a time, parallel read-only reviewers, validation-before-commit, required handoff, exact approval text, no push, and no dependency/mutating-live/CEP/external-provider work by default. M209 records duplicate_layers queue evidence proving plan-only creates no child run, SDK thread, or runtime state, and the roadmap supervisor smokes cover single-approval queue behavior including wrong-approval rejection, live binding policy, unplanned path stops, ignored handoff handling, and Windows .cmd validation dispatch.",
+      "verdict": "AE Agent roadmap supervisor is available as a local-gated aggressive autopilot layer: plan-only preview, queueSha256-bound single approval for roadmap-sdk chains, SDK writer path plus --engine cli writer fallback for SDK stream/parser failures, read-only live-check against open AE/CEP, execute-one, run-until-budget, runtime session state, one writer child at a time, parallel read-only reviewers, validation-before-commit, required handoff, exact approval text, no push, and no dependency/mutating-live/CEP/external-provider work by default. M209 records duplicate_layers queue evidence proving plan-only creates no child run, SDK thread, or runtime state, and the roadmap supervisor smokes cover single-approval queue behavior including wrong-approval rejection, live binding policy, unplanned path stops, ignored handoff handling, and Windows .cmd validation dispatch. M210 records duplicate_layers closeout docs/governance state without runtime, CEP, dependency, push, or PR changes, but the required `.codex/handoff.md` update is blocked in this writer context by an inherited Windows ACL deny.",
       "artifacts": [
         ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-contract.json",
         ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-readiness.json",
@@ -270,6 +271,7 @@
       ".codex-audit/sdk-history-index.json",
       ".codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json",
       ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-contract.json",
+      "M210 records duplicate_layers closeout state",
       "codex:orchestrator:current-history-index:smoke"
     ],
     "requiredSourceSnippets": {

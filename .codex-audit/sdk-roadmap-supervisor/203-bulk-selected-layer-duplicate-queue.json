@@ -3,12 +3,14 @@
   "milestone": 203,
   "title": "Bulk / Selected Layer Duplicate Supervisor Queue",
   "createdAt": "2026-05-24",
-  "purpose": "Preview the long-running roadmap supervisor workload for turning the M197 design-only bulk/selected-layer duplicate slice into a shipped typed-tool capability. This queue is for plan-only review before any run-until-budget execution.",
+  "purpose": "Record the roadmap supervisor workload that turned the M197 design-only bulk/selected-layer duplicate slice into a shipped typed-tool capability through M204-M209 and the M210 closeout state. This closeout preserves the original no-push, no-PR, no-dependency-change, and no-CEP-SDK-write boundaries; the required handoff update remains blocked in this writer context by an inherited Windows ACL deny on .codex/handoff.md.",
   "sourceContext": {
-    "previousMilestone": 202,
+    "previousMilestone": 209,
     "sourceDesign": ".codex-audit/sdk-feature-conveyor/dakkshin-intake/m197-bulk-selected-layer-duplicate-design.md",
     "branch": "road-map-2.0",
-    "executionModel": "Sequential roadmap supervisor items, one writer child at a time, optional read-only reviewers, validation and handoff after each item, and separate generated-only live approval before mutating AE validation."
+    "executionModel": "Sequential roadmap supervisor items, one writer child at a time, optional read-only reviewers, validation and handoff after each item, and separate generated-only live approval before mutating AE validation.",
+    "closeoutMilestone": 210,
+    "closeoutState": "duplicate_layers-epic-closeout-pending-handoff-acl"
   },
   "queueItems": [
     {
@@ -92,7 +94,11 @@
         "validation-failed",
         "context-pressure"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedBy": {
+        "commit": "916305a",
+        "evidence": "M204 added the explicit duplicate_layers runtime typed bridge tool with local smoke coverage and no live AE/CEP mutation."
+      }
     },
     {
       "id": "m205-duplicate-layers-planner-repair",
@@ -187,7 +193,11 @@
         "validation-failed",
         "context-pressure"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedBy": {
+        "commit": "bfa78fa",
+        "evidence": "M205 exposed duplicate_layers to planner guidance and bounded plan repair while preserving selected-layer evidence requirements."
+      }
     },
     {
       "id": "m206-duplicate-layers-semantic-local-smokes",
@@ -282,7 +292,11 @@
         "validation-failed",
         "context-pressure"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedBy": {
+        "commit": "0ca1ff7",
+        "evidence": "M206 added semantic verification and local smoke coverage for duplicate_layers source/duplicate read-back."
+      }
     },
     {
       "id": "m207-duplicate-layers-live-validation-lane",
@@ -386,7 +400,11 @@
         "validation-failed",
         "context-pressure"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedBy": {
+        "commit": "d7a1865",
+        "evidence": "M207 recorded generated-only Full UI Agent live evidence through the installed CEP panel, OpenAI CLI planning, protected run, read-back, cleanup, and no user-asset mutation."
+      }
     },
     {
       "id": "m208-duplicate-layers-solution-library",
@@ -484,7 +502,11 @@
         "validation-failed",
         "context-pressure"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedBy": {
+        "commit": "221198d",
+        "evidence": "M208 added solution-library guidance for explicit bulk and selected-layer duplicate workflows with prior selected-layer evidence requirements."
+      }
     },
     {
       "id": "m209-duplicate-layers-supervisor-proof",
@@ -621,7 +643,11 @@
         "validation-failed",
         "context-pressure"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedBy": {
+        "commit": "25117a8",
+        "evidence": "M209 recorded roadmap supervisor plan-only and smoke proof for the duplicate_layers queue without runtime, CEP, dependency, push, or PR changes."
+      }
     },
     {
       "id": "m210-duplicate-layers-closeout",
@@ -734,7 +760,48 @@
         "validation-failed",
         "context-pressure"
       ],
-      "status": "queued"
+      "status": "blocked-handoff-acl",
+      "completedBy": {
+        "commit": null,
+        "evidence": "M210 closeout docs/governance state was prepared without runtime behavior changes, but the required .codex/handoff.md update is blocked in this writer context by an inherited Windows ACL deny."
+      },
+      "closeoutProof": {
+        "state": "pending-handoff-acl",
+        "recordedAt": "2026-05-24",
+        "validatedCommands": [
+          "npm.cmd run check:rules",
+          "git diff --check",
+          "node scripts/provider-contract-smoke.js",
+          "node scripts/solution-registry-smoke.js",
+          "node scripts/solution-candidate-report-smoke.js",
+          "node scripts/solution-promotion-smoke.js",
+          "node scripts/solution-retrieval-smoke.js",
+          "node scripts/solution-library-validation-smoke.js",
+          "node scripts/project-intent-memory-smoke.js",
+          "node scripts/plan-classification-smoke.js",
+          "node scripts/plan-repair-smoke.js",
+          "node scripts/semantic-verification-smoke.js",
+          "node scripts/reliability-validation-suite-smoke.js",
+          "node scripts/chatgpt-connector-smoke.js",
+          "node scripts/provider-api-smoke.js",
+          "node scripts/prompt-optimization-smoke.js",
+          "node scripts/bridge-only-smoke-test.js",
+          "node scripts/smoke-test.js"
+        ],
+        "validationResult": {
+          "status": "passed",
+          "notes": "All M210 validation commands passed on 2026-05-24. The first check:rules attempt failed after changing currentSdkBaseline.featureConveyorState outside the existing smoke contract; the field was restored to the checked value and check:rules plus git diff --check passed on rerun."
+        },
+        "boundaries": {
+          "runtimeBehaviorChangedDuringCloseout": false,
+          "cepPanelEdited": false,
+          "dependenciesChanged": false,
+          "liveCepAeRunDuringCloseout": false,
+          "pushPerformed": false,
+          "prCreated": false,
+          "handoffUpdated": false
+        }
+      }
     }
   ]
 }
