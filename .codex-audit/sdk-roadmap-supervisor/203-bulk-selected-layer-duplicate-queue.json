@@ -1,0 +1,634 @@
+{
+  "schema": "sdk-roadmap-supervisor-queue.v1",
+  "milestone": 203,
+  "title": "Bulk / Selected Layer Duplicate Supervisor Queue",
+  "createdAt": "2026-05-24",
+  "purpose": "Preview the long-running roadmap supervisor workload for turning the M197 design-only bulk/selected-layer duplicate slice into a shipped typed-tool capability. This queue is for plan-only review before any run-until-budget execution.",
+  "sourceContext": {
+    "previousMilestone": 202,
+    "sourceDesign": ".codex-audit/sdk-feature-conveyor/dakkshin-intake/m197-bulk-selected-layer-duplicate-design.md",
+    "branch": "road-map-2.0",
+    "executionModel": "Sequential roadmap supervisor items, one writer child at a time, optional read-only reviewers, validation and handoff after each item, and separate generated-only live approval before mutating AE validation."
+  },
+  "queueItems": [
+    {
+      "id": "m204-duplicate-layers-runtime-tool",
+      "milestone": 204,
+      "title": "Add explicit duplicate_layers runtime typed tool",
+      "dependencies": [],
+      "runner": {
+        "kind": "feature-conveyor",
+        "itemId": "m204-duplicate-layers-runtime-tool",
+        "approvalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-feature-conveyor/dakkshin-intake/m204-duplicate-layers-runtime-tool-design.md",
+        "mcp-server/bridge-daemon.js",
+        "scripts/smoke-test.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "package.json",
+        "package-lock.json",
+        "logs/**",
+        "backups/**",
+        "snapshots/**"
+      ],
+      "allowedCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node scripts/smoke-test.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node scripts/smoke-test.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "runtime-safety-review",
+          "kind": "read-only",
+          "prompt": "Review the duplicate_layers runtime tool design and implementation for unsafe selection-only behavior, layer deletion, source/precomp relink scope creep, missing idempotency/checkpoint fields, or missing source/duplicate read-back."
+        }
+      ],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 60,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "feat: add duplicate layers typed tool"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "feature-conveyor-item-not-approved",
+        "selection-only-ambiguity",
+        "planned-path-outside-policy",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "m205-duplicate-layers-planner-repair",
+      "milestone": 205,
+      "title": "Expose duplicate_layers to planner and plan repair",
+      "dependencies": [
+        "m204-duplicate-layers-runtime-tool"
+      ],
+      "runner": {
+        "kind": "feature-conveyor",
+        "itemId": "m205-duplicate-layers-planner-repair",
+        "approvalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-feature-conveyor/dakkshin-intake/m205-duplicate-layers-planner-repair-design.md",
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "scripts/plan-repair-smoke.js",
+        "scripts/chatgpt-connector-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "package.json",
+        "package-lock.json",
+        "logs/**",
+        "backups/**",
+        "snapshots/**"
+      ],
+      "allowedCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check scripts/plan-repair-smoke.js",
+        "node --check scripts/chatgpt-connector-smoke.js",
+        "node scripts/plan-repair-smoke.js",
+        "node scripts/chatgpt-connector-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check scripts/plan-repair-smoke.js",
+        "node --check scripts/chatgpt-connector-smoke.js",
+        "node scripts/plan-repair-smoke.js",
+        "node scripts/chatgpt-connector-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "planner-scope-review",
+          "kind": "read-only",
+          "prompt": "Review planner and repair changes for duplicate_layers. Block if they route delete, deep precomp/source duplication, mask/path edits, or selection-only ambiguity into duplicate_layers."
+        }
+      ],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 60,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "feat: expose duplicate layers to planner"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "feature-conveyor-item-not-approved",
+        "planner-scope-creep",
+        "planned-path-outside-policy",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "m206-duplicate-layers-semantic-local-smokes",
+      "milestone": 206,
+      "title": "Add semantic verification and local smoke coverage",
+      "dependencies": [
+        "m205-duplicate-layers-planner-repair"
+      ],
+      "runner": {
+        "kind": "feature-conveyor",
+        "itemId": "m206-duplicate-layers-semantic-local-smokes",
+        "approvalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-feature-conveyor/dakkshin-intake/m206-duplicate-layers-semantic-local-smokes-design.md",
+        "mcp-server/semantic-verification.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/smoke-test.js",
+        "scripts/reliability-validation-suite.js",
+        "scripts/reliability-validation-suite-smoke.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "package.json",
+        "package-lock.json",
+        "logs/**",
+        "backups/**",
+        "snapshots/**"
+      ],
+      "allowedCommands": [
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/smoke-test.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/reliability-validation-suite-smoke.js",
+        "node scripts/smoke-test.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/smoke-test.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/reliability-validation-suite-smoke.js",
+        "node scripts/smoke-test.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "semantic-evidence-review",
+          "kind": "read-only",
+          "prompt": "Review duplicate_layers semantic evidence. Block if it does not prove one duplicate per requested source, expected duplicate naming, before/after layer counts, and source/duplicate read-back."
+        }
+      ],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 75,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "test: add duplicate layers semantic coverage"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "feature-conveyor-item-not-approved",
+        "semantic-readback-missing",
+        "planned-path-outside-policy",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "m207-duplicate-layers-live-validation-lane",
+      "milestone": 207,
+      "title": "Add generated-only Full UI Agent live validation lane",
+      "dependencies": [
+        "m206-duplicate-layers-semantic-local-smokes"
+      ],
+      "runner": {
+        "kind": "feature-conveyor",
+        "itemId": "m207-duplicate-layers-live-validation-lane",
+        "approvalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json",
+        ".codex-audit/sdk-feature-conveyor/dakkshin-intake/m207-duplicate-layers-live-validation-design.md",
+        "orchestrator/run-ae-agent-feature-conveyor.mjs",
+        "scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js",
+        "scripts/sdk-ae-agent-feature-conveyor-command-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "package.json",
+        "package-lock.json",
+        "backups/**",
+        "snapshots/**"
+      ],
+      "allowedCommands": [
+        "node --check orchestrator/run-ae-agent-feature-conveyor.mjs",
+        "node --check scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js",
+        "node --check scripts/sdk-ae-agent-feature-conveyor-command-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke",
+        "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor:smoke",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check orchestrator/run-ae-agent-feature-conveyor.mjs",
+        "node --check scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js",
+        "node --check scripts/sdk-ae-agent-feature-conveyor-command-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke",
+        "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor:smoke",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "live-lane-policy-review",
+          "kind": "read-only",
+          "prompt": "Review the generated-only duplicate_layers live lane. Block if it allows deterministic backend fallback, Local/Ollama/OpenRouter fallback, user-asset mutation, CEP SDK writes, dependency changes, or live mutation without exact approval."
+        }
+      ],
+      "liveValidation": {
+        "mode": "generated-only-command",
+        "approvalRequired": true,
+        "approvalText": "I approve one M207 live CEP AE validation run for generated-only bulk selected layer duplicate checks using OpenAI CLI",
+        "mutatingLive": true,
+        "commands": [
+          "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item m207-duplicate-layers-live-validation --validate-live --stage both --allow-mutating-live --approval-text \"I approve one M207 live CEP AE validation run for generated-only bulk selected layer duplicate checks using OpenAI CLI\" --json"
+        ]
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 90,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "feat: add duplicate layers live validation lane"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "missing-item-live-approval",
+        "feature-conveyor-item-not-approved",
+        "live-connectivity-unavailable",
+        "generated-cleanup-leftovers",
+        "planned-path-outside-policy",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "m208-duplicate-layers-solution-library",
+      "milestone": 208,
+      "title": "Add solution library guidance for bulk duplicate workflows",
+      "dependencies": [
+        "m207-duplicate-layers-live-validation-lane"
+      ],
+      "runner": {
+        "kind": "feature-conveyor",
+        "itemId": "m208-duplicate-layers-solution-library",
+        "approvalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-feature-conveyor/dakkshin-intake/m208-duplicate-layers-solution-library-design.md",
+        "registry/solutions.json",
+        "mcp-server/solution-library.js",
+        "docs/solution-library.md",
+        "scripts/solution-registry-smoke.js",
+        "scripts/solution-retrieval-smoke.js",
+        "scripts/solution-library-validation-smoke.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "package.json",
+        "package-lock.json",
+        "logs/**",
+        "backups/**",
+        "snapshots/**"
+      ],
+      "allowedCommands": [
+        "node --check mcp-server/solution-library.js",
+        "node --check scripts/solution-registry-smoke.js",
+        "node --check scripts/solution-retrieval-smoke.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node scripts/solution-registry-smoke.js",
+        "node scripts/solution-retrieval-smoke.js",
+        "node scripts/solution-library-validation-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check mcp-server/solution-library.js",
+        "node --check scripts/solution-registry-smoke.js",
+        "node --check scripts/solution-retrieval-smoke.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node scripts/solution-registry-smoke.js",
+        "node scripts/solution-retrieval-smoke.js",
+        "node scripts/solution-library-validation-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "solution-guidance-review",
+          "kind": "read-only",
+          "prompt": "Review solution-library duplicate_layers guidance. Block if it promotes raw ExtendScript, destructive operations, deep precomp/source duplication, or selection-only execution without prior selected-layer evidence."
+        }
+      ],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 60,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "docs: add duplicate layers solution guidance"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "feature-conveyor-item-not-approved",
+        "raw-extendscript-guidance",
+        "planned-path-outside-policy",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "m209-duplicate-layers-supervisor-proof",
+      "milestone": 209,
+      "title": "Prove roadmap supervisor execution on the duplicate_layers queue",
+      "dependencies": [
+        "m208-duplicate-layers-solution-library"
+      ],
+      "runner": {
+        "kind": "feature-conveyor",
+        "itemId": "m209-duplicate-layers-supervisor-proof",
+        "approvalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/203-bulk-selected-layer-duplicate-queue.json",
+        ".codex-audit/sdk-current-state.json",
+        "orchestrator/README.md",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "mcp-server/**",
+        "package.json",
+        "package-lock.json",
+        "logs/**",
+        "backups/**",
+        "snapshots/**"
+      ],
+      "allowedCommands": [
+        "npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor -- --plan-only --queue .codex-audit/sdk-roadmap-supervisor/203-bulk-selected-layer-duplicate-queue.json --max-items 3 --max-minutes 180 --json",
+        "npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor-readiness:smoke",
+        "npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor:smoke",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor -- --plan-only --queue .codex-audit/sdk-roadmap-supervisor/203-bulk-selected-layer-duplicate-queue.json --max-items 3 --max-minutes 180 --json",
+        "npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor-readiness:smoke",
+        "npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor:smoke",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "supervisor-state-review",
+          "kind": "read-only",
+          "prompt": "Review duplicate_layers supervisor evidence. Block if the queue can run more than one writer at a time, skip handoff/commit gates, mutate live AE without item live approval, or accept unplanned paths."
+        }
+      ],
+      "liveValidation": {
+        "mode": "read-only-connectivity",
+        "commands": [
+          "node scripts/cep-panel-cdp-smoke.js inspect",
+          "node scripts/cep-panel-cdp-smoke.js connector-status-smoke"
+        ]
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 60,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "docs: record duplicate layers supervisor proof"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "feature-conveyor-item-not-approved",
+        "live-connectivity-unavailable",
+        "planned-path-outside-policy",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "m210-duplicate-layers-closeout",
+      "milestone": 210,
+      "title": "Close out duplicate_layers epic governance and handoff",
+      "dependencies": [
+        "m209-duplicate-layers-supervisor-proof"
+      ],
+      "runner": {
+        "kind": "feature-conveyor",
+        "itemId": "m210-duplicate-layers-closeout",
+        "approvalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-current-state.json",
+        ".codex-audit/sdk-roadmap-supervisor/203-bulk-selected-layer-duplicate-queue.json",
+        "orchestrator/README.md",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "mcp-server/**",
+        "package.json",
+        "package-lock.json",
+        "logs/**",
+        "backups/**",
+        "snapshots/**"
+      ],
+      "allowedCommands": [
+        "npm.cmd run check:rules",
+        "git diff --check",
+        "node scripts/provider-contract-smoke.js",
+        "node scripts/solution-registry-smoke.js",
+        "node scripts/solution-candidate-report-smoke.js",
+        "node scripts/solution-promotion-smoke.js",
+        "node scripts/solution-retrieval-smoke.js",
+        "node scripts/solution-library-validation-smoke.js",
+        "node scripts/project-intent-memory-smoke.js",
+        "node scripts/plan-classification-smoke.js",
+        "node scripts/plan-repair-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/reliability-validation-suite-smoke.js",
+        "node scripts/chatgpt-connector-smoke.js",
+        "node scripts/provider-api-smoke.js",
+        "node scripts/prompt-optimization-smoke.js",
+        "node scripts/bridge-only-smoke-test.js",
+        "node scripts/smoke-test.js"
+      ],
+      "validationCommands": [
+        "npm.cmd run check:rules",
+        "git diff --check",
+        "node scripts/provider-contract-smoke.js",
+        "node scripts/solution-registry-smoke.js",
+        "node scripts/solution-candidate-report-smoke.js",
+        "node scripts/solution-promotion-smoke.js",
+        "node scripts/solution-retrieval-smoke.js",
+        "node scripts/solution-library-validation-smoke.js",
+        "node scripts/project-intent-memory-smoke.js",
+        "node scripts/plan-classification-smoke.js",
+        "node scripts/plan-repair-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/reliability-validation-suite-smoke.js",
+        "node scripts/chatgpt-connector-smoke.js",
+        "node scripts/provider-api-smoke.js",
+        "node scripts/prompt-optimization-smoke.js",
+        "node scripts/bridge-only-smoke-test.js",
+        "node scripts/smoke-test.js"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "closeout-review",
+          "kind": "read-only",
+          "prompt": "Review final duplicate_layers closeout. Block if validation evidence is incomplete, handoff is stale, current-state claims exceed proof, or push/PR/dependency/CEP SDK work is implied."
+        }
+      ],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 75,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "docs: close duplicate layers supervisor epic"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "feature-conveyor-item-not-approved",
+        "validation-evidence-incomplete",
+        "planned-path-outside-policy",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    }
+  ]
+}

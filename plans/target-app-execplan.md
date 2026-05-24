@@ -34,6 +34,7 @@
 - [x] Milestone 200: Roadmap supervisor execute-one validation/commit/handoff loop.
 - [x] Milestone 201: Roadmap supervisor run-until-budget loop with parallel read-only reviewers.
 - [x] Milestone 202: Roadmap supervisor live AE/CEP validation hooks.
+- [x] Milestone 203: Bulk/selected-layer duplicate supervisor queue plan-only preview.
 
 ## Current Stable Baseline
 
@@ -275,6 +276,7 @@
 - M200: Added execute-one support for one approved queue item with clean-git preflight, writer child logs, planned-path diff enforcement, validation, required handoff update, auto-commit of planned files only, and final report writing.
 - M201: Added run-until-budget/resume behavior with max item/minute budgets, runtime state, sequential writer execution, and up to two read-only reviewer tasks in parallel.
 - M202: Added roadmap supervisor `--live-check`, `--require-live-connectivity`, queue item `liveValidation` policy, and separate `--live-approval-text` for generated-only AE/CEP lanes.
+- M203: Added the Bulk / Selected Layer Duplicate supervisor queue and passed `--plan-only` preview for the first ready item before any real execution.
 
 ## Decision Log
 
@@ -283,6 +285,7 @@
 - 2026-05-24: Roadmap supervisor is deterministic control-plane code, not a long-lived LLM agent. It may run aggressive multi-item loops only inside exact approval text, with one writer child at a time, optional parallel read-only reviewers, validation before commit, and no push/dependency/live/CEP/external-provider work unless a later item adds its own approval.
 - 2026-05-24: The supervisor's approval text must bind repository path, queue path, max items, max minutes, auto-commit permission, `noPush=true`, `noDependencyChanges=true`, and `noLiveCepAeUnlessPerItemApproved=true`; plan-only preview is the source of the exact string.
 - 2026-05-24: M202 lets the roadmap supervisor check real open After Effects / AE Agent panel state itself. Read-only connectivity checks do not need mutating approval, but generated-only Full UI Agent or other mutating live commands must be declared in the queue item `liveValidation` policy and require separate exact `--live-approval-text`.
+- 2026-05-24: M203 starts the Bulk / Selected Layer Duplicate epic in roadmap-supervisor plan-only mode only. The new queue is sequential and previewable, but its item approvals remain `pending-explicit-approval`; real `--run-until-budget` execution still needs a fresh approval turn and matching lower feature-conveyor item activation.
 - 2026-05-24: M198 marker lifecycle acceptance must run inside the installed panel through CDP, Agent UI/chat, `openai-cli` with `gpt-5.5`, panel-generated plan only, M100 dry run/protected run, bridge marker read-back, and generated-prefix cleanup. Deterministic backend fallback, Ollama, OpenRouter, and raw ExtendScript fallback are not acceptance evidence.
 - 2026-05-24: M197 treats bulk/selected-layer duplication as its own future gated slice, not an implicit extension hidden inside `duplicate_layer`. Future `duplicate_layers` work should require concrete `layerIndices`; selected-layer convenience must come from prior read-only selected-layer evidence rather than selection-only ambiguity.
 - 2026-05-24: M197 intentionally adds no runtime tool, planner alias, semantic verifier code, CEP UI, live mutating validation, OpenAI CLI planner acceptance, dependency change, push, or PR. Source/precomp relink duplication, layer deletion, mask delete/invert/path editing, audio workflows, and arbitrary ExtendScript loops stay separately gated.
@@ -414,6 +417,7 @@
 | M199-M201 live/provider validation | Out of scope because the roadmap supervisor is repository orchestration control-plane work; it adds no AE runtime tool, no CEP panel UI, no planner-visible AE tool, no dependency change, and no live CEP/AE lane. | Not run. |
 | M199-M201 live connectivity checks | Required by the standing live availability rule because After Effects, the installed panel, and bridge were available. | Passed on 2026-05-24: `node scripts/cep-panel-cdp-smoke.js inspect` saw installed `AE Agent 2.0.0` connected to the bridge, and `node scripts/cep-panel-cdp-smoke.js connector-status-smoke` passed. Full mutating OpenAI CLI planner acceptance was not run because the supervisor does not add a planner-visible AE tool or CEP panel behavior. |
 | M202 roadmap supervisor live hooks | Required because M202 makes supervisor responsible for read-only AE/CEP live connectivity and item-level generated-only live validation hooks. | Passed on 2026-05-24: touched JS `node --check`; `node scripts/sdk-ae-agent-roadmap-supervisor-readiness-smoke.js`; `node scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js`; `npm.cmd run check:rules`; `git diff --check`; `npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor -- --live-check --session-id m202-live-check --json`; `node scripts/cep-panel-cdp-smoke.js inspect`; `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; provider contract/API; solution registry/candidate/promotion/retrieval/library; project intent memory; plan classification/repair; semantic verification; reliability validation suite smoke; ChatGPT connector; prompt optimization; bridge-only smoke; and main smoke. Bridge status also reported `panelConnected=true`. `git diff --check` printed only LF-to-CRLF working-copy warnings for touched files. No mutating live planner lane was run because M202 adds read-only connectivity gates plus approval-gated hooks, not a new planner-visible AE tool. |
+| M203 bulk/selected-layer duplicate supervisor plan-only | Required because M203 creates the first real long-running roadmap supervisor queue for the M197 duplicate-many epic before execution approval. | Passed on 2026-05-24: `npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor -- --plan-only --queue .codex-audit/sdk-roadmap-supervisor/203-bulk-selected-layer-duplicate-queue.json --max-items 3 --max-minutes 180 --json`; `npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor-readiness:smoke`; `npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor:smoke`; `npm.cmd run check:rules`; `git diff --check`; JSON parse for the new queue. No child runs, SDKThread, runtime state, live AE mutation, dependency change, push, or PR were performed. |
 | SDKThread/network/external-provider/OpenAI CLI planner outside approved generated-only live lanes | Forbidden/out of scope for this turn. | Not run outside approved generated-only live validation lanes. |
 | Package install/dependency change validation | Out of scope because no dependency change is allowed. | Not run. |
 
@@ -613,6 +617,13 @@
 - Added optional queue item `liveValidation` policy with modes `none`, `read-only-connectivity`, and `generated-only-command`.
 - Generated-only item live validation requires queue-declared commands, `mutatingLive:true`, and exact separate `--live-approval-text`.
 - Extended command smoke coverage with temp-repo fake CEP smoke scripts proving live-check, required live connectivity, missing item live approval failure, and successful item-level live validation logging.
+
+### Milestone 203
+
+- Added `.codex-audit/sdk-roadmap-supervisor/203-bulk-selected-layer-duplicate-queue.json`.
+- The queue maps the M197 design-only duplicate-many slice into sequential M204-M210 supervisor items: runtime tool, planner/repair exposure, semantic/local smokes, generated-only live lane, solution-library guidance, supervisor proof, and closeout.
+- The queue keeps every item `pending-explicit-approval`; M203 is plan-only preview, not authorization to execute writer children.
+- `--plan-only` showed first ready item `m204-duplicate-layers-runtime-tool`, no child runs, no SDKThread, no runtime state, and exact future supervisor approval text for `maxItems=3` / `maxMinutes=180`.
 
 ### Milestone 175
 
