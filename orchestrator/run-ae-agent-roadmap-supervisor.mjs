@@ -290,6 +290,27 @@ function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
 }
 
+function fileSha256(cwd, repoPath) {
+  const absolute = path.join(cwd, normalizeRepoPath(repoPath));
+  if (!existsSync(absolute) || !statSync(absolute).isFile()) {
+    return null;
+  }
+  return sha256(readFileSync(absolute));
+}
+
+function fileFingerprint(cwd, repoPath) {
+  const absolute = path.join(cwd, normalizeRepoPath(repoPath));
+  if (!existsSync(absolute) || !statSync(absolute).isFile()) {
+    return null;
+  }
+  const stats = statSync(absolute);
+  return {
+    mtimeMs: stats.mtimeMs,
+    sha256: fileSha256(cwd, repoPath),
+    size: stats.size,
+  };
+}
+
 function uniqueSorted(values) {
   return Array.from(new Set(values.map(normalizeRepoPath))).sort();
 }
@@ -529,6 +550,24 @@ function gitStatus(cwd) {
 
 function gitHead(cwd) {
   return gitOutput(cwd, ["rev-parse", "HEAD"]).trim();
+}
+
+function gitPathIsTracked(cwd, repoPath) {
+  const result = spawnSync("git", ["ls-files", "--error-unmatch", "--", normalizeRepoPath(repoPath)], {
+    cwd,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  return result.status === 0;
+}
+
+function gitPathIsIgnored(cwd, repoPath) {
+  const result = spawnSync("git", ["check-ignore", "-q", "--", normalizeRepoPath(repoPath)], {
+    cwd,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  return result.status === 0;
 }
 
 function parseStatusPath(line) {
@@ -1049,7 +1088,8 @@ function runValidationCommands(cwd, runtime, item) {
 function stageAndCommit(cwd, item) {
   const existingPaths = item.plannedPaths
     .map(normalizeRepoPath)
-    .filter((repoPath) => existsSync(path.join(cwd, repoPath)));
+    .filter((repoPath) => existsSync(path.join(cwd, repoPath)))
+    .filter((repoPath) => gitPathIsTracked(cwd, repoPath) || !gitPathIsIgnored(cwd, repoPath));
   if (existingPaths.length === 0) {
     throw new Error(`No planned paths exist to commit for ${item.id}.`);
   }
@@ -1086,6 +1126,39 @@ function stageAndCommit(cwd, item) {
     throw new Error(`git commit failed for ${item.id}: ${commitResult.stderr || commitResult.stdout}`);
   }
   return gitHead(cwd);
+}
+
+function createRequiredHandoffSnapshot(cwd, item) {
+  if (item.handoffPolicy.required !== true) {
+    return null;
+  }
+  const handoffPath = normalizeRepoPath(item.handoffPolicy.path);
+  if (!item.plannedPaths.map(normalizeRepoPath).includes(handoffPath)) {
+    throw new Error(`Required handoff path is not in plannedPaths for ${item.id}: ${handoffPath}`);
+  }
+  return {
+    path: handoffPath,
+    fingerprint: fileFingerprint(cwd, handoffPath),
+  };
+}
+
+function assertRequiredHandoffUpdated(cwd, item, snapshot) {
+  if (!snapshot) {
+    return;
+  }
+  const next = fileFingerprint(cwd, snapshot.path);
+  if (!next) {
+    throw new Error(`Required handoff was not written for ${item.id}: ${snapshot.path}`);
+  }
+  const previous = snapshot.fingerprint;
+  if (
+    previous &&
+    next.sha256 === previous.sha256 &&
+    next.mtimeMs === previous.mtimeMs &&
+    next.size === previous.size
+  ) {
+    throw new Error(`Required handoff was not updated for ${item.id}: ${snapshot.path}`);
+  }
 }
 
 function dependencySatisfied(item, completedItems, queue) {
@@ -1144,6 +1217,7 @@ async function executeQueueItem(cwd, runtime, state, queue, item, options, preAp
   assertItemExecutable(item);
   assertCleanGit(cwd);
   const preHead = gitHead(cwd);
+  const handoffSnapshot = createRequiredHandoffSnapshot(cwd, item);
   appendEvent(runtime, { item: item.id, type: "item-started" });
   const preflightLiveResults = options.requireLiveConnectivity
     ? runLiveConnectivityCheck(cwd, runtime)
@@ -1159,15 +1233,7 @@ async function executeQueueItem(cwd, runtime, state, queue, item, options, preAp
   const validationResults = runValidationCommands(cwd, runtime, item);
   const itemLiveValidationResults = runItemLiveValidation(cwd, runtime, queue, item, options);
   const preCommitChanges = assertChangedPathsAllowed(cwd, item.plannedPaths);
-  if (item.handoffPolicy.required === true) {
-    const handoffPath = normalizeRepoPath(item.handoffPolicy.path);
-    if (!item.plannedPaths.map(normalizeRepoPath).includes(handoffPath)) {
-      throw new Error(`Required handoff path is not in plannedPaths for ${item.id}: ${handoffPath}`);
-    }
-    if (!preCommitChanges.workingTreeChangedPaths.includes(handoffPath)) {
-      throw new Error(`Required handoff was not updated for ${item.id}: ${handoffPath}`);
-    }
-  }
+  assertRequiredHandoffUpdated(cwd, item, handoffSnapshot);
   const commitId = stageAndCommit(cwd, item);
   const postRun = assertChangedPathsAllowed(cwd, item.plannedPaths, preHead);
   if (!state.completedItems.includes(item.id)) {

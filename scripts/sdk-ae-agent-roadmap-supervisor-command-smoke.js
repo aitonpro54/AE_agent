@@ -37,7 +37,7 @@ function sh(cwd, args) {
 function initRepo(temp) {
   sh(temp, ["git", "init"]);
   fs.writeFileSync(path.join(temp, "base.txt"), "base\n", "utf8");
-  fs.writeFileSync(path.join(temp, ".gitignore"), ".codex-runtime/\nbin/\n", "utf8");
+  fs.writeFileSync(path.join(temp, ".gitignore"), ".codex/\n.codex-runtime/\nbin/\n", "utf8");
   fs.mkdirSync(path.join(temp, "orchestrator"), { recursive: true });
   fs.mkdirSync(path.join(temp, "scripts"), { recursive: true });
   fs.mkdirSync(path.join(temp, "bin"), { recursive: true });
