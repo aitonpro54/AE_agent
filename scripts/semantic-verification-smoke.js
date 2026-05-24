@@ -76,6 +76,7 @@ function fakeMutationResult(step, state) {
       inPoint: args.startTime || 0,
       outPoint: (args.startTime || 0) + (args.duration || 1)
     });
+    state.layers.push(layer);
     return withVerification({
       comp: { name: compName },
       layer,
@@ -91,6 +92,7 @@ function fakeMutationResult(step, state) {
       text: args.text,
       fontSize: args.fontSize
     });
+    state.layers.push(layer);
     return withVerification({ comp: { name: compName }, layer, text: args.text }, compName, layer);
   }
   if (step.tool === "create_camera_layer") {
@@ -105,6 +107,7 @@ function fakeMutationResult(step, state) {
         pointOfInterest: args.pointOfInterest || [320, 180, 0]
       }
     });
+    state.layers.push(layer);
     return withVerification({
       comp: { name: compName },
       layer,
@@ -136,6 +139,7 @@ function fakeMutationResult(step, state) {
   if (step.tool === "duplicate_layer") {
     const source = layerInfo(args.sourceName || "Duplicate Fixture Source", { index: args.layerIndex || 1 });
     const duplicate = layerInfo(args.name || `${source.name} copy`, { index: 1 });
+    state.layers = [duplicate, { ...source, index: source.index + 1 }];
     return withVerification({
       comp: { name: compName, numLayers: state.nextLayerIndex + 1 },
       source,
@@ -143,6 +147,50 @@ function fakeMutationResult(step, state) {
       duplicate,
       layer: duplicate
     }, compName, duplicate);
+  }
+  if (step.tool === "duplicate_layers") {
+    const requestedLayerIndices = Array.isArray(args.layerIndices) ? args.layerIndices : [];
+    const sourceNames = Array.isArray(args.sourceNames)
+      ? args.sourceNames
+      : requestedLayerIndices.map((index) => `Duplicate Fixture Source ${index}`);
+    const suffix = args.nameSuffix === undefined ? " copy" : String(args.nameSuffix || "");
+    const beforeLayerCount = Math.max(state.layers.length, requestedLayerIndices.length);
+    const pairs = requestedLayerIndices.map((requestedLayerIndex, index) => {
+      const sourceName = sourceNames[index] || `Duplicate Fixture Source ${requestedLayerIndex}`;
+      const source = layerInfo(sourceName, { index: requestedLayerIndex });
+      const duplicate = layerInfo(`${sourceName}${suffix}`, { index: index + 1 });
+      return {
+        requestedLayerIndex,
+        source,
+        sourceAfter: { ...source, index: index + 1 + requestedLayerIndices.length },
+        duplicate
+      };
+    });
+    const afterLayerCount = beforeLayerCount + pairs.length;
+    state.layers = pairs.map((pair) => pair.duplicate).concat(
+      pairs.map((pair) => pair.sourceAfter),
+      Array.from({ length: Math.max(0, afterLayerCount - pairs.length * 2) }, (_value, index) => layerInfo(`Existing Layer ${index + 1}`, { index: pairs.length * 2 + index + 1 }))
+    );
+    return withVerification({
+      comp: { name: compName, numLayersBefore: beforeLayerCount, numLayersAfter: afterLayerCount },
+      requestedLayerIndices,
+      layerCountBefore: beforeLayerCount,
+      layerCountAfter: afterLayerCount,
+      duplicateCount: pairs.length,
+      pairs,
+      layers: pairs.map((pair) => pair.duplicate),
+      postVerification: {
+        ok: true,
+        beforeLayerCount,
+        afterLayerCount,
+        expectedLayerCountAfter: afterLayerCount,
+        requestedCount: requestedLayerIndices.length,
+        duplicateCount: pairs.length,
+        layerCountDelta: pairs.length,
+        layerCountMatches: true,
+        pairCountMatches: true
+      }
+    }, compName, pairs[0] && pairs[0].duplicate);
   }
   if (step.tool === "add_layer_marker") {
     const marker = {
@@ -440,6 +488,17 @@ function fakeReadBackResult(step, state) {
       }
     };
   }
+  if (step.tool === "get_comp_details" || step.tool === "list_layers") {
+    const layers = state.layers.slice();
+    return {
+      comp: {
+        name: step.args && step.args.compName || state.lastCompName || "Fixture Comp",
+        numLayers: layers.length
+      },
+      layerCount: layers.length,
+      layers
+    };
+  }
   return { ok: true };
 }
 
@@ -450,6 +509,7 @@ function fakeRunForPlan(plan) {
     nextRenderQueueIndex: 1,
     lastCompName: "",
     projectItems: [],
+    layers: [],
     renderQueueItems: [],
     layerMarkers: []
   };
@@ -632,6 +692,61 @@ function assertDuplicateLayerPasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("duplicate_layer:duplicate") >= 0), "duplicate layer check should be reported.");
 }
 
+function assertDuplicateLayersPasses() {
+  const plan = {
+    summary: "Duplicate two generated layers and inspect the comp.",
+    risk: "low",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Duplicate generated layers",
+        tool: "duplicate_layers",
+        args: {
+          compName: "Duplicate Layers Fixture",
+          layerIndices: [1, 2],
+          sourceNames: ["Duplicate Layers Source A", "Duplicate Layers Source B"],
+          nameSuffix: " Copy"
+        }
+      },
+      {
+        title: "Read duplicate layers comp",
+        tool: "get_comp_details",
+        args: { compName: "Duplicate Layers Fixture" }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `duplicate layers semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("duplicate_layers:pairs") >= 0 && check.status === "passed"), "duplicate_layers pair-count check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("duplicate_layers:names") >= 0 && check.observed.indexOf("Duplicate Layers Source A Copy") >= 0), "duplicate_layers name read-back check should report expected names.");
+  assert(semantic.checks.some((check) => check.id.indexOf("duplicate_layers:layer-counts") >= 0 && check.expected === "2 -> 4"), "duplicate_layers before/after count check should be reported.");
+}
+
+function assertDuplicateLayersMissingReadBackNeedsReview() {
+  const plan = {
+    summary: "Duplicate two generated layers without post-run read-back.",
+    risk: "low",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Duplicate generated layers",
+        tool: "duplicate_layers",
+        args: {
+          compName: "Duplicate Layers Fixture",
+          layerIndices: [1, 2],
+          sourceNames: ["Duplicate Layers Source A", "Duplicate Layers Source B"],
+          nameSuffix: " Copy"
+        }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "duplicate_layers must not pass without post-run read-back evidence.");
+  assert(semantic.checks.some((check) => check.id.indexOf("duplicate_layers:names") >= 0 && check.status === "failed"), "missing duplicate_layers read-back names should fail.");
+}
+
 function assertAddLayerMarkerPasses() {
   const plan = {
     summary: "Add one explicit timeline marker to a generated layer and inspect marker read-back.",
@@ -744,6 +859,8 @@ function main() {
   assertCameraLayerPasses();
   assertLayerMaskPasses();
   assertDuplicateLayerPasses();
+  assertDuplicateLayersPasses();
+  assertDuplicateLayersMissingReadBackNeedsReview();
   assertAddLayerMarkerPasses();
   assertUpdateLayerMarkerPasses();
   assertDeleteLayerMarkerPasses();

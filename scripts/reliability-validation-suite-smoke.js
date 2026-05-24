@@ -30,6 +30,8 @@ assert(ids(local).includes("planner-corpus-offline"), "Local suite must include 
 assert(ids(local).includes("semantic-verification"), "Local suite must include semantic verification.");
 assert(ids(local).includes("provider-contract"), "Local suite must include provider contract readiness coverage.");
 assert(local.every((item) => !item.blockedReason), "Local suite must not be approval-gated.");
+const semanticVerificationCheck = local.find((item) => item.id === "semantic-verification");
+assert(semanticVerificationCheck.evidence.includes("duplicate_layers"), "Semantic verification check must include duplicate_layers evidence.");
 
 const readiness = selectedChecks({ scope: "provider-readiness" }, catalog);
 assert.strictEqual(readiness.length, 1, "Readiness suite should be a single matrix check.");

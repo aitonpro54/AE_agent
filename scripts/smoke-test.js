@@ -1599,16 +1599,26 @@ async function main() {
     duplicateLayersQueuedPayload.layerCountBefore !== 2 ||
     duplicateLayersQueuedPayload.layerCountAfter !== 4 ||
     duplicateLayersQueuedPayload.duplicateCount !== 2 ||
+    duplicateLayersQueuedPayload.layerCountAfter - duplicateLayersQueuedPayload.layerCountBefore !== 2 ||
     !Array.isArray(duplicateLayersQueuedPayload.pairs) ||
     duplicateLayersQueuedPayload.pairs.length !== 2 ||
     !duplicateLayersQueuedPayload.pairs[0].source ||
     !duplicateLayersQueuedPayload.pairs[0].duplicate ||
+    duplicateLayersQueuedPayload.pairs[0].source.name !== "Smoke Source A" ||
+    duplicateLayersQueuedPayload.pairs[0].duplicate.name !== "Smoke Source A Copy" ||
+    duplicateLayersQueuedPayload.pairs[1].source.name !== "Smoke Source B" ||
+    duplicateLayersQueuedPayload.pairs[1].duplicate.name !== "Smoke Source B Copy" ||
     !duplicateLayersQueuedPayload.postVerification ||
     duplicateLayersQueuedPayload.postVerification.ok !== true ||
+    duplicateLayersQueuedPayload.postVerification.beforeLayerCount !== 2 ||
+    duplicateLayersQueuedPayload.postVerification.afterLayerCount !== 4 ||
+    duplicateLayersQueuedPayload.postVerification.requestedCount !== 2 ||
+    duplicateLayersQueuedPayload.postVerification.duplicateCount !== 2 ||
+    duplicateLayersQueuedPayload.postVerification.layerCountDelta !== 2 ||
     duplicateLayersQueuedPayload.postVerification.layerCountMatches !== true ||
     duplicateLayersQueuedPayload.postVerification.pairCountMatches !== true
   ) {
-    throw new Error("duplicate_layers result did not expose source/duplicate read-back and post-verification fields");
+    throw new Error("duplicate_layers result did not expose deterministic one-duplicate-per-source read-back and post-verification fields");
   }
   if (
     duplicateLayersEmptyRejection.status !== 500 ||

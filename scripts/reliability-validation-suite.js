@@ -58,7 +58,7 @@ function buildCheckCatalog() {
     item("project-intent-memory", "local", "Project Intent Memory retrieval, redaction and update rules.", cmd("project-intent-memory-smoke.js"), { evidence: ["project memory"], timeoutMs: 30000 }),
     item("plan-classification", "local", "Agent plan confidence/risk classification.", cmd("plan-classification-smoke.js"), { evidence: ["classification"], timeoutMs: 30000 }),
     item("plan-repair", "local", "Bounded deterministic plan repair.", cmd("plan-repair-smoke.js"), { evidence: ["repair"], timeoutMs: 30000 }),
-    item("semantic-verification", "local", "Deterministic post-run semantic outcome checks.", cmd("semantic-verification-smoke.js"), { evidence: ["semantic verification"], timeoutMs: 30000 }),
+    item("semantic-verification", "local", "Deterministic post-run semantic outcome checks, including duplicate_layers read-back.", cmd("semantic-verification-smoke.js"), { evidence: ["semantic verification", "duplicate_layers"], timeoutMs: 30000 }),
     item("agent-qa-audit-schema", "local", "Generated QA audit schema and leftover detection.", cmd("agent-qa-audit-smoke.js"), { evidence: ["audit schema"], timeoutMs: 30000 }),
     item("agent-run-report-schema", "local", "Agent run report schema and semantic aggregates.", cmd("agent-scenario-report-smoke.js"), { evidence: ["run reports"], timeoutMs: 30000 }),
     item("planner-corpus-offline", "local", "Accepted Agent scenario corpus through validation and dry-run.", cmd("agent-planner-corpus-smoke.js"), { evidence: ["offline corpus", "dry-run"], timeoutMs: 90000 }),

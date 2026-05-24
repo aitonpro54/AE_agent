@@ -21,6 +21,7 @@ const MUTATING_TOOLS = new Set([
   "set_expression",
   "clear_expression",
   "duplicate_layer",
+  "duplicate_layers",
   "add_layer_marker",
   "update_layer_marker",
   "delete_layer_marker",
@@ -123,6 +124,15 @@ function addOutputPath(target, value, source) {
   if (source) target.outputPathSources[text].push(source);
 }
 
+function addLayerCount(target, value, source) {
+  const count = numberValue(value);
+  if (count === null || count < 0) return;
+  target.layerCounts.push({
+    count,
+    source: source || "observed layer count"
+  });
+}
+
 function markerSignature(marker) {
   if (!marker) return "";
   const comment = compactText(marker.comment, 180);
@@ -174,6 +184,9 @@ function collectPayloadEvidence(payload, evidence, source, depth = 0) {
   if (typeof payload.after === "string") addName(evidence, payload.after, source);
   if (typeof payload.file === "string") addOutputPath(evidence, payload.file, source);
   if (typeof payload.outputPath === "string") addOutputPath(evidence, payload.outputPath, source);
+  if (hasOwn(payload, "numLayers")) addLayerCount(evidence, payload.numLayers, source);
+  if (hasOwn(payload, "layerCount")) addLayerCount(evidence, payload.layerCount, source);
+  if (Array.isArray(payload.layers)) addLayerCount(evidence, payload.layers.length, source);
   collectMarkerPayload(payload, evidence, source);
 
   for (const key of Object.keys(payload)) {
@@ -205,6 +218,7 @@ function collectReadBackEvidence(steps, afterOrder) {
     nameSources: {},
     outputPaths: new Set(),
     outputPathSources: {},
+    layerCounts: [],
     markers: [],
     markerSignatures: new Set()
   };
@@ -222,6 +236,7 @@ function collectAllEvidence(steps) {
     nameSources: {},
     outputPaths: new Set(),
     outputPathSources: {},
+    layerCounts: [],
     markers: [],
     markerSignatures: new Set()
   };
@@ -249,6 +264,15 @@ function observedOutputEvidence(evidence, expectedPath) {
       const source = evidence.outputPathSources[outputPath] && evidence.outputPathSources[outputPath][0];
       return source || outputPath;
     }
+  }
+  return null;
+}
+
+function observedLayerCountEvidence(evidence, expectedCount) {
+  const expected = numberValue(expectedCount);
+  if (expected === null || !evidence || !Array.isArray(evidence.layerCounts)) return null;
+  for (const item of evidence.layerCounts) {
+    if (nearlyEqual(item.count, expected)) return item.source || "observed layer count";
   }
   return null;
 }
@@ -527,6 +551,74 @@ function checkSplit(checks, step, payload) {
   });
 }
 
+function expectedDuplicateLayerNames(args, pairs) {
+  const sourceNames = Array.isArray(args.sourceNames) ? args.sourceNames.map((value) => String(value)) : [];
+  const suffix = hasOwn(args, "nameSuffix") ? String(args.nameSuffix || "") : " copy";
+  return pairs.map((pair, index) => {
+    const sourceName = sourceNames[index] || pair && pair.source && pair.source.name || "";
+    if (sourceName) return `${sourceName}${suffix}`;
+    if (pair && pair.duplicate && pair.duplicate.name) return String(pair.duplicate.name);
+    return sourceName ? `${sourceName}${suffix}` : "";
+  }).filter(Boolean);
+}
+
+function checkDuplicateLayers(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const pairs = Array.isArray(payload.pairs) ? payload.pairs : [];
+  const requested = Array.isArray(args.layerIndices) ? args.layerIndices : [];
+  const expectedCount = requested.length;
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const pairMismatches = [];
+  for (let index = 0; index < pairs.length; index += 1) {
+    const pair = pairs[index] || {};
+    if (!pair.source || !pair.duplicate) pairMismatches.push(`pair ${index + 1} missing source or duplicate`);
+  }
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:pairs`,
+    title: "One duplicate exists for each requested source layer",
+    expected: `${expectedCount} source/duplicate pair(s)`,
+    observed: `${pairs.length} pair(s), duplicateCount=${payload.duplicateCount}`,
+    passed: expectedCount > 0 &&
+      pairs.length === expectedCount &&
+      Number(payload.duplicateCount || 0) === expectedCount &&
+      postVerification.pairCountMatches === true &&
+      pairMismatches.length === 0,
+    evidence: pairMismatches.length ? pairMismatches.join("; ") : stepLabel(step)
+  });
+
+  const expectedNames = expectedDuplicateLayerNames(args, pairs);
+  const missingNames = expectedNames.filter((name) => !observedNameEvidence(evidence.readBack, name));
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:names`,
+    title: "Duplicate layer names are present in post-run read-back",
+    expected: expectedNames.join(", "),
+    observed: missingNames.length ? `missing: ${missingNames.join(", ")}` : expectedNames.join(", "),
+    passed: expectedNames.length === expectedCount && missingNames.length === 0,
+    evidence: missingNames.length
+      ? "No post-run read-back step contained every expected duplicate name."
+      : expectedNames.map((name) => observedNameEvidence(evidence.readBack, name)).filter(Boolean).join("; ")
+  });
+
+  const before = numberValue(payload.layerCountBefore);
+  const after = numberValue(payload.layerCountAfter);
+  const expectedAfter = before === null ? null : before + expectedCount;
+  const afterReadBackEvidence = observedLayerCountEvidence(evidence.readBack, after);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:layer-counts`,
+    title: "Before and after layer counts match requested duplicates",
+    expected: before === null ? `${expectedCount} new layer(s)` : `${before} -> ${expectedAfter}`,
+    observed: before === null || after === null ? "missing before/after layer counts" : `${before} -> ${after}`,
+    passed: before !== null &&
+      after !== null &&
+      expectedAfter !== null &&
+      nearlyEqual(after, expectedAfter) &&
+      postVerification.ok === true &&
+      postVerification.layerCountMatches === true &&
+      Boolean(afterReadBackEvidence),
+    evidence: afterReadBackEvidence || "No post-run read-back layer count matched duplicate_layers after-count."
+  });
+}
+
 function exactRenamesMatch(items, args) {
   if (!items.length) return false;
   for (let index = 0; index < items.length; index += 1) {
@@ -733,6 +825,11 @@ function verifyStep(checks, step, evidence) {
       passed: Boolean(payload.source) && Boolean(duplicate && duplicate.index),
       evidence: stepLabel(step)
     });
+    return;
+  }
+
+  if (step.tool === "duplicate_layers") {
+    checkDuplicateLayers(checks, step, payload, evidence);
     return;
   }
 
