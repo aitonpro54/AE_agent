@@ -729,10 +729,40 @@ function tailLines(value, maxLines) {
   return output.split(/\r?\n/).slice(-maxLines).join("\n").trim();
 }
 
+function splitCommandLine(command) {
+  const args = [];
+  let current = "";
+  let quote = null;
+  for (let index = 0; index < command.length; index += 1) {
+    const char = command[index];
+    if ((char === "\"" || char === "'") && (!quote || quote === char)) {
+      quote = quote ? null : char;
+      continue;
+    }
+    if (!quote && /\s/.test(char)) {
+      if (current) {
+        args.push(current);
+        current = "";
+      }
+      continue;
+    }
+    current += char;
+  }
+  if (quote) {
+    throw new Error(`Unterminated quote in command: ${command}`);
+  }
+  if (current) {
+    args.push(current);
+  }
+  return args;
+}
+
 function runShellCommand(cwd, command, timeoutMs = 120000) {
-  const args = process.platform === "win32" ? ["/d", "/s", "/c", command] : ["-lc", command];
-  const shell = process.platform === "win32" ? "cmd.exe" : "sh";
-  return spawnSync(shell, args, {
+  const [program, ...args] = splitCommandLine(command);
+  if (!program) {
+    throw new Error("Validation command must not be empty.");
+  }
+  return spawnSync(program, args, {
     cwd,
     encoding: "utf8",
     maxBuffer: CHILD_OUTPUT_MAX_BUFFER_BYTES,
