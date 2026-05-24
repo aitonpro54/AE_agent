@@ -1,6 +1,6 @@
 {
   "schema": "sdk-roadmap-supervisor-queue.v1",
-  "milestone": 211,
+  "milestone": 212,
   "title": "AO-Inspired Pipeline Hardening Queue",
   "createdAt": "2026-05-24",
   "purpose": "Run the safe AO-inspired hardening block from docs/research/composio-agent-orchestrator-applicability.md through the existing AE Agent roadmap supervisor without installing AO, creating branches/worktrees/PRs, touching CEP/live/production/dependencies, or changing package manifests.",
@@ -8,7 +8,7 @@
     "research": "docs/research/composio-agent-orchestrator-applicability.md",
     "block": "ao-inspired-pipeline-hardening",
     "executionModel": "Sequential roadmap supervisor items, one roadmap-sdk writer child at a time, focused validation per item, handoff after each item, and one reviewable commit per item.",
-    "numberingDecision": "The user requested M211-M214 for this AO-inspired block even though the active plan already contains a duplicate_layers M211 reconciliation. Use AO-specific titles/ids to avoid confusing the two records.",
+    "numberingDecision": "The research note now shifts this AO-inspired block to M212-M215 because the active plan already contains a duplicate_layers M211 reconciliation. This follows the existing project convention of preserving the requested design while avoiding milestone collisions.",
     "boundaries": {
       "installAO": false,
       "runAO": false,
@@ -23,8 +23,8 @@
   },
   "queueItems": [
     {
-      "id": "m211-ao-task-session-activity-schema",
-      "milestone": 211,
+      "id": "m212-ao-task-session-activity-schema",
+      "milestone": 212,
       "title": "AO-inspired task/session/activity schema",
       "dependencies": [],
       "runner": {
@@ -33,7 +33,7 @@
       "mode": "sdk-write",
       "plannedPaths": [
         ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
-        ".codex-audit/sdk-ao-pattern-intake/211-activity-session-schema.json",
+        ".codex-audit/sdk-ao-pattern-intake/212-activity-session-schema.json",
         "scripts/sdk-ao-pattern-intake-smoke.js",
         "plans/target-app-execplan.md",
         ".codex/handoff.md"
@@ -53,14 +53,14 @@
         ".github/**"
       ],
       "allowedActions": [
-        "create .codex-audit/sdk-ao-pattern-intake/211-activity-session-schema.json as a local AO-inspired contract, not an AO integration",
+        "create .codex-audit/sdk-ao-pattern-intake/212-activity-session-schema.json as a local AO-inspired contract, not an AO integration",
         "define a task envelope with taskId, milestone, source, goal, plannedPaths, forbiddenPaths, allowedCommands, validationCommands, stopGates, escalationRules, nextPrompt, handoffPath, stateFile, activityLog, and reportPath",
         "define session roles writer, reviewer, analyzer, and live-check; define lifecycle states queued, active, idle, needs_input, stuck, errored, done, stopped, and escalated",
         "define activity JSONL event examples for active, ready, idle, needs_input, stuck, errored, done, validation_started, validation_failed, handoff_written, and commit_created",
         "map the contract to the existing roadmap supervisor runtime files under .codex-runtime/sdk/roadmap-supervisor/<session-id>/ without changing runtime behavior",
         "add scripts/sdk-ao-pattern-intake-smoke.js to parse the artifact and assert required fields, states, event examples, roadmap-supervisor mapping, and forbidden-boundary claims",
-        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and Active Roadmap notes for this AO-inspired M211 item while recording the existing duplicate M211 numbering collision",
-        "update .codex/handoff.md with the M211 AO schema state, validation commands, boundaries, commit pending/supervisor commit note, and exact next prompt for M212"
+        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and Active Roadmap notes for this AO-inspired M212 item while recording the existing M211 numbering collision",
+        "update .codex/handoff.md with the M212 AO schema state, validation commands, boundaries, commit pending/supervisor commit note, and exact next prompt for M213"
       ],
       "forbiddenActions": [
         "install or run Composio AO",
@@ -118,11 +118,11 @@
       "status": "queued"
     },
     {
-      "id": "m212-ao-stuck-escalation-design",
-      "milestone": 212,
+      "id": "m213-ao-stuck-escalation-design",
+      "milestone": 213,
       "title": "AO-inspired stuck detector and escalation design",
       "dependencies": [
-        "m211-ao-task-session-activity-schema"
+        "m212-ao-task-session-activity-schema"
       ],
       "runner": {
         "kind": "roadmap-sdk"
@@ -130,7 +130,7 @@
       "mode": "sdk-write",
       "plannedPaths": [
         ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
-        ".codex-audit/sdk-ao-pattern-intake/212-stuck-escalation-design.json",
+        ".codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json",
         "scripts/sdk-ao-stuck-escalation-smoke.js",
         "plans/target-app-execplan.md",
         ".codex/handoff.md"
@@ -150,13 +150,13 @@
         ".github/**"
       ],
       "allowedActions": [
-        "create .codex-audit/sdk-ao-pattern-intake/212-stuck-escalation-design.json as a design-only policy over the M211 activity/session contract",
+        "create .codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json as a design-only policy over the M212 activity/session contract",
         "define stuck inputs from stale activity, missing log progress, validation failure, child process timeout, needs_input prompt, context_pressure, dirty git state, and unplanned path change",
         "define escalation actions stop_and_handoff, ask_user, create_repair_prompt, retry_later, and fail_closed, with retry caps and no auto-fix default",
         "define examples that turn activity/session events into stuck/escalated outcomes without mutating repository files outside planned paths",
         "add scripts/sdk-ao-stuck-escalation-smoke.js with fixture sessions proving stale activity and validation failures escalate, healthy done sessions do not, and auto-fix/auto-retry/live/dependency actions remain forbidden",
-        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and Active Roadmap notes for M212",
-        "update .codex/handoff.md with M212 state, validation commands, decisions, risks, and exact next prompt for M213"
+        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and Active Roadmap notes for M213",
+        "update .codex/handoff.md with M213 state, validation commands, decisions, risks, and exact next prompt for M214"
       ],
       "forbiddenActions": [
         "implement an auto-fixing runtime loop",
@@ -214,11 +214,11 @@
       "status": "queued"
     },
     {
-      "id": "m213-ao-static-status-dashboard",
-      "milestone": 213,
+      "id": "m214-ao-static-status-dashboard",
+      "milestone": 214,
       "title": "AO-inspired static status dashboard",
       "dependencies": [
-        "m212-ao-stuck-escalation-design"
+        "m213-ao-stuck-escalation-design"
       ],
       "runner": {
         "kind": "roadmap-sdk"
@@ -226,7 +226,7 @@
       "mode": "sdk-write",
       "plannedPaths": [
         ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
-        ".codex-audit/sdk-ao-pattern-intake/213-status-dashboard-contract.json",
+        ".codex-audit/sdk-ao-pattern-intake/214-status-dashboard-contract.json",
         "scripts/render-roadmap-supervisor-status-dashboard.js",
         "scripts/sdk-ao-status-dashboard-smoke.js",
         "plans/target-app-execplan.md",
@@ -247,13 +247,13 @@
         ".github/**"
       ],
       "allowedActions": [
-        "create .codex-audit/sdk-ao-pattern-intake/213-status-dashboard-contract.json defining a static dashboard over roadmap supervisor state/activity artifacts",
+        "create .codex-audit/sdk-ao-pattern-intake/214-status-dashboard-contract.json defining a static dashboard over roadmap supervisor state/activity artifacts",
         "add scripts/render-roadmap-supervisor-status-dashboard.js as a no-dependency CLI that reads a supplied session root or fixture root and writes/prints static Markdown only",
         "the dashboard must summarize session id, queue item, role, lifecycle status, last activity, validation result, blockers, changed paths, handoff path, report path, and next action",
         "add scripts/sdk-ao-status-dashboard-smoke.js that builds temp fixture session files, runs the renderer, and asserts active/stuck/done sessions plus next-action text render correctly",
         "ensure the renderer does not start a web server, install packages, write production/runtime files by default, or require live AE/CEP",
-        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and Active Roadmap notes for M213",
-        "update .codex/handoff.md with M213 state, validation commands, decisions, risks, and exact next prompt for M214"
+        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and Active Roadmap notes for M214",
+        "update .codex/handoff.md with M214 state, validation commands, decisions, risks, and exact next prompt for M215"
       ],
       "forbiddenActions": [
         "add a web server, browser UI, dependency, package script, package manifest change, or package lock change",
@@ -312,11 +312,11 @@
       "status": "queued"
     },
     {
-      "id": "m214-ao-readonly-failure-analyzer",
-      "milestone": 214,
+      "id": "m215-ao-readonly-failure-analyzer",
+      "milestone": 215,
       "title": "AO-inspired read-only failure analyzer packet",
       "dependencies": [
-        "m213-ao-static-status-dashboard"
+        "m214-ao-static-status-dashboard"
       ],
       "runner": {
         "kind": "roadmap-sdk"
@@ -324,7 +324,7 @@
       "mode": "sdk-write",
       "plannedPaths": [
         ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
-        ".codex-audit/sdk-ao-pattern-intake/214-readonly-failure-analyzer-contract.json",
+        ".codex-audit/sdk-ao-pattern-intake/215-readonly-failure-analyzer-contract.json",
         "scripts/create-roadmap-failure-analyzer-packet.js",
         "scripts/sdk-ao-failure-analyzer-smoke.js",
         "plans/target-app-execplan.md",
@@ -345,13 +345,13 @@
         ".github/**"
       ],
       "allowedActions": [
-        "create .codex-audit/sdk-ao-pattern-intake/214-readonly-failure-analyzer-contract.json defining a read-only failure packet format",
+        "create .codex-audit/sdk-ao-pattern-intake/215-readonly-failure-analyzer-contract.json defining a read-only failure packet format",
         "add scripts/create-roadmap-failure-analyzer-packet.js as a no-dependency CLI that reads explicit failure report/log/session fixture paths and emits JSON or Markdown repair packets without changing source files",
         "the packet must include failure class, command, status, relevant log tail, changed paths if supplied, suspected cause with confidence, forbidden auto-actions, repair prompt, and next bounded task fields",
         "add scripts/sdk-ao-failure-analyzer-smoke.js that builds temp fixture failures, runs the analyzer, and asserts validation_failure and stuck_session packets include repair prompts while forbidding auto-fix/live/dependency/PR actions",
-        "update the queue artifact closeout notes for this AO-inspired block only if the previous M211-M213 commits are observable in git log",
-        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and Active Roadmap notes for M214 and block closeout",
-        "update .codex/handoff.md with M214 state, validation commands, decisions, risks, commit pending/supervisor commit note, and exact next prompt for the next thread"
+        "update the queue artifact closeout notes for this AO-inspired block only if the previous M212-M214 commits are observable in git log",
+        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and Active Roadmap notes for M215 and block closeout",
+        "update .codex/handoff.md with M215 state, validation commands, decisions, risks, commit pending/supervisor commit note, and exact next prompt for the next thread"
       ],
       "forbiddenActions": [
         "make the analyzer fix code, edit source based on logs, retry commands, run live AE/CEP, install dependencies, create branches/worktrees, push, PR, GitHub issues, or GitHub Actions",
