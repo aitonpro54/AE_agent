@@ -115,7 +115,11 @@
         "validation-failed",
         "context-pressure"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedBy": {
+        "commit": "b680a4f63f07ccf02803fb1891fd3a18ad9fa9c8",
+        "evidence": "M212 created the AO-inspired task/session/activity schema artifact and smoke coverage through roadmap supervisor without AO install, branch/worktree/PR, CEP/live, production, or dependency changes."
+      }
     },
     {
       "id": "m213-ao-stuck-escalation-design",
@@ -211,7 +215,11 @@
         "validation-failed",
         "context-pressure"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedBy": {
+        "commit": "12eb9be1e35aacdf972323a104ad0549c6476ceb",
+        "evidence": "M213 created the AO-inspired stuck/escalation design artifact and smoke coverage through roadmap supervisor without auto-fix, unbounded retry, AO install, branch/worktree/PR, CEP/live, production, or dependency changes."
+      }
     },
     {
       "id": "m214-ao-static-status-dashboard",
@@ -326,7 +334,11 @@
         ],
         "handoffPath": ".codex/handoff.md"
       },
-      "status": "pending-handoff-acl"
+      "status": "completed",
+      "completedBy": {
+        "commit": "d1d4756e93fe760f41962c11667d6c302955a461",
+        "evidence": "M214 created the static roadmap supervisor status dashboard contract, no-dependency renderer, and fixture smoke coverage through roadmap supervisor without web server, package, CEP/live, production, AO install, branch/worktree, push, or PR changes."
+      }
     },
     {
       "id": "m215-ao-readonly-failure-analyzer",
