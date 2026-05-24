@@ -7,8 +7,11 @@
   "queue": ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-queue.json",
   "readiness": {
     "planOnlyAvailable": true,
+    "liveCheckAvailable": true,
     "executeOneAvailable": true,
     "runUntilBudgetAvailable": true,
+    "requireLiveConnectivityAvailable": true,
+    "itemLiveValidationAvailable": true,
     "parallelReviewersAvailable": true,
     "autoCommitAfterValidation": true,
     "autoPush": false,
@@ -22,6 +25,8 @@
     "node --check scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js",
     "node scripts/sdk-ae-agent-roadmap-supervisor-readiness-smoke.js",
     "node scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js",
+    "node scripts/cep-panel-cdp-smoke.js inspect when live stack is available",
+    "node scripts/cep-panel-cdp-smoke.js connector-status-smoke when live stack is available",
     "npm.cmd run check:rules",
     "git diff --check"
   ]

@@ -24,12 +24,14 @@ export const HARD_MAX_MINUTES = 300;
 export const DEFAULT_TAIL_LINES = 80;
 const CHILD_OUTPUT_MAX_BUFFER_BYTES = 30 * 1024 * 1024;
 const REVIEWER_LIMIT = 2;
+const LIVE_CHECK_TIMEOUT_MS = 5 * 60 * 1000;
 
 const HELP = `
 AE Agent roadmap supervisor
 
 Usage:
   node orchestrator/run-ae-agent-roadmap-supervisor.mjs --plan-only --queue <path> --max-items <n> --json
+  node orchestrator/run-ae-agent-roadmap-supervisor.mjs --live-check --json
   node orchestrator/run-ae-agent-roadmap-supervisor.mjs --execute-one --item <id> --approval-text "<exact text>"
   node orchestrator/run-ae-agent-roadmap-supervisor.mjs --run-until-budget --max-items <n> --max-minutes <m> --reviewers parallel --approval-text "<exact text>"
 
@@ -45,6 +47,10 @@ Options:
   --reviewers <none|parallel>
                              Run read-only reviewer tasks, up to two in parallel.
   --approval-text <text>     Exact supervisor approval text printed by --plan-only.
+  --live-approval-text <text>
+                             Exact item-level live validation approval text.
+  --require-live-connectivity
+                             Run read-only AE/CEP connectivity before writer work.
   --tail-lines <n>           Failure tail lines. Default ${DEFAULT_TAIL_LINES}.
   --json                     Print machine-readable output.
   --help                     Show this help.
@@ -59,6 +65,7 @@ const VALUE_OPTIONS = new Set([
   "approval-text",
   "engine",
   "item",
+  "live-approval-text",
   "log-dir",
   "max-items",
   "max-minutes",
@@ -73,7 +80,9 @@ const BOOLEAN_OPTIONS = new Set([
   "execute-one",
   "help",
   "json",
+  "live-check",
   "plan-only",
+  "require-live-connectivity",
   "run-until-budget",
 ]);
 
@@ -383,12 +392,35 @@ function validateQueue(queue) {
     if (!item.stopGates.includes("validation-failed") || !item.stopGates.includes("context-pressure")) {
       throw new Error(`Queue item must include validation/context stop gates: ${item.id}`);
     }
+    validateLiveValidationPolicy(item);
   }
   for (const item of queue.queueItems) {
     for (const dependency of item.dependencies) {
       if (!ids.has(dependency)) {
         throw new Error(`Unknown dependency for ${item.id}: ${dependency}`);
       }
+    }
+  }
+}
+
+function validateLiveValidationPolicy(item) {
+  const policy = item.liveValidation || { mode: "none" };
+  if (!["none", "read-only-connectivity", "generated-only-command"].includes(policy.mode)) {
+    throw new Error(`Unsupported liveValidation mode for ${item.id}: ${policy.mode}`);
+  }
+  if (policy.mode === "none") {
+    return;
+  }
+  assertArray(policy.commands, `${item.id}.liveValidation.commands`);
+  if (policy.commands.length === 0) {
+    throw new Error(`liveValidation commands are required for ${item.id}.`);
+  }
+  if (policy.mode === "generated-only-command") {
+    if (policy.approvalRequired !== true || !policy.approvalText) {
+      throw new Error(`generated-only liveValidation requires exact approval text for ${item.id}.`);
+    }
+    if (policy.mutatingLive !== true) {
+      throw new Error(`generated-only liveValidation must explicitly mark mutatingLive for ${item.id}.`);
     }
   }
 }
@@ -414,12 +446,12 @@ export function buildSupervisorApprovalText({
 }
 
 function ensureMode(options) {
-  const modes = ["planOnly", "executeOne", "runUntilBudget"].filter((key) => options[key]);
+  const modes = ["planOnly", "liveCheck", "executeOne", "runUntilBudget"].filter((key) => options[key]);
   if (options.help) {
     return "help";
   }
   if (modes.length !== 1) {
-    throw new Error("Select exactly one mode: --plan-only, --execute-one, or --run-until-budget.");
+    throw new Error("Select exactly one mode: --plan-only, --live-check, --execute-one, or --run-until-budget.");
   }
   return modes[0];
 }
@@ -537,12 +569,14 @@ function createRuntime(cwd, options) {
   const absolute = path.join(cwd, repoPath);
   mkdirSync(absolute, { recursive: true });
   mkdirSync(path.join(absolute, "children"), { recursive: true });
+  mkdirSync(path.join(absolute, "live"), { recursive: true });
   mkdirSync(path.join(absolute, "reviewers"), { recursive: true });
   return {
     absolute,
     childDir: path.join(absolute, "children"),
     eventsPath: path.join(absolute, "events.jsonl"),
     finalReportPath: path.join(absolute, "final-report.json"),
+    liveDir: path.join(absolute, "live"),
     repoPath,
     reviewerDir: path.join(absolute, "reviewers"),
     sessionId,
@@ -614,6 +648,71 @@ function runShellCommand(cwd, command, timeoutMs = 120000) {
     stdio: ["ignore", "pipe", "pipe"],
     timeout: timeoutMs,
   });
+}
+
+function liveConnectivityCommands() {
+  const nodeCommand = "node";
+  return [
+    {
+      command: `${nodeCommand} scripts/cep-panel-cdp-smoke.js inspect`,
+      id: "live-cep-inspect",
+      timeoutMs: LIVE_CHECK_TIMEOUT_MS,
+    },
+    {
+      command: `${nodeCommand} scripts/cep-panel-cdp-smoke.js connector-status-smoke`,
+      id: "live-connector-status-smoke",
+      timeoutMs: LIVE_CHECK_TIMEOUT_MS,
+    },
+  ];
+}
+
+function runLoggedCommand(cwd, runtime, command, id, directory, timeoutMs = 120000) {
+  const result = runShellCommand(cwd, command, timeoutMs);
+  const logPath = path.join(directory, `${safeSessionToken(id)}.log`);
+  writeLog(logPath, result);
+  return {
+    command,
+    logPath: normalizeRepoPath(path.relative(cwd, logPath)),
+    ok: !result.error && result.status === 0,
+    status: result.status,
+    stderrTail: tailLines(result.stderr, DEFAULT_TAIL_LINES),
+    stdoutTail: tailLines(result.stdout, DEFAULT_TAIL_LINES),
+  };
+}
+
+function runLiveConnectivityCheck(cwd, runtime) {
+  const results = [];
+  for (const command of liveConnectivityCommands()) {
+    const result = runLoggedCommand(cwd, runtime, command.command, command.id, runtime.liveDir, command.timeoutMs);
+    results.push({ ...result, id: command.id, mode: "read-only-connectivity" });
+    if (!result.ok) {
+      throw new Error(`Live AE/CEP connectivity failed: ${command.id}. ${result.logPath}\n${result.stderrTail || result.stdoutTail}`);
+    }
+  }
+  return results;
+}
+
+function runItemLiveValidation(cwd, runtime, item, options) {
+  const policy = item.liveValidation || { mode: "none" };
+  if (policy.mode === "none") {
+    return [];
+  }
+  if (policy.mode === "read-only-connectivity") {
+    return runLiveConnectivityCheck(cwd, runtime);
+  }
+  if (options.liveApprovalText !== policy.approvalText) {
+    throw new Error(`Missing exact --live-approval-text for ${item.id}: ${policy.approvalText}`);
+  }
+  const results = [];
+  for (const [index, command] of policy.commands.entries()) {
+    const id = `item-live-${item.id}-${index + 1}`;
+    const result = runLoggedCommand(cwd, runtime, command, id, runtime.liveDir, item.maxMinutes * 60 * 1000);
+    results.push({ ...result, id, mode: policy.mode });
+    if (!result.ok) {
+      throw new Error(`Item live validation failed for ${item.id}: ${command}. ${result.logPath}\n${result.stderrTail || result.stdoutTail}`);
+    }
+  }
+  return results;
 }
 
 function runFixtureWriter(cwd, item) {
@@ -873,6 +972,9 @@ async function executeQueueItem(cwd, runtime, state, queue, item, options, preAp
   assertCleanGit(cwd);
   const preHead = gitHead(cwd);
   appendEvent(runtime, { item: item.id, type: "item-started" });
+  const preflightLiveResults = options.requireLiveConnectivity
+    ? runLiveConnectivityCheck(cwd, runtime)
+    : [];
   const reviewerResults = await runReviewers(cwd, runtime, item, options.reviewers || "none", options.engine || "sdk");
   const childResult = runWriterChild(cwd, runtime, item, options.engine || "sdk");
   if (childResult.error || childResult.status !== 0) {
@@ -882,6 +984,7 @@ async function executeQueueItem(cwd, runtime, state, queue, item, options, preAp
   }
   const preValidationChanges = assertChangedPathsAllowed(cwd, item.plannedPaths);
   const validationResults = runValidationCommands(cwd, runtime, item);
+  const itemLiveValidationResults = runItemLiveValidation(cwd, runtime, item, options);
   const preCommitChanges = assertChangedPathsAllowed(cwd, item.plannedPaths);
   if (item.handoffPolicy.required === true) {
     const handoffPath = normalizeRepoPath(item.handoffPolicy.path);
@@ -906,6 +1009,8 @@ async function executeQueueItem(cwd, runtime, state, queue, item, options, preAp
     childLogPath: normalizeRepoPath(path.relative(cwd, childResult.logPath)),
     commitId,
     item: item.id,
+    itemLiveValidationResults,
+    liveConnectivityResults: preflightLiveResults,
     preValidationChangedPaths: preValidationChanges.changedPaths,
     reviewerResults,
     validationResults,
@@ -958,6 +1063,7 @@ export function planOnlyEnvelope(prepared) {
       milestone: item.milestone,
       plannedPaths: item.plannedPaths,
       reviewerTasks: item.reviewerTasks.length,
+      liveValidationMode: (item.liveValidation || { mode: "none" }).mode,
       status: item.status,
     })),
     maxItems: prepared.maxItems,
@@ -967,6 +1073,25 @@ export function planOnlyEnvelope(prepared) {
     runtimeStateWritten: false,
     sdkThreadCreated: false,
   };
+}
+
+export function liveCheck(prepared) {
+  const runtime = createRuntime(prepared.cwd, prepared.options);
+  const state = loadState(runtime, prepared.options);
+  writeState(runtime, state);
+  appendEvent(runtime, { type: "live-check-started" });
+  const liveConnectivityResults = runLiveConnectivityCheck(prepared.cwd, runtime);
+  const report = {
+    liveConnectivityResults,
+    mode: "live-check",
+    ok: true,
+    queuePath: prepared.queuePath,
+    sessionId: runtime.sessionId,
+    statePath: normalizeRepoPath(path.relative(prepared.cwd, runtime.statePath)),
+  };
+  report.finalReportPath = writeFinalReport(runtime, report);
+  appendEvent(runtime, { type: "live-check-completed" });
+  return report;
 }
 
 export async function executeOne(prepared) {
@@ -1068,6 +1193,8 @@ export async function main(argv = process.argv.slice(2)) {
   let result;
   if (prepared.mode === "planOnly") {
     result = planOnlyEnvelope(prepared);
+  } else if (prepared.mode === "liveCheck") {
+    result = liveCheck(prepared);
   } else if (prepared.mode === "executeOne") {
     result = await executeOne(prepared);
   } else {

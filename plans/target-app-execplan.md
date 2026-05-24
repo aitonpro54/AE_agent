@@ -33,6 +33,7 @@
 - [x] Milestone 199: Roadmap supervisor contract, governance, and plan-only preview.
 - [x] Milestone 200: Roadmap supervisor execute-one validation/commit/handoff loop.
 - [x] Milestone 201: Roadmap supervisor run-until-budget loop with parallel read-only reviewers.
+- [x] Milestone 202: Roadmap supervisor live AE/CEP validation hooks.
 
 ## Current Stable Baseline
 
@@ -81,7 +82,7 @@
 - SDK smoke consolidation is planned in `.codex-audit/sdk-smoke-consolidation-plan.json`; existing milestone-specific smokes stay active until replacement coverage is green.
 - The AE Agent cleanup conveyor command captures full child stdout/stderr into ignored `.codex-runtime/sdk/cleanup-conveyor-logs` execution logs by default, prints compact terminal summaries, and validates both working-tree changes and commits created since pre-run `HEAD` against the selected planned-path allowlist.
 - The AE Agent feature conveyor is now locally smoke-checked for Dakkshin intake, M187 field validation, M190 Full UI Agent new-tool validation, and M191 mask-safety validation through `.codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json` and `orchestrator/run-ae-agent-feature-conveyor.mjs`; SDK workspace-write execution remains separate from the M188/M190/M191 `--validate-live` lanes.
-- The AE Agent roadmap supervisor now sits above existing bounded runners as a deterministic local autopilot: plan-only preview, execute-one, run-until-budget, runtime session state under `.codex-runtime/sdk/roadmap-supervisor/`, one writer child at a time, up to two read-only reviewers in parallel, validation before auto-commit, required handoff checks, exact approval text, and no push/dependency/live/CEP/external-provider work by default.
+- The AE Agent roadmap supervisor now sits above existing bounded runners as a deterministic local autopilot: plan-only preview, read-only `--live-check` against an already-open AE Agent panel, execute-one, run-until-budget, runtime session state under `.codex-runtime/sdk/roadmap-supervisor/`, one writer child at a time, up to two read-only reviewers in parallel, validation before auto-commit, optional item-level generated-only live validation with separate `--live-approval-text`, required handoff checks, exact approval text, and no push/dependency/mutating-live/CEP/external-provider work by default.
 
 ## Historical Archive
 
@@ -273,6 +274,7 @@
 - M199: Added the roadmap supervisor contract, governance/readiness artifacts, default safe queue, plan-only preview, exact approval text generation, and package/check:rules wiring.
 - M200: Added execute-one support for one approved queue item with clean-git preflight, writer child logs, planned-path diff enforcement, validation, required handoff update, auto-commit of planned files only, and final report writing.
 - M201: Added run-until-budget/resume behavior with max item/minute budgets, runtime state, sequential writer execution, and up to two read-only reviewer tasks in parallel.
+- M202: Added roadmap supervisor `--live-check`, `--require-live-connectivity`, queue item `liveValidation` policy, and separate `--live-approval-text` for generated-only AE/CEP lanes.
 
 ## Decision Log
 
@@ -280,6 +282,7 @@
 - 2026-05-24: Roadmap supervisor milestones are numbered M199-M201 because M198 was already occupied by the marker lifecycle live-validation lane. This preserves the user's requested design while avoiding a milestone collision.
 - 2026-05-24: Roadmap supervisor is deterministic control-plane code, not a long-lived LLM agent. It may run aggressive multi-item loops only inside exact approval text, with one writer child at a time, optional parallel read-only reviewers, validation before commit, and no push/dependency/live/CEP/external-provider work unless a later item adds its own approval.
 - 2026-05-24: The supervisor's approval text must bind repository path, queue path, max items, max minutes, auto-commit permission, `noPush=true`, `noDependencyChanges=true`, and `noLiveCepAeUnlessPerItemApproved=true`; plan-only preview is the source of the exact string.
+- 2026-05-24: M202 lets the roadmap supervisor check real open After Effects / AE Agent panel state itself. Read-only connectivity checks do not need mutating approval, but generated-only Full UI Agent or other mutating live commands must be declared in the queue item `liveValidation` policy and require separate exact `--live-approval-text`.
 - 2026-05-24: M198 marker lifecycle acceptance must run inside the installed panel through CDP, Agent UI/chat, `openai-cli` with `gpt-5.5`, panel-generated plan only, M100 dry run/protected run, bridge marker read-back, and generated-prefix cleanup. Deterministic backend fallback, Ollama, OpenRouter, and raw ExtendScript fallback are not acceptance evidence.
 - 2026-05-24: M197 treats bulk/selected-layer duplication as its own future gated slice, not an implicit extension hidden inside `duplicate_layer`. Future `duplicate_layers` work should require concrete `layerIndices`; selected-layer convenience must come from prior read-only selected-layer evidence rather than selection-only ambiguity.
 - 2026-05-24: M197 intentionally adds no runtime tool, planner alias, semantic verifier code, CEP UI, live mutating validation, OpenAI CLI planner acceptance, dependency change, push, or PR. Source/precomp relink duplication, layer deletion, mask delete/invert/path editing, audio workflows, and arbitrary ExtendScript loops stay separately gated.
@@ -410,6 +413,7 @@
 | M199-M201 roadmap supervisor static suite | Required because M199-M201 add a new supervisor runner, audit/governance artifacts, package scripts, check:rules wiring, and temp-git command smokes. | Passed on 2026-05-24: touched JS `node --check`; `node scripts/sdk-ae-agent-roadmap-supervisor-readiness-smoke.js`; `node scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js`; current-history and current-governance smokes; `npm.cmd run check:rules`; `git diff --check`; provider contract/API; solution registry/candidate/promotion/retrieval/library; project intent memory; plan classification/repair; semantic verification; reliability validation suite smoke; ChatGPT connector; prompt optimization; bridge-only smoke; and main smoke. The command smoke uses temporary git repositories to prove plan-only creates no child run, wrong approval fails, dirty tree fails, execute-one commits one item, unplanned paths fail, validation failure stops the loop, run-until-budget respects budget/resume, and reviewers remain read-only. |
 | M199-M201 live/provider validation | Out of scope because the roadmap supervisor is repository orchestration control-plane work; it adds no AE runtime tool, no CEP panel UI, no planner-visible AE tool, no dependency change, and no live CEP/AE lane. | Not run. |
 | M199-M201 live connectivity checks | Required by the standing live availability rule because After Effects, the installed panel, and bridge were available. | Passed on 2026-05-24: `node scripts/cep-panel-cdp-smoke.js inspect` saw installed `AE Agent 2.0.0` connected to the bridge, and `node scripts/cep-panel-cdp-smoke.js connector-status-smoke` passed. Full mutating OpenAI CLI planner acceptance was not run because the supervisor does not add a planner-visible AE tool or CEP panel behavior. |
+| M202 roadmap supervisor live hooks | Required because M202 makes supervisor responsible for read-only AE/CEP live connectivity and item-level generated-only live validation hooks. | Passed on 2026-05-24: touched JS `node --check`; `node scripts/sdk-ae-agent-roadmap-supervisor-readiness-smoke.js`; `node scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js`; `npm.cmd run check:rules`; `git diff --check`; `npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor -- --live-check --session-id m202-live-check --json`; `node scripts/cep-panel-cdp-smoke.js inspect`; `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; provider contract/API; solution registry/candidate/promotion/retrieval/library; project intent memory; plan classification/repair; semantic verification; reliability validation suite smoke; ChatGPT connector; prompt optimization; bridge-only smoke; and main smoke. Bridge status also reported `panelConnected=true`. `git diff --check` printed only LF-to-CRLF working-copy warnings for touched files. No mutating live planner lane was run because M202 adds read-only connectivity gates plus approval-gated hooks, not a new planner-visible AE tool. |
 | SDKThread/network/external-provider/OpenAI CLI planner outside approved generated-only live lanes | Forbidden/out of scope for this turn. | Not run outside approved generated-only live validation lanes. |
 | Package install/dependency change validation | Out of scope because no dependency change is allowed. | Not run. |
 
@@ -600,6 +604,15 @@
 - The loop runs one writer item at a time until max item/minute budget, no ready items, or the first fail-closed gate.
 - Parallel reviewer mode runs at most two read-only reviewer tasks per item; reviewer failures or blocking findings stop the item when the queue item marks reviewers blocking.
 - Added temp-git command smoke coverage for plan-only/no child run, wrong approval, dirty tree, successful execute-one commit, unplanned path rejection, validation failure stop, run-until-budget budget stop, resume-state, and reviewer read-only behavior.
+
+### Milestone 202
+
+- Added supervisor `--live-check` mode for read-only checks against an already-open AE Agent panel.
+- `--live-check` runs `node scripts/cep-panel-cdp-smoke.js inspect` and `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`, writes logs under `.codex-runtime/sdk/roadmap-supervisor/<session-id>/live/`, and records a final report without touching tracked files.
+- Added `--require-live-connectivity` for `--execute-one` and `--run-until-budget`, so real supervisor execution can fail closed before writer work when AE/CEP/bridge are unavailable.
+- Added optional queue item `liveValidation` policy with modes `none`, `read-only-connectivity`, and `generated-only-command`.
+- Generated-only item live validation requires queue-declared commands, `mutatingLive:true`, and exact separate `--live-approval-text`.
+- Extended command smoke coverage with temp-repo fake CEP smoke scripts proving live-check, required live connectivity, missing item live approval failure, and successful item-level live validation logging.
 
 ### Milestone 175
 

@@ -37,7 +37,23 @@ function initRepo(temp) {
   sh(temp, ["git", "init"]);
   fs.writeFileSync(path.join(temp, "base.txt"), "base\n", "utf8");
   fs.writeFileSync(path.join(temp, ".gitignore"), ".codex-runtime/\n", "utf8");
-  sh(temp, ["git", "add", "base.txt", ".gitignore"]);
+  fs.mkdirSync(path.join(temp, "scripts"), { recursive: true });
+  fs.writeFileSync(
+    path.join(temp, "scripts", "cep-panel-cdp-smoke.js"),
+    [
+      '"use strict";',
+      "const mode = process.argv[2];",
+      "if (mode === 'inspect' || mode === 'connector-status-smoke') {",
+      "  console.log(JSON.stringify({ ok: true, mode }));",
+      "  process.exit(0);",
+      "}",
+      "console.error('unexpected mode ' + mode);",
+      "process.exit(1);",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  sh(temp, ["git", "add", "base.txt", ".gitignore", "scripts/cep-panel-cdp-smoke.js"]);
   sh(temp, [
     "git",
     "-c",
@@ -93,6 +109,10 @@ function item(id, milestone, options = {}) {
     validationCommands: options.validationCommands || ["git diff --check"],
     reviewerTasks: options.reviewerTasks || [],
     reviewerBlocking: options.reviewerBlocking || false,
+    liveValidation: options.liveValidation || {
+      mode: "none",
+      commands: [],
+    },
     approval: {
       state: options.approvalState || "approved",
       freshRequired: true,
@@ -157,6 +177,31 @@ function assertDefaultPlanOnly() {
   assert.strictEqual(result.maxMinutes, 180);
   assert.match(result.approvalText, /noPush=true/);
   assert(result.items.some((entry) => entry.id === "m199-roadmap-supervisor-contract-preview"));
+}
+
+function assertLiveCheckPasses() {
+  const temp = createTempRepo("live-check");
+  try {
+    const queuePath = writeQueue(temp, [item("one", 1)]);
+    const result = parseJson(run([
+      "--live-check",
+      "--queue",
+      queuePath,
+      "--session-id",
+      "live-check",
+      "--json",
+    ], temp));
+    assert.strictEqual(result.mode, "live-check");
+    assert.strictEqual(result.ok, true);
+    assert.deepStrictEqual(
+      result.liveConnectivityResults.map((entry) => entry.id),
+      ["live-cep-inspect", "live-connector-status-smoke"],
+    );
+    assert(fs.existsSync(path.join(temp, result.finalReportPath)));
+    assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
+  } finally {
+    removeTempRepo(temp);
+  }
 }
 
 function assertUnsafeFlagsRejected() {
@@ -236,6 +281,62 @@ function assertExecuteOneCommits() {
     assert(fs.existsSync(path.join(temp, result.finalReportPath)));
     assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
     assert.strictEqual(sh(temp, ["git", "log", "-1", "--format=%s"]), "test: one");
+  } finally {
+    removeTempRepo(temp);
+  }
+}
+
+function assertRequireLiveConnectivityAndItemLiveValidation() {
+  const temp = createTempRepo("item-live");
+  try {
+    const liveCommand = "node scripts/cep-panel-cdp-smoke.js inspect";
+    const queuePath = writeQueue(temp, [item("one", 1, {
+      liveValidation: {
+        approvalRequired: true,
+        approvalText: "I approve generated-only item live validation",
+        commands: [liveCommand],
+        mode: "generated-only-command",
+        mutatingLive: true,
+      },
+    })]);
+    const approval = approvalFor(temp, queuePath, ["--max-items", "1"]);
+    const missingLiveApproval = run([
+      "--execute-one",
+      "--queue",
+      queuePath,
+      "--item",
+      "one",
+      "--max-items",
+      "1",
+      "--require-live-connectivity",
+      "--approval-text",
+      approval,
+    ], temp);
+    assert.notStrictEqual(missingLiveApproval.status, 0);
+    assert.match(missingLiveApproval.stderr, /Missing exact --live-approval-text/);
+
+    sh(temp, ["git", "reset", "--hard", "HEAD"]);
+    sh(temp, ["git", "clean", "-fd"]);
+    const result = parseJson(run([
+      "--execute-one",
+      "--queue",
+      queuePath,
+      "--item",
+      "one",
+      "--max-items",
+      "1",
+      "--session-id",
+      "item-live",
+      "--require-live-connectivity",
+      "--approval-text",
+      approval,
+      "--live-approval-text",
+      "I approve generated-only item live validation",
+      "--json",
+    ], temp));
+    assert.strictEqual(result.results[0].liveConnectivityResults.length, 2);
+    assert.strictEqual(result.results[0].itemLiveValidationResults.length, 1);
+    assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
   } finally {
     removeTempRepo(temp);
   }
@@ -347,10 +448,12 @@ function assertRunUntilBudgetAndResume() {
 
 function main() {
   assertDefaultPlanOnly();
+  assertLiveCheckPasses();
   assertUnsafeFlagsRejected();
   assertWrongApprovalFails();
   assertDirtyTreeFails();
   assertExecuteOneCommits();
+  assertRequireLiveConnectivityAndItemLiveValidation();
   assertUnplannedPathFails();
   assertValidationFailureStops();
   assertRunUntilBudgetAndResume();

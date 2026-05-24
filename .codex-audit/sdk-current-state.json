@@ -224,7 +224,7 @@
         201
       ],
       "status": "current-direct-check",
-      "verdict": "AE Agent roadmap supervisor is available as a local-gated aggressive autopilot layer: plan-only preview, execute-one, run-until-budget, runtime session state, one writer child at a time, parallel read-only reviewers, validation-before-commit, required handoff, exact approval text, no push, and no dependency/live/CEP/external-provider work by default.",
+      "verdict": "AE Agent roadmap supervisor is available as a local-gated aggressive autopilot layer: plan-only preview, read-only live-check against open AE/CEP, execute-one, run-until-budget, runtime session state, one writer child at a time, parallel read-only reviewers, validation-before-commit, required handoff, exact approval text, no push, and no dependency/mutating-live/CEP/external-provider work by default.",
       "artifacts": [
         ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-contract.json",
         ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-readiness.json",
@@ -274,6 +274,8 @@
         "sdk-ae-agent-feature-conveyor-command-smoke.js",
         "sdk-ae-agent-roadmap-supervisor-readiness-smoke.js",
         "sdk-ae-agent-roadmap-supervisor-command-smoke.js",
+        "--live-check",
+        "requireLiveConnectivity",
         "M176 SDK current/history index smoke failed"
       ],
       "package.json": [

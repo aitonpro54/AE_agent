@@ -44,6 +44,10 @@ function main() {
   assert.strictEqual(contract.approvalContract.hardMaxMinutes, 300);
   assert.strictEqual(contract.executionModel.writerConcurrency, 1);
   assert.strictEqual(contract.executionModel.reviewerConcurrency, 2);
+  assert.strictEqual(contract.executionModel.readOnlyLiveConnectivity, true);
+  assert.strictEqual(readiness.readiness.liveCheckAvailable, true);
+  assert.strictEqual(readiness.readiness.requireLiveConnectivityAvailable, true);
+  assert.strictEqual(readiness.readiness.itemLiveValidationAvailable, true);
   assert.strictEqual(governance.mustRemainFalse.autoPush, false);
   assert.strictEqual(governance.mustRemainFalse.dependencyChanges, false);
   assert.strictEqual(governance.mustRemainFalse.cepPanelSdkWrites, false);
@@ -81,14 +85,21 @@ function main() {
     "HARD_MAX_ITEMS = 5",
     "REVIEWER_LIMIT = 2",
     "buildSupervisorApprovalText",
+    "liveCheck",
+    "runLiveConnectivityCheck",
+    "runItemLiveValidation",
+    "requireLiveConnectivity",
     "runUntilBudget",
     "noLiveCepAeUnlessPerItemApproved=true",
+    "Missing exact --live-approval-text",
     "Unsafe roadmap supervisor flag rejected",
   ], "roadmap supervisor runner");
   assertIncludesAll(readme, [
     "AE Agent roadmap supervisor",
     "codex:orchestrator:ae-agent-roadmap-supervisor",
     "sdk-roadmap-supervisor-contract.v1",
+    "--live-check",
+    "--require-live-connectivity",
     "--run-until-budget",
     "noPush=true",
   ], "orchestrator README");

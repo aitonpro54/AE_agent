@@ -17,6 +17,7 @@
   },
   "cli": {
     "planOnly": "npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor -- --plan-only --queue <path> --max-items <n> --json",
+    "liveCheck": "npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor -- --live-check --json",
     "executeOne": "npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor -- --execute-one --item <id> --approval-text \"<exact text>\"",
     "runUntilBudget": "npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor -- --run-until-budget --max-items <n> --max-minutes <m> --reviewers parallel --approval-text \"<exact text>\"",
     "sharedOptions": [
@@ -25,6 +26,8 @@
       "--resume-session <id>",
       "--log-dir <path>",
       "--tail-lines <n>",
+      "--require-live-connectivity",
+      "--live-approval-text <text>",
       "--json"
     ]
   },
@@ -69,6 +72,14 @@
       "stopGates",
       "status"
     ],
+    "optionalFields": [
+      "liveValidation"
+    ],
+    "liveValidationModes": [
+      "none",
+      "read-only-connectivity",
+      "generated-only-command"
+    ],
     "runnerKinds": [
       "feature-conveyor",
       "cleanup-conveyor",
@@ -86,6 +97,7 @@
       "state.json",
       "events.jsonl",
       "children/*.log",
+      "live/*.log",
       "reviewers/*.log",
       "final-report.json"
     ]
@@ -93,6 +105,8 @@
   "executionModel": {
     "writerConcurrency": 1,
     "reviewerConcurrency": 2,
+    "readOnlyLiveConnectivity": true,
+    "itemLiveValidation": "Only when the queue item defines liveValidation and generated-only commands carry their own exact live approval text.",
     "reviewerPolicy": "read-only reviewers only; no parallel writers",
     "commitPolicy": "auto-commit only planned paths after validation passes",
     "pushPolicy": "no push by default"
@@ -109,6 +123,8 @@
     "node-check-failed-for-touched-js",
     "git-diff-check-failed",
     "handoff-missing-after-success",
+    "live-connectivity-unavailable",
+    "missing-item-live-approval",
     "push-pr-dependency-live-cep-external-provider-request-without-per-item-approval",
     "context-pressure"
   ],

@@ -43,6 +43,10 @@
         "git diff --check"
       ],
       "reviewerTasks": [],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
       "approval": {
         "state": "pending-explicit-approval",
         "freshRequired": true

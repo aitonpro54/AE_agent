@@ -14,7 +14,7 @@
     "dependencyChanges": false,
     "packageLockChanges": false,
     "cepPanelSdkWrites": false,
-    "liveCepAeByDefault": false,
+    "mutatingLiveCepAeByDefault": false,
     "externalProviderPlannerByDefault": false,
     "parallelWriters": false
   },
@@ -22,7 +22,12 @@
     "one approved writer item at a time",
     "auto-commit planned paths after validation",
     "run-until-budget up to maxItems/maxMinutes",
+    "read-only live connectivity checks against the already-open AE Agent panel",
     "up to two read-only reviewer children in parallel"
+  ],
+  "allowedWithSeparateItemLiveApproval": [
+    "generated-only live validation commands defined by the queue item",
+    "Full UI Agent OpenAI CLI lanes that already have fail-closed cleanup/read-back policy"
   ],
   "blockedWithoutSeparateApproval": [
     "push",
