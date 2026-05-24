@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-05-23",
+  "updatedAt": "2026-05-24",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -459,6 +459,109 @@
       ],
       "notes": [
         "Keep this recipe typed-tool-only; raw ExtendScript is not needed for CTI alignment."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "bulk-layer-duplicate-typed-tool",
+      "title": "Bulk Layer Duplicate Typed Tool",
+      "status": "tool",
+      "tags": [
+        "layers",
+        "duplicate",
+        "bulk-duplicate",
+        "selected-layers",
+        "typed-tool",
+        "duplicate_layers"
+      ],
+      "intent": {
+        "summary": "Prefer duplicate_layers for explicit bulk layer duplication after target layers are known.",
+        "appliesWhen": [
+          "The user asks to duplicate, copy or clone multiple explicit layers.",
+          "The user asks to duplicate selected layers and selected-layer indices have been inspected first."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "layerIndices",
+          "type": "array",
+          "required": true,
+          "description": "Concrete one-based source layer indices for duplicate_layers."
+        },
+        {
+          "name": "sourceNames",
+          "type": "array",
+          "required": false,
+          "description": "Optional expected source names paired with layerIndices for source guard evidence."
+        },
+        {
+          "name": "nameSuffix",
+          "type": "string",
+          "required": false,
+          "description": "Optional duplicate name suffix when the user requests one."
+        }
+      ],
+      "targetAssumptions": [
+        "Explicit bulk duplicate workflows use concrete layerIndices from prior comp or layer inspection.",
+        "Selected-layer duplicate workflows require prior get_selected_layers evidence before binding layerIndices.",
+        "Deep precomp/source duplication remains a separate workflow and is not part of this guidance."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": null,
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "duplicate_layers",
+          "get_comp_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Require duplicate_layers pair/count evidence and post-run comp read-back for expected source and duplicate names.",
+        "steps": [
+          "Run get_selected_layers before selected-layer duplicate plans, or use prior explicit layer inspection for bulk explicit indices.",
+          "Run duplicate_layers with concrete layerIndices and optional sourceNames.",
+          "Run get_comp_details after mutation and compare source/duplicate names plus before/after layer counts."
+        ],
+        "expectedEvidence": [
+          "Selected-layer duplicate plans include get_selected_layers evidence before layerIndices are bound.",
+          "duplicate_layers returns one source/duplicate pair for each requested source layer.",
+          "Post-run comp read-back shows the expected duplicate names and final layer count."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "live-generated",
+        "notes": [
+          "Backed by M207 generated-only Full UI Agent live validation and M206 local semantic smoke coverage."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-24",
+          "from": "roadmap-duplicate-layers-epic",
+          "to": "tool",
+          "reviewer": "codex",
+          "evidence": "Milestone 208 solution-library guidance after M204-M207 runtime, planner, semantic, and generated-only live validation.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "For selected-layer requests, inspect selection first with get_selected_layers and bind concrete layerIndices from that evidence.",
+        "Do not use this guidance for deletion, raw ExtendScript, deep precomp/source duplication, source relinking, mask/path edits, audio workflows, or arbitrary user-asset mutation."
       ]
     },
     {

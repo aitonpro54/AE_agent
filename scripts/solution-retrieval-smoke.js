@@ -12,6 +12,7 @@ const AVAILABLE_TOOLS = [
   "get_active_comp",
   "get_selected_layers",
   "align_layers_to_time",
+  "duplicate_layers",
   "create_text_layer",
   "get_render_queue_status",
   "run_extendscript_file"
@@ -225,6 +226,45 @@ function run() {
   assert.strictEqual(equivalentRetrieval.omitted.typedToolEquivalent, 1);
   assert(formatSolutionHintsForPrompt(equivalentRetrieval).indexOf("normal MCP tool catalog") >= 0);
 
+  const duplicateTool = solution({
+    id: "fixture-duplicate-layers-tool",
+    title: "Duplicate Layers Typed Tool",
+    status: "tool",
+    tags: ["layers", "duplicate", "selected-layers"],
+    intent: {
+      summary: "Use duplicate_layers for explicit bulk or selected-layer duplicate requests.",
+      appliesWhen: ["The user asks to duplicate multiple explicit or selected layers."]
+    },
+    execution: {
+      mode: "typed-plan",
+      mutating: true,
+      riskLevel: "medium",
+      recipePath: null,
+      scriptPath: null,
+      preferredTools: ["get_selected_layers", "duplicate_layers"]
+    },
+    verificationRecipe: {
+      summary: "Selected-layer duplicate plans require get_selected_layers evidence before duplicate_layers.",
+      steps: ["Run get_selected_layers before selected-layer duplication."],
+      expectedEvidence: ["duplicate_layers returns source/duplicate pairs."]
+    },
+    notes: [
+      "Selected-layer duplicate workflows require prior get_selected_layers evidence.",
+      "Keep raw ExtendScript and deep precomp/source duplication out of this guidance."
+    ]
+  });
+  const duplicateRetrieval = retrieveSolutionHints("Duplicate selected layers in the active comp.", {
+    registry: registry([duplicateTool]),
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: 3
+  });
+  const duplicatePromptSection = formatSolutionHintsForPrompt(duplicateRetrieval);
+  assert.strictEqual(duplicateRetrieval.entries.length, 0, "tool status guidance should be represented by toolMatches, not recipe entries.");
+  assert.strictEqual(duplicateRetrieval.toolMatches.length, 1, "duplicate_layers tool guidance should surface as a tool match.");
+  assert(duplicatePromptSection.includes("Duplicate Layers Typed Tool"), "tool guidance title should be included in the prompt section.");
+  assert(duplicatePromptSection.includes("get_selected_layers"), "selected-layer duplicate guidance should mention prior selected-layer evidence.");
+  assert(duplicatePromptSection.includes("duplicate_layers"), "bulk duplicate guidance should prefer duplicate_layers.");
+
   const typedCandidate = solution({
     id: "fixture-tool-candidate",
     title: "Implement Narrow Matte Tool",
@@ -257,6 +297,7 @@ function run() {
     surfaced: ids(baseRetrieval),
     rawRisk: rawRetrieval.entries[0].rawExtendscriptRisk,
     toolMatches: equivalentRetrieval.toolMatches.map((match) => match.id),
+    duplicateToolMatches: duplicateRetrieval.toolMatches.map((match) => match.id),
     typedToolCandidate: candidateRetrieval.entries[0].id
   }, null, 2));
 }

@@ -184,6 +184,18 @@ Retrieval rules:
 
 The solution section is not an execution API. Every useful hint must still become normal MCP plan steps and pass the existing plan validation, dry-run/run gates, idempotency, checkpoint/edit-session protection and verification read-back.
 
+## Duplicate Layers Tool Guidance
+
+Milestone 208 adds tool-backed guidance for explicit bulk layer duplication. This is not a raw JSX recipe and not a deep precomp/source workflow. Retrieval may surface `bulk-layer-duplicate-typed-tool` as a normal tool-catalog match so the planner prefers `duplicate_layers` for bounded many-layer duplicate requests.
+
+Rules for this guidance:
+
+- explicit bulk duplicate requests should inspect the target comp/layers first, then call `duplicate_layers` with concrete one-based `layerIndices`;
+- selected-layer duplicate requests must run `get_selected_layers` first and bind `layerIndices` only from that read-only evidence;
+- optional `sourceNames` can guard the source names paired with `layerIndices`;
+- verification must include `duplicate_layers` source/duplicate pair evidence and post-run comp read-back with expected duplicate names and layer-count change;
+- deletion, raw ExtendScript, deep precomp/source duplication, source relinking, mask/path edits, audio workflows and arbitrary user-asset mutation stay out of this guidance.
+
 ## Seeded Reviewed Recipes
 
 Milestone 71 seeds the tracked registry with two reviewed, typed-tool-first recipes:

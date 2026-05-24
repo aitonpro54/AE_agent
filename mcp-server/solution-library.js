@@ -174,13 +174,20 @@ function compactSolution(solution, score) {
 }
 
 function compactToolMatch(solution, score) {
+  const execution = isPlainObject(solution.execution) ? solution.execution : {};
+  const verification = isPlainObject(solution.verificationRecipe) ? solution.verificationRecipe : {};
   return {
     id: solution.id,
     title: solution.title,
     score,
     tags: compactList(solution.tags, 8),
     preferredTools: compactList(solutionPreferredTools(solution), 8),
-    intentSummary: compactText(solution.intent && solution.intent.summary, 160)
+    intentSummary: compactText(solution.intent && solution.intent.summary, 160),
+    appliesWhen: compactList(solution.intent && solution.intent.appliesWhen, 2),
+    mutating: Boolean(execution.mutating),
+    riskLevel: execution.riskLevel || "unknown",
+    verificationSummary: compactText(verification.summary || "", 160),
+    notes: compactList(solution.notes, 2)
   };
 }
 
@@ -322,6 +329,11 @@ function formatSolutionHintsForPrompt(retrieval) {
   if (retrieval.toolMatches && retrieval.toolMatches.length) {
     const tools = Array.from(new Set(retrieval.toolMatches.flatMap((match) => match.preferredTools || []))).slice(0, 8);
     lines.push(`Reviewed tool-backed matches are represented by the normal MCP tool catalog: ${tools.length ? tools.join(", ") : "use the catalog above"}. Prefer these typed tools over older recipes or raw scripts.`);
+    for (const match of retrieval.toolMatches) {
+      const preferred = match.preferredTools.length ? ` Prefer: ${match.preferredTools.join(", ")}.` : "";
+      const note = match.notes.length ? ` Guidance: ${compactText(match.notes[0], 180)}.` : "";
+      lines.push(`- Tool guidance: ${match.title} [risk=${match.riskLevel}; ${match.mutating ? "mutating" : "read-only"}].${preferred}${note}`);
+    }
   }
 
   if (!retrieval.entries.length) {
@@ -329,7 +341,8 @@ function formatSolutionHintsForPrompt(retrieval) {
     return lines.join("\n");
   }
 
-  for (const entry of retrieval.entries) {
+  const entriesForPrompt = retrieval.toolMatches && retrieval.toolMatches.length ? retrieval.entries.slice(0, 1) : retrieval.entries;
+  for (const entry of entriesForPrompt) {
     const statusNote = entry.status === "typed-tool-candidate"
       ? "typed-tool-candidate: recommend implementing or using a narrow typed bridge tool; do not treat as an execution shortcut."
       : "recipe: may be suggested as an advisory planning pattern.";

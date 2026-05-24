@@ -20,6 +20,7 @@ const DAKKSHIN_ADVISORY_IDS = [
   "safe-effect-addition-typed-plan",
   "selected-layers-animation-typed-plan"
 ];
+const TOOL_BACKED_IDS = ["bulk-layer-duplicate-typed-tool"];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
   "get_project_info",
@@ -38,6 +39,7 @@ const AVAILABLE_TOOLS = [
   "set_property_keyframes",
   "apply_keyframe_ease",
   "set_layer_transform",
+  "duplicate_layers",
   "deep_duplicate_precomp_sources",
   "run_extendscript_file"
 ];
@@ -137,6 +139,36 @@ function assertDakkshinAdvisoryQuality(registry) {
   }
 }
 
+function assertToolBackedGuidanceQuality(registry) {
+  for (const id of TOOL_BACKED_IDS) {
+    const solution = solutionById(registry, id);
+    assert(solution, `Missing tool-backed solution guidance: ${id}`);
+    assert.strictEqual(solution.status, "tool", `${id}: duplicate_layers guidance should be represented by the normal tool catalog.`);
+    assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: tool-backed guidance should still describe typed-plan usage.`);
+    assert.strictEqual(solution.execution.recipePath, null, `${id}: plannedPaths do not add a dedicated recipe file for this tool-backed guidance.`);
+    assert.strictEqual(solution.execution.scriptPath, null, `${id}: tool-backed guidance must not use raw JSX.`);
+    assert(solution.execution.preferredTools.includes("duplicate_layers"), `${id}: duplicate_layers must be the preferred bulk duplicate tool.`);
+    assert(solution.execution.preferredTools.includes("get_selected_layers"), `${id}: selected-layer workflows must require prior selected-layer evidence.`);
+    assert(!solution.execution.preferredTools.includes("run_extendscript"), `${id}: inline ExtendScript must not be preferred.`);
+    assert(!solution.execution.preferredTools.includes("run_extendscript_file"), `${id}: raw file execution must not be preferred.`);
+    assert(solution.promotionHistory.some((entry) => /Milestone 208/i.test(entry.evidence)), `${id}: promotion evidence should mention Milestone 208.`);
+    assert(solution.notes.some((note) => /get_selected_layers/.test(note)), `${id}: notes must document selected-layer evidence.`);
+    assert(solution.notes.some((note) => /deep precomp\/source duplication/.test(note)), `${id}: notes must keep deep precomp/source duplication out of scope.`);
+    assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+
+    const gates = solution.requiredSafetyGates;
+    assert.strictEqual(solution.execution.mutating, true, `${id}: duplicate_layers guidance describes protected mutations.`);
+    assert.strictEqual(gates.planValidation, true, `${id}: mutating tool guidance needs plan validation.`);
+    assert.strictEqual(gates.explicitConfirmation, true, `${id}: mutating tool guidance needs explicit confirmation.`);
+    assert.strictEqual(gates.allowMutations, true, `${id}: mutating tool guidance needs mutation permission.`);
+    assert.strictEqual(gates.idempotency, true, `${id}: mutating tool guidance needs idempotency.`);
+    assert.strictEqual(gates.checkpointOrEditSession, true, `${id}: mutating tool guidance should keep checkpoint/edit-session protection.`);
+    assert.strictEqual(gates.postMutationReadBack, true, `${id}: mutating tool guidance needs read-back verification.`);
+    assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must require selection read-back first.`);
+    assert(solution.verificationRecipe.expectedEvidence.some((item) => /source\/duplicate pair/.test(item)), `${id}: verification must require duplicate pair evidence.`);
+  }
+}
+
 function assertActualRetrieval(registry) {
   const contextRetrieval = retrieveSolutionHints("Summarize the active comp, selected layers and render queue state.", {
     registry,
@@ -187,6 +219,19 @@ function assertActualRetrieval(registry) {
   assert.strictEqual(animationRetrieval.ok, true);
   assert(ids(animationRetrieval).includes("selected-layers-animation-typed-plan"), "selected layer animation recipe should surface for animation prompt.");
 
+  const duplicateRetrieval = retrieveSolutionHints("Duplicate the selected layers after inspecting the selection.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(duplicateRetrieval.ok, true);
+  assert(duplicateRetrieval.toolMatches.some((match) => match.id === "bulk-layer-duplicate-typed-tool"), "duplicate_layers tool guidance should surface as a tool-backed match.");
+  const duplicatePromptSection = formatSolutionHintsForPrompt(duplicateRetrieval);
+  assert(duplicatePromptSection.includes("Bulk Layer Duplicate Typed Tool"), "prompt section should include duplicate_layers tool guidance title.");
+  assert(duplicatePromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for selected duplicate workflows.");
+  assert(duplicatePromptSection.includes("duplicate_layers"), "prompt section should prefer duplicate_layers for bulk duplication.");
+  assert(!/run_extendscript/i.test(duplicatePromptSection), "duplicate_layers guidance should not recommend raw ExtendScript.");
+
   return {
     contextRetrieval,
     alignRetrieval,
@@ -195,7 +240,8 @@ function assertActualRetrieval(registry) {
       basicComp: ids(basicCompRetrieval),
       effect: ids(effectRetrieval),
       animation: ids(animationRetrieval)
-    }
+    },
+    duplicateToolMatches: duplicateRetrieval.toolMatches.map((match) => match.id)
   };
 }
 
@@ -397,6 +443,7 @@ function main() {
   const registry = readRegistry();
   const registrySummary = assertSeedQuality(registry);
   assertDakkshinAdvisoryQuality(registry);
+  assertToolBackedGuidanceQuality(registry);
   const actualRetrieval = assertActualRetrieval(registry);
   const candidateOmitted = assertCandidateInvisibility(registry);
   const staleAndEquivalent = assertStaleAndToolEquivalentBehavior();
@@ -408,11 +455,13 @@ function main() {
     solutionCount: registrySummary.solutionCount,
     seeded: SEEDED_IDS,
     dakkshinAdvisory: DAKKSHIN_ADVISORY_IDS,
+    toolBackedGuidance: TOOL_BACKED_IDS,
     actualRetrieval: {
       contextReturned: actualRetrieval.contextRetrieval.returned,
       alignReturned: actualRetrieval.alignRetrieval.returned,
       promptSectionLength: actualRetrieval.promptSectionLength,
-      dakkshinAdvisoryRetrieval: actualRetrieval.dakkshinAdvisoryRetrieval
+      dakkshinAdvisoryRetrieval: actualRetrieval.dakkshinAdvisoryRetrieval,
+      duplicateToolMatches: actualRetrieval.duplicateToolMatches
     },
     candidateOmitted,
     staleAndEquivalent,
