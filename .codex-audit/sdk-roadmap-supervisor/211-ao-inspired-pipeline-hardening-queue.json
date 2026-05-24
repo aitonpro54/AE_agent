@@ -375,6 +375,9 @@
       ],
       "allowedActions": [
         "create .codex-audit/sdk-ao-pattern-intake/215-readonly-failure-analyzer-contract.json defining a read-only failure packet format",
+        "keep the existing queue path exactly .codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json even though this final item is M215",
+        "keep the completed prior artifacts exactly at .codex-audit/sdk-ao-pattern-intake/212-activity-session-schema.json, .codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json, and .codex-audit/sdk-ao-pattern-intake/214-status-dashboard-contract.json",
+        "do not renumber, rename, move, or recreate the completed M212-M214 artifacts; M215 adds only the failure analyzer contract and scripts listed in plannedPaths",
         "add scripts/create-roadmap-failure-analyzer-packet.js as a no-dependency CLI that reads explicit failure report/log/session fixture paths and emits JSON or Markdown repair packets without changing source files",
         "the packet must include failure class, command, status, relevant log tail, changed paths if supplied, suspected cause with confidence, forbidden auto-actions, repair prompt, and next bounded task fields",
         "add scripts/sdk-ao-failure-analyzer-smoke.js that builds temp fixture failures, runs the analyzer, and asserts validation_failure and stuck_session packets include repair prompts while forbidding auto-fix/live/dependency/PR actions",
@@ -384,6 +387,9 @@
       ],
       "forbiddenActions": [
         "make the analyzer fix code, edit source based on logs, retry commands, run live AE/CEP, install dependencies, create branches/worktrees, push, PR, GitHub issues, or GitHub Actions",
+        "rename .codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json or create a replacement queue path",
+        "rename or move .codex-audit/sdk-ao-pattern-intake/212-activity-session-schema.json, .codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json, or .codex-audit/sdk-ao-pattern-intake/214-status-dashboard-contract.json",
+        "create .codex-audit/sdk-ao-pattern-intake/216-*.json, .codex-audit/sdk-ao-pattern-intake/217-*.json, .codex-audit/sdk-ao-pattern-intake/218-*.json, or any other unplanned AO hardening artifact",
         "read broad unbounded logs by default; use explicit paths and bounded tails",
         "touch CEP/live/production/dependency/package paths"
       ],
