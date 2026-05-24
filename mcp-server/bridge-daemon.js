@@ -873,6 +873,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "set_layer_transform",
   "apply_transform_expression",
   "add_layer_marker",
+  "update_layer_marker",
   "create_test_comp",
   "cleanup_test_items"
 ]);
@@ -3991,6 +3992,7 @@ const PLANNING_TOOL_NAMES = [
   "set_layer_transform",
   "apply_transform_expression",
   "add_layer_marker",
+  "update_layer_marker",
   "create_test_comp",
   "cleanup_test_items",
   "run_extendscript",
@@ -5823,7 +5825,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For timeline trims, work areas, sequencing, splitting, and offsets, use set_comp_work_area, set_layer_time_range, stagger_layers, or split_layers_at_time.",
     "For precomp/source workflows, use precompose_layers, replace_layer_source, deep_duplicate_precomp_sources, rename_layers, and rename_project_items before considering raw ExtendScript.",
     "For explicit single-layer duplication, use duplicate_layer after inspecting the target comp/layer; do not use it for delete operations or selection-only ambiguity.",
-    "For timeline marker workflows, use add_layer_marker only with explicit layer/time/comment evidence; do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
+    "For timeline marker workflows, use add_layer_marker or update_layer_marker only with explicit layer/time/comment evidence; update_layer_marker must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
     "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, and fit_layer_to_comp.",
     "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, set_expression, and clear_expression.",
     "For render queue setup, use add_comp_to_render_queue, set_render_queue_output, and get_render_queue_status. Do not start a render.",
@@ -8759,6 +8761,52 @@ const tools = [
         }
       },
       required: ["layerIndex", "comment"]
+    }
+  },
+  {
+    name: "update_layer_marker",
+    description: "Update one existing layer marker by explicit marker index or strict target time.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based layer index in the target composition."
+        },
+        markerIndex: {
+          type: "number",
+          description: "Optional 1-based marker key index to update. Use this when multiple markers share the same time."
+        },
+        targetTime: {
+          type: "number",
+          description: "Optional existing marker time in seconds. Required when markerIndex is omitted."
+        },
+        targetComment: {
+          type: "string",
+          description: "Optional existing marker comment guard."
+        },
+        comment: {
+          type: "string",
+          description: "Optional replacement marker comment."
+        },
+        time: {
+          type: "number",
+          description: "Optional replacement marker time in seconds."
+        },
+        duration: {
+          type: "number",
+          description: "Optional replacement marker duration in seconds."
+        }
+      },
+      required: ["layerIndex"]
     }
   },
   {
@@ -13041,6 +13089,114 @@ async function callTool(name, args) {
           name: comp.name
         },
         layer: __codexLayerInfo(layer),
+        marker: markerInfo,
+        markers: __codexLayerMarkers(layer, 50)
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "update_layer_marker") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const markerIndex = optionalPositiveInteger(args, "markerIndex");
+    const targetTime = optionalNumber(args, "targetTime", null);
+    const targetComment = optionalString(args, "targetComment", "");
+    const nextComment = optionalString(args, "comment", null);
+    const nextTime = optionalNumber(args, "time", null);
+    const nextDuration = optionalNumber(args, "duration", null);
+
+    if (markerIndex === null && targetTime === null) return toolResult("markerIndex or targetTime is required.", true);
+    if (targetTime !== null && targetTime < 0) return toolResult("targetTime must be 0 or greater.", true);
+    if (nextTime !== null && nextTime < 0) return toolResult("time must be 0 or greater.", true);
+    if (nextDuration !== null && nextDuration < 0) return toolResult("duration must be 0 or greater.", true);
+    if (nextComment === null && nextTime === null && nextDuration === null) return toolResult("At least one of comment, time, or duration is required.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      function __codexMarkerComment(markerProp, keyIndex) {
+        try {
+          var markerValue = markerProp.keyValue(keyIndex);
+          return markerValue.comment || "";
+        } catch (__commentError) {
+          return "";
+        }
+      }
+      function __codexFindMarkerKey(markerProp, markerIndex, targetTime, targetComment) {
+        if (!markerProp || markerProp.numKeys < 1) throw new Error("Layer has no markers.");
+        if (markerIndex !== null) {
+          if (markerIndex < 1 || markerIndex > markerProp.numKeys) throw new Error("markerIndex is outside the layer marker range.");
+          if (targetTime !== null && Math.abs(markerProp.keyTime(markerIndex) - targetTime) > 0.001) throw new Error("markerIndex does not match targetTime.");
+          if (targetComment && __codexMarkerComment(markerProp, markerIndex) !== targetComment) throw new Error("markerIndex does not match targetComment.");
+          return markerIndex;
+        }
+        var matchIndex = 0;
+        for (var __mk = 1; __mk <= markerProp.numKeys; __mk++) {
+          if (Math.abs(markerProp.keyTime(__mk) - targetTime) <= 0.001) {
+            if (targetComment && __codexMarkerComment(markerProp, __mk) !== targetComment) continue;
+            if (matchIndex) throw new Error("More than one marker matched targetTime; provide markerIndex.");
+            matchIndex = __mk;
+          }
+        }
+        if (!matchIndex) throw new Error("No marker matched the requested target.");
+        return matchIndex;
+      }
+      function __codexCopyMarkerFields(target, source) {
+        try { target.chapter = source.chapter || ""; } catch (__chapterCopyError) {}
+        try { target.url = source.url || ""; } catch (__urlCopyError) {}
+        try { target.frameTarget = source.frameTarget || ""; } catch (__frameTargetCopyError) {}
+        try { target.cuePointName = source.cuePointName || ""; } catch (__cueCopyError) {}
+        try { target.eventCuePoint = source.eventCuePoint; } catch (__eventCueCopyError) {}
+        try { target.protectedRegion = source.protectedRegion; } catch (__protectedCopyError) {}
+      }
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      var markerProp = layer.property("ADBE Marker");
+      if (!markerProp) throw new Error("Layer markers are unavailable.");
+      var requestedMarkerIndex = ${markerIndex === null ? "null" : markerIndex};
+      var requestedTargetTime = ${targetTime === null ? "null" : targetTime};
+      var requestedTargetComment = ${aeLiteral(targetComment)};
+      var replacementComment = ${nextComment === null ? "null" : aeLiteral(nextComment)};
+      var replacementTime = ${nextTime === null ? "null" : nextTime};
+      var replacementDuration = ${nextDuration === null ? "null" : nextDuration};
+
+      app.beginUndoGroup("Codex Update Layer Marker");
+      var keyIndex = __codexFindMarkerKey(markerProp, requestedMarkerIndex, requestedTargetTime, requestedTargetComment);
+      var markerBefore = __codexMarkerInfo(markerProp, keyIndex);
+      var oldValue = markerProp.keyValue(keyIndex);
+      var newComment = replacementComment !== null ? replacementComment : markerBefore.comment;
+      var newTime = replacementTime !== null ? replacementTime : markerBefore.time;
+      var newDuration = replacementDuration !== null ? replacementDuration : markerBefore.duration;
+      if (replacementTime !== null) {
+        for (var __existingKey = 1; __existingKey <= markerProp.numKeys; __existingKey++) {
+          if (__existingKey !== keyIndex && Math.abs(markerProp.keyTime(__existingKey) - newTime) <= 0.001) {
+            throw new Error("Another marker already exists at the requested time.");
+          }
+        }
+      }
+      var markerValue = new MarkerValue(newComment);
+      markerValue.duration = newDuration || 0;
+      __codexCopyMarkerFields(markerValue, oldValue);
+      if (Math.abs(newTime - markerBefore.time) <= 0.001) {
+        markerProp.setValueAtKey(keyIndex, markerValue);
+      } else {
+        markerProp.removeKey(keyIndex);
+        markerProp.setValueAtTime(newTime, markerValue);
+      }
+      var updatedKeyIndex = markerProp.nearestKeyIndex(newTime);
+      var markerInfo = __codexMarkerInfo(markerProp, updatedKeyIndex);
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name
+        },
+        layer: __codexLayerInfo(layer),
+        markerBefore: markerBefore,
         marker: markerInfo,
         markers: __codexLayerMarkers(layer, 50)
       };

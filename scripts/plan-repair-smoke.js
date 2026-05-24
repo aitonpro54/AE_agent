@@ -231,6 +231,27 @@ async function main() {
     assert.strictEqual(markerRepair.repairedPlan.steps[0].args.time, 1.25);
     assert.strictEqual(markerRepair.repairedPlan.steps[0].args.duration, 0.5);
 
+    const markerUpdateRepair = await validatePlan("layer-marker-update-alias", {
+      summary: "Update one explicit marker on the generated layer.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Update marker", tool: "editLayerMarker", args: { compName: "Repair Smoke Comp", layer: 1, markerNumber: 1, targetMarkerComment: "Repair Smoke Marker", newMarkerText: "Repair Smoke Marker Updated", newMarkerTime: 1.5, newMarkerDuration: 0.75 } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["update_layer_marker"],
+      actionTypes: ["tool-alias", "arg-alias"]
+    });
+    assert.strictEqual(markerUpdateRepair.repairedPlan.steps[0].args.layerIndex, 1);
+    assert.strictEqual(markerUpdateRepair.repairedPlan.steps[0].args.markerIndex, 1);
+    assert.strictEqual(markerUpdateRepair.repairedPlan.steps[0].args.targetComment, "Repair Smoke Marker");
+    assert.strictEqual(markerUpdateRepair.repairedPlan.steps[0].args.comment, "Repair Smoke Marker Updated");
+    assert.strictEqual(markerUpdateRepair.repairedPlan.steps[0].args.time, 1.5);
+    assert.strictEqual(markerUpdateRepair.repairedPlan.steps[0].args.duration, 0.75);
+
     const bindingAliasRepair = await validatePlan("binding-alias", {
       summary: "Set selected layers 3D using common aliases.",
       risk: "medium",

@@ -22,6 +22,7 @@ const MUTATING_TOOLS = new Set([
   "clear_expression",
   "duplicate_layer",
   "add_layer_marker",
+  "update_layer_marker",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
   "precompose_layers",
@@ -257,6 +258,22 @@ function markerMatchesArgs(marker, args) {
   if (hasOwn(args, "time") && !nearlyEqual(marker.time, args.time)) return false;
   if (hasOwn(args, "duration") && !nearlyEqual(marker.duration, args.duration)) return false;
   return true;
+}
+
+function updatedMarkerMatchesArgs(marker, args) {
+  if (!marker || !args) return false;
+  if (hasOwn(args, "comment") && !sameString(marker.comment, args.comment)) return false;
+  if (hasOwn(args, "time") && !nearlyEqual(marker.time, args.time)) return false;
+  if (hasOwn(args, "duration") && !nearlyEqual(marker.duration, args.duration)) return false;
+  return true;
+}
+
+function observedUpdatedMarkerEvidence(evidence, args) {
+  if (!evidence || !Array.isArray(evidence.markers)) return null;
+  for (const marker of evidence.markers) {
+    if (updatedMarkerMatchesArgs(marker, args)) return marker.source || "observed marker";
+  }
+  return null;
 }
 
 function observedMarkerEvidence(evidence, args) {
@@ -710,6 +727,20 @@ function verifyStep(checks, step, evidence) {
       observed: markerText(marker),
       passed: markerMatchesArgs(marker, args) && Boolean(readBackEvidence),
       evidence: readBackEvidence || "No matching marker read-back after mutation."
+    });
+    return;
+  }
+
+  if (step.tool === "update_layer_marker") {
+    const marker = payload.marker || {};
+    const readBackEvidence = observedUpdatedMarkerEvidence(evidence.readBack, args);
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:marker`,
+      title: "Layer marker update matches request",
+      expected: expectedMarkerText(args),
+      observed: markerText(marker),
+      passed: updatedMarkerMatchesArgs(marker, args) && Boolean(readBackEvidence),
+      evidence: readBackEvidence || "No matching updated marker read-back after mutation."
     });
     return;
   }

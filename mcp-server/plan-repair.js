@@ -97,7 +97,11 @@ const TOOL_ALIASES = {
   createmarker: "add_layer_marker",
   createlayermarker: "add_layer_marker",
   addmarker: "add_layer_marker",
-  addlayermarker: "add_layer_marker"
+  addlayermarker: "add_layer_marker",
+  updatemarker: "update_layer_marker",
+  updatelayermarker: "update_layer_marker",
+  editmarker: "update_layer_marker",
+  editlayermarker: "update_layer_marker"
 };
 
 const BINDING_ALIASES = {
@@ -274,7 +278,21 @@ function propertyCandidates(field) {
     markertext: ["comment"],
     markerlabel: ["comment"],
     markertime: ["time"],
-    markerduration: ["duration"]
+    markerduration: ["duration"],
+    markernumber: ["markerIndex"],
+    markerkey: ["markerIndex"],
+    targetmarker: ["markerIndex"],
+    targetmarkerindex: ["markerIndex"],
+    targetmarkertime: ["targetTime"],
+    originalmarkertime: ["targetTime"],
+    currentmarkertime: ["targetTime"],
+    targetmarkercomment: ["targetComment"],
+    originalmarkercomment: ["targetComment"],
+    currentmarkercomment: ["targetComment"],
+    newmarkercomment: ["comment"],
+    newmarkertext: ["comment"],
+    newmarkertime: ["time"],
+    newmarkerduration: ["duration"]
   };
   return aliases[token] || [];
 }

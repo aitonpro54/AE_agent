@@ -168,6 +168,45 @@ function fakeMutationResult(step, state) {
       }
     }, compName, layer);
   }
+  if (step.tool === "update_layer_marker") {
+    if (state.layerMarkers.length === 0) {
+      state.layerMarkers.push({
+        keyIndex: 1,
+        time: args.targetTime === undefined ? 1.25 : args.targetTime,
+        comment: args.targetComment || "Marker Fixture Beat",
+        duration: 0.5
+      });
+    }
+    let markerIndex = args.markerIndex || 0;
+    if (!markerIndex && args.targetTime !== undefined) {
+      markerIndex = state.layerMarkers.findIndex((marker) => Math.abs(Number(marker.time) - Number(args.targetTime)) <= 0.001 && (!args.targetComment || marker.comment === args.targetComment)) + 1;
+    }
+    if (markerIndex < 1 || markerIndex > state.layerMarkers.length) markerIndex = 1;
+    const markerBefore = { ...state.layerMarkers[markerIndex - 1] };
+    const marker = {
+      ...markerBefore,
+      comment: args.comment === undefined ? markerBefore.comment : args.comment,
+      time: args.time === undefined ? markerBefore.time : args.time,
+      duration: args.duration === undefined ? markerBefore.duration : args.duration
+    };
+    state.layerMarkers[markerIndex - 1] = marker;
+    const layer = layerInfo("Marker Fixture Layer", {
+      index: args.layerIndex || 1,
+      markerCount: state.layerMarkers.length
+    });
+    return withVerification({
+      comp: { name: compName },
+      layer,
+      markerBefore,
+      marker,
+      markers: {
+        count: state.layerMarkers.length,
+        returned: state.layerMarkers.length,
+        truncated: false,
+        items: state.layerMarkers.slice()
+      }
+    }, compName, layer);
+  }
   if (step.tool === "set_comp_work_area") {
     return withVerification({
       comp: { name: compName },
@@ -595,6 +634,41 @@ function assertAddLayerMarkerPasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("add_layer_marker:marker") >= 0), "add layer marker check should be reported.");
 }
 
+function assertUpdateLayerMarkerPasses() {
+  const plan = {
+    summary: "Update one explicit timeline marker and inspect marker read-back.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Update layer marker",
+        tool: "update_layer_marker",
+        args: {
+          compName: "Marker Fixture",
+          layerIndex: 1,
+          markerIndex: 1,
+          targetComment: "Marker Fixture Beat",
+          comment: "Marker Fixture Beat Updated",
+          time: 1.5,
+          duration: 0.75
+        }
+      },
+      {
+        title: "Read marker layer",
+        tool: "get_layer_details",
+        args: {
+          compName: "Marker Fixture",
+          layerIndex: 1
+        }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `update layer marker semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("update_layer_marker:marker") >= 0), "update layer marker check should be reported.");
+}
+
 function main() {
   const scenarios = agentScenarioPlans("Codex Semantic Fixture", 0);
   const results = scenarios.map(assertScenarioPasses);
@@ -607,6 +681,7 @@ function main() {
   assertLayerMaskPasses();
   assertDuplicateLayerPasses();
   assertAddLayerMarkerPasses();
+  assertUpdateLayerMarkerPasses();
 
   console.log(JSON.stringify({
     ok: true,
