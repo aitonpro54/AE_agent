@@ -68,7 +68,6 @@ function openAiCliNewToolsScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_NEW_TOOLS_PREFIX || "Codex QA M190",
     scenarioFactory: agentNewToolsScenarioPlans,
-    allowSemanticNeedsReviewWithReadBack: true,
     skipRenderQueueCleanup: true
   };
 }
@@ -99,7 +98,6 @@ function openAiCliMarkerLifecycleScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_MARKER_LIFECYCLE_PREFIX || "Codex QA M198",
     scenarioFactory: agentMarkerLifecycleScenarioPlans,
-    allowSemanticNeedsReviewWithReadBack: true,
     skipRenderQueueCleanup: true
   };
 }
@@ -115,7 +113,6 @@ function openAiCliDuplicateLayersScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_DUPLICATE_LAYERS_PREFIX || "Codex QA M207",
     scenarioFactory: agentDuplicateLayersScenarioPlans,
-    allowSemanticNeedsReviewWithReadBack: true,
     skipRenderQueueCleanup: true
   };
 }

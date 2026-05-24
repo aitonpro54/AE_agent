@@ -90,7 +90,8 @@ function pathMatchesSuffix(observed, expected) {
 }
 
 function payloadForStep(step) {
-  return isPlainObject(step && step.result) ? step.result : null;
+  if (!step || step.result === undefined || step.result === null) return null;
+  return step.result;
 }
 
 function isMutatingStep(step) {
@@ -131,6 +132,48 @@ function addLayerCount(target, value, source) {
     count,
     source: source || "observed layer count"
   });
+}
+
+function numberArrayFromValue(value) {
+  const raw = Array.isArray(value)
+    ? value
+    : isPlainObject(value) && Array.isArray(value.value)
+      ? value.value
+      : null;
+  if (!raw) return null;
+  const numbers = raw.map(numberValue);
+  if (!numbers.length || numbers.some((item) => item === null)) return null;
+  return numbers;
+}
+
+function addNumberArray(target, key, value, source) {
+  if (!key) return;
+  const numbers = numberArrayFromValue(value);
+  if (!numbers) return;
+  if (!target.numberArrays[key]) target.numberArrays[key] = [];
+  target.numberArrays[key].push({
+    values: numbers,
+    source: source || `observed ${key}`
+  });
+}
+
+function createEvidenceStore(readBackSteps) {
+  return {
+    count: Array.isArray(readBackSteps) ? readBackSteps.length : 0,
+    steps: Array.isArray(readBackSteps) ? readBackSteps.map((step) => ({
+      index: step.index || null,
+      title: step.title || step.tool || "Read-back step",
+      tool: step.tool || null
+    })) : [],
+    names: new Set(),
+    nameSources: {},
+    outputPaths: new Set(),
+    outputPathSources: {},
+    layerCounts: [],
+    numberArrays: {},
+    markers: [],
+    markerSignatures: new Set()
+  };
 }
 
 function markerSignature(marker) {
@@ -177,6 +220,15 @@ function collectPayloadEvidence(payload, evidence, source, depth = 0) {
     for (const item of payload) collectPayloadEvidence(item, evidence, source, depth + 1);
     return;
   }
+  if (typeof payload === "string") {
+    const text = payload.trim();
+    if (text && (text[0] === "{" || text[0] === "[")) {
+      try {
+        collectPayloadEvidence(JSON.parse(text), evidence, source, depth + 1);
+      } catch (_error) {}
+    }
+    return;
+  }
   if (!isPlainObject(payload)) return;
 
   if (typeof payload.name === "string") addName(evidence, payload.name, source);
@@ -187,6 +239,8 @@ function collectPayloadEvidence(payload, evidence, source, depth = 0) {
   if (hasOwn(payload, "numLayers")) addLayerCount(evidence, payload.numLayers, source);
   if (hasOwn(payload, "layerCount")) addLayerCount(evidence, payload.layerCount, source);
   if (Array.isArray(payload.layers)) addLayerCount(evidence, payload.layers.length, source);
+  if (hasOwn(payload, "position")) addNumberArray(evidence, "position", payload.position, source);
+  if (hasOwn(payload, "pointOfInterest")) addNumberArray(evidence, "pointOfInterest", payload.pointOfInterest, source);
   collectMarkerPayload(payload, evidence, source);
 
   for (const key of Object.keys(payload)) {
@@ -199,29 +253,20 @@ function stepOrder(step, fallback) {
   return Number.isFinite(number) && number > 0 ? number : fallback;
 }
 
-function collectReadBackEvidence(steps, afterOrder) {
+function collectReadBackEvidence(steps, afterOrder, beforeOrder) {
   const readBackSteps = [];
   for (let index = 0; index < steps.length; index += 1) {
     const step = steps[index];
-    if (isReadBackStep(step) && stepOrder(step, index + 1) > afterOrder) {
+    const order = stepOrder(step, index + 1);
+    if (
+      isReadBackStep(step) &&
+      order > afterOrder &&
+      (beforeOrder === undefined || beforeOrder === null || order < beforeOrder)
+    ) {
       readBackSteps.push(step);
     }
   }
-  const evidence = {
-    count: readBackSteps.length,
-    steps: readBackSteps.map((step) => ({
-      index: step.index || null,
-      title: step.title || step.tool || "Read-back step",
-      tool: step.tool || null
-    })),
-    names: new Set(),
-    nameSources: {},
-    outputPaths: new Set(),
-    outputPathSources: {},
-    layerCounts: [],
-    markers: [],
-    markerSignatures: new Set()
-  };
+  const evidence = createEvidenceStore(readBackSteps);
 
   for (const step of readBackSteps) {
     collectPayloadEvidence(payloadForStep(step), evidence, stepLabel(step));
@@ -231,15 +276,7 @@ function collectReadBackEvidence(steps, afterOrder) {
 }
 
 function collectAllEvidence(steps) {
-  const evidence = {
-    names: new Set(),
-    nameSources: {},
-    outputPaths: new Set(),
-    outputPathSources: {},
-    layerCounts: [],
-    markers: [],
-    markerSignatures: new Set()
-  };
+  const evidence = createEvidenceStore([]);
   for (const step of steps) {
     if (step && step.status === "completed") {
       collectPayloadEvidence(payloadForStep(step), evidence, stepLabel(step));
@@ -263,6 +300,24 @@ function observedOutputEvidence(evidence, expectedPath) {
     if (pathMatchesSuffix(outputPath, expectedPath)) {
       const source = evidence.outputPathSources[outputPath] && evidence.outputPathSources[outputPath][0];
       return source || outputPath;
+    }
+  }
+  return null;
+}
+
+function observedNumberArrayEvidence(evidence, key, expectedValues) {
+  if (!evidence || !evidence.numberArrays || !Array.isArray(expectedValues)) return null;
+  const candidates = evidence.numberArrays[key] || [];
+  for (const candidate of candidates) {
+    const values = Array.isArray(candidate.values) ? candidate.values : [];
+    if (
+      values.length >= expectedValues.length &&
+      expectedValues.every((value, index) => nearlyEqual(value, values[index]))
+    ) {
+      return {
+        source: candidate.source || `observed ${key}`,
+        values: values.slice(0, expectedValues.length)
+      };
     }
   }
   return null;
@@ -391,18 +446,26 @@ function checkNumberFields(checks, step, fields, payload, title) {
   });
 }
 
-function checkNumberArrayField(checks, step, arg, observedValue, title) {
+function checkNumberArrayField(checks, step, arg, observedValue, evidence, title) {
   if (!hasOwn(step.args, arg)) return;
   const expected = Array.isArray(step.args[arg]) ? step.args[arg] : [];
-  const observed = Array.isArray(observedValue) ? observedValue.slice(0, expected.length) : [];
-  const passed = expected.length > 0 && expected.every((value, index) => nearlyEqual(value, observed[index]));
+  const observedNumbers = numberArrayFromValue(observedValue);
+  const observed = observedNumbers ? observedNumbers.slice(0, expected.length) : [];
+  const readBackEvidence = observedNumberArrayEvidence(evidence.readBack, arg, expected);
+  const allEvidence = observedNumberArrayEvidence(evidence.all, arg, expected);
+  const fallbackObserved = readBackEvidence || allEvidence;
+  const finalObserved = observed.length ? observed : fallbackObserved ? fallbackObserved.values : [];
+  const passed = expected.length > 0 && (
+    expected.every((value, index) => nearlyEqual(value, observed[index])) ||
+    Boolean(fallbackObserved)
+  );
   pushCheck(checks, {
     id: `${step.index || "step"}:${step.tool}:${arg}`,
     title,
     expected: expected.join(","),
-    observed: observed.length ? observed.join(",") : "missing",
+    observed: finalObserved.length ? finalObserved.join(",") : "missing",
     passed,
-    evidence: passed ? stepLabel(step) : `${arg} read-back did not match requested values.`
+    evidence: passed ? (readBackEvidence && readBackEvidence.source || allEvidence && allEvidence.source || stepLabel(step)) : `${arg} read-back did not match requested values.`
   });
 }
 
@@ -666,8 +729,8 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "create_camera_layer") {
     checkName(checks, step, args.name, payload.layer && payload.layer.name, evidence, "Created camera layer name matches request");
-    checkNumberArrayField(checks, step, "position", payload.camera && payload.camera.position, "Created camera position matches request");
-    checkNumberArrayField(checks, step, "pointOfInterest", payload.camera && payload.camera.pointOfInterest, "Created camera point of interest matches request");
+    checkNumberArrayField(checks, step, "position", payload.camera && payload.camera.position, evidence, "Created camera position matches request");
+    checkNumberArrayField(checks, step, "pointOfInterest", payload.camera && payload.camera.pointOfInterest, evidence, "Created camera point of interest matches request");
     checkNumberFields(checks, step, [
       { arg: "zoom", label: "zoom", read: (value) => value && value.camera && value.camera.zoom }
     ], payload, "Created camera options match request");
@@ -989,8 +1052,9 @@ function buildSemanticVerification(plan, run) {
   const mutatingSteps = steps.filter(isMutatingStep);
   const checks = [];
   const warnings = [];
-  const lastMutatingOrder = mutatingSteps.reduce((max, step, index) => Math.max(max, stepOrder(step, index + 1)), 0);
-  const readBackEvidence = collectReadBackEvidence(steps, lastMutatingOrder);
+  const mutatingOrders = mutatingSteps.map((step, index) => stepOrder(step, index + 1));
+  const firstMutatingOrder = mutatingOrders.reduce((min, order) => Math.min(min, order), Number.POSITIVE_INFINITY);
+  const readBackEvidence = collectReadBackEvidence(steps, Number.isFinite(firstMutatingOrder) ? firstMutatingOrder : 0);
   const allEvidence = collectAllEvidence(steps);
   const mutationVerificationCount = mutatingSteps.filter((step) => {
     const payload = payloadForStep(step);
@@ -1031,7 +1095,8 @@ function buildSemanticVerification(plan, run) {
     warnings.push("No explicit read-back summary step was executed after the mutating steps.");
   }
 
-  for (const step of mutatingSteps) {
+  for (let index = 0; index < mutatingSteps.length; index += 1) {
+    const step = mutatingSteps[index];
     if (step.status !== "completed") {
       pushCheck(checks, {
         id: `${step.index || "step"}:${step.tool || "unknown"}:completed`,
@@ -1043,7 +1108,12 @@ function buildSemanticVerification(plan, run) {
       });
       continue;
     }
-    verifyStep(checks, step, { readBack: readBackEvidence, all: allEvidence });
+    const currentOrder = stepOrder(step, index + 1);
+    const nextMutatingOrder = index + 1 < mutatingSteps.length
+      ? stepOrder(mutatingSteps[index + 1], index + 2)
+      : null;
+    const stepReadBackEvidence = collectReadBackEvidence(steps, currentOrder, nextMutatingOrder);
+    verifyStep(checks, step, { readBack: stepReadBackEvidence, all: allEvidence });
   }
 
   const failedChecks = checks.filter((check) => check.status === "failed").length;

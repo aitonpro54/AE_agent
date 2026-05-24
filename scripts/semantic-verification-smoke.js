@@ -632,6 +632,84 @@ function assertCameraLayerPasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("create_camera_layer:numbers") >= 0), "camera zoom check should be reported.");
 }
 
+function assertCameraPointOfInterestUsesReadBackEvidence() {
+  const plan = {
+    summary: "Create a generated camera layer and inspect the layer details.",
+    risk: "low",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Create generated camera",
+        tool: "create_camera_layer",
+        args: {
+          compName: "Camera Fixture",
+          name: "Camera Fixture Camera",
+          pointOfInterest: [320, 180, 0],
+          position: [320, 180, -850],
+          zoom: 800
+        }
+      },
+      {
+        title: "Read generated camera",
+        tool: "get_layer_details",
+        args: { compName: "Camera Fixture", layerIndex: 1 }
+      }
+    ]
+  };
+  const run = {
+    ok: true,
+    dryRun: false,
+    steps: [
+      {
+        index: 1,
+        title: plan.steps[0].title,
+        tool: "create_camera_layer",
+        args: clone(plan.steps[0].args),
+        mutatesProject: true,
+        status: "completed",
+        result: withVerification({
+          comp: { name: "Camera Fixture" },
+          layer: layerInfo("Camera Fixture Camera", { matchName: "ADBE Camera Layer" }),
+          camera: {
+            position: [320, 180, -850],
+            zoom: 800
+          }
+        }, "Camera Fixture")
+      },
+      {
+        index: 2,
+        title: plan.steps[1].title,
+        tool: "get_layer_details",
+        args: clone(plan.steps[1].args),
+        mutatesProject: false,
+        status: "completed",
+        result: {
+          comp: { name: "Camera Fixture" },
+          layer: layerInfo("Camera Fixture Camera", {
+            matchName: "ADBE Camera Layer",
+            transform: {
+              pointOfInterest: { kind: "array", value: [320, 180, 0] },
+              position: { kind: "array", value: [320, 180, -850] }
+            }
+          }),
+          transform: {
+            pointOfInterest: { kind: "array", value: [320, 180, 0] },
+            position: { kind: "array", value: [320, 180, -850] }
+          },
+          camera: { zoom: 800 }
+        }
+      }
+    ]
+  };
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `camera pointOfInterest read-back fallback should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => (
+    check.id.indexOf("create_camera_layer:pointOfInterest") >= 0 &&
+    check.status === "passed" &&
+    check.evidence.indexOf("Read generated camera") >= 0
+  )), "camera pointOfInterest check should use read-back evidence.");
+}
+
 function assertLayerMaskPasses() {
   const plan = {
     summary: "Create a generated layer mask and inspect the layer.",
@@ -747,6 +825,98 @@ function assertDuplicateLayersMissingReadBackNeedsReview() {
   assert(semantic.checks.some((check) => check.id.indexOf("duplicate_layers:names") >= 0 && check.status === "failed"), "missing duplicate_layers read-back names should fail.");
 }
 
+function assertDuplicateLayersJsonStringReadBackPasses() {
+  const plan = {
+    summary: "Duplicate two generated layers and inspect the comp.",
+    risk: "low",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Duplicate generated layers",
+        tool: "duplicate_layers",
+        args: {
+          compName: "Duplicate Layers Fixture",
+          layerIndices: [1, 2],
+          sourceNames: ["Duplicate Layers Source B", "Duplicate Layers Source A"],
+          nameSuffix: " Copy"
+        }
+      },
+      {
+        title: "Read duplicate layers comp",
+        tool: "get_comp_details",
+        args: { compName: "Duplicate Layers Fixture", includeLayers: true }
+      }
+    ]
+  };
+  const pairs = [
+    {
+      requestedLayerIndex: 1,
+      source: layerInfo("Duplicate Layers Source B", { index: 1 }),
+      duplicate: layerInfo("Duplicate Layers Source B Copy", { index: 1 })
+    },
+    {
+      requestedLayerIndex: 2,
+      source: layerInfo("Duplicate Layers Source A", { index: 2 }),
+      duplicate: layerInfo("Duplicate Layers Source A Copy", { index: 3 })
+    }
+  ];
+  const run = {
+    ok: true,
+    dryRun: false,
+    steps: [
+      {
+        index: 1,
+        title: plan.steps[0].title,
+        tool: "duplicate_layers",
+        args: clone(plan.steps[0].args),
+        mutatesProject: true,
+        status: "completed",
+        result: withVerification({
+          comp: { name: "Duplicate Layers Fixture", numLayersBefore: 2, numLayersAfter: 4 },
+          requestedLayerIndices: [1, 2],
+          layerCountBefore: 2,
+          layerCountAfter: 4,
+          duplicateCount: 2,
+          pairs,
+          postVerification: {
+            ok: true,
+            beforeLayerCount: 2,
+            afterLayerCount: 4,
+            expectedLayerCountAfter: 4,
+            requestedCount: 2,
+            duplicateCount: 2,
+            layerCountDelta: 2,
+            layerCountMatches: true,
+            pairCountMatches: true
+          }
+        }, "Duplicate Layers Fixture")
+      },
+      {
+        index: 2,
+        title: plan.steps[1].title,
+        tool: "get_comp_details",
+        args: clone(plan.steps[1].args),
+        mutatesProject: false,
+        status: "completed",
+        result: JSON.stringify({
+          comp: { name: "Duplicate Layers Fixture", numLayers: 4 },
+          layerCount: 4,
+          layers: [
+            layerInfo("Duplicate Layers Source B Copy", { index: 1 }),
+            layerInfo("Duplicate Layers Source B", { index: 2 }),
+            layerInfo("Duplicate Layers Source A Copy", { index: 3 }),
+            layerInfo("Duplicate Layers Source A", { index: 4 })
+          ]
+        })
+      }
+    ]
+  };
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `duplicate_layers JSON read-back should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("duplicate_layers:names") >= 0 && check.status === "passed"), "duplicate_layers JSON read-back names should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("duplicate_layers:layer-counts") >= 0 && check.status === "passed"), "duplicate_layers JSON read-back layer count should pass.");
+}
+
 function assertAddLayerMarkerPasses() {
   const plan = {
     summary: "Add one explicit timeline marker to a generated layer and inspect marker read-back.",
@@ -848,6 +1018,71 @@ function assertDeleteLayerMarkerPasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("delete_layer_marker:marker") >= 0), "delete layer marker check should be reported.");
 }
 
+function assertMarkerLifecycleSequencePasses() {
+  const plan = {
+    summary: "Add, update, delete one explicit timeline marker and inspect each lifecycle state.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Add layer marker",
+        tool: "add_layer_marker",
+        args: {
+          compName: "Marker Fixture",
+          layerIndex: 1,
+          time: 1.25,
+          comment: "Marker Fixture Initial",
+          duration: 0.25
+        }
+      },
+      {
+        title: "Read marker after add",
+        tool: "get_layer_details",
+        args: { compName: "Marker Fixture", layerIndex: 1 }
+      },
+      {
+        title: "Update layer marker",
+        tool: "update_layer_marker",
+        args: {
+          compName: "Marker Fixture",
+          layerIndex: 1,
+          markerIndex: 1,
+          targetComment: "Marker Fixture Initial",
+          comment: "Marker Fixture Updated",
+          time: 1.5,
+          duration: 0.5
+        }
+      },
+      {
+        title: "Read marker after update",
+        tool: "get_layer_details",
+        args: { compName: "Marker Fixture", layerIndex: 1 }
+      },
+      {
+        title: "Delete layer marker",
+        tool: "delete_layer_marker",
+        args: {
+          compName: "Marker Fixture",
+          layerIndex: 1,
+          markerIndex: 1,
+          targetComment: "Marker Fixture Updated"
+        }
+      },
+      {
+        title: "Read marker after delete",
+        tool: "get_layer_details",
+        args: { compName: "Marker Fixture", layerIndex: 1 }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `marker lifecycle semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("add_layer_marker:marker") >= 0 && check.status === "passed" && check.evidence.indexOf("Read marker after add") >= 0), "add marker should use the intermediate add read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("update_layer_marker:marker") >= 0 && check.status === "passed" && check.evidence.indexOf("Read marker after update") >= 0), "update marker should use the intermediate update read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("delete_layer_marker:marker") >= 0 && check.status === "passed"), "delete marker should still pass on final absent read-back.");
+}
+
 function main() {
   const scenarios = agentScenarioPlans("Codex Semantic Fixture", 0);
   const results = scenarios.map(assertScenarioPasses);
@@ -857,13 +1092,16 @@ function main() {
   assertMissingReadBackNeedsReview(timingScenario);
   assertDeepDuplicatePasses();
   assertCameraLayerPasses();
+  assertCameraPointOfInterestUsesReadBackEvidence();
   assertLayerMaskPasses();
   assertDuplicateLayerPasses();
   assertDuplicateLayersPasses();
+  assertDuplicateLayersJsonStringReadBackPasses();
   assertDuplicateLayersMissingReadBackNeedsReview();
   assertAddLayerMarkerPasses();
   assertUpdateLayerMarkerPasses();
   assertDeleteLayerMarkerPasses();
+  assertMarkerLifecycleSequencePasses();
 
   console.log(JSON.stringify({
     ok: true,

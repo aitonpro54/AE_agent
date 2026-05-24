@@ -10356,12 +10356,13 @@ async function callTool(name, args) {
 
   if (name === "get_comp_details") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
     const includeLayers = optionalBoolean(args, "includeLayers", true);
     const layerLimit = Math.max(1, Math.min(1000, Math.floor(optionalNumber(args, "layerLimit", 200))));
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex});
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
       var includeLayers = ${includeLayers ? "true" : "false"};
       var layerLimit = ${layerLimit};
       var selectedLayerIndices = [];
@@ -10449,9 +10450,10 @@ async function callTool(name, args) {
       var transform = null;
       try {
         var transformGroup = layer.property("ADBE Transform Group");
+        var anchorPointPreview = __codexReadProperty(transformGroup, "ADBE Anchor Point");
         transform = {
-          anchorPoint: __codexReadProperty(transformGroup, "ADBE Anchor Point"),
-          pointOfInterest: __codexReadProperty(transformGroup, "ADBE Point of Interest"),
+          anchorPoint: anchorPointPreview,
+          pointOfInterest: __codexReadProperty(transformGroup, "ADBE Point of Interest") || (layer.matchName === "ADBE Camera Layer" ? anchorPointPreview : null),
           position: __codexReadProperty(transformGroup, "ADBE Position"),
           scale: __codexReadProperty(transformGroup, "ADBE Scale"),
           orientation: __codexReadProperty(transformGroup, "ADBE Orientation"),
@@ -11094,7 +11096,7 @@ async function callTool(name, args) {
 
       var transform = layer.property("ADBE Transform Group");
       if (requestedPointOfInterest !== null) {
-        var pointProp = transform.property("ADBE Point of Interest");
+        var pointProp = transform.property("ADBE Point of Interest") || transform.property("ADBE Anchor Point");
         if (pointProp) pointProp.setValue(__codexCameraPoint3(requestedPointOfInterest));
       }
       if (requestedPosition !== null) transform.property("ADBE Position").setValue(requestedPosition);
@@ -11119,7 +11121,7 @@ async function callTool(name, args) {
         },
         layer: __codexLayerInfo(layer),
         camera: {
-          pointOfInterest: transform ? __codexReadValue(transform.property("ADBE Point of Interest")) : null,
+          pointOfInterest: transform ? __codexReadValue(transform.property("ADBE Point of Interest") || transform.property("ADBE Anchor Point")) : null,
           position: transform ? __codexReadValue(transform.property("ADBE Position")) : null,
           zoom: cameraOptions ? __codexReadValue(cameraOptions.property("ADBE Camera Zoom")) : null
         }

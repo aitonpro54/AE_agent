@@ -1267,7 +1267,7 @@ async function main() {
     })
   });
   const itemIndexesBindingCommand = await waitForPendingCommand(port, token, 5000);
-  if (!itemIndexesBindingCommand.body.command || itemIndexesBindingCommand.body.command.script.indexOf("__codexResolveComp(7)") < 0) {
+  if (!itemIndexesBindingCommand.body.command || itemIndexesBindingCommand.body.command.script.indexOf("__codexResolveComp(7") < 0) {
     throw new Error("Expected {{itemIndexes}} binding to resolve to selected source comp item 7.");
   }
   await requestJsonWithOptions({
@@ -1299,7 +1299,7 @@ async function main() {
     })
   });
   const wrappedStepBindingCommand = await waitForPendingCommand(port, token, 5000);
-  if (!wrappedStepBindingCommand.body.command || wrappedStepBindingCommand.body.command.script.indexOf("__codexResolveComp(1)") < 0) {
+  if (!wrappedStepBindingCommand.body.command || wrappedStepBindingCommand.body.command.script.indexOf("__codexResolveComp(1") < 0) {
     throw new Error("Expected wrapped {{steps.1.result}} binding to resolve to active comp item 1.");
   }
   await requestJsonWithOptions({
