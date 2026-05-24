@@ -551,6 +551,53 @@
           "node scripts/cep-panel-cdp-smoke.js connector-status-smoke"
         ]
       },
+      "supervisorProof": {
+        "recordedAt": "2026-05-24",
+        "planOnlyCommand": "npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor -- --plan-only --queue .codex-audit/sdk-roadmap-supervisor/203-bulk-selected-layer-duplicate-queue.json --max-items 3 --max-minutes 180 --json",
+        "planOnlyResult": {
+          "status": "passed",
+          "childRunsCreated": false,
+          "sdkThreadCreated": false,
+          "runtimeStateWritten": false,
+          "approvalBindings": [
+            "repo",
+            "queue",
+            "queueSha256",
+            "itemIds",
+            "maxItems=3",
+            "maxMinutes=180",
+            "autoCommit=true",
+            "noPush=true",
+            "noDependencyChanges=true",
+            "liveBindings",
+            "noLiveCepAeUnlessPerItemApproved=true"
+          ]
+        },
+        "smokeCommands": [
+          {
+            "command": "npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor-readiness:smoke",
+            "status": "passed"
+          },
+          {
+            "command": "npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor:smoke",
+            "status": "passed"
+          }
+        ],
+        "validatedBehavior": [
+          "plan-only preview does not create child runs, SDK threads, or runtime session state",
+          "single approval text is queueSha256-bound and includes all queue item ids plus max item/minute budgets",
+          "the M207 generated-only live command is the only single-approval mutating-live binding in this queue",
+          "roadmap supervisor command smokes cover wrong-approval rejection, dirty-tree rejection, one-writer execution, read-only reviewers, validation failure stops, run-until-budget resume, unplanned path rejection, ignored handoff handling, and Windows .cmd validation dispatch"
+        ],
+        "boundaries": {
+          "runtimeBridgeEdited": false,
+          "cepPanelEdited": false,
+          "mutatingLiveAeRun": false,
+          "dependenciesChanged": false,
+          "pushPerformed": false,
+          "prCreated": false
+        }
+      },
       "approval": {
         "state": "pending-explicit-approval",
         "freshRequired": true
