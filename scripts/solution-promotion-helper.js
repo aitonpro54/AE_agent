@@ -76,6 +76,7 @@ const KNOWN_BRIDGE_TOOLS = new Set([
   "apply_transform_expression",
   "add_layer_marker",
   "update_layer_marker",
+  "delete_layer_marker",
   "create_test_comp",
   "cleanup_test_items"
 ]);
@@ -119,6 +120,7 @@ const MUTATING_TOOLS = new Set([
   "apply_transform_expression",
   "add_layer_marker",
   "update_layer_marker",
+  "delete_layer_marker",
   "create_test_comp",
   "cleanup_test_items"
 ]);

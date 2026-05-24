@@ -101,7 +101,11 @@ const TOOL_ALIASES = {
   updatemarker: "update_layer_marker",
   updatelayermarker: "update_layer_marker",
   editmarker: "update_layer_marker",
-  editlayermarker: "update_layer_marker"
+  editlayermarker: "update_layer_marker",
+  deletemarker: "delete_layer_marker",
+  deletelayermarker: "delete_layer_marker",
+  removemarker: "delete_layer_marker",
+  removelayermarker: "delete_layer_marker"
 };
 
 const BINDING_ALIASES = {
@@ -277,7 +281,7 @@ function propertyCandidates(field) {
     markercomment: ["comment"],
     markertext: ["comment"],
     markerlabel: ["comment"],
-    markertime: ["time"],
+    markertime: ["time", "targetTime"],
     markerduration: ["duration"],
     markernumber: ["markerIndex"],
     markerkey: ["markerIndex"],

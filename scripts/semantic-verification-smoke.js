@@ -207,6 +207,37 @@ function fakeMutationResult(step, state) {
       }
     }, compName, layer);
   }
+  if (step.tool === "delete_layer_marker") {
+    if (state.layerMarkers.length === 0) {
+      state.layerMarkers.push({
+        keyIndex: 1,
+        time: args.targetTime === undefined ? 1.25 : args.targetTime,
+        comment: args.targetComment || "Marker Fixture Beat",
+        duration: 0.5
+      });
+    }
+    let markerIndex = args.markerIndex || 0;
+    if (!markerIndex && args.targetTime !== undefined) {
+      markerIndex = state.layerMarkers.findIndex((marker) => Math.abs(Number(marker.time) - Number(args.targetTime)) <= 0.001 && (!args.targetComment || marker.comment === args.targetComment)) + 1;
+    }
+    if (markerIndex < 1 || markerIndex > state.layerMarkers.length) markerIndex = 1;
+    const markerDeleted = state.layerMarkers.splice(markerIndex - 1, 1)[0];
+    const layer = layerInfo("Marker Fixture Layer", {
+      index: args.layerIndex || 1,
+      markerCount: state.layerMarkers.length
+    });
+    return withVerification({
+      comp: { name: compName },
+      layer,
+      markerDeleted,
+      markers: {
+        count: state.layerMarkers.length,
+        returned: state.layerMarkers.length,
+        truncated: false,
+        items: state.layerMarkers.slice()
+      }
+    }, compName, layer);
+  }
   if (step.tool === "set_comp_work_area") {
     return withVerification({
       comp: { name: compName },
@@ -669,6 +700,39 @@ function assertUpdateLayerMarkerPasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("update_layer_marker:marker") >= 0), "update layer marker check should be reported.");
 }
 
+function assertDeleteLayerMarkerPasses() {
+  const plan = {
+    summary: "Delete one explicit timeline marker and inspect marker read-back.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Delete layer marker",
+        tool: "delete_layer_marker",
+        args: {
+          compName: "Marker Fixture",
+          layerIndex: 1,
+          markerIndex: 1,
+          targetTime: 1.25,
+          targetComment: "Marker Fixture Beat"
+        }
+      },
+      {
+        title: "Read marker layer",
+        tool: "get_layer_details",
+        args: {
+          compName: "Marker Fixture",
+          layerIndex: 1
+        }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `delete layer marker semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("delete_layer_marker:marker") >= 0), "delete layer marker check should be reported.");
+}
+
 function main() {
   const scenarios = agentScenarioPlans("Codex Semantic Fixture", 0);
   const results = scenarios.map(assertScenarioPasses);
@@ -682,6 +746,7 @@ function main() {
   assertDuplicateLayerPasses();
   assertAddLayerMarkerPasses();
   assertUpdateLayerMarkerPasses();
+  assertDeleteLayerMarkerPasses();
 
   console.log(JSON.stringify({
     ok: true,

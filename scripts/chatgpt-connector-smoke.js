@@ -289,6 +289,7 @@ function assertReadOnlyTools(tools) {
     "duplicate_layer",
     "add_layer_marker",
     "update_layer_marker",
+    "delete_layer_marker",
     "create_shape_layer",
     "import_footage",
     "add_project_item_to_comp",

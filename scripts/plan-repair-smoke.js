@@ -252,6 +252,24 @@ async function main() {
     assert.strictEqual(markerUpdateRepair.repairedPlan.steps[0].args.time, 1.5);
     assert.strictEqual(markerUpdateRepair.repairedPlan.steps[0].args.duration, 0.75);
 
+    const markerDeleteRepair = await validatePlan("layer-marker-delete-alias", {
+      summary: "Delete one explicit marker on the generated layer.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Delete marker", tool: "removeLayerMarker", args: { compName: "Repair Smoke Comp", layer: 1, markerNumber: 1, targetMarkerComment: "Repair Smoke Marker Updated" } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["delete_layer_marker"],
+      actionTypes: ["tool-alias", "arg-alias"]
+    });
+    assert.strictEqual(markerDeleteRepair.repairedPlan.steps[0].args.layerIndex, 1);
+    assert.strictEqual(markerDeleteRepair.repairedPlan.steps[0].args.markerIndex, 1);
+    assert.strictEqual(markerDeleteRepair.repairedPlan.steps[0].args.targetComment, "Repair Smoke Marker Updated");
+
     const bindingAliasRepair = await validatePlan("binding-alias", {
       summary: "Set selected layers 3D using common aliases.",
       risk: "medium",

@@ -81,6 +81,7 @@ const MUTATING_TOOLS = new Set([
   "clear_expression",
   "add_layer_marker",
   "update_layer_marker",
+  "delete_layer_marker",
   "add_comp_to_render_queue",
   "set_render_queue_output",
   "cleanup_test_items",

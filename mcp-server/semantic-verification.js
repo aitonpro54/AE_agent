@@ -23,6 +23,7 @@ const MUTATING_TOOLS = new Set([
   "duplicate_layer",
   "add_layer_marker",
   "update_layer_marker",
+  "delete_layer_marker",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
   "precompose_layers",
@@ -274,6 +275,24 @@ function observedUpdatedMarkerEvidence(evidence, args) {
     if (updatedMarkerMatchesArgs(marker, args)) return marker.source || "observed marker";
   }
   return null;
+}
+
+function markerMatchesDeleteTarget(marker, target) {
+  if (!marker || !target) return false;
+  if (target.comment && !sameString(marker.comment, target.comment)) return false;
+  if (target.time !== null && target.time !== undefined && !nearlyEqual(marker.time, target.time)) return false;
+  if (target.duration !== null && target.duration !== undefined && !nearlyEqual(marker.duration, target.duration)) return false;
+  return true;
+}
+
+function observedDeletedMarkerAbsent(evidence, deletedMarker, args) {
+  if (!evidence || !Array.isArray(evidence.markers) || !deletedMarker) return false;
+  const target = {
+    comment: args.targetComment || deletedMarker.comment || "",
+    time: hasOwn(args, "targetTime") ? args.targetTime : deletedMarker.time,
+    duration: deletedMarker.duration
+  };
+  return !evidence.markers.some((marker) => markerMatchesDeleteTarget(marker, target));
 }
 
 function observedMarkerEvidence(evidence, args) {
@@ -741,6 +760,20 @@ function verifyStep(checks, step, evidence) {
       observed: markerText(marker),
       passed: updatedMarkerMatchesArgs(marker, args) && Boolean(readBackEvidence),
       evidence: readBackEvidence || "No matching updated marker read-back after mutation."
+    });
+    return;
+  }
+
+  if (step.tool === "delete_layer_marker") {
+    const deletedMarker = payload.markerDeleted || {};
+    const absent = observedDeletedMarkerAbsent(evidence.readBack, deletedMarker, args);
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:marker`,
+      title: "Layer marker target was deleted",
+      expected: `deleted marker absent after read-back: ${markerText(deletedMarker)}`,
+      observed: absent ? "deleted marker absent" : "deleted marker still present or no marker read-back",
+      passed: Boolean(deletedMarker && deletedMarker.keyIndex) && absent,
+      evidence: absent ? "Post-run marker read-back does not include the deleted marker target." : "No post-run marker read-back proving deletion."
     });
     return;
   }

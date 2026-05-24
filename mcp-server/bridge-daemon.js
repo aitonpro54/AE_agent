@@ -874,6 +874,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "apply_transform_expression",
   "add_layer_marker",
   "update_layer_marker",
+  "delete_layer_marker",
   "create_test_comp",
   "cleanup_test_items"
 ]);
@@ -3993,6 +3994,7 @@ const PLANNING_TOOL_NAMES = [
   "apply_transform_expression",
   "add_layer_marker",
   "update_layer_marker",
+  "delete_layer_marker",
   "create_test_comp",
   "cleanup_test_items",
   "run_extendscript",
@@ -5825,7 +5827,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For timeline trims, work areas, sequencing, splitting, and offsets, use set_comp_work_area, set_layer_time_range, stagger_layers, or split_layers_at_time.",
     "For precomp/source workflows, use precompose_layers, replace_layer_source, deep_duplicate_precomp_sources, rename_layers, and rename_project_items before considering raw ExtendScript.",
     "For explicit single-layer duplication, use duplicate_layer after inspecting the target comp/layer; do not use it for delete operations or selection-only ambiguity.",
-    "For timeline marker workflows, use add_layer_marker or update_layer_marker only with explicit layer/time/comment evidence; update_layer_marker must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
+    "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
     "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, and fit_layer_to_comp.",
     "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, set_expression, and clear_expression.",
     "For render queue setup, use add_comp_to_render_queue, set_render_queue_output, and get_render_queue_status. Do not start a render.",
@@ -8804,6 +8806,40 @@ const tools = [
         duration: {
           type: "number",
           description: "Optional replacement marker duration in seconds."
+        }
+      },
+      required: ["layerIndex"]
+    }
+  },
+  {
+    name: "delete_layer_marker",
+    description: "Delete one existing layer marker by explicit marker index or strict target time.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based layer index in the target composition."
+        },
+        markerIndex: {
+          type: "number",
+          description: "Optional 1-based marker key index to delete. Use this when multiple markers share the same time."
+        },
+        targetTime: {
+          type: "number",
+          description: "Optional existing marker time in seconds. Required when markerIndex is omitted."
+        },
+        targetComment: {
+          type: "string",
+          description: "Optional existing marker comment guard."
         }
       },
       required: ["layerIndex"]
@@ -13198,6 +13234,75 @@ async function callTool(name, args) {
         layer: __codexLayerInfo(layer),
         markerBefore: markerBefore,
         marker: markerInfo,
+        markers: __codexLayerMarkers(layer, 50)
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "delete_layer_marker") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const markerIndex = optionalPositiveInteger(args, "markerIndex");
+    const targetTime = optionalNumber(args, "targetTime", null);
+    const targetComment = optionalString(args, "targetComment", "");
+
+    if (markerIndex === null && targetTime === null) return toolResult("markerIndex or targetTime is required.", true);
+    if (targetTime !== null && targetTime < 0) return toolResult("targetTime must be 0 or greater.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      function __codexMarkerComment(markerProp, keyIndex) {
+        try {
+          var markerValue = markerProp.keyValue(keyIndex);
+          return markerValue.comment || "";
+        } catch (__commentError) {
+          return "";
+        }
+      }
+      function __codexFindMarkerKey(markerProp, markerIndex, targetTime, targetComment) {
+        if (!markerProp || markerProp.numKeys < 1) throw new Error("Layer has no markers.");
+        if (markerIndex !== null) {
+          if (markerIndex < 1 || markerIndex > markerProp.numKeys) throw new Error("markerIndex is outside the layer marker range.");
+          if (targetTime !== null && Math.abs(markerProp.keyTime(markerIndex) - targetTime) > 0.001) throw new Error("markerIndex does not match targetTime.");
+          if (targetComment && __codexMarkerComment(markerProp, markerIndex) !== targetComment) throw new Error("markerIndex does not match targetComment.");
+          return markerIndex;
+        }
+        var matchIndex = 0;
+        for (var __mk = 1; __mk <= markerProp.numKeys; __mk++) {
+          if (Math.abs(markerProp.keyTime(__mk) - targetTime) <= 0.001) {
+            if (targetComment && __codexMarkerComment(markerProp, __mk) !== targetComment) continue;
+            if (matchIndex) throw new Error("More than one marker matched targetTime; provide markerIndex.");
+            matchIndex = __mk;
+          }
+        }
+        if (!matchIndex) throw new Error("No marker matched the requested target.");
+        return matchIndex;
+      }
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      var markerProp = layer.property("ADBE Marker");
+      if (!markerProp) throw new Error("Layer markers are unavailable.");
+      var requestedMarkerIndex = ${markerIndex === null ? "null" : markerIndex};
+      var requestedTargetTime = ${targetTime === null ? "null" : targetTime};
+      var requestedTargetComment = ${aeLiteral(targetComment)};
+
+      app.beginUndoGroup("Codex Delete Layer Marker");
+      var keyIndex = __codexFindMarkerKey(markerProp, requestedMarkerIndex, requestedTargetTime, requestedTargetComment);
+      var markerDeleted = __codexMarkerInfo(markerProp, keyIndex);
+      markerProp.removeKey(keyIndex);
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name
+        },
+        layer: __codexLayerInfo(layer),
+        markerDeleted: markerDeleted,
         markers: __codexLayerMarkers(layer, 50)
       };
       app.endUndoGroup();
