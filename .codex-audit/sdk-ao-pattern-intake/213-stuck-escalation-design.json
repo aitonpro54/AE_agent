@@ -1,0 +1,427 @@
+{
+  "schema": "sdk-ao-pattern-intake.stuck-escalation-design.v1",
+  "milestone": 213,
+  "title": "AO-inspired stuck detector and escalation design",
+  "createdAt": "2026-05-24",
+  "purpose": "Define a design-only stuck detection and escalation policy over the M212 activity/session contract for the existing AE Agent roadmap supervisor without implementing an auto-fixing loop or changing runtime behavior.",
+  "source": {
+    "kind": "ao-inspired-pattern-intake",
+    "parentContractPath": ".codex-audit/sdk-ao-pattern-intake/212-activity-session-schema.json",
+    "queuePath": ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
+    "queueItemId": "m213-ao-stuck-escalation-design",
+    "notRuntimeBehavior": true,
+    "notAnAoIntegration": true
+  },
+  "boundaryClaims": {
+    "autoFixRuntimeLoopImplemented": false,
+    "autoRetryDefaultEnabled": false,
+    "unboundedRetryAllowed": false,
+    "roadmapSupervisorRuntimeChanged": false,
+    "productionRuntimeChanged": false,
+    "aoInstalled": false,
+    "aoStarted": false,
+    "cepPanelChanged": false,
+    "liveCepAeValidationRun": false,
+    "externalProviderPlannerValidationRun": false,
+    "dependenciesChanged": false,
+    "packageManifestChanged": false,
+    "branchWorktreePushPrGithubActionCreated": false
+  },
+  "policyDefaults": {
+    "autoFix": false,
+    "autoRetry": false,
+    "maxRetriesPerInput": 1,
+    "maxTotalRetriesPerSession": 2,
+    "retryRequiresUserOrSupervisorDecision": true,
+    "contextPressureForcesHandoff": true,
+    "unplannedPathChangeFailsClosed": true,
+    "liveAndDependencyActionsForbidden": true
+  },
+  "stuckInputs": [
+    {
+      "input": "stale_activity",
+      "description": "No new activity JSONL event or state timestamp is observed before the configured stale threshold while the session is active or idle.",
+      "eventSignals": [
+        "active",
+        "idle"
+      ],
+      "stateSignals": [
+        "active",
+        "idle"
+      ],
+      "defaultEscalationAction": "stop_and_handoff",
+      "retryable": true,
+      "retryCap": 1
+    },
+    {
+      "input": "missing_log_progress",
+      "description": "Expected child, validation, reviewer, or report log files exist but do not advance after the session claims active validation or child execution.",
+      "eventSignals": [
+        "active",
+        "validation_started"
+      ],
+      "stateSignals": [
+        "active"
+      ],
+      "defaultEscalationAction": "create_repair_prompt",
+      "retryable": true,
+      "retryCap": 1
+    },
+    {
+      "input": "validation_failure",
+      "description": "A validation command exits non-zero or records a validation_failed event.",
+      "eventSignals": [
+        "validation_failed",
+        "errored"
+      ],
+      "stateSignals": [
+        "errored"
+      ],
+      "defaultEscalationAction": "create_repair_prompt",
+      "retryable": false,
+      "retryCap": 0
+    },
+    {
+      "input": "child_process_timeout",
+      "description": "A bounded writer, reviewer, analyzer, or validation child exceeds its approved timeout.",
+      "eventSignals": [
+        "child_timeout"
+      ],
+      "stateSignals": [
+        "stuck"
+      ],
+      "defaultEscalationAction": "stop_and_handoff",
+      "retryable": true,
+      "retryCap": 1
+    },
+    {
+      "input": "needs_input_prompt",
+      "description": "The session records needs_input for approval, missing clarification, or a stop gate that requires human choice.",
+      "eventSignals": [
+        "needs_input"
+      ],
+      "stateSignals": [
+        "needs_input"
+      ],
+      "defaultEscalationAction": "ask_user",
+      "retryable": false,
+      "retryCap": 0
+    },
+    {
+      "input": "context_pressure",
+      "description": "The session or user reports context pressure at or above the project handoff threshold.",
+      "eventSignals": [
+        "context_pressure"
+      ],
+      "stateSignals": [
+        "stopped",
+        "escalated"
+      ],
+      "defaultEscalationAction": "stop_and_handoff",
+      "retryable": false,
+      "retryCap": 0
+    },
+    {
+      "input": "dirty_git_state",
+      "description": "Execution starts or validation completes with dirty paths outside the approved item scope or a dirty state that the item declares as a stop gate.",
+      "eventSignals": [
+        "dirty_git_state"
+      ],
+      "stateSignals": [
+        "stopped"
+      ],
+      "defaultEscalationAction": "fail_closed",
+      "retryable": false,
+      "retryCap": 0
+    },
+    {
+      "input": "unplanned_path_change",
+      "description": "A writer child changes or proposes changing a path outside the current queue item's plannedPaths.",
+      "eventSignals": [
+        "unplanned_path_change"
+      ],
+      "stateSignals": [
+        "stopped",
+        "escalated"
+      ],
+      "defaultEscalationAction": "fail_closed",
+      "retryable": false,
+      "retryCap": 0
+    }
+  ],
+  "escalationActions": [
+    {
+      "action": "stop_and_handoff",
+      "description": "Stop implementation, write or update the handoff path with current state, validation results, risks, and exact next prompt, then wait for the next bounded run.",
+      "terminalState": "escalated",
+      "mayMutateRepository": true,
+      "allowedWriteScope": [
+        ".codex/handoff.md",
+        "plans/target-app-execplan.md"
+      ],
+      "autoFix": false,
+      "autoRetry": false
+    },
+    {
+      "action": "ask_user",
+      "description": "Ask the user for the missing approval or decision and do not continue the blocked action until a fresh explicit answer exists.",
+      "terminalState": "needs_input",
+      "mayMutateRepository": false,
+      "allowedWriteScope": [],
+      "autoFix": false,
+      "autoRetry": false
+    },
+    {
+      "action": "create_repair_prompt",
+      "description": "Record a compact repair prompt or next-chat prompt describing the failure, allowed paths, commands run, and exact next safe action.",
+      "terminalState": "escalated",
+      "mayMutateRepository": true,
+      "allowedWriteScope": [
+        ".codex/handoff.md",
+        "plans/target-app-execplan.md"
+      ],
+      "autoFix": false,
+      "autoRetry": false
+    },
+    {
+      "action": "retry_later",
+      "description": "Defer a retry for an external or transient condition only when retry caps remain and a supervisor or user explicitly chooses the retry.",
+      "terminalState": "stopped",
+      "mayMutateRepository": false,
+      "allowedWriteScope": [],
+      "autoFix": false,
+      "autoRetry": false,
+      "requiresRetryBudget": true
+    },
+    {
+      "action": "fail_closed",
+      "description": "Stop without applying fixes when a forbidden boundary, unplanned path, dirty state, dependency/live request, or unsafe retry condition appears.",
+      "terminalState": "stopped",
+      "mayMutateRepository": false,
+      "allowedWriteScope": [],
+      "autoFix": false,
+      "autoRetry": false
+    }
+  ],
+  "forbiddenActions": [
+    "auto_fix",
+    "auto_retry_without_explicit_decision",
+    "unbounded_retry",
+    "live_cep_ae_action",
+    "dependency_or_package_action",
+    "runtime_behavior_change",
+    "production_path_write",
+    "branch_worktree_push_pr_github_action",
+    "ao_install_or_start"
+  ],
+  "examples": [
+    {
+      "id": "stale-active-writer",
+      "description": "An active writer has no fresh activity before the stale threshold, so the policy stops and hands off instead of spinning or auto-fixing.",
+      "fixture": {
+        "now": "2026-05-24T17:30:00.000Z",
+        "staleAfterMinutes": 15,
+        "retryCount": 0,
+        "session": {
+          "sessionId": "m213-stale-writer",
+          "taskId": "m213-ao-stuck-escalation-design",
+          "role": "writer",
+          "state": "active",
+          "plannedPaths": [
+            ".codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json",
+            "scripts/sdk-ao-stuck-escalation-smoke.js",
+            "plans/target-app-execplan.md",
+            ".codex/handoff.md"
+          ],
+          "changedPaths": []
+        },
+        "events": [
+          {
+            "ts": "2026-05-24T17:00:00.000Z",
+            "event": "active",
+            "state": "active"
+          }
+        ]
+      },
+      "expected": {
+        "outcome": "escalated",
+        "stuckInput": "stale_activity",
+        "action": "stop_and_handoff",
+        "autoFix": false,
+        "autoRetry": false
+      }
+    },
+    {
+      "id": "validation-failed",
+      "description": "A failed validation command escalates into a repair prompt without running an automatic repair loop.",
+      "fixture": {
+        "now": "2026-05-24T17:32:00.000Z",
+        "staleAfterMinutes": 15,
+        "retryCount": 0,
+        "session": {
+          "sessionId": "m213-validation-failed",
+          "taskId": "m213-ao-stuck-escalation-design",
+          "role": "writer",
+          "state": "errored",
+          "plannedPaths": [
+            ".codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json",
+            "scripts/sdk-ao-stuck-escalation-smoke.js",
+            "plans/target-app-execplan.md",
+            ".codex/handoff.md"
+          ],
+          "changedPaths": [
+            "scripts/sdk-ao-stuck-escalation-smoke.js"
+          ]
+        },
+        "events": [
+          {
+            "ts": "2026-05-24T17:31:00.000Z",
+            "event": "validation_failed",
+            "state": "errored",
+            "command": "node scripts/sdk-ao-stuck-escalation-smoke.js",
+            "exitCode": 1
+          }
+        ]
+      },
+      "expected": {
+        "outcome": "escalated",
+        "stuckInput": "validation_failure",
+        "action": "create_repair_prompt",
+        "autoFix": false,
+        "autoRetry": false
+      }
+    },
+    {
+      "id": "healthy-done",
+      "description": "A completed session with allowed changed paths and done validation is not stuck and does not escalate.",
+      "fixture": {
+        "now": "2026-05-24T17:35:00.000Z",
+        "staleAfterMinutes": 15,
+        "retryCount": 0,
+        "session": {
+          "sessionId": "m213-healthy-done",
+          "taskId": "m213-ao-stuck-escalation-design",
+          "role": "writer",
+          "state": "done",
+          "plannedPaths": [
+            ".codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json",
+            "scripts/sdk-ao-stuck-escalation-smoke.js",
+            "plans/target-app-execplan.md",
+            ".codex/handoff.md"
+          ],
+          "changedPaths": [
+            ".codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json",
+            "scripts/sdk-ao-stuck-escalation-smoke.js"
+          ]
+        },
+        "events": [
+          {
+            "ts": "2026-05-24T17:33:00.000Z",
+            "event": "validation_started",
+            "state": "active",
+            "command": "node scripts/sdk-ao-stuck-escalation-smoke.js"
+          },
+          {
+            "ts": "2026-05-24T17:34:00.000Z",
+            "event": "done",
+            "state": "done"
+          }
+        ]
+      },
+      "expected": {
+        "outcome": "healthy",
+        "stuckInput": null,
+        "action": null,
+        "autoFix": false,
+        "autoRetry": false
+      }
+    },
+    {
+      "id": "unplanned-path-change",
+      "description": "A child writes outside plannedPaths, so the policy fails closed even if recent activity exists.",
+      "fixture": {
+        "now": "2026-05-24T17:36:00.000Z",
+        "staleAfterMinutes": 15,
+        "retryCount": 0,
+        "session": {
+          "sessionId": "m213-unplanned-path",
+          "taskId": "m213-ao-stuck-escalation-design",
+          "role": "writer",
+          "state": "active",
+          "plannedPaths": [
+            ".codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json",
+            "scripts/sdk-ao-stuck-escalation-smoke.js",
+            "plans/target-app-execplan.md",
+            ".codex/handoff.md"
+          ],
+          "changedPaths": [
+            "package.json"
+          ]
+        },
+        "events": [
+          {
+            "ts": "2026-05-24T17:35:00.000Z",
+            "event": "active",
+            "state": "active"
+          }
+        ]
+      },
+      "expected": {
+        "outcome": "escalated",
+        "stuckInput": "unplanned_path_change",
+        "action": "fail_closed",
+        "autoFix": false,
+        "autoRetry": false
+      }
+    }
+  ],
+  "nextPrompt": "Continue with M214 AO-inspired static status dashboard. Use the M212 activity/session schema and M213 stuck/escalation design as inputs. Do not install or run AO, do not add a server or dependency, do not edit CEP/live/production/package paths, and keep the dashboard static and design-bounded.",
+  "machineCheck": {
+    "requiredParentSchema": "sdk-ao-pattern-intake.activity-session-schema.v1",
+    "requiredStuckInputs": [
+      "stale_activity",
+      "missing_log_progress",
+      "validation_failure",
+      "child_process_timeout",
+      "needs_input_prompt",
+      "context_pressure",
+      "dirty_git_state",
+      "unplanned_path_change"
+    ],
+    "requiredEscalationActions": [
+      "stop_and_handoff",
+      "ask_user",
+      "create_repair_prompt",
+      "retry_later",
+      "fail_closed"
+    ],
+    "requiredForbiddenActions": [
+      "auto_fix",
+      "auto_retry_without_explicit_decision",
+      "unbounded_retry",
+      "live_cep_ae_action",
+      "dependency_or_package_action"
+    ],
+    "requiredFalseBoundaryClaims": [
+      "autoFixRuntimeLoopImplemented",
+      "autoRetryDefaultEnabled",
+      "unboundedRetryAllowed",
+      "roadmapSupervisorRuntimeChanged",
+      "productionRuntimeChanged",
+      "aoInstalled",
+      "aoStarted",
+      "cepPanelChanged",
+      "liveCepAeValidationRun",
+      "externalProviderPlannerValidationRun",
+      "dependenciesChanged",
+      "packageManifestChanged",
+      "branchWorktreePushPrGithubActionCreated"
+    ],
+    "requiredExampleIds": [
+      "stale-active-writer",
+      "validation-failed",
+      "healthy-done",
+      "unplanned-path-change"
+    ]
+  }
+}
