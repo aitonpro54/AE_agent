@@ -17,9 +17,7 @@
       "title": "Add explicit duplicate_layers runtime typed tool",
       "dependencies": [],
       "runner": {
-        "kind": "feature-conveyor",
-        "itemId": "m204-duplicate-layers-runtime-tool",
-        "approvalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only"
+        "kind": "roadmap-sdk"
       },
       "mode": "sdk-write",
       "plannedPaths": [
@@ -36,6 +34,17 @@
         "logs/**",
         "backups/**",
         "snapshots/**"
+      ],
+      "allowedActions": [
+        "add a bounded duplicate_layers typed bridge tool using explicit layerIndices",
+        "require source/duplicate pair read-back, before/after layer counts, idempotency, checkpoint, and post-verification fields",
+        "reject empty, duplicate, non-positive, out-of-range, locked, or selection-only layer targets"
+      ],
+      "forbiddenActions": [
+        "delete layers or project items",
+        "deep-duplicate or relink precomp/source trees",
+        "edit masks, paths, audio workflows, CEP panel files, dependencies, package manifests, or user assets",
+        "run live AE/CEP mutation"
       ],
       "allowedCommands": [
         "node --check mcp-server/bridge-daemon.js",
@@ -77,7 +86,7 @@
       "stopGates": [
         "dirty-git-before-execution",
         "missing-exact-fresh-approval",
-        "feature-conveyor-item-not-approved",
+        "roadmap-sdk-child-failed",
         "selection-only-ambiguity",
         "planned-path-outside-policy",
         "validation-failed",
@@ -93,9 +102,7 @@
         "m204-duplicate-layers-runtime-tool"
       ],
       "runner": {
-        "kind": "feature-conveyor",
-        "itemId": "m205-duplicate-layers-planner-repair",
-        "approvalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only"
+        "kind": "roadmap-sdk"
       },
       "mode": "sdk-write",
       "plannedPaths": [
@@ -115,6 +122,16 @@
         "logs/**",
         "backups/**",
         "snapshots/**"
+      ],
+      "allowedActions": [
+        "expose duplicate_layers in planner guidance and typed-tool catalog",
+        "add plan-repair aliases only for bulk or selected-layer duplicate intents",
+        "preserve deep_duplicate_precomp_sources for selected precomp/source workflows"
+      ],
+      "forbiddenActions": [
+        "route layer deletion, source relinking, mask/path editing, or audio workflows to duplicate_layers",
+        "execute selected-layer duplication without prior read-only selected-layer evidence",
+        "edit CEP panel files, dependencies, package manifests, or live AE state"
       ],
       "allowedCommands": [
         "node --check mcp-server/bridge-daemon.js",
@@ -164,7 +181,7 @@
       "stopGates": [
         "dirty-git-before-execution",
         "missing-exact-fresh-approval",
-        "feature-conveyor-item-not-approved",
+        "roadmap-sdk-child-failed",
         "planner-scope-creep",
         "planned-path-outside-policy",
         "validation-failed",
@@ -180,9 +197,7 @@
         "m205-duplicate-layers-planner-repair"
       ],
       "runner": {
-        "kind": "feature-conveyor",
-        "itemId": "m206-duplicate-layers-semantic-local-smokes",
-        "approvalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only"
+        "kind": "roadmap-sdk"
       },
       "mode": "sdk-write",
       "plannedPaths": [
@@ -202,6 +217,16 @@
         "logs/**",
         "backups/**",
         "snapshots/**"
+      ],
+      "allowedActions": [
+        "add semantic verification for duplicate_layers source/duplicate pairs",
+        "add local smoke coverage for one duplicate per requested source, expected names, and before/after layer counts",
+        "keep verification deterministic and based on bridge read-back"
+      ],
+      "forbiddenActions": [
+        "accept duplicate success without post-run read-back evidence",
+        "add broad live AE mutation, CEP panel edits, dependencies, or package changes",
+        "cover destructive layer deletion, source relinking, masks, paths, or audio workflows"
       ],
       "allowedCommands": [
         "node --check mcp-server/semantic-verification.js",
@@ -251,7 +276,7 @@
       "stopGates": [
         "dirty-git-before-execution",
         "missing-exact-fresh-approval",
-        "feature-conveyor-item-not-approved",
+        "roadmap-sdk-child-failed",
         "semantic-readback-missing",
         "planned-path-outside-policy",
         "validation-failed",
@@ -267,9 +292,7 @@
         "m206-duplicate-layers-semantic-local-smokes"
       ],
       "runner": {
-        "kind": "feature-conveyor",
-        "itemId": "m207-duplicate-layers-live-validation-lane",
-        "approvalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only"
+        "kind": "roadmap-sdk"
       },
       "mode": "sdk-write",
       "plannedPaths": [
@@ -289,6 +312,16 @@
         "package-lock.json",
         "backups/**",
         "snapshots/**"
+      ],
+      "allowedActions": [
+        "add a generated-only duplicate_layers Full UI Agent live validation lane",
+        "require installed panel/CDP, openai-cli, panel-generated plan, dry run, protected run, read-back, semantic verification, and cleanup",
+        "fail closed when deterministic, Local/Ollama, or OpenRouter fallback is attempted"
+      ],
+      "forbiddenActions": [
+        "mutate user assets or accept leftover generated items",
+        "edit CEP panel files, dependencies, package manifests, or package locks",
+        "run live mutation without exact single-approval live binding or fallback live approval"
       ],
       "allowedCommands": [
         "node --check orchestrator/run-ae-agent-feature-conveyor.mjs",
@@ -321,7 +354,9 @@
         "mode": "generated-only-command",
         "approvalRequired": true,
         "approvalText": "I approve one M207 live CEP AE validation run for generated-only bulk selected layer duplicate checks using OpenAI CLI",
+        "generatedOnlyLive": true,
         "mutatingLive": true,
+        "noUserAssetMutation": true,
         "commands": [
           "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item m207-duplicate-layers-live-validation --validate-live --stage both --allow-mutating-live --approval-text \"I approve one M207 live CEP AE validation run for generated-only bulk selected layer duplicate checks using OpenAI CLI\" --json"
         ]
@@ -344,7 +379,7 @@
         "dirty-git-before-execution",
         "missing-exact-fresh-approval",
         "missing-item-live-approval",
-        "feature-conveyor-item-not-approved",
+        "roadmap-sdk-child-failed",
         "live-connectivity-unavailable",
         "generated-cleanup-leftovers",
         "planned-path-outside-policy",
@@ -361,9 +396,7 @@
         "m207-duplicate-layers-live-validation-lane"
       ],
       "runner": {
-        "kind": "feature-conveyor",
-        "itemId": "m208-duplicate-layers-solution-library",
-        "approvalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only"
+        "kind": "roadmap-sdk"
       },
       "mode": "sdk-write",
       "plannedPaths": [
@@ -384,6 +417,16 @@
         "logs/**",
         "backups/**",
         "snapshots/**"
+      ],
+      "allowedActions": [
+        "add solution-library guidance that prefers duplicate_layers for explicit bulk layer duplication",
+        "document selected-layer duplicate workflows as requiring prior get_selected_layers evidence",
+        "keep raw ExtendScript and deep precomp/source duplication out of this recipe"
+      ],
+      "forbiddenActions": [
+        "promote destructive delete workflows or source/precomp relinking",
+        "edit CEP panel files, dependencies, package manifests, or live AE state",
+        "claim duplicate_layers handles masks, paths, audio, or arbitrary user-asset mutation"
       ],
       "allowedCommands": [
         "node --check mcp-server/solution-library.js",
@@ -435,7 +478,7 @@
       "stopGates": [
         "dirty-git-before-execution",
         "missing-exact-fresh-approval",
-        "feature-conveyor-item-not-approved",
+        "roadmap-sdk-child-failed",
         "raw-extendscript-guidance",
         "planned-path-outside-policy",
         "validation-failed",
@@ -451,9 +494,7 @@
         "m208-duplicate-layers-solution-library"
       ],
       "runner": {
-        "kind": "feature-conveyor",
-        "itemId": "m209-duplicate-layers-supervisor-proof",
-        "approvalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only"
+        "kind": "roadmap-sdk"
       },
       "mode": "sdk-write",
       "plannedPaths": [
@@ -471,6 +512,16 @@
         "logs/**",
         "backups/**",
         "snapshots/**"
+      ],
+      "allowedActions": [
+        "record supervisor evidence for the duplicate_layers queue",
+        "prove plan-only and roadmap supervisor smokes cover single-approval queue behavior",
+        "update current-state and README claims only to match validated supervisor behavior"
+      ],
+      "forbiddenActions": [
+        "edit runtime bridge or CEP panel product code",
+        "run mutating live AE validation without the generated-only live item approval binding",
+        "push, create a PR, install packages, or change dependencies"
       ],
       "allowedCommands": [
         "npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor -- --plan-only --queue .codex-audit/sdk-roadmap-supervisor/203-bulk-selected-layer-duplicate-queue.json --max-items 3 --max-minutes 180 --json",
@@ -517,7 +568,7 @@
       "stopGates": [
         "dirty-git-before-execution",
         "missing-exact-fresh-approval",
-        "feature-conveyor-item-not-approved",
+        "roadmap-sdk-child-failed",
         "live-connectivity-unavailable",
         "planned-path-outside-policy",
         "validation-failed",
@@ -533,9 +584,7 @@
         "m209-duplicate-layers-supervisor-proof"
       ],
       "runner": {
-        "kind": "feature-conveyor",
-        "itemId": "m210-duplicate-layers-closeout",
-        "approvalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only"
+        "kind": "roadmap-sdk"
       },
       "mode": "sdk-write",
       "plannedPaths": [
@@ -553,6 +602,16 @@
         "logs/**",
         "backups/**",
         "snapshots/**"
+      ],
+      "allowedActions": [
+        "close out the duplicate_layers epic with validation evidence, current-state notes, README notes, and handoff",
+        "record only claims proven by committed milestones and validation results",
+        "preserve no-push, no-PR, no-dependency-change, and no-CEP-SDK-write boundaries"
+      ],
+      "forbiddenActions": [
+        "make new runtime behavior changes during closeout",
+        "overstate live validation, planner acceptance, or supervisor execution evidence",
+        "push, create a PR, install packages, or change dependencies"
       ],
       "allowedCommands": [
         "npm.cmd run check:rules",
@@ -622,7 +681,7 @@
       "stopGates": [
         "dirty-git-before-execution",
         "missing-exact-fresh-approval",
-        "feature-conveyor-item-not-approved",
+        "roadmap-sdk-child-failed",
         "validation-evidence-incomplete",
         "planned-path-outside-policy",
         "validation-failed",

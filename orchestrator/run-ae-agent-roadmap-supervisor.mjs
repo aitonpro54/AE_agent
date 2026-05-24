@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   appendFileSync,
   existsSync,
@@ -56,9 +57,10 @@ Options:
   --help                     Show this help.
 
 The supervisor is deterministic control-plane code. Writer children run one
-approved milestone at a time through bounded runners or smoke fixtures, reviewer
-children are read-only, and push/dependency/live/CEP/external-provider work is
-rejected unless a future queue item adds its own narrow approval lane.
+approved milestone at a time through direct roadmap SDK, bounded runners, or
+smoke fixtures. Reviewer children are read-only, and push/dependency/live/CEP/
+external-provider work is rejected unless a future queue item adds its own
+narrow approval lane.
 `;
 
 const VALUE_OPTIONS = new Set([
@@ -280,6 +282,14 @@ function readJson(cwd, repoPath) {
   return JSON.parse(readFileSync(path.join(cwd, repoPath), "utf8"));
 }
 
+function readText(cwd, repoPath) {
+  return readFileSync(path.join(cwd, repoPath), "utf8");
+}
+
+function sha256(value) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
 function uniqueSorted(values) {
   return Array.from(new Set(values.map(normalizeRepoPath))).sort();
 }
@@ -323,6 +333,8 @@ function validateQueue(queue) {
       "mode",
       "plannedPaths",
       "forbiddenPaths",
+      "allowedActions",
+      "forbiddenActions",
       "allowedCommands",
       "validationCommands",
       "reviewerTasks",
@@ -349,6 +361,8 @@ function validateQueue(queue) {
     assertArray(item.dependencies, `${item.id}.dependencies`);
     assertArray(item.plannedPaths, `${item.id}.plannedPaths`);
     assertArray(item.forbiddenPaths, `${item.id}.forbiddenPaths`);
+    assertArray(item.allowedActions, `${item.id}.allowedActions`);
+    assertArray(item.forbiddenActions, `${item.id}.forbiddenActions`);
     assertArray(item.allowedCommands, `${item.id}.allowedCommands`);
     assertArray(item.validationCommands, `${item.id}.validationCommands`);
     assertArray(item.reviewerTasks, `${item.id}.reviewerTasks`);
@@ -359,7 +373,7 @@ function validateQueue(queue) {
     for (const repoPath of item.plannedPaths) {
       validatePlannedPath(item, repoPath);
     }
-    if (!["fixture", "feature-conveyor", "cleanup-conveyor"].includes(item.runner.kind)) {
+    if (!["fixture", "feature-conveyor", "cleanup-conveyor", "roadmap-sdk"].includes(item.runner.kind)) {
       throw new Error(`Unsupported runner kind for ${item.id}: ${item.runner.kind}`);
     }
     if (!["local-only", "sdk-write", "fixture"].includes(item.mode)) {
@@ -422,25 +436,63 @@ function validateLiveValidationPolicy(item) {
     if (policy.mutatingLive !== true) {
       throw new Error(`generated-only liveValidation must explicitly mark mutatingLive for ${item.id}.`);
     }
+    if (policy.generatedOnlyLive === true && policy.noUserAssetMutation !== true) {
+      throw new Error(`single-approval generated-only liveValidation must forbid user asset mutation for ${item.id}.`);
+    }
   }
+}
+
+function queueItemIds(queue) {
+  return queue.queueItems.map((item) => item.id).join(",") || "none";
+}
+
+function liveApprovalBindings(queue) {
+  const bindings = [];
+  for (const item of queue.queueItems) {
+    const policy = item.liveValidation || { mode: "none" };
+    if (
+      policy.mode !== "generated-only-command" ||
+      policy.generatedOnlyLive !== true ||
+      policy.noUserAssetMutation !== true
+    ) {
+      continue;
+    }
+    for (const command of policy.commands) {
+      bindings.push(
+        [
+          item.id,
+          "generatedOnlyLive=true",
+          "noUserAssetMutation=true",
+          `command=${encodeURIComponent(command)}`,
+        ].join(":"),
+      );
+    }
+  }
+  return bindings.length > 0 ? bindings.join("|") : "none";
 }
 
 export function buildSupervisorApprovalText({
   autoCommit = true,
   cwd = process.cwd(),
+  itemIds = "none",
+  liveBindings = "none",
   maxItems = DEFAULT_MAX_ITEMS,
   maxMinutes = DEFAULT_MAX_MINUTES,
+  queueSha256 = "",
   queuePath = DEFAULT_QUEUE_PATH,
 } = {}) {
   return [
     "I approve AE Agent roadmap supervisor",
     `repo=${path.resolve(cwd)}`,
     `queue=${normalizeRepoPath(queuePath)}`,
+    `queueSha256=${queueSha256}`,
+    `itemIds=${itemIds}`,
     `maxItems=${maxItems}`,
     `maxMinutes=${maxMinutes}`,
     `autoCommit=${autoCommit ? "true" : "false"}`,
     "noPush=true",
     "noDependencyChanges=true",
+    `liveBindings=${liveBindings}`,
     "noLiveCepAeUnlessPerItemApproved=true",
   ].join(" ");
 }
@@ -692,7 +744,25 @@ function runLiveConnectivityCheck(cwd, runtime) {
   return results;
 }
 
-function runItemLiveValidation(cwd, runtime, item, options) {
+function singleApprovalAllowsLiveValidation(cwd, queue, item, options) {
+  const policy = item.liveValidation || { mode: "none" };
+  if (
+    policy.mode !== "generated-only-command" ||
+    policy.generatedOnlyLive !== true ||
+    policy.noUserAssetMutation !== true
+  ) {
+    return false;
+  }
+  return options.approvalText === expectedSupervisorApproval(
+    options,
+    cwd,
+    queue,
+    options.queuePath,
+    options.queueSha256,
+  );
+}
+
+function runItemLiveValidation(cwd, runtime, queue, item, options) {
   const policy = item.liveValidation || { mode: "none" };
   if (policy.mode === "none") {
     return [];
@@ -700,7 +770,10 @@ function runItemLiveValidation(cwd, runtime, item, options) {
   if (policy.mode === "read-only-connectivity") {
     return runLiveConnectivityCheck(cwd, runtime);
   }
-  if (options.liveApprovalText !== policy.approvalText) {
+  if (
+    options.liveApprovalText !== policy.approvalText &&
+    !singleApprovalAllowsLiveValidation(cwd, queue, item, options)
+  ) {
     throw new Error(`Missing exact --live-approval-text for ${item.id}: ${policy.approvalText}`);
   }
   const results = [];
@@ -759,10 +832,65 @@ function buildBoundedRunnerCommand(item, engine) {
   throw new Error(`No bounded command registered for runner kind: ${kind}`);
 }
 
+function buildRoadmapSdkPrompt(item) {
+  const payload = {
+    allowedActions: item.allowedActions,
+    forbiddenActions: item.forbiddenActions,
+    handoffPolicy: item.handoffPolicy,
+    id: item.id,
+    milestone: item.milestone,
+    plannedPaths: item.plannedPaths,
+    title: item.title,
+    validationCommands: item.validationCommands,
+  };
+  return [
+    "You are a writer child for AE Agent roadmap supervisor.",
+    "Complete exactly the provided queue item. Do not perform unrelated work.",
+    "Write only files listed in plannedPaths. Do not push, create a PR, install packages, change dependencies, edit CEP panel files, or run live AE/CEP unless this item explicitly asks for it.",
+    "Update the handoff file when handoffPolicy.required is true.",
+    "Respect forbiddenActions even if the task seems easier with a broader change.",
+    "",
+    "<roadmap_item_json>",
+    JSON.stringify(payload, null, 2),
+    "</roadmap_item_json>",
+  ].join("\n");
+}
+
+function runRoadmapSdkWriter(cwd, item) {
+  const prompt = buildRoadmapSdkPrompt(item);
+  const args = [
+    path.join("orchestrator", "codex-sdk-orchestrator.mjs"),
+    "--cwd",
+    cwd,
+    "--sandbox",
+    "workspace-write",
+    "--approval",
+    "never",
+    "--web-search",
+    "disabled",
+    "--reasoning",
+    "high",
+    "--prompt",
+    prompt,
+  ];
+  return spawnSync(process.execPath, args, {
+    cwd,
+    encoding: "utf8",
+    maxBuffer: CHILD_OUTPUT_MAX_BUFFER_BYTES,
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: item.maxMinutes * 60 * 1000,
+  });
+}
+
 function runWriterChild(cwd, runtime, item, engine) {
   const logPath = path.join(runtime.childDir, `${safeSessionToken(item.id)}.log`);
   if (item.runner.kind === "fixture") {
     const result = runFixtureWriter(cwd, item);
+    writeLog(logPath, result);
+    return { ...result, logPath };
+  }
+  if (item.runner.kind === "roadmap-sdk") {
+    const result = runRoadmapSdkWriter(cwd, item);
     writeLog(logPath, result);
     return { ...result, logPath };
   }
@@ -946,17 +1074,29 @@ function selectableItems(queue, completedItems) {
   );
 }
 
-function assertSupervisorApproval(options, cwd, queuePath) {
+function expectedSupervisorApproval(options, cwd, queue, queuePath, queueSha256) {
   const maxItems = options.maxItems || DEFAULT_MAX_ITEMS;
   const maxMinutes = options.maxMinutes || DEFAULT_MAX_MINUTES;
-  const expected = buildSupervisorApprovalText({ cwd, maxItems, maxMinutes, queuePath });
+  return buildSupervisorApprovalText({
+    cwd,
+    itemIds: queueItemIds(queue),
+    liveBindings: liveApprovalBindings(queue),
+    maxItems,
+    maxMinutes,
+    queuePath,
+    queueSha256,
+  });
+}
+
+function assertSupervisorApproval(options, cwd, queue, queuePath, queueSha256) {
+  const expected = expectedSupervisorApproval(options, cwd, queue, queuePath, queueSha256);
   if (options.approvalText !== expected) {
     throw new Error(`Missing exact --approval-text: ${expected}`);
   }
 }
 
 function assertItemExecutable(item) {
-  if (item.approval.state !== "approved") {
+  if (item.runner.kind !== "roadmap-sdk" && item.approval.state !== "approved") {
     throw new Error(`Queue item is not approved for supervisor execution: ${item.id}`);
   }
   if (item.maxChildRuns < 1) {
@@ -966,7 +1106,7 @@ function assertItemExecutable(item) {
 
 async function executeQueueItem(cwd, runtime, state, queue, item, options, preApproved = false) {
   if (!preApproved) {
-    assertSupervisorApproval(options, cwd, options.queuePath);
+    assertSupervisorApproval(options, cwd, queue, options.queuePath, options.queueSha256);
   }
   assertItemExecutable(item);
   assertCleanGit(cwd);
@@ -984,7 +1124,7 @@ async function executeQueueItem(cwd, runtime, state, queue, item, options, preAp
   }
   const preValidationChanges = assertChangedPathsAllowed(cwd, item.plannedPaths);
   const validationResults = runValidationCommands(cwd, runtime, item);
-  const itemLiveValidationResults = runItemLiveValidation(cwd, runtime, item, options);
+  const itemLiveValidationResults = runItemLiveValidation(cwd, runtime, queue, item, options);
   const preCommitChanges = assertChangedPathsAllowed(cwd, item.plannedPaths);
   if (item.handoffPolicy.required === true) {
     const handoffPath = normalizeRepoPath(item.handoffPolicy.path);
@@ -1025,7 +1165,10 @@ function prepareRun(argv = process.argv.slice(2), cwd = process.cwd()) {
   }
   const queuePath = normalizeQueuePath(cwd, options.queue || DEFAULT_QUEUE_PATH);
   options.queuePath = queuePath;
-  const queue = readJson(cwd, queuePath);
+  const queueText = readText(cwd, queuePath);
+  const queueSha256 = sha256(queueText);
+  options.queueSha256 = queueSha256;
+  const queue = JSON.parse(queueText);
   validateQueue(queue);
   const maxItems = options.maxItems || DEFAULT_MAX_ITEMS;
   const maxMinutes = options.maxMinutes || DEFAULT_MAX_MINUTES;
@@ -1041,6 +1184,7 @@ function prepareRun(argv = process.argv.slice(2), cwd = process.cwd()) {
       ...options,
     },
     queue,
+    queueSha256,
     queuePath,
   };
 }
@@ -1050,9 +1194,12 @@ export function planOnlyEnvelope(prepared) {
   return {
     approvalText: buildSupervisorApprovalText({
       cwd: prepared.cwd,
+      itemIds: queueItemIds(prepared.queue),
+      liveBindings: liveApprovalBindings(prepared.queue),
       maxItems: prepared.maxItems,
       maxMinutes: prepared.maxMinutes,
       queuePath: prepared.queuePath,
+      queueSha256: prepared.queueSha256,
     }),
     childRunsCreated: false,
     engine: prepared.options.engine,
@@ -1069,6 +1216,7 @@ export function planOnlyEnvelope(prepared) {
     maxItems: prepared.maxItems,
     maxMinutes: prepared.maxMinutes,
     mode: "plan-only",
+    queueSha256: prepared.queueSha256,
     queuePath: prepared.queuePath,
     runtimeStateWritten: false,
     sdkThreadCreated: false,
@@ -1085,6 +1233,7 @@ export function liveCheck(prepared) {
     liveConnectivityResults,
     mode: "live-check",
     ok: true,
+    queueSha256: prepared.queueSha256,
     queuePath: prepared.queuePath,
     sessionId: runtime.sessionId,
     statePath: normalizeRepoPath(path.relative(prepared.cwd, runtime.statePath)),
@@ -1098,7 +1247,7 @@ export async function executeOne(prepared) {
   if (!prepared.options.item) {
     throw new Error("--execute-one requires --item <id>.");
   }
-  assertSupervisorApproval(prepared.options, prepared.cwd, prepared.queuePath);
+  assertSupervisorApproval(prepared.options, prepared.cwd, prepared.queue, prepared.queuePath, prepared.queueSha256);
   const item = prepared.queue.queueItems.find((entry) => entry.id === prepared.options.item);
   if (!item) {
     throw new Error(`Unknown queue item: ${prepared.options.item}`);
@@ -1110,6 +1259,7 @@ export async function executeOne(prepared) {
   const report = {
     mode: "execute-one",
     ok: true,
+    queueSha256: prepared.queueSha256,
     queuePath: prepared.queuePath,
     results: [result],
     sessionId: runtime.sessionId,
@@ -1120,7 +1270,7 @@ export async function executeOne(prepared) {
 }
 
 export async function runUntilBudget(prepared) {
-  assertSupervisorApproval(prepared.options, prepared.cwd, prepared.queuePath);
+  assertSupervisorApproval(prepared.options, prepared.cwd, prepared.queue, prepared.queuePath, prepared.queueSha256);
   const runtime = createRuntime(prepared.cwd, prepared.options);
   const state = loadState(runtime, prepared.options);
   writeState(runtime, state);
@@ -1150,6 +1300,7 @@ export async function runUntilBudget(prepared) {
     maxMinutes: prepared.maxMinutes,
     mode: "run-until-budget",
     ok: true,
+    queueSha256: prepared.queueSha256,
     queuePath: prepared.queuePath,
     results,
     sessionId: runtime.sessionId,

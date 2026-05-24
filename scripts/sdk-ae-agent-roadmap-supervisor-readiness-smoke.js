@@ -48,6 +48,9 @@ function main() {
   assert.strictEqual(readiness.readiness.liveCheckAvailable, true);
   assert.strictEqual(readiness.readiness.requireLiveConnectivityAvailable, true);
   assert.strictEqual(readiness.readiness.itemLiveValidationAvailable, true);
+  assert.strictEqual(readiness.readiness.queueHashApprovalAvailable, true);
+  assert.strictEqual(readiness.readiness.roadmapSdkRunnerAvailable, true);
+  assert.strictEqual(readiness.readiness.singleApprovalChainAvailable, true);
   assert.strictEqual(governance.mustRemainFalse.autoPush, false);
   assert.strictEqual(governance.mustRemainFalse.dependencyChanges, false);
   assert.strictEqual(governance.mustRemainFalse.cepPanelSdkWrites, false);
@@ -85,6 +88,9 @@ function main() {
     "HARD_MAX_ITEMS = 5",
     "REVIEWER_LIMIT = 2",
     "buildSupervisorApprovalText",
+    "queueSha256",
+    "roadmap-sdk",
+    "runRoadmapSdkWriter",
     "liveCheck",
     "runLiveConnectivityCheck",
     "runItemLiveValidation",
@@ -100,6 +106,9 @@ function main() {
     "sdk-roadmap-supervisor-contract.v1",
     "--live-check",
     "--require-live-connectivity",
+    "queueSha256",
+    "roadmap-sdk",
+    "single approval",
     "--run-until-budget",
     "noPush=true",
   ], "orchestrator README");

@@ -2026,6 +2026,8 @@ async function runContractSmoke() {
       readme.includes("npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor -- --plan-only") &&
       readme.includes("--live-check") &&
       readme.includes("--require-live-connectivity") &&
+      readme.includes("queueSha256") &&
+      readme.includes("roadmap-sdk") &&
       readme.includes("--run-until-budget") &&
       readme.includes("noPush=true") &&
       readme.includes("noDependencyChanges=true"),
@@ -2038,8 +2040,10 @@ async function runContractSmoke() {
   );
   assertContract(
     roadmapSupervisorRunner.includes("--live-check") &&
-      roadmapSupervisorRunner.includes("requireLiveConnectivity"),
-    "M199 AE Agent roadmap supervisor runner does not expose live connectivity gates",
+      roadmapSupervisorRunner.includes("requireLiveConnectivity") &&
+      roadmapSupervisorRunner.includes("queueSha256") &&
+      roadmapSupervisorRunner.includes("roadmap-sdk"),
+    "M199 AE Agent roadmap supervisor runner does not expose live connectivity and single-approval gates",
     failures,
   );
   assertContract(

@@ -36,6 +36,16 @@
         "backups/**",
         "snapshots/**"
       ],
+      "allowedActions": [
+        "preview the roadmap supervisor contract and queue shape",
+        "verify plan-only approval text generation without child execution"
+      ],
+      "forbiddenActions": [
+        "run writer children",
+        "edit product runtime files",
+        "run live AE/CEP validation",
+        "push or create a PR"
+      ],
       "allowedCommands": [
         "git diff --check"
       ],

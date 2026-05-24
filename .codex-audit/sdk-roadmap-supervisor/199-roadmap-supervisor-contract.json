@@ -3,7 +3,7 @@
   "milestone": 199,
   "title": "AE Agent Roadmap Supervisor Contract",
   "createdAt": "2026-05-24",
-  "purpose": "Define the deterministic supervisor that can preview and run approved roadmap queue items while preserving the existing fail-closed SDK/conveyor safety model.",
+  "purpose": "Define the deterministic supervisor that can preview and run approved roadmap queue items while preserving the existing fail-closed SDK/conveyor safety model, including single-approval frozen queues for direct roadmap SDK writer children.",
   "numberingDecision": {
     "requestedPlanMilestones": ["M198", "M199", "M200"],
     "implementedAs": ["M199", "M200", "M201"],
@@ -36,18 +36,21 @@
     "defaultMaxMinutes": 180,
     "hardMaxItems": 5,
     "hardMaxMinutes": 300,
-    "approvalTextTemplate": "I approve AE Agent roadmap supervisor repo=<absolute cwd> queue=<queue path> maxItems=<n> maxMinutes=<m> autoCommit=true noPush=true noDependencyChanges=true noLiveCepAeUnlessPerItemApproved=true",
+    "approvalTextTemplate": "I approve AE Agent roadmap supervisor repo=<absolute cwd> queue=<queue path> queueSha256=<sha256> itemIds=<comma-separated item ids> maxItems=<n> maxMinutes=<m> autoCommit=true noPush=true noDependencyChanges=true liveBindings=<bindings|none> noLiveCepAeUnlessPerItemApproved=true",
     "freshForEachRun": true,
     "expiresAfterRun": true,
     "binds": [
       "repository absolute path",
       "queue path",
+      "queue SHA-256 hash",
+      "queue item ids",
       "max items",
       "max minutes",
       "auto-commit permission",
       "no push",
       "no dependency changes",
-      "no live CEP/AE unless the selected item has its own approval"
+      "single-approval live bindings when generated-only live validation is explicitly declared",
+      "no live CEP/AE unless the selected item has its own approval or bound generated-only live approval"
     ]
   },
   "queueItemSchema": {
@@ -61,6 +64,8 @@
       "mode",
       "plannedPaths",
       "forbiddenPaths",
+      "allowedActions",
+      "forbiddenActions",
       "allowedCommands",
       "validationCommands",
       "reviewerTasks",
@@ -83,6 +88,7 @@
     "runnerKinds": [
       "feature-conveyor",
       "cleanup-conveyor",
+      "roadmap-sdk",
       "fixture"
     ],
     "modes": [
@@ -106,7 +112,8 @@
     "writerConcurrency": 1,
     "reviewerConcurrency": 2,
     "readOnlyLiveConnectivity": true,
-    "itemLiveValidation": "Only when the queue item defines liveValidation and generated-only commands carry their own exact live approval text.",
+    "roadmapSdkWriter": "roadmap-sdk items run directly through orchestrator/codex-sdk-orchestrator.mjs with workspace-write, approval=never, web-search=disabled, reasoning=high, and model default.",
+    "itemLiveValidation": "Only when the queue item defines liveValidation. Generated-only commands either carry their own exact live approval text or are bound into the single supervisor approval with generatedOnlyLive=true and noUserAssetMutation=true.",
     "reviewerPolicy": "read-only reviewers only; no parallel writers",
     "commitPolicy": "auto-commit only planned paths after validation passes",
     "pushPolicy": "no push by default"

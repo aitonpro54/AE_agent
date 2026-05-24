@@ -37,7 +37,28 @@ function initRepo(temp) {
   sh(temp, ["git", "init"]);
   fs.writeFileSync(path.join(temp, "base.txt"), "base\n", "utf8");
   fs.writeFileSync(path.join(temp, ".gitignore"), ".codex-runtime/\n", "utf8");
+  fs.mkdirSync(path.join(temp, "orchestrator"), { recursive: true });
   fs.mkdirSync(path.join(temp, "scripts"), { recursive: true });
+  fs.writeFileSync(
+    path.join(temp, "orchestrator", "codex-sdk-orchestrator.mjs"),
+    [
+      "import fs from 'node:fs';",
+      "import path from 'node:path';",
+      "const promptIndex = process.argv.indexOf('--prompt');",
+      "const prompt = promptIndex === -1 ? '' : process.argv[promptIndex + 1] || '';",
+      "const match = prompt.match(/<roadmap_item_json>\\n([\\s\\S]*?)\\n<\\/roadmap_item_json>/);",
+      "if (!match) { console.log('read-only reviewer no-op'); process.exit(0); }",
+      "const item = JSON.parse(match[1]);",
+      "for (const repoPath of item.plannedPaths || []) {",
+      "  const target = path.join(process.cwd(), repoPath.replace(/\\\\/g, '/'));",
+      "  fs.mkdirSync(path.dirname(target), { recursive: true });",
+      "  fs.writeFileSync(target, `roadmap-sdk wrote ${item.id}\\n`, 'utf8');",
+      "}",
+      "console.log(`roadmap-sdk wrote ${item.id}`);",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
   fs.writeFileSync(
     path.join(temp, "scripts", "cep-panel-cdp-smoke.js"),
     [
@@ -53,7 +74,14 @@ function initRepo(temp) {
     ].join("\n"),
     "utf8",
   );
-  sh(temp, ["git", "add", "base.txt", ".gitignore", "scripts/cep-panel-cdp-smoke.js"]);
+  sh(temp, [
+    "git",
+    "add",
+    "base.txt",
+    ".gitignore",
+    "orchestrator/codex-sdk-orchestrator.mjs",
+    "scripts/cep-panel-cdp-smoke.js",
+  ]);
   sh(temp, [
     "git",
     "-c",
@@ -91,20 +119,27 @@ function removeTempRepo(temp) {
 
 function item(id, milestone, options = {}) {
   const planned = options.plannedPaths || [`${id}.txt`, ".codex/handoff.md"];
+  const runner = options.runner || (
+    options.runnerKind === "roadmap-sdk"
+      ? { kind: "roadmap-sdk" }
+      : {
+          kind: "fixture",
+          action: options.action || "write-planned",
+          writePaths: options.writePaths || planned,
+          unplannedPath: options.unplannedPath,
+        }
+  );
   return {
     id,
     milestone,
     title: id,
     dependencies: options.dependencies || [],
-    runner: {
-      kind: "fixture",
-      action: options.action || "write-planned",
-      writePaths: options.writePaths || planned,
-      unplannedPath: options.unplannedPath,
-    },
-    mode: "fixture",
+    runner,
+    mode: options.mode || (runner.kind === "roadmap-sdk" ? "sdk-write" : "fixture"),
     plannedPaths: planned,
     forbiddenPaths: ["cep-panel/**", "package-lock.json", "node_modules/**"],
+    allowedActions: options.allowedActions || [`complete ${id} within planned paths`],
+    forbiddenActions: options.forbiddenActions || ["push", "create a PR", "install packages"],
     allowedCommands: options.allowedCommands || ["git diff --check"],
     validationCommands: options.validationCommands || ["git diff --check"],
     reviewerTasks: options.reviewerTasks || [],
@@ -176,6 +211,9 @@ function assertDefaultPlanOnly() {
   assert.strictEqual(result.maxItems, 3);
   assert.strictEqual(result.maxMinutes, 180);
   assert.match(result.approvalText, /noPush=true/);
+  assert.match(result.approvalText, /queueSha256=[a-f0-9]{64}/);
+  assert.match(result.approvalText, /itemIds=/);
+  assert.match(result.approvalText, /liveBindings=/);
   assert(result.items.some((entry) => entry.id === "m199-roadmap-supervisor-contract-preview"));
 }
 
@@ -286,6 +324,65 @@ function assertExecuteOneCommits() {
   }
 }
 
+function assertQueueHashApprovalBinding() {
+  const temp = createTempRepo("queue-hash");
+  try {
+    let queuePath = writeQueue(temp, [item("one", 1)]);
+    const approval = approvalFor(temp, queuePath, ["--max-items", "1"]);
+    queuePath = writeQueue(temp, [item("one", 1), item("two", 2, { dependencies: ["one"] })]);
+    const result = run([
+      "--execute-one",
+      "--queue",
+      queuePath,
+      "--item",
+      "one",
+      "--max-items",
+      "1",
+      "--approval-text",
+      approval,
+    ], temp);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /Missing exact --approval-text/);
+    assert.match(result.stderr, /queueSha256=/);
+    assert.match(result.stderr, /itemIds=one,two/);
+  } finally {
+    removeTempRepo(temp);
+  }
+}
+
+function assertRoadmapSdkExecuteOneCommits() {
+  const temp = createTempRepo("roadmap-sdk-one");
+  try {
+    const queuePath = writeQueue(temp, [item("one", 1, {
+      runnerKind: "roadmap-sdk",
+      approvalState: "pending-explicit-approval",
+    })]);
+    const approval = approvalFor(temp, queuePath, ["--max-items", "1"]);
+    const result = parseJson(run([
+      "--execute-one",
+      "--queue",
+      queuePath,
+      "--item",
+      "one",
+      "--max-items",
+      "1",
+      "--session-id",
+      "roadmap-sdk-one",
+      "--approval-text",
+      approval,
+      "--json",
+    ], temp));
+    assert.strictEqual(result.mode, "execute-one");
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.results[0].item, "one");
+    assert.match(fs.readFileSync(path.join(temp, "one.txt"), "utf8"), /roadmap-sdk wrote one/);
+    assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
+    assert.strictEqual(sh(temp, ["git", "log", "-1", "--format=%s"]), "test: one");
+  } finally {
+    removeTempRepo(temp);
+  }
+}
+
 function assertRequireLiveConnectivityAndItemLiveValidation() {
   const temp = createTempRepo("item-live");
   try {
@@ -335,6 +432,47 @@ function assertRequireLiveConnectivityAndItemLiveValidation() {
       "--json",
     ], temp));
     assert.strictEqual(result.results[0].liveConnectivityResults.length, 2);
+    assert.strictEqual(result.results[0].itemLiveValidationResults.length, 1);
+    assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
+  } finally {
+    removeTempRepo(temp);
+  }
+}
+
+function assertSingleApprovalLiveBindingRuns() {
+  const temp = createTempRepo("single-approval-live");
+  try {
+    const liveCommand = "node scripts/cep-panel-cdp-smoke.js inspect";
+    const queuePath = writeQueue(temp, [item("one", 1, {
+      approvalState: "pending-explicit-approval",
+      runnerKind: "roadmap-sdk",
+      liveValidation: {
+        approvalRequired: true,
+        approvalText: "I approve generated-only item live validation",
+        commands: [liveCommand],
+        generatedOnlyLive: true,
+        mode: "generated-only-command",
+        mutatingLive: true,
+        noUserAssetMutation: true,
+      },
+    })]);
+    const approval = approvalFor(temp, queuePath, ["--max-items", "1"]);
+    assert.match(approval, /liveBindings=one:generatedOnlyLive=true:noUserAssetMutation=true:command=/);
+    assert(approval.includes(encodeURIComponent(liveCommand)));
+    const result = parseJson(run([
+      "--execute-one",
+      "--queue",
+      queuePath,
+      "--item",
+      "one",
+      "--max-items",
+      "1",
+      "--session-id",
+      "single-approval-live",
+      "--approval-text",
+      approval,
+      "--json",
+    ], temp));
     assert.strictEqual(result.results[0].itemLiveValidationResults.length, 1);
     assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
   } finally {
@@ -401,8 +539,16 @@ function assertRunUntilBudgetAndResume() {
   const temp = createTempRepo("budget");
   try {
     const queuePath = writeQueue(temp, [
-      item("one", 1, { reviewerTasks: [{ id: "risk", kind: "noop" }] }),
-      item("two", 2, { dependencies: ["one"] }),
+      item("one", 1, {
+        approvalState: "pending-explicit-approval",
+        reviewerTasks: [{ id: "risk", kind: "noop" }],
+        runnerKind: "roadmap-sdk",
+      }),
+      item("two", 2, {
+        approvalState: "pending-explicit-approval",
+        dependencies: ["one"],
+        runnerKind: "roadmap-sdk",
+      }),
     ]);
     const approvalOne = approvalFor(temp, queuePath, ["--max-items", "1"]);
     const first = parseJson(run([
@@ -453,7 +599,10 @@ function main() {
   assertWrongApprovalFails();
   assertDirtyTreeFails();
   assertExecuteOneCommits();
+  assertQueueHashApprovalBinding();
+  assertRoadmapSdkExecuteOneCommits();
   assertRequireLiveConnectivityAndItemLiveValidation();
+  assertSingleApprovalLiveBindingRuns();
   assertUnplannedPathFails();
   assertValidationFailureStops();
   assertRunUntilBudgetAndResume();

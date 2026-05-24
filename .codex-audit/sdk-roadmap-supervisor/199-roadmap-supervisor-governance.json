@@ -22,12 +22,17 @@
     "one approved writer item at a time",
     "auto-commit planned paths after validation",
     "run-until-budget up to maxItems/maxMinutes",
+    "single-approval frozen roadmap queues bound by queue SHA-256 and item ids",
+    "direct roadmap-sdk writer children with workspace-write, approval=never, web-search=disabled, reasoning=high, and model default",
     "read-only live connectivity checks against the already-open AE Agent panel",
     "up to two read-only reviewer children in parallel"
   ],
   "allowedWithSeparateItemLiveApproval": [
-    "generated-only live validation commands defined by the queue item",
+    "generated-only live validation commands defined by the queue item when not bound into the frozen supervisor approval",
     "Full UI Agent OpenAI CLI lanes that already have fail-closed cleanup/read-back policy"
+  ],
+  "allowedWithSingleSupervisorApprovalLiveBinding": [
+    "generated-only live validation commands that are explicitly listed in liveBindings with generatedOnlyLive=true and noUserAssetMutation=true"
   ],
   "blockedWithoutSeparateApproval": [
     "push",
