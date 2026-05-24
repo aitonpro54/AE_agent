@@ -548,8 +548,8 @@
       },
       "status": "completed",
       "completedBy": {
-        "commit": "pending-aux-alignment-commit",
-        "evidence": "AUX-004 created the read-only failure analyzer contract, analyzer CLI, fixture smoke coverage, and AUX compatibility artifacts without AO install/start, branch/worktree/PR, CEP/live, production, dependency, or package changes."
+        "commit": "da35c40f3c1fa89ef4d238304fa6db5dad7801c4",
+        "evidence": "AUX-004 created the read-only failure analyzer contract, analyzer CLI, fixture smoke coverage, and AUX compatibility artifacts without AO install/start, branch/worktree/PR, CEP/live, production, dependency, or package changes. Commit da35c40 records the forward-only AUX label alignment."
       },
       "auxiliaryId": "AUX-004",
       "legacyQueueItemId": "m215-ao-readonly-failure-analyzer",
@@ -564,7 +564,8 @@
     "closedAt": "2026-05-24",
     "scope": "AO-inspired pipeline hardening block AUX-001-AUX-004",
     "auxiliaryScope": "AO-inspired pipeline hardening block AUX-001-AUX-004; M212-M215 are historical branch-local compatibility labels only.",
-    "status": "completed-pending-aux-alignment-commit",
+    "status": "completed",
+    "alignmentCommit": "da35c40f3c1fa89ef4d238304fa6db5dad7801c4",
     "queuePathPreserved": ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
     "auxiliaryArtifactPaths": [
       ".codex-audit/sdk-ao-pattern-intake/aux-001-activity-session-schema.json",
