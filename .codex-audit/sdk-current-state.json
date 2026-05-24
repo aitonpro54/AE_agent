@@ -40,6 +40,7 @@
     "checkRulesEntrypoint": "npm.cmd run check:rules",
     "checkRulesCommand": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke",
     "featureConveyorState": "m186-sdk-approved-not-executed-and-m188-m190-m191-m198-live-validation-approved",
+    "roadmapSupervisorState": "m199-m201-local-gated-aggressive-supervisor",
     "historicalProofReadPolicy": "Use .codex-audit/sdk-history-index.json first; reread old packets only for a specific audit question."
   },
   "currentDirectCheckSets": [
@@ -214,6 +215,33 @@
         "codex:orchestrator:ae-agent-feature-conveyor:smoke",
         "check:rules"
       ]
+    },
+    {
+      "id": "m199-m201-roadmap-supervisor",
+      "milestones": [
+        199,
+        200,
+        201
+      ],
+      "status": "current-direct-check",
+      "verdict": "AE Agent roadmap supervisor is available as a local-gated aggressive autopilot layer: plan-only preview, execute-one, run-until-budget, runtime session state, one writer child at a time, parallel read-only reviewers, validation-before-commit, required handoff, exact approval text, no push, and no dependency/live/CEP/external-provider work by default.",
+      "artifacts": [
+        ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-contract.json",
+        ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-readiness.json",
+        ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-governance.json",
+        ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-queue.json"
+      ],
+      "scriptPaths": [
+        "orchestrator/run-ae-agent-roadmap-supervisor.mjs",
+        "scripts/sdk-ae-agent-roadmap-supervisor-readiness-smoke.js",
+        "scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js"
+      ],
+      "packageScripts": [
+        "codex:orchestrator:ae-agent-roadmap-supervisor",
+        "codex:orchestrator:ae-agent-roadmap-supervisor-readiness:smoke",
+        "codex:orchestrator:ae-agent-roadmap-supervisor:smoke",
+        "check:rules"
+      ]
     }
   ],
   "machineCheck": {
@@ -223,7 +251,8 @@
       "m152-provider-smoke-governance",
       "m153-m157-conveyor-governance",
       "m158-m173-extraction-and-cleanup-queue",
-      "m184-feature-conveyor-readiness"
+      "m184-feature-conveyor-readiness",
+      "m199-m201-roadmap-supervisor"
     ],
     "requiredProductionCodeSdkWriteAllowlist": [
       "scripts/provider-api-smoke.js",
@@ -235,6 +264,7 @@
       ".codex-audit/sdk-current-state.json",
       ".codex-audit/sdk-history-index.json",
       ".codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json",
+      ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-contract.json",
       "codex:orchestrator:current-history-index:smoke"
     ],
     "requiredSourceSnippets": {
@@ -242,12 +272,17 @@
         "sdk-current-history-index-smoke.js",
         "sdk-ae-agent-feature-conveyor-readiness-smoke.js",
         "sdk-ae-agent-feature-conveyor-command-smoke.js",
+        "sdk-ae-agent-roadmap-supervisor-readiness-smoke.js",
+        "sdk-ae-agent-roadmap-supervisor-command-smoke.js",
         "M176 SDK current/history index smoke failed"
       ],
       "package.json": [
         "\"codex:orchestrator:ae-agent-feature-conveyor\": \"node orchestrator/run-ae-agent-feature-conveyor.mjs\"",
         "\"codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke\": \"node scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js\"",
         "\"codex:orchestrator:ae-agent-feature-conveyor:smoke\": \"node scripts/sdk-ae-agent-feature-conveyor-command-smoke.js\"",
+        "\"codex:orchestrator:ae-agent-roadmap-supervisor\": \"node orchestrator/run-ae-agent-roadmap-supervisor.mjs\"",
+        "\"codex:orchestrator:ae-agent-roadmap-supervisor-readiness:smoke\": \"node scripts/sdk-ae-agent-roadmap-supervisor-readiness-smoke.js\"",
+        "\"codex:orchestrator:ae-agent-roadmap-supervisor:smoke\": \"node scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js\"",
         "\"codex:orchestrator:current-history-index:smoke\": \"node scripts/sdk-current-history-index-smoke.js\"",
         "\"check:rules\": \"node orchestrator/run-buffered-acceptance.mjs --contract-smoke\""
       ]

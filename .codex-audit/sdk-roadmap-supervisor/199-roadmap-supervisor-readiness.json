@@ -1,0 +1,28 @@
+{
+  "schema": "sdk-roadmap-supervisor-readiness.v1",
+  "milestone": 199,
+  "title": "AE Agent Roadmap Supervisor Readiness",
+  "createdAt": "2026-05-24",
+  "contract": ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-contract.json",
+  "queue": ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-queue.json",
+  "readiness": {
+    "planOnlyAvailable": true,
+    "executeOneAvailable": true,
+    "runUntilBudgetAvailable": true,
+    "parallelReviewersAvailable": true,
+    "autoCommitAfterValidation": true,
+    "autoPush": false,
+    "dependencyChangesAllowed": false,
+    "liveCepAeAllowedByDefault": false,
+    "cepPanelSdkWritesAllowed": false
+  },
+  "requiredValidation": [
+    "node --check orchestrator/run-ae-agent-roadmap-supervisor.mjs",
+    "node --check scripts/sdk-ae-agent-roadmap-supervisor-readiness-smoke.js",
+    "node --check scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js",
+    "node scripts/sdk-ae-agent-roadmap-supervisor-readiness-smoke.js",
+    "node scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js",
+    "npm.cmd run check:rules",
+    "git diff --check"
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "schema": "sdk-roadmap-supervisor-contract.v1",
+  "milestone": 199,
+  "title": "AE Agent Roadmap Supervisor Contract",
+  "createdAt": "2026-05-24",
+  "purpose": "Define the deterministic supervisor that can preview and run approved roadmap queue items while preserving the existing fail-closed SDK/conveyor safety model.",
+  "numberingDecision": {
+    "requestedPlanMilestones": ["M198", "M199", "M200"],
+    "implementedAs": ["M199", "M200", "M201"],
+    "reason": "M198 was already occupied by the marker lifecycle live-validation lane in the active working tree."
+  },
+  "runner": {
+    "path": "orchestrator/run-ae-agent-roadmap-supervisor.mjs",
+    "packageScript": "codex:orchestrator:ae-agent-roadmap-supervisor",
+    "readinessSmoke": "scripts/sdk-ae-agent-roadmap-supervisor-readiness-smoke.js",
+    "commandSmoke": "scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js"
+  },
+  "cli": {
+    "planOnly": "npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor -- --plan-only --queue <path> --max-items <n> --json",
+    "executeOne": "npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor -- --execute-one --item <id> --approval-text \"<exact text>\"",
+    "runUntilBudget": "npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor -- --run-until-budget --max-items <n> --max-minutes <m> --reviewers parallel --approval-text \"<exact text>\"",
+    "sharedOptions": [
+      "--engine sdk|cli",
+      "--session-id <id>",
+      "--resume-session <id>",
+      "--log-dir <path>",
+      "--tail-lines <n>",
+      "--json"
+    ]
+  },
+  "approvalContract": {
+    "defaultMaxItems": 3,
+    "defaultMaxMinutes": 180,
+    "hardMaxItems": 5,
+    "hardMaxMinutes": 300,
+    "approvalTextTemplate": "I approve AE Agent roadmap supervisor repo=<absolute cwd> queue=<queue path> maxItems=<n> maxMinutes=<m> autoCommit=true noPush=true noDependencyChanges=true noLiveCepAeUnlessPerItemApproved=true",
+    "freshForEachRun": true,
+    "expiresAfterRun": true,
+    "binds": [
+      "repository absolute path",
+      "queue path",
+      "max items",
+      "max minutes",
+      "auto-commit permission",
+      "no push",
+      "no dependency changes",
+      "no live CEP/AE unless the selected item has its own approval"
+    ]
+  },
+  "queueItemSchema": {
+    "schema": "sdk-roadmap-supervisor-queue.v1",
+    "requiredFields": [
+      "id",
+      "milestone",
+      "title",
+      "dependencies",
+      "runner",
+      "mode",
+      "plannedPaths",
+      "forbiddenPaths",
+      "allowedCommands",
+      "validationCommands",
+      "reviewerTasks",
+      "approval",
+      "maxChildRuns",
+      "maxMinutes",
+      "commitPolicy",
+      "handoffPolicy",
+      "stopGates",
+      "status"
+    ],
+    "runnerKinds": [
+      "feature-conveyor",
+      "cleanup-conveyor",
+      "fixture"
+    ],
+    "modes": [
+      "local-only",
+      "sdk-write",
+      "fixture"
+    ]
+  },
+  "runtimeState": {
+    "root": ".codex-runtime/sdk/roadmap-supervisor/<session-id>/",
+    "files": [
+      "state.json",
+      "events.jsonl",
+      "children/*.log",
+      "reviewers/*.log",
+      "final-report.json"
+    ]
+  },
+  "executionModel": {
+    "writerConcurrency": 1,
+    "reviewerConcurrency": 2,
+    "reviewerPolicy": "read-only reviewers only; no parallel writers",
+    "commitPolicy": "auto-commit only planned paths after validation passes",
+    "pushPolicy": "no push by default"
+  },
+  "stopGates": [
+    "dirty-git-before-execution",
+    "missing-exact-fresh-approval",
+    "dependency-not-completed",
+    "item-not-approved",
+    "max-child-runs-exceeded",
+    "planned-path-outside-policy",
+    "changed-path-outside-planned-paths",
+    "validation-failed",
+    "node-check-failed-for-touched-js",
+    "git-diff-check-failed",
+    "handoff-missing-after-success",
+    "push-pr-dependency-live-cep-external-provider-request-without-per-item-approval",
+    "context-pressure"
+  ],
+  "notApprovedByThisContract": [
+    "push",
+    "PR creation",
+    "dependency changes",
+    "package-lock changes",
+    "CEP-panel SDK writes",
+    "live CEP/AE validation",
+    "mutating live validation",
+    "external-provider/OpenAI CLI planner lanes",
+    "broad production-code lanes"
+  ]
+}

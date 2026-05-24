@@ -1,0 +1,38 @@
+{
+  "schema": "sdk-roadmap-supervisor-governance.v1",
+  "milestone": 199,
+  "title": "AE Agent Roadmap Supervisor Governance",
+  "createdAt": "2026-05-24",
+  "state": "local-gated-aggressive-supervisor",
+  "sourceArtifacts": [
+    ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-contract.json",
+    ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-readiness.json",
+    ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-queue.json"
+  ],
+  "mustRemainFalse": {
+    "autoPush": false,
+    "dependencyChanges": false,
+    "packageLockChanges": false,
+    "cepPanelSdkWrites": false,
+    "liveCepAeByDefault": false,
+    "externalProviderPlannerByDefault": false,
+    "parallelWriters": false
+  },
+  "allowedWithExactSupervisorApproval": [
+    "one approved writer item at a time",
+    "auto-commit planned paths after validation",
+    "run-until-budget up to maxItems/maxMinutes",
+    "up to two read-only reviewer children in parallel"
+  ],
+  "blockedWithoutSeparateApproval": [
+    "push",
+    "PR creation",
+    "dependency changes",
+    "package-lock changes",
+    "CEP-panel SDK writes",
+    "live CEP/AE validation",
+    "mutating live validation",
+    "external-provider/OpenAI CLI planner validation",
+    "broad production-code lanes"
+  ]
+}

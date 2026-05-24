@@ -1161,6 +1161,34 @@ async function runContractSmoke() {
     `M184 AE Agent feature conveyor command smoke failed: ${aeAgentFeatureConveyorCommandOutput.trim()}`,
     failures,
   );
+  const aeAgentRoadmapSupervisorReadinessSmoke = runNode([
+    path.join("scripts", "sdk-ae-agent-roadmap-supervisor-readiness-smoke.js"),
+  ]);
+  const aeAgentRoadmapSupervisorReadinessOutput = `${
+    aeAgentRoadmapSupervisorReadinessSmoke.stdout ?? ""
+  }\n${aeAgentRoadmapSupervisorReadinessSmoke.stderr ?? ""}`;
+  assertContract(
+    aeAgentRoadmapSupervisorReadinessSmoke.status === 0 &&
+      aeAgentRoadmapSupervisorReadinessOutput.includes(
+        "SDK AE Agent roadmap supervisor readiness smoke: pass",
+      ),
+    `M199 AE Agent roadmap supervisor readiness smoke failed: ${aeAgentRoadmapSupervisorReadinessOutput.trim()}`,
+    failures,
+  );
+  const aeAgentRoadmapSupervisorCommandSmoke = runNode([
+    path.join("scripts", "sdk-ae-agent-roadmap-supervisor-command-smoke.js"),
+  ], 120000);
+  const aeAgentRoadmapSupervisorCommandOutput = `${
+    aeAgentRoadmapSupervisorCommandSmoke.stdout ?? ""
+  }\n${aeAgentRoadmapSupervisorCommandSmoke.stderr ?? ""}`;
+  assertContract(
+    aeAgentRoadmapSupervisorCommandSmoke.status === 0 &&
+      aeAgentRoadmapSupervisorCommandOutput.includes(
+        "SDK AE Agent roadmap supervisor command smoke: pass",
+      ),
+    `M199 AE Agent roadmap supervisor command smoke failed: ${aeAgentRoadmapSupervisorCommandOutput.trim()}`,
+    failures,
+  );
   const sdkCurrentHistoryIndexSmoke = runNode([
     path.join("scripts", "sdk-current-history-index-smoke.js"),
   ]);
@@ -1725,6 +1753,24 @@ async function runContractSmoke() {
     failures,
   );
   assertContract(
+    packageJson.scripts?.["codex:orchestrator:ae-agent-roadmap-supervisor"] ===
+      "node orchestrator/run-ae-agent-roadmap-supervisor.mjs",
+    "package.json codex:orchestrator:ae-agent-roadmap-supervisor script is not wired to the M199 AE Agent roadmap supervisor runner",
+    failures,
+  );
+  assertContract(
+    packageJson.scripts?.["codex:orchestrator:ae-agent-roadmap-supervisor-readiness:smoke"] ===
+      "node scripts/sdk-ae-agent-roadmap-supervisor-readiness-smoke.js",
+    "package.json codex:orchestrator:ae-agent-roadmap-supervisor-readiness:smoke script is not wired to the M199 AE Agent roadmap supervisor readiness smoke",
+    failures,
+  );
+  assertContract(
+    packageJson.scripts?.["codex:orchestrator:ae-agent-roadmap-supervisor:smoke"] ===
+      "node scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js",
+    "package.json codex:orchestrator:ae-agent-roadmap-supervisor:smoke script is not wired to the M199 AE Agent roadmap supervisor command smoke",
+    failures,
+  );
+  assertContract(
     packageJson.scripts?.["codex:orchestrator:write-scaffold"] ===
       "node orchestrator/run-write-capable-scaffold.mjs",
     "package.json codex:orchestrator:write-scaffold script is not wired to the M112 runner",
@@ -1737,7 +1783,7 @@ async function runContractSmoke() {
     failures,
   );
 
-  const readme = readIfExists(path.join("orchestrator", "README.md"), 40000);
+  const readme = readIfExists(path.join("orchestrator", "README.md"), 120000);
   assertContract(
     readme.includes("npm.cmd run codex:orchestrator:help"),
     "README does not document codex:orchestrator:help",
@@ -1970,6 +2016,18 @@ async function runContractSmoke() {
       readme.includes("186-dakkshin-tool-gap-map-approval.json") &&
       readme.includes("one selected approved item"),
     "README does not document the M184 AE Agent feature conveyor readiness gate",
+    failures,
+  );
+  assertContract(
+    readme.includes("AE Agent roadmap supervisor") &&
+      readme.includes("199-roadmap-supervisor-contract.json") &&
+      readme.includes("sdk-roadmap-supervisor-contract.v1") &&
+      readme.includes("npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor-readiness:smoke") &&
+      readme.includes("npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor -- --plan-only") &&
+      readme.includes("--run-until-budget") &&
+      readme.includes("noPush=true") &&
+      readme.includes("noDependencyChanges=true"),
+    "README does not document the M199 AE Agent roadmap supervisor",
     failures,
   );
   assertContract(

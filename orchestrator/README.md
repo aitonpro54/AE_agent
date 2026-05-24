@@ -361,6 +361,17 @@ npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item m198-marker-l
 
 The feature conveyor command runner is `orchestrator/run-ae-agent-feature-conveyor.mjs`. Dry-run preview never creates an SDK thread or Codex CLI session. Execution is bounded to one selected approved item, exact approval text, a clean pre-run git state, full child-output logs under `.codex-runtime/sdk/feature-conveyor-logs`, no auto-commit, no push, and a commit-aware post-run path allowlist. Unapproved items still fail closed with `Feature conveyor execution is not approved`. The `--validate-live` path is not SDK workspace-write execution: it runs local validation commands in staged order, writes child logs under `.codex-runtime/sdk/feature-conveyor-live-logs`, writes a JSON report under `.codex-runtime/sdk/feature-conveyor-live-reports`, and fails closed when AE, bridge, CEP panel, provider readiness, or saved-project preflight is unavailable.
 
+M199-M201 add the AE Agent roadmap supervisor as the aggressive local autopilot layer above the existing bounded runners. The contract lives in `.codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-contract.json` with schema `sdk-roadmap-supervisor-contract.v1`; readiness/governance/queue artifacts live in the same directory. The runner is deterministic control-plane code, not a long-lived LLM agent: one writer child runs at a time, up to two read-only reviewers may run in parallel, validation must pass before auto-commit, `.codex/handoff.md` must be updated when required, and push/dependency/live/CEP/external-provider work remains blocked without a separate per-item lane. The default aggressive budget is `maxItems=3` and `maxMinutes=180`, with hard caps of 5 items and 300 minutes.
+
+```powershell
+npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor-readiness:smoke
+npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor:smoke
+npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor -- --plan-only --json
+npm.cmd run codex:orchestrator:ae-agent-roadmap-supervisor -- --run-until-budget --max-items 3 --max-minutes 180 --reviewers parallel --approval-text "I approve AE Agent roadmap supervisor repo=<absolute cwd> queue=<queue path> maxItems=3 maxMinutes=180 autoCommit=true noPush=true noDependencyChanges=true noLiveCepAeUnlessPerItemApproved=true"
+```
+
+`--plan-only` prints the exact approval text for the selected repository, queue, item/time budget, auto-commit permission, and hard bans: `noPush=true`, `noDependencyChanges=true`, and `noLiveCepAeUnlessPerItemApproved=true`. `--execute-one` runs exactly one approved queue item and stops after commit/report. `--run-until-budget` resumes from `.codex-runtime/sdk/roadmap-supervisor/<session-id>/state.json`, commits after every completed item, and stops on the first dirty tree, approval mismatch, out-of-scope path, failed validation, missing handoff, reviewer blocking finding, or budget gate.
+
 Buffered acceptance wrapper всегда создает SDK thread с теми же безопасными ограничениями: `sandboxMode: "read-only"`, `approvalPolicy: "never"`, `networkAccessEnabled: false`, `webSearchMode: "disabled"`.
 
 В buffered acceptance mode wrapper отклоняет unsafe-capable overrides до создания SDK thread, включая `--sandbox danger-full-access`, `--approval on-request`, `--network` и `--web-search live`. Также отклоняются `--external-provider`, `--openai-cli-planner`, `--mutating-live`, `--tenant-policy-bypass` и `--skip-git-repo-check`.

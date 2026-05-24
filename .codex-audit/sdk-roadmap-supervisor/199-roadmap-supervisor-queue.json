@@ -1,0 +1,70 @@
+{
+  "schema": "sdk-roadmap-supervisor-queue.v1",
+  "milestone": 199,
+  "title": "AE Agent Roadmap Supervisor Initial Queue",
+  "createdAt": "2026-05-24",
+  "purpose": "Provide a safe default queue for plan-only preview. Execution remains pending explicit per-run approval and per-item approval.",
+  "queueItems": [
+    {
+      "id": "m199-roadmap-supervisor-contract-preview",
+      "milestone": 199,
+      "title": "Roadmap supervisor contract preview",
+      "dependencies": [],
+      "runner": {
+        "kind": "fixture",
+        "action": "no-op"
+      },
+      "mode": "local-only",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-contract.json",
+        ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-readiness.json",
+        ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-governance.json",
+        ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-queue.json",
+        "orchestrator/run-ae-agent-roadmap-supervisor.mjs",
+        "scripts/sdk-ae-agent-roadmap-supervisor-readiness-smoke.js",
+        "scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js",
+        "orchestrator/README.md",
+        "package.json",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "mcp-server/**",
+        "package-lock.json",
+        "logs/**",
+        "backups/**",
+        "snapshots/**"
+      ],
+      "allowedCommands": [
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "git diff --check"
+      ],
+      "reviewerTasks": [],
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 0,
+      "maxMinutes": 30,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "feat: add roadmap supervisor contract"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "planned-path-outside-policy",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    }
+  ]
+}
