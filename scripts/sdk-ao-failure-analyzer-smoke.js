@@ -7,10 +7,13 @@ const os = require("os");
 const path = require("path");
 
 const repo = path.resolve(__dirname, "..");
-const CONTRACT_PATH = ".codex-audit/sdk-ao-pattern-intake/215-readonly-failure-analyzer-contract.json";
-const PARENT_ACTIVITY_PATH = ".codex-audit/sdk-ao-pattern-intake/212-activity-session-schema.json";
-const PARENT_ESCALATION_PATH = ".codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json";
-const PARENT_DASHBOARD_PATH = ".codex-audit/sdk-ao-pattern-intake/214-status-dashboard-contract.json";
+const CONTRACT_PATH = ".codex-audit/sdk-ao-pattern-intake/aux-004-readonly-failure-analyzer-contract.json";
+const AUX_PARENT_ACTIVITY_PATH = ".codex-audit/sdk-ao-pattern-intake/aux-001-activity-session-schema.json";
+const AUX_PARENT_ESCALATION_PATH = ".codex-audit/sdk-ao-pattern-intake/aux-002-stuck-escalation-design.json";
+const AUX_PARENT_DASHBOARD_PATH = ".codex-audit/sdk-ao-pattern-intake/aux-003-status-dashboard-contract.json";
+const LEGACY_PARENT_ACTIVITY_PATH = ".codex-audit/sdk-ao-pattern-intake/212-activity-session-schema.json";
+const LEGACY_PARENT_ESCALATION_PATH = ".codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json";
+const LEGACY_PARENT_DASHBOARD_PATH = ".codex-audit/sdk-ao-pattern-intake/214-status-dashboard-contract.json";
 const QUEUE_PATH = ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json";
 const ANALYZER_PATH = path.join(repo, "scripts", "create-roadmap-failure-analyzer-packet.js");
 
@@ -37,13 +40,19 @@ function assertFalseClaims(contract) {
   }
 }
 
-function assertContractShape(contract, parentActivity, parentEscalation, parentDashboard, queue) {
+function assertContractShape(contract, auxParents, legacyParents, queue) {
   assert.strictEqual(contract.schema, contract.machineCheck.requiredSchema);
-  assert.strictEqual(contract.milestone, contract.machineCheck.requiredMilestone);
-  assert.strictEqual(parentActivity.schema, contract.machineCheck.requiredParentSchemas[0]);
-  assert.strictEqual(parentEscalation.schema, contract.machineCheck.requiredParentSchemas[1]);
-  assert.strictEqual(parentDashboard.schema, contract.machineCheck.requiredParentSchemas[2]);
+  assert.strictEqual(contract.auxiliaryId, contract.machineCheck.requiredAuxiliaryId);
   assert.strictEqual(contract.source.queueItemId, contract.machineCheck.requiredQueueItemId);
+  assert.strictEqual(contract.source.legacyQueueItemId, contract.machineCheck.legacyQueueItemId);
+  assert.deepStrictEqual(
+    auxParents.map((parent) => parent.schema),
+    contract.machineCheck.requiredParentCompatibilitySchemas,
+  );
+  assert.deepStrictEqual(
+    legacyParents.map((parent) => parent.schema),
+    contract.machineCheck.requiredLegacyParentSchemas,
+  );
   assert.strictEqual(contract.source.queuePath, contract.machineCheck.requiredQueuePath);
   assert.strictEqual(contract.source.notRuntimeBehavior, true);
   assert.strictEqual(contract.source.notAnAoIntegration, true);
@@ -53,6 +62,7 @@ function assertContractShape(contract, parentActivity, parentEscalation, parentD
   assert.strictEqual(contract.packetContract.noDefaultWrites, true);
   assert.strictEqual(contract.cliContract.script, contract.machineCheck.requiredAnalyzerScript);
   assert(queue.queueItems.some((item) => item.id === contract.machineCheck.requiredQueueItemId));
+  assert(queue.sourceContext.auxiliaryLabelDecision.includes("AUX-###"));
 
   assertIncludesAll(
     contract.packetContract.requiredPacketFields,
@@ -98,7 +108,7 @@ function buildValidationFailureFixture(root) {
   const logPath = path.join(root, "validation.log");
 
   writeJson(reportPath, {
-    taskId: "m215-ao-readonly-failure-analyzer",
+    taskId: "aux-004-ao-readonly-failure-analyzer",
     command: "node scripts/sdk-ao-failure-analyzer-smoke.js",
     status: "failed",
     validation: {
@@ -107,11 +117,11 @@ function buildValidationFailureFixture(root) {
       command: "node scripts/sdk-ao-failure-analyzer-smoke.js",
     },
     changedPaths: [
-      ".codex-audit/sdk-ao-pattern-intake/215-readonly-failure-analyzer-contract.json",
+      ".codex-audit/sdk-ao-pattern-intake/aux-004-readonly-failure-analyzer-contract.json",
       "scripts/create-roadmap-failure-analyzer-packet.js",
     ],
     plannedPaths: [
-      ".codex-audit/sdk-ao-pattern-intake/215-readonly-failure-analyzer-contract.json",
+      ".codex-audit/sdk-ao-pattern-intake/aux-004-readonly-failure-analyzer-contract.json",
       "scripts/create-roadmap-failure-analyzer-packet.js",
       "scripts/sdk-ao-failure-analyzer-smoke.js",
       "plans/target-app-execplan.md",
@@ -126,7 +136,7 @@ function buildValidationFailureFixture(root) {
   fs.mkdirSync(sessionRoot, { recursive: true });
   writeJson(path.join(sessionRoot, "state.json"), {
     sessionId: "validation-session",
-    queueItemId: "m215-ao-readonly-failure-analyzer",
+    queueItemId: "aux-004-ao-readonly-failure-analyzer",
     role: "writer",
     state: "errored",
     validationResult: "failed",
@@ -171,7 +181,7 @@ function buildStuckSessionFixture(root) {
   fs.mkdirSync(sessionRoot, { recursive: true });
   writeJson(path.join(sessionRoot, "state.json"), {
     sessionId: "stuck-session",
-    queueItemId: "m215-ao-readonly-failure-analyzer",
+    queueItemId: "aux-004-ao-readonly-failure-analyzer",
     role: "writer",
     state: "stuck",
     status: "stuck",
@@ -179,7 +189,7 @@ function buildStuckSessionFixture(root) {
       "no activity heartbeat for 15 minutes",
     ],
     plannedPaths: [
-      ".codex-audit/sdk-ao-pattern-intake/215-readonly-failure-analyzer-contract.json",
+      ".codex-audit/sdk-ao-pattern-intake/aux-004-readonly-failure-analyzer-contract.json",
       "scripts/create-roadmap-failure-analyzer-packet.js",
     ],
     changedPaths: [],
@@ -247,14 +257,21 @@ function assertAnalyzerSourceIsReadOnly() {
 
 function main() {
   const contract = readJson(CONTRACT_PATH);
-  const parentActivity = readJson(PARENT_ACTIVITY_PATH);
-  const parentEscalation = readJson(PARENT_ESCALATION_PATH);
-  const parentDashboard = readJson(PARENT_DASHBOARD_PATH);
+  const auxParents = [
+    readJson(AUX_PARENT_ACTIVITY_PATH),
+    readJson(AUX_PARENT_ESCALATION_PATH),
+    readJson(AUX_PARENT_DASHBOARD_PATH),
+  ];
+  const legacyParents = [
+    readJson(LEGACY_PARENT_ACTIVITY_PATH),
+    readJson(LEGACY_PARENT_ESCALATION_PATH),
+    readJson(LEGACY_PARENT_DASHBOARD_PATH),
+  ];
   const queue = readJson(QUEUE_PATH);
-  assertContractShape(contract, parentActivity, parentEscalation, parentDashboard, queue);
+  assertContractShape(contract, auxParents, legacyParents, queue);
   assertAnalyzerSourceIsReadOnly();
 
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "ae-agent-m215-failure-analyzer-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "ae-agent-aux-004-failure-analyzer-"));
   const validationFixture = buildValidationFailureFixture(root);
   const validationPacket = JSON.parse(runAnalyzer([
     "--report",

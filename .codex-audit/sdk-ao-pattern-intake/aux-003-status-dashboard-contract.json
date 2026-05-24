@@ -1,0 +1,52 @@
+{
+  "schema": "sdk-ao-pattern-intake.auxiliary-compatibility.v1",
+  "auxiliaryId": "AUX-003",
+  "title": "Static status dashboard",
+  "createdAt": "2026-05-24",
+  "purpose": "Provide the active auxiliary label for the completed static status dashboard contract without renaming or deleting the historical M214 artifact.",
+  "legacyCompatibility": {
+    "legacyMilestone": 214,
+    "legacyQueueItemId": "m214-ao-static-status-dashboard",
+    "legacyArtifactPath": ".codex-audit/sdk-ao-pattern-intake/214-status-dashboard-contract.json",
+    "legacyCommit": "d1d4756e93fe760f41962c11667d6c302955a461",
+    "compatibilityNote": "The M214 artifact remains the committed source for completed historical work. New references should use AUX-003 and this compatibility artifact."
+  },
+  "primaryArtifact": {
+    "path": ".codex-audit/sdk-ao-pattern-intake/214-status-dashboard-contract.json",
+    "schema": "sdk-ao-pattern-intake.status-dashboard-contract.v1"
+  },
+  "boundaryClaims": {
+    "webServerAdded": false,
+    "browserUiAdded": false,
+    "dependencyAdded": false,
+    "packageManifestChanged": false,
+    "packageLockChanged": false,
+    "roadmapSupervisorRuntimeChanged": false,
+    "productionRuntimeChanged": false,
+    "runtimeFilesWrittenByDefault": false,
+    "aoInstalled": false,
+    "aoStarted": false,
+    "cepPanelChanged": false,
+    "liveCepAeValidationRun": false,
+    "externalProviderPlannerValidationRun": false,
+    "branchWorktreePushPrGithubActionCreated": false
+  },
+  "validation": {
+    "smokeScript": "scripts/sdk-ao-status-dashboard-smoke.js",
+    "rendererScript": "scripts/render-roadmap-supervisor-status-dashboard.js",
+    "commands": [
+      "node --check scripts/render-roadmap-supervisor-status-dashboard.js",
+      "node --check scripts/sdk-ao-status-dashboard-smoke.js",
+      "node scripts/sdk-ao-status-dashboard-smoke.js",
+      "npm.cmd run check:rules",
+      "git diff --check"
+    ]
+  },
+  "machineCheck": {
+    "requiredSchema": "sdk-ao-pattern-intake.auxiliary-compatibility.v1",
+    "requiredAuxiliaryId": "AUX-003",
+    "requiredLegacyArtifactPath": ".codex-audit/sdk-ao-pattern-intake/214-status-dashboard-contract.json",
+    "requiredLegacySchema": "sdk-ao-pattern-intake.status-dashboard-contract.v1",
+    "requiredSmokeScript": "scripts/sdk-ao-status-dashboard-smoke.js"
+  }
+}

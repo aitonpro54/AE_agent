@@ -1,0 +1,47 @@
+{
+  "schema": "sdk-ao-pattern-intake.auxiliary-compatibility.v1",
+  "auxiliaryId": "AUX-001",
+  "title": "Activity JSONL/session lifecycle intake",
+  "createdAt": "2026-05-24",
+  "purpose": "Provide the active auxiliary label for the completed activity JSONL/session lifecycle intake without renaming or deleting the historical M212 artifact.",
+  "legacyCompatibility": {
+    "legacyMilestone": 212,
+    "legacyQueueItemId": "m212-ao-task-session-activity-schema",
+    "legacyArtifactPath": ".codex-audit/sdk-ao-pattern-intake/212-activity-session-schema.json",
+    "legacyCommit": "b680a4f63f07ccf02803fb1891fd3a18ad9fa9c8",
+    "compatibilityNote": "The M212 artifact remains the committed source for completed historical work. New references should use AUX-001 and this compatibility artifact."
+  },
+  "primaryArtifact": {
+    "path": ".codex-audit/sdk-ao-pattern-intake/212-activity-session-schema.json",
+    "schema": "sdk-ao-pattern-intake.activity-session-schema.v1"
+  },
+  "boundaryClaims": {
+    "aoInstalled": false,
+    "aoStarted": false,
+    "aoRuntimeIntegrated": false,
+    "roadmapSupervisorRuntimeChanged": false,
+    "productionRuntimeChanged": false,
+    "cepPanelChanged": false,
+    "liveCepAeValidationRun": false,
+    "externalProviderPlannerValidationRun": false,
+    "dependenciesChanged": false,
+    "packageManifestChanged": false,
+    "branchWorktreePushPrGithubActionCreated": false
+  },
+  "validation": {
+    "smokeScript": "scripts/sdk-ao-pattern-intake-smoke.js",
+    "commands": [
+      "node --check scripts/sdk-ao-pattern-intake-smoke.js",
+      "node scripts/sdk-ao-pattern-intake-smoke.js",
+      "npm.cmd run check:rules",
+      "git diff --check"
+    ]
+  },
+  "machineCheck": {
+    "requiredSchema": "sdk-ao-pattern-intake.auxiliary-compatibility.v1",
+    "requiredAuxiliaryId": "AUX-001",
+    "requiredLegacyArtifactPath": ".codex-audit/sdk-ao-pattern-intake/212-activity-session-schema.json",
+    "requiredLegacySchema": "sdk-ao-pattern-intake.activity-session-schema.v1",
+    "requiredSmokeScript": "scripts/sdk-ao-pattern-intake-smoke.js"
+  }
+}

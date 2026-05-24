@@ -8,7 +8,8 @@
     "research": "docs/research/composio-agent-orchestrator-applicability.md",
     "block": "ao-inspired-pipeline-hardening",
     "executionModel": "Sequential roadmap supervisor items, one roadmap-sdk writer child at a time, focused validation per item, handoff after each item, and one reviewable commit per item.",
-    "numberingDecision": "The research note now shifts this AO-inspired block to M212-M215 because the active plan already contains a duplicate_layers M211 reconciliation. This follows the existing project convention of preserving the requested design while avoiding milestone collisions.",
+    "numberingDecision": "Historical M212-M215 references are preserved only because this branch already contains completed M212-M214 commits and a partial M215 analyzer attempt. New AO-inspired pipeline-hardening references use AUX-001 through AUX-004.",
+    "auxiliaryLabelDecision": "Future orchestrator, supervisor, conveyor, observability, failure-analyzer, AO-inspired, and other optimization/support work must use AUX-### labels instead of consuming product roadmap M### ids. The M212-M215 labels in this queue are historical compatibility records for already-created branch-local artifacts.",
     "boundaries": {
       "installAO": false,
       "runAO": false,
@@ -341,7 +342,7 @@
       }
     },
     {
-      "id": "m215-ao-readonly-failure-analyzer",
+      "id": "aux-004-ao-readonly-failure-analyzer",
       "milestone": 215,
       "title": "AO-inspired read-only failure analyzer packet",
       "dependencies": [
@@ -353,7 +354,10 @@
       "mode": "sdk-write",
       "plannedPaths": [
         ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
-        ".codex-audit/sdk-ao-pattern-intake/215-readonly-failure-analyzer-contract.json",
+        ".codex-audit/sdk-ao-pattern-intake/aux-001-activity-session-schema.json",
+        ".codex-audit/sdk-ao-pattern-intake/aux-002-stuck-escalation-design.json",
+        ".codex-audit/sdk-ao-pattern-intake/aux-003-status-dashboard-contract.json",
+        ".codex-audit/sdk-ao-pattern-intake/aux-004-readonly-failure-analyzer-contract.json",
         "scripts/create-roadmap-failure-analyzer-packet.js",
         "scripts/sdk-ao-failure-analyzer-smoke.js",
         "plans/target-app-execplan.md",
@@ -374,26 +378,29 @@
         ".github/**"
       ],
       "allowedActions": [
-        "create .codex-audit/sdk-ao-pattern-intake/215-readonly-failure-analyzer-contract.json defining a read-only failure packet format",
-        "keep the existing queue path exactly .codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json even though this final item is M215",
-        "keep the completed prior artifacts exactly at .codex-audit/sdk-ao-pattern-intake/212-activity-session-schema.json, .codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json, and .codex-audit/sdk-ao-pattern-intake/214-status-dashboard-contract.json",
-        "do not renumber, rename, move, or recreate the completed M212-M214 artifacts; M215 adds only the failure analyzer contract and scripts listed in plannedPaths",
+        "create AUX-001 through AUX-003 compatibility artifacts over the completed legacy M212-M214 artifacts",
+        "create .codex-audit/sdk-ao-pattern-intake/aux-004-readonly-failure-analyzer-contract.json defining a read-only failure packet format",
+        "keep the existing queue path exactly .codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json while treating AUX-001-AUX-004 as the primary support-lane labels",
+        "keep completed prior artifacts at their legacy 212, 213, and 214 paths without renaming or moving them",
         "add scripts/create-roadmap-failure-analyzer-packet.js as a no-dependency CLI that reads explicit failure report/log/session fixture paths and emits JSON or Markdown repair packets without changing source files",
-        "the packet must include failure class, command, status, relevant log tail, changed paths if supplied, suspected cause with confidence, forbidden auto-actions, repair prompt, and next bounded task fields",
-        "add scripts/sdk-ao-failure-analyzer-smoke.js that builds temp fixture failures, runs the analyzer, and asserts validation_failure and stuck_session packets include repair prompts while forbidding auto-fix/live/dependency/PR actions",
-        "update the queue artifact closeout notes for this AO-inspired block only if the previous M212-M214 commits are observable in git log",
-        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and Active Roadmap notes for M215 and block closeout",
-        "update .codex/handoff.md with M215 state, validation commands, decisions, risks, commit pending/supervisor commit note, and exact next prompt for the next thread"
+        "update plans/target-app-execplan.md and .codex/handoff.md with AUX-004 state, validation, decisions, risks, and next prompt"
       ],
       "forbiddenActions": [
         "make the analyzer fix code, edit source based on logs, retry commands, run live AE/CEP, install dependencies, create branches/worktrees, push, PR, GitHub issues, or GitHub Actions",
         "rename .codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json or create a replacement queue path",
         "rename or move .codex-audit/sdk-ao-pattern-intake/212-activity-session-schema.json, .codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json, or .codex-audit/sdk-ao-pattern-intake/214-status-dashboard-contract.json",
-        "create .codex-audit/sdk-ao-pattern-intake/216-*.json, .codex-audit/sdk-ao-pattern-intake/217-*.json, .codex-audit/sdk-ao-pattern-intake/218-*.json, or any other unplanned AO hardening artifact",
+        "create new M### artifact paths for auxiliary/support work",
         "read broad unbounded logs by default; use explicit paths and bounded tails",
         "touch CEP/live/production/dependency/package paths"
       ],
       "allowedCommands": [
+        "node --check scripts/sdk-ao-pattern-intake-smoke.js",
+        "node scripts/sdk-ao-pattern-intake-smoke.js",
+        "node --check scripts/sdk-ao-stuck-escalation-smoke.js",
+        "node scripts/sdk-ao-stuck-escalation-smoke.js",
+        "node --check scripts/render-roadmap-supervisor-status-dashboard.js",
+        "node --check scripts/sdk-ao-status-dashboard-smoke.js",
+        "node scripts/sdk-ao-status-dashboard-smoke.js",
         "node --check scripts/create-roadmap-failure-analyzer-packet.js",
         "node --check scripts/sdk-ao-failure-analyzer-smoke.js",
         "node scripts/sdk-ao-failure-analyzer-smoke.js",
@@ -417,6 +424,13 @@
         "node scripts/smoke-test.js"
       ],
       "validationCommands": [
+        "node --check scripts/sdk-ao-pattern-intake-smoke.js",
+        "node scripts/sdk-ao-pattern-intake-smoke.js",
+        "node --check scripts/sdk-ao-stuck-escalation-smoke.js",
+        "node scripts/sdk-ao-stuck-escalation-smoke.js",
+        "node --check scripts/render-roadmap-supervisor-status-dashboard.js",
+        "node --check scripts/sdk-ao-status-dashboard-smoke.js",
+        "node scripts/sdk-ao-status-dashboard-smoke.js",
         "node --check scripts/create-roadmap-failure-analyzer-packet.js",
         "node --check scripts/sdk-ao-failure-analyzer-smoke.js",
         "node scripts/sdk-ao-failure-analyzer-smoke.js",
@@ -458,7 +472,7 @@
       "maxMinutes": 90,
       "commitPolicy": {
         "autoCommit": true,
-        "message": "feat: add roadmap failure analyzer"
+        "message": "docs: align AO hardening lane with AUX labels"
       },
       "handoffPolicy": {
         "required": true,
@@ -473,7 +487,127 @@
         "validation-failed",
         "context-pressure"
       ],
-      "status": "queued"
+      "completion": {
+        "completedAt": "2026-05-24",
+        "summary": "Added AUX-001 through AUX-003 compatibility artifacts over the completed legacy M212-M214 artifacts, added the AUX-004 read-only failure analyzer packet contract, no-dependency analyzer CLI, fixture smoke coverage for validation_failure and stuck_session packets, active plan notes, and handoff state. Prior M212-M214 commits were observable in git log before this block closeout note was added.",
+        "observedPriorCommits": [
+          {
+            "milestone": 212,
+            "commit": "b680a4f63f07ccf02803fb1891fd3a18ad9fa9c8",
+            "subject": "docs: add AO-inspired activity schema"
+          },
+          {
+            "milestone": 213,
+            "commit": "12eb9be1e35aacdf972323a104ad0549c6476ceb",
+            "subject": "docs: add AO-inspired escalation design"
+          },
+          {
+            "milestone": 214,
+            "commit": "d1d4756e93fe760f41962c11667d6c302955a461",
+            "subject": "feat: add roadmap status dashboard"
+          }
+        ],
+        "validationCommands": [
+          "node --check scripts/sdk-ao-pattern-intake-smoke.js",
+          "node scripts/sdk-ao-pattern-intake-smoke.js",
+          "node --check scripts/sdk-ao-stuck-escalation-smoke.js",
+          "node scripts/sdk-ao-stuck-escalation-smoke.js",
+          "node --check scripts/render-roadmap-supervisor-status-dashboard.js",
+          "node --check scripts/sdk-ao-status-dashboard-smoke.js",
+          "node scripts/sdk-ao-status-dashboard-smoke.js",
+          "node --check scripts/create-roadmap-failure-analyzer-packet.js",
+          "node --check scripts/sdk-ao-failure-analyzer-smoke.js",
+          "node scripts/sdk-ao-failure-analyzer-smoke.js",
+          "npm.cmd run check:rules",
+          "git diff --check",
+          "node scripts/provider-contract-smoke.js",
+          "node scripts/solution-registry-smoke.js",
+          "node scripts/solution-candidate-report-smoke.js",
+          "node scripts/solution-promotion-smoke.js",
+          "node scripts/solution-retrieval-smoke.js",
+          "node scripts/solution-library-validation-smoke.js",
+          "node scripts/project-intent-memory-smoke.js",
+          "node scripts/plan-classification-smoke.js",
+          "node scripts/plan-repair-smoke.js",
+          "node scripts/semantic-verification-smoke.js",
+          "node scripts/reliability-validation-suite-smoke.js",
+          "node scripts/chatgpt-connector-smoke.js",
+          "node scripts/provider-api-smoke.js",
+          "node scripts/prompt-optimization-smoke.js",
+          "node scripts/bridge-only-smoke-test.js",
+          "node scripts/smoke-test.js"
+        ],
+        "boundaryNotes": [
+          "The queue path remains .codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json.",
+          "M212-M214 artifact paths were not renamed, moved, renumbered, or recreated; AUX-001-AUX-003 compatibility artifacts point at them.",
+          "Commit a168a6d already added the legacy M215 analyzer artifact; it is preserved as a compatibility record while AUX-004 is the active support-lane path.",
+          "The analyzer emits packets from explicit inputs only and does not edit source, retry commands, run live AE/CEP, install dependencies, change packages, create branches/worktrees, push, create PRs, GitHub issues, or GitHub Actions.",
+          "The handoff is updated as an ignored local continuation record and is not staged for commit."
+        ],
+        "handoffPath": ".codex/handoff.md"
+      },
+      "status": "completed",
+      "completedBy": {
+        "commit": "pending-aux-alignment-commit",
+        "evidence": "AUX-004 created the read-only failure analyzer contract, analyzer CLI, fixture smoke coverage, and AUX compatibility artifacts without AO install/start, branch/worktree/PR, CEP/live, production, dependency, or package changes."
+      },
+      "auxiliaryId": "AUX-004",
+      "legacyQueueItemId": "m215-ao-readonly-failure-analyzer",
+      "milestoneCompatibilityNote": "The numeric milestone field is retained for sdk-roadmap-supervisor queue schema compatibility only; this is AUX-004 support work, not a product M### milestone.",
+      "auxiliaryTitle": "Read-only failure analyzer",
+      "auxiliaryDependencies": [
+        "AUX-003"
+      ]
     }
-  ]
+  ],
+  "blockCloseout": {
+    "closedAt": "2026-05-24",
+    "scope": "AO-inspired pipeline hardening block AUX-001-AUX-004",
+    "auxiliaryScope": "AO-inspired pipeline hardening block AUX-001-AUX-004; M212-M215 are historical branch-local compatibility labels only.",
+    "status": "completed-pending-aux-alignment-commit",
+    "queuePathPreserved": ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
+    "auxiliaryArtifactPaths": [
+      ".codex-audit/sdk-ao-pattern-intake/aux-001-activity-session-schema.json",
+      ".codex-audit/sdk-ao-pattern-intake/aux-002-stuck-escalation-design.json",
+      ".codex-audit/sdk-ao-pattern-intake/aux-003-status-dashboard-contract.json",
+      ".codex-audit/sdk-ao-pattern-intake/aux-004-readonly-failure-analyzer-contract.json"
+    ],
+    "completedArtifactPathsPreserved": [
+      ".codex-audit/sdk-ao-pattern-intake/212-activity-session-schema.json",
+      ".codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json",
+      ".codex-audit/sdk-ao-pattern-intake/214-status-dashboard-contract.json"
+    ],
+    "aux004Artifact": ".codex-audit/sdk-ao-pattern-intake/aux-004-readonly-failure-analyzer-contract.json",
+    "priorCommitsObservedInGitLog": [
+      "b680a4f63f07ccf02803fb1891fd3a18ad9fa9c8",
+      "12eb9be1e35aacdf972323a104ad0549c6476ceb",
+      "d1d4756e93fe760f41962c11667d6c302955a461"
+    ],
+    "boundaryNotes": [
+      "No AO install/start, auto-fix loop, command retry, broad log read, live AE/CEP run, dependency/package change, production runtime change, CEP edit, branch/worktree, push, PR, GitHub issue, or GitHub Action was added in the closeout.",
+      "AUX-004 is the final AO-inspired block item and does not create any further M### AO hardening artifact."
+    ],
+    "legacyM215ArtifactPreserved": ".codex-audit/sdk-ao-pattern-intake/215-readonly-failure-analyzer-contract.json"
+  },
+  "auxiliaryLane": {
+    "primaryLabels": [
+      "AUX-001",
+      "AUX-002",
+      "AUX-003",
+      "AUX-004"
+    ],
+    "legacyLabels": [
+      "M212",
+      "M213",
+      "M214",
+      "M215"
+    ],
+    "compatibilityArtifacts": [
+      ".codex-audit/sdk-ao-pattern-intake/aux-001-activity-session-schema.json",
+      ".codex-audit/sdk-ao-pattern-intake/aux-002-stuck-escalation-design.json",
+      ".codex-audit/sdk-ao-pattern-intake/aux-003-status-dashboard-contract.json",
+      ".codex-audit/sdk-ao-pattern-intake/aux-004-readonly-failure-analyzer-contract.json"
+    ],
+    "forwardOnlyNote": "AUX-### labels are primary for orchestrator/support work. Existing M212-M214 commits and any M215 references remain historical compatibility records only; no history is rewritten and no completed artifacts are renamed or deleted."
+  }
 }

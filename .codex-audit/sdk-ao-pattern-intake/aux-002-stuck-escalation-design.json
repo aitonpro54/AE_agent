@@ -1,0 +1,49 @@
+{
+  "schema": "sdk-ao-pattern-intake.auxiliary-compatibility.v1",
+  "auxiliaryId": "AUX-002",
+  "title": "Stuck detector and escalation rules",
+  "createdAt": "2026-05-24",
+  "purpose": "Provide the active auxiliary label for the completed stuck detector and escalation design without renaming or deleting the historical M213 artifact.",
+  "legacyCompatibility": {
+    "legacyMilestone": 213,
+    "legacyQueueItemId": "m213-ao-stuck-escalation-design",
+    "legacyArtifactPath": ".codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json",
+    "legacyCommit": "12eb9be1e35aacdf972323a104ad0549c6476ceb",
+    "compatibilityNote": "The M213 artifact remains the committed source for completed historical work. New references should use AUX-002 and this compatibility artifact."
+  },
+  "primaryArtifact": {
+    "path": ".codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json",
+    "schema": "sdk-ao-pattern-intake.stuck-escalation-design.v1"
+  },
+  "boundaryClaims": {
+    "autoFixRuntimeLoopImplemented": false,
+    "autoRetryDefaultEnabled": false,
+    "unboundedRetryAllowed": false,
+    "roadmapSupervisorRuntimeChanged": false,
+    "productionRuntimeChanged": false,
+    "aoInstalled": false,
+    "aoStarted": false,
+    "cepPanelChanged": false,
+    "liveCepAeValidationRun": false,
+    "externalProviderPlannerValidationRun": false,
+    "dependenciesChanged": false,
+    "packageManifestChanged": false,
+    "branchWorktreePushPrGithubActionCreated": false
+  },
+  "validation": {
+    "smokeScript": "scripts/sdk-ao-stuck-escalation-smoke.js",
+    "commands": [
+      "node --check scripts/sdk-ao-stuck-escalation-smoke.js",
+      "node scripts/sdk-ao-stuck-escalation-smoke.js",
+      "npm.cmd run check:rules",
+      "git diff --check"
+    ]
+  },
+  "machineCheck": {
+    "requiredSchema": "sdk-ao-pattern-intake.auxiliary-compatibility.v1",
+    "requiredAuxiliaryId": "AUX-002",
+    "requiredLegacyArtifactPath": ".codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json",
+    "requiredLegacySchema": "sdk-ao-pattern-intake.stuck-escalation-design.v1",
+    "requiredSmokeScript": "scripts/sdk-ao-stuck-escalation-smoke.js"
+  }
+}
