@@ -28,6 +28,7 @@
 - [x] Milestone 194: Marker delete/update gated-slice design.
 - [x] Milestone 195: Explicit layer marker update typed bridge tool.
 - [x] Milestone 196: Explicit layer marker delete typed bridge tool.
+- [x] Milestone 197: Bulk/selected-layer duplicate gated-slice design.
 
 ## Current Stable Baseline
 
@@ -49,6 +50,7 @@
 - The typed bridge catalog now includes `create_layer_mask`, a bounded first mask-safety slice that creates one additive closed polygon mask on an existing layer, rejects destructive mask operations, and exposes mask shape/mode read-back through `get_layer_details`.
 - M191 live acceptance proved the mask safety slice from inside the installed CEP panel through CDP, Agent UI, `openai-cli`/`gpt-5.5`, a panel-generated mask plan, dry run, protected run, semantic verification, bridge read-back, and generated-only cleanup. Acceptance did not use deterministic backend fallback, Local/Ollama fallback, or OpenRouter fallback.
 - The typed bridge catalog now includes `duplicate_layer`, a bounded explicit single-layer duplication tool that requires a target layer index, can verify the expected source layer name, returns source/duplicate read-back, and deliberately does not delete layers or rely on selection-only ambiguity.
+- M197 records the future bulk/selected-layer duplicate contract as a separate gated slice. No bulk duplicate runtime tool exists yet; the design requires concrete `layerIndices`, selected-layer bindings from prior read-only evidence, source/duplicate pair read-back, and separate approval for any generated-only live validation lane.
 - The existing `add_layer_marker` typed tool now has explicit marker evidence: it returns created-marker read-back, `get_layer_details` exposes marker summaries, and semantic verification checks comment/time/duration against post-run read-back. It does not analyze audio, detect beats, bulk-generate markers, delete/update markers, or claim audio-derived marker evidence.
 - M194 records the future marker delete/update contract as a separate gated slice. No marker delete/update runtime tools exist yet; the design requires explicit marker targeting, before/after read-back, semantic absence/update checks, and separate approval for any generated-only live validation lane.
 - The typed bridge catalog now includes `update_layer_marker`, a bounded single-marker update tool that targets an existing layer marker by `markerIndex` or strict `targetTime`, optionally guards with `targetComment`, updates only comment/time/duration, and returns before/after marker read-back.
@@ -260,9 +262,12 @@
 - M194: Added a design-only marker delete/update contract that keeps future marker edits separate from audio analysis, bulk marker generation, layer deletion, mask/path editing, live validation, and planner acceptance until separately implemented and approved.
 - M195: Added `update_layer_marker` as a bounded single-marker update typed tool with explicit target guards, before/after marker read-back, plan-repair aliases, semantic verification, and local non-live smoke coverage.
 - M196: Added `delete_layer_marker` as a bounded single-marker delete typed tool with explicit target guards, deleted-marker/after-summary read-back, plan-repair aliases, semantic absence verification, and local non-live smoke coverage.
+- M197: Added a design-only bulk/selected-layer duplicate contract that keeps future many-layer duplication separate from single-layer duplication, deep-precomp/source duplication, layer deletion, mask/path editing, live validation, and planner acceptance until separately implemented and approved.
 
 ## Decision Log
 
+- 2026-05-24: M197 treats bulk/selected-layer duplication as its own future gated slice, not an implicit extension hidden inside `duplicate_layer`. Future `duplicate_layers` work should require concrete `layerIndices`; selected-layer convenience must come from prior read-only selected-layer evidence rather than selection-only ambiguity.
+- 2026-05-24: M197 intentionally adds no runtime tool, planner alias, semantic verifier code, CEP UI, live mutating validation, OpenAI CLI planner acceptance, dependency change, push, or PR. Source/precomp relink duplication, layer deletion, mask delete/invert/path editing, audio workflows, and arbitrary ExtendScript loops stay separately gated.
 - 2026-05-24: M196 implements only single-marker delete through `delete_layer_marker`. It targets one marker by `markerIndex` or strict `targetTime`, can guard with `targetComment`, returns `markerDeleted` plus after-state `markers`, and fails closed for missing/ambiguous/out-of-range targets.
 - 2026-05-24: M196 intentionally does not implement clear-all marker deletion, bulk marker deletion, audio-derived markers, destructive layer/project operations, mask delete/invert/path editing, live CEP/AE mutating validation, OpenAI CLI planner acceptance, dependency changes, push, or PR.
 - 2026-05-24: M195 implements only marker update, not marker delete. `update_layer_marker` targets one marker by `markerIndex` or strict `targetTime`, can guard with `targetComment`, updates only `comment`, `time`, and `duration`, and fails closed for missing/ambiguous/out-of-range targets.
@@ -384,6 +389,7 @@
 | M194 documentation suite | Required because M194 adds a marker delete/update gated-slice design and updates the active plan/handoff only. | Passed on 2026-05-24: `npm.cmd run check:rules`; `git diff --check`. No JavaScript was touched, and live CEP/AE mutating validation, OpenAI CLI planner acceptance, audio workflows, destructive layer/project operations, mask/path editing, dependency changes, push, and PR were not run. |
 | M195 AGENTS non-live suite | Required because M195 adds `update_layer_marker`, planner guidance, plan-repair aliases, semantic verification, and local smoke/helper coverage. | Passed on 2026-05-24: touched JS `node --check`; `node scripts/plan-repair-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-promotion-smoke.js`; `node scripts/chatgpt-connector-smoke.js`; `node scripts/smoke-test.js`; `node scripts/m187-advisory-field-smoke.js both --mock-bridge --dry-run --json`; provider contract/API; solution registry/candidate/promotion/retrieval/library; project intent memory; plan classification; reliability validation suite smoke; provider API smoke; prompt optimization; bridge-only smoke; feature conveyor readiness/command/current-history smokes; agent planner corpus smoke; `npm.cmd run check:rules`; and `git diff --check`. `git diff --check` printed only LF-to-CRLF working-copy warnings for touched files. |
 | M196 AGENTS non-live suite | Required because M196 adds `delete_layer_marker`, planner guidance, plan-repair aliases, semantic absence verification, and local smoke/helper coverage. | Passed on 2026-05-24: touched JS `node --check`; `node scripts/plan-repair-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-promotion-smoke.js`; `node scripts/chatgpt-connector-smoke.js`; `node scripts/smoke-test.js`; `node scripts/m187-advisory-field-smoke.js both --mock-bridge --dry-run --json`; provider contract/API; solution registry/candidate/promotion/retrieval/library; project intent memory; plan classification; reliability validation suite smoke; provider API smoke; prompt optimization; bridge-only smoke; feature conveyor readiness/command/current-history smokes; agent planner corpus smoke; `npm.cmd run check:rules`; and `git diff --check`. `git diff --check` printed only LF-to-CRLF working-copy warnings for touched files. |
+| M197 documentation suite | Required because M197 adds a bulk/selected-layer duplicate gated-slice design and updates the active plan/handoff only. | Passed on 2026-05-24: `npm.cmd run check:rules`; `git diff --check`. No JavaScript was touched, and live CEP/AE mutating validation, OpenAI CLI planner acceptance, source/precomp relink duplication, layer deletion, mask/path editing, audio workflows, dependency changes, push, and PR were not run. |
 | SDKThread/network/external-provider/OpenAI CLI planner/non-M188-or-M190-or-M191 mutating-live validation | Forbidden/out of scope for this turn. | Not run outside the approved M190/M191 OpenAI CLI live validation lanes. |
 | Package install/dependency change validation | Out of scope because no dependency change is allowed. | Not run. |
 
@@ -531,6 +537,14 @@
 - Added `.codex-audit/sdk-feature-conveyor/dakkshin-intake/m196-delete-layer-marker-design.md`.
 - Passed the M196 non-live validation listed in the validation matrix.
 - Live CEP/AE mutating validation, OpenAI CLI planner acceptance, clear-all marker deletion, bulk marker generation/delete, audio analysis/beat detection, destructive layer/project operations, mask delete/invert/path editing, dependency changes, push, and PR were not run.
+
+### Milestone 197
+
+- Added `.codex-audit/sdk-feature-conveyor/dakkshin-intake/m197-bulk-selected-layer-duplicate-design.md`.
+- Recorded bulk/selected-layer duplication as a future separate gated slice instead of extending M192 `duplicate_layer`.
+- Future implementation should use concrete `layerIndices`, optional selected-layer bindings from prior read-only evidence, source-name guards, source/duplicate pair read-back, and semantic one-duplicate-per-source checks.
+- This milestone is design-only: no runtime tool, planner alias, semantic verification code, smoke helper, CEP UI, dependency, live validation, OpenAI CLI planner acceptance, push, or PR changed.
+- Passed the M197 documentation validation listed in the validation matrix.
 
 ### Milestone 175
 
