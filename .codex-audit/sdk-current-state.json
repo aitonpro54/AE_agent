@@ -40,7 +40,7 @@
     "checkRulesEntrypoint": "npm.cmd run check:rules",
     "checkRulesCommand": "node orchestrator/run-buffered-acceptance.mjs --contract-smoke",
     "featureConveyorState": "m186-sdk-approved-not-executed-and-m188-m190-m191-m198-live-validation-approved",
-    "roadmapSupervisorState": "m199-m210-local-gated-supervisor-with-duplicate-layers-closeout-pending-handoff-acl",
+    "roadmapSupervisorState": "m199-m211-local-gated-supervisor-with-duplicate-layers-closeout-reconciled",
     "historicalProofReadPolicy": "Use .codex-audit/sdk-history-index.json first; reread old packets only for a specific audit question."
   },
   "currentDirectCheckSets": [
@@ -229,7 +229,7 @@
         210
       ],
       "status": "current-direct-check",
-      "verdict": "AE Agent roadmap supervisor is available as a local-gated aggressive autopilot layer: plan-only preview, queueSha256-bound single approval for roadmap-sdk chains, SDK writer path plus --engine cli writer fallback for SDK stream/parser failures, read-only live-check against open AE/CEP, execute-one, run-until-budget, runtime session state, one writer child at a time, parallel read-only reviewers, validation-before-commit, required handoff, exact approval text, no push, and no dependency/mutating-live/CEP/external-provider work by default. M209 records duplicate_layers queue evidence proving plan-only creates no child run, SDK thread, or runtime state, and the roadmap supervisor smokes cover single-approval queue behavior including wrong-approval rejection, live binding policy, unplanned path stops, ignored handoff handling, and Windows .cmd validation dispatch. M210 records duplicate_layers closeout docs/governance state without runtime, CEP, dependency, push, or PR changes, but the required `.codex/handoff.md` update is blocked in this writer context by an inherited Windows ACL deny.",
+      "verdict": "AE Agent roadmap supervisor is available as a local-gated aggressive autopilot layer: plan-only preview, queueSha256-bound single approval for roadmap-sdk chains, SDK writer path plus --engine cli writer fallback for SDK stream/parser failures, read-only live-check against open AE/CEP, execute-one, run-until-budget, runtime session state, one writer child at a time, parallel read-only reviewers, validation-before-commit, required handoff, exact approval text, no push, and no dependency/mutating-live/CEP/external-provider work by default. M209 records duplicate_layers queue evidence proving plan-only creates no child run, SDK thread, or runtime state, and the roadmap supervisor smokes cover single-approval queue behavior including wrong-approval rejection, live binding policy, unplanned path stops, ignored handoff handling, and Windows .cmd validation dispatch. M210 records duplicate_layers closeout docs/governance state without runtime, CEP, dependency, push, or PR changes, and M211 reconciles the tracked closeout state with the parent-updated `.codex/handoff.md`.",
       "artifacts": [
         ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-contract.json",
         ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-readiness.json",

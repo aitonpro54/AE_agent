@@ -3,14 +3,14 @@
   "milestone": 203,
   "title": "Bulk / Selected Layer Duplicate Supervisor Queue",
   "createdAt": "2026-05-24",
-  "purpose": "Record the roadmap supervisor workload that turned the M197 design-only bulk/selected-layer duplicate slice into a shipped typed-tool capability through M204-M209 and the M210 closeout state. This closeout preserves the original no-push, no-PR, no-dependency-change, and no-CEP-SDK-write boundaries; the required handoff update remains blocked in this writer context by an inherited Windows ACL deny on .codex/handoff.md.",
+  "purpose": "Record the roadmap supervisor workload that turned the M197 design-only bulk/selected-layer duplicate slice into a shipped typed-tool capability through M204-M210. This closeout preserves the original no-push, no-PR, no-dependency-change, and no-CEP-SDK-write boundaries; parent-side M211 reconciliation confirms the ignored handoff file was updated after the M210 supervisor run.",
   "sourceContext": {
     "previousMilestone": 209,
     "sourceDesign": ".codex-audit/sdk-feature-conveyor/dakkshin-intake/m197-bulk-selected-layer-duplicate-design.md",
     "branch": "road-map-2.0",
     "executionModel": "Sequential roadmap supervisor items, one writer child at a time, optional read-only reviewers, validation and handoff after each item, and separate generated-only live approval before mutating AE validation.",
     "closeoutMilestone": 210,
-    "closeoutState": "duplicate_layers-epic-closeout-pending-handoff-acl"
+    "closeoutState": "duplicate_layers-epic-closed"
   },
   "queueItems": [
     {
@@ -760,13 +760,13 @@
         "validation-failed",
         "context-pressure"
       ],
-      "status": "blocked-handoff-acl",
+      "status": "completed",
       "completedBy": {
-        "commit": null,
-        "evidence": "M210 closeout docs/governance state was prepared without runtime behavior changes, but the required .codex/handoff.md update is blocked in this writer context by an inherited Windows ACL deny."
+        "commit": "340bdc6cfa143a0548212c33bc102cd2dc0c49e0",
+        "evidence": "M210 closeout docs/governance state was committed without runtime behavior changes, and parent-side M211 reconciliation confirmed .codex/handoff.md was updated after the supervisor run."
       },
       "closeoutProof": {
-        "state": "pending-handoff-acl",
+        "state": "completed",
         "recordedAt": "2026-05-24",
         "validatedCommands": [
           "npm.cmd run check:rules",
@@ -799,7 +799,7 @@
           "liveCepAeRunDuringCloseout": false,
           "pushPerformed": false,
           "prCreated": false,
-          "handoffUpdated": false
+          "handoffUpdated": true
         }
       }
     }
