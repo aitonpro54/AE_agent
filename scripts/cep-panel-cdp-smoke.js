@@ -3,6 +3,7 @@
 const http = require("http");
 const { writeAgentRunReport } = require("./agent-scenario-report");
 const {
+  agentDuplicateLayersScenarioPlans,
   agentMaskSafetyScenarioPlans,
   agentMarkerLifecycleScenarioPlans,
   agentNewToolsScenarioPlans,
@@ -99,6 +100,21 @@ function openAiCliMarkerLifecycleScenarioConfig() {
     runPrefixBase: process.env.CEP_PANEL_AGENT_MARKER_LIFECYCLE_PREFIX || "Codex QA M198",
     scenarioFactory: agentMarkerLifecycleScenarioPlans,
     allowSemanticNeedsReviewWithReadBack: true,
+    skipRenderQueueCleanup: true
+  };
+}
+
+function openAiCliDuplicateLayersScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-duplicate-layers",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_DUPLICATE_LAYERS_PREFIX || "Codex QA M207",
+    scenarioFactory: agentDuplicateLayersScenarioPlans,
     skipRenderQueueCleanup: true
   };
 }
@@ -3503,9 +3519,62 @@ async function verifyMarkerLifecycleReadBack(scenario, expected) {
   };
 }
 
+async function verifyDuplicateLayersReadBack(scenario, expected) {
+  const found = await callBridgeTool("find_project_items", {
+    query: expected.compName,
+    type: "comp",
+    exactName: true,
+    caseSensitive: true,
+    limit: 5
+  });
+  const compMatch = found.matches && found.matches[0];
+  if (!compMatch || !compMatch.itemIndex) {
+    throw new Error(`${scenario.id}: generated duplicate-layers comp was not found by exact name.`);
+  }
+
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const names = layers.map((layer) => layer.name);
+  for (const sourceName of expected.sourceNames || []) {
+    if (!names.includes(sourceName)) {
+      throw new Error(`${scenario.id}: generated source layer ${sourceName} was not found by read-back.`);
+    }
+  }
+  for (const duplicateName of expected.duplicateNames || []) {
+    if (!names.includes(duplicateName)) {
+      throw new Error(`${scenario.id}: generated duplicate layer ${duplicateName} was not found by read-back.`);
+    }
+  }
+  if (typeof expected.layerCountAfter === "number" && Number(comp.numLayers) !== expected.layerCountAfter) {
+    throw new Error(`${scenario.id}: expected ${expected.layerCountAfter} layers after duplicate_layers, got ${comp.numLayers}.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      numLayers: comp.numLayers
+    },
+    layers: {
+      sourceNames: expected.sourceNames || [],
+      duplicateNames: expected.duplicateNames || [],
+      observedNames: names
+    }
+  };
+}
+
 async function verifyAgentScenarioReadBack(scenario) {
   const expected = scenario.expectedReadBack;
   if (!expected) return null;
+
+  if (expected.duplicateLayers) {
+    return verifyDuplicateLayersReadBack(scenario, expected);
+  }
 
   if (expected.markerLifecycle) {
     return verifyMarkerLifecycleReadBack(scenario, expected);
@@ -4112,6 +4181,10 @@ async function main() {
   }
   if (command === "agent-marker-lifecycle-openai-cli-smoke" || command === "full-ui-agent-marker-lifecycle-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliMarkerLifecycleScenarioConfig());
+    return;
+  }
+  if (command === "agent-duplicate-layers-openai-cli-smoke" || command === "full-ui-agent-duplicate-layers-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliDuplicateLayersScenarioConfig());
     return;
   }
   if (command === "openai-api-setup-smoke") {

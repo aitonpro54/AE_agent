@@ -80,12 +80,14 @@
     "m190FullUiAgentValidateLiveCommand": "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item m190-full-ui-agent-new-tools-validation --validate-live --stage both --allow-mutating-live --approval-text \"I approve one M190 Full UI Agent live conveyor validation run for new typed tools using OpenAI CLI and generated-only mutations\"",
     "m191MaskSafetyValidateLiveCommand": "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item m191-mask-safety-live-validation --validate-live --stage both --allow-mutating-live --approval-text \"I approve one M191 live CEP AE validation run for generated-only mask safety checks inside After Effects\"",
     "m198MarkerLifecycleValidateLiveCommand": "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item m198-marker-lifecycle-live-validation --validate-live --stage both --allow-mutating-live --approval-text \"I approve one M198 live CEP AE validation run for generated-only marker lifecycle checks using OpenAI CLI\"",
+    "m207DuplicateLayersValidateLiveCommand": "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item m207-duplicate-layers-live-validation --validate-live --stage both --allow-mutating-live --approval-text \"I approve one M207 live CEP AE validation run for generated-only bulk selected layer duplicate checks using OpenAI CLI\"",
     "executeRequiresExactApprovalText": "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only",
     "executeCliRequiresExactApprovalText": "I approve one Codex CLI feature conveyor workspace-write run for the selected queued feature item planned paths only",
     "validateLiveRequiresExactApprovalText": "I approve one M188 staged live AE validation run for M187 advisory recipes using generated-only mutations",
     "m190ValidateLiveRequiresExactApprovalText": "I approve one M190 Full UI Agent live conveyor validation run for new typed tools using OpenAI CLI and generated-only mutations",
     "m191ValidateLiveRequiresExactApprovalText": "I approve one M191 live CEP AE validation run for generated-only mask safety checks inside After Effects",
     "m198ValidateLiveRequiresExactApprovalText": "I approve one M198 live CEP AE validation run for generated-only marker lifecycle checks using OpenAI CLI",
+    "m207ValidateLiveRequiresExactApprovalText": "I approve one M207 live CEP AE validation run for generated-only bulk selected layer duplicate checks using OpenAI CLI",
     "supportedEngines": [
       "sdk",
       "cli"
@@ -514,6 +516,81 @@
         "context-pressure"
       ],
       "status": "queued"
+    },
+    {
+      "id": "m207-duplicate-layers-live-validation",
+      "milestone": 207,
+      "title": "Duplicate layers live CEP/AE validation",
+      "laneId": "duplicate-layers-openai-cli-live-validation",
+      "scope": "m207-duplicate-layers-live-validation",
+      "mode": "local-live-validation",
+      "plannedPaths": [
+        ".codex-audit/sdk-feature-conveyor/dakkshin-intake/m207-duplicate-layers-live-validation-design.md",
+        ".codex-runtime/sdk/feature-conveyor-live-logs/",
+        ".codex-runtime/sdk/feature-conveyor-live-reports/",
+        "logs/agent-run-reports/"
+      ],
+      "executionApprovalState": "pending-explicit-approval",
+      "explicitApprovalText": null,
+      "maxAiTurns": 0,
+      "liveValidation": {
+        "approvalState": "approved",
+        "approvalText": "I approve one M207 live CEP AE validation run for generated-only bulk selected layer duplicate checks using OpenAI CLI",
+        "runnerMode": "--validate-live",
+        "defaultStage": "both",
+        "requiresAllowMutatingLiveFlagForMutatingStage": true,
+        "sdkThreadCreated": false,
+        "codexCliChildCreated": false,
+        "openAiCliProviderUsed": true,
+        "externalProviderValidationRun": true,
+        "openAiCliPlannerValidationRun": true,
+        "deterministicBackendFallbackAllowed": false,
+        "localProviderFallbackAllowed": false,
+        "openRouterFallbackAllowed": false,
+        "failClosedUnavailablePolicy": true
+      },
+      "allowedActions": [
+        "run read-only CEP inspect against an already-open AE Agent CEP panel",
+        "run Full UI Agent validation through CDP with provider openai-cli, model gpt-5.5, and Agent mode",
+        "require the panel-generated plan to cover create_comp, create_solid_layer, duplicate_layers, and get_comp_details",
+        "run dry run, protected run, duplicate source/duplicate read-back, semantic verification, and generated-prefix cleanup for generated-only duplicate_layers items"
+      ],
+      "forbiddenActions": [
+        "start an SDKThread or Codex CLI workspace-write child run",
+        "accept deterministic backend fallback as live validation evidence",
+        "fall back to ollama-local, Local/Ollama, OpenRouter, or openrouter/free planners",
+        "edit cep-panel/** through the SDK lane",
+        "make package/dependency changes",
+        "mutate user assets, leave generated items behind, run destructive layer/project operations, mask/path editing, audio workflows, source relinking, or deep precomp duplication",
+        "push or create a PR"
+      ],
+      "validationCommands": [
+        "node --check orchestrator/run-ae-agent-feature-conveyor.mjs",
+        "node --check scripts/sdk-ae-agent-feature-conveyor-readiness-smoke.js",
+        "node --check scripts/sdk-ae-agent-feature-conveyor-command-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item m207-duplicate-layers-live-validation --validate-live --stage both --dry-run --allow-mutating-live --approval-text \"I approve one M207 live CEP AE validation run for generated-only bulk selected layer duplicate checks using OpenAI CLI\" --json",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "stopGates": [
+        "ae-not-running",
+        "cep-panel-not-open-or-not-connected",
+        "bridge-unavailable",
+        "openai-cli-not-ready",
+        "project-not-saved",
+        "active-comp-unavailable",
+        "active-edit-session-already-open",
+        "panel-generated-plan-missing-required-typed-tools",
+        "deterministic-backend-fallback-attempted",
+        "ollama-openrouter-fallback-attempted",
+        "generated-cleanup-leftovers",
+        "render-queue-drift",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
     }
   ],
   "globalStopGates": [
@@ -590,25 +667,30 @@
         "M190_LIVE_VALIDATION_APPROVAL_TEXT",
         "M191_LIVE_VALIDATION_APPROVAL_TEXT",
         "M198_LIVE_VALIDATION_APPROVAL_TEXT",
+        "M207_LIVE_VALIDATION_APPROVAL_TEXT",
         "mutating-live-local",
         "m187-advisory-field-smoke.js",
         "full-ui-agent-new-tools-openai-cli-smoke",
         "full-ui-agent-mask-safety-openai-cli-smoke",
-        "full-ui-agent-marker-lifecycle-openai-cli-smoke"
+        "full-ui-agent-marker-lifecycle-openai-cli-smoke",
+        "full-ui-agent-duplicate-layers-openai-cli-smoke"
       ],
       "scripts/cep-panel-cdp-smoke.js": [
         "openAiCliNewToolsScenarioConfig",
         "openAiCliMaskSafetyScenarioConfig",
         "openAiCliMarkerLifecycleScenarioConfig",
+        "openAiCliDuplicateLayersScenarioConfig",
         "full-ui-agent-new-tools-openai-cli-smoke",
         "full-ui-agent-mask-safety-openai-cli-smoke",
         "full-ui-agent-marker-lifecycle-openai-cli-smoke",
+        "full-ui-agent-duplicate-layers-openai-cli-smoke",
         "deterministic backend fallback is disabled"
       ],
       "scripts/agent-scenario-fixtures.js": [
         "agentNewToolsScenarioPlans",
         "agentMaskSafetyScenarioPlans",
         "agentMarkerLifecycleScenarioPlans",
+        "agentDuplicateLayersScenarioPlans",
         "create_comp",
         "create_project_folder",
         "list_project_folder_items",
@@ -617,7 +699,8 @@
         "create_layer_mask",
         "add_layer_marker",
         "update_layer_marker",
-        "delete_layer_marker"
+        "delete_layer_marker",
+        "duplicate_layers"
       ],
       "mcp-server/bridge-daemon.js": [
         "create_layer_mask",

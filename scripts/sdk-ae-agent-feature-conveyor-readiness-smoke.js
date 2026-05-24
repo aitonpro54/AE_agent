@@ -196,6 +196,39 @@ function assertLiveValidationM198Item(item) {
   assertIncludes(item.stopGates, "generated-cleanup-leftovers", `${item.id} stop gates`);
 }
 
+function assertLiveValidationM207Item(item) {
+  assertQueueItem(item);
+  assert.strictEqual(item.id, "m207-duplicate-layers-live-validation");
+  assert.strictEqual(item.mode, "local-live-validation");
+  assert.strictEqual(item.executionApprovalState, "pending-explicit-approval");
+  assert.strictEqual(item.explicitApprovalText, null);
+  assert.strictEqual(item.maxAiTurns, 0);
+  assert(item.liveValidation, "M207 item must carry separate liveValidation approval metadata.");
+  assert.strictEqual(item.liveValidation.approvalState, "approved");
+  assert.strictEqual(
+    item.liveValidation.approvalText,
+    "I approve one M207 live CEP AE validation run for generated-only bulk selected layer duplicate checks using OpenAI CLI",
+  );
+  assert.strictEqual(item.liveValidation.openAiCliProviderUsed, true);
+  assert.strictEqual(item.liveValidation.externalProviderValidationRun, true);
+  assert.strictEqual(item.liveValidation.openAiCliPlannerValidationRun, true);
+  assert.strictEqual(item.liveValidation.deterministicBackendFallbackAllowed, false);
+  assert.strictEqual(item.liveValidation.localProviderFallbackAllowed, false);
+  assert.strictEqual(item.liveValidation.openRouterFallbackAllowed, false);
+  assertIncludes(item.allowedActions, "run Full UI Agent validation through CDP with provider openai-cli, model gpt-5.5, and Agent mode", `${item.id} allowed actions`);
+  assertIncludes(item.allowedActions, "require the panel-generated plan to cover create_comp, create_solid_layer, duplicate_layers, and get_comp_details", `${item.id} allowed actions`);
+  assertIncludes(item.allowedActions, "run dry run, protected run, duplicate source/duplicate read-back, semantic verification, and generated-prefix cleanup for generated-only duplicate_layers items", `${item.id} allowed actions`);
+  assertIncludes(item.forbiddenActions, "accept deterministic backend fallback as live validation evidence", `${item.id} forbidden actions`);
+  assertIncludes(item.forbiddenActions, "fall back to ollama-local, Local/Ollama, OpenRouter, or openrouter/free planners", `${item.id} forbidden actions`);
+  assertIncludes(item.forbiddenActions, "mutate user assets, leave generated items behind, run destructive layer/project operations, mask/path editing, audio workflows, source relinking, or deep precomp duplication", `${item.id} forbidden actions`);
+  assertIncludes(item.stopGates, "openai-cli-not-ready", `${item.id} stop gates`);
+  assertIncludes(item.stopGates, "active-comp-unavailable", `${item.id} stop gates`);
+  assertIncludes(item.stopGates, "panel-generated-plan-missing-required-typed-tools", `${item.id} stop gates`);
+  assertIncludes(item.stopGates, "deterministic-backend-fallback-attempted", `${item.id} stop gates`);
+  assertIncludes(item.stopGates, "ollama-openrouter-fallback-attempted", `${item.id} stop gates`);
+  assertIncludes(item.stopGates, "generated-cleanup-leftovers", `${item.id} stop gates`);
+}
+
 function main() {
   const review = readJson(REVIEW_PATH);
   const readiness = readJson(READINESS_PATH);
@@ -246,6 +279,10 @@ function main() {
     queue.commandRunner.m198ValidateLiveRequiresExactApprovalText,
     "I approve one M198 live CEP AE validation run for generated-only marker lifecycle checks using OpenAI CLI",
   );
+  assert.strictEqual(
+    queue.commandRunner.m207ValidateLiveRequiresExactApprovalText,
+    "I approve one M207 live CEP AE validation run for generated-only bulk selected layer duplicate checks using OpenAI CLI",
+  );
 
   assert.deepStrictEqual(
     queue.queueItems.map((item) => item.id),
@@ -257,6 +294,7 @@ function main() {
       "m190-full-ui-agent-new-tools-validation",
       "m191-mask-safety-live-validation",
       "m198-marker-lifecycle-live-validation",
+      "m207-duplicate-layers-live-validation",
     ],
   );
   for (const item of queue.queueItems) {
@@ -270,6 +308,8 @@ function main() {
       assertLiveValidationM191Item(item);
     } else if (item.id === "m198-marker-lifecycle-live-validation") {
       assertLiveValidationM198Item(item);
+    } else if (item.id === "m207-duplicate-layers-live-validation") {
+      assertLiveValidationM207Item(item);
     } else {
       assertPendingQueueItem(item);
     }

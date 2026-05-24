@@ -20,6 +20,8 @@ const M191_LIVE_VALIDATION_APPROVAL_TEXT =
   "I approve one M191 live CEP AE validation run for generated-only mask safety checks inside After Effects";
 const M198_LIVE_VALIDATION_APPROVAL_TEXT =
   "I approve one M198 live CEP AE validation run for generated-only marker lifecycle checks using OpenAI CLI";
+const M207_LIVE_VALIDATION_APPROVAL_TEXT =
+  "I approve one M207 live CEP AE validation run for generated-only bulk selected layer duplicate checks using OpenAI CLI";
 
 function run(args, cwd = repo) {
   const runner = cwd === repo
@@ -134,6 +136,7 @@ function writeTempLiveQueue(temp) {
       queue.queueItems.find((item) => item.id === "m190-full-ui-agent-new-tools-validation"),
       queue.queueItems.find((item) => item.id === "m191-mask-safety-live-validation"),
       queue.queueItems.find((item) => item.id === "m198-marker-lifecycle-live-validation"),
+      queue.queueItems.find((item) => item.id === "m207-duplicate-layers-live-validation"),
     ],
   }, null, 2), "utf8");
 }
@@ -194,6 +197,7 @@ async function main() {
     "m190-full-ui-agent-new-tools-validation",
     "m191-mask-safety-live-validation",
     "m198-marker-lifecycle-live-validation",
+    "m207-duplicate-layers-live-validation",
   ]);
   assert(dryRun.plannedPaths.includes(".codex/handoff.md"));
   assert(dryRun.plannedPaths.includes("plans/target-app-execplan.md"));
@@ -247,6 +251,11 @@ async function main() {
   assert.deepStrictEqual(m198Single.items, ["m198-marker-lifecycle-live-validation"]);
   assert.strictEqual(m198Single.executionApproved, false);
   assert(m198Single.plannedPaths.includes("logs/agent-run-reports/"));
+
+  const m207Single = parseJson(run(["--item", "m207-duplicate-layers-live-validation", "--json"]));
+  assert.deepStrictEqual(m207Single.items, ["m207-duplicate-layers-live-validation"]);
+  assert.strictEqual(m207Single.executionApproved, false);
+  assert(m207Single.plannedPaths.includes("logs/agent-run-reports/"));
 
   const liveDryRunBlocked = parseJson(run([
     "--item",
@@ -361,6 +370,30 @@ async function main() {
   assert(m198LiveDryRunApproved.plannedCommands.some((command) => /full-ui-agent-marker-lifecycle-openai-cli-smoke/.test(command.command)));
   assert(!m198LiveDryRunApproved.plannedCommands.some((command) => /ollama|openrouter/i.test(command.command)));
 
+  const m207LiveDryRunApproved = parseJson(run([
+    "--item",
+    "m207-duplicate-layers-live-validation",
+    "--validate-live",
+    "--stage",
+    "both",
+    "--allow-mutating-live",
+    "--approval-text",
+    M207_LIVE_VALIDATION_APPROVAL_TEXT,
+    "--dry-run",
+    "--json",
+  ]));
+  assert.strictEqual(m207LiveDryRunApproved.liveValidationApproved, true);
+  assert.deepStrictEqual(m207LiveDryRunApproved.blockedBy, []);
+  assert.deepStrictEqual(
+    m207LiveDryRunApproved.plannedCommands.map((command) => command.id),
+    [
+      "m207-live-cep-inspect",
+      "m207-full-ui-agent-openai-cli-duplicate-layers-smoke",
+    ],
+  );
+  assert(m207LiveDryRunApproved.plannedCommands.some((command) => /full-ui-agent-duplicate-layers-openai-cli-smoke/.test(command.command)));
+  assert(!m207LiveDryRunApproved.plannedCommands.some((command) => /ollama|openrouter/i.test(command.command)));
+
   const missingApproval = run(["--item", "m185-dakkshin-intake-scope-brief", "--execute-sdk", "--approval-text", "wrong"]);
   assert.notStrictEqual(missingApproval.status, 0);
   assert.match(missingApproval.stderr, /Missing exact --approval-text/);
@@ -425,6 +458,19 @@ async function main() {
   ]);
   assert.notStrictEqual(missingM191LiveApproval.status, 0);
   assert.match(missingM191LiveApproval.stderr, /M191 live CEP AE validation/);
+
+  const missingM207LiveApproval = run([
+    "--item",
+    "m207-duplicate-layers-live-validation",
+    "--validate-live",
+    "--stage",
+    "mutating",
+    "--allow-mutating-live",
+    "--approval-text",
+    "wrong",
+  ]);
+  assert.notStrictEqual(missingM207LiveApproval.status, 0);
+  assert.match(missingM207LiveApproval.stderr, /M207 live CEP AE validation/);
 
   const sdkExecuteLiveItem = run([
     "--item",

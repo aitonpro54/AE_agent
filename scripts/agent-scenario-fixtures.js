@@ -532,6 +532,110 @@ function agentMarkerLifecycleScenarioPlans(runPrefix) {
   }));
 }
 
+function agentDuplicateLayersScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Duplicate Layers`;
+  const compName = `${base} Comp`;
+  const layerAName = `${base} Source A`;
+  const layerBName = `${base} Source B`;
+  const duplicateAName = `${layerAName} Copy`;
+  const duplicateBName = `${layerBName} Copy`;
+
+  return [
+    {
+      id: "generated-duplicate-layers-matrix",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "duplicate_layers",
+        "get_comp_details"
+      ],
+      expectedReadBack: {
+        compName,
+        duplicateLayers: true,
+        sourceNames: [layerAName, layerBName],
+        duplicateNames: [duplicateAName, duplicateBName],
+        layerCountAfter: 4
+      },
+      plan: {
+        summary: "Live QA for generated-only duplicate_layers source/duplicate pair read-back inside After Effects.",
+        risk: "low",
+        requiresCheckpoint: true,
+        steps: [
+          {
+            title: "Create generated duplicate layers QA comp",
+            tool: "create_comp",
+            args: {
+              name: compName,
+              width: 640,
+              height: 360,
+              pixelAspect: 1,
+              duration: 3,
+              frameRate: 24,
+              bgColor: [0.08, 0.1, 0.12],
+              allowDuplicateName: false,
+              openInViewer: false,
+              comment: "M207 generated-only duplicate_layers validation"
+            }
+          },
+          {
+            title: "Create first generated duplicate source layer",
+            tool: "create_solid_layer",
+            args: {
+              compName,
+              name: layerAName,
+              color: [0.2, 0.52, 0.86],
+              width: 240,
+              height: 180,
+              pixelAspect: 1,
+              startTime: 0,
+              duration: 3
+            }
+          },
+          {
+            title: "Create second generated duplicate source layer",
+            tool: "create_solid_layer",
+            args: {
+              compName,
+              name: layerBName,
+              color: [0.86, 0.42, 0.2],
+              width: 240,
+              height: 180,
+              pixelAspect: 1,
+              startTime: 0,
+              duration: 3
+            }
+          },
+          {
+            title: "Duplicate generated layers explicitly",
+            tool: "duplicate_layers",
+            args: {
+              compName,
+              layerIndices: [1, 2],
+              sourceNames: [layerBName, layerAName],
+              nameSuffix: " Copy"
+            }
+          },
+          {
+            title: "Read back generated duplicate layer details",
+            tool: "get_comp_details",
+            args: {
+              compName,
+              includeLayers: true,
+              layerLimit: 10
+            }
+          }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function buildAgentPlannerRegressionCorpus(options) {
   const config = options || {};
   const renderQueueBaselineTotal = Number.isFinite(Number(config.renderQueueBaselineTotal))
@@ -565,6 +669,7 @@ module.exports = {
   AGENT_SCENARIO_MUTATING_TOOLS,
   DEFAULT_PLANNER_FIXTURE_PREFIX,
   DEFAULT_RENDER_QUEUE_BASELINE_TOTAL,
+  agentDuplicateLayersScenarioPlans,
   agentMaskSafetyScenarioPlans,
   agentMarkerLifecycleScenarioPlans,
   agentNewToolsScenarioPlans,
