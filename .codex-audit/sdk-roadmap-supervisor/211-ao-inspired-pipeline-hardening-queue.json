@@ -1,0 +1,444 @@
+{
+  "schema": "sdk-roadmap-supervisor-queue.v1",
+  "milestone": 211,
+  "title": "AO-Inspired Pipeline Hardening Queue",
+  "createdAt": "2026-05-24",
+  "purpose": "Run the safe AO-inspired hardening block from docs/research/composio-agent-orchestrator-applicability.md through the existing AE Agent roadmap supervisor without installing AO, creating branches/worktrees/PRs, touching CEP/live/production/dependencies, or changing package manifests.",
+  "sourceContext": {
+    "research": "docs/research/composio-agent-orchestrator-applicability.md",
+    "block": "ao-inspired-pipeline-hardening",
+    "executionModel": "Sequential roadmap supervisor items, one roadmap-sdk writer child at a time, focused validation per item, handoff after each item, and one reviewable commit per item.",
+    "numberingDecision": "The user requested M211-M214 for this AO-inspired block even though the active plan already contains a duplicate_layers M211 reconciliation. Use AO-specific titles/ids to avoid confusing the two records.",
+    "boundaries": {
+      "installAO": false,
+      "runAO": false,
+      "branchOrWorktree": false,
+      "push": false,
+      "pullRequest": false,
+      "cepPanel": false,
+      "liveCepAe": false,
+      "productionRuntimePaths": false,
+      "dependencies": false
+    }
+  },
+  "queueItems": [
+    {
+      "id": "m211-ao-task-session-activity-schema",
+      "milestone": 211,
+      "title": "AO-inspired task/session/activity schema",
+      "dependencies": [],
+      "runner": {
+        "kind": "roadmap-sdk"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
+        ".codex-audit/sdk-ao-pattern-intake/211-activity-session-schema.json",
+        "scripts/sdk-ao-pattern-intake-smoke.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "mcp-server/**",
+        "chatgpt-connector/**",
+        "registry/**",
+        "recipes/**",
+        "package.json",
+        "package-lock.json",
+        "node_modules/**",
+        "logs/**",
+        "backups/**",
+        "snapshots/**",
+        ".github/**"
+      ],
+      "allowedActions": [
+        "create .codex-audit/sdk-ao-pattern-intake/211-activity-session-schema.json as a local AO-inspired contract, not an AO integration",
+        "define a task envelope with taskId, milestone, source, goal, plannedPaths, forbiddenPaths, allowedCommands, validationCommands, stopGates, escalationRules, nextPrompt, handoffPath, stateFile, activityLog, and reportPath",
+        "define session roles writer, reviewer, analyzer, and live-check; define lifecycle states queued, active, idle, needs_input, stuck, errored, done, stopped, and escalated",
+        "define activity JSONL event examples for active, ready, idle, needs_input, stuck, errored, done, validation_started, validation_failed, handoff_written, and commit_created",
+        "map the contract to the existing roadmap supervisor runtime files under .codex-runtime/sdk/roadmap-supervisor/<session-id>/ without changing runtime behavior",
+        "add scripts/sdk-ao-pattern-intake-smoke.js to parse the artifact and assert required fields, states, event examples, roadmap-supervisor mapping, and forbidden-boundary claims",
+        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and Active Roadmap notes for this AO-inspired M211 item while recording the existing duplicate M211 numbering collision",
+        "update .codex/handoff.md with the M211 AO schema state, validation commands, boundaries, commit pending/supervisor commit note, and exact next prompt for M212"
+      ],
+      "forbiddenActions": [
+        "install or run Composio AO",
+        "create a branch, worktree, push, PR, GitHub issue, or GitHub Action",
+        "edit CEP panel, bridge runtime, connector, registry, recipe, production, dependency, package manifest, package lock, or live AE/CEP files",
+        "claim the schema is active runtime behavior; it is an intake contract only",
+        "run live AE/CEP validation or external-provider planner validation"
+      ],
+      "allowedCommands": [
+        "node --check scripts/sdk-ao-pattern-intake-smoke.js",
+        "node scripts/sdk-ao-pattern-intake-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check scripts/sdk-ao-pattern-intake-smoke.js",
+        "node scripts/sdk-ao-pattern-intake-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "schema-boundary-review",
+          "kind": "read-only",
+          "prompt": "Review the AO-inspired schema intake. Block if it installs AO, enables worktrees/branches/PRs, touches CEP/live/production/dependencies, or presents design-only schema artifacts as active runtime behavior."
+        }
+      ],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 45,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "docs: add AO-inspired activity schema"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "roadmap-sdk-child-failed",
+        "ao-install-or-run-requested",
+        "planned-path-outside-policy",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "m212-ao-stuck-escalation-design",
+      "milestone": 212,
+      "title": "AO-inspired stuck detector and escalation design",
+      "dependencies": [
+        "m211-ao-task-session-activity-schema"
+      ],
+      "runner": {
+        "kind": "roadmap-sdk"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
+        ".codex-audit/sdk-ao-pattern-intake/212-stuck-escalation-design.json",
+        "scripts/sdk-ao-stuck-escalation-smoke.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "mcp-server/**",
+        "chatgpt-connector/**",
+        "registry/**",
+        "recipes/**",
+        "package.json",
+        "package-lock.json",
+        "node_modules/**",
+        "logs/**",
+        "backups/**",
+        "snapshots/**",
+        ".github/**"
+      ],
+      "allowedActions": [
+        "create .codex-audit/sdk-ao-pattern-intake/212-stuck-escalation-design.json as a design-only policy over the M211 activity/session contract",
+        "define stuck inputs from stale activity, missing log progress, validation failure, child process timeout, needs_input prompt, context_pressure, dirty git state, and unplanned path change",
+        "define escalation actions stop_and_handoff, ask_user, create_repair_prompt, retry_later, and fail_closed, with retry caps and no auto-fix default",
+        "define examples that turn activity/session events into stuck/escalated outcomes without mutating repository files outside planned paths",
+        "add scripts/sdk-ao-stuck-escalation-smoke.js with fixture sessions proving stale activity and validation failures escalate, healthy done sessions do not, and auto-fix/auto-retry/live/dependency actions remain forbidden",
+        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and Active Roadmap notes for M212",
+        "update .codex/handoff.md with M212 state, validation commands, decisions, risks, and exact next prompt for M213"
+      ],
+      "forbiddenActions": [
+        "implement an auto-fixing runtime loop",
+        "change the roadmap supervisor runner or production runtime behavior",
+        "install or run AO",
+        "create branches, worktrees, push, PRs, GitHub issues, or GitHub Actions",
+        "touch CEP/live/production/dependency/package paths"
+      ],
+      "allowedCommands": [
+        "node --check scripts/sdk-ao-stuck-escalation-smoke.js",
+        "node scripts/sdk-ao-stuck-escalation-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check scripts/sdk-ao-stuck-escalation-smoke.js",
+        "node scripts/sdk-ao-stuck-escalation-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "escalation-policy-review",
+          "kind": "read-only",
+          "prompt": "Review stuck/escalation design. Block if it allows unbounded retry, auto-fix, live/CEP/dependency work, or continuing implementation after context-pressure handoff gates."
+        }
+      ],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 45,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "docs: add AO-inspired escalation design"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "roadmap-sdk-child-failed",
+        "auto-fix-or-unbounded-retry",
+        "planned-path-outside-policy",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "m213-ao-static-status-dashboard",
+      "milestone": 213,
+      "title": "AO-inspired static status dashboard",
+      "dependencies": [
+        "m212-ao-stuck-escalation-design"
+      ],
+      "runner": {
+        "kind": "roadmap-sdk"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
+        ".codex-audit/sdk-ao-pattern-intake/213-status-dashboard-contract.json",
+        "scripts/render-roadmap-supervisor-status-dashboard.js",
+        "scripts/sdk-ao-status-dashboard-smoke.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "mcp-server/**",
+        "chatgpt-connector/**",
+        "registry/**",
+        "recipes/**",
+        "package.json",
+        "package-lock.json",
+        "node_modules/**",
+        "logs/**",
+        "backups/**",
+        "snapshots/**",
+        ".github/**"
+      ],
+      "allowedActions": [
+        "create .codex-audit/sdk-ao-pattern-intake/213-status-dashboard-contract.json defining a static dashboard over roadmap supervisor state/activity artifacts",
+        "add scripts/render-roadmap-supervisor-status-dashboard.js as a no-dependency CLI that reads a supplied session root or fixture root and writes/prints static Markdown only",
+        "the dashboard must summarize session id, queue item, role, lifecycle status, last activity, validation result, blockers, changed paths, handoff path, report path, and next action",
+        "add scripts/sdk-ao-status-dashboard-smoke.js that builds temp fixture session files, runs the renderer, and asserts active/stuck/done sessions plus next-action text render correctly",
+        "ensure the renderer does not start a web server, install packages, write production/runtime files by default, or require live AE/CEP",
+        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and Active Roadmap notes for M213",
+        "update .codex/handoff.md with M213 state, validation commands, decisions, risks, and exact next prompt for M214"
+      ],
+      "forbiddenActions": [
+        "add a web server, browser UI, dependency, package script, package manifest change, or package lock change",
+        "read or write CEP/live/production paths",
+        "install or run AO",
+        "create branches, worktrees, push, PRs, GitHub issues, or GitHub Actions"
+      ],
+      "allowedCommands": [
+        "node --check scripts/render-roadmap-supervisor-status-dashboard.js",
+        "node --check scripts/sdk-ao-status-dashboard-smoke.js",
+        "node scripts/sdk-ao-status-dashboard-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check scripts/render-roadmap-supervisor-status-dashboard.js",
+        "node --check scripts/sdk-ao-status-dashboard-smoke.js",
+        "node scripts/sdk-ao-status-dashboard-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "dashboard-static-review",
+          "kind": "read-only",
+          "prompt": "Review the status dashboard milestone. Block if it starts a service, adds dependencies, touches CEP/live/production paths, or reads unbounded logs instead of bounded state/activity artifacts."
+        }
+      ],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 60,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "feat: add roadmap status dashboard"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "roadmap-sdk-child-failed",
+        "service-or-dependency-added",
+        "planned-path-outside-policy",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "m214-ao-readonly-failure-analyzer",
+      "milestone": 214,
+      "title": "AO-inspired read-only failure analyzer packet",
+      "dependencies": [
+        "m213-ao-static-status-dashboard"
+      ],
+      "runner": {
+        "kind": "roadmap-sdk"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
+        ".codex-audit/sdk-ao-pattern-intake/214-readonly-failure-analyzer-contract.json",
+        "scripts/create-roadmap-failure-analyzer-packet.js",
+        "scripts/sdk-ao-failure-analyzer-smoke.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "mcp-server/**",
+        "chatgpt-connector/**",
+        "registry/**",
+        "recipes/**",
+        "package.json",
+        "package-lock.json",
+        "node_modules/**",
+        "logs/**",
+        "backups/**",
+        "snapshots/**",
+        ".github/**"
+      ],
+      "allowedActions": [
+        "create .codex-audit/sdk-ao-pattern-intake/214-readonly-failure-analyzer-contract.json defining a read-only failure packet format",
+        "add scripts/create-roadmap-failure-analyzer-packet.js as a no-dependency CLI that reads explicit failure report/log/session fixture paths and emits JSON or Markdown repair packets without changing source files",
+        "the packet must include failure class, command, status, relevant log tail, changed paths if supplied, suspected cause with confidence, forbidden auto-actions, repair prompt, and next bounded task fields",
+        "add scripts/sdk-ao-failure-analyzer-smoke.js that builds temp fixture failures, runs the analyzer, and asserts validation_failure and stuck_session packets include repair prompts while forbidding auto-fix/live/dependency/PR actions",
+        "update the queue artifact closeout notes for this AO-inspired block only if the previous M211-M213 commits are observable in git log",
+        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and Active Roadmap notes for M214 and block closeout",
+        "update .codex/handoff.md with M214 state, validation commands, decisions, risks, commit pending/supervisor commit note, and exact next prompt for the next thread"
+      ],
+      "forbiddenActions": [
+        "make the analyzer fix code, edit source based on logs, retry commands, run live AE/CEP, install dependencies, create branches/worktrees, push, PR, GitHub issues, or GitHub Actions",
+        "read broad unbounded logs by default; use explicit paths and bounded tails",
+        "touch CEP/live/production/dependency/package paths"
+      ],
+      "allowedCommands": [
+        "node --check scripts/create-roadmap-failure-analyzer-packet.js",
+        "node --check scripts/sdk-ao-failure-analyzer-smoke.js",
+        "node scripts/sdk-ao-failure-analyzer-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check",
+        "node scripts/provider-contract-smoke.js",
+        "node scripts/solution-registry-smoke.js",
+        "node scripts/solution-candidate-report-smoke.js",
+        "node scripts/solution-promotion-smoke.js",
+        "node scripts/solution-retrieval-smoke.js",
+        "node scripts/solution-library-validation-smoke.js",
+        "node scripts/project-intent-memory-smoke.js",
+        "node scripts/plan-classification-smoke.js",
+        "node scripts/plan-repair-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/reliability-validation-suite-smoke.js",
+        "node scripts/chatgpt-connector-smoke.js",
+        "node scripts/provider-api-smoke.js",
+        "node scripts/prompt-optimization-smoke.js",
+        "node scripts/bridge-only-smoke-test.js",
+        "node scripts/smoke-test.js"
+      ],
+      "validationCommands": [
+        "node --check scripts/create-roadmap-failure-analyzer-packet.js",
+        "node --check scripts/sdk-ao-failure-analyzer-smoke.js",
+        "node scripts/sdk-ao-failure-analyzer-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check",
+        "node scripts/provider-contract-smoke.js",
+        "node scripts/solution-registry-smoke.js",
+        "node scripts/solution-candidate-report-smoke.js",
+        "node scripts/solution-promotion-smoke.js",
+        "node scripts/solution-retrieval-smoke.js",
+        "node scripts/solution-library-validation-smoke.js",
+        "node scripts/project-intent-memory-smoke.js",
+        "node scripts/plan-classification-smoke.js",
+        "node scripts/plan-repair-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/reliability-validation-suite-smoke.js",
+        "node scripts/chatgpt-connector-smoke.js",
+        "node scripts/provider-api-smoke.js",
+        "node scripts/prompt-optimization-smoke.js",
+        "node scripts/bridge-only-smoke-test.js",
+        "node scripts/smoke-test.js"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "failure-analyzer-readonly-review",
+          "kind": "read-only",
+          "prompt": "Review the failure analyzer packet milestone. Block if it can edit code, retry or fix automatically, read broad logs by default, run live/CEP/dependency/package/GitHub actions, or produce an unbounded next task."
+        }
+      ],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 90,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "feat: add roadmap failure analyzer"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "roadmap-sdk-child-failed",
+        "auto-fix-or-retry-added",
+        "planned-path-outside-policy",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    }
+  ]
+}
