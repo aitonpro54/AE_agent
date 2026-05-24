@@ -57,10 +57,10 @@ Options:
   --help                     Show this help.
 
 The supervisor is deterministic control-plane code. Writer children run one
-approved milestone at a time through direct roadmap SDK, bounded runners, or
-smoke fixtures. Reviewer children are read-only, and push/dependency/live/CEP/
-external-provider work is rejected unless a future queue item adds its own
-narrow approval lane.
+approved milestone at a time through direct roadmap SDK, Codex CLI fallback,
+bounded runners, or smoke fixtures. Reviewer children are read-only, and
+push/dependency/live/CEP/external-provider work is rejected unless a future
+queue item adds its own narrow approval lane.
 `;
 
 const VALUE_OPTIONS = new Set([
@@ -882,6 +882,39 @@ function runRoadmapSdkWriter(cwd, item) {
   });
 }
 
+function runRoadmapCliWriter(cwd, item) {
+  const prompt = buildRoadmapSdkPrompt(item);
+  const args = [
+    "/d",
+    "/s",
+    "/c",
+    "codex",
+    "exec",
+    "--cd",
+    cwd,
+    "--sandbox",
+    "workspace-write",
+    "--ephemeral",
+    "-c",
+    "approval_policy=\"never\"",
+    "-c",
+    "model_reasoning_effort=\"high\"",
+    "-c",
+    "sandbox_workspace_write.network_access=false",
+    "--disable",
+    "web_search",
+    "-",
+  ];
+  return spawnSync("cmd.exe", args, {
+    cwd,
+    input: prompt,
+    encoding: "utf8",
+    maxBuffer: CHILD_OUTPUT_MAX_BUFFER_BYTES,
+    stdio: ["pipe", "pipe", "pipe"],
+    timeout: item.maxMinutes * 60 * 1000,
+  });
+}
+
 function runWriterChild(cwd, runtime, item, engine) {
   const logPath = path.join(runtime.childDir, `${safeSessionToken(item.id)}.log`);
   if (item.runner.kind === "fixture") {
@@ -890,7 +923,7 @@ function runWriterChild(cwd, runtime, item, engine) {
     return { ...result, logPath };
   }
   if (item.runner.kind === "roadmap-sdk") {
-    const result = runRoadmapSdkWriter(cwd, item);
+    const result = engine === "cli" ? runRoadmapCliWriter(cwd, item) : runRoadmapSdkWriter(cwd, item);
     writeLog(logPath, result);
     return { ...result, logPath };
   }

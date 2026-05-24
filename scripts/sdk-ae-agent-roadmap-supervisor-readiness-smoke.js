@@ -50,6 +50,7 @@ function main() {
   assert.strictEqual(readiness.readiness.itemLiveValidationAvailable, true);
   assert.strictEqual(readiness.readiness.queueHashApprovalAvailable, true);
   assert.strictEqual(readiness.readiness.roadmapSdkRunnerAvailable, true);
+  assert.strictEqual(readiness.readiness.roadmapSdkCliWriterFallbackAvailable, true);
   assert.strictEqual(readiness.readiness.singleApprovalChainAvailable, true);
   assert.strictEqual(governance.mustRemainFalse.autoPush, false);
   assert.strictEqual(governance.mustRemainFalse.dependencyChanges, false);
@@ -91,6 +92,9 @@ function main() {
     "queueSha256",
     "roadmap-sdk",
     "runRoadmapSdkWriter",
+    "runRoadmapCliWriter",
+    "model_reasoning_effort=\\\"high\\\"",
+    "web_search",
     "liveCheck",
     "runLiveConnectivityCheck",
     "runItemLiveValidation",
@@ -108,6 +112,7 @@ function main() {
     "--require-live-connectivity",
     "queueSha256",
     "roadmap-sdk",
+    "--engine cli",
     "single approval",
     "--run-until-budget",
     "noPush=true",

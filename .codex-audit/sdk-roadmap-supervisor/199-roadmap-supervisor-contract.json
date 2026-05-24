@@ -112,7 +112,7 @@
     "writerConcurrency": 1,
     "reviewerConcurrency": 2,
     "readOnlyLiveConnectivity": true,
-    "roadmapSdkWriter": "roadmap-sdk items run directly through orchestrator/codex-sdk-orchestrator.mjs with workspace-write, approval=never, web-search=disabled, reasoning=high, and model default.",
+    "roadmapSdkWriter": "roadmap-sdk items run directly through orchestrator/codex-sdk-orchestrator.mjs with workspace-write, approval=never, web-search=disabled, reasoning=high, and model default. When --engine cli is selected, the roadmap-sdk writer itself uses codex exec through cmd.exe with equivalent workspace-write, approval never, high reasoning, web-search disabled, and no-network workspace policy, then returns to the same supervisor validation and commit gates.",
     "itemLiveValidation": "Only when the queue item defines liveValidation. Generated-only commands either carry their own exact live approval text or are bound into the single supervisor approval with generatedOnlyLive=true and noUserAssetMutation=true.",
     "reviewerPolicy": "read-only reviewers only; no parallel writers",
     "commitPolicy": "auto-commit only planned paths after validation passes",

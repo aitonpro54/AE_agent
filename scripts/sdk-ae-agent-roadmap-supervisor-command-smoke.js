@@ -9,10 +9,11 @@ const { spawnSync } = require("child_process");
 const repo = path.resolve(__dirname, "..");
 const runner = path.join(repo, "orchestrator/run-ae-agent-roadmap-supervisor.mjs");
 
-function run(args, cwd = repo) {
+function run(args, cwd = repo, options = {}) {
   return spawnSync(process.execPath, [runner, ...args], {
     cwd,
     encoding: "utf8",
+    env: options.env || process.env,
     stdio: ["ignore", "pipe", "pipe"],
     timeout: 120000,
   });
@@ -36,14 +37,19 @@ function sh(cwd, args) {
 function initRepo(temp) {
   sh(temp, ["git", "init"]);
   fs.writeFileSync(path.join(temp, "base.txt"), "base\n", "utf8");
-  fs.writeFileSync(path.join(temp, ".gitignore"), ".codex-runtime/\n", "utf8");
+  fs.writeFileSync(path.join(temp, ".gitignore"), ".codex-runtime/\nbin/\n", "utf8");
   fs.mkdirSync(path.join(temp, "orchestrator"), { recursive: true });
   fs.mkdirSync(path.join(temp, "scripts"), { recursive: true });
+  fs.mkdirSync(path.join(temp, "bin"), { recursive: true });
   fs.writeFileSync(
     path.join(temp, "orchestrator", "codex-sdk-orchestrator.mjs"),
     [
       "import fs from 'node:fs';",
       "import path from 'node:path';",
+      "if (process.env.FAKE_CODEX_SDK_FAIL_PARSE === '1') {",
+      "  console.error('Failed to parse item: SUCCESS: The process with PID 16172 (child process of PID 12936) has been terminated.');",
+      "  process.exit(1);",
+      "}",
       "const promptIndex = process.argv.indexOf('--prompt');",
       "const prompt = promptIndex === -1 ? '' : process.argv[promptIndex + 1] || '';",
       "const match = prompt.match(/<roadmap_item_json>\\n([\\s\\S]*?)\\n<\\/roadmap_item_json>/);",
@@ -57,6 +63,34 @@ function initRepo(temp) {
       "console.log(`roadmap-sdk wrote ${item.id}`);",
       "",
     ].join("\n"),
+    "utf8",
+  );
+  fs.writeFileSync(
+    path.join(temp, "bin", "fake-codex-cli.mjs"),
+    [
+      "import fs from 'node:fs';",
+      "import path from 'node:path';",
+      "const prompt = fs.readFileSync(0, 'utf8');",
+      "const match = prompt.match(/<roadmap_item_json>\\n([\\s\\S]*?)\\n<\\/roadmap_item_json>/);",
+      "if (!match) { console.log('read-only reviewer no-op'); process.exit(0); }",
+      "const item = JSON.parse(match[1]);",
+      "for (const repoPath of item.plannedPaths || []) {",
+      "  const target = path.join(process.cwd(), repoPath.replace(/\\\\/g, '/'));",
+      "  fs.mkdirSync(path.dirname(target), { recursive: true });",
+      "  fs.writeFileSync(target, `roadmap-cli wrote ${item.id}\\n`, 'utf8');",
+      "}",
+      "console.log(`roadmap-cli wrote ${item.id}`);",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  fs.writeFileSync(
+    path.join(temp, "bin", "codex.cmd"),
+    [
+      "@echo off",
+      "node \"%~dp0fake-codex-cli.mjs\" %*",
+      "",
+    ].join("\r\n"),
     "utf8",
   );
   fs.writeFileSync(
@@ -92,6 +126,13 @@ function initRepo(temp) {
     "-m",
     "base",
   ]);
+}
+
+function envWithFakeCodex(temp, extra = {}) {
+  const env = { ...process.env, ...extra };
+  const pathKey = Object.keys(env).find((key) => key.toLowerCase() === "path") || "PATH";
+  env[pathKey] = `${path.join(temp, "bin")}${path.delimiter}${env[pathKey] || ""}`;
+  return env;
 }
 
 function createTempRepo(name) {
@@ -383,6 +424,49 @@ function assertRoadmapSdkExecuteOneCommits() {
   }
 }
 
+function assertRoadmapSdkCliExecuteOneCommits() {
+  const temp = createTempRepo("roadmap-sdk-cli");
+  try {
+    const queuePath = writeQueue(temp, [item("one", 1, {
+      runnerKind: "roadmap-sdk",
+      approvalState: "pending-explicit-approval",
+    })]);
+    const approval = approvalFor(temp, queuePath, ["--max-items", "1"]);
+    const result = parseJson(run([
+      "--execute-one",
+      "--queue",
+      queuePath,
+      "--item",
+      "one",
+      "--engine",
+      "cli",
+      "--max-items",
+      "1",
+      "--session-id",
+      "roadmap-sdk-cli",
+      "--approval-text",
+      approval,
+      "--json",
+    ], temp, {
+      env: envWithFakeCodex(temp, { FAKE_CODEX_SDK_FAIL_PARSE: "1" }),
+    }));
+    assert.strictEqual(result.mode, "execute-one");
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.results[0].item, "one");
+    assert.match(fs.readFileSync(path.join(temp, "one.txt"), "utf8"), /roadmap-cli wrote one/);
+    assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
+    assert.strictEqual(sh(temp, ["git", "log", "-1", "--format=%s"]), "test: one");
+    const childLog = fs.readFileSync(
+      path.join(temp, ".codex-runtime", "sdk", "roadmap-supervisor", "roadmap-sdk-cli", "children", "one.log"),
+      "utf8",
+    );
+    assert.match(childLog, /roadmap-cli wrote one/);
+    assert.doesNotMatch(childLog, /Failed to parse item/);
+  } finally {
+    removeTempRepo(temp);
+  }
+}
+
 function assertRequireLiveConnectivityAndItemLiveValidation() {
   const temp = createTempRepo("item-live");
   try {
@@ -601,6 +685,7 @@ function main() {
   assertExecuteOneCommits();
   assertQueueHashApprovalBinding();
   assertRoadmapSdkExecuteOneCommits();
+  assertRoadmapSdkCliExecuteOneCommits();
   assertRequireLiveConnectivityAndItemLiveValidation();
   assertSingleApprovalLiveBindingRuns();
   assertUnplannedPathFails();

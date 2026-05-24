@@ -24,6 +24,7 @@
     "run-until-budget up to maxItems/maxMinutes",
     "single-approval frozen roadmap queues bound by queue SHA-256 and item ids",
     "direct roadmap-sdk writer children with workspace-write, approval=never, web-search=disabled, reasoning=high, and model default",
+    "roadmap-sdk writer CLI fallback via --engine cli when the SDK stream/parser path fails",
     "read-only live connectivity checks against the already-open AE Agent panel",
     "up to two read-only reviewer children in parallel"
   ],

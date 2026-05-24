@@ -224,7 +224,7 @@
         201
       ],
       "status": "current-direct-check",
-      "verdict": "AE Agent roadmap supervisor is available as a local-gated aggressive autopilot layer: plan-only preview, queueSha256-bound single approval for roadmap-sdk chains, read-only live-check against open AE/CEP, execute-one, run-until-budget, runtime session state, one writer child at a time, parallel read-only reviewers, validation-before-commit, required handoff, exact approval text, no push, and no dependency/mutating-live/CEP/external-provider work by default.",
+      "verdict": "AE Agent roadmap supervisor is available as a local-gated aggressive autopilot layer: plan-only preview, queueSha256-bound single approval for roadmap-sdk chains, SDK writer path plus --engine cli writer fallback for SDK stream/parser failures, read-only live-check against open AE/CEP, execute-one, run-until-budget, runtime session state, one writer child at a time, parallel read-only reviewers, validation-before-commit, required handoff, exact approval text, no push, and no dependency/mutating-live/CEP/external-provider work by default.",
       "artifacts": [
         ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-contract.json",
         ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-readiness.json",

@@ -2028,6 +2028,7 @@ async function runContractSmoke() {
       readme.includes("--require-live-connectivity") &&
       readme.includes("queueSha256") &&
       readme.includes("roadmap-sdk") &&
+      readme.includes("--engine cli") &&
       readme.includes("--run-until-budget") &&
       readme.includes("noPush=true") &&
       readme.includes("noDependencyChanges=true"),
@@ -2042,7 +2043,8 @@ async function runContractSmoke() {
     roadmapSupervisorRunner.includes("--live-check") &&
       roadmapSupervisorRunner.includes("requireLiveConnectivity") &&
       roadmapSupervisorRunner.includes("queueSha256") &&
-      roadmapSupervisorRunner.includes("roadmap-sdk"),
+      roadmapSupervisorRunner.includes("roadmap-sdk") &&
+      roadmapSupervisorRunner.includes("runRoadmapCliWriter"),
     "M199 AE Agent roadmap supervisor runner does not expose live connectivity and single-approval gates",
     failures,
   );

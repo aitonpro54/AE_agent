@@ -14,6 +14,7 @@
     "itemLiveValidationAvailable": true,
     "queueHashApprovalAvailable": true,
     "roadmapSdkRunnerAvailable": true,
+    "roadmapSdkCliWriterFallbackAvailable": true,
     "singleApprovalChainAvailable": true,
     "parallelReviewersAvailable": true,
     "autoCommitAfterValidation": true,
