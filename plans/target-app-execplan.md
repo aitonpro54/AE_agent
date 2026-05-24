@@ -680,6 +680,7 @@
 - The tool opens its undo group only after target preflight and closes it with a `finally` guard; it returns `pairs[]` source/duplicate read-back, before/after layer counts, duplicate count, safety metadata fields, and `postVerification` count/pair evidence.
 - Updated `scripts/smoke-test.js` to assert schema exposure, safety fields, queued script guards, fake source/duplicate read-back, post-verification fields, and pre-queue rejection for empty/duplicate/non-positive `layerIndices`.
 - Planner guidance, plan-repair aliases, semantic verification, generated-only live lane, CEP UI, dependency changes, push, PR, and live AE/CEP mutation were not performed.
+- 2026-05-24 writer-child recheck: M204 was already present at `HEAD` `0ca1ff7d437e677bb3a3309df6268354ca386806`; reran the queue validation commands successfully (`node --check mcp-server/bridge-daemon.js`, `node scripts/smoke-test.js`, `npm.cmd run check:rules`, `git diff --check`) without code changes or live AE/CEP mutation. Updating `.codex/handoff.md` was attempted with `apply_patch` and PowerShell UTF-8 write, but both were blocked by filesystem permissions on the ignored handoff file; the current handoff file still contains M206 state and must be finalized by a process with permission.
 
 ### Milestone 205 Queue Item: Duplicate Layers Planner/Repair Exposure
 
