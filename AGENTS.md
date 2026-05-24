@@ -51,6 +51,7 @@ For large command outputs, save full logs to a file and summarize only the relev
 - Do not pause AE Agent product work to make the SDK orchestrator broadly production-ready in one abstract block.
 - Improve SDK orchestration incrementally when a concrete AE Agent task needs it: one narrow lane, one contract, one proof, one reviewable milestone.
 - Keep broad SDK repo-editing, CEP-panel SDK writes, live CEP/AE validation, external-provider/OpenAI CLI planner validation, mutating-live validation, dependency changes, push, and PR creation approval-gated.
+- Treat Local/Ollama as an explicitly requested provider only. Do not use Local/Ollama for planner runs, live CEP smokes, broad/default-provider smokes, fallback planning, recovery validation, or mutating validation unless the user explicitly asks for Local/Ollama in the current turn. Prefer read-only connectivity checks and milestone-specific generated-only `openai-cli` lanes for live validation.
 - Move generic, reusable SDK orchestration behavior toward the sibling `codex-sdk-orchestrator-tool`; keep AE Agent-specific policy, evidence, and safety gates in this repository unless a separate migration milestone proves equivalent fail-closed behavior.
 
 ## Verification
@@ -78,6 +79,6 @@ Before marking a milestone complete, run:
 - `node scripts/smoke-test.js`
 - live CEP/AE validation is mandatory when After Effects, the installed AE Agent panel, and the bridge are available; for planner-visible or mutating tool changes, also run the relevant generated-only Full UI Agent `openai-cli` planner acceptance lane, or create the narrow lane first if it does not exist yet
 - `node scripts/cep-panel-cdp-smoke.js inspect` and `node scripts/cep-panel-cdp-smoke.js connector-status-smoke` for live connectivity
-- relevant live CEP smoke tests, such as `node scripts/cep-panel-cdp-smoke.js smoke`, `node scripts/provider-key-save-smoke.js`, or the milestone-specific generated-only OpenAI CLI lane, when After Effects and the panel are available
+- relevant live CEP smoke tests when After Effects and the panel are available; do not run Local/Ollama or broad default-provider CEP smokes such as `node scripts/cep-panel-cdp-smoke.js smoke` unless the user explicitly asks for Local/Ollama in the current turn; prefer `node scripts/provider-key-save-smoke.js`, read-only connectivity checks, or the milestone-specific generated-only OpenAI CLI lane
 
 If a check cannot run, record why and what would be needed to run it.
