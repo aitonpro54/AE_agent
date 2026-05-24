@@ -1,0 +1,389 @@
+{
+  "schema": "sdk-ao-pattern-intake.activity-session-schema.v1",
+  "milestone": 212,
+  "title": "AO-inspired task/session/activity schema",
+  "createdAt": "2026-05-24",
+  "purpose": "Define a local AO-inspired task envelope, session lifecycle, and activity JSONL contract for the existing AE Agent roadmap supervisor without installing AO or changing runtime behavior.",
+  "source": {
+    "kind": "ao-inspired-pattern-intake",
+    "researchPath": "docs/research/composio-agent-orchestrator-applicability.md",
+    "queuePath": ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
+    "numberingDecision": "This intake starts at M212 because M211 is already used by duplicate_layers closeout reconciliation.",
+    "notAnIntegration": true
+  },
+  "boundaryClaims": {
+    "aoInstalled": false,
+    "aoStarted": false,
+    "aoRuntimeIntegrated": false,
+    "roadmapSupervisorRuntimeChanged": false,
+    "productionRuntimeChanged": false,
+    "cepPanelChanged": false,
+    "liveCepAeValidationRun": false,
+    "externalProviderPlannerValidationRun": false,
+    "dependenciesChanged": false,
+    "packageManifestChanged": false,
+    "branchWorktreePushPrGithubActionCreated": false
+  },
+  "taskEnvelope": {
+    "requiredFields": [
+      "taskId",
+      "milestone",
+      "source",
+      "goal",
+      "plannedPaths",
+      "forbiddenPaths",
+      "allowedCommands",
+      "validationCommands",
+      "stopGates",
+      "escalationRules",
+      "nextPrompt",
+      "handoffPath",
+      "stateFile",
+      "activityLog",
+      "reportPath"
+    ],
+    "example": {
+      "taskId": "m212-ao-task-session-activity-schema",
+      "milestone": 212,
+      "source": {
+        "type": "roadmap-supervisor-queue-item",
+        "path": ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
+        "itemId": "m212-ao-task-session-activity-schema"
+      },
+      "goal": "Create a local AO-inspired activity/session intake contract and smoke test without changing roadmap supervisor runtime behavior.",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
+        ".codex-audit/sdk-ao-pattern-intake/212-activity-session-schema.json",
+        "scripts/sdk-ao-pattern-intake-smoke.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "mcp-server/**",
+        "chatgpt-connector/**",
+        "registry/**",
+        "recipes/**",
+        "package.json",
+        "package-lock.json",
+        "node_modules/**",
+        "logs/**",
+        "backups/**",
+        "snapshots/**",
+        ".github/**"
+      ],
+      "allowedCommands": [
+        "node --check scripts/sdk-ao-pattern-intake-smoke.js",
+        "node scripts/sdk-ao-pattern-intake-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check scripts/sdk-ao-pattern-intake-smoke.js",
+        "node scripts/sdk-ao-pattern-intake-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "roadmap-sdk-child-failed",
+        "ao-install-or-run-requested",
+        "planned-path-outside-policy",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "escalationRules": [
+        {
+          "reason": "needs_input",
+          "action": "stop_and_request_user_input",
+          "autoFix": false
+        },
+        {
+          "reason": "validation_failed",
+          "action": "stop_and_record_repair_prompt",
+          "autoFix": false
+        },
+        {
+          "reason": "context_pressure",
+          "action": "write_handoff_and_stop",
+          "autoFix": false
+        },
+        {
+          "reason": "forbidden_boundary_requested",
+          "action": "fail_closed",
+          "autoFix": false
+        }
+      ],
+      "nextPrompt": "Continue with M213 AO-inspired stuck detector and escalation design. Use the M212 schema artifact as input; do not install or run AO, do not edit runtime/CEP/dependency paths, and keep the design local and fail-closed.",
+      "handoffPath": ".codex/handoff.md",
+      "stateFile": ".codex-runtime/sdk/roadmap-supervisor/<session-id>/state.json",
+      "activityLog": ".codex-runtime/sdk/roadmap-supervisor/<session-id>/events.jsonl",
+      "reportPath": ".codex-runtime/sdk/roadmap-supervisor/<session-id>/reports/<item-id>.json"
+    }
+  },
+  "sessionRoles": [
+    {
+      "role": "writer",
+      "responsibility": "Apply the bounded queue item by writing only planned paths, then run allowed validation commands.",
+      "mayWrite": true,
+      "mustStayWithinPlannedPaths": true
+    },
+    {
+      "role": "reviewer",
+      "responsibility": "Review planned-path diffs and boundary claims without changing files.",
+      "mayWrite": false,
+      "mustStayWithinPlannedPaths": true
+    },
+    {
+      "role": "analyzer",
+      "responsibility": "Read explicit reports or logs and produce bounded findings or repair prompts without applying fixes.",
+      "mayWrite": false,
+      "mustStayWithinPlannedPaths": true
+    },
+    {
+      "role": "live-check",
+      "responsibility": "Run only item-approved live connectivity or generated-only validation commands when declared by the queue item.",
+      "mayWrite": false,
+      "requiresExplicitLiveApproval": true
+    }
+  ],
+  "lifecycleStates": [
+    {
+      "state": "queued",
+      "terminal": false,
+      "description": "Task is known to the queue but has not started."
+    },
+    {
+      "state": "active",
+      "terminal": false,
+      "description": "A session is currently working or validating."
+    },
+    {
+      "state": "idle",
+      "terminal": false,
+      "description": "Session is alive but waiting between bounded actions."
+    },
+    {
+      "state": "needs_input",
+      "terminal": false,
+      "description": "Session needs user approval or clarification before continuing."
+    },
+    {
+      "state": "stuck",
+      "terminal": false,
+      "description": "Session stopped making progress and must escalate instead of spinning."
+    },
+    {
+      "state": "errored",
+      "terminal": true,
+      "description": "Session failed with an error that must be recorded."
+    },
+    {
+      "state": "done",
+      "terminal": true,
+      "description": "Task completed and validation/handoff state is recorded."
+    },
+    {
+      "state": "stopped",
+      "terminal": true,
+      "description": "Task was intentionally halted by a stop gate."
+    },
+    {
+      "state": "escalated",
+      "terminal": true,
+      "description": "Task was converted to a user prompt, repair prompt, or next bounded queue item."
+    }
+  ],
+  "activityJsonlContract": {
+    "requiredEventFields": [
+      "ts",
+      "sessionId",
+      "taskId",
+      "role",
+      "event",
+      "state"
+    ],
+    "eventExamples": [
+      {
+        "ts": "2026-05-24T16:00:00.000Z",
+        "sessionId": "m212-ao-pattern-intake",
+        "taskId": "m212-ao-task-session-activity-schema",
+        "role": "writer",
+        "event": "active",
+        "state": "active",
+        "message": "Writer started bounded planned-path work."
+      },
+      {
+        "ts": "2026-05-24T16:02:00.000Z",
+        "sessionId": "m212-ao-pattern-intake",
+        "taskId": "m212-ao-task-session-activity-schema",
+        "role": "reviewer",
+        "event": "ready",
+        "state": "idle",
+        "message": "Read-only reviewer is ready to inspect the contract."
+      },
+      {
+        "ts": "2026-05-24T16:04:00.000Z",
+        "sessionId": "m212-ao-pattern-intake",
+        "taskId": "m212-ao-task-session-activity-schema",
+        "role": "writer",
+        "event": "idle",
+        "state": "idle",
+        "message": "Writer is waiting for validation command completion."
+      },
+      {
+        "ts": "2026-05-24T16:06:00.000Z",
+        "sessionId": "m212-ao-pattern-intake",
+        "taskId": "m212-ao-task-session-activity-schema",
+        "role": "writer",
+        "event": "needs_input",
+        "state": "needs_input",
+        "message": "Fresh approval is required before a gated action can continue."
+      },
+      {
+        "ts": "2026-05-24T16:08:00.000Z",
+        "sessionId": "m212-ao-pattern-intake",
+        "taskId": "m212-ao-task-session-activity-schema",
+        "role": "writer",
+        "event": "stuck",
+        "state": "stuck",
+        "message": "No progress heartbeat observed before the stale-activity threshold."
+      },
+      {
+        "ts": "2026-05-24T16:10:00.000Z",
+        "sessionId": "m212-ao-pattern-intake",
+        "taskId": "m212-ao-task-session-activity-schema",
+        "role": "writer",
+        "event": "errored",
+        "state": "errored",
+        "message": "Validation command failed and the session stopped."
+      },
+      {
+        "ts": "2026-05-24T16:12:00.000Z",
+        "sessionId": "m212-ao-pattern-intake",
+        "taskId": "m212-ao-task-session-activity-schema",
+        "role": "writer",
+        "event": "done",
+        "state": "done",
+        "message": "Planned-path work and validation completed."
+      },
+      {
+        "ts": "2026-05-24T16:14:00.000Z",
+        "sessionId": "m212-ao-pattern-intake",
+        "taskId": "m212-ao-task-session-activity-schema",
+        "role": "writer",
+        "event": "validation_started",
+        "state": "active",
+        "command": "node scripts/sdk-ao-pattern-intake-smoke.js"
+      },
+      {
+        "ts": "2026-05-24T16:16:00.000Z",
+        "sessionId": "m212-ao-pattern-intake",
+        "taskId": "m212-ao-task-session-activity-schema",
+        "role": "writer",
+        "event": "validation_failed",
+        "state": "errored",
+        "command": "npm.cmd run check:rules",
+        "exitCode": 1,
+        "nextAction": "stop_and_record_repair_prompt"
+      },
+      {
+        "ts": "2026-05-24T16:18:00.000Z",
+        "sessionId": "m212-ao-pattern-intake",
+        "taskId": "m212-ao-task-session-activity-schema",
+        "role": "writer",
+        "event": "handoff_written",
+        "state": "active",
+        "path": ".codex/handoff.md"
+      },
+      {
+        "ts": "2026-05-24T16:20:00.000Z",
+        "sessionId": "m212-ao-pattern-intake",
+        "taskId": "m212-ao-task-session-activity-schema",
+        "role": "writer",
+        "event": "commit_created",
+        "state": "done",
+        "commit": "<supervisor-created-commit>",
+        "message": "docs: add AO-inspired activity schema"
+      }
+    ]
+  },
+  "roadmapSupervisorMapping": {
+    "note": "This is a documentation contract over existing roadmap supervisor artifacts. It does not change file names, runner behavior, commit behavior, validation behavior, or live validation behavior.",
+    "sessionRoot": ".codex-runtime/sdk/roadmap-supervisor/<session-id>/",
+    "stateFile": ".codex-runtime/sdk/roadmap-supervisor/<session-id>/state.json",
+    "activityLog": ".codex-runtime/sdk/roadmap-supervisor/<session-id>/events.jsonl",
+    "childLogs": ".codex-runtime/sdk/roadmap-supervisor/<session-id>/children/",
+    "reviewerLogs": ".codex-runtime/sdk/roadmap-supervisor/<session-id>/reviewers/",
+    "liveLogs": ".codex-runtime/sdk/roadmap-supervisor/<session-id>/live/",
+    "reportPath": ".codex-runtime/sdk/roadmap-supervisor/<session-id>/reports/<item-id>.json",
+    "handoffPath": ".codex/handoff.md",
+    "queuePath": ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json"
+  },
+  "machineCheck": {
+    "requiredTaskEnvelopeFields": [
+      "taskId",
+      "milestone",
+      "source",
+      "goal",
+      "plannedPaths",
+      "forbiddenPaths",
+      "allowedCommands",
+      "validationCommands",
+      "stopGates",
+      "escalationRules",
+      "nextPrompt",
+      "handoffPath",
+      "stateFile",
+      "activityLog",
+      "reportPath"
+    ],
+    "requiredRoles": [
+      "writer",
+      "reviewer",
+      "analyzer",
+      "live-check"
+    ],
+    "requiredLifecycleStates": [
+      "queued",
+      "active",
+      "idle",
+      "needs_input",
+      "stuck",
+      "errored",
+      "done",
+      "stopped",
+      "escalated"
+    ],
+    "requiredEventExamples": [
+      "active",
+      "ready",
+      "idle",
+      "needs_input",
+      "stuck",
+      "errored",
+      "done",
+      "validation_started",
+      "validation_failed",
+      "handoff_written",
+      "commit_created"
+    ],
+    "requiredFalseBoundaryClaims": [
+      "aoInstalled",
+      "aoStarted",
+      "aoRuntimeIntegrated",
+      "roadmapSupervisorRuntimeChanged",
+      "productionRuntimeChanged",
+      "cepPanelChanged",
+      "liveCepAeValidationRun",
+      "externalProviderPlannerValidationRun",
+      "dependenciesChanged",
+      "packageManifestChanged",
+      "branchWorktreePushPrGithubActionCreated"
+    ],
+    "requiredMappingRoot": ".codex-runtime/sdk/roadmap-supervisor/<session-id>/",
+    "requiredQueuePath": ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
+    "requiredHandoffPath": ".codex/handoff.md"
+  }
+}
