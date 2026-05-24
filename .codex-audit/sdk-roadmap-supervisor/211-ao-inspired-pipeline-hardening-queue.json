@@ -309,7 +309,24 @@
         "validation-failed",
         "context-pressure"
       ],
-      "status": "queued"
+      "completion": {
+        "completedAt": "2026-05-24",
+        "summary": "Added a design-bounded static Markdown status dashboard contract, no-dependency renderer CLI, fixture smoke coverage for active/stuck/done sessions, and active plan notes. Required handoff content is blocked by the current writer-child ACL and must be finalized by supervisor/parent.",
+        "validationCommands": [
+          "node --check scripts/render-roadmap-supervisor-status-dashboard.js",
+          "node --check scripts/sdk-ao-status-dashboard-smoke.js",
+          "node scripts/sdk-ao-status-dashboard-smoke.js",
+          "npm.cmd run check:rules",
+          "git diff --check"
+        ],
+        "boundaryNotes": [
+          "No web server, browser UI, dependency, package manifest, package lock, AO install/start, CEP/live/production path, branch, worktree, push, PR, GitHub issue, or GitHub Action was added.",
+          "The renderer reads only explicit session or fixture roots and writes Markdown only when --output is supplied.",
+          "Updating .codex/handoff.md was attempted with apply_patch and PowerShell Set-Content but denied by filesystem ACL."
+        ],
+        "handoffPath": ".codex/handoff.md"
+      },
+      "status": "pending-handoff-acl"
     },
     {
       "id": "m215-ao-readonly-failure-analyzer",

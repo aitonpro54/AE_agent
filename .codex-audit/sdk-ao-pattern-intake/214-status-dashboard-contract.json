@@ -1,0 +1,147 @@
+{
+  "schema": "sdk-ao-pattern-intake.status-dashboard-contract.v1",
+  "milestone": 214,
+  "title": "AO-inspired static status dashboard",
+  "createdAt": "2026-05-24",
+  "purpose": "Define a static Markdown dashboard over existing roadmap supervisor state/activity artifacts without adding a server, dependency, browser UI, AO runtime, or live AE/CEP requirement.",
+  "source": {
+    "kind": "ao-inspired-pattern-intake",
+    "parentActivityContractPath": ".codex-audit/sdk-ao-pattern-intake/212-activity-session-schema.json",
+    "parentEscalationDesignPath": ".codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json",
+    "queuePath": ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
+    "queueItemId": "m214-ao-static-status-dashboard",
+    "notRuntimeBehavior": true,
+    "notAnAoIntegration": true
+  },
+  "boundaryClaims": {
+    "webServerAdded": false,
+    "browserUiAdded": false,
+    "dependencyAdded": false,
+    "packageManifestChanged": false,
+    "packageLockChanged": false,
+    "roadmapSupervisorRuntimeChanged": false,
+    "productionRuntimeChanged": false,
+    "runtimeFilesWrittenByDefault": false,
+    "aoInstalled": false,
+    "aoStarted": false,
+    "cepPanelChanged": false,
+    "liveCepAeValidationRun": false,
+    "externalProviderPlannerValidationRun": false,
+    "branchWorktreePushPrGithubActionCreated": false
+  },
+  "dashboardContract": {
+    "format": "static-markdown",
+    "inputMode": "explicit-session-root-or-fixture-root",
+    "defaultOutput": "stdout",
+    "explicitOutputFlag": "--output <path>",
+    "noDefaultWrites": true,
+    "artifactReads": [
+      "state.json",
+      "events.jsonl",
+      "reports/*.json"
+    ],
+    "excludedReads": [
+      "child process stdout/stderr logs",
+      "CEP panel files",
+      "live AE project files",
+      "package manifests",
+      "dependency trees"
+    ],
+    "requiredSummaryFields": [
+      "session id",
+      "queue item",
+      "role",
+      "lifecycle status",
+      "last activity",
+      "validation result",
+      "blockers",
+      "changed paths",
+      "handoff path",
+      "report path",
+      "next action"
+    ],
+    "sessionDiscovery": {
+      "singleSession": "If the supplied root contains state.json, render that root as one session.",
+      "fixtureOrSupervisorRoot": "If the supplied root does not contain state.json, render immediate child directories that contain state.json.",
+      "sortOrder": "Lexicographic by session id."
+    }
+  },
+  "cliContract": {
+    "script": "scripts/render-roadmap-supervisor-status-dashboard.js",
+    "requiredInput": "--session-root <path>",
+    "optionalOutput": "--output <path>",
+    "sideEffects": [
+      "prints Markdown to stdout when --output is omitted",
+      "writes only the requested Markdown file when --output is supplied"
+    ],
+    "forbiddenSideEffects": [
+      "start web server",
+      "install packages",
+      "modify package.json",
+      "modify package-lock.json",
+      "write runtime or production files by default",
+      "run live AE/CEP",
+      "invoke AO"
+    ]
+  },
+  "fixtureExpectations": [
+    {
+      "sessionState": "active",
+      "expectedNextAction": "Continue bounded validation or planned-path work."
+    },
+    {
+      "sessionState": "stuck",
+      "expectedNextAction": "Stop and hand off with blockers before retrying."
+    },
+    {
+      "sessionState": "done",
+      "expectedNextAction": "Continue to the next queue item."
+    }
+  ],
+  "machineCheck": {
+    "requiredParentSchemas": [
+      "sdk-ao-pattern-intake.activity-session-schema.v1",
+      "sdk-ao-pattern-intake.stuck-escalation-design.v1"
+    ],
+    "requiredSchema": "sdk-ao-pattern-intake.status-dashboard-contract.v1",
+    "requiredFormat": "static-markdown",
+    "requiredInputMode": "explicit-session-root-or-fixture-root",
+    "requiredDefaultOutput": "stdout",
+    "requiredSummaryFields": [
+      "session id",
+      "queue item",
+      "role",
+      "lifecycle status",
+      "last activity",
+      "validation result",
+      "blockers",
+      "changed paths",
+      "handoff path",
+      "report path",
+      "next action"
+    ],
+    "requiredFalseBoundaryClaims": [
+      "webServerAdded",
+      "browserUiAdded",
+      "dependencyAdded",
+      "packageManifestChanged",
+      "packageLockChanged",
+      "roadmapSupervisorRuntimeChanged",
+      "productionRuntimeChanged",
+      "runtimeFilesWrittenByDefault",
+      "aoInstalled",
+      "aoStarted",
+      "cepPanelChanged",
+      "liveCepAeValidationRun",
+      "externalProviderPlannerValidationRun",
+      "branchWorktreePushPrGithubActionCreated"
+    ],
+    "requiredFixtureStates": [
+      "active",
+      "stuck",
+      "done"
+    ],
+    "requiredRendererScript": "scripts/render-roadmap-supervisor-status-dashboard.js",
+    "requiredSmokeScript": "scripts/sdk-ao-status-dashboard-smoke.js"
+  }
+}
