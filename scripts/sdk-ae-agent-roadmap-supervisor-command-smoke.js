@@ -365,6 +365,43 @@ function assertExecuteOneCommits() {
   }
 }
 
+function assertSupervisorFinalizesIgnoredHandoff() {
+  const temp = createTempRepo("ignored-handoff");
+  try {
+    const queuePath = writeQueue(temp, [item("one", 1, {
+      runner: {
+        kind: "fixture",
+        action: "write-planned",
+        writePaths: ["one.txt"],
+      },
+    })]);
+    const approval = approvalFor(temp, queuePath, ["--max-items", "1"]);
+    const result = parseJson(run([
+      "--execute-one",
+      "--queue",
+      queuePath,
+      "--item",
+      "one",
+      "--max-items",
+      "1",
+      "--session-id",
+      "ignored-handoff",
+      "--approval-text",
+      approval,
+      "--json",
+    ], temp));
+    assert.strictEqual(result.ok, true);
+    assert.match(
+      fs.readFileSync(path.join(temp, ".codex", "handoff.md"), "utf8"),
+      /finalized by deterministic roadmap supervisor/,
+    );
+    assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
+    assert.strictEqual(sh(temp, ["git", "log", "-1", "--format=%s"]), "test: one");
+  } finally {
+    removeTempRepo(temp);
+  }
+}
+
 function assertQueueHashApprovalBinding() {
   const temp = createTempRepo("queue-hash");
   try {
@@ -683,6 +720,7 @@ function main() {
   assertWrongApprovalFails();
   assertDirtyTreeFails();
   assertExecuteOneCommits();
+  assertSupervisorFinalizesIgnoredHandoff();
   assertQueueHashApprovalBinding();
   assertRoadmapSdkExecuteOneCommits();
   assertRoadmapSdkCliExecuteOneCommits();

@@ -1146,19 +1146,78 @@ function assertRequiredHandoffUpdated(cwd, item, snapshot) {
   if (!snapshot) {
     return;
   }
+  if (requiredHandoffUpdated(cwd, snapshot)) {
+    return;
+  }
+  throw new Error(`Required handoff was not updated for ${item.id}: ${snapshot.path}`);
+}
+
+function requiredHandoffUpdated(cwd, snapshot) {
+  if (!snapshot) {
+    return true;
+  }
   const next = fileFingerprint(cwd, snapshot.path);
   if (!next) {
-    throw new Error(`Required handoff was not written for ${item.id}: ${snapshot.path}`);
+    return false;
   }
   const previous = snapshot.fingerprint;
-  if (
+  return !(
     previous &&
     next.sha256 === previous.sha256 &&
     next.mtimeMs === previous.mtimeMs &&
     next.size === previous.size
-  ) {
-    throw new Error(`Required handoff was not updated for ${item.id}: ${snapshot.path}`);
-  }
+  );
+}
+
+function writeSupervisorHandoff(cwd, item, context) {
+  const handoffPath = normalizeRepoPath(item.handoffPolicy.path);
+  const validationLines = context.validationResults.map((entry) => `- ${entry.command}: status ${entry.status}`);
+  const liveLines = context.itemLiveValidationResults.map((entry) => `- ${entry.command}: status ${entry.status}`);
+  const reviewerLines = context.reviewerResults.map((entry) => `- ${entry.id}: status ${entry.status}`);
+  const lines = [
+    `# Handoff: ${item.id}, ${new Date().toISOString()}`,
+    "",
+    "## Текущая цель",
+    "",
+    `${item.title}.`,
+    "",
+    "## Текущее состояние",
+    "",
+    `- Queue item: ${item.id}.`,
+    `- Milestone: M${item.milestone}.`,
+    `- Commit: ${context.commitId || "pending supervisor commit"}.`,
+    "- Push: не выполнялся.",
+    "- PR: не создавался.",
+    "",
+    "## Files Touched",
+    "",
+    ...item.plannedPaths.map((repoPath) => `- ${normalizeRepoPath(repoPath)}`),
+    "",
+    "## Validation Run And Results",
+    "",
+    ...(validationLines.length > 0 ? validationLines : ["- No validation commands recorded."]),
+    "",
+    "## Reviewer Results",
+    "",
+    ...(reviewerLines.length > 0 ? reviewerLines : ["- Reviewer mode was none or no reviewer tasks were selected."]),
+    "",
+    "## Live Validation",
+    "",
+    ...(liveLines.length > 0 ? liveLines : ["- No item live validation commands ran for this item."]),
+    "",
+    "## Decisions Made",
+    "",
+    "- Handoff was finalized by deterministic roadmap supervisor because the writer child did not update the ignored `.codex/handoff.md` file directly.",
+    "- No push, PR, dependency change, CEP panel SDK write, or unapproved live mutation was performed by the supervisor.",
+    "",
+    "## Known Risks / Blockers",
+    "",
+    "- Continue with the next queue item only from a clean working tree and matching fresh supervisor approval text.",
+    "",
+  ];
+  const absolute = path.join(cwd, handoffPath);
+  mkdirSync(path.dirname(absolute), { recursive: true });
+  writeFileSync(absolute, `${lines.join("\n")}\n`, "utf8");
 }
 
 function dependencySatisfied(item, completedItems, queue) {
@@ -1232,9 +1291,30 @@ async function executeQueueItem(cwd, runtime, state, queue, item, options, preAp
   const preValidationChanges = assertChangedPathsAllowed(cwd, item.plannedPaths);
   const validationResults = runValidationCommands(cwd, runtime, item);
   const itemLiveValidationResults = runItemLiveValidation(cwd, runtime, queue, item, options);
-  const preCommitChanges = assertChangedPathsAllowed(cwd, item.plannedPaths);
+  assertChangedPathsAllowed(cwd, item.plannedPaths);
+  let handoffFinalizedBySupervisor = false;
+  if (handoffSnapshot && !requiredHandoffUpdated(cwd, handoffSnapshot)) {
+    writeSupervisorHandoff(cwd, item, {
+      childResult,
+      itemLiveValidationResults,
+      preflightLiveResults,
+      reviewerResults,
+      validationResults,
+    });
+    handoffFinalizedBySupervisor = true;
+  }
   assertRequiredHandoffUpdated(cwd, item, handoffSnapshot);
   const commitId = stageAndCommit(cwd, item);
+  if (handoffFinalizedBySupervisor) {
+    writeSupervisorHandoff(cwd, item, {
+      childResult,
+      commitId,
+      itemLiveValidationResults,
+      preflightLiveResults,
+      reviewerResults,
+      validationResults,
+    });
+  }
   const postRun = assertChangedPathsAllowed(cwd, item.plannedPaths, preHead);
   if (!state.completedItems.includes(item.id)) {
     state.completedItems.push(item.id);
