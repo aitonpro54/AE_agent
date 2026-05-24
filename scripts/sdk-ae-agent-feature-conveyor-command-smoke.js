@@ -18,6 +18,8 @@ const M190_LIVE_VALIDATION_APPROVAL_TEXT =
   "I approve one M190 Full UI Agent live conveyor validation run for new typed tools using OpenAI CLI and generated-only mutations";
 const M191_LIVE_VALIDATION_APPROVAL_TEXT =
   "I approve one M191 live CEP AE validation run for generated-only mask safety checks inside After Effects";
+const M198_LIVE_VALIDATION_APPROVAL_TEXT =
+  "I approve one M198 live CEP AE validation run for generated-only marker lifecycle checks using OpenAI CLI";
 
 function run(args, cwd = repo) {
   const runner = cwd === repo
@@ -131,6 +133,7 @@ function writeTempLiveQueue(temp) {
       queue.queueItems.find((item) => item.id === "m188-dakkshin-advisory-field-validation"),
       queue.queueItems.find((item) => item.id === "m190-full-ui-agent-new-tools-validation"),
       queue.queueItems.find((item) => item.id === "m191-mask-safety-live-validation"),
+      queue.queueItems.find((item) => item.id === "m198-marker-lifecycle-live-validation"),
     ],
   }, null, 2), "utf8");
 }
@@ -190,6 +193,7 @@ async function main() {
     "m188-dakkshin-advisory-field-validation",
     "m190-full-ui-agent-new-tools-validation",
     "m191-mask-safety-live-validation",
+    "m198-marker-lifecycle-live-validation",
   ]);
   assert(dryRun.plannedPaths.includes(".codex/handoff.md"));
   assert(dryRun.plannedPaths.includes("plans/target-app-execplan.md"));
@@ -238,6 +242,11 @@ async function main() {
   assert.deepStrictEqual(m191Single.items, ["m191-mask-safety-live-validation"]);
   assert.strictEqual(m191Single.executionApproved, false);
   assert(m191Single.plannedPaths.includes("logs/agent-run-reports/"));
+
+  const m198Single = parseJson(run(["--item", "m198-marker-lifecycle-live-validation", "--json"]));
+  assert.deepStrictEqual(m198Single.items, ["m198-marker-lifecycle-live-validation"]);
+  assert.strictEqual(m198Single.executionApproved, false);
+  assert(m198Single.plannedPaths.includes("logs/agent-run-reports/"));
 
   const liveDryRunBlocked = parseJson(run([
     "--item",
@@ -327,6 +336,30 @@ async function main() {
   );
   assert(m191LiveDryRunApproved.plannedCommands.some((command) => /full-ui-agent-mask-safety-openai-cli-smoke/.test(command.command)));
   assert(!m191LiveDryRunApproved.plannedCommands.some((command) => /ollama|openrouter/i.test(command.command)));
+
+  const m198LiveDryRunApproved = parseJson(run([
+    "--item",
+    "m198-marker-lifecycle-live-validation",
+    "--validate-live",
+    "--stage",
+    "both",
+    "--allow-mutating-live",
+    "--approval-text",
+    M198_LIVE_VALIDATION_APPROVAL_TEXT,
+    "--dry-run",
+    "--json",
+  ]));
+  assert.strictEqual(m198LiveDryRunApproved.liveValidationApproved, true);
+  assert.deepStrictEqual(m198LiveDryRunApproved.blockedBy, []);
+  assert.deepStrictEqual(
+    m198LiveDryRunApproved.plannedCommands.map((command) => command.id),
+    [
+      "m198-live-cep-inspect",
+      "m198-full-ui-agent-openai-cli-marker-lifecycle-smoke",
+    ],
+  );
+  assert(m198LiveDryRunApproved.plannedCommands.some((command) => /full-ui-agent-marker-lifecycle-openai-cli-smoke/.test(command.command)));
+  assert(!m198LiveDryRunApproved.plannedCommands.some((command) => /ollama|openrouter/i.test(command.command)));
 
   const missingApproval = run(["--item", "m185-dakkshin-intake-scope-brief", "--execute-sdk", "--approval-text", "wrong"]);
   assert.notStrictEqual(missingApproval.status, 0);

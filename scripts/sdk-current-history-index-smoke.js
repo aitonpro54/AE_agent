@@ -53,7 +53,7 @@ function main() {
   assert.strictEqual(current.currentSdkBaseline.state, "local-gated-ae-agent-specific");
   assert.strictEqual(
     current.currentSdkBaseline.featureConveyorState,
-    "m186-sdk-approved-not-executed-and-m188-m190-m191-live-validation-approved",
+    "m186-sdk-approved-not-executed-and-m188-m190-m191-m198-live-validation-approved",
   );
   assert.strictEqual(current.currentSdkBaseline.cepPanelSdkWritesEnabled, false);
   assert.deepStrictEqual(

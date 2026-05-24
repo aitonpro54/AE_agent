@@ -4,6 +4,7 @@ const http = require("http");
 const { writeAgentRunReport } = require("./agent-scenario-report");
 const {
   agentMaskSafetyScenarioPlans,
+  agentMarkerLifecycleScenarioPlans,
   agentNewToolsScenarioPlans,
   agentScenarioPlans
 } = require("./agent-scenario-fixtures");
@@ -82,6 +83,22 @@ function openAiCliMaskSafetyScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_MASK_SAFETY_PREFIX || "Codex QA M191",
     scenarioFactory: agentMaskSafetyScenarioPlans,
+    skipRenderQueueCleanup: true
+  };
+}
+
+function openAiCliMarkerLifecycleScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-marker-lifecycle",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_MARKER_LIFECYCLE_PREFIX || "Codex QA M198",
+    scenarioFactory: agentMarkerLifecycleScenarioPlans,
+    allowSemanticNeedsReviewWithReadBack: true,
     skipRenderQueueCleanup: true
   };
 }
@@ -3424,9 +3441,75 @@ async function verifyMaskScenarioReadBack(scenario, expected) {
   };
 }
 
+async function verifyMarkerLifecycleReadBack(scenario, expected) {
+  const found = await callBridgeTool("find_project_items", {
+    query: expected.compName,
+    type: "comp",
+    exactName: true,
+    caseSensitive: true,
+    limit: 5
+  });
+  const compMatch = found.matches && found.matches[0];
+  if (!compMatch || !compMatch.itemIndex) {
+    throw new Error(`${scenario.id}: generated marker comp was not found by exact name.`);
+  }
+
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const layer = layers.find((item) => item.name === expected.layerName);
+  if (!layer || !layer.index) {
+    throw new Error(`${scenario.id}: generated marker target layer was not found by read-back.`);
+  }
+
+  const layerDetails = await callBridgeTool("get_layer_details", {
+    compName: expected.compName,
+    layerIndex: layer.index,
+    includeProperties: false
+  });
+  const markers = layerDetails.markers || {};
+  const items = Array.isArray(markers.items) ? markers.items : [];
+  const finalCount = Number(markers.count || 0);
+  if (finalCount !== Number(expected.finalMarkerCount || 0)) {
+    throw new Error(`${scenario.id}: expected final marker count ${expected.finalMarkerCount}, got ${finalCount}.`);
+  }
+  const deletedStillPresent = items.some((marker) => (
+    marker.comment === expected.deletedComment &&
+    Math.abs(Number(marker.time) - Number(expected.deletedTime)) <= 0.001
+  ));
+  if (deletedStillPresent) {
+    throw new Error(`${scenario.id}: deleted marker was still present in read-back.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      numLayers: comp.numLayers
+    },
+    layer: {
+      index: layer.index,
+      name: layer.name
+    },
+    markers: {
+      count: finalCount,
+      returned: Number(markers.returned || items.length),
+      deletedCommentAbsent: true
+    }
+  };
+}
+
 async function verifyAgentScenarioReadBack(scenario) {
   const expected = scenario.expectedReadBack;
   if (!expected) return null;
+
+  if (expected.markerLifecycle) {
+    return verifyMarkerLifecycleReadBack(scenario, expected);
+  }
 
   if (expected.maskName) {
     return verifyMaskScenarioReadBack(scenario, expected);
@@ -4025,6 +4108,10 @@ async function main() {
   }
   if (command === "agent-mask-safety-openai-cli-smoke" || command === "full-ui-agent-mask-safety-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliMaskSafetyScenarioConfig());
+    return;
+  }
+  if (command === "agent-marker-lifecycle-openai-cli-smoke" || command === "full-ui-agent-marker-lifecycle-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliMarkerLifecycleScenarioConfig());
     return;
   }
   if (command === "openai-api-setup-smoke") {

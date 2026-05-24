@@ -29,6 +29,7 @@
 - [x] Milestone 195: Explicit layer marker update typed bridge tool.
 - [x] Milestone 196: Explicit layer marker delete typed bridge tool.
 - [x] Milestone 197: Bulk/selected-layer duplicate gated-slice design.
+- [x] Milestone 198: Standing live validation rule and marker lifecycle OpenAI CLI lane.
 
 ## Current Stable Baseline
 
@@ -63,6 +64,7 @@
 - CEP install/sync clears only this extension's Chromium cache folders (`Cache`, `Code Cache`, `GPUCache`, `blob_storage`) while preserving Local Storage.
 - Installed CEP tracked files now match the repository at `AE Agent 2.0.0`.
 - Live AE/CEP connectivity with the opened `AE Agent 2.0.0` panel is verified: bridge status, `ping_ae`, CDP inspect, and connector-status smoke pass.
+- Standing project rule as of M198: when After Effects, the installed AE Agent panel, and bridge are available, live CEP/AE validation is mandatory; planner-visible or mutating tool changes also require a relevant generated-only Full UI Agent `openai-cli` planner acceptance lane, or a newly added narrow lane before milestone closeout.
 - The broad local-Ollama CDP smoke now passes through plan generation, saved-plan recovery, dry run, and read-only run. Recovery of saved structured Agent plans is deterministic: the panel stores only the structured plan in chat history, then asks the bridge `/agents/plan/propose` endpoint to revalidate it and mint a fresh M100 action proposal instead of re-prompting the local planner.
 
 ## Current SDK Baseline
@@ -263,9 +265,12 @@
 - M195: Added `update_layer_marker` as a bounded single-marker update typed tool with explicit target guards, before/after marker read-back, plan-repair aliases, semantic verification, and local non-live smoke coverage.
 - M196: Added `delete_layer_marker` as a bounded single-marker delete typed tool with explicit target guards, deleted-marker/after-summary read-back, plan-repair aliases, semantic absence verification, and local non-live smoke coverage.
 - M197: Added a design-only bulk/selected-layer duplicate contract that keeps future many-layer duplication separate from single-layer duplication, deep-precomp/source duplication, layer deletion, mask/path editing, live validation, and planner acceptance until separately implemented and approved.
+- M198: Promoted live CEP/AE and generated-only OpenAI CLI planner acceptance into a standing project rule when the live stack is available, and added the M198 marker lifecycle Full UI Agent live conveyor lane for add/update/delete marker proof.
 
 ## Decision Log
 
+- 2026-05-24: User gave standing approval to run live CEP/AE validation and OpenAI CLI planner acceptance when AE, the installed panel, and bridge are available. Future milestones should not skip relevant live validation merely because it is slower; if a required live lane does not exist, add a narrow generated-only fail-closed lane.
+- 2026-05-24: M198 marker lifecycle acceptance must run inside the installed panel through CDP, Agent UI/chat, `openai-cli` with `gpt-5.5`, panel-generated plan only, M100 dry run/protected run, bridge marker read-back, and generated-prefix cleanup. Deterministic backend fallback, Ollama, OpenRouter, and raw ExtendScript fallback are not acceptance evidence.
 - 2026-05-24: M197 treats bulk/selected-layer duplication as its own future gated slice, not an implicit extension hidden inside `duplicate_layer`. Future `duplicate_layers` work should require concrete `layerIndices`; selected-layer convenience must come from prior read-only selected-layer evidence rather than selection-only ambiguity.
 - 2026-05-24: M197 intentionally adds no runtime tool, planner alias, semantic verifier code, CEP UI, live mutating validation, OpenAI CLI planner acceptance, dependency change, push, or PR. Source/precomp relink duplication, layer deletion, mask delete/invert/path editing, audio workflows, and arbitrary ExtendScript loops stay separately gated.
 - 2026-05-24: M196 implements only single-marker delete through `delete_layer_marker`. It targets one marker by `markerIndex` or strict `targetTime`, can guard with `targetComment`, returns `markerDeleted` plus after-state `markers`, and fails closed for missing/ambiguous/out-of-range targets.
@@ -390,7 +395,9 @@
 | M195 AGENTS non-live suite | Required because M195 adds `update_layer_marker`, planner guidance, plan-repair aliases, semantic verification, and local smoke/helper coverage. | Passed on 2026-05-24: touched JS `node --check`; `node scripts/plan-repair-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-promotion-smoke.js`; `node scripts/chatgpt-connector-smoke.js`; `node scripts/smoke-test.js`; `node scripts/m187-advisory-field-smoke.js both --mock-bridge --dry-run --json`; provider contract/API; solution registry/candidate/promotion/retrieval/library; project intent memory; plan classification; reliability validation suite smoke; provider API smoke; prompt optimization; bridge-only smoke; feature conveyor readiness/command/current-history smokes; agent planner corpus smoke; `npm.cmd run check:rules`; and `git diff --check`. `git diff --check` printed only LF-to-CRLF working-copy warnings for touched files. |
 | M196 AGENTS non-live suite | Required because M196 adds `delete_layer_marker`, planner guidance, plan-repair aliases, semantic absence verification, and local smoke/helper coverage. | Passed on 2026-05-24: touched JS `node --check`; `node scripts/plan-repair-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-promotion-smoke.js`; `node scripts/chatgpt-connector-smoke.js`; `node scripts/smoke-test.js`; `node scripts/m187-advisory-field-smoke.js both --mock-bridge --dry-run --json`; provider contract/API; solution registry/candidate/promotion/retrieval/library; project intent memory; plan classification; reliability validation suite smoke; provider API smoke; prompt optimization; bridge-only smoke; feature conveyor readiness/command/current-history smokes; agent planner corpus smoke; `npm.cmd run check:rules`; and `git diff --check`. `git diff --check` printed only LF-to-CRLF working-copy warnings for touched files. |
 | M197 documentation suite | Required because M197 adds a bulk/selected-layer duplicate gated-slice design and updates the active plan/handoff only. | Passed on 2026-05-24: `npm.cmd run check:rules`; `git diff --check`. No JavaScript was touched, and live CEP/AE mutating validation, OpenAI CLI planner acceptance, source/precomp relink duplication, layer deletion, mask/path editing, audio workflows, dependency changes, push, and PR were not run. |
-| SDKThread/network/external-provider/OpenAI CLI planner/non-M188-or-M190-or-M191 mutating-live validation | Forbidden/out of scope for this turn. | Not run outside the approved M190/M191 OpenAI CLI live validation lanes. |
+| M198 static/live-lane suite | Required because M198 changes standing validation policy and adds a marker lifecycle Full UI Agent OpenAI CLI live lane. | Passed on 2026-05-24: touched JS `node --check`; `npm.cmd run codex:orchestrator:ae-agent-feature-conveyor-readiness:smoke`; `npm.cmd run codex:orchestrator:ae-agent-feature-conveyor:smoke`; M198 conveyor live dry-run with exact approval text; `npm.cmd run check:rules`; and `git diff --check`. |
+| M198 Full UI Agent live marker lifecycle acceptance | Required by the new standing live-validation rule and the M198 marker lifecycle lane; must run through installed panel/CDP, Agent UI/chat, `openai-cli`, `gpt-5.5`, and a panel-generated typed marker plan only. | Passed on 2026-05-24 after syncing installed CEP files and restarting the stale bridge daemon so `/tools` exposed `add_layer_marker`, `update_layer_marker`, and `delete_layer_marker`. Command: `npm.cmd run codex:orchestrator:ae-agent-feature-conveyor -- --item m198-marker-lifecycle-live-validation --validate-live --stage both --allow-mutating-live --approval-text "I approve one M198 live CEP AE validation run for generated-only marker lifecycle checks using OpenAI CLI" --json`. Live report: `.codex-runtime/sdk/feature-conveyor-live-reports/2026-05-24T06-18-22-643Z-m198-marker-lifecycle-live-validation-both.json`. Agent report: `logs/agent-run-reports/2026-05-24T06-18-19.605Z-openai-cli-gpt-5.5-marker-lifecycle-Codex-QA-M198-03454036.json`. The run used panel plan mode, dry run, protected run, explicit marker read-back verification, and cleanup; cleanup removed 2 generated project items and left render queue total at 0. Semantic verification reported the expected update/read-back ordering limitation, but the lane passed because final bridge read-back showed marker count 0 and deleted marker absence. Deterministic backend fallback, Local/Ollama fallback, OpenRouter fallback, raw ExtendScript fallback, and user-asset mutation were not used. |
+| SDKThread/network/external-provider/OpenAI CLI planner outside approved generated-only live lanes | Forbidden/out of scope for this turn. | Not run outside approved generated-only live validation lanes. |
 | Package install/dependency change validation | Out of scope because no dependency change is allowed. | Not run. |
 
 ### Milestone 184
@@ -545,6 +552,17 @@
 - Future implementation should use concrete `layerIndices`, optional selected-layer bindings from prior read-only evidence, source-name guards, source/duplicate pair read-back, and semantic one-duplicate-per-source checks.
 - This milestone is design-only: no runtime tool, planner alias, semantic verification code, smoke helper, CEP UI, dependency, live validation, OpenAI CLI planner acceptance, push, or PR changed.
 - Passed the M197 documentation validation listed in the validation matrix.
+
+### Milestone 198
+
+- Updated `AGENTS.md` so live CEP/AE validation is mandatory when AE, installed panel, and bridge are available; planner-visible or mutating tool changes require a relevant generated-only Full UI Agent `openai-cli` planner acceptance lane.
+- Added `agentMarkerLifecycleScenarioPlans` to `scripts/agent-scenario-fixtures.js` covering generated-only `create_comp`, `create_solid_layer`, `add_layer_marker`, `update_layer_marker`, `delete_layer_marker`, and `get_layer_details`.
+- Added `full-ui-agent-marker-lifecycle-openai-cli-smoke` to `scripts/cep-panel-cdp-smoke.js` with generated marker read-back verification and cleanup.
+- Added `m198-marker-lifecycle-live-validation` to the feature conveyor queue and runner with exact approval text, read-only inspect stage, mutating Full UI Agent OpenAI CLI stage, and fallback rejection.
+- Updated feature conveyor readiness/command smokes, current SDK state, and orchestrator README for the M198 live lane.
+- Added `.codex-audit/sdk-feature-conveyor/dakkshin-intake/m198-live-validation-rule-marker-lane.md`.
+- Passed the M198 static/live-lane validation listed in the validation matrix.
+- Passed the M198 Full UI Agent live marker lifecycle acceptance listed in the validation matrix.
 
 ### Milestone 175
 

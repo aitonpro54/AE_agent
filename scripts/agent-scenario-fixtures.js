@@ -397,6 +397,140 @@ function agentMaskSafetyScenarioPlans(runPrefix) {
   }));
 }
 
+function agentMarkerLifecycleScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Marker Lifecycle`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Solid`;
+  const initialComment = `${base} Initial Marker`;
+  const updatedComment = `${base} Updated Marker`;
+
+  return [
+    {
+      id: "generated-marker-lifecycle-matrix",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "add_layer_marker",
+        "get_layer_details",
+        "update_layer_marker",
+        "delete_layer_marker"
+      ],
+      expectedReadBack: {
+        compName,
+        layerName,
+        markerLifecycle: true,
+        finalMarkerCount: 0,
+        deletedComment: updatedComment,
+        deletedTime: 1.5
+      },
+      plan: {
+        summary: "Live QA for generated-only layer marker add, update, delete, and read-back inside After Effects.",
+        risk: "low",
+        requiresCheckpoint: true,
+        steps: [
+          {
+            title: "Create generated marker QA comp",
+            tool: "create_comp",
+            args: {
+              name: compName,
+              width: 640,
+              height: 360,
+              pixelAspect: 1,
+              duration: 3,
+              frameRate: 24,
+              bgColor: [0.08, 0.1, 0.12],
+              allowDuplicateName: false,
+              openInViewer: false,
+              comment: "M198 generated-only marker lifecycle validation"
+            }
+          },
+          {
+            title: "Create generated marker target layer",
+            tool: "create_solid_layer",
+            args: {
+              compName,
+              name: layerName,
+              color: [0.24, 0.54, 0.82],
+              width: 640,
+              height: 360,
+              pixelAspect: 1,
+              startTime: 0,
+              duration: 3
+            }
+          },
+          {
+            title: "Add generated layer marker",
+            tool: "add_layer_marker",
+            args: {
+              compName,
+              layerIndex: 1,
+              time: 1.25,
+              comment: initialComment,
+              duration: 0.25
+            }
+          },
+          {
+            title: "Read marker after add",
+            tool: "get_layer_details",
+            args: {
+              compName,
+              layerIndex: 1,
+              includeProperties: false
+            }
+          },
+          {
+            title: "Update generated layer marker",
+            tool: "update_layer_marker",
+            args: {
+              compName,
+              layerIndex: 1,
+              markerIndex: 1,
+              targetComment: initialComment,
+              comment: updatedComment,
+              time: 1.5,
+              duration: 0.5
+            }
+          },
+          {
+            title: "Read marker after update",
+            tool: "get_layer_details",
+            args: {
+              compName,
+              layerIndex: 1,
+              includeProperties: false
+            }
+          },
+          {
+            title: "Delete generated layer marker",
+            tool: "delete_layer_marker",
+            args: {
+              compName,
+              layerIndex: 1,
+              markerIndex: 1,
+              targetComment: updatedComment
+            }
+          },
+          {
+            title: "Read marker after delete",
+            tool: "get_layer_details",
+            args: {
+              compName,
+              layerIndex: 1,
+              includeProperties: false
+            }
+          }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function buildAgentPlannerRegressionCorpus(options) {
   const config = options || {};
   const renderQueueBaselineTotal = Number.isFinite(Number(config.renderQueueBaselineTotal))
@@ -431,6 +565,7 @@ module.exports = {
   DEFAULT_PLANNER_FIXTURE_PREFIX,
   DEFAULT_RENDER_QUEUE_BASELINE_TOTAL,
   agentMaskSafetyScenarioPlans,
+  agentMarkerLifecycleScenarioPlans,
   agentNewToolsScenarioPlans,
   agentScenarioPlans,
   buildAgentPlannerRegressionCorpus,

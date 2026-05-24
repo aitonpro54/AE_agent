@@ -76,6 +76,8 @@ Before marking a milestone complete, run:
 - `node scripts/prompt-optimization-smoke.js`
 - `node scripts/bridge-only-smoke-test.js`
 - `node scripts/smoke-test.js`
-- relevant live CEP smoke tests, such as `node scripts/cep-panel-cdp-smoke.js smoke`, `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`, and `node scripts/provider-key-save-smoke.js`, when After Effects and the panel are available
+- live CEP/AE validation is mandatory when After Effects, the installed AE Agent panel, and the bridge are available; for planner-visible or mutating tool changes, also run the relevant generated-only Full UI Agent `openai-cli` planner acceptance lane, or create the narrow lane first if it does not exist yet
+- `node scripts/cep-panel-cdp-smoke.js inspect` and `node scripts/cep-panel-cdp-smoke.js connector-status-smoke` for live connectivity
+- relevant live CEP smoke tests, such as `node scripts/cep-panel-cdp-smoke.js smoke`, `node scripts/provider-key-save-smoke.js`, or the milestone-specific generated-only OpenAI CLI lane, when After Effects and the panel are available
 
 If a check cannot run, record why and what would be needed to run it.
