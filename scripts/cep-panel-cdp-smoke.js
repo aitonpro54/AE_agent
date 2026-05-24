@@ -115,6 +115,7 @@ function openAiCliDuplicateLayersScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_DUPLICATE_LAYERS_PREFIX || "Codex QA M207",
     scenarioFactory: agentDuplicateLayersScenarioPlans,
+    allowSemanticNeedsReviewWithReadBack: true,
     skipRenderQueueCleanup: true
   };
 }
