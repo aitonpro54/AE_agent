@@ -94,6 +94,17 @@ function initRepo(temp) {
     "utf8",
   );
   fs.writeFileSync(
+    path.join(temp, "bin", "verify-roadmap-args.cmd"),
+    [
+      "@echo off",
+      "if \"%~1\"==\"alpha beta\" if \"%~2\"==\"plain\" exit /b 0",
+      "echo unexpected args [%~1] [%~2] 1>&2",
+      "exit /b 7",
+      "",
+    ].join("\r\n"),
+    "utf8",
+  );
+  fs.writeFileSync(
     path.join(temp, "scripts", "cep-panel-cdp-smoke.js"),
     [
       '"use strict";',
@@ -656,6 +667,36 @@ function assertValidationFailureStops() {
   }
 }
 
+function assertWindowsCmdValidationCommandRuns() {
+  if (process.platform !== "win32") {
+    return;
+  }
+  const temp = createTempRepo("cmd-validation");
+  try {
+    const queuePath = writeQueue(temp, [item("one", 1, {
+      allowedCommands: ["bin\\verify-roadmap-args.cmd \"alpha beta\" plain"],
+      validationCommands: ["bin\\verify-roadmap-args.cmd \"alpha beta\" plain"],
+    })]);
+    const approval = approvalFor(temp, queuePath, ["--max-items", "1"]);
+    const result = parseJson(run([
+      "--execute-one",
+      "--queue",
+      queuePath,
+      "--item",
+      "one",
+      "--max-items",
+      "1",
+      "--approval-text",
+      approval,
+      "--json",
+    ], temp));
+    assert.strictEqual(result.results[0].validationResults[0].status, 0);
+    assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
+  } finally {
+    removeTempRepo(temp);
+  }
+}
+
 function assertRunUntilBudgetAndResume() {
   const temp = createTempRepo("budget");
   try {
@@ -728,6 +769,7 @@ function main() {
   assertSingleApprovalLiveBindingRuns();
   assertUnplannedPathFails();
   assertValidationFailureStops();
+  assertWindowsCmdValidationCommandRuns();
   assertRunUntilBudgetAndResume();
 
   console.log("SDK AE Agent roadmap supervisor command smoke: pass");

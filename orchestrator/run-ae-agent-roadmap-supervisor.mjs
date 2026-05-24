@@ -757,12 +757,22 @@ function splitCommandLine(command) {
   return args;
 }
 
+function isWindowsCommandScript(program) {
+  return /\.(?:cmd|bat)$/i.test(program);
+}
+
 function runShellCommand(cwd, command, timeoutMs = 120000) {
   const [program, ...args] = splitCommandLine(command);
   if (!program) {
     throw new Error("Validation command must not be empty.");
   }
-  return spawnSync(program, args, {
+  const executable = process.platform === "win32" && isWindowsCommandScript(program)
+    ? (process.env.ComSpec || "cmd.exe")
+    : program;
+  const commandArgs = process.platform === "win32" && isWindowsCommandScript(program)
+    ? ["/d", "/c", "call", program, ...args]
+    : args;
+  return spawnSync(executable, commandArgs, {
     cwd,
     encoding: "utf8",
     maxBuffer: CHILD_OUTPUT_MAX_BUFFER_BYTES,
