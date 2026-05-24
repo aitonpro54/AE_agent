@@ -287,6 +287,7 @@ function assertReadOnlyTools(tools) {
     "create_camera_layer",
     "create_layer_mask",
     "duplicate_layer",
+    "duplicate_layers",
     "add_layer_marker",
     "update_layer_marker",
     "delete_layer_marker",

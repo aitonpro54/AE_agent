@@ -25,6 +25,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "set_expression",
   "clear_expression",
   "duplicate_layer",
+  "duplicate_layers",
   "add_layer_marker",
   "update_layer_marker",
   "delete_layer_marker",

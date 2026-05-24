@@ -212,6 +212,58 @@ async function main() {
     assert.strictEqual(duplicateLayerRepair.repairedPlan.steps[0].args.sourceName, "Repair Smoke Source");
     assert.strictEqual(duplicateLayerRepair.repairedPlan.steps[0].args.name, "Repair Smoke Copy");
 
+    const duplicateLayersRepair = await validatePlan("duplicate-layers-bulk-alias", {
+      summary: "Duplicate two explicit generated layers.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Copy layers", tool: "copyLayers", args: { compName: "Repair Smoke Comp", layerIndexes: [1, 2], layerNames: ["Repair Smoke Source A", "Repair Smoke Source B"], suffix: " copy" } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["duplicate_layers"],
+      actionTypes: ["tool-alias", "arg-alias"]
+    });
+    assert.deepStrictEqual(duplicateLayersRepair.repairedPlan.steps[0].args.layerIndices, [1, 2]);
+    assert.deepStrictEqual(duplicateLayersRepair.repairedPlan.steps[0].args.sourceNames, ["Repair Smoke Source A", "Repair Smoke Source B"]);
+    assert.strictEqual(duplicateLayersRepair.repairedPlan.steps[0].args.nameSuffix, " copy");
+
+    const selectedDuplicateRepair = await validatePlan("duplicate-selected-layers-with-evidence", {
+      summary: "Duplicate the selected generated layers after read-only selection evidence.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Inspect selected layers", tool: "getSelectedLayers", args: {} },
+        { title: "Duplicate selected layers", tool: "duplicateSelectedLayers", args: { compName: "Repair Smoke Comp", suffix: " copy" } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["get_selected_layers", "duplicate_layers"],
+      actionTypes: ["tool-alias", "missing-required-binding"]
+    });
+    assert.strictEqual(selectedDuplicateRepair.repairedPlan.steps[1].resultBindings.layerIndices, "{{selectedLayerIndices}}");
+    assert.strictEqual(selectedDuplicateRepair.repairedPlan.steps[1].args.nameSuffix, " copy");
+
+    const selectedDuplicateWithoutEvidence = await validatePlan("duplicate-selected-layers-no-evidence", {
+      summary: "Duplicate selected layers without read-only evidence.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Duplicate selected layers", tool: "duplicateSelectedLayers", args: { compName: "Repair Smoke Comp", suffix: " copy" } }
+      ]
+    }, {
+      applied: true,
+      validationOk: false,
+      toolSequence: ["duplicate_layers"],
+      actionTypes: ["tool-alias"]
+    });
+    assert(!selectedDuplicateWithoutEvidence.repairedPlan.steps[0].args.layerIndices, "selection-only duplicate repair must not invent layerIndices");
+    assert(!selectedDuplicateWithoutEvidence.repairedPlan.steps[0].resultBindings, "selection-only duplicate repair must not add bindings without read-only evidence");
+
     const markerRepair = await validatePlan("layer-marker-alias", {
       summary: "Add one explicit marker to the generated layer.",
       risk: "medium",
