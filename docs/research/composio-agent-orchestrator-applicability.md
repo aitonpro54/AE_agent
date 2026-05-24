@@ -132,9 +132,9 @@ Rollback: не добавлять `agent-orchestrator.yaml` в AE Agent, ост�
 | Escalation/notifier | partial: handoff | medium | Не терять needs-input | Local escalation rules |
 | Structured task schema | yes | low | Стабильные handoffs | Common schema docs |
 
-## G. Concrete Next Milestone Proposal
+## G. Concrete Next Auxiliary Task Proposal
 
-Milestone id/name: `M215 AO-inspired activity and session-state intake`
+Auxiliary id/name: `AUX-001 AO-inspired activity and session-state intake`
 
 Goal: перенести полезную AO-идею без установки AO: унифицированный контракт `activity JSONL + session lifecycle summary` для SDK roadmap supervisor.
 
@@ -158,7 +158,7 @@ Forbidden paths:
 
 Implementation steps:
 
-1. Add `.codex-audit/sdk-ao-pattern-intake/215-activity-session-schema.json`.
+1. Add `.codex-audit/sdk-ao-pattern-intake/aux-001-activity-session-schema.json`.
 2. Include schema/version, event examples, lifecycle states, stop gates, mapping to existing roadmap supervisor state.
 3. Add `scripts/sdk-ao-pattern-intake-smoke.js`.
 4. Optionally document in `orchestrator/README.md`.
@@ -174,7 +174,7 @@ Checks:
 Exact prompt:
 
 ```text
-Продолжи в AE Agent с безопасного milestone M215 AO-inspired activity and session-state intake. Не устанавливай и не запускай Composio AO, не трогай CEP/live/production/dependencies/PR/branches. Создай только локальный schema artifact под .codex-audit/sdk-ao-pattern-intake и smoke script для проверки activity JSONL/session lifecycle контракта, затем выполни node --check, smoke script и git diff --check. Если меняешь план/handoff, держи изменения минимальными и запиши, что это перенос паттернов AO, а не интеграция AO.
+Продолжи в AE Agent с безопасной auxiliary-задачей AUX-001 AO-inspired activity and session-state intake. Не занимай продуктовые milestone ids M###: они зарезервированы для основной roadmap. Не устанавливай и не запускай Composio AO, не трогай CEP/live/production/dependencies/PR/branches. Создай только локальный schema artifact под .codex-audit/sdk-ao-pattern-intake и smoke script для проверки activity JSONL/session lifecycle контракта, затем выполни node --check, smoke script и git diff --check. Если меняешь план/handoff, держи изменения минимальными и запиши, что это перенос паттернов AO, а не интеграция AO.
 ```
 
 ## Pipeline insertion: ядро ценности AO для AE Agent
@@ -207,12 +207,12 @@ Task isolation + session lifecycle + feedback routing
 
 | Step | Capability | Почему рано полезно | Запрещено на этом шаге |
 | --- | --- | --- | --- |
-| M215 | Activity/session schema intake | общий язык состояний без runtime риска | AO install, worktree, PR, production edits |
-| M216 | Stuck detector + escalation rules | снижает зависания Codex runs | auto-fix, auto-retry без лимитов |
-| M217 | Status markdown/HTML dashboard | показывает sessions/blockers/next action | web server/dependency |
-| M218 | Read-only CI/test failure analyzer | превращает logs в repair prompt | самостоятельное исправление кода analyzer-ом |
-| M219 | Dummy worktree pilot outside production | проверяет isolation pattern | worktree в текущем repo |
-| M220 | Optional AO sandbox pilot | проверяет настоящий AO feedback routing | подключение AO к AE Agent |
+| AUX-001 | Activity/session schema intake | общий язык состояний без runtime риска | AO install, worktree, PR, production edits |
+| AUX-002 | Stuck detector + escalation rules | снижает зависания Codex runs | auto-fix, auto-retry без лимитов |
+| AUX-003 | Status markdown/HTML dashboard | показывает sessions/blockers/next action | web server/dependency |
+| AUX-004 | Read-only CI/test failure analyzer | превращает logs в repair prompt | самостоятельное исправление кода analyzer-ом |
+| AUX-005 | Dummy worktree pilot outside production | проверяет isolation pattern | worktree в текущем repo |
+| AUX-006 | Optional AO sandbox pilot | проверяет настоящий AO feedback routing | подключение AO к AE Agent |
 
 ### Минимальный task/session envelope
 
