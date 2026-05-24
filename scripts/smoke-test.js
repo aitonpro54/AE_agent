@@ -505,6 +505,46 @@ async function main() {
     duplicate: { index: 1, name: "Smoke Source Copy" },
     layer: { index: 1, name: "Smoke Source Copy" }
   }));
+  const duplicateLayersQueuedResponse = await callQueuedDevTool(port, token, "duplicate_layers", {
+    compName: "Smoke Comp",
+    layerIndices: [1, 2],
+    sourceNames: ["Smoke Source A", "Smoke Source B"],
+    nameSuffix: " Copy",
+    verifyAfter: false
+  }, ["Codex Duplicate Layers", "__codexDuplicateLayersUndoOpen", "sourceRefs", "sourceLayerForCopy.duplicate()", "requestedIndex > comp.numLayers", "sourceLayer.locked"], {
+    comp: { itemIndex: 1, name: "Smoke Comp", numLayersBefore: 2, numLayersAfter: 4 },
+    requestedLayerIndices: [1, 2],
+    layerCountBefore: 2,
+    layerCountAfter: 4,
+    duplicateCount: 2,
+    pairs: [
+      {
+        requestedLayerIndex: 1,
+        source: { index: 1, name: "Smoke Source A" },
+        sourceAfter: { index: 2, name: "Smoke Source A" },
+        duplicate: { index: 1, name: "Smoke Source A Copy" }
+      },
+      {
+        requestedLayerIndex: 2,
+        source: { index: 2, name: "Smoke Source B" },
+        sourceAfter: { index: 4, name: "Smoke Source B" },
+        duplicate: { index: 3, name: "Smoke Source B Copy" }
+      }
+    ],
+    layers: [{ index: 1, name: "Smoke Source A Copy" }, { index: 3, name: "Smoke Source B Copy" }],
+    postVerification: {
+      ok: true,
+      beforeLayerCount: 2,
+      afterLayerCount: 4,
+      expectedLayerCountAfter: 4,
+      requestedCount: 2,
+      duplicateCount: 2,
+      layerCountDelta: 2,
+      layerCountMatches: true,
+      pairCountMatches: true
+    }
+  });
+  queuedToolResponses.push(duplicateLayersQueuedResponse);
   queuedToolResponses.push(await callQueuedDevTool(port, token, "add_layer_marker", {
     compName: "Smoke Comp",
     layerIndex: 1,
@@ -1480,6 +1520,45 @@ async function main() {
   const devEvidenceText = devEvidenceFile && fs.existsSync(devEvidenceFile) ? fs.readFileSync(devEvidenceFile, "utf8") : "";
   const devStartPromptText = devStartPromptFile && fs.existsSync(devStartPromptFile) ? fs.readFileSync(devStartPromptFile, "utf8") : "";
   const devCandidateText = devCandidateFile && fs.existsSync(devCandidateFile) ? fs.readFileSync(devCandidateFile, "utf8") : "";
+  const duplicateLayersEmptyRejection = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/dev/tool/duplicate_layers",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    layerIndices: [],
+    verifyAfter: false
+  });
+  const duplicateLayersDuplicateRejection = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/dev/tool/duplicate_layers",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    layerIndices: [1, 1],
+    verifyAfter: false
+  });
+  const duplicateLayersNonPositiveRejection = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/dev/tool/duplicate_layers",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    layerIndices: [1, 0],
+    verifyAfter: false
+  });
   adapter.kill();
   daemon.kill();
 
@@ -1501,7 +1580,7 @@ async function main() {
   if (alignLayers.status !== 200 || !alignLayers.body.ok || alignLayers.body.result.changedCount !== 2) {
     throw new Error("Expected align_layers_to_time to align multiple layer timings");
   }
-  if (queuedToolResponses.length !== 25 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
+  if (queuedToolResponses.length !== 26 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
     throw new Error("Expected all new typed tool queue smokes to pass");
   }
   const deepDuplicateQueuedPayload = deepDuplicateQueuedResponse.response.body.result || {};
@@ -1514,6 +1593,29 @@ async function main() {
     deepDuplicateQueuedPayload.duplicatedProjectItemIndices.join(",") !== "4,6"
   ) {
     throw new Error("Deep duplicate result aliases did not expose read-back binding fields");
+  }
+  const duplicateLayersQueuedPayload = duplicateLayersQueuedResponse.response.body.result || {};
+  if (
+    duplicateLayersQueuedPayload.layerCountBefore !== 2 ||
+    duplicateLayersQueuedPayload.layerCountAfter !== 4 ||
+    duplicateLayersQueuedPayload.duplicateCount !== 2 ||
+    !Array.isArray(duplicateLayersQueuedPayload.pairs) ||
+    duplicateLayersQueuedPayload.pairs.length !== 2 ||
+    !duplicateLayersQueuedPayload.pairs[0].source ||
+    !duplicateLayersQueuedPayload.pairs[0].duplicate ||
+    !duplicateLayersQueuedPayload.postVerification ||
+    duplicateLayersQueuedPayload.postVerification.ok !== true ||
+    duplicateLayersQueuedPayload.postVerification.layerCountMatches !== true ||
+    duplicateLayersQueuedPayload.postVerification.pairCountMatches !== true
+  ) {
+    throw new Error("duplicate_layers result did not expose source/duplicate read-back and post-verification fields");
+  }
+  if (
+    duplicateLayersEmptyRejection.status !== 500 ||
+    duplicateLayersDuplicateRejection.status !== 500 ||
+    duplicateLayersNonPositiveRejection.status !== 500
+  ) {
+    throw new Error("Expected duplicate_layers to reject empty, duplicate, and non-positive layerIndices before queueing AE work");
   }
   if (!agentsTool.body.ok || !agentsTool.body.result || !Array.isArray(agentsTool.body.result.agents)) {
     throw new Error("Unexpected list_ai_agents tool response");
@@ -1779,7 +1881,7 @@ async function main() {
   }
 
   const toolNames = lines[1].result.tools.map((tool) => tool.name);
-  for (const expectedTool of ["get_ai_agent_log", "get_project_intent_memory", "update_project_intent_memory", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "run_agent_hardcore_session", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint", "list_project_folder_items", "create_comp", "create_project_folder", "move_project_items_to_folder", "set_comp_work_area", "set_layer_time_range", "stagger_layers", "split_layers_at_time", "precompose_layers", "replace_layer_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer", "create_camera_layer", "create_layer_mask", "duplicate_layer", "add_layer_marker", "update_layer_marker", "delete_layer_marker", "create_shape_layer", "fit_layer_to_comp", "set_property_keyframes", "apply_keyframe_ease", "set_expression", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"]) {
+  for (const expectedTool of ["get_ai_agent_log", "get_project_intent_memory", "update_project_intent_memory", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "run_agent_hardcore_session", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint", "list_project_folder_items", "create_comp", "create_project_folder", "move_project_items_to_folder", "set_comp_work_area", "set_layer_time_range", "stagger_layers", "split_layers_at_time", "precompose_layers", "replace_layer_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer", "create_camera_layer", "create_layer_mask", "duplicate_layer", "duplicate_layers", "add_layer_marker", "update_layer_marker", "delete_layer_marker", "create_shape_layer", "fit_layer_to_comp", "set_property_keyframes", "apply_keyframe_ease", "set_expression", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"]) {
     if (!toolNames.includes(expectedTool)) {
       throw new Error("Missing expected tool: " + expectedTool);
     }
@@ -1799,6 +1901,10 @@ async function main() {
   const duplicateLayerTool = lines[1].result.tools.find((tool) => tool.name === "duplicate_layer");
   if (!duplicateLayerTool || !duplicateLayerTool.inputSchema.properties.autoCheckpoint || !duplicateLayerTool.inputSchema.properties.checkpointLabel || !duplicateLayerTool.inputSchema.properties.idempotencyKey || !duplicateLayerTool.inputSchema.properties.verifyAfter || !duplicateLayerTool.inputSchema.properties.sourceName) {
     throw new Error("duplicate_layer is missing safety schema fields");
+  }
+  const duplicateLayersTool = lines[1].result.tools.find((tool) => tool.name === "duplicate_layers");
+  if (!duplicateLayersTool || !duplicateLayersTool.inputSchema.properties.autoCheckpoint || !duplicateLayersTool.inputSchema.properties.checkpointLabel || !duplicateLayersTool.inputSchema.properties.idempotencyKey || !duplicateLayersTool.inputSchema.properties.verifyAfter || !duplicateLayersTool.inputSchema.properties.layerIndices || !duplicateLayersTool.inputSchema.properties.sourceNames) {
+    throw new Error("duplicate_layers is missing safety schema fields");
   }
   const addLayerMarkerTool = lines[1].result.tools.find((tool) => tool.name === "add_layer_marker");
   if (!addLayerMarkerTool || !addLayerMarkerTool.inputSchema.properties.autoCheckpoint || !addLayerMarkerTool.inputSchema.properties.checkpointLabel || !addLayerMarkerTool.inputSchema.properties.idempotencyKey || !addLayerMarkerTool.inputSchema.properties.verifyAfter || !addLayerMarkerTool.inputSchema.properties.layerIndex || !addLayerMarkerTool.inputSchema.properties.comment) {

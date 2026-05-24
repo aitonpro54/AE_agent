@@ -847,6 +847,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "create_layer_mask",
   "add_project_item_to_comp",
   "duplicate_layer",
+  "duplicate_layers",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
   "add_effect",
@@ -1574,6 +1575,31 @@ function requiredPositiveIntegerList(args, name) {
       seen.add(normalized);
       result.push(normalized);
     }
+  }
+  return result;
+}
+
+function requiredExplicitPositiveIntegerList(args, name) {
+  let raw = args[name];
+  if (typeof raw === "string" && raw.trim().startsWith("[")) {
+    raw = JSON.parse(raw);
+  }
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw new Error(`${name} must be a non-empty array of positive 1-based integers.`);
+  }
+
+  const result = [];
+  const seen = new Set();
+  for (let index = 0; index < raw.length; index += 1) {
+    const value = Number(raw[index]);
+    if (!Number.isInteger(value) || value < 1) {
+      throw new Error(`${name} must contain only positive 1-based integers.`);
+    }
+    if (seen.has(value)) {
+      throw new Error(`${name} must not contain duplicate layer indexes.`);
+    }
+    seen.add(value);
+    result.push(value);
   }
   return result;
 }
@@ -8095,6 +8121,38 @@ const tools = [
     }
   },
   {
+    name: "duplicate_layers",
+    description: "Duplicate a bounded explicit list of source layers in the active comp or a comp by project item index/name. This runtime slice requires concrete layerIndices, rejects selection-only targeting, and does not delete layers or deep-duplicate/relink sources.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndices: {
+          type: "array",
+          items: { type: "number" },
+          description: "Required non-empty explicit 1-based source layer indexes in the target composition. Duplicate, non-positive, out-of-range, and selection-only targets are rejected."
+        },
+        sourceNames: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional expected source layer names, one per layerIndices entry. When provided, every indexed layer must match its paired name."
+        },
+        nameSuffix: {
+          type: "string",
+          description: "Optional suffix applied to each duplicate name after duplication. Defaults to After Effects duplicate naming when omitted."
+        }
+      },
+      required: ["layerIndices"]
+    }
+  },
+  {
     name: "duplicate_comp",
     description: "Duplicate an After Effects composition and optionally open it in the viewer.",
     inputSchema: {
@@ -11208,6 +11266,113 @@ async function callTool(name, args) {
       };
       app.endUndoGroup();
       return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "duplicate_layers") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndices = requiredExplicitPositiveIntegerList(args, "layerIndices");
+    const nameSuffix = optionalString(args, "nameSuffix", "");
+
+    let sourceNames = null;
+    if (hasArg(args, "sourceNames")) {
+      sourceNames = args.sourceNames;
+      if (typeof sourceNames === "string" && sourceNames.trim().startsWith("[")) {
+        sourceNames = JSON.parse(sourceNames);
+      }
+      if (!Array.isArray(sourceNames)) {
+        return toolResult("sourceNames must be an array when provided.", true);
+      }
+      sourceNames = sourceNames.map((value) => String(value));
+      if (sourceNames.length !== layerIndices.length) {
+        return toolResult("sourceNames must have the same length as layerIndices.", true);
+      }
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var requestedLayerIndices = ${aeLiteral(layerIndices)};
+      var expectedSourceNames = ${sourceNames ? aeLiteral(sourceNames) : "null"};
+      var nameSuffix = ${aeLiteral(nameSuffix)};
+      var layerCountBefore = comp.numLayers;
+      var sourceRefs = [];
+      var sourceBefore = [];
+
+      for (var __dupIndex = 0; __dupIndex < requestedLayerIndices.length; __dupIndex++) {
+        var requestedIndex = requestedLayerIndices[__dupIndex];
+        if (requestedIndex > comp.numLayers) {
+          throw new Error("Layer index " + requestedIndex + " is out of range for comp with " + comp.numLayers + " layers.");
+        }
+        var sourceLayer = comp.layer(requestedIndex);
+        if (!sourceLayer) throw new Error("Layer not found at index " + requestedIndex + ".");
+        if (sourceLayer.locked === true) {
+          throw new Error("Layer " + requestedIndex + " is locked and cannot be duplicated safely.");
+        }
+        if (expectedSourceNames && sourceLayer.name !== expectedSourceNames[__dupIndex]) {
+          throw new Error("Layer name mismatch at index " + requestedIndex + ". Expected '" + expectedSourceNames[__dupIndex] + "' but found '" + sourceLayer.name + "'.");
+        }
+        sourceRefs.push(sourceLayer);
+        sourceBefore.push(__codexLayerInfo(sourceLayer));
+      }
+
+      var __codexDuplicateLayersUndoOpen = false;
+      try {
+      app.beginUndoGroup("Codex Duplicate Layers");
+      __codexDuplicateLayersUndoOpen = true;
+      var pairs = [];
+      var duplicates = [];
+      for (var __copyIndex = 0; __copyIndex < sourceRefs.length; __copyIndex++) {
+        var sourceLayerForCopy = sourceRefs[__copyIndex];
+        var duplicate = sourceLayerForCopy.duplicate();
+        if (!duplicate) throw new Error("After Effects did not return a duplicated layer for index " + requestedLayerIndices[__copyIndex] + ".");
+        if (nameSuffix) duplicate.name = sourceBefore[__copyIndex].name + nameSuffix;
+        var duplicateInfo = __codexLayerInfo(duplicate);
+        var sourceAfter = __codexLayerInfo(sourceLayerForCopy);
+        duplicates.push(duplicateInfo);
+        pairs.push({
+          requestedLayerIndex: requestedLayerIndices[__copyIndex],
+          source: sourceBefore[__copyIndex],
+          sourceAfter: sourceAfter,
+          duplicate: duplicateInfo
+        });
+      }
+      var layerCountAfter = comp.numLayers;
+      var expectedLayerCountAfter = layerCountBefore + requestedLayerIndices.length;
+      var postVerification = {
+        ok: layerCountAfter === expectedLayerCountAfter && pairs.length === requestedLayerIndices.length,
+        beforeLayerCount: layerCountBefore,
+        afterLayerCount: layerCountAfter,
+        expectedLayerCountAfter: expectedLayerCountAfter,
+        requestedCount: requestedLayerIndices.length,
+        duplicateCount: duplicates.length,
+        layerCountDelta: layerCountAfter - layerCountBefore,
+        layerCountMatches: layerCountAfter === expectedLayerCountAfter,
+        pairCountMatches: pairs.length === requestedLayerIndices.length
+      };
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          numLayersBefore: layerCountBefore,
+          numLayersAfter: layerCountAfter
+        },
+        requestedLayerIndices: requestedLayerIndices,
+        layerCountBefore: layerCountBefore,
+        layerCountAfter: layerCountAfter,
+        duplicateCount: duplicates.length,
+        pairs: pairs,
+        layers: duplicates,
+        postVerification: postVerification
+      };
+      return response;
+      } finally {
+        if (__codexDuplicateLayersUndoOpen) {
+          app.endUndoGroup();
+        }
+      }
     `);
     return toolResult(result.result);
   }
