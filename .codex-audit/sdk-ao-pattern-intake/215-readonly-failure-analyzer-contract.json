@@ -1,0 +1,162 @@
+{
+  "schema": "sdk-ao-pattern-intake.readonly-failure-analyzer-contract.v1",
+  "milestone": 215,
+  "title": "AO-inspired read-only failure analyzer packet",
+  "createdAt": "2026-05-24",
+  "purpose": "Define a read-only failure analyzer packet for roadmap supervisor failures that converts explicit report, log, and session fixture paths into bounded repair prompts without fixing code, retrying commands, or changing runtime behavior.",
+  "source": {
+    "kind": "ao-inspired-pattern-intake",
+    "parentActivityContractPath": ".codex-audit/sdk-ao-pattern-intake/212-activity-session-schema.json",
+    "parentEscalationDesignPath": ".codex-audit/sdk-ao-pattern-intake/213-stuck-escalation-design.json",
+    "parentDashboardContractPath": ".codex-audit/sdk-ao-pattern-intake/214-status-dashboard-contract.json",
+    "queuePath": ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
+    "queueItemId": "m215-ao-readonly-failure-analyzer",
+    "notRuntimeBehavior": true,
+    "notAnAoIntegration": true
+  },
+  "boundaryClaims": {
+    "autoFixImplemented": false,
+    "autoRetryImplemented": false,
+    "sourceFilesEditedFromLogs": false,
+    "commandsRetried": false,
+    "liveCepAeValidationRun": false,
+    "externalProviderPlannerValidationRun": false,
+    "dependenciesChanged": false,
+    "packageManifestChanged": false,
+    "packageLockChanged": false,
+    "roadmapSupervisorRuntimeChanged": false,
+    "productionRuntimeChanged": false,
+    "aoInstalled": false,
+    "aoStarted": false,
+    "cepPanelChanged": false,
+    "branchWorktreePushPrGithubActionCreated": false
+  },
+  "packetContract": {
+    "format": "json-or-markdown",
+    "inputMode": "explicit-report-log-session-paths-only",
+    "defaultOutput": "stdout",
+    "noDefaultWrites": true,
+    "boundedLogTailDefaultLines": 40,
+    "artifactReads": [
+      "explicit --report JSON path",
+      "explicit --log text path with bounded tail",
+      "explicit --session state JSON file or session directory",
+      "explicit session events.jsonl with bounded tail when a session directory is supplied"
+    ],
+    "excludedReads": [
+      "broad logs directory scan",
+      "CEP panel files",
+      "live AE project files",
+      "package manifests",
+      "dependency trees",
+      "production runtime files"
+    ],
+    "requiredPacketFields": [
+      "failureClass",
+      "command",
+      "status",
+      "relevantLogTail",
+      "changedPaths",
+      "suspectedCause",
+      "forbiddenAutoActions",
+      "repairPrompt",
+      "nextBoundedTask"
+    ],
+    "failureClasses": [
+      "validation_failure",
+      "stuck_session",
+      "forbidden_boundary",
+      "command_failure",
+      "unknown_failure"
+    ]
+  },
+  "cliContract": {
+    "script": "scripts/create-roadmap-failure-analyzer-packet.js",
+    "requiredInput": "at least one of --report <path>, --log <path>, or --session <path>",
+    "optionalInputs": [
+      "--format json",
+      "--format markdown",
+      "--tail-lines <positive integer>",
+      "--changed-path <path>"
+    ],
+    "sideEffects": [
+      "prints JSON to stdout when --format is omitted or json",
+      "prints Markdown to stdout when --format markdown is supplied"
+    ],
+    "forbiddenSideEffects": [
+      "edit source files",
+      "retry commands",
+      "run live AE/CEP",
+      "install dependencies",
+      "modify package.json",
+      "modify package-lock.json",
+      "create branch, worktree, push, PR, GitHub issue, or GitHub Action",
+      "invoke AO"
+    ]
+  },
+  "packetFieldDefinitions": {
+    "failureClass": "A bounded classification from known roadmap failure signals, prioritizing validation_failure and stuck_session before generic command_failure.",
+    "command": "The failed or active command when available from report, session state, activity event, or log evidence.",
+    "status": "The observed failure status, exit code, lifecycle state, or validation result.",
+    "relevantLogTail": "Only the bounded tail of explicitly supplied logs or session activity, never a broad unbounded log read.",
+    "changedPaths": "Changed paths supplied by report, session state, or --changed-path flags; empty when unavailable.",
+    "suspectedCause": "A short cause summary plus confidence field, derived from explicit evidence only.",
+    "forbiddenAutoActions": "Actions the analyzer output must forbid, including auto-fix, retry, live, dependency, and PR actions.",
+    "repairPrompt": "A compact next-chat prompt for a human or writer child to inspect the bounded evidence and repair only within planned paths.",
+    "nextBoundedTask": "A narrow task envelope containing goal, planned paths, forbidden actions, validation commands, and stop conditions."
+  },
+  "machineCheck": {
+    "requiredSchema": "sdk-ao-pattern-intake.readonly-failure-analyzer-contract.v1",
+    "requiredMilestone": 215,
+    "requiredParentSchemas": [
+      "sdk-ao-pattern-intake.activity-session-schema.v1",
+      "sdk-ao-pattern-intake.stuck-escalation-design.v1",
+      "sdk-ao-pattern-intake.status-dashboard-contract.v1"
+    ],
+    "requiredFormat": "json-or-markdown",
+    "requiredInputMode": "explicit-report-log-session-paths-only",
+    "requiredDefaultOutput": "stdout",
+    "requiredPacketFields": [
+      "failureClass",
+      "command",
+      "status",
+      "relevantLogTail",
+      "changedPaths",
+      "suspectedCause",
+      "forbiddenAutoActions",
+      "repairPrompt",
+      "nextBoundedTask"
+    ],
+    "requiredFailureClasses": [
+      "validation_failure",
+      "stuck_session"
+    ],
+    "requiredForbiddenAutoActions": [
+      "auto_fix",
+      "retry_command",
+      "run_live_cep_ae",
+      "install_dependencies",
+      "push_or_pr"
+    ],
+    "requiredFalseBoundaryClaims": [
+      "autoFixImplemented",
+      "autoRetryImplemented",
+      "sourceFilesEditedFromLogs",
+      "commandsRetried",
+      "liveCepAeValidationRun",
+      "dependenciesChanged",
+      "packageManifestChanged",
+      "packageLockChanged",
+      "roadmapSupervisorRuntimeChanged",
+      "productionRuntimeChanged",
+      "aoInstalled",
+      "aoStarted",
+      "cepPanelChanged",
+      "branchWorktreePushPrGithubActionCreated"
+    ],
+    "requiredAnalyzerScript": "scripts/create-roadmap-failure-analyzer-packet.js",
+    "requiredSmokeScript": "scripts/sdk-ao-failure-analyzer-smoke.js",
+    "requiredQueuePath": ".codex-audit/sdk-roadmap-supervisor/211-ao-inspired-pipeline-hardening-queue.json",
+    "requiredQueueItemId": "m215-ao-readonly-failure-analyzer"
+  }
+}
