@@ -26,6 +26,8 @@ export const DEFAULT_TAIL_LINES = 80;
 const CHILD_OUTPUT_MAX_BUFFER_BYTES = 30 * 1024 * 1024;
 const REVIEWER_LIMIT = 2;
 const LIVE_CHECK_TIMEOUT_MS = 5 * 60 * 1000;
+const REVIEWER_SDK_PROCESS_TERMINATION_RE =
+  /Failed to parse item:\s*SUCCESS:\s*The process with PID \d+ \(child process of PID \d+\) has been terminated\./i;
 
 const HELP = `
 AE Agent roadmap supervisor
@@ -1074,26 +1076,36 @@ function runWriterChild(cwd, runtime, item, engine) {
   return { ...result, logPath };
 }
 
-function runReviewerProcess(cwd, runtime, item, task, index, engine) {
-  const logPath = path.join(runtime.reviewerDir, `${safeSessionToken(item.id)}-${index + 1}.log`);
-  if (task.kind === "noop") {
-    const result = {
-      status: 0,
-      stdout: `noop reviewer ${task.id || index + 1} used read-only contract\n`,
-      stderr: "",
-    };
-    writeLog(logPath, result);
-    return Promise.resolve({ ...result, id: task.id || `reviewer-${index + 1}`, logPath, readOnly: true });
-  }
-
-  const prompt = [
+function buildReviewerPrompt(item, task) {
+  return [
     "Read-only reviewer for AE Agent roadmap supervisor.",
     "Do not edit files, run mutating commands, install packages, push, or create a PR.",
     task.prompt || `Review queue item ${item.id} for blocking risks.`,
   ].join("\n");
+}
+
+function buildReviewerInvocation(cwd, prompt, engine) {
   const command = engine === "cli" ? "cmd.exe" : process.execPath;
   const args = engine === "cli"
-    ? ["/d", "/s", "/c", "codex", "exec", "--cd", cwd, "--sandbox", "read-only", "--ephemeral", "-c", "approval_policy=\"never\"", "-"]
+    ? [
+        "/d",
+        "/s",
+        "/c",
+        "codex",
+        "exec",
+        "--cd",
+        cwd,
+        "--sandbox",
+        "read-only",
+        "--ephemeral",
+        "-c",
+        "approval_policy=\"never\"",
+        "-c",
+        "sandbox_workspace_write.network_access=false",
+        "--disable",
+        "web_search",
+        "-",
+      ]
     : [
         path.join("orchestrator", "codex-sdk-orchestrator.mjs"),
         "--cwd",
@@ -1107,9 +1119,21 @@ function runReviewerProcess(cwd, runtime, item, task, index, engine) {
         "--prompt",
         prompt,
       ];
+  return { args, command, input: engine === "cli" ? prompt : "" };
+}
 
+function runReviewerAttempt(cwd, invocation) {
   return new Promise((resolve) => {
-    const child = spawn(command, args, {
+    let settled = false;
+    function finish(result) {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      resolve(result);
+    }
+
+    const child = spawn(invocation.command, invocation.args, {
       cwd,
       stdio: ["pipe", "pipe", "pipe"],
     });
@@ -1121,15 +1145,68 @@ function runReviewerProcess(cwd, runtime, item, task, index, engine) {
     child.stderr.on("data", (chunk) => {
       stderr += chunk.toString("utf8");
     });
-    if (engine === "cli") {
-      child.stdin.end(prompt);
+    child.on("error", (error) => {
+      finish({ error, status: 1, stderr, stdout });
+    });
+    if (invocation.input !== undefined) {
+      child.stdin.end(invocation.input);
+    } else {
+      child.stdin.end();
     }
     child.on("close", (status, signal) => {
-      const result = { status, signal, stdout, stderr };
-      writeLog(logPath, result);
-      resolve({ ...result, id: task.id || `reviewer-${index + 1}`, logPath, readOnly: true });
+      finish({ status, signal, stdout, stderr });
     });
   });
+}
+
+function isReviewerSdkProcessTermination(result) {
+  if (!result || result.status === 0) {
+    return false;
+  }
+  return REVIEWER_SDK_PROCESS_TERMINATION_RE.test(`${result.stderr || ""}\n${result.stdout || ""}`);
+}
+
+function combineReviewerFallbackResult(primary, fallback) {
+  return {
+    error: fallback.error,
+    fallbackEngine: "cli",
+    primaryStatus: primary.status,
+    signal: fallback.signal,
+    status: fallback.status,
+    stderr: [
+      "## sdk reviewer attempt stderr",
+      primary.stderr || "(empty)",
+      "## cli reviewer fallback stderr",
+      fallback.stderr || "(empty)",
+    ].join("\n"),
+    stdout: [
+      "## sdk reviewer attempt stdout",
+      primary.stdout || "(empty)",
+      "## cli reviewer fallback stdout",
+      fallback.stdout || "(empty)",
+    ].join("\n"),
+  };
+}
+
+async function runReviewerProcess(cwd, runtime, item, task, index, engine) {
+  const logPath = path.join(runtime.reviewerDir, `${safeSessionToken(item.id)}-${index + 1}.log`);
+  if (task.kind === "noop") {
+    const result = {
+      status: 0,
+      stdout: `noop reviewer ${task.id || index + 1} used read-only contract\n`,
+      stderr: "",
+    };
+    writeLog(logPath, result);
+    return { ...result, id: task.id || `reviewer-${index + 1}`, logPath, readOnly: true };
+  }
+
+  const prompt = buildReviewerPrompt(item, task);
+  const primary = await runReviewerAttempt(cwd, buildReviewerInvocation(cwd, prompt, engine));
+  const result = engine === "sdk" && isReviewerSdkProcessTermination(primary)
+    ? combineReviewerFallbackResult(primary, await runReviewerAttempt(cwd, buildReviewerInvocation(cwd, prompt, "cli")))
+    : primary;
+  writeLog(logPath, result);
+  return { ...result, id: task.id || `reviewer-${index + 1}`, logPath, readOnly: true };
 }
 
 async function runReviewers(cwd, runtime, item, mode, engine) {
@@ -1150,6 +1227,7 @@ async function runReviewers(cwd, runtime, item, mode, engine) {
     }
   }
   return results.map((result) => ({
+    ...(result.fallbackEngine ? { fallbackEngine: result.fallbackEngine } : {}),
     id: result.id,
     logPath: normalizeRepoPath(path.relative(cwd, result.logPath)),
     readOnly: true,

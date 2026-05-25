@@ -46,7 +46,10 @@ function initRepo(temp) {
     [
       "import fs from 'node:fs';",
       "import path from 'node:path';",
-      "if (process.env.FAKE_CODEX_SDK_FAIL_PARSE === '1') {",
+      "const sandboxIndex = process.argv.indexOf('--sandbox');",
+      "const sandbox = sandboxIndex === -1 ? '' : process.argv[sandboxIndex + 1] || '';",
+      "const fakeFailureMode = process.env.FAKE_CODEX_SDK_FAIL_PARSE;",
+      "if (fakeFailureMode === '1' || fakeFailureMode === sandbox) {",
       "  console.error('Failed to parse item: SUCCESS: The process with PID 16172 (child process of PID 12936) has been terminated.');",
       "  process.exit(1);",
       "}",
@@ -556,6 +559,68 @@ function assertRoadmapSdkCliExecuteOneCommits() {
   }
 }
 
+function assertReadOnlyReviewerSdkParseFailureFallsBackAndRunsWriter() {
+  const temp = createTempRepo("reviewer-parser-fallback");
+  try {
+    const queuePath = writeQueue(temp, [item("one", 1, {
+      approvalState: "pending-explicit-approval",
+      reviewerBlocking: true,
+      reviewerTasks: [
+        { id: "risk-one", kind: "sdk-readonly", prompt: "Return PASS unless there is a blocking risk." },
+        { id: "risk-two", kind: "sdk-readonly", prompt: "Return PASS unless there is a critical risk." },
+      ],
+      runnerKind: "roadmap-sdk",
+    })]);
+    const approval = approvalFor(temp, queuePath, ["--max-items", "1"]);
+    const result = parseJson(run([
+      "--run-until-budget",
+      "--queue",
+      queuePath,
+      "--max-items",
+      "1",
+      "--session-id",
+      "reviewer-parser-fallback",
+      "--reviewers",
+      "parallel",
+      "--approval-text",
+      approval,
+      "--json",
+    ], temp, {
+      env: envWithFakeCodex(temp, { FAKE_CODEX_SDK_FAIL_PARSE: "read-only" }),
+    }));
+    assert.strictEqual(result.mode, "run-until-budget");
+    assert.strictEqual(result.ok, true);
+    assert.deepStrictEqual(result.completedItems, ["one"]);
+    assert.strictEqual(result.results[0].reviewerResults.length, 2);
+    for (const reviewer of result.results[0].reviewerResults) {
+      assert.strictEqual(reviewer.status, 0);
+      assert.strictEqual(reviewer.fallbackEngine, "cli");
+      const reviewerLog = fs.readFileSync(path.join(temp, reviewer.logPath), "utf8");
+      assert.match(reviewerLog, /Failed to parse item: SUCCESS:/);
+      assert.match(reviewerLog, /read-only reviewer no-op/);
+    }
+    assert.match(fs.readFileSync(path.join(temp, "one.txt"), "utf8"), /roadmap-sdk wrote one/);
+    const childLog = fs.readFileSync(
+      path.join(
+        temp,
+        ".codex-runtime",
+        "sdk",
+        "roadmap-supervisor",
+        "reviewer-parser-fallback",
+        "children",
+        "one.log",
+      ),
+      "utf8",
+    );
+    assert.match(childLog, /roadmap-sdk wrote one/);
+    assert.doesNotMatch(childLog, /Failed to parse item/);
+    assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
+    assert.strictEqual(sh(temp, ["git", "log", "-1", "--format=%s"]), "test: one");
+  } finally {
+    removeTempRepo(temp);
+  }
+}
+
 function assertRequireLiveConnectivityAndItemLiveValidation() {
   const temp = createTempRepo("item-live");
   try {
@@ -807,6 +872,7 @@ function main() {
   assertQueueHashApprovalBinding();
   assertRoadmapSdkExecuteOneCommits();
   assertRoadmapSdkCliExecuteOneCommits();
+  assertReadOnlyReviewerSdkParseFailureFallsBackAndRunsWriter();
   assertRequireLiveConnectivityAndItemLiveValidation();
   assertSingleApprovalLiveBindingRuns();
   assertUnplannedPathFails();

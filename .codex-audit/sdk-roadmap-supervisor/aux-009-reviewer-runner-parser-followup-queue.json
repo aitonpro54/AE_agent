@@ -149,7 +149,12 @@
         "live-cep-ae-requested",
         "local-ollama-openrouter-deterministic-fallback-requested"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedBy": {
+        "actor": "parent-finalization",
+        "completedAt": "2026-05-25",
+        "note": "Repaired read-only reviewer SDK parser termination handling with read-only CLI fallback coverage after the supervisor writer child returned the same parser-termination envelope; M216-M219 retry remains approval-gated."
+      }
     }
   ]
 }
