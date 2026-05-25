@@ -228,7 +228,12 @@
         "validation-failed",
         "context-pressure"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedBy": {
+        "commit": "pending-supervisor-parent-commit",
+        "supervisorSession": "aux-006-handoff-freshness-guard",
+        "evidence": "AUX-006 was completed by a roadmap writer child within the planned paths. The guard contract, no-dependency read-only CLI, and smoke fixtures passed node --check for both touched scripts and node scripts/sdk-ao-handoff-freshness-smoke.js. The CLI rejects stale handoffs, missing commit evidence, and missing exact next prompts without editing handoff files automatically. Updating .codex/handoff.md was attempted through apply_patch and PowerShell UTF-8 Set-Content but was blocked by access denial, so the intended handoff state is recorded in plans/target-app-execplan.md for supervisor/parent finalization. No live AE/CEP, dependency, CEP panel, production path, push, PR, branch, worktree, GitHub automation, AO, Local/Ollama, auto-fix, or command retry work was performed."
+      }
     },
     {
       "id": "aux-007-context-pressure-gate",

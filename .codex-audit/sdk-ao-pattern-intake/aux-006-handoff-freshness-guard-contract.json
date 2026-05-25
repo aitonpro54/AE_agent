@@ -1,0 +1,126 @@
+{
+  "schema": "sdk-ao-handoff-freshness-guard-contract.v1",
+  "auxiliaryId": "AUX-006",
+  "title": "Handoff freshness guard",
+  "source": {
+    "queuePath": ".codex-audit/sdk-roadmap-supervisor/aux-005-aux-008-support-queue.json",
+    "queueItemId": "aux-006-handoff-freshness-guard",
+    "notRuntimeBehavior": true,
+    "notAnAoIntegration": true
+  },
+  "guardContract": {
+    "script": "scripts/check-roadmap-handoff-freshness.js",
+    "inputMode": "explicit_paths_only",
+    "requiredInputs": [
+      "report path",
+      "state path",
+      "handoff path"
+    ],
+    "defaultOutput": "stdout_json",
+    "allowedFormats": [
+      "json",
+      "markdown"
+    ],
+    "noDefaultWrites": true,
+    "noHandoffAutoUpdate": true,
+    "noCommandRetries": true,
+    "noAutoFixes": true,
+    "freshnessRules": [
+      "report and state must refer to the same queue item",
+      "report or state must provide a concrete commit id",
+      "handoff text must mention the concrete commit id",
+      "handoff text must include a non-empty Exact Next Prompt section",
+      "handoff timestamp must be equal to or newer than the latest report/state completion or update timestamp"
+    ],
+    "rejectionReasons": [
+      "queue_item_mismatch",
+      "missing_commit",
+      "missing_next_prompt",
+      "missing_handoff_timestamp",
+      "stale_handoff",
+      "validation_not_passed"
+    ],
+    "freshResult": "fresh",
+    "staleResult": "stale"
+  },
+  "fixtureExpectations": [
+    {
+      "id": "fresh_handoff",
+      "expectedOk": true,
+      "expectedReason": null
+    },
+    {
+      "id": "stale_handoff",
+      "expectedOk": false,
+      "expectedReason": "stale_handoff"
+    },
+    {
+      "id": "missing_commit",
+      "expectedOk": false,
+      "expectedReason": "missing_commit"
+    },
+    {
+      "id": "missing_next_prompt",
+      "expectedOk": false,
+      "expectedReason": "missing_next_prompt"
+    }
+  ],
+  "boundaryClaims": {
+    "autoUpdateHandoff": false,
+    "autoFix": false,
+    "commandRetry": false,
+    "branchOrWorktree": false,
+    "push": false,
+    "pullRequest": false,
+    "githubIssueOrAction": false,
+    "aoInstallOrRun": false,
+    "cepPanelWrite": false,
+    "liveCepAe": false,
+    "externalProviderPlanner": false,
+    "dependencyOrPackageChange": false,
+    "productionRuntimePathWrite": false,
+    "localOllama": false
+  },
+  "machineCheck": {
+    "requiredSchema": "sdk-ao-handoff-freshness-guard-contract.v1",
+    "requiredAuxiliaryId": "AUX-006",
+    "requiredQueuePath": ".codex-audit/sdk-roadmap-supervisor/aux-005-aux-008-support-queue.json",
+    "requiredQueueItemId": "aux-006-handoff-freshness-guard",
+    "requiredGuardScript": "scripts/check-roadmap-handoff-freshness.js",
+    "requiredSmokeScript": "scripts/sdk-ao-handoff-freshness-smoke.js",
+    "requiredInputMode": "explicit_paths_only",
+    "requiredDefaultOutput": "stdout_json",
+    "requiredInputs": [
+      "report path",
+      "state path",
+      "handoff path"
+    ],
+    "requiredRejectionReasons": [
+      "stale_handoff",
+      "missing_commit",
+      "missing_next_prompt"
+    ],
+    "requiredFixtureIds": [
+      "fresh_handoff",
+      "stale_handoff",
+      "missing_commit",
+      "missing_next_prompt"
+    ],
+    "requiredFalseBoundaryClaims": [
+      "autoUpdateHandoff",
+      "autoFix",
+      "commandRetry",
+      "branchOrWorktree",
+      "push",
+      "pullRequest",
+      "githubIssueOrAction",
+      "aoInstallOrRun",
+      "cepPanelWrite",
+      "liveCepAe",
+      "externalProviderPlanner",
+      "dependencyOrPackageChange",
+      "productionRuntimePathWrite",
+      "localOllama"
+    ]
+  }
+}
