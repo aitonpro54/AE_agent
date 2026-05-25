@@ -636,6 +636,390 @@ function agentDuplicateLayersScenarioPlans(runPrefix) {
   }));
 }
 
+function agentManualTypedToolsScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Manual Typed Tools`;
+  const folderBase = `${base} Folder Move`;
+  const markerBase = `${base} Marker`;
+  const searchBase = `${base} Exact Search`;
+  const duplicateBase = `${base} Duplicate Layers`;
+  const cameraBase = `${base} Camera`;
+  const folderName = `${folderBase} Folder`;
+  const folderCompName = `${folderBase} Comp`;
+  const markerCompName = `${markerBase} Comp`;
+  const markerLayerName = `${markerBase} Solid`;
+  const markerComment = `${markerBase} Marker`;
+  const searchCompName = `${searchBase} Comp`;
+  const duplicateCompName = `${duplicateBase} Comp`;
+  const duplicateLayerAName = `${duplicateBase} Source A`;
+  const duplicateLayerBName = `${duplicateBase} Source B`;
+  const duplicateAName = `${duplicateLayerAName} Copy`;
+  const duplicateBName = `${duplicateLayerBName} Copy`;
+  const cameraCompName = `${cameraBase} Comp`;
+  const cameraName = `${cameraBase} Camera`;
+
+  return [
+    {
+      id: "manual-folder-move-from-reference-layout",
+      cleanupPrefix: folderBase,
+      promptFamily: "screenshot-openai-cli-agent-folder-setup",
+      expectedTools: [
+        "create_project_folder",
+        "create_comp",
+        "move_project_items_to_folder",
+        "list_project_folder_items",
+        "find_project_items"
+      ],
+      expectedReadBack: {
+        folderMove: true,
+        folderName,
+        compName: folderCompName
+      },
+      plan: {
+        summary: "M219 manual folder organization live QA on generated assets.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          {
+            title: "Create generated manual folder",
+            tool: "create_project_folder",
+            args: {
+              name: folderName,
+              allowExisting: false
+            }
+          },
+          {
+            title: "Create generated manual folder comp",
+            tool: "create_comp",
+            args: {
+              name: folderCompName,
+              width: 640,
+              height: 360,
+              pixelAspect: 1,
+              duration: 2,
+              frameRate: 24,
+              bgColor: [0.08, 0.1, 0.12],
+              allowDuplicateName: false,
+              openInViewer: false,
+              comment: "M219 generated-only manual typed-tools folder validation"
+            }
+          },
+          {
+            title: "Move generated comp into generated folder",
+            tool: "move_project_items_to_folder",
+            args: {
+              targetFolderName: folderName
+            },
+            resultBindings: {
+              itemIndices: "{{steps.2.itemIndex}}"
+            }
+          },
+          {
+            title: "Read generated folder contents",
+            tool: "list_project_folder_items",
+            args: {
+              folderName,
+              recursive: false,
+              type: "comp",
+              limit: 10
+            }
+          },
+          {
+            title: "Read generated folder comp summary",
+            tool: "find_project_items",
+            args: {
+              query: folderCompName,
+              type: "comp",
+              exactName: true,
+              caseSensitive: true,
+              limit: 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: "manual-marker-comp-binding-from-dakkshin-intake",
+      cleanupPrefix: markerBase,
+      promptFamily: "dakkshin-marker-lifecycle-manual-panel",
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "add_layer_marker",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        markerReadBack: true,
+        compName: markerCompName,
+        layerName: markerLayerName,
+        markerComment,
+        markerTime: 1,
+        markerDuration: 0.25
+      },
+      plan: {
+        summary: "M219 manual marker add live QA on generated assets.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          {
+            title: "Create generated marker comp",
+            tool: "create_comp",
+            args: {
+              name: markerCompName,
+              width: 640,
+              height: 360,
+              pixelAspect: 1,
+              duration: 3,
+              frameRate: 24,
+              bgColor: [0.08, 0.1, 0.12],
+              allowDuplicateName: false,
+              openInViewer: false,
+              comment: "M219 generated-only manual typed-tools marker validation"
+            }
+          },
+          {
+            title: "Create generated marker target layer",
+            tool: "create_solid_layer",
+            args: {
+              compName: markerCompName,
+              name: markerLayerName,
+              color: [0.24, 0.54, 0.82],
+              width: 640,
+              height: 360,
+              pixelAspect: 1,
+              startTime: 0,
+              duration: 3
+            }
+          },
+          {
+            title: "Add generated marker",
+            tool: "add_layer_marker",
+            args: {
+              compName: markerCompName,
+              layerIndex: 1,
+              time: 1,
+              comment: markerComment,
+              duration: 0.25
+            }
+          },
+          {
+            title: "Read generated marker details",
+            tool: "get_layer_details",
+            args: {
+              compName: markerCompName,
+              layerIndex: 1,
+              includeProperties: false
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: "manual-exact-name-project-search",
+      cleanupPrefix: searchBase,
+      promptFamily: "screenshot-openai-api-without-key-project-search",
+      expectedTools: [
+        "create_comp",
+        "find_project_items"
+      ],
+      expectedReadBack: {
+        exactProjectItemSearch: true,
+        compName: searchCompName
+      },
+      plan: {
+        summary: "M219 manual exact-name project search live QA on generated assets.",
+        risk: "low",
+        requiresCheckpoint: true,
+        steps: [
+          {
+            title: "Create generated exact-search comp",
+            tool: "create_comp",
+            args: {
+              name: searchCompName,
+              width: 640,
+              height: 360,
+              pixelAspect: 1,
+              duration: 2,
+              frameRate: 24,
+              bgColor: [0.08, 0.1, 0.12],
+              allowDuplicateName: false,
+              openInViewer: false,
+              comment: "M219 generated-only manual typed-tools exact search validation"
+            }
+          },
+          {
+            title: "Find generated comp by exact name",
+            tool: "find_project_items",
+            args: {
+              query: searchCompName,
+              exactName: true,
+              type: "comp",
+              caseSensitive: true,
+              limit: 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: "manual-focused-chat-duplicate-layers-order",
+      cleanupPrefix: duplicateBase,
+      promptFamily: "screenshot-focused-chat-duplicate-layers",
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "create_text_layer",
+        "duplicate_layers",
+        "get_comp_details"
+      ],
+      expectedReadBack: {
+        compName: duplicateCompName,
+        duplicateLayers: true,
+        sourceNames: [duplicateLayerAName, duplicateLayerBName],
+        duplicateNames: [duplicateAName, duplicateBName],
+        layerCountAfter: 4
+      },
+      plan: {
+        summary: "M219 manual duplicate_layers stack-order live QA on generated assets.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          {
+            title: "Create generated duplicate manual comp",
+            tool: "create_comp",
+            args: {
+              name: duplicateCompName,
+              width: 640,
+              height: 360,
+              pixelAspect: 1,
+              duration: 3,
+              frameRate: 24,
+              bgColor: [0.08, 0.1, 0.12],
+              allowDuplicateName: false,
+              openInViewer: false,
+              comment: "M219 generated-only manual typed-tools duplicate validation"
+            }
+          },
+          {
+            title: "Create first generated duplicate source",
+            tool: "create_solid_layer",
+            args: {
+              compName: duplicateCompName,
+              name: duplicateLayerAName,
+              color: [0.2, 0.52, 0.86],
+              width: 240,
+              height: 180,
+              pixelAspect: 1,
+              startTime: 0,
+              duration: 3
+            }
+          },
+          {
+            title: "Create second generated duplicate source",
+            tool: "create_text_layer",
+            args: {
+              compName: duplicateCompName,
+              name: duplicateLayerBName,
+              text: "M219 B",
+              position: [320, 180],
+              fontSize: 48,
+              fillColor: [0.95, 0.95, 0.85],
+              startTime: 0,
+              duration: 3
+            }
+          },
+          {
+            title: "Duplicate generated manual source layers",
+            tool: "duplicate_layers",
+            args: {
+              compName: duplicateCompName,
+              layerIndices: [1, 2],
+              sourceNames: [duplicateLayerBName, duplicateLayerAName],
+              nameSuffix: " Copy"
+            }
+          },
+          {
+            title: "Read generated duplicate layer details",
+            tool: "get_comp_details",
+            args: {
+              compName: duplicateCompName,
+              includeLayers: true,
+              layerLimit: 10
+            }
+          }
+        ]
+      }
+    },
+    {
+      id: "manual-model-menu-camera-final-summary",
+      cleanupPrefix: cameraBase,
+      promptFamily: "screenshot-openai-cli-model-menu-camera",
+      expectedTools: [
+        "create_comp",
+        "create_camera_layer",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        cameraReadBack: true,
+        compName: cameraCompName,
+        cameraName,
+        cameraZoom: 600
+      },
+      plan: {
+        summary: "M219 manual camera final read-back live QA on generated assets.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          {
+            title: "Create generated camera manual comp",
+            tool: "create_comp",
+            args: {
+              name: cameraCompName,
+              width: 640,
+              height: 360,
+              pixelAspect: 1,
+              duration: 3,
+              frameRate: 24,
+              bgColor: [0.08, 0.1, 0.12],
+              allowDuplicateName: false,
+              openInViewer: false,
+              comment: "M219 generated-only manual typed-tools camera validation"
+            }
+          },
+          {
+            title: "Create generated camera",
+            tool: "create_camera_layer",
+            args: {
+              compName: cameraCompName,
+              name: cameraName,
+              pointOfInterest: [320, 180, 0],
+              position: [320, 180, -900],
+              zoom: 600,
+              startTime: 0,
+              duration: 3
+            }
+          },
+          {
+            title: "Read generated camera final summary",
+            tool: "get_layer_details",
+            args: {
+              compName: cameraCompName,
+              includeProperties: false
+            },
+            resultBindings: {
+              layerIndex: "{{steps.2.layer.index}}"
+            }
+          }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function buildAgentPlannerRegressionCorpus(options) {
   const config = options || {};
   const renderQueueBaselineTotal = Number.isFinite(Number(config.renderQueueBaselineTotal))
@@ -670,6 +1054,7 @@ module.exports = {
   DEFAULT_PLANNER_FIXTURE_PREFIX,
   DEFAULT_RENDER_QUEUE_BASELINE_TOTAL,
   agentDuplicateLayersScenarioPlans,
+  agentManualTypedToolsScenarioPlans,
   agentMaskSafetyScenarioPlans,
   agentMarkerLifecycleScenarioPlans,
   agentNewToolsScenarioPlans,

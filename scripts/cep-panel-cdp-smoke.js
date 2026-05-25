@@ -4,6 +4,7 @@ const http = require("http");
 const { writeAgentRunReport } = require("./agent-scenario-report");
 const {
   agentDuplicateLayersScenarioPlans,
+  agentManualTypedToolsScenarioPlans,
   agentMaskSafetyScenarioPlans,
   agentMarkerLifecycleScenarioPlans,
   agentNewToolsScenarioPlans,
@@ -114,6 +115,23 @@ function openAiCliDuplicateLayersScenarioConfig() {
     runPrefixBase: process.env.CEP_PANEL_AGENT_DUPLICATE_LAYERS_PREFIX || "Codex QA M207",
     scenarioFactory: agentDuplicateLayersScenarioPlans,
     skipRenderQueueCleanup: true
+  };
+}
+
+function openAiCliManualTypedToolsScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-manual-typed-tools",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_MANUAL_TYPED_TOOLS_PREFIX || "Codex QA M219",
+    scenarioFactory: agentManualTypedToolsScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true
   };
 }
 
@@ -3616,9 +3634,169 @@ async function verifyDuplicateLayersReadBack(scenario, expected) {
   };
 }
 
+async function findGeneratedCompByExactName(scenario, compName) {
+  const found = await callBridgeTool("find_project_items", {
+    query: compName,
+    type: "comp",
+    exactName: true,
+    caseSensitive: true,
+    limit: 5
+  });
+  const compMatch = found.matches && found.matches[0];
+  if (!compMatch || !compMatch.itemIndex) {
+    throw new Error(`${scenario.id}: generated comp ${compName} was not found by exact-name read-back.`);
+  }
+  return compMatch;
+}
+
+async function verifyFolderMoveReadBack(scenario, expected) {
+  const folder = await callBridgeTool("list_project_folder_items", {
+    folderName: expected.folderName,
+    recursive: false,
+    type: "comp",
+    limit: 20
+  });
+  const folderItems = Array.isArray(folder.items) ? folder.items : [];
+  const folderComp = folderItems.find((item) => item.name === expected.compName);
+  if (!folderComp) {
+    throw new Error(`${scenario.id}: generated folder does not contain comp ${expected.compName}.`);
+  }
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+
+  return {
+    ok: true,
+    folder: {
+      name: expected.folderName,
+      returned: folder.returned,
+      containsComp: folderComp.name
+    },
+    comp: {
+      itemIndex: compMatch.itemIndex,
+      name: compMatch.name,
+      type: compMatch.type || null
+    }
+  };
+}
+
+async function verifyExactProjectItemSearchReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  return {
+    ok: true,
+    comp: {
+      itemIndex: compMatch.itemIndex,
+      name: compMatch.name,
+      type: compMatch.type || null
+    }
+  };
+}
+
+async function verifyMarkerReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const layer = layers.find((item) => item.name === expected.layerName);
+  if (!layer || !layer.index) {
+    throw new Error(`${scenario.id}: generated marker target layer was not found by read-back.`);
+  }
+
+  const layerDetails = await callBridgeTool("get_layer_details", {
+    compName: expected.compName,
+    layerIndex: layer.index,
+    includeProperties: false
+  });
+  const markers = layerDetails.markers || {};
+  const items = Array.isArray(markers.items) ? markers.items : [];
+  const marker = items.find((item) => (
+    item.comment === expected.markerComment &&
+    Math.abs(Number(item.time) - Number(expected.markerTime)) <= 0.001
+  ));
+  if (!marker) {
+    throw new Error(`${scenario.id}: generated marker ${expected.markerComment} was not found by read-back.`);
+  }
+  if (typeof expected.markerDuration === "number" && Math.abs(Number(marker.duration) - expected.markerDuration) > 0.001) {
+    throw new Error(`${scenario.id}: generated marker duration mismatch; expected ${expected.markerDuration}, got ${marker.duration}.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      numLayers: comp.numLayers
+    },
+    layer: {
+      index: layer.index,
+      name: layer.name
+    },
+    marker: {
+      comment: marker.comment,
+      time: marker.time,
+      duration: marker.duration
+    }
+  };
+}
+
+async function verifyCameraReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const cameraLayer = layers.find((layer) => layer.name === expected.cameraName);
+  if (!cameraLayer || !cameraLayer.index) {
+    throw new Error(`${scenario.id}: generated camera layer was not found by read-back.`);
+  }
+
+  const layerDetails = await callBridgeTool("get_layer_details", {
+    compName: expected.compName,
+    layerIndex: cameraLayer.index,
+    includeProperties: false
+  });
+  const zoom = valuePreviewNumber(layerDetails.camera && layerDetails.camera.zoom);
+  if (typeof expected.cameraZoom === "number" && Math.abs(Number(zoom) - expected.cameraZoom) > 0.001) {
+    throw new Error(`${scenario.id}: generated camera zoom read-back mismatch; expected ${expected.cameraZoom}, got ${zoom}.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      numLayers: comp.numLayers
+    },
+    camera: {
+      layerIndex: cameraLayer.index,
+      name: cameraLayer.name,
+      zoom
+    }
+  };
+}
+
 async function verifyAgentScenarioReadBack(scenario) {
   const expected = scenario.expectedReadBack;
   if (!expected) return null;
+
+  if (expected.folderMove) {
+    return verifyFolderMoveReadBack(scenario, expected);
+  }
+
+  if (expected.exactProjectItemSearch) {
+    return verifyExactProjectItemSearchReadBack(scenario, expected);
+  }
+
+  if (expected.markerReadBack) {
+    return verifyMarkerReadBack(scenario, expected);
+  }
+
+  if (expected.cameraReadBack) {
+    return verifyCameraReadBack(scenario, expected);
+  }
 
   if (expected.duplicateLayers) {
     return verifyDuplicateLayersReadBack(scenario, expected);
@@ -3854,6 +4032,15 @@ async function runAgentScenario(send, scenario, config) {
     throw new Error(`${scenario.id}: protected run did not report checkpoint/edit-session protection.`);
   }
   const readBackVerification = await verifyAgentScenarioReadBack(scenario);
+  if (scenarioConfig.requireFinalReadBack && (!readBackVerification || readBackVerification.ok !== true)) {
+    throw new Error(`${scenario.id}: final read-back summary is required for ${scenarioConfig.label}.`);
+  }
+  if (
+    scenarioConfig.requireSemanticVerificationPassed &&
+    (!run.planRunSemanticVerification || run.planRunSemanticVerification.status !== "passed")
+  ) {
+    throw new Error(`${scenario.id}: semantic verification was not passed for ${scenarioConfig.label}.\n${run.transcript.slice(-3000)}`);
+  }
   const outcomePassed = run.transcript.indexOf("Outcome verification: passed") >= 0;
   const allowedNeedsReviewWithReadBack = Boolean(
     scenarioConfig.allowSemanticNeedsReviewWithReadBack &&
@@ -4221,6 +4408,10 @@ async function main() {
   }
   if (command === "agent-duplicate-layers-openai-cli-smoke" || command === "full-ui-agent-duplicate-layers-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliDuplicateLayersScenarioConfig());
+    return;
+  }
+  if (command === "agent-manual-typed-tools-openai-cli-smoke" || command === "full-ui-agent-manual-typed-tools-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliManualTypedToolsScenarioConfig());
     return;
   }
   if (command === "openai-api-setup-smoke") {
