@@ -541,7 +541,10 @@ async function main() {
       duplicateCount: 2,
       layerCountDelta: 2,
       layerCountMatches: true,
-      pairCountMatches: true
+      pairCountMatches: true,
+      sourceNameMatches: true,
+      duplicateNameMatches: true,
+      pairNameMatches: true
     }
   });
   queuedToolResponses.push(duplicateLayersQueuedResponse);
@@ -1616,7 +1619,10 @@ async function main() {
     duplicateLayersQueuedPayload.postVerification.duplicateCount !== 2 ||
     duplicateLayersQueuedPayload.postVerification.layerCountDelta !== 2 ||
     duplicateLayersQueuedPayload.postVerification.layerCountMatches !== true ||
-    duplicateLayersQueuedPayload.postVerification.pairCountMatches !== true
+    duplicateLayersQueuedPayload.postVerification.pairCountMatches !== true ||
+    duplicateLayersQueuedPayload.postVerification.sourceNameMatches !== true ||
+    duplicateLayersQueuedPayload.postVerification.duplicateNameMatches !== true ||
+    duplicateLayersQueuedPayload.postVerification.pairNameMatches !== true
   ) {
     throw new Error("duplicate_layers result did not expose deterministic one-duplicate-per-source read-back and post-verification fields");
   }

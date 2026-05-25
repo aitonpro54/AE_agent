@@ -404,7 +404,12 @@
         "ao-runtime-requested",
         "analyzer-auto-fix-requested"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedBy": {
+        "actor": "roadmap-writer-child",
+        "completedAt": "2026-05-25",
+        "note": "Repaired M218 duplicate layer-order and semantic evidence: duplicate_layer/duplicate_layers now document AE index-1 insertion, return stricter postVerification name/order flags, plan repair maps sourceNames to inferred AE stack order or inserts get_comp_details when duplicate source order is ambiguous, semantic verification fails closed on duplicate_layers pair/name/read-back order mismatches, and the manual typed-tool corpus now has all five cases fixed before M219. Validation passed with the M218 command set. Updating ignored .codex/handoff.md was attempted with apply_patch and PowerShell UTF-8 but blocked by the inherited local ACL, so the intended handoff state is recorded in the active plan for supervisor/parent finalization. No live AE/CEP validation, Local/Ollama, OpenRouter, deterministic fallback, external AO runtime, dependency/package change, branch/worktree, push, PR, GitHub issue/action, CEP panel edit, asset deletion, source relinking, or analyzer auto-fix was run. Commit remains pending supervisor/parent finalization."
+      }
     },
     {
       "id": "m219-manual-typed-tools-live-acceptance",

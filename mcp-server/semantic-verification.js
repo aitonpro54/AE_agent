@@ -134,6 +134,18 @@ function addLayerCount(target, value, source) {
   });
 }
 
+function addLayerEvidence(target, value, source) {
+  if (!isPlainObject(value)) return;
+  const index = numberValue(value.index);
+  const name = compactText(value.name, 160);
+  if (index === null || index < 1 || !name) return;
+  target.layers.push({
+    index,
+    name,
+    source: source || "observed layer"
+  });
+}
+
 function numberArrayFromValue(value) {
   const raw = Array.isArray(value)
     ? value
@@ -171,6 +183,7 @@ function createEvidenceStore(readBackSteps) {
     outputPathSources: {},
     layerCounts: [],
     numberArrays: {},
+    layers: [],
     markers: [],
     markerSignatures: new Set()
   };
@@ -232,6 +245,7 @@ function collectPayloadEvidence(payload, evidence, source, depth = 0) {
   if (!isPlainObject(payload)) return;
 
   if (typeof payload.name === "string") addName(evidence, payload.name, source);
+  addLayerEvidence(evidence, payload, source);
   if (typeof payload.before === "string") addName(evidence, payload.before, source);
   if (typeof payload.after === "string") addName(evidence, payload.after, source);
   if (typeof payload.file === "string") addOutputPath(evidence, payload.file, source);
@@ -290,6 +304,18 @@ function observedNameEvidence(evidence, expectedName) {
   if (evidence.names.has(expectedName)) {
     const source = evidence.nameSources[expectedName] && evidence.nameSources[expectedName][0];
     return source || "observed result";
+  }
+  return null;
+}
+
+function observedLayerAtIndexEvidence(evidence, expectedIndex, expectedName) {
+  const index = numberValue(expectedIndex);
+  const name = compactText(expectedName, 160);
+  if (index === null || !name || !evidence || !Array.isArray(evidence.layers)) return null;
+  for (const layer of evidence.layers) {
+    if (nearlyEqual(layer.index, index) && layer.name === name) {
+      return layer.source || `layer ${index}: ${name}`;
+    }
   }
   return null;
 }
@@ -629,12 +655,34 @@ function checkDuplicateLayers(checks, step, payload, evidence) {
   const args = step.args || {};
   const pairs = Array.isArray(payload.pairs) ? payload.pairs : [];
   const requested = Array.isArray(args.layerIndices) ? args.layerIndices : [];
+  const sourceNames = Array.isArray(args.sourceNames) ? args.sourceNames.map((value) => String(value)) : [];
+  const suffix = hasOwn(args, "nameSuffix") ? String(args.nameSuffix || "") : " copy";
   const expectedCount = requested.length;
   const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
   const pairMismatches = [];
+  const pairNameMismatches = [];
+  const pairReadBackMismatches = [];
   for (let index = 0; index < pairs.length; index += 1) {
     const pair = pairs[index] || {};
     if (!pair.source || !pair.duplicate) pairMismatches.push(`pair ${index + 1} missing source or duplicate`);
+    if (pair.requestedLayerIndex !== undefined && requested[index] !== undefined && Number(pair.requestedLayerIndex) !== Number(requested[index])) {
+      pairNameMismatches.push(`pair ${index + 1} requested index ${pair.requestedLayerIndex} != ${requested[index]}`);
+    }
+    const expectedSourceName = sourceNames[index] || pair.source && pair.source.name || "";
+    const expectedDuplicateName = expectedSourceName ? `${expectedSourceName}${suffix}` : pair.duplicate && pair.duplicate.name || "";
+    if (expectedSourceName && pair.source && pair.source.name !== expectedSourceName) {
+      pairNameMismatches.push(`pair ${index + 1} source ${pair.source.name || "missing"} != ${expectedSourceName}`);
+    }
+    if (expectedDuplicateName && pair.duplicate && pair.duplicate.name !== expectedDuplicateName) {
+      pairNameMismatches.push(`pair ${index + 1} duplicate ${pair.duplicate.name || "missing"} != ${expectedDuplicateName}`);
+    }
+    if (pair.duplicate && pair.duplicate.index && expectedDuplicateName && !observedLayerAtIndexEvidence(evidence.readBack, pair.duplicate.index, expectedDuplicateName)) {
+      pairReadBackMismatches.push(`duplicate ${expectedDuplicateName} not read back at layer ${pair.duplicate.index}`);
+    }
+    const sourceAfter = pair.sourceAfter || pair.source;
+    if (sourceAfter && sourceAfter.index && expectedSourceName && !observedLayerAtIndexEvidence(evidence.readBack, sourceAfter.index, expectedSourceName)) {
+      pairReadBackMismatches.push(`source ${expectedSourceName} not read back at layer ${sourceAfter.index}`);
+    }
   }
   pushCheck(checks, {
     id: `${step.index || "step"}:${step.tool}:pairs`,
@@ -645,8 +693,25 @@ function checkDuplicateLayers(checks, step, payload, evidence) {
       pairs.length === expectedCount &&
       Number(payload.duplicateCount || 0) === expectedCount &&
       postVerification.pairCountMatches === true &&
+      postVerification.pairNameMatches !== false &&
       pairMismatches.length === 0,
     evidence: pairMismatches.length ? pairMismatches.join("; ") : stepLabel(step)
+  });
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:pair-name-order`,
+    title: "Source and duplicate names match requested layer-index order",
+    expected: requested.map((layerIndex, index) => `${layerIndex}:${sourceNames[index] || "source"}`).join(", "),
+    observed: pairNameMismatches.concat(pairReadBackMismatches).length
+      ? pairNameMismatches.concat(pairReadBackMismatches).join("; ")
+      : pairs.map((pair) => `${pair.requestedLayerIndex}:${pair.source && pair.source.name || "missing"} -> ${pair.duplicate && pair.duplicate.name || "missing"}`).join(", "),
+    passed: expectedCount > 0 &&
+      pairs.length === expectedCount &&
+      pairNameMismatches.length === 0 &&
+      pairReadBackMismatches.length === 0,
+    evidence: pairNameMismatches.concat(pairReadBackMismatches).length
+      ? pairNameMismatches.concat(pairReadBackMismatches).join("; ")
+      : "Post-run read-back matched duplicate_layers source/duplicate pair order."
   });
 
   const expectedNames = expectedDuplicateLayerNames(args, pairs);
@@ -656,7 +721,7 @@ function checkDuplicateLayers(checks, step, payload, evidence) {
     title: "Duplicate layer names are present in post-run read-back",
     expected: expectedNames.join(", "),
     observed: missingNames.length ? `missing: ${missingNames.join(", ")}` : expectedNames.join(", "),
-    passed: expectedNames.length === expectedCount && missingNames.length === 0,
+    passed: expectedNames.length === expectedCount && missingNames.length === 0 && pairNameMismatches.length === 0,
     evidence: missingNames.length
       ? "No post-run read-back step contained every expected duplicate name."
       : expectedNames.map((name) => observedNameEvidence(evidence.readBack, name)).filter(Boolean).join("; ")

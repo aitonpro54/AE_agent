@@ -145,7 +145,7 @@ const MANUAL_TYPED_TOOL_CORPUS = [
     prompt: "Create two visible source layers, duplicate both with duplicate_layers, and verify source/duplicate pairs.",
     ownerToFlip: "M218",
     fixedExpectation: "duplicate_layers sourceNames match After Effects layer-index stack order after new layers insert at index 1.",
-    expectedCurrentFailures: [FAILURE_IDS.wrongDuplicateLayersOrder],
+    expectedCurrentFailures: [],
     plan: {
       summary: "Manual duplicate_layers stack-order flow.",
       risk: "medium",
@@ -175,7 +175,7 @@ const MANUAL_TYPED_TOOL_CORPUS = [
           args: {
             compItemIndex: "{{itemIndex}}",
             layerIndices: [1, 2],
-            sourceNames: ["Codex Manual Source A", "Codex Manual Source B"],
+            sourceNames: ["Codex Manual Source B", "Codex Manual Source A"],
             nameSuffix: " copy"
           }
         },
@@ -194,7 +194,7 @@ const MANUAL_TYPED_TOOL_CORPUS = [
     prompt: "Add a generated camera and report the final camera position and zoom back to the user.",
     ownerToFlip: "M218",
     fixedExpectation: "mutating manual typed-tool plans end with a final read-back summary step for the created camera/layer.",
-    expectedCurrentFailures: [FAILURE_IDS.missingFinalReadbackSummary],
+    expectedCurrentFailures: [],
     plan: {
       summary: "Manual camera creation without final read-back.",
       risk: "medium",
@@ -209,6 +209,11 @@ const MANUAL_TYPED_TOOL_CORPUS = [
             position: [640, 360, -900],
             zoom: 600
           }
+        },
+        {
+          title: "Read generated camera result",
+          tool: "get_comp_details",
+          args: { includeLayers: true }
         }
       ]
     }
@@ -380,14 +385,11 @@ function main() {
 
   assert.deepStrictEqual(
     Array.from(seenExpectedFailures).sort(),
-    [
-      FAILURE_IDS.wrongDuplicateLayersOrder,
-      FAILURE_IDS.missingFinalReadbackSummary
-    ].sort(),
-    "M217 corpus must leave only M218-owned manual typed-tool failures"
+    [],
+    "M218 corpus must have no expected manual typed-tool failures before live acceptance"
   );
 
-  console.log("manual-typed-tool-regression-smoke: M217 binding/schema cases fixed; M218 failures remain expected");
+  console.log("manual-typed-tool-regression-smoke: M218 duplicate order and final read-back cases fixed");
   for (const { testCase, report } of reports) {
     const observed = report.observedCurrentFailures.length ? report.observedCurrentFailures.join(", ") : "fixed";
     console.log(`- ${testCase.id}: ${observed}; flipOwner=${testCase.ownerToFlip}`);

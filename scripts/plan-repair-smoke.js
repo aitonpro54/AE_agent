@@ -230,6 +230,41 @@ async function main() {
     assert.deepStrictEqual(duplicateLayersRepair.repairedPlan.steps[0].args.sourceNames, ["Repair Smoke Source A", "Repair Smoke Source B"]);
     assert.strictEqual(duplicateLayersRepair.repairedPlan.steps[0].args.nameSuffix, " copy");
 
+    const duplicateLayersStackOrderRepair = await validatePlan("duplicate-layers-stack-order", {
+      summary: "Create two generated layers and duplicate both by current layer index.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Create source A", tool: "create_solid_layer", args: { compName: "Repair Smoke Comp", name: "Repair Smoke Source A", color: [1, 0, 0], width: 1280, height: 720 } },
+        { title: "Create source B", tool: "create_text_layer", args: { compName: "Repair Smoke Comp", name: "Repair Smoke Source B", text: "B" } },
+        { title: "Duplicate sources", tool: "duplicate_layers", args: { compName: "Repair Smoke Comp", layerIndices: [1, 2], sourceNames: ["Repair Smoke Source A", "Repair Smoke Source B"], nameSuffix: " copy" } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["create_solid_layer", "create_text_layer", "duplicate_layers"],
+      actionTypes: ["layer-stack-order"]
+    });
+    assert.deepStrictEqual(duplicateLayersStackOrderRepair.repairedPlan.steps[2].args.sourceNames, ["Repair Smoke Source B", "Repair Smoke Source A"]);
+
+    const duplicateLayersAmbiguousOrderRepair = await validatePlan("duplicate-layers-ambiguous-order-readback", {
+      summary: "Duplicate two existing generated layers by explicit indexes.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Duplicate existing sources", tool: "duplicate_layers", args: { compName: "Repair Smoke Comp", layerIndices: [1, 2], nameSuffix: " copy" } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["get_comp_details", "duplicate_layers"],
+      actionTypes: ["layer-stack-readback"]
+    });
+    assert.strictEqual(duplicateLayersAmbiguousOrderRepair.repairedPlan.steps[0].args.includeLayers, true);
+    assert.strictEqual(duplicateLayersAmbiguousOrderRepair.repairedPlan.steps[0].args.compName, "Repair Smoke Comp");
+
     const selectedDuplicateRepair = await validatePlan("duplicate-selected-layers-with-evidence", {
       summary: "Duplicate the selected generated layers after read-only selection evidence.",
       risk: "medium",

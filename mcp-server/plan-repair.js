@@ -179,6 +179,22 @@ const LAYER_RESULT_TOOLS = new Set([
   "add_project_item_to_comp"
 ]);
 
+const LAYER_CREATION_TOOLS = new Set([
+  "create_text_layer",
+  "create_solid_layer",
+  "create_null_layer",
+  "create_adjustment_layer",
+  "create_camera_layer",
+  "create_shape_layer",
+  "add_project_item_to_comp"
+]);
+
+const LAYER_STACK_READBACK_TOOLS = new Set([
+  "get_comp_details",
+  "list_layers",
+  "get_selected_layers"
+]);
+
 const PROJECT_ITEM_RESULT_TOOLS = new Set([
   "find_project_items",
   "find_comps",
@@ -574,6 +590,106 @@ function bindingForMissingField(field, steps, stepIndex) {
   return "";
 }
 
+function layerNameFromCreationStep(step) {
+  if (!step || !LAYER_CREATION_TOOLS.has(stepToolName(step))) return "";
+  const args = stepArgs(step);
+  return typeof args.name === "string" ? args.name.trim() : "";
+}
+
+function inferredAeLayerStackBeforeStep(steps, stepIndex) {
+  const stack = [];
+  for (let index = 0; index < stepIndex; index += 1) {
+    const name = layerNameFromCreationStep(steps[index]);
+    if (name) stack.unshift(name);
+  }
+  return stack;
+}
+
+function hasPriorLayerStackReadBack(steps, stepIndex) {
+  for (let index = 0; index < stepIndex; index += 1) {
+    if (LAYER_STACK_READBACK_TOOLS.has(stepToolName(steps[index]))) return true;
+  }
+  return false;
+}
+
+function inspectionArgsFromDuplicateArgs(args) {
+  const result = { includeLayers: true };
+  if (hasOwn(args, "compItemIndex") && !missingValue(args.compItemIndex)) {
+    result.compItemIndex = args.compItemIndex;
+  } else if (hasOwn(args, "compName") && !missingValue(args.compName)) {
+    result.compName = args.compName;
+  }
+  return result;
+}
+
+function repairDuplicateLayerStackOrder(step, stepIndex, steps, actions) {
+  const toolName = stepToolName(step);
+  if (toolName !== "duplicate_layer" && toolName !== "duplicate_layers") return;
+  const args = stepArgs(step);
+  const stack = inferredAeLayerStackBeforeStep(steps, stepIndex);
+
+  if (toolName === "duplicate_layer") {
+    const layerIndex = Number(args.layerIndex);
+    const expectedName = Number.isInteger(layerIndex) && layerIndex > 0 ? stack[layerIndex - 1] : "";
+    if (expectedName && args.sourceName && args.sourceName !== expectedName) {
+      const before = args.sourceName;
+      args.sourceName = expectedName;
+      step.args = args;
+      addAction(actions, stepIndex, "layer-stack-order", "Mapped duplicate_layer sourceName to current AE stack order.", {
+        field: "sourceName",
+        before,
+        after: expectedName
+      });
+    }
+    return;
+  }
+
+  const layerIndices = Array.isArray(args.layerIndices) ? args.layerIndices : [];
+  const sourceNames = Array.isArray(args.sourceNames) ? args.sourceNames : [];
+  if (!layerIndices.length || !sourceNames.length) return;
+  const expectedNames = layerIndices.map((layerIndex) => {
+    const number = Number(layerIndex);
+    return Number.isInteger(number) && number > 0 ? stack[number - 1] || "" : "";
+  });
+  if (expectedNames.some((name) => !name)) return;
+  const mismatch = expectedNames.some((name, index) => sourceNames[index] !== name);
+  if (!mismatch) return;
+  args.sourceNames = expectedNames;
+  step.args = args;
+  addAction(actions, stepIndex, "layer-stack-order", "Mapped duplicate_layers sourceNames to current AE stack order.", {
+    field: "sourceNames",
+    before: sourceNames,
+    after: expectedNames
+  });
+}
+
+function insertLayerStackInspectionBeforeAmbiguousDuplicates(steps, catalog, actions) {
+  if (!catalog.toolByName("get_comp_details") || !catalog.planningToolNames.has("get_comp_details")) return;
+  for (let index = steps.length - 1; index >= 0; index -= 1) {
+    const step = steps[index];
+    const toolName = stepToolName(step);
+    if (toolName !== "duplicate_layer" && toolName !== "duplicate_layers") continue;
+    const args = stepArgs(step);
+    const hasConcreteIndex = toolName === "duplicate_layer"
+      ? !missingValue(args.layerIndex)
+      : Array.isArray(args.layerIndices) && args.layerIndices.length > 0;
+    if (!hasConcreteIndex) continue;
+    const hasExpectedNames = toolName === "duplicate_layer"
+      ? !missingValue(args.sourceName)
+      : Array.isArray(args.sourceNames) && args.sourceNames.length === args.layerIndices.length;
+    if (hasExpectedNames || hasPriorLayerStackReadBack(steps, index)) continue;
+    steps.splice(index, 0, {
+      title: "Inspect layer stack before duplication",
+      intent: "Read current AE layer stack order before duplicating explicit layer indices.",
+      tool: "get_comp_details",
+      args: inspectionArgsFromDuplicateArgs(args)
+    });
+    addAction(actions, index, "layer-stack-readback", "Inserted get_comp_details before duplicate layer step with ambiguous source-layer order.", {
+      tool: toolName
+    });
+  }
+}
+
 function repairToolName(step, stepIndex, catalog, actions, blockers) {
   const original = stepToolName(step);
   if (!original || catalog.toolByName(original)) return;
@@ -737,7 +853,9 @@ function repairAgentPlan(plan, validation, catalogOptions) {
     repairArgAliases(step, index, tool, repair.actions);
     repairResultBindingAliases(step, index, tool, repair.actions);
     repairMissingRequired(step, index, repairedPlan.steps, tool, repair.actions);
+    repairDuplicateLayerStackOrder(step, index, repairedPlan.steps, repair.actions);
   }
+  insertLayerStackInspectionBeforeAmbiguousDuplicates(repairedPlan.steps, catalog, repair.actions);
 
   repair.applied = repair.actions.length > 0;
   if (!repair.applied) return repair;

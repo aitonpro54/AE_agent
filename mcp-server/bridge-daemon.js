@@ -5915,8 +5915,8 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For requests to align selected layers, clips, or precomps to the current time indicator, use align_layers_to_time with no layerIndices and omit targetTime so it uses the active comp CTI.",
     "For timeline trims, work areas, sequencing, splitting, and offsets, use set_comp_work_area, set_layer_time_range, stagger_layers, or split_layers_at_time.",
     "For precomp/source workflows, use precompose_layers, replace_layer_source, deep_duplicate_precomp_sources, rename_layers, and rename_project_items before considering raw ExtendScript.",
-    "For explicit single-layer duplication, use duplicate_layer after inspecting the target comp/layer; do not use it for delete operations or selection-only ambiguity.",
-    "For explicit bulk layer duplication, use duplicate_layers with concrete layerIndices after inspecting the target comp/layers. For selected-layer duplication, inspect with get_selected_layers first and bind layerIndices from {{selectedLayerIndices}}; never use duplicate_layers for deletion, source/precomp relinking, mask/path edits, or audio workflows.",
+    "For explicit single-layer duplication, use duplicate_layer after inspecting the target comp/layer and pairing layerIndex with the sourceName in current AE stack order. AE inserts newly created and duplicated layers at layer index 1; do not assume creation order equals layer-index order.",
+    "For explicit bulk layer duplication, use duplicate_layers with concrete layerIndices after inspecting the target comp/layers. Pair sourceNames with layerIndices in current AE stack order, or insert get_comp_details before duplication when source-layer order is ambiguous. For selected-layer duplication, inspect with get_selected_layers first and bind layerIndices from {{selectedLayerIndices}}; never use duplicate_layers for deletion, source/precomp relinking, mask/path edits, or audio workflows.",
     "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
     "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, and fit_layer_to_comp.",
     "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, set_expression, and clear_expression.",
@@ -8174,7 +8174,7 @@ const tools = [
         },
         sourceName: {
           type: "string",
-          description: "Optional exact expected source layer name. When provided, duplication fails if the indexed layer has a different name."
+          description: "Optional exact expected source layer name at the current 1-based layerIndex. AE inserts newly created and duplicated layers at the top of the stack, so inspect current stack order before setting this."
         },
         name: {
           type: "string",
@@ -8206,7 +8206,7 @@ const tools = [
         sourceNames: {
           type: "array",
           items: { type: "string" },
-          description: "Optional expected source layer names, one per layerIndices entry. When provided, every indexed layer must match its paired name."
+          description: "Optional expected source layer names, one per layerIndices entry in current AE stack order. AE inserts newly created and duplicated layers at the top of the stack, so layerIndices [1,2] after creating A then B usually maps to [B,A]."
         },
         nameSuffix: {
           type: "string",
@@ -11313,22 +11313,42 @@ async function callTool(name, args) {
       }
 
       app.beginUndoGroup("Codex Duplicate Layer");
+      var layerCountBefore = comp.numLayers;
       var sourceBefore = __codexLayerInfo(sourceLayer);
       var duplicate = sourceLayer.duplicate();
       if (!duplicate) throw new Error("After Effects did not return a duplicated layer.");
       if (duplicateName) duplicate.name = duplicateName;
       var duplicateInfo = __codexLayerInfo(duplicate);
       var sourceAfter = __codexLayerInfo(sourceLayer);
+      var layerCountAfter = comp.numLayers;
+      var expectedDuplicateName = duplicateName || duplicateInfo.name;
+      var postVerification = {
+        ok: layerCountAfter === layerCountBefore + 1 &&
+          (!expectedSourceName || sourceBefore.name === expectedSourceName) &&
+          (!expectedDuplicateName || duplicateInfo.name === expectedDuplicateName),
+        beforeLayerCount: layerCountBefore,
+        afterLayerCount: layerCountAfter,
+        expectedLayerCountAfter: layerCountBefore + 1,
+        layerCountDelta: layerCountAfter - layerCountBefore,
+        layerCountMatches: layerCountAfter === layerCountBefore + 1,
+        sourceNameMatches: !expectedSourceName || sourceBefore.name === expectedSourceName,
+        duplicateNameMatches: !expectedDuplicateName || duplicateInfo.name === expectedDuplicateName
+      };
       var response = {
         comp: {
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name,
-          numLayers: comp.numLayers
+          numLayers: comp.numLayers,
+          numLayersBefore: layerCountBefore,
+          numLayersAfter: layerCountAfter
         },
         source: sourceBefore,
         sourceAfter: sourceAfter,
         duplicate: duplicateInfo,
-        layer: duplicateInfo
+        layer: duplicateInfo,
+        layerCountBefore: layerCountBefore,
+        layerCountAfter: layerCountAfter,
+        postVerification: postVerification
       };
       app.endUndoGroup();
       return response;
@@ -11407,8 +11427,20 @@ async function callTool(name, args) {
       }
       var layerCountAfter = comp.numLayers;
       var expectedLayerCountAfter = layerCountBefore + requestedLayerIndices.length;
+      var sourceNameMatches = true;
+      var duplicateNameMatches = true;
+      for (var __verifyPairIndex = 0; __verifyPairIndex < pairs.length; __verifyPairIndex++) {
+        var pair = pairs[__verifyPairIndex];
+        var expectedPairSourceName = expectedSourceNames ? expectedSourceNames[__verifyPairIndex] : sourceBefore[__verifyPairIndex].name;
+        var expectedPairDuplicateName = sourceBefore[__verifyPairIndex].name + nameSuffix;
+        if (expectedPairSourceName && pair.source.name !== expectedPairSourceName) sourceNameMatches = false;
+        if (nameSuffix && pair.duplicate.name !== expectedPairDuplicateName) duplicateNameMatches = false;
+      }
       var postVerification = {
-        ok: layerCountAfter === expectedLayerCountAfter && pairs.length === requestedLayerIndices.length,
+        ok: layerCountAfter === expectedLayerCountAfter &&
+          pairs.length === requestedLayerIndices.length &&
+          sourceNameMatches === true &&
+          duplicateNameMatches === true,
         beforeLayerCount: layerCountBefore,
         afterLayerCount: layerCountAfter,
         expectedLayerCountAfter: expectedLayerCountAfter,
@@ -11416,7 +11448,10 @@ async function callTool(name, args) {
         duplicateCount: duplicates.length,
         layerCountDelta: layerCountAfter - layerCountBefore,
         layerCountMatches: layerCountAfter === expectedLayerCountAfter,
-        pairCountMatches: pairs.length === requestedLayerIndices.length
+        pairCountMatches: pairs.length === requestedLayerIndices.length,
+        sourceNameMatches: sourceNameMatches,
+        duplicateNameMatches: duplicateNameMatches,
+        pairNameMatches: sourceNameMatches === true && duplicateNameMatches === true
       };
       var response = {
         comp: {

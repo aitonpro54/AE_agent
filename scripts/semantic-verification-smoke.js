@@ -33,6 +33,19 @@ function layerInfo(name, overrides = {}) {
   };
 }
 
+function reindexLayers(layers) {
+  for (let index = 0; index < layers.length; index += 1) {
+    layers[index] = { ...layers[index], index: index + 1 };
+  }
+}
+
+function insertLayerAtTop(state, layer) {
+  state.layers.unshift({ ...layer, index: 1 });
+  reindexLayers(state.layers);
+  state.nextLayerIndex = state.layers.length + 1;
+  return state.layers[0];
+}
+
 function withVerification(payload, compName, layer) {
   return {
     ...payload,
@@ -70,13 +83,12 @@ function fakeMutationResult(step, state) {
     }, args.name);
   }
   if (step.tool === "create_solid_layer") {
-    const layer = layerInfo(args.name, {
-      index: state.nextLayerIndex++,
+    const layer = insertLayerAtTop(state, layerInfo(args.name, {
+      index: 1,
       startTime: args.startTime || 0,
       inPoint: args.startTime || 0,
       outPoint: (args.startTime || 0) + (args.duration || 1)
-    });
-    state.layers.push(layer);
+    }));
     return withVerification({
       comp: { name: compName },
       layer,
@@ -84,20 +96,19 @@ function fakeMutationResult(step, state) {
     }, compName, layer);
   }
   if (step.tool === "create_text_layer") {
-    const layer = layerInfo(args.name, {
-      index: state.nextLayerIndex++,
+    const layer = insertLayerAtTop(state, layerInfo(args.name, {
+      index: 1,
       startTime: args.startTime || 0,
       inPoint: args.startTime || 0,
       outPoint: (args.startTime || 0) + (args.duration || 1),
       text: args.text,
       fontSize: args.fontSize
-    });
-    state.layers.push(layer);
+    }));
     return withVerification({ comp: { name: compName }, layer, text: args.text }, compName, layer);
   }
   if (step.tool === "create_camera_layer") {
-    const layer = layerInfo(args.name, {
-      index: state.nextLayerIndex++,
+    const layer = insertLayerAtTop(state, layerInfo(args.name, {
+      index: 1,
       matchName: "ADBE Camera Layer",
       startTime: args.startTime || 0,
       inPoint: args.startTime || 0,
@@ -106,8 +117,7 @@ function fakeMutationResult(step, state) {
         position: args.position || [320, 180, -900],
         pointOfInterest: args.pointOfInterest || [320, 180, 0]
       }
-    });
-    state.layers.push(layer);
+    }));
     return withVerification({
       comp: { name: compName },
       layer,
@@ -188,7 +198,10 @@ function fakeMutationResult(step, state) {
         duplicateCount: pairs.length,
         layerCountDelta: pairs.length,
         layerCountMatches: true,
-        pairCountMatches: true
+        pairCountMatches: true,
+        sourceNameMatches: true,
+        duplicateNameMatches: true,
+        pairNameMatches: true
       }
     }, compName, pairs[0] && pairs[0].duplicate);
   }
@@ -825,6 +838,102 @@ function assertDuplicateLayersMissingReadBackNeedsReview() {
   assert(semantic.checks.some((check) => check.id.indexOf("duplicate_layers:names") >= 0 && check.status === "failed"), "missing duplicate_layers read-back names should fail.");
 }
 
+function assertDuplicateLayersPairOrderMismatchNeedsReview() {
+  const plan = {
+    summary: "Duplicate two generated layers with current stack-order source names.",
+    risk: "low",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Duplicate generated layers",
+        tool: "duplicate_layers",
+        args: {
+          compName: "Duplicate Layers Fixture",
+          layerIndices: [1, 2],
+          sourceNames: ["Duplicate Layers Source B", "Duplicate Layers Source A"],
+          nameSuffix: " Copy"
+        }
+      },
+      {
+        title: "Read duplicate layers comp",
+        tool: "get_comp_details",
+        args: { compName: "Duplicate Layers Fixture", includeLayers: true }
+      }
+    ]
+  };
+  const pairs = [
+    {
+      requestedLayerIndex: 1,
+      source: layerInfo("Duplicate Layers Source A", { index: 1 }),
+      sourceAfter: layerInfo("Duplicate Layers Source A", { index: 2 }),
+      duplicate: layerInfo("Duplicate Layers Source A Copy", { index: 1 })
+    },
+    {
+      requestedLayerIndex: 2,
+      source: layerInfo("Duplicate Layers Source B", { index: 2 }),
+      sourceAfter: layerInfo("Duplicate Layers Source B", { index: 4 }),
+      duplicate: layerInfo("Duplicate Layers Source B Copy", { index: 3 })
+    }
+  ];
+  const run = {
+    ok: true,
+    dryRun: false,
+    steps: [
+      {
+        index: 1,
+        title: plan.steps[0].title,
+        tool: "duplicate_layers",
+        args: clone(plan.steps[0].args),
+        mutatesProject: true,
+        status: "completed",
+        result: withVerification({
+          comp: { name: "Duplicate Layers Fixture", numLayersBefore: 2, numLayersAfter: 4 },
+          requestedLayerIndices: [1, 2],
+          layerCountBefore: 2,
+          layerCountAfter: 4,
+          duplicateCount: 2,
+          pairs,
+          postVerification: {
+            ok: true,
+            beforeLayerCount: 2,
+            afterLayerCount: 4,
+            expectedLayerCountAfter: 4,
+            requestedCount: 2,
+            duplicateCount: 2,
+            layerCountDelta: 2,
+            layerCountMatches: true,
+            pairCountMatches: true,
+            sourceNameMatches: false,
+            duplicateNameMatches: false,
+            pairNameMatches: false
+          }
+        }, "Duplicate Layers Fixture")
+      },
+      {
+        index: 2,
+        title: plan.steps[1].title,
+        tool: "get_comp_details",
+        args: clone(plan.steps[1].args),
+        mutatesProject: false,
+        status: "completed",
+        result: {
+          comp: { name: "Duplicate Layers Fixture", numLayers: 4 },
+          layerCount: 4,
+          layers: [
+            layerInfo("Duplicate Layers Source A Copy", { index: 1 }),
+            layerInfo("Duplicate Layers Source A", { index: 2 }),
+            layerInfo("Duplicate Layers Source B Copy", { index: 3 }),
+            layerInfo("Duplicate Layers Source B", { index: 4 })
+          ]
+        }
+      }
+    ]
+  };
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "duplicate_layers layer/name order mismatch must fail closed.");
+  assert(semantic.checks.some((check) => check.id.indexOf("duplicate_layers:pair-name-order") >= 0 && check.status === "failed"), "duplicate_layers pair-name order check should fail.");
+}
+
 function assertDuplicateLayersJsonStringReadBackPasses() {
   const plan = {
     summary: "Duplicate two generated layers and inspect the comp.",
@@ -852,11 +961,13 @@ function assertDuplicateLayersJsonStringReadBackPasses() {
     {
       requestedLayerIndex: 1,
       source: layerInfo("Duplicate Layers Source B", { index: 1 }),
+      sourceAfter: layerInfo("Duplicate Layers Source B", { index: 2 }),
       duplicate: layerInfo("Duplicate Layers Source B Copy", { index: 1 })
     },
     {
       requestedLayerIndex: 2,
       source: layerInfo("Duplicate Layers Source A", { index: 2 }),
+      sourceAfter: layerInfo("Duplicate Layers Source A", { index: 4 }),
       duplicate: layerInfo("Duplicate Layers Source A Copy", { index: 3 })
     }
   ];
@@ -887,7 +998,10 @@ function assertDuplicateLayersJsonStringReadBackPasses() {
             duplicateCount: 2,
             layerCountDelta: 2,
             layerCountMatches: true,
-            pairCountMatches: true
+            pairCountMatches: true,
+            sourceNameMatches: true,
+            duplicateNameMatches: true,
+            pairNameMatches: true
           }
         }, "Duplicate Layers Fixture")
       },
@@ -1098,6 +1212,7 @@ function main() {
   assertDuplicateLayersPasses();
   assertDuplicateLayersJsonStringReadBackPasses();
   assertDuplicateLayersMissingReadBackNeedsReview();
+  assertDuplicateLayersPairOrderMismatchNeedsReview();
   assertAddLayerMarkerPasses();
   assertUpdateLayerMarkerPasses();
   assertDeleteLayerMarkerPasses();
