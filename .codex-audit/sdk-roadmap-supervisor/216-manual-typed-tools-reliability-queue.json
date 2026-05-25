@@ -543,7 +543,12 @@
         "ao-runtime-requested",
         "analyzer-auto-fix-requested"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedBy": {
+        "actor": "roadmap-supervisor-parent-live-gate",
+        "completedAt": "2026-05-25",
+        "note": "Parent supervisor finalized this generated-only live item only after validation and item-live gates passed. Validation: node --check scripts/cep-panel-cdp-smoke.js: status 0; node --check scripts/agent-scenario-fixtures.js: status 0; node --check scripts/manual-typed-tool-regression-smoke.js: status 0; node scripts/manual-typed-tool-regression-smoke.js: status 0; node scripts/plan-repair-smoke.js: status 0; node scripts/semantic-verification-smoke.js: status 0; node scripts/smoke-test.js: status 0; npm.cmd run check:rules: status 0; git diff --check: status 0; node scripts/cep-panel-cdp-smoke.js inspect: status 0; node scripts/cep-panel-cdp-smoke.js connector-status-smoke: status 0. Item live: node scripts/cep-panel-cdp-smoke.js full-ui-agent-manual-typed-tools-openai-cli-smoke: status 0. Writer-authored live completion is deferred until this parent gate succeeds."
+      }
     }
   ]
 }
