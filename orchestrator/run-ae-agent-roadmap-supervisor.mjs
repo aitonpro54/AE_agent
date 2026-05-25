@@ -27,7 +27,7 @@ const CHILD_OUTPUT_MAX_BUFFER_BYTES = 30 * 1024 * 1024;
 const REVIEWER_LIMIT = 2;
 const LIVE_CHECK_TIMEOUT_MS = 5 * 60 * 1000;
 const REVIEWER_SDK_PROCESS_TERMINATION_RE =
-  /Failed to parse item:\s*SUCCESS:\s*The process with PID \d+ \(child process of PID \d+\) has been terminated\./i;
+  /Failed to parse item:\s*(?:SUCCESS:\s*The process with PID \d+ \(child process of PID \d+\) has been terminated\.|Успешно:\s*.*?\d+.*?\d+.*?заверш[её]н)/i;
 
 const HELP = `
 AE Agent roadmap supervisor
@@ -1350,7 +1350,21 @@ function isReviewerSdkProcessTermination(result) {
   if (!result || result.status === 0) {
     return false;
   }
-  return REVIEWER_SDK_PROCESS_TERMINATION_RE.test(`${result.stderr || ""}\n${result.stdout || ""}`);
+  return isReviewerSdkProcessTerminationText(`${result.stderr || ""}\n${result.stdout || ""}`);
+}
+
+function isReviewerSdkProcessTerminationText(text) {
+  if (REVIEWER_SDK_PROCESS_TERMINATION_RE.test(text)) {
+    return true;
+  }
+  const parseLine = String(text || "")
+    .split(/\r?\n/)
+    .find((line) => /Failed to parse item:/i.test(line));
+  if (!parseLine) {
+    return false;
+  }
+  const numericIds = parseLine.match(/\b\d{3,}\b/g) || [];
+  return parseLine.includes("\uFFFD") && numericIds.length >= 2;
 }
 
 function combineReviewerFallbackResult(primary, fallback) {
@@ -1407,7 +1421,13 @@ async function runReviewers(cwd, runtime, item, mode, engine) {
   for (const result of results) {
     const output = `${result.stdout || ""}\n${result.stderr || ""}`;
     if (result.status !== 0) {
-      throw new Error(`Read-only reviewer failed for ${item.id}: ${result.id}`);
+      throw new Error(
+        [
+          `Read-only reviewer failed for ${item.id}: ${result.id}`,
+          `Log: ${normalizeRepoPath(path.relative(cwd, result.logPath))}`,
+          tailLines(output, 20),
+        ].join("\n"),
+      );
     }
     if (item.reviewerBlocking === true && /\b(CRITICAL|BLOCKING)\b/i.test(output)) {
       throw new Error(`Read-only reviewer reported a blocking finding for ${item.id}: ${result.id}`);
@@ -2070,7 +2090,7 @@ function assertMissionFollowupAllowedPaths(paths) {
 
 function missionFailureAllowsFollowup(error) {
   const text = error && error.message ? error.message : String(error || "");
-  return REVIEWER_SDK_PROCESS_TERMINATION_RE.test(text);
+  return isReviewerSdkProcessTerminationText(text);
 }
 
 function buildMissionFollowupItem(runtime, failedItem) {

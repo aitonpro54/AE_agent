@@ -53,6 +53,11 @@ function initRepo(temp) {
       "  console.error('Failed to parse item: SUCCESS: The process with PID 16172 (child process of PID 12936) has been terminated.');",
       "  process.exit(1);",
       "}",
+      "if (fakeFailureMode === 'localized-read-only' && sandbox === 'read-only') {",
+      "  const bad = String.fromCharCode(0xfffd);",
+      "  console.error(`Failed to parse item: ${bad}${bad}: ${bad}${bad} 19728, ${bad}${bad} 12472, ${bad}${bad}.`);",
+      "  process.exit(1);",
+      "}",
       "const promptIndex = process.argv.indexOf('--prompt');",
       "const prompt = promptIndex === -1 ? '' : process.argv[promptIndex + 1] || '';",
       "const match = prompt.match(/<roadmap_item_json>\\n([\\s\\S]*?)\\n<\\/roadmap_item_json>/);",
@@ -567,8 +572,8 @@ function assertRoadmapSdkCliExecuteOneCommits() {
   }
 }
 
-function assertReadOnlyReviewerSdkParseFailureFallsBackAndRunsWriter() {
-  const temp = createTempRepo("reviewer-parser-fallback");
+function runReadOnlyReviewerSdkParseFailureFallback(tempName, failureMode, expectedPrimaryPattern) {
+  const temp = createTempRepo(tempName);
   try {
     const queuePath = writeQueue(temp, [item("one", 1, {
       approvalState: "pending-explicit-approval",
@@ -587,14 +592,14 @@ function assertReadOnlyReviewerSdkParseFailureFallsBackAndRunsWriter() {
       "--max-items",
       "1",
       "--session-id",
-      "reviewer-parser-fallback",
+      tempName,
       "--reviewers",
       "parallel",
       "--approval-text",
       approval,
       "--json",
     ], temp, {
-      env: envWithFakeCodex(temp, { FAKE_CODEX_SDK_FAIL_PARSE: "read-only" }),
+      env: envWithFakeCodex(temp, { FAKE_CODEX_SDK_FAIL_PARSE: failureMode }),
     }));
     assert.strictEqual(result.mode, "run-until-budget");
     assert.strictEqual(result.ok, true);
@@ -604,7 +609,7 @@ function assertReadOnlyReviewerSdkParseFailureFallsBackAndRunsWriter() {
       assert.strictEqual(reviewer.status, 0);
       assert.strictEqual(reviewer.fallbackEngine, "cli");
       const reviewerLog = fs.readFileSync(path.join(temp, reviewer.logPath), "utf8");
-      assert.match(reviewerLog, /Failed to parse item: SUCCESS:/);
+      assert.match(reviewerLog, expectedPrimaryPattern);
       assert.match(reviewerLog, /read-only reviewer no-op/);
     }
     assert.match(fs.readFileSync(path.join(temp, "one.txt"), "utf8"), /roadmap-sdk wrote one/);
@@ -614,7 +619,7 @@ function assertReadOnlyReviewerSdkParseFailureFallsBackAndRunsWriter() {
         ".codex-runtime",
         "sdk",
         "roadmap-supervisor",
-        "reviewer-parser-fallback",
+        tempName,
         "children",
         "one.log",
       ),
@@ -627,6 +632,19 @@ function assertReadOnlyReviewerSdkParseFailureFallsBackAndRunsWriter() {
   } finally {
     removeTempRepo(temp);
   }
+}
+
+function assertReadOnlyReviewerSdkParseFailureFallsBackAndRunsWriter() {
+  runReadOnlyReviewerSdkParseFailureFallback(
+    "reviewer-parser-fallback",
+    "read-only",
+    /Failed to parse item: SUCCESS:/,
+  );
+  runReadOnlyReviewerSdkParseFailureFallback(
+    "reviewer-localized-parser-fallback",
+    "localized-read-only",
+    /Failed to parse item: .*19728.*12472/,
+  );
 }
 
 function assertPromptOnlyMissionCreatesQueueAndExecutes() {

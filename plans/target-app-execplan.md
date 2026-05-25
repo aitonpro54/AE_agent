@@ -63,6 +63,7 @@
 - [x] AUX-009 follow-up task artifact: created a fresh bounded reviewer-runner/parser repair queue after the M216-M219 run stopped before the M216 writer child on read-only reviewer parser termination; plan-only preview passed with no child run, SDK thread, runtime state, retry, live CEP/AE, provider fallback, AO runtime, dependency change, push, or PR.
 - [x] AUX-009 support item: repaired the read-only reviewer SDK parser-termination path with a read-only Codex CLI fallback and command-smoke coverage, without retrying M216-M219 or starting the M216 writer child.
 - [x] AUX-010 support item: added the universal roadmap supervisor Mission Runner for prompt/existing-queue mission approvals, bounded follow-up retry, generated-only live bindings, mission phase state, and command-smoke coverage.
+- [x] AUX-011 support item: repaired localized Windows read-only reviewer parser/process-termination detection after the M216-M219 mission stopped before the M216 writer child.
 
 ## Current Stable Baseline
 
@@ -1005,6 +1006,17 @@
 - Updated `orchestrator/README.md`, this plan, and `.codex/handoff.md`.
 - Validation passed with `node --check orchestrator/run-ae-agent-roadmap-supervisor.mjs`, `node --check scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js`, `node scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js`, `npm.cmd run check:rules`, and `git diff --check`.
 - No real live CEP/AE validation, Local/Ollama, OpenRouter, deterministic fallback, external-provider planner validation, external AO runtime, dependency/package change, branch/worktree, push, PR, GitHub issue/action, CEP panel edit, bridge runtime edit, registry/recipe edit, or product typed-tool edit was performed.
+
+### AUX-011 Support Item: Localized Reviewer Parser Repair
+
+- The approved M216-M219 mission run was attempted after `queueSha256=7e42fc15ac69a5ef0ec9e4d8c10905c61a4b9a92c9c2f119916b8645612f5840` matched plan-only output, but it stopped in runtime session `.codex-runtime/sdk/roadmap-supervisor/roadmap-2026-05-25T10-41-50-819Z/` before the M216 writer child.
+- The stop was caused by read-only reviewer parser/process-termination output in localized Windows form with replacement characters, so the previous English-only `SUCCESS: The process ... has been terminated` detector did not invoke the read-only Codex CLI fallback.
+- Updated `orchestrator/run-ae-agent-roadmap-supervisor.mjs` so reviewer parser termination detection accepts the English Windows text, correctly decoded Russian Windows text, and the bounded replacement-character form seen in the real M216 reviewer logs when it includes two numeric process ids.
+- Reviewer failure errors now include the normalized reviewer log path and a short output tail, so bounded mission follow-up detection can see parser evidence instead of only `Read-only reviewer failed ...`.
+- Updated `scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js` with a second temp-repo scenario that reproduces the localized/replacement-character reviewer parse failure, proves both reviewers fall back to read-only Codex CLI, and proves the SDK writer child still starts and commits.
+- Validation passed with `node --check orchestrator/run-ae-agent-roadmap-supervisor.mjs`, `node --check scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js`, `node scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js`, `npm.cmd run check:rules`, the AGENTS non-live smoke suite, and `git diff --check`.
+- `git diff --check` printed only LF-to-CRLF working-copy warnings for the touched JS files.
+- No M216-M219 retry, M216 writer, M217-M219 execution, generated-only OpenAI CLI live lane, live CEP/AE validation, read-only CEP connectivity preflight, Local/Ollama, OpenRouter, deterministic fallback, external-provider planner validation, external AO runtime, dependency/package change, branch/worktree, push, PR, GitHub issue/action, CEP panel edit, bridge runtime edit, registry/recipe edit, or product typed-tool edit was performed.
 
 ### Milestone 175
 
