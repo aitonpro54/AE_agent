@@ -1,0 +1,154 @@
+{
+  "schema": "sdk-ao-context-pressure-gate-contract.v1",
+  "auxiliaryId": "AUX-007",
+  "title": "Context-pressure stop gate contract",
+  "source": {
+    "queuePath": ".codex-audit/sdk-roadmap-supervisor/aux-005-aux-008-support-queue.json",
+    "queueItemId": "aux-007-context-pressure-gate",
+    "notRuntimeBehavior": true,
+    "notAnAoIntegration": true
+  },
+  "guardContract": {
+    "script": "scripts/check-roadmap-context-pressure.js",
+    "inputMode": "explicit_state_or_metrics_paths_only",
+    "requiredInputs": [
+      "state path or metrics path"
+    ],
+    "defaultOutput": "stdout_json",
+    "allowedFormats": [
+      "json",
+      "markdown"
+    ],
+    "noDefaultWrites": true,
+    "noImplementationContinuationAfterMandatoryHandoff": true,
+    "noBroadValidationInHardCeiling": true,
+    "noCommandRetries": true,
+    "noAutoFixes": true,
+    "thresholds": {
+      "prepareHandoff": {
+        "tokens": 150000,
+        "percent": 60,
+        "nextRequiredAction": "prepare_handoff_soon"
+      },
+      "noNewWork": {
+        "tokens": 170000,
+        "percent": 66,
+        "nextRequiredAction": "stop_before_new_work_and_prepare_handoff"
+      },
+      "mandatoryHandoff": {
+        "tokens": 185000,
+        "percent": 72,
+        "nextRequiredAction": "stop_implementation_update_handoff"
+      },
+      "hardCeiling": {
+        "tokens": 195000,
+        "percent": 76,
+        "nextRequiredAction": "only_handoff_text_allowed"
+      },
+      "absoluteCeiling": {
+        "tokens": 200000,
+        "percent": 78,
+        "nextRequiredAction": "only_handoff_text_allowed"
+      }
+    },
+    "stopReasons": [
+      "context_no_new_work_threshold",
+      "context_mandatory_handoff_threshold",
+      "context_hard_ceiling_threshold",
+      "context_absolute_ceiling_threshold",
+      "explicit_mandatory_handoff_state",
+      "explicit_hard_ceiling_state"
+    ],
+    "warningReasons": [
+      "context_prepare_handoff_threshold"
+    ],
+    "resultLevels": [
+      "below_threshold",
+      "prepare_handoff",
+      "no_new_work",
+      "mandatory_handoff",
+      "hard_ceiling",
+      "absolute_ceiling"
+    ]
+  },
+  "fixtureExpectations": [
+    {
+      "id": "below_threshold",
+      "expectedOk": true,
+      "expectedLevel": "below_threshold",
+      "expectedNextRequiredAction": "continue_current_bounded_item"
+    },
+    {
+      "id": "prepare_handoff",
+      "expectedOk": true,
+      "expectedLevel": "prepare_handoff",
+      "expectedNextRequiredAction": "prepare_handoff_soon"
+    },
+    {
+      "id": "mandatory_handoff",
+      "expectedOk": false,
+      "expectedLevel": "mandatory_handoff",
+      "expectedNextRequiredAction": "stop_implementation_update_handoff"
+    },
+    {
+      "id": "hard_ceiling",
+      "expectedOk": false,
+      "expectedLevel": "hard_ceiling",
+      "expectedNextRequiredAction": "only_handoff_text_allowed"
+    }
+  ],
+  "boundaryClaims": {
+    "continueAfterMandatoryHandoff": false,
+    "broadValidationInHardCeiling": false,
+    "autoFix": false,
+    "commandRetry": false,
+    "branchOrWorktree": false,
+    "push": false,
+    "pullRequest": false,
+    "githubIssueOrAction": false,
+    "aoInstallOrRun": false,
+    "cepPanelWrite": false,
+    "liveCepAe": false,
+    "externalProviderPlanner": false,
+    "dependencyOrPackageChange": false,
+    "productionRuntimePathWrite": false,
+    "localOllama": false
+  },
+  "machineCheck": {
+    "requiredSchema": "sdk-ao-context-pressure-gate-contract.v1",
+    "requiredAuxiliaryId": "AUX-007",
+    "requiredQueuePath": ".codex-audit/sdk-roadmap-supervisor/aux-005-aux-008-support-queue.json",
+    "requiredQueueItemId": "aux-007-context-pressure-gate",
+    "requiredGuardScript": "scripts/check-roadmap-context-pressure.js",
+    "requiredSmokeScript": "scripts/sdk-ao-context-pressure-smoke.js",
+    "requiredInputMode": "explicit_state_or_metrics_paths_only",
+    "requiredDefaultOutput": "stdout_json",
+    "requiredStopReasons": [
+      "context_mandatory_handoff_threshold",
+      "context_hard_ceiling_threshold"
+    ],
+    "requiredFixtureIds": [
+      "below_threshold",
+      "prepare_handoff",
+      "mandatory_handoff",
+      "hard_ceiling"
+    ],
+    "requiredFalseBoundaryClaims": [
+      "continueAfterMandatoryHandoff",
+      "broadValidationInHardCeiling",
+      "autoFix",
+      "commandRetry",
+      "branchOrWorktree",
+      "push",
+      "pullRequest",
+      "githubIssueOrAction",
+      "aoInstallOrRun",
+      "cepPanelWrite",
+      "liveCepAe",
+      "externalProviderPlanner",
+      "dependencyOrPackageChange",
+      "productionRuntimePathWrite",
+      "localOllama"
+    ]
+  }
+}
