@@ -183,6 +183,7 @@ function item(id, milestone, options = {}) {
   );
   return {
     id,
+    label: options.label,
     milestone,
     title: id,
     dependencies: options.dependencies || [],
@@ -408,6 +409,46 @@ function assertSupervisorFinalizesIgnoredHandoff() {
     );
     assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
     assert.strictEqual(sh(temp, ["git", "log", "-1", "--format=%s"]), "test: one");
+  } finally {
+    removeTempRepo(temp);
+  }
+}
+
+function assertAuxQueueLabelsDoNotLeakMilestones() {
+  const temp = createTempRepo("aux-labels");
+  try {
+    const queuePath = writeQueue(temp, [item("aux-005-roadmap-supervisor-compatibility", undefined, {
+      label: "AUX-005",
+      plannedPaths: ["aux-005.txt", ".codex/handoff.md"],
+      runner: {
+        kind: "fixture",
+        action: "write-planned",
+        writePaths: ["aux-005.txt"],
+      },
+    })]);
+    const plan = parseJson(run(["--plan-only", "--queue", queuePath, "--max-items", "1", "--json"], temp));
+    assert.strictEqual(plan.items[0].label, "AUX-005");
+    assert(!Object.hasOwn(plan.items[0], "milestone"), "AUX plan-only item must not expose a numeric milestone.");
+
+    const result = parseJson(run([
+      "--execute-one",
+      "--queue",
+      queuePath,
+      "--item",
+      "aux-005-roadmap-supervisor-compatibility",
+      "--max-items",
+      "1",
+      "--session-id",
+      "aux-labels",
+      "--approval-text",
+      plan.approvalText,
+      "--json",
+    ], temp));
+    assert.strictEqual(result.ok, true);
+    const handoff = fs.readFileSync(path.join(temp, ".codex", "handoff.md"), "utf8");
+    assert.match(handoff, /Queue label: AUX-005/);
+    assert.doesNotMatch(handoff, /Milestone: M/);
+    assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
   } finally {
     removeTempRepo(temp);
   }
@@ -762,6 +803,7 @@ function main() {
   assertDirtyTreeFails();
   assertExecuteOneCommits();
   assertSupervisorFinalizesIgnoredHandoff();
+  assertAuxQueueLabelsDoNotLeakMilestones();
   assertQueueHashApprovalBinding();
   assertRoadmapSdkExecuteOneCommits();
   assertRoadmapSdkCliExecuteOneCommits();

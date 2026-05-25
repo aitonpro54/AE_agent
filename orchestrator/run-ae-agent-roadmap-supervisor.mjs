@@ -123,6 +123,8 @@ const GLOBAL_FORBIDDEN_PATH_PATTERNS = Object.freeze([
   "**/*token*",
 ]);
 
+const QUEUE_ITEM_LABEL_PATTERN = /^(?:M\d{1,4}|AUX-\d{3})$/;
+
 function splitInlineOption(raw) {
   const index = raw.indexOf("=");
   if (index === -1) {
@@ -321,6 +323,46 @@ function assertArray(value, label) {
   }
 }
 
+function queueItemLabel(item) {
+  if (typeof item.label === "string" && item.label.trim()) {
+    return item.label.trim();
+  }
+  return `M${item.milestone}`;
+}
+
+function validateQueueItemLabel(item) {
+  const hasMilestone = Object.hasOwn(item, "milestone");
+  const hasLabel = Object.hasOwn(item, "label");
+  if (!hasMilestone && !hasLabel) {
+    throw new Error(`Queue item ${item.id || "(missing id)"} must include milestone or label.`);
+  }
+  if (hasLabel) {
+    if (typeof item.label !== "string" || !QUEUE_ITEM_LABEL_PATTERN.test(item.label)) {
+      throw new Error(`Queue item label is invalid for ${item.id}: ${item.label}`);
+    }
+    if (item.label.startsWith("AUX-") && hasMilestone) {
+      throw new Error(`AUX queue item must not include numeric milestone: ${item.id}`);
+    }
+    if (item.label.startsWith("M")) {
+      const labelMilestone = Number.parseInt(item.label.slice(1), 10);
+      if (!Number.isInteger(labelMilestone) || (hasMilestone && item.milestone !== labelMilestone)) {
+        throw new Error(`Queue item label/milestone mismatch for ${item.id}: ${item.label}`);
+      }
+    }
+  }
+  if (hasMilestone && (!Number.isInteger(item.milestone) || item.milestone < 1)) {
+    throw new Error(`Queue milestone is invalid at ${item.id}.`);
+  }
+}
+
+function auxLabelNumber(item) {
+  const label = queueItemLabel(item);
+  if (!label.startsWith("AUX-")) {
+    return null;
+  }
+  return Number.parseInt(label.slice(4), 10);
+}
+
 function validatePlannedPath(item, repoPath) {
   const normalized = normalizeRepoPath(repoPath);
   if (isUnsafeRepoPathShape(normalized)) {
@@ -344,10 +386,10 @@ function validateQueue(queue) {
   assertArray(queue.queueItems, "queueItems");
   const ids = new Set();
   let previousMilestone = 0;
+  let previousAuxLabel = 0;
   for (const item of queue.queueItems) {
     for (const field of [
       "id",
-      "milestone",
       "title",
       "dependencies",
       "runner",
@@ -375,10 +417,20 @@ function validateQueue(queue) {
       throw new Error(`Duplicate queue item id: ${item.id}`);
     }
     ids.add(item.id);
-    if (!Number.isInteger(item.milestone) || item.milestone < previousMilestone) {
-      throw new Error(`Queue milestone ordering is invalid at ${item.id}.`);
+    validateQueueItemLabel(item);
+    if (Object.hasOwn(item, "milestone")) {
+      if (item.milestone < previousMilestone) {
+        throw new Error(`Queue milestone ordering is invalid at ${item.id}.`);
+      }
+      previousMilestone = item.milestone;
     }
-    previousMilestone = item.milestone;
+    const auxNumber = auxLabelNumber(item);
+    if (auxNumber !== null) {
+      if (auxNumber < previousAuxLabel) {
+        throw new Error(`AUX queue label ordering is invalid at ${item.id}.`);
+      }
+      previousAuxLabel = auxNumber;
+    }
     assertArray(item.dependencies, `${item.id}.dependencies`);
     assertArray(item.plannedPaths, `${item.id}.plannedPaths`);
     assertArray(item.forbiddenPaths, `${item.id}.forbiddenPaths`);
@@ -917,11 +969,14 @@ function buildRoadmapSdkPrompt(item) {
     forbiddenActions: item.forbiddenActions,
     handoffPolicy: item.handoffPolicy,
     id: item.id,
-    milestone: item.milestone,
+    label: queueItemLabel(item),
     plannedPaths: item.plannedPaths,
     title: item.title,
     validationCommands: item.validationCommands,
   };
+  if (Object.hasOwn(item, "milestone")) {
+    payload.milestone = item.milestone;
+  }
   return [
     "You are a writer child for AE Agent roadmap supervisor.",
     "Complete exactly the provided queue item. Do not perform unrelated work.",
@@ -1224,7 +1279,7 @@ function writeSupervisorHandoff(cwd, item, context) {
     "## Текущее состояние",
     "",
     `- Queue item: ${item.id}.`,
-    `- Milestone: M${item.milestone}.`,
+    `- Queue label: ${queueItemLabel(item)}.`,
     `- Commit: ${context.commitId || "pending supervisor commit"}.`,
     "- Push: не выполнялся.",
     "- PR: не создавался.",
@@ -1425,12 +1480,13 @@ export function planOnlyEnvelope(prepared) {
     items: ready.map((item) => ({
       approvalState: item.approval.state,
       id: item.id,
+      label: queueItemLabel(item),
       maxChildRuns: item.maxChildRuns,
-      milestone: item.milestone,
       plannedPaths: item.plannedPaths,
       reviewerTasks: item.reviewerTasks.length,
       liveValidationMode: (item.liveValidation || { mode: "none" }).mode,
       status: item.status,
+      ...(Object.hasOwn(item, "milestone") ? { milestone: item.milestone } : {}),
     })),
     maxItems: prepared.maxItems,
     maxMinutes: prepared.maxMinutes,
