@@ -3320,6 +3320,14 @@ function defaultPlanBindingValue(payload, targetField) {
       valueAtPath(payload, "mutation.target.item.itemIndex")
     ]);
   }
+  if (targetField === "folderItemIndex" || targetField === "targetFolderItemIndex") {
+    return firstPresent([
+      payload.folderItemIndex,
+      payload.targetFolderItemIndex,
+      valueAtPath(payload, "folder.itemIndex"),
+      valueAtPath(payload, "targetFolder.itemIndex")
+    ]);
+  }
   if (targetField === "compName") {
     return firstPresent([
       payload.compName,
@@ -3600,7 +3608,19 @@ function isCompIndexBindingName(lower) {
     "compitemindex",
     "compositionitemindex",
     "activecompitemindex",
-    "activecompositionitemindex"
+    "activecompositionitemindex",
+    "markercompitemindex",
+    "maskcompitemindex",
+    "cameracompitemindex"
+  ].includes(lower);
+}
+
+function isFolderIndexBindingName(lower) {
+  return [
+    "folderitemindex",
+    "targetfolderitemindex",
+    "folderindex",
+    "targetfolderindex"
   ].includes(lower);
 }
 
@@ -3791,6 +3811,9 @@ function resolveNamedPlanBinding(name, executedSteps, targetField, step) {
     ));
     return fitBindingValueToTargetField(value, targetField);
   }
+  if (isFolderIndexBindingName(lower)) {
+    return findBindingValueInExecutedSteps(executedSteps, (payload) => defaultPlanBindingValue(payload, "folderItemIndex"));
+  }
   if (isCompIndexBindingName(lower)) {
     return findBindingValueInExecutedSteps(executedSteps, (payload) => defaultPlanBindingValue(payload, "compItemIndex"));
   }
@@ -3854,25 +3877,51 @@ function canonicalPlanArgField(field, schemaProperties) {
   if (!schemaProperties || hasArg(schemaProperties, original)) return original;
 
   const aliases = {
-    itemindex: "itemIndices",
-    itemindexes: "itemIndices",
-    projectitemindex: "itemIndices",
-    projectitemindexes: "itemIndices",
-    projectitemindices: "itemIndices",
-    selectedprecompitemindex: "itemIndices",
-    selectedprecompitemindexes: "itemIndices",
-    selectedprecompitemindices: "itemIndices",
-    sourceitemindex: "itemIndices",
-    sourceitemindexes: "itemIndices",
-    sourceitemindices: "itemIndices",
-    layerindex: "layerIndices",
-    layerindexes: "layerIndices",
-    selectedlayerindex: "layerIndices",
-    selectedlayerindexes: "layerIndices",
-    selectedlayerindices: "layerIndices"
+    markercompitemindex: ["compItemIndex"],
+    maskcompitemindex: ["compItemIndex"],
+    cameracompitemindex: ["compItemIndex"],
+    folderindex: ["targetFolderItemIndex", "folderItemIndex"],
+    folderitemindex: ["targetFolderItemIndex", "folderItemIndex"],
+    targetfolderindex: ["targetFolderItemIndex"],
+    targetfolderitemindex: ["targetFolderItemIndex"],
+    itemindex: ["itemIndices"],
+    itemindexes: ["itemIndices"],
+    projectitemindex: ["itemIndices"],
+    projectitemindexes: ["itemIndices"],
+    projectitemindices: ["itemIndices"],
+    selectedprecompitemindex: ["itemIndices"],
+    selectedprecompitemindexes: ["itemIndices"],
+    selectedprecompitemindices: ["itemIndices"],
+    sourceitemindex: ["itemIndices"],
+    sourceitemindexes: ["itemIndices"],
+    sourceitemindices: ["itemIndices"],
+    itemtype: ["type", "itemType"],
+    projectitemtype: ["type", "itemType"],
+    layerindex: ["layerIndices"],
+    layerindexes: ["layerIndices"],
+    selectedlayerindex: ["layerIndices"],
+    selectedlayerindexes: ["layerIndices"],
+    selectedlayerindices: ["layerIndices"]
   };
-  const canonical = aliases[original.toLowerCase()];
-  return canonical && hasArg(schemaProperties, canonical) ? canonical : original;
+  const candidates = aliases[original.toLowerCase()] || [];
+  for (const candidate of candidates) {
+    if (hasArg(schemaProperties, candidate)) return candidate;
+  }
+  return original;
+}
+
+function isBooleanLiteralString(value) {
+  if (typeof value !== "string") return false;
+  return ["true", "1", "yes", "on", "false", "0", "no", "off"].includes(value.trim().toLowerCase());
+}
+
+function normalizeProjectItemType(value) {
+  if (typeof value !== "string") return value;
+  const normalized = value.trim().toLowerCase();
+  if (["comp", "comps", "composition", "compositions", "compositionitem", "compitem"].includes(normalized)) return "comp";
+  if (["footage", "footageitem", "footages"].includes(normalized)) return "footage";
+  if (["folder", "folders", "folderitem"].includes(normalized)) return "folder";
+  return value;
 }
 
 function normalizePlanArgAliases(args, tool) {
@@ -3889,6 +3938,19 @@ function normalizePlanArgAliases(args, tool) {
       normalized[canonical] = normalized[field];
     }
     delete normalized[field];
+  }
+  if (tool && tool.name === "find_project_items" && typeof normalized.exactName === "string" && !isBooleanLiteralString(normalized.exactName)) {
+    const query = normalized.exactName.trim();
+    if (query && (!hasArg(normalized, "query") || missingPlanBindingValue(normalized.query))) {
+      normalized.query = query;
+    }
+    normalized.exactName = true;
+  }
+  if (hasArg(normalized, "type")) {
+    normalized.type = normalizeProjectItemType(normalized.type);
+  }
+  if (hasArg(normalized, "itemType")) {
+    normalized.itemType = normalizeProjectItemType(normalized.itemType);
   }
   return normalized;
 }

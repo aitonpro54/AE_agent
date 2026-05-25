@@ -266,7 +266,12 @@
         "ao-runtime-requested",
         "analyzer-auto-fix-requested"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedBy": {
+        "actor": "roadmap-writer-child",
+        "completedAt": "2026-05-25",
+        "note": "Repaired M217 runtime binding/schema aliases in bridge-daemon and plan-repair: folder.itemIndex can satisfy folderItemIndex/targetFolderItemIndex bindings, target folder arg aliases are schema-aware, marker/mask/camera comp aliases normalize to compItemIndex, find_project_items exactName string becomes query plus exactName:true, and itemType composition normalizes to type comp. Updated the manual typed-tool regression smoke so M217 cases are fixed while M218 duplicate order/read-back cases remain expected failures. Validation passed with the M217 command set. Updating ignored .codex/handoff.md was attempted with apply_patch and PowerShell UTF-8 but blocked by the inherited local ACL, so the intended handoff state is recorded in the active plan for supervisor/parent finalization; commit remains pending supervisor/parent finalization."
+      }
     },
     {
       "id": "m218-layer-order-and-duplicate-tools-repair",

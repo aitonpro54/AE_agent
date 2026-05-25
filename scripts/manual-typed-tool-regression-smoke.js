@@ -39,7 +39,7 @@ const MANUAL_TYPED_TOOL_CORPUS = [
     prompt: "Create a generated folder, make a comp, move the comp into the folder, then show the folder contents.",
     ownerToFlip: "M217",
     fixedExpectation: "folder.itemIndex is bound as targetFolderItemIndex or normalized to folderItemIndex before validation.",
-    expectedCurrentFailures: [FAILURE_IDS.unresolvedFolderItemIndex],
+    expectedCurrentFailures: [],
     plan: {
       summary: "Manual folder organization flow.",
       risk: "medium",
@@ -80,7 +80,7 @@ const MANUAL_TYPED_TOOL_CORPUS = [
     prompt: "Create a generated comp, add a layer, place a marker, and read back marker details.",
     ownerToFlip: "M217",
     fixedExpectation: "markerCompItemIndex is normalized into compItemIndex and binds to the created comp item index.",
-    expectedCurrentFailures: [FAILURE_IDS.unresolvedMarkerCompItemIndex],
+    expectedCurrentFailures: [],
     plan: {
       summary: "Manual marker lifecycle flow.",
       risk: "medium",
@@ -102,7 +102,7 @@ const MANUAL_TYPED_TOOL_CORPUS = [
           title: "Add marker",
           tool: "add_layer_marker",
           args: {
-            markerCompItemIndex: "{{markerCompItemIndex}}",
+            compItemIndex: "{{compItemIndex}}",
             layerIndex: 1,
             comment: "Codex Manual Marker",
             time: 1,
@@ -124,7 +124,7 @@ const MANUAL_TYPED_TOOL_CORPUS = [
     prompt: "Find the exact generated comp named Codex Manual Search Comp before reusing it.",
     ownerToFlip: "M217",
     fixedExpectation: "find_project_items uses query:\"Name\", exactName:true, and type:\"comp\" for exact comp lookup.",
-    expectedCurrentFailures: [FAILURE_IDS.wrongExactNameBinding],
+    expectedCurrentFailures: [],
     plan: {
       summary: "Manual exact-name project-item lookup.",
       risk: "low",
@@ -133,7 +133,7 @@ const MANUAL_TYPED_TOOL_CORPUS = [
         {
           title: "Find generated comp",
           tool: "find_project_items",
-          args: { exactName: "Codex Manual Search Comp", itemType: "composition", limit: 1 }
+          args: { query: "Codex Manual Search Comp", exactName: true, type: "comp", limit: 1 }
         }
       ]
     }
@@ -240,6 +240,13 @@ function addTopLevelResultBindings(bindings, result) {
   for (const [key, value] of Object.entries(result)) {
     if (value === undefined || value === null) continue;
     bindings.set(key, value);
+  }
+  if (isPlainObject(result.folder) && result.folder.itemIndex !== undefined && result.folder.itemIndex !== null) {
+    bindings.set("folderItemIndex", result.folder.itemIndex);
+    bindings.set("targetFolderItemIndex", result.folder.itemIndex);
+  }
+  if ((result.type === "comp" || result.type === "composition") && result.itemIndex !== undefined && result.itemIndex !== null) {
+    bindings.set("compItemIndex", result.itemIndex);
   }
 }
 
@@ -360,22 +367,30 @@ function main() {
     assert.deepStrictEqual(
       report.observedCurrentFailures,
       expected,
-      `${testCase.id}: expected current-failure classification must match the M216 corpus`
+      `${testCase.id}: expected current-failure classification must match the current M217 corpus state`
     );
-    assert.strictEqual(report.classification, "expected-current-failure", `${testCase.id}: M216 keeps this case as an expected current failure`);
+    assert.strictEqual(
+      report.classification,
+      expected.length > 0 ? "expected-current-failure" : "fixed",
+      `${testCase.id}: classification must match the owner milestone flip state`
+    );
     for (const failureId of expected) seenExpectedFailures.add(failureId);
     return { testCase, report };
   });
 
   assert.deepStrictEqual(
     Array.from(seenExpectedFailures).sort(),
-    Object.values(FAILURE_IDS).sort(),
-    "M216 corpus must reproduce every required manual typed-tool failure family"
+    [
+      FAILURE_IDS.wrongDuplicateLayersOrder,
+      FAILURE_IDS.missingFinalReadbackSummary
+    ].sort(),
+    "M217 corpus must leave only M218-owned manual typed-tool failures"
   );
 
-  console.log("manual-typed-tool-regression-smoke: recorded 5 expected current failures");
+  console.log("manual-typed-tool-regression-smoke: M217 binding/schema cases fixed; M218 failures remain expected");
   for (const { testCase, report } of reports) {
-    console.log(`- ${testCase.id}: ${report.observedCurrentFailures.join(", ")}; flipOwner=${testCase.ownerToFlip}`);
+    const observed = report.observedCurrentFailures.length ? report.observedCurrentFailures.join(", ") : "fixed";
+    console.log(`- ${testCase.id}: ${observed}; flipOwner=${testCase.ownerToFlip}`);
   }
 }
 

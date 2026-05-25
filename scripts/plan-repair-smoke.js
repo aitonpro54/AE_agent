@@ -322,6 +322,60 @@ async function main() {
     assert.strictEqual(markerDeleteRepair.repairedPlan.steps[0].args.markerIndex, 1);
     assert.strictEqual(markerDeleteRepair.repairedPlan.steps[0].args.targetComment, "Repair Smoke Marker Updated");
 
+    const folderTargetRepair = await validatePlan("folder-target-binding-alias", {
+      summary: "Move a generated comp into a generated folder.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Create folder", tool: "create_project_folder", args: { name: "Repair Smoke Folder" } },
+        { title: "Create comp", tool: "create_comp", args: { name: "Repair Smoke Folder Comp", width: 1280, height: 720, duration: 4, frameRate: 24 } },
+        { title: "Move comp", tool: "move_project_items_to_folder", args: { itemIndices: "{{itemIndex}}", folderItemIndex: "{{folderItemIndex}}" } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["create_project_folder", "create_comp", "move_project_items_to_folder"],
+      actionTypes: ["arg-alias"]
+    });
+    assert.strictEqual(folderTargetRepair.repairedPlan.steps[2].args.targetFolderItemIndex, "{{folderItemIndex}}");
+
+    const markerCompAliasRepair = await validatePlan("marker-comp-binding-alias", {
+      summary: "Create a comp, add a layer, and add a marker using a marker comp alias.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Create comp", tool: "create_comp", args: { name: "Repair Smoke Marker Comp", width: 1280, height: 720, duration: 4, frameRate: 24 } },
+        { title: "Create layer", tool: "create_solid_layer", args: { compItemIndex: "{{itemIndex}}", name: "Repair Smoke Marker Solid", color: [1, 0, 0], width: 1280, height: 720 } },
+        { title: "Create marker", tool: "add_layer_marker", args: { markerCompItemIndex: "{{markerCompItemIndex}}", layerIndex: 1, comment: "Repair Smoke Marker", time: 1.25 } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["create_comp", "create_solid_layer", "add_layer_marker"],
+      actionTypes: ["arg-alias", "binding-alias"]
+    });
+    assert.strictEqual(markerCompAliasRepair.repairedPlan.steps[2].args.compItemIndex, "{{compItemIndex}}");
+
+    const exactProjectSearchRepair = await validatePlan("exact-project-search-schema-alias", {
+      summary: "Find an exact generated composition by name.",
+      risk: "low",
+      requiresCheckpoint: false,
+      steps: [
+        { title: "Find comp", tool: "find_project_items", args: { exactName: "Repair Smoke Exact Comp", itemType: "composition", limit: 1 } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "safe typed-tool",
+      toolSequence: ["find_project_items"],
+      actionTypes: ["arg-alias", "arg-shape", "arg-value-alias"]
+    });
+    assert.strictEqual(exactProjectSearchRepair.repairedPlan.steps[0].args.query, "Repair Smoke Exact Comp");
+    assert.strictEqual(exactProjectSearchRepair.repairedPlan.steps[0].args.exactName, true);
+    assert.strictEqual(exactProjectSearchRepair.repairedPlan.steps[0].args.type, "comp");
+
     const bindingAliasRepair = await validatePlan("binding-alias", {
       summary: "Set selected layers 3D using common aliases.",
       risk: "medium",

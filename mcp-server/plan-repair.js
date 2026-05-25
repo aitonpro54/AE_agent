@@ -117,8 +117,13 @@ const TOOL_ALIASES = {
 };
 
 const BINDING_ALIASES = {
+  markercompitemindex: "compItemIndex",
+  maskcompitemindex: "compItemIndex",
+  cameracompitemindex: "compItemIndex",
   itemindexes: "itemIndices",
   projectitemindexes: "itemIndices",
+  folderitemindex: "folderItemIndex",
+  targetfolderitemindex: "targetFolderItemIndex",
   selectedlayerindexes: "selectedLayerIndices",
   selectedlayers: "selectedLayerIndices",
   selectedprecompitemindexes: "selectedPrecompItemIndices",
@@ -126,6 +131,20 @@ const BINDING_ALIASES = {
   selectedsourceitemindexes: "selectedSourceItemIndices",
   sourceitemindexes: "sourceItemIndices"
 };
+
+function isBooleanLiteralString(value) {
+  if (typeof value !== "string") return false;
+  return ["true", "1", "yes", "on", "false", "0", "no", "off"].includes(value.trim().toLowerCase());
+}
+
+function normalizeProjectItemType(value) {
+  if (typeof value !== "string") return value;
+  const normalized = value.trim().toLowerCase();
+  if (["comp", "comps", "composition", "compositions", "compositionitem", "compitem"].includes(normalized)) return "comp";
+  if (["footage", "footageitem", "footages"].includes(normalized)) return "footage";
+  if (["folder", "folders", "folderitem"].includes(normalized)) return "folder";
+  return value;
+}
 
 const COMP_RESULT_TOOLS = new Set([
   "get_active_comp",
@@ -233,10 +252,17 @@ function propertyCandidates(field) {
     compositionitemindex: ["compItemIndex"],
     activecompindex: ["compItemIndex"],
     activecompitemindex: ["compItemIndex"],
+    markercompitemindex: ["compItemIndex"],
+    maskcompitemindex: ["compItemIndex"],
+    cameracompitemindex: ["compItemIndex"],
     comp: ["compName"],
     composition: ["compName"],
     compositionname: ["compName"],
     activecompname: ["compName"],
+    folderindex: ["targetFolderItemIndex", "folderItemIndex"],
+    folderitemindex: ["targetFolderItemIndex", "folderItemIndex"],
+    targetfolderindex: ["targetFolderItemIndex"],
+    targetfolderitemindex: ["targetFolderItemIndex"],
     layerindexes: ["layerIndices", "layerIndex"],
     layerindices: ["layerIndices", "layerIndex"],
     selectedlayerindexes: ["layerIndices", "layerIndex"],
@@ -270,6 +296,8 @@ function propertyCandidates(field) {
     sourceitem: ["sourceItemIndex", "sourceItemName"],
     sourceitemindexes: ["sourceItemIndex", "itemIndices"],
     sourceitemindices: ["itemIndices", "sourceItemIndex"],
+    itemtype: ["type", "itemType"],
+    projectitemtype: ["type", "itemType"],
     property: ["propertyPath"],
     propertyname: ["propertyName", "propertyPath"],
     propertymatchname: ["propertyMatchName", "propertyPath"],
@@ -329,6 +357,56 @@ function bindingAlias(value) {
   if (!match) return value;
   const canonical = BINDING_ALIASES[normalizeToken(match[1])];
   return canonical ? `{{${canonical}}}` : value;
+}
+
+function repairToolSpecificArgValues(args, stepIndex, tool, actions) {
+  if (!isPlainObject(args) || !tool) return false;
+  let changed = false;
+
+  if (tool.name === "find_project_items") {
+    if (typeof args.exactName === "string" && !isBooleanLiteralString(args.exactName)) {
+      const query = args.exactName.trim();
+      if (query && missingValue(args.query)) {
+        args.query = query;
+      }
+      args.exactName = true;
+      changed = true;
+      addAction(actions, stepIndex, "arg-shape", "Mapped exactName string to query plus exactName:true.", {
+        field: "exactName",
+        query
+      });
+    }
+  }
+
+  if (hasOwn(args, "type")) {
+    const normalizedType = normalizeProjectItemType(args.type);
+    if (normalizedType !== args.type) {
+      const before = args.type;
+      args.type = normalizedType;
+      changed = true;
+      addAction(actions, stepIndex, "arg-value-alias", `Mapped project item type ${before} to ${normalizedType}.`, {
+        field: "type",
+        before,
+        after: normalizedType
+      });
+    }
+  }
+
+  if (hasOwn(args, "itemType")) {
+    const normalizedItemType = normalizeProjectItemType(args.itemType);
+    if (normalizedItemType !== args.itemType) {
+      const before = args.itemType;
+      args.itemType = normalizedItemType;
+      changed = true;
+      addAction(actions, stepIndex, "arg-value-alias", `Mapped project item type ${before} to ${normalizedItemType}.`, {
+        field: "itemType",
+        before,
+        after: normalizedItemType
+      });
+    }
+  }
+
+  return changed;
 }
 
 function planSummary(validation) {
@@ -553,6 +631,10 @@ function repairArgAliases(step, stepIndex, tool, actions) {
         after: repairedValue
       });
     }
+  }
+
+  if (repairToolSpecificArgValues(args, stepIndex, tool, actions)) {
+    changed = true;
   }
 
   if (changed || step.arguments) {
