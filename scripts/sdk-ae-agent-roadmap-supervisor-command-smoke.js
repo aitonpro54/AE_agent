@@ -259,6 +259,14 @@ function approvalFor(temp, queuePath, extra = []) {
   return plan.approvalText;
 }
 
+function missionApprovalFor(temp, args) {
+  const plan = parseJson(run(["--mission-plan-only", "--json", ...args], temp));
+  assert.strictEqual(plan.childRunsCreated, false);
+  assert.strictEqual(plan.sdkThreadCreated, false);
+  assert.strictEqual(plan.runtimeStateWritten, false);
+  return plan.approvalText;
+}
+
 function assertDefaultPlanOnly() {
   const result = parseJson(run(["--plan-only", "--json"]));
   assert.strictEqual(result.mode, "plan-only");
@@ -621,6 +629,185 @@ function assertReadOnlyReviewerSdkParseFailureFallsBackAndRunsWriter() {
   }
 }
 
+function assertPromptOnlyMissionCreatesQueueAndExecutes() {
+  const temp = createTempRepo("mission-prompt");
+  try {
+    const prompt = "Write a bounded mission evidence note.";
+    const plan = parseJson(run([
+      "--mission-plan-only",
+      "--mission-prompt",
+      prompt,
+      "--max-items",
+      "1",
+      "--json",
+    ], temp));
+    assert.strictEqual(plan.mode, "mission-plan-only");
+    assert.strictEqual(plan.queueExists, false);
+    assert.match(plan.approvalText, /missionSha256=[a-f0-9]{64}/);
+    assert.match(plan.approvalText, /autoFollowups=bounded/);
+    assert.match(plan.approvalText, /livePolicy=generatedOnlyOpenAiCli/);
+    assert.strictEqual(fs.existsSync(path.join(temp, plan.queuePath)), false);
+
+    const result = parseJson(run([
+      "--mission-run",
+      "--mission-prompt",
+      prompt,
+      "--max-items",
+      "1",
+      "--session-id",
+      "mission-prompt",
+      "--approval-text",
+      plan.approvalText,
+      "--json",
+    ], temp));
+    assert.strictEqual(result.mode, "mission-run");
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.completedPrimaryItems, 1);
+    assert(result.queueCreatedCommit, "prompt mission must commit its synthesized queue first");
+    assert(fs.existsSync(path.join(temp, result.queuePath)));
+    assert.match(fs.readFileSync(path.join(temp, result.queuePath), "utf8"), /sdk-roadmap-supervisor-queue\.v1/);
+    assert.match(fs.readFileSync(path.join(temp, ".codex-audit", "sdk-roadmap-supervisor", `mission-${plan.missionSha256.slice(0, 12)}-result.md`), "utf8"), /roadmap-sdk wrote/);
+    assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
+    const subjects = sh(temp, ["git", "log", "--format=%s", "-3"]).split(/\r?\n/);
+    assert.deepStrictEqual(subjects.slice(0, 2), [
+      "chore: execute supervisor mission",
+      "chore: add supervisor mission queue",
+    ]);
+  } finally {
+    removeTempRepo(temp);
+  }
+}
+
+function assertExistingQueueMissionRunsWithoutPlanCopying() {
+  const temp = createTempRepo("mission-existing-queue");
+  try {
+    const queuePath = writeQueue(temp, [item("one", 1)]);
+    const approval = missionApprovalFor(temp, ["--queue", queuePath, "--max-items", "1"]);
+    assert.match(approval, /I approve AE Agent roadmap supervisor mission/);
+    const result = parseJson(run([
+      "--mission-run",
+      "--queue",
+      queuePath,
+      "--max-items",
+      "1",
+      "--session-id",
+      "mission-existing-queue",
+      "--approval-text",
+      approval,
+      "--json",
+    ], temp));
+    assert.strictEqual(result.mode, "mission-run");
+    assert.strictEqual(result.completedPrimaryItems, 1);
+    assert.strictEqual(result.queueCreatedCommit, null);
+    assert.strictEqual(result.results[0].item, "one");
+    assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
+    assert.strictEqual(sh(temp, ["git", "log", "-1", "--format=%s"]), "test: one");
+  } finally {
+    removeTempRepo(temp);
+  }
+}
+
+function assertMissionFailureFollowupAndRetry() {
+  const temp = createTempRepo("mission-followup");
+  try {
+    const markerPath = ".codex-audit/sdk-roadmap-supervisor/followup-marker.json";
+    const queuePath = writeQueue(temp, [item("one", 1, {
+      runner: {
+        kind: "fixture",
+        action: "fail-until-path-exists",
+        requiredPath: markerPath,
+        missionFollowup: {
+          markerPath,
+        },
+      },
+      plannedPaths: ["one.txt", ".codex/handoff.md"],
+    })]);
+    const approval = missionApprovalFor(temp, ["--queue", queuePath, "--max-items", "1"]);
+    const result = parseJson(run([
+      "--mission-run",
+      "--queue",
+      queuePath,
+      "--max-items",
+      "1",
+      "--session-id",
+      "mission-followup",
+      "--approval-text",
+      approval,
+      "--json",
+    ], temp));
+    assert.strictEqual(result.ok, true);
+    assert.deepStrictEqual(result.followupsUsed, ["one"]);
+    assert.strictEqual(result.completedPrimaryItems, 1);
+    assert(result.results.some((entry) => entry.followupFor === "one"));
+    assert(fs.existsSync(path.join(temp, markerPath)));
+    assert.match(fs.readFileSync(path.join(temp, "one.txt"), "utf8"), /roadmap supervisor fixture one/);
+    const state = JSON.parse(fs.readFileSync(path.join(temp, result.statePath), "utf8"));
+    assert(state.missionPhases.some((entry) => entry.phase === "followup_running"));
+    assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
+    assert.strictEqual(sh(temp, ["git", "log", "-1", "--format=%s"]), "test: one");
+  } finally {
+    removeTempRepo(temp);
+  }
+}
+
+function assertMissionGeneratedOnlyLiveRunsAndRejectsUnsafeLive() {
+  const temp = createTempRepo("mission-live");
+  try {
+    const liveCommand = "node scripts/cep-panel-cdp-smoke.js inspect";
+    const queuePath = writeQueue(temp, [item("one", 1, {
+      liveValidation: {
+        approvalRequired: true,
+        approvalText: "I approve generated-only item live validation",
+        commands: [liveCommand],
+        generatedOnlyLive: true,
+        mode: "generated-only-command",
+        mutatingLive: true,
+        noUserAssetMutation: true,
+      },
+    })]);
+    const approval = missionApprovalFor(temp, ["--queue", queuePath, "--max-items", "1"]);
+    assert(approval.includes("livePolicy=generatedOnlyOpenAiCli"));
+    assert(approval.includes("liveBindings=one:generatedOnlyLive=true:noUserAssetMutation=true:command="));
+    const result = parseJson(run([
+      "--mission-run",
+      "--queue",
+      queuePath,
+      "--max-items",
+      "1",
+      "--session-id",
+      "mission-live",
+      "--approval-text",
+      approval,
+      "--json",
+    ], temp));
+    assert.strictEqual(result.results[0].liveConnectivityResults.length, 2);
+    assert.strictEqual(result.results[0].itemLiveValidationResults.length, 1);
+    assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
+
+    const unsafeTemp = createTempRepo("mission-live-unsafe");
+    try {
+      const unsafeQueuePath = writeQueue(unsafeTemp, [item("one", 1, {
+        liveValidation: {
+          approvalRequired: true,
+          approvalText: "I approve unsafe live validation",
+          commands: [liveCommand],
+          generatedOnlyLive: true,
+          mode: "generated-only-command",
+          mutatingLive: true,
+          noUserAssetMutation: false,
+        },
+      })]);
+      const unsafe = run(["--mission-plan-only", "--queue", unsafeQueuePath, "--max-items", "1"], unsafeTemp);
+      assert.notStrictEqual(unsafe.status, 0);
+      assert.match(unsafe.stderr, /must forbid user asset mutation/);
+    } finally {
+      removeTempRepo(unsafeTemp);
+    }
+  } finally {
+    removeTempRepo(temp);
+  }
+}
+
 function assertRequireLiveConnectivityAndItemLiveValidation() {
   const temp = createTempRepo("item-live");
   try {
@@ -873,6 +1060,10 @@ function main() {
   assertRoadmapSdkExecuteOneCommits();
   assertRoadmapSdkCliExecuteOneCommits();
   assertReadOnlyReviewerSdkParseFailureFallsBackAndRunsWriter();
+  assertPromptOnlyMissionCreatesQueueAndExecutes();
+  assertExistingQueueMissionRunsWithoutPlanCopying();
+  assertMissionFailureFollowupAndRetry();
+  assertMissionGeneratedOnlyLiveRunsAndRejectsUnsafeLive();
   assertRequireLiveConnectivityAndItemLiveValidation();
   assertSingleApprovalLiveBindingRuns();
   assertUnplannedPathFails();

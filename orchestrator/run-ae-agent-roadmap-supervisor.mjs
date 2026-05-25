@@ -37,6 +37,9 @@ Usage:
   node orchestrator/run-ae-agent-roadmap-supervisor.mjs --live-check --json
   node orchestrator/run-ae-agent-roadmap-supervisor.mjs --execute-one --item <id> --approval-text "<exact text>"
   node orchestrator/run-ae-agent-roadmap-supervisor.mjs --run-until-budget --max-items <n> --max-minutes <m> --reviewers parallel --approval-text "<exact text>"
+  node orchestrator/run-ae-agent-roadmap-supervisor.mjs --mission-plan-only --mission-prompt "<goal>" --json
+  node orchestrator/run-ae-agent-roadmap-supervisor.mjs --mission-run --mission-prompt "<goal>" --approval-text "<exact mission approval>"
+  node orchestrator/run-ae-agent-roadmap-supervisor.mjs --mission-run --queue <path> --approval-text "<exact mission approval>"
 
 Options:
   --queue <path>             Roadmap supervisor queue. Defaults to ${DEFAULT_QUEUE_PATH}
@@ -52,6 +55,7 @@ Options:
   --approval-text <text>     Exact supervisor approval text printed by --plan-only.
   --live-approval-text <text>
                              Exact item-level live validation approval text.
+  --mission-prompt <text>    Mission intent used to synthesize a bounded queue when --queue is not provided.
   --require-live-connectivity
                              Run read-only AE/CEP connectivity before writer work.
   --tail-lines <n>           Failure tail lines. Default ${DEFAULT_TAIL_LINES}.
@@ -73,6 +77,7 @@ const VALUE_OPTIONS = new Set([
   "log-dir",
   "max-items",
   "max-minutes",
+  "mission-prompt",
   "queue",
   "resume-session",
   "reviewers",
@@ -85,6 +90,8 @@ const BOOLEAN_OPTIONS = new Set([
   "help",
   "json",
   "live-check",
+  "mission-plan-only",
+  "mission-run",
   "plan-only",
   "require-live-connectivity",
   "run-until-budget",
@@ -292,6 +299,10 @@ function readText(cwd, repoPath) {
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function stableJson(value) {
+  return `${JSON.stringify(value, null, 2)}\n`;
 }
 
 function fileSha256(cwd, repoPath) {
@@ -546,6 +557,123 @@ function liveApprovalBindings(queue) {
   return bindings.length > 0 ? bindings.join("|") : "none";
 }
 
+function missionPromptSha(prompt) {
+  const normalized = String(prompt || "").trim();
+  if (!normalized) {
+    throw new Error("--mission-prompt is required when --queue is not provided.");
+  }
+  return sha256(normalized);
+}
+
+function missionQueuePathFromPrompt(prompt) {
+  const missionSha256 = missionPromptSha(prompt);
+  return `.codex-audit/sdk-roadmap-supervisor/mission-${missionSha256.slice(0, 12)}-queue.json`;
+}
+
+function buildPromptMissionQueue(prompt) {
+  const missionSha256 = missionPromptSha(prompt);
+  const shortId = missionSha256.slice(0, 12);
+  const notePath = `.codex-audit/sdk-roadmap-supervisor/mission-${shortId}-result.md`;
+  return {
+    schema: "sdk-roadmap-supervisor-queue.v1",
+    title: `Mission ${shortId}`,
+    createdAt: "mission-prompt",
+    purpose: "Deterministic mission queue synthesized from a user mission prompt.",
+    sourceContext: {
+      missionPrompt: prompt,
+      missionSha256,
+      boundaries: {
+        dependencies: false,
+        deterministicFallback: false,
+        externalAoRuntime: false,
+        localOllama: false,
+        openRouterFallback: false,
+        push: false,
+        pullRequest: false,
+        userAssetMutation: false,
+      },
+    },
+    queueItems: [
+      {
+        id: `mission-${shortId}-bounded-work`,
+        label: "AUX-010",
+        title: "Execute synthesized supervisor mission",
+        dependencies: [],
+        runner: {
+          kind: "roadmap-sdk",
+        },
+        mode: "sdk-write",
+        plannedPaths: [
+          notePath,
+          "plans/target-app-execplan.md",
+          ".codex/handoff.md",
+        ],
+        forbiddenPaths: [
+          "cep-panel/**",
+          "package.json",
+          "package-lock.json",
+          "node_modules/**",
+          "logs/**",
+          "backups/**",
+          "snapshots/**",
+          ".github/**",
+        ],
+        allowedActions: [
+          `complete the mission prompt within this bounded supervisor item: ${prompt}`,
+          `write concise implementation evidence or a bounded follow-up note to ${notePath}`,
+          "update plans/target-app-execplan.md Progress, Decision Log, and Validation notes",
+          "update .codex/handoff.md with mission state, validation, decisions, risks, and exact next prompt",
+        ],
+        forbiddenActions: [
+          "run Local/Ollama, OpenRouter, deterministic fallback, or external-provider planner validation",
+          "install or run any external AO runtime",
+          "create a branch, worktree, push, PR, GitHub issue, or GitHub Action",
+          "change dependencies, package manifests, or package locks",
+          "edit CEP panel files or run live AE/CEP unless a generated-only liveValidation lane is explicitly present",
+          "mutate user assets",
+        ],
+        allowedCommands: [
+          "git diff --check",
+        ],
+        validationCommands: [
+          "git diff --check",
+        ],
+        reviewerTasks: [],
+        liveValidation: {
+          mode: "none",
+          commands: [],
+        },
+        approval: {
+          state: "pending-explicit-approval",
+          freshRequired: true,
+        },
+        maxChildRuns: 1,
+        maxMinutes: 60,
+        commitPolicy: {
+          autoCommit: true,
+          message: "chore: execute supervisor mission",
+        },
+        handoffPolicy: {
+          required: true,
+          path: ".codex/handoff.md",
+        },
+        stopGates: [
+          "dirty-git-before-execution",
+          "missing-exact-fresh-approval",
+          "roadmap-sdk-child-failed",
+          "validation-failed",
+          "context-pressure",
+          "unplanned-path-change",
+          "handoff-stale",
+          "ao-runtime-requested",
+          "local-ollama-openrouter-deterministic-fallback-requested",
+        ],
+        status: "queued",
+      },
+    ],
+  };
+}
+
 export function buildSupervisorApprovalText({
   autoCommit = true,
   cwd = process.cwd(),
@@ -572,13 +700,47 @@ export function buildSupervisorApprovalText({
   ].join(" ");
 }
 
+export function buildMissionApprovalText({
+  cwd = process.cwd(),
+  liveBindings = "none",
+  maxItems = DEFAULT_MAX_ITEMS,
+  maxMinutes = DEFAULT_MAX_MINUTES,
+  missionSha256 = "none",
+  queuePath = DEFAULT_QUEUE_PATH,
+  queueSha256 = "",
+} = {}) {
+  return [
+    "I approve AE Agent roadmap supervisor mission",
+    `repo=${path.resolve(cwd)}`,
+    `missionSha256=${missionSha256}`,
+    `queue=${normalizeRepoPath(queuePath)}`,
+    `queueSha256=${queueSha256}`,
+    `maxItems=${maxItems}`,
+    `maxMinutes=${maxMinutes}`,
+    "autoCommit=true",
+    "autoFollowups=bounded",
+    "livePolicy=generatedOnlyOpenAiCli",
+    `liveBindings=${liveBindings}`,
+    "noPush=true",
+    "noDependencyChanges=true",
+    "noUserAssetMutation=true",
+  ].join(" ");
+}
+
 function ensureMode(options) {
-  const modes = ["planOnly", "liveCheck", "executeOne", "runUntilBudget"].filter((key) => options[key]);
+  const modes = [
+    "planOnly",
+    "liveCheck",
+    "executeOne",
+    "runUntilBudget",
+    "missionPlanOnly",
+    "missionRun",
+  ].filter((key) => options[key]);
   if (options.help) {
     return "help";
   }
   if (modes.length !== 1) {
-    throw new Error("Select exactly one mode: --plan-only, --live-check, --execute-one, or --run-until-budget.");
+    throw new Error("Select exactly one mode: --plan-only, --live-check, --execute-one, --run-until-budget, --mission-plan-only, or --mission-run.");
   }
   return modes[0];
 }
@@ -750,6 +912,18 @@ function appendEvent(runtime, event) {
   appendFileSync(runtime.eventsPath, `${JSON.stringify({ at: new Date().toISOString(), ...event })}\n`, "utf8");
 }
 
+function recordMissionPhase(runtime, state, phase, details = {}) {
+  if (!state.mission) {
+    return;
+  }
+  const entry = { at: new Date().toISOString(), details, phase };
+  state.missionPhases = [...(state.missionPhases || []), entry];
+  state.currentPhase = phase;
+  state.updatedAt = entry.at;
+  writeState(runtime, state);
+  appendEvent(runtime, { phase, type: "mission-phase", ...details });
+}
+
 function writeFinalReport(runtime, report) {
   writeFileSync(runtime.finalReportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
   return normalizeRepoPath(path.relative(process.cwd(), runtime.finalReportPath));
@@ -886,6 +1060,9 @@ function singleApprovalAllowsLiveValidation(cwd, queue, item, options) {
   ) {
     return false;
   }
+  if (options.missionSingleApprovalLive === true) {
+    return true;
+  }
   return options.approvalText === expectedSupervisorApproval(
     options,
     cwd,
@@ -923,6 +1100,16 @@ function runItemLiveValidation(cwd, runtime, queue, item, options) {
 
 function runFixtureWriter(cwd, item) {
   const action = item.runner.action || "write-planned";
+  if (action === "fail-until-path-exists") {
+    const requiredPath = normalizeRepoPath(item.runner.requiredPath || "");
+    if (!requiredPath || !existsSync(path.join(cwd, requiredPath))) {
+      return {
+        status: 1,
+        stdout: "",
+        stderr: "Failed to parse item: SUCCESS: The process with PID 16172 (child process of PID 12936) has been terminated.\n",
+      };
+    }
+  }
   if (action === "write-unplanned") {
     const target = path.join(cwd, item.runner.unplannedPath || "unplanned-roadmap-supervisor.txt");
     writeFileSync(target, "unplanned\n", "utf8");
@@ -1301,6 +1488,49 @@ function stageAndCommit(cwd, item) {
   return gitHead(cwd);
 }
 
+function stageAndCommitPaths(cwd, repoPaths, message) {
+  const existingPaths = repoPaths
+    .map(normalizeRepoPath)
+    .filter((repoPath) => existsSync(path.join(cwd, repoPath)))
+    .filter((repoPath) => gitPathIsTracked(cwd, repoPath) || !gitPathIsIgnored(cwd, repoPath));
+  if (existingPaths.length === 0) {
+    throw new Error("No paths exist to commit.");
+  }
+  const addResult = spawnSync("git", ["add", "--", ...existingPaths], {
+    cwd,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (addResult.status !== 0) {
+    throw new Error(`git add failed: ${addResult.stderr || addResult.stdout}`);
+  }
+  const status = gitStatus(cwd);
+  if (status.length === 0) {
+    throw new Error("No reviewable changes remain to commit.");
+  }
+  const commitResult = spawnSync(
+    "git",
+    [
+      "-c",
+      "user.name=Roadmap Supervisor",
+      "-c",
+      "user.email=roadmap-supervisor@example.local",
+      "commit",
+      "-m",
+      message,
+    ],
+    {
+      cwd,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+  if (commitResult.status !== 0) {
+    throw new Error(`git commit failed: ${commitResult.stderr || commitResult.stdout}`);
+  }
+  return gitHead(cwd);
+}
+
 function createRequiredHandoffSnapshot(cwd, item) {
   if (item.handoffPolicy.required !== true) {
     return null;
@@ -1450,10 +1680,12 @@ async function executeQueueItem(cwd, runtime, state, queue, item, options, preAp
   assertCleanGit(cwd);
   const preHead = gitHead(cwd);
   const handoffSnapshot = createRequiredHandoffSnapshot(cwd, item);
+  recordMissionPhase(runtime, state, "item_running", { item: item.id });
   appendEvent(runtime, { item: item.id, type: "item-started" });
   const preflightLiveResults = options.requireLiveConnectivity
     ? runLiveConnectivityCheck(cwd, runtime)
     : [];
+  recordMissionPhase(runtime, state, "reviewing", { item: item.id, reviewerMode: options.reviewers || "none" });
   const reviewerResults = await runReviewers(cwd, runtime, item, options.reviewers || "none", options.engine || "sdk");
   const childResult = runWriterChild(cwd, runtime, item, options.engine || "sdk");
   if (childResult.error || childResult.status !== 0) {
@@ -1462,7 +1694,17 @@ async function executeQueueItem(cwd, runtime, state, queue, item, options, preAp
     );
   }
   const preValidationChanges = assertChangedPathsAllowed(cwd, item.plannedPaths);
+  recordMissionPhase(runtime, state, "validating", { item: item.id });
   const validationResults = runValidationCommands(cwd, runtime, item);
+  const policy = item.liveValidation || { mode: "none" };
+  const preItemLiveConnectivityResults = [];
+  if (state.mission && policy.mode === "generated-only-command") {
+    recordMissionPhase(runtime, state, "live_validating", { item: item.id, stage: "connectivity" });
+    preItemLiveConnectivityResults.push(...runLiveConnectivityCheck(cwd, runtime));
+  }
+  if (state.mission && policy.mode !== "none") {
+    recordMissionPhase(runtime, state, "live_validating", { item: item.id, stage: "item-live" });
+  }
   const itemLiveValidationResults = runItemLiveValidation(cwd, runtime, queue, item, options);
   assertChangedPathsAllowed(cwd, item.plannedPaths);
   let handoffFinalizedBySupervisor = false;
@@ -1477,6 +1719,7 @@ async function executeQueueItem(cwd, runtime, state, queue, item, options, preAp
     handoffFinalizedBySupervisor = true;
   }
   assertRequiredHandoffUpdated(cwd, item, handoffSnapshot);
+  recordMissionPhase(runtime, state, "handoff_written", { item: item.id });
   const commitId = stageAndCommit(cwd, item);
   if (handoffFinalizedBySupervisor) {
     writeSupervisorHandoff(cwd, item, {
@@ -1495,6 +1738,7 @@ async function executeQueueItem(cwd, runtime, state, queue, item, options, preAp
   state.lastCommitId = commitId;
   state.updatedAt = new Date().toISOString();
   writeState(runtime, state);
+  recordMissionPhase(runtime, state, "committed", { commitId, item: item.id });
   appendEvent(runtime, { commitId, item: item.id, type: "item-completed" });
   return {
     changedPaths: postRun.changedPaths,
@@ -1502,7 +1746,7 @@ async function executeQueueItem(cwd, runtime, state, queue, item, options, preAp
     commitId,
     item: item.id,
     itemLiveValidationResults,
-    liveConnectivityResults: preflightLiveResults,
+    liveConnectivityResults: [...preflightLiveResults, ...preItemLiveConnectivityResults],
     preValidationChangedPaths: preValidationChanges.changedPaths,
     reviewerResults,
     validationResults,
@@ -1514,6 +1758,9 @@ function prepareRun(argv = process.argv.slice(2), cwd = process.cwd()) {
   const mode = ensureMode(options);
   if (mode === "help") {
     return { help: true };
+  }
+  if (mode === "missionPlanOnly" || mode === "missionRun") {
+    return prepareMissionRun(cwd, mode, options);
   }
   const queuePath = normalizeQueuePath(cwd, options.queue || DEFAULT_QUEUE_PATH);
   options.queuePath = queuePath;
@@ -1538,6 +1785,68 @@ function prepareRun(argv = process.argv.slice(2), cwd = process.cwd()) {
     queue,
     queueSha256,
     queuePath,
+  };
+}
+
+function prepareMissionRun(cwd, mode, rawOptions) {
+  const maxItems = rawOptions.maxItems || DEFAULT_MAX_ITEMS;
+  const maxMinutes = rawOptions.maxMinutes || DEFAULT_MAX_MINUTES;
+  const options = {
+    engine: rawOptions.engine || "sdk",
+    reviewers: rawOptions.reviewers || "parallel",
+    tailLines: rawOptions.tailLines || DEFAULT_TAIL_LINES,
+    ...rawOptions,
+    maxItems,
+    maxMinutes,
+    missionSingleApprovalLive: true,
+  };
+  let missionSha256 = "none";
+  let queue;
+  let queueExists = false;
+  let queuePath;
+  let queueText;
+  let source;
+  if (rawOptions.queue) {
+    queuePath = normalizeQueuePath(cwd, rawOptions.queue);
+    queueText = readText(cwd, queuePath);
+    queue = JSON.parse(queueText);
+    queueExists = true;
+    missionSha256 = rawOptions.missionPrompt ? missionPromptSha(rawOptions.missionPrompt) : "none";
+    source = "existing-queue";
+  } else {
+    if (!rawOptions.missionPrompt) {
+      throw new Error("--mission-prompt is required when --queue is not provided.");
+    }
+    missionSha256 = missionPromptSha(rawOptions.missionPrompt);
+    queuePath = missionQueuePathFromPrompt(rawOptions.missionPrompt);
+    if (existsSync(path.join(cwd, queuePath))) {
+      queueText = readText(cwd, queuePath);
+      queue = JSON.parse(queueText);
+      queueExists = true;
+      source = "existing-prompt-queue";
+    } else {
+      queue = buildPromptMissionQueue(rawOptions.missionPrompt);
+      queueText = stableJson(queue);
+      source = "synthesized-prompt";
+    }
+  }
+  validateQueue(queue);
+  const queueSha256 = sha256(queueText);
+  options.queuePath = queuePath;
+  options.queueSha256 = queueSha256;
+  return {
+    cwd,
+    maxItems,
+    maxMinutes,
+    missionSha256,
+    mode,
+    options,
+    queue,
+    queueExists,
+    queuePath,
+    queueSha256,
+    queueText,
+    source,
   };
 }
 
@@ -1573,6 +1882,56 @@ export function planOnlyEnvelope(prepared) {
     queuePath: prepared.queuePath,
     runtimeStateWritten: false,
     sdkThreadCreated: false,
+  };
+}
+
+function expectedMissionApproval(prepared) {
+  return buildMissionApprovalText({
+    cwd: prepared.cwd,
+    liveBindings: liveApprovalBindings(prepared.queue),
+    maxItems: prepared.maxItems,
+    maxMinutes: prepared.maxMinutes,
+    missionSha256: prepared.missionSha256,
+    queuePath: prepared.queuePath,
+    queueSha256: prepared.queueSha256,
+  });
+}
+
+function assertMissionApproval(prepared) {
+  const expected = expectedMissionApproval(prepared);
+  if (prepared.options.approvalText !== expected) {
+    throw new Error(`Missing exact --approval-text: ${expected}`);
+  }
+}
+
+export function missionPlanOnlyEnvelope(prepared) {
+  const ready = selectableItems(prepared.queue, []).slice(0, prepared.maxItems);
+  return {
+    approvalText: expectedMissionApproval(prepared),
+    childRunsCreated: false,
+    engine: prepared.options.engine,
+    items: ready.map((item) => ({
+      approvalState: item.approval.state,
+      id: item.id,
+      label: queueItemLabel(item),
+      liveValidationMode: (item.liveValidation || { mode: "none" }).mode,
+      maxChildRuns: item.maxChildRuns,
+      plannedPaths: item.plannedPaths,
+      reviewerTasks: item.reviewerTasks.length,
+      status: item.status,
+      ...(Object.hasOwn(item, "milestone") ? { milestone: item.milestone } : {}),
+    })),
+    liveBindings: liveApprovalBindings(prepared.queue),
+    maxItems: prepared.maxItems,
+    maxMinutes: prepared.maxMinutes,
+    missionSha256: prepared.missionSha256,
+    mode: "mission-plan-only",
+    queueExists: prepared.queueExists,
+    queuePath: prepared.queuePath,
+    queueSha256: prepared.queueSha256,
+    runtimeStateWritten: false,
+    sdkThreadCreated: false,
+    source: prepared.source,
   };
 }
 
@@ -1664,6 +2023,230 @@ export async function runUntilBudget(prepared) {
   return report;
 }
 
+function writeMissionQueueArtifact(prepared, runtime, state) {
+  if (prepared.queueExists) {
+    return null;
+  }
+  assertCleanGit(prepared.cwd);
+  const preHead = gitHead(prepared.cwd);
+  const absolute = path.join(prepared.cwd, prepared.queuePath);
+  mkdirSync(path.dirname(absolute), { recursive: true });
+  writeFileSync(absolute, prepared.queueText, "utf8");
+  validateQueue(JSON.parse(readText(prepared.cwd, prepared.queuePath)));
+  assertChangedPathsAllowed(prepared.cwd, [prepared.queuePath]);
+  const commitId = stageAndCommitPaths(
+    prepared.cwd,
+    [prepared.queuePath],
+    "chore: add supervisor mission queue",
+  );
+  assertChangedPathsAllowed(prepared.cwd, [prepared.queuePath], preHead);
+  prepared.queueExists = true;
+  state.queueCreatedCommit = commitId;
+  state.updatedAt = new Date().toISOString();
+  writeState(runtime, state);
+  recordMissionPhase(runtime, state, "queue_created", { commitId, queuePath: prepared.queuePath });
+  return commitId;
+}
+
+function missionFollowupAllowedPath(repoPath) {
+  const normalized = normalizeRepoPath(repoPath);
+  return (
+    normalized === ".codex/handoff.md" ||
+    normalized === "plans/target-app-execplan.md" ||
+    normalized.startsWith(".codex-audit/sdk-roadmap-supervisor/") ||
+    normalized.startsWith(".codex-audit/sdk-ao-pattern-intake/") ||
+    normalized.startsWith("orchestrator/") ||
+    normalized.startsWith("scripts/")
+  );
+}
+
+function assertMissionFollowupAllowedPaths(paths) {
+  for (const repoPath of paths) {
+    if (!missionFollowupAllowedPath(repoPath)) {
+      throw new Error(`Mission follow-up planned path is outside support scope: ${repoPath}`);
+    }
+  }
+}
+
+function missionFailureAllowsFollowup(error) {
+  const text = error && error.message ? error.message : String(error || "");
+  return REVIEWER_SDK_PROCESS_TERMINATION_RE.test(text);
+}
+
+function buildMissionFollowupItem(runtime, failedItem) {
+  const markerPath = normalizeRepoPath(
+    failedItem.runner && failedItem.runner.missionFollowup && failedItem.runner.missionFollowup.markerPath
+      ? failedItem.runner.missionFollowup.markerPath
+      : `.codex-audit/sdk-roadmap-supervisor/${runtime.sessionId}-${safeSessionToken(failedItem.id)}-followup.json`,
+  );
+  const plannedPaths = uniqueSorted([markerPath, ".codex/handoff.md"]);
+  assertMissionFollowupAllowedPaths(plannedPaths);
+  return {
+    id: `aux-mission-followup-${safeSessionToken(failedItem.id)}`,
+    label: "AUX-010",
+    title: `Bounded mission follow-up for ${failedItem.id}`,
+    dependencies: [],
+    runner: {
+      kind: "fixture",
+      action: "write-planned",
+      writePaths: plannedPaths,
+    },
+    mode: "fixture",
+    plannedPaths,
+    forbiddenPaths: [
+      "cep-panel/**",
+      "mcp-server/**",
+      "chatgpt-connector/**",
+      "registry/**",
+      "recipes/**",
+      "package.json",
+      "package-lock.json",
+      "node_modules/**",
+      "logs/**",
+      "backups/**",
+      "snapshots/**",
+      ".github/**",
+    ],
+    allowedActions: [
+      "write one bounded support follow-up artifact for a mission parser/transport failure",
+      "update .codex/handoff.md with the follow-up state",
+    ],
+    forbiddenActions: [
+      "edit product runtime behavior",
+      "run live AE/CEP validation",
+      "use Local/Ollama, OpenRouter, deterministic fallback, or external-provider planner validation",
+      "install or run any external AO runtime",
+      "create a branch, worktree, push, PR, GitHub issue, or GitHub Action",
+      "change dependencies, package manifests, or package locks",
+    ],
+    allowedCommands: ["git diff --check"],
+    validationCommands: ["git diff --check"],
+    reviewerTasks: [],
+    liveValidation: {
+      mode: "none",
+      commands: [],
+    },
+    approval: {
+      state: "approved",
+      freshRequired: true,
+    },
+    maxChildRuns: 1,
+    maxMinutes: 5,
+    commitPolicy: {
+      autoCommit: true,
+      message: "chore: add mission follow-up artifact",
+    },
+    handoffPolicy: {
+      required: true,
+      path: ".codex/handoff.md",
+    },
+    stopGates: [
+      "dirty-git-before-execution",
+      "missing-exact-fresh-approval",
+      "validation-failed",
+      "context-pressure",
+      "unplanned-path-change",
+      "handoff-stale",
+      "ao-runtime-requested",
+      "live-cep-ae-requested",
+      "local-ollama-openrouter-deterministic-fallback-requested",
+    ],
+    status: "queued",
+  };
+}
+
+export async function missionRun(prepared) {
+  assertMissionApproval(prepared);
+  const runtime = createRuntime(prepared.cwd, prepared.options);
+  const state = loadState(runtime, prepared.options);
+  state.mission = true;
+  state.missionSha256 = prepared.missionSha256;
+  state.queuePath = prepared.queuePath;
+  state.queueSha256 = prepared.queueSha256;
+  writeState(runtime, state);
+  recordMissionPhase(runtime, state, "intake", { source: prepared.source });
+  const queueCreatedCommit = writeMissionQueueArtifact(prepared, runtime, state);
+  recordMissionPhase(runtime, state, "plan_verified", {
+    liveBindings: liveApprovalBindings(prepared.queue),
+    queueSha256: prepared.queueSha256,
+  });
+
+  const startedAt = Date.now();
+  const results = [];
+  const followupsUsed = new Set();
+  let completedPrimaryItems = 0;
+  let stopReason = null;
+  while (completedPrimaryItems < prepared.maxItems) {
+    const elapsedMinutes = (Date.now() - startedAt) / 60000;
+    if (elapsedMinutes >= prepared.maxMinutes) {
+      stopReason = "max-minutes";
+      break;
+    }
+    const next = selectableItems(prepared.queue, state.completedItems)[0];
+    if (!next) {
+      stopReason = "no-ready-items";
+      break;
+    }
+    try {
+      const result = await executeQueueItem(prepared.cwd, runtime, state, prepared.queue, next, prepared.options, true);
+      results.push(result);
+      completedPrimaryItems += 1;
+    } catch (error) {
+      if (!followupsUsed.has(next.id) && missionFailureAllowsFollowup(error)) {
+        const followup = buildMissionFollowupItem(runtime, next);
+        const followupQueue = {
+          ...prepared.queue,
+          queueItems: [...prepared.queue.queueItems, followup],
+        };
+        validateQueue(followupQueue);
+        recordMissionPhase(runtime, state, "followup_running", { item: next.id, followup: followup.id });
+        const followupResult = await executeQueueItem(
+          prepared.cwd,
+          runtime,
+          state,
+          followupQueue,
+          followup,
+          prepared.options,
+          true,
+        );
+        results.push({ ...followupResult, followupFor: next.id });
+        followupsUsed.add(next.id);
+        continue;
+      }
+      if (!state.failedItems.includes(next.id)) {
+        state.failedItems.push(next.id);
+      }
+      state.updatedAt = new Date().toISOString();
+      writeState(runtime, state);
+      recordMissionPhase(runtime, state, "stopped", { error: error.message, item: next.id });
+      throw error;
+    }
+  }
+  if (!stopReason) {
+    stopReason = completedPrimaryItems >= prepared.maxItems ? "max-items" : "completed";
+  }
+  recordMissionPhase(runtime, state, "stopped", { stopReason });
+  const report = {
+    completedItems: state.completedItems,
+    completedPrimaryItems,
+    followupsUsed: Array.from(followupsUsed),
+    maxItems: prepared.maxItems,
+    maxMinutes: prepared.maxMinutes,
+    missionSha256: prepared.missionSha256,
+    mode: "mission-run",
+    ok: true,
+    queueCreatedCommit,
+    queuePath: prepared.queuePath,
+    queueSha256: prepared.queueSha256,
+    results,
+    sessionId: runtime.sessionId,
+    statePath: normalizeRepoPath(path.relative(prepared.cwd, runtime.statePath)),
+    stopReason,
+  };
+  report.finalReportPath = writeFinalReport(runtime, report);
+  return report;
+}
+
 function printResult(result, asJson) {
   if (asJson) {
     console.log(JSON.stringify(result, null, 2));
@@ -1697,10 +2280,14 @@ export async function main(argv = process.argv.slice(2)) {
   let result;
   if (prepared.mode === "planOnly") {
     result = planOnlyEnvelope(prepared);
+  } else if (prepared.mode === "missionPlanOnly") {
+    result = missionPlanOnlyEnvelope(prepared);
   } else if (prepared.mode === "liveCheck") {
     result = liveCheck(prepared);
   } else if (prepared.mode === "executeOne") {
     result = await executeOne(prepared);
+  } else if (prepared.mode === "missionRun") {
+    result = await missionRun(prepared);
   } else {
     result = await runUntilBudget(prepared);
   }
