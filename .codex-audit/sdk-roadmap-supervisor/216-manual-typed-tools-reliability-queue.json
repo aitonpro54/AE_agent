@@ -137,7 +137,12 @@
         "ao-runtime-requested",
         "analyzer-auto-fix-requested"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedBy": {
+        "actor": "roadmap-writer-child",
+        "completedAt": "2026-05-25",
+        "note": "Added local M216 manual typed-tool regression corpus with five expected current-failure classifications; runtime/planner/semantic/CEP repairs remain deferred to M217-M219. Updating ignored .codex/handoff.md was attempted with apply_patch and PowerShell UTF-8 but blocked by local ACL, so the intended handoff state is recorded in the active plan for supervisor/parent finalization; commit is pending supervisor finalization."
+      }
     },
     {
       "id": "m217-runtime-binding-and-schema-repair",
