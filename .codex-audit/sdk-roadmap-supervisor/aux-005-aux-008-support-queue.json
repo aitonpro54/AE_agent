@@ -121,7 +121,12 @@
         "validation-failed",
         "context-pressure"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedBy": {
+        "commit": "parent-finalized",
+        "supervisorSession": "aux-005-reviewer-worker-contract",
+        "evidence": "AUX-005 was executed through roadmap supervisor execute-one. The first supervisor validation failed on a smoke self-check false positive; parent finalization repaired only the planned smoke self-check and reran the item validation commands without live, dependency, CEP, production, push, PR, branch, worktree, GitHub automation, AO, or Local/Ollama work."
+      }
     },
     {
       "id": "aux-006-handoff-freshness-guard",

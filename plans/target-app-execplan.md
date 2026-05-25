@@ -56,6 +56,7 @@
 - [x] Milestone 204 supervisor repair: ignored handoff gate for real roadmap runs.
 - [x] AUX queue compatibility slice: roadmap supervisor accepts `AUX-###` labels without numeric `M###` leakage in plan-only output, writer prompt payloads, and supervisor-finalized handoffs.
 - [x] AUX-005..AUX-008 support queue artifact: created explicit AUX-labeled supervisor queue and passed plan-only preview for AUX-005 before any child run or runtime state write.
+- [x] AUX-005 support item: read-only reviewer-worker contract completed after supervisor execute-one exposed a smoke self-check false positive and parent finalization repaired only the planned smoke file.
 
 ## Current Stable Baseline
 
@@ -320,6 +321,7 @@
 
 ## Decision Log
 
+- 2026-05-25: AUX-005 defines the reviewer-worker lane as read-only over explicit supervisor artifacts: diff summaries, planned paths, validation results, handoff content, final reports, and bounded log tails. Reviewer outputs are limited to `pass`, `non_blocking_finding`, `blocking_finding`, and `needs_handoff_refresh`. The supervisor execute-one run stopped on a smoke self-check false positive before commit; parent finalization repaired only that planned smoke self-check and completed validation without live, dependency, CEP, production, push, PR, branch, worktree, GitHub automation, AO, or Local/Ollama work.
 - 2026-05-25: The roadmap supervisor must not synthesize product-roadmap `M###` labels for AUX support work. Queue items can now declare `label:"AUX-###"` without `milestone`; AUX items are rejected if they also include a numeric milestone, plan-only output exposes `label`, writer child prompts receive that label, and supervisor-finalized handoffs write `Queue label: AUX-###` rather than `Milestone: M###`.
 - 2026-05-25: AUX-005..AUX-008 continue the safe local support-lane backlog as reviewer-worker, handoff freshness guard, context-pressure gate, and feedback router contracts. Dummy worktree and AO sandbox pilots remain separately approval-gated and are not part of this queue.
 - 2026-05-24: Auxiliary/orchestrator optimization work must not consume product roadmap `M###` ids. Use `AUX-###` labels for supervisor/conveyor tooling, activity/session contracts, stuck detection, status dashboards, failure analyzers, AO-inspired pattern intake, and other support infrastructure. Existing branch-local AO-inspired `M212-M215` references are historical compatibility records only; future continuation prompts should use `AUX-001+`.
@@ -437,6 +439,7 @@
 
 | Check | Current requirement | Latest result |
 | --- | --- | --- |
+| AUX-005 read-only reviewer-worker contract | Required because AUX-005 introduces a reviewer-worker contract and smoke over explicit supervisor artifacts without file edits, auto-fix, command retry, AO, live CEP/AE, dependencies, production paths, push, PR, or GitHub automation. | Passed on 2026-05-25 after parent finalization of a supervisor validation stop. The supervisor `execute-one` session `aux-005-reviewer-worker-contract` created the contract and smoke but stopped before commit because the smoke's self-read-only assertion searched for literal `writeFileSync` and matched its own assert text. Parent finalization changed only the planned smoke self-check, then passed `node --check scripts/sdk-ao-reviewer-worker-smoke.js`; `node scripts/sdk-ao-reviewer-worker-smoke.js`; `npm.cmd run check:rules`; and `git diff --check` with only LF-to-CRLF working-copy warnings. No source auto-fix based on reviewer output, command retry loop, live AE/CEP, dependency/package change, CEP/live/production path edit, branch, worktree, push, PR, GitHub issue/action, AO install/start, or Local/Ollama run was performed. |
 | `node --check mcp-server/bridge-daemon.js` and `node --check scripts/smoke-test.js` | Required because M183 changes bridge tool implementation and smoke assertions. | Passed on 2026-05-23. |
 | M183 AGENTS non-live suite | Required because M183 adds typed bridge tools and updates the main smoke catalog. | Passed on 2026-05-23 across `.codex-runtime/validation/m183-non-live-20260523-165746.log` and `.codex-runtime/validation/m183-non-live-remaining-20260523-165806.log`: `npm.cmd run check:rules`, `git diff --check`, provider contract/API, solution registry/candidate/promotion/retrieval/library, project intent memory, plan classification/repair, semantic verification, reliability validation, ChatGPT connector, prompt optimization, bridge-only smoke, and main smoke. `git diff --check` printed only existing LF-to-CRLF working-copy warnings. |
 | M183 live CEP availability check | Required before deciding whether live CEP smoke is available. | `node scripts/cep-panel-cdp-smoke.js inspect` could not connect to CDP on 2026-05-23 (`connect ECONNREFUSED 127.0.0.1:8870`), so live CEP smoke was skipped for this milestone. Log: `.codex-runtime/validation/m183-live-availability-20260523-165831.log`. |
@@ -879,7 +882,7 @@
 - Roadmap writer child prompts now include the normalized item label, and supervisor-finalized handoffs write `Queue label: AUX-###` instead of synthesizing `Milestone: M###`.
 - Updated `scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js` with a temp `AUX-005` queue fixture that proves plan-only output and supervisor-finalized ignored handoffs do not leak `M###`.
 - Validation passed with `node --check orchestrator/run-ae-agent-roadmap-supervisor.mjs`, `node --check scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js`, `node scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js`, `npm.cmd run check:rules`, and `git diff --check` with only LF-to-CRLF working-copy warnings.
-- Handoff was updated locally in `.codex/handoff.md`; it is ignored and not staged.
+- Handoff update was attempted through `apply_patch` and PowerShell UTF-8 write, but both were blocked for `.codex/handoff.md` by write/ACL denial; the intended handoff state is recorded in this plan for supervisor/parent finalization.
 - No AUX-005..AUX-008 item was executed during this compatibility slice. The next step is to create the AUX queue artifact, run supervisor `--plan-only`, and then execute one ready AUX item through `--execute-one` or `--run-until-budget` from a clean tree and fresh approval text.
 - No CEP panel edit, bridge/runtime product behavior change, dependency/package change, live AE/CEP validation, external-provider planner validation, Local/Ollama run, branch/worktree, push, PR, GitHub issue/action, or AO install/start was performed.
 
@@ -893,6 +896,20 @@
 - The preview exposed one ready item, `aux-005-reviewer-worker-contract`, with `label:"AUX-005"` and no numeric `milestone`.
 - No AUX item was executed during queue creation or preview. The next step is to commit this queue artifact from a clean tree, then execute AUX-005 through supervisor with the exact approval text from the plan-only preview.
 - No CEP panel edit, bridge/runtime product behavior change, dependency/package change, live AE/CEP validation, external-provider planner validation, Local/Ollama run, branch/worktree, push, PR, GitHub issue/action, or AO install/start was performed.
+
+### AUX-005 Support Item: Read-Only Reviewer-Worker Contract
+
+- Drafted `.codex-audit/sdk-ao-pattern-intake/aux-005-reviewer-worker-contract.json` as a local read-only reviewer-worker contract over explicit supervisor artifacts.
+- The contract defines reviewer inputs as diff summaries, planned paths, validation results, handoff content, final reports, and bounded log tails.
+- The contract limits reviewer outputs to `pass`, `non_blocking_finding`, `blocking_finding`, and `needs_handoff_refresh`, with fixture decisions for clean pass, minor non-blocking finding, failed validation, stale handoff, and forbidden boundary cases.
+- Boundary claims are false for source editing, auto-fix, command retry, worktree/branch creation, AO usage, live CEP/AE, external-provider planning, dependency/package changes, push, PR, GitHub issue/action, CEP writes, production-path writes, and roadmap supervisor runtime writes.
+- Added `scripts/sdk-ao-reviewer-worker-smoke.js` to parse the contract and queue artifact, assert required inputs/outputs/false boundary claims, and validate fixture reviewer decisions.
+- Supervisor `execute-one` session `aux-005-reviewer-worker-contract` reached validation and stopped before commit because the smoke self-check matched its own literal `writeFileSync` assertion text.
+- Parent finalization repaired only the planned smoke self-check by constructing forbidden tokens from fragments, then reran the item validation commands.
+- Validation passed with `node --check scripts/sdk-ao-reviewer-worker-smoke.js`, `node scripts/sdk-ao-reviewer-worker-smoke.js`, `npm.cmd run check:rules`, and `git diff --check` with only LF-to-CRLF working-copy warnings.
+- Updated `.codex-audit/sdk-roadmap-supervisor/aux-005-aux-008-support-queue.json` to mark AUX-005 completed by parent finalization after the supervisor validation stop.
+- Handoff was updated locally in `.codex/handoff.md`; it is ignored and not staged.
+- No CEP panel edit, bridge/runtime product behavior change, dependency/package change, live AE/CEP validation, external-provider planner validation, Local/Ollama run, branch/worktree, push, PR, GitHub issue/action, AO install/start, production-path write, command retry, or auto-fix was performed.
 
 ### Milestone 175
 

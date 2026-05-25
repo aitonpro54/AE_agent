@@ -1,0 +1,280 @@
+{
+  "schema": "sdk-ao-pattern-intake.reviewer-worker-contract.v1",
+  "title": "Read-only reviewer-worker contract",
+  "createdAt": "2026-05-25",
+  "purpose": "Define a local read-only reviewer-worker contract for roadmap supervisor writer outputs. Reviewers consume explicit bounded artifacts and emit pass/finding/handoff decisions without editing files, retrying commands, or changing runtime behavior.",
+  "source": {
+    "kind": "ao-inspired-pattern-intake",
+    "queuePath": ".codex-audit/sdk-roadmap-supervisor/aux-005-aux-008-support-queue.json",
+    "queueItemId": "aux-005-reviewer-worker-contract",
+    "auxiliaryId": "AUX-005",
+    "parentAuxiliaryContracts": [
+      ".codex-audit/sdk-ao-pattern-intake/aux-001-activity-session-schema.json",
+      ".codex-audit/sdk-ao-pattern-intake/aux-002-stuck-escalation-design.json",
+      ".codex-audit/sdk-ao-pattern-intake/aux-003-status-dashboard-contract.json",
+      ".codex-audit/sdk-ao-pattern-intake/aux-004-readonly-failure-analyzer-contract.json"
+    ],
+    "supervisorArtifacts": [
+      "queue item planned paths",
+      "writer child diff summary",
+      "validation command results",
+      "required handoff content",
+      "writer final report",
+      "bounded child log tails"
+    ],
+    "notRuntimeBehavior": true,
+    "notAnAoIntegration": true
+  },
+  "boundaryClaims": {
+    "sourceEditingEnabled": false,
+    "autoFixEnabled": false,
+    "commandRetryEnabled": false,
+    "worktreeCreationEnabled": false,
+    "branchCreationEnabled": false,
+    "aoUsageEnabled": false,
+    "liveCepAeEnabled": false,
+    "externalProviderPlannerEnabled": false,
+    "dependencyChangesEnabled": false,
+    "packageManifestChangesEnabled": false,
+    "packageLockChangesEnabled": false,
+    "pushEnabled": false,
+    "pullRequestEnabled": false,
+    "githubIssueActionEnabled": false,
+    "productionPathWritesEnabled": false,
+    "cepPanelWritesEnabled": false,
+    "roadmapSupervisorRuntimeWritesEnabled": false
+  },
+  "reviewerContract": {
+    "role": "read-only-reviewer",
+    "inputMode": "explicit-supervisor-artifacts-only",
+    "defaultOutput": "review-decision-json",
+    "noFileEdits": true,
+    "noCommandRetries": true,
+    "noAutoFixes": true,
+    "noDefaultWrites": true,
+    "boundedLogTailDefaultLines": 60,
+    "requiredInputs": [
+      "diff_summaries",
+      "planned_paths",
+      "validation_results",
+      "handoff_content",
+      "final_reports",
+      "bounded_log_tails"
+    ],
+    "allowedArtifactReads": [
+      "explicit writer diff summary",
+      "explicit planned paths from the queue item",
+      "explicit validation result summary and exit statuses",
+      "explicit required handoff content or handoff fingerprint",
+      "explicit writer final report",
+      "explicit bounded stdout/stderr/log tails"
+    ],
+    "excludedReads": [
+      "broad repository scan",
+      "unbounded logs directory scan",
+      "CEP panel files",
+      "live AE project state",
+      "package manifests",
+      "dependency trees",
+      "production runtime paths",
+      "GitHub issue, PR, or Action state"
+    ],
+    "allowedOutputs": [
+      "pass",
+      "non_blocking_finding",
+      "blocking_finding",
+      "needs_handoff_refresh"
+    ],
+    "requiredOutputFields": [
+      "decision",
+      "summary",
+      "findings",
+      "handoffRequired",
+      "forbiddenActionsObserved",
+      "reviewedInputs"
+    ],
+    "decisionRules": [
+      {
+        "decision": "pass",
+        "when": "all changed paths are planned, validation passed, handoff is fresh when required, and no forbidden action evidence exists"
+      },
+      {
+        "decision": "non_blocking_finding",
+        "when": "the reviewer finds a bounded documentation or evidence issue that does not invalidate validation, planned-path compliance, or handoff freshness"
+      },
+      {
+        "decision": "blocking_finding",
+        "when": "validation failed, an unplanned path changed, a forbidden boundary was crossed, or required evidence is missing"
+      },
+      {
+        "decision": "needs_handoff_refresh",
+        "when": "the implementation otherwise passes but the required handoff is missing, stale, or does not mention the completed item state"
+      }
+    ],
+    "forbiddenReviewerSideEffects": [
+      "edit source files",
+      "auto-fix findings",
+      "retry failed commands",
+      "create branch or worktree",
+      "install or run Composio AO",
+      "run live AE/CEP validation",
+      "run external-provider planner validation",
+      "change dependencies",
+      "modify package.json",
+      "modify package-lock.json",
+      "push commits",
+      "create pull request",
+      "create GitHub issue or GitHub Action",
+      "write production paths"
+    ]
+  },
+  "fixtureReviewerDecisions": [
+    {
+      "id": "clean-pass",
+      "inputs": {
+        "changedPaths": [
+          ".codex-audit/sdk-ao-pattern-intake/aux-005-reviewer-worker-contract.json",
+          "scripts/sdk-ao-reviewer-worker-smoke.js"
+        ],
+        "plannedPaths": [
+          ".codex-audit/sdk-ao-pattern-intake/aux-005-reviewer-worker-contract.json",
+          "scripts/sdk-ao-reviewer-worker-smoke.js",
+          "plans/target-app-execplan.md",
+          ".codex/handoff.md"
+        ],
+        "validationStatus": "passed",
+        "handoffFresh": true,
+        "forbiddenActionEvidence": [],
+        "boundedLogTailLines": 12
+      },
+      "expectedDecision": "pass"
+    },
+    {
+      "id": "minor-report-gap",
+      "inputs": {
+        "changedPaths": [
+          "plans/target-app-execplan.md"
+        ],
+        "plannedPaths": [
+          "plans/target-app-execplan.md",
+          ".codex/handoff.md"
+        ],
+        "validationStatus": "passed",
+        "handoffFresh": true,
+        "forbiddenActionEvidence": [],
+        "boundedLogTailLines": 8,
+        "minorFinding": "final report omits one nonessential summary detail"
+      },
+      "expectedDecision": "non_blocking_finding"
+    },
+    {
+      "id": "failed-validation",
+      "inputs": {
+        "changedPaths": [
+          "scripts/sdk-ao-reviewer-worker-smoke.js"
+        ],
+        "plannedPaths": [
+          "scripts/sdk-ao-reviewer-worker-smoke.js"
+        ],
+        "validationStatus": "failed",
+        "handoffFresh": true,
+        "forbiddenActionEvidence": [],
+        "boundedLogTailLines": 40
+      },
+      "expectedDecision": "blocking_finding"
+    },
+    {
+      "id": "stale-handoff",
+      "inputs": {
+        "changedPaths": [
+          "plans/target-app-execplan.md"
+        ],
+        "plannedPaths": [
+          "plans/target-app-execplan.md",
+          ".codex/handoff.md"
+        ],
+        "validationStatus": "passed",
+        "handoffFresh": false,
+        "forbiddenActionEvidence": [],
+        "boundedLogTailLines": 20
+      },
+      "expectedDecision": "needs_handoff_refresh"
+    },
+    {
+      "id": "forbidden-boundary",
+      "inputs": {
+        "changedPaths": [
+          "package.json"
+        ],
+        "plannedPaths": [
+          "plans/target-app-execplan.md"
+        ],
+        "validationStatus": "passed",
+        "handoffFresh": true,
+        "forbiddenActionEvidence": [
+          "dependency change",
+          "unplanned package path"
+        ],
+        "boundedLogTailLines": 15
+      },
+      "expectedDecision": "blocking_finding"
+    }
+  ],
+  "machineCheck": {
+    "requiredSchema": "sdk-ao-pattern-intake.reviewer-worker-contract.v1",
+    "requiredQueuePath": ".codex-audit/sdk-roadmap-supervisor/aux-005-aux-008-support-queue.json",
+    "requiredQueueItemId": "aux-005-reviewer-worker-contract",
+    "requiredAuxiliaryId": "AUX-005",
+    "requiredInputMode": "explicit-supervisor-artifacts-only",
+    "requiredDefaultOutput": "review-decision-json",
+    "requiredInputs": [
+      "diff_summaries",
+      "planned_paths",
+      "validation_results",
+      "handoff_content",
+      "final_reports",
+      "bounded_log_tails"
+    ],
+    "requiredOutputs": [
+      "pass",
+      "non_blocking_finding",
+      "blocking_finding",
+      "needs_handoff_refresh"
+    ],
+    "requiredFalseBoundaryClaims": [
+      "sourceEditingEnabled",
+      "autoFixEnabled",
+      "commandRetryEnabled",
+      "worktreeCreationEnabled",
+      "branchCreationEnabled",
+      "aoUsageEnabled",
+      "liveCepAeEnabled",
+      "dependencyChangesEnabled",
+      "pushEnabled",
+      "pullRequestEnabled",
+      "githubIssueActionEnabled",
+      "productionPathWritesEnabled"
+    ],
+    "requiredForbiddenReviewerSideEffects": [
+      "edit source files",
+      "auto-fix findings",
+      "retry failed commands",
+      "create branch or worktree",
+      "install or run Composio AO",
+      "run live AE/CEP validation",
+      "change dependencies",
+      "push commits",
+      "create pull request",
+      "create GitHub issue or GitHub Action",
+      "write production paths"
+    ],
+    "requiredFixtureDecisions": [
+      "pass",
+      "non_blocking_finding",
+      "blocking_finding",
+      "needs_handoff_refresh"
+    ],
+    "requiredSmokeScript": "scripts/sdk-ao-reviewer-worker-smoke.js"
+  },
+  "auxiliaryId": "AUX-005"
+}
