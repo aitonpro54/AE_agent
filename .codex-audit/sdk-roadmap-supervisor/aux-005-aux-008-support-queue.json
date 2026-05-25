@@ -442,7 +442,12 @@
         "validation-failed",
         "context-pressure"
       ],
-      "status": "queued"
+      "status": "blocked",
+      "completedBy": {
+        "commit": "not-created-direct-writer-child",
+        "supervisorSession": "aux-008-feedback-router-contract",
+        "evidence": "AUX-008 implementation and validation were completed in a direct writer-child pass within the planned paths, but mandatory .codex/handoff.md update was blocked by workspace write access (apply_patch rejected the path and PowerShell Set-Content returned UnauthorizedAccessException). The local bounded feedback router contract, no-dependency read-only CLI, and smoke fixtures passed node --check for both touched scripts, node scripts/sdk-ao-feedback-router-smoke.js, npm.cmd run check:rules, and git diff --check. The router reads only explicit validation, reviewer, context, and analyzer packet paths; emits bounded next-task envelopes for validation_failure, reviewer_blocking, context_pressure, analyzer_packet, and unknown_feedback; exits nonzero for unknown feedback; and does not edit source, auto-fix, retry commands, create issues, open PRs, install or run AO, touch CEP/live/production/dependency/package paths, run live AE/CEP, use external-provider planner validation, or use Local/Ollama. No commit was created by this direct writer child because the prompt limited writes to plannedPaths and did not authorize git metadata writes."
+      }
     }
   ]
 }

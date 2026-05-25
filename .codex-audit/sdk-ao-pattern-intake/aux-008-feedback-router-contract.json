@@ -1,0 +1,192 @@
+{
+  "schema": "sdk-ao-feedback-router-contract.v1",
+  "auxiliaryId": "AUX-008",
+  "title": "Bounded feedback router contract",
+  "source": {
+    "queuePath": ".codex-audit/sdk-roadmap-supervisor/aux-005-aux-008-support-queue.json",
+    "queueItemId": "aux-008-feedback-router-contract",
+    "notRuntimeBehavior": true,
+    "notAnAoIntegration": true
+  },
+  "routerContract": {
+    "script": "scripts/route-roadmap-feedback-packet.js",
+    "inputMode": "explicit_feedback_packet_paths_only",
+    "requiredInputs": [
+      "at least one validation, reviewer, context, or analyzer packet path"
+    ],
+    "defaultOutput": "stdout_json",
+    "allowedFormats": [
+      "json",
+      "markdown"
+    ],
+    "noDefaultWrites": true,
+    "noSourceEditsFromFeedback": true,
+    "noCommandRetries": true,
+    "noAutoFixes": true,
+    "noGithubIssueOrPrCreation": true,
+    "noUnboundedTasks": true,
+    "acceptedPacketTypes": [
+      "validation",
+      "reviewer",
+      "context",
+      "analyzer"
+    ],
+    "routeClasses": [
+      "validation_failure",
+      "reviewer_blocking",
+      "context_pressure",
+      "analyzer_packet",
+      "unknown_feedback"
+    ],
+    "taskEnvelopeRequiredFields": [
+      "id",
+      "feedbackClass",
+      "sourceType",
+      "sourcePath",
+      "priority",
+      "goal",
+      "plannedPaths",
+      "forbiddenActions",
+      "validationCommands",
+      "nextRequiredAction",
+      "requiresFreshApproval"
+    ],
+    "forbiddenTaskActions": [
+      "edit_source_from_feedback_without_new_approval",
+      "auto_fix",
+      "retry_command",
+      "create_branch_or_worktree",
+      "push_or_pr",
+      "github_issue_or_action",
+      "install_or_run_ao",
+      "touch_cep_live_production_dependency_package_paths",
+      "run_live_cep_ae",
+      "external_provider_planner_validation",
+      "use_local_ollama"
+    ],
+    "unknownFeedbackPolicy": {
+      "routeClass": "unknown_feedback",
+      "ok": false,
+      "nextRequiredAction": "manual_triage_with_new_bounded_queue_item",
+      "implementationAllowed": false
+    }
+  },
+  "fixtureExpectations": [
+    {
+      "id": "validation_failure",
+      "expectedOk": true,
+      "expectedRouteClass": "validation_failure",
+      "expectedNextRequiredAction": "create_bounded_validation_repair_task"
+    },
+    {
+      "id": "reviewer_blocking",
+      "expectedOk": true,
+      "expectedRouteClass": "reviewer_blocking",
+      "expectedNextRequiredAction": "create_bounded_reviewer_followup_task"
+    },
+    {
+      "id": "context_pressure",
+      "expectedOk": true,
+      "expectedRouteClass": "context_pressure",
+      "expectedNextRequiredAction": "stop_and_update_handoff"
+    },
+    {
+      "id": "analyzer_packet",
+      "expectedOk": true,
+      "expectedRouteClass": "analyzer_packet",
+      "expectedNextRequiredAction": "create_bounded_analyzer_followup_task"
+    },
+    {
+      "id": "unknown_feedback",
+      "expectedOk": false,
+      "expectedRouteClass": "unknown_feedback",
+      "expectedNextRequiredAction": "manual_triage_with_new_bounded_queue_item"
+    }
+  ],
+  "boundaryClaims": {
+    "sourceEditingEnabled": false,
+    "autoFixEnabled": false,
+    "commandRetryEnabled": false,
+    "worktreeCreationEnabled": false,
+    "branchCreationEnabled": false,
+    "aoUsageEnabled": false,
+    "liveCepAeEnabled": false,
+    "externalProviderPlannerEnabled": false,
+    "dependencyChangesEnabled": false,
+    "packageManifestChangesEnabled": false,
+    "packageLockChangesEnabled": false,
+    "pushEnabled": false,
+    "pullRequestEnabled": false,
+    "githubIssueActionEnabled": false,
+    "productionPathWritesEnabled": false,
+    "cepPanelWritesEnabled": false,
+    "unboundedTaskCreationEnabled": false
+  },
+  "machineCheck": {
+    "requiredSchema": "sdk-ao-feedback-router-contract.v1",
+    "requiredAuxiliaryId": "AUX-008",
+    "requiredQueuePath": ".codex-audit/sdk-roadmap-supervisor/aux-005-aux-008-support-queue.json",
+    "requiredQueueItemId": "aux-008-feedback-router-contract",
+    "requiredRouterScript": "scripts/route-roadmap-feedback-packet.js",
+    "requiredSmokeScript": "scripts/sdk-ao-feedback-router-smoke.js",
+    "requiredInputMode": "explicit_feedback_packet_paths_only",
+    "requiredDefaultOutput": "stdout_json",
+    "requiredPacketTypes": [
+      "validation",
+      "reviewer",
+      "context",
+      "analyzer"
+    ],
+    "requiredRouteClasses": [
+      "validation_failure",
+      "reviewer_blocking",
+      "context_pressure",
+      "analyzer_packet",
+      "unknown_feedback"
+    ],
+    "requiredFixtureIds": [
+      "validation_failure",
+      "reviewer_blocking",
+      "context_pressure",
+      "analyzer_packet",
+      "unknown_feedback"
+    ],
+    "requiredTaskEnvelopeFields": [
+      "id",
+      "feedbackClass",
+      "sourceType",
+      "sourcePath",
+      "priority",
+      "goal",
+      "plannedPaths",
+      "forbiddenActions",
+      "validationCommands",
+      "nextRequiredAction",
+      "requiresFreshApproval"
+    ],
+    "requiredForbiddenTaskActions": [
+      "auto_fix",
+      "retry_command",
+      "push_or_pr",
+      "github_issue_or_action",
+      "install_or_run_ao",
+      "run_live_cep_ae",
+      "use_local_ollama"
+    ],
+    "requiredFalseBoundaryClaims": [
+      "sourceEditingEnabled",
+      "autoFixEnabled",
+      "commandRetryEnabled",
+      "worktreeCreationEnabled",
+      "branchCreationEnabled",
+      "aoUsageEnabled",
+      "liveCepAeEnabled",
+      "dependencyChangesEnabled",
+      "pushEnabled",
+      "pullRequestEnabled",
+      "githubIssueActionEnabled",
+      "productionPathWritesEnabled",
+      "unboundedTaskCreationEnabled"
+    ]
+  }
+}
