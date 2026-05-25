@@ -337,9 +337,9 @@
       ],
       "status": "completed",
       "completedBy": {
-        "commit": "not-created-by-writer-child",
+        "commit": "f045c052b6741b6577501b8730f597a4009c52ec",
         "supervisorSession": "aux-007-context-pressure-gate",
-        "evidence": "AUX-007 was completed inside the writer-child planned paths except for the ignored .codex/handoff.md update, which was attempted through apply_patch and PowerShell Set-Content and blocked by local ACL access denial. The local context-pressure contract, no-dependency read-only CLI, and smoke fixtures passed node --check for both touched scripts, node scripts/sdk-ao-context-pressure-smoke.js, npm.cmd run check:rules, and git diff --check. The guard reads only explicit state or metrics fixture paths, reports warning/stop reasons plus the next required action to stdout, exits nonzero for no-new-work, mandatory-handoff, hard-ceiling, and absolute-ceiling states, and does not continue implementation after mandatory handoff threshold fixtures. No broad validation, live AE/CEP, external-provider planner validation, dependency, CEP panel, production path, push, PR, branch, worktree, GitHub automation, AO, Local/Ollama, auto-fix, or command retry work was performed. No git commit was created by this writer child because the queue item asked for planned-path file updates only. Supervisor/parent must finalize .codex/handoff.md before continuing to AUX-008."
+        "evidence": "AUX-007 was completed by roadmap supervisor execute-one within the planned paths. The local context-pressure contract, no-dependency read-only CLI, and smoke fixtures passed node --check for both touched scripts, node scripts/sdk-ao-context-pressure-smoke.js, npm.cmd run check:rules, and git diff --check. The guard reads only explicit state or metrics fixture paths, reports warning/stop reasons plus the next required action to stdout, exits nonzero for no-new-work, mandatory-handoff, hard-ceiling, and absolute-ceiling states, and does not continue implementation after mandatory handoff threshold fixtures. The supervisor finalized the ignored .codex/handoff.md after commit. No broad validation, live AE/CEP, external-provider planner validation, dependency, CEP panel, production path, push, PR, branch, worktree, GitHub automation, AO, Local/Ollama, auto-fix, or command retry work was performed."
       }
     },
     {
