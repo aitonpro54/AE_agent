@@ -3220,10 +3220,35 @@ async function agentScenarioPreflight(config) {
   };
 }
 
+function renderQueueItemCompName(item) {
+  return item && item.comp && typeof item.comp.name === "string" ? item.comp.name : "";
+}
+
 async function cleanupRenderQueueItemsByPrefix(prefix) {
-  return callBridgeTool("run_extendscript", {
-    timeoutMs: 60000,
-    script: `
+  const status = await callBridgeTool("get_render_queue_status", { limit: 200 });
+  const items = Array.isArray(status && status.items) ? status.items : [];
+  const matching = items.filter((item) => renderQueueItemCompName(item).indexOf(prefix) === 0);
+  if (!matching.length) {
+    return {
+      prefix,
+      removedCount: 0,
+      removed: [],
+      totalItems: Number(status && status.totalItems || 0),
+      skipped: true
+    };
+  }
+
+  const cleanupPlan = {
+    summary: `Clean up generated render queue items for ${prefix}`,
+    risk: "medium",
+    requiresCheckpoint: false,
+    steps: [
+      {
+        title: "Remove generated live QA render queue items",
+        tool: "run_extendscript",
+        args: {
+          timeoutMs: 60000,
+          script: `
       var prefix = ${JSON.stringify(prefix)};
       var rq = app.project.renderQueue;
       var removed = [];
@@ -3249,7 +3274,27 @@ async function cleanupRenderQueueItemsByPrefix(prefix) {
         totalItems: rq.numItems
       };
     `
+        }
+      }
+    ]
+  };
+
+  const proposedCleanup = await proposeBridgePlan(
+    cleanupPlan,
+    `agent-scenario-render-queue-cleanup-${Date.now()}`,
+    "agent-scenario-render-queue-cleanup"
+  );
+  const dryRun = await runProposedBridgePlan(proposedCleanup, true, 120000, "agent-scenario-render-queue-cleanup");
+  const cleanupRun = await runProposedBridgePlan(proposedCleanup, false, 120000, "agent-scenario-render-queue-cleanup", {
+    allowRawExtendscript: true,
+    rawExtendscriptDryRunId: dryRun.id
   });
+  const firstStep = cleanupRun.steps && cleanupRun.steps[0] ? cleanupRun.steps[0] : null;
+  return {
+    ...(firstStep && firstStep.result ? firstStep.result : {}),
+    dryRun: planRunSummary(dryRun),
+    run: planRunSummary(cleanupRun)
+  };
 }
 
 function m100RunFieldsForProposal(proposal, includeConfirmation, fallbackSurface) {
@@ -3285,15 +3330,20 @@ async function proposeBridgePlan(plan, requestId, surface) {
   return response.body;
 }
 
-async function runProposedBridgePlan(proposed, dryRun, timeoutMs, surface) {
-  const response = await postBridge("/agents/plan/run", {
+async function runProposedBridgePlan(proposed, dryRun, timeoutMs, surface, options) {
+  const runOptions = options || {};
+  const payload = {
     ...m100RunFieldsForProposal(proposed.proposal, !dryRun, surface),
     dryRun,
     confirm: !dryRun,
     allowMutations: !dryRun,
     autoEditSession: !dryRun,
     timeoutMs: timeoutMs || 120000
-  });
+  };
+  if (runOptions.allowRawExtendscript) payload.allowRawExtendscript = true;
+  if (runOptions.rawExtendscriptDryRunId) payload.rawExtendscriptDryRunId = runOptions.rawExtendscriptDryRunId;
+
+  const response = await postBridge("/agents/plan/run", payload);
   if (response.status >= 400 || !response.body || response.body.ok !== true) {
     const error = response.body && (response.body.error || (response.body.run && response.body.run.error));
     throw new Error(`Proposed plan run failed: ${error || `HTTP ${response.status}`}`);
@@ -3648,24 +3698,12 @@ async function verifyAgentScenarioReadBack(scenario) {
 }
 
 async function runBridgePlanForScenario(scenario, dryRun) {
-  const response = await postBridge("/agents/plan/run", {
-    plan: scenario.plan,
-    requestId: `agent-scenario-${scenario.id}-${dryRun ? "dry" : "run"}-${Date.now()}`,
-    dryRun,
-    confirm: !dryRun,
-    allowMutations: !dryRun,
-    autoEditSession: !dryRun,
-    timeoutMs: 180000
-  });
-
-  if (response.status >= 400 || !response.body || response.body.ok !== true) {
-    const error = response.body && (response.body.error || (response.body.run && response.body.run.error));
-    throw new Error(`${scenario.id}: direct ${dryRun ? "dry-run" : "run"} failed: ${error || `HTTP ${response.status}`}`);
-  }
-  if (!response.body.run || response.body.run.ok !== true) {
-    throw new Error(`${scenario.id}: direct ${dryRun ? "dry-run" : "run"} needs review.`);
-  }
-  return response.body.run;
+  const proposed = await proposeBridgePlan(
+    scenario.plan,
+    `agent-scenario-${scenario.id}-${dryRun ? "dry" : "run"}-${Date.now()}`,
+    "agent-scenario-deterministic-fallback"
+  );
+  return runProposedBridgePlan(proposed, dryRun, 180000, "agent-scenario-deterministic-fallback");
 }
 
 function scenarioValidationLine(scenario) {
