@@ -1346,11 +1346,15 @@ function runReviewerAttempt(cwd, invocation) {
   });
 }
 
-function isReviewerSdkProcessTermination(result) {
+function isSdkProcessTerminationResult(result) {
   if (!result || result.status === 0) {
     return false;
   }
   return isReviewerSdkProcessTerminationText(`${result.stderr || ""}\n${result.stdout || ""}`);
+}
+
+function isReviewerSdkProcessTermination(result) {
+  return isSdkProcessTerminationResult(result);
 }
 
 function isReviewerSdkProcessTerminationText(text) {
@@ -1708,12 +1712,31 @@ async function executeQueueItem(cwd, runtime, state, queue, item, options, preAp
   recordMissionPhase(runtime, state, "reviewing", { item: item.id, reviewerMode: options.reviewers || "none" });
   const reviewerResults = await runReviewers(cwd, runtime, item, options.reviewers || "none", options.engine || "sdk");
   const childResult = runWriterChild(cwd, runtime, item, options.engine || "sdk");
+  let writerParserTerminationRecovered = false;
+  let preValidationChanges = null;
   if (childResult.error || childResult.status !== 0) {
-    throw new Error(
-      `Writer child failed for ${item.id}: ${normalizeRepoPath(path.relative(cwd, childResult.logPath))}\n${tailLines(childResult.stderr || childResult.stdout, options.tailLines)}`,
-    );
+    if (isSdkProcessTerminationResult(childResult)) {
+      preValidationChanges = assertChangedPathsAllowed(cwd, item.plannedPaths);
+      if (preValidationChanges.changedPaths.length > 0) {
+        writerParserTerminationRecovered = true;
+        const childLogPath = normalizeRepoPath(path.relative(cwd, childResult.logPath));
+        recordMissionPhase(runtime, state, "writer_parser_parent_finalize", { childLogPath, item: item.id });
+        appendEvent(runtime, {
+          childLogPath,
+          item: item.id,
+          type: "writer-parser-parent-finalize",
+        });
+      }
+    }
+    if (!writerParserTerminationRecovered) {
+      throw new Error(
+        `Writer child failed for ${item.id}: ${normalizeRepoPath(path.relative(cwd, childResult.logPath))}\n${tailLines(childResult.stderr || childResult.stdout, options.tailLines)}`,
+      );
+    }
   }
-  const preValidationChanges = assertChangedPathsAllowed(cwd, item.plannedPaths);
+  if (!preValidationChanges) {
+    preValidationChanges = assertChangedPathsAllowed(cwd, item.plannedPaths);
+  }
   recordMissionPhase(runtime, state, "validating", { item: item.id });
   const validationResults = runValidationCommands(cwd, runtime, item);
   const policy = item.liveValidation || { mode: "none" };
@@ -1770,6 +1793,7 @@ async function executeQueueItem(cwd, runtime, state, queue, item, options, preAp
     preValidationChangedPaths: preValidationChanges.changedPaths,
     reviewerResults,
     validationResults,
+    writerParserTerminationRecovered,
   };
 }
 

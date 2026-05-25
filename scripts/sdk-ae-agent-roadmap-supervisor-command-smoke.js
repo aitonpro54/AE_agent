@@ -68,6 +68,10 @@ function initRepo(temp) {
       "  fs.mkdirSync(path.dirname(target), { recursive: true });",
       "  fs.writeFileSync(target, `roadmap-sdk wrote ${item.id}\\n`, 'utf8');",
       "}",
+      "if (fakeFailureMode === 'workspace-write-after-write' && sandbox === 'workspace-write') {",
+      "  console.error('Failed to parse item: SUCCESS: The process with PID 16172 (child process of PID 12936) has been terminated.');",
+      "  process.exit(1);",
+      "}",
       "console.log(`roadmap-sdk wrote ${item.id}`);",
       "",
     ].join("\n"),
@@ -768,6 +772,45 @@ function assertMissionFailureFollowupAndRetry() {
   }
 }
 
+function assertMissionWriterParserFailureParentFinalizesPlannedChanges() {
+  const temp = createTempRepo("mission-writer-parser-parent-finalize");
+  try {
+    const queuePath = writeQueue(temp, [item("one", 1, {
+      runnerKind: "roadmap-sdk",
+      plannedPaths: ["one.txt", ".codex/handoff.md"],
+    })]);
+    const approval = missionApprovalFor(temp, ["--queue", queuePath, "--max-items", "1"]);
+    const result = parseJson(run([
+      "--mission-run",
+      "--queue",
+      queuePath,
+      "--max-items",
+      "1",
+      "--session-id",
+      "mission-writer-parser-parent-finalize",
+      "--approval-text",
+      approval,
+      "--json",
+    ], temp, {
+      env: envWithFakeCodex(temp, {
+        FAKE_CODEX_SDK_FAIL_PARSE: "workspace-write-after-write",
+      }),
+    }));
+    assert.strictEqual(result.ok, true);
+    assert.deepStrictEqual(result.followupsUsed, []);
+    assert.strictEqual(result.completedPrimaryItems, 1);
+    assert.strictEqual(result.results[0].writerParserTerminationRecovered, true);
+    assert.match(fs.readFileSync(path.join(temp, "one.txt"), "utf8"), /roadmap-sdk wrote one/);
+    const state = JSON.parse(fs.readFileSync(path.join(temp, result.statePath), "utf8"));
+    assert(state.missionPhases.some((entry) => entry.phase === "writer_parser_parent_finalize"));
+    assert(!state.missionPhases.some((entry) => entry.phase === "followup_running"));
+    assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
+    assert.strictEqual(sh(temp, ["git", "log", "-1", "--format=%s"]), "test: one");
+  } finally {
+    removeTempRepo(temp);
+  }
+}
+
 function assertMissionGeneratedOnlyLiveRunsAndRejectsUnsafeLive() {
   const temp = createTempRepo("mission-live");
   try {
@@ -1081,6 +1124,7 @@ function main() {
   assertPromptOnlyMissionCreatesQueueAndExecutes();
   assertExistingQueueMissionRunsWithoutPlanCopying();
   assertMissionFailureFollowupAndRetry();
+  assertMissionWriterParserFailureParentFinalizesPlannedChanges();
   assertMissionGeneratedOnlyLiveRunsAndRejectsUnsafeLive();
   assertRequireLiveConnectivityAndItemLiveValidation();
   assertSingleApprovalLiveBindingRuns();
