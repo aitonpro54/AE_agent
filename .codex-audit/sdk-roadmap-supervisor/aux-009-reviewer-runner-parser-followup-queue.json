@@ -1,0 +1,155 @@
+{
+  "schema": "sdk-roadmap-supervisor-queue.v1",
+  "title": "AUX-009 Reviewer Runner Parser Follow-up Queue",
+  "createdAt": "2026-05-25",
+  "purpose": "Create one bounded support-lane task to eliminate the read-only reviewer-runner/parser termination that stopped the M216-M219 manual typed-tools supervisor run before the M216 writer child.",
+  "sourceContext": {
+    "trigger": "M216-M219 run-until-budget stopped before writer child on read-only reviewer failure.",
+    "sourceQueue": ".codex-audit/sdk-roadmap-supervisor/216-manual-typed-tools-reliability-queue.json",
+    "sourceCommit": "fd4e39b",
+    "runtimeSession": ".codex-runtime/sdk/roadmap-supervisor/roadmap-2026-05-25T09-39-35-362Z",
+    "analyzerPacket": ".codex-runtime/sdk/roadmap-supervisor/roadmap-2026-05-25T09-39-35-362Z/m216-reviewer-failure-analyzer.json",
+    "routeFile": ".codex-runtime/sdk/roadmap-supervisor/roadmap-2026-05-25T09-39-35-362Z/m216-reviewer-failure-route.json",
+    "routeResult": {
+      "nextRequiredAction": "create_bounded_analyzer_followup_task",
+      "requiresFreshApproval": true,
+      "implementationAllowed": false
+    },
+    "evidenceSummary": {
+      "failureClass": "unknown_failure",
+      "changedPaths": [],
+      "reviewerLogStderr": "Failed to parse item: SUCCESS: The process with PID ... has been terminated.",
+      "writerStarted": false,
+      "productFilesChanged": false
+    },
+    "boundaries": {
+      "retryM216M219SupervisorRun": false,
+      "runM216Writer": false,
+      "bypassReviewers": false,
+      "installAO": false,
+      "runAO": false,
+      "branchOrWorktree": false,
+      "push": false,
+      "pullRequest": false,
+      "githubIssueOrAction": false,
+      "dependencies": false,
+      "packageManifest": false,
+      "packageLock": false,
+      "cepPanel": false,
+      "liveCepAe": false,
+      "externalProviderPlannerValidation": false,
+      "localOllama": false,
+      "openRouterFallback": false,
+      "deterministicFallback": false
+    }
+  },
+  "queueItems": [
+    {
+      "id": "aux-009-reviewer-runner-parser-followup",
+      "label": "AUX-009",
+      "title": "Repair read-only reviewer runner/parser termination",
+      "dependencies": [],
+      "runner": {
+        "kind": "roadmap-sdk"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/aux-009-reviewer-runner-parser-followup-queue.json",
+        "orchestrator/run-ae-agent-roadmap-supervisor.mjs",
+        "orchestrator/codex-sdk-orchestrator.mjs",
+        "scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "mcp-server/**",
+        "chatgpt-connector/**",
+        "registry/**",
+        "recipes/**",
+        "package.json",
+        "package-lock.json",
+        "node_modules/**",
+        "logs/**",
+        "backups/**",
+        "snapshots/**",
+        ".github/**",
+        "docs/research/**"
+      ],
+      "allowedActions": [
+        "inspect only the explicit M216 reviewer-failure evidence paths listed in sourceContext, plus the two planned runner/parser source files and the existing roadmap supervisor command smoke",
+        "reproduce the reviewer-runner/parser failure with a local smoke fixture rather than retrying the M216-M219 supervisor run",
+        "repair the read-only reviewer invocation or parser boundary so reviewer tasks do not terminate before the writer child with Failed to parse item process-termination text",
+        "preserve read-only reviewer isolation: reviewers must not edit files, run mutating commands, install packages, push, create a PR, run live AE/CEP, or bypass blocking findings",
+        "keep the M216-M219 queue and product manual typed-tools repair untouched in this item except for documentation notes",
+        "add or update roadmap supervisor command-smoke coverage proving read-only reviewers can run without writer-child parser termination and that writer-child parser fallback behavior remains covered",
+        "update this queue item status/completedBy after successful validation",
+        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and active roadmap notes for AUX-009",
+        "update .codex/handoff.md with AUX-009 state, validation commands, decisions, risks, commit pending/supervisor commit note, and exact next prompt for retrying the M216-M219 supervisor run only after fresh approval"
+      ],
+      "forbiddenActions": [
+        "retry the M216-M219 run-until-budget command",
+        "start the M216 writer child",
+        "change M216-M219 product repair behavior",
+        "bypass reviewers by treating reviewer failure as success",
+        "auto-fix from analyzer packets without this bounded approval",
+        "run live AE/CEP validation",
+        "use Local/Ollama, OpenRouter, deterministic fallback, or external-provider planner validation",
+        "install or run any external AO runtime",
+        "create a branch, worktree, push, PR, GitHub issue, or GitHub Action",
+        "change dependencies, package manifests, or package locks",
+        "edit CEP panel, bridge runtime, registry, recipe, or production typed-tool files"
+      ],
+      "allowedCommands": [
+        "node --check orchestrator/run-ae-agent-roadmap-supervisor.mjs",
+        "node --check orchestrator/codex-sdk-orchestrator.mjs",
+        "node --check scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js",
+        "node scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check orchestrator/run-ae-agent-roadmap-supervisor.mjs",
+        "node --check orchestrator/codex-sdk-orchestrator.mjs",
+        "node --check scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js",
+        "node scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 60,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "fix: repair roadmap reviewer parser handling"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "roadmap-sdk-child-failed",
+        "validation-failed",
+        "context-pressure",
+        "unplanned-path-change",
+        "handoff-stale",
+        "reviewer-bypass-attempted",
+        "m216-m219-rerun-attempted",
+        "ao-runtime-requested",
+        "live-cep-ae-requested",
+        "local-ollama-openrouter-deterministic-fallback-requested"
+      ],
+      "status": "queued"
+    }
+  ]
+}
