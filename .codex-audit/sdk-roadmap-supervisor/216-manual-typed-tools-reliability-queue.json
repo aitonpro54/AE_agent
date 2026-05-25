@@ -1,0 +1,534 @@
+{
+  "schema": "sdk-roadmap-supervisor-queue.v1",
+  "milestone": 216,
+  "title": "Manual Typed Tools Reliability Queue",
+  "createdAt": "2026-05-25",
+  "purpose": "Repair Dakkshin manual typed-tool reliability through the AE Agent roadmap supervisor with existing AO-inspired support gates, without installing or running any external AO runtime.",
+  "sourceContext": {
+    "requestedBy": "current Codex thread",
+    "executionModel": "Sequential roadmap supervisor items, one roadmap-sdk writer child at a time, two read-only reviewers in parallel, validation before auto-commit, handoff after each item, and generated-only live acceptance only for M219.",
+    "productMilestoneDecision": "Use product milestones M216 through M219 because the work repairs runtime, planner, semantic verification, and panel/live acceptance behavior.",
+    "aoPipelineUsage": {
+      "externalAoRuntime": false,
+      "supportScriptsOnly": true,
+      "failureAnalyzerScript": "scripts/create-roadmap-failure-analyzer-packet.js",
+      "feedbackRouterScript": "scripts/route-roadmap-feedback-packet.js",
+      "contextPressureScript": "scripts/check-roadmap-context-pressure.js",
+      "handoffFreshnessScript": "scripts/check-roadmap-handoff-freshness.js",
+      "failurePolicy": "Analyzer packets classify failures and feed bounded next-task routing only; no analyzer auto-fix is allowed."
+    },
+    "boundaries": {
+      "installAO": false,
+      "runAO": false,
+      "branchOrWorktree": false,
+      "push": false,
+      "pullRequest": false,
+      "githubIssueOrAction": false,
+      "dependencies": false,
+      "packageManifest": false,
+      "packageLock": false,
+      "localOllama": false,
+      "openRouterFallback": false,
+      "deterministicFallback": false
+    }
+  },
+  "queueItems": [
+    {
+      "id": "m216-manual-typed-tool-regression-corpus",
+      "milestone": 216,
+      "title": "Add manual typed-tool regression corpus",
+      "dependencies": [],
+      "runner": {
+        "kind": "roadmap-sdk"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/216-manual-typed-tools-reliability-queue.json",
+        "scripts/manual-typed-tool-regression-smoke.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "package.json",
+        "package-lock.json",
+        "node_modules/**",
+        "logs/**",
+        "backups/**",
+        "snapshots/**",
+        ".github/**"
+      ],
+      "allowedActions": [
+        "add scripts/manual-typed-tool-regression-smoke.js with a local corpus for five manual panel prompt families from the screenshots and Dakkshin typed-tool intake",
+        "make the corpus locally reproduce unresolved folderItemIndex, unresolved markerCompItemIndex, wrong exactName binding, wrong duplicate_layers layer/name order, and missing final read-back summary",
+        "keep M216 focused on regression coverage and explicit current-failure classification; do not repair runtime, planner, semantic verification, CEP panel files, dependencies, or live AE state in this item",
+        "ensure the smoke exits successfully while recording the current expected failures so M217 and M218 can flip the same corpus to fixed expectations",
+        "update this queue item status/completedBy after successful validation",
+        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and active roadmap notes for M216",
+        "update .codex/handoff.md with M216 state, validation commands, decisions, risks, commit pending/supervisor commit note, and exact next prompt for M217"
+      ],
+      "forbiddenActions": [
+        "repair binding/schema behavior in M216",
+        "repair duplicate layer order behavior in M216",
+        "edit CEP panel files or run live AE/CEP validation",
+        "install or run any external AO runtime",
+        "use Local/Ollama, OpenRouter, or deterministic planner fallback",
+        "create a branch, worktree, push, PR, GitHub issue, or GitHub Action",
+        "change dependencies, package manifests, or package locks",
+        "auto-fix from analyzer packets"
+      ],
+      "allowedCommands": [
+        "node --check scripts/manual-typed-tool-regression-smoke.js",
+        "node scripts/manual-typed-tool-regression-smoke.js",
+        "node scripts/plan-repair-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/smoke-test.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check scripts/manual-typed-tool-regression-smoke.js",
+        "node scripts/manual-typed-tool-regression-smoke.js",
+        "node scripts/plan-repair-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/smoke-test.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "typed-tool-safety-correctness-review",
+          "kind": "read-only",
+          "prompt": "Review M216 regression corpus coverage. Block if it misses any of the five manual typed-tool failure families, repairs runtime behavior in this coverage-only item, touches CEP/live/dependency paths, or weakens typed-tool safety."
+        },
+        {
+          "id": "validation-handoff-freshness-review",
+          "kind": "read-only",
+          "prompt": "Review M216 validation and handoff freshness. Block if validation evidence is incomplete, the handoff is stale or missing the exact next prompt, or the item implies analyzer auto-fix, Local/Ollama, push, PR, dependency, branch, worktree, or external AO runtime work."
+        }
+      ],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 60,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "test: add manual typed tool regression corpus"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "roadmap-sdk-child-failed",
+        "validation-failed",
+        "reviewer-blocking",
+        "context-pressure",
+        "unplanned-path-change",
+        "handoff-stale",
+        "ao-runtime-requested",
+        "analyzer-auto-fix-requested"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "m217-runtime-binding-and-schema-repair",
+      "milestone": 217,
+      "title": "Repair runtime bindings and schema aliases",
+      "dependencies": [
+        "m216-manual-typed-tool-regression-corpus"
+      ],
+      "runner": {
+        "kind": "roadmap-sdk"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/216-manual-typed-tools-reliability-queue.json",
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "scripts/manual-typed-tool-regression-smoke.js",
+        "scripts/plan-repair-smoke.js",
+        "scripts/smoke-test.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "package.json",
+        "package-lock.json",
+        "node_modules/**",
+        "logs/**",
+        "backups/**",
+        "snapshots/**",
+        ".github/**"
+      ],
+      "allowedActions": [
+        "repair folderItemIndex binding from payload.folder.itemIndex",
+        "support targetFolderItemIndex aliases without broad string hacks",
+        "repair markerCompItemIndex, maskCompItemIndex, and cameraCompItemIndex aliases into compItemIndex",
+        "repair find_project_items exactName:\"Name\" into query:\"Name\", exactName:true",
+        "repair itemType:\"composition\" into type:\"comp\"",
+        "update scripts/manual-typed-tool-regression-smoke.js so the M216 binding/schema current-failure cases now pass with fixed expectations",
+        "keep duplicate_layer and duplicate_layers layer-order repair for M218",
+        "update this queue item status/completedBy after successful validation",
+        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and active roadmap notes for M217",
+        "update .codex/handoff.md with M217 state, validation commands, decisions, risks, commit pending/supervisor commit note, and exact next prompt for M218"
+      ],
+      "forbiddenActions": [
+        "change CEP panel UI files",
+        "edit dependency, package manifest, or package lock files",
+        "run live AE/CEP validation in this non-live repair item",
+        "use Local/Ollama, OpenRouter, or deterministic planner fallback",
+        "install or run any external AO runtime",
+        "create a branch, worktree, push, PR, GitHub issue, or GitHub Action",
+        "auto-fix from analyzer packets"
+      ],
+      "allowedCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check scripts/manual-typed-tool-regression-smoke.js",
+        "node --check scripts/plan-repair-smoke.js",
+        "node --check scripts/smoke-test.js",
+        "node scripts/manual-typed-tool-regression-smoke.js",
+        "node scripts/plan-repair-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/smoke-test.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check scripts/manual-typed-tool-regression-smoke.js",
+        "node --check scripts/plan-repair-smoke.js",
+        "node --check scripts/smoke-test.js",
+        "node scripts/manual-typed-tool-regression-smoke.js",
+        "node scripts/plan-repair-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/smoke-test.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "typed-tool-safety-correctness-review",
+          "kind": "read-only",
+          "prompt": "Review M217 binding and schema repair. Block if aliases are applied unsafely, exactName string repair loses the query value, itemType composition is not normalized to comp, duplicate layer-order scope leaks into this item, or typed-tool safety gates are weakened."
+        },
+        {
+          "id": "validation-handoff-freshness-review",
+          "kind": "read-only",
+          "prompt": "Review M217 validation and handoff freshness. Block if the manual regression smoke, plan-repair smoke, semantic smoke, smoke-test, check:rules, or git diff --check evidence is missing, if handoff is stale, or if Local/Ollama/external AO/push/PR/dependency work occurred."
+        }
+      ],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 75,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "fix: repair manual typed tool bindings"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "dependency-not-completed",
+        "roadmap-sdk-child-failed",
+        "validation-failed",
+        "reviewer-blocking",
+        "context-pressure",
+        "unplanned-path-change",
+        "handoff-stale",
+        "schema-alias-unsafe",
+        "ao-runtime-requested",
+        "analyzer-auto-fix-requested"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "m218-layer-order-and-duplicate-tools-repair",
+      "milestone": 218,
+      "title": "Repair duplicate layer order and semantic evidence",
+      "dependencies": [
+        "m217-runtime-binding-and-schema-repair"
+      ],
+      "runner": {
+        "kind": "roadmap-sdk"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/216-manual-typed-tools-reliability-queue.json",
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "scripts/manual-typed-tool-regression-smoke.js",
+        "scripts/plan-repair-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/smoke-test.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "package.json",
+        "package-lock.json",
+        "node_modules/**",
+        "logs/**",
+        "backups/**",
+        "snapshots/**",
+        ".github/**"
+      ],
+      "allowedActions": [
+        "repair duplicate_layer and duplicate_layers layer-order logic for After Effects insertion at layer index 1",
+        "make planner or repair use stack-order layer names or insert get_comp_details before duplication when source-layer order is ambiguous",
+        "make semantic verification fail closed before live run when duplicate_layers layer/name order mismatches the expected source/duplicate pairs",
+        "update scripts/manual-typed-tool-regression-smoke.js so the duplicate_layers layer/name order case passes with fixed expectations",
+        "preserve M217 binding/schema repairs and do not add live validation in this item",
+        "update this queue item status/completedBy after successful validation",
+        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and active roadmap notes for M218",
+        "update .codex/handoff.md with M218 state, validation commands, decisions, risks, commit pending/supervisor commit note, and exact next prompt for M219"
+      ],
+      "forbiddenActions": [
+        "delete layers or project items",
+        "deep-duplicate or relink precomp/source trees",
+        "route mask/path/audio workflows into duplicate_layer or duplicate_layers",
+        "accept duplicate success without post-run read-back evidence",
+        "change CEP panel UI files",
+        "edit dependency, package manifest, or package lock files",
+        "run live AE/CEP validation in this non-live repair item",
+        "use Local/Ollama, OpenRouter, or deterministic planner fallback",
+        "install or run any external AO runtime",
+        "create a branch, worktree, push, PR, GitHub issue, or GitHub Action",
+        "auto-fix from analyzer packets"
+      ],
+      "allowedCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/manual-typed-tool-regression-smoke.js",
+        "node --check scripts/plan-repair-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/smoke-test.js",
+        "node scripts/manual-typed-tool-regression-smoke.js",
+        "node scripts/plan-repair-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/smoke-test.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/manual-typed-tool-regression-smoke.js",
+        "node --check scripts/plan-repair-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/smoke-test.js",
+        "node scripts/manual-typed-tool-regression-smoke.js",
+        "node scripts/plan-repair-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/smoke-test.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "typed-tool-safety-correctness-review",
+          "kind": "read-only",
+          "prompt": "Review M218 duplicate layer-order repair. Block if it ignores AE's new-layer index 1 behavior, accepts layer/name order mismatches, skips required get_comp_details evidence for ambiguous source order, or weakens duplicate_layer(s) safety."
+        },
+        {
+          "id": "validation-handoff-freshness-review",
+          "kind": "read-only",
+          "prompt": "Review M218 validation and handoff freshness. Block if manual regression, plan-repair, semantic verification, smoke-test, check:rules, or git diff --check evidence is missing, if handoff is stale, or if Local/Ollama/external AO/push/PR/dependency work occurred."
+        }
+      ],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 75,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "fix: repair duplicate layer order verification"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "dependency-not-completed",
+        "roadmap-sdk-child-failed",
+        "validation-failed",
+        "reviewer-blocking",
+        "context-pressure",
+        "unplanned-path-change",
+        "handoff-stale",
+        "duplicate-layer-order-mismatch",
+        "semantic-readback-missing",
+        "ao-runtime-requested",
+        "analyzer-auto-fix-requested"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "m219-manual-typed-tools-live-acceptance",
+      "milestone": 219,
+      "title": "Add and run manual typed-tools live acceptance",
+      "dependencies": [
+        "m218-layer-order-and-duplicate-tools-repair"
+      ],
+      "runner": {
+        "kind": "roadmap-sdk"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/216-manual-typed-tools-reliability-queue.json",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/manual-typed-tool-regression-smoke.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "package.json",
+        "package-lock.json",
+        "node_modules/**",
+        "logs/**",
+        "backups/**",
+        "snapshots/**",
+        ".github/**"
+      ],
+      "allowedActions": [
+        "add full-ui-agent-manual-typed-tools-openai-cli-smoke to scripts/cep-panel-cdp-smoke.js for the same five manual prompt families",
+        "use generated-only prefixes for all live-created comps, folders, layers, markers, masks, cameras, and duplicate-layer assets",
+        "require OpenAI CLI planning through the installed panel/CDP path with no Local/Ollama, OpenRouter, or deterministic fallback",
+        "run dry run, protected run, read-back summary, semantic verification passed, and generated asset cleanup",
+        "fail closed when any final read-back summary is missing or semantic verification is not passed",
+        "update this queue item status/completedBy after successful validation and live acceptance",
+        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and active roadmap notes for M219 closeout",
+        "update .codex/handoff.md with M219 state, validation commands, live acceptance evidence, decisions, risks, and exact next prompt"
+      ],
+      "forbiddenActions": [
+        "mutate user assets or accept leftover generated assets",
+        "edit CEP panel files or dependency/package files",
+        "run Local/Ollama, OpenRouter, or deterministic fallback",
+        "install or run any external AO runtime",
+        "create a branch, worktree, push, PR, GitHub issue, or GitHub Action",
+        "auto-fix from analyzer packets"
+      ],
+      "allowedCommands": [
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/manual-typed-tool-regression-smoke.js",
+        "node scripts/manual-typed-tool-regression-smoke.js",
+        "node scripts/plan-repair-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/smoke-test.js",
+        "npm.cmd run check:rules",
+        "git diff --check",
+        "node scripts/cep-panel-cdp-smoke.js inspect",
+        "node scripts/cep-panel-cdp-smoke.js connector-status-smoke",
+        "node scripts/cep-panel-cdp-smoke.js full-ui-agent-manual-typed-tools-openai-cli-smoke"
+      ],
+      "validationCommands": [
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/manual-typed-tool-regression-smoke.js",
+        "node scripts/manual-typed-tool-regression-smoke.js",
+        "node scripts/plan-repair-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/smoke-test.js",
+        "npm.cmd run check:rules",
+        "git diff --check",
+        "node scripts/cep-panel-cdp-smoke.js inspect",
+        "node scripts/cep-panel-cdp-smoke.js connector-status-smoke"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "typed-tool-safety-correctness-review",
+          "kind": "read-only",
+          "prompt": "Review M219 live acceptance lane. Block if it permits Local/Ollama, OpenRouter, deterministic fallback, user-asset mutation, leftover generated assets, missing read-back summary, or semantic verification other than passed."
+        },
+        {
+          "id": "validation-handoff-freshness-review",
+          "kind": "read-only",
+          "prompt": "Review M219 validation and handoff freshness. Block if inspect, connector-status-smoke, generated-only OpenAI CLI live acceptance, cleanup evidence, semantic passed evidence, or exact next prompt is missing."
+        }
+      ],
+      "liveValidation": {
+        "mode": "generated-only-command",
+        "approvalRequired": true,
+        "approvalText": "I approve one M219 live CEP AE validation run for generated-only manual typed-tools checks using OpenAI CLI",
+        "generatedOnlyLive": true,
+        "mutatingLive": true,
+        "noUserAssetMutation": true,
+        "commands": [
+          "node scripts/cep-panel-cdp-smoke.js full-ui-agent-manual-typed-tools-openai-cli-smoke"
+        ]
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 120,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "test: add manual typed tools live acceptance"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "dependency-not-completed",
+        "roadmap-sdk-child-failed",
+        "validation-failed",
+        "reviewer-blocking",
+        "context-pressure",
+        "unplanned-path-change",
+        "handoff-stale",
+        "live-connectivity-unavailable",
+        "openai-cli-not-ready",
+        "panel-generated-plan-missing-required-typed-tools",
+        "deterministic-backend-fallback-attempted",
+        "ollama-openrouter-fallback-attempted",
+        "semantic-verification-failed",
+        "readback-summary-missing",
+        "generated-cleanup-leftovers",
+        "ao-runtime-requested",
+        "analyzer-auto-fix-requested"
+      ],
+      "status": "queued"
+    }
+  ]
+}
