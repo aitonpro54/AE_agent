@@ -1098,6 +1098,86 @@ function runItemLiveValidation(cwd, runtime, queue, item, options) {
   return results;
 }
 
+function parentOwnsLiveCompletion(item) {
+  const policy = item.liveValidation || { mode: "none" };
+  return policy.mode === "generated-only-command";
+}
+
+function queuePathIsPlannedForItem(item, options) {
+  if (!options.queuePath) {
+    return false;
+  }
+  const queuePath = normalizeRepoPath(options.queuePath);
+  return item.plannedPaths.map(normalizeRepoPath).includes(queuePath);
+}
+
+function updateQueueItemInTrackedFile(cwd, queuePath, itemId, updater) {
+  const normalizedQueuePath = normalizeRepoPath(queuePath);
+  const absolute = path.join(cwd, normalizedQueuePath);
+  const queue = JSON.parse(readFileSync(absolute, "utf8"));
+  const queueItem = queue.queueItems && queue.queueItems.find((entry) => entry.id === itemId);
+  if (!queueItem) {
+    throw new Error(`Cannot update queue item ${itemId} in ${normalizedQueuePath}.`);
+  }
+  const changed = updater(queueItem, queue);
+  if (changed) {
+    writeFileSync(absolute, `${JSON.stringify(queue, null, 2)}\n`, "utf8");
+  }
+  return { changed, queueItem };
+}
+
+function deferWriterLiveCompletion(cwd, runtime, state, item, options) {
+  if (!parentOwnsLiveCompletion(item) || !queuePathIsPlannedForItem(item, options)) {
+    return { active: false, changed: false };
+  }
+  const result = updateQueueItemInTrackedFile(cwd, options.queuePath, item.id, (queueItem) => {
+    if (queueItem.status !== "completed" && !Object.hasOwn(queueItem, "completedBy")) {
+      return false;
+    }
+    queueItem.status = "queued";
+    delete queueItem.completedBy;
+    return true;
+  });
+  if (result.changed) {
+    recordMissionPhase(runtime, state, "live_completion_deferred", {
+      item: item.id,
+      queuePath: normalizeRepoPath(options.queuePath),
+    });
+  }
+  return { active: true, changed: result.changed };
+}
+
+function finalizeParentLiveCompletion(cwd, runtime, state, item, options, context) {
+  if (!parentOwnsLiveCompletion(item) || !queuePathIsPlannedForItem(item, options)) {
+    return null;
+  }
+  const liveSummary = context.itemLiveValidationResults
+    .map((entry) => `${entry.command}: status ${entry.status}`)
+    .join("; ") || "no item live commands recorded";
+  const validationSummary = context.validationResults
+    .map((entry) => `${entry.command}: status ${entry.status}`)
+    .join("; ") || "no validation commands recorded";
+  const result = updateQueueItemInTrackedFile(cwd, options.queuePath, item.id, (queueItem) => {
+    queueItem.status = "completed";
+    queueItem.completedBy = {
+      actor: "roadmap-supervisor-parent-live-gate",
+      completedAt: new Date().toISOString().slice(0, 10),
+      note: [
+        "Parent supervisor finalized this generated-only live item only after validation and item-live gates passed.",
+        `Validation: ${validationSummary}.`,
+        `Item live: ${liveSummary}.`,
+        "Writer-authored live completion is deferred until this parent gate succeeds."
+      ].join(" ")
+    };
+    return true;
+  });
+  recordMissionPhase(runtime, state, "live_completion_finalized", {
+    item: item.id,
+    queuePath: normalizeRepoPath(options.queuePath),
+  });
+  return result.queueItem.completedBy;
+}
+
 function runFixtureWriter(cwd, item) {
   const action = item.runner.action || "write-planned";
   if (action === "fail-until-path-exists") {
@@ -1166,12 +1246,20 @@ function buildRoadmapSdkPrompt(item) {
   if (Object.hasOwn(item, "milestone")) {
     payload.milestone = item.milestone;
   }
+  const policy = item.liveValidation || { mode: "none" };
+  const liveCompletionGuidance = policy.mode === "none"
+    ? []
+    : [
+        "This item has parent-owned liveValidation. Implement the requested code or lane, but do not mark the queue item completed, do not add completedBy, and do not describe live acceptance as final in tracked docs before the parent supervisor runs liveValidation.commands.",
+        "The parent supervisor is the only source of truth for generated-only live completion and will finalize queue completion after its own live gate succeeds.",
+      ];
   return [
     "You are a writer child for AE Agent roadmap supervisor.",
     "Complete exactly the provided queue item. Do not perform unrelated work.",
     "Write only files listed in plannedPaths. Do not push, create a PR, install packages, change dependencies, edit CEP panel files, or run live AE/CEP unless this item explicitly asks for it.",
     "Update the handoff file when handoffPolicy.required is true.",
     "Respect forbiddenActions even if the task seems easier with a broader change.",
+    ...liveCompletionGuidance,
     "",
     "<roadmap_item_json>",
     JSON.stringify(payload, null, 2),
@@ -1740,6 +1828,7 @@ async function executeQueueItem(cwd, runtime, state, queue, item, options, preAp
   recordMissionPhase(runtime, state, "validating", { item: item.id });
   const validationResults = runValidationCommands(cwd, runtime, item);
   const policy = item.liveValidation || { mode: "none" };
+  const deferredLiveCompletion = deferWriterLiveCompletion(cwd, runtime, state, item, options);
   const preItemLiveConnectivityResults = [];
   if (state.mission && policy.mode === "generated-only-command") {
     recordMissionPhase(runtime, state, "live_validating", { item: item.id, stage: "connectivity" });
@@ -1749,6 +1838,10 @@ async function executeQueueItem(cwd, runtime, state, queue, item, options, preAp
     recordMissionPhase(runtime, state, "live_validating", { item: item.id, stage: "item-live" });
   }
   const itemLiveValidationResults = runItemLiveValidation(cwd, runtime, queue, item, options);
+  const parentLiveCompletedBy = finalizeParentLiveCompletion(cwd, runtime, state, item, options, {
+    itemLiveValidationResults,
+    validationResults,
+  });
   assertChangedPathsAllowed(cwd, item.plannedPaths);
   let handoffFinalizedBySupervisor = false;
   if (handoffSnapshot && !requiredHandoffUpdated(cwd, handoffSnapshot)) {
@@ -1790,6 +1883,8 @@ async function executeQueueItem(cwd, runtime, state, queue, item, options, preAp
     item: item.id,
     itemLiveValidationResults,
     liveConnectivityResults: [...preflightLiveResults, ...preItemLiveConnectivityResults],
+    parentLiveCompletionDeferred: deferredLiveCompletion.changed,
+    parentLiveCompletedBy,
     preValidationChangedPaths: preValidationChanges.changedPaths,
     reviewerResults,
     validationResults,

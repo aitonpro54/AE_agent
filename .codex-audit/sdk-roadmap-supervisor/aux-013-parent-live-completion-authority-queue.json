@@ -1,0 +1,116 @@
+{
+  "schema": "sdk-roadmap-supervisor-queue.v1",
+  "title": "AUX-013 Parent Live Completion Authority Repair",
+  "createdAt": "2026-05-25",
+  "purpose": "Repair the supervisor Mission Runner so generated-only live queue items cannot be marked completed by a writer child before the parent-owned validation and item-live gates succeed.",
+  "queueItems": [
+    {
+      "id": "aux-013-parent-live-completion-authority",
+      "label": "AUX-013",
+      "title": "Enforce parent live completion authority",
+      "dependencies": [],
+      "runner": {
+        "kind": "roadmap-sdk"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/aux-013-parent-live-completion-authority-queue.json",
+        "orchestrator/run-ae-agent-roadmap-supervisor.mjs",
+        "scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "package.json",
+        "package-lock.json",
+        "node_modules/**",
+        "logs/**",
+        "backups/**",
+        "snapshots/**",
+        ".github/**"
+      ],
+      "allowedActions": [
+        "make the parent supervisor the only source of truth for generated-only live queue item completion",
+        "defer or remove writer-authored status:completed/completedBy for generated-only live items before parent item-live validation runs",
+        "restore completion in the tracked queue only after parent validation and parent item-live validation succeed",
+        "add command-smoke coverage for both parent live success and parent live failure after a writer child prematurely marks the queue item completed",
+        "preserve the existing writer parser parent-finalize recovery path for planned-path edits",
+        "do not retry M219 or run live CEP/AE validation as part of this support repair"
+      ],
+      "forbiddenActions": [
+        "commit the dirty M219 product/live lane changes",
+        "rerun M219 live validation",
+        "edit CEP panel files",
+        "use Local/Ollama, OpenRouter, deterministic fallback, or external-provider planner validation",
+        "install or run any external AO runtime",
+        "create a branch, worktree, push, PR, GitHub issue, or GitHub Action",
+        "change dependencies, package manifests, or package locks",
+        "auto-fix from analyzer packets"
+      ],
+      "allowedCommands": [
+        "node --check orchestrator/run-ae-agent-roadmap-supervisor.mjs",
+        "node --check scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js",
+        "node scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check orchestrator/run-ae-agent-roadmap-supervisor.mjs",
+        "node --check scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js",
+        "node scripts/sdk-ae-agent-roadmap-supervisor-command-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "parent-live-authority-review",
+          "kind": "read-only",
+          "prompt": "Review AUX-013. Block if generated-only live item completion can still be finalized by a writer child before the parent item-live gate succeeds, or if a parent item-live failure can leave a tracked queue item marked completed."
+        },
+        {
+          "id": "support-boundary-review",
+          "kind": "read-only",
+          "prompt": "Review AUX-013 support boundaries. Block if the repair commits M219 product/live lane changes, runs live CEP/AE, uses Local/Ollama/OpenRouter/deterministic fallback, changes dependencies, creates branch/worktree/push/PR/GitHub work, or weakens parser parent-finalize safety."
+        }
+      ],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 30,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "fix: enforce parent live completion authority"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "roadmap-sdk-child-failed",
+        "validation-failed",
+        "reviewer-blocking",
+        "context-pressure",
+        "unplanned-path-change",
+        "handoff-stale",
+        "live-completion-authority-violation",
+        "m219-dirty-state-committed",
+        "ao-runtime-requested",
+        "analyzer-auto-fix-requested"
+      ],
+      "status": "completed",
+      "completedBy": {
+        "actor": "parent-codex-support-repair",
+        "completedAt": "2026-05-25",
+        "note": "Added parent-owned generated-only live completion authority to the Mission Runner. The parent now defers writer-authored queue completion before item-live validation and writes completedBy only after parent validation and item-live gates pass. Command-smoke coverage proves both live success and live failure after premature writer completion."
+      }
+    }
+  ]
+}

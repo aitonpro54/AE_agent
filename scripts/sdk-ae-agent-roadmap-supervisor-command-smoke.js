@@ -63,10 +63,23 @@ function initRepo(temp) {
       "const match = prompt.match(/<roadmap_item_json>\\n([\\s\\S]*?)\\n<\\/roadmap_item_json>/);",
       "if (!match) { console.log('read-only reviewer no-op'); process.exit(0); }",
       "const item = JSON.parse(match[1]);",
+      "const shouldMarkQueueCompleted = process.env.FAKE_CODEX_MARK_QUEUE_COMPLETED === '1';",
       "for (const repoPath of item.plannedPaths || []) {",
+      "  if (shouldMarkQueueCompleted && repoPath.replace(/\\\\/g, '/').endsWith('/queue.json')) continue;",
       "  const target = path.join(process.cwd(), repoPath.replace(/\\\\/g, '/'));",
       "  fs.mkdirSync(path.dirname(target), { recursive: true });",
       "  fs.writeFileSync(target, `roadmap-sdk wrote ${item.id}\\n`, 'utf8');",
+      "}",
+      "if (shouldMarkQueueCompleted) {",
+      "  const queuePath = (item.plannedPaths || []).find((repoPath) => repoPath.replace(/\\\\/g, '/').endsWith('/queue.json'));",
+      "  if (queuePath) {",
+      "    const target = path.join(process.cwd(), queuePath.replace(/\\\\/g, '/'));",
+      "    const queue = JSON.parse(fs.readFileSync(target, 'utf8'));",
+      "    const queueItem = queue.queueItems.find((entry) => entry.id === item.id);",
+      "    queueItem.status = 'completed';",
+      "    queueItem.completedBy = { actor: 'roadmap-writer-child', completedAt: '2026-05-25', note: 'writer claimed live completion before parent gate' };",
+      "    fs.writeFileSync(target, `${JSON.stringify(queue, null, 2)}\\n`, 'utf8');",
+      "  }",
       "}",
       "if (fakeFailureMode === 'workspace-write-after-write' && sandbox === 'workspace-write') {",
       "  console.error('Failed to parse item: SUCCESS: The process with PID 16172 (child process of PID 12936) has been terminated.');",
@@ -869,6 +882,106 @@ function assertMissionGeneratedOnlyLiveRunsAndRejectsUnsafeLive() {
   }
 }
 
+function assertMissionParentOwnsLiveCompletionSuccess() {
+  const temp = createTempRepo("mission-parent-live-completion");
+  try {
+    const queueRepoPath = ".codex-audit/sdk-roadmap-supervisor/queue.json";
+    const liveCommand = "node scripts/cep-panel-cdp-smoke.js inspect";
+    const queuePath = writeQueue(temp, [item("one", 1, {
+      runnerKind: "roadmap-sdk",
+      plannedPaths: ["one.txt", queueRepoPath, ".codex/handoff.md"],
+      liveValidation: {
+        approvalRequired: true,
+        approvalText: "I approve generated-only item live validation",
+        commands: [liveCommand],
+        generatedOnlyLive: true,
+        mode: "generated-only-command",
+        mutatingLive: true,
+        noUserAssetMutation: true,
+      },
+    })]);
+    const approval = missionApprovalFor(temp, ["--queue", queuePath, "--max-items", "1"]);
+    const result = parseJson(run([
+      "--mission-run",
+      "--queue",
+      queuePath,
+      "--max-items",
+      "1",
+      "--session-id",
+      "mission-parent-live-completion",
+      "--approval-text",
+      approval,
+      "--json",
+    ], temp, {
+      env: envWithFakeCodex(temp, { FAKE_CODEX_MARK_QUEUE_COMPLETED: "1" }),
+    }));
+
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.results[0].parentLiveCompletionDeferred, true);
+    assert.strictEqual(result.results[0].parentLiveCompletedBy.actor, "roadmap-supervisor-parent-live-gate");
+    const queue = JSON.parse(fs.readFileSync(path.join(temp, queueRepoPath), "utf8"));
+    const queueItem = queue.queueItems.find((entry) => entry.id === "one");
+    assert.strictEqual(queueItem.status, "completed");
+    assert.strictEqual(queueItem.completedBy.actor, "roadmap-supervisor-parent-live-gate");
+    assert.doesNotMatch(queueItem.completedBy.note, /writer claimed live completion/);
+    assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
+  } finally {
+    removeTempRepo(temp);
+  }
+}
+
+function assertMissionParentDefersLiveCompletionOnLiveFailure() {
+  const temp = createTempRepo("mission-parent-live-failure");
+  try {
+    const queueRepoPath = ".codex-audit/sdk-roadmap-supervisor/queue.json";
+    const liveCommand = "node scripts/cep-panel-cdp-smoke.js manual-typed-tools";
+    const queuePath = writeQueue(temp, [item("one", 1, {
+      runnerKind: "roadmap-sdk",
+      plannedPaths: ["one.txt", queueRepoPath, ".codex/handoff.md"],
+      liveValidation: {
+        approvalRequired: true,
+        approvalText: "I approve generated-only item live validation",
+        commands: [liveCommand],
+        generatedOnlyLive: true,
+        mode: "generated-only-command",
+        mutatingLive: true,
+        noUserAssetMutation: true,
+      },
+    })]);
+    const approval = missionApprovalFor(temp, ["--queue", queuePath, "--max-items", "1"]);
+    const result = run([
+      "--mission-run",
+      "--queue",
+      queuePath,
+      "--max-items",
+      "1",
+      "--session-id",
+      "mission-parent-live-failure",
+      "--approval-text",
+      approval,
+      "--json",
+    ], temp, {
+      env: envWithFakeCodex(temp, { FAKE_CODEX_MARK_QUEUE_COMPLETED: "1" }),
+    });
+
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /Item live validation failed/);
+    const queue = JSON.parse(fs.readFileSync(path.join(temp, queueRepoPath), "utf8"));
+    const queueItem = queue.queueItems.find((entry) => entry.id === "one");
+    assert.strictEqual(queueItem.status, "queued");
+    assert.strictEqual(Object.hasOwn(queueItem, "completedBy"), false);
+    const state = JSON.parse(fs.readFileSync(
+      path.join(temp, ".codex-runtime", "sdk", "roadmap-supervisor", "mission-parent-live-failure", "state.json"),
+      "utf8",
+    ));
+    assert.deepStrictEqual(state.failedItems, ["one"]);
+    assert(state.missionPhases.some((entry) => entry.phase === "live_completion_deferred"));
+    assert(!state.missionPhases.some((entry) => entry.phase === "live_completion_finalized"));
+  } finally {
+    removeTempRepo(temp);
+  }
+}
+
 function assertRequireLiveConnectivityAndItemLiveValidation() {
   const temp = createTempRepo("item-live");
   try {
@@ -1126,6 +1239,8 @@ function main() {
   assertMissionFailureFollowupAndRetry();
   assertMissionWriterParserFailureParentFinalizesPlannedChanges();
   assertMissionGeneratedOnlyLiveRunsAndRejectsUnsafeLive();
+  assertMissionParentOwnsLiveCompletionSuccess();
+  assertMissionParentDefersLiveCompletionOnLiveFailure();
   assertRequireLiveConnectivityAndItemLiveValidation();
   assertSingleApprovalLiveBindingRuns();
   assertUnplannedPathFails();
