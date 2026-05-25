@@ -1,0 +1,433 @@
+{
+  "schema": "sdk-roadmap-supervisor-queue.v1",
+  "title": "AUX-005 through AUX-008 Supervisor Support Queue",
+  "createdAt": "2026-05-25",
+  "purpose": "Run the next safe AUX support-lane block through the AE Agent roadmap supervisor using explicit AUX labels, without consuming product roadmap M### ids and without enabling worktree, AO, dependency, live CEP/AE, push, PR, or GitHub automation work.",
+  "sourceContext": {
+    "parentLane": "AUX-001 through AUX-004 AO-inspired support lane",
+    "compatibilityPrerequisiteCommit": "4d8eab8",
+    "selectionDecision": "AUX-005 through AUX-008 continue the safe local support-lane backlog with reviewer, handoff, context, and feedback contracts. Dummy worktree and AO sandbox pilots remain separately approval-gated and are not part of this queue.",
+    "executionModel": "Sequential roadmap supervisor items, one roadmap-sdk writer child at a time, optional read-only reviewers, validation and handoff after each item, and one reviewable commit per item.",
+    "boundaries": {
+      "installAO": false,
+      "runAO": false,
+      "branchOrWorktree": false,
+      "push": false,
+      "pullRequest": false,
+      "githubIssueOrAction": false,
+      "cepPanel": false,
+      "liveCepAe": false,
+      "productionRuntimePaths": false,
+      "dependencies": false,
+      "packageManifest": false,
+      "packageLock": false,
+      "localOllama": false
+    }
+  },
+  "queueItems": [
+    {
+      "id": "aux-005-reviewer-worker-contract",
+      "label": "AUX-005",
+      "title": "Read-only reviewer-worker contract",
+      "dependencies": [],
+      "runner": {
+        "kind": "roadmap-sdk"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/aux-005-aux-008-support-queue.json",
+        ".codex-audit/sdk-ao-pattern-intake/aux-005-reviewer-worker-contract.json",
+        "scripts/sdk-ao-reviewer-worker-smoke.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "mcp-server/**",
+        "chatgpt-connector/**",
+        "registry/**",
+        "recipes/**",
+        "package.json",
+        "package-lock.json",
+        "node_modules/**",
+        "logs/**",
+        "backups/**",
+        "snapshots/**",
+        ".github/**",
+        "docs/research/**"
+      ],
+      "allowedActions": [
+        "create .codex-audit/sdk-ao-pattern-intake/aux-005-reviewer-worker-contract.json as a local read-only reviewer-worker contract over existing supervisor artifacts",
+        "define reviewer inputs as explicit diff summaries, planned paths, validation results, handoff content, final reports, and bounded log tails",
+        "define reviewer outputs as pass, non_blocking_finding, blocking_finding, and needs_handoff_refresh without editing files",
+        "define false boundary claims for source editing, auto-fix, command retry, worktree or branch creation, AO usage, live CEP/AE, dependency changes, push, PR, GitHub issue/action, and production-path writes",
+        "add scripts/sdk-ao-reviewer-worker-smoke.js to parse the artifact and assert required inputs, outputs, false boundary claims, and fixture reviewer decisions",
+        "update this queue item status/completedBy after successful validation",
+        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and Active Roadmap notes for AUX-005",
+        "update .codex/handoff.md with AUX-005 state, validation commands, decisions, risks, commit pending/supervisor commit note, and exact next prompt for AUX-006"
+      ],
+      "forbiddenActions": [
+        "edit source files based on reviewer findings",
+        "auto-fix or retry failed commands",
+        "create a branch, worktree, push, PR, GitHub issue, or GitHub Action",
+        "install or run Composio AO",
+        "touch CEP/live/production/dependency/package paths",
+        "run live AE/CEP validation or external-provider planner validation",
+        "use Local/Ollama"
+      ],
+      "allowedCommands": [
+        "node --check scripts/sdk-ao-reviewer-worker-smoke.js",
+        "node scripts/sdk-ao-reviewer-worker-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check scripts/sdk-ao-reviewer-worker-smoke.js",
+        "node scripts/sdk-ao-reviewer-worker-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "reviewer-boundary-review",
+          "kind": "read-only",
+          "prompt": "Review the AUX-005 reviewer-worker contract. Block if it edits files, auto-fixes, retries commands, creates worktrees/branches/PRs/GitHub automation, uses AO, touches CEP/live/production/dependencies, or claims active runtime behavior."
+        }
+      ],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 60,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "feat: add AUX reviewer worker contract"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "roadmap-sdk-child-failed",
+        "reviewer-auto-fix-or-mutation",
+        "planned-path-outside-policy",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "aux-006-handoff-freshness-guard",
+      "label": "AUX-006",
+      "title": "Handoff freshness guard",
+      "dependencies": [
+        "aux-005-reviewer-worker-contract"
+      ],
+      "runner": {
+        "kind": "roadmap-sdk"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/aux-005-aux-008-support-queue.json",
+        ".codex-audit/sdk-ao-pattern-intake/aux-006-handoff-freshness-guard-contract.json",
+        "scripts/check-roadmap-handoff-freshness.js",
+        "scripts/sdk-ao-handoff-freshness-smoke.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "mcp-server/**",
+        "chatgpt-connector/**",
+        "registry/**",
+        "recipes/**",
+        "package.json",
+        "package-lock.json",
+        "node_modules/**",
+        "logs/**",
+        "backups/**",
+        "snapshots/**",
+        ".github/**",
+        "docs/research/**"
+      ],
+      "allowedActions": [
+        "create .codex-audit/sdk-ao-pattern-intake/aux-006-handoff-freshness-guard-contract.json as a local guard contract",
+        "add scripts/check-roadmap-handoff-freshness.js as a no-dependency read-only CLI over explicit report/state/handoff paths",
+        "add scripts/sdk-ao-handoff-freshness-smoke.js with fresh, stale, missing commit, and missing next-prompt fixtures",
+        "reject stale handoffs without editing them automatically",
+        "update this queue item status/completedBy after successful validation",
+        "update plans/target-app-execplan.md and .codex/handoff.md for AUX-006"
+      ],
+      "forbiddenActions": [
+        "auto-update handoff content from the guard",
+        "auto-fix or retry failed commands",
+        "create a branch, worktree, push, PR, GitHub issue, or GitHub Action",
+        "install or run Composio AO",
+        "touch CEP/live/production/dependency/package paths",
+        "run live AE/CEP validation or external-provider planner validation",
+        "use Local/Ollama"
+      ],
+      "allowedCommands": [
+        "node --check scripts/check-roadmap-handoff-freshness.js",
+        "node --check scripts/sdk-ao-handoff-freshness-smoke.js",
+        "node scripts/sdk-ao-handoff-freshness-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check scripts/check-roadmap-handoff-freshness.js",
+        "node --check scripts/sdk-ao-handoff-freshness-smoke.js",
+        "node scripts/sdk-ao-handoff-freshness-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "handoff-guard-boundary-review",
+          "kind": "read-only",
+          "prompt": "Review the AUX-006 handoff freshness guard. Block if it mutates handoff files automatically, creates worktrees/branches/PRs/GitHub automation, uses AO, or touches CEP/live/production/dependencies."
+        }
+      ],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 60,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "feat: add AUX handoff freshness guard"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "dependency-not-completed",
+        "roadmap-sdk-child-failed",
+        "handoff-auto-mutation",
+        "planned-path-outside-policy",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "aux-007-context-pressure-gate",
+      "label": "AUX-007",
+      "title": "Context-pressure stop gate contract",
+      "dependencies": [
+        "aux-006-handoff-freshness-guard"
+      ],
+      "runner": {
+        "kind": "roadmap-sdk"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/aux-005-aux-008-support-queue.json",
+        ".codex-audit/sdk-ao-pattern-intake/aux-007-context-pressure-gate-contract.json",
+        "scripts/check-roadmap-context-pressure.js",
+        "scripts/sdk-ao-context-pressure-smoke.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "mcp-server/**",
+        "chatgpt-connector/**",
+        "registry/**",
+        "recipes/**",
+        "package.json",
+        "package-lock.json",
+        "node_modules/**",
+        "logs/**",
+        "backups/**",
+        "snapshots/**",
+        ".github/**",
+        "docs/research/**"
+      ],
+      "allowedActions": [
+        "create .codex-audit/sdk-ao-pattern-intake/aux-007-context-pressure-gate-contract.json as a local context-pressure stop gate contract",
+        "add scripts/check-roadmap-context-pressure.js as a no-dependency read-only CLI over explicit state or metrics fixture paths",
+        "add scripts/sdk-ao-context-pressure-smoke.js with below-threshold, prepare-handoff, mandatory-handoff, and hard-ceiling fixtures",
+        "make the guard report stop reasons and next required action without continuing implementation",
+        "update this queue item status/completedBy after successful validation",
+        "update plans/target-app-execplan.md and .codex/handoff.md for AUX-007"
+      ],
+      "forbiddenActions": [
+        "continue implementation after mandatory handoff threshold fixtures",
+        "auto-fix, retry commands, or run broad validation",
+        "create a branch, worktree, push, PR, GitHub issue, or GitHub Action",
+        "install or run Composio AO",
+        "touch CEP/live/production/dependency/package paths",
+        "run live AE/CEP validation or external-provider planner validation",
+        "use Local/Ollama"
+      ],
+      "allowedCommands": [
+        "node --check scripts/check-roadmap-context-pressure.js",
+        "node --check scripts/sdk-ao-context-pressure-smoke.js",
+        "node scripts/sdk-ao-context-pressure-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check scripts/check-roadmap-context-pressure.js",
+        "node --check scripts/sdk-ao-context-pressure-smoke.js",
+        "node scripts/sdk-ao-context-pressure-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "context-gate-boundary-review",
+          "kind": "read-only",
+          "prompt": "Review the AUX-007 context-pressure guard. Block if it allows continued implementation past mandatory handoff thresholds, broad validation in hard ceiling mode, or worktree/AO/CEP/live/dependency/push/PR scope."
+        }
+      ],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 60,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "feat: add AUX context pressure gate"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "dependency-not-completed",
+        "roadmap-sdk-child-failed",
+        "context-gate-allows-overrun",
+        "planned-path-outside-policy",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "aux-008-feedback-router-contract",
+      "label": "AUX-008",
+      "title": "Bounded feedback router contract",
+      "dependencies": [
+        "aux-007-context-pressure-gate"
+      ],
+      "runner": {
+        "kind": "roadmap-sdk"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/aux-005-aux-008-support-queue.json",
+        ".codex-audit/sdk-ao-pattern-intake/aux-008-feedback-router-contract.json",
+        "scripts/route-roadmap-feedback-packet.js",
+        "scripts/sdk-ao-feedback-router-smoke.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "mcp-server/**",
+        "chatgpt-connector/**",
+        "registry/**",
+        "recipes/**",
+        "package.json",
+        "package-lock.json",
+        "node_modules/**",
+        "logs/**",
+        "backups/**",
+        "snapshots/**",
+        ".github/**",
+        "docs/research/**"
+      ],
+      "allowedActions": [
+        "create .codex-audit/sdk-ao-pattern-intake/aux-008-feedback-router-contract.json as a local bounded feedback router contract",
+        "add scripts/route-roadmap-feedback-packet.js as a no-dependency read-only CLI over explicit validation, reviewer, context, and analyzer packet paths",
+        "add scripts/sdk-ao-feedback-router-smoke.js with validation_failure, reviewer_blocking, context_pressure, analyzer_packet, and unknown feedback fixtures",
+        "emit next bounded task envelopes without editing source, retrying commands, creating issues, or opening PRs",
+        "update this queue item status/completedBy after successful validation",
+        "update plans/target-app-execplan.md and .codex/handoff.md for AUX-008 closeout"
+      ],
+      "forbiddenActions": [
+        "edit source files from feedback",
+        "auto-fix or retry failed commands",
+        "create a branch, worktree, push, PR, GitHub issue, or GitHub Action",
+        "install or run Composio AO",
+        "touch CEP/live/production/dependency/package paths",
+        "run live AE/CEP validation or external-provider planner validation",
+        "use Local/Ollama"
+      ],
+      "allowedCommands": [
+        "node --check scripts/route-roadmap-feedback-packet.js",
+        "node --check scripts/sdk-ao-feedback-router-smoke.js",
+        "node scripts/sdk-ao-feedback-router-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check scripts/route-roadmap-feedback-packet.js",
+        "node --check scripts/sdk-ao-feedback-router-smoke.js",
+        "node scripts/sdk-ao-feedback-router-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [
+        {
+          "id": "feedback-router-boundary-review",
+          "kind": "read-only",
+          "prompt": "Review the AUX-008 feedback router. Block if it edits source, retries commands, creates worktrees/branches/PRs/issues/actions, uses AO, touches CEP/live/production/dependencies, or routes feedback into unbounded tasks."
+        }
+      ],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 60,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "feat: add AUX feedback router contract"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "dependency-not-completed",
+        "roadmap-sdk-child-failed",
+        "feedback-router-unbounded-output",
+        "planned-path-outside-policy",
+        "validation-failed",
+        "context-pressure"
+      ],
+      "status": "queued"
+    }
+  ]
+}
