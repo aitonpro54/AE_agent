@@ -716,7 +716,20 @@
         "local-ollama-openrouter-deterministic-fallback-requested",
         "dependency-change-requested"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedAt": "2026-05-26",
+      "completedBy": {
+        "actor": "codex-writer-child",
+        "validationCommands": [
+          "node --check mcp-server/bridge-daemon.js",
+          "node --check scripts/smoke-test.js",
+          "node scripts/smoke-test.js",
+          "npm.cmd run check:rules",
+          "git diff --check"
+        ],
+        "commit": "not-created-by-writer-child",
+        "handoff": "blocked-by-inherited-deny-acl"
+      }
     }
   ]
 }

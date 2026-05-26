@@ -157,6 +157,67 @@ async function callQueuedDevTool(port, token, toolName, payload, scriptSnippets,
   return { response, command };
 }
 
+async function callRejectedDevToolWithoutQueuedCommand(port, token, toolName, payload, expectedMessage) {
+  const promise = requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/dev/tool/" + toolName,
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, payload || {});
+
+  await wait(150);
+
+  const next = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/bridge/next",
+    method: "GET",
+    headers: {
+      "x-ae-bridge-token": token
+    }
+  });
+
+  if (next.body.command && next.body.command.id) {
+    await requestJsonWithOptions({
+      hostname: "127.0.0.1",
+      port,
+      path: "/bridge/result",
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-ae-bridge-token": token
+      }
+    }, {
+      id: next.body.command.id,
+      ok: false,
+      error: "Unexpected queued command for rejected " + toolName
+    });
+    await promise.catch(() => null);
+    throw new Error(toolName + " queued AE work before rejecting invalid input");
+  }
+
+  const response = await Promise.race([
+    promise,
+    wait(2000).then(() => null)
+  ]);
+
+  if (!response) {
+    throw new Error(toolName + " rejection did not return");
+  }
+  if (
+    response.status !== 500 ||
+    response.body.ok !== false ||
+    String(response.body.result || "").indexOf(expectedMessage) < 0
+  ) {
+    throw new Error("Unexpected rejected " + toolName + " response");
+  }
+  return response;
+}
+
 async function main() {
   const smokeDir = smokeArtifactDir();
   const smokeStores = writeSmokeRegistryAndMemory(smokeDir);
@@ -1585,6 +1646,13 @@ async function main() {
     maskIndex: 1,
     verifyAfter: false
   });
+  const missingCompSetLayerMask = await callRejectedDevToolWithoutQueuedCommand(port, token, "set_layer_mask", {
+    layerIndex: 1,
+    operation: "update",
+    maskIndex: 1,
+    opacity: 50,
+    verifyAfter: false
+  }, "compItemIndex or compName is required for set_layer_mask");
   const rawExtendscriptPlan = {
     summary: "Smoke-test raw ExtendScript execution gate.",
     risk: "medium",
@@ -2021,9 +2089,11 @@ async function main() {
     invalidSetCompProperties.status !== 500 ||
     emptySetCompProperties.status !== 500 ||
     invalidSetLayerMask.status !== 500 ||
+    missingCompSetLayerMask.status !== 500 ||
     String(invalidSetCompProperties.body.result || "").indexOf("Unsupported set_comp_properties fields") < 0 ||
     String(emptySetCompProperties.body.result || "").indexOf("At least one approved comp property update is required") < 0 ||
-    String(invalidSetLayerMask.body.result || "").indexOf("operation must be create or update") < 0
+    String(invalidSetLayerMask.body.result || "").indexOf("compItemIndex or compName is required for set_layer_mask") < 0 ||
+    String(missingCompSetLayerMask.body.result || "").indexOf("compItemIndex or compName is required for set_layer_mask") < 0
   ) {
     throw new Error("set_comp_properties or set_layer_mask validation did not fail closed");
   }
@@ -2115,6 +2185,13 @@ async function main() {
   const setLayerMaskTool = lines[1].result.tools.find((tool) => tool.name === "set_layer_mask");
   if (!setLayerMaskTool || !setLayerMaskTool.inputSchema.properties.autoCheckpoint || !setLayerMaskTool.inputSchema.properties.checkpointLabel || !setLayerMaskTool.inputSchema.properties.idempotencyKey || !setLayerMaskTool.inputSchema.properties.verifyAfter || !setLayerMaskTool.inputSchema.properties.operation || !setLayerMaskTool.inputSchema.properties.layerIndex || !setLayerMaskTool.inputSchema.properties.maskIndex || !setLayerMaskTool.inputSchema.properties.expectedMaskName) {
     throw new Error("set_layer_mask is missing safety schema fields");
+  }
+  if (
+    String(setLayerMaskTool.description || "").indexOf("compItemIndex or compName") < 0 ||
+    String(setLayerMaskTool.inputSchema.properties.compItemIndex.description || "").indexOf("does not default to the active comp") < 0 ||
+    String(setLayerMaskTool.inputSchema.properties.compName.description || "").indexOf("does not default to the active comp") < 0
+  ) {
+    throw new Error("set_layer_mask schema does not document explicit comp targeting");
   }
   const setCompPropertiesTool = lines[1].result.tools.find((tool) => tool.name === "set_comp_properties");
   if (!setCompPropertiesTool || !setCompPropertiesTool.inputSchema.properties.autoCheckpoint || !setCompPropertiesTool.inputSchema.properties.checkpointLabel || !setCompPropertiesTool.inputSchema.properties.idempotencyKey || !setCompPropertiesTool.inputSchema.properties.verifyAfter || !setCompPropertiesTool.inputSchema.properties.compItemIndex || !setCompPropertiesTool.inputSchema.properties.width || !setCompPropertiesTool.inputSchema.properties.bgColor || setCompPropertiesTool.inputSchema.properties.opacity) {

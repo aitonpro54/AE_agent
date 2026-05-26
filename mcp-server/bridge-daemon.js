@@ -8804,12 +8804,12 @@ const tools = [
   },
   {
     name: "set_layer_mask",
-    description: "Create or update one bounded layer mask on one explicit layer. Update mode requires one explicit maskIndex and this tool never deletes masks, runs roto, or edits arbitrary mask property trees.",
+    description: "Create or update one bounded layer mask on one explicit layer in one explicit composition. Provide compItemIndex or compName; update mode requires one explicit maskIndex and this tool never deletes masks, runs roto, or edits arbitrary mask property trees.",
     inputSchema: {
       type: "object",
       properties: {
-        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
-        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        compItemIndex: { type: "number", description: "Required when compName is not provided. 1-based project item index for the explicit target composition; set_layer_mask does not default to the active comp." },
+        compName: { type: "string", description: "Required when compItemIndex is not provided. Exact composition name for the explicit target composition; set_layer_mask does not default to the active comp." },
         layerIndex: { type: "number", description: "Required 1-based layer index in the target composition." },
         operation: { type: "string", enum: ["create", "update"], description: "Required operation. Create adds one mask; update changes one existing mask by maskIndex." },
         maskIndex: { type: "number", description: "Required for update. 1-based mask index in the layer mask group." },
@@ -13312,6 +13312,7 @@ async function callTool(name, args) {
     const coordinateLimit = 1000000;
     const allowedMaskModes = new Set(["add", "subtract", "intersect", "lighten", "darken", "difference", "none"]);
 
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required for set_layer_mask.", true);
     if (!["create", "update"].includes(operation)) return toolResult("operation must be create or update.", true);
     if (hasArg(args, "delete") || hasArg(args, "remove") || hasArg(args, "maskIndices") || hasArg(args, "roto") || hasArg(args, "rotobrush")) {
       return toolResult("set_layer_mask supports one create/update target only; delete, bulk mask, and roto fields are not allowed.", true);
