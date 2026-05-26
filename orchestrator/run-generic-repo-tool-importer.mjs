@@ -6,6 +6,7 @@ import {
   appendFileSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   statSync,
   writeFileSync,
@@ -20,27 +21,42 @@ const CONTRACT_PATH = ".codex-audit/sdk-generic-repo-importer/aux-014-generic-re
 const RUN_ROOT_RELATIVE = ".codex-runtime/sdk/generic-repo-importer";
 const RUNNER_SCHEMA = "generic-repo-tool-importer.command-skeleton.v1";
 const SUPERVISOR_PLAN_SCHEMA = "generic-repo-tool-importer.supervisor-plan.v1";
+const ANALYSIS_SCHEMA = "generic-repo-tool-importer.analysis-fixture.v1";
+const ANALYSIS_ARTIFACTS = Object.freeze([
+  "analysis/repo-fingerprint.json",
+  "analysis/risk-map.json",
+  "analysis/read-back-requirements.json",
+  "analysis/batch-plan.json",
+]);
+const TEXT_FILE_MAX_BYTES = 256 * 1024;
+const SECRET_PATTERN =
+  /\b(?:[A-Z0-9]+[_-])*?(?:api[_-]?key|access[_-]?token|secret|password)\b\s*[:=]\s*["']?(?:sk-|xox|ghp_|[A-Za-z0-9_\-]{12,})/i;
+const NAMED_REPO_ASSUMPTION_PATTERN = /\bdakkshin\b/i;
 
 const HELP = `
 Generic repository tool importer skeleton
 
 Usage:
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path>
+  node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --run-analysis
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --json
 
 Options:
   --manifest <path>  generic-repo-tool-importer.manifest.v1 JSON file.
+  --run-analysis     Run the AUX-016 fixture-backed analysis phase, then stop
+                     before implementation worktrees.
   --json             Print machine-readable output.
   --help             Show this help.
 
-This AUX-015 skeleton validates the AUX-014 manifest contract, creates an
-ignored run root, writes durable initial state artifacts, and stops before
-analysis. It does not create branches, worktrees, child runs, live AE/CEP runs,
-dependency changes, product runtime edits, push, PR, or GitHub automation.
+This skeleton validates the AUX-014 manifest contract, creates an ignored run
+root, writes durable state artifacts, optionally writes fixture-backed analysis
+artifacts, and stops before implementation. It does not create branches,
+worktrees, child runs, live AE/CEP runs, dependency changes, product runtime
+edits, push, PR, or GitHub automation.
 `;
 
 const VALUE_OPTIONS = new Set(["manifest"]);
-const BOOLEAN_OPTIONS = new Set(["help", "json"]);
+const BOOLEAN_OPTIONS = new Set(["help", "json", "run-analysis"]);
 
 function splitInlineOption(raw) {
   const index = raw.indexOf("=");
@@ -120,6 +136,11 @@ function normalizeRepoPath(value) {
   return String(value || "").replace(/\\/g, "/").replace(/^\.\//, "");
 }
 
+function pathStartsWith(child, parent) {
+  const relative = path.relative(parent, child);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
 function requireObject(value, label) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`${label} must be an object`);
@@ -168,6 +189,13 @@ function assertNoLocalOllamaProvider(value, label) {
   }
   if (/\bollama\b/i.test(value) || /\blocal\b/i.test(value)) {
     throw new Error(`${label} must not select Local/Ollama`);
+  }
+}
+
+function assertNoNamedRepoAssumptions(value, label) {
+  const text = typeof value === "string" ? value : stableStringify(value);
+  if (NAMED_REPO_ASSUMPTION_PATTERN.test(text)) {
+    throw new Error(`${label} must not contain named-repo assumptions`);
   }
 }
 
@@ -350,7 +378,7 @@ function createNormalizedManifest(manifest, manifestPath, contractPath) {
     normalizedManifest: {
       ...normalized,
       _meta: {
-        normalizedBy: "AUX-015 generic repo importer command skeleton",
+        normalizedBy: "AUX-016 generic repo importer command skeleton",
         sourceManifestPath: path.resolve(manifestPath),
         sourceContractPath: path.resolve(contractPath),
         manifestHash,
@@ -392,7 +420,12 @@ function createSupervisorPlan(manifest, manifestHash, runRootRelative) {
       {
         phase: "analysis",
         status: "not_started",
-        reason: "AUX-015 stops before analysis by design.",
+        reason: "Run with --run-analysis to execute the AUX-016 fixture-backed analysis phase.",
+      },
+      {
+        phase: "implementation_worktrees",
+        status: "not_started",
+        reason: "AUX-016 does not create implementation worktrees.",
       },
     ],
     forbiddenBoundaries: {
@@ -408,6 +441,51 @@ function createSupervisorPlan(manifest, manifestHash, runRootRelative) {
       githubAutomation: false,
     },
   };
+}
+
+function updateSupervisorPlanForAnalysis(runRoot, manifest, manifestHash, runRootRelative, artifactPaths) {
+  const planPath = path.join(runRoot, "supervisor-plan.json");
+  const existing = existsSync(planPath)
+    ? readJsonFile(planPath, "supervisor plan")
+    : createSupervisorPlan(manifest, manifestHash, runRootRelative);
+  const plan = {
+    ...existing,
+    auxiliaryId: "AUX-016",
+    status: "stopped_after_analysis",
+    stopBeforePhase: "implementation_worktrees",
+    analysis: {
+      schema: ANALYSIS_SCHEMA,
+      status: "completed",
+      artifacts: artifactPaths,
+      worktreesCreated: false,
+      liveCepAeRun: false,
+      localOllamaUsed: false,
+    },
+    phasePlan: [
+      {
+        phase: "initialized",
+        status: "written",
+        artifacts: [
+          "state.json",
+          "events.jsonl",
+          "manifest.original.json",
+          "manifest.normalized.json",
+          "supervisor-plan.json",
+        ],
+      },
+      {
+        phase: "analysis",
+        status: "written",
+        artifacts: artifactPaths,
+      },
+      {
+        phase: "implementation_worktrees",
+        status: "not_started",
+        reason: "AUX-016 stops before implementation worktrees by design.",
+      },
+    ],
+  };
+  writeJson(planPath, plan);
 }
 
 function loadState(runRoot) {
@@ -470,16 +548,27 @@ function initializeRun({ manifest, normalizedManifest, manifestHash, manifestPat
   return state;
 }
 
-function resumeRun({ manifest, manifestHash, runRoot, existingState }) {
-  const now = new Date().toISOString();
+function assertResumeStateMatches(manifest, manifestHash, existingState) {
   if (existingState.manifestHash !== manifestHash) {
     throw new Error("resume-manifest-hash-mismatch");
   }
   if (existingState.runId !== manifest.run.runId) {
     throw new Error("resume-run-id-mismatch");
   }
-  if (existingState.status !== "stopped" || existingState.nextPhase !== "analysis") {
-    throw new Error("resume-state-not-at-analysis-boundary");
+  if (existingState.status !== "stopped") {
+    throw new Error("resume-state-not-stopped");
+  }
+}
+
+function resumeRun({ manifest, manifestHash, runRoot, existingState }) {
+  const now = new Date().toISOString();
+  assertResumeStateMatches(manifest, manifestHash, existingState);
+  const atAnalysisBoundary = existingState.nextPhase === "analysis";
+  const atImplementationBoundary =
+    existingState.currentPhase === "analysis_complete" &&
+    existingState.nextPhase === "implementation_planning";
+  if (!atAnalysisBoundary && !atImplementationBoundary) {
+    throw new Error("resume-state-not-at-supported-boundary");
   }
 
   const state = {
@@ -493,16 +582,450 @@ function resumeRun({ manifest, manifestHash, runRoot, existingState }) {
     event: "resume_from_state_checked",
     runId: manifest.run.runId,
     manifestHash,
-    nextPhase: "analysis",
+    currentPhase: state.currentPhase,
+    nextPhase: state.nextPhase,
     at: now,
   });
-  appendEvent(runRoot, {
-    event: "stopped_before_analysis",
-    runId: manifest.run.runId,
-    nextPhase: "analysis",
-    at: now,
-  });
+  if (state.nextPhase === "analysis") {
+    appendEvent(runRoot, {
+      event: "stopped_before_analysis",
+      runId: manifest.run.runId,
+      nextPhase: "analysis",
+      at: now,
+    });
+  }
   return state;
+}
+
+function resolveSourceRoot(manifest) {
+  if (manifest.sourceRepo.inputKind !== "local-path") {
+    throw new Error("analysis-source-input-kind-not-supported");
+  }
+
+  const sourceRoot = path.resolve(manifest.sourceRepo.location);
+  if (!existsSync(sourceRoot) || !statSync(sourceRoot).isDirectory()) {
+    throw new Error(`analysis-source-missing: ${sourceRoot}`);
+  }
+
+  const allowedRoots = manifest.sourceRepo.allowedReadRoots.map((entry) => path.resolve(entry));
+  if (!allowedRoots.some((allowedRoot) => pathStartsWith(sourceRoot, allowedRoot))) {
+    throw new Error("analysis-source-outside-allowed-read-roots");
+  }
+  return sourceRoot;
+}
+
+function isDeniedSourcePath(relativePath, deniedRoots) {
+  const normalized = normalizeRepoPath(relativePath);
+  return deniedRoots.some((entry) => {
+    const denied = normalizeRepoPath(entry).replace(/\/+$/, "");
+    return normalized === denied || normalized.startsWith(`${denied}/`) || normalized.includes(`/${denied}/`);
+  });
+}
+
+function readTextIfSmall(filePath, size) {
+  if (size > TEXT_FILE_MAX_BYTES) {
+    return "";
+  }
+  const text = readFileSync(filePath, "utf8");
+  if (text.includes("\u0000")) {
+    return "";
+  }
+  return text;
+}
+
+function collectSourceInventory(sourceRoot, manifest) {
+  const deniedRoots = [".git", "node_modules", ...(manifest.sourceRepo.deniedReadRoots || [])];
+  const sizeLimits = manifest.intake.sizeLimits || {};
+  const maxFiles = Number.isInteger(sizeLimits.maxFiles) ? sizeLimits.maxFiles : 500;
+  const maxBytes = Number.isInteger(sizeLimits.maxBytes) ? sizeLimits.maxBytes : 10 * 1024 * 1024;
+  const files = [];
+  let totalBytes = 0;
+  let secretMatch = null;
+  let licenseFile = null;
+
+  function visit(directory) {
+    const entries = readdirSync(directory, { withFileTypes: true }).sort((left, right) =>
+      left.name.localeCompare(right.name),
+    );
+    for (const entry of entries) {
+      const absolute = path.join(directory, entry.name);
+      const relative = normalizeRepoPath(path.relative(sourceRoot, absolute));
+      if (isDeniedSourcePath(relative, deniedRoots)) {
+        continue;
+      }
+      if (entry.isDirectory()) {
+        visit(absolute);
+        continue;
+      }
+      if (!entry.isFile()) {
+        continue;
+      }
+
+      const stat = statSync(absolute);
+      totalBytes += stat.size;
+      if (files.length + 1 > maxFiles) {
+        throw new Error("analysis-source-size-limit-files-exceeded");
+      }
+      if (totalBytes > maxBytes) {
+        throw new Error("analysis-source-size-limit-bytes-exceeded");
+      }
+
+      const text = readTextIfSmall(absolute, stat.size);
+      if (!licenseFile && /^(?:license|licence|copying)(?:\..*)?$/i.test(entry.name)) {
+        licenseFile = relative;
+      }
+      if (!secretMatch && SECRET_PATTERN.test(text)) {
+        secretMatch = relative;
+      }
+      if (NAMED_REPO_ASSUMPTION_PATTERN.test(relative) || NAMED_REPO_ASSUMPTION_PATTERN.test(text)) {
+        throw new Error(`named-repo-assumption-detected: ${relative}`);
+      }
+
+      files.push({
+        path: relative,
+        size: stat.size,
+        sha256: sha256Text(readFileSync(absolute)),
+        extension: path.extname(entry.name).toLowerCase(),
+      });
+    }
+  }
+
+  visit(sourceRoot);
+  return { files, licenseFile, secretMatch, sourceRoot, totalBytes };
+}
+
+function enforceIntakePolicies(manifest, inventory) {
+  if (manifest.intake.secretPolicy === "reject-secrets" && inventory.secretMatch) {
+    throw new Error(`unsafe-secret-detected: ${inventory.secretMatch}`);
+  }
+  if (
+    ["require-license", "reject-missing-license", "require-classified-license"].includes(
+      manifest.intake.licensePolicy,
+    ) &&
+    !inventory.licenseFile
+  ) {
+    throw new Error("license-review-failed: missing license file");
+  }
+}
+
+function candidateId(prefix, relativePath) {
+  const base = normalizeRepoPath(relativePath)
+    .replace(/\.[^.]+$/, "")
+    .replace(/[^A-Za-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+  return `${prefix}-${base || "candidate"}`;
+}
+
+function buildToolCandidates(sourceRoot, inventory) {
+  const candidates = [];
+  for (const file of inventory.files) {
+    if (![".js", ".mjs", ".jsx", ".ts"].includes(file.extension)) {
+      continue;
+    }
+    const text = readTextIfSmall(path.join(sourceRoot, file.path), file.size);
+    if (!/(?:export\s+function|module\.exports|function\s+\w+|class\s+\w+|run_extendscript|tool)/i.test(text)) {
+      continue;
+    }
+    candidates.push({
+      schema: "generic-repo-tool-importer.tool-candidate.v1",
+      id: candidateId("tool", file.path),
+      sourcePath: file.path,
+      evidence: ["code-shape-heuristic"],
+      risk: "review_required",
+      readBackRequired: true,
+      implementationWorktreeCreated: false,
+    });
+  }
+  return candidates;
+}
+
+function buildAutomationCandidates(sourceRoot, inventory) {
+  const candidates = [];
+  const packageFile = inventory.files.find((file) => file.path === "package.json");
+  if (packageFile) {
+    const packageJson = readJsonFile(path.join(sourceRoot, "package.json"), "source package");
+    for (const [scriptName, command] of Object.entries(packageJson.scripts || {})) {
+      candidates.push({
+        schema: "generic-repo-tool-importer.automation-candidate.v1",
+        id: candidateId("automation", `package-${scriptName}`),
+        sourcePath: "package.json",
+        scriptName,
+        command,
+        risk: "review_required",
+        implementationWorktreeCreated: false,
+      });
+    }
+  }
+
+  for (const file of inventory.files) {
+    if (/^(?:scripts|bin)\//.test(file.path) || [".ps1", ".cmd", ".bat", ".sh"].includes(file.extension)) {
+      candidates.push({
+        schema: "generic-repo-tool-importer.automation-candidate.v1",
+        id: candidateId("automation", file.path),
+        sourcePath: file.path,
+        risk: "review_required",
+        implementationWorktreeCreated: false,
+      });
+    }
+  }
+  return candidates;
+}
+
+function writeCandidateFiles(runRoot, directoryName, candidates, noneId) {
+  const directory = path.join(runRoot, "analysis", directoryName);
+  mkdirSync(directory, { recursive: true });
+  if (candidates.length === 0) {
+    const none = {
+      schema: `generic-repo-tool-importer.${noneId}.v1`,
+      id: "none",
+      status: "none_detected",
+      implementationWorktreeCreated: false,
+    };
+    writeJson(path.join(directory, "none.json"), none);
+    return [`analysis/${directoryName}/none.json`];
+  }
+
+  const paths = [];
+  for (const candidate of candidates) {
+    const relative = `analysis/${directoryName}/${candidate.id}.json`;
+    writeJson(path.join(runRoot, relative), candidate);
+    paths.push(relative);
+  }
+  return paths;
+}
+
+function buildAnalysisArtifacts(manifest, manifestHash, runRoot) {
+  assertNoNamedRepoAssumptions(manifest, "manifest");
+  const sourceRoot = resolveSourceRoot(manifest);
+  const inventory = collectSourceInventory(sourceRoot, manifest);
+  enforceIntakePolicies(manifest, inventory);
+
+  const toolCandidates = buildToolCandidates(sourceRoot, inventory);
+  const automationCandidates = buildAutomationCandidates(sourceRoot, inventory);
+  const analysisRoot = path.join(runRoot, "analysis");
+  mkdirSync(analysisRoot, { recursive: true });
+
+  const fingerprint = {
+    schema: "generic-repo-tool-importer.repo-fingerprint.v1",
+    runId: manifest.run.runId,
+    manifestHash,
+    sourceInputKind: manifest.sourceRepo.inputKind,
+    sourceRoot,
+    revision: manifest.sourceRepo.revision,
+    fileCount: inventory.files.length,
+    totalBytes: inventory.totalBytes,
+    licenseFile: inventory.licenseFile,
+    files: inventory.files,
+  };
+  writeJson(path.join(analysisRoot, "repo-fingerprint.json"), fingerprint);
+
+  const toolPaths = writeCandidateFiles(runRoot, "tool-candidates", toolCandidates, "tool-candidate-summary");
+  const automationPaths = writeCandidateFiles(
+    runRoot,
+    "automation-candidates",
+    automationCandidates,
+    "automation-candidate-summary",
+  );
+
+  const riskMap = {
+    schema: "generic-repo-tool-importer.risk-map.v1",
+    runId: manifest.run.runId,
+    manifestHash,
+    status: "review_required",
+    checks: {
+      localOllama: "rejected_by_manifest_validation",
+      namedRepoAssumptions: "passed",
+      secrets: "passed",
+      license: inventory.licenseFile ? "present" : "not_required_by_manifest",
+      worktreesCreated: false,
+      liveCepAeRun: false,
+    },
+    candidateRisks: [...toolCandidates, ...automationCandidates].map((candidate) => ({
+      id: candidate.id,
+      risk: candidate.risk,
+      sourcePath: candidate.sourcePath,
+    })),
+  };
+  writeJson(path.join(analysisRoot, "risk-map.json"), riskMap);
+
+  const readBackRequirements = {
+    schema: "generic-repo-tool-importer.read-back-requirements.v1",
+    runId: manifest.run.runId,
+    manifestHash,
+    requirements: toolCandidates.map((candidate) => ({
+      candidateId: candidate.id,
+      sourcePath: candidate.sourcePath,
+      requiredBeforePromotion: true,
+      evidenceKinds: ["non-live-smoke", "semantic-verification", "future-read-back"],
+    })),
+  };
+  writeJson(path.join(analysisRoot, "read-back-requirements.json"), readBackRequirements);
+
+  const batchPlan = {
+    schema: "generic-repo-tool-importer.batch-plan.v1",
+    runId: manifest.run.runId,
+    manifestHash,
+    status: "planned_for_future_implementation",
+    maxParallelAnalysisWorkers: manifest.analysis.batching.maxParallelAnalysisWorkers,
+    maxParallelImplementationBatches: manifest.analysis.batching.maxParallelImplementationBatches,
+    implementationWorktreesCreated: false,
+    batches: [
+      {
+        id: "fixture-analysis-batch-1",
+        candidateIds: [...toolCandidates, ...automationCandidates].map((candidate) => candidate.id),
+        plannedPaths: [],
+        worktree: null,
+        status: "not_started",
+      },
+    ],
+  };
+  writeJson(path.join(analysisRoot, "batch-plan.json"), batchPlan);
+
+  return [
+    ...ANALYSIS_ARTIFACTS,
+    ...toolPaths,
+    ...automationPaths,
+  ];
+}
+
+function verifyAnalysisOutputs(runRoot) {
+  const required = [...ANALYSIS_ARTIFACTS];
+  for (const relative of required) {
+    const absolute = path.join(runRoot, relative);
+    if (!existsSync(absolute)) {
+      throw new Error(`analysis-output-missing: ${relative}`);
+    }
+    readJsonFile(absolute, relative);
+  }
+
+  for (const directoryName of ["tool-candidates", "automation-candidates"]) {
+    const directory = path.join(runRoot, "analysis", directoryName);
+    if (!existsSync(directory) || !statSync(directory).isDirectory()) {
+      throw new Error(`analysis-output-missing: analysis/${directoryName}`);
+    }
+    const jsonFiles = readdirSync(directory).filter((entry) => entry.endsWith(".json"));
+    if (jsonFiles.length === 0) {
+      throw new Error(`analysis-output-missing: analysis/${directoryName}/*.json`);
+    }
+    for (const fileName of jsonFiles) {
+      readJsonFile(path.join(directory, fileName), `analysis/${directoryName}/${fileName}`);
+    }
+  }
+}
+
+function runAnalysisPhase({ manifest, manifestHash, runRoot, runRootRelative, state }) {
+  const now = new Date().toISOString();
+  if (state.currentPhase === "analysis_complete" && state.nextPhase === "implementation_planning") {
+    verifyAnalysisOutputs(runRoot);
+    appendEvent(runRoot, {
+      event: "analysis_resume_verified",
+      runId: manifest.run.runId,
+      manifestHash,
+      nextPhase: state.nextPhase,
+      at: now,
+    });
+    return state;
+  }
+
+  if (state.status !== "stopped" || state.nextPhase !== "analysis") {
+    throw new Error("analysis-state-not-at-boundary");
+  }
+
+  const startedState = {
+    ...state,
+    auxiliaryId: "AUX-016",
+    status: "running",
+    currentPhase: "analysis",
+    nextPhase: null,
+    stopReason: null,
+    updatedAt: now,
+    analysisStartedAt: now,
+    flags: {
+      ...state.flags,
+      analysisStarted: true,
+      worktreesCreated: false,
+      liveCepAeRun: false,
+      localOllamaUsed: false,
+    },
+  };
+  writeJson(path.join(runRoot, "state.json"), startedState);
+  appendEvent(runRoot, {
+    event: "analysis_started",
+    auxiliaryId: "AUX-016",
+    runId: manifest.run.runId,
+    manifestHash,
+    at: now,
+  });
+
+  try {
+    const artifactPaths = buildAnalysisArtifacts(manifest, manifestHash, runRoot);
+    verifyAnalysisOutputs(runRoot);
+    const completedAt = new Date().toISOString();
+    const completedState = {
+      ...startedState,
+      status: "stopped",
+      currentPhase: "analysis_complete",
+      nextPhase: "implementation_planning",
+      stopReason: "stopped_before_implementation_worktrees",
+      updatedAt: completedAt,
+      analysisCompletedAt: completedAt,
+      analysisArtifacts: artifactPaths,
+      flags: {
+        ...startedState.flags,
+        analysisCompleted: true,
+        worktreesCreated: false,
+        liveCepAeRun: false,
+        localOllamaUsed: false,
+        dependencyChanged: false,
+        productRuntimeEdited: false,
+        branchCreated: false,
+        pushOrPrCreated: false,
+      },
+    };
+    writeJson(path.join(runRoot, "state.json"), completedState);
+    updateSupervisorPlanForAnalysis(runRoot, manifest, manifestHash, runRootRelative, artifactPaths);
+    appendEvent(runRoot, {
+      event: "analysis_complete",
+      runId: manifest.run.runId,
+      manifestHash,
+      artifacts: artifactPaths,
+      nextPhase: "implementation_planning",
+      at: completedAt,
+    });
+    appendEvent(runRoot, {
+      event: "stopped_before_implementation_worktrees",
+      runId: manifest.run.runId,
+      nextPhase: "implementation_planning",
+      at: completedAt,
+    });
+    return completedState;
+  } catch (error) {
+    const failedAt = new Date().toISOString();
+    const failedState = {
+      ...startedState,
+      status: "stopped",
+      currentPhase: "analysis",
+      nextPhase: "analysis",
+      stopReason: error.message.split(":")[0],
+      updatedAt: failedAt,
+      flags: {
+        ...startedState.flags,
+        analysisCompleted: false,
+        worktreesCreated: false,
+        liveCepAeRun: false,
+        localOllamaUsed: false,
+      },
+    };
+    writeJson(path.join(runRoot, "state.json"), failedState);
+    appendEvent(runRoot, {
+      event: "analysis_failed",
+      runId: manifest.run.runId,
+      reason: error.message,
+      at: failedAt,
+    });
+    throw error;
+  }
 }
 
 export function runImporter(options, cwd = process.cwd()) {
@@ -548,24 +1071,37 @@ export function runImporter(options, cwd = process.cwd()) {
     });
   }
 
+  if (options["run-analysis"]) {
+    state = runAnalysisPhase({ manifest, manifestHash, runRoot, runRootRelative, state });
+  }
+
+  const analysisComplete = state.currentPhase === "analysis_complete";
+  const status = analysisComplete ? "stopped_after_analysis" : "stopped_before_analysis";
+  const artifacts = [
+    "state.json",
+    "events.jsonl",
+    "manifest.original.json",
+    "manifest.normalized.json",
+    "supervisor-plan.json",
+  ];
+  if (analysisComplete) {
+    artifacts.push(...(state.analysisArtifacts || []));
+  }
+
   return {
     schema: RUNNER_SCHEMA,
-    auxiliaryId: "AUX-015",
+    auxiliaryId: analysisComplete ? "AUX-016" : "AUX-015",
     runId: manifest.run.runId,
-    status: "stopped_before_analysis",
+    status,
     resumed,
     manifestHash,
     targetRepo,
     runRoot,
-    artifacts: [
-      "state.json",
-      "events.jsonl",
-      "manifest.original.json",
-      "manifest.normalized.json",
-      "supervisor-plan.json",
-    ],
+    artifacts,
+    currentPhase: state.currentPhase,
     nextPhase: state.nextPhase,
-    analysisStarted: false,
+    analysisStarted: state.flags.analysisStarted === true,
+    analysisCompleted: state.flags.analysisCompleted === true,
     worktreesCreated: false,
     liveCepAeRun: false,
     localOllamaUsed: false,
@@ -583,7 +1119,7 @@ async function main() {
     if (options.json) {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } else {
-      process.stdout.write(`Generic repo importer skeleton initialized ${result.runId}; stopped before analysis.\n`);
+      process.stdout.write(`Generic repo importer skeleton initialized ${result.runId}; ${result.status}.\n`);
       process.stdout.write(`Run root: ${result.runRoot}\n`);
     }
   } catch (error) {

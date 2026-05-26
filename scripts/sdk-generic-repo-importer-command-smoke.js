@@ -47,6 +47,14 @@ function createTempFixture(name) {
   fs.mkdirSync(target, { recursive: true });
   fs.mkdirSync(source, { recursive: true });
   fs.writeFileSync(path.join(source, "tool.js"), "export function tool() { return true; }\n", "utf8");
+  fs.mkdirSync(path.join(source, "scripts"), { recursive: true });
+  fs.writeFileSync(path.join(source, "scripts", "smoke.js"), "console.log('fixture smoke');\n", "utf8");
+  fs.writeFileSync(
+    path.join(source, "package.json"),
+    `${JSON.stringify({ scripts: { smoke: "node scripts/smoke.js" } }, null, 2)}\n`,
+    "utf8",
+  );
+  fs.writeFileSync(path.join(source, "LICENSE"), "Fixture license\n", "utf8");
 
   sh(target, ["git", "init"]);
   fs.writeFileSync(path.join(target, ".gitignore"), ".codex-runtime/\n", "utf8");
@@ -348,12 +356,191 @@ function assertResumeFromStateFixture() {
   }
 }
 
+function assertAnalysisArtifacts(output, fixture, runId) {
+  assert.strictEqual(output.schema, "generic-repo-tool-importer.command-skeleton.v1");
+  assert.strictEqual(output.auxiliaryId, "AUX-016");
+  assert.strictEqual(output.runId, runId);
+  assert.strictEqual(output.status, "stopped_after_analysis");
+  assert.strictEqual(output.currentPhase, "analysis_complete");
+  assert.strictEqual(output.nextPhase, "implementation_planning");
+  assert.strictEqual(output.analysisStarted, true);
+  assert.strictEqual(output.analysisCompleted, true);
+  assert.strictEqual(output.worktreesCreated, false);
+  assert.strictEqual(output.liveCepAeRun, false);
+  assert.strictEqual(output.localOllamaUsed, false);
+
+  const runRoot = path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-importer", runId);
+  const state = readJson(path.join(runRoot, "state.json"));
+  assert.strictEqual(state.auxiliaryId, "AUX-016");
+  assert.strictEqual(state.status, "stopped");
+  assert.strictEqual(state.currentPhase, "analysis_complete");
+  assert.strictEqual(state.nextPhase, "implementation_planning");
+  assert.strictEqual(state.stopReason, "stopped_before_implementation_worktrees");
+  assert.strictEqual(state.flags.analysisStarted, true);
+  assert.strictEqual(state.flags.analysisCompleted, true);
+  assert.strictEqual(state.flags.worktreesCreated, false);
+  assert.strictEqual(state.flags.liveCepAeRun, false);
+  assert.strictEqual(state.flags.localOllamaUsed, false);
+
+  const required = [
+    "analysis/repo-fingerprint.json",
+    "analysis/risk-map.json",
+    "analysis/read-back-requirements.json",
+    "analysis/batch-plan.json",
+  ];
+  for (const relative of required) {
+    assert(fs.existsSync(path.join(runRoot, relative)), `${relative} must exist`);
+  }
+
+  const fingerprint = readJson(path.join(runRoot, "analysis", "repo-fingerprint.json"));
+  assert.strictEqual(fingerprint.schema, "generic-repo-tool-importer.repo-fingerprint.v1");
+  assert.strictEqual(fingerprint.runId, runId);
+  assert(fingerprint.files.some((file) => file.path === "tool.js"));
+  assert(fingerprint.files.some((file) => file.path === "package.json"));
+  assert.strictEqual(fingerprint.licenseFile, "LICENSE");
+
+  const toolCandidates = fs.readdirSync(path.join(runRoot, "analysis", "tool-candidates"));
+  assert(toolCandidates.some((file) => file.endsWith(".json") && file !== "none.json"));
+  const automationCandidates = fs.readdirSync(path.join(runRoot, "analysis", "automation-candidates"));
+  assert(automationCandidates.some((file) => file.endsWith(".json") && file !== "none.json"));
+
+  const riskMap = readJson(path.join(runRoot, "analysis", "risk-map.json"));
+  assert.strictEqual(riskMap.schema, "generic-repo-tool-importer.risk-map.v1");
+  assert.strictEqual(riskMap.checks.localOllama, "rejected_by_manifest_validation");
+  assert.strictEqual(riskMap.checks.namedRepoAssumptions, "passed");
+  assert.strictEqual(riskMap.checks.secrets, "passed");
+  assert.strictEqual(riskMap.checks.worktreesCreated, false);
+  assert.strictEqual(riskMap.checks.liveCepAeRun, false);
+
+  const batchPlan = readJson(path.join(runRoot, "analysis", "batch-plan.json"));
+  assert.strictEqual(batchPlan.schema, "generic-repo-tool-importer.batch-plan.v1");
+  assert.strictEqual(batchPlan.implementationWorktreesCreated, false);
+  assert.strictEqual(batchPlan.batches[0].worktree, null);
+
+  const supervisorPlan = readJson(path.join(runRoot, "supervisor-plan.json"));
+  assert.strictEqual(supervisorPlan.auxiliaryId, "AUX-016");
+  assert.strictEqual(supervisorPlan.status, "stopped_after_analysis");
+  assert.strictEqual(supervisorPlan.stopBeforePhase, "implementation_worktrees");
+  assert.strictEqual(supervisorPlan.analysis.worktreesCreated, false);
+  assert.strictEqual(supervisorPlan.analysis.liveCepAeRun, false);
+
+  assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain"]), "");
+}
+
+function assertSuccessfulAnalysisFixture() {
+  const fixture = createTempFixture("analysis-success");
+  try {
+    const manifestPath = writeManifest(fixture.root, validManifest(fixture, "aux016-analysis-success"));
+    const output = parseJson(run(["--manifest", manifestPath, "--run-analysis", "--json"]));
+    assert.strictEqual(output.resumed, false);
+    assertAnalysisArtifacts(output, fixture, "aux016-analysis-success");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertMissingOutputFailClosedFixture() {
+  const fixture = createTempFixture("missing-output");
+  try {
+    const manifestPath = writeManifest(fixture.root, validManifest(fixture, "aux016-missing-output"));
+    parseJson(run(["--manifest", manifestPath, "--run-analysis", "--json"]));
+    const runRoot = path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-importer", "aux016-missing-output");
+    fs.rmSync(path.join(runRoot, "analysis", "risk-map.json"), { force: true });
+    const result = run(["--manifest", manifestPath, "--run-analysis", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /analysis-output-missing: analysis\/risk-map\.json/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertUnsafeSecretFixture() {
+  const fixture = createTempFixture("unsafe-secret");
+  try {
+    fs.writeFileSync(path.join(fixture.source, "secret.env"), "OPENAI_API_KEY=sk-fixtureSecretValue\n", "utf8");
+    const manifestPath = writeManifest(fixture.root, validManifest(fixture, "aux016-secret-stop"));
+    const result = run(["--manifest", manifestPath, "--run-analysis", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /unsafe-secret-detected/);
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertLicenseStopFixture() {
+  const fixture = createTempFixture("license-stop");
+  try {
+    fs.rmSync(path.join(fixture.source, "LICENSE"), { force: true });
+    const manifest = validManifest(fixture, "aux016-license-stop");
+    manifest.intake.licensePolicy = "require-license";
+    const manifestPath = writeManifest(fixture.root, manifest);
+    const result = run(["--manifest", manifestPath, "--run-analysis", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /license-review-failed/);
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertNamedRepoAssumptionFixture() {
+  const fixture = createTempFixture("named-repo");
+  try {
+    const manifest = validManifest(fixture, "aux016-named-repo");
+    manifest.run.requestedGoal = "Import Dakkshin-specific tools";
+    const manifestPath = writeManifest(fixture.root, manifest);
+    const result = run(["--manifest", manifestPath, "--run-analysis", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /named-repo assumptions/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertAnalysisResumeFixture() {
+  const fixture = createTempFixture("analysis-resume");
+  try {
+    const manifestPath = writeManifest(fixture.root, validManifest(fixture, "aux016-analysis-resume"));
+    const init = parseJson(run(["--manifest", manifestPath, "--json"]));
+    assert.strictEqual(init.status, "stopped_before_analysis");
+
+    const analysis = parseJson(run(["--manifest", manifestPath, "--run-analysis", "--json"]));
+    assert.strictEqual(analysis.resumed, true);
+    assertAnalysisArtifacts(analysis, fixture, "aux016-analysis-resume");
+
+    const second = parseJson(run(["--manifest", manifestPath, "--run-analysis", "--json"]));
+    assert.strictEqual(second.resumed, true);
+    assert.strictEqual(second.status, "stopped_after_analysis");
+
+    const runRoot = path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-importer", "aux016-analysis-resume");
+    const state = readJson(path.join(runRoot, "state.json"));
+    assert.strictEqual(state.resumeCount, 2);
+    assert.strictEqual(state.currentPhase, "analysis_complete");
+    assert.strictEqual(state.nextPhase, "implementation_planning");
+
+    const events = fs.readFileSync(path.join(runRoot, "events.jsonl"), "utf8").trim().split(/\r?\n/).map(JSON.parse);
+    assert(events.some((event) => event.event === "analysis_started"));
+    assert(events.some((event) => event.event === "analysis_complete"));
+    assert(events.some((event) => event.event === "analysis_resume_verified"));
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function main() {
   assertValidManifestFixture();
   assertInvalidSchemaFixture();
   assertLocalOllamaRejectedFixture();
   assertDirtyUnownedTargetFixture();
   assertResumeFromStateFixture();
+  assertSuccessfulAnalysisFixture();
+  assertMissingOutputFailClosedFixture();
+  assertUnsafeSecretFixture();
+  assertLicenseStopFixture();
+  assertNamedRepoAssumptionFixture();
+  assertAnalysisResumeFixture();
 
   console.log("SDK generic repo importer command smoke: pass");
 }
