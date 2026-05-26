@@ -11,6 +11,12 @@ const {
   agentScenarioPlans
 } = require("./agent-scenario-fixtures");
 
+const LOCAL_MUTATING_TOOLS = new Set([
+  "delete_layer",
+  "set_comp_properties",
+  "set_layer_mask"
+]);
+
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -21,6 +27,7 @@ function layerInfo(name, overrides = {}) {
   const outPoint = overrides.outPoint === undefined ? inPoint + 1 : overrides.outPoint;
   return {
     index: overrides.index || 1,
+    id: overrides.id || null,
     name: name || "Layer",
     matchName: overrides.matchName || "ADBE AV Layer",
     startTime,
@@ -204,6 +211,132 @@ function fakeMutationResult(step, state) {
         pairNameMatches: true
       }
     }, compName, pairs[0] && pairs[0].duplicate);
+  }
+  if (step.tool === "delete_layer") {
+    if (!state.layers.length) {
+      state.layers = [
+        layerInfo(args.expectedLayerName || "Delete Fixture Source", { index: 1, id: 301 }),
+        layerInfo("Delete Fixture Background", { index: 2, id: 302 })
+      ];
+    }
+    const layerIndex = args.layerIndex || 1;
+    const deletedLayer = state.layers[layerIndex - 1] || layerInfo(args.expectedLayerName || "Delete Fixture Source", { index: layerIndex, id: 301 });
+    const beforeLayerCount = state.layers.length;
+    state.layers.splice(layerIndex - 1, 1);
+    reindexLayers(state.layers);
+    const afterLayerCount = state.layers.length;
+    const layerAtDeletedIndexAfter = state.layers[layerIndex - 1] || null;
+    return withVerification({
+      comp: { name: compName, numLayersBefore: beforeLayerCount, numLayersAfter: afterLayerCount },
+      layerCountBefore: beforeLayerCount,
+      layerCountAfter: afterLayerCount,
+      requestedLayerIndex: layerIndex,
+      expectedLayerName: args.expectedLayerName,
+      deletedLayer,
+      layerAtDeletedIndexAfter,
+      postVerification: {
+        ok: true,
+        beforeLayerCount,
+        afterLayerCount,
+        expectedLayerCountAfter: afterLayerCount,
+        layerCountMatches: true,
+        deletedLayerId: deletedLayer.id,
+        deletedLayerIdAbsent: true,
+        expectedLayerName: args.expectedLayerName,
+        sameNameCountDecremented: true,
+        deletedLayerNameAbsentAtOriginalIndex: !layerAtDeletedIndexAfter || layerAtDeletedIndexAfter.name !== args.expectedLayerName
+      }
+    }, compName);
+  }
+  if (step.tool === "set_comp_properties") {
+    const before = { ...state.compProperties, name: compName, itemIndex: 1, numLayers: state.layers.length };
+    const updates = {};
+    for (const field of ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime"]) {
+      if (Object.prototype.hasOwnProperty.call(args, field)) updates[field] = args[field];
+    }
+    state.compProperties = { ...state.compProperties, ...updates };
+    const after = { ...state.compProperties, name: compName, itemIndex: 1, numLayers: state.layers.length };
+    const fieldMatches = {};
+    for (const field of Object.keys(updates)) fieldMatches[field] = true;
+    return withVerification({
+      comp: after,
+      before,
+      after,
+      updates,
+      updatedFields: Object.keys(updates),
+      postVerification: {
+        ok: true,
+        updatedFields: Object.keys(updates),
+        fieldMatches,
+        compIdentityMatches: true,
+        layerCountUnchanged: true
+      }
+    }, compName);
+  }
+  if (step.tool === "set_layer_mask") {
+    const beforeMaskCount = state.masks.length;
+    let mask;
+    if (args.operation === "update") {
+      mask = state.masks[(args.maskIndex || 1) - 1] || {
+        propertyIndex: args.maskIndex || 1,
+        name: args.expectedMaskName || "Mask 1",
+        maskMode: "add",
+        inverted: false,
+        shape: { vertices: [[0, 0], [100, 0], [100, 100]] },
+        opacity: 100,
+        feather: [0, 0],
+        expansion: 0
+      };
+      mask = {
+        ...mask,
+        maskMode: args.maskMode || mask.maskMode,
+        inverted: Object.prototype.hasOwnProperty.call(args, "inverted") ? args.inverted : mask.inverted,
+        shape: Object.prototype.hasOwnProperty.call(args, "vertices") ? { vertices: args.vertices } : mask.shape,
+        opacity: Object.prototype.hasOwnProperty.call(args, "opacity") ? args.opacity : mask.opacity,
+        feather: Object.prototype.hasOwnProperty.call(args, "feather") ? args.feather : mask.feather,
+        expansion: Object.prototype.hasOwnProperty.call(args, "expansion") ? args.expansion : mask.expansion
+      };
+      state.masks[(args.maskIndex || 1) - 1] = mask;
+    } else {
+      mask = {
+        propertyIndex: beforeMaskCount + 1,
+        name: args.name || "Mask 1",
+        maskMode: args.maskMode || "add",
+        inverted: args.inverted === true,
+        shape: { vertices: args.vertices || [] },
+        opacity: Object.prototype.hasOwnProperty.call(args, "opacity") ? args.opacity : 100,
+        feather: args.feather || [0, 0],
+        expansion: Object.prototype.hasOwnProperty.call(args, "expansion") ? args.expansion : 0
+      };
+      state.masks.push(mask);
+    }
+    const afterMaskCount = state.masks.length;
+    return withVerification({
+      comp: { name: compName },
+      layer: layerInfo("Mask Fixture Solid", { index: args.layerIndex || 1 }),
+      operation: args.operation,
+      beforeMasks: { count: beforeMaskCount, items: [] },
+      afterMasks: { count: afterMaskCount, items: state.masks.slice() },
+      mask,
+      afterMask: mask,
+      postVerification: {
+        ok: true,
+        operation: args.operation,
+        beforeMaskCount,
+        afterMaskCount,
+        expectedMaskCountAfter: afterMaskCount,
+        maskCountMatches: true,
+        maskIndex: mask.propertyIndex,
+        expectedMaskName: args.expectedMaskName || args.name || "",
+        expectedMaskNameMatches: true,
+        verticesMatch: true,
+        maskModeMatches: true,
+        invertedMatches: true,
+        opacityMatches: true,
+        featherMatches: true,
+        expansionMatches: true
+      }
+    }, compName);
   }
   if (step.tool === "add_layer_marker") {
     const marker = {
@@ -493,6 +626,12 @@ function fakeReadBackResult(step, state) {
         index: step.args && step.args.layerIndex || 1,
         markerCount: state.layerMarkers.length
       }),
+      masks: {
+        count: state.masks.length,
+        returned: state.masks.length,
+        truncated: false,
+        items: state.masks.slice()
+      },
       markers: {
         count: state.layerMarkers.length,
         returned: state.layerMarkers.length,
@@ -506,7 +645,14 @@ function fakeReadBackResult(step, state) {
     return {
       comp: {
         name: step.args && step.args.compName || state.lastCompName || "Fixture Comp",
-        numLayers: layers.length
+        numLayers: layers.length,
+        width: state.compProperties.width,
+        height: state.compProperties.height,
+        pixelAspect: state.compProperties.pixelAspect,
+        duration: state.compProperties.duration,
+        frameRate: state.compProperties.frameRate,
+        bgColor: state.compProperties.bgColor,
+        displayStartTime: state.compProperties.displayStartTime
       },
       layerCount: layers.length,
       layers
@@ -524,10 +670,20 @@ function fakeRunForPlan(plan) {
     projectItems: [],
     layers: [],
     renderQueueItems: [],
-    layerMarkers: []
+    layerMarkers: [],
+    masks: [],
+    compProperties: {
+      width: 1280,
+      height: 720,
+      pixelAspect: 1,
+      duration: 4,
+      frameRate: 24,
+      bgColor: [0, 0, 0],
+      displayStartTime: 0
+    }
   };
   const steps = (plan.steps || []).map((step, index) => {
-    const mutatesProject = AGENT_SCENARIO_MUTATING_TOOLS.has(step.tool);
+    const mutatesProject = AGENT_SCENARIO_MUTATING_TOOLS.has(step.tool) || LOCAL_MUTATING_TOOLS.has(step.tool);
     const result = mutatesProject ? fakeMutationResult(step, state) : fakeReadBackResult(step, state);
     return {
       index: index + 1,
@@ -836,6 +992,186 @@ function assertDuplicateLayersMissingReadBackNeedsReview() {
   const semantic = buildSemanticVerification(plan, run);
   assert.strictEqual(semantic.status, "needs_review", "duplicate_layers must not pass without post-run read-back evidence.");
   assert(semantic.checks.some((check) => check.id.indexOf("duplicate_layers:names") >= 0 && check.status === "failed"), "missing duplicate_layers read-back names should fail.");
+}
+
+function assertDeleteLayerPasses() {
+  const plan = {
+    summary: "Delete one inspected generated layer and inspect the comp.",
+    risk: "high",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Delete generated layer",
+        tool: "delete_layer",
+        args: {
+          compName: "Delete Fixture",
+          layerIndex: 1,
+          expectedLayerName: "Delete Fixture Source"
+        }
+      },
+      {
+        title: "Read comp after delete",
+        tool: "get_comp_details",
+        args: { compName: "Delete Fixture", includeLayers: true }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `delete_layer semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("delete_layer:absence") >= 0 && check.status === "passed"), "delete_layer absence check should pass.");
+}
+
+function assertDeleteLayerMissingReadBackNeedsReview() {
+  const plan = {
+    summary: "Delete one inspected generated layer without read-back.",
+    risk: "high",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Delete generated layer",
+        tool: "delete_layer",
+        args: {
+          compName: "Delete Fixture",
+          layerIndex: 1,
+          expectedLayerName: "Delete Fixture Source"
+        }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "delete_layer must fail closed without post-run read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("delete_layer:absence") >= 0 && check.status === "failed"), "delete_layer missing read-back absence should fail.");
+}
+
+function assertSetCompPropertiesPasses() {
+  const plan = {
+    summary: "Update one generated composition property set and inspect it.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Update comp properties",
+        tool: "set_comp_properties",
+        args: {
+          compName: "Comp Properties Fixture",
+          width: 1920,
+          height: 1080,
+          frameRate: 30,
+          bgColor: [0.1, 0.2, 0.3]
+        }
+      },
+      {
+        title: "Read comp properties",
+        tool: "get_comp_details",
+        args: { compName: "Comp Properties Fixture" }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `set_comp_properties semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_comp_properties:width") >= 0 && check.status === "passed"), "set_comp_properties width check should pass.");
+}
+
+function assertSetCompPropertiesReadBackMismatchNeedsReview() {
+  const plan = {
+    summary: "Update one generated composition property set and inspect it.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Update comp properties",
+        tool: "set_comp_properties",
+        args: { compName: "Comp Properties Fixture", width: 1920 }
+      },
+      {
+        title: "Read comp properties",
+        tool: "get_comp_details",
+        args: { compName: "Comp Properties Fixture" }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  run.steps[1].result.comp.width = 1280;
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "set_comp_properties must fail closed on mismatched read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_comp_properties:width") >= 0 && check.status === "failed"), "set_comp_properties mismatched read-back should fail.");
+}
+
+function assertSetLayerMaskCreateUpdatePasses() {
+  const plan = {
+    summary: "Create and update one generated layer mask with read-back after each mutation.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Create mask",
+        tool: "set_layer_mask",
+        args: {
+          compName: "Mask Fixture",
+          layerIndex: 1,
+          operation: "create",
+          name: "Mask Fixture Create",
+          vertices: [[0, 0], [100, 0], [100, 100]],
+          maskMode: "add"
+        }
+      },
+      {
+        title: "Read mask after create",
+        tool: "get_layer_details",
+        args: { compName: "Mask Fixture", layerIndex: 1 }
+      },
+      {
+        title: "Update mask",
+        tool: "set_layer_mask",
+        args: {
+          compName: "Mask Fixture",
+          layerIndex: 1,
+          operation: "update",
+          maskIndex: 1,
+          expectedMaskName: "Mask Fixture Create",
+          opacity: 75
+        }
+      },
+      {
+        title: "Read mask after update",
+        tool: "get_layer_details",
+        args: { compName: "Mask Fixture", layerIndex: 1 }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `set_layer_mask semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_mask:mask") >= 0 && check.status === "passed"), "set_layer_mask read-back check should pass.");
+}
+
+function assertSetLayerMaskMissingReadBackNeedsReview() {
+  const plan = {
+    summary: "Create one generated layer mask without read-back.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Create mask",
+        tool: "set_layer_mask",
+        args: {
+          compName: "Mask Fixture",
+          layerIndex: 1,
+          operation: "create",
+          name: "Mask Fixture Create",
+          vertices: [[0, 0], [100, 0], [100, 100]],
+          maskMode: "add"
+        }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "set_layer_mask must fail closed without post-run read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_mask:mask") >= 0 && check.status === "failed"), "set_layer_mask missing read-back should fail.");
 }
 
 function assertDuplicateLayersPairOrderMismatchNeedsReview() {
@@ -1213,6 +1549,12 @@ function main() {
   assertDuplicateLayersJsonStringReadBackPasses();
   assertDuplicateLayersMissingReadBackNeedsReview();
   assertDuplicateLayersPairOrderMismatchNeedsReview();
+  assertDeleteLayerPasses();
+  assertDeleteLayerMissingReadBackNeedsReview();
+  assertSetCompPropertiesPasses();
+  assertSetCompPropertiesReadBackMismatchNeedsReview();
+  assertSetLayerMaskCreateUpdatePasses();
+  assertSetLayerMaskMissingReadBackNeedsReview();
   assertAddLayerMarkerPasses();
   assertUpdateLayerMarkerPasses();
   assertDeleteLayerMarkerPasses();

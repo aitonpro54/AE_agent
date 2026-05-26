@@ -7,7 +7,11 @@ const FAILURE_IDS = {
   unresolvedMarkerCompItemIndex: "unresolved-markerCompItemIndex",
   wrongExactNameBinding: "wrong-exactName-binding",
   wrongDuplicateLayersOrder: "wrong-duplicate_layers-layer-name-order",
-  missingFinalReadbackSummary: "missing-final-readback-summary"
+  missingFinalReadbackSummary: "missing-final-readback-summary",
+  unsafeDeleteAliasNotRejected: "unsafe-delete-alias-not-rejected",
+  missingDeleteLayerEvidence: "missing-delete_layer-evidence",
+  unsafeCompPropertyMutation: "unsafe-comp-property-mutation",
+  unsafeMaskMutation: "unsafe-mask-mutation"
 };
 
 const MUTATING_TOOLS = new Set([
@@ -19,6 +23,9 @@ const MUTATING_TOOLS = new Set([
   "create_text_layer",
   "duplicate_layer",
   "duplicate_layers",
+  "delete_layer",
+  "set_comp_properties",
+  "set_layer_mask",
   "move_project_items_to_folder"
 ]);
 
@@ -217,6 +224,148 @@ const MANUAL_TYPED_TOOL_CORPUS = [
         }
       ]
     }
+  },
+  {
+    id: "dakkshin-safe-delete-layer-alias-evidence",
+    promptFamily: "dakkshin-delete-layer-alias-manual-panel",
+    sourceContext: "M222 Dakkshin risky typed-tool alias repair for deleteLayer/delete layer/remove layer.",
+    prompt: "Inspect the generated comp, remove only the named generated layer, then prove it is gone.",
+    ownerToFlip: "M222",
+    fixedExpectation: "delete_layer is used only with prior comp/layer inspection, explicit layerIndex, expectedLayerName, and post-run read-back.",
+    expectedCurrentFailures: [],
+    plan: {
+      summary: "Manual delete_layer evidence-bound flow.",
+      risk: "high",
+      requiresCheckpoint: true,
+      steps: [
+        {
+          title: "Inspect delete target layers",
+          tool: "get_comp_details",
+          args: { compName: "Codex Manual Delete Comp", includeLayers: true }
+        },
+        {
+          title: "Delete one generated layer",
+          tool: "delete_layer",
+          args: {
+            compName: "Codex Manual Delete Comp",
+            layerIndex: 1,
+            expectedLayerName: "Codex Manual Delete Source"
+          }
+        },
+        {
+          title: "Read comp after deletion",
+          tool: "get_comp_details",
+          args: { compName: "Codex Manual Delete Comp", includeLayers: true }
+        }
+      ]
+    }
+  },
+  {
+    id: "dakkshin-unsafe-delete-alias-rejected",
+    promptFamily: "dakkshin-delete-layer-naked-natural-language",
+    sourceContext: "M222 Dakkshin risky typed-tool alias rejection for naked deleteLayer/remove layer plans.",
+    prompt: "Remove the selected layer.",
+    ownerToFlip: "M222",
+    fixedExpectation: "deleteLayer/delete layer/remove layer is not repaired from naked natural-language intent without prior inspection evidence.",
+    expectedCurrentFailures: [],
+    repairExpectation: {
+      status: "rejected",
+      reason: "missing prior comp/layer inspection evidence"
+    },
+    plan: {
+      summary: "Unsafe naked delete alias should stay rejected.",
+      risk: "high",
+      requiresCheckpoint: true,
+      steps: [
+        {
+          title: "Remove selected layer without inspection",
+          tool: "deleteLayer",
+          args: { layer: "selected" }
+        }
+      ]
+    }
+  },
+  {
+    id: "dakkshin-set-comp-properties-readback",
+    promptFamily: "dakkshin-set-composition-properties-alias",
+    sourceContext: "M222 Dakkshin setCompositionProperties alias normalization and semantic read-back.",
+    prompt: "Set only the generated comp width, height, frame rate, and background color, then read it back.",
+    ownerToFlip: "M222",
+    fixedExpectation: "set_comp_properties updates only the approved comp property subset and is followed by comp read-back.",
+    expectedCurrentFailures: [],
+    plan: {
+      summary: "Manual set_comp_properties bounded flow.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        {
+          title: "Set generated comp properties",
+          tool: "set_comp_properties",
+          args: {
+            compName: "Codex Manual Properties Comp",
+            width: 1920,
+            height: 1080,
+            frameRate: 30,
+            bgColor: [0.1, 0.2, 0.3]
+          }
+        },
+        {
+          title: "Read generated comp properties",
+          tool: "get_comp_details",
+          args: { compName: "Codex Manual Properties Comp" }
+        }
+      ]
+    }
+  },
+  {
+    id: "dakkshin-set-layer-mask-readback",
+    promptFamily: "dakkshin-set-layer-mask-alias",
+    sourceContext: "M222 Dakkshin setLayerMask alias normalization and semantic mask read-back.",
+    prompt: "Create one generated mask, update its opacity, and read the mask after each change.",
+    ownerToFlip: "M222",
+    fixedExpectation: "set_layer_mask uses only create/update on one explicit layer/mask and reads the mask back after each mutation.",
+    expectedCurrentFailures: [],
+    plan: {
+      summary: "Manual set_layer_mask bounded flow.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        {
+          title: "Create generated mask",
+          tool: "set_layer_mask",
+          args: {
+            compName: "Codex Manual Mask Comp",
+            layerIndex: 1,
+            operation: "create",
+            name: "Codex Manual Mask",
+            vertices: [[120, 80], [520, 80], [520, 280], [120, 280]],
+            maskMode: "add"
+          }
+        },
+        {
+          title: "Read mask after create",
+          tool: "get_layer_details",
+          args: { compName: "Codex Manual Mask Comp", layerIndex: 1 }
+        },
+        {
+          title: "Update generated mask",
+          tool: "set_layer_mask",
+          args: {
+            compName: "Codex Manual Mask Comp",
+            layerIndex: 1,
+            operation: "update",
+            maskIndex: 1,
+            expectedMaskName: "Codex Manual Mask",
+            opacity: 75
+          }
+        },
+        {
+          title: "Read mask after update",
+          tool: "get_layer_details",
+          args: { compName: "Codex Manual Mask Comp", layerIndex: 1 }
+        }
+      ]
+    }
   }
 ];
 
@@ -347,12 +496,58 @@ function inspectFinalReadbackSummary(testCase, failures) {
   }
 }
 
+function hasReadbackBefore(steps, index) {
+  return steps.slice(0, index).some((step) => READBACK_TOOLS.has(step.tool));
+}
+
+function hasReadbackAfter(steps, index) {
+  return steps.slice(index + 1).some((step) => READBACK_TOOLS.has(step.tool));
+}
+
+function inspectDakkshinM222Cases(testCase, failures) {
+  if (testCase.repairExpectation && testCase.repairExpectation.status === "rejected") {
+    const hasCanonicalDelete = testCase.plan.steps.some((step) => step.tool === "delete_layer");
+    const unsafeAlias = testCase.plan.steps.some((step) => ["deleteLayer", "delete layer", "remove layer", "removeLayer"].includes(step.tool));
+    if (!unsafeAlias || hasCanonicalDelete) {
+      addFailure(failures, FAILURE_IDS.unsafeDeleteAliasNotRejected, null, "unsafe delete alias case must remain an unrepaired alias with an explicit rejected expectation.");
+    }
+    return;
+  }
+
+  const safeCompFields = new Set(["compItemIndex", "compName", "width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime"]);
+  const maskForbiddenFields = new Set(["delete", "remove", "maskIndices", "roto", "rotobrush", "script", "jsx", "propertyPath"]);
+  const steps = testCase.plan.steps || [];
+  for (let index = 0; index < steps.length; index += 1) {
+    const step = steps[index];
+    const args = step.args || {};
+    if (step.tool === "delete_layer") {
+      if (!hasReadbackBefore(steps, index) || !hasReadbackAfter(steps, index) || !args.layerIndex || !args.expectedLayerName) {
+        addFailure(failures, FAILURE_IDS.missingDeleteLayerEvidence, step, "delete_layer requires prior inspection evidence, explicit layerIndex/expectedLayerName, and post-run read-back.");
+      }
+    }
+    if (step.tool === "set_comp_properties") {
+      const unsafeFields = Object.keys(args).filter((field) => !safeCompFields.has(field));
+      if (unsafeFields.length || !hasReadbackAfter(steps, index)) {
+        addFailure(failures, FAILURE_IDS.unsafeCompPropertyMutation, step, `set_comp_properties unsafe fields or missing read-back: ${unsafeFields.join(", ") || "none"}`);
+      }
+    }
+    if (step.tool === "set_layer_mask") {
+      const operation = String(args.operation || "").toLowerCase();
+      const unsafeFields = Object.keys(args).filter((field) => maskForbiddenFields.has(field));
+      if (!["create", "update"].includes(operation) || unsafeFields.length || !args.layerIndex || !hasReadbackAfter(steps, index)) {
+        addFailure(failures, FAILURE_IDS.unsafeMaskMutation, step, `set_layer_mask unsafe operation/fields or missing read-back: ${operation || "missing"}`);
+      }
+    }
+  }
+}
+
 function classifyCase(testCase) {
   const failures = new Map();
   inspectUnresolvedBindings(testCase, failures);
   inspectExactNameBinding(testCase, failures);
   inspectDuplicateLayersOrder(testCase, failures);
   inspectFinalReadbackSummary(testCase, failures);
+  inspectDakkshinM222Cases(testCase, failures);
   const observedCurrentFailures = Array.from(failures.keys()).sort();
   return {
     id: testCase.id,
@@ -363,7 +558,7 @@ function classifyCase(testCase) {
 }
 
 function main() {
-  assert.strictEqual(MANUAL_TYPED_TOOL_CORPUS.length, 5, "M216 corpus must cover exactly five manual prompt families");
+  assert.strictEqual(MANUAL_TYPED_TOOL_CORPUS.length, 9, "M222 corpus must cover the five existing manual prompt families plus four Dakkshin typed-tool regressions");
 
   const seenExpectedFailures = new Set();
   const reports = MANUAL_TYPED_TOOL_CORPUS.map((testCase) => {
@@ -386,10 +581,10 @@ function main() {
   assert.deepStrictEqual(
     Array.from(seenExpectedFailures).sort(),
     [],
-    "M218 corpus must have no expected manual typed-tool failures before live acceptance"
+    "M222 corpus must have no expected manual typed-tool failures before live acceptance"
   );
 
-  console.log("manual-typed-tool-regression-smoke: M218 duplicate order and final read-back cases fixed");
+  console.log("manual-typed-tool-regression-smoke: M222 Dakkshin planner and semantic regression cases fixed");
   for (const { testCase, report } of reports) {
     const observed = report.observedCurrentFailures.length ? report.observedCurrentFailures.join(", ") : "fixed";
     console.log(`- ${testCase.id}: ${observed}; flipOwner=${testCase.ownerToFlip}`);

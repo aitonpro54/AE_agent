@@ -299,6 +299,134 @@ async function main() {
     assert(!selectedDuplicateWithoutEvidence.repairedPlan.steps[0].args.layerIndices, "selection-only duplicate repair must not invent layerIndices");
     assert(!selectedDuplicateWithoutEvidence.repairedPlan.steps[0].resultBindings, "selection-only duplicate repair must not add bindings without read-only evidence");
 
+    const deleteLayerRepair = await validatePlan("delete-layer-alias-with-evidence", {
+      summary: "Delete one explicit generated layer after inspecting the layer stack.",
+      risk: "high",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Inspect generated comp layers", tool: "get_comp_details", args: { compName: "Repair Smoke Comp", includeLayers: true } },
+        { title: "Remove explicit layer", tool: "remove layer", args: { compName: "Repair Smoke Comp", layer: 1, layerName: "Repair Smoke Delete Source" } },
+        { title: "Read comp after deletion", tool: "get_comp_details", args: { compName: "Repair Smoke Comp", includeLayers: true } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["get_comp_details", "delete_layer", "get_comp_details"],
+      actionTypes: ["tool-alias", "arg-alias"]
+    });
+    assert.strictEqual(deleteLayerRepair.repairedPlan.steps[1].args.layerIndex, 1);
+    assert.strictEqual(deleteLayerRepair.repairedPlan.steps[1].args.expectedLayerName, "Repair Smoke Delete Source");
+
+    await validatePlan("delete-layer-alias-no-evidence", {
+      summary: "Delete a layer from a naked natural-language alias.",
+      risk: "high",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Remove explicit layer without inspection", tool: "deleteLayer", args: { compName: "Repair Smoke Comp", layer: 1, layerName: "Repair Smoke Delete Source" } }
+      ]
+    }, {
+      applied: false,
+      validationOk: false
+    });
+
+    await validatePlan("delete-layer-alias-broad-rejected", {
+      summary: "Reject broad layer deletion alias.",
+      risk: "high",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Inspect generated comp layers", tool: "get_comp_details", args: { compName: "Repair Smoke Comp", includeLayers: true } },
+        { title: "Remove selected layers", tool: "removeLayer", args: { compName: "Repair Smoke Comp", layerIndexes: [1, 2], layerName: "Repair Smoke Delete Source" } }
+      ]
+    }, {
+      applied: false,
+      validationOk: false
+    });
+
+    const compPropertiesRepair = await validatePlan("set-composition-properties-alias", {
+      summary: "Set a narrow generated comp property subset and read it back.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Set comp properties", tool: "setCompositionProperties", args: { compositionName: "Repair Smoke Comp", properties: { width: 1920, height: 1080, fps: 30 } } },
+        { title: "Read comp properties", tool: "get_comp_details", args: { compName: "Repair Smoke Comp" } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["set_comp_properties", "get_comp_details"],
+      actionTypes: ["tool-alias", "arg-alias", "arg-shape"]
+    });
+    assert.strictEqual(compPropertiesRepair.repairedPlan.steps[0].args.compName, "Repair Smoke Comp");
+    assert.strictEqual(compPropertiesRepair.repairedPlan.steps[0].args.width, 1920);
+    assert.strictEqual(compPropertiesRepair.repairedPlan.steps[0].args.height, 1080);
+    assert.strictEqual(compPropertiesRepair.repairedPlan.steps[0].args.frameRate, 30);
+    assert(!Object.prototype.hasOwnProperty.call(compPropertiesRepair.repairedPlan.steps[0].args, "properties"), "safe comp property aliases should be flattened");
+
+    await validatePlan("set-composition-properties-unsafe-rejected", {
+      summary: "Reject arbitrary generated comp property mutation alias.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Set arbitrary comp property", tool: "setCompositionProperties", args: { compositionName: "Repair Smoke Comp", properties: { shutterAngle: 180 } } }
+      ]
+    }, {
+      applied: false,
+      validationOk: false
+    });
+
+    const maskSetCreateRepair = await validatePlan("set-layer-mask-create-alias", {
+      summary: "Create a bounded mask through Dakkshin alias and read it back.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Set layer mask", tool: "setLayerMask", args: { compName: "Repair Smoke Comp", layer: 1, operation: "create", maskName: "Repair Smoke Set Mask", shape: { vertices: [[120, 80], [520, 80], [520, 280], [120, 280]] }, mode: "add" } },
+        { title: "Read mask layer", tool: "get_layer_details", args: { compName: "Repair Smoke Comp", layerIndex: 1 } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["set_layer_mask", "get_layer_details"],
+      actionTypes: ["tool-alias", "arg-alias", "arg-shape"]
+    });
+    assert.strictEqual(maskSetCreateRepair.repairedPlan.steps[0].args.layerIndex, 1);
+    assert.strictEqual(maskSetCreateRepair.repairedPlan.steps[0].args.name, "Repair Smoke Set Mask");
+    assert.deepStrictEqual(maskSetCreateRepair.repairedPlan.steps[0].args.vertices, [[120, 80], [520, 80], [520, 280], [120, 280]]);
+    assert.strictEqual(maskSetCreateRepair.repairedPlan.steps[0].args.maskMode, "add");
+
+    const maskSetUpdateRepair = await validatePlan("set-layer-mask-update-alias", {
+      summary: "Update one bounded mask through Dakkshin alias and read it back.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Set layer mask", tool: "setLayerMask", args: { compName: "Repair Smoke Comp", layer: 1, operation: "update", maskNumber: 1, maskName: "Repair Smoke Set Mask", opacity: 75 } },
+        { title: "Read mask layer", tool: "get_layer_details", args: { compName: "Repair Smoke Comp", layerIndex: 1 } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["set_layer_mask", "get_layer_details"],
+      actionTypes: ["tool-alias", "arg-alias", "arg-shape"]
+    });
+    assert.strictEqual(maskSetUpdateRepair.repairedPlan.steps[0].args.maskIndex, 1);
+    assert.strictEqual(maskSetUpdateRepair.repairedPlan.steps[0].args.expectedMaskName, "Repair Smoke Set Mask");
+    assert(!Object.prototype.hasOwnProperty.call(maskSetUpdateRepair.repairedPlan.steps[0].args, "name"), "update mask alias must not keep a rename field");
+
+    await validatePlan("set-layer-mask-delete-alias-rejected", {
+      summary: "Reject mask deletion alias.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Delete mask", tool: "setLayerMask", args: { compName: "Repair Smoke Comp", layer: 1, operation: "delete", maskNumber: 1 } }
+      ]
+    }, {
+      applied: false,
+      validationOk: false
+    });
+
     const markerRepair = await validatePlan("layer-marker-alias", {
       summary: "Add one explicit marker to the generated layer.",
       risk: "medium",
@@ -600,6 +728,9 @@ async function main() {
         precomposeActions: precomposeRepair.planRepair.actions.length,
         textActions: textRepair.planRepair.actions.length,
         maskActions: maskRepair.planRepair.actions.length,
+        deleteLayerActions: deleteLayerRepair.planRepair.actions.length,
+        compPropertiesActions: compPropertiesRepair.planRepair.actions.length,
+        setLayerMaskActions: maskSetCreateRepair.planRepair.actions.length + maskSetUpdateRepair.planRepair.actions.length,
         bindingAliasActions: bindingAliasRepair.planRepair.actions.length,
         selectedPrecompDuplicateActions: selectedPrecompDuplicateRepair.planRepair.actions.length,
         emptyRunStatus: emptyRunResponse.body.run.error,

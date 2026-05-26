@@ -48,6 +48,13 @@ const TOOL_ALIASES = {
   duplicateselectedlayers: "duplicate_layers",
   copyselectedlayers: "duplicate_layers",
   cloneselectedlayers: "duplicate_layers",
+  deletelayer: "delete_layer",
+  removelayer: "delete_layer",
+  setcompositionproperties: "set_comp_properties",
+  setcompproperties: "set_comp_properties",
+  setcompositionprops: "set_comp_properties",
+  setlayermask: "set_layer_mask",
+  updatelayermask: "set_layer_mask",
   fitlayer: "fit_layer_to_comp",
   fittocomp: "fit_layer_to_comp",
   fitlayertocomp: "fit_layer_to_comp",
@@ -195,6 +202,40 @@ const LAYER_STACK_READBACK_TOOLS = new Set([
   "get_selected_layers"
 ]);
 
+const DELETE_LAYER_INSPECTION_TOOLS = new Set([
+  "get_comp_details",
+  "get_layer_details",
+  "list_layers"
+]);
+
+const SAFE_COMP_PROPERTY_FIELDS = new Set([
+  "width",
+  "height",
+  "pixelAspect",
+  "duration",
+  "frameRate",
+  "bgColor",
+  "displayStartTime"
+]);
+
+const SET_LAYER_MASK_FORBIDDEN_TOKENS = new Set([
+  "delete",
+  "remove",
+  "removeMask",
+  "deleteMask",
+  "maskIndices",
+  "masks",
+  "selectedMasks",
+  "bulk",
+  "roto",
+  "rotobrush",
+  "rotoBrush",
+  "propertyPath",
+  "propertyName",
+  "script",
+  "jsx"
+].map(normalizeToken));
+
 const PROJECT_ITEM_RESULT_TOOLS = new Set([
   "find_project_items",
   "find_comps",
@@ -285,10 +326,15 @@ function propertyCandidates(field) {
     selectedlayerindices: ["layerIndices", "layerIndex"],
     layers: ["layerIndices", "layerIndex"],
     layer: ["layerIndex", "layerIndices"],
+    layernumber: ["layerIndex"],
+    layeridx: ["layerIndex"],
     source: ["sourceName", "sourceItemIndex", "sourceItemName"],
     sourcelayer: ["sourceName", "layerIndex"],
     sourcelayername: ["sourceName"],
-    layername: ["sourceName", "name"],
+    layername: ["expectedLayerName", "sourceName", "name"],
+    targetlayername: ["expectedLayerName", "sourceName", "name"],
+    expectedlayername: ["expectedLayerName", "sourceName", "name"],
+    expectedname: ["expectedLayerName", "sourceName", "name"],
     layernames: ["sourceNames", "sourceName"],
     sourcelayernames: ["sourceNames", "sourceName"],
     suffix: ["nameSuffix"],
@@ -298,8 +344,32 @@ function propertyCandidates(field) {
     points: ["vertices"],
     maskpoints: ["vertices"],
     pathpoints: ["vertices"],
+    maskvertices: ["vertices"],
+    maskpath: ["vertices"],
     maskname: ["name"],
+    expectedmaskname: ["expectedMaskName", "name"],
+    targetmaskname: ["expectedMaskName", "name"],
+    masknumber: ["maskIndex"],
+    maskkey: ["maskIndex"],
+    targetmask: ["maskIndex"],
+    targetmaskindex: ["maskIndex"],
+    maskoperation: ["operation"],
+    op: ["operation"],
     mode: ["maskMode"],
+    maskmode: ["maskMode"],
+    ismaskinverted: ["inverted"],
+    maskopacity: ["opacity"],
+    maskfeather: ["feather"],
+    maskexpansion: ["expansion"],
+    pixelaspectratio: ["pixelAspect"],
+    par: ["pixelAspect"],
+    fps: ["frameRate"],
+    framerate: ["frameRate"],
+    backgroundcolor: ["bgColor"],
+    bgcolor: ["bgColor"],
+    displaystart: ["displayStartTime"],
+    displaystarttime: ["displayStartTime"],
+    starttime: ["displayStartTime"],
     itemindexes: ["itemIndices", "itemIndex"],
     itemindices: ["itemIndices", "itemIndex"],
     projectitemindexes: ["itemIndices", "itemIndex"],
@@ -375,6 +445,109 @@ function bindingAlias(value) {
   return canonical ? `{{${canonical}}}` : value;
 }
 
+function normalizedArgKeys(args) {
+  return Object.keys(args || {}).map(normalizeToken).filter(Boolean);
+}
+
+function canonicalArgValue(args, properties, canonicalField) {
+  if (hasOwn(args, canonicalField) && !missingValue(args[canonicalField])) return args[canonicalField];
+  for (const field of Object.keys(args || {})) {
+    if (canonicalArgField(field, properties) === canonicalField && !missingValue(args[field])) return args[field];
+  }
+  return undefined;
+}
+
+function hasPriorDeleteLayerInspectionEvidence(steps, stepIndex) {
+  for (let index = 0; index < stepIndex; index += 1) {
+    if (DELETE_LAYER_INSPECTION_TOOLS.has(stepToolName(steps[index]))) return true;
+  }
+  return false;
+}
+
+function hasUnsafeDeleteLayerAliasShape(args) {
+  const keys = normalizedArgKeys(args);
+  if (keys.some((key) => ["layerindices", "layerindexes", "selectedlayers", "selectedlayerindices", "selectedlayerindexes", "alllayers", "layers"].includes(key))) {
+    return true;
+  }
+  for (const value of Object.values(args || {})) {
+    if (typeof value === "string" && ["all", "selected", "*"].includes(value.trim().toLowerCase())) return true;
+    if (Array.isArray(value) && value.length > 1) return true;
+  }
+  return false;
+}
+
+function canRepairDeleteLayerAlias(step, stepIndex, steps, tool, blockers) {
+  const args = stepArgs(step);
+  const properties = schemaProperties(tool);
+  if (!hasPriorDeleteLayerInspectionEvidence(steps, stepIndex)) {
+    blockers.push(`Step ${stepIndex + 1}: delete_layer alias repair requires a prior comp/layer inspection step.`);
+    return false;
+  }
+  if (hasUnsafeDeleteLayerAliasShape(args)) {
+    blockers.push(`Step ${stepIndex + 1}: delete_layer alias repair refuses broad, selected, or multi-layer deletion.`);
+    return false;
+  }
+  if (missingValue(canonicalArgValue(args, properties, "layerIndex")) || missingValue(canonicalArgValue(args, properties, "expectedLayerName"))) {
+    blockers.push(`Step ${stepIndex + 1}: delete_layer alias repair requires explicit layerIndex and expectedLayerName evidence.`);
+    return false;
+  }
+  return true;
+}
+
+function compPropertyObject(args) {
+  for (const key of ["properties", "compProperties", "compositionProperties", "settings"]) {
+    if (isPlainObject(args[key])) return { key, value: args[key] };
+  }
+  return null;
+}
+
+function unsafeSetCompPropertiesAlias(args) {
+  const nested = compPropertyObject(args);
+  if (nested) {
+    const unsupported = Object.keys(nested.value).filter((key) => !SAFE_COMP_PROPERTY_FIELDS.has(canonicalArgField(key, Object.fromEntries(Array.from(SAFE_COMP_PROPERTY_FIELDS).map((field) => [field, true])))));
+    if (unsupported.length) return unsupported;
+  }
+  const unsafeTokens = normalizedArgKeys(args).filter((key) => [
+    "property",
+    "propertypath",
+    "propertyname",
+    "expression",
+    "script",
+    "jsx",
+    "effects",
+    "layers",
+    "masks"
+  ].includes(key));
+  return unsafeTokens;
+}
+
+function unsafeSetLayerMaskAlias(args) {
+  const operation = String(args.operation || args.op || args.maskOperation || "").trim().toLowerCase();
+  if (["delete", "remove", "bulk", "roto", "rotobrush"].includes(operation)) return ["operation"];
+  return normalizedArgKeys(args).filter((key) => SET_LAYER_MASK_FORBIDDEN_TOKENS.has(key));
+}
+
+function canRepairToolAlias(candidate, original, step, stepIndex, steps, tool, blockers) {
+  if (candidate === "delete_layer") {
+    return canRepairDeleteLayerAlias(step, stepIndex, steps, tool, blockers);
+  }
+  if (candidate === "set_comp_properties") {
+    const unsafe = unsafeSetCompPropertiesAlias(stepArgs(step));
+    if (unsafe.length) {
+      blockers.push(`Step ${stepIndex + 1}: set_comp_properties alias repair refuses unsupported comp fields: ${unsafe.join(", ")}.`);
+      return false;
+    }
+  }
+  if (candidate === "set_layer_mask") {
+    const unsafe = unsafeSetLayerMaskAlias(stepArgs(step));
+    if (unsafe.length) {
+      blockers.push(`Step ${stepIndex + 1}: set_layer_mask alias repair refuses delete, bulk, roto, raw JSX, or arbitrary property edits.`);
+      return false;
+    }
+  }
+  return Boolean(original);
+}
+
 function repairToolSpecificArgValues(args, stepIndex, tool, actions) {
   if (!isPlainObject(args) || !tool) return false;
   let changed = false;
@@ -418,6 +591,44 @@ function repairToolSpecificArgValues(args, stepIndex, tool, actions) {
         field: "itemType",
         before,
         after: normalizedItemType
+      });
+    }
+  }
+
+  if (tool.name === "set_comp_properties") {
+    const nested = compPropertyObject(args);
+    if (nested) {
+      for (const [field, value] of Object.entries(nested.value)) {
+        const canonical = canonicalArgField(field, Object.fromEntries(Array.from(SAFE_COMP_PROPERTY_FIELDS).map((key) => [key, true])));
+        if (!SAFE_COMP_PROPERTY_FIELDS.has(canonical)) continue;
+        if (!hasOwn(args, canonical) || missingValue(args[canonical])) {
+          args[canonical] = value;
+          changed = true;
+          addAction(actions, stepIndex, "arg-shape", `Flattened composition property ${field} to ${canonical}.`, {
+            field: canonical
+          });
+        }
+      }
+      delete args[nested.key];
+      changed = true;
+    }
+  }
+
+  if (tool.name === "set_layer_mask") {
+    if (isPlainObject(args.shape) && Array.isArray(args.shape.vertices) && !hasOwn(args, "vertices")) {
+      args.vertices = args.shape.vertices;
+      delete args.shape;
+      changed = true;
+      addAction(actions, stepIndex, "arg-shape", "Flattened mask shape vertices to vertices.", {
+        field: "vertices"
+      });
+    }
+    if (String(args.operation || "").toLowerCase() === "update" && hasOwn(args, "name") && !hasOwn(args, "expectedMaskName")) {
+      args.expectedMaskName = args.name;
+      delete args.name;
+      changed = true;
+      addAction(actions, stepIndex, "arg-shape", "Mapped update-mode mask name to expectedMaskName guard.", {
+        field: "expectedMaskName"
       });
     }
   }
@@ -741,17 +952,21 @@ function repairDeepDuplicateParentLayerReadBack(steps, actions) {
   }
 }
 
-function repairToolName(step, stepIndex, catalog, actions, blockers) {
+function repairToolName(step, stepIndex, steps, catalog, actions, blockers) {
   const original = stepToolName(step);
   if (!original || catalog.toolByName(original)) return;
 
   const candidate = TOOL_ALIASES[normalizeToken(original)];
-  if (!candidate || !catalog.toolByName(candidate) || !catalog.planningToolNames.has(candidate)) {
+  const tool = candidate ? catalog.toolByName(candidate) : null;
+  if (!candidate || !tool || !catalog.planningToolNames.has(candidate)) {
     blockers.push(`Step ${stepIndex + 1}: no bounded typed-tool repair for ${original}.`);
     return;
   }
   if (candidate === "run_extendscript" || candidate === "run_extendscript_file") {
     blockers.push(`Step ${stepIndex + 1}: repair refuses raw ExtendScript fallback for ${original}.`);
+    return;
+  }
+  if (!canRepairToolAlias(candidate, original, step, stepIndex, steps, tool, blockers)) {
     return;
   }
   step.tool = candidate;
@@ -834,6 +1049,7 @@ function repairResultBindingAliases(step, stepIndex, tool, actions) {
 
 function repairMissingRequired(step, stepIndex, steps, tool, actions) {
   if (!tool) return;
+  if (tool.name === "delete_layer") return;
   const args = stepArgs(step);
   const bindings = isPlainObject(step.resultBindings) ? { ...step.resultBindings } : {};
   let changed = false;
@@ -897,7 +1113,7 @@ function repairAgentPlan(plan, validation, catalogOptions) {
   for (let index = 0; index < repairedPlan.steps.length; index += 1) {
     const step = isPlainObject(repairedPlan.steps[index]) ? repairedPlan.steps[index] : {};
     repairedPlan.steps[index] = step;
-    repairToolName(step, index, catalog, repair.actions, repair.blockers);
+    repairToolName(step, index, repairedPlan.steps, catalog, repair.actions, repair.blockers);
     const toolName = stepToolName(step);
     const tool = catalog.toolByName(toolName);
     if (!tool || !catalog.planningToolNames.has(toolName)) continue;

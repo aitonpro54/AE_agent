@@ -22,6 +22,9 @@ const MUTATING_TOOLS = new Set([
   "clear_expression",
   "duplicate_layer",
   "duplicate_layers",
+  "delete_layer",
+  "set_comp_properties",
+  "set_layer_mask",
   "add_layer_marker",
   "update_layer_marker",
   "delete_layer_marker",
@@ -142,7 +145,47 @@ function addLayerEvidence(target, value, source) {
   target.layers.push({
     index,
     name,
+    id: value.id === undefined || value.id === null ? null : String(value.id),
     source: source || "observed layer"
+  });
+}
+
+function addCompEvidence(target, value, source) {
+  if (!isPlainObject(value)) return;
+  const hasCompField = ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "numLayers", "layerCount"].some((key) => hasOwn(value, key));
+  if (!hasCompField) return;
+  target.comps.push({
+    name: compactText(value.name, 160),
+    itemIndex: numberValue(value.itemIndex),
+    width: numberValue(value.width),
+    height: numberValue(value.height),
+    pixelAspect: numberValue(value.pixelAspect),
+    duration: numberValue(value.duration),
+    frameRate: numberValue(value.frameRate),
+    bgColor: Array.isArray(value.bgColor) ? value.bgColor.map(numberValue) : null,
+    displayStartTime: numberValue(value.displayStartTime),
+    numLayers: numberValue(hasOwn(value, "numLayers") ? value.numLayers : value.layerCount),
+    source: source || "observed comp"
+  });
+}
+
+function addMaskEvidence(target, value, source) {
+  if (!isPlainObject(value)) return;
+  const shape = isPlainObject(value.shape) ? value.shape : {};
+  const hasMaskField = hasOwn(value, "maskMode") || hasOwn(value, "inverted") || hasOwn(value, "propertyIndex") || hasOwn(value, "opacity") || hasOwn(value, "feather") || hasOwn(value, "expansion") || Array.isArray(shape.vertices);
+  if (!hasMaskField) return;
+  target.masks.push({
+    propertyIndex: numberValue(value.propertyIndex),
+    name: compactText(value.name, 160),
+    maskMode: value.maskMode === undefined || value.maskMode === null ? "" : String(value.maskMode),
+    inverted: value.inverted === true,
+    shape: {
+      vertices: Array.isArray(shape.vertices) ? shape.vertices : []
+    },
+    opacity: numberValue(value.opacity),
+    feather: Array.isArray(value.feather) ? value.feather.map(numberValue) : null,
+    expansion: numberValue(value.expansion),
+    source: source || "observed mask"
   });
 }
 
@@ -184,6 +227,8 @@ function createEvidenceStore(readBackSteps) {
     layerCounts: [],
     numberArrays: {},
     layers: [],
+    comps: [],
+    masks: [],
     markers: [],
     markerSignatures: new Set()
   };
@@ -246,6 +291,8 @@ function collectPayloadEvidence(payload, evidence, source, depth = 0) {
 
   if (typeof payload.name === "string") addName(evidence, payload.name, source);
   addLayerEvidence(evidence, payload, source);
+  addCompEvidence(evidence, payload, source);
+  addMaskEvidence(evidence, payload, source);
   if (typeof payload.before === "string") addName(evidence, payload.before, source);
   if (typeof payload.after === "string") addName(evidence, payload.after, source);
   if (typeof payload.file === "string") addOutputPath(evidence, payload.file, source);
@@ -354,6 +401,83 @@ function observedLayerCountEvidence(evidence, expectedCount) {
   if (expected === null || !evidence || !Array.isArray(evidence.layerCounts)) return null;
   for (const item of evidence.layerCounts) {
     if (nearlyEqual(item.count, expected)) return item.source || "observed layer count";
+  }
+  return null;
+}
+
+function observedDeletedLayerAbsent(evidence, payload, args) {
+  if (!evidence || !payload) return null;
+  const deletedLayer = payload.deletedLayer || {};
+  const deletedId = deletedLayer.id === undefined || deletedLayer.id === null ? "" : String(deletedLayer.id);
+  const expectedName = compactText(args.expectedLayerName || payload.expectedLayerName, 160);
+  const requestedLayerIndex = numberValue(args.layerIndex || payload.requestedLayerIndex);
+  const afterCountEvidence = observedLayerCountEvidence(evidence, payload.layerCountAfter);
+  const deletedIdStillPresent = deletedId && evidence.layers.some((layer) => layer.id === deletedId);
+  const sameNameAtDeletedIndex = requestedLayerIndex !== null && expectedName
+    ? observedLayerAtIndexEvidence(evidence, requestedLayerIndex, expectedName)
+    : null;
+  if (afterCountEvidence && !deletedIdStillPresent && !sameNameAtDeletedIndex) return afterCountEvidence;
+  return null;
+}
+
+function compFieldMatches(comp, field, expected) {
+  if (!comp) return false;
+  if (field === "bgColor") {
+    return Array.isArray(expected) &&
+      Array.isArray(comp.bgColor) &&
+      expected.length === 3 &&
+      expected.every((value, index) => nearlyEqual(value, comp.bgColor[index]));
+  }
+  return nearlyEqual(comp[field], expected);
+}
+
+function observedCompFieldEvidence(evidence, field, expected) {
+  if (!evidence || !Array.isArray(evidence.comps)) return null;
+  for (const comp of evidence.comps) {
+    if (compFieldMatches(comp, field, expected)) return comp.source || "observed comp";
+  }
+  return null;
+}
+
+function pointsMatch(observed, expected) {
+  if (!Array.isArray(expected)) return true;
+  if (!Array.isArray(observed) || observed.length < expected.length) return false;
+  return expected.every((point, index) => (
+    Array.isArray(point) &&
+    Array.isArray(observed[index]) &&
+    nearlyEqual(point[0], observed[index][0]) &&
+    nearlyEqual(point[1], observed[index][1])
+  ));
+}
+
+function numberArrayMatches(observed, expected) {
+  if (!Array.isArray(expected)) return true;
+  if (!Array.isArray(observed) || observed.length < expected.length) return false;
+  return expected.every((value, index) => nearlyEqual(value, observed[index]));
+}
+
+function maskMatchesArgs(mask, args) {
+  if (!mask) return false;
+  if (hasOwn(args, "maskIndex") && !nearlyEqual(mask.propertyIndex, args.maskIndex)) return false;
+  if (hasOwn(args, "expectedMaskName") && args.expectedMaskName && !sameString(mask.name, args.expectedMaskName)) return false;
+  if (hasOwn(args, "name") && args.operation === "create" && args.name && !sameString(mask.name, args.name)) return false;
+  if (hasOwn(args, "vertices") && !pointsMatch(mask.shape && mask.shape.vertices, args.vertices)) return false;
+  if (hasOwn(args, "maskMode") && !sameString(mask.maskMode, args.maskMode)) return false;
+  if (hasOwn(args, "inverted") && mask.inverted !== args.inverted) return false;
+  if (hasOwn(args, "opacity") && !nearlyEqual(mask.opacity, args.opacity)) return false;
+  if (hasOwn(args, "feather") && !numberArrayMatches(mask.feather, args.feather)) return false;
+  if (hasOwn(args, "expansion") && !nearlyEqual(mask.expansion, args.expansion)) return false;
+  return true;
+}
+
+function observedMaskEvidence(evidence, args, payloadMask) {
+  if (!evidence || !Array.isArray(evidence.masks)) return null;
+  const index = numberValue(payloadMask && payloadMask.propertyIndex);
+  const name = compactText(payloadMask && payloadMask.name, 160);
+  for (const mask of evidence.masks) {
+    if (index !== null && mask.propertyIndex !== null && !nearlyEqual(mask.propertyIndex, index)) continue;
+    if (name && mask.name && mask.name !== name) continue;
+    if (maskMatchesArgs(mask, args)) return mask.source || "observed mask";
   }
   return null;
 }
@@ -747,6 +871,89 @@ function checkDuplicateLayers(checks, step, payload, evidence) {
   });
 }
 
+function checkDeleteLayer(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const absentEvidence = observedDeletedLayerAbsent(evidence.readBack, payload, args);
+  const before = numberValue(payload.layerCountBefore);
+  const after = numberValue(payload.layerCountAfter);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:absence`,
+    title: "Deleted layer is absent after read-back",
+    expected: `delete layer ${args.layerIndex || payload.requestedLayerIndex || "specified"} named ${args.expectedLayerName || payload.expectedLayerName || "expected"}`,
+    observed: absentEvidence ? `layer count ${before} -> ${after}; deleted layer absent` : "deleted layer absence not proven by read-back",
+    passed: Boolean(payload.deletedLayer) &&
+      postVerification.ok === true &&
+      postVerification.layerCountMatches === true &&
+      postVerification.deletedLayerIdAbsent === true &&
+      Boolean(absentEvidence),
+    evidence: absentEvidence || "No post-run comp/layer read-back proved the deleted layer is absent."
+  });
+}
+
+function checkSetCompProperties(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const updates = isPlainObject(payload.updates) ? payload.updates : {};
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const fields = Object.keys(updates).length ? Object.keys(updates) : ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime"].filter((field) => hasOwn(args, field));
+  if (!fields.length) {
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:updates`,
+      title: "Composition update includes at least one bounded field",
+      expected: "one or more approved comp property updates",
+      observed: "no approved comp property updates",
+      passed: false,
+      evidence: "set_comp_properties did not report any bounded updated fields."
+    });
+    return;
+  }
+  for (const field of fields) {
+    const expected = hasOwn(updates, field) ? updates[field] : args[field];
+    const readBackEvidence = observedCompFieldEvidence(evidence.readBack, field, expected);
+    const afterMatches = compFieldMatches(payload.after, field, expected);
+    const fieldMatches = !postVerification.fieldMatches || postVerification.fieldMatches[field] !== false;
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:${field}`,
+      title: `Composition ${field} matches requested update`,
+      expected: Array.isArray(expected) ? expected.join(",") : expected,
+      observed: afterMatches ? (Array.isArray(expected) ? expected.join(",") : expected) : "missing or mismatched after value",
+      passed: afterMatches && fieldMatches && Boolean(readBackEvidence) && postVerification.ok === true,
+      evidence: readBackEvidence || `No post-run comp read-back matched ${field}.`
+    });
+  }
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:identity`,
+    title: "Composition identity and layer count stay bounded",
+    expected: "same comp identity and unchanged layer count",
+    observed: `identity=${postVerification.compIdentityMatches === true}, layerCountUnchanged=${postVerification.layerCountUnchanged === true}`,
+    passed: postVerification.compIdentityMatches === true && postVerification.layerCountUnchanged === true && evidence.readBack.count > 0,
+    evidence: evidence.readBack.count > 0 ? "Post-run comp read-back was present." : "No post-run comp read-back was present."
+  });
+}
+
+function checkSetLayerMask(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const mask = payload.afterMask || payload.mask || {};
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const readBackEvidence = observedMaskEvidence(evidence.readBack, args, mask);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:mask`,
+    title: "Layer mask create/update matches read-back",
+    expected: `${args.operation || payload.operation || "operation"} mask ${args.maskIndex || args.name || args.expectedMaskName || ""}`.trim(),
+    observed: mask.name ? `${mask.propertyIndex || "?"}: ${mask.name}` : "missing mask",
+    passed: Boolean(mask && mask.propertyIndex) && postVerification.ok === true && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run layer/mask read-back matched the create/update result."
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:mask-count`,
+    title: "Layer mask count matches bounded operation",
+    expected: `after mask count ${postVerification.expectedMaskCountAfter}`,
+    observed: `after mask count ${postVerification.afterMaskCount}`,
+    passed: postVerification.maskCountMatches === true && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run mask read-back proved the final mask count."
+  });
+}
+
 function exactRenamesMatch(items, args) {
   if (!items.length) return false;
   for (let index = 0; index < items.length; index += 1) {
@@ -958,6 +1165,21 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "duplicate_layers") {
     checkDuplicateLayers(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "delete_layer") {
+    checkDeleteLayer(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_comp_properties") {
+    checkSetCompProperties(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_layer_mask") {
+    checkSetLayerMask(checks, step, payload, evidence);
     return;
   }
 

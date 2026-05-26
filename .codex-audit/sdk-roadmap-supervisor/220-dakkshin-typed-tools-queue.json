@@ -377,7 +377,26 @@
         "local-ollama-openrouter-deterministic-fallback-requested",
         "dependency-change-requested"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedAt": "2026-05-26",
+      "completedBy": {
+        "actor": "codex-writer-child",
+        "validationCommands": [
+          "node --check mcp-server/bridge-daemon.js",
+          "node --check mcp-server/plan-repair.js",
+          "node --check mcp-server/semantic-verification.js",
+          "node --check scripts/plan-repair-smoke.js",
+          "node --check scripts/semantic-verification-smoke.js",
+          "node --check scripts/manual-typed-tool-regression-smoke.js",
+          "node scripts/manual-typed-tool-regression-smoke.js",
+          "node scripts/plan-repair-smoke.js",
+          "node scripts/semantic-verification-smoke.js",
+          "node scripts/reliability-validation-suite-smoke.js",
+          "npm.cmd run check:rules",
+          "git diff --check"
+        ],
+        "commit": "not-created-by-writer-child"
+      }
     },
     {
       "id": "m223-dakkshin-generated-only-live-lane",
