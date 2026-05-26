@@ -529,6 +529,205 @@ function assertAnalysisResumeFixture() {
   }
 }
 
+function assertImplementationPlanningArtifacts(output, fixture, runId) {
+  assert.strictEqual(output.schema, "generic-repo-tool-importer.command-skeleton.v1");
+  assert.strictEqual(output.auxiliaryId, "AUX-017");
+  assert.strictEqual(output.runId, runId);
+  assert.strictEqual(output.status, "stopped_after_implementation_planning");
+  assert.strictEqual(output.currentPhase, "implementation_planned");
+  assert.strictEqual(output.nextPhase, "implementation_worktrees");
+  assert.strictEqual(output.analysisCompleted, true);
+  assert.strictEqual(output.implementationPlanned, true);
+  assert.strictEqual(output.worktreesCreated, false);
+  assert.strictEqual(output.childRunsCreated, false);
+  assert.strictEqual(output.liveCepAeRun, false);
+  assert.strictEqual(output.localOllamaUsed, false);
+
+  const runRoot = path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-importer", runId);
+  const state = readJson(path.join(runRoot, "state.json"));
+  assert.strictEqual(state.auxiliaryId, "AUX-017");
+  assert.strictEqual(state.status, "stopped");
+  assert.strictEqual(state.currentPhase, "implementation_planned");
+  assert.strictEqual(state.nextPhase, "implementation_worktrees");
+  assert.strictEqual(state.stopReason, "stopped_before_actual_implementation_worktrees");
+  assert.strictEqual(state.flags.implementationPlanned, true);
+  assert.strictEqual(state.flags.worktreesCreated, false);
+  assert.strictEqual(state.flags.childRunsCreated, false);
+
+  for (const relative of [
+    "implementation/batch-worktree-plan.json",
+    "implementation/planned-paths.json",
+  ]) {
+    assert(fs.existsSync(path.join(runRoot, relative)), `${relative} must exist`);
+  }
+
+  const plannedPaths = readJson(path.join(runRoot, "implementation", "planned-paths.json"));
+  assert.strictEqual(plannedPaths.schema, "generic-repo-tool-importer.planned-paths.v1");
+  assert.strictEqual(plannedPaths.status, "planned_only");
+  assert.strictEqual(plannedPaths.dependencyChangesAllowed, false);
+  assert.strictEqual(plannedPaths.checks.allowlist, "passed");
+  assert.strictEqual(plannedPaths.checks.forbiddenPaths, "passed");
+  assert(plannedPaths.allPlannedPaths.some((entry) => entry.startsWith("scripts/imported-tools/")));
+  assert(plannedPaths.allPlannedPaths.some((entry) => entry.startsWith("scripts/imported-automations/")));
+
+  const worktreePlan = readJson(path.join(runRoot, "implementation", "batch-worktree-plan.json"));
+  assert.strictEqual(worktreePlan.schema, "generic-repo-tool-importer.batch-worktree-plan.v1");
+  assert.strictEqual(worktreePlan.status, "planned_only");
+  assert.strictEqual(worktreePlan.worktreesCreated, false);
+  assert.strictEqual(worktreePlan.childRunsCreated, false);
+  assert.strictEqual(worktreePlan.batches[0].actualWorktreePath, null);
+  assert.strictEqual(worktreePlan.batches[0].worktreeCreated, false);
+  assert(worktreePlan.batches[0].promptPath.endsWith(".md"));
+  assert(fs.existsSync(path.join(runRoot, worktreePlan.batches[0].promptPath)));
+
+  const prompt = fs.readFileSync(path.join(runRoot, worktreePlan.batches[0].promptPath), "utf8");
+  assert(prompt.includes("Do not create branches or git worktrees."));
+  assert(prompt.includes("Do not use Local/Ollama"));
+
+  const supervisorPlan = readJson(path.join(runRoot, "supervisor-plan.json"));
+  assert.strictEqual(supervisorPlan.auxiliaryId, "AUX-017");
+  assert.strictEqual(supervisorPlan.status, "stopped_after_implementation_planning");
+  assert.strictEqual(supervisorPlan.stopBeforePhase, "implementation_worktrees");
+  assert.strictEqual(supervisorPlan.implementationPlanning.worktreesCreated, false);
+  assert.strictEqual(supervisorPlan.implementationPlanning.childRunsCreated, false);
+
+  assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain"]), "");
+}
+
+function assertSuccessfulImplementationPlanningFixture() {
+  const fixture = createTempFixture("implementation-success");
+  try {
+    const manifestPath = writeManifest(fixture.root, validManifest(fixture, "aux017-implementation-success"));
+    const analysis = parseJson(run(["--manifest", manifestPath, "--run-analysis", "--json"]));
+    assert.strictEqual(analysis.status, "stopped_after_analysis");
+
+    const output = parseJson(run(["--manifest", manifestPath, "--plan-implementation", "--json"]));
+    assert.strictEqual(output.resumed, true);
+    assertImplementationPlanningArtifacts(output, fixture, "aux017-implementation-success");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertImplementationMissingAnalysisArtifactFixture() {
+  const fixture = createTempFixture("implementation-missing-analysis");
+  try {
+    const manifestPath = writeManifest(fixture.root, validManifest(fixture, "aux017-missing-analysis"));
+    parseJson(run(["--manifest", manifestPath, "--run-analysis", "--json"]));
+    const runRoot = path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-importer", "aux017-missing-analysis");
+    fs.rmSync(path.join(runRoot, "analysis", "batch-plan.json"), { force: true });
+
+    const result = run(["--manifest", manifestPath, "--plan-implementation", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /analysis-output-missing: analysis\/batch-plan\.json/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertImplementationForbiddenPathFixture() {
+  const fixture = createTempFixture("implementation-forbidden-path");
+  try {
+    const manifest = validManifest(fixture, "aux017-forbidden-path");
+    manifest.implementation.plannedPathsPerBatch = [
+      {
+        id: "bad-cep-panel-path",
+        candidateIds: ["*"],
+        plannedPaths: ["cep-panel/panel.js"],
+      },
+    ];
+    const manifestPath = writeManifest(fixture.root, manifest);
+    parseJson(run(["--manifest", manifestPath, "--run-analysis", "--json"]));
+
+    const result = run(["--manifest", manifestPath, "--plan-implementation", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /forbidden-target-path: cep-panel\/panel\.js/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertImplementationDependencyChangeFixture() {
+  const fixture = createTempFixture("implementation-dependency-change");
+  try {
+    const manifest = validManifest(fixture, "aux017-dependency-change");
+    manifest.targetRepo.allowedWritePaths = [...manifest.targetRepo.allowedWritePaths, "package.json"];
+    manifest.targetRepo.forbiddenWritePaths = manifest.targetRepo.forbiddenWritePaths.filter(
+      (entry) => !["package.json", "package-lock.json"].includes(entry),
+    );
+    manifest.safety.forbiddenPaths = manifest.safety.forbiddenPaths.filter(
+      (entry) => !["package.json", "package-lock.json"].includes(entry),
+    );
+    manifest.implementation.plannedPathsPerBatch = [
+      {
+        id: "dependency-file-path",
+        candidateIds: ["*"],
+        plannedPaths: ["package.json"],
+      },
+    ];
+    const manifestPath = writeManifest(fixture.root, manifest);
+    parseJson(run(["--manifest", manifestPath, "--run-analysis", "--json"]));
+
+    const result = run(["--manifest", manifestPath, "--plan-implementation", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /dependency-change-requested-without-manifest-allowance: package\.json/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertImplementationSharedConflictFixture() {
+  const fixture = createTempFixture("implementation-shared-conflict");
+  try {
+    const manifest = validManifest(fixture, "aux017-shared-conflict");
+    manifest.analysis.batching.maxParallelImplementationBatches = 2;
+    manifest.implementation.plannedPathsPerBatch = [
+      {
+        id: "batch-one",
+        candidateIds: ["*"],
+        plannedPaths: ["scripts/shared-registry.js"],
+      },
+      {
+        id: "batch-two",
+        candidateIds: ["*"],
+        plannedPaths: ["scripts/shared-registry.js"],
+      },
+    ];
+    const manifestPath = writeManifest(fixture.root, manifest);
+    parseJson(run(["--manifest", manifestPath, "--run-analysis", "--json"]));
+
+    const result = run(["--manifest", manifestPath, "--plan-implementation", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /shared-file-batch-conflict-without-merge-owner: scripts\/shared-registry\.js/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertImplementationResumeFixture() {
+  const fixture = createTempFixture("implementation-resume");
+  try {
+    const manifestPath = writeManifest(fixture.root, validManifest(fixture, "aux017-implementation-resume"));
+    parseJson(run(["--manifest", manifestPath, "--run-analysis", "--json"]));
+    const first = parseJson(run(["--manifest", manifestPath, "--plan-implementation", "--json"]));
+    assertImplementationPlanningArtifacts(first, fixture, "aux017-implementation-resume");
+
+    const second = parseJson(run(["--manifest", manifestPath, "--plan-implementation", "--json"]));
+    assert.strictEqual(second.resumed, true);
+    assertImplementationPlanningArtifacts(second, fixture, "aux017-implementation-resume");
+
+    const runRoot = path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-importer", "aux017-implementation-resume");
+    const state = readJson(path.join(runRoot, "state.json"));
+    assert(state.resumeCount >= 2);
+    const events = fs.readFileSync(path.join(runRoot, "events.jsonl"), "utf8").trim().split(/\r?\n/).map(JSON.parse);
+    assert(events.some((event) => event.event === "implementation_planned"));
+    assert(events.some((event) => event.event === "implementation_plan_resume_verified"));
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function main() {
   assertValidManifestFixture();
   assertInvalidSchemaFixture();
@@ -541,6 +740,12 @@ function main() {
   assertLicenseStopFixture();
   assertNamedRepoAssumptionFixture();
   assertAnalysisResumeFixture();
+  assertSuccessfulImplementationPlanningFixture();
+  assertImplementationMissingAnalysisArtifactFixture();
+  assertImplementationForbiddenPathFixture();
+  assertImplementationDependencyChangeFixture();
+  assertImplementationSharedConflictFixture();
+  assertImplementationResumeFixture();
 
   console.log("SDK generic repo importer command smoke: pass");
 }

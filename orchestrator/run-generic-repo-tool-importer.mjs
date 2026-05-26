@@ -22,11 +22,27 @@ const RUN_ROOT_RELATIVE = ".codex-runtime/sdk/generic-repo-importer";
 const RUNNER_SCHEMA = "generic-repo-tool-importer.command-skeleton.v1";
 const SUPERVISOR_PLAN_SCHEMA = "generic-repo-tool-importer.supervisor-plan.v1";
 const ANALYSIS_SCHEMA = "generic-repo-tool-importer.analysis-fixture.v1";
+const IMPLEMENTATION_PLAN_SCHEMA = "generic-repo-tool-importer.implementation-plan.v1";
 const ANALYSIS_ARTIFACTS = Object.freeze([
   "analysis/repo-fingerprint.json",
   "analysis/risk-map.json",
   "analysis/read-back-requirements.json",
   "analysis/batch-plan.json",
+]);
+const IMPLEMENTATION_PLAN_ARTIFACTS = Object.freeze([
+  "implementation/batch-worktree-plan.json",
+  "implementation/planned-paths.json",
+]);
+const DEPENDENCY_PATHS = new Set([
+  "package.json",
+  "package-lock.json",
+  "npm-shrinkwrap.json",
+  "pnpm-lock.yaml",
+  "yarn.lock",
+  "bun.lockb",
+  "deno.json",
+  "deno.lock",
+  "jsr.json",
 ]);
 const TEXT_FILE_MAX_BYTES = 256 * 1024;
 const SECRET_PATTERN =
@@ -39,24 +55,28 @@ Generic repository tool importer skeleton
 Usage:
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path>
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --run-analysis
+  node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --plan-implementation
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --json
 
 Options:
   --manifest <path>  generic-repo-tool-importer.manifest.v1 JSON file.
   --run-analysis     Run the AUX-016 fixture-backed analysis phase, then stop
                      before implementation worktrees.
+  --plan-implementation
+                     Run the AUX-017 plan-only implementation batch planner,
+                     then stop before creating branches or worktrees.
   --json             Print machine-readable output.
   --help             Show this help.
 
 This skeleton validates the AUX-014 manifest contract, creates an ignored run
 root, writes durable state artifacts, optionally writes fixture-backed analysis
-artifacts, and stops before implementation. It does not create branches,
-worktrees, child runs, live AE/CEP runs, dependency changes, product runtime
-edits, push, PR, or GitHub automation.
+artifacts and plan-only implementation batch artifacts, and stops before
+implementation. It does not create branches, worktrees, child runs, live AE/CEP
+runs, dependency changes, product runtime edits, push, PR, or GitHub automation.
 `;
 
 const VALUE_OPTIONS = new Set(["manifest"]);
-const BOOLEAN_OPTIONS = new Set(["help", "json", "run-analysis"]);
+const BOOLEAN_OPTIONS = new Set(["help", "json", "run-analysis", "plan-implementation"]);
 
 function splitInlineOption(raw) {
   const index = raw.indexOf("=");
@@ -488,6 +508,65 @@ function updateSupervisorPlanForAnalysis(runRoot, manifest, manifestHash, runRoo
   writeJson(planPath, plan);
 }
 
+function updateSupervisorPlanForImplementationPlanning(runRoot, manifest, manifestHash, runRootRelative, artifactPaths, batches) {
+  const planPath = path.join(runRoot, "supervisor-plan.json");
+  const existing = existsSync(planPath)
+    ? readJsonFile(planPath, "supervisor plan")
+    : createSupervisorPlan(manifest, manifestHash, runRootRelative);
+  const plan = {
+    ...existing,
+    auxiliaryId: "AUX-017",
+    status: "stopped_after_implementation_planning",
+    stopBeforePhase: "implementation_worktrees",
+    implementationPlanning: {
+      schema: IMPLEMENTATION_PLAN_SCHEMA,
+      status: "completed",
+      artifacts: artifactPaths,
+      batches: batches.map((batch) => ({
+        id: batch.id,
+        candidateIds: batch.candidateIds,
+        plannedPaths: batch.plannedPaths,
+        promptPath: batch.promptPath,
+        plannedWorktreePath: batch.plannedWorktreePath,
+        worktreeCreated: false,
+      })),
+      worktreesCreated: false,
+      childRunsCreated: false,
+      liveCepAeRun: false,
+      localOllamaUsed: false,
+    },
+    phasePlan: [
+      {
+        phase: "initialized",
+        status: "written",
+        artifacts: [
+          "state.json",
+          "events.jsonl",
+          "manifest.original.json",
+          "manifest.normalized.json",
+          "supervisor-plan.json",
+        ],
+      },
+      {
+        phase: "analysis",
+        status: "written",
+        artifacts: existing.analysis?.artifacts || [],
+      },
+      {
+        phase: "implementation_planning",
+        status: "written",
+        artifacts: artifactPaths,
+      },
+      {
+        phase: "implementation_worktrees",
+        status: "not_started",
+        reason: "AUX-017 plans batches only and does not create branches, worktrees, or child runs.",
+      },
+    ],
+  };
+  writeJson(planPath, plan);
+}
+
 function loadState(runRoot) {
   const statePath = path.join(runRoot, "state.json");
   if (!existsSync(statePath)) {
@@ -567,7 +646,10 @@ function resumeRun({ manifest, manifestHash, runRoot, existingState }) {
   const atImplementationBoundary =
     existingState.currentPhase === "analysis_complete" &&
     existingState.nextPhase === "implementation_planning";
-  if (!atAnalysisBoundary && !atImplementationBoundary) {
+  const atImplementationPlannedBoundary =
+    existingState.currentPhase === "implementation_planned" &&
+    existingState.nextPhase === "implementation_worktrees";
+  if (!atAnalysisBoundary && !atImplementationBoundary && !atImplementationPlannedBoundary) {
     throw new Error("resume-state-not-at-supported-boundary");
   }
 
@@ -715,6 +797,57 @@ function candidateId(prefix, relativePath) {
     .replace(/^-+|-+$/g, "")
     .toLowerCase();
   return `${prefix}-${base || "candidate"}`;
+}
+
+function safeId(value, fallback = "batch") {
+  return String(value || fallback)
+    .replace(/[^A-Za-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 96) || fallback;
+}
+
+function uniqueValues(values) {
+  return [...new Set(values)];
+}
+
+function normalizePlannedPath(value) {
+  const normalized = normalizeRepoPath(value).replace(/\/+/g, "/");
+  if (
+    normalized === "" ||
+    path.isAbsolute(String(value || "")) ||
+    normalized === ".." ||
+    normalized.startsWith("../") ||
+    normalized.includes("/../")
+  ) {
+    throw new Error(`invalid-planned-path: ${value}`);
+  }
+  return normalized;
+}
+
+function pathMatchesPattern(relativePath, pattern) {
+  const normalized = normalizeRepoPath(relativePath);
+  const normalizedPattern = normalizeRepoPath(pattern).replace(/\/+$/, "");
+  if (normalizedPattern.endsWith("/**")) {
+    const prefix = normalizedPattern.slice(0, -3);
+    return normalized === prefix || normalized.startsWith(`${prefix}/`);
+  }
+  return normalized === normalizedPattern;
+}
+
+function pathMatchesAny(relativePath, patterns) {
+  return (patterns || []).some((pattern) => pathMatchesPattern(relativePath, pattern));
+}
+
+function isDependencyPath(relativePath) {
+  return DEPENDENCY_PATHS.has(normalizeRepoPath(relativePath));
+}
+
+function defaultPlannedPathForCandidate(candidate) {
+  const id = safeId(candidate.id, "candidate");
+  if (candidate.kind === "tool") {
+    return `scripts/imported-tools/${id}.js`;
+  }
+  return `scripts/imported-automations/${id}.md`;
 }
 
 function buildToolCandidates(sourceRoot, inventory) {
@@ -914,6 +1047,272 @@ function verifyAnalysisOutputs(runRoot) {
   }
 }
 
+function readCandidateArtifacts(runRoot, directoryName, kind) {
+  const directory = path.join(runRoot, "analysis", directoryName);
+  const jsonFiles = readdirSync(directory)
+    .filter((entry) => entry.endsWith(".json"))
+    .sort((left, right) => left.localeCompare(right));
+  const candidates = [];
+  for (const fileName of jsonFiles) {
+    const candidate = readJsonFile(path.join(directory, fileName), `analysis/${directoryName}/${fileName}`);
+    if (candidate.id === "none" || candidate.status === "none_detected") {
+      continue;
+    }
+    requireString(candidate.id, `analysis/${directoryName}/${fileName}.id`);
+    requireString(candidate.sourcePath, `analysis/${directoryName}/${fileName}.sourcePath`);
+    candidates.push({ ...candidate, kind });
+  }
+  return candidates;
+}
+
+function expandCandidateIds(candidateIds, candidates) {
+  if (!candidateIds || candidateIds.length === 0 || candidateIds.includes("*")) {
+    return candidates.map((candidate) => candidate.id);
+  }
+  return uniqueValues(candidateIds);
+}
+
+function buildBatchDefinitions(manifest, batchPlan, candidates) {
+  const overrides = Array.isArray(manifest.implementation.plannedPathsPerBatch)
+    ? manifest.implementation.plannedPathsPerBatch
+    : [];
+  const sourceBatches = overrides.length > 0 ? overrides : batchPlan.batches;
+  if (!Array.isArray(sourceBatches) || sourceBatches.length === 0) {
+    throw new Error("implementation-batch-plan-empty");
+  }
+
+  const candidateById = new Map(candidates.map((candidate) => [candidate.id, candidate]));
+  return sourceBatches.map((sourceBatch, index) => {
+    const id = safeId(sourceBatch.id || `implementation-batch-${index + 1}`, `implementation-batch-${index + 1}`);
+    const candidateIds = expandCandidateIds(sourceBatch.candidateIds, candidates);
+    for (const candidateIdValue of candidateIds) {
+      if (!candidateById.has(candidateIdValue)) {
+        throw new Error(`implementation-batch-candidate-missing: ${candidateIdValue}`);
+      }
+    }
+
+    const sourcePlannedPaths = Array.isArray(sourceBatch.plannedPaths) ? sourceBatch.plannedPaths : [];
+    const plannedPaths =
+      sourcePlannedPaths.length > 0
+        ? sourcePlannedPaths.map(normalizePlannedPath)
+        : candidateIds.map((candidateIdValue) => defaultPlannedPathForCandidate(candidateById.get(candidateIdValue)));
+    const normalizedPlannedPaths = uniqueValues(plannedPaths.map(normalizePlannedPath));
+    if (normalizedPlannedPaths.length === 0) {
+      throw new Error(`batch-without-planned-paths: ${id}`);
+    }
+
+    return {
+      id,
+      candidateIds,
+      plannedPaths: normalizedPlannedPaths,
+      sharedFileOwnerFor: Array.isArray(sourceBatch.sharedFileOwnerFor)
+        ? sourceBatch.sharedFileOwnerFor.map(normalizePlannedPath)
+        : [],
+      plannedWorktreePath: `worktrees/${id}`,
+      worktreeCreated: false,
+    };
+  });
+}
+
+function validatePlannedPaths(manifest, batches) {
+  const allowed = manifest.targetRepo.allowedWritePaths || [];
+  const forbidden = [...(manifest.targetRepo.forbiddenWritePaths || []), ...(manifest.safety.forbiddenPaths || [])];
+  const dependencyChangesAllowed = manifest.implementation.dependencyChangesAllowed === true;
+
+  for (const batch of batches) {
+    for (const plannedPath of batch.plannedPaths) {
+      if (isDependencyPath(plannedPath) && !dependencyChangesAllowed) {
+        throw new Error(`dependency-change-requested-without-manifest-allowance: ${plannedPath}`);
+      }
+      if (pathMatchesAny(plannedPath, forbidden)) {
+        throw new Error(`forbidden-target-path: ${plannedPath}`);
+      }
+      if (!pathMatchesAny(plannedPath, allowed)) {
+        throw new Error(`planned-path-outside-allowlist: ${plannedPath}`);
+      }
+    }
+  }
+}
+
+function validateSharedPathOwnership(manifest, batches) {
+  const occurrences = new Map();
+  for (const batch of batches) {
+    for (const plannedPath of batch.plannedPaths) {
+      const current = occurrences.get(plannedPath) || [];
+      current.push(batch.id);
+      occurrences.set(plannedPath, current);
+    }
+  }
+
+  const manifestOwners = manifest.implementation.sharedFileOwners || {};
+  for (const [plannedPath, owners] of occurrences.entries()) {
+    if (owners.length < 2) {
+      continue;
+    }
+    const inlineOwner = batches.find((batch) => batch.sharedFileOwnerFor.includes(plannedPath))?.id;
+    const owner = manifestOwners[plannedPath] || inlineOwner;
+    if (!owner) {
+      throw new Error(`shared-file-batch-conflict-without-merge-owner: ${plannedPath}`);
+    }
+    if (!owners.includes(owner)) {
+      throw new Error(`shared-file-owner-not-in-conflict: ${plannedPath}`);
+    }
+  }
+}
+
+function buildPromptText(manifest, batch, candidates) {
+  const candidateById = new Map(candidates.map((candidate) => [candidate.id, candidate]));
+  const candidateSummaries = batch.candidateIds.map((candidateIdValue) => {
+    const candidate = candidateById.get(candidateIdValue);
+    return {
+      id: candidate.id,
+      kind: candidate.kind,
+      sourcePath: candidate.sourcePath,
+      risk: candidate.risk,
+    };
+  });
+  return [
+    `# Generic Repo Importer Batch ${batch.id}`,
+    "",
+    "This is an AUX-017 plan-only prompt artifact. Do not run it yet.",
+    "",
+    `Run ID: ${manifest.run.runId}`,
+    `Requested goal: ${manifest.run.requestedGoal}`,
+    "",
+    "Hard boundaries:",
+    "- Edit only the planned paths listed below.",
+    "- Do not create branches or git worktrees.",
+    "- Do not launch Codex child runs from this prompt.",
+    "- Do not use Local/Ollama, fallback providers, web search, live AE/CEP, push, PR, or GitHub automation.",
+    "- Do not change package/dependency files unless a later approved manifest explicitly allows that path.",
+    "",
+    "Planned paths:",
+    ...batch.plannedPaths.map((plannedPath) => `- ${plannedPath}`),
+    "",
+    "Candidates:",
+    "```json",
+    JSON.stringify(candidateSummaries, null, 2),
+    "```",
+    "",
+  ].join("\n");
+}
+
+function buildImplementationPlanningArtifacts(manifest, manifestHash, runRoot) {
+  verifyAnalysisOutputs(runRoot);
+  const batchPlan = readJsonFile(path.join(runRoot, "analysis", "batch-plan.json"), "analysis batch plan");
+  const riskMap = readJsonFile(path.join(runRoot, "analysis", "risk-map.json"), "analysis risk map");
+  const readBackRequirements = readJsonFile(
+    path.join(runRoot, "analysis", "read-back-requirements.json"),
+    "analysis read-back requirements",
+  );
+  const candidates = [
+    ...readCandidateArtifacts(runRoot, "tool-candidates", "tool"),
+    ...readCandidateArtifacts(runRoot, "automation-candidates", "automation"),
+  ];
+  assertNoNamedRepoAssumptions({ manifest, batchPlan, riskMap, readBackRequirements, candidates }, "implementation planning inputs");
+
+  const batches = buildBatchDefinitions(manifest, batchPlan, candidates);
+  validatePlannedPaths(manifest, batches);
+  validateSharedPathOwnership(manifest, batches);
+
+  const implementationRoot = path.join(runRoot, "implementation");
+  const promptRoot = path.join(implementationRoot, "batch-prompts");
+  mkdirSync(promptRoot, { recursive: true });
+
+  const promptPaths = [];
+  for (const batch of batches) {
+    const promptPath = `implementation/batch-prompts/${safeId(batch.id)}.md`;
+    batch.promptPath = promptPath;
+    writeFileSync(path.join(runRoot, promptPath), buildPromptText(manifest, batch, candidates), "utf8");
+    promptPaths.push(promptPath);
+  }
+
+  const allPlannedPaths = uniqueValues(batches.flatMap((batch) => batch.plannedPaths)).sort((left, right) =>
+    left.localeCompare(right),
+  );
+  const plannedPaths = {
+    schema: "generic-repo-tool-importer.planned-paths.v1",
+    runId: manifest.run.runId,
+    manifestHash,
+    status: "planned_only",
+    dependencyChangesAllowed: manifest.implementation.dependencyChangesAllowed === true,
+    allowedWritePaths: manifest.targetRepo.allowedWritePaths,
+    forbiddenWritePaths: uniqueValues([...(manifest.targetRepo.forbiddenWritePaths || []), ...(manifest.safety.forbiddenPaths || [])]),
+    allPlannedPaths,
+    batches: batches.map((batch) => ({
+      id: batch.id,
+      candidateIds: batch.candidateIds,
+      plannedPaths: batch.plannedPaths,
+      promptPath: batch.promptPath,
+      worktreeCreated: false,
+    })),
+    checks: {
+      allowlist: "passed",
+      forbiddenPaths: "passed",
+      dependencyChanges: manifest.implementation.dependencyChangesAllowed === true ? "explicitly_allowed" : "not_requested",
+      sharedPathOwnership: "passed",
+    },
+  };
+  writeJson(path.join(implementationRoot, "planned-paths.json"), plannedPaths);
+
+  const worktreePlan = {
+    schema: "generic-repo-tool-importer.batch-worktree-plan.v1",
+    runId: manifest.run.runId,
+    manifestHash,
+    status: "planned_only",
+    sourceAnalysisBatchPlan: "analysis/batch-plan.json",
+    maxParallelImplementationBatches: manifest.analysis.batching.maxParallelImplementationBatches,
+    worktreesCreated: false,
+    childRunsCreated: false,
+    liveCepAeRun: false,
+    localOllamaUsed: false,
+    batches: batches.map((batch) => ({
+      id: batch.id,
+      candidateIds: batch.candidateIds,
+      plannedPaths: batch.plannedPaths,
+      promptPath: batch.promptPath,
+      plannedWorktreePath: batch.plannedWorktreePath,
+      actualWorktreePath: null,
+      worktreeCreated: false,
+      childRunCreated: false,
+      status: "not_started",
+    })),
+  };
+  writeJson(path.join(implementationRoot, "batch-worktree-plan.json"), worktreePlan);
+
+  return {
+    artifactPaths: [...IMPLEMENTATION_PLAN_ARTIFACTS, ...promptPaths],
+    batches,
+  };
+}
+
+function verifyImplementationPlanningOutputs(runRoot) {
+  for (const relative of IMPLEMENTATION_PLAN_ARTIFACTS) {
+    const absolute = path.join(runRoot, relative);
+    if (!existsSync(absolute)) {
+      throw new Error(`implementation-plan-output-missing: ${relative}`);
+    }
+    readJsonFile(absolute, relative);
+  }
+
+  const worktreePlan = readJsonFile(
+    path.join(runRoot, "implementation", "batch-worktree-plan.json"),
+    "implementation batch worktree plan",
+  );
+  if (worktreePlan.schema !== "generic-repo-tool-importer.batch-worktree-plan.v1") {
+    throw new Error("implementation-plan-schema-mismatch: batch-worktree-plan.json");
+  }
+  if (worktreePlan.worktreesCreated !== false || worktreePlan.childRunsCreated !== false) {
+    throw new Error("implementation-plan-boundary-violated");
+  }
+  for (const batch of worktreePlan.batches || []) {
+    const promptPath = batch.promptPath;
+    if (!promptPath || !existsSync(path.join(runRoot, promptPath))) {
+      throw new Error(`implementation-plan-output-missing: ${promptPath || "batch prompt"}`);
+    }
+  }
+}
+
 function runAnalysisPhase({ manifest, manifestHash, runRoot, runRootRelative, state }) {
   const now = new Date().toISOString();
   if (state.currentPhase === "analysis_complete" && state.nextPhase === "implementation_planning") {
@@ -1028,6 +1427,142 @@ function runAnalysisPhase({ manifest, manifestHash, runRoot, runRootRelative, st
   }
 }
 
+function runImplementationPlanningPhase({ manifest, manifestHash, runRoot, runRootRelative, state }) {
+  const now = new Date().toISOString();
+  if (state.currentPhase === "implementation_planned" && state.nextPhase === "implementation_worktrees") {
+    verifyAnalysisOutputs(runRoot);
+    verifyImplementationPlanningOutputs(runRoot);
+    appendEvent(runRoot, {
+      event: "implementation_plan_resume_verified",
+      runId: manifest.run.runId,
+      manifestHash,
+      nextPhase: state.nextPhase,
+      at: now,
+    });
+    return state;
+  }
+
+  if (state.status !== "stopped" || state.currentPhase !== "analysis_complete" || state.nextPhase !== "implementation_planning") {
+    throw new Error("implementation-planning-state-not-at-boundary");
+  }
+
+  const startedState = {
+    ...state,
+    auxiliaryId: "AUX-017",
+    status: "running",
+    currentPhase: "implementation_planning",
+    nextPhase: null,
+    stopReason: null,
+    updatedAt: now,
+    implementationPlanningStartedAt: now,
+    flags: {
+      ...state.flags,
+      implementationPlanningStarted: true,
+      worktreesCreated: false,
+      liveCepAeRun: false,
+      localOllamaUsed: false,
+      dependencyChanged: false,
+      productRuntimeEdited: false,
+      branchCreated: false,
+      pushOrPrCreated: false,
+    },
+  };
+  writeJson(path.join(runRoot, "state.json"), startedState);
+  appendEvent(runRoot, {
+    event: "implementation_planning_started",
+    auxiliaryId: "AUX-017",
+    runId: manifest.run.runId,
+    manifestHash,
+    at: now,
+  });
+
+  try {
+    const { artifactPaths, batches } = buildImplementationPlanningArtifacts(manifest, manifestHash, runRoot);
+    verifyImplementationPlanningOutputs(runRoot);
+    const completedAt = new Date().toISOString();
+    const completedState = {
+      ...startedState,
+      status: "stopped",
+      currentPhase: "implementation_planned",
+      nextPhase: "implementation_worktrees",
+      stopReason: "stopped_before_actual_implementation_worktrees",
+      updatedAt: completedAt,
+      implementationPlanningCompletedAt: completedAt,
+      implementationArtifacts: artifactPaths,
+      implementationBatches: batches.map((batch) => ({
+        id: batch.id,
+        candidateIds: batch.candidateIds,
+        plannedPaths: batch.plannedPaths,
+        promptPath: batch.promptPath,
+        plannedWorktreePath: batch.plannedWorktreePath,
+        worktreeCreated: false,
+      })),
+      flags: {
+        ...startedState.flags,
+        implementationPlanned: true,
+        worktreesCreated: false,
+        liveCepAeRun: false,
+        localOllamaUsed: false,
+        dependencyChanged: false,
+        productRuntimeEdited: false,
+        branchCreated: false,
+        pushOrPrCreated: false,
+        childRunsCreated: false,
+      },
+    };
+    writeJson(path.join(runRoot, "state.json"), completedState);
+    updateSupervisorPlanForImplementationPlanning(
+      runRoot,
+      manifest,
+      manifestHash,
+      runRootRelative,
+      artifactPaths,
+      completedState.implementationBatches,
+    );
+    appendEvent(runRoot, {
+      event: "implementation_planned",
+      runId: manifest.run.runId,
+      manifestHash,
+      artifacts: artifactPaths,
+      nextPhase: "implementation_worktrees",
+      at: completedAt,
+    });
+    appendEvent(runRoot, {
+      event: "stopped_before_actual_implementation_worktrees",
+      runId: manifest.run.runId,
+      nextPhase: "implementation_worktrees",
+      at: completedAt,
+    });
+    return completedState;
+  } catch (error) {
+    const failedAt = new Date().toISOString();
+    const failedState = {
+      ...startedState,
+      status: "stopped",
+      currentPhase: "analysis_complete",
+      nextPhase: "implementation_planning",
+      stopReason: error.message.split(":")[0],
+      updatedAt: failedAt,
+      flags: {
+        ...startedState.flags,
+        implementationPlanned: false,
+        worktreesCreated: false,
+        liveCepAeRun: false,
+        localOllamaUsed: false,
+        childRunsCreated: false,
+      },
+    };
+    writeJson(path.join(runRoot, "state.json"), failedState);
+    appendEvent(runRoot, {
+      event: "implementation_planning_failed",
+      runId: manifest.run.runId,
+      reason: error.message,
+      at: failedAt,
+    });
+    throw error;
+  }
+}
+
 export function runImporter(options, cwd = process.cwd()) {
   if (!options.manifest) {
     throw new Error("Missing --manifest <path>");
@@ -1074,9 +1609,17 @@ export function runImporter(options, cwd = process.cwd()) {
   if (options["run-analysis"]) {
     state = runAnalysisPhase({ manifest, manifestHash, runRoot, runRootRelative, state });
   }
+  if (options["plan-implementation"]) {
+    state = runImplementationPlanningPhase({ manifest, manifestHash, runRoot, runRootRelative, state });
+  }
 
-  const analysisComplete = state.currentPhase === "analysis_complete";
-  const status = analysisComplete ? "stopped_after_analysis" : "stopped_before_analysis";
+  const implementationPlanned = state.currentPhase === "implementation_planned";
+  const analysisComplete = implementationPlanned || state.currentPhase === "analysis_complete";
+  const status = implementationPlanned
+    ? "stopped_after_implementation_planning"
+    : analysisComplete
+      ? "stopped_after_analysis"
+      : "stopped_before_analysis";
   const artifacts = [
     "state.json",
     "events.jsonl",
@@ -1087,10 +1630,13 @@ export function runImporter(options, cwd = process.cwd()) {
   if (analysisComplete) {
     artifacts.push(...(state.analysisArtifacts || []));
   }
+  if (implementationPlanned) {
+    artifacts.push(...(state.implementationArtifacts || []));
+  }
 
   return {
     schema: RUNNER_SCHEMA,
-    auxiliaryId: analysisComplete ? "AUX-016" : "AUX-015",
+    auxiliaryId: implementationPlanned ? "AUX-017" : analysisComplete ? "AUX-016" : "AUX-015",
     runId: manifest.run.runId,
     status,
     resumed,
@@ -1102,7 +1648,9 @@ export function runImporter(options, cwd = process.cwd()) {
     nextPhase: state.nextPhase,
     analysisStarted: state.flags.analysisStarted === true,
     analysisCompleted: state.flags.analysisCompleted === true,
+    implementationPlanned,
     worktreesCreated: false,
+    childRunsCreated: false,
     liveCepAeRun: false,
     localOllamaUsed: false,
   };
