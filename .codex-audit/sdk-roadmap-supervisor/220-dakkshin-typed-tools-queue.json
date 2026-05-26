@@ -616,7 +616,44 @@
         "local-ollama-openrouter-deterministic-fallback-requested",
         "dependency-change-requested"
       ],
-      "status": "queued"
+      "status": "queued",
+      "parentOwnedLiveAcceptance": {
+        "state": "local-validation-passed-parent-live-pending",
+        "recordedAt": "2026-05-26",
+        "recordedBy": "codex-writer-child",
+        "localValidationCommands": [
+          "node --check scripts/cep-panel-cdp-smoke.js",
+          "node scripts/plan-repair-smoke.js",
+          "node scripts/semantic-verification-smoke.js",
+          "npm.cmd run check:rules",
+          "git diff --check"
+        ],
+        "liveCommand": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-dakkshin-typed-tools-openai-cli-smoke",
+        "liveCommandStatus": "not-run-by-writer-child-parent-supervisor-owned",
+        "handoffStatus": "blocked-by-inherited-deny-acl-on-ignored-handoff-file",
+        "requiredParentPreflight": [
+          "read-only installed-panel CDP inspect",
+          "read-only connector-status smoke"
+        ],
+        "requiredEvidence": [
+          "installed panel/CDP",
+          "OpenAI CLI",
+          "panel-generated plan",
+          "dry run",
+          "protected run",
+          "bridge read-back",
+          "semantic verification",
+          "generated-prefix cleanup",
+          "fail-closed leftover detection"
+        ],
+        "forbiddenFallbacks": [
+          "Local/Ollama",
+          "OpenRouter",
+          "deterministic fallback",
+          "external AO runtime",
+          "external-provider planner validation"
+        ]
+      }
     },
     {
       "id": "m225-dakkshin-set-layer-mask-explicit-comp-target",
