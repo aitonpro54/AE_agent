@@ -29,6 +29,7 @@ const local = selectedChecks({ scope: "local" }, catalog);
 assert(ids(local).includes("planner-corpus-offline"), "Local suite must include offline corpus.");
 assert(ids(local).includes("semantic-verification"), "Local suite must include semantic verification.");
 assert(ids(local).includes("provider-contract"), "Local suite must include provider contract readiness coverage.");
+assert(ids(local).includes("raw-fallback-candidate"), "Local suite must include raw fallback candidate quarantine coverage.");
 assert(local.every((item) => !item.blockedReason), "Local suite must not be approval-gated.");
 const semanticVerificationCheck = local.find((item) => item.id === "semantic-verification");
 assert(semanticVerificationCheck.evidence.includes("duplicate_layers"), "Semantic verification check must include duplicate_layers evidence.");

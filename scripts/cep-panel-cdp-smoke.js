@@ -2971,9 +2971,10 @@ async function workflowPresetSmoke() {
       state.promptOptimizationLabel === "On" &&
       state.workflowPresetValue === "" &&
       state.workflowInsertDisabled === true &&
-      state.promptValue.indexOf("aligns them to the current time indicator") >= 0 &&
-      state.promptValue.indexOf("align_layers_to_time") >= 0 &&
-      state.promptValue.indexOf("Do not use raw ExtendScript") >= 0 &&
+      state.promptValue.indexOf("Поставь выделенные слои") >= 0 &&
+      state.promptValue.indexOf("Align the selected layers") >= 0 &&
+      state.promptValue.indexOf("align_layers_to_time") < 0 &&
+      state.promptValue.indexOf("Do not use raw ExtendScript") < 0 &&
       state.transcript.indexOf("First saved prompt") >= 0 &&
       state.transcript.indexOf("align_layers_to_time") < 0 &&
       state.chatHistoryValue === "history-smoke-one"

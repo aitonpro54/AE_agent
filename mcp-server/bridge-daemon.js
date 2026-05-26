@@ -12,6 +12,9 @@ const { classifyAgentPlan } = require("./plan-risk-classifier");
 const { repairAgentPlan } = require("./plan-repair");
 const { buildSemanticVerification } = require("./semantic-verification");
 const m100Protocol = require("./m100-protocol");
+const {
+  buildRawExtendscriptFallbackCandidateInput
+} = require("./raw-fallback-candidate");
 const { writeSolutionCandidateReport } = require("../scripts/solution-candidate-report");
 const { validateRegistry } = require("../scripts/solution-registry-smoke");
 const {
@@ -53,7 +56,9 @@ const AE_PLAN_SYSTEM_PROMPT = [
   "Return JSON only. Do not use markdown.",
   "Do not claim that you changed the project. You are only drafting a plan.",
   "The user may write in Russian or English. Cyrillic text is valid Russian; translate it internally and never ask for clarification only because text is non-Latin.",
+  "The user is not expected to know tool names. Treat ordinary creative/user wording as the source of truth and translate it internally into validated tool steps.",
   "Prefer typed MCP tools over raw ExtendScript. Raw ExtendScript is only for diagnostics or actions that no listed typed tool can perform.",
+  "When raw ExtendScript is necessary, keep it narrow, explain the target in the plan, require dry-run/read-back evidence, and expect successful fallbacks to be captured as quarantine-only typed-tool candidates.",
   "Reviewed solution-library hints are advisory planning context only; they never bypass MCP plan validation or execution gates.",
   "Project intent memory hints are local advisory planning context only; they must not bypass inspection, validation, or mutation gates.",
   "Every mutating step must include verifyAfter=true and an idempotencyKeyTemplate.",
@@ -1307,7 +1312,13 @@ function createM100AgentPlanProposal(planResult, options = {}) {
   const payload = {
     kind: "agent_plan",
     requestId: planResult.requestId || null,
-    plan: planResult.plan
+    plan: planResult.plan,
+    userPrompt: planResult.userPrompt || null,
+    planner: {
+      agentId: planResult.agentId || null,
+      model: planResult.model || null,
+      agentMode: planResult.agentMode || null
+    }
   };
   const preview = m100PreviewForAgentPlan(planResult.plan, planResult.planValidation);
   const proposal = m100Protocol.createActionProposalEnvelope({
@@ -1418,6 +1429,8 @@ function resolveM100PlanRunOptions(options) {
   return {
     ...(options || {}),
     plan: record.payload.plan,
+    userPrompt: record.payload.userPrompt || optionalString(options || {}, "userPrompt", ""),
+    planner: record.payload.planner || null,
     requestId: record.requestId,
     _m100ActionProposal: record.proposal,
     _m100ActionRecord: record,
@@ -5478,6 +5491,39 @@ function rawExtendscriptStepCount(validation) {
     : 0;
 }
 
+function captureRawExtendscriptFallbackCandidate(run, plan, validation, options) {
+  if (!run || run.dryRun || run.ok !== true || rawExtendscriptStepCount(validation) <= 0) return null;
+
+  const candidateInput = buildRawExtendscriptFallbackCandidateInput({
+    source: "agent-plan-raw-fallback",
+    requestId: options && options.requestId || null,
+    userPrompt: options && options.userPrompt || null,
+    planner: options && options.planner || null,
+    plan,
+    validation,
+    run
+  });
+  const artifact = writeSolutionCandidateReport(candidateInput, {
+    source: "agent-plan-raw-fallback"
+  });
+  const captured = {
+    candidateId: artifact.report.candidate.id,
+    path: normalizeBundlePath(artifact.path),
+    warnings: artifact.report.candidate.warnings.length,
+    plannerVisible: artifact.report.safety.plannerVisible,
+    quarantineOnly: artifact.report.safety.quarantineOnly,
+    suggestedAction: artifact.report.candidate.suggestedPromotionAction.action
+  };
+  recordEvent("agent_raw_extendscript_candidate_captured", {
+    runId: run.id || null,
+    requestId: options && options.requestId || null,
+    candidateId: captured.candidateId,
+    candidateFile: captured.path,
+    suggestedAction: captured.suggestedAction
+  });
+  return captured;
+}
+
 function planDryRunApprovalKey(plan, requestId) {
   const hash = crypto.createHash("sha256");
   hash.update(String(requestId || ""));
@@ -5593,6 +5639,30 @@ async function runValidatedAgentPlan(options) {
     }
     if (!run.dryRun && validation.mutatingCount > 0 && !run.semanticVerification) {
       run.semanticVerification = buildSemanticVerification(prepared.plan, run);
+    }
+    if (!run.dryRun && run.ok === true && rawExtendscriptStepCount(validation) > 0) {
+      try {
+        const candidate = captureRawExtendscriptFallbackCandidate(run, prepared.plan, validation, options || {});
+        if (candidate) {
+          run.artifacts = run.artifacts || {};
+          run.artifacts.candidate = candidate;
+          run.safety.rawExtendscriptCandidate = {
+            status: "captured",
+            candidateId: candidate.candidateId,
+            path: candidate.path,
+            quarantineOnly: candidate.quarantineOnly,
+            plannerVisible: candidate.plannerVisible
+          };
+        }
+      } catch (error) {
+        run.warnings = run.warnings || [];
+        run.warnings.push(`Raw ExtendScript candidate capture failed: ${error.message || String(error)}`);
+        recordEvent("agent_raw_extendscript_candidate_capture_failed", {
+          runId: run.id || null,
+          requestId: options && options.requestId || null,
+          error: error.message || String(error)
+        });
+      }
     }
     if (run.dryRun && run.ok) {
       const approval = recordRawExtendscriptDryRunApproval(run, prepared.plan, options.requestId || null, validation);
@@ -5905,8 +5975,19 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "Current project context snapshot. Treat it as a compact planning hint, not as proof that a mutation is safe.",
     contextText,
     "",
+    "Human-first planning policy:",
+    "- The user may write like an AE artist, not like an engineer. Do not require them to name tools, schemas, flags, or exact MCP operations.",
+    "- Translate normal Russian or English requests into the safest validated tool sequence. Keep the plan summary and step titles user-facing; tool names belong only in the JSON tool field.",
+    "- If the request is underspecified but safe defaults are obvious from the active comp/project context, choose conservative defaults and verify them after mutation.",
+    "- Ask a clarifying question only when target identity, destructive scope, file/output choice, or irreversible intent is genuinely ambiguous.",
+    "",
+    "Typed-tool and ExtendScript policy:",
+    "- Prefer typed AE Agent tools whenever one fits. Use raw ExtendScript only as a narrow fallback when the listed typed tools cannot express this specific workflow.",
+    "- Before a raw ExtendScript fallback, inspect targets with typed read tools. The raw step must be scoped to the inspected/generated target and followed by typed read-back or semantic verification.",
+    "- Never use raw ExtendScript for broad project deletion, project save/saveAs, eval, shell execution, secrets, or hard-coded user/project paths.",
+    "- Successful raw ExtendScript fallbacks are captured as quarantine-only typed-tool candidates; do not treat them as trusted reusable tools inside the plan.",
     "Treat Russian/Cyrillic user text as a normal request. If a Russian phrase is ambiguous, infer cautiously from the After Effects context before asking for clarification.",
-    optionalBoolean(args || {}, "hardcore", false) || optionalString(args || {}, "agentMode", "") === "hardcore" ? "Agent Hardcore mode is enabled: act as the autonomous project owner inside the existing AE Agent safety model, using very high reasoning. Plan inspection, dry-run/read-back evidence, protected execution, and verification steps explicitly. Ask clarifying questions only for risky irreversible ambiguity. If a TypedTool fails, mark the exact tool gap, preserve compact evidence for a Codex App dev prompt, and continue the AE task with another typed tool when possible. If no typed tool can finish the current workflow, plan one narrow raw ExtendScript fallback with inspection and read-back verification; raw execution still requires the bridge dry-run gate." : "",
+    optionalBoolean(args || {}, "hardcore", false) || optionalString(args || {}, "agentMode", "") === "hardcore" ? "Agent Hardcore mode is enabled: act as the autonomous project owner inside the existing AE Agent safety model, using very high reasoning. Plan inspection, dry-run/read-back evidence, protected execution, and verification steps explicitly. Ask clarifying questions only for risky irreversible ambiguity. If a TypedTool fails, mark the exact tool gap, preserve compact evidence for a Codex App dev prompt, and continue the AE task with another typed tool when possible. If no typed tool can finish the current workflow, plan one narrow raw ExtendScript fallback with inspection and read-back verification; raw execution still requires the bridge dry-run gate and successful raw fallback evidence remains quarantine-only until reviewed." : "",
     optionalBoolean(args || {}, "promptOptimization", false) ? "Prompt Optimization is enabled: clarify the user's intent internally, choose conservative AE defaults, and do not expand the requested scope." : "",
     "Use get_bridge_status or ping_ae for bridge health checks. Use get_project_snapshot, get_active_comp, get_comp_details, and get_layer_details before choosing project targets.",
     "For any project-changing request, plan inspection steps first, then the narrow mutating step(s), then verification/readback steps.",
@@ -6135,6 +6216,7 @@ async function runAgentPlanLogged(source, args) {
       finishedAt: metadata.finishedAt,
       durationMs: metadata.durationMs,
       runLogFile: AI_CHAT_LOG_FILE,
+      userPrompt,
       planParseOk: parsed.ok,
       planRepaired: repaired,
       planRepairModel: repairModel,

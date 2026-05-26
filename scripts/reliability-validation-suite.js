@@ -64,6 +64,7 @@ function buildCheckCatalog() {
     item("planner-corpus-offline", "local", "Accepted Agent scenario corpus through validation and dry-run.", cmd("agent-planner-corpus-smoke.js"), { evidence: ["offline corpus", "dry-run"], timeoutMs: 90000 }),
     item("solution-registry", "local", "Reviewed Solution Library registry metadata.", cmd("solution-registry-smoke.js"), { evidence: ["solution registry"], timeoutMs: 30000 }),
     item("solution-candidate-report", "local", "Candidate report redaction and quarantine guards.", cmd("solution-candidate-report-smoke.js"), { evidence: ["candidate quarantine"], timeoutMs: 30000 }),
+    item("raw-fallback-candidate", "local", "Successful raw ExtendScript fallback candidate capture rules.", cmd("raw-fallback-candidate-smoke.js"), { evidence: ["raw fallback quarantine", "typed-tool candidate"], timeoutMs: 30000 }),
     item("solution-promotion", "local", "Explicit solution promotion rules.", cmd("solution-promotion-smoke.js"), { evidence: ["promotion gates"], timeoutMs: 30000 }),
     item("solution-retrieval", "local", "Read-only advisory solution retrieval.", cmd("solution-retrieval-smoke.js"), { evidence: ["solution retrieval"], timeoutMs: 30000 }),
     item("solution-library-validation", "local", "Reviewed Solution Library validation.", cmd("solution-library-validation-smoke.js"), { evidence: ["solution validation"], timeoutMs: 30000 }),

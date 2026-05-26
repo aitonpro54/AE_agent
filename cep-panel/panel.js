@@ -132,28 +132,28 @@
   var WORKFLOW_PRESETS = [
     {
       id: "selected-layer-timing",
-      label: "Selected layers: timing",
-      prompt: "Create a safe Agent plan for the active composition that reads the selected layers, aligns them to the current time indicator, sets a clean in/out time range, staggers multiple selected layers with a small overlap, and verifies the final selected-layer timing. Prefer typed AE Agent tools such as get_active_comp, get_selected_layers, align_layers_to_time, set_layer_time_range, and stagger_layers. Do not use raw ExtendScript unless no typed tool fits."
+      label: "Слои к текущему времени",
+      prompt: "Поставь выделенные слои в активной композиции на текущий момент, аккуратно подрежь их видимый диапазон, разложи несколько слоев с небольшим нахлестом и проверь итоговые времена. EN: Align the selected layers to the current time, trim their visible range, stagger them with a small overlap, and verify the final timing."
     },
     {
       id: "precompose-rename",
-      label: "Precompose and rename",
-      prompt: "Create a safe Agent plan that reads the active composition and selected layers, precomposes the selected layers into a clearly named precomp, renames the resulting layer and related project items with a consistent prefix, and verifies the new precomp/source relationship. Prefer typed AE Agent tools such as get_active_comp, get_selected_layers, precompose_layers, rename_layers, rename_project_items, and get_comp_details. Ask one clarifying question if the new name is not obvious."
+      label: "Прекомп и имена",
+      prompt: "Собери выделенные слои в отдельный прекомп, дай ему понятное имя с единым префиксом, переименуй получившийся слой и связанные элементы проекта, затем проверь связь слоя с новым исходником. Если имя не очевидно, задай один короткий вопрос. EN: Precompose the selected layers, rename the result consistently, and verify the new source relationship."
     },
     {
       id: "text-shape-layout",
-      label: "Text and shape layout",
-      prompt: "Create a safe Agent plan for the active composition that updates or creates a text layer, adds a simple rectangle or ellipse shape layer behind it, fits or positions the selected visual layer cleanly inside the comp, and verifies the created or changed layers. Prefer typed AE Agent tools such as get_active_comp, get_selected_layers, update_text_layer, create_shape_layer, fit_layer_to_comp, and get_comp_details. Do not use raw ExtendScript unless no typed tool fits."
+      label: "Текст и подложка",
+      prompt: "Обнови или создай текст в активной композиции, добавь простую прямоугольную или овальную подложку позади него, аккуратно впиши выбранный визуальный слой в кадр и проверь созданные или измененные слои. EN: Create or update text, add a simple backing shape, fit the selected visual layer, and verify the result."
     },
     {
       id: "basic-animation",
-      label: "Basic animation",
-      prompt: "Create a safe Agent plan for the active composition that reads the selected layers, adds simple transform keyframes for a short entrance animation, applies temporal easing, and verifies the animated properties. Prefer typed AE Agent tools such as get_active_comp, get_selected_layers, set_property_keyframes, apply_keyframe_ease, set_expression, clear_expression, and get_comp_details. Keep the animation modest and ask a clarifying question if direction, timing, or property choices are unclear."
+      label: "Простой въезд",
+      prompt: "Сделай для выделенных слоев короткую аккуратную анимацию появления: простые ключи трансформации, мягкое easing и проверка анимированных свойств. Держи движение скромным; если направление или тайминг неясны, задай один короткий вопрос. EN: Add a simple entrance animation to selected layers with easing and verify the animated properties."
     },
     {
       id: "replace-source",
-      label: "Replace source",
-      prompt: "Create a safe Agent plan that reads the active composition and selected layers, finds the intended replacement footage or precomp item by name, replaces the selected layer source while preserving transforms, and verifies the replacement. Prefer typed AE Agent tools such as get_active_comp, get_selected_layers, find_project_items, replace_layer_source, and get_comp_details. Ask one clarifying question if the replacement item name is ambiguous."
+      label: "Заменить источник",
+      prompt: "Найди нужный footage или прекомп по имени, замени источник выделенного слоя без сброса трансформаций и проверь, что слой теперь ссылается на правильный элемент. Если имя замены неоднозначно, задай один короткий вопрос. EN: Replace the selected layer source by name, preserve transforms, and verify the replacement."
     }
   ];
 
@@ -2975,6 +2975,9 @@
     if (run.warnings && run.warnings.length) {
       lines.push("Warnings: " + run.warnings.join("; "));
     }
+    if (run.artifacts && run.artifacts.candidate && run.artifacts.candidate.path) {
+      lines.push("Candidate saved for typed-tool review: " + run.artifacts.candidate.path);
+    }
     var recoveryHint = recoveryHintForRun(run, runMutatingCount);
     if (recoveryHint) lines.push("Recovery: " + recoveryHint);
     var semanticText = !run.dryRun ? formatSemanticVerification(run.semanticVerification) : "";
@@ -3131,6 +3134,9 @@
       targetFiles: devRequestTargetFiles(validation),
       planResult: lastPlanResult,
       runResult: lastPlanRunResult,
+      candidateReport: lastPlanRunResult && lastPlanRunResult.artifacts && lastPlanRunResult.artifacts.candidate
+        ? lastPlanRunResult.artifacts.candidate
+        : null,
       openCodexApp: false
     };
 
