@@ -23,7 +23,8 @@ const DAKKSHIN_ADVISORY_IDS = [
 const TOOL_BACKED_IDS = ["bulk-layer-duplicate-typed-tool"];
 const IMPORTED_ADVISORY_IDS = [
   "reset-composition-work-area-typed-plan",
-  "add-markers-to-selected-layers-typed-plan"
+  "add-markers-to-selected-layers-typed-plan",
+  "append-to-layer-name-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -45,6 +46,7 @@ const AVAILABLE_TOOLS = [
   "set_layer_transform",
   "set_comp_work_area",
   "add_layer_marker",
+  "rename_layers",
   "get_layer_details",
   "duplicate_layers",
   "deep_duplicate_precomp_sources",
@@ -235,6 +237,23 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /time/.test(item)), `${id}: verification must require marker time evidence.`);
       assert(solution.notes.some((note) => /audio analysis/.test(note)), `${id}: notes must keep audio analysis out of scope.`);
       assert(solution.promotionHistory.some((entry) => /kmmsl1/.test(entry.evidence)), `${id}: promotion evidence should mention kmmsl1.`);
+    } else if (id === "append-to-layer-name-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "rename_layers", "get_comp_details"],
+        `${id}: imported layer-name prefix workflow should stay on the narrow typed tool sequence.`
+      );
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("rename_layers"), `${id}: recipe should use the layer rename typed tool.`);
+      assert(text.includes('mode:"prefix"'), `${id}: recipe should require prefix rename mode.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp details read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /rename_layers/.test(step)), `${id}: verification must include the layer rename step.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read comp details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /changedCount/.test(item)), `${id}: verification must require rename count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /prefix/.test(item)), `${id}: verification must require prefix read-back evidence.`);
+      assert(solution.notes.some((note) => /project item rename/.test(note)), `${id}: notes must keep project item rename out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /kmlan1/.test(entry.evidence)), `${id}: promotion evidence should mention kmlan1.`);
     } else {
       throw new Error(`Unhandled imported advisory solution quality checks: ${id}`);
     }
@@ -331,6 +350,20 @@ function assertActualRetrieval(registry) {
   assert(addMarkersPromptSection.includes("get_layer_details"), "prompt section should require marker read-back.");
   assert(!/run_extendscript/i.test(addMarkersPromptSection), "selected-layer marker guidance should not recommend raw ExtendScript.");
 
+  const appendLayerNameRetrieval = retrieveSolutionHints("Prefix the selected layer names with Shot 10 after inspecting the selection.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(appendLayerNameRetrieval.ok, true);
+  assert(ids(appendLayerNameRetrieval).includes("append-to-layer-name-typed-plan"), "selected-layer name-prefix advisory recipe should surface for selected layer rename prompt.");
+  const appendLayerNamePromptSection = formatSolutionHintsForPrompt(appendLayerNameRetrieval);
+  assert(appendLayerNamePromptSection.includes("Append To Layer Name Typed Plan"), "prompt section should include selected-layer name-prefix advisory title.");
+  assert(appendLayerNamePromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for layer name prefix workflows.");
+  assert(appendLayerNamePromptSection.includes("rename_layers"), "prompt section should prefer rename_layers for layer name prefixing.");
+  assert(appendLayerNamePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
+  assert(!/run_extendscript/i.test(appendLayerNamePromptSection), "selected-layer name-prefix guidance should not recommend raw ExtendScript.");
+
   return {
     contextRetrieval,
     alignRetrieval,
@@ -343,7 +376,8 @@ function assertActualRetrieval(registry) {
     duplicateToolMatches: duplicateRetrieval.toolMatches.map((match) => match.id),
     importedAdvisoryRetrieval: {
       resetWorkArea: ids(resetWorkAreaRetrieval),
-      addMarkers: ids(addMarkersRetrieval)
+      addMarkers: ids(addMarkersRetrieval),
+      appendLayerName: ids(appendLayerNameRetrieval)
     }
   };
 }

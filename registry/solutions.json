@@ -857,6 +857,105 @@
         "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
         "Do not use this recipe for audio analysis, beat detection, marker generation from audio, marker update/delete, layer timing changes, render queue items, or broad timeline cleanup."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "append-to-layer-name-typed-plan",
+      "title": "Append To Layer Name Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "layer-name",
+        "rename",
+        "prefix",
+        "selected-layers",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Prefix selected layer names with explicit user-provided text, then read the layer names back.",
+        "appliesWhen": [
+          "The user asks to add or prepend text to the names of selected layers.",
+          "The workflow needs a narrow selected-layer name-prefix pattern without project item rename or broad layer edits."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedLayerIndices",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Selected layers verified by get_selected_layers before the rename mutation."
+        },
+        {
+          "name": "namePrefix",
+          "type": "string",
+          "required": true,
+          "description": "Explicit non-empty user-provided text to prefix to each selected layer name."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists and selected layers are read before mutation.",
+        "The workflow changes only selected layer names by adding a prefix and does not rename project items or alter layer timing."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/append-to-layer-name-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "rename_layers",
+          "get_comp_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read back the same comp and confirm each affected selected layer name starts with the requested prefix.",
+        "steps": [
+          "Run get_active_comp before mutation to capture comp identity.",
+          "Run get_selected_layers before mutation and bind concrete layerIndex values from that evidence.",
+          "Run rename_layers once with mode prefix, explicit prefix and the selected layer indices.",
+          "Run get_comp_details after mutation and compare selected layer names with the expected prefixed names."
+        ],
+        "expectedEvidence": [
+          "Selected-layer name-prefix plans include get_selected_layers evidence before layerIndex values are bound.",
+          "rename_layers reports changedCount matching the selected-layer count and before/after name evidence.",
+          "Post-run get_comp_details read-back shows every affected selected layer name starts with the requested prefix."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by kmlan1 generic repository importer as advisory typed-plan coverage for prefixing selected layer names."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-26",
+          "from": "generic-repo-importer-kmlan1",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "kmlan1 adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Append_To_Layer_Name.jsx at d017a775fd3f474963313b40882650800917aec9 into existing typed tools; no source JSX copied.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Do not use this recipe for suffix rename, find/replace rename, exact rename, project item rename, source relinking, layer timing changes, marker edits, render queue items, or broad cleanup."
+      ]
     }
   ]
 }
