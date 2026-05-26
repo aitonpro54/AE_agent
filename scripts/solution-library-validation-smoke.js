@@ -21,6 +21,7 @@ const DAKKSHIN_ADVISORY_IDS = [
   "selected-layers-animation-typed-plan"
 ];
 const TOOL_BACKED_IDS = ["bulk-layer-duplicate-typed-tool"];
+const IMPORTED_ADVISORY_IDS = ["reset-composition-work-area-typed-plan"];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
   "get_project_info",
@@ -39,6 +40,7 @@ const AVAILABLE_TOOLS = [
   "set_property_keyframes",
   "apply_keyframe_ease",
   "set_layer_transform",
+  "set_comp_work_area",
   "duplicate_layers",
   "deep_duplicate_precomp_sources",
   "run_extendscript_file"
@@ -169,6 +171,50 @@ function assertToolBackedGuidanceQuality(registry) {
   }
 }
 
+function assertImportedAdvisoryQuality(registry) {
+  for (const id of IMPORTED_ADVISORY_IDS) {
+    const solution = solutionById(registry, id);
+    assert(solution, `Missing imported advisory solution: ${id}`);
+    assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entries should be reviewed recipes.`);
+    assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entries should use typed-plan execution.`);
+    assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entries must not use raw JSX.`);
+    assert(!solution.execution.preferredTools.includes("run_extendscript"), `${id}: inline ExtendScript must not be preferred.`);
+    assert(!solution.execution.preferredTools.includes("run_extendscript_file"), `${id}: raw file execution must not be preferred.`);
+    assert(solution.execution.recipePath !== "recipes/README.md", `${id}: imported advisory entries should have dedicated recipe files.`);
+    assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present for retrieval/audit.`);
+    assert(solution.tags.includes("kyletmartinez-advisory"), `${id}: imported source advisory tag should be present for retrieval/audit.`);
+    assert(solution.promotionHistory.some((entry) => /AUX-021/.test(entry.evidence)), `${id}: promotion evidence should mention AUX-021.`);
+    assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+    assert.deepStrictEqual(
+      solution.execution.preferredTools,
+      ["get_active_comp", "set_comp_work_area", "get_comp_details"],
+      `${id}: imported reset workflow should stay on the narrow typed tool sequence.`
+    );
+
+    const text = recipeText(solution);
+    assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+    assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+    assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+    assert(text.includes("start:0"), `${id}: recipe should set the work area start to zero.`);
+    assert(text.includes("workAreaDuration"), `${id}: recipe should require work-area duration read-back.`);
+    assert(!/run_extendscript/i.test(text), `${id}: imported advisory recipe should not recommend raw ExtendScript.`);
+    assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+
+    const gates = solution.requiredSafetyGates;
+    assert.strictEqual(solution.execution.mutating, true, `${id}: work-area reset describes a protected mutation.`);
+    assert.strictEqual(gates.planValidation, true, `${id}: mutating recipe needs plan validation.`);
+    assert.strictEqual(gates.explicitConfirmation, true, `${id}: mutating recipe needs explicit confirmation.`);
+    assert.strictEqual(gates.allowMutations, true, `${id}: mutating recipe needs mutation permission.`);
+    assert.strictEqual(gates.idempotency, true, `${id}: mutating recipe needs idempotency.`);
+    assert.strictEqual(gates.checkpointOrEditSession, true, `${id}: mutating recipe should keep checkpoint/edit-session protection.`);
+    assert.strictEqual(gates.postMutationReadBack, true, `${id}: mutating recipe needs read-back verification.`);
+    assert(solution.verificationRecipe.steps.some((step) => /get_active_comp/.test(step)), `${id}: verification must capture pre-mutation comp duration.`);
+    assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read comp details after mutation.`);
+    assert(solution.verificationRecipe.expectedEvidence.some((item) => /workAreaStart/.test(item)), `${id}: verification must require workAreaStart evidence.`);
+    assert(solution.verificationRecipe.expectedEvidence.some((item) => /workAreaDuration/.test(item)), `${id}: verification must require workAreaDuration evidence.`);
+  }
+}
+
 function assertActualRetrieval(registry) {
   const contextRetrieval = retrieveSolutionHints("Summarize the active comp, selected layers and render queue state.", {
     registry,
@@ -232,6 +278,19 @@ function assertActualRetrieval(registry) {
   assert(duplicatePromptSection.includes("duplicate_layers"), "prompt section should prefer duplicate_layers for bulk duplication.");
   assert(!/run_extendscript/i.test(duplicatePromptSection), "duplicate_layers guidance should not recommend raw ExtendScript.");
 
+  const resetWorkAreaRetrieval = retrieveSolutionHints("Reset the active composition work area so it covers the full composition duration.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(resetWorkAreaRetrieval.ok, true);
+  assert(ids(resetWorkAreaRetrieval).includes("reset-composition-work-area-typed-plan"), "reset work-area advisory recipe should surface for full-comp work area prompt.");
+  const resetWorkAreaPromptSection = formatSolutionHintsForPrompt(resetWorkAreaRetrieval);
+  assert(resetWorkAreaPromptSection.includes("Reset Composition Work Area Typed Plan"), "prompt section should include reset work-area advisory title.");
+  assert(resetWorkAreaPromptSection.includes("set_comp_work_area"), "prompt section should prefer set_comp_work_area for work-area reset.");
+  assert(resetWorkAreaPromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
+  assert(!/run_extendscript/i.test(resetWorkAreaPromptSection), "reset work-area guidance should not recommend raw ExtendScript.");
+
   return {
     contextRetrieval,
     alignRetrieval,
@@ -241,7 +300,10 @@ function assertActualRetrieval(registry) {
       effect: ids(effectRetrieval),
       animation: ids(animationRetrieval)
     },
-    duplicateToolMatches: duplicateRetrieval.toolMatches.map((match) => match.id)
+    duplicateToolMatches: duplicateRetrieval.toolMatches.map((match) => match.id),
+    importedAdvisoryRetrieval: {
+      resetWorkArea: ids(resetWorkAreaRetrieval)
+    }
   };
 }
 
@@ -444,6 +506,7 @@ function main() {
   const registrySummary = assertSeedQuality(registry);
   assertDakkshinAdvisoryQuality(registry);
   assertToolBackedGuidanceQuality(registry);
+  assertImportedAdvisoryQuality(registry);
   const actualRetrieval = assertActualRetrieval(registry);
   const candidateOmitted = assertCandidateInvisibility(registry);
   const staleAndEquivalent = assertStaleAndToolEquivalentBehavior();
@@ -456,12 +519,14 @@ function main() {
     seeded: SEEDED_IDS,
     dakkshinAdvisory: DAKKSHIN_ADVISORY_IDS,
     toolBackedGuidance: TOOL_BACKED_IDS,
+    importedAdvisory: IMPORTED_ADVISORY_IDS,
     actualRetrieval: {
       contextReturned: actualRetrieval.contextRetrieval.returned,
       alignReturned: actualRetrieval.alignRetrieval.returned,
       promptSectionLength: actualRetrieval.promptSectionLength,
       dakkshinAdvisoryRetrieval: actualRetrieval.dakkshinAdvisoryRetrieval,
-      duplicateToolMatches: actualRetrieval.duplicateToolMatches
+      duplicateToolMatches: actualRetrieval.duplicateToolMatches,
+      importedAdvisoryRetrieval: actualRetrieval.importedAdvisoryRetrieval
     },
     candidateOmitted,
     staleAndEquivalent,

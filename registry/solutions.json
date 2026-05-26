@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-05-24",
+  "updatedAt": "2026-05-26",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -660,6 +660,97 @@
       ],
       "notes": [
         "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "reset-composition-work-area-typed-plan",
+      "title": "Reset Composition Work Area Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "comp",
+        "work-area",
+        "timeline",
+        "reset",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Reset a composition work area so it starts at zero and covers the full composition duration.",
+        "appliesWhen": [
+          "The user asks to reset or extend the active composition work area to the full comp.",
+          "The work area is shorter than the comp duration and should be restored without changing layers or comp duration."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Active or explicitly selected composition inspected before the work-area mutation."
+        }
+      ],
+      "targetAssumptions": [
+        "The target composition duration is read before the mutation.",
+        "The workflow changes only workAreaStart and workAreaDuration."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/reset-composition-work-area-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "set_comp_work_area",
+          "get_comp_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read back the same comp and confirm the work area starts at zero and matches the full comp duration.",
+        "steps": [
+          "Run get_active_comp before mutation to capture comp identity and duration.",
+          "Run set_comp_work_area with start zero and duration from the inspected comp.",
+          "Run get_comp_details after mutation and compare workAreaStart and workAreaDuration with the expected full-comp range."
+        ],
+        "expectedEvidence": [
+          "The mutating step targets the inspected comp only.",
+          "Post-run comp details report workAreaStart at zero.",
+          "Post-run comp details report workAreaDuration matching the inspected comp duration."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by AUX-021 generic repository importer as advisory typed-plan coverage for resetting a comp work area."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-26",
+          "from": "generic-repo-importer-kmrwa2",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "AUX-021 adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Reset_Composition_Work_Area.jsx at d017a775fd3f474963313b40882650800917aec9 into existing typed tools; no source JSX copied.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Do not use this recipe for changing comp duration, layer timing, markers, render queue items, or broad timeline cleanup."
       ]
     }
   ]
