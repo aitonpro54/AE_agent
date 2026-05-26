@@ -396,7 +396,8 @@
           "npm.cmd run check:rules",
           "git diff --check"
         ],
-        "commit": "not-created-by-writer-child"
+        "commit": "not-created-by-writer-child",
+        "handoff": "blocked-by-access-denied-on-ignored-handoff-file"
       }
     },
     {
@@ -630,6 +631,9 @@
         ],
         "liveCommand": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-dakkshin-typed-tools-openai-cli-smoke",
         "liveCommandStatus": "failed-after-protected-run-cleanup-passed-semantic-readback-window-needs-m226",
+        "protectedRunObserved": true,
+        "generatedCleanupObserved": true,
+        "semanticFailureReason": "fixture lacked mutation-scoped read-back windows between risky Dakkshin mutations",
         "latestLocalValidationStatus": "passed-after-m225-explicit-comp-target-repair",
         "handoffStatus": "blocked-by-filesystem-acl-unauthorized-access-this-run",
         "commitStatus": "not-created-by-writer-child-parent-owned-live-finalization",
@@ -880,7 +884,23 @@
         "local-ollama-openrouter-deterministic-fallback-requested",
         "dependency-change-requested"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedAt": "2026-05-26",
+      "completedBy": {
+        "actor": "codex-writer-child",
+        "validationCommands": [
+          "node --check scripts/agent-scenario-fixtures.js",
+          "node --check scripts/agent-scenario-report-smoke.js",
+          "node --check scripts/semantic-verification-smoke.js",
+          "node --check scripts/cep-panel-cdp-smoke.js",
+          "node scripts/agent-scenario-report-smoke.js",
+          "node scripts/semantic-verification-smoke.js",
+          "node scripts/plan-repair-smoke.js",
+          "npm.cmd run check:rules",
+          "git diff --check"
+        ],
+        "commit": "not-created-by-writer-child"
+      }
     }
   ]
 }

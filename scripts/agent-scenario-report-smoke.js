@@ -131,7 +131,7 @@ function assertDakkshinGeneratedOnlyFixture() {
     "set_layer_mask",
     "get_layer_details"
   ]);
-  assert.strictEqual(scenario.expectedStepCount, 10);
+  assert.strictEqual(scenario.expectedStepCount, 13);
   assert.strictEqual(scenario.expectedMutatingCount, 7);
   assert.strictEqual(scenario.expectedReadBack.dakkshinTypedTools, true);
   assert.strictEqual(scenario.expectedReadBack.compName.indexOf(scenario.cleanupPrefix), 0);
@@ -143,15 +143,23 @@ function assertDakkshinGeneratedOnlyFixture() {
   assert.deepStrictEqual(toolSequence, [
     "create_comp",
     "set_comp_properties",
+    "get_comp_details",
     "create_solid_layer",
     "create_solid_layer",
     "get_comp_details",
     "delete_layer",
+    "get_comp_details",
     "set_layer_mask",
+    "get_layer_details",
     "set_layer_mask",
     "get_comp_details",
     "get_layer_details"
   ]);
+  assert.strictEqual(toolSequence[toolSequence.indexOf("set_comp_properties") + 1], "get_comp_details");
+  assert.strictEqual(toolSequence[toolSequence.indexOf("delete_layer") + 1], "get_comp_details");
+  const firstMaskMutationIndex = toolSequence.indexOf("set_layer_mask");
+  assert.strictEqual(toolSequence[firstMaskMutationIndex + 1], "get_layer_details");
+  assert.strictEqual(toolSequence[firstMaskMutationIndex + 2], "set_layer_mask");
   assert(!toolSequence.includes("run_extendscript"), "M223 fixture must not use raw ExtendScript.");
   assert(!toolSequence.includes("cleanup_test_items"), "M223 fixture cleanup is owned by the scenario runner, not the planner fixture.");
   assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);

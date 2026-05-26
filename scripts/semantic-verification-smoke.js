@@ -8,6 +8,7 @@ const {
 } = require("../mcp-server/semantic-verification");
 const {
   AGENT_SCENARIO_MUTATING_TOOLS,
+  agentDakkshinTypedToolsScenarioPlans,
   agentScenarioPlans
 } = require("./agent-scenario-fixtures");
 
@@ -1174,6 +1175,19 @@ function assertSetLayerMaskMissingReadBackNeedsReview() {
   assert(semantic.checks.some((check) => check.id.indexOf("set_layer_mask:mask") >= 0 && check.status === "failed"), "set_layer_mask missing read-back should fail.");
 }
 
+function assertDakkshinFixtureMutationScopedReadBackPasses() {
+  const [scenario] = agentDakkshinTypedToolsScenarioPlans("Semantic Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  assert.strictEqual(semantic.status, "passed", `Dakkshin fixture should pass with mutation-scoped read-back windows: ${semantic.summary}`);
+  assert(semantic.readBackSteps.some((step) => step.index === 3 && step.tool === "get_comp_details"), "Dakkshin fixture should read comp details after set_comp_properties.");
+  assert(semantic.readBackSteps.some((step) => step.index === 8 && step.tool === "get_comp_details"), "Dakkshin fixture should read comp details after delete_layer.");
+  assert(semantic.readBackSteps.some((step) => step.index === 10 && step.tool === "get_layer_details"), "Dakkshin fixture should read layer details after set_layer_mask create.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_comp_properties:width") >= 0 && check.status === "passed"), "Dakkshin set_comp_properties check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("delete_layer:absence") >= 0 && check.status === "passed"), "Dakkshin delete_layer absence check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_mask:mask") >= 0 && check.status === "passed"), "Dakkshin set_layer_mask read-back check should pass.");
+}
+
 function assertDuplicateLayersPairOrderMismatchNeedsReview() {
   const plan = {
     summary: "Duplicate two generated layers with current stack-order source names.",
@@ -1555,6 +1569,7 @@ function main() {
   assertSetCompPropertiesReadBackMismatchNeedsReview();
   assertSetLayerMaskCreateUpdatePasses();
   assertSetLayerMaskMissingReadBackNeedsReview();
+  assertDakkshinFixtureMutationScopedReadBackPasses();
   assertAddLayerMarkerPasses();
   assertUpdateLayerMarkerPasses();
   assertDeleteLayerMarkerPasses();

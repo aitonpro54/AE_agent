@@ -721,6 +721,15 @@ function agentDakkshinTypedToolsScenarioPlans(runPrefix) {
             }
           },
           {
+            title: "Read generated Dakkshin comp after property update",
+            tool: "get_comp_details",
+            args: {
+              compName,
+              includeLayers: true,
+              layerLimit: 10
+            }
+          },
+          {
             title: "Create generated delete target layer",
             tool: "create_solid_layer",
             args: {
@@ -767,6 +776,15 @@ function agentDakkshinTypedToolsScenarioPlans(runPrefix) {
             }
           },
           {
+            title: "Read generated Dakkshin comp after delete",
+            tool: "get_comp_details",
+            args: {
+              compName,
+              includeLayers: true,
+              layerLimit: 10
+            }
+          },
+          {
             title: "Create generated target mask",
             tool: "set_layer_mask",
             args: {
@@ -780,6 +798,15 @@ function agentDakkshinTypedToolsScenarioPlans(runPrefix) {
               opacity: 100,
               feather: [0, 0],
               expansion: 0
+            }
+          },
+          {
+            title: "Read generated Dakkshin mask after create",
+            tool: "get_layer_details",
+            args: {
+              compName,
+              layerIndex: 1,
+              includeProperties: false
             }
           },
           {
