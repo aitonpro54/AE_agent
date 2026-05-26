@@ -855,6 +855,95 @@ function agentDakkshinTypedToolsScenarioPlans(runPrefix) {
   }));
 }
 
+function agentResetWorkAreaScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Reset Work Area`;
+  const compName = `${base} Comp`;
+  const shortWorkArea = {
+    start: 1,
+    duration: 2
+  };
+  const fullWorkArea = {
+    start: 0,
+    duration: 5
+  };
+
+  return [
+    {
+      id: "generated-reset-work-area",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_test_comp",
+        "set_comp_work_area",
+        "get_comp_details"
+      ],
+      expectedReadBack: {
+        resetWorkArea: true,
+        compName,
+        fullWorkArea,
+        shortWorkArea
+      },
+      plan: {
+        summary: "AUX-026 generated-only live QA for resetting a generated comp work area to full duration.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          {
+            title: "Create generated reset work area comp",
+            tool: "create_test_comp",
+            args: {
+              name: compName,
+              width: 640,
+              height: 360,
+              duration: fullWorkArea.duration,
+              frameRate: 24,
+              openInViewer: false
+            }
+          },
+          {
+            title: "Set generated comp work area to a short range",
+            tool: "set_comp_work_area",
+            args: {
+              compName,
+              start: shortWorkArea.start,
+              duration: shortWorkArea.duration
+            }
+          },
+          {
+            title: "Read generated short work area",
+            tool: "get_comp_details",
+            args: {
+              compName,
+              includeLayers: false
+            }
+          },
+          {
+            title: "Reset generated comp work area to full duration",
+            tool: "set_comp_work_area",
+            args: {
+              compName,
+              start: fullWorkArea.start,
+              duration: fullWorkArea.duration
+            }
+          },
+          {
+            title: "Read generated full work area",
+            tool: "get_comp_details",
+            args: {
+              compName,
+              includeLayers: false
+            }
+          }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentManualTypedToolsScenarioPlans(runPrefix) {
   const base = `${runPrefix} Manual Typed Tools`;
   const folderBase = `${base} Folder Move`;
@@ -1278,6 +1367,7 @@ module.exports = {
   agentMaskSafetyScenarioPlans,
   agentMarkerLifecycleScenarioPlans,
   agentNewToolsScenarioPlans,
+  agentResetWorkAreaScenarioPlans,
   agentScenarioPlans,
   buildAgentPlannerRegressionCorpus,
   exactPlanPrompt,

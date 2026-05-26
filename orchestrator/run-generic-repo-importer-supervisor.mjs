@@ -54,6 +54,8 @@ Options:
   --live-timeout-ms <n>  Timeout for each live command. Default ${DEFAULT_LIVE_TIMEOUT_MS}.
   --status              Inspect durable state and write a compact status artifact. Default mode.
   --inspect-live        Run read-only CEP/CDP inspect and connector-status checks when closeout reaches live gate.
+  --allow-ancestor-head-drift
+                         Permit target HEAD drift only when importer targetHead is an ancestor of current HEAD.
   --allow-generated-live
                          Permit --live-command execution after generated-only/OpenAI CLI policy checks.
   --closeout            Stop at the current reviewable closeout gate and record live unavailable/pass evidence.
@@ -80,6 +82,7 @@ const VALUE_OPTIONS = new Set([
 
 const BOOLEAN_OPTIONS = new Set([
   "allow-generated-live",
+  "allow-ancestor-head-drift",
   "closeout",
   "help",
   "inspect-live",
@@ -439,17 +442,39 @@ function verifyStateForCloseout(state) {
   return blockers;
 }
 
-function verifyBranchAndHead(targetRepo, state) {
+function gitIsAncestor(cwd, maybeAncestor, descendant) {
+  if (!maybeAncestor || !descendant) {
+    return false;
+  }
+  const result = spawnSync("git", ["merge-base", "--is-ancestor", maybeAncestor, descendant], {
+    cwd,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  return result.status === 0;
+}
+
+function verifyBranchAndHead(targetRepo, state, options = {}) {
   const currentHead = gitHead(targetRepo);
   const currentBranch = gitBranch(targetRepo);
   const blockers = [];
+  let headDrift = null;
   if (state.targetHead && currentHead !== state.targetHead) {
-    blockers.push(
-      blocker("branch-or-head-drift", `Target HEAD drifted from importer state ${state.targetHead} to ${currentHead}.`, {
-        currentHead,
-        expectedHead: state.targetHead,
-      }),
-    );
+    const ancestorAllowed = options.allowAncestorHeadDrift === true && gitIsAncestor(targetRepo, state.targetHead, currentHead);
+    headDrift = {
+      allowed: ancestorAllowed,
+      currentHead,
+      expectedHead: state.targetHead,
+      mode: ancestorAllowed ? "ancestor" : "blocked",
+    };
+    if (!ancestorAllowed) {
+      blockers.push(
+        blocker("branch-or-head-drift", `Target HEAD drifted from importer state ${state.targetHead} to ${currentHead}.`, {
+          currentHead,
+          expectedHead: state.targetHead,
+        }),
+      );
+    }
   }
   if (state.targetBranch && currentBranch !== state.targetBranch) {
     blockers.push(
@@ -459,7 +484,7 @@ function verifyBranchAndHead(targetRepo, state) {
       }),
     );
   }
-  return { blockers, currentBranch, currentHead };
+  return { blockers, currentBranch, currentHead, headDrift };
 }
 
 function verifySourceRevision(manifest) {
@@ -672,7 +697,7 @@ function buildNextAction(state, liveAcceptance) {
 
 function buildStatusReport(run, runtime, options) {
   const context = verifyContext(options);
-  const branch = verifyBranchAndHead(run.targetRepo, run.state);
+  const branch = verifyBranchAndHead(run.targetRepo, run.state, options);
   const source = verifySourceRevision(run.manifest);
   const dirty = verifyDirtyOwnership(run.targetRepo, [
     ...(Array.isArray(run.state.ownedDirtyPaths) ? run.state.ownedDirtyPaths : []),
@@ -737,6 +762,7 @@ function buildStatusReport(run, runtime, options) {
     targetRepo: run.targetRepo,
     targetBranch: branch.currentBranch,
     targetHead: branch.currentHead,
+    targetHeadDrift: branch.headDrift,
     importerStatePath: normalizeRepoPath(path.relative(run.targetRepo, run.statePath)),
     importerManifestPath: normalizeRepoPath(path.relative(run.targetRepo, run.manifestPath)),
     supervisorRunRoot: runtime.repoPath,

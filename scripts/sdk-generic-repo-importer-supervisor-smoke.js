@@ -246,10 +246,43 @@ function assertNextActionAndHandoffArtifact() {
   }
 }
 
+function assertAncestorHeadDriftGate() {
+  const fixture = createFixture("ancestor-drift");
+  try {
+    fs.writeFileSync(path.join(fixture.target, "README.md"), "# support commit\n", "utf8");
+    sh(fixture.target, ["git", "add", "README.md"]);
+    sh(fixture.target, [
+      "git",
+      "-c",
+      "user.name=Smoke",
+      "-c",
+      "user.email=smoke@example.local",
+      "commit",
+      "-m",
+      "support commit",
+    ]);
+
+    const blocked = run(["--state", fixture.statePath, "--status", "--session-id", "ancestor-blocked", "--json"], fixture.target);
+    assert.notStrictEqual(blocked.status, 0);
+    const blockedOutput = JSON.parse(blocked.stdout);
+    assert(blockedOutput.blockers.some((entry) => entry.code === "branch-or-head-drift"));
+
+    const allowed = parseJson(
+      run(["--state", fixture.statePath, "--status", "--allow-ancestor-head-drift", "--session-id", "ancestor-allowed", "--json"], fixture.target),
+    );
+    assert.strictEqual(allowed.ok, true);
+    assert.strictEqual(allowed.targetHeadDrift.mode, "ancestor");
+    assert.strictEqual(allowed.targetHeadDrift.allowed, true);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 assertStatusInspection();
 assertDirtyUnownedFailsClosed();
 assertMissingReportFailsClosed();
 assertStaleReportFailsClosed();
 assertNextActionAndHandoffArtifact();
+assertAncestorHeadDriftGate();
 
 console.log(JSON.stringify({ ok: true, smoke: "sdk-generic-repo-importer-supervisor" }, null, 2));

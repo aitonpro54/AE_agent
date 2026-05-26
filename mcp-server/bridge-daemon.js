@@ -10620,6 +10620,8 @@ async function callTool(name, args) {
         height: comp.height,
         pixelAspect: comp.pixelAspect,
         duration: comp.duration,
+        workAreaStart: comp.workAreaStart,
+        workAreaDuration: comp.workAreaDuration,
         frameRate: comp.frameRate,
         displayStartTime: comp.displayStartTime,
         time: comp.time,

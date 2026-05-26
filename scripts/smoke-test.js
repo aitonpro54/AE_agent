@@ -464,6 +464,17 @@ async function main() {
     workAreaStart: 0,
     workAreaDuration: 2
   }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "get_comp_details", {
+    compItemIndex: 1,
+    includeLayers: false
+  }, ["workAreaStart: comp.workAreaStart", "workAreaDuration: comp.workAreaDuration"], {
+    itemIndex: 1,
+    name: "Smoke Comp",
+    type: "comp",
+    workAreaStart: 0,
+    workAreaDuration: 2,
+    layersReturned: 0
+  }));
   queuedToolResponses.push(await callQueuedDevTool(port, token, "set_layer_time_range", {
     layerIndices: [1, 2],
     inPoint: 0.5,
@@ -1828,7 +1839,7 @@ async function main() {
   if (alignLayers.status !== 200 || !alignLayers.body.ok || alignLayers.body.result.changedCount !== 2) {
     throw new Error("Expected align_layers_to_time to align multiple layer timings");
   }
-  if (queuedToolResponses.length !== 29 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
+  if (queuedToolResponses.length !== 30 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
     throw new Error("Expected all new typed tool queue smokes to pass");
   }
   const deepDuplicateQueuedPayload = deepDuplicateQueuedResponse.response.body.result || {};

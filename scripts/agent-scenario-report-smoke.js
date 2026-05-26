@@ -10,7 +10,8 @@ const {
   writeAgentRunReport
 } = require("./agent-scenario-report");
 const {
-  agentDakkshinTypedToolsScenarioPlans
+  agentDakkshinTypedToolsScenarioPlans,
+  agentResetWorkAreaScenarioPlans
 } = require("./agent-scenario-fixtures");
 
 function fixtureReport() {
@@ -165,8 +166,42 @@ function assertDakkshinGeneratedOnlyFixture() {
   assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
 }
 
+function assertResetWorkAreaGeneratedOnlyFixture() {
+  const [scenario] = agentResetWorkAreaScenarioPlans("Codex QA AUX026 Fixture");
+  assert(scenario, "AUX-026 reset work area scenario should be registered.");
+  assert.strictEqual(scenario.id, "generated-reset-work-area");
+  assert.strictEqual(scenario.cleanupPrefix, "Codex QA AUX026 Fixture Reset Work Area");
+  assert.deepStrictEqual(scenario.expectedTools, [
+    "create_test_comp",
+    "set_comp_work_area",
+    "get_comp_details"
+  ]);
+  assert.strictEqual(scenario.expectedStepCount, 5);
+  assert.strictEqual(scenario.expectedMutatingCount, 3);
+  assert.strictEqual(scenario.expectedReadBack.resetWorkArea, true);
+  assert.strictEqual(scenario.expectedReadBack.compName.indexOf(scenario.cleanupPrefix), 0);
+  assert.deepStrictEqual(scenario.expectedReadBack.shortWorkArea, { start: 1, duration: 2 });
+  assert.deepStrictEqual(scenario.expectedReadBack.fullWorkArea, { start: 0, duration: 5 });
+
+  const toolSequence = scenario.plan.steps.map((step) => step.tool);
+  assert.deepStrictEqual(toolSequence, [
+    "create_test_comp",
+    "set_comp_work_area",
+    "get_comp_details",
+    "set_comp_work_area",
+    "get_comp_details"
+  ]);
+  assert.strictEqual(scenario.plan.steps[1].args.start, 1);
+  assert.strictEqual(scenario.plan.steps[3].args.start, 0);
+  assert.strictEqual(scenario.plan.steps[3].args.duration, 5);
+  assert(!toolSequence.includes("run_extendscript"), "AUX-026 fixture must not use raw ExtendScript.");
+  assert(!toolSequence.includes("cleanup_test_items"), "AUX-026 fixture cleanup is owned by the scenario runner.");
+  assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
+}
+
 function main() {
   assertDakkshinGeneratedOnlyFixture();
+  assertResetWorkAreaGeneratedOnlyFixture();
 
   const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "ae-agent-run-report-"));
   const artifact = writeAgentRunReport(fixtureReport(), {

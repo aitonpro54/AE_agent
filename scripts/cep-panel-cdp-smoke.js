@@ -9,6 +9,7 @@ const {
   agentMaskSafetyScenarioPlans,
   agentMarkerLifecycleScenarioPlans,
   agentNewToolsScenarioPlans,
+  agentResetWorkAreaScenarioPlans,
   agentScenarioPlans
 } = require("./agent-scenario-fixtures");
 const {
@@ -147,6 +148,24 @@ function openAiCliDakkshinTypedToolsScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_DAKKSHIN_TYPED_TOOLS_PREFIX || "Codex QA M223",
     scenarioFactory: agentDakkshinTypedToolsScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliResetWorkAreaScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-reset-work-area",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_RESET_WORK_AREA_PREFIX || "Codex QA AUX026",
+    scenarioFactory: agentResetWorkAreaScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -3777,6 +3796,42 @@ async function verifyDakkshinTypedToolsReadBack(scenario, expected) {
   };
 }
 
+async function verifyResetWorkAreaReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: false
+  });
+  const start = Number(comp.workAreaStart);
+  const duration = Number(comp.workAreaDuration);
+  const expectedStart = Number(expected.fullWorkArea && expected.fullWorkArea.start);
+  const expectedDuration = Number(expected.fullWorkArea && expected.fullWorkArea.duration);
+  if (!numbersMatch(expectedStart, start, 0.001)) {
+    throw new Error(`${scenario.id}: expected final workAreaStart ${expectedStart}, got ${start}.`);
+  }
+  if (!numbersMatch(expectedDuration, duration, 0.001)) {
+    throw new Error(`${scenario.id}: expected final workAreaDuration ${expectedDuration}, got ${duration}.`);
+  }
+  if (!numbersMatch(expectedDuration, comp.duration, 0.001)) {
+    throw new Error(`${scenario.id}: expected comp duration ${expectedDuration}, got ${comp.duration}.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      duration: comp.duration,
+      workAreaStart: comp.workAreaStart,
+      workAreaDuration: comp.workAreaDuration
+    },
+    expected: {
+      fullWorkArea: expected.fullWorkArea,
+      shortWorkArea: expected.shortWorkArea
+    }
+  };
+}
+
 async function findGeneratedCompByExactName(scenario, compName) {
   const found = await callBridgeTool("find_project_items", {
     query: compName,
@@ -3947,6 +4002,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.dakkshinTypedTools) {
     return verifyDakkshinTypedToolsReadBack(scenario, expected);
+  }
+
+  if (expected.resetWorkArea) {
+    return verifyResetWorkAreaReadBack(scenario, expected);
   }
 
   if (expected.markerLifecycle) {
@@ -4564,6 +4623,10 @@ async function main() {
   }
   if (command === "agent-dakkshin-typed-tools-openai-cli-smoke" || command === "full-ui-agent-dakkshin-typed-tools-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliDakkshinTypedToolsScenarioConfig());
+    return;
+  }
+  if (command === "agent-reset-work-area-openai-cli-smoke" || command === "full-ui-agent-reset-work-area-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliResetWorkAreaScenarioConfig());
     return;
   }
   if (command === "openai-api-setup-smoke") {
