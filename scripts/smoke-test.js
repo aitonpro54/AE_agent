@@ -357,6 +357,44 @@ async function main() {
   const alignLayers = await alignLayersPromise;
 
   const queuedToolResponses = [];
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "set_comp_properties", {
+    compName: "Smoke Comp",
+    width: 1280,
+    height: 720,
+    pixelAspect: 1,
+    duration: 6,
+    frameRate: 30,
+    bgColor: [0.1, 0.2, 0.3],
+    displayStartTime: 1,
+    verifyAfter: false
+  }, ["Codex Set Comp Properties", "__codexCompProperties", "comp.width", "postVerification"], {
+    comp: {
+      itemIndex: 1,
+      name: "Smoke Comp",
+      width: 1280,
+      height: 720,
+      pixelAspect: 1,
+      duration: 6,
+      frameRate: 30,
+      bgColor: [0.1, 0.2, 0.3],
+      displayStartTime: 1,
+      numLayers: 2
+    },
+    updatedFields: ["width", "height", "pixelAspect", "duration", "frameRate", "displayStartTime", "bgColor"],
+    postVerification: {
+      ok: true,
+      layerCountUnchanged: true,
+      fieldMatches: {
+        width: true,
+        height: true,
+        pixelAspect: true,
+        duration: true,
+        frameRate: true,
+        bgColor: true,
+        displayStartTime: true
+      }
+    }
+  }));
   queuedToolResponses.push(await callQueuedDevTool(port, token, "set_comp_work_area", {
     duration: 2,
     verifyAfter: false
@@ -492,6 +530,55 @@ async function main() {
       shape: { vertexCount: 4, vertices: [[120, 80], [520, 80], [520, 280], [120, 280]] }
     }
   }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "set_layer_mask", {
+    compName: "Smoke Comp",
+    layerIndex: 1,
+    operation: "update",
+    maskIndex: 1,
+    expectedMaskName: "Smoke Mask",
+    vertices: [[140, 90], [500, 90], [500, 260], [140, 260]],
+    maskMode: "subtract",
+    inverted: true,
+    opacity: 75,
+    feather: [4, 4],
+    expansion: 2,
+    verifyAfter: false
+  }, ["Codex Set Layer Mask", "__codexMaskInfo", "requestedMaskIndex", "MaskMode.SUBTRACT"], {
+    comp: { itemIndex: 1, name: "Smoke Comp" },
+    layer: { index: 1, name: "Layer 1" },
+    operation: "update",
+    beforeMask: {
+      propertyIndex: 1,
+      name: "Smoke Mask",
+      maskMode: "add",
+      inverted: false,
+      shape: { vertexCount: 4 }
+    },
+    mask: {
+      propertyIndex: 1,
+      name: "Smoke Mask",
+      maskMode: "subtract",
+      inverted: true,
+      shape: { vertexCount: 4, vertices: [[140, 90], [500, 90], [500, 260], [140, 260]] },
+      opacity: 75,
+      feather: [4, 4],
+      expansion: 2
+    },
+    postVerification: {
+      ok: true,
+      operation: "update",
+      beforeMaskCount: 1,
+      afterMaskCount: 1,
+      expectedMaskCountAfter: 1,
+      maskCountMatches: true,
+      verticesMatch: true,
+      maskModeMatches: true,
+      invertedMatches: true,
+      opacityMatches: true,
+      featherMatches: true,
+      expansionMatches: true
+    }
+  }));
   queuedToolResponses.push(await callQueuedDevTool(port, token, "duplicate_layer", {
     compName: "Smoke Comp",
     layerIndex: 1,
@@ -548,6 +635,35 @@ async function main() {
     }
   });
   queuedToolResponses.push(duplicateLayersQueuedResponse);
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "delete_layer", {
+    compName: "Smoke Comp",
+    layerIndex: 3,
+    expectedLayerName: "Smoke Delete Target",
+    verifyAfter: false
+  }, ["Codex Delete Layer", "layer.remove()", "expectedLayerName", "Layer is locked"], {
+    comp: { itemIndex: 1, name: "Smoke Comp", numLayersBefore: 4, numLayersAfter: 3 },
+    layerCountBefore: 4,
+    layerCountAfter: 3,
+    requestedLayerIndex: 3,
+    expectedLayerName: "Smoke Delete Target",
+    deletedLayer: { index: 3, id: 101, name: "Smoke Delete Target", locked: false },
+    layerAtDeletedIndexAfter: { index: 3, name: "Layer After Deleted Target" },
+    postVerification: {
+      ok: true,
+      beforeLayerCount: 4,
+      afterLayerCount: 3,
+      expectedLayerCountAfter: 3,
+      layerCountDelta: -1,
+      layerCountMatches: true,
+      deletedLayerId: 101,
+      deletedLayerIdAbsent: true,
+      expectedLayerName: "Smoke Delete Target",
+      sameNameCountBefore: 1,
+      sameNameCountAfter: 0,
+      sameNameCountDecremented: true,
+      deletedLayerNameAbsentAtOriginalIndex: true
+    }
+  }));
   queuedToolResponses.push(await callQueuedDevTool(port, token, "add_layer_marker", {
     compName: "Smoke Comp",
     layerIndex: 1,
@@ -1408,6 +1524,67 @@ async function main() {
     requestId: "smoke-mutating-blocked-run",
     plan: mutatingPlan
   });
+  const directUnsafeDeleteLayer = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/tools/call",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    name: "delete_layer",
+    arguments: {
+      compName: "Smoke Comp",
+      layerIndex: 1,
+      expectedLayerName: "Smoke Layer",
+      confirm: true
+    }
+  });
+  const directUnsafeDeletePayload = JSON.parse(directUnsafeDeleteLayer.body.result.content[0].text);
+  const invalidSetCompProperties = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/dev/tool/set_comp_properties",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    compName: "Smoke Comp",
+    opacity: 50,
+    verifyAfter: false
+  });
+  const emptySetCompProperties = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/dev/tool/set_comp_properties",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    compName: "Smoke Comp",
+    verifyAfter: false
+  });
+  const invalidSetLayerMask = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/dev/tool/set_layer_mask",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": token
+    }
+  }, {
+    layerIndex: 1,
+    operation: "delete",
+    maskIndex: 1,
+    verifyAfter: false
+  });
   const rawExtendscriptPlan = {
     summary: "Smoke-test raw ExtendScript execution gate.",
     risk: "medium",
@@ -1583,7 +1760,7 @@ async function main() {
   if (alignLayers.status !== 200 || !alignLayers.body.ok || alignLayers.body.result.changedCount !== 2) {
     throw new Error("Expected align_layers_to_time to align multiple layer timings");
   }
-  if (queuedToolResponses.length !== 26 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
+  if (queuedToolResponses.length !== 29 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
     throw new Error("Expected all new typed tool queue smokes to pass");
   }
   const deepDuplicateQueuedPayload = deepDuplicateQueuedResponse.response.body.result || {};
@@ -1830,6 +2007,27 @@ async function main() {
     throw new Error("Mutating plan without an M100 proposal was not blocked");
   }
   if (
+    directUnsafeDeleteLayer.status !== 200 ||
+    !directUnsafeDeleteLayer.body.result ||
+    directUnsafeDeleteLayer.body.result.isError !== true ||
+    directUnsafeDeletePayload.code !== "proposal_required" ||
+    !directUnsafeDeletePayload.m100 ||
+    directUnsafeDeletePayload.m100.riskLevel !== "destructive" ||
+    directUnsafeDeletePayload.m100.ignoredClientConfirmation !== true
+  ) {
+    throw new Error("Direct unsafe delete_layer call did not fail closed as destructive M100");
+  }
+  if (
+    invalidSetCompProperties.status !== 500 ||
+    emptySetCompProperties.status !== 500 ||
+    invalidSetLayerMask.status !== 500 ||
+    String(invalidSetCompProperties.body.result || "").indexOf("Unsupported set_comp_properties fields") < 0 ||
+    String(emptySetCompProperties.body.result || "").indexOf("At least one approved comp property update is required") < 0 ||
+    String(invalidSetLayerMask.body.result || "").indexOf("operation must be create or update") < 0
+  ) {
+    throw new Error("set_comp_properties or set_layer_mask validation did not fail closed");
+  }
+  if (
     rawExtendscriptDryRun.status !== 200 ||
     rawExtendscriptDryRun.body.ok !== true ||
     !rawExtendscriptDryRun.body.run ||
@@ -1897,7 +2095,7 @@ async function main() {
   }
 
   const toolNames = lines[1].result.tools.map((tool) => tool.name);
-  for (const expectedTool of ["get_ai_agent_log", "get_project_intent_memory", "update_project_intent_memory", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "run_agent_hardcore_session", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint", "list_project_folder_items", "create_comp", "create_project_folder", "move_project_items_to_folder", "set_comp_work_area", "set_layer_time_range", "stagger_layers", "split_layers_at_time", "precompose_layers", "replace_layer_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer", "create_camera_layer", "create_layer_mask", "duplicate_layer", "duplicate_layers", "add_layer_marker", "update_layer_marker", "delete_layer_marker", "create_shape_layer", "fit_layer_to_comp", "set_property_keyframes", "apply_keyframe_ease", "set_expression", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"]) {
+  for (const expectedTool of ["get_ai_agent_log", "get_project_intent_memory", "update_project_intent_memory", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "run_agent_hardcore_session", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint", "list_project_folder_items", "create_comp", "create_project_folder", "move_project_items_to_folder", "set_comp_properties", "set_comp_work_area", "set_layer_time_range", "stagger_layers", "split_layers_at_time", "precompose_layers", "replace_layer_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer", "create_camera_layer", "create_layer_mask", "set_layer_mask", "duplicate_layer", "duplicate_layers", "delete_layer", "add_layer_marker", "update_layer_marker", "delete_layer_marker", "create_shape_layer", "fit_layer_to_comp", "set_property_keyframes", "apply_keyframe_ease", "set_expression", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"]) {
     if (!toolNames.includes(expectedTool)) {
       throw new Error("Missing expected tool: " + expectedTool);
     }
@@ -1914,6 +2112,14 @@ async function main() {
   if (!createMaskTool || !createMaskTool.inputSchema.properties.autoCheckpoint || !createMaskTool.inputSchema.properties.checkpointLabel || !createMaskTool.inputSchema.properties.idempotencyKey || !createMaskTool.inputSchema.properties.verifyAfter) {
     throw new Error("create_layer_mask is missing safety schema fields");
   }
+  const setLayerMaskTool = lines[1].result.tools.find((tool) => tool.name === "set_layer_mask");
+  if (!setLayerMaskTool || !setLayerMaskTool.inputSchema.properties.autoCheckpoint || !setLayerMaskTool.inputSchema.properties.checkpointLabel || !setLayerMaskTool.inputSchema.properties.idempotencyKey || !setLayerMaskTool.inputSchema.properties.verifyAfter || !setLayerMaskTool.inputSchema.properties.operation || !setLayerMaskTool.inputSchema.properties.layerIndex || !setLayerMaskTool.inputSchema.properties.maskIndex || !setLayerMaskTool.inputSchema.properties.expectedMaskName) {
+    throw new Error("set_layer_mask is missing safety schema fields");
+  }
+  const setCompPropertiesTool = lines[1].result.tools.find((tool) => tool.name === "set_comp_properties");
+  if (!setCompPropertiesTool || !setCompPropertiesTool.inputSchema.properties.autoCheckpoint || !setCompPropertiesTool.inputSchema.properties.checkpointLabel || !setCompPropertiesTool.inputSchema.properties.idempotencyKey || !setCompPropertiesTool.inputSchema.properties.verifyAfter || !setCompPropertiesTool.inputSchema.properties.compItemIndex || !setCompPropertiesTool.inputSchema.properties.width || !setCompPropertiesTool.inputSchema.properties.bgColor || setCompPropertiesTool.inputSchema.properties.opacity) {
+    throw new Error("set_comp_properties is missing bounded safety schema fields");
+  }
   const duplicateLayerTool = lines[1].result.tools.find((tool) => tool.name === "duplicate_layer");
   if (!duplicateLayerTool || !duplicateLayerTool.inputSchema.properties.autoCheckpoint || !duplicateLayerTool.inputSchema.properties.checkpointLabel || !duplicateLayerTool.inputSchema.properties.idempotencyKey || !duplicateLayerTool.inputSchema.properties.verifyAfter || !duplicateLayerTool.inputSchema.properties.sourceName) {
     throw new Error("duplicate_layer is missing safety schema fields");
@@ -1921,6 +2127,10 @@ async function main() {
   const duplicateLayersTool = lines[1].result.tools.find((tool) => tool.name === "duplicate_layers");
   if (!duplicateLayersTool || !duplicateLayersTool.inputSchema.properties.autoCheckpoint || !duplicateLayersTool.inputSchema.properties.checkpointLabel || !duplicateLayersTool.inputSchema.properties.idempotencyKey || !duplicateLayersTool.inputSchema.properties.verifyAfter || !duplicateLayersTool.inputSchema.properties.layerIndices || !duplicateLayersTool.inputSchema.properties.sourceNames) {
     throw new Error("duplicate_layers is missing safety schema fields");
+  }
+  const deleteLayerTool = lines[1].result.tools.find((tool) => tool.name === "delete_layer");
+  if (!deleteLayerTool || !deleteLayerTool.inputSchema.properties.autoCheckpoint || !deleteLayerTool.inputSchema.properties.checkpointLabel || !deleteLayerTool.inputSchema.properties.idempotencyKey || !deleteLayerTool.inputSchema.properties.verifyAfter || !deleteLayerTool.inputSchema.properties.layerIndex || !deleteLayerTool.inputSchema.properties.expectedLayerName || deleteLayerTool.inputSchema.properties.layerIndices) {
+    throw new Error("delete_layer is missing destructive safety schema fields");
   }
   const addLayerMarkerTool = lines[1].result.tools.find((tool) => tool.name === "add_layer_marker");
   if (!addLayerMarkerTool || !addLayerMarkerTool.inputSchema.properties.autoCheckpoint || !addLayerMarkerTool.inputSchema.properties.checkpointLabel || !addLayerMarkerTool.inputSchema.properties.idempotencyKey || !addLayerMarkerTool.inputSchema.properties.verifyAfter || !addLayerMarkerTool.inputSchema.properties.layerIndex || !addLayerMarkerTool.inputSchema.properties.comment) {

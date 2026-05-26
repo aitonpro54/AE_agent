@@ -850,14 +850,17 @@ const MUTATING_TOOL_NAMES = new Set([
   "create_adjustment_layer",
   "create_camera_layer",
   "create_layer_mask",
+  "set_layer_mask",
   "add_project_item_to_comp",
   "duplicate_layer",
   "duplicate_layers",
+  "delete_layer",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
   "add_effect",
   "set_effect_property",
   "set_property_value",
+  "set_comp_properties",
   "set_comp_work_area",
   "set_layer_time_range",
   "stagger_layers",
@@ -899,7 +902,8 @@ const M100_RAW_JSX_TOOL_NAMES = new Set([
 ]);
 const M100_DESTRUCTIVE_TOOL_NAMES = new Set([
   "cleanup_test_items",
-  "delete_project_checkpoint"
+  "delete_project_checkpoint",
+  "delete_layer"
 ]);
 const M100_DIRECT_TOOL_SOURCES = new Set([
   "direct-tools-call"
@@ -1879,7 +1883,7 @@ function compactCheckpoint(checkpoint) {
 function inferMutationTarget(toolName, args, payload) {
   const target = { tool: toolName };
   const request = {};
-  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "layerName", "sourceName", "targetTime", "time", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "itemType", "sourceItemIndex", "sourceItemName", "sourceCompItemIndex", "sourceCompName", "nameSuffix", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "renderQueueItemIndex", "outputPath"]) {
+  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "layerName", "sourceName", "expectedLayerName", "maskIndex", "expectedMaskName", "operation", "maskMode", "targetTime", "time", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "itemType", "sourceItemIndex", "sourceItemName", "sourceCompItemIndex", "sourceCompName", "nameSuffix", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "renderQueueItemIndex", "outputPath"]) {
     if (hasArg(args || {}, key)) request[key] = args[key];
   }
   if (Object.keys(request).length) target.request = request;
@@ -4065,15 +4069,18 @@ const PLANNING_TOOL_NAMES = [
   "create_adjustment_layer",
   "create_camera_layer",
   "create_layer_mask",
+  "set_layer_mask",
   "add_project_item_to_comp",
   "duplicate_layer",
   "duplicate_layers",
+  "delete_layer",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
   "add_effect",
   "set_effect_property",
   "set_property_value",
   "align_layers_to_time",
+  "set_comp_properties",
   "set_comp_work_area",
   "set_layer_time_range",
   "stagger_layers",
@@ -5998,8 +6005,10 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For precomp/source workflows, use precompose_layers, replace_layer_source, deep_duplicate_precomp_sources, rename_layers, and rename_project_items before considering raw ExtendScript.",
     "For explicit single-layer duplication, use duplicate_layer after inspecting the target comp/layer and pairing layerIndex with the sourceName in current AE stack order. AE inserts newly created and duplicated layers at layer index 1; do not assume creation order equals layer-index order.",
     "For explicit bulk layer duplication, use duplicate_layers with concrete layerIndices after inspecting the target comp/layers. Pair sourceNames with layerIndices in current AE stack order, or insert get_comp_details before duplication when source-layer order is ambiguous. For selected-layer duplication, inspect with get_selected_layers first and bind layerIndices from {{selectedLayerIndices}}; never use duplicate_layers for deletion, source/precomp relinking, mask/path edits, or audio workflows.",
+    "For destructive single-layer deletion, use delete_layer only after inspecting the explicit target comp/layer. Provide compItemIndex or compName, layerIndex, and expectedLayerName; never use selection-only, broad, or name-optional deletion.",
+    "For composition settings, use set_comp_properties only for width, height, pixelAspect, duration, frameRate, bgColor, and displayStartTime on one explicit comp, then read back the comp.",
     "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
-    "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, and fit_layer_to_comp.",
+    "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, set_layer_mask, and fit_layer_to_comp. Use set_layer_mask update mode only with one explicit maskIndex; do not delete masks, target multiple masks/layers, run roto, or edit arbitrary mask property trees.",
     "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, set_expression, and clear_expression.",
     "For render queue setup, use add_comp_to_render_queue, set_render_queue_output, and get_render_queue_status. Do not start a render.",
     "For requests about selected layers, inspect with get_active_comp or get_selected_layers first. A later layerIndex field may use {{selectedLayerIndices}} to target the selected layers.",
@@ -8300,6 +8309,32 @@ const tools = [
     }
   },
   {
+    name: "delete_layer",
+    description: "Delete exactly one explicit layer from one explicit composition. This destructive M100 tool requires layerIndex and expectedLayerName, rejects bulk or selection-based deletion, rejects locked/out-of-range targets, and returns before/after read-back.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Required when compName is omitted. 1-based project item index for the target composition."
+        },
+        compName: {
+          type: "string",
+          description: "Required when compItemIndex is omitted. Exact target composition name."
+        },
+        layerIndex: {
+          type: "number",
+          description: "Required 1-based layer index in the target composition."
+        },
+        expectedLayerName: {
+          type: "string",
+          description: "Required exact layer name expected at layerIndex before deletion."
+        }
+      },
+      required: ["layerIndex", "expectedLayerName"]
+    }
+  },
+  {
     name: "duplicate_comp",
     description: "Duplicate an After Effects composition and optionally open it in the viewer.",
     inputSchema: {
@@ -8557,6 +8592,34 @@ const tools = [
     }
   },
   {
+    name: "set_comp_properties",
+    description: "Update a narrow approved set of properties on one explicit composition: width, height, pixelAspect, duration, frameRate, bgColor, and displayStartTime only.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Required when compName is omitted. 1-based project item index for the target composition."
+        },
+        compName: {
+          type: "string",
+          description: "Required when compItemIndex is omitted. Exact target composition name."
+        },
+        width: { type: "number", description: "Optional composition width in pixels. Must be a positive integer." },
+        height: { type: "number", description: "Optional composition height in pixels. Must be a positive integer." },
+        pixelAspect: { type: "number", description: "Optional pixel aspect ratio. Must be greater than 0." },
+        duration: { type: "number", description: "Optional composition duration in seconds. Must be greater than 0." },
+        frameRate: { type: "number", description: "Optional frame rate in frames per second. Must be greater than 0." },
+        bgColor: {
+          type: "array",
+          items: { type: "number" },
+          description: "Optional RGB background color as three numbers from 0 to 1."
+        },
+        displayStartTime: { type: "number", description: "Optional display start time in seconds." }
+      }
+    }
+  },
+  {
     name: "set_layer_time_range",
     description: "Set start, in-point, out-point, or duration for selected or specified layers.",
     inputSchema: {
@@ -8737,6 +8800,33 @@ const tools = [
         expansion: { type: "number", description: "Optional mask expansion in pixels." }
       },
       required: ["layerIndex", "vertices"]
+    }
+  },
+  {
+    name: "set_layer_mask",
+    description: "Create or update one bounded layer mask on one explicit layer. Update mode requires one explicit maskIndex and this tool never deletes masks, runs roto, or edits arbitrary mask property trees.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndex: { type: "number", description: "Required 1-based layer index in the target composition." },
+        operation: { type: "string", enum: ["create", "update"], description: "Required operation. Create adds one mask; update changes one existing mask by maskIndex." },
+        maskIndex: { type: "number", description: "Required for update. 1-based mask index in the layer mask group." },
+        expectedMaskName: { type: "string", description: "Optional exact mask name guard for update mode." },
+        name: { type: "string", description: "Optional mask name for create mode. Update mode does not rename masks." },
+        vertices: {
+          type: "array",
+          description: "Optional polygon vertices as an array of [x, y] layer-space points. Create mode requires 3 to 50 points; update mode may omit vertices when changing other bounded fields.",
+          items: { type: "array", items: { type: "number" } }
+        },
+        maskMode: { type: "string", enum: ["add", "subtract", "intersect", "lighten", "darken", "difference", "none"], description: "Optional bounded mask mode." },
+        inverted: { type: "boolean", description: "Optional mask inverted flag." },
+        opacity: { type: "number", description: "Optional mask opacity from 0 to 100." },
+        feather: { type: "array", items: { type: "number" }, description: "Optional [x, y] mask feather values, 0 or greater." },
+        expansion: { type: "number", description: "Optional mask expansion in pixels." }
+      },
+      required: ["layerIndex", "operation"]
     }
   },
   {
@@ -11561,6 +11651,107 @@ async function callTool(name, args) {
     return toolResult(result.result);
   }
 
+  if (name === "delete_layer") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const expectedLayerName = optionalString(args, "expectedLayerName", "").trim();
+
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required.", true);
+    if (!expectedLayerName) return toolResult("expectedLayerName is required.", true);
+    if (hasArg(args, "layerIndices") || hasArg(args, "layerNames") || hasArg(args, "selectedLayersOnly")) {
+      return toolResult("delete_layer deletes exactly one explicit layer; bulk or selection-based targets are not allowed.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var requestedLayerIndex = ${layerIndex};
+      var expectedLayerName = ${aeLiteral(expectedLayerName)};
+
+      function __codexLayerNameCount(comp, layerName) {
+        var count = 0;
+        for (var __ln = 1; __ln <= comp.numLayers; __ln++) {
+          var layer = comp.layer(__ln);
+          if (layer && layer.name === layerName) count++;
+        }
+        return count;
+      }
+
+      if (requestedLayerIndex > comp.numLayers) {
+        throw new Error("Layer index " + requestedLayerIndex + " is out of range for comp with " + comp.numLayers + " layers.");
+      }
+      var layer = comp.layer(requestedLayerIndex);
+      if (!layer) throw new Error("Layer not found at index " + requestedLayerIndex + ".");
+      if (layer.name !== expectedLayerName) {
+        throw new Error("Layer name mismatch. Expected '" + expectedLayerName + "' but found '" + layer.name + "'.");
+      }
+      if (layer.locked === true) {
+        throw new Error("Layer is locked and cannot be deleted safely.");
+      }
+
+      var layerCountBefore = comp.numLayers;
+      var deletedLayer = __codexLayerInfo(layer);
+      var sameNameCountBefore = __codexLayerNameCount(comp, expectedLayerName);
+      var deletedLayerId = deletedLayer ? deletedLayer.id : null;
+      var __codexDeleteLayerUndoOpen = false;
+      try {
+        app.beginUndoGroup("Codex Delete Layer");
+        __codexDeleteLayerUndoOpen = true;
+        layer.remove();
+        var layerCountAfter = comp.numLayers;
+        var layerAtDeletedIndexAfter = requestedLayerIndex <= comp.numLayers ? __codexLayerInfo(comp.layer(requestedLayerIndex)) : null;
+        var sameNameCountAfter = __codexLayerNameCount(comp, expectedLayerName);
+        var deletedLayerIdStillPresent = false;
+        if (deletedLayerId !== null && deletedLayerId !== undefined) {
+          for (var __dl = 1; __dl <= comp.numLayers; __dl++) {
+            var currentLayer = comp.layer(__dl);
+            if (currentLayer && currentLayer.id === deletedLayerId) deletedLayerIdStillPresent = true;
+          }
+        }
+        var expectedLayerCountAfter = layerCountBefore - 1;
+        var postVerification = {
+          ok: layerCountAfter === expectedLayerCountAfter &&
+            deletedLayerIdStillPresent === false &&
+            sameNameCountAfter === Math.max(0, sameNameCountBefore - 1),
+          beforeLayerCount: layerCountBefore,
+          afterLayerCount: layerCountAfter,
+          expectedLayerCountAfter: expectedLayerCountAfter,
+          layerCountDelta: layerCountAfter - layerCountBefore,
+          layerCountMatches: layerCountAfter === expectedLayerCountAfter,
+          deletedLayerId: deletedLayerId,
+          deletedLayerIdAbsent: deletedLayerIdStillPresent === false,
+          expectedLayerName: expectedLayerName,
+          sameNameCountBefore: sameNameCountBefore,
+          sameNameCountAfter: sameNameCountAfter,
+          sameNameCountDecremented: sameNameCountAfter === Math.max(0, sameNameCountBefore - 1),
+          layerAtDeletedIndexAfter: layerAtDeletedIndexAfter,
+          deletedLayerNameAbsentAtOriginalIndex: !layerAtDeletedIndexAfter || layerAtDeletedIndexAfter.name !== expectedLayerName
+        };
+        return {
+          comp: {
+            itemIndex: __codexProjectIndexForItem(comp),
+            name: comp.name,
+            numLayersBefore: layerCountBefore,
+            numLayersAfter: layerCountAfter
+          },
+          layerCountBefore: layerCountBefore,
+          layerCountAfter: layerCountAfter,
+          requestedLayerIndex: requestedLayerIndex,
+          expectedLayerName: expectedLayerName,
+          deletedLayer: deletedLayer,
+          layerAtDeletedIndexAfter: layerAtDeletedIndexAfter,
+          postVerification: postVerification
+        };
+      } finally {
+        if (__codexDeleteLayerUndoOpen) {
+          app.endUndoGroup();
+        }
+      }
+    `);
+    return toolResult(result.result);
+  }
+
   if (name === "deep_duplicate_precomp_sources") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
@@ -12328,6 +12519,138 @@ async function callTool(name, args) {
     return toolResult(result.result);
   }
 
+  if (name === "set_comp_properties") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required.", true);
+
+    const allowedKeys = new Set([
+      "compItemIndex",
+      "compName",
+      "width",
+      "height",
+      "pixelAspect",
+      "duration",
+      "frameRate",
+      "bgColor",
+      "displayStartTime",
+      "autoCheckpoint",
+      "checkpointLabel",
+      "idempotencyKey",
+      "idempotencyScope",
+      "verifyAfter",
+      M100_DIRECT_ESCAPE_HATCH_ARG
+    ]);
+    const unsupportedKeys = Object.keys(args || {}).filter((key) => !allowedKeys.has(key));
+    if (unsupportedKeys.length) return toolResult("Unsupported set_comp_properties fields: " + unsupportedKeys.join(", "), true);
+
+    const requested = {};
+    if (hasArg(args, "width")) {
+      const width = optionalNumber(args, "width", null);
+      if (!Number.isInteger(width) || width < 4) return toolResult("width must be an integer of at least 4.", true);
+      requested.width = width;
+    }
+    if (hasArg(args, "height")) {
+      const height = optionalNumber(args, "height", null);
+      if (!Number.isInteger(height) || height < 4) return toolResult("height must be an integer of at least 4.", true);
+      requested.height = height;
+    }
+    if (hasArg(args, "pixelAspect")) {
+      const pixelAspect = optionalNumber(args, "pixelAspect", null);
+      if (pixelAspect <= 0) return toolResult("pixelAspect must be greater than 0.", true);
+      requested.pixelAspect = pixelAspect;
+    }
+    if (hasArg(args, "duration")) {
+      const duration = optionalNumber(args, "duration", null);
+      if (duration <= 0) return toolResult("duration must be greater than 0.", true);
+      requested.duration = duration;
+    }
+    if (hasArg(args, "frameRate")) {
+      const frameRate = optionalNumber(args, "frameRate", null);
+      if (frameRate <= 0) return toolResult("frameRate must be greater than 0.", true);
+      requested.frameRate = frameRate;
+    }
+    if (hasArg(args, "displayStartTime")) {
+      requested.displayStartTime = optionalNumber(args, "displayStartTime", null);
+    }
+    if (hasArg(args, "bgColor")) {
+      const bgColor = optionalNumberArray(args, "bgColor", null, 3, 3);
+      if (bgColor.some((value) => value < 0 || value > 1)) return toolResult("bgColor values must be between 0 and 1.", true);
+      requested.bgColor = bgColor;
+    }
+    const requestedKeys = Object.keys(requested);
+    if (!requestedKeys.length) return toolResult("At least one approved comp property update is required.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var requested = ${aeLiteral(requested)};
+      var requestedKeys = ${aeLiteral(requestedKeys)};
+
+      function __codexCompProperties(comp) {
+        return {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          width: comp.width,
+          height: comp.height,
+          pixelAspect: comp.pixelAspect,
+          duration: comp.duration,
+          frameRate: comp.frameRate,
+          bgColor: comp.bgColor ? [comp.bgColor[0], comp.bgColor[1], comp.bgColor[2]] : null,
+          displayStartTime: comp.displayStartTime,
+          numLayers: comp.numLayers
+        };
+      }
+
+      function __codexNear(a, b) {
+        return Math.abs(Number(a) - Number(b)) <= 0.0001;
+      }
+
+      function __codexColorMatches(actual, expected) {
+        if (!actual || !expected || actual.length < 3 || expected.length < 3) return false;
+        return __codexNear(actual[0], expected[0]) && __codexNear(actual[1], expected[1]) && __codexNear(actual[2], expected[2]);
+      }
+
+      app.beginUndoGroup("Codex Set Comp Properties");
+      var before = __codexCompProperties(comp);
+      if (requested.width !== undefined) comp.width = requested.width;
+      if (requested.height !== undefined) comp.height = requested.height;
+      if (requested.pixelAspect !== undefined) comp.pixelAspect = requested.pixelAspect;
+      if (requested.duration !== undefined) comp.duration = requested.duration;
+      if (requested.frameRate !== undefined) comp.frameRate = requested.frameRate;
+      if (requested.bgColor !== undefined) comp.bgColor = requested.bgColor;
+      if (requested.displayStartTime !== undefined) comp.displayStartTime = requested.displayStartTime;
+      var after = __codexCompProperties(comp);
+      var fieldMatches = {};
+      var allMatch = true;
+      for (var __fieldIndex = 0; __fieldIndex < requestedKeys.length; __fieldIndex++) {
+        var field = requestedKeys[__fieldIndex];
+        var matches = field === "bgColor"
+          ? __codexColorMatches(after.bgColor, requested.bgColor)
+          : __codexNear(after[field], requested[field]);
+        fieldMatches[field] = matches;
+        if (!matches) allMatch = false;
+      }
+      var response = {
+        comp: after,
+        before: before,
+        after: after,
+        updates: requested,
+        updatedFields: requestedKeys,
+        postVerification: {
+          ok: allMatch,
+          updatedFields: requestedKeys,
+          fieldMatches: fieldMatches,
+          compIdentityMatches: before.itemIndex === after.itemIndex && before.name === after.name,
+          layerCountUnchanged: before.numLayers === after.numLayers
+        }
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
   if (name === "set_layer_time_range") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
@@ -12959,6 +13282,294 @@ async function callTool(name, args) {
           feather: __codexReadValue(featherProperty),
           expansion: __codexReadValue(expansionProperty)
         }
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_layer_mask") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const operation = optionalString(args, "operation", "").toLowerCase();
+    const maskIndex = optionalPositiveInteger(args, "maskIndex");
+    const expectedMaskName = optionalString(args, "expectedMaskName", "");
+    const maskName = optionalString(args, "name", "Codex Mask");
+    const hasVertices = hasArg(args, "vertices");
+    const vertices = hasVertices ? requiredPointArray(args, "vertices", 3, 50) : null;
+    const hasMaskMode = hasArg(args, "maskMode");
+    const maskMode = hasMaskMode ? optionalString(args, "maskMode", "").toLowerCase() : "";
+    const hasInverted = hasArg(args, "inverted");
+    const inverted = optionalBoolean(args, "inverted", null);
+    const hasOpacity = hasArg(args, "opacity");
+    const opacity = optionalNumber(args, "opacity", null);
+    const hasFeather = hasArg(args, "feather");
+    const feather = optionalNumberArray(args, "feather", null, 2, 2);
+    const hasExpansion = hasArg(args, "expansion");
+    const expansion = optionalNumber(args, "expansion", null);
+    const coordinateLimit = 1000000;
+    const allowedMaskModes = new Set(["add", "subtract", "intersect", "lighten", "darken", "difference", "none"]);
+
+    if (!["create", "update"].includes(operation)) return toolResult("operation must be create or update.", true);
+    if (hasArg(args, "delete") || hasArg(args, "remove") || hasArg(args, "maskIndices") || hasArg(args, "roto") || hasArg(args, "rotobrush")) {
+      return toolResult("set_layer_mask supports one create/update target only; delete, bulk mask, and roto fields are not allowed.", true);
+    }
+    if (operation === "create" && !vertices) return toolResult("vertices are required for create.", true);
+    if (operation === "update" && maskIndex === null) return toolResult("maskIndex is required for update.", true);
+    if (operation === "update" && hasArg(args, "name")) return toolResult("set_layer_mask update mode does not rename masks.", true);
+    if (operation === "update" && !hasVertices && !hasMaskMode && !hasInverted && !hasOpacity && !hasFeather && !hasExpansion) {
+      return toolResult("At least one bounded mask field is required for update.", true);
+    }
+    if (maskMode && !allowedMaskModes.has(maskMode)) return toolResult("maskMode must be one of: add, subtract, intersect, lighten, darken, difference, none.", true);
+    if (vertices && vertices.some((point) => Math.abs(point[0]) > coordinateLimit || Math.abs(point[1]) > coordinateLimit)) {
+      return toolResult("vertices values must be between -1000000 and 1000000.", true);
+    }
+    if (opacity !== null && (opacity < 0 || opacity > 100)) return toolResult("opacity must be between 0 and 100.", true);
+    if (feather && feather.some((value) => value < 0)) return toolResult("feather values must be 0 or greater.", true);
+
+    const effectiveMaskMode = maskMode || (operation === "create" ? "add" : "");
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      var operation = ${aeLiteral(operation)};
+      var requestedMaskIndex = ${maskIndex === null ? "null" : maskIndex};
+      var expectedMaskName = ${aeLiteral(expectedMaskName)};
+      var maskName = ${aeLiteral(maskName)};
+      var requestedVertices = ${vertices ? aeLiteral(vertices) : "null"};
+      var requestedMaskMode = ${effectiveMaskMode ? aeLiteral(effectiveMaskMode) : "null"};
+      var requestedInverted = ${inverted === null ? "null" : inverted ? "true" : "false"};
+      var requestedOpacity = ${opacity === null ? "null" : opacity};
+      var requestedFeather = ${feather ? aeLiteral(feather) : "null"};
+      var requestedExpansion = ${expansion === null ? "null" : expansion};
+
+      function __codexMaskPointList(points, limit) {
+        var list = [];
+        if (!points) return list;
+        for (var __mp = 0; __mp < points.length && __mp < limit; __mp++) {
+          var point = points[__mp];
+          list.push([point[0], point[1]]);
+        }
+        return list;
+      }
+
+      function __codexZeroTangents(points) {
+        var tangents = [];
+        for (var __zt = 0; __zt < points.length; __zt++) tangents.push([0, 0]);
+        return tangents;
+      }
+
+      function __codexFindChildProperty(group, matchName, fallbackName) {
+        if (!group) return null;
+        try {
+          var direct = group.property(matchName);
+          if (direct) return direct;
+        } catch (__directPropertyError) {}
+        if (fallbackName) {
+          try {
+            var fallback = group.property(fallbackName);
+            if (fallback) return fallback;
+          } catch (__fallbackPropertyError) {}
+        }
+        try {
+          for (var __cp = 1; __cp <= group.numProperties; __cp++) {
+            var child = group.property(__cp);
+            if (child && (child.matchName === matchName || child.name === fallbackName)) return child;
+          }
+        } catch (__childPropertyError) {}
+        return null;
+      }
+
+      function __codexReadValue(prop) {
+        try {
+          if (!prop) return null;
+          var value = prop.value;
+          if (value instanceof Array) {
+            var copy = [];
+            for (var __rv = 0; __rv < value.length; __rv++) copy.push(value[__rv]);
+            return copy;
+          }
+          return value;
+        } catch (__readValueError) {
+          return null;
+        }
+      }
+
+      function __codexModeName(value) {
+        try {
+          if (value === MaskMode.ADD) return "add";
+          if (value === MaskMode.SUBTRACT) return "subtract";
+          if (value === MaskMode.INTERSECT) return "intersect";
+          if (value === MaskMode.LIGHTEN) return "lighten";
+          if (value === MaskMode.DARKEN) return "darken";
+          if (value === MaskMode.DIFFERENCE) return "difference";
+          if (value === MaskMode.NONE) return "none";
+        } catch (__modeNameError) {}
+        return String(value);
+      }
+
+      function __codexModeValue(value) {
+        if (value === "add") return MaskMode.ADD;
+        if (value === "subtract") return MaskMode.SUBTRACT;
+        if (value === "intersect") return MaskMode.INTERSECT;
+        if (value === "lighten") return MaskMode.LIGHTEN;
+        if (value === "darken") return MaskMode.DARKEN;
+        if (value === "difference") return MaskMode.DIFFERENCE;
+        if (value === "none") return MaskMode.NONE;
+        throw new Error("Unsupported mask mode: " + value);
+      }
+
+      function __codexMaskShapeInfo(mask) {
+        var shapeProp = __codexFindChildProperty(mask, "ADBE Mask Shape", "Mask Path");
+        var shape = shapeProp ? shapeProp.value : null;
+        if (!shape) return null;
+        return {
+          closed: shape.closed === true,
+          vertexCount: shape.vertices ? shape.vertices.length : 0,
+          vertices: __codexMaskPointList(shape.vertices, 50),
+          inTangents: __codexMaskPointList(shape.inTangents, 50),
+          outTangents: __codexMaskPointList(shape.outTangents, 50),
+          truncated: shape.vertices && shape.vertices.length > 50
+        };
+      }
+
+      function __codexMaskInfo(mask) {
+        if (!mask) return null;
+        var opacityProperty = __codexFindChildProperty(mask, "ADBE Mask Opacity", "Mask Opacity");
+        var featherProperty = __codexFindChildProperty(mask, "ADBE Mask Feather", "Mask Feather");
+        var expansionProperty = __codexFindChildProperty(mask, "ADBE Mask Expansion", "Mask Expansion");
+        return {
+          propertyIndex: mask.propertyIndex,
+          name: mask.name,
+          matchName: mask.matchName,
+          maskMode: __codexModeName(mask.maskMode),
+          inverted: mask.inverted,
+          shape: __codexMaskShapeInfo(mask),
+          opacity: __codexReadValue(opacityProperty),
+          feather: __codexReadValue(featherProperty),
+          expansion: __codexReadValue(expansionProperty)
+        };
+      }
+
+      function __codexMaskSummary(maskGroup) {
+        var items = [];
+        var count = maskGroup ? maskGroup.numProperties : 0;
+        for (var __ms = 1; __ms <= count; __ms++) {
+          items.push(__codexMaskInfo(maskGroup.property(__ms)));
+        }
+        return { count: count, items: items };
+      }
+
+      function __codexNear(a, b) {
+        return Math.abs(Number(a) - Number(b)) <= 0.0001;
+      }
+
+      function __codexArrayNear(a, b) {
+        if (!a || !b || a.length !== b.length) return false;
+        for (var __an = 0; __an < a.length; __an++) {
+          if (!__codexNear(a[__an], b[__an])) return false;
+        }
+        return true;
+      }
+
+      function __codexVerticesMatch(actualShape, expectedVertices) {
+        if (!expectedVertices) return true;
+        if (!actualShape || !actualShape.vertices || actualShape.vertices.length !== expectedVertices.length) return false;
+        for (var __vm = 0; __vm < expectedVertices.length; __vm++) {
+          if (!__codexArrayNear(actualShape.vertices[__vm], expectedVertices[__vm])) return false;
+        }
+        return true;
+      }
+
+      app.beginUndoGroup("Codex Set Layer Mask");
+      var maskGroup = layer.property("ADBE Mask Parade");
+      if (!maskGroup) throw new Error("Layer does not support masks.");
+      var beforeMasks = __codexMaskSummary(maskGroup);
+      var targetMask = null;
+      if (operation === "create") {
+        try { targetMask = maskGroup.addProperty("ADBE Mask Atom"); } catch (__addMatchNameError) {}
+        if (!targetMask) {
+          try { targetMask = maskGroup.addProperty("Mask"); } catch (__addDisplayNameError) {}
+        }
+        if (!targetMask) throw new Error("Could not create mask atom on layer.");
+        if (maskName) targetMask.name = maskName;
+      } else {
+        if (requestedMaskIndex < 1 || requestedMaskIndex > maskGroup.numProperties) throw new Error("maskIndex is outside the layer mask range.");
+        targetMask = maskGroup.property(requestedMaskIndex);
+        if (!targetMask) throw new Error("Mask not found at maskIndex " + requestedMaskIndex + ".");
+        if (expectedMaskName && targetMask.name !== expectedMaskName) {
+          throw new Error("Mask name mismatch. Expected '" + expectedMaskName + "' but found '" + targetMask.name + "'.");
+        }
+      }
+      var beforeMask = operation === "update" ? __codexMaskInfo(targetMask) : null;
+      if (requestedMaskMode !== null) targetMask.maskMode = __codexModeValue(requestedMaskMode);
+      if (requestedInverted !== null) targetMask.inverted = requestedInverted;
+      if (requestedVertices !== null) {
+        var shape = new Shape();
+        shape.vertices = requestedVertices;
+        shape.inTangents = __codexZeroTangents(requestedVertices);
+        shape.outTangents = __codexZeroTangents(requestedVertices);
+        shape.closed = true;
+        var shapeProperty = __codexFindChildProperty(targetMask, "ADBE Mask Shape", "Mask Path");
+        if (!shapeProperty) throw new Error("Mask shape property was not found.");
+        shapeProperty.setValue(shape);
+      }
+      var opacityProperty = __codexFindChildProperty(targetMask, "ADBE Mask Opacity", "Mask Opacity");
+      var featherProperty = __codexFindChildProperty(targetMask, "ADBE Mask Feather", "Mask Feather");
+      var expansionProperty = __codexFindChildProperty(targetMask, "ADBE Mask Expansion", "Mask Expansion");
+      if (requestedOpacity !== null) {
+        if (!opacityProperty) throw new Error("Mask opacity property was not found.");
+        opacityProperty.setValue(requestedOpacity);
+      }
+      if (requestedFeather !== null) {
+        if (!featherProperty) throw new Error("Mask feather property was not found.");
+        featherProperty.setValue(requestedFeather);
+      }
+      if (requestedExpansion !== null) {
+        if (!expansionProperty) throw new Error("Mask expansion property was not found.");
+        expansionProperty.setValue(requestedExpansion);
+      }
+      var afterMask = __codexMaskInfo(targetMask);
+      var afterMasks = __codexMaskSummary(maskGroup);
+      var expectedMaskCountAfter = beforeMasks.count + (operation === "create" ? 1 : 0);
+      var postVerification = {
+        ok: afterMasks.count === expectedMaskCountAfter &&
+          __codexVerticesMatch(afterMask.shape, requestedVertices) &&
+          (requestedMaskMode === null || afterMask.maskMode === requestedMaskMode) &&
+          (requestedInverted === null || afterMask.inverted === requestedInverted) &&
+          (requestedOpacity === null || __codexNear(afterMask.opacity, requestedOpacity)) &&
+          (requestedFeather === null || __codexArrayNear(afterMask.feather, requestedFeather)) &&
+          (requestedExpansion === null || __codexNear(afterMask.expansion, requestedExpansion)),
+        operation: operation,
+        beforeMaskCount: beforeMasks.count,
+        afterMaskCount: afterMasks.count,
+        expectedMaskCountAfter: expectedMaskCountAfter,
+        maskCountMatches: afterMasks.count === expectedMaskCountAfter,
+        maskIndex: afterMask ? afterMask.propertyIndex : null,
+        expectedMaskName: expectedMaskName || (operation === "create" ? maskName : ""),
+        expectedMaskNameMatches: expectedMaskName ? afterMask.name === expectedMaskName : true,
+        verticesMatch: __codexVerticesMatch(afterMask.shape, requestedVertices),
+        maskModeMatches: requestedMaskMode === null || afterMask.maskMode === requestedMaskMode,
+        invertedMatches: requestedInverted === null || afterMask.inverted === requestedInverted,
+        opacityMatches: requestedOpacity === null || __codexNear(afterMask.opacity, requestedOpacity),
+        featherMatches: requestedFeather === null || __codexArrayNear(afterMask.feather, requestedFeather),
+        expansionMatches: requestedExpansion === null || __codexNear(afterMask.expansion, requestedExpansion)
+      };
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        layer: __codexLayerInfo(layer),
+        operation: operation,
+        beforeMasks: beforeMasks,
+        afterMasks: afterMasks,
+        beforeMask: beforeMask,
+        mask: afterMask,
+        afterMask: afterMask,
+        postVerification: postVerification
       };
       app.endUndoGroup();
       return response;
