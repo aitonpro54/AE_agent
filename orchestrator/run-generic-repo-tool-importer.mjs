@@ -23,6 +23,7 @@ const RUNNER_SCHEMA = "generic-repo-tool-importer.command-skeleton.v1";
 const SUPERVISOR_PLAN_SCHEMA = "generic-repo-tool-importer.supervisor-plan.v1";
 const ANALYSIS_SCHEMA = "generic-repo-tool-importer.analysis-fixture.v1";
 const IMPLEMENTATION_PLAN_SCHEMA = "generic-repo-tool-importer.implementation-plan.v1";
+const MERGE_PLAN_SCHEMA = "generic-repo-tool-importer.merge-plan.v1";
 const ANALYSIS_ARTIFACTS = Object.freeze([
   "analysis/repo-fingerprint.json",
   "analysis/risk-map.json",
@@ -32,6 +33,12 @@ const ANALYSIS_ARTIFACTS = Object.freeze([
 const IMPLEMENTATION_PLAN_ARTIFACTS = Object.freeze([
   "implementation/batch-worktree-plan.json",
   "implementation/planned-paths.json",
+]);
+const MERGE_PLAN_ARTIFACTS = Object.freeze([
+  "merge/supervisor-merge-plan.json",
+  "merge/accepted-batches.json",
+  "merge/rejected-batches.json",
+  "validation/non-live-report.json",
 ]);
 const DEPENDENCY_PATHS = new Set([
   "package.json",
@@ -56,6 +63,7 @@ Usage:
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path>
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --run-analysis
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --plan-implementation
+  node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --plan-merge
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --json
 
 Options:
@@ -65,18 +73,21 @@ Options:
   --plan-implementation
                      Run the AUX-017 plan-only implementation batch planner,
                      then stop before creating branches or worktrees.
+  --plan-merge      Run the AUX-018 plan-only controlled merge supervisor,
+                     then stop before applying changes or live validation.
   --json             Print machine-readable output.
   --help             Show this help.
 
 This skeleton validates the AUX-014 manifest contract, creates an ignored run
 root, writes durable state artifacts, optionally writes fixture-backed analysis
-artifacts and plan-only implementation batch artifacts, and stops before
-implementation. It does not create branches, worktrees, child runs, live AE/CEP
-runs, dependency changes, product runtime edits, push, PR, or GitHub automation.
+artifacts, plan-only implementation batch artifacts, and plan-only merge
+artifacts, then stops before implementation. It does not create branches,
+worktrees, child runs, live AE/CEP runs, dependency changes, product runtime
+edits, push, PR, or GitHub automation.
 `;
 
 const VALUE_OPTIONS = new Set(["manifest"]);
-const BOOLEAN_OPTIONS = new Set(["help", "json", "run-analysis", "plan-implementation"]);
+const BOOLEAN_OPTIONS = new Set(["help", "json", "run-analysis", "plan-implementation", "plan-merge"]);
 
 function splitInlineOption(raw) {
   const index = raw.indexOf("=");
@@ -567,6 +578,65 @@ function updateSupervisorPlanForImplementationPlanning(runRoot, manifest, manife
   writeJson(planPath, plan);
 }
 
+function updateSupervisorPlanForMergePlanning(runRoot, manifest, manifestHash, runRootRelative, artifactPaths, accepted, rejected) {
+  const planPath = path.join(runRoot, "supervisor-plan.json");
+  const existing = existsSync(planPath)
+    ? readJsonFile(planPath, "supervisor plan")
+    : createSupervisorPlan(manifest, manifestHash, runRootRelative);
+  const plan = {
+    ...existing,
+    auxiliaryId: "AUX-018",
+    status: "stopped_after_merge_planning",
+    stopBeforePhase: "live_queue_design",
+    mergePlanning: {
+      schema: MERGE_PLAN_SCHEMA,
+      status: "completed",
+      artifacts: artifactPaths,
+      acceptedBatchIds: accepted.map((batch) => batch.id),
+      rejectedBatchIds: rejected.map((batch) => batch.id),
+      controlledMergeApplied: false,
+      worktreesCreated: false,
+      childRunsCreated: false,
+      liveCepAeRun: false,
+      localOllamaUsed: false,
+    },
+    phasePlan: [
+      {
+        phase: "initialized",
+        status: "written",
+        artifacts: [
+          "state.json",
+          "events.jsonl",
+          "manifest.original.json",
+          "manifest.normalized.json",
+          "supervisor-plan.json",
+        ],
+      },
+      {
+        phase: "analysis",
+        status: "written",
+        artifacts: existing.analysis?.artifacts || [],
+      },
+      {
+        phase: "implementation_planning",
+        status: "written",
+        artifacts: existing.implementationPlanning?.artifacts || [],
+      },
+      {
+        phase: "merge_planning",
+        status: "written",
+        artifacts: artifactPaths,
+      },
+      {
+        phase: "live_queue_design",
+        status: "not_started",
+        reason: "AUX-018 plans controlled merge and non-live report artifacts only.",
+      },
+    ],
+  };
+  writeJson(planPath, plan);
+}
+
 function loadState(runRoot) {
   const statePath = path.join(runRoot, "state.json");
   if (!existsSync(statePath)) {
@@ -649,7 +719,10 @@ function resumeRun({ manifest, manifestHash, runRoot, existingState }) {
   const atImplementationPlannedBoundary =
     existingState.currentPhase === "implementation_planned" &&
     existingState.nextPhase === "implementation_worktrees";
-  if (!atAnalysisBoundary && !atImplementationBoundary && !atImplementationPlannedBoundary) {
+  const atMergePlannedBoundary =
+    existingState.currentPhase === "merge_planned" &&
+    existingState.nextPhase === "live_queue_planning";
+  if (!atAnalysisBoundary && !atImplementationBoundary && !atImplementationPlannedBoundary && !atMergePlannedBoundary) {
     throw new Error("resume-state-not-at-supported-boundary");
   }
 
@@ -1313,6 +1386,194 @@ function verifyImplementationPlanningOutputs(runRoot) {
   }
 }
 
+function readImplementationPlanningOutputs(runRoot) {
+  verifyImplementationPlanningOutputs(runRoot);
+  const plannedPaths = readJsonFile(path.join(runRoot, "implementation", "planned-paths.json"), "implementation planned paths");
+  const worktreePlan = readJsonFile(
+    path.join(runRoot, "implementation", "batch-worktree-plan.json"),
+    "implementation batch worktree plan",
+  );
+  if (!Array.isArray(plannedPaths.batches) || !Array.isArray(worktreePlan.batches)) {
+    throw new Error("implementation-plan-output-invalid: batches missing");
+  }
+  return { plannedPaths, worktreePlan };
+}
+
+function validateMergeSharedPathOwnership(manifest, worktreePlan) {
+  const batches = (worktreePlan.batches || []).map((batch) => ({
+    id: batch.id,
+    plannedPaths: (batch.plannedPaths || []).map(normalizePlannedPath),
+    sharedFileOwnerFor: Array.isArray(batch.sharedFileOwnerFor)
+      ? batch.sharedFileOwnerFor.map(normalizePlannedPath)
+      : [],
+  }));
+  validateSharedPathOwnership(manifest, batches);
+}
+
+function buildFixtureBatchResults(worktreePlan, manifest) {
+  const fixtureResults = manifest.merge.fixtureBatchResults;
+  if (Array.isArray(fixtureResults) && fixtureResults.length > 0) {
+    return fixtureResults.map((result, index) => ({
+      id: safeId(result.id || `fixture-result-${index + 1}`, `fixture-result-${index + 1}`),
+      status: result.status || "fixture_completed",
+      validationStatus: result.validationStatus || "passed",
+      changedPaths: Array.isArray(result.changedPaths) ? result.changedPaths.map(normalizePlannedPath) : [],
+      notes: result.notes || "",
+    }));
+  }
+  return (worktreePlan.batches || []).map((batch) => ({
+    id: batch.id,
+    status: "fixture_completed",
+    validationStatus: "passed",
+    changedPaths: (batch.plannedPaths || []).map(normalizePlannedPath),
+    notes: "Generated by AUX-018 from plan-only implementation artifacts.",
+  }));
+}
+
+function validateBatchResultPaths(manifest, worktreePlan, batchResults) {
+  const batchById = new Map((worktreePlan.batches || []).map((batch) => [batch.id, batch]));
+  const allowed = manifest.targetRepo.allowedWritePaths || [];
+  const forbidden = [...(manifest.targetRepo.forbiddenWritePaths || []), ...(manifest.safety.forbiddenPaths || [])];
+  const dependencyChangesAllowed = manifest.implementation.dependencyChangesAllowed === true;
+
+  for (const result of batchResults) {
+    const plannedBatch = batchById.get(result.id);
+    if (!plannedBatch) {
+      throw new Error(`merge-batch-result-without-plan: ${result.id}`);
+    }
+    const plannedSet = new Set((plannedBatch.plannedPaths || []).map(normalizePlannedPath));
+    for (const changedPath of result.changedPaths) {
+      if (isDependencyPath(changedPath) && !dependencyChangesAllowed) {
+        throw new Error(`dependency-change-requested-without-manifest-allowance: ${changedPath}`);
+      }
+      if (pathMatchesAny(changedPath, forbidden)) {
+        throw new Error(`forbidden-target-path: ${changedPath}`);
+      }
+      if (!pathMatchesAny(changedPath, allowed)) {
+        throw new Error(`planned-path-outside-allowlist: ${changedPath}`);
+      }
+      if (!plannedSet.has(changedPath)) {
+        throw new Error(`unplanned-path-change: ${result.id}:${changedPath}`);
+      }
+    }
+  }
+}
+
+function buildMergePlanningArtifacts(manifest, manifestHash, runRoot) {
+  verifyAnalysisOutputs(runRoot);
+  const { plannedPaths, worktreePlan } = readImplementationPlanningOutputs(runRoot);
+  assertNoNamedRepoAssumptions({ manifest, plannedPaths, worktreePlan }, "merge planning inputs");
+  validateMergeSharedPathOwnership(manifest, worktreePlan);
+
+  const batchResults = buildFixtureBatchResults(worktreePlan, manifest);
+  validateBatchResultPaths(manifest, worktreePlan, batchResults);
+
+  const accepted = [];
+  const rejected = [];
+  for (const result of batchResults) {
+    const record = {
+      id: result.id,
+      changedPaths: result.changedPaths,
+      status: result.status,
+      validationStatus: result.validationStatus,
+      controlledMergeApplied: false,
+      worktreeCreated: false,
+      childRunCreated: false,
+    };
+    if (result.status === "fixture_completed" && result.validationStatus === "passed") {
+      accepted.push(record);
+    } else {
+      rejected.push({
+        ...record,
+        reason: result.validationStatus === "passed" ? "batch_not_completed" : "fixture_validation_not_passed",
+      });
+    }
+  }
+
+  const mergeRoot = path.join(runRoot, "merge");
+  const validationRoot = path.join(runRoot, "validation");
+  mkdirSync(mergeRoot, { recursive: true });
+  mkdirSync(validationRoot, { recursive: true });
+
+  const mergePlan = {
+    schema: "generic-repo-tool-importer.supervisor-merge-plan.v1",
+    runId: manifest.run.runId,
+    manifestHash,
+    status: "planned_only",
+    sourceImplementationPlan: "implementation/batch-worktree-plan.json",
+    sourcePlannedPaths: "implementation/planned-paths.json",
+    acceptedBatchIds: accepted.map((batch) => batch.id),
+    rejectedBatchIds: rejected.map((batch) => batch.id),
+    controlledMergeApplied: false,
+    worktreesCreated: false,
+    childRunsCreated: false,
+    liveCepAeRun: false,
+    localOllamaUsed: false,
+    checks: {
+      plannedPathsOnly: "passed",
+      sharedPathOwnership: "passed",
+      dependencyChanges: manifest.implementation.dependencyChangesAllowed === true ? "explicitly_allowed" : "not_requested",
+      dirtyTreeOwnership: "checked_before_run",
+      nonLiveValidation: "planned_not_run",
+    },
+  };
+  writeJson(path.join(mergeRoot, "supervisor-merge-plan.json"), mergePlan);
+
+  writeJson(path.join(mergeRoot, "accepted-batches.json"), {
+    schema: "generic-repo-tool-importer.accepted-batches.v1",
+    runId: manifest.run.runId,
+    manifestHash,
+    status: "planned_only",
+    batches: accepted,
+  });
+
+  writeJson(path.join(mergeRoot, "rejected-batches.json"), {
+    schema: "generic-repo-tool-importer.rejected-batches.v1",
+    runId: manifest.run.runId,
+    manifestHash,
+    status: "planned_only",
+    batches: rejected,
+  });
+
+  writeJson(path.join(validationRoot, "non-live-report.json"), {
+    schema: "generic-repo-tool-importer.non-live-report.v1",
+    runId: manifest.run.runId,
+    manifestHash,
+    status: "planned_only",
+    commands: manifest.validation.nonLiveCommands || [],
+    commandsRun: false,
+    nodeCheckTouchedJs: manifest.validation.nodeCheckTouchedJs === true,
+    gitDiffCheck: manifest.validation.gitDiffCheck === true,
+    semanticVerificationRequiredBeforeLive: manifest.validation.semanticVerification?.requiredBeforeLive === true,
+    reportPath: manifest.validation.reportPath,
+    liveCepAeRun: false,
+    localOllamaUsed: false,
+  });
+
+  return {
+    artifactPaths: [...MERGE_PLAN_ARTIFACTS],
+    accepted,
+    rejected,
+  };
+}
+
+function verifyMergePlanningOutputs(runRoot) {
+  for (const relative of MERGE_PLAN_ARTIFACTS) {
+    const absolute = path.join(runRoot, relative);
+    if (!existsSync(absolute)) {
+      throw new Error(`merge-plan-output-missing: ${relative}`);
+    }
+    readJsonFile(absolute, relative);
+  }
+  const mergePlan = readJsonFile(path.join(runRoot, "merge", "supervisor-merge-plan.json"), "merge supervisor plan");
+  if (mergePlan.schema !== "generic-repo-tool-importer.supervisor-merge-plan.v1") {
+    throw new Error("merge-plan-schema-mismatch: supervisor-merge-plan.json");
+  }
+  if (mergePlan.controlledMergeApplied !== false || mergePlan.worktreesCreated !== false || mergePlan.childRunsCreated !== false) {
+    throw new Error("merge-plan-boundary-violated");
+  }
+}
+
 function runAnalysisPhase({ manifest, manifestHash, runRoot, runRootRelative, state }) {
   const now = new Date().toISOString();
   if (state.currentPhase === "analysis_complete" && state.nextPhase === "implementation_planning") {
@@ -1563,6 +1824,142 @@ function runImplementationPlanningPhase({ manifest, manifestHash, runRoot, runRo
   }
 }
 
+function runMergePlanningPhase({ manifest, manifestHash, runRoot, runRootRelative, state }) {
+  const now = new Date().toISOString();
+  if (state.currentPhase === "merge_planned" && state.nextPhase === "live_queue_planning") {
+    verifyAnalysisOutputs(runRoot);
+    verifyImplementationPlanningOutputs(runRoot);
+    verifyMergePlanningOutputs(runRoot);
+    appendEvent(runRoot, {
+      event: "merge_plan_resume_verified",
+      runId: manifest.run.runId,
+      manifestHash,
+      nextPhase: state.nextPhase,
+      at: now,
+    });
+    return state;
+  }
+
+  if (state.status !== "stopped" || state.currentPhase !== "implementation_planned" || state.nextPhase !== "implementation_worktrees") {
+    throw new Error("merge-planning-state-not-at-boundary");
+  }
+
+  const startedState = {
+    ...state,
+    auxiliaryId: "AUX-018",
+    status: "running",
+    currentPhase: "merge_planning",
+    nextPhase: null,
+    stopReason: null,
+    updatedAt: now,
+    mergePlanningStartedAt: now,
+    flags: {
+      ...state.flags,
+      mergePlanningStarted: true,
+      controlledMergeApplied: false,
+      worktreesCreated: false,
+      liveCepAeRun: false,
+      localOllamaUsed: false,
+      dependencyChanged: false,
+      productRuntimeEdited: false,
+      branchCreated: false,
+      pushOrPrCreated: false,
+      childRunsCreated: false,
+    },
+  };
+  writeJson(path.join(runRoot, "state.json"), startedState);
+  appendEvent(runRoot, {
+    event: "merge_planning_started",
+    auxiliaryId: "AUX-018",
+    runId: manifest.run.runId,
+    manifestHash,
+    at: now,
+  });
+
+  try {
+    const { artifactPaths, accepted, rejected } = buildMergePlanningArtifacts(manifest, manifestHash, runRoot);
+    verifyMergePlanningOutputs(runRoot);
+    const completedAt = new Date().toISOString();
+    const completedState = {
+      ...startedState,
+      status: "stopped",
+      currentPhase: "merge_planned",
+      nextPhase: "live_queue_planning",
+      stopReason: "stopped_before_live_queue_design",
+      updatedAt: completedAt,
+      mergePlanningCompletedAt: completedAt,
+      mergeArtifacts: artifactPaths,
+      acceptedBatchIds: accepted.map((batch) => batch.id),
+      rejectedBatchIds: rejected.map((batch) => batch.id),
+      flags: {
+        ...startedState.flags,
+        mergePlanned: true,
+        controlledMergeApplied: false,
+        worktreesCreated: false,
+        liveCepAeRun: false,
+        localOllamaUsed: false,
+        dependencyChanged: false,
+        productRuntimeEdited: false,
+        branchCreated: false,
+        pushOrPrCreated: false,
+        childRunsCreated: false,
+      },
+    };
+    writeJson(path.join(runRoot, "state.json"), completedState);
+    updateSupervisorPlanForMergePlanning(
+      runRoot,
+      manifest,
+      manifestHash,
+      runRootRelative,
+      artifactPaths,
+      accepted,
+      rejected,
+    );
+    appendEvent(runRoot, {
+      event: "merge_planned",
+      runId: manifest.run.runId,
+      manifestHash,
+      artifacts: artifactPaths,
+      nextPhase: "live_queue_planning",
+      at: completedAt,
+    });
+    appendEvent(runRoot, {
+      event: "stopped_before_live_queue_design",
+      runId: manifest.run.runId,
+      nextPhase: "live_queue_planning",
+      at: completedAt,
+    });
+    return completedState;
+  } catch (error) {
+    const failedAt = new Date().toISOString();
+    const failedState = {
+      ...startedState,
+      status: "stopped",
+      currentPhase: "implementation_planned",
+      nextPhase: "implementation_worktrees",
+      stopReason: error.message.split(":")[0],
+      updatedAt: failedAt,
+      flags: {
+        ...startedState.flags,
+        mergePlanned: false,
+        controlledMergeApplied: false,
+        worktreesCreated: false,
+        liveCepAeRun: false,
+        localOllamaUsed: false,
+        childRunsCreated: false,
+      },
+    };
+    writeJson(path.join(runRoot, "state.json"), failedState);
+    appendEvent(runRoot, {
+      event: "merge_planning_failed",
+      runId: manifest.run.runId,
+      reason: error.message,
+      at: failedAt,
+    });
+    throw error;
+  }
+}
+
 export function runImporter(options, cwd = process.cwd()) {
   if (!options.manifest) {
     throw new Error("Missing --manifest <path>");
@@ -1612,11 +2009,17 @@ export function runImporter(options, cwd = process.cwd()) {
   if (options["plan-implementation"]) {
     state = runImplementationPlanningPhase({ manifest, manifestHash, runRoot, runRootRelative, state });
   }
+  if (options["plan-merge"]) {
+    state = runMergePlanningPhase({ manifest, manifestHash, runRoot, runRootRelative, state });
+  }
 
-  const implementationPlanned = state.currentPhase === "implementation_planned";
+  const mergePlanned = state.currentPhase === "merge_planned";
+  const implementationPlanned = mergePlanned || state.currentPhase === "implementation_planned";
   const analysisComplete = implementationPlanned || state.currentPhase === "analysis_complete";
   const status = implementationPlanned
-    ? "stopped_after_implementation_planning"
+    ? mergePlanned
+      ? "stopped_after_merge_planning"
+      : "stopped_after_implementation_planning"
     : analysisComplete
       ? "stopped_after_analysis"
       : "stopped_before_analysis";
@@ -1633,10 +2036,13 @@ export function runImporter(options, cwd = process.cwd()) {
   if (implementationPlanned) {
     artifacts.push(...(state.implementationArtifacts || []));
   }
+  if (mergePlanned) {
+    artifacts.push(...(state.mergeArtifacts || []));
+  }
 
   return {
     schema: RUNNER_SCHEMA,
-    auxiliaryId: implementationPlanned ? "AUX-017" : analysisComplete ? "AUX-016" : "AUX-015",
+    auxiliaryId: mergePlanned ? "AUX-018" : implementationPlanned ? "AUX-017" : analysisComplete ? "AUX-016" : "AUX-015",
     runId: manifest.run.runId,
     status,
     resumed,
@@ -1649,8 +2055,10 @@ export function runImporter(options, cwd = process.cwd()) {
     analysisStarted: state.flags.analysisStarted === true,
     analysisCompleted: state.flags.analysisCompleted === true,
     implementationPlanned,
+    mergePlanned,
     worktreesCreated: false,
     childRunsCreated: false,
+    controlledMergeApplied: false,
     liveCepAeRun: false,
     localOllamaUsed: false,
   };

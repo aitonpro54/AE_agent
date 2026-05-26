@@ -728,6 +728,233 @@ function assertImplementationResumeFixture() {
   }
 }
 
+function prepareImplementationFixture(fixture, runId, manifest = validManifest(fixture, runId)) {
+  const manifestPath = writeManifest(fixture.root, manifest);
+  parseJson(run(["--manifest", manifestPath, "--run-analysis", "--json"]));
+  parseJson(run(["--manifest", manifestPath, "--plan-implementation", "--json"]));
+  const runRoot = path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-importer", runId);
+  return { manifestPath, runRoot };
+}
+
+function assertMergePlanningArtifacts(output, fixture, runId) {
+  assert.strictEqual(output.schema, "generic-repo-tool-importer.command-skeleton.v1");
+  assert.strictEqual(output.auxiliaryId, "AUX-018");
+  assert.strictEqual(output.runId, runId);
+  assert.strictEqual(output.status, "stopped_after_merge_planning");
+  assert.strictEqual(output.currentPhase, "merge_planned");
+  assert.strictEqual(output.nextPhase, "live_queue_planning");
+  assert.strictEqual(output.analysisCompleted, true);
+  assert.strictEqual(output.implementationPlanned, true);
+  assert.strictEqual(output.mergePlanned, true);
+  assert.strictEqual(output.worktreesCreated, false);
+  assert.strictEqual(output.childRunsCreated, false);
+  assert.strictEqual(output.controlledMergeApplied, false);
+  assert.strictEqual(output.liveCepAeRun, false);
+  assert.strictEqual(output.localOllamaUsed, false);
+
+  const runRoot = path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-importer", runId);
+  const state = readJson(path.join(runRoot, "state.json"));
+  assert.strictEqual(state.auxiliaryId, "AUX-018");
+  assert.strictEqual(state.status, "stopped");
+  assert.strictEqual(state.currentPhase, "merge_planned");
+  assert.strictEqual(state.nextPhase, "live_queue_planning");
+  assert.strictEqual(state.stopReason, "stopped_before_live_queue_design");
+  assert.strictEqual(state.flags.mergePlanned, true);
+  assert.strictEqual(state.flags.controlledMergeApplied, false);
+  assert.strictEqual(state.flags.worktreesCreated, false);
+  assert.strictEqual(state.flags.childRunsCreated, false);
+
+  for (const relative of [
+    "merge/supervisor-merge-plan.json",
+    "merge/accepted-batches.json",
+    "merge/rejected-batches.json",
+    "validation/non-live-report.json",
+  ]) {
+    assert(fs.existsSync(path.join(runRoot, relative)), `${relative} must exist`);
+  }
+
+  const mergePlan = readJson(path.join(runRoot, "merge", "supervisor-merge-plan.json"));
+  assert.strictEqual(mergePlan.schema, "generic-repo-tool-importer.supervisor-merge-plan.v1");
+  assert.strictEqual(mergePlan.status, "planned_only");
+  assert.strictEqual(mergePlan.controlledMergeApplied, false);
+  assert.strictEqual(mergePlan.worktreesCreated, false);
+  assert.strictEqual(mergePlan.childRunsCreated, false);
+  assert.strictEqual(mergePlan.checks.plannedPathsOnly, "passed");
+  assert.strictEqual(mergePlan.checks.nonLiveValidation, "planned_not_run");
+
+  const accepted = readJson(path.join(runRoot, "merge", "accepted-batches.json"));
+  assert.strictEqual(accepted.schema, "generic-repo-tool-importer.accepted-batches.v1");
+  assert.strictEqual(accepted.status, "planned_only");
+  assert(accepted.batches.length > 0);
+  assert.strictEqual(accepted.batches[0].controlledMergeApplied, false);
+
+  const rejected = readJson(path.join(runRoot, "merge", "rejected-batches.json"));
+  assert.strictEqual(rejected.schema, "generic-repo-tool-importer.rejected-batches.v1");
+  assert.strictEqual(rejected.status, "planned_only");
+  assert.deepStrictEqual(rejected.batches, []);
+
+  const validationReport = readJson(path.join(runRoot, "validation", "non-live-report.json"));
+  assert.strictEqual(validationReport.schema, "generic-repo-tool-importer.non-live-report.v1");
+  assert.strictEqual(validationReport.status, "planned_only");
+  assert.strictEqual(validationReport.commandsRun, false);
+  assert.strictEqual(validationReport.gitDiffCheck, true);
+  assert.strictEqual(validationReport.liveCepAeRun, false);
+  assert.strictEqual(validationReport.localOllamaUsed, false);
+
+  const supervisorPlan = readJson(path.join(runRoot, "supervisor-plan.json"));
+  assert.strictEqual(supervisorPlan.auxiliaryId, "AUX-018");
+  assert.strictEqual(supervisorPlan.status, "stopped_after_merge_planning");
+  assert.strictEqual(supervisorPlan.stopBeforePhase, "live_queue_design");
+  assert.strictEqual(supervisorPlan.mergePlanning.controlledMergeApplied, false);
+  assert.strictEqual(supervisorPlan.mergePlanning.childRunsCreated, false);
+
+  assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain"]), "");
+}
+
+function assertSuccessfulMergePlanningFixture() {
+  const fixture = createTempFixture("merge-success");
+  try {
+    const runId = "aux018-merge-success";
+    const { manifestPath } = prepareImplementationFixture(fixture, runId);
+    const output = parseJson(run(["--manifest", manifestPath, "--plan-merge", "--json"]));
+    assert.strictEqual(output.resumed, true);
+    assertMergePlanningArtifacts(output, fixture, runId);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertMergeMissingImplementationArtifactFixture() {
+  const fixture = createTempFixture("merge-missing-implementation");
+  try {
+    const runId = "aux018-missing-implementation";
+    const { manifestPath, runRoot } = prepareImplementationFixture(fixture, runId);
+    fs.rmSync(path.join(runRoot, "implementation", "planned-paths.json"), { force: true });
+
+    const result = run(["--manifest", manifestPath, "--plan-merge", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /implementation-plan-output-missing: implementation\/planned-paths\.json/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertMergeUnplannedPathFixture() {
+  const fixture = createTempFixture("merge-unplanned-path");
+  try {
+    const runId = "aux018-unplanned-path";
+    const manifest = validManifest(fixture, runId);
+    manifest.merge.fixtureBatchResults = [
+      {
+        id: "fixture-analysis-batch-1",
+        status: "fixture_completed",
+        validationStatus: "passed",
+        changedPaths: ["scripts/unplanned.js"],
+      },
+    ];
+    const { manifestPath } = prepareImplementationFixture(fixture, runId, manifest);
+
+    const result = run(["--manifest", manifestPath, "--plan-merge", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /unplanned-path-change: fixture-analysis-batch-1:scripts\/unplanned\.js/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertMergeDependencyChangeFixture() {
+  const fixture = createTempFixture("merge-dependency-change");
+  try {
+    const runId = "aux018-dependency-change";
+    const manifest = validManifest(fixture, runId);
+    manifest.merge.fixtureBatchResults = [
+      {
+        id: "fixture-analysis-batch-1",
+        status: "fixture_completed",
+        validationStatus: "passed",
+        changedPaths: ["package.json"],
+      },
+    ];
+    const { manifestPath } = prepareImplementationFixture(fixture, runId, manifest);
+
+    const result = run(["--manifest", manifestPath, "--plan-merge", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /dependency-change-requested-without-manifest-allowance: package\.json/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertMergeSharedConflictFixture() {
+  const fixture = createTempFixture("merge-shared-conflict");
+  try {
+    const runId = "aux018-shared-conflict";
+    const { manifestPath, runRoot } = prepareImplementationFixture(fixture, runId);
+    const worktreePlanPath = path.join(runRoot, "implementation", "batch-worktree-plan.json");
+    const plannedPathsPath = path.join(runRoot, "implementation", "planned-paths.json");
+    const worktreePlan = readJson(worktreePlanPath);
+    const plannedPaths = readJson(plannedPathsPath);
+    const firstBatch = worktreePlan.batches[0];
+    const sharedPath = firstBatch.plannedPaths[0];
+    worktreePlan.batches.push({
+      ...firstBatch,
+      id: "tampered-second-batch",
+      plannedPaths: [sharedPath],
+    });
+    plannedPaths.batches.push({
+      ...plannedPaths.batches[0],
+      id: "tampered-second-batch",
+      plannedPaths: [sharedPath],
+    });
+    fs.writeFileSync(worktreePlanPath, `${JSON.stringify(worktreePlan, null, 2)}\n`, "utf8");
+    fs.writeFileSync(plannedPathsPath, `${JSON.stringify(plannedPaths, null, 2)}\n`, "utf8");
+
+    const result = run(["--manifest", manifestPath, "--plan-merge", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, new RegExp(`shared-file-batch-conflict-without-merge-owner: ${sharedPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertMergeDirtyTargetFixture() {
+  const fixture = createTempFixture("merge-dirty-target");
+  try {
+    const runId = "aux018-dirty-target";
+    const { manifestPath } = prepareImplementationFixture(fixture, runId);
+    fs.writeFileSync(path.join(fixture.target, "unowned.txt"), "dirty\n", "utf8");
+
+    const result = run(["--manifest", manifestPath, "--plan-merge", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /target-repo-dirty-unowned: unowned\.txt/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertMergeResumeFixture() {
+  const fixture = createTempFixture("merge-resume");
+  try {
+    const runId = "aux018-merge-resume";
+    const { manifestPath, runRoot } = prepareImplementationFixture(fixture, runId);
+    const first = parseJson(run(["--manifest", manifestPath, "--plan-merge", "--json"]));
+    assertMergePlanningArtifacts(first, fixture, runId);
+
+    const second = parseJson(run(["--manifest", manifestPath, "--plan-merge", "--json"]));
+    assert.strictEqual(second.resumed, true);
+    assertMergePlanningArtifacts(second, fixture, runId);
+
+    const state = readJson(path.join(runRoot, "state.json"));
+    assert(state.resumeCount >= 3);
+    const events = fs.readFileSync(path.join(runRoot, "events.jsonl"), "utf8").trim().split(/\r?\n/).map(JSON.parse);
+    assert(events.some((event) => event.event === "merge_planned"));
+    assert(events.some((event) => event.event === "merge_plan_resume_verified"));
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function main() {
   assertValidManifestFixture();
   assertInvalidSchemaFixture();
@@ -746,6 +973,13 @@ function main() {
   assertImplementationDependencyChangeFixture();
   assertImplementationSharedConflictFixture();
   assertImplementationResumeFixture();
+  assertSuccessfulMergePlanningFixture();
+  assertMergeMissingImplementationArtifactFixture();
+  assertMergeUnplannedPathFixture();
+  assertMergeDependencyChangeFixture();
+  assertMergeSharedConflictFixture();
+  assertMergeDirtyTargetFixture();
+  assertMergeResumeFixture();
 
   console.log("SDK generic repo importer command smoke: pass");
 }
