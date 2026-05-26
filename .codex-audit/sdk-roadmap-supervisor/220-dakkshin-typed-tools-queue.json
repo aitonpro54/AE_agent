@@ -256,7 +256,8 @@
           "npm.cmd run check:rules",
           "git diff --check"
         ],
-        "commit": "not-created-by-writer-child"
+        "commit": "not-created-by-writer-child",
+        "handoff": "blocked-by-inherited-deny-acl"
       }
     },
     {
@@ -499,7 +500,22 @@
         "local-ollama-openrouter-deterministic-fallback-requested",
         "dependency-change-requested"
       ],
-      "status": "queued"
+      "status": "completed",
+      "completedAt": "2026-05-26",
+      "completedBy": {
+        "actor": "codex-writer-child",
+        "validationCommands": [
+          "node --check scripts/agent-scenario-fixtures.js",
+          "node --check scripts/cep-panel-cdp-smoke.js",
+          "node --check scripts/agent-scenario-report-smoke.js",
+          "node scripts/agent-scenario-report-smoke.js",
+          "node scripts/plan-repair-smoke.js",
+          "node scripts/semantic-verification-smoke.js",
+          "npm.cmd run check:rules",
+          "git diff --check"
+        ],
+        "commit": "not-created-by-writer-child"
+      }
     },
     {
       "id": "m224-dakkshin-generated-only-live-acceptance",

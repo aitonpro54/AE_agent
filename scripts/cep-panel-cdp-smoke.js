@@ -3,6 +3,7 @@
 const http = require("http");
 const { writeAgentRunReport } = require("./agent-scenario-report");
 const {
+  agentDakkshinTypedToolsScenarioPlans,
   agentDuplicateLayersScenarioPlans,
   agentManualTypedToolsScenarioPlans,
   agentMaskSafetyScenarioPlans,
@@ -132,6 +133,24 @@ function openAiCliManualTypedToolsScenarioConfig() {
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true
+  };
+}
+
+function openAiCliDakkshinTypedToolsScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-dakkshin-typed-tools",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_DAKKSHIN_TYPED_TOOLS_PREFIX || "Codex QA M223",
+    scenarioFactory: agentDakkshinTypedToolsScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
   };
 }
 
@@ -3141,6 +3160,20 @@ async function agentScenarioReadiness(config) {
   return response.readiness;
 }
 
+function assertAgentScenarioProviderPolicy(config) {
+  const scenarioConfig = config || defaultAgentScenarioConfig();
+  if (!scenarioConfig.disallowProviderFallbacks) return;
+  const agentId = String(scenarioConfig.agentId || "").toLowerCase();
+  const providerGroup = String(scenarioConfig.providerGroup || "").toLowerCase();
+  const authMode = String(scenarioConfig.authMode || "").toLowerCase();
+  if (providerGroup !== "openai" || authMode !== "cli") {
+    throw new Error(`${scenarioConfig.label}: generated-only live lane must use OpenAI CLI; got providerGroup=${scenarioConfig.providerGroup || ""}, authMode=${scenarioConfig.authMode || ""}.`);
+  }
+  if (agentId.indexOf("ollama") >= 0 || agentId.indexOf("local") >= 0 || agentId.indexOf("openrouter") >= 0) {
+    throw new Error(`${scenarioConfig.label}: Local/Ollama/OpenRouter provider fallback is forbidden for this generated-only lane.`);
+  }
+}
+
 async function agentScenarioAudit() {
   const prefixLimit = boundedNumber(process.env.CEP_PANEL_AUDIT_MAX_PREFIXES, 30, 1, 100);
   const prefixes = collectAuditPrefixes({
@@ -3635,6 +3668,115 @@ async function verifyDuplicateLayersReadBack(scenario, expected) {
   };
 }
 
+function numbersMatch(expected, observed, tolerance) {
+  return Math.abs(Number(expected) - Number(observed)) <= (typeof tolerance === "number" ? tolerance : 0.001);
+}
+
+function numberPreviewArray(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.map((item) => valuePreviewNumber(item));
+  if (Array.isArray(value.value)) return value.value.map((item) => valuePreviewNumber(item));
+  return [];
+}
+
+function numberArraysMatch(expected, observed, tolerance) {
+  const actual = numberPreviewArray(observed);
+  return Array.isArray(expected) &&
+    actual.length >= expected.length &&
+    expected.every((value, index) => numbersMatch(value, actual[index], tolerance));
+}
+
+async function verifyDakkshinTypedToolsReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const props = expected.compProperties || {};
+  for (const field of ["width", "height", "pixelAspect", "duration", "frameRate", "displayStartTime"]) {
+    if (typeof props[field] === "number" && !numbersMatch(props[field], comp[field], 0.01)) {
+      throw new Error(`${scenario.id}: generated comp ${field} mismatch; expected ${props[field]}, got ${comp[field]}.`);
+    }
+  }
+  if (Array.isArray(props.bgColor) && !numberArraysMatch(props.bgColor, comp.bgColor, 0.01)) {
+    throw new Error(`${scenario.id}: generated comp bgColor read-back mismatch.`);
+  }
+
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const names = layers.map((layer) => layer.name);
+  const maskLayer = layers.find((layer) => layer.name === expected.layerName);
+  if (!maskLayer || !maskLayer.index) {
+    throw new Error(`${scenario.id}: generated Dakkshin mask target layer was not found by read-back.`);
+  }
+  if (names.includes(expected.deletedLayerName)) {
+    throw new Error(`${scenario.id}: generated delete target layer was still present after delete_layer.`);
+  }
+  if (typeof expected.layerCountAfter === "number" && Number(comp.numLayers) !== expected.layerCountAfter) {
+    throw new Error(`${scenario.id}: expected ${expected.layerCountAfter} layer(s) after delete_layer, got ${comp.numLayers}.`);
+  }
+
+  const layerDetails = await callBridgeTool("get_layer_details", {
+    compName: expected.compName,
+    layerIndex: maskLayer.index,
+    includeProperties: false
+  });
+  const masks = Array.isArray(layerDetails.masks) ? layerDetails.masks : [];
+  if (typeof expected.maskCount === "number" && masks.length !== expected.maskCount) {
+    throw new Error(`${scenario.id}: expected ${expected.maskCount} generated mask(s), got ${masks.length}.`);
+  }
+  const mask = masks.find((item) => item.name === expected.maskName);
+  if (!mask) {
+    throw new Error(`${scenario.id}: generated mask ${expected.maskName} was not found by read-back.`);
+  }
+  if (expected.maskMode && mask.maskMode !== expected.maskMode) {
+    throw new Error(`${scenario.id}: generated mask mode mismatch; expected ${expected.maskMode}, got ${mask.maskMode}.`);
+  }
+  if (typeof expected.inverted === "boolean" && mask.inverted !== expected.inverted) {
+    throw new Error(`${scenario.id}: generated mask inverted read-back mismatch.`);
+  }
+  if (!pointsMatch(expected.maskVertices, mask.shape && mask.shape.vertices)) {
+    throw new Error(`${scenario.id}: generated updated mask vertices read-back mismatch.`);
+  }
+  if (typeof expected.opacity === "number" && !numbersMatch(expected.opacity, valuePreviewNumber(mask.opacity), 0.01)) {
+    throw new Error(`${scenario.id}: generated mask opacity read-back mismatch.`);
+  }
+  if (Array.isArray(expected.feather) && !numberArraysMatch(expected.feather, mask.feather, 0.01)) {
+    throw new Error(`${scenario.id}: generated mask feather read-back mismatch.`);
+  }
+  if (typeof expected.expansion === "number" && !numbersMatch(expected.expansion, valuePreviewNumber(mask.expansion), 0.01)) {
+    throw new Error(`${scenario.id}: generated mask expansion read-back mismatch.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      width: comp.width,
+      height: comp.height,
+      duration: comp.duration,
+      frameRate: comp.frameRate,
+      displayStartTime: comp.displayStartTime,
+      numLayers: comp.numLayers
+    },
+    layer: {
+      index: maskLayer.index,
+      name: maskLayer.name,
+      deletedLayerAbsent: true
+    },
+    mask: {
+      name: mask.name,
+      maskMode: mask.maskMode,
+      inverted: mask.inverted,
+      opacity: valuePreviewNumber(mask.opacity),
+      feather: numberPreviewArray(mask.feather),
+      expansion: valuePreviewNumber(mask.expansion),
+      vertexCount: mask.shape ? mask.shape.vertexCount : null
+    }
+  };
+}
+
 async function findGeneratedCompByExactName(scenario, compName) {
   const found = await callBridgeTool("find_project_items", {
     query: compName,
@@ -3801,6 +3943,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.duplicateLayers) {
     return verifyDuplicateLayersReadBack(scenario, expected);
+  }
+
+  if (expected.dakkshinTypedTools) {
+    return verifyDakkshinTypedToolsReadBack(scenario, expected);
   }
 
   if (expected.markerLifecycle) {
@@ -4072,6 +4218,7 @@ async function runAgentScenario(send, scenario, config) {
 
 async function agentScenarioSmoke(config) {
   const scenarioConfig = config || defaultAgentScenarioConfig();
+  assertAgentScenarioProviderPolicy(scenarioConfig);
   const preflight = await agentScenarioPreflight(scenarioConfig);
   const renderQueueBaselineTotal = Number(preflight.renderQueue && preflight.renderQueue.totalItems || 0);
   const runPrefix = `${scenarioConfig.runPrefixBase || AGENT_SCENARIO_PREFIX} ${agentScenarioStamp()}`;
@@ -4413,6 +4560,10 @@ async function main() {
   }
   if (command === "agent-manual-typed-tools-openai-cli-smoke" || command === "full-ui-agent-manual-typed-tools-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliManualTypedToolsScenarioConfig());
+    return;
+  }
+  if (command === "agent-dakkshin-typed-tools-openai-cli-smoke" || command === "full-ui-agent-dakkshin-typed-tools-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliDakkshinTypedToolsScenarioConfig());
     return;
   }
   if (command === "openai-api-setup-smoke") {

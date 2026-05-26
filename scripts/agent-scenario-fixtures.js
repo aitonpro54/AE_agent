@@ -26,6 +26,9 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "clear_expression",
   "duplicate_layer",
   "duplicate_layers",
+  "delete_layer",
+  "set_comp_properties",
+  "set_layer_mask",
   "add_layer_marker",
   "update_layer_marker",
   "delete_layer_marker",
@@ -636,6 +639,195 @@ function agentDuplicateLayersScenarioPlans(runPrefix) {
   }));
 }
 
+function agentDakkshinTypedToolsScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Dakkshin Typed Tools`;
+  const compName = `${base} Comp`;
+  const maskLayerName = `${base} Mask Target`;
+  const deleteLayerName = `${base} Delete Target`;
+  const maskName = `${base} Mask`;
+  const updatedVertices = [[80, 70], [540, 90], [500, 300], [110, 270]];
+  const compProperties = {
+    width: 800,
+    height: 450,
+    pixelAspect: 1,
+    duration: 4,
+    frameRate: 24,
+    bgColor: [0.12, 0.16, 0.22],
+    displayStartTime: 0.5
+  };
+
+  return [
+    {
+      id: "generated-dakkshin-typed-tools-matrix",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "set_comp_properties",
+        "create_solid_layer",
+        "get_comp_details",
+        "delete_layer",
+        "set_layer_mask",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        dakkshinTypedTools: true,
+        compName,
+        compProperties,
+        layerName: maskLayerName,
+        deletedLayerName: deleteLayerName,
+        layerCountAfter: 1,
+        maskName,
+        maskCount: 1,
+        maskMode: "subtract",
+        maskVertices: updatedVertices,
+        inverted: true,
+        opacity: 72,
+        feather: [6, 3],
+        expansion: 9
+      },
+      plan: {
+        summary: "M223 generated-only live QA for delete_layer, set_comp_properties, and set_layer_mask.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          {
+            title: "Create generated Dakkshin QA comp",
+            tool: "create_comp",
+            args: {
+              name: compName,
+              width: 640,
+              height: 360,
+              pixelAspect: 1,
+              duration: 3,
+              frameRate: 24,
+              bgColor: [0.08, 0.1, 0.12],
+              allowDuplicateName: false,
+              openInViewer: false,
+              comment: "M223 generated-only Dakkshin typed tools validation"
+            }
+          },
+          {
+            title: "Set generated comp properties",
+            tool: "set_comp_properties",
+            args: {
+              compName,
+              width: compProperties.width,
+              height: compProperties.height,
+              pixelAspect: compProperties.pixelAspect,
+              duration: compProperties.duration,
+              frameRate: compProperties.frameRate,
+              bgColor: compProperties.bgColor,
+              displayStartTime: compProperties.displayStartTime
+            }
+          },
+          {
+            title: "Create generated delete target layer",
+            tool: "create_solid_layer",
+            args: {
+              compName,
+              name: deleteLayerName,
+              color: [0.88, 0.24, 0.18],
+              width: 220,
+              height: 140,
+              pixelAspect: 1,
+              startTime: 0,
+              duration: 4
+            }
+          },
+          {
+            title: "Create generated mask target layer",
+            tool: "create_solid_layer",
+            args: {
+              compName,
+              name: maskLayerName,
+              color: [0.18, 0.48, 0.86],
+              width: 800,
+              height: 450,
+              pixelAspect: 1,
+              startTime: 0,
+              duration: 4
+            }
+          },
+          {
+            title: "Inspect generated Dakkshin layer stack",
+            tool: "get_comp_details",
+            args: {
+              compName,
+              includeLayers: true,
+              layerLimit: 10
+            }
+          },
+          {
+            title: "Delete generated target layer explicitly",
+            tool: "delete_layer",
+            args: {
+              compName,
+              layerIndex: 2,
+              expectedLayerName: deleteLayerName
+            }
+          },
+          {
+            title: "Create generated target mask",
+            tool: "set_layer_mask",
+            args: {
+              compName,
+              layerIndex: 1,
+              operation: "create",
+              name: maskName,
+              vertices: [[90, 80], [520, 80], [520, 280], [90, 280]],
+              maskMode: "add",
+              inverted: false,
+              opacity: 100,
+              feather: [0, 0],
+              expansion: 0
+            }
+          },
+          {
+            title: "Update generated target mask",
+            tool: "set_layer_mask",
+            args: {
+              compName,
+              layerIndex: 1,
+              operation: "update",
+              maskIndex: 1,
+              expectedMaskName: maskName,
+              vertices: updatedVertices,
+              maskMode: "subtract",
+              inverted: true,
+              opacity: 72,
+              feather: [6, 3],
+              expansion: 9
+            }
+          },
+          {
+            title: "Read generated Dakkshin comp after mutations",
+            tool: "get_comp_details",
+            args: {
+              compName,
+              includeLayers: true,
+              layerLimit: 10
+            }
+          },
+          {
+            title: "Read generated Dakkshin mask details",
+            tool: "get_layer_details",
+            args: {
+              compName,
+              layerIndex: 1,
+              includeProperties: false
+            }
+          }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentManualTypedToolsScenarioPlans(runPrefix) {
   const base = `${runPrefix} Manual Typed Tools`;
   const folderBase = `${base} Folder Move`;
@@ -1054,6 +1246,7 @@ module.exports = {
   DEFAULT_PLANNER_FIXTURE_PREFIX,
   DEFAULT_RENDER_QUEUE_BASELINE_TOTAL,
   agentDuplicateLayersScenarioPlans,
+  agentDakkshinTypedToolsScenarioPlans,
   agentManualTypedToolsScenarioPlans,
   agentMaskSafetyScenarioPlans,
   agentMarkerLifecycleScenarioPlans,

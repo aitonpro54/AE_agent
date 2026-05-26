@@ -9,6 +9,9 @@ const {
   REPORT_SCHEMA_VERSION,
   writeAgentRunReport
 } = require("./agent-scenario-report");
+const {
+  agentDakkshinTypedToolsScenarioPlans
+} = require("./agent-scenario-fixtures");
 
 function fixtureReport() {
   return {
@@ -114,7 +117,49 @@ function fixtureReport() {
   };
 }
 
+function assertDakkshinGeneratedOnlyFixture() {
+  const [scenario] = agentDakkshinTypedToolsScenarioPlans("Codex QA M223 Fixture");
+  assert(scenario, "M223 Dakkshin scenario should be registered.");
+  assert.strictEqual(scenario.id, "generated-dakkshin-typed-tools-matrix");
+  assert.strictEqual(scenario.cleanupPrefix, "Codex QA M223 Fixture Dakkshin Typed Tools");
+  assert.deepStrictEqual(scenario.expectedTools, [
+    "create_comp",
+    "set_comp_properties",
+    "create_solid_layer",
+    "get_comp_details",
+    "delete_layer",
+    "set_layer_mask",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(scenario.expectedStepCount, 10);
+  assert.strictEqual(scenario.expectedMutatingCount, 7);
+  assert.strictEqual(scenario.expectedReadBack.dakkshinTypedTools, true);
+  assert.strictEqual(scenario.expectedReadBack.compName.indexOf(scenario.cleanupPrefix), 0);
+  assert.strictEqual(scenario.expectedReadBack.layerName.indexOf(scenario.cleanupPrefix), 0);
+  assert.strictEqual(scenario.expectedReadBack.deletedLayerName.indexOf(scenario.cleanupPrefix), 0);
+  assert.strictEqual(scenario.expectedReadBack.maskName.indexOf(scenario.cleanupPrefix), 0);
+
+  const toolSequence = scenario.plan.steps.map((step) => step.tool);
+  assert.deepStrictEqual(toolSequence, [
+    "create_comp",
+    "set_comp_properties",
+    "create_solid_layer",
+    "create_solid_layer",
+    "get_comp_details",
+    "delete_layer",
+    "set_layer_mask",
+    "set_layer_mask",
+    "get_comp_details",
+    "get_layer_details"
+  ]);
+  assert(!toolSequence.includes("run_extendscript"), "M223 fixture must not use raw ExtendScript.");
+  assert(!toolSequence.includes("cleanup_test_items"), "M223 fixture cleanup is owned by the scenario runner, not the planner fixture.");
+  assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
+}
+
 function main() {
+  assertDakkshinGeneratedOnlyFixture();
+
   const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "ae-agent-run-report-"));
   const artifact = writeAgentRunReport(fixtureReport(), {
     outputDir,
