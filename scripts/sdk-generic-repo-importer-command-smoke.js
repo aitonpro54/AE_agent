@@ -955,6 +955,297 @@ function assertMergeResumeFixture() {
   }
 }
 
+function prepareMergeFixture(fixture, runId, manifest = validManifest(fixture, runId)) {
+  const prepared = prepareImplementationFixture(fixture, runId, manifest);
+  parseJson(run(["--manifest", prepared.manifestPath, "--plan-merge", "--json"]));
+  return prepared;
+}
+
+function assertLiveQueuePlanningArtifacts(output, fixture, runId) {
+  assert.strictEqual(output.schema, "generic-repo-tool-importer.command-skeleton.v1");
+  assert.strictEqual(output.auxiliaryId, "AUX-019");
+  assert.strictEqual(output.runId, runId);
+  assert.strictEqual(output.status, "stopped_after_live_queue_planning");
+  assert.strictEqual(output.currentPhase, "live_queue_planned");
+  assert.strictEqual(output.nextPhase, "completed");
+  assert.strictEqual(output.analysisCompleted, true);
+  assert.strictEqual(output.implementationPlanned, true);
+  assert.strictEqual(output.mergePlanned, true);
+  assert.strictEqual(output.liveQueuePlanned, true);
+  assert.strictEqual(output.worktreesCreated, false);
+  assert.strictEqual(output.childRunsCreated, false);
+  assert.strictEqual(output.controlledMergeApplied, false);
+  assert.strictEqual(output.liveCepAeRun, false);
+  assert.strictEqual(output.localOllamaUsed, false);
+
+  const runRoot = path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-importer", runId);
+  const state = readJson(path.join(runRoot, "state.json"));
+  assert.strictEqual(state.auxiliaryId, "AUX-019");
+  assert.strictEqual(state.status, "stopped");
+  assert.strictEqual(state.currentPhase, "live_queue_planned");
+  assert.strictEqual(state.nextPhase, "completed");
+  assert.strictEqual(state.stopReason, "stopped_before_live_queue_execution");
+  assert.strictEqual(state.flags.liveQueuePlanned, true);
+  assert.strictEqual(state.flags.liveCepAeRun, false);
+  assert.strictEqual(state.flags.localOllamaUsed, false);
+  assert.strictEqual(state.flags.fallbackProviderUsed, false);
+
+  const queuePath = path.join(runRoot, "live-queue", "queue.json");
+  const lockPath = path.join(runRoot, "locks", "live-ae-cep.lock");
+  assert(fs.existsSync(queuePath), "live queue must exist");
+  assert(fs.existsSync(lockPath), "live lock fixture must exist");
+
+  const queue = readJson(queuePath);
+  assert.strictEqual(queue.schema, "generic-repo-tool-importer.live-queue.v1");
+  assert.strictEqual(queue.status, "planned_only");
+  assert.strictEqual(queue.liveCepAeRun, false);
+  assert.strictEqual(queue.localOllamaUsed, false);
+  assert.strictEqual(queue.fallbackProviderUsed, false);
+  assert.strictEqual(queue.checks.lockArtifact, "fixture_available");
+  assert.strictEqual(queue.checks.m100Proposal, "present");
+  assert.strictEqual(queue.checks.dryRunProposalMatch, "passed");
+  assert.strictEqual(queue.checks.confirmedRunProposalMatch, "passed");
+  assert.strictEqual(queue.checks.readBack, "present");
+  assert.strictEqual(queue.checks.semanticVerification, "passed");
+  assert.strictEqual(queue.checks.cleanupProof, "passed");
+  assert(queue.items.length > 0);
+
+  const item = queue.items[0];
+  for (const relative of item.artifacts) {
+    assert(fs.existsSync(path.join(runRoot, relative)), `${relative} must exist`);
+  }
+  const proposal = readJson(path.join(runRoot, "live-queue", item.id, "m100-proposal.json"));
+  const dryRun = readJson(path.join(runRoot, "live-queue", item.id, "dry-run.json"));
+  const confirmedRun = readJson(path.join(runRoot, "live-queue", item.id, "confirmed-run.json"));
+  const readBack = readJson(path.join(runRoot, "live-queue", item.id, "read-back.json"));
+  const semantic = readJson(path.join(runRoot, "live-queue", item.id, "semantic-verification.json"));
+  const cleanup = readJson(path.join(runRoot, "live-queue", item.id, "cleanup-proof.json"));
+  assert.strictEqual(proposal.m100ProposalPresent, true);
+  assert.strictEqual(dryRun.proposalId, proposal.proposalId);
+  assert.strictEqual(confirmedRun.proposalId, proposal.proposalId);
+  assert.strictEqual(confirmedRun.mutationApplied, false);
+  assert.strictEqual(readBack.status, "present");
+  assert.strictEqual(semantic.status, "passed");
+  assert.strictEqual(cleanup.status, "passed");
+  assert.deepStrictEqual(cleanup.leftovers, []);
+
+  const lock = readJson(lockPath);
+  assert.strictEqual(lock.schema, "generic-repo-tool-importer.live-lock-fixture.v1");
+  assert.strictEqual(lock.status, "fixture_available");
+  assert.strictEqual(lock.actualLockAcquired, false);
+  assert.strictEqual(lock.liveCepAeRun, false);
+
+  const supervisorPlan = readJson(path.join(runRoot, "supervisor-plan.json"));
+  assert.strictEqual(supervisorPlan.auxiliaryId, "AUX-019");
+  assert.strictEqual(supervisorPlan.status, "stopped_after_live_queue_planning");
+  assert.strictEqual(supervisorPlan.stopBeforePhase, "live_queue_execution");
+  assert.strictEqual(supervisorPlan.liveQueuePlanning.liveCepAeRun, false);
+  assert.strictEqual(supervisorPlan.liveQueuePlanning.fallbackProviderUsed, false);
+
+  assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain"]), "");
+}
+
+function assertSuccessfulLiveQueuePlanningFixture() {
+  const fixture = createTempFixture("live-success");
+  try {
+    const runId = "aux019-live-success";
+    const { manifestPath } = prepareMergeFixture(fixture, runId);
+    const output = parseJson(run(["--manifest", manifestPath, "--plan-live-queue", "--json"]));
+    assert.strictEqual(output.resumed, true);
+    assertLiveQueuePlanningArtifacts(output, fixture, runId);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertLiveQueueMissingMergeArtifactFixture() {
+  const fixture = createTempFixture("live-missing-merge");
+  try {
+    const runId = "aux019-missing-merge";
+    const { manifestPath, runRoot } = prepareMergeFixture(fixture, runId);
+    fs.rmSync(path.join(runRoot, "merge", "supervisor-merge-plan.json"), { force: true });
+
+    const result = run(["--manifest", manifestPath, "--plan-live-queue", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /merge-plan-output-missing: merge\/supervisor-merge-plan\.json/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertLiveQueueLockUnavailableFixture() {
+  const fixture = createTempFixture("live-lock-unavailable");
+  try {
+    const runId = "aux019-lock-unavailable";
+    const manifest = validManifest(fixture, runId);
+    manifest.liveAcceptance.fixtureEvidence = { lockAvailable: false };
+    const { manifestPath } = prepareMergeFixture(fixture, runId, manifest);
+
+    const result = run(["--manifest", manifestPath, "--plan-live-queue", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /live-lock-not-available/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertLiveQueueM100MissingFixture() {
+  const fixture = createTempFixture("live-m100-missing");
+  try {
+    const runId = "aux019-m100-missing";
+    const manifest = validManifest(fixture, runId);
+    manifest.liveAcceptance.fixtureEvidence = { m100ProposalMissing: true };
+    const { manifestPath } = prepareMergeFixture(fixture, runId, manifest);
+
+    const result = run(["--manifest", manifestPath, "--plan-live-queue", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /m100-proposal-missing/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertLiveQueueDryRunMismatchFixture() {
+  const fixture = createTempFixture("live-dry-run-mismatch");
+  try {
+    const runId = "aux019-dry-run-mismatch";
+    const manifest = validManifest(fixture, runId);
+    manifest.liveAcceptance.fixtureEvidence = {
+      proposalId: "proposal-one",
+      dryRunProposalId: "proposal-two",
+    };
+    const { manifestPath } = prepareMergeFixture(fixture, runId, manifest);
+
+    const result = run(["--manifest", manifestPath, "--plan-live-queue", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /dry-run-proposal-mismatch/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertLiveQueueConfirmedMismatchFixture() {
+  const fixture = createTempFixture("live-confirmed-mismatch");
+  try {
+    const runId = "aux019-confirmed-mismatch";
+    const manifest = validManifest(fixture, runId);
+    manifest.liveAcceptance.fixtureEvidence = {
+      proposalId: "proposal-one",
+      confirmedProposalId: "proposal-two",
+    };
+    const { manifestPath } = prepareMergeFixture(fixture, runId, manifest);
+
+    const result = run(["--manifest", manifestPath, "--plan-live-queue", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /confirmed-run-proposal-mismatch/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertLiveQueueReadBackMissingFixture() {
+  const fixture = createTempFixture("live-read-back-missing");
+  try {
+    const runId = "aux019-read-back-missing";
+    const manifest = validManifest(fixture, runId);
+    manifest.liveAcceptance.fixtureEvidence = { readBackMissing: true };
+    const { manifestPath } = prepareMergeFixture(fixture, runId, manifest);
+
+    const result = run(["--manifest", manifestPath, "--plan-live-queue", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /read-back-missing/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertLiveQueueSemanticNotPassedFixture() {
+  const fixture = createTempFixture("live-semantic-not-passed");
+  try {
+    const runId = "aux019-semantic-not-passed";
+    const manifest = validManifest(fixture, runId);
+    manifest.liveAcceptance.fixtureEvidence = { semanticStatus: "needs_review" };
+    const { manifestPath } = prepareMergeFixture(fixture, runId, manifest);
+
+    const result = run(["--manifest", manifestPath, "--plan-live-queue", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /semantic-verification-not-passed: needs_review/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertLiveQueueProviderRejectionFixture() {
+  const fixture = createTempFixture("live-provider-rejection");
+  try {
+    const runId = "aux019-provider-rejection";
+    const manifest = validManifest(fixture, runId);
+    manifest.liveAcceptance.fixtureEvidence = { providerPath: "Local/Ollama" };
+    const { manifestPath } = prepareMergeFixture(fixture, runId, manifest);
+
+    const result = run(["--manifest", manifestPath, "--plan-live-queue", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /Local\/Ollama/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertLiveQueueFallbackProviderFixture() {
+  const fixture = createTempFixture("live-fallback-provider");
+  try {
+    const runId = "aux019-fallback-provider";
+    const manifest = validManifest(fixture, runId);
+    manifest.liveAcceptance.fixtureEvidence = { fallbackProviderUsed: true };
+    const { manifestPath } = prepareMergeFixture(fixture, runId, manifest);
+
+    const result = run(["--manifest", manifestPath, "--plan-live-queue", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /fallback-provider-evidence-rejected/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertLiveQueueCleanupLeftoversFixture() {
+  const fixture = createTempFixture("live-cleanup-leftovers");
+  try {
+    const runId = "aux019-cleanup-leftovers";
+    const manifest = validManifest(fixture, runId);
+    manifest.liveAcceptance.fixtureEvidence = { cleanupLeftovers: ["Generated leftover"] };
+    const { manifestPath } = prepareMergeFixture(fixture, runId, manifest);
+
+    const result = run(["--manifest", manifestPath, "--plan-live-queue", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /generated-prefix-cleanup-leftovers/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertLiveQueueResumeFixture() {
+  const fixture = createTempFixture("live-resume");
+  try {
+    const runId = "aux019-live-resume";
+    const { manifestPath, runRoot } = prepareMergeFixture(fixture, runId);
+    const first = parseJson(run(["--manifest", manifestPath, "--plan-live-queue", "--json"]));
+    assertLiveQueuePlanningArtifacts(first, fixture, runId);
+
+    const second = parseJson(run(["--manifest", manifestPath, "--plan-live-queue", "--json"]));
+    assert.strictEqual(second.resumed, true);
+    assertLiveQueuePlanningArtifacts(second, fixture, runId);
+
+    const state = readJson(path.join(runRoot, "state.json"));
+    assert(state.resumeCount >= 4);
+    const events = fs.readFileSync(path.join(runRoot, "events.jsonl"), "utf8").trim().split(/\r?\n/).map(JSON.parse);
+    assert(events.some((event) => event.event === "live_queue_planned"));
+    assert(events.some((event) => event.event === "live_queue_plan_resume_verified"));
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function main() {
   assertValidManifestFixture();
   assertInvalidSchemaFixture();
@@ -980,6 +1271,18 @@ function main() {
   assertMergeSharedConflictFixture();
   assertMergeDirtyTargetFixture();
   assertMergeResumeFixture();
+  assertSuccessfulLiveQueuePlanningFixture();
+  assertLiveQueueMissingMergeArtifactFixture();
+  assertLiveQueueLockUnavailableFixture();
+  assertLiveQueueM100MissingFixture();
+  assertLiveQueueDryRunMismatchFixture();
+  assertLiveQueueConfirmedMismatchFixture();
+  assertLiveQueueReadBackMissingFixture();
+  assertLiveQueueSemanticNotPassedFixture();
+  assertLiveQueueProviderRejectionFixture();
+  assertLiveQueueFallbackProviderFixture();
+  assertLiveQueueCleanupLeftoversFixture();
+  assertLiveQueueResumeFixture();
 
   console.log("SDK generic repo importer command smoke: pass");
 }

@@ -24,6 +24,7 @@ const SUPERVISOR_PLAN_SCHEMA = "generic-repo-tool-importer.supervisor-plan.v1";
 const ANALYSIS_SCHEMA = "generic-repo-tool-importer.analysis-fixture.v1";
 const IMPLEMENTATION_PLAN_SCHEMA = "generic-repo-tool-importer.implementation-plan.v1";
 const MERGE_PLAN_SCHEMA = "generic-repo-tool-importer.merge-plan.v1";
+const LIVE_QUEUE_PLAN_SCHEMA = "generic-repo-tool-importer.live-queue-plan.v1";
 const ANALYSIS_ARTIFACTS = Object.freeze([
   "analysis/repo-fingerprint.json",
   "analysis/risk-map.json",
@@ -39,6 +40,10 @@ const MERGE_PLAN_ARTIFACTS = Object.freeze([
   "merge/accepted-batches.json",
   "merge/rejected-batches.json",
   "validation/non-live-report.json",
+]);
+const LIVE_QUEUE_ROOT_ARTIFACTS = Object.freeze([
+  "live-queue/queue.json",
+  "locks/live-ae-cep.lock",
 ]);
 const DEPENDENCY_PATHS = new Set([
   "package.json",
@@ -64,6 +69,7 @@ Usage:
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --run-analysis
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --plan-implementation
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --plan-merge
+  node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --plan-live-queue
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --json
 
 Options:
@@ -75,19 +81,21 @@ Options:
                      then stop before creating branches or worktrees.
   --plan-merge      Run the AUX-018 plan-only controlled merge supervisor,
                      then stop before applying changes or live validation.
+  --plan-live-queue Run the AUX-019 fixture-only serial live queue evidence
+                     planner, then stop before live AE/CEP execution.
   --json             Print machine-readable output.
   --help             Show this help.
 
 This skeleton validates the AUX-014 manifest contract, creates an ignored run
 root, writes durable state artifacts, optionally writes fixture-backed analysis
-artifacts, plan-only implementation batch artifacts, and plan-only merge
-artifacts, then stops before implementation. It does not create branches,
-worktrees, child runs, live AE/CEP runs, dependency changes, product runtime
-edits, push, PR, or GitHub automation.
+artifacts, plan-only implementation batch artifacts, plan-only merge artifacts,
+and fixture-only live queue evidence, then stops before implementation. It does
+not create branches, worktrees, child runs, live AE/CEP runs, dependency changes,
+product runtime edits, push, PR, or GitHub automation.
 `;
 
 const VALUE_OPTIONS = new Set(["manifest"]);
-const BOOLEAN_OPTIONS = new Set(["help", "json", "run-analysis", "plan-implementation", "plan-merge"]);
+const BOOLEAN_OPTIONS = new Set(["help", "json", "run-analysis", "plan-implementation", "plan-merge", "plan-live-queue"]);
 
 function splitInlineOption(raw) {
   const index = raw.indexOf("=");
@@ -637,6 +645,68 @@ function updateSupervisorPlanForMergePlanning(runRoot, manifest, manifestHash, r
   writeJson(planPath, plan);
 }
 
+function updateSupervisorPlanForLiveQueuePlanning(runRoot, manifest, manifestHash, runRootRelative, artifactPaths, items) {
+  const planPath = path.join(runRoot, "supervisor-plan.json");
+  const existing = existsSync(planPath)
+    ? readJsonFile(planPath, "supervisor plan")
+    : createSupervisorPlan(manifest, manifestHash, runRootRelative);
+  const plan = {
+    ...existing,
+    auxiliaryId: "AUX-019",
+    status: "stopped_after_live_queue_planning",
+    stopBeforePhase: "live_queue_execution",
+    liveQueuePlanning: {
+      schema: LIVE_QUEUE_PLAN_SCHEMA,
+      status: "completed",
+      artifacts: artifactPaths,
+      itemIds: items.map((item) => item.id),
+      liveCepAeRun: false,
+      localOllamaUsed: false,
+      fallbackProviderUsed: false,
+      childRunsCreated: false,
+    },
+    phasePlan: [
+      {
+        phase: "initialized",
+        status: "written",
+        artifacts: [
+          "state.json",
+          "events.jsonl",
+          "manifest.original.json",
+          "manifest.normalized.json",
+          "supervisor-plan.json",
+        ],
+      },
+      {
+        phase: "analysis",
+        status: "written",
+        artifacts: existing.analysis?.artifacts || [],
+      },
+      {
+        phase: "implementation_planning",
+        status: "written",
+        artifacts: existing.implementationPlanning?.artifacts || [],
+      },
+      {
+        phase: "merge_planning",
+        status: "written",
+        artifacts: existing.mergePlanning?.artifacts || [],
+      },
+      {
+        phase: "live_queue_planning",
+        status: "written",
+        artifacts: artifactPaths,
+      },
+      {
+        phase: "live_queue_execution",
+        status: "not_started",
+        reason: "AUX-019 writes fixture evidence only and does not run live AE/CEP validation.",
+      },
+    ],
+  };
+  writeJson(planPath, plan);
+}
+
 function loadState(runRoot) {
   const statePath = path.join(runRoot, "state.json");
   if (!existsSync(statePath)) {
@@ -722,7 +792,16 @@ function resumeRun({ manifest, manifestHash, runRoot, existingState }) {
   const atMergePlannedBoundary =
     existingState.currentPhase === "merge_planned" &&
     existingState.nextPhase === "live_queue_planning";
-  if (!atAnalysisBoundary && !atImplementationBoundary && !atImplementationPlannedBoundary && !atMergePlannedBoundary) {
+  const atLiveQueuePlannedBoundary =
+    existingState.currentPhase === "live_queue_planned" &&
+    existingState.nextPhase === "completed";
+  if (
+    !atAnalysisBoundary &&
+    !atImplementationBoundary &&
+    !atImplementationPlannedBoundary &&
+    !atMergePlannedBoundary &&
+    !atLiveQueuePlannedBoundary
+  ) {
     throw new Error("resume-state-not-at-supported-boundary");
   }
 
@@ -1574,6 +1653,230 @@ function verifyMergePlanningOutputs(runRoot) {
   }
 }
 
+function readMergePlanningOutputs(runRoot) {
+  verifyMergePlanningOutputs(runRoot);
+  const mergePlan = readJsonFile(path.join(runRoot, "merge", "supervisor-merge-plan.json"), "merge supervisor plan");
+  const accepted = readJsonFile(path.join(runRoot, "merge", "accepted-batches.json"), "accepted batches");
+  const rejected = readJsonFile(path.join(runRoot, "merge", "rejected-batches.json"), "rejected batches");
+  return { mergePlan, accepted, rejected };
+}
+
+function buildLiveQueueItems(acceptedBatches) {
+  const batches = Array.isArray(acceptedBatches.batches) ? acceptedBatches.batches : [];
+  if (batches.length === 0) {
+    throw new Error("live-queue-no-accepted-batches");
+  }
+  return batches.map((batch) => ({
+    id: `live-${safeId(batch.id, "batch")}`,
+    batchId: batch.id,
+    changedPaths: (batch.changedPaths || []).map(normalizePlannedPath),
+    generatedPrefix: `generic-importer-${safeId(batch.id, "batch")}`,
+  }));
+}
+
+function liveQueueFixtureEvidence(manifest) {
+  const evidence = manifest.liveAcceptance.fixtureEvidence || {};
+  const providerPath = evidence.providerPath || manifest.liveAcceptance.providerPath;
+  assertNoLocalOllamaProvider(providerPath, "manifest.liveAcceptance.fixtureEvidence.providerPath");
+  if (evidence.fallbackProviderUsed === true) {
+    throw new Error("fallback-provider-evidence-rejected");
+  }
+  if (evidence.lockAvailable === false) {
+    throw new Error("live-lock-not-available");
+  }
+  if (evidence.m100ProposalMissing === true) {
+    throw new Error("m100-proposal-missing");
+  }
+  if (evidence.readBackMissing === true) {
+    throw new Error("read-back-missing");
+  }
+  if (evidence.cleanupProofMissing === true) {
+    throw new Error("generated-prefix-cleanup-proof-missing");
+  }
+  if (Array.isArray(evidence.cleanupLeftovers) && evidence.cleanupLeftovers.length > 0) {
+    throw new Error("generated-prefix-cleanup-leftovers");
+  }
+  const semanticStatus = evidence.semanticStatus || "passed";
+  if (semanticStatus !== "passed") {
+    throw new Error(`semantic-verification-not-passed: ${semanticStatus}`);
+  }
+  return { ...evidence, providerPath, semanticStatus };
+}
+
+function validateLiveQueueEvidenceForItem(item, evidence) {
+  const proposalId = evidence.proposalId || `m100-${item.id}`;
+  const dryRunProposalId = evidence.dryRunProposalId || proposalId;
+  if (dryRunProposalId !== proposalId) {
+    throw new Error(`dry-run-proposal-mismatch: ${item.id}`);
+  }
+  const confirmedProposalId = evidence.confirmedProposalId || proposalId;
+  if (confirmedProposalId !== proposalId) {
+    throw new Error(`confirmed-run-proposal-mismatch: ${item.id}`);
+  }
+  return {
+    proposalId,
+    dryRunId: evidence.dryRunId || `dry-${item.id}`,
+    confirmedRunId: evidence.confirmedRunId || `confirmed-${item.id}`,
+  };
+}
+
+function buildLiveQueuePlanningArtifacts(manifest, manifestHash, runRoot) {
+  verifyAnalysisOutputs(runRoot);
+  verifyImplementationPlanningOutputs(runRoot);
+  const { mergePlan, accepted, rejected } = readMergePlanningOutputs(runRoot);
+  assertNoNamedRepoAssumptions({ manifest, mergePlan, accepted, rejected }, "live queue planning inputs");
+  const evidence = liveQueueFixtureEvidence(manifest);
+  const items = buildLiveQueueItems(accepted);
+
+  const liveQueueRoot = path.join(runRoot, "live-queue");
+  const lockRoot = path.join(runRoot, "locks");
+  mkdirSync(liveQueueRoot, { recursive: true });
+  mkdirSync(lockRoot, { recursive: true });
+
+  writeJson(path.join(lockRoot, "live-ae-cep.lock"), {
+    schema: "generic-repo-tool-importer.live-lock-fixture.v1",
+    runId: manifest.run.runId,
+    manifestHash,
+    status: "fixture_available",
+    lockPath: "locks/live-ae-cep.lock",
+    actualLockAcquired: false,
+    liveCepAeRun: false,
+  });
+
+  const artifactPaths = [...LIVE_QUEUE_ROOT_ARTIFACTS];
+  const queueItems = [];
+  for (const item of items) {
+    const ids = validateLiveQueueEvidenceForItem(item, evidence);
+    const itemRoot = path.join(liveQueueRoot, item.id);
+    mkdirSync(itemRoot, { recursive: true });
+    const itemArtifacts = [
+      `live-queue/${item.id}/m100-proposal.json`,
+      `live-queue/${item.id}/dry-run.json`,
+      `live-queue/${item.id}/confirmed-run.json`,
+      `live-queue/${item.id}/read-back.json`,
+      `live-queue/${item.id}/semantic-verification.json`,
+      `live-queue/${item.id}/cleanup-proof.json`,
+    ];
+    artifactPaths.push(...itemArtifacts);
+
+    writeJson(path.join(itemRoot, "m100-proposal.json"), {
+      schema: "generic-repo-tool-importer.live-m100-proposal.v1",
+      runId: manifest.run.runId,
+      itemId: item.id,
+      batchId: item.batchId,
+      proposalId: ids.proposalId,
+      providerPath: evidence.providerPath,
+      generatedOnly: true,
+      m100ProposalPresent: true,
+      liveCepAeRun: false,
+    });
+    writeJson(path.join(itemRoot, "dry-run.json"), {
+      schema: "generic-repo-tool-importer.live-dry-run.v1",
+      runId: manifest.run.runId,
+      itemId: item.id,
+      dryRunId: ids.dryRunId,
+      proposalId: ids.proposalId,
+      status: "passed",
+      matchesProposal: true,
+      liveCepAeRun: false,
+    });
+    writeJson(path.join(itemRoot, "confirmed-run.json"), {
+      schema: "generic-repo-tool-importer.live-confirmed-run.v1",
+      runId: manifest.run.runId,
+      itemId: item.id,
+      confirmedRunId: ids.confirmedRunId,
+      dryRunId: ids.dryRunId,
+      proposalId: ids.proposalId,
+      status: "fixture_confirmed",
+      matchesProposal: true,
+      mutationApplied: false,
+      liveCepAeRun: false,
+    });
+    writeJson(path.join(itemRoot, "read-back.json"), {
+      schema: "generic-repo-tool-importer.live-read-back.v1",
+      runId: manifest.run.runId,
+      itemId: item.id,
+      status: "present",
+      changedPaths: item.changedPaths,
+      generatedPrefix: item.generatedPrefix,
+      liveCepAeRun: false,
+    });
+    writeJson(path.join(itemRoot, "semantic-verification.json"), {
+      schema: "generic-repo-tool-importer.live-semantic-verification.v1",
+      runId: manifest.run.runId,
+      itemId: item.id,
+      status: "passed",
+      outcomeVerification: "passed",
+      liveCepAeRun: false,
+    });
+    writeJson(path.join(itemRoot, "cleanup-proof.json"), {
+      schema: "generic-repo-tool-importer.live-cleanup-proof.v1",
+      runId: manifest.run.runId,
+      itemId: item.id,
+      status: "passed",
+      generatedPrefix: item.generatedPrefix,
+      leftovers: [],
+      liveCepAeRun: false,
+    });
+    queueItems.push({
+      ...item,
+      proposalId: ids.proposalId,
+      dryRunId: ids.dryRunId,
+      confirmedRunId: ids.confirmedRunId,
+      artifacts: itemArtifacts,
+      status: "fixture_evidence_ready",
+    });
+  }
+
+  writeJson(path.join(liveQueueRoot, "queue.json"), {
+    schema: "generic-repo-tool-importer.live-queue.v1",
+    runId: manifest.run.runId,
+    manifestHash,
+    status: "planned_only",
+    lockPath: "locks/live-ae-cep.lock",
+    items: queueItems,
+    checks: {
+      lockArtifact: "fixture_available",
+      m100Proposal: "present",
+      dryRunProposalMatch: "passed",
+      confirmedRunProposalMatch: "passed",
+      readBack: "present",
+      semanticVerification: "passed",
+      cleanupProof: "passed",
+      providerEvidence: "openai_cli_only_no_fallback",
+    },
+    liveCepAeRun: false,
+    localOllamaUsed: false,
+    fallbackProviderUsed: false,
+  });
+
+  return { artifactPaths, items: queueItems };
+}
+
+function verifyLiveQueuePlanningOutputs(runRoot) {
+  for (const relative of LIVE_QUEUE_ROOT_ARTIFACTS) {
+    const absolute = path.join(runRoot, relative);
+    if (!existsSync(absolute)) {
+      throw new Error(`live-queue-output-missing: ${relative}`);
+    }
+    readJsonFile(absolute, relative);
+  }
+  const queue = readJsonFile(path.join(runRoot, "live-queue", "queue.json"), "live queue");
+  if (queue.schema !== "generic-repo-tool-importer.live-queue.v1") {
+    throw new Error("live-queue-schema-mismatch: queue.json");
+  }
+  if (queue.liveCepAeRun !== false || queue.localOllamaUsed !== false || queue.fallbackProviderUsed !== false) {
+    throw new Error("live-queue-boundary-violated");
+  }
+  for (const item of queue.items || []) {
+    for (const relative of item.artifacts || []) {
+      if (!existsSync(path.join(runRoot, relative))) {
+        throw new Error(`live-queue-output-missing: ${relative}`);
+      }
+    }
+  }
+}
+
 function runAnalysisPhase({ manifest, manifestHash, runRoot, runRootRelative, state }) {
   const now = new Date().toISOString();
   if (state.currentPhase === "analysis_complete" && state.nextPhase === "implementation_planning") {
@@ -1960,6 +2263,139 @@ function runMergePlanningPhase({ manifest, manifestHash, runRoot, runRootRelativ
   }
 }
 
+function runLiveQueuePlanningPhase({ manifest, manifestHash, runRoot, runRootRelative, state }) {
+  const now = new Date().toISOString();
+  if (state.currentPhase === "live_queue_planned" && state.nextPhase === "completed") {
+    verifyAnalysisOutputs(runRoot);
+    verifyImplementationPlanningOutputs(runRoot);
+    verifyMergePlanningOutputs(runRoot);
+    verifyLiveQueuePlanningOutputs(runRoot);
+    appendEvent(runRoot, {
+      event: "live_queue_plan_resume_verified",
+      runId: manifest.run.runId,
+      manifestHash,
+      nextPhase: state.nextPhase,
+      at: now,
+    });
+    return state;
+  }
+
+  if (state.status !== "stopped" || state.currentPhase !== "merge_planned" || state.nextPhase !== "live_queue_planning") {
+    throw new Error("live-queue-planning-state-not-at-boundary");
+  }
+
+  const startedState = {
+    ...state,
+    auxiliaryId: "AUX-019",
+    status: "running",
+    currentPhase: "live_queue_planning",
+    nextPhase: null,
+    stopReason: null,
+    updatedAt: now,
+    liveQueuePlanningStartedAt: now,
+    flags: {
+      ...state.flags,
+      liveQueuePlanningStarted: true,
+      liveQueuePlanned: false,
+      liveCepAeRun: false,
+      localOllamaUsed: false,
+      fallbackProviderUsed: false,
+      dependencyChanged: false,
+      productRuntimeEdited: false,
+      branchCreated: false,
+      pushOrPrCreated: false,
+      childRunsCreated: false,
+    },
+  };
+  writeJson(path.join(runRoot, "state.json"), startedState);
+  appendEvent(runRoot, {
+    event: "live_queue_planning_started",
+    auxiliaryId: "AUX-019",
+    runId: manifest.run.runId,
+    manifestHash,
+    at: now,
+  });
+
+  try {
+    const { artifactPaths, items } = buildLiveQueuePlanningArtifacts(manifest, manifestHash, runRoot);
+    verifyLiveQueuePlanningOutputs(runRoot);
+    const completedAt = new Date().toISOString();
+    const completedState = {
+      ...startedState,
+      status: "stopped",
+      currentPhase: "live_queue_planned",
+      nextPhase: "completed",
+      stopReason: "stopped_before_live_queue_execution",
+      updatedAt: completedAt,
+      liveQueuePlanningCompletedAt: completedAt,
+      liveQueueArtifacts: artifactPaths,
+      liveQueueItemIds: items.map((item) => item.id),
+      flags: {
+        ...startedState.flags,
+        liveQueuePlanned: true,
+        liveCepAeRun: false,
+        localOllamaUsed: false,
+        fallbackProviderUsed: false,
+        dependencyChanged: false,
+        productRuntimeEdited: false,
+        branchCreated: false,
+        pushOrPrCreated: false,
+        childRunsCreated: false,
+      },
+    };
+    writeJson(path.join(runRoot, "state.json"), completedState);
+    updateSupervisorPlanForLiveQueuePlanning(
+      runRoot,
+      manifest,
+      manifestHash,
+      runRootRelative,
+      artifactPaths,
+      items,
+    );
+    appendEvent(runRoot, {
+      event: "live_queue_planned",
+      runId: manifest.run.runId,
+      manifestHash,
+      artifacts: artifactPaths,
+      nextPhase: "completed",
+      at: completedAt,
+    });
+    appendEvent(runRoot, {
+      event: "stopped_before_live_queue_execution",
+      runId: manifest.run.runId,
+      nextPhase: "completed",
+      at: completedAt,
+    });
+    return completedState;
+  } catch (error) {
+    const failedAt = new Date().toISOString();
+    const failedState = {
+      ...startedState,
+      status: "stopped",
+      currentPhase: "merge_planned",
+      nextPhase: "live_queue_planning",
+      stopReason: error.message.split(":")[0],
+      updatedAt: failedAt,
+      flags: {
+        ...startedState.flags,
+        liveQueuePlanned: false,
+        liveCepAeRun: false,
+        localOllamaUsed: false,
+        fallbackProviderUsed: false,
+        childRunsCreated: false,
+      },
+    };
+    writeJson(path.join(runRoot, "state.json"), failedState);
+    appendEvent(runRoot, {
+      event: "live_queue_planning_failed",
+      runId: manifest.run.runId,
+      reason: error.message,
+      at: failedAt,
+    });
+    throw error;
+  }
+}
+
 export function runImporter(options, cwd = process.cwd()) {
   if (!options.manifest) {
     throw new Error("Missing --manifest <path>");
@@ -2012,17 +2448,23 @@ export function runImporter(options, cwd = process.cwd()) {
   if (options["plan-merge"]) {
     state = runMergePlanningPhase({ manifest, manifestHash, runRoot, runRootRelative, state });
   }
+  if (options["plan-live-queue"]) {
+    state = runLiveQueuePlanningPhase({ manifest, manifestHash, runRoot, runRootRelative, state });
+  }
 
-  const mergePlanned = state.currentPhase === "merge_planned";
+  const liveQueuePlanned = state.currentPhase === "live_queue_planned";
+  const mergePlanned = liveQueuePlanned || state.currentPhase === "merge_planned";
   const implementationPlanned = mergePlanned || state.currentPhase === "implementation_planned";
   const analysisComplete = implementationPlanned || state.currentPhase === "analysis_complete";
-  const status = implementationPlanned
-    ? mergePlanned
+  const status = liveQueuePlanned
+    ? "stopped_after_live_queue_planning"
+    : implementationPlanned
+      ? mergePlanned
       ? "stopped_after_merge_planning"
       : "stopped_after_implementation_planning"
-    : analysisComplete
-      ? "stopped_after_analysis"
-      : "stopped_before_analysis";
+      : analysisComplete
+        ? "stopped_after_analysis"
+        : "stopped_before_analysis";
   const artifacts = [
     "state.json",
     "events.jsonl",
@@ -2039,10 +2481,13 @@ export function runImporter(options, cwd = process.cwd()) {
   if (mergePlanned) {
     artifacts.push(...(state.mergeArtifacts || []));
   }
+  if (liveQueuePlanned) {
+    artifacts.push(...(state.liveQueueArtifacts || []));
+  }
 
   return {
     schema: RUNNER_SCHEMA,
-    auxiliaryId: mergePlanned ? "AUX-018" : implementationPlanned ? "AUX-017" : analysisComplete ? "AUX-016" : "AUX-015",
+    auxiliaryId: liveQueuePlanned ? "AUX-019" : mergePlanned ? "AUX-018" : implementationPlanned ? "AUX-017" : analysisComplete ? "AUX-016" : "AUX-015",
     runId: manifest.run.runId,
     status,
     resumed,
@@ -2056,6 +2501,7 @@ export function runImporter(options, cwd = process.cwd()) {
     analysisCompleted: state.flags.analysisCompleted === true,
     implementationPlanned,
     mergePlanned,
+    liveQueuePlanned,
     worktreesCreated: false,
     childRunsCreated: false,
     controlledMergeApplied: false,
