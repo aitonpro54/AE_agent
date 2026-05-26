@@ -1307,6 +1307,41 @@ function assertSuccessfulControlledSourceMergeFixture() {
   }
 }
 
+function assertControlledSourceMergeTrackedModifiedPathFixture() {
+  const fixture = createTempFixture("controlled-merge-tracked-modified");
+  try {
+    const trackedPath = path.join(fixture.target, "scripts", "imported-tools", "tool-tool.js");
+    fs.mkdirSync(path.dirname(trackedPath), { recursive: true });
+    fs.writeFileSync(trackedPath, "// original tracked importer output\nmodule.exports = 'original';\n", "utf8");
+    sh(fixture.target, ["git", "add", "scripts/imported-tools/tool-tool.js"]);
+    sh(fixture.target, [
+      "git",
+      "-c",
+      "user.name=Smoke",
+      "-c",
+      "user.email=smoke@example.local",
+      "commit",
+      "-m",
+      "tracked planned file",
+    ]);
+
+    const runId = "aux022-controlled-merge-tracked-modified";
+    const { manifestPath, runRoot } = prepareImplementationChildRunFixture(fixture, runId);
+    const output = parseJson(run(["--manifest", manifestPath, "--apply-controlled-merge", "--json"]));
+    assert.strictEqual(output.resumed, true);
+    assert.strictEqual(output.status, "stopped_after_controlled_source_merge");
+
+    const report = readJson(path.join(runRoot, "merge", "controlled-source-merge-report.json"));
+    assert.strictEqual(report.schema, "generic-repo-tool-importer.controlled-source-merge.v1");
+    assert.deepStrictEqual(report.appliedPaths, ["scripts/imported-tools/tool-tool.js"]);
+    assert.deepStrictEqual(report.ownedDirtyPaths, ["scripts/imported-tools/tool-tool.js"]);
+    assert.strictEqual(report.operations[0].operation, "updated");
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "M scripts/imported-tools/tool-tool.js");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertControlledSourceMergeMissingEvidenceFixture() {
   const fixture = createTempFixture("controlled-merge-missing-evidence");
   try {
@@ -2056,6 +2091,7 @@ function main() {
   assertImplementationChildRunProcessFailureFixture();
   assertImplementationChildRunResumeFixture();
   assertSuccessfulControlledSourceMergeFixture();
+  assertControlledSourceMergeTrackedModifiedPathFixture();
   assertControlledSourceMergeMissingEvidenceFixture();
   assertControlledSourceMergeDirtyTargetFixture();
   assertControlledSourceMergeCommitDriftFixture();

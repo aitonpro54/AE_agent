@@ -450,12 +450,24 @@ function gitCurrentBranch(cwd) {
 }
 
 function gitStatusEntries(cwd) {
-  const output = runGit(cwd, ["status", "--porcelain", "--untracked-files=all"], "git status");
-  return output.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const result = spawnSync("git", ["status", "--porcelain", "--untracked-files=all"], {
+    cwd,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (result.status !== 0) {
+    throw new Error(`git status failed: ${result.stderr || result.stdout}`);
+  }
+  return (result.stdout || "").split(/\r?\n/).filter((line) => line.trim().length > 0);
 }
 
 function statusEntryPath(entry) {
-  return normalizeRepoPath(entry.slice(3).trim() || entry);
+  const rawPath = entry.slice(3).trim() || entry.trim();
+  const renameSeparator = " -> ";
+  const normalizedPath = rawPath.includes(renameSeparator)
+    ? rawPath.slice(rawPath.lastIndexOf(renameSeparator) + renameSeparator.length)
+    : rawPath;
+  return normalizeRepoPath(normalizedPath);
 }
 
 function gitStatusPaths(cwd) {
