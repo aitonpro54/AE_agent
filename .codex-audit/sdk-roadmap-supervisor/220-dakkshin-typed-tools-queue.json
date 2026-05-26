@@ -522,7 +522,7 @@
       "milestone": 224,
       "title": "Run generated-only Dakkshin typed tools live acceptance",
       "dependencies": [
-        "m225-dakkshin-set-layer-mask-explicit-comp-target"
+        "m226-dakkshin-live-lane-readback-windows"
       ],
       "runner": {
         "kind": "roadmap-sdk"
@@ -618,7 +618,7 @@
       ],
       "status": "queued",
       "parentOwnedLiveAcceptance": {
-        "state": "local-validation-passed-parent-live-pending",
+        "state": "parent-live-attempt-failed-semantic-readback-window-pending-m226",
         "recordedAt": "2026-05-26",
         "recordedBy": "codex-writer-child",
         "localValidationCommands": [
@@ -629,8 +629,10 @@
           "git diff --check"
         ],
         "liveCommand": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-dakkshin-typed-tools-openai-cli-smoke",
-        "liveCommandStatus": "not-run-by-writer-child-parent-supervisor-owned",
-        "handoffStatus": "blocked-by-inherited-deny-acl-on-ignored-handoff-file",
+        "liveCommandStatus": "failed-after-protected-run-cleanup-passed-semantic-readback-window-needs-m226",
+        "latestLocalValidationStatus": "passed-after-m225-explicit-comp-target-repair",
+        "handoffStatus": "blocked-by-filesystem-acl-unauthorized-access-this-run",
+        "commitStatus": "not-created-by-writer-child-parent-owned-live-finalization",
         "requiredParentPreflight": [
           "read-only installed-panel CDP inspect",
           "read-only connector-status smoke"
@@ -767,6 +769,118 @@
         "commit": "not-created-by-writer-child",
         "handoff": "blocked-by-inherited-deny-acl"
       }
+    },
+    {
+      "id": "m226-dakkshin-live-lane-readback-windows",
+      "milestone": 226,
+      "title": "Repair Dakkshin live lane mutation-scoped read-back windows",
+      "dependencies": [
+        "m225-dakkshin-set-layer-mask-explicit-comp-target"
+      ],
+      "runner": {
+        "kind": "roadmap-sdk"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/220-dakkshin-typed-tools-queue.json",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "mcp-server/**",
+        "package.json",
+        "package-lock.json",
+        "node_modules/**",
+        "logs/**",
+        "backups/**",
+        "snapshots/**",
+        ".github/**"
+      ],
+      "allowedActions": [
+        "repair the generated-only Dakkshin Full UI Agent scenario fixture so risky mutations have mutation-scoped read-back before the next risky mutation",
+        "add a get_comp_details read-back after set_comp_properties before later layer creation",
+        "add a get_comp_details read-back after delete_layer before set_layer_mask mutations",
+        "add a get_layer_details read-back after set_layer_mask create before set_layer_mask update",
+        "keep the Dakkshin lane generated-only, OpenAI CLI, panel-plan, dry-run, protected-run, semantic-verification, cleanup, and leftover-detection requirements unchanged",
+        "add or update local smoke coverage proving the Dakkshin fixture shape and semantic verifier pass with mutation-scoped read-back windows",
+        "record the prior M224 parent live attempt as failed on semantic read-back scoping, with protected run and cleanup otherwise observed, and keep M224 queued until rerun after M226",
+        "update this queue item status/completedBy after successful local validation",
+        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and Current Stable Baseline notes for M226",
+        "update .codex/handoff.md with M226 state, validation, decisions, risks, commit note, and exact next prompt for M224 live acceptance rerun"
+      ],
+      "forbiddenActions": [
+        "relax semantic verification fail-closed behavior or accept final read-back when a mutation-specific read-back is required",
+        "edit bridge runtime, typed tool implementation, plan repair, or M100 policy files",
+        "edit CEP panel UI/runtime files",
+        "run live AE/CEP validation in M226",
+        "use Local/Ollama, OpenRouter, deterministic fallback, or external-provider planner validation",
+        "install or run any external AO runtime",
+        "create a branch, worktree, push, PR, GitHub issue, or GitHub Action",
+        "change dependencies, package manifests, or package locks",
+        "mutate user assets",
+        "auto-fix from analyzer packets"
+      ],
+      "allowedCommands": [
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/plan-repair-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/plan-repair-smoke.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 45,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "test: repair Dakkshin live lane read-back windows"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "roadmap-sdk-child-failed",
+        "validation-failed",
+        "context-pressure",
+        "unplanned-path-change",
+        "handoff-stale",
+        "semantic-verification-relaxed",
+        "live-cep-ae-requested",
+        "user-asset-mutation-requested",
+        "local-ollama-openrouter-deterministic-fallback-requested",
+        "dependency-change-requested"
+      ],
+      "status": "queued"
     }
   ]
 }
