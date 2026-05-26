@@ -728,6 +728,184 @@ function assertImplementationResumeFixture() {
   }
 }
 
+function assertImplementationWorktreeArtifacts(output, fixture, runId) {
+  assert.strictEqual(output.schema, "generic-repo-tool-importer.command-skeleton.v1");
+  assert.strictEqual(output.auxiliaryId, "AUX-020");
+  assert.strictEqual(output.runId, runId);
+  assert.strictEqual(output.status, "stopped_after_implementation_worktrees");
+  assert.strictEqual(output.currentPhase, "implementation_worktrees_ready");
+  assert.strictEqual(output.nextPhase, "implementation_child_runs");
+  assert.strictEqual(output.analysisCompleted, true);
+  assert.strictEqual(output.implementationPlanned, true);
+  assert.strictEqual(output.implementationWorktreesReady, true);
+  assert.strictEqual(output.worktreesCreated, true);
+  assert.strictEqual(output.branchCreated, false);
+  assert.strictEqual(output.childRunsCreated, false);
+  assert.strictEqual(output.controlledMergeApplied, false);
+  assert.strictEqual(output.liveCepAeRun, false);
+  assert.strictEqual(output.localOllamaUsed, false);
+  assert.strictEqual(output.fallbackProviderUsed, false);
+
+  const runRoot = path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-importer", runId);
+  const state = readJson(path.join(runRoot, "state.json"));
+  assert.strictEqual(state.auxiliaryId, "AUX-020");
+  assert.strictEqual(state.status, "stopped");
+  assert.strictEqual(state.currentPhase, "implementation_worktrees_ready");
+  assert.strictEqual(state.nextPhase, "implementation_child_runs");
+  assert.strictEqual(state.stopReason, "stopped_before_codex_child_runs");
+  assert.strictEqual(state.flags.implementationWorktreesReady, true);
+  assert.strictEqual(state.flags.worktreesCreated, true);
+  assert.strictEqual(state.flags.branchCreated, false);
+  assert.strictEqual(state.flags.childRunsCreated, false);
+
+  for (const relative of [
+    "implementation/worktree-run.json",
+  ]) {
+    assert(fs.existsSync(path.join(runRoot, relative)), `${relative} must exist`);
+  }
+
+  const worktreeRun = readJson(path.join(runRoot, "implementation", "worktree-run.json"));
+  assert.strictEqual(worktreeRun.schema, "generic-repo-tool-importer.implementation-worktree-run.v1");
+  assert.strictEqual(worktreeRun.status, "worktrees_created_child_runs_not_started");
+  assert.strictEqual(worktreeRun.worktreesCreated, true);
+  assert.strictEqual(worktreeRun.branchCreated, false);
+  assert.strictEqual(worktreeRun.childRunsCreated, false);
+  assert.strictEqual(worktreeRun.controlledMergeApplied, false);
+  assert.strictEqual(worktreeRun.validationCommandsRun, false);
+  assert.strictEqual(worktreeRun.liveCepAeRun, false);
+  assert.strictEqual(worktreeRun.localOllamaUsed, false);
+  assert.strictEqual(worktreeRun.fallbackProviderUsed, false);
+  assert.strictEqual(worktreeRun.checks.branchCreation, "detached_worktree_only");
+  assert.strictEqual(worktreeRun.checks.childRuns, "not_started");
+  assert.strictEqual(worktreeRun.checks.mergeApplication, "not_started");
+  assert(worktreeRun.batches.length > 0);
+
+  const firstBatch = worktreeRun.batches[0];
+  assert(fs.existsSync(firstBatch.actualWorktreePath), "actual worktree must exist");
+  assert(firstBatch.actualWorktreeRelativePath.startsWith(`.codex-runtime/sdk/generic-repo-importer/${runId}/worktrees/`));
+  assert(fs.existsSync(path.join(runRoot, firstBatch.batchResultPath)), "batch result must exist");
+  assert(fs.existsSync(path.join(runRoot, firstBatch.childRunIntentPath)), "child run intent must exist");
+  assert.strictEqual(sh(firstBatch.actualWorktreePath, ["git", "rev-parse", "--is-inside-work-tree"]), "true");
+  const branch = spawnSync("git", ["symbolic-ref", "-q", "--short", "HEAD"], {
+    cwd: firstBatch.actualWorktreePath,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  assert.notStrictEqual(branch.status, 0, "implementation worktree must be detached");
+  assert.strictEqual(sh(firstBatch.actualWorktreePath, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+
+  const batchResult = readJson(path.join(runRoot, firstBatch.batchResultPath));
+  assert.strictEqual(batchResult.status, "worktree_ready");
+  assert.strictEqual(batchResult.worktreeCreated, true);
+  assert.strictEqual(batchResult.branchCreated, false);
+  assert.strictEqual(batchResult.childRunCreated, false);
+  assert.strictEqual(batchResult.controlledMergeApplied, false);
+  assert.strictEqual(batchResult.validationCommandsRun, false);
+  assert.strictEqual(batchResult.liveCepAeRun, false);
+
+  const childRunIntent = readJson(path.join(runRoot, firstBatch.childRunIntentPath));
+  assert.strictEqual(childRunIntent.status, "not_started");
+  assert.strictEqual(childRunIntent.commandNotRun, true);
+  assert.strictEqual(childRunIntent.localOllama, false);
+  assert.strictEqual(childRunIntent.stopReason, "stopped_before_codex_child_runs");
+
+  const supervisorPlan = readJson(path.join(runRoot, "supervisor-plan.json"));
+  assert.strictEqual(supervisorPlan.auxiliaryId, "AUX-020");
+  assert.strictEqual(supervisorPlan.status, "stopped_after_implementation_worktrees");
+  assert.strictEqual(supervisorPlan.stopBeforePhase, "codex_child_runs");
+  assert.strictEqual(supervisorPlan.implementationWorktrees.worktreesCreated, true);
+  assert.strictEqual(supervisorPlan.implementationWorktrees.branchCreated, false);
+  assert.strictEqual(supervisorPlan.implementationWorktrees.childRunsCreated, false);
+  assert.strictEqual(supervisorPlan.implementationWorktrees.controlledMergeApplied, false);
+
+  assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+}
+
+function assertSuccessfulImplementationWorktreeFixture() {
+  const fixture = createTempFixture("implementation-worktree-success");
+  try {
+    const runId = "aux020-worktree-success";
+    const { manifestPath } = prepareImplementationFixture(fixture, runId);
+    const output = parseJson(run(["--manifest", manifestPath, "--run-implementation-worktrees", "--json"]));
+    assert.strictEqual(output.resumed, true);
+    assertImplementationWorktreeArtifacts(output, fixture, runId);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertImplementationWorktreeMissingPlanFixture() {
+  const fixture = createTempFixture("implementation-worktree-missing-plan");
+  try {
+    const runId = "aux020-missing-plan";
+    const { manifestPath, runRoot } = prepareImplementationFixture(fixture, runId);
+    fs.rmSync(path.join(runRoot, "implementation", "planned-paths.json"), { force: true });
+
+    const result = run(["--manifest", manifestPath, "--run-implementation-worktrees", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /implementation-plan-output-missing: implementation\/planned-paths\.json/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertImplementationWorktreeExistingPathFixture() {
+  const fixture = createTempFixture("implementation-worktree-existing-path");
+  try {
+    const runId = "aux020-existing-path";
+    const { manifestPath, runRoot } = prepareImplementationFixture(fixture, runId);
+    const worktreePlan = readJson(path.join(runRoot, "implementation", "batch-worktree-plan.json"));
+    fs.mkdirSync(path.join(runRoot, worktreePlan.batches[0].plannedWorktreePath), { recursive: true });
+
+    const result = run(["--manifest", manifestPath, "--run-implementation-worktrees", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /implementation-worktree-path-exists: fixture-analysis-batch-1/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertImplementationWorktreeRunOwnedPathFixture() {
+  const fixture = createTempFixture("implementation-worktree-run-owned");
+  try {
+    const runId = "aux020-run-owned-path";
+    const { manifestPath, runRoot } = prepareImplementationFixture(fixture, runId);
+    const worktreePlanPath = path.join(runRoot, "implementation", "batch-worktree-plan.json");
+    const worktreePlan = readJson(worktreePlanPath);
+    worktreePlan.batches[0].plannedWorktreePath = "outside-worktrees/fixture-analysis-batch-1";
+    fs.writeFileSync(worktreePlanPath, `${JSON.stringify(worktreePlan, null, 2)}\n`, "utf8");
+
+    const result = run(["--manifest", manifestPath, "--run-implementation-worktrees", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /implementation-worktree-path-not-run-owned: fixture-analysis-batch-1/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertImplementationWorktreeResumeFixture() {
+  const fixture = createTempFixture("implementation-worktree-resume");
+  try {
+    const runId = "aux020-worktree-resume";
+    const { manifestPath, runRoot } = prepareImplementationFixture(fixture, runId);
+    const first = parseJson(run(["--manifest", manifestPath, "--run-implementation-worktrees", "--json"]));
+    assertImplementationWorktreeArtifacts(first, fixture, runId);
+
+    const second = parseJson(run(["--manifest", manifestPath, "--run-implementation-worktrees", "--json"]));
+    assert.strictEqual(second.resumed, true);
+    assertImplementationWorktreeArtifacts(second, fixture, runId);
+
+    const state = readJson(path.join(runRoot, "state.json"));
+    assert(state.resumeCount >= 3);
+    const events = fs.readFileSync(path.join(runRoot, "events.jsonl"), "utf8").trim().split(/\r?\n/).map(JSON.parse);
+    assert(events.some((event) => event.event === "implementation_worktrees_ready"));
+    assert(events.some((event) => event.event === "implementation_worktrees_resume_verified"));
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function prepareImplementationFixture(fixture, runId, manifest = validManifest(fixture, runId)) {
   const manifestPath = writeManifest(fixture.root, manifest);
   parseJson(run(["--manifest", manifestPath, "--run-analysis", "--json"]));
@@ -1264,6 +1442,11 @@ function main() {
   assertImplementationDependencyChangeFixture();
   assertImplementationSharedConflictFixture();
   assertImplementationResumeFixture();
+  assertSuccessfulImplementationWorktreeFixture();
+  assertImplementationWorktreeMissingPlanFixture();
+  assertImplementationWorktreeExistingPathFixture();
+  assertImplementationWorktreeRunOwnedPathFixture();
+  assertImplementationWorktreeResumeFixture();
   assertSuccessfulMergePlanningFixture();
   assertMergeMissingImplementationArtifactFixture();
   assertMergeUnplannedPathFixture();
