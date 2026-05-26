@@ -523,7 +523,7 @@
       "milestone": 224,
       "title": "Run generated-only Dakkshin typed tools live acceptance",
       "dependencies": [
-        "m226-dakkshin-live-lane-readback-windows"
+        "m227-dakkshin-live-semantic-ae-evidence"
       ],
       "runner": {
         "kind": "roadmap-sdk"
@@ -619,7 +619,7 @@
       ],
       "status": "queued",
       "parentOwnedLiveAcceptance": {
-        "state": "parent-live-attempt-failed-semantic-readback-window-pending-m226",
+        "state": "parent-live-attempt-after-m226-failed-semantic-ae-evidence-pending-m227",
         "recordedAt": "2026-05-26",
         "recordedBy": "codex-writer-child",
         "localValidationCommands": [
@@ -630,11 +630,12 @@
           "git diff --check"
         ],
         "liveCommand": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-dakkshin-typed-tools-openai-cli-smoke",
-        "liveCommandStatus": "failed-after-protected-run-cleanup-passed-semantic-readback-window-needs-m226",
+        "liveCommandStatus": "failed-after-m226-protected-run-cleanup-passed-semantic-ae-evidence-needs-m227",
+        "previousLiveCommandStatus": "failed-after-protected-run-cleanup-passed-semantic-readback-window-needed-m226",
         "protectedRunObserved": true,
         "generatedCleanupObserved": true,
-        "semanticFailureReason": "fixture lacked mutation-scoped read-back windows between risky Dakkshin mutations",
-        "latestLocalValidationStatus": "passed-after-m225-explicit-comp-target-repair",
+        "semanticFailureReason": "after M226 mutation-scoped read-backs were present, but semantic evidence still did not normalize live AE read-back values such as quantized bgColor and mask property preview wrappers",
+        "latestLocalValidationStatus": "passed-after-m226-readback-window-repair",
         "handoffStatus": "blocked-by-filesystem-acl-unauthorized-access-this-run",
         "commitStatus": "not-created-by-writer-child-parent-owned-live-finalization",
         "requiredParentPreflight": [
@@ -901,6 +902,118 @@
         ],
         "commit": "not-created-by-writer-child"
       }
+    },
+    {
+      "id": "m227-dakkshin-live-semantic-ae-evidence",
+      "milestone": 227,
+      "title": "Repair Dakkshin live semantic AE read-back evidence",
+      "dependencies": [
+        "m226-dakkshin-live-lane-readback-windows"
+      ],
+      "runner": {
+        "kind": "roadmap-sdk"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/220-dakkshin-typed-tools-queue.json",
+        "mcp-server/semantic-verification.js",
+        "mcp-server/bridge-daemon.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/smoke-test.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "package.json",
+        "package-lock.json",
+        "node_modules/**",
+        "logs/**",
+        "backups/**",
+        "snapshots/**",
+        ".github/**"
+      ],
+      "allowedActions": [
+        "repair semantic evidence collection for live AE read-back shapes observed after M226 without accepting missing read-back",
+        "normalize AE property preview wrappers for composition bgColor and mask opacity, feather, and expansion evidence",
+        "align set_comp_properties bgColor postVerification with AE color-channel quantization only, without widening non-color field tolerance",
+        "add local semantic regression coverage that reproduces the M224-after-M226 live evidence shape with quantized bgColor and mask property preview wrappers",
+        "keep mutation-scoped read-back requirements intact for delete_layer, set_comp_properties, and set_layer_mask",
+        "record the M224-after-M226 parent live failure and keep M224 queued until rerun after M227",
+        "update this queue item status/completedBy after successful local validation",
+        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and Current Stable Baseline notes for M227",
+        "update .codex/handoff.md with M227 state, validation, decisions, risks, commit note, and exact next prompt for M224 live acceptance rerun"
+      ],
+      "forbiddenActions": [
+        "relax semantic verification to pass without post-run read-back evidence",
+        "allow final-only read-back to satisfy a mutation-scoped Dakkshin check when a later risky mutation intervenes",
+        "widen non-color numeric tolerances for composition or mask fields",
+        "change Dakkshin typed tool targeting, M100 policy, plan repair aliases, or live lane provider policy",
+        "edit CEP panel UI/runtime files",
+        "run live AE/CEP validation in M227",
+        "use Local/Ollama, OpenRouter, deterministic fallback, or external-provider planner validation",
+        "install or run any external AO runtime",
+        "create a branch, worktree, push, PR, GitHub issue, or GitHub Action",
+        "change dependencies, package manifests, or package locks",
+        "mutate user assets",
+        "auto-fix from analyzer packets"
+      ],
+      "allowedCommands": [
+        "node --check mcp-server/semantic-verification.js",
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/smoke-test.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/plan-repair-smoke.js",
+        "node scripts/smoke-test.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check mcp-server/semantic-verification.js",
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/smoke-test.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/plan-repair-smoke.js",
+        "node scripts/smoke-test.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 45,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "fix: normalize Dakkshin live semantic evidence"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "roadmap-sdk-child-failed",
+        "validation-failed",
+        "context-pressure",
+        "unplanned-path-change",
+        "handoff-stale",
+        "semantic-verification-relaxed",
+        "live-cep-ae-requested",
+        "user-asset-mutation-requested",
+        "local-ollama-openrouter-deterministic-fallback-requested",
+        "dependency-change-requested"
+      ],
+      "status": "queued"
     }
   ]
 }
