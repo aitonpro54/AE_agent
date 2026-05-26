@@ -1,0 +1,362 @@
+{
+  "schema": "ae-agent-dakkshin-risky-typed-tools-safety-contract.v1",
+  "milestone": 220,
+  "id": "m220-dakkshin-risky-tools-safety-contract",
+  "createdAt": "2026-05-26",
+  "purpose": "Freeze the safety contract for delete_layer, set_comp_properties, set_layer_mask, and the generated-only live acceptance lane before runtime product implementation starts.",
+  "source": {
+    "queuePath": ".codex-audit/sdk-roadmap-supervisor/220-dakkshin-typed-tools-queue.json",
+    "queueItemId": "m220-dakkshin-risky-tools-safety-contract",
+    "notRuntimeImplementation": true,
+    "notPlannerImplementation": true,
+    "notSemanticImplementation": true,
+    "notCepPanelImplementation": true,
+    "notLiveValidation": true
+  },
+  "boundaryClaims": {
+    "runtimeTypedToolsImplemented": false,
+    "plannerExposureImplemented": false,
+    "semanticVerificationImplemented": false,
+    "cepPanelEdited": false,
+    "liveCepAeValidationRun": false,
+    "localOllamaUsed": false,
+    "openRouterUsed": false,
+    "deterministicFallbackUsed": false,
+    "externalProviderPlannerValidationUsed": false,
+    "externalAoRuntimeInstalledOrRun": false,
+    "dependencyOrPackageChanged": false,
+    "branchWorktreePushPrGithubActionCreated": false,
+    "userAssetMutation": false,
+    "analyzerAutoFix": false
+  },
+  "toolContracts": [
+    {
+      "toolName": "delete_layer",
+      "implementationMilestone": 221,
+      "risk": {
+        "m100Required": true,
+        "m100RiskLevel": "destructive",
+        "mutationClass": "destructive"
+      },
+      "targeting": {
+        "explicitCompTargetRequired": true,
+        "allowedCompTargets": [
+          "compItemIndex",
+          "compName"
+        ],
+        "activeCompFallbackAllowed": false,
+        "oneExplicitLayerOnly": true,
+        "requiredFields": [
+          "layerIndex",
+          "expectedLayerName"
+        ],
+        "expectedLayerNameGuardRequired": true,
+        "selectionBasedTargetingAllowed": false,
+        "nameOnlyTargetingAllowed": false,
+        "bulkTargetingAllowed": false
+      },
+      "requiredReadBack": {
+        "beforeLayerSummary": true,
+        "afterLayerSummary": true,
+        "beforeLayerCount": true,
+        "afterLayerCount": true,
+        "deletedLayerPayload": true,
+        "readBackAfterMutationRequired": true
+      },
+      "requiredRejections": [
+        "missing_expected_layer_name",
+        "missing_layer_index",
+        "locked_layer",
+        "out_of_range_layer",
+        "bulk_delete_request",
+        "selection_only_delete_request",
+        "name_only_delete_request",
+        "ambiguous_comp_target",
+        "user_asset_delete_without_generated_scope"
+      ],
+      "semanticVerification": {
+        "required": true,
+        "absenceVerificationRequired": true,
+        "mustVerifyDeletedLayerAbsentAfterReadBack": true,
+        "mustVerifyLayerCountDecrement": true,
+        "missingReadBackFailsClosed": true
+      },
+      "explicitNonGoals": [
+        "delete_multiple_layers",
+        "delete_selected_layers",
+        "delete_by_name_only",
+        "delete_locked_layers",
+        "delete_user_assets_without_generated_scope",
+        "raw_extendscript_delete_fallback"
+      ]
+    },
+    {
+      "toolName": "set_comp_properties",
+      "implementationMilestone": 221,
+      "risk": {
+        "m100Required": true,
+        "m100RiskLevel": "mutating",
+        "mutationClass": "mutating"
+      },
+      "targeting": {
+        "explicitCompTargetRequired": true,
+        "allowedCompTargets": [
+          "compItemIndex",
+          "compName"
+        ],
+        "activeCompFallbackAllowed": false,
+        "oneExplicitCompositionOnly": true,
+        "bulkCompositionTargetingAllowed": false
+      },
+      "allowedUpdateFields": [
+        "width",
+        "height",
+        "pixelAspect",
+        "duration",
+        "frameRate",
+        "bgColor",
+        "displayStartTime"
+      ],
+      "fieldBounds": {
+        "width": "positive integer within AE composition bounds",
+        "height": "positive integer within AE composition bounds",
+        "pixelAspect": "positive finite number within AE composition bounds",
+        "duration": "positive finite seconds within AE composition bounds",
+        "frameRate": "positive finite fps within AE composition bounds",
+        "bgColor": "array of three finite RGB channel numbers in the 0..1 range",
+        "displayStartTime": "finite seconds within AE display-start bounds"
+      },
+      "requiredReadBack": {
+        "beforeCompSummary": true,
+        "afterCompSummary": true,
+        "changedFieldsSummary": true,
+        "readBackAfterMutationRequired": true
+      },
+      "requiredRejections": [
+        "empty_update",
+        "unknown_update_field",
+        "invalid_field_value",
+        "multiple_comp_targets",
+        "active_comp_implicit_target",
+        "arbitrary_comp_property_path"
+      ],
+      "semanticVerification": {
+        "required": true,
+        "mustVerifyOnlyRequestedFieldsChanged": true,
+        "mustVerifyRequestedValuesAfterReadBack": true,
+        "missingReadBackFailsClosed": true
+      },
+      "explicitNonGoals": [
+        "rename_comp",
+        "move_comp",
+        "delete_comp",
+        "change_layers",
+        "change_render_queue",
+        "arbitrary_property_tree_update"
+      ]
+    },
+    {
+      "toolName": "set_layer_mask",
+      "implementationMilestone": 221,
+      "risk": {
+        "m100Required": true,
+        "m100RiskLevel": "mutating",
+        "mutationClass": "mutating"
+      },
+      "targeting": {
+        "explicitCompTargetRequired": true,
+        "allowedCompTargets": [
+          "compItemIndex",
+          "compName"
+        ],
+        "activeCompFallbackAllowed": false,
+        "oneExplicitLayerOnly": true,
+        "requiredLayerField": "layerIndex",
+        "bulkLayerTargetingAllowed": false,
+        "selectionBasedTargetingAllowed": false
+      },
+      "operationPolicy": {
+        "supportedOperations": [
+          "create",
+          "update"
+        ],
+        "defaultOperation": "create",
+        "deleteOperationAllowed": false,
+        "bulkMaskOperationsAllowed": false,
+        "rotoOperationsAllowed": false,
+        "arbitraryMaskPropertyPathsAllowed": false,
+        "updateRequiresExplicitMaskTarget": true,
+        "allowedMaskTargetsForUpdate": [
+          "maskIndex",
+          "expectedMaskName"
+        ]
+      },
+      "boundedFields": {
+        "shape": {
+          "allowed": true,
+          "closedOnly": true,
+          "verticesRequired": true,
+          "inTangentsAllowed": true,
+          "outTangentsAllowed": true,
+          "arbitraryPathExpressionsAllowed": false
+        },
+        "mode": {
+          "allowed": true,
+          "allowedValues": [
+            "add",
+            "subtract",
+            "intersect",
+            "lighten",
+            "darken",
+            "difference",
+            "none"
+          ]
+        },
+        "inverted": {
+          "allowed": true,
+          "type": "boolean"
+        },
+        "opacity": {
+          "allowed": true,
+          "min": 0,
+          "max": 100
+        },
+        "feather": {
+          "allowed": true,
+          "finiteNumberOrPair": true,
+          "min": 0
+        },
+        "expansion": {
+          "allowed": true,
+          "finiteNumber": true
+        }
+      },
+      "requiredReadBack": {
+        "beforeMaskSummary": true,
+        "afterMaskSummary": true,
+        "changedMaskSummary": true,
+        "readBackAfterMutationRequired": true
+      },
+      "requiredRejections": [
+        "missing_layer_index",
+        "missing_mask_target_for_update",
+        "delete_mask_request",
+        "bulk_mask_request",
+        "roto_request",
+        "arbitrary_mask_path",
+        "selection_only_mask_request",
+        "invalid_mask_shape",
+        "invalid_bounded_field_value"
+      ],
+      "semanticVerification": {
+        "required": true,
+        "mustVerifyCreatedOrUpdatedMaskAfterReadBack": true,
+        "mustVerifyOperationWasCreateOrUpdateOnly": true,
+        "missingReadBackFailsClosed": true
+      },
+      "explicitNonGoals": [
+        "mask_delete",
+        "mask_bulk_edit",
+        "roto_brush",
+        "arbitrary_bezier_property_tree",
+        "selected_layer_mask_edit_without_prior_evidence",
+        "raw_extendscript_mask_fallback"
+      ]
+    }
+  ],
+  "liveAcceptanceContract": {
+    "implementationMilestone": 223,
+    "executionMilestone": 224,
+    "mode": "generated-only-full-ui-agent-openai-cli",
+    "parentOwned": true,
+    "runOnlyWhenLiveStackAvailable": true,
+    "provider": "openai-cli",
+    "installedPanelRequired": true,
+    "cdpRequired": true,
+    "panelGeneratedPlanRequired": true,
+    "dryRunRequired": true,
+    "protectedRunRequired": true,
+    "bridgeReadBackRequired": true,
+    "semanticVerificationStatusRequired": "passed",
+    "generatedPrefixRequired": true,
+    "generatedCleanupRequired": true,
+    "failClosedOn": [
+      "generated_leftovers",
+      "user_asset_mutation",
+      "missing_semantic_pass",
+      "missing_read_back",
+      "deterministic_fallback",
+      "local_ollama",
+      "openrouter",
+      "external_provider_planner_validation",
+      "raw_extendscript_primary_path"
+    ],
+    "forbiddenProviders": [
+      "local-ollama",
+      "openrouter",
+      "deterministic-fallback",
+      "external-provider-planner-validation"
+    ],
+    "userAssetMutationAllowed": false
+  },
+  "machineCheck": {
+    "requiredSchema": "ae-agent-dakkshin-risky-typed-tools-safety-contract.v1",
+    "requiredMilestone": 220,
+    "requiredQueuePath": ".codex-audit/sdk-roadmap-supervisor/220-dakkshin-typed-tools-queue.json",
+    "requiredQueueItemId": "m220-dakkshin-risky-tools-safety-contract",
+    "requiredToolNames": [
+      "delete_layer",
+      "set_comp_properties",
+      "set_layer_mask"
+    ],
+    "deleteLayerRequiredRiskLevel": "destructive",
+    "setCompPropertiesAllowedFields": [
+      "width",
+      "height",
+      "pixelAspect",
+      "duration",
+      "frameRate",
+      "bgColor",
+      "displayStartTime"
+    ],
+    "setLayerMaskSupportedOperations": [
+      "create",
+      "update"
+    ],
+    "setLayerMaskBoundedFields": [
+      "shape",
+      "mode",
+      "inverted",
+      "opacity",
+      "feather",
+      "expansion"
+    ],
+    "requiredFalseBoundaryClaims": [
+      "runtimeTypedToolsImplemented",
+      "plannerExposureImplemented",
+      "semanticVerificationImplemented",
+      "cepPanelEdited",
+      "liveCepAeValidationRun",
+      "localOllamaUsed",
+      "openRouterUsed",
+      "deterministicFallbackUsed",
+      "externalProviderPlannerValidationUsed",
+      "externalAoRuntimeInstalledOrRun",
+      "dependencyOrPackageChanged",
+      "branchWorktreePushPrGithubActionCreated",
+      "userAssetMutation",
+      "analyzerAutoFix"
+    ],
+    "requiredLiveFailClosedOn": [
+      "generated_leftovers",
+      "user_asset_mutation",
+      "missing_semantic_pass",
+      "missing_read_back",
+      "deterministic_fallback",
+      "local_ollama",
+      "openrouter",
+      "external_provider_planner_validation"
+    ],
+    "requiredSmokeScript": "scripts/dakkshin-typed-tools-safety-contract-smoke.js"
+  }
+}
