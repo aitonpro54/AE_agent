@@ -752,6 +752,111 @@
         "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
         "Do not use this recipe for changing comp duration, layer timing, markers, render queue items, or broad timeline cleanup."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "add-markers-to-selected-layers-typed-plan",
+      "title": "Add Markers To Selected Layers Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "markers",
+        "marker",
+        "layer-marker",
+        "selected-layers",
+        "timeline",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Add one explicit layer marker to each selected layer with a provided or default comment, then read the markers back.",
+        "appliesWhen": [
+          "The user asks to add markers to selected layers.",
+          "The workflow needs a narrow selected-layer marker add pattern without audio analysis or marker lifecycle updates."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedLayerIndices",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Selected layers verified by get_selected_layers before marker mutation."
+        },
+        {
+          "name": "markerComment",
+          "type": "string",
+          "required": false,
+          "description": "Optional user-provided marker comment; if omitted, use a short explicit non-empty default comment."
+        },
+        {
+          "name": "markerTime",
+          "type": "number",
+          "required": false,
+          "description": "Optional marker time in seconds; if omitted, use the active comp current time inspected before mutation."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists and selected layers are read before mutation.",
+        "The workflow adds only explicit layer markers and does not analyze audio, delete markers, update markers or change layer timing."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/add-markers-to-selected-layers-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "add_layer_marker",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read back each affected layer and confirm marker comment, time and optional duration evidence.",
+        "steps": [
+          "Run get_active_comp before mutation to capture comp identity and current time.",
+          "Run get_selected_layers before mutation and bind concrete layerIndex values from that evidence.",
+          "Run add_layer_marker once for each selected layer with an explicit non-empty comment.",
+          "Run get_layer_details for each affected layer after mutation and compare marker comment, time and optional duration."
+        ],
+        "expectedEvidence": [
+          "Selected-layer marker plans include get_selected_layers evidence before layerIndex values are bound.",
+          "Each add_layer_marker result reports the created marker for the targeted layer.",
+          "Post-run get_layer_details read-back shows the expected marker comment and time on every affected selected layer."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by kmmsl1 generic repository importer as advisory typed-plan coverage for adding explicit markers to selected layers."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-26",
+          "from": "generic-repo-importer-kmmsl1",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "kmmsl1 adapted only the idea behind kyletmartinez/after-effects-scripts Markers/Add_Markers_To_Selected_Layers.jsx at d017a775fd3f474963313b40882650800917aec9 into existing typed tools; no source JSX copied.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Do not use this recipe for audio analysis, beat detection, marker generation from audio, marker update/delete, layer timing changes, render queue items, or broad timeline cleanup."
+      ]
     }
   ]
 }

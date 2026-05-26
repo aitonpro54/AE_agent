@@ -21,7 +21,10 @@ const DAKKSHIN_ADVISORY_IDS = [
   "selected-layers-animation-typed-plan"
 ];
 const TOOL_BACKED_IDS = ["bulk-layer-duplicate-typed-tool"];
-const IMPORTED_ADVISORY_IDS = ["reset-composition-work-area-typed-plan"];
+const IMPORTED_ADVISORY_IDS = [
+  "reset-composition-work-area-typed-plan",
+  "add-markers-to-selected-layers-typed-plan"
+];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
   "get_project_info",
@@ -41,6 +44,8 @@ const AVAILABLE_TOOLS = [
   "apply_keyframe_ease",
   "set_layer_transform",
   "set_comp_work_area",
+  "add_layer_marker",
+  "get_layer_details",
   "duplicate_layers",
   "deep_duplicate_precomp_sources",
   "run_extendscript_file"
@@ -183,35 +188,56 @@ function assertImportedAdvisoryQuality(registry) {
     assert(solution.execution.recipePath !== "recipes/README.md", `${id}: imported advisory entries should have dedicated recipe files.`);
     assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present for retrieval/audit.`);
     assert(solution.tags.includes("kyletmartinez-advisory"), `${id}: imported source advisory tag should be present for retrieval/audit.`);
-    assert(solution.promotionHistory.some((entry) => /AUX-021/.test(entry.evidence)), `${id}: promotion evidence should mention AUX-021.`);
     assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
-    assert.deepStrictEqual(
-      solution.execution.preferredTools,
-      ["get_active_comp", "set_comp_work_area", "get_comp_details"],
-      `${id}: imported reset workflow should stay on the narrow typed tool sequence.`
-    );
 
     const text = recipeText(solution);
     assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
     assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
     assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
-    assert(text.includes("start:0"), `${id}: recipe should set the work area start to zero.`);
-    assert(text.includes("workAreaDuration"), `${id}: recipe should require work-area duration read-back.`);
     assert(!/run_extendscript/i.test(text), `${id}: imported advisory recipe should not recommend raw ExtendScript.`);
     assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
 
     const gates = solution.requiredSafetyGates;
-    assert.strictEqual(solution.execution.mutating, true, `${id}: work-area reset describes a protected mutation.`);
+    assert.strictEqual(solution.execution.mutating, true, `${id}: imported advisory recipe describes a protected mutation.`);
     assert.strictEqual(gates.planValidation, true, `${id}: mutating recipe needs plan validation.`);
     assert.strictEqual(gates.explicitConfirmation, true, `${id}: mutating recipe needs explicit confirmation.`);
     assert.strictEqual(gates.allowMutations, true, `${id}: mutating recipe needs mutation permission.`);
     assert.strictEqual(gates.idempotency, true, `${id}: mutating recipe needs idempotency.`);
     assert.strictEqual(gates.checkpointOrEditSession, true, `${id}: mutating recipe should keep checkpoint/edit-session protection.`);
     assert.strictEqual(gates.postMutationReadBack, true, `${id}: mutating recipe needs read-back verification.`);
-    assert(solution.verificationRecipe.steps.some((step) => /get_active_comp/.test(step)), `${id}: verification must capture pre-mutation comp duration.`);
-    assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read comp details after mutation.`);
-    assert(solution.verificationRecipe.expectedEvidence.some((item) => /workAreaStart/.test(item)), `${id}: verification must require workAreaStart evidence.`);
-    assert(solution.verificationRecipe.expectedEvidence.some((item) => /workAreaDuration/.test(item)), `${id}: verification must require workAreaDuration evidence.`);
+
+    if (id === "reset-composition-work-area-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "set_comp_work_area", "get_comp_details"],
+        `${id}: imported reset workflow should stay on the narrow typed tool sequence.`
+      );
+      assert(text.includes("start:0"), `${id}: recipe should set the work area start to zero.`);
+      assert(text.includes("workAreaDuration"), `${id}: recipe should require work-area duration read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_active_comp/.test(step)), `${id}: verification must capture pre-mutation comp duration.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read comp details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /workAreaStart/.test(item)), `${id}: verification must require workAreaStart evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /workAreaDuration/.test(item)), `${id}: verification must require workAreaDuration evidence.`);
+      assert(solution.promotionHistory.some((entry) => /AUX-021/.test(entry.evidence)), `${id}: promotion evidence should mention AUX-021.`);
+    } else if (id === "add-markers-to-selected-layers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "add_layer_marker", "get_layer_details"],
+        `${id}: imported selected-layer marker workflow should stay on the narrow typed tool sequence.`
+      );
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("add_layer_marker"), `${id}: recipe should use the marker add typed tool.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require marker read-back through layer details.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_layer_marker/.test(step)), `${id}: verification must include marker creation steps.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer marker details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /comment/.test(item)), `${id}: verification must require marker comment evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /time/.test(item)), `${id}: verification must require marker time evidence.`);
+      assert(solution.notes.some((note) => /audio analysis/.test(note)), `${id}: notes must keep audio analysis out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /kmmsl1/.test(entry.evidence)), `${id}: promotion evidence should mention kmmsl1.`);
+    } else {
+      throw new Error(`Unhandled imported advisory solution quality checks: ${id}`);
+    }
   }
 }
 
@@ -291,6 +317,20 @@ function assertActualRetrieval(registry) {
   assert(resetWorkAreaPromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
   assert(!/run_extendscript/i.test(resetWorkAreaPromptSection), "reset work-area guidance should not recommend raw ExtendScript.");
 
+  const addMarkersRetrieval = retrieveSolutionHints("Add a marker with a comment to all selected layers.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(addMarkersRetrieval.ok, true);
+  assert(ids(addMarkersRetrieval).includes("add-markers-to-selected-layers-typed-plan"), "selected-layer marker advisory recipe should surface for selected marker prompt.");
+  const addMarkersPromptSection = formatSolutionHintsForPrompt(addMarkersRetrieval);
+  assert(addMarkersPromptSection.includes("Add Markers To Selected Layers Typed Plan"), "prompt section should include selected-layer marker advisory title.");
+  assert(addMarkersPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for marker add workflows.");
+  assert(addMarkersPromptSection.includes("add_layer_marker"), "prompt section should prefer add_layer_marker for marker creation.");
+  assert(addMarkersPromptSection.includes("get_layer_details"), "prompt section should require marker read-back.");
+  assert(!/run_extendscript/i.test(addMarkersPromptSection), "selected-layer marker guidance should not recommend raw ExtendScript.");
+
   return {
     contextRetrieval,
     alignRetrieval,
@@ -302,7 +342,8 @@ function assertActualRetrieval(registry) {
     },
     duplicateToolMatches: duplicateRetrieval.toolMatches.map((match) => match.id),
     importedAdvisoryRetrieval: {
-      resetWorkArea: ids(resetWorkAreaRetrieval)
+      resetWorkArea: ids(resetWorkAreaRetrieval),
+      addMarkers: ids(addMarkersRetrieval)
     }
   };
 }
