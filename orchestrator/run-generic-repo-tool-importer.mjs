@@ -24,6 +24,7 @@ const SUPERVISOR_PLAN_SCHEMA = "generic-repo-tool-importer.supervisor-plan.v1";
 const ANALYSIS_SCHEMA = "generic-repo-tool-importer.analysis-fixture.v1";
 const IMPLEMENTATION_PLAN_SCHEMA = "generic-repo-tool-importer.implementation-plan.v1";
 const IMPLEMENTATION_WORKTREE_SCHEMA = "generic-repo-tool-importer.implementation-worktree-run.v1";
+const IMPLEMENTATION_CHILD_RUN_SCHEMA = "generic-repo-tool-importer.implementation-child-run.v1";
 const MERGE_PLAN_SCHEMA = "generic-repo-tool-importer.merge-plan.v1";
 const LIVE_QUEUE_PLAN_SCHEMA = "generic-repo-tool-importer.live-queue-plan.v1";
 const ANALYSIS_ARTIFACTS = Object.freeze([
@@ -38,6 +39,9 @@ const IMPLEMENTATION_PLAN_ARTIFACTS = Object.freeze([
 ]);
 const IMPLEMENTATION_WORKTREE_ARTIFACTS = Object.freeze([
   "implementation/worktree-run.json",
+]);
+const IMPLEMENTATION_CHILD_RUN_ARTIFACTS = Object.freeze([
+  "implementation/child-run-run.json",
 ]);
 const MERGE_PLAN_ARTIFACTS = Object.freeze([
   "merge/supervisor-merge-plan.json",
@@ -61,6 +65,9 @@ const DEPENDENCY_PATHS = new Set([
   "jsr.json",
 ]);
 const TEXT_FILE_MAX_BYTES = 256 * 1024;
+const CHILD_RUN_OUTPUT_MAX_BUFFER_BYTES = 2 * 1024 * 1024;
+const DEFAULT_CHILD_RUN_TIMEOUT_MS = 10 * 60 * 1000;
+const MAX_CHILD_RUN_TIMEOUT_MS = 30 * 60 * 1000;
 const SECRET_PATTERN =
   /\b(?:[A-Z0-9]+[_-])*?(?:api[_-]?key|access[_-]?token|secret|password)\b\s*[:=]\s*["']?(?:sk-|xox|ghp_|[A-Za-z0-9_\-]{12,})/i;
 const NAMED_REPO_ASSUMPTION_PATTERN = /\bdakkshin\b/i;
@@ -73,6 +80,7 @@ Usage:
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --run-analysis
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --plan-implementation
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --run-implementation-worktrees
+  node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --run-implementation-child-runs
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --plan-merge
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --plan-live-queue
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --json
@@ -88,6 +96,11 @@ Options:
                       Run the AUX-020 implementation worktree boundary: create
                       detached importer-owned worktrees only, record child-run
                       intent, then stop before Codex child runs or merge.
+  --run-implementation-child-runs
+                      Run the AUX-021 child-run boundary: launch Codex CLI only
+                      inside AUX-020 detached importer-owned worktrees from
+                      child-run intents, capture evidence, enforce planned paths,
+                      then stop before source merge or validation commands.
   --plan-merge      Run the AUX-018 plan-only controlled merge supervisor,
                       then stop before applying changes or live validation.
   --plan-live-queue Run the AUX-019 fixture-only serial live queue evidence
@@ -98,10 +111,11 @@ Options:
 This skeleton validates the AUX-014 manifest contract, creates an ignored run
 root, writes durable state artifacts, optionally writes fixture-backed analysis
 artifacts, plan-only implementation batch artifacts, opt-in detached implementation
-worktree boundary artifacts, plan-only merge artifacts, and fixture-only live queue
-evidence. It does not launch child runs, apply source merges, run live AE/CEP,
-change dependencies, edit product runtime files, push, create PRs, or trigger
-GitHub automation.
+worktree boundary artifacts, opt-in bounded child-run artifacts, plan-only merge
+artifacts, and fixture-only live queue evidence. It does not apply source merges,
+run validation commands against imported changes, run live AE/CEP, change
+dependencies, edit product runtime files, push, create PRs, or trigger GitHub
+automation.
 `;
 
 const VALUE_OPTIONS = new Set(["manifest"]);
@@ -111,6 +125,7 @@ const BOOLEAN_OPTIONS = new Set([
   "run-analysis",
   "plan-implementation",
   "run-implementation-worktrees",
+  "run-implementation-child-runs",
   "plan-merge",
   "plan-live-queue",
 ]);
@@ -677,6 +692,89 @@ function updateSupervisorPlanForImplementationWorktrees(runRoot, manifest, manif
   writeJson(planPath, plan);
 }
 
+function updateSupervisorPlanForImplementationChildRuns(runRoot, manifest, manifestHash, runRootRelative, artifactPaths, batches) {
+  const planPath = path.join(runRoot, "supervisor-plan.json");
+  const existing = existsSync(planPath)
+    ? readJsonFile(planPath, "supervisor plan")
+    : createSupervisorPlan(manifest, manifestHash, runRootRelative);
+  const plan = {
+    ...existing,
+    auxiliaryId: "AUX-021",
+    status: "stopped_after_implementation_child_runs",
+    stopBeforePhase: "source_merge_application",
+    implementationChildRuns: {
+      schema: IMPLEMENTATION_CHILD_RUN_SCHEMA,
+      status: "completed",
+      artifacts: artifactPaths,
+      batches: batches.map((batch) => ({
+        id: batch.id,
+        plannedPaths: batch.plannedPaths,
+        childRunIntentPath: batch.childRunIntentPath,
+        childRunResultPath: batch.childRunResultPath,
+        actualWorktreePath: batch.actualWorktreePath,
+        exitCode: batch.exitCode,
+        changedPaths: batch.changedPaths,
+        plannedPathGate: batch.plannedPathGate,
+      })),
+      worktreesCreated: true,
+      branchCreated: false,
+      childRunsCreated: true,
+      controlledMergeApplied: false,
+      sourceMergeApplied: false,
+      validationCommandsRun: false,
+      liveCepAeRun: false,
+      localOllamaUsed: false,
+      fallbackProviderUsed: false,
+      dependencyChanged: false,
+      productRuntimeEdited: false,
+    },
+    phasePlan: [
+      {
+        phase: "initialized",
+        status: "written",
+        artifacts: [
+          "state.json",
+          "events.jsonl",
+          "manifest.original.json",
+          "manifest.normalized.json",
+          "supervisor-plan.json",
+        ],
+      },
+      {
+        phase: "analysis",
+        status: "written",
+        artifacts: existing.analysis?.artifacts || [],
+      },
+      {
+        phase: "implementation_planning",
+        status: "written",
+        artifacts: existing.implementationPlanning?.artifacts || [],
+      },
+      {
+        phase: "implementation_worktrees",
+        status: "written",
+        artifacts: existing.implementationWorktrees?.artifacts || [],
+      },
+      {
+        phase: "implementation_child_runs",
+        status: "written",
+        artifacts: artifactPaths,
+      },
+      {
+        phase: "source_merge_application",
+        status: "not_started",
+        reason: "AUX-021 runs child processes only inside importer-owned detached worktrees and stops before source merge application.",
+      },
+      {
+        phase: "validation_commands",
+        status: "not_started",
+        reason: "AUX-021 captures child-run evidence only and does not run validation commands against imported changes.",
+      },
+    ],
+  };
+  writeJson(planPath, plan);
+}
+
 function updateSupervisorPlanForMergePlanning(runRoot, manifest, manifestHash, runRootRelative, artifactPaths, accepted, rejected) {
   const planPath = path.join(runRoot, "supervisor-plan.json");
   const existing = existsSync(planPath)
@@ -883,6 +981,9 @@ function resumeRun({ manifest, manifestHash, runRoot, existingState }) {
   const atImplementationWorktreesBoundary =
     existingState.currentPhase === "implementation_worktrees_ready" &&
     existingState.nextPhase === "implementation_child_runs";
+  const atImplementationChildRunsBoundary =
+    existingState.currentPhase === "implementation_child_runs_complete" &&
+    existingState.nextPhase === "controlled_merge";
   const atMergePlannedBoundary =
     existingState.currentPhase === "merge_planned" &&
     existingState.nextPhase === "live_queue_planning";
@@ -894,6 +995,7 @@ function resumeRun({ manifest, manifestHash, runRoot, existingState }) {
     !atImplementationBoundary &&
     !atImplementationPlannedBoundary &&
     !atImplementationWorktreesBoundary &&
+    !atImplementationChildRunsBoundary &&
     !atMergePlannedBoundary &&
     !atLiveQueuePlannedBoundary
   ) {
@@ -1813,6 +1915,446 @@ function verifyImplementationWorktreeOutputs(runRoot, targetRepo) {
   }
 }
 
+function assertDetachedWorktree(worktreePath, label) {
+  if (!existsSync(worktreePath)) {
+    throw new Error(`implementation-child-run-worktree-missing: ${label}`);
+  }
+  const inside = runGit(worktreePath, ["rev-parse", "--is-inside-work-tree"], `verify implementation child worktree ${label}`).trim();
+  if (inside !== "true") {
+    throw new Error(`implementation-child-run-worktree-invalid: ${label}`);
+  }
+  const branch = spawnSync("git", ["symbolic-ref", "-q", "--short", "HEAD"], {
+    cwd: worktreePath,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (branch.status === 0) {
+    throw new Error(`implementation-child-run-branch-created: ${label}:${branch.stdout.trim()}`);
+  }
+}
+
+function assertDetachedCleanChildRunWorktree(worktreePath, label) {
+  assertDetachedWorktree(worktreePath, label);
+  const status = runGit(worktreePath, ["status", "--porcelain", "--untracked-files=all"], `implementation child worktree status ${label}`);
+  if (status.trim() !== "") {
+    throw new Error(`implementation-child-run-worktree-not-clean: ${label}:${status.trim()}`);
+  }
+}
+
+function sortedNormalizedPaths(paths) {
+  return uniqueValues((paths || []).map(normalizePlannedPath)).sort((left, right) => left.localeCompare(right));
+}
+
+function sameStringSet(left, right) {
+  const sortedLeft = sortedNormalizedPaths(left);
+  const sortedRight = sortedNormalizedPaths(right);
+  return sortedLeft.length === sortedRight.length && sortedLeft.every((value, index) => value === sortedRight[index]);
+}
+
+function worktreeChangedPaths(worktreePath) {
+  const tracked = runGit(worktreePath, ["diff", "--name-only", "HEAD", "--"], "implementation child tracked diff")
+    .split(/\r?\n/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  const untracked = runGit(worktreePath, ["ls-files", "--others", "--exclude-standard"], "implementation child untracked files")
+    .split(/\r?\n/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  return sortedNormalizedPaths([...tracked, ...untracked]);
+}
+
+function assertRunOwnedChildWorktree({ targetRepo, runRootRelative, batch }) {
+  const batchId = batch.id || batch.batchId;
+  const worktreePath = path.resolve(batch.actualWorktreePath || "");
+  if (!pathStartsWith(worktreePath, targetRepo)) {
+    throw new Error(`implementation-child-run-worktree-outside-target: ${batchId}`);
+  }
+  const expectedPrefix = `${normalizeRepoPath(runRootRelative)}/worktrees/`;
+  const relative = normalizeRepoPath(batch.actualWorktreeRelativePath || path.relative(targetRepo, worktreePath));
+  if (!relative.startsWith(expectedPrefix)) {
+    throw new Error(`implementation-child-run-worktree-not-run-owned: ${batchId}:${relative}`);
+  }
+  return worktreePath;
+}
+
+function validateChildRunIntent({ manifest, intent, batch, worktreePath }) {
+  if (intent.schema !== "generic-repo-tool-importer.child-run-intent.v1") {
+    throw new Error(`implementation-child-run-intent-schema-mismatch: ${batch.id}`);
+  }
+  if (intent.runId !== manifest.run.runId || intent.batchId !== batch.id) {
+    throw new Error(`implementation-child-run-intent-binding-mismatch: ${batch.id}`);
+  }
+  if (intent.status !== "not_started" || intent.commandNotRun !== true) {
+    throw new Error(`implementation-child-run-intent-already-used: ${batch.id}`);
+  }
+  if (intent.engine !== "codex-cli") {
+    throw new Error(`implementation-child-run-engine-not-allowed: ${batch.id}`);
+  }
+  if (intent.sandbox !== "workspace-write") {
+    throw new Error(`implementation-child-run-sandbox-not-allowed: ${batch.id}`);
+  }
+  if (intent.approvalPolicy !== "never") {
+    throw new Error(`implementation-child-run-approval-policy-not-allowed: ${batch.id}`);
+  }
+  if (intent.webSearch !== "disabled") {
+    throw new Error(`implementation-child-run-web-search-not-disabled: ${batch.id}`);
+  }
+  if (intent.localOllama !== false) {
+    throw new Error(`implementation-child-run-local-ollama-not-allowed: ${batch.id}`);
+  }
+  if (path.resolve(intent.cwd || "") !== worktreePath) {
+    throw new Error(`implementation-child-run-cwd-mismatch: ${batch.id}`);
+  }
+  if (intent.promptPath !== batch.promptPath) {
+    throw new Error(`implementation-child-run-prompt-mismatch: ${batch.id}`);
+  }
+  if (!sameStringSet(intent.plannedPaths, batch.plannedPaths)) {
+    throw new Error(`implementation-child-run-planned-path-mismatch: ${batch.id}`);
+  }
+}
+
+function childRunTimeoutMs(manifest) {
+  const configured = manifest.implementation.codexCliInvocation.timeoutMs;
+  if (configured === undefined) {
+    return DEFAULT_CHILD_RUN_TIMEOUT_MS;
+  }
+  if (!Number.isInteger(configured) || configured < 1000 || configured > MAX_CHILD_RUN_TIMEOUT_MS) {
+    throw new Error("implementation-child-run-timeout-out-of-bounds");
+  }
+  return configured;
+}
+
+function buildChildRunPrompt(intent, promptText) {
+  return [
+    "AUX-021 generic repository importer child-run execution wrapper.",
+    "Execute this batch now inside the already-selected detached importer-owned worktree.",
+    "This wrapper supersedes older plan-only wording inside the batch prompt artifact.",
+    "",
+    "Hard boundaries:",
+    "- Edit only the planned paths in the child-run intent.",
+    "- Do not create branches, commits, extra worktrees, source merges, validation runs, live AE/CEP/CDP/OpenAI CLI planner runs, package/dependency changes, push, PR, GitHub automation, or user-asset mutations.",
+    "- Do not use Local/Ollama, fallback providers, or web search.",
+    "- Leave changes in this detached worktree only; the parent importer will stop before any source merge application.",
+    "",
+    "<child_run_intent_json>",
+    JSON.stringify(intent, null, 2),
+    "</child_run_intent_json>",
+    "",
+    promptText,
+  ].join("\n");
+}
+
+function buildCodexChildRunInvocation(manifest, worktreePath) {
+  const codexArgs = [
+    "exec",
+    "--cd",
+    worktreePath,
+    "--sandbox",
+    "workspace-write",
+    "--ephemeral",
+    "-c",
+    "approval_policy=\"never\"",
+    "-c",
+    "sandbox_workspace_write.network_access=false",
+    "--disable",
+    "web_search",
+  ];
+  if (manifest.run.defaultModel) {
+    codexArgs.push("--model", manifest.run.defaultModel);
+  }
+  codexArgs.push("-");
+  if (process.platform === "win32") {
+    return {
+      command: "cmd.exe",
+      args: ["/d", "/s", "/c", "codex", ...codexArgs],
+      displayCommand: "codex",
+      displayArgs: codexArgs,
+    };
+  }
+  return {
+    command: "codex",
+    args: codexArgs,
+    displayCommand: "codex",
+    displayArgs: codexArgs,
+  };
+}
+
+function resultStatusForChildRun({ changedPaths, exitCode, error, postRunHead, preRunHead, timedOut, unplannedPaths }) {
+  if (timedOut) {
+    return "failed_timeout";
+  }
+  if (error || exitCode !== 0) {
+    return "failed_process";
+  }
+  if (postRunHead !== preRunHead) {
+    return "failed_commit_created";
+  }
+  if (unplannedPaths.length > 0) {
+    return "failed_unplanned_paths";
+  }
+  return changedPaths.length > 0 ? "child_run_completed" : "child_run_completed_no_changes";
+}
+
+function assertChildRunResultPassed(result) {
+  if (result.status === "failed_timeout") {
+    throw new Error(`implementation-child-run-timeout: ${result.batchId}`);
+  }
+  if (result.status === "failed_process") {
+    throw new Error(`implementation-child-run-failed: ${result.batchId}`);
+  }
+  if (result.status === "failed_commit_created") {
+    throw new Error(`implementation-child-run-commit-created: ${result.batchId}`);
+  }
+  if (result.status === "failed_unplanned_paths") {
+    throw new Error(`implementation-child-run-unplanned-paths: ${result.batchId}:${result.unplannedPaths.join(", ")}`);
+  }
+}
+
+function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootRelative, targetRepo, batch }) {
+  const safeBatchId = safeId(batch.id);
+  const resultRoot = path.join(runRoot, "implementation", "child-run-results");
+  const logRoot = path.join(runRoot, "implementation", "child-run-logs");
+  mkdirSync(resultRoot, { recursive: true });
+  mkdirSync(logRoot, { recursive: true });
+
+  const worktreePath = assertRunOwnedChildWorktree({ targetRepo, runRootRelative, batch });
+  assertDetachedCleanChildRunWorktree(worktreePath, batch.id);
+
+  const intentPath = batch.childRunIntentPath;
+  if (!intentPath || !existsSync(path.join(runRoot, intentPath))) {
+    throw new Error(`implementation-child-run-intent-missing: ${batch.id}`);
+  }
+  const intent = readJsonFile(path.join(runRoot, intentPath), `implementation child run intent ${batch.id}`);
+  validateChildRunIntent({ manifest, intent, batch, worktreePath });
+  const promptPath = path.join(runRoot, intent.promptPath);
+  if (!existsSync(promptPath)) {
+    throw new Error(`implementation-child-run-prompt-missing: ${batch.id}:${intent.promptPath}`);
+  }
+
+  const prompt = buildChildRunPrompt(intent, readFileSync(promptPath, "utf8"));
+  const invocation = buildCodexChildRunInvocation(manifest, worktreePath);
+  const timeoutMs = childRunTimeoutMs(manifest);
+  const startedAt = new Date().toISOString();
+  const preRunHead = runGit(worktreePath, ["rev-parse", "HEAD"], `implementation child pre-run head ${batch.id}`);
+  const result = spawnSync(invocation.command, invocation.args, {
+    cwd: worktreePath,
+    input: prompt,
+    encoding: "utf8",
+    maxBuffer: CHILD_RUN_OUTPUT_MAX_BUFFER_BYTES,
+    stdio: ["pipe", "pipe", "pipe"],
+    timeout: timeoutMs,
+  });
+  const completedAt = new Date().toISOString();
+  assertDetachedWorktree(worktreePath, batch.id);
+  const postRunHead = runGit(worktreePath, ["rev-parse", "HEAD"], `implementation child post-run head ${batch.id}`);
+  const changedPaths = worktreeChangedPaths(worktreePath);
+  const unplannedPaths = changedPaths.filter((changedPath) => !pathMatchesAny(changedPath, batch.plannedPaths));
+  const timedOut = result.error?.code === "ETIMEDOUT";
+  const stdoutPath = `implementation/child-run-logs/${safeBatchId}.stdout.txt`;
+  const stderrPath = `implementation/child-run-logs/${safeBatchId}.stderr.txt`;
+  writeFileSync(path.join(runRoot, stdoutPath), result.stdout || "", "utf8");
+  writeFileSync(path.join(runRoot, stderrPath), result.stderr || "", "utf8");
+
+  const childRunResult = {
+    schema: "generic-repo-tool-importer.implementation-child-run-result.v1",
+    runId: manifest.run.runId,
+    manifestHash,
+    batchId: batch.id,
+    status: resultStatusForChildRun({
+      changedPaths,
+      error: result.error,
+      exitCode: result.status,
+      postRunHead,
+      preRunHead,
+      timedOut,
+      unplannedPaths,
+    }),
+    startedAt,
+    completedAt,
+    timeoutMs,
+    plannedPaths: batch.plannedPaths,
+    changedPaths,
+    unplannedPaths,
+    plannedPathGate: unplannedPaths.length === 0 ? "passed" : "failed",
+    promptPath: intent.promptPath,
+    childRunIntentPath: intentPath,
+    actualWorktreePath: worktreePath,
+    actualWorktreeRelativePath: batch.actualWorktreeRelativePath,
+    command: {
+      name: invocation.displayCommand,
+      args: invocation.displayArgs,
+      stdin: "batch prompt wrapper",
+    },
+    exitCode: result.status,
+    signal: result.signal || null,
+    error: result.error ? result.error.message : null,
+    stdoutPath,
+    stderrPath,
+    preRunHead,
+    postRunHead,
+    preRunWorktreeClean: true,
+    detachedWorktreeVerified: true,
+    worktreeCreated: true,
+    branchCreated: false,
+    childRunCreated: true,
+    controlledMergeApplied: false,
+    sourceMergeApplied: false,
+    validationCommandsRun: false,
+    liveCepAeRun: false,
+    localOllamaUsed: false,
+    fallbackProviderUsed: false,
+    dependencyChanged: false,
+    productRuntimeEdited: false,
+    pushOrPrCreated: false,
+  };
+
+  const childRunResultPath = `implementation/child-run-results/${safeBatchId}.json`;
+  writeJson(path.join(runRoot, childRunResultPath), childRunResult);
+  assertChildRunResultPassed(childRunResult);
+  return { ...childRunResult, childRunResultPath };
+}
+
+function buildImplementationChildRunArtifacts(manifest, manifestHash, targetRepo, runRoot, runRootRelative) {
+  verifyAnalysisOutputs(runRoot);
+  verifyImplementationPlanningOutputs(runRoot);
+  verifyImplementationWorktreeOutputs(runRoot, targetRepo);
+
+  const worktreeRun = readJsonFile(path.join(runRoot, "implementation", "worktree-run.json"), "implementation worktree run");
+  if (!Array.isArray(worktreeRun.batches) || worktreeRun.batches.length === 0) {
+    throw new Error("implementation-child-run-batch-plan-empty");
+  }
+
+  const artifactPaths = [...IMPLEMENTATION_CHILD_RUN_ARTIFACTS];
+  const batches = [];
+  for (const batch of worktreeRun.batches) {
+    const childResult = runImplementationChildBatch({
+      manifest,
+      manifestHash,
+      runRoot,
+      runRootRelative,
+      targetRepo,
+      batch,
+    });
+    artifactPaths.push(childResult.childRunResultPath, childResult.stdoutPath, childResult.stderrPath);
+    batches.push(childResult);
+  }
+
+  writeJson(path.join(runRoot, "implementation", "child-run-run.json"), {
+    schema: IMPLEMENTATION_CHILD_RUN_SCHEMA,
+    runId: manifest.run.runId,
+    manifestHash,
+    status: "child_runs_completed_source_merge_not_started",
+    sourceImplementationWorktreeRun: "implementation/worktree-run.json",
+    worktreesCreated: true,
+    branchCreated: false,
+    childRunsCreated: true,
+    controlledMergeApplied: false,
+    sourceMergeApplied: false,
+    validationCommandsRun: false,
+    liveCepAeRun: false,
+    localOllamaUsed: false,
+    fallbackProviderUsed: false,
+    dependencyChanged: false,
+    productRuntimeEdited: false,
+    pushOrPrCreated: false,
+    batches: batches.map((batch) => ({
+      id: batch.batchId,
+      status: batch.status,
+      plannedPaths: batch.plannedPaths,
+      changedPaths: batch.changedPaths,
+      unplannedPaths: batch.unplannedPaths,
+      plannedPathGate: batch.plannedPathGate,
+      childRunIntentPath: batch.childRunIntentPath,
+      childRunResultPath: batch.childRunResultPath,
+      actualWorktreePath: batch.actualWorktreePath,
+      actualWorktreeRelativePath: batch.actualWorktreeRelativePath,
+      exitCode: batch.exitCode,
+      stdoutPath: batch.stdoutPath,
+      stderrPath: batch.stderrPath,
+    })),
+    checks: {
+      manifestHashBinding: "passed",
+      sourceReadOnly: "passed",
+      preRunWorktreeClean: "passed",
+      detachedImporterOwnedWorktrees: "passed",
+      plannedPathGate: "passed",
+      branchCreation: "not_created",
+      commits: "not_created",
+      sourceMergeApplication: "not_started",
+      validationCommands: "not_started",
+      liveValidation: "not_started",
+      localOllama: "rejected",
+      fallbackProvider: "rejected",
+    },
+  });
+
+  return { artifactPaths, batches };
+}
+
+function verifyImplementationChildRunOutputs(runRoot, targetRepo, runRootRelative) {
+  for (const relative of IMPLEMENTATION_CHILD_RUN_ARTIFACTS) {
+    const absolute = path.join(runRoot, relative);
+    if (!existsSync(absolute)) {
+      throw new Error(`implementation-child-run-output-missing: ${relative}`);
+    }
+    readJsonFile(absolute, relative);
+  }
+
+  const childRun = readJsonFile(path.join(runRoot, "implementation", "child-run-run.json"), "implementation child run");
+  if (childRun.schema !== IMPLEMENTATION_CHILD_RUN_SCHEMA) {
+    throw new Error("implementation-child-run-schema-mismatch: child-run-run.json");
+  }
+  if (
+    childRun.worktreesCreated !== true ||
+    childRun.branchCreated !== false ||
+    childRun.childRunsCreated !== true ||
+    childRun.controlledMergeApplied !== false ||
+    childRun.sourceMergeApplied !== false ||
+    childRun.validationCommandsRun !== false ||
+    childRun.liveCepAeRun !== false ||
+    childRun.localOllamaUsed !== false ||
+    childRun.fallbackProviderUsed !== false ||
+    childRun.dependencyChanged !== false ||
+    childRun.productRuntimeEdited !== false ||
+    childRun.pushOrPrCreated !== false
+  ) {
+    throw new Error("implementation-child-run-boundary-violated");
+  }
+  for (const batch of childRun.batches || []) {
+    if (!batch.childRunResultPath || !existsSync(path.join(runRoot, batch.childRunResultPath))) {
+      throw new Error(`implementation-child-run-output-missing: ${batch.childRunResultPath || "child run result"}`);
+    }
+    const childResult = readJsonFile(path.join(runRoot, batch.childRunResultPath), `implementation child run result ${batch.id}`);
+    if (
+      !["child_run_completed", "child_run_completed_no_changes"].includes(childResult.status) ||
+      childResult.childRunCreated !== true ||
+      childResult.controlledMergeApplied !== false ||
+      childResult.sourceMergeApplied !== false ||
+      childResult.validationCommandsRun !== false ||
+      childResult.liveCepAeRun !== false ||
+      childResult.localOllamaUsed !== false ||
+      childResult.fallbackProviderUsed !== false ||
+      childResult.pushOrPrCreated !== false
+    ) {
+      throw new Error(`implementation-child-run-result-boundary-violated: ${batch.id}`);
+    }
+    const worktreePath = assertRunOwnedChildWorktree({ targetRepo, runRootRelative, batch: childResult });
+    assertDetachedWorktree(worktreePath, batch.id);
+    const currentHead = runGit(worktreePath, ["rev-parse", "HEAD"], `implementation child resume head ${batch.id}`);
+    if (currentHead !== childResult.preRunHead || childResult.postRunHead !== childResult.preRunHead) {
+      throw new Error(`implementation-child-run-commit-created: ${batch.id}`);
+    }
+    const currentChangedPaths = worktreeChangedPaths(worktreePath);
+    if (!sameStringSet(currentChangedPaths, childResult.changedPaths)) {
+      throw new Error(`implementation-child-run-changed-paths-drift: ${batch.id}`);
+    }
+    const unplannedPaths = currentChangedPaths.filter((changedPath) => !pathMatchesAny(changedPath, childResult.plannedPaths));
+    if (unplannedPaths.length > 0) {
+      throw new Error(`implementation-child-run-unplanned-paths: ${batch.id}:${unplannedPaths.join(", ")}`);
+    }
+  }
+}
+
 function validateMergeSharedPathOwnership(manifest, worktreePlan) {
   const batches = (worktreePlan.batches || []).map((batch) => ({
     id: batch.id,
@@ -2614,6 +3156,162 @@ function runImplementationWorktreePhase({ manifest, manifestHash, targetRepo, ru
   }
 }
 
+function runImplementationChildRunPhase({ manifest, manifestHash, targetRepo, runRoot, runRootRelative, state }) {
+  const now = new Date().toISOString();
+  if (state.currentPhase === "implementation_child_runs_complete" && state.nextPhase === "controlled_merge") {
+    verifyAnalysisOutputs(runRoot);
+    verifyImplementationPlanningOutputs(runRoot);
+    verifyImplementationChildRunOutputs(runRoot, targetRepo, runRootRelative);
+    appendEvent(runRoot, {
+      event: "implementation_child_runs_resume_verified",
+      runId: manifest.run.runId,
+      manifestHash,
+      nextPhase: state.nextPhase,
+      at: now,
+    });
+    return state;
+  }
+
+  if (state.status !== "stopped" || state.currentPhase !== "implementation_worktrees_ready" || state.nextPhase !== "implementation_child_runs") {
+    throw new Error("implementation-child-run-state-not-at-boundary");
+  }
+
+  const startedState = {
+    ...state,
+    auxiliaryId: "AUX-021",
+    status: "running",
+    currentPhase: "implementation_child_runs_running",
+    nextPhase: null,
+    stopReason: null,
+    updatedAt: now,
+    implementationChildRunsStartedAt: now,
+    flags: {
+      ...state.flags,
+      implementationChildRunsStarted: true,
+      worktreesCreated: true,
+      branchCreated: false,
+      childRunsCreated: false,
+      controlledMergeApplied: false,
+      sourceMergeApplied: false,
+      validationCommandsRun: false,
+      liveCepAeRun: false,
+      localOllamaUsed: false,
+      fallbackProviderUsed: false,
+      dependencyChanged: false,
+      productRuntimeEdited: false,
+      pushOrPrCreated: false,
+    },
+  };
+  writeJson(path.join(runRoot, "state.json"), startedState);
+  appendEvent(runRoot, {
+    event: "implementation_child_runs_started",
+    auxiliaryId: "AUX-021",
+    runId: manifest.run.runId,
+    manifestHash,
+    at: now,
+  });
+
+  try {
+    const { artifactPaths, batches } = buildImplementationChildRunArtifacts(
+      manifest,
+      manifestHash,
+      targetRepo,
+      runRoot,
+      runRootRelative,
+    );
+    verifyImplementationChildRunOutputs(runRoot, targetRepo, runRootRelative);
+    const completedAt = new Date().toISOString();
+    const completedState = {
+      ...startedState,
+      status: "stopped",
+      currentPhase: "implementation_child_runs_complete",
+      nextPhase: "controlled_merge",
+      stopReason: "stopped_before_source_merge_application",
+      updatedAt: completedAt,
+      implementationChildRunsCompletedAt: completedAt,
+      implementationChildRunArtifacts: artifactPaths,
+      implementationChildRunBatches: batches.map((batch) => ({
+        id: batch.batchId,
+        status: batch.status,
+        plannedPaths: batch.plannedPaths,
+        changedPaths: batch.changedPaths,
+        childRunIntentPath: batch.childRunIntentPath,
+        childRunResultPath: batch.childRunResultPath,
+        actualWorktreePath: batch.actualWorktreePath,
+        actualWorktreeRelativePath: batch.actualWorktreeRelativePath,
+      })),
+      flags: {
+        ...startedState.flags,
+        implementationChildRunsComplete: true,
+        worktreesCreated: true,
+        branchCreated: false,
+        childRunsCreated: true,
+        controlledMergeApplied: false,
+        sourceMergeApplied: false,
+        validationCommandsRun: false,
+        liveCepAeRun: false,
+        localOllamaUsed: false,
+        fallbackProviderUsed: false,
+        dependencyChanged: false,
+        productRuntimeEdited: false,
+        pushOrPrCreated: false,
+      },
+    };
+    writeJson(path.join(runRoot, "state.json"), completedState);
+    updateSupervisorPlanForImplementationChildRuns(
+      runRoot,
+      manifest,
+      manifestHash,
+      runRootRelative,
+      artifactPaths,
+      completedState.implementationChildRunBatches,
+    );
+    appendEvent(runRoot, {
+      event: "implementation_child_runs_complete",
+      runId: manifest.run.runId,
+      manifestHash,
+      artifacts: artifactPaths,
+      nextPhase: "controlled_merge",
+      at: completedAt,
+    });
+    appendEvent(runRoot, {
+      event: "stopped_before_source_merge_application",
+      runId: manifest.run.runId,
+      nextPhase: "controlled_merge",
+      at: completedAt,
+    });
+    return completedState;
+  } catch (error) {
+    const failedAt = new Date().toISOString();
+    const failedState = {
+      ...startedState,
+      status: "stopped",
+      currentPhase: "implementation_worktrees_ready",
+      nextPhase: "implementation_child_runs",
+      stopReason: error.message.split(":")[0],
+      updatedAt: failedAt,
+      flags: {
+        ...startedState.flags,
+        implementationChildRunsComplete: false,
+        controlledMergeApplied: false,
+        sourceMergeApplied: false,
+        validationCommandsRun: false,
+        liveCepAeRun: false,
+        localOllamaUsed: false,
+        fallbackProviderUsed: false,
+      },
+    };
+    writeJson(path.join(runRoot, "state.json"), failedState);
+    appendEvent(runRoot, {
+      event: "implementation_child_runs_failed",
+      runId: manifest.run.runId,
+      reason: error.message,
+      at: failedAt,
+    });
+    throw error;
+  }
+}
+
 function runMergePlanningPhase({ manifest, manifestHash, runRoot, runRootRelative, state }) {
   const now = new Date().toISOString();
   if (state.currentPhase === "merge_planned" && state.nextPhase === "live_queue_planning") {
@@ -2935,6 +3633,9 @@ export function runImporter(options, cwd = process.cwd()) {
   if (options["run-implementation-worktrees"]) {
     state = runImplementationWorktreePhase({ manifest, manifestHash, targetRepo, runRoot, runRootRelative, state });
   }
+  if (options["run-implementation-child-runs"]) {
+    state = runImplementationChildRunPhase({ manifest, manifestHash, targetRepo, runRoot, runRootRelative, state });
+  }
   if (options["plan-merge"]) {
     state = runMergePlanningPhase({ manifest, manifestHash, runRoot, runRootRelative, state });
   }
@@ -2944,7 +3645,8 @@ export function runImporter(options, cwd = process.cwd()) {
 
   const liveQueuePlanned = state.currentPhase === "live_queue_planned";
   const mergePlanned = liveQueuePlanned || state.currentPhase === "merge_planned";
-  const implementationWorktreesReady = state.currentPhase === "implementation_worktrees_ready";
+  const implementationChildRunsComplete = state.currentPhase === "implementation_child_runs_complete";
+  const implementationWorktreesReady = implementationChildRunsComplete || state.currentPhase === "implementation_worktrees_ready";
   const implementationPlanned = implementationWorktreesReady || mergePlanned || state.currentPhase === "implementation_planned";
   const analysisComplete = implementationPlanned || state.currentPhase === "analysis_complete";
   let status = "stopped_before_analysis";
@@ -2952,6 +3654,8 @@ export function runImporter(options, cwd = process.cwd()) {
     status = "stopped_after_live_queue_planning";
   } else if (mergePlanned) {
     status = "stopped_after_merge_planning";
+  } else if (implementationChildRunsComplete) {
+    status = "stopped_after_implementation_child_runs";
   } else if (implementationWorktreesReady) {
     status = "stopped_after_implementation_worktrees";
   } else if (implementationPlanned) {
@@ -2975,6 +3679,9 @@ export function runImporter(options, cwd = process.cwd()) {
   if (implementationWorktreesReady) {
     artifacts.push(...(state.implementationWorktreeArtifacts || []));
   }
+  if (implementationChildRunsComplete) {
+    artifacts.push(...(state.implementationChildRunArtifacts || []));
+  }
   if (mergePlanned) {
     artifacts.push(...(state.mergeArtifacts || []));
   }
@@ -2988,13 +3695,15 @@ export function runImporter(options, cwd = process.cwd()) {
       ? "AUX-019"
       : mergePlanned
         ? "AUX-018"
-        : implementationWorktreesReady
-          ? "AUX-020"
-          : implementationPlanned
-            ? "AUX-017"
-            : analysisComplete
-              ? "AUX-016"
-              : "AUX-015",
+        : implementationChildRunsComplete
+          ? "AUX-021"
+          : implementationWorktreesReady
+            ? "AUX-020"
+            : implementationPlanned
+              ? "AUX-017"
+              : analysisComplete
+                ? "AUX-016"
+                : "AUX-015",
     runId: manifest.run.runId,
     status,
     resumed,
@@ -3008,12 +3717,14 @@ export function runImporter(options, cwd = process.cwd()) {
     analysisCompleted: state.flags.analysisCompleted === true,
     implementationPlanned,
     implementationWorktreesReady,
+    implementationChildRunsComplete,
     mergePlanned,
     liveQueuePlanned,
     worktreesCreated: state.flags.worktreesCreated === true,
     branchCreated: state.flags.branchCreated === true,
     childRunsCreated: state.flags.childRunsCreated === true,
     controlledMergeApplied: state.flags.controlledMergeApplied === true,
+    validationCommandsRun: state.flags.validationCommandsRun === true,
     liveCepAeRun: state.flags.liveCepAeRun === true,
     localOllamaUsed: state.flags.localOllamaUsed === true,
     fallbackProviderUsed: state.flags.fallbackProviderUsed === true,

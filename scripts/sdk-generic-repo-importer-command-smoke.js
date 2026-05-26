@@ -19,9 +19,10 @@ function sh(cwd, args) {
   return result.stdout.trim();
 }
 
-function run(args, cwd = repo) {
+function run(args, cwd = repo, env = {}) {
   return spawnSync(process.execPath, [runner, ...args], {
     cwd,
+    env: { ...process.env, ...env },
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     timeout: 60000,
@@ -217,6 +218,65 @@ function writeManifest(root, manifest, name = "importer.manifest.json") {
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function writeFakeCodex(root) {
+  const binDir = path.join(root, "fake-bin");
+  fs.mkdirSync(binDir, { recursive: true });
+  const fakeScript = path.join(binDir, "fake-codex.js");
+  fs.writeFileSync(
+    fakeScript,
+    [
+      '"use strict";',
+      'const fs = require("fs");',
+      'const path = require("path");',
+      'const cdIndex = process.argv.indexOf("--cd");',
+      'const cwd = cdIndex >= 0 ? process.argv[cdIndex + 1] : process.cwd();',
+      'let input = "";',
+      'process.stdin.setEncoding("utf8");',
+      'process.stdin.on("data", (chunk) => { input += chunk; });',
+      'process.stdin.on("end", () => {',
+      '  const mode = process.env.FAKE_CODEX_MODE || "success";',
+      '  if (!input.includes("AUX-021 generic repository importer child-run execution wrapper")) {',
+      '    console.error("missing AUX-021 wrapper");',
+      '    process.exit(9);',
+      '  }',
+      '  if (mode === "fail") {',
+      '    console.error("fake codex failure");',
+      '    process.exit(7);',
+      '  }',
+      '  if (mode !== "no-change") {',
+      '    const relative = process.env.FAKE_CODEX_WRITE_PATH || "scripts/imported-tools/tool-tool.js";',
+      '    const absolute = path.join(cwd, relative);',
+      '    fs.mkdirSync(path.dirname(absolute), { recursive: true });',
+      '    fs.writeFileSync(absolute, `// fake imported output\\nmodule.exports = ${JSON.stringify(mode)};\\n`, "utf8");',
+      '  }',
+      '  console.log(`fake codex ${mode}`);',
+      '});',
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+
+  if (process.platform === "win32") {
+    fs.writeFileSync(path.join(binDir, "codex.cmd"), '@echo off\r\nnode "%~dp0fake-codex.js" %*\r\n', "utf8");
+  } else {
+    const binPath = path.join(binDir, "codex");
+    fs.writeFileSync(binPath, `#!/bin/sh\nnode "${fakeScript}" "$@"\n`, "utf8");
+    fs.chmodSync(binPath, 0o755);
+  }
+  return binDir;
+}
+
+function fakeCodexEnv(binDir, mode, writePath) {
+  const currentPath = process.env.PATH || process.env.Path || "";
+  const nextPath = `${binDir}${path.delimiter}${currentPath}`;
+  return {
+    FAKE_CODEX_MODE: mode,
+    FAKE_CODEX_WRITE_PATH: writePath || "",
+    PATH: nextPath,
+    Path: nextPath,
+  };
 }
 
 function assertValidRunArtifacts(output, fixture, runId) {
@@ -914,6 +974,247 @@ function prepareImplementationFixture(fixture, runId, manifest = validManifest(f
   return { manifestPath, runRoot };
 }
 
+function prepareImplementationWorktreeFixture(fixture, runId, manifest = validManifest(fixture, runId)) {
+  const prepared = prepareImplementationFixture(fixture, runId, manifest);
+  parseJson(run(["--manifest", prepared.manifestPath, "--run-implementation-worktrees", "--json"]));
+  return prepared;
+}
+
+function assertImplementationChildRunArtifacts(output, fixture, runId) {
+  assert.strictEqual(output.schema, "generic-repo-tool-importer.command-skeleton.v1");
+  assert.strictEqual(output.auxiliaryId, "AUX-021");
+  assert.strictEqual(output.runId, runId);
+  assert.strictEqual(output.status, "stopped_after_implementation_child_runs");
+  assert.strictEqual(output.currentPhase, "implementation_child_runs_complete");
+  assert.strictEqual(output.nextPhase, "controlled_merge");
+  assert.strictEqual(output.analysisCompleted, true);
+  assert.strictEqual(output.implementationPlanned, true);
+  assert.strictEqual(output.implementationWorktreesReady, true);
+  assert.strictEqual(output.implementationChildRunsComplete, true);
+  assert.strictEqual(output.worktreesCreated, true);
+  assert.strictEqual(output.branchCreated, false);
+  assert.strictEqual(output.childRunsCreated, true);
+  assert.strictEqual(output.controlledMergeApplied, false);
+  assert.strictEqual(output.validationCommandsRun, false);
+  assert.strictEqual(output.liveCepAeRun, false);
+  assert.strictEqual(output.localOllamaUsed, false);
+  assert.strictEqual(output.fallbackProviderUsed, false);
+
+  const runRoot = path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-importer", runId);
+  const state = readJson(path.join(runRoot, "state.json"));
+  assert.strictEqual(state.auxiliaryId, "AUX-021");
+  assert.strictEqual(state.status, "stopped");
+  assert.strictEqual(state.currentPhase, "implementation_child_runs_complete");
+  assert.strictEqual(state.nextPhase, "controlled_merge");
+  assert.strictEqual(state.stopReason, "stopped_before_source_merge_application");
+  assert.strictEqual(state.flags.implementationChildRunsComplete, true);
+  assert.strictEqual(state.flags.worktreesCreated, true);
+  assert.strictEqual(state.flags.branchCreated, false);
+  assert.strictEqual(state.flags.childRunsCreated, true);
+  assert.strictEqual(state.flags.controlledMergeApplied, false);
+  assert.strictEqual(state.flags.sourceMergeApplied, false);
+  assert.strictEqual(state.flags.validationCommandsRun, false);
+
+  const childRun = readJson(path.join(runRoot, "implementation", "child-run-run.json"));
+  assert.strictEqual(childRun.schema, "generic-repo-tool-importer.implementation-child-run.v1");
+  assert.strictEqual(childRun.status, "child_runs_completed_source_merge_not_started");
+  assert.strictEqual(childRun.worktreesCreated, true);
+  assert.strictEqual(childRun.branchCreated, false);
+  assert.strictEqual(childRun.childRunsCreated, true);
+  assert.strictEqual(childRun.controlledMergeApplied, false);
+  assert.strictEqual(childRun.sourceMergeApplied, false);
+  assert.strictEqual(childRun.validationCommandsRun, false);
+  assert.strictEqual(childRun.liveCepAeRun, false);
+  assert.strictEqual(childRun.localOllamaUsed, false);
+  assert.strictEqual(childRun.fallbackProviderUsed, false);
+  assert.strictEqual(childRun.checks.plannedPathGate, "passed");
+  assert.strictEqual(childRun.checks.sourceMergeApplication, "not_started");
+  assert.strictEqual(childRun.checks.validationCommands, "not_started");
+  assert(childRun.batches.length > 0);
+
+  const firstBatch = childRun.batches[0];
+  assert(fs.existsSync(path.join(runRoot, firstBatch.childRunResultPath)), "child run result must exist");
+  assert(fs.existsSync(path.join(runRoot, firstBatch.stdoutPath)), "child run stdout must exist");
+  assert(fs.existsSync(path.join(runRoot, firstBatch.stderrPath)), "child run stderr must exist");
+  assert(fs.existsSync(path.join(firstBatch.actualWorktreePath, "scripts", "imported-tools", "tool-tool.js")));
+
+  const childResult = readJson(path.join(runRoot, firstBatch.childRunResultPath));
+  assert.strictEqual(childResult.schema, "generic-repo-tool-importer.implementation-child-run-result.v1");
+  assert.strictEqual(childResult.status, "child_run_completed");
+  assert.deepStrictEqual(childResult.changedPaths, ["scripts/imported-tools/tool-tool.js"]);
+  assert.deepStrictEqual(childResult.unplannedPaths, []);
+  assert.strictEqual(childResult.plannedPathGate, "passed");
+  assert.strictEqual(childResult.preRunWorktreeClean, true);
+  assert.strictEqual(childResult.detachedWorktreeVerified, true);
+  assert.strictEqual(childResult.childRunCreated, true);
+  assert.strictEqual(childResult.branchCreated, false);
+  assert.strictEqual(childResult.sourceMergeApplied, false);
+  assert.strictEqual(childResult.validationCommandsRun, false);
+  assert.strictEqual(childResult.liveCepAeRun, false);
+  assert.strictEqual(childResult.localOllamaUsed, false);
+  assert.strictEqual(childResult.fallbackProviderUsed, false);
+  assert.strictEqual(childResult.preRunHead, childResult.postRunHead);
+  assert(fs.readFileSync(path.join(runRoot, childResult.stdoutPath), "utf8").includes("fake codex success"));
+
+  const supervisorPlan = readJson(path.join(runRoot, "supervisor-plan.json"));
+  assert.strictEqual(supervisorPlan.auxiliaryId, "AUX-021");
+  assert.strictEqual(supervisorPlan.status, "stopped_after_implementation_child_runs");
+  assert.strictEqual(supervisorPlan.stopBeforePhase, "source_merge_application");
+  assert.strictEqual(supervisorPlan.implementationChildRuns.childRunsCreated, true);
+  assert.strictEqual(supervisorPlan.implementationChildRuns.sourceMergeApplied, false);
+  assert.strictEqual(supervisorPlan.implementationChildRuns.validationCommandsRun, false);
+
+  assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+}
+
+function assertSuccessfulImplementationChildRunFixture() {
+  const fixture = createTempFixture("implementation-child-success");
+  try {
+    const runId = "aux021-child-success";
+    const { manifestPath } = prepareImplementationWorktreeFixture(fixture, runId);
+    const binDir = writeFakeCodex(fixture.root);
+    const output = parseJson(
+      run(
+        ["--manifest", manifestPath, "--run-implementation-child-runs", "--json"],
+        repo,
+        fakeCodexEnv(binDir, "success", "scripts/imported-tools/tool-tool.js"),
+      ),
+    );
+    assert.strictEqual(output.resumed, true);
+    assertImplementationChildRunArtifacts(output, fixture, runId);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertImplementationChildRunMissingIntentFixture() {
+  const fixture = createTempFixture("implementation-child-missing-intent");
+  try {
+    const runId = "aux021-missing-intent";
+    const { manifestPath, runRoot } = prepareImplementationWorktreeFixture(fixture, runId);
+    const worktreeRun = readJson(path.join(runRoot, "implementation", "worktree-run.json"));
+    fs.rmSync(path.join(runRoot, worktreeRun.batches[0].childRunIntentPath), { force: true });
+    const binDir = writeFakeCodex(fixture.root);
+
+    const result = run(
+      ["--manifest", manifestPath, "--run-implementation-child-runs", "--json"],
+      repo,
+      fakeCodexEnv(binDir, "success", "scripts/imported-tools/tool-tool.js"),
+    );
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /implementation-worktree-output-missing: implementation\/child-run-intents\/fixture-analysis-batch-1\.json/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertImplementationChildRunUnplannedPathFixture() {
+  const fixture = createTempFixture("implementation-child-unplanned");
+  try {
+    const runId = "aux021-unplanned-path";
+    const { manifestPath, runRoot } = prepareImplementationWorktreeFixture(fixture, runId);
+    const binDir = writeFakeCodex(fixture.root);
+
+    const result = run(
+      ["--manifest", manifestPath, "--run-implementation-child-runs", "--json"],
+      repo,
+      fakeCodexEnv(binDir, "success", "scripts/unplanned.js"),
+    );
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /implementation-child-run-unplanned-paths: fixture-analysis-batch-1:scripts\/unplanned\.js/);
+    const childResult = readJson(path.join(runRoot, "implementation", "child-run-results", "fixture-analysis-batch-1.json"));
+    assert.strictEqual(childResult.status, "failed_unplanned_paths");
+    assert.deepStrictEqual(childResult.unplannedPaths, ["scripts/unplanned.js"]);
+    const state = readJson(path.join(runRoot, "state.json"));
+    assert.strictEqual(state.currentPhase, "implementation_worktrees_ready");
+    assert.strictEqual(state.nextPhase, "implementation_child_runs");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertImplementationChildRunDirtyWorktreeFixture() {
+  const fixture = createTempFixture("implementation-child-dirty-worktree");
+  try {
+    const runId = "aux021-dirty-worktree";
+    const { manifestPath, runRoot } = prepareImplementationWorktreeFixture(fixture, runId);
+    const worktreeRun = readJson(path.join(runRoot, "implementation", "worktree-run.json"));
+    const worktreePath = worktreeRun.batches[0].actualWorktreePath;
+    fs.mkdirSync(path.join(worktreePath, "scripts", "imported-tools"), { recursive: true });
+    fs.writeFileSync(path.join(worktreePath, "scripts", "imported-tools", "tool-tool.js"), "// dirty before child\n", "utf8");
+    const binDir = writeFakeCodex(fixture.root);
+
+    const result = run(
+      ["--manifest", manifestPath, "--run-implementation-child-runs", "--json"],
+      repo,
+      fakeCodexEnv(binDir, "success", "scripts/imported-tools/tool-tool.js"),
+    );
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /implementation-worktree-dirty: fixture-analysis-batch-1/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertImplementationChildRunProcessFailureFixture() {
+  const fixture = createTempFixture("implementation-child-process-failure");
+  try {
+    const runId = "aux021-process-failure";
+    const { manifestPath, runRoot } = prepareImplementationWorktreeFixture(fixture, runId);
+    const binDir = writeFakeCodex(fixture.root);
+
+    const result = run(
+      ["--manifest", manifestPath, "--run-implementation-child-runs", "--json"],
+      repo,
+      fakeCodexEnv(binDir, "fail", "scripts/imported-tools/tool-tool.js"),
+    );
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /implementation-child-run-failed: fixture-analysis-batch-1/);
+    const childResult = readJson(path.join(runRoot, "implementation", "child-run-results", "fixture-analysis-batch-1.json"));
+    assert.strictEqual(childResult.status, "failed_process");
+    assert.strictEqual(childResult.exitCode, 7);
+    assert(fs.readFileSync(path.join(runRoot, childResult.stderrPath), "utf8").includes("fake codex failure"));
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertImplementationChildRunResumeFixture() {
+  const fixture = createTempFixture("implementation-child-resume");
+  try {
+    const runId = "aux021-child-resume";
+    const { manifestPath, runRoot } = prepareImplementationWorktreeFixture(fixture, runId);
+    const binDir = writeFakeCodex(fixture.root);
+    const first = parseJson(
+      run(
+        ["--manifest", manifestPath, "--run-implementation-child-runs", "--json"],
+        repo,
+        fakeCodexEnv(binDir, "success", "scripts/imported-tools/tool-tool.js"),
+      ),
+    );
+    assertImplementationChildRunArtifacts(first, fixture, runId);
+
+    const second = parseJson(
+      run(
+        ["--manifest", manifestPath, "--run-implementation-child-runs", "--json"],
+        repo,
+        fakeCodexEnv(binDir, "fail", "scripts/unplanned.js"),
+      ),
+    );
+    assert.strictEqual(second.resumed, true);
+    assertImplementationChildRunArtifacts(second, fixture, runId);
+
+    const state = readJson(path.join(runRoot, "state.json"));
+    assert(state.resumeCount >= 4);
+    const events = fs.readFileSync(path.join(runRoot, "events.jsonl"), "utf8").trim().split(/\r?\n/).map(JSON.parse);
+    assert(events.some((event) => event.event === "implementation_child_runs_complete"));
+    assert(events.some((event) => event.event === "implementation_child_runs_resume_verified"));
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertMergePlanningArtifacts(output, fixture, runId) {
   assert.strictEqual(output.schema, "generic-repo-tool-importer.command-skeleton.v1");
   assert.strictEqual(output.auxiliaryId, "AUX-018");
@@ -1447,6 +1748,12 @@ function main() {
   assertImplementationWorktreeExistingPathFixture();
   assertImplementationWorktreeRunOwnedPathFixture();
   assertImplementationWorktreeResumeFixture();
+  assertSuccessfulImplementationChildRunFixture();
+  assertImplementationChildRunMissingIntentFixture();
+  assertImplementationChildRunUnplannedPathFixture();
+  assertImplementationChildRunDirtyWorktreeFixture();
+  assertImplementationChildRunProcessFailureFixture();
+  assertImplementationChildRunResumeFixture();
   assertSuccessfulMergePlanningFixture();
   assertMergeMissingImplementationArtifactFixture();
   assertMergeUnplannedPathFixture();
