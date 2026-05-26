@@ -511,6 +511,49 @@ async function main() {
     assert.strictEqual(selectedPrecompDuplicateRepair.repairedPlan.steps[1].args.sourceCompItemIndex, "{{selectedPrecompItemIndex}}");
     assert.strictEqual(selectedPrecompDuplicateRepair.repairedPlan.steps[1].args.unavailableFootagePolicy, "reuse");
 
+    const deepDuplicateParentLayerReadBackRepair = await validatePlan("deep-duplicate-parent-layer-readback", {
+      summary: "Duplicate the selected precomp source tree and verify the relinked parent layer.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Inspect selected precomp layer", tool: "get_active_comp", args: {} },
+        {
+          title: "Deep duplicate selected precomp sources",
+          tool: "deep_duplicate_precomp_sources",
+          args: {
+            layerIndex: "{{selectedPrecompLayerIndex}}",
+            sourceCompItemIndex: "{{selectedPrecompItemIndex}}",
+            nameSuffix: " copy",
+            unavailableFootagePolicy: "reuse"
+          }
+        },
+        {
+          title: "Read back duplicated source comp",
+          tool: "get_comp_details",
+          args: {
+            compItemIndex: "{{duplicatedRootCompItemIndex}}",
+            includeLayers: true
+          }
+        },
+        {
+          title: "Verify parent layer after relink",
+          tool: "get_layer_details",
+          args: {
+            compItemIndex: "{{compItemIndex}}",
+            layerIndex: "{{selectedPrecompLayerIndex}}"
+          }
+        }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["get_active_comp", "deep_duplicate_precomp_sources", "get_comp_details", "get_layer_details"],
+      actionTypes: ["deep-duplicate-parent-layer-readback"]
+    });
+    assert.strictEqual(deepDuplicateParentLayerReadBackRepair.repairedPlan.steps[3].args.compItemIndex, "steps.2.result.comp.itemIndex");
+    assert.strictEqual(deepDuplicateParentLayerReadBackRepair.repairedPlan.steps[3].args.layerIndex, "{{selectedPrecompLayerIndex}}");
+
     const dryRunResponse = await bridgePost("/agents/plan/run", {
       requestId: "plan-repair-dry-run",
       dryRun: true,

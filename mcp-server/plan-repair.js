@@ -690,6 +690,57 @@ function insertLayerStackInspectionBeforeAmbiguousDuplicates(steps, catalog, act
   }
 }
 
+function templateBindingToken(value) {
+  const match = /^\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}$/.exec(String(value || "").trim());
+  return match ? normalizeToken(match[1]) : "";
+}
+
+function isSelectedPrecompLayerIndexBinding(value) {
+  const token = templateBindingToken(value);
+  return token === "selectedprecomplayerindex" || token === "selectedprecomplayerindices";
+}
+
+function isAmbiguousDeepDuplicateLayerReadBackCompBinding(value) {
+  if (missingValue(value)) return true;
+  const token = templateBindingToken(value);
+  return [
+    "compitemindex",
+    "compindex",
+    "activecompitemindex",
+    "activecompindex",
+    "rootcompitemindex",
+    "duplicatedrootcompitemindex"
+  ].includes(token);
+}
+
+function repairDeepDuplicateParentLayerReadBack(steps, actions) {
+  let lastDeepDuplicateIndex = -1;
+  for (let index = 0; index < steps.length; index += 1) {
+    const step = steps[index];
+    const toolName = stepToolName(step);
+    if (toolName === "deep_duplicate_precomp_sources") {
+      lastDeepDuplicateIndex = index;
+      continue;
+    }
+    if (lastDeepDuplicateIndex < 0 || toolName !== "get_layer_details") continue;
+
+    const args = stepArgs(step);
+    if (!isSelectedPrecompLayerIndexBinding(args.layerIndex)) continue;
+    if (!isAmbiguousDeepDuplicateLayerReadBackCompBinding(args.compItemIndex)) continue;
+
+    const parentCompBinding = `steps.${lastDeepDuplicateIndex + 1}.result.comp.itemIndex`;
+    if (args.compItemIndex === parentCompBinding) continue;
+    const before = hasOwn(args, "compItemIndex") ? args.compItemIndex : null;
+    args.compItemIndex = parentCompBinding;
+    step.args = args;
+    addAction(actions, index, "deep-duplicate-parent-layer-readback", "Pinned selected-precomp layer read-back to the parent comp returned by deep_duplicate_precomp_sources.", {
+      field: "compItemIndex",
+      before,
+      after: parentCompBinding
+    });
+  }
+}
+
 function repairToolName(step, stepIndex, catalog, actions, blockers) {
   const original = stepToolName(step);
   if (!original || catalog.toolByName(original)) return;
@@ -856,6 +907,7 @@ function repairAgentPlan(plan, validation, catalogOptions) {
     repairDuplicateLayerStackOrder(step, index, repairedPlan.steps, repair.actions);
   }
   insertLayerStackInspectionBeforeAmbiguousDuplicates(repairedPlan.steps, catalog, repair.actions);
+  repairDeepDuplicateParentLayerReadBack(repairedPlan.steps, repair.actions);
 
   repair.applied = repair.actions.length > 0;
   if (!repair.applied) return repair;

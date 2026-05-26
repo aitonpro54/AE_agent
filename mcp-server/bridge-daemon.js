@@ -6007,6 +6007,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For requests about selected precomp/source comp(s), inspect with get_active_comp or get_selected_layers first, then use {{selectedPrecompLayerIndex}} for the selected precomp layer, {{selectedPrecompItemIndex}} for one source comp, or {{selectedPrecompItemIndices}} in itemIndices for rename_project_items.",
     "For deep duplicate of a selected precomp and its sources, prefer one deep_duplicate_precomp_sources step with layerIndex {{selectedPrecompLayerIndex}} and sourceCompItemIndex {{selectedPrecompItemIndex}} after inspection; do not use run_extendscript.",
     "For read-back after deep_duplicate_precomp_sources, use get_comp_details with compItemIndex {{duplicatedRootCompItemIndex}} or {{rootCompItemIndex}}; the tool also returns createdItemIndices for project-item summaries.",
+    "To verify the parent layer after deep_duplicate_precomp_sources relinks it, use get_layer_details with compItemIndex steps.<deep-duplicate-step>.result.comp.itemIndex and layerIndex {{selectedPrecompLayerIndex}}; do not reuse generic {{compItemIndex}} after reading the duplicated source comp.",
     "Use canonical schema field names such as itemIndices and layerIndices; do not use itemIndexes or layerIndexes.",
     "If a later step depends on a previous tool result, set dependsOnStep and resultBindings instead of inventing indices.",
     "If solution hints mention a typed-tool-candidate, prefer recommending a typed bridge tool implementation over repeating a workaround.",
