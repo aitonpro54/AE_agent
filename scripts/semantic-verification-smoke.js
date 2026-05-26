@@ -22,6 +22,22 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function aePropertyPreview(value) {
+  const preview = {
+    kind: Array.isArray(value) ? "array" : typeof value,
+    value: clone(value)
+  };
+  if (Array.isArray(value)) {
+    preview.length = value.length;
+    preview.truncated = false;
+  }
+  return preview;
+}
+
+function quantizedAeColor(color) {
+  return color.map((channel) => Math.round(channel * 255) / 255);
+}
+
 function layerInfo(name, overrides = {}) {
   const startTime = overrides.startTime === undefined ? 0 : overrides.startTime;
   const inPoint = overrides.inPoint === undefined ? startTime : overrides.inPoint;
@@ -1188,6 +1204,39 @@ function assertDakkshinFixtureMutationScopedReadBackPasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("set_layer_mask:mask") >= 0 && check.status === "passed"), "Dakkshin set_layer_mask read-back check should pass.");
 }
 
+function assertDakkshinLiveAeEvidenceShapePasses() {
+  const [scenario] = agentDakkshinTypedToolsScenarioPlans("Semantic Live Evidence Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const setCompStep = run.steps.find((step) => step.tool === "set_comp_properties");
+  const compReadBackStep = run.steps.find((step) => step.index === 3 && step.tool === "get_comp_details");
+  assert(setCompStep && compReadBackStep, "Dakkshin live evidence fixture needs set_comp_properties and scoped comp read-back.");
+
+  const quantizedBgColor = quantizedAeColor(setCompStep.args.bgColor);
+  setCompStep.result.comp.bgColor = quantizedBgColor;
+  setCompStep.result.after.bgColor = quantizedBgColor;
+  setCompStep.result.postVerification.ok = true;
+  setCompStep.result.postVerification.fieldMatches.bgColor = true;
+  compReadBackStep.result.comp.bgColor = aePropertyPreview(quantizedBgColor);
+
+  for (const readBackStep of run.steps.filter((step) => step.tool === "get_layer_details")) {
+    const masks = readBackStep.result && readBackStep.result.masks && Array.isArray(readBackStep.result.masks.items)
+      ? readBackStep.result.masks.items
+      : [];
+    for (const mask of masks) {
+      if (Object.prototype.hasOwnProperty.call(mask, "opacity")) mask.opacity = aePropertyPreview(mask.opacity);
+      if (Object.prototype.hasOwnProperty.call(mask, "feather")) mask.feather = aePropertyPreview(mask.feather);
+      if (Object.prototype.hasOwnProperty.call(mask, "expansion")) mask.expansion = aePropertyPreview(mask.expansion);
+    }
+  }
+
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  assert.strictEqual(semantic.status, "passed", `Dakkshin live AE evidence shape should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_comp_properties:bgColor") >= 0 && check.status === "passed"), "quantized bgColor read-back should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_mask:mask") >= 0 && check.status === "passed"), "mask property preview wrappers should pass.");
+  assert(semantic.readBackSteps.some((step) => step.index === 3 && step.tool === "get_comp_details"), "live evidence fixture should keep set_comp_properties scoped read-back.");
+  assert(semantic.readBackSteps.some((step) => step.index === 10 && step.tool === "get_layer_details"), "live evidence fixture should keep set_layer_mask create scoped read-back.");
+}
+
 function assertDuplicateLayersPairOrderMismatchNeedsReview() {
   const plan = {
     summary: "Duplicate two generated layers with current stack-order source names.",
@@ -1570,6 +1619,7 @@ function main() {
   assertSetLayerMaskCreateUpdatePasses();
   assertSetLayerMaskMissingReadBackNeedsReview();
   assertDakkshinFixtureMutationScopedReadBackPasses();
+  assertDakkshinLiveAeEvidenceShapePasses();
   assertAddLayerMarkerPasses();
   assertUpdateLayerMarkerPasses();
   assertDeleteLayerMarkerPasses();

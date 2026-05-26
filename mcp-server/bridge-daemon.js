@@ -12606,9 +12606,13 @@ async function callTool(name, args) {
         return Math.abs(Number(a) - Number(b)) <= 0.0001;
       }
 
+      function __codexColorNear(a, b) {
+        return Math.abs(Number(a) - Number(b)) <= ((0.5 / 255) + 0.000001);
+      }
+
       function __codexColorMatches(actual, expected) {
         if (!actual || !expected || actual.length < 3 || expected.length < 3) return false;
-        return __codexNear(actual[0], expected[0]) && __codexNear(actual[1], expected[1]) && __codexNear(actual[2], expected[2]);
+        return __codexColorNear(actual[0], expected[0]) && __codexColorNear(actual[1], expected[1]) && __codexColorNear(actual[2], expected[2]);
       }
 
       app.beginUndoGroup("Codex Set Comp Properties");

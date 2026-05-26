@@ -1,6 +1,7 @@
 "use strict";
 
 const SEMANTIC_VERIFICATION_SCHEMA = "ae-agent-semantic-verification.v1";
+const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
 
 const MUTATING_TOOLS = new Set([
   "create_test_comp",
@@ -68,7 +69,8 @@ function compactText(value, maxLength = 180) {
 }
 
 function numberValue(value) {
-  const number = Number(value);
+  const raw = isPlainObject(value) && hasOwn(value, "value") ? value.value : value;
+  const number = Number(raw);
   return Number.isFinite(number) ? number : null;
 }
 
@@ -78,8 +80,24 @@ function nearlyEqual(left, right, tolerance = 0.001) {
   return a !== null && b !== null && Math.abs(a - b) <= tolerance;
 }
 
+function colorChannelNearlyEqual(left, right) {
+  return nearlyEqual(left, right, COLOR_CHANNEL_QUANTIZATION_TOLERANCE);
+}
+
 function sameString(left, right) {
   return String(left || "") === String(right || "");
+}
+
+function numberArrayValue(value) {
+  const raw = Array.isArray(value)
+    ? value
+    : isPlainObject(value) && Array.isArray(value.value)
+      ? value.value
+      : null;
+  if (!raw) return null;
+  const numbers = raw.map(numberValue);
+  if (!numbers.length || numbers.some((item) => item === null)) return null;
+  return numbers;
 }
 
 function normalizeSlashes(value) {
@@ -162,7 +180,7 @@ function addCompEvidence(target, value, source) {
     pixelAspect: numberValue(value.pixelAspect),
     duration: numberValue(value.duration),
     frameRate: numberValue(value.frameRate),
-    bgColor: Array.isArray(value.bgColor) ? value.bgColor.map(numberValue) : null,
+    bgColor: numberArrayValue(value.bgColor),
     displayStartTime: numberValue(value.displayStartTime),
     numLayers: numberValue(hasOwn(value, "numLayers") ? value.numLayers : value.layerCount),
     source: source || "observed comp"
@@ -183,22 +201,14 @@ function addMaskEvidence(target, value, source) {
       vertices: Array.isArray(shape.vertices) ? shape.vertices : []
     },
     opacity: numberValue(value.opacity),
-    feather: Array.isArray(value.feather) ? value.feather.map(numberValue) : null,
+    feather: numberArrayValue(value.feather),
     expansion: numberValue(value.expansion),
     source: source || "observed mask"
   });
 }
 
 function numberArrayFromValue(value) {
-  const raw = Array.isArray(value)
-    ? value
-    : isPlainObject(value) && Array.isArray(value.value)
-      ? value.value
-      : null;
-  if (!raw) return null;
-  const numbers = raw.map(numberValue);
-  if (!numbers.length || numbers.some((item) => item === null)) return null;
-  return numbers;
+  return numberArrayValue(value);
 }
 
 function addNumberArray(target, key, value, source) {
@@ -423,10 +433,13 @@ function observedDeletedLayerAbsent(evidence, payload, args) {
 function compFieldMatches(comp, field, expected) {
   if (!comp) return false;
   if (field === "bgColor") {
-    return Array.isArray(expected) &&
-      Array.isArray(comp.bgColor) &&
-      expected.length === 3 &&
-      expected.every((value, index) => nearlyEqual(value, comp.bgColor[index]));
+    const expectedColor = numberArrayValue(expected);
+    const observedColor = numberArrayValue(comp.bgColor);
+    return Array.isArray(expectedColor) &&
+      Array.isArray(observedColor) &&
+      expectedColor.length === 3 &&
+      observedColor.length >= 3 &&
+      expectedColor.every((value, index) => colorChannelNearlyEqual(value, observedColor[index]));
   }
   return nearlyEqual(comp[field], expected);
 }
@@ -451,9 +464,11 @@ function pointsMatch(observed, expected) {
 }
 
 function numberArrayMatches(observed, expected) {
-  if (!Array.isArray(expected)) return true;
-  if (!Array.isArray(observed) || observed.length < expected.length) return false;
-  return expected.every((value, index) => nearlyEqual(value, observed[index]));
+  const expectedNumbers = numberArrayValue(expected);
+  if (!Array.isArray(expectedNumbers)) return true;
+  const observedNumbers = numberArrayValue(observed);
+  if (!Array.isArray(observedNumbers) || observedNumbers.length < expectedNumbers.length) return false;
+  return expectedNumbers.every((value, index) => nearlyEqual(value, observedNumbers[index]));
 }
 
 function maskMatchesArgs(mask, args) {

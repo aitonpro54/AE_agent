@@ -428,7 +428,7 @@ async function main() {
     bgColor: [0.1, 0.2, 0.3],
     displayStartTime: 1,
     verifyAfter: false
-  }, ["Codex Set Comp Properties", "__codexCompProperties", "comp.width", "postVerification"], {
+  }, ["Codex Set Comp Properties", "__codexCompProperties", "comp.width", "__codexColorNear", "postVerification"], {
     comp: {
       itemIndex: 1,
       name: "Smoke Comp",
@@ -437,7 +437,7 @@ async function main() {
       pixelAspect: 1,
       duration: 6,
       frameRate: 30,
-      bgColor: [0.1, 0.2, 0.3],
+      bgColor: [26 / 255, 51 / 255, 77 / 255],
       displayStartTime: 1,
       numLayers: 2
     },
