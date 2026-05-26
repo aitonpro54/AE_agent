@@ -956,6 +956,116 @@
         "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
         "Do not use this recipe for suffix rename, find/replace rename, exact rename, project item rename, source relinking, layer timing changes, marker edits, render queue items, or broad cleanup."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "rename-selected-layers-with-numbers-typed-plan",
+      "title": "Rename Selected Layers With Numbers Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "layer-name",
+        "rename",
+        "numbers",
+        "numbered",
+        "sequence",
+        "zero-padding",
+        "selected-layers",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Rename selected layers with an explicit base name and zero-padded sequence numbers, then read the layer names back.",
+        "appliesWhen": [
+          "The user asks to rename selected layers with numbering or sequence numbers.",
+          "The workflow needs zero-padded names and must compute each exact layer name before calling rename_layers."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedLayerIndices",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Selected layers verified by get_selected_layers before the rename mutation."
+        },
+        {
+          "name": "baseName",
+          "type": "string",
+          "required": true,
+          "description": "Explicit non-empty user-provided base name used before the sequence number."
+        },
+        {
+          "name": "zeroPaddingWidth",
+          "type": "number",
+          "required": true,
+          "description": "Explicit sequence width used to compute names such as Shot 001, Shot 002 and Shot 003."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists and selected layers are read before mutation.",
+        "The workflow changes only selected layer names and computes every zero-padded target name before mutation."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/rename-selected-layers-with-numbers-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "rename_layers",
+          "get_comp_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read back the same comp and confirm each affected selected layer has the expected zero-padded exact name.",
+        "steps": [
+          "Run get_active_comp before mutation to capture comp identity.",
+          "Run get_selected_layers before mutation and bind concrete layerIndex values from that evidence.",
+          "Compute one explicit zero-padded target name for each selected layer.",
+          "Run one rename_layers step per selected layer with mode exact, a single layer index and the precomputed name.",
+          "Run get_comp_details after mutation and compare selected layer names with the expected zero-padded names."
+        ],
+        "expectedEvidence": [
+          "Selected-layer numbered rename plans include get_selected_layers evidence before layerIndex values are bound.",
+          "Each rename_layers call reports changedCount:1 and before/after name evidence for one selected layer.",
+          "Post-run get_comp_details read-back shows every affected selected layer has the requested base name and zero-padded sequence number."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by kmlrn1 generic repository importer as advisory typed-plan coverage for renaming selected layers with zero-padded numbers."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-26",
+          "from": "generic-repo-importer-kmlrn1",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "kmlrn1 adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Rename_Selected_Layers_With_Numbers.jsx at d017a775fd3f474963313b40882650800917aec9 into existing typed tools; no source JSX copied.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Because rename_layers multi-layer exact mode appends unpadded numbers, compute every zero-padded target name explicitly and run one exact rename_layers step per selected layer.",
+        "Do not use this recipe for prefix/suffix rename, find/replace rename, project item rename, source relinking, layer timing changes, marker edits, render queue items, or broad cleanup."
+      ]
     }
   ]
 }

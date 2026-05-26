@@ -24,7 +24,8 @@ const TOOL_BACKED_IDS = ["bulk-layer-duplicate-typed-tool"];
 const IMPORTED_ADVISORY_IDS = [
   "reset-composition-work-area-typed-plan",
   "add-markers-to-selected-layers-typed-plan",
-  "append-to-layer-name-typed-plan"
+  "append-to-layer-name-typed-plan",
+  "rename-selected-layers-with-numbers-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -254,6 +255,27 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /prefix/.test(item)), `${id}: verification must require prefix read-back evidence.`);
       assert(solution.notes.some((note) => /project item rename/.test(note)), `${id}: notes must keep project item rename out of scope.`);
       assert(solution.promotionHistory.some((entry) => /kmlan1/.test(entry.evidence)), `${id}: promotion evidence should mention kmlan1.`);
+    } else if (id === "rename-selected-layers-with-numbers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "rename_layers", "get_comp_details"],
+        `${id}: imported numbered layer rename workflow should stay on the narrow typed tool sequence.`
+      );
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("rename_layers"), `${id}: recipe should use the layer rename typed tool.`);
+      assert(text.includes('mode:"exact"'), `${id}: recipe should require exact rename mode.`);
+      assert(text.includes("zero-padded"), `${id}: recipe should require zero-padded target names.`);
+      assert(text.includes("one `rename_layers` step per concrete selected layer"), `${id}: recipe should require one exact rename per selected layer.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp details read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /one rename_layers step per selected layer/.test(step)), `${id}: verification must include one rename step per selected layer.`);
+      assert(solution.verificationRecipe.steps.some((step) => /mode exact/.test(step)), `${id}: verification must require exact rename mode.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read comp details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /changedCount:1/.test(item)), `${id}: verification must require one-layer rename count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /zero-padded sequence number/.test(item)), `${id}: verification must require zero-padded read-back evidence.`);
+      assert(solution.notes.some((note) => /multi-layer exact mode appends unpadded numbers/.test(note)), `${id}: notes must document why target names are computed explicitly.`);
+      assert(solution.notes.some((note) => /project item rename/.test(note)), `${id}: notes must keep project item rename out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /kmlrn1/.test(entry.evidence)), `${id}: promotion evidence should mention kmlrn1.`);
     } else {
       throw new Error(`Unhandled imported advisory solution quality checks: ${id}`);
     }
@@ -364,6 +386,20 @@ function assertActualRetrieval(registry) {
   assert(appendLayerNamePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
   assert(!/run_extendscript/i.test(appendLayerNamePromptSection), "selected-layer name-prefix guidance should not recommend raw ExtendScript.");
 
+  const numberedLayerNameRetrieval = retrieveSolutionHints("Rename the selected layers with base name Shot and zero-padded numbers 001, 002 and 003 after inspecting the selection.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(numberedLayerNameRetrieval.ok, true);
+  assert(ids(numberedLayerNameRetrieval).includes("rename-selected-layers-with-numbers-typed-plan"), "selected-layer numbered rename advisory recipe should surface for zero-padded sequence rename prompt.");
+  const numberedLayerNamePromptSection = formatSolutionHintsForPrompt(numberedLayerNameRetrieval);
+  assert(numberedLayerNamePromptSection.includes("Rename Selected Layers With Numbers Typed Plan"), "prompt section should include selected-layer numbered rename advisory title.");
+  assert(numberedLayerNamePromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for numbered layer rename workflows.");
+  assert(numberedLayerNamePromptSection.includes("rename_layers"), "prompt section should prefer rename_layers for numbered layer renaming.");
+  assert(numberedLayerNamePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
+  assert(!/run_extendscript/i.test(numberedLayerNamePromptSection), "selected-layer numbered rename guidance should not recommend raw ExtendScript.");
+
   return {
     contextRetrieval,
     alignRetrieval,
@@ -377,7 +413,8 @@ function assertActualRetrieval(registry) {
     importedAdvisoryRetrieval: {
       resetWorkArea: ids(resetWorkAreaRetrieval),
       addMarkers: ids(addMarkersRetrieval),
-      appendLayerName: ids(appendLayerNameRetrieval)
+      appendLayerName: ids(appendLayerNameRetrieval),
+      numberedLayerName: ids(numberedLayerNameRetrieval)
     }
   };
 }
