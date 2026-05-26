@@ -617,9 +617,9 @@
         "local-ollama-openrouter-deterministic-fallback-requested",
         "dependency-change-requested"
       ],
-      "status": "queued",
+      "status": "completed",
       "parentOwnedLiveAcceptance": {
-        "state": "parent-live-attempt-after-m226-failed-semantic-ae-evidence-pending-m227",
+        "state": "local-validation-passed-after-m227-parent-live-pending",
         "recordedAt": "2026-05-26",
         "recordedBy": "codex-writer-child",
         "localValidationCommands": [
@@ -630,13 +630,14 @@
           "git diff --check"
         ],
         "liveCommand": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-dakkshin-typed-tools-openai-cli-smoke",
-        "liveCommandStatus": "failed-after-m226-protected-run-cleanup-passed-semantic-ae-evidence-needs-m227",
-        "previousLiveCommandStatus": "failed-after-protected-run-cleanup-passed-semantic-readback-window-needed-m226",
+        "liveCommandStatus": "not-run-by-writer-child-parent-live-pending-after-m227",
+        "previousLiveCommandStatus": "failed-after-m226-protected-run-cleanup-passed-semantic-ae-evidence-needs-m227",
         "protectedRunObserved": true,
         "generatedCleanupObserved": true,
         "semanticFailureReason": "after M226 mutation-scoped read-backs were present, but semantic evidence still did not normalize live AE read-back values such as quantized bgColor and mask property preview wrappers",
-        "latestLocalValidationStatus": "passed-after-m226-readback-window-repair",
-        "handoffStatus": "blocked-by-filesystem-acl-unauthorized-access-this-run",
+        "latestLocalValidationStatus": "passed-after-m227-semantic-evidence-repair",
+        "liveUnavailableReason": "writer child is not authorized to run the parent-owned generated-only live command; parent supervisor must first run read-only installed-panel CDP inspect and connector-status smoke, then run the declared OpenAI CLI generated-only lane if available",
+        "handoffStatus": "blocked-by-inherited-deny-acl-this-run",
         "commitStatus": "not-created-by-writer-child-parent-owned-live-finalization",
         "requiredParentPreflight": [
           "read-only installed-panel CDP inspect",
@@ -660,6 +661,11 @@
           "external AO runtime",
           "external-provider planner validation"
         ]
+      },
+      "completedBy": {
+        "actor": "roadmap-supervisor-parent-live-gate",
+        "completedAt": "2026-05-26",
+        "note": "Parent supervisor finalized this generated-only live item only after validation and item-live gates passed. Validation: node --check scripts/cep-panel-cdp-smoke.js: status 0; node scripts/plan-repair-smoke.js: status 0; node scripts/semantic-verification-smoke.js: status 0; npm.cmd run check:rules: status 0; git diff --check: status 0. Item live: node scripts/cep-panel-cdp-smoke.js full-ui-agent-dakkshin-typed-tools-openai-cli-smoke: status 0. Writer-authored live completion is deferred until this parent gate succeeds."
       }
     },
     {
