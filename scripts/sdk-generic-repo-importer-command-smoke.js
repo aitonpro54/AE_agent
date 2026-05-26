@@ -980,6 +980,19 @@ function prepareImplementationWorktreeFixture(fixture, runId, manifest = validMa
   return prepared;
 }
 
+function prepareImplementationChildRunFixture(fixture, runId, manifest = validManifest(fixture, runId), writePath = "scripts/imported-tools/tool-tool.js") {
+  const prepared = prepareImplementationWorktreeFixture(fixture, runId, manifest);
+  const binDir = writeFakeCodex(fixture.root);
+  parseJson(
+    run(
+      ["--manifest", prepared.manifestPath, "--run-implementation-child-runs", "--json"],
+      repo,
+      fakeCodexEnv(binDir, "success", writePath),
+    ),
+  );
+  return { ...prepared, binDir };
+}
+
 function assertImplementationChildRunArtifacts(output, fixture, runId) {
   assert.strictEqual(output.schema, "generic-repo-tool-importer.command-skeleton.v1");
   assert.strictEqual(output.auxiliaryId, "AUX-021");
@@ -1210,6 +1223,294 @@ function assertImplementationChildRunResumeFixture() {
     assert(events.some((event) => event.event === "implementation_child_runs_complete"));
     assert(events.some((event) => event.event === "implementation_child_runs_resume_verified"));
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertControlledSourceMergeArtifacts(output, fixture, runId) {
+  assert.strictEqual(output.schema, "generic-repo-tool-importer.command-skeleton.v1");
+  assert.strictEqual(output.auxiliaryId, "AUX-022");
+  assert.strictEqual(output.runId, runId);
+  assert.strictEqual(output.status, "stopped_after_controlled_source_merge");
+  assert.strictEqual(output.currentPhase, "source_merged");
+  assert.strictEqual(output.nextPhase, "non_live_validation");
+  assert.strictEqual(output.implementationChildRunsComplete, true);
+  assert.strictEqual(output.sourceMerged, true);
+  assert.strictEqual(output.nonLiveValidationComplete, false);
+  assert.strictEqual(output.worktreesCreated, true);
+  assert.strictEqual(output.childRunsCreated, true);
+  assert.strictEqual(output.controlledMergeApplied, true);
+  assert.strictEqual(output.sourceMergeApplied, true);
+  assert.strictEqual(output.validationCommandsRun, false);
+  assert.strictEqual(output.liveCepAeRun, false);
+  assert.strictEqual(output.localOllamaUsed, false);
+  assert.strictEqual(output.fallbackProviderUsed, false);
+
+  const runRoot = path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-importer", runId);
+  const state = readJson(path.join(runRoot, "state.json"));
+  assert.strictEqual(state.auxiliaryId, "AUX-022");
+  assert.strictEqual(state.status, "stopped");
+  assert.strictEqual(state.currentPhase, "source_merged");
+  assert.strictEqual(state.nextPhase, "non_live_validation");
+  assert.strictEqual(state.stopReason, "stopped_before_non_live_validation");
+  assert.strictEqual(state.flags.controlledSourceMergeComplete, true);
+  assert.strictEqual(state.flags.controlledMergeApplied, true);
+  assert.strictEqual(state.flags.sourceMergeApplied, true);
+  assert.strictEqual(state.flags.validationCommandsRun, false);
+  assert.deepStrictEqual(state.ownedDirtyPaths, ["scripts/imported-tools/tool-tool.js"]);
+
+  for (const relative of [
+    "merge/controlled-source-merge-plan.json",
+    "merge/controlled-source-merge-report.json",
+  ]) {
+    assert(fs.existsSync(path.join(runRoot, relative)), `${relative} must exist`);
+  }
+
+  const report = readJson(path.join(runRoot, "merge", "controlled-source-merge-report.json"));
+  assert.strictEqual(report.schema, "generic-repo-tool-importer.controlled-source-merge.v1");
+  assert.strictEqual(report.status, "applied");
+  assert.strictEqual(report.controlledMergeApplied, true);
+  assert.strictEqual(report.sourceMergeApplied, true);
+  assert.strictEqual(report.validationCommandsRun, false);
+  assert.strictEqual(report.checks.childRunEvidence, "passed");
+  assert.strictEqual(report.checks.plannedPathsOnly, "passed");
+  assert.strictEqual(report.checks.targetHeadDrift, "passed");
+  assert.strictEqual(report.checks.targetBranchDrift, "passed");
+  assert.deepStrictEqual(report.appliedPaths, ["scripts/imported-tools/tool-tool.js"]);
+  assert.deepStrictEqual(report.ownedDirtyPaths, ["scripts/imported-tools/tool-tool.js"]);
+  assert.strictEqual(report.operations[0].operation, "created");
+
+  const importedPath = path.join(fixture.target, "scripts", "imported-tools", "tool-tool.js");
+  assert(fs.existsSync(importedPath), "controlled merge must copy imported file into target");
+  assert(fs.readFileSync(importedPath, "utf8").includes("fake imported output"));
+  assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "?? scripts/imported-tools/tool-tool.js");
+
+  const supervisorPlan = readJson(path.join(runRoot, "supervisor-plan.json"));
+  assert.strictEqual(supervisorPlan.auxiliaryId, "AUX-022");
+  assert.strictEqual(supervisorPlan.status, "stopped_after_controlled_source_merge");
+  assert.strictEqual(supervisorPlan.stopBeforePhase, "non_live_validation");
+  assert.strictEqual(supervisorPlan.controlledSourceMerge.sourceMergeApplied, true);
+  assert.strictEqual(supervisorPlan.controlledSourceMerge.validationCommandsRun, false);
+}
+
+function assertSuccessfulControlledSourceMergeFixture() {
+  const fixture = createTempFixture("controlled-merge-success");
+  try {
+    const runId = "aux022-controlled-merge-success";
+    const { manifestPath } = prepareImplementationChildRunFixture(fixture, runId);
+    const output = parseJson(run(["--manifest", manifestPath, "--apply-controlled-merge", "--json"]));
+    assert.strictEqual(output.resumed, true);
+    assertControlledSourceMergeArtifacts(output, fixture, runId);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertControlledSourceMergeMissingEvidenceFixture() {
+  const fixture = createTempFixture("controlled-merge-missing-evidence");
+  try {
+    const runId = "aux022-missing-evidence";
+    const { manifestPath, runRoot } = prepareImplementationChildRunFixture(fixture, runId);
+    fs.rmSync(path.join(runRoot, "implementation", "child-run-run.json"), { force: true });
+
+    const result = run(["--manifest", manifestPath, "--apply-controlled-merge", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /implementation-child-run-output-missing: implementation\/child-run-run\.json/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertControlledSourceMergeDirtyTargetFixture() {
+  const fixture = createTempFixture("controlled-merge-dirty-target");
+  try {
+    const runId = "aux022-dirty-target";
+    const { manifestPath } = prepareImplementationChildRunFixture(fixture, runId);
+    fs.writeFileSync(path.join(fixture.target, "unowned.txt"), "dirty\n", "utf8");
+
+    const result = run(["--manifest", manifestPath, "--apply-controlled-merge", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /target-repo-dirty-unowned: unowned\.txt/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertControlledSourceMergeCommitDriftFixture() {
+  const fixture = createTempFixture("controlled-merge-commit-drift");
+  try {
+    const runId = "aux022-commit-drift";
+    const { manifestPath } = prepareImplementationChildRunFixture(fixture, runId);
+    fs.writeFileSync(path.join(fixture.target, "README.md"), "# target\n\ncommit drift\n", "utf8");
+    sh(fixture.target, ["git", "add", "README.md"]);
+    sh(fixture.target, [
+      "git",
+      "-c",
+      "user.name=Smoke",
+      "-c",
+      "user.email=smoke@example.local",
+      "commit",
+      "-m",
+      "commit drift",
+    ]);
+
+    const result = run(["--manifest", manifestPath, "--apply-controlled-merge", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /controlled-merge-target-head-drift: fixture-analysis-batch-1/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertControlledSourceMergeBranchDriftFixture() {
+  const fixture = createTempFixture("controlled-merge-branch-drift");
+  try {
+    const runId = "aux022-branch-drift";
+    const { manifestPath } = prepareImplementationChildRunFixture(fixture, runId);
+    sh(fixture.target, ["git", "checkout", "-b", "branch-drift"]);
+
+    const result = run(["--manifest", manifestPath, "--apply-controlled-merge", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /controlled-merge-target-branch-drift:/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertControlledSourceMergeResumeFixture() {
+  const fixture = createTempFixture("controlled-merge-resume");
+  try {
+    const runId = "aux022-controlled-merge-resume";
+    const { manifestPath, runRoot } = prepareImplementationChildRunFixture(fixture, runId);
+    const first = parseJson(run(["--manifest", manifestPath, "--apply-controlled-merge", "--json"]));
+    assertControlledSourceMergeArtifacts(first, fixture, runId);
+
+    const second = parseJson(run(["--manifest", manifestPath, "--apply-controlled-merge", "--json"]));
+    assert.strictEqual(second.resumed, true);
+    assertControlledSourceMergeArtifacts(second, fixture, runId);
+
+    const state = readJson(path.join(runRoot, "state.json"));
+    assert(state.resumeCount >= 5);
+    const events = fs.readFileSync(path.join(runRoot, "events.jsonl"), "utf8").trim().split(/\r?\n/).map(JSON.parse);
+    assert(events.some((event) => event.event === "controlled_source_merge_complete"));
+    assert(events.some((event) => event.event === "controlled_source_merge_resume_verified"));
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function prepareControlledSourceMergeFixture(fixture, runId, manifest = validManifest(fixture, runId)) {
+  const prepared = prepareImplementationChildRunFixture(fixture, runId, manifest);
+  parseJson(run(["--manifest", prepared.manifestPath, "--apply-controlled-merge", "--json"]));
+  return prepared;
+}
+
+function assertNonLiveValidationArtifacts(output, fixture, runId) {
+  assert.strictEqual(output.schema, "generic-repo-tool-importer.command-skeleton.v1");
+  assert.strictEqual(output.auxiliaryId, "AUX-023");
+  assert.strictEqual(output.runId, runId);
+  assert.strictEqual(output.status, "stopped_after_non_live_validation");
+  assert.strictEqual(output.currentPhase, "non_live_validation_complete");
+  assert.strictEqual(output.nextPhase, "live_acceptance");
+  assert.strictEqual(output.sourceMerged, true);
+  assert.strictEqual(output.nonLiveValidationComplete, true);
+  assert.strictEqual(output.controlledMergeApplied, true);
+  assert.strictEqual(output.sourceMergeApplied, true);
+  assert.strictEqual(output.validationCommandsRun, true);
+  assert.strictEqual(output.liveCepAeRun, false);
+  assert.strictEqual(output.localOllamaUsed, false);
+  assert.strictEqual(output.fallbackProviderUsed, false);
+
+  const runRoot = path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-importer", runId);
+  const state = readJson(path.join(runRoot, "state.json"));
+  assert.strictEqual(state.auxiliaryId, "AUX-023");
+  assert.strictEqual(state.status, "stopped");
+  assert.strictEqual(state.currentPhase, "non_live_validation_complete");
+  assert.strictEqual(state.nextPhase, "live_acceptance");
+  assert.strictEqual(state.stopReason, "stopped_before_live_acceptance");
+  assert.strictEqual(state.flags.nonLiveValidationComplete, true);
+  assert.strictEqual(state.flags.validationCommandsRun, true);
+  assert.deepStrictEqual(state.ownedDirtyPaths, ["scripts/imported-tools/tool-tool.js"]);
+
+  const report = readJson(path.join(runRoot, "validation", "non-live-report.json"));
+  assert.strictEqual(report.schema, "generic-repo-tool-importer.non-live-validation.v1");
+  assert.strictEqual(report.status, "passed");
+  assert.strictEqual(report.validationCommandsRun, true);
+  assert.strictEqual(report.liveCepAeRun, false);
+  assert.strictEqual(report.commands.length, 2);
+  assert.strictEqual(report.commands[0].status, "passed");
+  assert.strictEqual(report.commands[1].status, "passed");
+  assert(fs.existsSync(path.join(runRoot, report.commands[0].stdoutPath)));
+  assert(fs.existsSync(path.join(runRoot, report.commands[0].stderrPath)));
+  assert.strictEqual(report.checks.commandExitCodes, "passed");
+  assert.strictEqual(report.checks.validationDidNotModifyImportedFiles, "passed");
+
+  const supervisorPlan = readJson(path.join(runRoot, "supervisor-plan.json"));
+  assert.strictEqual(supervisorPlan.auxiliaryId, "AUX-023");
+  assert.strictEqual(supervisorPlan.status, "stopped_after_non_live_validation");
+  assert.strictEqual(supervisorPlan.stopBeforePhase, "live_acceptance");
+  assert.strictEqual(supervisorPlan.nonLiveValidation.validationCommandsRun, true);
+
+  assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "?? scripts/imported-tools/tool-tool.js");
+}
+
+function assertSuccessfulNonLiveValidationFixture() {
+  const fixture = createTempFixture("non-live-success");
+  try {
+    const runId = "aux023-non-live-success";
+    const { manifestPath } = prepareControlledSourceMergeFixture(fixture, runId);
+    const output = parseJson(run(["--manifest", manifestPath, "--run-non-live-validation", "--json"]));
+    assert.strictEqual(output.resumed, true);
+    assertNonLiveValidationArtifacts(output, fixture, runId);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertNonLiveValidationFailureFixture() {
+  const fixture = createTempFixture("non-live-failure");
+  try {
+    const runId = "aux023-non-live-failure";
+    const { manifestPath, runRoot } = prepareControlledSourceMergeFixture(fixture, runId);
+    fs.writeFileSync(path.join(fixture.target, "scripts", "imported-tools", "tool-tool.js"), "module.exports = ;\n", "utf8");
+
+    const result = run(["--manifest", manifestPath, "--run-non-live-validation", "--json"]);
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /non-live-validation-failed/);
+
+    const report = readJson(path.join(runRoot, "validation", "non-live-report.json"));
+    assert.strictEqual(report.schema, "generic-repo-tool-importer.non-live-validation.v1");
+    assert.strictEqual(report.status, "failed");
+    assert.strictEqual(report.commands[0].status, "failed");
+    assert.strictEqual(report.checks.commandExitCodes, "failed");
+
+    const state = readJson(path.join(runRoot, "state.json"));
+    assert.strictEqual(state.currentPhase, "source_merged");
+    assert.strictEqual(state.nextPhase, "non_live_validation");
+    assert.strictEqual(state.flags.validationCommandsRun, false);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertNonLiveValidationResumeFixture() {
+  const fixture = createTempFixture("non-live-resume");
+  try {
+    const runId = "aux023-non-live-resume";
+    const { manifestPath, runRoot } = prepareControlledSourceMergeFixture(fixture, runId);
+    const first = parseJson(run(["--manifest", manifestPath, "--run-non-live-validation", "--json"]));
+    assertNonLiveValidationArtifacts(first, fixture, runId);
+
+    const second = parseJson(run(["--manifest", manifestPath, "--run-non-live-validation", "--json"]));
+    assert.strictEqual(second.resumed, true);
+    assertNonLiveValidationArtifacts(second, fixture, runId);
+
+    const state = readJson(path.join(runRoot, "state.json"));
+    assert(state.resumeCount >= 6);
+    const events = fs.readFileSync(path.join(runRoot, "events.jsonl"), "utf8").trim().split(/\r?\n/).map(JSON.parse);
+    assert(events.some((event) => event.event === "non_live_validation_complete"));
+    assert(events.some((event) => event.event === "non_live_validation_resume_verified"));
   } finally {
     removeFixture(fixture.root);
   }
@@ -1754,6 +2055,15 @@ function main() {
   assertImplementationChildRunDirtyWorktreeFixture();
   assertImplementationChildRunProcessFailureFixture();
   assertImplementationChildRunResumeFixture();
+  assertSuccessfulControlledSourceMergeFixture();
+  assertControlledSourceMergeMissingEvidenceFixture();
+  assertControlledSourceMergeDirtyTargetFixture();
+  assertControlledSourceMergeCommitDriftFixture();
+  assertControlledSourceMergeBranchDriftFixture();
+  assertControlledSourceMergeResumeFixture();
+  assertSuccessfulNonLiveValidationFixture();
+  assertNonLiveValidationFailureFixture();
+  assertNonLiveValidationResumeFixture();
   assertSuccessfulMergePlanningFixture();
   assertMergeMissingImplementationArtifactFixture();
   assertMergeUnplannedPathFixture();

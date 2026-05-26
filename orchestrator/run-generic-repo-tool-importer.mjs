@@ -4,10 +4,12 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   appendFileSync,
+  copyFileSync,
   existsSync,
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
@@ -25,6 +27,8 @@ const ANALYSIS_SCHEMA = "generic-repo-tool-importer.analysis-fixture.v1";
 const IMPLEMENTATION_PLAN_SCHEMA = "generic-repo-tool-importer.implementation-plan.v1";
 const IMPLEMENTATION_WORKTREE_SCHEMA = "generic-repo-tool-importer.implementation-worktree-run.v1";
 const IMPLEMENTATION_CHILD_RUN_SCHEMA = "generic-repo-tool-importer.implementation-child-run.v1";
+const CONTROLLED_SOURCE_MERGE_SCHEMA = "generic-repo-tool-importer.controlled-source-merge.v1";
+const NON_LIVE_VALIDATION_SCHEMA = "generic-repo-tool-importer.non-live-validation.v1";
 const MERGE_PLAN_SCHEMA = "generic-repo-tool-importer.merge-plan.v1";
 const LIVE_QUEUE_PLAN_SCHEMA = "generic-repo-tool-importer.live-queue-plan.v1";
 const ANALYSIS_ARTIFACTS = Object.freeze([
@@ -42,6 +46,13 @@ const IMPLEMENTATION_WORKTREE_ARTIFACTS = Object.freeze([
 ]);
 const IMPLEMENTATION_CHILD_RUN_ARTIFACTS = Object.freeze([
   "implementation/child-run-run.json",
+]);
+const CONTROLLED_SOURCE_MERGE_ARTIFACTS = Object.freeze([
+  "merge/controlled-source-merge-plan.json",
+  "merge/controlled-source-merge-report.json",
+]);
+const NON_LIVE_VALIDATION_ARTIFACTS = Object.freeze([
+  "validation/non-live-report.json",
 ]);
 const MERGE_PLAN_ARTIFACTS = Object.freeze([
   "merge/supervisor-merge-plan.json",
@@ -81,6 +92,8 @@ Usage:
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --plan-implementation
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --run-implementation-worktrees
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --run-implementation-child-runs
+  node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --apply-controlled-merge
+  node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --run-non-live-validation
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --plan-merge
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --plan-live-queue
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --json
@@ -101,6 +114,15 @@ Options:
                       inside AUX-020 detached importer-owned worktrees from
                       child-run intents, capture evidence, enforce planned paths,
                       then stop before source merge or validation commands.
+  --apply-controlled-merge
+                      Run the AUX-022 controlled source merge application lane:
+                      copy only accepted child-run planned paths into the target
+                      repo, record durable merge evidence, then stop before
+                      non-live validation.
+  --run-non-live-validation
+                      Run the AUX-023 non-live validation lane against imported
+                      target changes, capture full command logs and report
+                      evidence, then stop before live acceptance.
   --plan-merge      Run the AUX-018 plan-only controlled merge supervisor,
                       then stop before applying changes or live validation.
   --plan-live-queue Run the AUX-019 fixture-only serial live queue evidence
@@ -112,10 +134,10 @@ This skeleton validates the AUX-014 manifest contract, creates an ignored run
 root, writes durable state artifacts, optionally writes fixture-backed analysis
 artifacts, plan-only implementation batch artifacts, opt-in detached implementation
 worktree boundary artifacts, opt-in bounded child-run artifacts, plan-only merge
-artifacts, and fixture-only live queue evidence. It does not apply source merges,
-run validation commands against imported changes, run live AE/CEP, change
-dependencies, edit product runtime files, push, create PRs, or trigger GitHub
-automation.
+artifacts, opt-in controlled source merge evidence, opt-in non-live validation
+evidence, and fixture-only live queue evidence. It does not run live AE/CEP,
+change dependencies unless explicitly allowed and validated, edit product runtime
+files outside planned paths, push, create PRs, or trigger GitHub automation.
 `;
 
 const VALUE_OPTIONS = new Set(["manifest"]);
@@ -126,6 +148,8 @@ const BOOLEAN_OPTIONS = new Set([
   "plan-implementation",
   "run-implementation-worktrees",
   "run-implementation-child-runs",
+  "apply-controlled-merge",
+  "run-non-live-validation",
   "plan-merge",
   "plan-live-queue",
 ]);
@@ -409,9 +433,33 @@ function runGit(cwd, args, label) {
   return result.stdout.trim();
 }
 
+function gitCurrentHead(cwd) {
+  return runGit(cwd, ["rev-parse", "HEAD"], "target git head");
+}
+
+function gitCurrentBranch(cwd) {
+  const result = spawnSync("git", ["symbolic-ref", "-q", "--short", "HEAD"], {
+    cwd,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (result.status !== 0) {
+    throw new Error("target-repo-branch-detached");
+  }
+  return result.stdout.trim();
+}
+
 function gitStatusEntries(cwd) {
   const output = runGit(cwd, ["status", "--porcelain", "--untracked-files=all"], "git status");
   return output.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+}
+
+function statusEntryPath(entry) {
+  return normalizeRepoPath(entry.slice(3).trim() || entry);
+}
+
+function gitStatusPaths(cwd) {
+  return sortedNormalizedPaths(gitStatusEntries(cwd).map(statusEntryPath));
 }
 
 function assertGitTargetCleanOrOwned(cwd, state) {
@@ -423,7 +471,7 @@ function assertGitTargetCleanOrOwned(cwd, state) {
 
   const owned = new Set((state?.ownedDirtyPaths || []).map(normalizeRepoPath));
   const unowned = dirtyEntries
-    .map((entry) => normalizeRepoPath(entry.slice(3).trim() || entry))
+    .map(statusEntryPath)
     .filter((entry) => !owned.has(entry));
   if (unowned.length > 0) {
     throw new Error(`target-repo-dirty-unowned: ${unowned.join(", ")}`);
@@ -775,6 +823,161 @@ function updateSupervisorPlanForImplementationChildRuns(runRoot, manifest, manif
   writeJson(planPath, plan);
 }
 
+function updateSupervisorPlanForControlledSourceMerge(runRoot, manifest, manifestHash, runRootRelative, artifactPaths, report) {
+  const planPath = path.join(runRoot, "supervisor-plan.json");
+  const existing = existsSync(planPath)
+    ? readJsonFile(planPath, "supervisor plan")
+    : createSupervisorPlan(manifest, manifestHash, runRootRelative);
+  const plan = {
+    ...existing,
+    auxiliaryId: "AUX-022",
+    status: "stopped_after_controlled_source_merge",
+    stopBeforePhase: "non_live_validation",
+    controlledSourceMerge: {
+      schema: CONTROLLED_SOURCE_MERGE_SCHEMA,
+      status: "completed",
+      artifacts: artifactPaths,
+      acceptedBatchIds: report.acceptedBatchIds,
+      rejectedBatchIds: report.rejectedBatchIds,
+      appliedPaths: report.appliedPaths,
+      ownedDirtyPaths: report.ownedDirtyPaths,
+      targetHead: report.targetHeadBefore,
+      targetBranch: report.targetBranch,
+      worktreesCreated: true,
+      branchCreated: false,
+      childRunsCreated: true,
+      controlledMergeApplied: true,
+      sourceMergeApplied: true,
+      validationCommandsRun: false,
+      liveCepAeRun: false,
+      localOllamaUsed: false,
+      fallbackProviderUsed: false,
+      dependencyChanged: report.dependencyChanged,
+      productRuntimeEdited: false,
+    },
+    phasePlan: [
+      {
+        phase: "initialized",
+        status: "written",
+        artifacts: [
+          "state.json",
+          "events.jsonl",
+          "manifest.original.json",
+          "manifest.normalized.json",
+          "supervisor-plan.json",
+        ],
+      },
+      {
+        phase: "analysis",
+        status: "written",
+        artifacts: existing.analysis?.artifacts || [],
+      },
+      {
+        phase: "implementation_planning",
+        status: "written",
+        artifacts: existing.implementationPlanning?.artifacts || [],
+      },
+      {
+        phase: "implementation_worktrees",
+        status: "written",
+        artifacts: existing.implementationWorktrees?.artifacts || [],
+      },
+      {
+        phase: "implementation_child_runs",
+        status: "written",
+        artifacts: existing.implementationChildRuns?.artifacts || [],
+      },
+      {
+        phase: "source_merge_application",
+        status: "written",
+        artifacts: artifactPaths,
+      },
+      {
+        phase: "non_live_validation",
+        status: "not_started",
+        reason: "AUX-022 applies only accepted child-run planned paths and stops before validation commands.",
+      },
+    ],
+  };
+  writeJson(planPath, plan);
+}
+
+function updateSupervisorPlanForNonLiveValidation(runRoot, manifest, manifestHash, runRootRelative, artifactPaths, report) {
+  const planPath = path.join(runRoot, "supervisor-plan.json");
+  const existing = existsSync(planPath)
+    ? readJsonFile(planPath, "supervisor plan")
+    : createSupervisorPlan(manifest, manifestHash, runRootRelative);
+  const plan = {
+    ...existing,
+    auxiliaryId: "AUX-023",
+    status: "stopped_after_non_live_validation",
+    stopBeforePhase: "live_acceptance",
+    nonLiveValidation: {
+      schema: NON_LIVE_VALIDATION_SCHEMA,
+      status: report.status,
+      artifacts: artifactPaths,
+      commandCount: report.commands.length,
+      passedCommandCount: report.commands.filter((command) => command.status === "passed" || command.status === "skipped").length,
+      touchedPaths: report.touchedPaths,
+      ownedDirtyPaths: report.ownedDirtyPaths,
+      validationCommandsRun: true,
+      liveCepAeRun: false,
+      localOllamaUsed: false,
+      fallbackProviderUsed: false,
+      dependencyChanged: report.dependencyChanged,
+    },
+    phasePlan: [
+      {
+        phase: "initialized",
+        status: "written",
+        artifacts: [
+          "state.json",
+          "events.jsonl",
+          "manifest.original.json",
+          "manifest.normalized.json",
+          "supervisor-plan.json",
+        ],
+      },
+      {
+        phase: "analysis",
+        status: "written",
+        artifacts: existing.analysis?.artifacts || [],
+      },
+      {
+        phase: "implementation_planning",
+        status: "written",
+        artifacts: existing.implementationPlanning?.artifacts || [],
+      },
+      {
+        phase: "implementation_worktrees",
+        status: "written",
+        artifacts: existing.implementationWorktrees?.artifacts || [],
+      },
+      {
+        phase: "implementation_child_runs",
+        status: "written",
+        artifacts: existing.implementationChildRuns?.artifacts || [],
+      },
+      {
+        phase: "source_merge_application",
+        status: "written",
+        artifacts: existing.controlledSourceMerge?.artifacts || [],
+      },
+      {
+        phase: "non_live_validation",
+        status: "written",
+        artifacts: artifactPaths,
+      },
+      {
+        phase: "live_acceptance",
+        status: "not_started",
+        reason: "AUX-023 runs non-live validation only and stops before live AE/CEP acceptance.",
+      },
+    ],
+  };
+  writeJson(planPath, plan);
+}
+
 function updateSupervisorPlanForMergePlanning(runRoot, manifest, manifestHash, runRootRelative, artifactPaths, accepted, rejected) {
   const planPath = path.join(runRoot, "supervisor-plan.json");
   const existing = existsSync(planPath)
@@ -907,6 +1110,8 @@ function loadState(runRoot) {
 function initializeRun({ manifest, normalizedManifest, manifestHash, manifestPath, targetRepo, runRoot, runRootRelative }) {
   const now = new Date().toISOString();
   mkdirSync(runRoot, { recursive: true });
+  const targetHead = gitCurrentHead(targetRepo);
+  const targetBranch = gitCurrentBranch(targetRepo);
 
   const state = {
     schema: RUNNER_SCHEMA,
@@ -919,6 +1124,8 @@ function initializeRun({ manifest, normalizedManifest, manifestHash, manifestPat
     manifestHash,
     manifestPath: path.resolve(manifestPath),
     targetRepo,
+    targetHead,
+    targetBranch,
     runRoot: runRootRelative,
     createdAt: now,
     updatedAt: now,
@@ -984,6 +1191,12 @@ function resumeRun({ manifest, manifestHash, runRoot, existingState }) {
   const atImplementationChildRunsBoundary =
     existingState.currentPhase === "implementation_child_runs_complete" &&
     existingState.nextPhase === "controlled_merge";
+  const atControlledSourceMergeBoundary =
+    existingState.currentPhase === "source_merged" &&
+    existingState.nextPhase === "non_live_validation";
+  const atNonLiveValidationBoundary =
+    existingState.currentPhase === "non_live_validation_complete" &&
+    existingState.nextPhase === "live_acceptance";
   const atMergePlannedBoundary =
     existingState.currentPhase === "merge_planned" &&
     existingState.nextPhase === "live_queue_planning";
@@ -996,6 +1209,8 @@ function resumeRun({ manifest, manifestHash, runRoot, existingState }) {
     !atImplementationPlannedBoundary &&
     !atImplementationWorktreesBoundary &&
     !atImplementationChildRunsBoundary &&
+    !atControlledSourceMergeBoundary &&
+    !atNonLiveValidationBoundary &&
     !atMergePlannedBoundary &&
     !atLiveQueuePlannedBoundary
   ) {
@@ -2355,6 +2570,518 @@ function verifyImplementationChildRunOutputs(runRoot, targetRepo, runRootRelativ
   }
 }
 
+function readImplementationChildRunOutputs(runRoot, targetRepo, runRootRelative) {
+  verifyImplementationChildRunOutputs(runRoot, targetRepo, runRootRelative);
+  const childRun = readJsonFile(path.join(runRoot, "implementation", "child-run-run.json"), "implementation child run");
+  const results = (childRun.batches || []).map((batch) =>
+    readJsonFile(path.join(runRoot, batch.childRunResultPath), `implementation child run result ${batch.id}`),
+  );
+  return { childRun, results };
+}
+
+function batchSharedPathOwner(manifest, worktreePlan, plannedPath) {
+  const manifestOwner = manifest.implementation.sharedFileOwners?.[plannedPath];
+  if (manifestOwner) {
+    return manifestOwner;
+  }
+  const ownerBatch = (worktreePlan.batches || []).find((batch) =>
+    Array.isArray(batch.sharedFileOwnerFor) && batch.sharedFileOwnerFor.map(normalizePlannedPath).includes(plannedPath),
+  );
+  return ownerBatch?.id || null;
+}
+
+function copyControlledPathFromWorktree({ targetRepo, worktreePath, relativePath }) {
+  const normalized = normalizePlannedPath(relativePath);
+  const sourcePath = resolveInside(worktreePath, normalized, "controlled merge source path");
+  const targetPath = resolveInside(targetRepo, normalized, "controlled merge target path");
+  const sourceExists = existsSync(sourcePath);
+  const targetExistsBefore = existsSync(targetPath);
+  if (!sourceExists) {
+    rmSync(targetPath, { force: true, recursive: true });
+    return {
+      path: normalized,
+      operation: targetExistsBefore ? "deleted" : "missing_noop",
+      sourceExists,
+      targetExistedBefore: targetExistsBefore,
+    };
+  }
+
+  const sourceStat = statSync(sourcePath);
+  if (!sourceStat.isFile()) {
+    throw new Error(`controlled-merge-source-path-not-file: ${normalized}`);
+  }
+  mkdirSync(path.dirname(targetPath), { recursive: true });
+  copyFileSync(sourcePath, targetPath);
+  return {
+    path: normalized,
+    operation: targetExistsBefore ? "updated" : "created",
+    sourceExists,
+    targetExistedBefore: targetExistsBefore,
+    bytes: sourceStat.size,
+  };
+}
+
+function buildControlledSourceMergeArtifacts({ manifest, manifestHash, targetRepo, runRoot, runRootRelative, state }) {
+  verifyAnalysisOutputs(runRoot);
+  const { worktreePlan } = readImplementationPlanningOutputs(runRoot);
+  validateMergeSharedPathOwnership(manifest, worktreePlan);
+  const { childRun, results } = readImplementationChildRunOutputs(runRoot, targetRepo, runRootRelative);
+  assertNoNamedRepoAssumptions({ manifest, worktreePlan, childRun, results }, "controlled source merge inputs");
+  assertGitTargetCleanOrOwned(targetRepo, { ownedDirtyPaths: [] });
+
+  const targetHeadBefore = gitCurrentHead(targetRepo);
+  const targetBranch = gitCurrentBranch(targetRepo);
+  if (!state.targetBranch) {
+    throw new Error("controlled-merge-target-branch-baseline-missing");
+  }
+  if (targetBranch !== state.targetBranch) {
+    throw new Error(`controlled-merge-target-branch-drift: expected ${state.targetBranch} actual ${targetBranch}`);
+  }
+
+  const resultByBatchId = new Map(results.map((result) => [result.batchId, result]));
+  const accepted = [];
+  const rejected = [];
+  const pathOccurrences = new Map();
+
+  for (const batch of worktreePlan.batches || []) {
+    const result = resultByBatchId.get(batch.id);
+    if (!result) {
+      throw new Error(`controlled-merge-child-result-missing: ${batch.id}`);
+    }
+    if (result.preRunHead !== targetHeadBefore) {
+      throw new Error(`controlled-merge-target-head-drift: ${batch.id}`);
+    }
+    const worktreePath = assertRunOwnedChildWorktree({ targetRepo, runRootRelative, batch: result });
+    const worktreeHead = runGit(worktreePath, ["rev-parse", "HEAD"], `controlled merge child head ${batch.id}`);
+    if (worktreeHead !== result.preRunHead || result.postRunHead !== result.preRunHead) {
+      throw new Error(`controlled-merge-child-head-drift: ${batch.id}`);
+    }
+    assertDetachedWorktree(worktreePath, batch.id);
+    if (result.plannedPathGate !== "passed" || (result.unplannedPaths || []).length > 0) {
+      throw new Error(`controlled-merge-child-unplanned-paths: ${batch.id}`);
+    }
+
+    const changedPaths = sortedNormalizedPaths(result.changedPaths || []);
+    for (const changedPath of changedPaths) {
+      const current = pathOccurrences.get(changedPath) || [];
+      current.push(batch.id);
+      pathOccurrences.set(changedPath, current);
+    }
+    accepted.push({
+      id: batch.id,
+      status: "accepted",
+      childRunStatus: result.status,
+      plannedPaths: (batch.plannedPaths || []).map(normalizePlannedPath),
+      changedPaths,
+      childRunResultPath: result.childRunResultPath,
+      actualWorktreePath: result.actualWorktreePath,
+      actualWorktreeRelativePath: result.actualWorktreeRelativePath,
+    });
+  }
+
+  validateBatchResultPaths(
+    manifest,
+    worktreePlan,
+    accepted.map((batch) => ({
+      id: batch.id,
+      status: "child_run_completed",
+      validationStatus: "passed",
+      changedPaths: batch.changedPaths,
+    })),
+  );
+
+  const skippedPaths = [];
+  const operations = [];
+  const appliedPaths = [];
+  for (const batch of accepted) {
+    for (const changedPath of batch.changedPaths) {
+      const occurrences = pathOccurrences.get(changedPath) || [];
+      const owner = occurrences.length > 1 ? batchSharedPathOwner(manifest, worktreePlan, changedPath) : null;
+      if (owner && owner !== batch.id) {
+        skippedPaths.push({
+          batchId: batch.id,
+          path: changedPath,
+          reason: `shared_path_owned_by:${owner}`,
+        });
+        continue;
+      }
+      if (occurrences.length > 1 && !owner) {
+        throw new Error(`controlled-merge-shared-path-owner-missing: ${changedPath}`);
+      }
+      const operation = copyControlledPathFromWorktree({
+        targetRepo,
+        worktreePath: batch.actualWorktreePath,
+        relativePath: changedPath,
+      });
+      operations.push({
+        batchId: batch.id,
+        ...operation,
+      });
+      if (operation.operation !== "missing_noop") {
+        appliedPaths.push(changedPath);
+      }
+    }
+  }
+
+  const ownedDirtyPaths = gitStatusPaths(targetRepo);
+  const unownedDirtyPaths = ownedDirtyPaths.filter((dirtyPath) => !appliedPaths.includes(dirtyPath));
+  if (unownedDirtyPaths.length > 0) {
+    throw new Error(`controlled-merge-unowned-dirty-paths-after-apply: ${unownedDirtyPaths.join(", ")}`);
+  }
+
+  const dependencyChanged = ownedDirtyPaths.some(isDependencyPath);
+  const mergeRoot = path.join(runRoot, "merge");
+  mkdirSync(mergeRoot, { recursive: true });
+
+  const baseReport = {
+    schema: CONTROLLED_SOURCE_MERGE_SCHEMA,
+    runId: manifest.run.runId,
+    manifestHash,
+    status: "applied",
+    sourceImplementationChildRun: "implementation/child-run-run.json",
+    targetRepo,
+    targetBranch,
+    targetHeadBefore,
+    targetHeadAfter: gitCurrentHead(targetRepo),
+    acceptedBatchIds: accepted.map((batch) => batch.id),
+    rejectedBatchIds: rejected.map((batch) => batch.id),
+    acceptedBatches: accepted,
+    rejectedBatches: rejected,
+    appliedPaths: sortedNormalizedPaths(appliedPaths),
+    skippedPaths,
+    ownedDirtyPaths,
+    operations,
+    worktreesCreated: true,
+    branchCreated: false,
+    childRunsCreated: true,
+    controlledMergeApplied: true,
+    sourceMergeApplied: true,
+    validationCommandsRun: false,
+    liveCepAeRun: false,
+    localOllamaUsed: false,
+    fallbackProviderUsed: false,
+    dependencyChanged,
+    productRuntimeEdited: false,
+    pushOrPrCreated: false,
+    checks: {
+      targetCleanBeforeApply: "passed",
+      manifestHashBinding: "passed",
+      childRunEvidence: "passed",
+      targetHeadDrift: "passed",
+      targetBranchDrift: "passed",
+      plannedPathsOnly: "passed",
+      forbiddenPaths: "passed",
+      dependencyChanges: dependencyChanged ? "explicitly_allowed_and_applied" : "not_requested",
+      dirtyTreeOwnership: "passed",
+      validationCommands: "not_started",
+      liveValidation: "not_started",
+    },
+  };
+
+  writeJson(path.join(mergeRoot, "controlled-source-merge-plan.json"), {
+    ...baseReport,
+    status: "planned_for_application",
+    controlledMergeApplied: false,
+    sourceMergeApplied: false,
+    validationCommandsRun: false,
+    operations: operations.map((operation) => ({
+      batchId: operation.batchId,
+      path: operation.path,
+      plannedOperation: operation.operation,
+    })),
+  });
+  writeJson(path.join(mergeRoot, "controlled-source-merge-report.json"), baseReport);
+
+  return {
+    artifactPaths: [...CONTROLLED_SOURCE_MERGE_ARTIFACTS],
+    report: baseReport,
+  };
+}
+
+function verifyControlledSourceMergeOutputs(runRoot, targetRepo, state) {
+  for (const relative of CONTROLLED_SOURCE_MERGE_ARTIFACTS) {
+    const absolute = path.join(runRoot, relative);
+    if (!existsSync(absolute)) {
+      throw new Error(`controlled-merge-output-missing: ${relative}`);
+    }
+    readJsonFile(absolute, relative);
+  }
+  const report = readJsonFile(path.join(runRoot, "merge", "controlled-source-merge-report.json"), "controlled source merge report");
+  if (report.schema !== CONTROLLED_SOURCE_MERGE_SCHEMA) {
+    throw new Error("controlled-merge-schema-mismatch: controlled-source-merge-report.json");
+  }
+  if (
+    report.controlledMergeApplied !== true ||
+    report.sourceMergeApplied !== true ||
+    report.validationCommandsRun !== false ||
+    report.liveCepAeRun !== false ||
+    report.localOllamaUsed !== false ||
+    report.fallbackProviderUsed !== false ||
+    report.pushOrPrCreated !== false
+  ) {
+    throw new Error("controlled-merge-boundary-violated");
+  }
+  if (state?.ownedDirtyPaths && !sameStringSet(gitStatusPaths(targetRepo), state.ownedDirtyPaths)) {
+    throw new Error("controlled-merge-owned-dirty-paths-drift");
+  }
+  return report;
+}
+
+function shellCommandForPlatform(command) {
+  if (process.platform === "win32") {
+    return {
+      command: "cmd.exe",
+      args: ["/d", "/s", "/c", command],
+    };
+  }
+  return {
+    command: "/bin/sh",
+    args: ["-lc", command],
+  };
+}
+
+function quoteShellPath(value) {
+  const raw = normalizeRepoPath(value);
+  if (/^[A-Za-z0-9_./:-]+$/.test(raw)) {
+    return raw;
+  }
+  if (process.platform === "win32") {
+    return `"${raw.replace(/"/g, '\\"')}"`;
+  }
+  return `'${raw.replace(/'/g, "'\\''")}'`;
+}
+
+function textSummary(value, limit = 2000) {
+  const text = String(value || "");
+  if (text.length <= limit) {
+    return text;
+  }
+  return `${text.slice(0, limit)}\n...[truncated ${text.length - limit} chars]`;
+}
+
+function fileSnapshot(targetRepo, relativePath) {
+  const absolute = resolveInside(targetRepo, relativePath, "validation snapshot path");
+  if (!existsSync(absolute)) {
+    return {
+      path: relativePath,
+      exists: false,
+      sha256: null,
+      bytes: 0,
+    };
+  }
+  const stat = statSync(absolute);
+  if (!stat.isFile()) {
+    return {
+      path: relativePath,
+      exists: true,
+      sha256: "non-file",
+      bytes: 0,
+    };
+  }
+  const bytes = readFileSync(absolute);
+  return {
+    path: relativePath,
+    exists: true,
+    sha256: createHash("sha256").update(bytes).digest("hex"),
+    bytes: bytes.length,
+  };
+}
+
+function snapshotPaths(targetRepo, paths) {
+  return sortedNormalizedPaths(paths).map((relativePath) => fileSnapshot(targetRepo, relativePath));
+}
+
+function sameSnapshots(left, right) {
+  return stableStringify(left) === stableStringify(right);
+}
+
+function expandNonLiveCommands(commands, touchedPaths) {
+  const touchedJs = sortedNormalizedPaths(touchedPaths.filter((entry) => /\.(?:cjs|mjs|js)$/i.test(entry)));
+  const expanded = [];
+  for (const command of commands || []) {
+    requireString(command, "manifest.validation.nonLiveCommands[]");
+    if (command.includes("<touched-js-files>")) {
+      if (touchedJs.length === 0) {
+        expanded.push({
+          sourceCommand: command,
+          command: command.replace("<touched-js-files>", ""),
+          status: "skipped",
+          reason: "no_touched_js_files",
+        });
+        continue;
+      }
+      for (const touchedJsPath of touchedJs) {
+        expanded.push({
+          sourceCommand: command,
+          command: command.replace("<touched-js-files>", quoteShellPath(touchedJsPath)),
+          touchedPath: touchedJsPath,
+        });
+      }
+      continue;
+    }
+    expanded.push({
+      sourceCommand: command,
+      command,
+    });
+  }
+  return expanded;
+}
+
+function runNonLiveCommand({ commandSpec, index, targetRepo, logRoot, logRootRelative }) {
+  const startedAt = new Date().toISOString();
+  const stdoutPath = `${logRootRelative}/${String(index + 1).padStart(2, "0")}-stdout.txt`;
+  const stderrPath = `${logRootRelative}/${String(index + 1).padStart(2, "0")}-stderr.txt`;
+  if (commandSpec.status === "skipped") {
+    writeFileSync(path.join(logRoot, `${String(index + 1).padStart(2, "0")}-stdout.txt`), "", "utf8");
+    writeFileSync(path.join(logRoot, `${String(index + 1).padStart(2, "0")}-stderr.txt`), commandSpec.reason || "skipped", "utf8");
+    return {
+      ...commandSpec,
+      index: index + 1,
+      cwd: targetRepo,
+      startedAt,
+      completedAt: new Date().toISOString(),
+      exitCode: null,
+      status: "skipped",
+      stdoutPath,
+      stderrPath,
+      stdoutSummary: "",
+      stderrSummary: commandSpec.reason || "skipped",
+    };
+  }
+
+  const invocation = shellCommandForPlatform(commandSpec.command);
+  const result = spawnSync(invocation.command, invocation.args, {
+    cwd: targetRepo,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    maxBuffer: CHILD_RUN_OUTPUT_MAX_BUFFER_BYTES,
+  });
+  const completedAt = new Date().toISOString();
+  writeFileSync(path.join(logRoot, `${String(index + 1).padStart(2, "0")}-stdout.txt`), result.stdout || "", "utf8");
+  writeFileSync(path.join(logRoot, `${String(index + 1).padStart(2, "0")}-stderr.txt`), result.stderr || "", "utf8");
+  return {
+    ...commandSpec,
+    index: index + 1,
+    cwd: targetRepo,
+    startedAt,
+    completedAt,
+    exitCode: result.status,
+    signal: result.signal || null,
+    error: result.error ? result.error.message : null,
+    status: result.status === 0 && !result.error ? "passed" : "failed",
+    stdoutPath,
+    stderrPath,
+    stdoutSummary: textSummary(result.stdout || ""),
+    stderrSummary: textSummary(result.stderr || ""),
+  };
+}
+
+function buildNonLiveValidationArtifacts({ manifest, manifestHash, targetRepo, runRoot, state }) {
+  const mergeReport = verifyControlledSourceMergeOutputs(runRoot, targetRepo, state);
+  const touchedPaths = sortedNormalizedPaths(mergeReport.ownedDirtyPaths || mergeReport.appliedPaths || []);
+  assertGitTargetCleanOrOwned(targetRepo, state);
+  if (!sameStringSet(gitStatusPaths(targetRepo), touchedPaths)) {
+    throw new Error("non-live-validation-target-dirty-paths-drift");
+  }
+
+  const validationRoot = path.join(runRoot, "validation");
+  const logRootRelative = "validation/non-live-logs";
+  const logRoot = path.join(runRoot, logRootRelative);
+  mkdirSync(logRoot, { recursive: true });
+  const beforeSnapshot = snapshotPaths(targetRepo, touchedPaths);
+  const expandedCommands = expandNonLiveCommands(manifest.validation.nonLiveCommands || [], touchedPaths);
+  const commandResults = [];
+
+  for (let index = 0; index < expandedCommands.length; index += 1) {
+    const commandResult = runNonLiveCommand({
+      commandSpec: expandedCommands[index],
+      index,
+      targetRepo,
+      logRoot,
+      logRootRelative,
+    });
+    commandResults.push(commandResult);
+    assertGitTargetCleanOrOwned(targetRepo, state);
+    if (commandResult.status === "failed") {
+      break;
+    }
+  }
+
+  const afterSnapshot = snapshotPaths(targetRepo, touchedPaths);
+  const dirtyPathsAfter = gitStatusPaths(targetRepo);
+  const snapshotUnchanged = sameSnapshots(beforeSnapshot, afterSnapshot);
+  const commandsPassed = commandResults.every((command) => command.status === "passed" || command.status === "skipped");
+  const dirtyPathsStable = sameStringSet(dirtyPathsAfter, touchedPaths);
+  const status = commandsPassed && snapshotUnchanged && dirtyPathsStable ? "passed" : "failed";
+  const report = {
+    schema: NON_LIVE_VALIDATION_SCHEMA,
+    runId: manifest.run.runId,
+    manifestHash,
+    status,
+    sourceControlledMergeReport: "merge/controlled-source-merge-report.json",
+    targetRepo,
+    touchedPaths,
+    ownedDirtyPaths: dirtyPathsAfter,
+    commands: commandResults,
+    beforeSnapshot,
+    afterSnapshot,
+    validationCommandsRun: true,
+    liveCepAeRun: false,
+    localOllamaUsed: false,
+    fallbackProviderUsed: false,
+    dependencyChanged: mergeReport.dependencyChanged === true,
+    productRuntimeEdited: false,
+    pushOrPrCreated: false,
+    checks: {
+      controlledMergeEvidence: "passed",
+      dirtyTreeOwnership: dirtyPathsStable ? "passed" : "failed",
+      commandExitCodes: commandsPassed ? "passed" : "failed",
+      validationDidNotModifyImportedFiles: snapshotUnchanged ? "passed" : "failed",
+      liveValidation: "not_started",
+    },
+  };
+  writeJson(path.join(validationRoot, "non-live-report.json"), report);
+  if (status !== "passed") {
+    throw new Error("non-live-validation-failed");
+  }
+  return {
+    artifactPaths: [
+      ...NON_LIVE_VALIDATION_ARTIFACTS,
+      ...commandResults.flatMap((command) => [command.stdoutPath, command.stderrPath]),
+    ],
+    report,
+  };
+}
+
+function verifyNonLiveValidationOutputs(runRoot, targetRepo, state) {
+  for (const relative of NON_LIVE_VALIDATION_ARTIFACTS) {
+    const absolute = path.join(runRoot, relative);
+    if (!existsSync(absolute)) {
+      throw new Error(`non-live-validation-output-missing: ${relative}`);
+    }
+    readJsonFile(absolute, relative);
+  }
+  const report = readJsonFile(path.join(runRoot, "validation", "non-live-report.json"), "non-live validation report");
+  if (report.schema !== NON_LIVE_VALIDATION_SCHEMA) {
+    throw new Error("non-live-validation-schema-mismatch: non-live-report.json");
+  }
+  if (
+    report.status !== "passed" ||
+    report.validationCommandsRun !== true ||
+    report.liveCepAeRun !== false ||
+    report.localOllamaUsed !== false ||
+    report.fallbackProviderUsed !== false ||
+    report.pushOrPrCreated !== false
+  ) {
+    throw new Error("non-live-validation-boundary-violated");
+  }
+  assertGitTargetCleanOrOwned(targetRepo, state);
+  if (state?.ownedDirtyPaths && !sameStringSet(gitStatusPaths(targetRepo), state.ownedDirtyPaths)) {
+    throw new Error("non-live-validation-owned-dirty-paths-drift");
+  }
+  return report;
+}
+
 function validateMergeSharedPathOwnership(manifest, worktreePlan) {
   const batches = (worktreePlan.batches || []).map((batch) => ({
     id: batch.id,
@@ -3312,6 +4039,293 @@ function runImplementationChildRunPhase({ manifest, manifestHash, targetRepo, ru
   }
 }
 
+function runControlledSourceMergePhase({ manifest, manifestHash, targetRepo, runRoot, runRootRelative, state }) {
+  const now = new Date().toISOString();
+  if (state.currentPhase === "source_merged" && state.nextPhase === "non_live_validation") {
+    verifyAnalysisOutputs(runRoot);
+    verifyImplementationPlanningOutputs(runRoot);
+    verifyImplementationChildRunOutputs(runRoot, targetRepo, runRootRelative);
+    verifyControlledSourceMergeOutputs(runRoot, targetRepo, state);
+    appendEvent(runRoot, {
+      event: "controlled_source_merge_resume_verified",
+      runId: manifest.run.runId,
+      manifestHash,
+      nextPhase: state.nextPhase,
+      at: now,
+    });
+    return state;
+  }
+
+  if (state.status !== "stopped" || state.currentPhase !== "implementation_child_runs_complete" || state.nextPhase !== "controlled_merge") {
+    throw new Error("controlled-source-merge-state-not-at-boundary");
+  }
+
+  const startedState = {
+    ...state,
+    auxiliaryId: "AUX-022",
+    status: "running",
+    currentPhase: "controlled_source_merge_running",
+    nextPhase: null,
+    stopReason: null,
+    updatedAt: now,
+    controlledSourceMergeStartedAt: now,
+    flags: {
+      ...state.flags,
+      controlledSourceMergeStarted: true,
+      worktreesCreated: true,
+      branchCreated: false,
+      childRunsCreated: true,
+      controlledMergeApplied: false,
+      sourceMergeApplied: false,
+      validationCommandsRun: false,
+      liveCepAeRun: false,
+      localOllamaUsed: false,
+      fallbackProviderUsed: false,
+      productRuntimeEdited: false,
+      pushOrPrCreated: false,
+    },
+  };
+  writeJson(path.join(runRoot, "state.json"), startedState);
+  appendEvent(runRoot, {
+    event: "controlled_source_merge_started",
+    auxiliaryId: "AUX-022",
+    runId: manifest.run.runId,
+    manifestHash,
+    at: now,
+  });
+
+  try {
+    const { artifactPaths, report } = buildControlledSourceMergeArtifacts({
+      manifest,
+      manifestHash,
+      targetRepo,
+      runRoot,
+      runRootRelative,
+      state: startedState,
+    });
+    const completedAt = new Date().toISOString();
+    const completedState = {
+      ...startedState,
+      status: "stopped",
+      currentPhase: "source_merged",
+      nextPhase: "non_live_validation",
+      stopReason: "stopped_before_non_live_validation",
+      updatedAt: completedAt,
+      controlledSourceMergeCompletedAt: completedAt,
+      controlledSourceMergeArtifacts: artifactPaths,
+      controlledSourceMergeReportPath: "merge/controlled-source-merge-report.json",
+      ownedDirtyPaths: report.ownedDirtyPaths,
+      flags: {
+        ...startedState.flags,
+        controlledSourceMergeComplete: true,
+        worktreesCreated: true,
+        branchCreated: false,
+        childRunsCreated: true,
+        controlledMergeApplied: true,
+        sourceMergeApplied: true,
+        validationCommandsRun: false,
+        liveCepAeRun: false,
+        localOllamaUsed: false,
+        fallbackProviderUsed: false,
+        dependencyChanged: report.dependencyChanged,
+        productRuntimeEdited: false,
+        pushOrPrCreated: false,
+      },
+    };
+    writeJson(path.join(runRoot, "state.json"), completedState);
+    updateSupervisorPlanForControlledSourceMerge(
+      runRoot,
+      manifest,
+      manifestHash,
+      runRootRelative,
+      artifactPaths,
+      report,
+    );
+    appendEvent(runRoot, {
+      event: "controlled_source_merge_complete",
+      runId: manifest.run.runId,
+      manifestHash,
+      artifacts: artifactPaths,
+      ownedDirtyPaths: report.ownedDirtyPaths,
+      nextPhase: "non_live_validation",
+      at: completedAt,
+    });
+    appendEvent(runRoot, {
+      event: "stopped_before_non_live_validation",
+      runId: manifest.run.runId,
+      nextPhase: "non_live_validation",
+      at: completedAt,
+    });
+    return completedState;
+  } catch (error) {
+    const failedAt = new Date().toISOString();
+    const failedState = {
+      ...startedState,
+      status: "stopped",
+      currentPhase: "implementation_child_runs_complete",
+      nextPhase: "controlled_merge",
+      stopReason: error.message.split(":")[0],
+      updatedAt: failedAt,
+      flags: {
+        ...startedState.flags,
+        controlledSourceMergeComplete: false,
+        controlledMergeApplied: false,
+        sourceMergeApplied: false,
+        validationCommandsRun: false,
+        liveCepAeRun: false,
+        localOllamaUsed: false,
+        fallbackProviderUsed: false,
+      },
+    };
+    writeJson(path.join(runRoot, "state.json"), failedState);
+    appendEvent(runRoot, {
+      event: "controlled_source_merge_failed",
+      runId: manifest.run.runId,
+      reason: error.message,
+      at: failedAt,
+    });
+    throw error;
+  }
+}
+
+function runNonLiveValidationPhase({ manifest, manifestHash, targetRepo, runRoot, runRootRelative, state }) {
+  const now = new Date().toISOString();
+  if (state.currentPhase === "non_live_validation_complete" && state.nextPhase === "live_acceptance") {
+    verifyAnalysisOutputs(runRoot);
+    verifyImplementationPlanningOutputs(runRoot);
+    verifyImplementationChildRunOutputs(runRoot, targetRepo, runRootRelative);
+    verifyControlledSourceMergeOutputs(runRoot, targetRepo, state);
+    verifyNonLiveValidationOutputs(runRoot, targetRepo, state);
+    appendEvent(runRoot, {
+      event: "non_live_validation_resume_verified",
+      runId: manifest.run.runId,
+      manifestHash,
+      nextPhase: state.nextPhase,
+      at: now,
+    });
+    return state;
+  }
+
+  if (state.status !== "stopped" || state.currentPhase !== "source_merged" || state.nextPhase !== "non_live_validation") {
+    throw new Error("non-live-validation-state-not-at-boundary");
+  }
+
+  const startedState = {
+    ...state,
+    auxiliaryId: "AUX-023",
+    status: "running",
+    currentPhase: "non_live_validation_running",
+    nextPhase: null,
+    stopReason: null,
+    updatedAt: now,
+    nonLiveValidationStartedAt: now,
+    flags: {
+      ...state.flags,
+      nonLiveValidationStarted: true,
+      controlledMergeApplied: true,
+      sourceMergeApplied: true,
+      validationCommandsRun: false,
+      liveCepAeRun: false,
+      localOllamaUsed: false,
+      fallbackProviderUsed: false,
+      pushOrPrCreated: false,
+    },
+  };
+  writeJson(path.join(runRoot, "state.json"), startedState);
+  appendEvent(runRoot, {
+    event: "non_live_validation_started",
+    auxiliaryId: "AUX-023",
+    runId: manifest.run.runId,
+    manifestHash,
+    at: now,
+  });
+
+  try {
+    const { artifactPaths, report } = buildNonLiveValidationArtifacts({
+      manifest,
+      manifestHash,
+      targetRepo,
+      runRoot,
+      state: startedState,
+    });
+    const completedAt = new Date().toISOString();
+    const completedState = {
+      ...startedState,
+      status: "stopped",
+      currentPhase: "non_live_validation_complete",
+      nextPhase: "live_acceptance",
+      stopReason: "stopped_before_live_acceptance",
+      updatedAt: completedAt,
+      nonLiveValidationCompletedAt: completedAt,
+      nonLiveValidationArtifacts: artifactPaths,
+      ownedDirtyPaths: report.ownedDirtyPaths,
+      flags: {
+        ...startedState.flags,
+        nonLiveValidationComplete: true,
+        controlledMergeApplied: true,
+        sourceMergeApplied: true,
+        validationCommandsRun: true,
+        liveCepAeRun: false,
+        localOllamaUsed: false,
+        fallbackProviderUsed: false,
+        dependencyChanged: report.dependencyChanged,
+        productRuntimeEdited: false,
+        pushOrPrCreated: false,
+      },
+    };
+    writeJson(path.join(runRoot, "state.json"), completedState);
+    updateSupervisorPlanForNonLiveValidation(
+      runRoot,
+      manifest,
+      manifestHash,
+      runRootRelative,
+      artifactPaths,
+      report,
+    );
+    appendEvent(runRoot, {
+      event: "non_live_validation_complete",
+      runId: manifest.run.runId,
+      manifestHash,
+      artifacts: artifactPaths,
+      nextPhase: "live_acceptance",
+      at: completedAt,
+    });
+    appendEvent(runRoot, {
+      event: "stopped_before_live_acceptance",
+      runId: manifest.run.runId,
+      nextPhase: "live_acceptance",
+      at: completedAt,
+    });
+    return completedState;
+  } catch (error) {
+    const failedAt = new Date().toISOString();
+    const failedState = {
+      ...startedState,
+      status: "stopped",
+      currentPhase: "source_merged",
+      nextPhase: "non_live_validation",
+      stopReason: error.message.split(":")[0],
+      updatedAt: failedAt,
+      flags: {
+        ...startedState.flags,
+        nonLiveValidationComplete: false,
+        validationCommandsRun: false,
+        liveCepAeRun: false,
+        localOllamaUsed: false,
+        fallbackProviderUsed: false,
+      },
+    };
+    writeJson(path.join(runRoot, "state.json"), failedState);
+    appendEvent(runRoot, {
+      event: "non_live_validation_failed",
+      runId: manifest.run.runId,
+      reason: error.message,
+      at: failedAt,
+    });
+    throw error;
+  }
+}
+
 function runMergePlanningPhase({ manifest, manifestHash, runRoot, runRootRelative, state }) {
   const now = new Date().toISOString();
   if (state.currentPhase === "merge_planned" && state.nextPhase === "live_queue_planning") {
@@ -3636,6 +4650,12 @@ export function runImporter(options, cwd = process.cwd()) {
   if (options["run-implementation-child-runs"]) {
     state = runImplementationChildRunPhase({ manifest, manifestHash, targetRepo, runRoot, runRootRelative, state });
   }
+  if (options["apply-controlled-merge"]) {
+    state = runControlledSourceMergePhase({ manifest, manifestHash, targetRepo, runRoot, runRootRelative, state });
+  }
+  if (options["run-non-live-validation"]) {
+    state = runNonLiveValidationPhase({ manifest, manifestHash, targetRepo, runRoot, runRootRelative, state });
+  }
   if (options["plan-merge"]) {
     state = runMergePlanningPhase({ manifest, manifestHash, runRoot, runRootRelative, state });
   }
@@ -3645,7 +4665,9 @@ export function runImporter(options, cwd = process.cwd()) {
 
   const liveQueuePlanned = state.currentPhase === "live_queue_planned";
   const mergePlanned = liveQueuePlanned || state.currentPhase === "merge_planned";
-  const implementationChildRunsComplete = state.currentPhase === "implementation_child_runs_complete";
+  const nonLiveValidationComplete = state.currentPhase === "non_live_validation_complete";
+  const sourceMerged = nonLiveValidationComplete || state.currentPhase === "source_merged";
+  const implementationChildRunsComplete = sourceMerged || state.currentPhase === "implementation_child_runs_complete";
   const implementationWorktreesReady = implementationChildRunsComplete || state.currentPhase === "implementation_worktrees_ready";
   const implementationPlanned = implementationWorktreesReady || mergePlanned || state.currentPhase === "implementation_planned";
   const analysisComplete = implementationPlanned || state.currentPhase === "analysis_complete";
@@ -3654,6 +4676,10 @@ export function runImporter(options, cwd = process.cwd()) {
     status = "stopped_after_live_queue_planning";
   } else if (mergePlanned) {
     status = "stopped_after_merge_planning";
+  } else if (nonLiveValidationComplete) {
+    status = "stopped_after_non_live_validation";
+  } else if (sourceMerged) {
+    status = "stopped_after_controlled_source_merge";
   } else if (implementationChildRunsComplete) {
     status = "stopped_after_implementation_child_runs";
   } else if (implementationWorktreesReady) {
@@ -3682,6 +4708,12 @@ export function runImporter(options, cwd = process.cwd()) {
   if (implementationChildRunsComplete) {
     artifacts.push(...(state.implementationChildRunArtifacts || []));
   }
+  if (sourceMerged) {
+    artifacts.push(...(state.controlledSourceMergeArtifacts || []));
+  }
+  if (nonLiveValidationComplete) {
+    artifacts.push(...(state.nonLiveValidationArtifacts || []));
+  }
   if (mergePlanned) {
     artifacts.push(...(state.mergeArtifacts || []));
   }
@@ -3695,15 +4727,19 @@ export function runImporter(options, cwd = process.cwd()) {
       ? "AUX-019"
       : mergePlanned
         ? "AUX-018"
-        : implementationChildRunsComplete
-          ? "AUX-021"
-          : implementationWorktreesReady
-            ? "AUX-020"
-            : implementationPlanned
-              ? "AUX-017"
-              : analysisComplete
-                ? "AUX-016"
-                : "AUX-015",
+        : nonLiveValidationComplete
+          ? "AUX-023"
+          : sourceMerged
+            ? "AUX-022"
+            : implementationChildRunsComplete
+              ? "AUX-021"
+              : implementationWorktreesReady
+                ? "AUX-020"
+                : implementationPlanned
+                  ? "AUX-017"
+                  : analysisComplete
+                    ? "AUX-016"
+                    : "AUX-015",
     runId: manifest.run.runId,
     status,
     resumed,
@@ -3718,12 +4754,15 @@ export function runImporter(options, cwd = process.cwd()) {
     implementationPlanned,
     implementationWorktreesReady,
     implementationChildRunsComplete,
+    sourceMerged,
+    nonLiveValidationComplete,
     mergePlanned,
     liveQueuePlanned,
     worktreesCreated: state.flags.worktreesCreated === true,
     branchCreated: state.flags.branchCreated === true,
     childRunsCreated: state.flags.childRunsCreated === true,
     controlledMergeApplied: state.flags.controlledMergeApplied === true,
+    sourceMergeApplied: state.flags.sourceMergeApplied === true,
     validationCommandsRun: state.flags.validationCommandsRun === true,
     liveCepAeRun: state.flags.liveCepAeRun === true,
     localOllamaUsed: state.flags.localOllamaUsed === true,
