@@ -522,7 +522,7 @@
       "milestone": 224,
       "title": "Run generated-only Dakkshin typed tools live acceptance",
       "dependencies": [
-        "m223-dakkshin-generated-only-live-lane"
+        "m225-dakkshin-set-layer-mask-explicit-comp-target"
       ],
       "runner": {
         "kind": "roadmap-sdk"
@@ -612,6 +612,106 @@
         "context-pressure",
         "unplanned-path-change",
         "handoff-stale",
+        "user-asset-mutation-requested",
+        "local-ollama-openrouter-deterministic-fallback-requested",
+        "dependency-change-requested"
+      ],
+      "status": "queued"
+    },
+    {
+      "id": "m225-dakkshin-set-layer-mask-explicit-comp-target",
+      "milestone": 225,
+      "title": "Repair set_layer_mask explicit comp target enforcement",
+      "dependencies": [
+        "m223-dakkshin-generated-only-live-lane"
+      ],
+      "runner": {
+        "kind": "roadmap-sdk"
+      },
+      "mode": "sdk-write",
+      "plannedPaths": [
+        ".codex-audit/sdk-roadmap-supervisor/220-dakkshin-typed-tools-queue.json",
+        "mcp-server/bridge-daemon.js",
+        "scripts/smoke-test.js",
+        "plans/target-app-execplan.md",
+        ".codex/handoff.md"
+      ],
+      "forbiddenPaths": [
+        "cep-panel/**",
+        "package.json",
+        "package-lock.json",
+        "node_modules/**",
+        "logs/**",
+        "backups/**",
+        "snapshots/**",
+        ".github/**"
+      ],
+      "allowedActions": [
+        "repair set_layer_mask so runtime rejects calls without compItemIndex or compName instead of falling back to the active comp",
+        "update the set_layer_mask tool schema descriptions to state compItemIndex or compName is required",
+        "add main bridge smoke coverage proving set_layer_mask rejects missing explicit comp target before queueing AE work",
+        "keep set_layer_mask create/update only, single-layer, single-mask update, and no delete/bulk/roto behavior unchanged",
+        "do not edit CEP panel files or run live AE/CEP validation in this repair item",
+        "update this queue item status/completedBy after successful validation",
+        "update plans/target-app-execplan.md Progress, Decision Log, Validation, and Current Stable Baseline notes for M225",
+        "update .codex/handoff.md with M225 state, validation, decisions, risks, commit note, and exact next prompt for M224 live acceptance or final validation"
+      ],
+      "forbiddenActions": [
+        "relax set_layer_mask explicit layer or mask targeting",
+        "allow active-comp fallback for set_layer_mask",
+        "allow mask delete, bulk mask operations, roto, arbitrary mask property paths, or selection-only mask edits",
+        "edit CEP panel files",
+        "run live AE/CEP validation",
+        "use Local/Ollama, OpenRouter, deterministic fallback, or external-provider planner validation",
+        "install or run any external AO runtime",
+        "create a branch, worktree, push, PR, GitHub issue, or GitHub Action",
+        "change dependencies, package manifests, or package locks",
+        "mutate user assets",
+        "auto-fix from analyzer packets"
+      ],
+      "allowedCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check scripts/smoke-test.js",
+        "node scripts/smoke-test.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "validationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check scripts/smoke-test.js",
+        "node scripts/smoke-test.js",
+        "npm.cmd run check:rules",
+        "git diff --check"
+      ],
+      "reviewerTasks": [],
+      "liveValidation": {
+        "mode": "none",
+        "commands": []
+      },
+      "approval": {
+        "state": "pending-explicit-approval",
+        "freshRequired": true
+      },
+      "maxChildRuns": 1,
+      "maxMinutes": 45,
+      "commitPolicy": {
+        "autoCommit": true,
+        "message": "fix: require explicit comp target for set layer mask"
+      },
+      "handoffPolicy": {
+        "required": true,
+        "path": ".codex/handoff.md"
+      },
+      "stopGates": [
+        "dirty-git-before-execution",
+        "missing-exact-fresh-approval",
+        "roadmap-sdk-child-failed",
+        "validation-failed",
+        "context-pressure",
+        "unplanned-path-change",
+        "handoff-stale",
+        "active-comp-mask-target-fallback",
+        "live-cep-ae-requested",
         "user-asset-mutation-requested",
         "local-ollama-openrouter-deterministic-fallback-requested",
         "dependency-change-requested"
