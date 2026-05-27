@@ -3,6 +3,7 @@
 const http = require("http");
 const { writeAgentRunReport } = require("./agent-scenario-report");
 const {
+  agentAssortedCompositionGuidesScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
   agentDuplicateLayersScenarioPlans,
   agentManualTypedToolsScenarioPlans,
@@ -185,6 +186,24 @@ function openAiCliRenameFindReplaceScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_RENAME_FIND_REPLACE_PREFIX || "Codex QA AUX032",
     scenarioFactory: agentRenameFindReplaceScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliAssortedCompositionGuidesScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-assorted-composition-guides",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_ASSORTED_GUIDES_PREFIX || "Codex QA AUX039",
+    scenarioFactory: agentAssortedCompositionGuidesScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -3892,6 +3911,85 @@ async function verifyFindReplaceLayerRenameReadBack(scenario, expected) {
   };
 }
 
+async function verifyAssortedCompositionGuidesReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 30
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const names = layers.map((layer) => layer.name);
+  const expectedGuides = Array.isArray(expected.guideSpecs) ? expected.guideSpecs : [];
+
+  if (typeof expected.layerCountAfter === "number" && Number(comp.numLayers) !== expected.layerCountAfter) {
+    throw new Error(`${scenario.id}: expected ${expected.layerCountAfter} generated guide layer(s), got ${comp.numLayers}.`);
+  }
+
+  for (const guide of expectedGuides) {
+    if (!names.includes(guide.name)) {
+      throw new Error(`${scenario.id}: generated guide overlay ${guide.name} was not found by read-back.`);
+    }
+  }
+
+  const details = [];
+  for (const guide of expectedGuides) {
+    const layer = layers.find((item) => item.name === guide.name);
+    if (!layer || !layer.index) {
+      throw new Error(`${scenario.id}: generated guide overlay ${guide.name} has no readable layer index.`);
+    }
+    const layerDetails = await callBridgeTool("get_layer_details", {
+      compItemIndex: compMatch.itemIndex,
+      layerIndex: layer.index,
+      includeProperties: false
+    });
+    const position = numberPreviewArray(layerDetails.transform && layerDetails.transform.position);
+    if (!numberArraysMatch(guide.position, position, 0.01)) {
+      throw new Error(`${scenario.id}: generated guide overlay ${guide.name} position read-back mismatch.`);
+    }
+    details.push({
+      name: guide.name,
+      index: layer.index,
+      position
+    });
+  }
+
+  const effectLayer = layers.find((item) => item.name === expected.effectLayerName);
+  if (!effectLayer || !effectLayer.index) {
+    throw new Error(`${scenario.id}: generated effect guide layer ${expected.effectLayerName} was not found by read-back.`);
+  }
+  const effectDetails = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: effectLayer.index,
+    includeProperties: false
+  });
+  const effects = Array.isArray(effectDetails.effects) ? effectDetails.effects : [];
+  const effect = effects.find((item) => (
+    item.name === expected.effectName &&
+    (!expected.effectMatchName || item.matchName === expected.effectMatchName)
+  ));
+  if (!effect) {
+    throw new Error(`${scenario.id}: generated guide effect ${expected.effectName} was not found by read-back.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      width: comp.width,
+      height: comp.height,
+      numLayers: comp.numLayers
+    },
+    guides: details,
+    effect: {
+      layerName: expected.effectLayerName,
+      name: effect.name,
+      matchName: effect.matchName
+    }
+  };
+}
+
 async function findGeneratedCompByExactName(scenario, compName) {
   const found = await callBridgeTool("find_project_items", {
     query: compName,
@@ -4070,6 +4168,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.findReplaceLayerRename) {
     return verifyFindReplaceLayerRenameReadBack(scenario, expected);
+  }
+
+  if (expected.assortedCompositionGuides) {
+    return verifyAssortedCompositionGuidesReadBack(scenario, expected);
   }
 
   if (expected.markerLifecycle) {
@@ -4695,6 +4797,10 @@ async function main() {
   }
   if (command === "agent-rename-find-replace-openai-cli-smoke" || command === "full-ui-agent-rename-find-replace-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliRenameFindReplaceScenarioConfig());
+    return;
+  }
+  if (command === "agent-assorted-composition-guides-openai-cli-smoke" || command === "full-ui-agent-assorted-composition-guides-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliAssortedCompositionGuidesScenarioConfig());
     return;
   }
   if (command === "openai-api-setup-smoke") {

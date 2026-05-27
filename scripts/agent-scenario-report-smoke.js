@@ -10,6 +10,7 @@ const {
   writeAgentRunReport
 } = require("./agent-scenario-report");
 const {
+  agentAssortedCompositionGuidesScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
   agentResetWorkAreaScenarioPlans
@@ -243,10 +244,65 @@ function assertRenameFindReplaceGeneratedOnlyFixture() {
   assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
 }
 
+function assertAssortedCompositionGuidesGeneratedOnlyFixture() {
+  const [scenario] = agentAssortedCompositionGuidesScenarioPlans("Codex QA AUX039 Fixture");
+  assert(scenario, "AUX-039 assorted composition guides scenario should be registered.");
+  assert.strictEqual(scenario.id, "generated-assorted-composition-guides");
+  assert.strictEqual(scenario.cleanupPrefix, "Codex QA AUX039 Fixture Assorted Guides");
+  assert.deepStrictEqual(scenario.expectedTools, [
+    "create_comp",
+    "create_shape_layer",
+    "add_effect",
+    "get_comp_details",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(scenario.expectedStepCount, 9);
+  assert.strictEqual(scenario.expectedMutatingCount, 7);
+  assert.strictEqual(scenario.expectedReadBack.assortedCompositionGuides, true);
+  assert.strictEqual(scenario.expectedReadBack.compName.indexOf(scenario.cleanupPrefix), 0);
+  assert.strictEqual(scenario.expectedReadBack.layerCountAfter, 5);
+  assert.strictEqual(scenario.expectedReadBack.effectMatchName, "ADBE Fill");
+  assert.strictEqual(scenario.expectedReadBack.effectLayerName, "Codex QA AUX039 Fixture Assorted Guides Title Safe Frame");
+  assert.deepStrictEqual(scenario.expectedReadBack.guideSpecs.map((guide) => guide.key), [
+    "edges",
+    "centerVertical",
+    "centerHorizontal",
+    "actionSafe",
+    "titleSafe"
+  ]);
+  assert.deepStrictEqual(scenario.expectedReadBack.guideSpecs.map((guide) => guide.position), [
+    [400, 225],
+    [400, 225],
+    [400, 225],
+    [400, 225],
+    [400, 225]
+  ]);
+
+  const toolSequence = scenario.plan.steps.map((step) => step.tool);
+  assert.deepStrictEqual(toolSequence, [
+    "create_comp",
+    "create_shape_layer",
+    "create_shape_layer",
+    "create_shape_layer",
+    "create_shape_layer",
+    "create_shape_layer",
+    "add_effect",
+    "get_comp_details",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(scenario.plan.steps[6].args.effect, "ADBE Fill");
+  assert.strictEqual(scenario.plan.steps[6].resultBindings.layerIndex, "{{steps.6.layer.index}}");
+  assert.strictEqual(scenario.plan.steps[8].resultBindings.layerIndex, "{{steps.6.layer.index}}");
+  assert(!toolSequence.includes("run_extendscript"), "AUX-039 fixture must not use raw ExtendScript.");
+  assert(!toolSequence.includes("cleanup_test_items"), "AUX-039 fixture cleanup is owned by the scenario runner.");
+  assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
+}
+
 function main() {
   assertDakkshinGeneratedOnlyFixture();
   assertResetWorkAreaGeneratedOnlyFixture();
   assertRenameFindReplaceGeneratedOnlyFixture();
+  assertAssortedCompositionGuidesGeneratedOnlyFixture();
 
   const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "ae-agent-run-report-"));
   const artifact = writeAgentRunReport(fixtureReport(), {

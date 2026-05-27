@@ -38,6 +38,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "replace_layer_source",
   "rename_layers",
   "rename_project_items",
+  "add_effect",
   "add_comp_to_render_queue",
   "set_render_queue_output"
 ]);
@@ -1062,6 +1063,163 @@ function agentRenameFindReplaceScenarioPlans(runPrefix) {
   }));
 }
 
+function agentAssortedCompositionGuidesScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Assorted Guides`;
+  const compName = `${base} Comp`;
+  const effectName = `${base} Fill Effect`;
+  const guideSpecs = [
+    {
+      key: "edges",
+      name: `${base} Edge Frame`,
+      size: [800, 450],
+      position: [400, 225],
+      fillColor: [0.02, 0.02, 0.02],
+      strokeColor: [1, 0.9, 0.15],
+      strokeWidth: 4
+    },
+    {
+      key: "centerVertical",
+      name: `${base} Center Vertical`,
+      size: [4, 450],
+      position: [400, 225],
+      fillColor: [0.2, 0.7, 1],
+      strokeColor: [0.2, 0.7, 1],
+      strokeWidth: 0
+    },
+    {
+      key: "centerHorizontal",
+      name: `${base} Center Horizontal`,
+      size: [800, 4],
+      position: [400, 225],
+      fillColor: [0.2, 0.7, 1],
+      strokeColor: [0.2, 0.7, 1],
+      strokeWidth: 0
+    },
+    {
+      key: "actionSafe",
+      name: `${base} Action Safe Frame`,
+      size: [720, 405],
+      position: [400, 225],
+      fillColor: [0.02, 0.08, 0.04],
+      strokeColor: [0.35, 1, 0.45],
+      strokeWidth: 3
+    },
+    {
+      key: "titleSafe",
+      name: `${base} Title Safe Frame`,
+      size: [640, 360],
+      position: [400, 225],
+      fillColor: [0.06, 0.04, 0.12],
+      strokeColor: [0.85, 0.55, 1],
+      strokeWidth: 3
+    }
+  ];
+
+  return [
+    {
+      id: "generated-assorted-composition-guides",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "add_effect",
+        "get_comp_details",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        assortedCompositionGuides: true,
+        compName,
+        layerCountAfter: guideSpecs.length,
+        guideSpecs: guideSpecs.map((guide) => ({
+          key: guide.key,
+          name: guide.name,
+          size: guide.size,
+          position: guide.position
+        })),
+        effectLayerName: guideSpecs[guideSpecs.length - 1].name,
+        effectName,
+        effectMatchName: "ADBE Fill"
+      },
+      plan: {
+        summary: "AUX-039 generated-only live QA for assorted composition guide overlay layers.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          {
+            title: "Create generated assorted guides comp",
+            tool: "create_comp",
+            args: {
+              name: compName,
+              width: 800,
+              height: 450,
+              pixelAspect: 1,
+              duration: 3,
+              frameRate: 24,
+              bgColor: [0.08, 0.09, 0.1],
+              allowDuplicateName: false,
+              openInViewer: false,
+              comment: "AUX-039 generated-only assorted composition guide overlay validation"
+            }
+          },
+          ...guideSpecs.map((guide) => ({
+            title: `Create generated ${guide.key} guide overlay`,
+            tool: "create_shape_layer",
+            args: {
+              compName,
+              name: guide.name,
+              shape: "rectangle",
+              size: guide.size,
+              position: guide.position,
+              fillColor: guide.fillColor,
+              strokeColor: guide.strokeColor,
+              strokeWidth: guide.strokeWidth,
+              startTime: 0,
+              duration: 3
+            }
+          })),
+          {
+            title: "Add generated guide color effect",
+            tool: "add_effect",
+            args: {
+              compName,
+              effect: "ADBE Fill",
+              name: effectName
+            },
+            resultBindings: {
+              layerIndex: "{{steps.6.layer.index}}"
+            }
+          },
+          {
+            title: "Read generated guide overlay layer stack",
+            tool: "get_comp_details",
+            args: {
+              compName,
+              includeLayers: true,
+              layerLimit: 20
+            }
+          },
+          {
+            title: "Read generated guide effect layer",
+            tool: "get_layer_details",
+            args: {
+              compName,
+              includeProperties: false
+            },
+            resultBindings: {
+              layerIndex: "{{steps.6.layer.index}}"
+            }
+          }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentManualTypedToolsScenarioPlans(runPrefix) {
   const base = `${runPrefix} Manual Typed Tools`;
   const folderBase = `${base} Folder Move`;
@@ -1479,6 +1637,7 @@ module.exports = {
   AGENT_SCENARIO_MUTATING_TOOLS,
   DEFAULT_PLANNER_FIXTURE_PREFIX,
   DEFAULT_RENDER_QUEUE_BASELINE_TOTAL,
+  agentAssortedCompositionGuidesScenarioPlans,
   agentDuplicateLayersScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
   agentManualTypedToolsScenarioPlans,
