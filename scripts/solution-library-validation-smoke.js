@@ -38,7 +38,8 @@ const IMPORTED_ADVISORY_IDS = [
   "add-composition-guide-typed-plan",
   "add-posterize-time-adjustment-layer-typed-plan",
   "center-composition-typed-plan",
-  "find-specific-effect-typed-plan"
+  "find-specific-effect-typed-plan",
+  "set-to-average-position-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -557,6 +558,27 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Center_Composition/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "set-to-average-position-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details", "set_layer_transform", "get_comp_details"],
+        `${id}: imported average-position workflow should stay on the narrow layer-transform typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: average-position workflow must be mutating.`);
+      assert(text.includes("component-wise arithmetic mean"), `${id}: recipe should compute an arithmetic mean from position evidence.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence for selected workflows.`);
+      assert(text.includes("at least two"), `${id}: recipe should require at least two target layers.`);
+      assert(text.includes("same coordinate dimensionality"), `${id}: recipe should reject mixed position dimensionality.`);
+      assert(text.includes("set_layer_transform"), `${id}: recipe should use the transform typed tool.`);
+      assert(text.includes("parent/world-space"), `${id}: recipe should fail closed for parent/world-space semantics.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read target layer positions.`);
+      assert(solution.verificationRecipe.steps.some((step) => /component-wise arithmetic mean/.test(step)), `${id}: verification must compute the arithmetic mean.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_transform/.test(step)), `${id}: verification must include transform positioning.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /computed average position/.test(item)), `${id}: verification must require average-position evidence.`);
+      assert(solution.notes.some((note) => /anchor points/.test(note)), `${id}: notes must reject anchor averaging claims.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Set_To_Average_Position/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "find-specific-effect-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -877,6 +899,21 @@ function assertActualRetrieval(registry) {
   assert(centerCompositionPromptSection.includes("viewer zoom/pan"), "prompt section should preserve viewer-centering warning.");
   assert(!/run_extendscript/i.test(centerCompositionPromptSection), "center composition guidance should not recommend raw ExtendScript.");
 
+  const averagePositionRetrieval = retrieveSolutionHints("Set the selected layers to their average position by reading current positions, computing the average, moving each selected layer to that average, and reading them back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(averagePositionRetrieval.ok, true);
+  assert(ids(averagePositionRetrieval).includes("set-to-average-position-typed-plan"), "set-to-average-position advisory recipe should surface for average position prompts.");
+  const averagePositionPromptSection = formatSolutionHintsForPrompt(averagePositionRetrieval);
+  assert(averagePositionPromptSection.includes("Set To Average Position Typed Plan"), "prompt section should include average-position advisory title.");
+  assert(averagePositionPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for average-position workflows.");
+  assert(averagePositionPromptSection.includes("get_layer_details"), "prompt section should require layer position read-back for average-position workflows.");
+  assert(averagePositionPromptSection.includes("set_layer_transform"), "prompt section should prefer set_layer_transform for average-position workflows.");
+  assert(averagePositionPromptSection.includes("average position"), "prompt section should preserve average-position guidance.");
+  assert(!/run_extendscript/i.test(averagePositionPromptSection), "average-position guidance should not recommend raw ExtendScript.");
+
   const findSpecificEffectRetrieval = retrieveSolutionHints("Find the specific ADBE Fill effect on layers in the active comp, list matching layer indexes, and inspect effect properties without changing anything.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -918,6 +955,7 @@ function assertActualRetrieval(registry) {
       compositionGuide: ids(compositionGuideRetrieval),
       posterizeTimeAdjustment: ids(posterizeTimeAdjustmentRetrieval),
       centerComposition: ids(centerCompositionRetrieval),
+      averagePosition: ids(averagePositionRetrieval),
       findSpecificEffect: ids(findSpecificEffectRetrieval)
     }
   };

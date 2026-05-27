@@ -2477,6 +2477,110 @@
         "Require a separate typed-tool contract for source-exact layer selection side effects, broad project-wide scans, fuzzy effect matching, effect stack mutation, expression/property edits or raw JSX search semantics.",
         "Do not infer layer targets from prior chat context; require current get_selected_layers, list_layers, list_effects, get_effect_details or get_layer_details evidence."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "set-to-average-position-typed-plan",
+      "title": "Set To Average Position Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "position",
+        "transform",
+        "average",
+        "align",
+        "selected-layers",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Move selected or explicit layers to the component-wise arithmetic mean of their current typed transform positions.",
+        "appliesWhen": [
+          "The user asks to set selected layers to average position, average out layer positions, or move multiple layers to their shared average point.",
+          "Layer transform position averaging from typed read-back is acceptable instead of anchor, bounds, world-space or exact source JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetLayers",
+          "type": "layer-selection",
+          "required": true,
+          "description": "At least two selected or explicitly identified layers whose current transform positions are read before computing the average."
+        }
+      ],
+      "targetAssumptions": [
+        "At least two concrete layer targets are read from current selected-layer or explicit-layer evidence before mutation.",
+        "The safe adaptation computes a component-wise arithmetic mean from numeric get_layer_details transform position evidence.",
+        "Target positions share the same coordinate dimensionality and coordinate-space assumptions; mixed dimensionality or insufficient parent/world-space evidence fails closed.",
+        "Existing layer names, sources, timing, effects, masks, parenting, expressions, layer order and unrelated transform fields are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/set-to-average-position-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details",
+          "set_layer_transform",
+          "get_comp_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected layer positions, compute the component-wise average position, set each target layer to that position, then read back layer positions and comp membership.",
+        "steps": [
+          "Run get_active_comp and get_selected_layers before mutation to capture target comp identity and concrete layer indices.",
+          "Run get_layer_details for every target layer before mutation and require at least two numeric position arrays with matching coordinate dimensionality.",
+          "Compute the component-wise arithmetic mean of the cited position values, including z only when every target position has numeric z evidence.",
+          "Run set_layer_transform for each target layer with position equal to the computed average position and leave other transform fields unchanged.",
+          "Run get_layer_details for every target layer and get_comp_details after mutation; fail closed if anchor/bounds averaging, parent/world-space conversion, separated dimensions, selection changes or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "The selected or explicit target layer set contains at least two concrete layer indices from current typed evidence.",
+          "Pre-run get_layer_details shows numeric position values with the same coordinate dimensionality for every target layer.",
+          "The computed average position equals the component-wise arithmetic mean of the cited pre-run positions.",
+          "Post-run get_layer_details shows every affected target layer position equals the computed average position.",
+          "Post-run get_comp_details shows no unexpected user-layer deletion, rename, relink, timing change or layer-count change."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-layers-set-to-average-position generic repository importer as advisory typed-plan coverage for selected-layer average position workflows.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed transform tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-27",
+          "from": "generic-repo-importer-tool-layers-set-to-average-position",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Set_To_Average_Position.jsx into existing typed tools as selected-layer transform position averaging; no source JSX copied. Anchor/bounds center averaging, parent/world-space conversion, separated dimensions, selection changes and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "This recipe averages selected or explicit layer transform position values only; it does not average anchor points, layer bounds, masks, shape vertices, paths, effects or rendered pixels.",
+        "Require a separate typed-tool contract for anchor/bounds center averaging, parent/world-space conversion, separated-dimension behavior, selection changes or exact source JSX semantics.",
+        "Require current get_selected_layers or explicit get_layer_details evidence before mutating layer transform values; do not infer targets from prior chat context.",
+        "Do not use this recipe for render queue changes, expression edits, source relinking, template batch changes, layer cleanup, effect edits, marker edits, selection mutation, or broad composition mutation."
+      ]
     }
   ]
 }
