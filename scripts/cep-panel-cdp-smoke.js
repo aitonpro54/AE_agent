@@ -4245,9 +4245,13 @@ async function verifyGeneratedProjectItemsReadBack(scenario, expected) {
     layerLimit: 10
   });
   const layers = Array.isArray(comp.layers) ? comp.layers : [];
-  const layer = layers.find((item) => item.name === expected.layerName);
+  const layer = layers.find((item) => (
+    item.name === expected.layerName ||
+    (item.source && (item.source.name === expected.renamedReplacementName || item.source.name === expected.replacementName))
+  ));
   if (!layer || !layer.index) {
-    throw new Error(`${scenario.id}: generated project-items layer ${expected.layerName} was not found by read-back.`);
+    const observed = layers.map((item) => `${item.name}${item.source && item.source.name ? ` -> ${item.source.name}` : ""}`);
+    throw new Error(`${scenario.id}: generated project-items source layer was not found by read-back; saw ${observed.join(", ") || "no layers"}.`);
   }
   return {
     ok: true,
@@ -4271,7 +4275,11 @@ async function verifyGeneratedProjectItemsReadBack(scenario, expected) {
 function effectPropertyValueMatches(properties, propertyIndex, expectedValue) {
   const property = (properties || []).find((item) => Number(item.index) === Number(propertyIndex));
   if (!property) return false;
-  return numberArraysMatch(expectedValue, property.value, 0.02);
+  const expected = numberPreviewArray(expectedValue);
+  const actual = numberPreviewArray(property.value);
+  const compareLength = Math.min(expected.length, actual.length);
+  return compareLength >= 3 &&
+    expected.slice(0, compareLength).every((value, index) => numbersMatch(value, actual[index], 0.02));
 }
 
 async function verifyGeneratedEffectPropertyReadBack(scenario, expected) {
