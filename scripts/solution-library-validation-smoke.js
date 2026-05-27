@@ -36,7 +36,8 @@ const IMPORTED_ADVISORY_IDS = [
   "add-background-layer-typed-plan",
   "add-composition-guide-typed-plan",
   "add-posterize-time-adjustment-layer-typed-plan",
-  "center-composition-typed-plan"
+  "center-composition-typed-plan",
+  "find-specific-effect-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -534,6 +535,28 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Center_Composition/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "find-specific-effect-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "list_layers", "get_selected_layers", "list_effects", "get_effect_details", "get_layer_details"],
+        `${id}: imported specific-effect search workflow should stay on the narrow read-only effect inspection typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: specific-effect search workflow must stay read-only.`);
+      assert.strictEqual(solution.requiredSafetyGates.allowMutations, false, `${id}: effect search reporting must not allow mutations.`);
+      assert(text.includes("list_effects"), `${id}: recipe should inspect applied layer effects.`);
+      assert(text.includes("get_effect_details"), `${id}: recipe should use effect detail read-back for matched effects.`);
+      assert(text.includes("effectMatchName"), `${id}: recipe should prefer exact effect matchName evidence.`);
+      assert(text.includes("Do not change selection state"), `${id}: recipe should explicitly avoid selection mutation.`);
+      assert(text.includes("project-wide all-comp scans"), `${id}: recipe should fail closed for broad project scans without explicit typed enumeration.`);
+      assert(solution.verificationRecipe.steps.some((step) => /list_layers/.test(step)), `${id}: verification must enumerate active-comp layers.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must support selected-layer scoped searches.`);
+      assert(solution.verificationRecipe.steps.some((step) => /list_effects/.test(step)), `${id}: verification must inspect applied layer effects.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_effect_details/.test(step)), `${id}: verification must include effect details for matched effects.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /effectMatchName/.test(item)), `${id}: verification must require effect matchName evidence.`);
+      assert(solution.notes.some((note) => /Display-name-only matching/.test(note)), `${id}: notes must document display-name ambiguity.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for source-exact semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Find_Specific_Effect/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else {
       throw new Error(`Unhandled imported advisory solution quality checks: ${id}`);
     }
@@ -817,6 +840,20 @@ function assertActualRetrieval(registry) {
   assert(centerCompositionPromptSection.includes("viewer zoom/pan"), "prompt section should preserve viewer-centering warning.");
   assert(!/run_extendscript/i.test(centerCompositionPromptSection), "center composition guidance should not recommend raw ExtendScript.");
 
+  const findSpecificEffectRetrieval = retrieveSolutionHints("Find the specific ADBE Fill effect on layers in the active comp, list matching layer indexes, and inspect effect properties without changing anything.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(findSpecificEffectRetrieval.ok, true);
+  assert(ids(findSpecificEffectRetrieval).includes("find-specific-effect-typed-plan"), "specific-effect search advisory recipe should surface for applied effect search prompts.");
+  const findSpecificEffectPromptSection = formatSolutionHintsForPrompt(findSpecificEffectRetrieval);
+  assert(findSpecificEffectPromptSection.includes("Find Specific Effect Typed Plan"), "prompt section should include find-specific-effect advisory title.");
+  assert(findSpecificEffectPromptSection.includes("list_effects"), "prompt section should prefer list_effects for applied effect search.");
+  assert(findSpecificEffectPromptSection.includes("get_effect_details"), "prompt section should preserve effect detail read-back guidance.");
+  assert(findSpecificEffectPromptSection.includes("read-only"), "prompt section should preserve read-only effect search guidance.");
+  assert(!/run_extendscript/i.test(findSpecificEffectPromptSection), "find-specific-effect guidance should not recommend raw ExtendScript.");
+
   return {
     contextRetrieval,
     alignRetrieval,
@@ -842,7 +879,8 @@ function assertActualRetrieval(registry) {
       backgroundLayer: ids(backgroundLayerRetrieval),
       compositionGuide: ids(compositionGuideRetrieval),
       posterizeTimeAdjustment: ids(posterizeTimeAdjustmentRetrieval),
-      centerComposition: ids(centerCompositionRetrieval)
+      centerComposition: ids(centerCompositionRetrieval),
+      findSpecificEffect: ids(findSpecificEffectRetrieval)
     }
   };
 }

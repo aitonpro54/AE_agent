@@ -2262,6 +2262,116 @@
         "Require current get_selected_layers or explicit get_layer_details evidence before mutating layer transform values; do not infer the target from prior chat context.",
         "Do not use this recipe for render queue changes, expression edits, source relinking, template batch changes, layer cleanup, selection mutation, or broad composition mutation."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "find-specific-effect-typed-plan",
+      "title": "Find Specific Effect Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "effects",
+        "effect",
+        "find",
+        "search",
+        "layers",
+        "read-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Find layers that already contain a specific effect through read-only layer/effect inspection.",
+        "appliesWhen": [
+          "The user asks to find, search, list or report layers with a specific effect in the active or explicit composition.",
+          "The workflow needs matching layer/effect evidence without adding, removing, disabling, reordering or editing effects."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "effectQuery",
+          "type": "string",
+          "required": true,
+          "description": "Exact effect matchName such as ADBE Fill, or an exact effect instance/display name when matchName is unavailable."
+        },
+        {
+          "name": "targetScope",
+          "type": "string",
+          "required": false,
+          "description": "active-comp, selected-layers or explicit comp scope; broad project scans require separately enumerated typed comp/layer evidence."
+        }
+      ],
+      "targetAssumptions": [
+        "An active or explicit composition is read before effect search results are reported.",
+        "Layer targets are concrete indices from get_selected_layers, list_layers or equivalent typed comp/layer evidence.",
+        "Exact effectMatchName evidence is preferred; display-name-only matching must be exact and ambiguity is reported instead of guessed.",
+        "The workflow is read-only and does not change selection state, layer state, effects, properties, sources, render queue items or project structure."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/find-specific-effect-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "list_layers",
+          "get_selected_layers",
+          "list_effects",
+          "get_effect_details",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Enumerate concrete layers, read applied effects, then report only exact matching effect evidence and optional effect details.",
+        "steps": [
+          "Run get_active_comp before reporting to capture target comp identity, or use an explicit comp target from the request.",
+          "Run get_selected_layers for selected-layer scoped searches, or list_layers for active-comp scoped searches, before binding concrete layerIndex values.",
+          "Run list_effects for each concrete layerIndex and compare exact effectMatchName when available.",
+          "Run get_effect_details for each matched effect when the user asks for properties or detailed effect evidence.",
+          "Optionally run get_layer_details for matched layers, then fail closed if the request requires changing selection, mutating effects, broad project scanning or non-typed raw search semantics."
+        ],
+        "expectedEvidence": [
+          "The search scope is backed by get_active_comp, get_selected_layers or list_layers evidence.",
+          "Each matched layer reports layerIndex/name evidence and an effect index/name with exact effectMatchName or exact returned effect-name evidence.",
+          "Optional properties come from get_effect_details for the matched effect instance.",
+          "Zero matches, ambiguous display names and unsupported project-wide scans are reported without mutation or raw ExtendScript fallback."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-layers-find-specific-effect generic repository importer as advisory typed-plan coverage for read-only applied-effect search.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed read tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-27",
+          "from": "generic-repo-importer-tool-layers-find-specific-effect",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Find_Specific_Effect.jsx into existing read-only typed tools for layer/effect inspection; no source JSX copied. The detached child-run had no local source JSX artifact, so exact selection-side effects or raw search semantics require parent/source review and a separate typed-tool contract if needed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution uses normal Agent plan validation and read-only typed tools.",
+        "Prefer exact effectMatchName matching. Display-name-only matching must be exact and must report ambiguity instead of guessing.",
+        "Do not change selection state, add/remove/disable/reorder effects, edit effect properties, rename layers, relink sources, mutate render queue items or run cleanup.",
+        "Require a separate typed-tool contract for source-exact layer selection side effects, broad project-wide scans, fuzzy effect matching, effect stack mutation, expression/property edits or raw JSX search semantics.",
+        "Do not infer layer targets from prior chat context; require current get_selected_layers, list_layers, list_effects, get_effect_details or get_layer_details evidence."
+      ]
     }
   ]
 }
