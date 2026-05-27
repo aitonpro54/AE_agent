@@ -777,6 +777,95 @@ function assertChildTimeoutResolutionRecoversImporterWorktreePatch() {
   }
 }
 
+function assertChildTimeoutTerminalTicketDoesNotRequeue() {
+  const fixture = createFixture("child-timeout-terminal");
+  try {
+    const runId = "fixture-child-timeout-terminal";
+    const failed = entry({
+      id: "tool-layers-child-timeout-terminal",
+      sourcePath: "Layers/Read_Only_Fixture.jsx",
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "ready" },
+      implementation: {
+        sliceId: "fixture-child-timeout-terminal",
+        plannedPaths: ["scripts/imported-tools/terminal-child-timeout.js"]
+      },
+      status: "failed_import",
+      queueRank: 1
+    });
+    failed.failClosed = {
+      status: "failed_import",
+      reason: "batch-importer-failed: implementation-child-run-timeout: queue-batch-1-timeout",
+      batchReport: ".codex-runtime/sdk/generic-repo-full-intake/fixture-child-timeout-terminal/queue-supervisor/timeout/batch-report.json"
+    };
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [failed]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const ticketPath = path.join(
+      fixture.target,
+      ".codex-runtime",
+      "sdk",
+      "generic-repo-full-intake",
+      runId,
+      "resolution-tickets",
+      "child-timeout-fixture",
+      "ticket.json"
+    );
+    const ticketRef = path.relative(fixture.target, ticketPath).replace(/\\/g, "/");
+    fs.mkdirSync(path.dirname(ticketPath), { recursive: true });
+    fs.writeFileSync(
+      ticketPath,
+      `${JSON.stringify({
+        schema: "generic-repo-full-intake.resolution-ticket.v1",
+        runId,
+        groupId: "child-timeout-fixture",
+        type: "child-timeout",
+        status: "running_recovery",
+        reason: "runtime_child_timeout_recovery_started",
+        affectedCandidateIds: [failed.id],
+        group: {
+          suggestedTools: failed.suggestedTools,
+          safetySignals: [],
+          synthesisFamily: null
+        },
+        isolation: {
+          runtimeOnly: true,
+          ticketPath: ticketRef,
+          trackedSharedFileMerge: "serial_only",
+          worktrees: "importer_owned_ignored_dirs_only"
+        },
+        evidence: {
+          failureReason: failed.failClosed.reason
+        },
+        createdAt: new Date().toISOString()
+      }, null, 2)}\n`,
+      "utf8"
+    );
+
+    const output = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        runId,
+        1
+      )
+    );
+    assert.strictEqual(output.status, "completed_no_candidates");
+    assert.strictEqual(output.resolutionQueue.terminalTicketCount, 1);
+    assert.deepStrictEqual(output.resolutionQueue.closedCandidateIds, [failed.id]);
+    assert.deepStrictEqual(output.resolutionQueue.requeuedCandidateIds, []);
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    assert.strictEqual(ledger.entries[0].status, "failed_import");
+    assert.strictEqual(ledger.entries[0].implementation.childTimeoutRecoveryExhausted, true);
+    assert.strictEqual(ledger.entries[0].resolution.status, "terminal_unresolved");
+    const ticket = JSON.parse(fs.readFileSync(ticketPath, "utf8"));
+    assert.strictEqual(ticket.status, "terminal_unresolved");
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertResumeFromState() {
   const fixture = createFixture("resume");
   try {
@@ -807,6 +896,7 @@ function main() {
   assertQueuedLedgerStaleBlockedStateIsRetried();
   assertResolutionTicketRequeuesBlockedFamily();
   assertChildTimeoutResolutionRecoversImporterWorktreePatch();
+  assertChildTimeoutTerminalTicketDoesNotRequeue();
   assertResumeFromState();
   console.log(JSON.stringify({ ok: true, smoke: "generic-repo-full-intake" }, null, 2));
 }

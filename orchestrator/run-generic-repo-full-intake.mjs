@@ -1196,8 +1196,25 @@ function isRecoverableLiveLaneEntry(entry) {
   return /candidate_tools_(?:do_not_match|exceed|match_multiple)|auto_lane_family_missing/i.test(entry.failClosed?.reason || "");
 }
 
+function childTimeoutRecoveryExhausted(entry) {
+  if (entry.implementation?.childTimeoutRecoveryExhausted === true) return true;
+  if (/child-timeout-recovery-exhausted|child-timeout-recovery-failed/i.test(entry.failClosed?.reason || "")) return true;
+  if (
+    entry.status === "failed_import" &&
+    entry.liveGate?.status === "ready" &&
+    entry.resolution?.status === "resolved_requeued" &&
+    hasReasonFragment(entry, CHILD_TIMEOUT_REASONS)
+  ) {
+    return true;
+  }
+  return false;
+}
+
 function recoverableImportFailureKind(entry) {
   if (entry.status !== "failed_import" && entry.failClosed?.status !== "failed_import") {
+    return null;
+  }
+  if (childTimeoutRecoveryExhausted(entry)) {
     return null;
   }
   if (hasReasonFragment(entry, CHILD_TIMEOUT_REASONS)) {
@@ -1256,6 +1273,35 @@ function recordResolutionTicket({ affected, evidence = {}, groupId, reason, runI
     },
     evidence,
     createdAt: new Date().toISOString(),
+  };
+  writeJson(ticketPath, ticket);
+  return ticket;
+}
+
+function readResolutionTicket(targetRepo, ticketRef) {
+  return readJsonIfExists(absoluteReportPath(targetRepo, ticketRef), "resolution-ticket");
+}
+
+function finalizeResolutionTicket({ affected = [], evidence = {}, reason, status, targetRepo, ticketRef }) {
+  const ticketPath = absoluteReportPath(targetRepo, ticketRef);
+  const existing = readJsonIfExists(ticketPath, "resolution-ticket");
+  if (!existing) {
+    throw new Error(`resolution-ticket-missing:${ticketRef || "none"}`);
+  }
+  const affectedIds = sortedUnique([
+    ...(Array.isArray(existing.affectedCandidateIds) ? existing.affectedCandidateIds : []),
+    ...affected.map((entry) => entry.id),
+  ]);
+  const ticket = {
+    ...existing,
+    status,
+    reason,
+    affectedCandidateIds: affectedIds,
+    evidence: {
+      ...(existing.evidence || {}),
+      ...evidence,
+    },
+    updatedAt: new Date().toISOString(),
   };
   writeJson(ticketPath, ticket);
   return ticket;
@@ -1481,10 +1527,66 @@ function processImportFailureResolutionTickets({ ledger, runId, runRoot, targetR
   return { requeuedCandidateIds, tickets };
 }
 
+function closeStaleRunningChildTimeoutTickets({ ledger, runId, runRoot, targetRepo }) {
+  const ticketsRoot = path.join(runRoot, "resolution-tickets");
+  if (!existsSync(ticketsRoot)) {
+    return { closedCandidateIds: [], tickets: [] };
+  }
+  const closedCandidateIds = [];
+  const tickets = [];
+  for (const item of readdirSync(ticketsRoot, { withFileTypes: true })) {
+    if (!item.isDirectory()) continue;
+    const ticketPath = path.join(ticketsRoot, item.name, "ticket.json");
+    const ticket = readJsonIfExists(ticketPath, "resolution-ticket");
+    if (!ticket || ticket.type !== "child-timeout" || ticket.status !== "running_recovery") {
+      continue;
+    }
+    const affected = (ticket.affectedCandidateIds || [])
+      .map((id) => ledger.entries.find((entry) => entry.id === id))
+      .filter(Boolean);
+    const terminalAffected = affected.filter((entry) => (
+      entry.status === "failed_import" && hasReasonFragment(entry, CHILD_TIMEOUT_REASONS)
+    ));
+    if (terminalAffected.length === 0) {
+      continue;
+    }
+    const finalized = finalizeResolutionTicket({
+      affected: terminalAffected,
+      evidence: {
+        closedOnResume: true,
+        closedRunId: runId,
+        terminalCandidateIds: terminalAffected.map((entry) => entry.id),
+        terminalFailureReasons: Object.fromEntries(
+          terminalAffected.map((entry) => [entry.id, entry.failClosed?.reason || entry.implementation?.failureReason || null])
+        ),
+      },
+      reason: "child_timeout_recovery_exhausted",
+      status: "terminal_unresolved",
+      targetRepo,
+      ticketRef: ticket.isolation.ticketPath,
+    });
+    for (const entry of terminalAffected) {
+      attachResolutionReference(entry, finalized, "terminal_unresolved");
+      entry.implementation = {
+        ...(entry.implementation || {}),
+        childTimeoutRecoveryExhausted: true,
+        resolutionTicket: finalized.isolation.ticketPath,
+      };
+      if (entry.failClosed) {
+        entry.failClosed.reason = `child-timeout-recovery-exhausted:${entry.failClosed.reason || "implementation-child-run-timeout"}`;
+      }
+      closedCandidateIds.push(entry.id);
+    }
+    tickets.push(finalized);
+  }
+  return { closedCandidateIds: sortedUnique(closedCandidateIds), tickets };
+}
+
 function processResolutionTickets({ ledger, ledgerPath, registry, runId, runRoot, targetRepo, timeoutMs }) {
+  const closed = closeStaleRunningChildTimeoutTickets({ ledger, runId, runRoot, targetRepo });
   const live = processLiveLaneResolutionTickets({ ledger, ledgerPath, registry, runId, runRoot, targetRepo, timeoutMs });
   const imports = processImportFailureResolutionTickets({ ledger, runId, runRoot, targetRepo });
-  if (live.tickets.length > 0 || imports.tickets.length > 0) {
+  if (closed.tickets.length > 0 || live.tickets.length > 0 || imports.tickets.length > 0) {
     updateLedgerNextCandidate(ledger, null);
     writeJson(ledgerPath, ledger);
   }
@@ -1492,7 +1594,7 @@ function processResolutionTickets({ ledger, ledgerPath, registry, runId, runRoot
     schema: "generic-repo-full-intake.resolution-queue.v1",
     runId,
     status: "terminal",
-    tickets: [...live.tickets, ...imports.tickets].map((ticket) => ({
+    tickets: [...closed.tickets, ...live.tickets, ...imports.tickets].map((ticket) => ({
       groupId: ticket.groupId,
       path: ticket.isolation.ticketPath,
       status: ticket.status,
@@ -1500,7 +1602,8 @@ function processResolutionTickets({ ledger, ledgerPath, registry, runId, runRoot
       affectedCandidateIds: ticket.affectedCandidateIds,
     })),
     requeuedCandidateIds: sortedUnique([...live.requeuedCandidateIds, ...imports.requeuedCandidateIds]),
-    terminalTicketCount: live.tickets.length + imports.tickets.length,
+    terminalTicketCount: closed.tickets.length + live.tickets.length + imports.tickets.length,
+    closedCandidateIds: closed.closedCandidateIds,
     openTicketCount: 0,
   };
 }
@@ -1740,6 +1843,29 @@ function runRecoveryValidation({ applyPaths, logDir, targetRepo, timeoutMs }) {
   return report;
 }
 
+function childTimeoutRecoveryExhaustedError({ affected, recoveryError, retryError, targetRepo, ticket }) {
+  const retryMessage = retryError && retryError.message ? retryError.message : String(retryError || "");
+  const recoveryMessage = recoveryError && recoveryError.message ? recoveryError.message : String(recoveryError || "");
+  const finalMessage = retryMessage || recoveryMessage || "child timeout recovery exhausted";
+  const finalized = finalizeResolutionTicket({
+    affected,
+    evidence: {
+      attemptsExhausted: true,
+      recoveryError: recoveryMessage || null,
+      retryError: retryMessage || null,
+    },
+    reason: "child_timeout_recovery_exhausted",
+    status: "terminal_unresolved",
+    targetRepo,
+    ticketRef: ticket.isolation.ticketPath,
+  });
+  const error = new Error(`child-timeout-recovery-exhausted:${finalMessage}`);
+  error.childTimeoutRecoveryExhausted = true;
+  error.resolutionStatus = "terminal_unresolved";
+  error.resolutionTicket = finalized.isolation.ticketPath;
+  return error;
+}
+
 function recoverChildTimeoutPatch({ candidate, runId, runRoot, targetRepo, timeoutMs }) {
   const intent = candidate.implementation?.recoveryIntent || {};
   const ticketPath = intent.ticketPath || path.join("resolution-tickets", safeId(candidate.id), "ticket.json");
@@ -1931,7 +2057,12 @@ function tryRecoverImportFailure({ candidate, error, ledger, runId, runRoot, tar
   } catch (recoveryError) {
     const attempts = Number(candidate.implementation?.recoveryAttemptCount || 0);
     if (attempts >= 1) {
-      throw new Error(`child-timeout-recovery-failed:${recoveryError.message}`);
+      throw childTimeoutRecoveryExhaustedError({
+        affected: [candidate],
+        recoveryError,
+        targetRepo,
+        ticket,
+      });
     }
     const retryCandidate = JSON.parse(JSON.stringify(candidate));
     retryCandidate.implementation = {
@@ -1944,7 +2075,17 @@ function tryRecoverImportFailure({ candidate, error, ledger, runId, runRoot, tar
       },
       retryNonce: ticket.evidence.retryNonce,
     };
-    return runCandidateImport({ candidate: retryCandidate, ledger, runId, runRoot, targetRepo });
+    try {
+      return runCandidateImport({ candidate: retryCandidate, ledger, runId, runRoot, targetRepo });
+    } catch (retryError) {
+      throw childTimeoutRecoveryExhaustedError({
+        affected: [candidate],
+        recoveryError,
+        retryError,
+        targetRepo,
+        ticket,
+      });
+    }
   }
 }
 
@@ -2050,6 +2191,16 @@ function updateLedgerTerminalStatus({ candidate, item, ledger, ledgerPath, targe
     batchReport: item.batchReport || entry.implementation?.batchReport || null,
     plannedPaths: Array.isArray(entry.implementation?.plannedPaths) ? entry.implementation.plannedPaths : [],
   };
+  if (item.resolutionTicket) {
+    const ticket = readResolutionTicket(targetRepo, item.resolutionTicket);
+    if (ticket) {
+      attachResolutionReference(entry, ticket, item.resolutionStatus || ticket.status || item.status);
+    }
+    entry.implementation.resolutionTicket = item.resolutionTicket;
+  }
+  if (item.childTimeoutRecoveryExhausted === true) {
+    entry.implementation.childTimeoutRecoveryExhausted = true;
+  }
   if (item.liveLaneStatus || item.liveLaneReport) {
     entry.liveGate = {
       ...entry.liveGate,
@@ -2360,6 +2511,7 @@ export function runFullIntake(options, cwd = process.cwd()) {
     timeoutMs,
   });
   report.resolutionQueue = {
+    closedCandidateIds: resolutionQueue.closedCandidateIds || [],
     openTicketCount: resolutionQueue.openTicketCount,
     requeuedCandidateIds: resolutionQueue.requeuedCandidateIds,
     status: resolutionQueue.status,
@@ -2499,6 +2651,13 @@ export function runFullIntake(options, cwd = process.cwd()) {
         item.status = "failed_import";
         item.reason = finalError.message;
         item.batchReport = error.report?.reportPath || null;
+        if (finalError.resolutionTicket) {
+          item.resolutionTicket = finalError.resolutionTicket;
+          item.resolutionStatus = finalError.resolutionStatus || "terminal_unresolved";
+        }
+        if (finalError.childTimeoutRecoveryExhausted === true) {
+          item.childTimeoutRecoveryExhausted = true;
+        }
         item.completedAt = new Date().toISOString();
         processedIds.add(candidate.id);
         updateLedgerTerminalStatus({ candidate, item, ledger: activeLedger, ledgerPath, targetRepo });
