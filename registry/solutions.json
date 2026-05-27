@@ -1728,6 +1728,117 @@
         "Use generated-prefix layer names and never delete, rename, relink or reorder existing user layers as part of this workflow.",
         "Do not use this recipe for template batch changes, layer cleanup, masks, expressions, source relinking, render queue items or broad composition mutation."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "add-composition-guide-typed-plan",
+      "title": "Add Composition Guide Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "guides",
+        "guide-layer",
+        "guide-overlay",
+        "shape-layers",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Add one generated composition guide overlay shape layer with typed read-back while native guideLayer=true semantics stay out of scope.",
+        "appliesWhen": [
+          "The user asks to add a single composition guide, guide layer, centered guide frame, 16:9 frame guide or visual guide overlay.",
+          "A generated shape-layer overlay adaptation is acceptable instead of native AE guide records or a native non-rendering guide layer."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "A new generated comp created by the plan, or an explicit existing comp target read back before guide overlay creation."
+        },
+        {
+          "name": "guideGeometry",
+          "type": "object",
+          "required": false,
+          "description": "Optional explicit guide geometry such as centered 16:9 frame, vertical guide line, horizontal guide line, margins or safe-area rectangle."
+        },
+        {
+          "name": "guideStyle",
+          "type": "object",
+          "required": false,
+          "description": "Optional visual styling for the generated guide overlay shape layer when supported by create_shape_layer."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow may add a generated overlay shape layer but must not mutate native AE composition guide records.",
+        "Target comp dimensions are known from create_comp output or get_comp_details read-back before guide geometry is computed.",
+        "Existing user layers are not deleted, renamed, relinked or reordered by this recipe.",
+        "Exact guideLayer=true, locked/non-rendering guide-layer behavior, ruler snapping and native CompItem.addGuide semantics remain typed-tool gaps."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/add-composition-guide-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "create_comp",
+          "create_shape_layer",
+          "get_comp_details",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read back target comp/composition guide overlay, confirm one generated 16:9 or requested geometry layer, and fail closed for guideLayer=true semantics.",
+        "steps": [
+          "Run create_comp only when the user requests a new generated comp; otherwise use get_comp_details to verify the explicit target comp before mutation.",
+          "Run create_shape_layer for one generated composition guide overlay with requested geometry, defaulting to a centered 16:9 frame when geometry is omitted.",
+          "Run get_comp_details after mutation and compare generated guide overlay name, count and comp dimensions.",
+          "Run get_layer_details for the generated guide overlay and fail closed if native guideLayer=true, locked/non-rendering guide-layer or CompItem.addGuide semantics are required."
+        ],
+        "expectedEvidence": [
+          "Post-run get_comp_details shows one generated composition guide overlay layer in the target comp and no unexpected user-layer mutation.",
+          "Generated guide overlay layer names use a generated prefix and the geometry matches the requested 16:9 frame or guide-line placement.",
+          "get_layer_details read-back shows the generated guide overlay layer shape evidence.",
+          "The plan reports native guideLayer=true, locked/non-rendering guide-layer, ruler snapping and CompItem.addGuide behavior as unsupported by current typed tools."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-compositions-add-composition-guide generic repository importer as advisory typed-plan coverage for generated composition guide overlays.",
+          "Live evidence was proved in AUX-043 with generated-only OpenAI CLI composition-guide lane over create_comp, create_shape_layer, get_comp_details and get_layer_details."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-27",
+          "from": "generic-repo-importer-tool-compositions-add-composition-guide",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Add_Composition_Guide.jsx into existing typed tools as a generated composition guide overlay shape layer; no source JSX copied. AUX-043 registered and proved the generated-only OpenAI CLI composition-guide lane.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "This recipe creates a generated shape-layer guide overlay, not native AE guide records or a native non-rendering guide layer; require a separate typed-tool contract for guideLayer=true, ruler snapping, removeGuide or guide-index semantics.",
+        "Use generated-prefix layer names and never delete, rename, relink or reorder existing user layers as part of this workflow.",
+        "Do not use this recipe for template batch changes, layer cleanup, masks, expressions, source relinking, render queue items or broad composition mutation."
+      ]
     }
   ]
 }

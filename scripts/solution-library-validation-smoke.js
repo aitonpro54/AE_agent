@@ -31,7 +31,8 @@ const IMPORTED_ADVISORY_IDS = [
   "get-selected-layer-duration-typed-plan",
   "duplicate-selected-layer-typed-plan",
   "add-assorted-composition-guides-typed-plan",
-  "add-background-layer-typed-plan"
+  "add-background-layer-typed-plan",
+  "add-composition-guide-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -419,6 +420,26 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Background_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /AUX-041/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+    } else if (id === "add-composition-guide-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["create_comp", "create_shape_layer", "get_comp_details", "get_layer_details"],
+        `${id}: imported composition guide workflow should stay on the narrow generated-guide typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: generated composition guide workflow must be mutating.`);
+      assert(text.includes("generated composition guide overlay"), `${id}: recipe should document generated guide overlay adaptation.`);
+      assert(text.includes("create_shape_layer"), `${id}: recipe should use the shape layer creation typed tool.`);
+      assert(text.includes("16:9"), `${id}: recipe should preserve default 16:9 guide geometry.`);
+      assert(text.includes("guideLayer=true"), `${id}: recipe should fail closed for native guide-layer semantics.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require guide overlay read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /create_shape_layer/.test(step)), `${id}: verification must include guide overlay shape-layer creation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /guideLayer=true/.test(step)), `${id}: verification must fail closed for native guide-layer semantics.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /one generated composition guide overlay layer/.test(item)), `${id}: verification must require one generated guide overlay.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /16:9 frame/.test(item)), `${id}: verification must preserve 16:9 frame evidence.`);
+      assert(solution.notes.some((note) => /native AE guide records/.test(note)), `${id}: notes must reject native guide-record claims.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for native guide semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Add_Composition_Guide/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /AUX-043/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
     } else {
       throw new Error(`Unhandled imported advisory solution quality checks: ${id}`);
     }
@@ -629,6 +650,21 @@ function assertActualRetrieval(registry) {
   assert(backgroundLayerPromptSection.includes("moveToEnd"), "prompt section should preserve exact stack-semantics warning.");
   assert(!/run_extendscript/i.test(backgroundLayerPromptSection), "background layer guidance should not recommend raw ExtendScript.");
 
+  const compositionGuideRetrieval = retrieveSolutionHints("Add a single 16:9 composition guide overlay shape layer to a generated comp, then read back the guide layer.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(compositionGuideRetrieval.ok, true);
+  assert(ids(compositionGuideRetrieval).includes("add-composition-guide-typed-plan"), "composition guide advisory recipe should surface for single guide overlay prompts.");
+  const compositionGuidePromptSection = formatSolutionHintsForPrompt(compositionGuideRetrieval);
+  assert(compositionGuidePromptSection.includes("Add Composition Guide Typed Plan"), "prompt section should include composition guide advisory title.");
+  assert(compositionGuidePromptSection.includes("create_shape_layer"), "prompt section should prefer create_shape_layer for generated guide overlays.");
+  assert(compositionGuidePromptSection.includes("get_layer_details"), "prompt section should require guide overlay layer read-back.");
+  assert(compositionGuidePromptSection.includes("16:9"), "prompt section should preserve default 16:9 guide geometry.");
+  assert(compositionGuidePromptSection.includes("guideLayer=true"), "prompt section should preserve native guide-layer warning.");
+  assert(!/run_extendscript/i.test(compositionGuidePromptSection), "composition guide guidance should not recommend raw ExtendScript.");
+
   return {
     contextRetrieval,
     alignRetrieval,
@@ -649,7 +685,8 @@ function assertActualRetrieval(registry) {
       selectedLayerDuration: ids(selectedLayerDurationRetrieval),
       duplicateSelectedLayer: ids(duplicateSelectedLayerRetrieval),
       assortedGuides: ids(assortedGuidesRetrieval),
-      backgroundLayer: ids(backgroundLayerRetrieval)
+      backgroundLayer: ids(backgroundLayerRetrieval),
+      compositionGuide: ids(compositionGuideRetrieval)
     }
   };
 }
