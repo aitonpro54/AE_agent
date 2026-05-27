@@ -25,6 +25,8 @@ const ALLOWED_INPUT_TYPES = new Set([
   "layer-selection",
   "comp",
   "project-item",
+  "project-item-selection",
+  "project-folder-or-root",
   "file-path"
 ]);
 const SAFETY_GATE_KEYS = [

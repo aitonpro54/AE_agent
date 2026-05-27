@@ -9,6 +9,7 @@
 - Пользователь просит переименовать выбранные слои в конкретный текст.
 - Активная композиция и выбранные слои должны быть подтверждены перед мутацией.
 - Target text должен быть явно предоставлен пользователем; пустой target text недопустим.
+- Все затронутые выбранные слои должны получить same exact text, без автоматической нумерации.
 - Для нескольких выбранных слоев план должен сохранять exact text semantics и не полагаться на multi-layer exact auto-numbering.
 - Задача не требует prefix/suffix rename, numbered or lettered sequence rename, find/replace, project item rename, source relinking, layer timing changes, marker edits, layer reordering, expressions, render queue changes or raw script execution.
 
