@@ -42,6 +42,7 @@ const IMPORTED_ADVISORY_IDS = [
   "set-to-average-position-typed-plan",
   "zero-position-typed-plan",
   "merge-imported-selected-items-typed-plan",
+  "replace-text-in-project-item-name-typed-plan",
   "rename-selected-project-items-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
@@ -630,6 +631,32 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Merge_Imported_Selected_Items/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "replace-text-in-project-item-name-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "get_project_snapshot", "find_project_items", "list_project_folder_items", "rename_project_items"],
+        `${id}: imported project-item find/replace rename workflow should stay on the narrow project-item typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: project-item find/replace rename workflow must be mutating.`);
+      assert(text.includes("get_project_snapshot"), `${id}: recipe should require project snapshot evidence.`);
+      assert(text.includes("find_project_items"), `${id}: recipe should require project item search evidence.`);
+      assert(text.includes("list_project_folder_items"), `${id}: recipe should allow folder-scoped project item evidence.`);
+      assert(text.includes("rename_project_items"), `${id}: recipe should use the project item rename typed tool.`);
+      assert(text.includes('mode:"findReplace"'), `${id}: recipe should require findReplace project-item rename mode.`);
+      assert(text.includes("literal find/replace only"), `${id}: recipe should document literal-only replacement.`);
+      assert(text.includes("true regex semantics"), `${id}: recipe should fail closed for true regex semantics.`);
+      assert(text.includes("caseSensitive"), `${id}: recipe should require explicit case-sensitivity behavior.`);
+      assert(text.includes("Project panel selection"), `${id}: recipe should fail closed for Project panel selection reads.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_project_snapshot/.test(step)), `${id}: verification must inspect project inventory.`);
+      assert(solution.verificationRecipe.steps.some((step) => /find_project_items/.test(step)), `${id}: verification must include item search evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /mode findReplace/.test(step)), `${id}: verification must include findReplace rename mode.`);
+      assert(solution.verificationRecipe.steps.some((step) => /true regex semantics/.test(step)), `${id}: verification must fail closed for regex semantics.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /changedCount/.test(item)), `${id}: verification must require rename count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /literal replacement/.test(item)), `${id}: verification must require literal replacement read-back evidence.`);
+      assert(solution.notes.some((note) => /RegEx semantics/.test(note)), `${id}: notes must reject source RegEx semantics for this recipe.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Replace_Text_In_Project_Item_Name/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "rename-selected-project-items-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -1034,6 +1061,22 @@ function assertActualRetrieval(registry) {
   assert(renameSelectedProjectItemsPromptSection.includes("rename_project_items"), "prompt section should prefer rename_project_items for project item rename workflows.");
   assert(renameSelectedProjectItemsPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning.");
   assert(!/run_extendscript/i.test(renameSelectedProjectItemsPromptSection), "selected project-item rename guidance should not recommend raw ExtendScript.");
+
+  const replaceProjectItemNameRetrieval = retrieveSolutionHints("Replace Alpha with Beta in project item names after reading the current project snapshot, binding explicit itemIndices, using rename_project_items mode findReplace, and reading back project inventory. Use literal text replacement, not regex.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(replaceProjectItemNameRetrieval.ok, true);
+  assert(ids(replaceProjectItemNameRetrieval).includes("replace-text-in-project-item-name-typed-plan"), "project item find/replace rename advisory recipe should surface for literal project item name replacement prompts.");
+  const replaceProjectItemNamePromptSection = formatSolutionHintsForPrompt(replaceProjectItemNameRetrieval);
+  assert(replaceProjectItemNamePromptSection.includes("Replace Text In Project Item Name Typed Plan"), "prompt section should include project item find/replace rename advisory title.");
+  assert(replaceProjectItemNamePromptSection.includes("literal"), "prompt section should preserve literal find/replace semantics for project item names.");
+  assert(replaceProjectItemNamePromptSection.includes("get_project_snapshot"), "prompt section should require project snapshot evidence for project item name find/replace workflows.");
+  assert(replaceProjectItemNamePromptSection.includes("find_project_items"), "prompt section should preserve item search evidence for project item name find/replace workflows.");
+  assert(replaceProjectItemNamePromptSection.includes("rename_project_items"), "prompt section should prefer rename_project_items for project item name find/replace workflows.");
+  assert(replaceProjectItemNamePromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning.");
+  assert(!/run_extendscript/i.test(replaceProjectItemNamePromptSection), "project item find/replace rename guidance should not recommend raw ExtendScript.");
 
   const findSpecificEffectRetrieval = retrieveSolutionHints("Find the specific ADBE Fill effect on layers in the active comp, list matching layer indexes, and inspect effect properties without changing anything.", {
     registry,

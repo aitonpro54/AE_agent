@@ -2798,6 +2798,131 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "replace-text-in-project-item-name-typed-plan",
+      "title": "Replace Text In Project Item Name Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "project",
+        "project-item",
+        "rename",
+        "find-replace",
+        "replace",
+        "literal",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Replace literal text in explicitly identified project item names, then read project inventory back.",
+        "appliesWhen": [
+          "The user asks to replace one explicit text fragment with another in project item names.",
+          "Typed project-item renaming from explicit item indices is acceptable instead of Project panel selection reads, prompt UI behavior, source relinking, item deletion, movement, or exact source JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "projectItemIndices",
+          "type": "project-item-selection",
+          "required": true,
+          "description": "Concrete project item indices read from current project snapshot, search, or folder listing evidence before mutation."
+        },
+        {
+          "name": "findText",
+          "type": "string",
+          "required": true,
+          "description": "Explicit non-empty literal text to find in each targeted project item name."
+        },
+        {
+          "name": "replaceText",
+          "type": "string",
+          "required": true,
+          "description": "Explicit literal replacement text; may be empty only when the user explicitly requests removal."
+        },
+        {
+          "name": "caseSensitive",
+          "type": "boolean",
+          "required": false,
+          "description": "Literal find/replace matching is case-sensitive by default unless the user explicitly asks for case-insensitive replacement."
+        }
+      ],
+      "targetAssumptions": [
+        "Every renamed item is bound by explicit itemIndices from current typed project evidence before mutation.",
+        "The workflow changes only the names of targeted project items by literal find/replace.",
+        "Current typed tools support project item rename by explicit itemIndices or scoped search but do not expose current Project panel selection.",
+        "True regex requests, capture groups, lookarounds, wildcard matching or regex flags require clarification or a separate typed-tool contract.",
+        "Existing item sources, item types, parent folders, comp contents, layer source references, render queue items and unlisted project items are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/replace-text-in-project-item-name-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_project_info",
+          "get_project_snapshot",
+          "find_project_items",
+          "list_project_folder_items",
+          "rename_project_items"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read project evidence, bind explicit item indices, perform literal find/replace project-item rename, then read back project inventory and item names.",
+        "steps": [
+          "Run get_project_info and get_project_snapshot before mutation to capture project inventory and candidate item names.",
+          "Run find_project_items or list_project_folder_items to enumerate the project items to rename.",
+          "Require a concrete itemIndices list from current typed evidence, explicit non-empty literal find text, explicit replacement text and selected case sensitivity.",
+          "Fail closed or ask for clarification when the request requires true regex semantics.",
+          "Run rename_project_items once with mode findReplace, literal find/replace text and the concrete itemIndices list.",
+          "Run get_project_snapshot, find_project_items or list_project_folder_items after mutation; fail closed if Project panel selection reads, selection order, prompt behavior, source relinking, item deletion, movement, folder cleanup or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies every concrete `itemIndices` list entry.",
+          "rename_project_items reports changedCount for the affected project-item count and before/after name evidence.",
+          "Post-run project read-back shows every affected project item has the requested literal replacement and no unexpected regex interpretation.",
+          "Post-run project read-back shows unchanged item sources, item types, parent folders and unrelated project inventory.",
+          "Post-run evidence shows no unexpected project item deletion, movement, source replacement, layer relink, import, render queue mutation or folder cleanup."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-project-replace-text-in-project-item-name generic repository importer as advisory typed-plan coverage for literal project item name find/replace.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed project-item tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-27",
+          "from": "generic-repo-importer-tool-project-replace-text-in-project-item-name",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Project/Replace_Text_In_Project_Item_Name.jsx into existing typed project-item rename tools; no source JSX copied. Current typed tools do not expose Project panel selection, so the safe literal find/replace adaptation requires explicit itemIndices from current typed evidence and one rename_project_items mode:\"findReplace\" mutation with explicit literal find, replace and caseSensitive behavior; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Literal find/replace only; do not promise RegEx semantics from the source JSX because current rename_project_items findReplace behavior is treated as escaped literal matching.",
+        "This recipe renames explicit project item indices only; it does not move project items, delete project items, import files, consolidate duplicate names, relink sources, replace layer sources or clean dependencies.",
+        "Ask for clarification or require a separate typed-tool contract when the user needs true regex, captures, lookarounds, wildcards, flags, Project panel selection reads, source-exact prompt behavior or selection ordering.",
+        "Require current get_project_snapshot, find_project_items or list_project_folder_items evidence before mutating project item names; do not infer item targets from prior chat context.",
+        "Do not use this recipe for selected-layer rename, exact same-text project item rename, layer source replacement, deep precomp/source duplication, project item movement, render queue changes, user-asset cleanup or broad project mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "rename-selected-project-items-typed-plan",
       "title": "Rename Selected Project Items Typed Plan",
       "status": "recipe",
