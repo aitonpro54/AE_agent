@@ -58,6 +58,8 @@ function createFixture(name) {
     "utf8"
   );
   fs.writeFileSync(path.join(source, "Layers", "Read_Only_Fixture.jsx"), "function readOnlyTool() { return true; }\n", "utf8");
+  fs.writeFileSync(path.join(source, "Layers", "Extend_All_Layers.jsx"), "function extendAllLayers() { return true; }\n", "utf8");
+  fs.writeFileSync(path.join(source, "Layers", "Shift_Layer_Start_Time.jsx"), "function shiftLayerStartTime() { return true; }\n", "utf8");
 
   fs.mkdirSync(path.join(target, "plans"), { recursive: true });
   fs.mkdirSync(path.join(target, "scripts"), { recursive: true });
@@ -211,6 +213,21 @@ function posterizeEntry(overrides = {}) {
     implementation: {
       sliceId: "fixture-posterize-time-import",
       plannedPaths: ["scripts/imported-tools/posterize-time.js"]
+    },
+    ...overrides
+  });
+}
+
+function timingEntry(overrides = {}) {
+  return entry({
+    id: "tool-layers-extend-all-layers",
+    sourcePath: "Layers/Extend_All_Layers.jsx",
+    name: "Extend All Layers",
+    description: "Fixture generated layer timing candidate.",
+    suggestedTools: ["get_active_comp", "get_selected_layers", "set_layer_time_range", "stagger_layers", "get_comp_details"],
+    implementation: {
+      sliceId: "fixture-layer-timing-import",
+      plannedPaths: ["scripts/imported-tools/layer-timing.js"]
     },
     ...overrides
   });
@@ -566,6 +583,200 @@ function assertQueuedLedgerStaleBlockedStateIsRetried() {
   }
 }
 
+function assertResolutionTicketRequeuesBlockedFamily() {
+  const fixture = createFixture("resolution-family");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const first = timingEntry({
+      status: "blocked_live_lane_synthesis_incomplete",
+      failClosed: {
+        status: "blocked_live_lane_synthesis_incomplete",
+        reason: "candidate_tools_do_not_match_a_supported_auto_lane_family"
+      },
+      liveGate: { required: true, status: "blocked_live_lane_synthesis_incomplete" },
+      queueRank: 1
+    });
+    const second = timingEntry({
+      id: "tool-layers-shift-layer-start-time",
+      sourcePath: "Layers/Shift_Layer_Start_Time.jsx",
+      status: "blocked_live_lane_synthesis_incomplete",
+      failClosed: {
+        status: "blocked_live_lane_synthesis_incomplete",
+        reason: "candidate_tools_do_not_match_a_supported_auto_lane_family"
+      },
+      implementation: {
+        sliceId: "fixture-layer-shift-import",
+        plannedPaths: ["scripts/imported-tools/layer-shift.js"]
+      },
+      liveGate: { required: true, status: "blocked_live_lane_synthesis_incomplete" },
+      queueRank: 2
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [first, second]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const output = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        "fixture-resolution-family",
+        1,
+        fakeCodexEnv(binDir)
+      )
+    );
+    assert.strictEqual(output.status, "completed");
+    assert.strictEqual(output.resolutionQueue.openTicketCount, 0);
+    assert.strictEqual(output.resolutionQueue.terminalTicketCount, 1);
+    assert.deepStrictEqual(output.resolutionQueue.requeuedCandidateIds.sort(), [
+      "tool-layers-extend-all-layers",
+      "tool-layers-shift-layer-start-time"
+    ]);
+    assert.strictEqual(output.resolutionQueue.tickets[0].type, "live-lane-family");
+
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    const completed = ledger.entries.find((item) => item.id === "tool-layers-extend-all-layers");
+    const queued = ledger.entries.find((item) => item.id === "tool-layers-shift-layer-start-time");
+    assert.strictEqual(completed.status, "completed");
+    assert.strictEqual(completed.liveGate.synthesisFamily, "layer-timing-generated-only");
+    assert.strictEqual(queued.status, "queued");
+    assert.strictEqual(queued.liveGate.status, "passed");
+    assert.strictEqual(queued.liveGate.command, "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-timing-openai-cli-smoke");
+    assert(fs.existsSync(path.join(fixture.target, output.resolutionQueue.tickets[0].path)));
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function writeChildTimeoutEvidence(fixture, entryToRecover) {
+  const importerRunId = "queue-fixture-child-timeout-import";
+  const batchRunId = "fixture-child-timeout-import";
+  const batchId = "queue-batch-1-childtimeout";
+  const runRoot = path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-importer", importerRunId);
+  const childResultDir = path.join(runRoot, "implementation", "child-run-results");
+  fs.mkdirSync(childResultDir, { recursive: true });
+
+  const worktreePath = path.join(runRoot, "worktrees", batchId);
+  fs.mkdirSync(path.dirname(worktreePath), { recursive: true });
+  sh(fixture.target, ["git", "worktree", "add", "--detach", worktreePath, "HEAD"]);
+  const recoveredPath = "scripts/imported-tools/recovered-child-timeout.js";
+  fs.mkdirSync(path.join(worktreePath, "scripts", "imported-tools"), { recursive: true });
+  fs.writeFileSync(
+    path.join(worktreePath, recoveredPath),
+    "// recovered from timed-out child\nmodule.exports = 'child-timeout';\n",
+    "utf8"
+  );
+
+  const childResult = {
+    schema: "generic-repo-tool-importer.implementation-child-run-result.v1",
+    runId: importerRunId,
+    manifestHash: "fixture-child-timeout",
+    batchId,
+    status: "failed_timeout",
+    timeoutMs: 600000,
+    plannedPaths: [recoveredPath],
+    changedPaths: [recoveredPath],
+    unplannedPaths: [],
+    plannedPathGate: "passed",
+    actualWorktreePath: worktreePath,
+    actualWorktreeRelativePath: path.relative(fixture.target, worktreePath).replace(/\\/g, "/"),
+    worktreeCreated: true,
+    childRunCreated: true,
+    controlledMergeApplied: false,
+    validationCommandsRun: false,
+    liveCepAeRun: false,
+    localOllamaUsed: false,
+    fallbackProviderUsed: false,
+    dependencyChanged: false,
+    productRuntimeEdited: false
+  };
+  fs.writeFileSync(path.join(childResultDir, `${batchId}.json`), `${JSON.stringify(childResult, null, 2)}\n`, "utf8");
+
+  const batchReportPath = path.join(
+    fixture.target,
+    ".codex-runtime",
+    "sdk",
+    "generic-repo-full-intake",
+    "fixture-child-timeout",
+    "queue-supervisor",
+    batchRunId,
+    "batch-report.json"
+  );
+  const relativeBatchReportPath = path.relative(fixture.target, batchReportPath).replace(/\\/g, "/");
+  fs.mkdirSync(path.dirname(batchReportPath), { recursive: true });
+  const batchReport = {
+    schema: "generic-repo-queue-supervisor.batch-report.v1",
+    ok: false,
+    status: "failed_during_import",
+    runId: batchRunId,
+    reportPath: relativeBatchReportPath,
+    importer: {
+      manifestPath: null,
+      runId: importerRunId,
+      result: null,
+      error: `implementation-child-run-timeout: ${batchId}`
+    },
+    items: [
+      {
+        candidateId: entryToRecover.id,
+        sourcePath: entryToRecover.sourcePath,
+        status: "failed_importer",
+        reason: `implementation-child-run-timeout: ${batchId}`,
+        importerRunId,
+        plannedPaths: [recoveredPath]
+      }
+    ]
+  };
+  fs.writeFileSync(batchReportPath, `${JSON.stringify(batchReport, null, 2)}\n`, "utf8");
+  return { batchReportPath: relativeBatchReportPath, recoveredPath };
+}
+
+function assertChildTimeoutResolutionRecoversImporterWorktreePatch() {
+  const fixture = createFixture("child-timeout-recovery");
+  try {
+    const failed = entry({
+      id: "tool-layers-child-timeout-recovery",
+      sourcePath: "Layers/Read_Only_Fixture.jsx",
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "not_required_for_read_only_or_skip" },
+      implementation: {
+        sliceId: "fixture-child-timeout-recovery",
+        plannedPaths: ["scripts/imported-tools/recovered-child-timeout.js"]
+      },
+      status: "failed_import",
+      queueRank: 1
+    });
+    const evidence = writeChildTimeoutEvidence(fixture, failed);
+    failed.failClosed = {
+      status: "failed_import",
+      reason: "batch-importer-failed: implementation-child-run-timeout: queue-batch-1-childtimeout",
+      batchReport: evidence.batchReportPath
+    };
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [failed]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const output = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        "fixture-child-timeout",
+        1
+      )
+    );
+    assert.strictEqual(output.status, "completed");
+    assert.strictEqual(output.items[0].status, "completed");
+    assert.strictEqual(output.items[0].importStatus, "imported_non_live_validated");
+    assert(fs.existsSync(path.join(fixture.target, evidence.recoveredPath)));
+    const recovered = fs.readFileSync(path.join(fixture.target, evidence.recoveredPath), "utf8");
+    assert(recovered.includes("child-timeout"));
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    assert.strictEqual(ledger.entries[0].status, "completed");
+    assert.strictEqual(ledger.entries[0].implementation.importerNonLiveReport.includes("recovery-validation-report.json"), true);
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertResumeFromState() {
   const fixture = createFixture("resume");
   try {
@@ -594,6 +805,8 @@ function main() {
   assertUnsafeCandidateSkipAndContinue();
   assertLiveLaneFailureEvidence();
   assertQueuedLedgerStaleBlockedStateIsRetried();
+  assertResolutionTicketRequeuesBlockedFamily();
+  assertChildTimeoutResolutionRecoversImporterWorktreePatch();
   assertResumeFromState();
   console.log(JSON.stringify({ ok: true, smoke: "generic-repo-full-intake" }, null, 2));
 }

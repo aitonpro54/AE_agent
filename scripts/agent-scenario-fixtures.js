@@ -1063,6 +1063,205 @@ function agentRenameFindReplaceScenarioPlans(runPrefix) {
   }));
 }
 
+function agentLayerTimingScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Layer Timing`;
+  const compName = `${base} Comp`;
+  const layerAName = `${base} Layer A`;
+  const layerBName = `${base} Layer B`;
+
+  return [
+    {
+      id: "generated-layer-timing",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "set_layer_time_range",
+        "stagger_layers",
+        "get_comp_details",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedLayerTiming: true,
+        compName,
+        layerExpectations: [
+          { name: layerAName, layerIndex: 1, startTime: 0.5, inPoint: 0.5, outPoint: 3 },
+          { name: layerBName, layerIndex: 2, startTime: 0.75, inPoint: 0.75, outPoint: 3.25 }
+        ]
+      },
+      plan: {
+        summary: "AUX-050 generated-only live QA for layer timing typed tools.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated layer timing comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 4, frameRate: 24, bgColor: [0.06, 0.08, 0.1], allowDuplicateName: false, openInViewer: false, comment: "AUX-050 generated-only layer timing validation" } },
+          { title: "Create first generated timing layer", tool: "create_solid_layer", args: { compName, name: layerAName, color: [0.18, 0.45, 0.9], width: 220, height: 160, pixelAspect: 1, startTime: 0, duration: 3.5 } },
+          { title: "Create second generated timing layer", tool: "create_solid_layer", args: { compName, name: layerBName, color: [0.9, 0.35, 0.18], width: 220, height: 160, pixelAspect: 1, startTime: 0, duration: 3.5 } },
+          { title: "Trim generated timing layers", tool: "set_layer_time_range", args: { compName, layerIndices: [1, 2], inPoint: 0.5, outPoint: 3 } },
+          { title: "Stagger generated timing layers", tool: "stagger_layers", args: { compName, layerIndices: [1, 2], startTime: 0.5, gap: 0.25, order: "indexAsc" } },
+          { title: "Read generated timing comp details", tool: "get_comp_details", args: { compName, includeLayers: true, layerLimit: 10 } },
+          { title: "Read first generated timing layer details", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } },
+          { title: "Read second generated timing layer details", tool: "get_layer_details", args: { compName, layerIndex: 2, includeProperties: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
+function agentLayerTransformScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Layer Transform`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Shape`;
+
+  return [
+    {
+      id: "generated-layer-transform",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "fit_layer_to_comp",
+        "set_layer_transform",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedLayerTransform: true,
+        compName,
+        layerName,
+        position: [320, 180],
+        opacity: 64
+      },
+      plan: {
+        summary: "AUX-050 generated-only live QA for layer transform and fit typed tools.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated transform comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.08, 0.09, 0.12], allowDuplicateName: false, openInViewer: false, comment: "AUX-050 generated-only transform validation" } },
+          { title: "Create generated transform shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [160, 90], position: [120, 90], fillColor: [0.25, 0.75, 0.95], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Fit generated transform shape to comp", tool: "fit_layer_to_comp", args: { compName, layerIndices: [1], mode: "contain", alignX: "center", alignY: "center" } },
+          { title: "Set generated transform read-back values", tool: "set_layer_transform", args: { compName, layerIndex: 1, position: [320, 180], opacity: 64 } },
+          { title: "Read generated transform layer details", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
+function agentProjectItemsScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Project Items`;
+  const folderName = `${base} Folder`;
+  const mainCompName = `${base} Main`;
+  const replacementName = `${base} Replacement`;
+  const renamedReplacementName = `${base} Replacement Renamed`;
+  const layerName = `${base} Plate`;
+
+  return [
+    {
+      id: "generated-project-items",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "create_project_folder",
+        "move_project_items_to_folder",
+        "replace_layer_source",
+        "rename_project_items",
+        "find_project_items",
+        "list_project_folder_items",
+        "get_comp_details"
+      ],
+      expectedReadBack: {
+        generatedProjectItems: true,
+        folderName,
+        mainCompName,
+        renamedReplacementName,
+        replacementName,
+        layerName
+      },
+      plan: {
+        summary: "AUX-050 generated-only live QA for project-item rename, folder, move, and source replacement typed tools.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated project-items main comp", tool: "create_comp", args: { name: mainCompName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.08, 0.1, 0.12], allowDuplicateName: false, openInViewer: false, comment: "AUX-050 generated-only project-items validation" } },
+          { title: "Create generated project-items replacement comp", tool: "create_comp", args: { name: replacementName, width: 320, height: 180, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.1, 0.08, 0.14], allowDuplicateName: false, openInViewer: false, comment: "AUX-050 generated-only replacement source" } },
+          { title: "Create generated project-items source layer", tool: "create_solid_layer", args: { compName: mainCompName, name: layerName, color: [0.35, 0.45, 0.9], width: 320, height: 180, pixelAspect: 1, startTime: 0, duration: 3 } },
+          { title: "Create generated project-items folder", tool: "create_project_folder", args: { name: folderName, allowExisting: false } },
+          { title: "Move generated replacement comp into generated folder", tool: "move_project_items_to_folder", args: { targetFolderName: folderName }, resultBindings: { itemIndices: "{{steps.2.itemIndex}}" } },
+          { title: "Replace generated layer source with generated comp", tool: "replace_layer_source", args: { compName: mainCompName, layerIndices: [1], sourceItemName: replacementName, sourceItemType: "comp", fixExpressions: true } },
+          { title: "Rename generated replacement project item", tool: "rename_project_items", args: { query: replacementName, type: "comp", exactName: true, limit: 1, mode: "exact", name: renamedReplacementName } },
+          { title: "Find generated project items after rename", tool: "find_project_items", args: { query: base, limit: 20, caseSensitive: true } },
+          { title: "List generated project-items folder contents", tool: "list_project_folder_items", args: { folderName, recursive: false, type: "comp", limit: 10 } },
+          { title: "Read generated project-items main comp", tool: "get_comp_details", args: { compName: mainCompName, includeLayers: true, layerLimit: 10 } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
+function agentEffectPropertyScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Effect Property`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Shape`;
+  const effectName = `${base} Fill`;
+
+  return [
+    {
+      id: "generated-effect-property",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "add_effect",
+        "get_effect_details",
+        "set_effect_property"
+      ],
+      expectedReadBack: {
+        generatedEffectProperty: true,
+        compName,
+        layerName,
+        effectName,
+        effectMatchName: "ADBE Fill",
+        propertyIndex: 3,
+        color: [0.95, 0.18, 0.22, 1]
+      },
+      plan: {
+        summary: "AUX-050 generated-only live QA for effect property typed tools.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated effect-property comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.08, 0.08, 0.1], allowDuplicateName: false, openInViewer: false, comment: "AUX-050 generated-only effect property validation" } },
+          { title: "Create generated effect-property shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [320, 180], position: [320, 180], fillColor: [0.2, 0.4, 0.85], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Add generated Fill effect", tool: "add_effect", args: { compName, layerIndex: 1, effect: "ADBE Fill", name: effectName } },
+          { title: "Inspect generated Fill effect before property set", tool: "get_effect_details", args: { compName, layerIndex: 1, effectName, includeProperties: true, propertyDepth: 1, propertyLimit: 20 } },
+          { title: "Set generated Fill color property", tool: "set_effect_property", args: { compName, layerIndex: 1, effectName, propertyIndex: 3, value: [0.95, 0.18, 0.22, 1] } },
+          { title: "Inspect generated Fill effect after property set", tool: "get_effect_details", args: { compName, layerIndex: 1, effectName, includeProperties: true, propertyDepth: 1, propertyLimit: 20 } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentAssortedCompositionGuidesScenarioPlans(runPrefix) {
   const base = `${runPrefix} Assorted Guides`;
   const compName = `${base} Comp`;
@@ -1860,10 +2059,14 @@ module.exports = {
   agentCompositionGuideScenarioPlans,
   agentDuplicateLayersScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
+  agentEffectPropertyScenarioPlans,
+  agentLayerTimingScenarioPlans,
+  agentLayerTransformScenarioPlans,
   agentManualTypedToolsScenarioPlans,
   agentMaskSafetyScenarioPlans,
   agentMarkerLifecycleScenarioPlans,
   agentNewToolsScenarioPlans,
+  agentProjectItemsScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
   agentResetWorkAreaScenarioPlans,
   agentScenarioPlans,

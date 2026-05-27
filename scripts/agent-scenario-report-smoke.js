@@ -14,7 +14,11 @@ const {
   agentBackgroundLayerScenarioPlans,
   agentCompositionGuideScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
+  agentEffectPropertyScenarioPlans,
+  agentLayerTimingScenarioPlans,
+  agentLayerTransformScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
+  agentProjectItemsScenarioPlans,
   agentResetWorkAreaScenarioPlans
 } = require("./agent-scenario-fixtures");
 
@@ -377,6 +381,61 @@ function assertCompositionGuideGeneratedOnlyFixture() {
   assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
 }
 
+function assertResolutionFamilyGeneratedOnlyFixtures() {
+  const [timing] = agentLayerTimingScenarioPlans("Codex QA AUX050 Fixture");
+  assert.strictEqual(timing.id, "generated-layer-timing");
+  assert.strictEqual(timing.expectedReadBack.generatedLayerTiming, true);
+  assert.deepStrictEqual(timing.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_solid_layer",
+    "create_solid_layer",
+    "set_layer_time_range",
+    "stagger_layers",
+    "get_comp_details",
+    "get_layer_details",
+    "get_layer_details"
+  ]);
+  assert(!timing.plan.steps.some((step) => step.tool === "run_extendscript"));
+
+  const [transform] = agentLayerTransformScenarioPlans("Codex QA AUX050 Fixture");
+  assert.strictEqual(transform.id, "generated-layer-transform");
+  assert.strictEqual(transform.expectedReadBack.generatedLayerTransform, true);
+  assert.deepStrictEqual(transform.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "fit_layer_to_comp",
+    "set_layer_transform",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(transform.plan.steps[3].args.opacity, 64);
+
+  const [projectItems] = agentProjectItemsScenarioPlans("Codex QA AUX050 Fixture");
+  assert.strictEqual(projectItems.id, "generated-project-items");
+  assert.strictEqual(projectItems.expectedReadBack.generatedProjectItems, true);
+  assert(projectItems.plan.steps.some((step) => step.tool === "move_project_items_to_folder"));
+  assert(projectItems.plan.steps.some((step) => step.tool === "replace_layer_source"));
+  assert(projectItems.plan.steps.some((step) => step.tool === "rename_project_items"));
+  assert.strictEqual(projectItems.plan.steps[4].resultBindings.itemIndices, "{{steps.2.itemIndex}}");
+
+  const [effectProperty] = agentEffectPropertyScenarioPlans("Codex QA AUX050 Fixture");
+  assert.strictEqual(effectProperty.id, "generated-effect-property");
+  assert.strictEqual(effectProperty.expectedReadBack.generatedEffectProperty, true);
+  assert.deepStrictEqual(effectProperty.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "add_effect",
+    "get_effect_details",
+    "set_effect_property",
+    "get_effect_details"
+  ]);
+  assert.strictEqual(effectProperty.plan.steps[4].args.propertyIndex, 3);
+
+  for (const scenario of [timing, transform, projectItems, effectProperty]) {
+    assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
+    assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
+  }
+}
+
 function main() {
   assertDakkshinGeneratedOnlyFixture();
   assertResetWorkAreaGeneratedOnlyFixture();
@@ -384,6 +443,7 @@ function main() {
   assertAssortedCompositionGuidesGeneratedOnlyFixture();
   assertCompositionGuideGeneratedOnlyFixture();
   assertBackgroundLayerGeneratedOnlyFixture();
+  assertResolutionFamilyGeneratedOnlyFixtures();
 
   const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "ae-agent-run-report-"));
   const artifact = writeAgentRunReport(fixtureReport(), {

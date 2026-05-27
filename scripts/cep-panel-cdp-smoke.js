@@ -10,10 +10,14 @@ const {
   agentCompositionGuideScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
   agentDuplicateLayersScenarioPlans,
+  agentEffectPropertyScenarioPlans,
+  agentLayerTimingScenarioPlans,
+  agentLayerTransformScenarioPlans,
   agentManualTypedToolsScenarioPlans,
   agentMaskSafetyScenarioPlans,
   agentMarkerLifecycleScenarioPlans,
   agentNewToolsScenarioPlans,
+  agentProjectItemsScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
   agentResetWorkAreaScenarioPlans,
   agentScenarioPlans
@@ -247,6 +251,78 @@ function openAiCliBackgroundLayerScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_BACKGROUND_LAYER_PREFIX || "Codex QA AUX041",
     scenarioFactory: agentBackgroundLayerScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliLayerTimingScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-layer-timing",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_LAYER_TIMING_PREFIX || "Codex QA AUX050",
+    scenarioFactory: agentLayerTimingScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliLayerTransformScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-layer-transform",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_LAYER_TRANSFORM_PREFIX || "Codex QA AUX050",
+    scenarioFactory: agentLayerTransformScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliProjectItemsScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-project-items",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_PROJECT_ITEMS_PREFIX || "Codex QA AUX050",
+    scenarioFactory: agentProjectItemsScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliEffectPropertyScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-effect-property",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_EFFECT_PROPERTY_PREFIX || "Codex QA AUX050",
+    scenarioFactory: agentEffectPropertyScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -4065,6 +4141,166 @@ async function verifyFindReplaceLayerRenameReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedLayerTimingReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 10
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const details = [];
+  for (const layerExpectation of expected.layerExpectations || []) {
+    const layer = layers.find((item) => item.name === layerExpectation.name);
+    if (!layer || !layer.index) {
+      throw new Error(`${scenario.id}: generated timing layer ${layerExpectation.name} was not found by read-back.`);
+    }
+    const layerDetails = await callBridgeTool("get_layer_details", {
+      compItemIndex: compMatch.itemIndex,
+      layerIndex: layer.index,
+      includeProperties: false
+    });
+    for (const field of ["startTime", "inPoint", "outPoint"]) {
+      if (!numbersMatch(layerExpectation[field], layerDetails[field], 0.01)) {
+        throw new Error(`${scenario.id}: generated timing ${field} mismatch for ${layerExpectation.name}; expected ${layerExpectation[field]}, got ${layerDetails[field]}.`);
+      }
+    }
+    details.push({
+      name: layer.name,
+      index: layer.index,
+      startTime: layerDetails.startTime,
+      inPoint: layerDetails.inPoint,
+      outPoint: layerDetails.outPoint
+    });
+  }
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      numLayers: comp.numLayers
+    },
+    layers: details
+  };
+}
+
+async function verifyGeneratedLayerTransformReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const details = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: 1,
+    includeProperties: false
+  });
+  if (!details || details.name !== expected.layerName) {
+    throw new Error(`${scenario.id}: generated transform layer ${expected.layerName} was not found by read-back.`);
+  }
+  const transform = details.transform || {};
+  const position = numberPreviewArray(transform.position);
+  const opacity = valuePreviewNumber(transform.opacity);
+  if (!numberArraysMatch(expected.position, position, 0.01)) {
+    throw new Error(`${scenario.id}: generated transform position read-back mismatch.`);
+  }
+  if (!numbersMatch(expected.opacity, opacity, 0.01)) {
+    throw new Error(`${scenario.id}: generated transform opacity read-back mismatch; expected ${expected.opacity}, got ${opacity}.`);
+  }
+  return {
+    ok: true,
+    layer: {
+      index: details.index,
+      name: details.name,
+      position,
+      opacity
+    }
+  };
+}
+
+async function verifyGeneratedProjectItemsReadBack(scenario, expected) {
+  const found = await callBridgeTool("find_project_items", {
+    query: expected.renamedReplacementName,
+    type: "comp",
+    exactName: true,
+    caseSensitive: true,
+    limit: 5
+  });
+  const renamed = found.matches && found.matches[0];
+  if (!renamed || !renamed.itemIndex) {
+    throw new Error(`${scenario.id}: renamed generated replacement comp was not found by read-back.`);
+  }
+  const folder = await callBridgeTool("list_project_folder_items", {
+    folderName: expected.folderName,
+    recursive: false,
+    type: "comp",
+    limit: 20
+  });
+  const folderItems = Array.isArray(folder.items) ? folder.items : [];
+  if (!folderItems.some((item) => item.name === expected.renamedReplacementName)) {
+    throw new Error(`${scenario.id}: generated folder did not contain renamed replacement comp.`);
+  }
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.mainCompName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 10
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const layer = layers.find((item) => item.name === expected.layerName);
+  if (!layer || !layer.index) {
+    throw new Error(`${scenario.id}: generated project-items layer ${expected.layerName} was not found by read-back.`);
+  }
+  return {
+    ok: true,
+    folder: {
+      name: expected.folderName,
+      containsComp: expected.renamedReplacementName,
+      returned: folder.returned
+    },
+    mainComp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      layerName: layer.name
+    },
+    renamedReplacement: {
+      itemIndex: renamed.itemIndex,
+      name: renamed.name
+    }
+  };
+}
+
+function effectPropertyValueMatches(properties, propertyIndex, expectedValue) {
+  const property = (properties || []).find((item) => Number(item.index) === Number(propertyIndex));
+  if (!property) return false;
+  return numberArraysMatch(expectedValue, property.value, 0.02);
+}
+
+async function verifyGeneratedEffectPropertyReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const details = await callBridgeTool("get_effect_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: 1,
+    effectName: expected.effectName,
+    includeProperties: true,
+    propertyDepth: 1,
+    propertyLimit: 20
+  });
+  if (!details || !details.effect) {
+    throw new Error(`${scenario.id}: generated effect ${expected.effectName} was not found by read-back.`);
+  }
+  if (expected.effectMatchName && details.effect.matchName !== expected.effectMatchName) {
+    throw new Error(`${scenario.id}: generated effect matchName mismatch; expected ${expected.effectMatchName}, got ${details.effect.matchName}.`);
+  }
+  if (!effectPropertyValueMatches(details.properties, expected.propertyIndex, expected.color)) {
+    throw new Error(`${scenario.id}: generated effect property value was not found by read-back.`);
+  }
+  return {
+    ok: true,
+    effect: {
+      name: details.effect.name,
+      matchName: details.effect.matchName,
+      propertiesReturned: details.propertiesReturned
+    }
+  };
+}
+
 async function verifyAssortedCompositionGuidesReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const comp = await callBridgeTool("get_comp_details", {
@@ -4453,6 +4689,22 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedBackgroundLayer) {
     return verifyGeneratedBackgroundLayerReadBack(scenario, expected);
+  }
+
+  if (expected.generatedLayerTiming) {
+    return verifyGeneratedLayerTimingReadBack(scenario, expected);
+  }
+
+  if (expected.generatedLayerTransform) {
+    return verifyGeneratedLayerTransformReadBack(scenario, expected);
+  }
+
+  if (expected.generatedProjectItems) {
+    return verifyGeneratedProjectItemsReadBack(scenario, expected);
+  }
+
+  if (expected.generatedEffectProperty) {
+    return verifyGeneratedEffectPropertyReadBack(scenario, expected);
   }
 
   if (expected.markerLifecycle) {
@@ -5098,6 +5350,22 @@ async function main() {
   }
   if (command === "agent-background-layer-openai-cli-smoke" || command === "full-ui-agent-background-layer-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliBackgroundLayerScenarioConfig());
+    return;
+  }
+  if (command === "agent-layer-timing-openai-cli-smoke" || command === "full-ui-agent-layer-timing-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliLayerTimingScenarioConfig());
+    return;
+  }
+  if (command === "agent-layer-transform-openai-cli-smoke" || command === "full-ui-agent-layer-transform-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliLayerTransformScenarioConfig());
+    return;
+  }
+  if (command === "agent-project-items-openai-cli-smoke" || command === "full-ui-agent-project-items-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliProjectItemsScenarioConfig());
+    return;
+  }
+  if (command === "agent-effect-property-openai-cli-smoke" || command === "full-ui-agent-effect-property-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliEffectPropertyScenarioConfig());
     return;
   }
   if (command === "openai-api-setup-smoke") {
