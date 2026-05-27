@@ -959,6 +959,111 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "rename-selected-layers-with-text-typed-plan",
+      "title": "Rename Selected Layers With Text Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "layer-name",
+        "rename",
+        "text",
+        "exact",
+        "selected-layers",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Rename selected layers to one explicit same exact text value, then read the layer names back.",
+        "appliesWhen": [
+          "The user asks to rename selected layers with a specific text string.",
+          "The workflow needs exact same-text selected-layer renaming without prefix, suffix, find/replace, numbered or lettered sequence semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedLayerIndices",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Selected layers verified by get_selected_layers before the rename mutation."
+        },
+        {
+          "name": "targetName",
+          "type": "string",
+          "required": true,
+          "description": "Explicit non-empty user-provided text to apply as the exact name for every selected layer."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists and selected layers are read before mutation.",
+        "The workflow changes only selected layer names to one exact user-provided text value.",
+        "Because multi-layer exact rename_layers appends numbers when one name targets multiple layers, the safe same-text adaptation uses one exact rename step per concrete selected layer."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/rename-selected-layers-with-text-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "rename_layers",
+          "get_comp_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read back the same comp and confirm each affected selected layer has the same exact requested text.",
+        "steps": [
+          "Run get_active_comp before mutation to capture comp identity.",
+          "Run get_selected_layers before mutation and bind concrete layerIndex values from that evidence.",
+          "Confirm one explicit non-empty target text.",
+          "Run one rename_layers step per selected layer with mode exact, a single layer index and the same explicit name.",
+          "Run get_comp_details after mutation and compare selected layer names with the exact requested text."
+        ],
+        "expectedEvidence": [
+          "Selected-layer exact text rename plans include get_selected_layers evidence before layerIndex values are bound.",
+          "Each rename_layers call reports changedCount:1 and before/after name evidence for one selected layer.",
+          "Post-run get_comp_details read-back shows every affected selected layer has the same exact requested text."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-layers-rename-selected-layers-with-text generic repository importer as advisory typed-plan coverage for exact same-text selected-layer renaming.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-27",
+          "from": "generic-repo-importer-tool-layers-rename-selected-layers-with-text",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Rename_Selected_Layers_With_Text.jsx into existing selected-layer rename typed tools; no source JSX copied. Because current rename_layers multi-layer exact mode appends unpadded numbers unless a template is used, same-text exact rename guidance uses one rename_layers call per concrete selected layer; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Use one exact rename_layers step per concrete selected layer when the requested behavior is the same exact text on every selected layer.",
+        "Do not use this recipe for prefix/suffix rename, numbered or lettered sequence rename, find/replace rename, project item rename, source relinking, layer timing changes, marker edits, render queue items, or broad cleanup.",
+        "Require a separate typed-tool contract for source-exact raw JSX prompt behavior, selection side effects, automatic UI ordering semantics, or any rename behavior that cannot be expressed with current rename_layers exact mode."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "rename-selected-layers-with-numbers-typed-plan",
       "title": "Rename Selected Layers With Numbers Typed Plan",
       "status": "recipe",

@@ -25,6 +25,7 @@ const IMPORTED_ADVISORY_IDS = [
   "reset-composition-work-area-typed-plan",
   "add-markers-to-selected-layers-typed-plan",
   "append-to-layer-name-typed-plan",
+  "rename-selected-layers-with-text-typed-plan",
   "rename-selected-layers-with-numbers-typed-plan",
   "rename-selected-layers-with-letters-typed-plan",
   "replace-text-in-layer-name-typed-plan",
@@ -276,6 +277,27 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /prefix/.test(item)), `${id}: verification must require prefix read-back evidence.`);
       assert(solution.notes.some((note) => /project item rename/.test(note)), `${id}: notes must keep project item rename out of scope.`);
       assert(solution.promotionHistory.some((entry) => /kmlan1/.test(entry.evidence)), `${id}: promotion evidence should mention kmlan1.`);
+    } else if (id === "rename-selected-layers-with-text-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "rename_layers", "get_comp_details"],
+        `${id}: imported exact-text layer rename workflow should stay on the narrow typed tool sequence.`
+      );
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("rename_layers"), `${id}: recipe should use the layer rename typed tool.`);
+      assert(text.includes('mode:"exact"'), `${id}: recipe should require exact rename mode.`);
+      assert(text.includes("one `rename_layers` step per concrete selected layer"), `${id}: recipe should require one exact rename per selected layer.`);
+      assert(text.includes("same exact text"), `${id}: recipe should document same exact text semantics.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp details read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /one rename_layers step per selected layer/.test(step)), `${id}: verification must include one rename step per selected layer.`);
+      assert(solution.verificationRecipe.steps.some((step) => /mode exact/.test(step)), `${id}: verification must require exact rename mode.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read comp details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /changedCount:1/.test(item)), `${id}: verification must require one-layer rename count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /same exact requested text/.test(item)), `${id}: verification must require same-text read-back evidence.`);
+      assert(solution.notes.some((note) => /one exact rename_layers step per concrete selected layer/.test(note)), `${id}: notes must document one exact rename per selected layer.`);
+      assert(solution.notes.some((note) => /project item rename/.test(note)), `${id}: notes must keep project item rename out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /Rename_Selected_Layers_With_Text/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else if (id === "rename-selected-layers-with-numbers-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -667,6 +689,21 @@ function assertActualRetrieval(registry) {
   assert(appendLayerNamePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
   assert(!/run_extendscript/i.test(appendLayerNamePromptSection), "selected-layer name-prefix guidance should not recommend raw ExtendScript.");
 
+  const exactTextLayerNameRetrieval = retrieveSolutionHints("Rename the selected layers to the exact text Scene Plate after inspecting the selection. Use the same exact text for every selected layer, not numbering.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(exactTextLayerNameRetrieval.ok, true);
+  assert(ids(exactTextLayerNameRetrieval).includes("rename-selected-layers-with-text-typed-plan"), "selected-layer exact-text rename advisory recipe should surface for same-text rename prompt.");
+  const exactTextLayerNamePromptSection = formatSolutionHintsForPrompt(exactTextLayerNameRetrieval);
+  assert(exactTextLayerNamePromptSection.includes("Rename Selected Layers With Text Typed Plan"), "prompt section should include selected-layer exact-text rename advisory title.");
+  assert(exactTextLayerNamePromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for exact-text layer rename workflows.");
+  assert(exactTextLayerNamePromptSection.includes("rename_layers"), "prompt section should prefer rename_layers for exact-text layer renaming.");
+  assert(exactTextLayerNamePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
+  assert(exactTextLayerNamePromptSection.includes("same exact"), "prompt section should preserve same exact text rename guidance.");
+  assert(!/run_extendscript/i.test(exactTextLayerNamePromptSection), "selected-layer exact-text rename guidance should not recommend raw ExtendScript.");
+
   const numberedLayerNameRetrieval = retrieveSolutionHints("Rename the selected layers with base name Shot and zero-padded numbers 001, 002 and 003 after inspecting the selection.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -868,6 +905,7 @@ function assertActualRetrieval(registry) {
       resetWorkArea: ids(resetWorkAreaRetrieval),
       addMarkers: ids(addMarkersRetrieval),
       appendLayerName: ids(appendLayerNameRetrieval),
+      exactTextLayerName: ids(exactTextLayerNameRetrieval),
       numberedLayerName: ids(numberedLayerNameRetrieval),
       letteredLayerName: ids(letteredLayerNameRetrieval),
       replaceLayerName: ids(replaceLayerNameRetrieval),
