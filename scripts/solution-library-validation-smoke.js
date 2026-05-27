@@ -35,7 +35,8 @@ const IMPORTED_ADVISORY_IDS = [
   "add-assorted-composition-guides-typed-plan",
   "add-background-layer-typed-plan",
   "add-composition-guide-typed-plan",
-  "add-posterize-time-adjustment-layer-typed-plan"
+  "add-posterize-time-adjustment-layer-typed-plan",
+  "center-composition-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -511,6 +512,28 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact timing semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Posterize_Time_Adjustment_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /AUX-045/.test(entry.evidence)), `${id}: promotion evidence should mention auto-lane synthesis context.`);
+    } else if (id === "center-composition-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "get_selected_layers", "get_layer_details", "set_layer_transform"],
+        `${id}: imported center composition workflow should stay on the narrow layer-transform typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: center composition workflow must be mutating.`);
+      assert(text.includes("composition center point"), `${id}: recipe should compute a typed composition center point.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence for selected workflows.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require target layer read-back.`);
+      assert(text.includes("set_layer_transform"), `${id}: recipe should use the transform typed tool.`);
+      assert(text.includes("viewer zoom/pan"), `${id}: recipe should fail closed for viewer centering semantics.`);
+      assert(text.includes("anchor-point or source-bounds recentering"), `${id}: recipe should fail closed for anchor/source-bounds semantics.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read comp dimensions.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must include selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_transform/.test(step)), `${id}: verification must include transform positioning.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /computed composition center point/.test(item)), `${id}: verification must require computed center evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /get_layer_details/.test(item)), `${id}: verification must require post-run layer detail evidence.`);
+      assert(solution.notes.some((note) => /native Center Composition UI command/.test(note)), `${id}: notes must reject native viewer command claims.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Center_Composition/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else {
       throw new Error(`Unhandled imported advisory solution quality checks: ${id}`);
     }
@@ -779,6 +802,21 @@ function assertActualRetrieval(registry) {
   assert(posterizeTimeAdjustmentPromptSection.includes("set_effect_property"), "prompt section should preserve property-setting evidence guidance.");
   assert(!/run_extendscript/i.test(posterizeTimeAdjustmentPromptSection), "posterize-time adjustment guidance should not recommend raw ExtendScript.");
 
+  const centerCompositionRetrieval = retrieveSolutionHints("Center the selected precomp layer in the active composition by placing it at the composition center, then read back the layer position.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(centerCompositionRetrieval.ok, true);
+  assert(ids(centerCompositionRetrieval).includes("center-composition-typed-plan"), "center composition advisory recipe should surface for selected precomp centering prompts.");
+  const centerCompositionPromptSection = formatSolutionHintsForPrompt(centerCompositionRetrieval);
+  assert(centerCompositionPromptSection.includes("Center Composition Typed Plan"), "prompt section should include center composition advisory title.");
+  assert(centerCompositionPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for center composition workflows.");
+  assert(centerCompositionPromptSection.includes("get_comp_details"), "prompt section should require comp dimension read-back for center composition workflows.");
+  assert(centerCompositionPromptSection.includes("set_layer_transform"), "prompt section should prefer set_layer_transform for center composition workflows.");
+  assert(centerCompositionPromptSection.includes("viewer zoom/pan"), "prompt section should preserve viewer-centering warning.");
+  assert(!/run_extendscript/i.test(centerCompositionPromptSection), "center composition guidance should not recommend raw ExtendScript.");
+
   return {
     contextRetrieval,
     alignRetrieval,
@@ -803,7 +841,8 @@ function assertActualRetrieval(registry) {
       assortedGuides: ids(assortedGuidesRetrieval),
       backgroundLayer: ids(backgroundLayerRetrieval),
       compositionGuide: ids(compositionGuideRetrieval),
-      posterizeTimeAdjustment: ids(posterizeTimeAdjustmentRetrieval)
+      posterizeTimeAdjustment: ids(posterizeTimeAdjustmentRetrieval),
+      centerComposition: ids(centerCompositionRetrieval)
     }
   };
 }

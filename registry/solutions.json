@@ -2151,6 +2151,117 @@
         "Do not infer selected layers from prior chat context or layer names; require get_selected_layers evidence for current selection state.",
         "Do not use this recipe for changing selection, selecting by type/label/randomness, deselecting layers, layer duplication, layer mutation, source relinking, render queue items, or broad timeline cleanup."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "center-composition-typed-plan",
+      "title": "Center Composition Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "layers",
+        "precomp",
+        "center",
+        "position",
+        "transform",
+        "selected-layers",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Center selected or explicit composition/precomp layers by setting their typed transform position to the target comp center point.",
+        "appliesWhen": [
+          "The user asks to center a composition, center a precomp layer, place selected comp artwork at the comp center, or re-center generated composition content inside the active comp.",
+          "Layer transform positioning to the comp center is acceptable instead of viewer zoom/pan centering or source-bounds recentering."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Active or explicit target composition whose width and height are read before computing the center point."
+        },
+        {
+          "name": "targetLayer",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Exactly one selected or explicitly identified layer unless the user explicitly asks to center multiple concrete layers."
+        }
+      ],
+      "targetAssumptions": [
+        "The safe adaptation centers layer transform position at [comp.width / 2, comp.height / 2] using typed read-back evidence.",
+        "The target layer is selected or explicitly identified before mutation; the workflow must not infer a layer from prior chat context.",
+        "Existing layer names, timing, sources, effects, masks, parenting, expressions and layer order are preserved.",
+        "Viewer zoom/pan centering, native Center Composition UI command behavior, anchor/source-bounds recentering, comp resize/crop, nested precomp source edits and parent/world-space conversion remain typed-tool gaps."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/center-composition-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "get_selected_layers",
+          "get_layer_details",
+          "set_layer_transform"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read comp dimensions and target layer details, set the layer position to the computed composition center point, then read back the centered position and unchanged layer membership.",
+        "steps": [
+          "Run get_active_comp and get_comp_details before mutation to capture target comp identity, width and height.",
+          "Run get_selected_layers for selected-layer requests and bind exactly one layerIndex unless the user explicitly requested multiple concrete layers.",
+          "Run get_layer_details before mutation to identify each target layer and current transform position.",
+          "Run set_layer_transform with position equal to [width / 2, height / 2] and leave other transform fields unchanged unless explicitly requested and supported.",
+          "Run get_layer_details and get_comp_details after mutation; fail closed if viewer zoom/pan, anchor/source-bounds recentering, comp resize/crop, nested source mutation or parent/world-space conversion is required."
+        ],
+        "expectedEvidence": [
+          "The comp center point is computed from get_comp_details width and height evidence.",
+          "Selected-layer plans include get_selected_layers evidence before layer indices are bound.",
+          "Post-run get_layer_details shows each target layer position equals the computed composition center point.",
+          "Post-run get_comp_details shows no unexpected user-layer deletion, rename, relink, timing change or layer-count change.",
+          "The plan reports viewer-centering, anchor/source-bounds recentering and parent/world-space conversion as unsupported by current typed tools."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-compositions-center-composition generic repository importer as advisory typed-plan coverage for centering explicit or selected layers at the comp center.",
+          "This detached child-run only updates planned recipe, registry, smoke, plan and handoff paths; parent importer owns validation and any generated-only live acceptance."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-27",
+          "from": "generic-repo-importer-tool-compositions-center-composition",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Center_Composition.jsx into existing typed tools as explicit layer transform positioning to the target composition center; no source JSX copied. Exact viewer centering, anchor/source-bounds recentering, comp resize/crop, nested source mutation and parent/world-space conversion require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "This recipe centers selected or explicit layer transform position at the target comp center; it does not run native viewer commands, change viewer zoom/pan, resize/crop comps, mutate nested source comps, or recenter anchor points or source bounds.",
+        "Require a separate typed-tool contract for native Center Composition UI command behavior, anchor/source-bounds recentering, parent/world-space conversion, comp resize/crop, or exact source JSX semantics.",
+        "Require current get_selected_layers or explicit get_layer_details evidence before mutating layer transform values; do not infer the target from prior chat context.",
+        "Do not use this recipe for render queue changes, expression edits, source relinking, template batch changes, layer cleanup, selection mutation, or broad composition mutation."
+      ]
     }
   ]
 }
