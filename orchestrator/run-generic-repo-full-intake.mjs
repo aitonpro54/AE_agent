@@ -39,6 +39,9 @@ const LIVE_LANE_READY_STATUSES = new Set([
   "reusable_lane_available",
 ]);
 const TERMINAL_ITEM_STATUSES = new Set([
+  "blocked_live_lane_synthesis_ambiguous",
+  "blocked_live_lane_synthesis_incomplete",
+  "blocked_live_lane_synthesis_unsafe",
   "blocked_live_lane_template_missing",
   "blocked_live_lane_validation_failed",
   "blocked_live_preflight_failed",
@@ -69,6 +72,77 @@ const DEPENDENCY_PATHS = new Set([
 const DEFAULT_PREFLIGHT_COMMANDS = Object.freeze([
   "node scripts/cep-panel-cdp-smoke.js inspect",
   "node scripts/cep-panel-cdp-smoke.js connector-status-smoke",
+]);
+const AUTO_LANE_UNSAFE_SIGNAL_FIELDS = Object.freeze([
+  "destructiveCleanup",
+  "thirdPartyAssumption",
+  "usesFileIo",
+  "usesRenderQueue",
+  "usesSettings",
+]);
+const AUTO_LANE_COMMON_NON_LIVE_COMMANDS = Object.freeze([
+  "node --check scripts/cep-panel-cdp-smoke.js",
+]);
+const AUTO_LANE_FAMILIES = Object.freeze([
+  {
+    id: "generated-shape-effect-layer",
+    requiredTools: ["create_shape_layer", "add_effect"],
+    allowedTools: [
+      "add_effect",
+      "create_shape_layer",
+      "get_active_comp",
+      "get_comp_details",
+      "get_effect_details",
+      "get_layer_details",
+      "list_effects",
+    ],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-background-layer-openai-cli-smoke",
+    proofLane: "background-layer",
+    scope:
+      "generated-only shape/effect layer family proof using create_shape_layer, add_effect, get_comp_details, and get_layer_details; candidate-specific native adjustment/guide semantics remain fail-closed in the recipe",
+  },
+  {
+    id: "generated-shape-layer-readback",
+    requiredTools: ["create_shape_layer"],
+    allowedTools: [
+      "create_shape_layer",
+      "get_active_comp",
+      "get_comp_details",
+      "get_layer_details",
+    ],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-composition-guide-openai-cli-smoke",
+    proofLane: "composition-guide",
+    scope:
+      "generated-only shape layer read-back family proof using create_shape_layer, get_comp_details, and get_layer_details; native guide-layer semantics remain fail-closed in the recipe",
+  },
+  {
+    id: "selected-layer-rename",
+    requiredTools: ["get_selected_layers", "rename_layers"],
+    allowedTools: [
+      "get_active_comp",
+      "get_comp_details",
+      "get_selected_layers",
+      "rename_layers",
+    ],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-rename-find-replace-openai-cli-smoke",
+    proofLane: "rename-find-replace",
+    scope:
+      "generated-only selected-layer rename family proof using get_selected_layers, rename_layers, and get_comp_details; candidate-specific naming conventions must be explicit in the recipe",
+  },
+  {
+    id: "selected-layer-duplicate",
+    requiredTools: ["get_selected_layers", "duplicate_layers"],
+    allowedTools: [
+      "duplicate_layers",
+      "get_active_comp",
+      "get_comp_details",
+      "get_selected_layers",
+    ],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-duplicate-layers-openai-cli-smoke",
+    proofLane: "duplicate-layers",
+    scope:
+      "generated-only selected-layer duplicate family proof using get_selected_layers, duplicate_layers, and get_comp_details; exact source placement semantics remain fail-closed in the recipe",
+  },
 ]);
 
 const HELP = `
@@ -540,6 +614,159 @@ function liveLaneTemplateFor(registry, candidate) {
   return registry.entries.find((entry) => entry.candidateId === candidate.id) || null;
 }
 
+function candidateTools(candidate) {
+  return sortedUnique(Array.isArray(candidate.suggestedTools) ? candidate.suggestedTools : []);
+}
+
+function unsafeSynthesisSignals(candidate) {
+  const signals = candidate.safetySignals && typeof candidate.safetySignals === "object"
+    ? candidate.safetySignals
+    : {};
+  return AUTO_LANE_UNSAFE_SIGNAL_FIELDS.filter((field) => signals[field] === true);
+}
+
+function familyRequirementMatches(family, tools) {
+  const toolSet = new Set(tools);
+  return family.requiredTools.every((tool) => toolSet.has(tool));
+}
+
+function familyAllowsAllTools(family, tools) {
+  const allowed = new Set(family.allowedTools);
+  return tools.every((tool) => allowed.has(tool));
+}
+
+function failClosedSynthesisReport({ candidate, reason, runId, status, tools, extra = {} }) {
+  return {
+    schema: "generic-repo-full-intake.auto-live-lane-synthesis.v1",
+    runId,
+    candidateId: candidate.id,
+    sourcePath: candidate.sourcePath,
+    status,
+    ok: false,
+    reason,
+    candidateTools: tools,
+    supportedFamilies: AUTO_LANE_FAMILIES.map((family) => ({
+      id: family.id,
+      allowedTools: family.allowedTools.slice(),
+      proofLane: family.proofLane,
+      requiredTools: family.requiredTools.slice(),
+    })),
+    ...extra,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function synthesizeLiveLaneTemplate(candidate, runId) {
+  const tools = candidateTools(candidate);
+  const unsafeSignals = unsafeSynthesisSignals(candidate);
+  if (!SAFE_CLASSIFICATIONS.has(candidate.classification)) {
+    return failClosedSynthesisReport({
+      candidate,
+      reason: `classification_not_allowed:${candidate.classification}`,
+      runId,
+      status: "blocked_live_lane_synthesis_unsafe",
+      tools,
+    });
+  }
+  if (unsafeSignals.length > 0) {
+    return failClosedSynthesisReport({
+      candidate,
+      extra: { unsafeSignals },
+      reason: `unsafe_safety_signals:${unsafeSignals.join(",")}`,
+      runId,
+      status: "blocked_live_lane_synthesis_unsafe",
+      tools,
+    });
+  }
+  if (tools.length === 0) {
+    return failClosedSynthesisReport({
+      candidate,
+      reason: "candidate_has_no_suggested_tools",
+      runId,
+      status: "blocked_live_lane_synthesis_incomplete",
+      tools,
+    });
+  }
+
+  const requirementMatches = AUTO_LANE_FAMILIES.filter((family) => familyRequirementMatches(family, tools));
+  const exactMatches = requirementMatches.filter((family) => familyAllowsAllTools(family, tools));
+  if (exactMatches.length > 1) {
+    return failClosedSynthesisReport({
+      candidate,
+      extra: { matchingFamilies: exactMatches.map((family) => family.id) },
+      reason: "candidate_tools_match_multiple_auto_lane_families",
+      runId,
+      status: "blocked_live_lane_synthesis_ambiguous",
+      tools,
+    });
+  }
+  if (requirementMatches.length === 0) {
+    return failClosedSynthesisReport({
+      candidate,
+      reason: "candidate_tools_do_not_match_a_supported_auto_lane_family",
+      runId,
+      status: "blocked_live_lane_synthesis_incomplete",
+      tools,
+    });
+  }
+  if (exactMatches.length === 0 && requirementMatches.length > 1) {
+    return failClosedSynthesisReport({
+      candidate,
+      extra: { matchingFamilies: requirementMatches.map((family) => family.id) },
+      reason: "candidate_tools_match_multiple_auto_lane_families",
+      runId,
+      status: "blocked_live_lane_synthesis_ambiguous",
+      tools,
+    });
+  }
+
+  const family = exactMatches[0] || requirementMatches[0];
+  const unsupportedTools = tools.filter((tool) => !family.allowedTools.includes(tool));
+  if (!familyAllowsAllTools(family, tools)) {
+    return failClosedSynthesisReport({
+      candidate,
+      extra: {
+        familyId: family.id,
+        unsupportedTools,
+      },
+      reason: `candidate_tools_exceed_family_contract:${family.id}`,
+      runId,
+      status: "blocked_live_lane_synthesis_incomplete",
+      tools,
+    });
+  }
+
+  const laneId = safeId(`auto-${family.id}-${candidate.id}-openai-cli`).slice(0, 96);
+  const synthesis = {
+    schema: "generic-repo-full-intake.auto-live-lane-synthesis.v1",
+    runId,
+    candidateId: candidate.id,
+    sourcePath: candidate.sourcePath,
+    status: "synthesized",
+    ok: true,
+    familyId: family.id,
+    proofLane: family.proofLane,
+    candidateTools: tools,
+    reason: "candidate_tools_safely_match_existing_typed_tool_family",
+    createdAt: new Date().toISOString(),
+  };
+  return {
+    ...synthesis,
+    template: {
+      candidateId: candidate.id,
+      command: family.command,
+      laneId,
+      nonLiveValidationCommands: AUTO_LANE_COMMON_NON_LIVE_COMMANDS.slice(),
+      plannedPaths: ["scripts/cep-panel-cdp-smoke.js"],
+      providerPath: "openai-cli",
+      scope: `${family.scope}; synthesized for ${candidate.id}`,
+      synthesis,
+      synthesized: true,
+      templateSource: "auto_synthesis",
+    },
+  };
+}
+
 function validateLiveLaneTemplate(template, candidate, targetRepo) {
   requireObject(template, `liveLaneTemplate:${candidate.id}`);
   requireString(template.candidateId, "liveLaneTemplate.candidateId");
@@ -673,30 +900,44 @@ function updateLedgerLiveGate({ candidate, ledger, ledgerPath, liveReport, targe
         ? liveReport.liveProof.logPath
         : normalizeRepoPath(path.relative(targetRepo, liveReport.reportPath)),
     autoLaneRunId: liveReport.runId,
+    synthesisEvidence: liveReport.synthesisReport || null,
+    synthesisFamily: template.synthesis?.familyId || null,
+    synthesized: template.synthesized === true,
+    templateSource: template.templateSource || "registry",
     updatedAt: new Date().toISOString(),
   };
   writeJson(ledgerPath, ledger);
 }
 
 function runAutoLiveLane({ candidate, ledger, ledgerPath, registry, runRoot, runId, targetRepo, timeoutMs }) {
-  const template = liveLaneTemplateFor(registry, candidate);
+  let template = liveLaneTemplateFor(registry, candidate);
   const laneRoot = path.join(runRoot, "candidates", safeId(candidate.id), "live-lane");
   const logDir = path.join(laneRoot, "logs");
   mkdirSync(logDir, { recursive: true });
+  let synthesisReport = null;
+  let synthesisReportPath = null;
 
   if (!template) {
-    const report = {
-      schema: "generic-repo-full-intake.live-lane-report.v1",
-      runId,
-      candidateId: candidate.id,
-      status: "blocked_live_lane_template_missing",
-      ok: false,
-      reason: "No live-lane template registered for this candidate.",
-      createdAt: new Date().toISOString(),
-    };
-    report.reportPath = path.join(laneRoot, "live-lane-report.json");
-    writeJson(report.reportPath, report);
-    return report;
+    synthesisReport = synthesizeLiveLaneTemplate(candidate, runId);
+    synthesisReportPath = path.join(laneRoot, "live-lane-synthesis.json");
+    writeJson(synthesisReportPath, synthesisReport);
+    if (!synthesisReport.ok) {
+      const report = {
+        schema: "generic-repo-full-intake.live-lane-report.v1",
+        runId,
+        candidateId: candidate.id,
+        status: synthesisReport.status,
+        ok: false,
+        reason: synthesisReport.reason,
+        synthesisReport: normalizeRepoPath(path.relative(targetRepo, synthesisReportPath)),
+        autoLaneSynthesis: synthesisReport,
+        createdAt: new Date().toISOString(),
+      };
+      report.reportPath = path.join(laneRoot, "live-lane-report.json");
+      writeJson(report.reportPath, report);
+      return report;
+    }
+    template = synthesisReport.template;
   }
 
   validateLiveLaneTemplate(template, candidate, targetRepo);
@@ -723,6 +964,8 @@ function runAutoLiveLane({ candidate, ledger, ledgerPath, registry, runRoot, run
       ok: false,
       failedCommand: nonLive.failed,
       nonLiveValidation: nonLive.results.map((entry) => commandEvidence(entry, targetRepo)),
+      synthesisReport: synthesisReportPath ? normalizeRepoPath(path.relative(targetRepo, synthesisReportPath)) : null,
+      templateSource: template.templateSource || "registry",
       createdAt: new Date().toISOString(),
     };
     report.reportPath = path.join(laneRoot, "live-lane-report.json");
@@ -752,6 +995,8 @@ function runAutoLiveLane({ candidate, ledger, ledgerPath, registry, runRoot, run
       failedCommand: preflight.failed,
       nonLiveValidation: nonLive.results.map((entry) => commandEvidence(entry, targetRepo)),
       preflight: preflight.results.map((entry) => commandEvidence(entry, targetRepo)),
+      synthesisReport: synthesisReportPath ? normalizeRepoPath(path.relative(targetRepo, synthesisReportPath)) : null,
+      templateSource: template.templateSource || "registry",
       createdAt: new Date().toISOString(),
     };
     report.reportPath = path.join(laneRoot, "live-lane-report.json");
@@ -779,6 +1024,8 @@ function runAutoLiveLane({ candidate, ledger, ledgerPath, registry, runRoot, run
       nonLiveValidation: nonLive.results.map((entry) => commandEvidence(entry, targetRepo)),
       preflight: preflight.results.map((entry) => commandEvidence(entry, targetRepo)),
       liveProof,
+      synthesisReport: synthesisReportPath ? normalizeRepoPath(path.relative(targetRepo, synthesisReportPath)) : null,
+      templateSource: template.templateSource || "registry",
       createdAt: new Date().toISOString(),
     };
     report.reportPath = path.join(laneRoot, "live-lane-report.json");
@@ -799,6 +1046,8 @@ function runAutoLiveLane({ candidate, ledger, ledgerPath, registry, runRoot, run
     nonLiveValidation: nonLive.results.map((entry) => commandEvidence(entry, targetRepo)),
     preflight: preflight.results.map((entry) => commandEvidence(entry, targetRepo)),
     liveProof,
+    synthesisReport: synthesisReportPath ? normalizeRepoPath(path.relative(targetRepo, synthesisReportPath)) : null,
+    templateSource: template.templateSource || "registry",
     createdAt: new Date().toISOString(),
   };
   report.reportPath = path.join(laneRoot, "live-lane-report.json");

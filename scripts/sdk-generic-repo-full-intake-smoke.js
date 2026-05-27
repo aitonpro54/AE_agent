@@ -52,6 +52,11 @@ function createFixture(name) {
     "function addCompositionGuide() { return true; }\n",
     "utf8"
   );
+  fs.writeFileSync(
+    path.join(source, "Compositions", "Add_Posterize_Time_Adjustment_Layer.jsx"),
+    "function addPosterizeTimeAdjustmentLayer() { return true; }\n",
+    "utf8"
+  );
   fs.writeFileSync(path.join(source, "Layers", "Read_Only_Fixture.jsx"), "function readOnlyTool() { return true; }\n", "utf8");
 
   fs.mkdirSync(path.join(target, "plans"), { recursive: true });
@@ -107,6 +112,9 @@ function createFixture(name) {
 }
 
 function removeFixture(root) {
+  if (process.env.KEEP_GENERIC_FULL_INTAKE_FIXTURES === "1") {
+    return;
+  }
   const parent = path.resolve(os.tmpdir());
   if (!root || !root.startsWith(`${parent}${path.sep}`)) {
     throw new Error(`refusing to remove unexpected temp path: ${root}`);
@@ -193,6 +201,21 @@ function entry(overrides = {}) {
   };
 }
 
+function posterizeEntry(overrides = {}) {
+  return entry({
+    id: "tool-compositions-add-posterize-time-adjustment-layer",
+    sourcePath: "Compositions/Add_Posterize_Time_Adjustment_Layer.jsx",
+    name: "Add Posterize Time Adjustment Layer",
+    description: "Fixture generated shape/effect-style layer candidate.",
+    suggestedTools: ["get_active_comp", "create_shape_layer", "add_effect", "get_layer_details"],
+    implementation: {
+      sliceId: "fixture-posterize-time-import",
+      plannedPaths: ["scripts/imported-tools/posterize-time.js"]
+    },
+    ...overrides
+  });
+}
+
 function validLedger(fixture, entries = null) {
   const ledgerEntries = entries || [entry()];
   return {
@@ -234,20 +257,23 @@ function writeLedger(fixture, ledger, name = "queue-ledger.json") {
 }
 
 function writeRegistry(fixture, overrides = {}) {
+  const entries = Object.prototype.hasOwnProperty.call(overrides, "entries")
+    ? overrides.entries
+    : [
+        {
+          candidateId: "tool-compositions-add-composition-guide",
+          laneId: "fixture-composition-guide-openai-cli",
+          command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-fixture-openai-cli-smoke",
+          providerPath: "openai-cli",
+          scope: "fixture generated-only OpenAI CLI lane",
+          plannedPaths: ["scripts/cep-panel-cdp-smoke.js"],
+          nonLiveValidationCommands: ["node --check scripts/cep-panel-cdp-smoke.js"],
+          ...(overrides.entry || {})
+        }
+      ];
   const registry = {
     schema: "generic-repo-live-lane-registry.v1",
-    entries: [
-      {
-        candidateId: "tool-compositions-add-composition-guide",
-        laneId: "fixture-composition-guide-openai-cli",
-        command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-fixture-openai-cli-smoke",
-        providerPath: "openai-cli",
-        scope: "fixture generated-only OpenAI CLI lane",
-        plannedPaths: ["scripts/cep-panel-cdp-smoke.js"],
-        nonLiveValidationCommands: ["node --check scripts/cep-panel-cdp-smoke.js"],
-        ...(overrides.entry || {})
-      }
-    ]
+    entries
   };
   const registryPath = path.join(fixture.root, "live-lane-registry.json");
   fs.writeFileSync(registryPath, `${JSON.stringify(registry, null, 2)}\n`, "utf8");
@@ -275,7 +301,7 @@ function runFullIntakeFixture(fixture, ledgerPath, registryPath, runId, maxItems
 }
 
 function assertCompletedCandidateAndAutoLane() {
-  const fixture = createFixture("completed-auto-lane");
+  const fixture = createFixture("registry-lane");
   try {
     const binDir = writeFakeCodex(fixture.root);
     const ledgerPath = writeLedger(fixture, validLedger(fixture));
@@ -285,7 +311,7 @@ function assertCompletedCandidateAndAutoLane() {
         fixture,
         ledgerPath,
         registryPath,
-        "fixture-completed-auto-lane",
+        "fixture-registry-lane",
         1,
         fakeCodexEnv(binDir)
       )
@@ -305,9 +331,87 @@ function assertCompletedCandidateAndAutoLane() {
     assert.strictEqual(completed.status, "completed");
     assert.strictEqual(completed.liveGate.status, "passed");
     assert.strictEqual(completed.liveGate.laneId, "fixture-composition-guide-openai-cli");
+    assert.strictEqual(completed.liveGate.templateSource, "registry");
+    assert.strictEqual(completed.liveGate.synthesized, false);
     assert.strictEqual(completed.implementation.commit, output.commits[0]);
     assert(fs.existsSync(path.join(fixture.target, "scripts", "imported-tools", "composition-guide.js")));
-    assert(fs.readFileSync(path.join(fixture.target, "plans", "target-app-execplan.md"), "utf8").includes("full-intake:fixture-completed-auto-lane:tool-compositions-add-composition-guide"));
+    assert(fs.readFileSync(path.join(fixture.target, "plans", "target-app-execplan.md"), "utf8").includes("full-intake:fixture-registry-lane:tool-compositions-add-composition-guide"));
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertSynthesizedAutoLaneCompletesWithoutRegistryEntry() {
+  const fixture = createFixture("synth-lane");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [posterizeEntry()]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const output = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        "fixture-synth-lane",
+        1,
+        fakeCodexEnv(binDir)
+      )
+    );
+    assert.strictEqual(output.status, "completed");
+    assert.strictEqual(output.items[0].candidateId, "tool-compositions-add-posterize-time-adjustment-layer");
+    assert.strictEqual(output.items[0].liveLaneStatus, "passed");
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    const completed = ledger.entries.find((item) => item.id === "tool-compositions-add-posterize-time-adjustment-layer");
+    assert.strictEqual(completed.status, "completed");
+    assert.strictEqual(completed.liveGate.status, "passed");
+    assert.strictEqual(completed.liveGate.templateSource, "auto_synthesis");
+    assert.strictEqual(completed.liveGate.synthesized, true);
+    assert.strictEqual(completed.liveGate.synthesisFamily, "generated-shape-effect-layer");
+    assert(completed.liveGate.laneId.includes("auto-generated-shape-effect-layer"));
+    assert(fs.existsSync(path.join(fixture.target, completed.liveGate.synthesisEvidence)));
+    assert(fs.existsSync(path.join(fixture.target, output.items[0].liveLaneReport)));
+    assert(fs.existsSync(path.join(fixture.target, "scripts", "imported-tools", "posterize-time.js")));
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertAutoLaneSynthesisFailClosedEvidence() {
+  const fixture = createFixture("synth-fail");
+  try {
+    const unsafe = posterizeEntry({
+      id: "tool-compositions-file-io-layer",
+      sourcePath: "Compositions/File_IO_Layer.jsx",
+      safetySignals: { usesFileIo: true },
+      queueRank: 1
+    });
+    const ambiguous = posterizeEntry({
+      id: "tool-layers-shape-and-rename-ambiguous",
+      sourcePath: "Layers/Shape_And_Rename_Ambiguous.jsx",
+      suggestedTools: ["get_active_comp", "get_selected_layers", "create_shape_layer", "add_effect", "rename_layers", "get_comp_details"],
+      safetySignals: {},
+      queueRank: 2
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [unsafe, ambiguous]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const output = parseJson(runFullIntakeFixture(fixture, ledgerPath, registryPath, "fixture-synth-fail", 2));
+    assert.strictEqual(output.status, "completed_with_blocked_candidates");
+    assert.deepStrictEqual(output.items.map((item) => item.status), [
+      "blocked_live_lane_synthesis_unsafe",
+      "blocked_live_lane_synthesis_ambiguous"
+    ]);
+    for (const item of output.items) {
+      assert(item.liveLaneReport, `${item.candidateId}: expected live lane report`);
+      const report = JSON.parse(fs.readFileSync(path.join(fixture.target, item.liveLaneReport), "utf8"));
+      assert.strictEqual(report.ok, false);
+      assert(report.synthesisReport, `${item.candidateId}: expected synthesis evidence path`);
+      const synthesis = JSON.parse(fs.readFileSync(path.join(fixture.target, report.synthesisReport), "utf8"));
+      assert.strictEqual(synthesis.status, item.status);
+      assert.strictEqual(synthesis.ok, false);
+      assert(Array.isArray(synthesis.candidateTools));
+    }
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);
@@ -411,6 +515,8 @@ function assertResumeFromState() {
 
 function main() {
   assertCompletedCandidateAndAutoLane();
+  assertSynthesizedAutoLaneCompletesWithoutRegistryEntry();
+  assertAutoLaneSynthesisFailClosedEvidence();
   assertUnsafeCandidateSkipAndContinue();
   assertLiveLaneFailureEvidence();
   assertResumeFromState();
