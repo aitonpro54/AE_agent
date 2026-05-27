@@ -1220,6 +1220,99 @@ function agentAssortedCompositionGuidesScenarioPlans(runPrefix) {
   }));
 }
 
+function agentCompositionGuideScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Composition Guide`;
+  const compName = `${base} Comp`;
+  const guideName = `${base} Overlay`;
+
+  return [
+    {
+      id: "generated-composition-guide",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "get_comp_details",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedCompositionGuide: true,
+        compName,
+        guideName,
+        layerCountAfter: 1,
+        guideSize: [1260, 720],
+        guidePosition: [640, 360],
+        strokeColor: [1, 0, 1],
+        strokeWidth: 20
+      },
+      plan: {
+        summary: "AUX-043 generated-only live QA for a generated composition guide overlay.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          {
+            title: "Create generated composition guide QA comp",
+            tool: "create_comp",
+            args: {
+              name: compName,
+              width: 1280,
+              height: 720,
+              pixelAspect: 1,
+              duration: 3,
+              frameRate: 24,
+              bgColor: [0.04, 0.04, 0.05],
+              allowDuplicateName: false,
+              openInViewer: false,
+              comment: "AUX-043 generated-only composition guide overlay validation"
+            }
+          },
+          {
+            title: "Create generated composition guide overlay",
+            tool: "create_shape_layer",
+            args: {
+              compName,
+              name: guideName,
+              shape: "rectangle",
+              size: [1260, 720],
+              position: [640, 360],
+              fillColor: [0.02, 0, 0.02],
+              strokeColor: [1, 0, 1],
+              strokeWidth: 20,
+              startTime: 0,
+              duration: 3
+            }
+          },
+          {
+            title: "Read generated composition guide comp",
+            tool: "get_comp_details",
+            args: {
+              compName,
+              includeLayers: true,
+              layerLimit: 10
+            }
+          },
+          {
+            title: "Read generated composition guide layer",
+            tool: "get_layer_details",
+            args: {
+              compName,
+              includeProperties: false
+            },
+            resultBindings: {
+              layerIndex: "{{steps.2.layer.index}}"
+            }
+          }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentBackgroundLayerScenarioPlans(runPrefix) {
   const base = `${runPrefix} Background Layer`;
   const compName = `${base} Comp`;
@@ -1764,6 +1857,7 @@ module.exports = {
   DEFAULT_RENDER_QUEUE_BASELINE_TOTAL,
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
+  agentCompositionGuideScenarioPlans,
   agentDuplicateLayersScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
   agentManualTypedToolsScenarioPlans,

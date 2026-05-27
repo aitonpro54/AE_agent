@@ -5,6 +5,7 @@ const { writeAgentRunReport } = require("./agent-scenario-report");
 const {
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
+  agentCompositionGuideScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
   agentDuplicateLayersScenarioPlans,
   agentManualTypedToolsScenarioPlans,
@@ -205,6 +206,24 @@ function openAiCliAssortedCompositionGuidesScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_ASSORTED_GUIDES_PREFIX || "Codex QA AUX039",
     scenarioFactory: agentAssortedCompositionGuidesScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliCompositionGuideScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-composition-guide",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_COMPOSITION_GUIDE_PREFIX || "Codex QA AUX043",
+    scenarioFactory: agentCompositionGuideScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -4009,6 +4028,53 @@ async function verifyAssortedCompositionGuidesReadBack(scenario, expected) {
   };
 }
 
+async function verifyCompositionGuideReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 10
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const guide = layers.find((layer) => layer.name === expected.guideName);
+  if (!guide || !guide.index) {
+    throw new Error(`${scenario.id}: generated composition guide layer ${expected.guideName} was not found by read-back.`);
+  }
+  if (typeof expected.layerCountAfter === "number" && Number(comp.numLayers) !== expected.layerCountAfter) {
+    throw new Error(`${scenario.id}: expected ${expected.layerCountAfter} generated composition guide layer(s), got ${comp.numLayers}.`);
+  }
+
+  const layerDetails = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: guide.index,
+    includeProperties: false
+  });
+  const position = numberPreviewArray(layerDetails.transform && layerDetails.transform.position);
+  if (!numberArraysMatch(expected.guidePosition, position, 0.01)) {
+    throw new Error(`${scenario.id}: generated composition guide position read-back mismatch.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      width: comp.width,
+      height: comp.height,
+      numLayers: comp.numLayers
+    },
+    guide: {
+      name: guide.name,
+      index: guide.index,
+      guideLayer: layerDetails.guideLayer,
+      position,
+      requestedSize: expected.guideSize,
+      requestedStrokeColor: expected.strokeColor,
+      requestedStrokeWidth: expected.strokeWidth
+    }
+  };
+}
+
 async function verifyGeneratedBackgroundLayerReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const comp = await callBridgeTool("get_comp_details", {
@@ -4263,6 +4329,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.assortedCompositionGuides) {
     return verifyAssortedCompositionGuidesReadBack(scenario, expected);
+  }
+
+  if (expected.generatedCompositionGuide) {
+    return verifyCompositionGuideReadBack(scenario, expected);
   }
 
   if (expected.generatedBackgroundLayer) {
@@ -4896,6 +4966,10 @@ async function main() {
   }
   if (command === "agent-assorted-composition-guides-openai-cli-smoke" || command === "full-ui-agent-assorted-composition-guides-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliAssortedCompositionGuidesScenarioConfig());
+    return;
+  }
+  if (command === "agent-composition-guide-openai-cli-smoke" || command === "full-ui-agent-composition-guide-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliCompositionGuideScenarioConfig());
     return;
   }
   if (command === "agent-background-layer-openai-cli-smoke" || command === "full-ui-agent-background-layer-openai-cli-smoke") {

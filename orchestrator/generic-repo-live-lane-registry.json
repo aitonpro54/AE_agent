@@ -1,0 +1,25 @@
+{
+  "schema": "generic-repo-live-lane-registry.v1",
+  "entries": [
+    {
+      "candidateId": "tool-compositions-add-composition-guide",
+      "laneId": "aux043-composition-guide-openai-cli",
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-composition-guide-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "scope": "generated-only composition guide overlay fixture with create_comp, create_shape_layer, get_comp_details/get_layer_details, read-only CEP/CDP preflight, semantic verification, and cleanup proof; native guideLayer semantics remain fail-closed",
+      "plannedPaths": [
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/agent-planner-corpus-smoke.js",
+        "node scripts/semantic-verification-smoke.js"
+      ]
+    }
+  ]
+}
