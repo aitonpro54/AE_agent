@@ -1944,6 +1944,95 @@
         "This recipe measures layer transform position values only; bounds, anchor-point-relative geometry, parenting/world-space conversion and rendered-pixel distances require a separate typed-tool contract.",
         "Do not use this recipe for moving, aligning, parenting, keyframing, renaming, duplicating, trimming, source relinking, render queue items, or broad timeline cleanup."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "layer-selection-get-typed-plan",
+      "title": "Layer Selection Get Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "selection",
+        "layers",
+        "selected-layers",
+        "read-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Read the current selected layer selection snapshot through get_selected_layers, with optional layer detail read-back and no selection mutation.",
+        "appliesWhen": [
+          "The user asks to get, read, show or list the currently selected layers.",
+          "The workflow needs selected layer indices and names before deciding whether a later operation is safe."
+        ]
+      },
+      "inputs": [],
+      "targetAssumptions": [
+        "An active composition exists before selected-layer state is reported.",
+        "Current layer selection is read from typed get_selected_layers evidence, not inferred from previous chat context or visible layer names.",
+        "Empty selection is a valid read-only result and must not trigger raw script execution or guessed fallback behavior.",
+        "Additional layer details are read only for concrete layerIndex values returned by get_selected_layers."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/layer-selection-get-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and selected-layer state, then confirm the reported count, indices and names come from typed evidence.",
+        "steps": [
+          "Run get_active_comp before reporting to capture active comp identity.",
+          "Run get_selected_layers and use the returned layers as the complete selection snapshot.",
+          "Report selected layer count, layerIndex values and names exactly from the selected-layer evidence.",
+          "Run get_layer_details only for concrete layerIndex values returned by get_selected_layers when more detail is needed.",
+          "Fail closed instead of changing selection state or using raw script execution when selection evidence is empty or unavailable."
+        ],
+        "expectedEvidence": [
+          "Layer-selection get plans include get_selected_layers evidence before selection details are reported.",
+          "The selected layer count equals the number of selected layer records returned by get_selected_layers.",
+          "Each reported layerIndex and name matches selected-layer evidence or optional get_layer_details read-back for the same index.",
+          "The response reports empty selection or unavailable evidence without mutating layer selection state."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-selection-layer-selection-get generic repository importer as advisory typed-plan coverage for read-only selected-layer selection reporting."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-27",
+          "from": "generic-repo-importer-tool-selection-layer-selection-get",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Layer_Selection_Get.jsx into existing read-only typed tools; no source JSX copied.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution uses normal Agent plan validation and read-only typed tools.",
+        "Do not infer selected layers from prior chat context or layer names; require get_selected_layers evidence for current selection state.",
+        "Do not use this recipe for changing selection, selecting by type/label/randomness, deselecting layers, layer duplication, layer mutation, source relinking, render queue items, or broad timeline cleanup."
+      ]
     }
   ]
 }

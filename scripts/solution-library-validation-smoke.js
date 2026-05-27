@@ -30,6 +30,7 @@ const IMPORTED_ADVISORY_IDS = [
   "replace-text-in-layer-name-typed-plan",
   "get-selected-layer-duration-typed-plan",
   "calculate-distance-between-layers-typed-plan",
+  "layer-selection-get-typed-plan",
   "duplicate-selected-layer-typed-plan",
   "add-assorted-composition-guides-typed-plan",
   "add-background-layer-typed-plan",
@@ -379,6 +380,27 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /guess a layer pair/.test(note)), `${id}: notes must reject layer-pair guessing.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must keep world-space or bounds semantics out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Calculate_Distance_Between_Layers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "layer-selection-get-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details"],
+        `${id}: imported layer-selection get workflow should stay on the narrow read-only typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: layer-selection get workflow must stay read-only.`);
+      assert.strictEqual(solution.requiredSafetyGates.allowMutations, false, `${id}: layer-selection reporting must not allow mutations.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("selected layer selection snapshot"), `${id}: recipe should document selection snapshot semantics.`);
+      assert(text.includes("selected layer count"), `${id}: recipe should report selected layer counts.`);
+      assert(text.includes("Do not change selection state"), `${id}: recipe should explicitly avoid selection mutations.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should use optional layer detail read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_active_comp/.test(step)), `${id}: verification must capture active comp evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include optional layer details read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /selected layer count/.test(item)), `${id}: verification must require selection count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /layerIndex/.test(item)), `${id}: verification must require selected layer index evidence.`);
+      assert(solution.notes.some((note) => /selection state/.test(note)), `${id}: notes must reject selection-state mutation.`);
+      assert(solution.notes.some((note) => /changing selection/.test(note)), `${id}: notes must keep selection mutation out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /Layer_Selection_Get/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else if (id === "duplicate-selected-layer-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -642,6 +664,20 @@ function assertActualRetrieval(registry) {
   assert(layerDistancePromptSection.includes("Euclidean distance"), "prompt section should preserve Euclidean distance guidance.");
   assert(!/run_extendscript/i.test(layerDistancePromptSection), "layer-distance guidance should not recommend raw ExtendScript.");
 
+  const layerSelectionGetRetrieval = retrieveSolutionHints("Get the current selected layer selection and report the selected layer count, indexes and names without changing selection.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(layerSelectionGetRetrieval.ok, true);
+  assert(ids(layerSelectionGetRetrieval).includes("layer-selection-get-typed-plan"), "layer-selection get advisory recipe should surface for selected layer selection prompts.");
+  const layerSelectionGetPromptSection = formatSolutionHintsForPrompt(layerSelectionGetRetrieval);
+  assert(layerSelectionGetPromptSection.includes("Layer Selection Get Typed Plan"), "prompt section should include layer-selection get advisory title.");
+  assert(layerSelectionGetPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for selection reporting.");
+  assert(layerSelectionGetPromptSection.includes("get_layer_details"), "prompt section should preserve optional layer-detail read-back guidance.");
+  assert(layerSelectionGetPromptSection.includes("selected layer count"), "prompt section should preserve selected layer count guidance.");
+  assert(!/run_extendscript/i.test(layerSelectionGetPromptSection), "layer-selection get guidance should not recommend raw ExtendScript.");
+
   const duplicateSelectedLayerRetrieval = retrieveSolutionHints("Duplicate the selected layer after inspecting the selected layer first, then read back the duplicate layer.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -719,6 +755,7 @@ function assertActualRetrieval(registry) {
       replaceLayerName: ids(replaceLayerNameRetrieval),
       selectedLayerDuration: ids(selectedLayerDurationRetrieval),
       layerDistance: ids(layerDistanceRetrieval),
+      layerSelectionGet: ids(layerSelectionGetRetrieval),
       duplicateSelectedLayer: ids(duplicateSelectedLayerRetrieval),
       assortedGuides: ids(assortedGuidesRetrieval),
       backgroundLayer: ids(backgroundLayerRetrieval),
