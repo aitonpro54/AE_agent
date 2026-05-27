@@ -28,7 +28,8 @@ const IMPORTED_ADVISORY_IDS = [
   "rename-selected-layers-with-numbers-typed-plan",
   "rename-selected-layers-with-letters-typed-plan",
   "replace-text-in-layer-name-typed-plan",
-  "get-selected-layer-duration-typed-plan"
+  "get-selected-layer-duration-typed-plan",
+  "duplicate-selected-layer-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -353,6 +354,29 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /primary selected layer/.test(note)), `${id}: notes must reject primary-selection guessing.`);
       assert(solution.notes.some((note) => /changing layer duration/.test(note)), `${id}: notes must keep timing mutation out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Get_Selected_Layer_Duration/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "duplicate-selected-layer-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "duplicate_layers", "get_comp_details"],
+        `${id}: imported selected-layer duplicate workflow should stay on the narrow typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: duplicate selected layer workflow must be mutating.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("duplicate_layers"), `${id}: recipe should use the duplicate_layers typed tool.`);
+      assert(text.includes("sourceNames"), `${id}: recipe should require source-name guards.`);
+      assert(text.includes("postVerification.ok:true"), `${id}: recipe should require duplicate post-verification evidence.`);
+      assert(text.includes("exact below-source placement"), `${id}: recipe should fail closed for exact placement semantics.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp details read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /duplicate_layers/.test(step)), `${id}: verification must include duplicate_layers.`);
+      assert(solution.verificationRecipe.steps.some((step) => /below-source placement/.test(step)), `${id}: verification must fail closed for below-source placement.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read comp details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /postVerification\.ok:true/.test(item)), `${id}: verification must require duplicate post-verification evidence.`);
+      assert(solution.notes.some((note) => /get_selected_layers evidence/.test(note)), `${id}: notes must require selection evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require separate contract for exact placement/selection semantics.`);
+      assert(solution.notes.some((note) => /deep precomp\/source duplication/.test(note)), `${id}: notes must keep deep duplication out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /Duplicate_Selected_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /AUX-036/.test(entry.evidence)), `${id}: promotion evidence should mention reusable live lane proof.`);
     } else {
       throw new Error(`Unhandled imported advisory solution quality checks: ${id}`);
     }
@@ -520,6 +544,20 @@ function assertActualRetrieval(registry) {
   assert(selectedLayerDurationPromptSection.includes("outPoint"), "prompt section should preserve timing-field duration guidance.");
   assert(!/run_extendscript/i.test(selectedLayerDurationPromptSection), "selected-layer duration guidance should not recommend raw ExtendScript.");
 
+  const duplicateSelectedLayerRetrieval = retrieveSolutionHints("Duplicate the selected layer after inspecting the selected layer first, then read back the duplicate layer.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(duplicateSelectedLayerRetrieval.ok, true);
+  assert(ids(duplicateSelectedLayerRetrieval).includes("duplicate-selected-layer-typed-plan"), "selected-layer duplicate advisory recipe should surface for selected duplicate prompt.");
+  const duplicateSelectedLayerPromptSection = formatSolutionHintsForPrompt(duplicateSelectedLayerRetrieval);
+  assert(duplicateSelectedLayerPromptSection.includes("Duplicate Selected Layer Typed Plan"), "prompt section should include selected-layer duplicate advisory title.");
+  assert(duplicateSelectedLayerPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for duplicate workflows.");
+  assert(duplicateSelectedLayerPromptSection.includes("duplicate_layers"), "prompt section should prefer duplicate_layers for selected-layer duplication.");
+  assert(duplicateSelectedLayerPromptSection.includes("get_comp_details"), "prompt section should require comp details read-back for selected-layer duplication.");
+  assert(!/run_extendscript/i.test(duplicateSelectedLayerPromptSection), "selected-layer duplicate guidance should not recommend raw ExtendScript.");
+
   return {
     contextRetrieval,
     alignRetrieval,
@@ -537,7 +575,8 @@ function assertActualRetrieval(registry) {
       numberedLayerName: ids(numberedLayerNameRetrieval),
       letteredLayerName: ids(letteredLayerNameRetrieval),
       replaceLayerName: ids(replaceLayerNameRetrieval),
-      selectedLayerDuration: ids(selectedLayerDurationRetrieval)
+      selectedLayerDuration: ids(selectedLayerDurationRetrieval),
+      duplicateSelectedLayer: ids(duplicateSelectedLayerRetrieval)
     }
   };
 }

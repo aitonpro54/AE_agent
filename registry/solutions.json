@@ -1391,6 +1391,117 @@
         "Do not guess a primary selected layer when multiple layers are selected; report all selected durations or ask which layer to inspect.",
         "Do not use this recipe for changing layer duration, trimming layers, aligning layers, marker edits, name changes, source relinking, render queue items, or broad timeline cleanup."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "duplicate-selected-layer-typed-plan",
+      "title": "Duplicate Selected Layer Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "selected-layers",
+        "duplicate",
+        "copy",
+        "clone",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool",
+        "duplicate_layers"
+      ],
+      "intent": {
+        "summary": "Duplicate selected layer(s) through duplicate_layers after selected-layer evidence, then read source/duplicate pairs back.",
+        "appliesWhen": [
+          "The user asks to duplicate, copy or clone the selected layer.",
+          "The workflow needs selected-layer duplication through the existing duplicate_layers typed tool without source relinking or layer deletion."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedLayerIndices",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Selected layers verified by get_selected_layers before the duplicate mutation."
+        },
+        {
+          "name": "sourceNames",
+          "type": "array",
+          "required": true,
+          "description": "Selected source layer names paired with layerIndices for duplicate_layers source guards."
+        },
+        {
+          "name": "nameSuffix",
+          "type": "string",
+          "required": false,
+          "description": "Optional explicit duplicate name suffix when requested or chosen before confirmation."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists and selected layers are read before mutation.",
+        "The workflow duplicates selected layers only after get_selected_layers evidence binds concrete layerIndices.",
+        "Exact below-source placement and final selection state are not promised by this recipe; those semantics require a separate typed-tool contract."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/duplicate-selected-layer-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "duplicate_layers",
+          "get_comp_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read back the same comp and confirm duplicate_layers returned expected source/duplicate pairs and layer-count delta.",
+        "steps": [
+          "Run get_active_comp before mutation to capture comp identity.",
+          "Run get_selected_layers before mutation and bind concrete layerIndex and source name values from that evidence.",
+          "Run duplicate_layers once with concrete selected layerIndices and paired sourceNames.",
+          "Run get_comp_details after mutation and compare source and duplicate names plus before/after layer counts.",
+          "Fail closed when exact below-source placement or final selection state is required."
+        ],
+        "expectedEvidence": [
+          "Selected-layer duplicate plans include get_selected_layers evidence before layerIndices are bound.",
+          "duplicate_layers returns one source/duplicate pair for each requested selected layer and postVerification.ok:true.",
+          "Post-run get_comp_details read-back shows expected source and duplicate layers in the same comp."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-layers-duplicate-selected-layer generic repository importer as advisory typed-plan coverage for selected-layer duplication.",
+          "Live evidence reuses the M207 generated-only duplicate_layers OpenAI CLI lane rerun in AUX-036."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-27",
+          "from": "generic-repo-importer-tool-layers-duplicate-selected-layer",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Duplicate_Selected_Layer.jsx into existing typed tools; no source JSX copied. AUX-036 reran the M207 generated-only duplicate_layers OpenAI CLI lane as reusable live evidence.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require get_selected_layers evidence before binding selected layer indices; do not duplicate selection-only targets without read-only evidence.",
+        "Do not promise exact below-source placement or final selection state; require a separate typed-tool contract when those semantics matter.",
+        "Do not use this recipe for deep precomp/source duplication, layer deletion, source relinking, mask/path edits, timing changes, marker edits, render queue items, or broad cleanup."
+      ]
     }
   ]
 }
