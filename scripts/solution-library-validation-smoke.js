@@ -29,6 +29,7 @@ const IMPORTED_ADVISORY_IDS = [
   "rename-selected-layers-with-letters-typed-plan",
   "replace-text-in-layer-name-typed-plan",
   "get-selected-layer-duration-typed-plan",
+  "calculate-distance-between-layers-typed-plan",
   "duplicate-selected-layer-typed-plan",
   "add-assorted-composition-guides-typed-plan",
   "add-background-layer-typed-plan",
@@ -358,6 +359,26 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /primary selected layer/.test(note)), `${id}: notes must reject primary-selection guessing.`);
       assert(solution.notes.some((note) => /changing layer duration/.test(note)), `${id}: notes must keep timing mutation out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Get_Selected_Layer_Duration/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "calculate-distance-between-layers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details"],
+        `${id}: imported layer-distance workflow should stay on the narrow read-only typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: layer-distance workflow must stay read-only.`);
+      assert.strictEqual(solution.requiredSafetyGates.allowMutations, false, `${id}: distance reporting must not allow mutations.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should use layer detail read-back.`);
+      assert(text.includes("Euclidean distance"), `${id}: recipe should compute Euclidean distance from position evidence.`);
+      assert(text.includes("Do not guess a primary or nearest layer"), `${id}: recipe should fail closed for ambiguous multi-selection.`);
+      assert(text.includes("set_layer_transform"), `${id}: recipe should explicitly avoid transform mutations.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer details read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /Euclidean distance/.test(step)), `${id}: verification must compute Euclidean distance from position fields.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /position values/.test(item)), `${id}: verification must require position evidence.`);
+      assert(solution.notes.some((note) => /guess a layer pair/.test(note)), `${id}: notes must reject layer-pair guessing.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must keep world-space or bounds semantics out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /Calculate_Distance_Between_Layers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else if (id === "duplicate-selected-layer-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -607,6 +628,20 @@ function assertActualRetrieval(registry) {
   assert(selectedLayerDurationPromptSection.includes("outPoint"), "prompt section should preserve timing-field duration guidance.");
   assert(!/run_extendscript/i.test(selectedLayerDurationPromptSection), "selected-layer duration guidance should not recommend raw ExtendScript.");
 
+  const layerDistanceRetrieval = retrieveSolutionHints("Calculate the distance between the two selected layers from their position values without moving anything.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(layerDistanceRetrieval.ok, true);
+  assert(ids(layerDistanceRetrieval).includes("calculate-distance-between-layers-typed-plan"), "layer-distance advisory recipe should surface for selected layer distance prompts.");
+  const layerDistancePromptSection = formatSolutionHintsForPrompt(layerDistanceRetrieval);
+  assert(layerDistancePromptSection.includes("Calculate Distance Between Layers Typed Plan"), "prompt section should include layer-distance advisory title.");
+  assert(layerDistancePromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for layer distance workflows.");
+  assert(layerDistancePromptSection.includes("get_layer_details"), "prompt section should prefer get_layer_details for layer position read-back.");
+  assert(layerDistancePromptSection.includes("Euclidean distance"), "prompt section should preserve Euclidean distance guidance.");
+  assert(!/run_extendscript/i.test(layerDistancePromptSection), "layer-distance guidance should not recommend raw ExtendScript.");
+
   const duplicateSelectedLayerRetrieval = retrieveSolutionHints("Duplicate the selected layer after inspecting the selected layer first, then read back the duplicate layer.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -683,6 +718,7 @@ function assertActualRetrieval(registry) {
       letteredLayerName: ids(letteredLayerNameRetrieval),
       replaceLayerName: ids(replaceLayerNameRetrieval),
       selectedLayerDuration: ids(selectedLayerDurationRetrieval),
+      layerDistance: ids(layerDistanceRetrieval),
       duplicateSelectedLayer: ids(duplicateSelectedLayerRetrieval),
       assortedGuides: ids(assortedGuidesRetrieval),
       backgroundLayer: ids(backgroundLayerRetrieval),

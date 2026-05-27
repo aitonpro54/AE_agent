@@ -1839,6 +1839,111 @@
         "Use generated-prefix layer names and never delete, rename, relink or reorder existing user layers as part of this workflow.",
         "Do not use this recipe for template batch changes, layer cleanup, masks, expressions, source relinking, render queue items or broad composition mutation."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "calculate-distance-between-layers-typed-plan",
+      "title": "Calculate Distance Between Layers Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "selected-layers",
+        "distance",
+        "position",
+        "measurement",
+        "read-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Report Euclidean distance between two layers from read-only transform position evidence.",
+        "appliesWhen": [
+          "The user asks to calculate or measure the distance between two layers.",
+          "The workflow needs read-only layer position measurement without moving, aligning or otherwise mutating layers."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "layerPair",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Exactly two selected or explicitly identified layers verified by typed read-back before distance is reported."
+        },
+        {
+          "name": "measurementTime",
+          "type": "number",
+          "required": false,
+          "description": "Optional sample time in seconds; omit to use the active comp current time or typed-tool default sample time."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists and the two target layers are read before reporting distance.",
+        "Layer distance is computed from typed read-back transform position values, not from layer bounds, anchor points, parenting offsets or rendered pixels.",
+        "Multiple selected layers require asking for a concrete pair instead of guessing which two layers to measure.",
+        "If position values are unavailable from typed read-back, the workflow reports a typed-tool gap rather than falling back to raw script execution."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/calculate-distance-between-layers-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and two layer positions, then confirm the reported value equals Euclidean distance from the cited coordinates.",
+        "steps": [
+          "Run get_active_comp before reporting to capture active comp identity and current time when available.",
+          "Run get_selected_layers when the request targets selected layers, and bind exactly two concrete layerIndex values from that evidence.",
+          "Run get_layer_details for both target layers and read transform position evidence from the same comp and sample-time context.",
+          "Compute Euclidean distance from the two cited position values, including z only when both positions include numeric z components.",
+          "Fail closed when fewer or more than two layers are selected without an explicit pair, or when position evidence is unavailable."
+        ],
+        "expectedEvidence": [
+          "Layer-distance plans include get_selected_layers evidence before selected layer indices are bound.",
+          "get_layer_details read-back shows usable position values for both target layers in the same comp.",
+          "The reported distance equals the Euclidean distance computed from the cited coordinates.",
+          "The response reports ambiguous selection or missing position evidence as a typed-tool gap instead of mutating layers."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-layers-calculate-distance-between-layers generic repository importer as advisory typed-plan coverage for read-only layer distance measurement."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-27",
+          "from": "generic-repo-importer-tool-layers-calculate-distance-between-layers",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Calculate_Distance_Between_Layers.jsx into existing read-only typed tools; no source JSX copied.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution uses normal Agent plan validation and read-only typed tools.",
+        "Do not guess a layer pair when selection or explicit layer naming is ambiguous; ask for exactly two layers or report distances only for an explicitly requested pair.",
+        "This recipe measures layer transform position values only; bounds, anchor-point-relative geometry, parenting/world-space conversion and rendered-pixel distances require a separate typed-tool contract.",
+        "Do not use this recipe for moving, aligning, parenting, keyframing, renaming, duplicating, trimming, source relinking, render queue items, or broad timeline cleanup."
+      ]
     }
   ]
 }
