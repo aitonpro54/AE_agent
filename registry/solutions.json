@@ -1994,7 +1994,7 @@
         "postMutationReadBack": false
       },
       "verificationRecipe": {
-        "summary": "Read active comp and selected-layer state, then confirm the reported count, indices and names come from typed evidence.",
+        "summary": "Read active comp and selected-layer state, then confirm the selected layer count, indices and names come from typed evidence.",
         "steps": [
           "Run get_active_comp before reporting to capture active comp identity.",
           "Run get_selected_layers and use the returned layers as the complete selection snapshot.",
