@@ -415,7 +415,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert(projectItems.plan.steps.some((step) => step.tool === "move_project_items_to_folder"));
   assert(projectItems.plan.steps.some((step) => step.tool === "replace_layer_source"));
   assert(projectItems.plan.steps.some((step) => step.tool === "rename_project_items"));
-  assert.strictEqual(projectItems.plan.steps[4].resultBindings.itemIndices, "{{steps.2.itemIndex}}");
+  assert.strictEqual(projectItems.plan.steps[6].resultBindings.itemIndices, "{{steps.6.renamed.0.itemIndex}}");
 
   const [effectProperty] = agentEffectPropertyScenarioPlans("Codex QA AUX050 Fixture");
   assert.strictEqual(effectProperty.id, "generated-effect-property");

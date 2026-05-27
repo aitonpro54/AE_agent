@@ -1842,6 +1842,124 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "add-posterize-time-adjustment-layer-typed-plan",
+      "title": "Add Posterize Time Adjustment Layer Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "posterize-time",
+        "adjustment-layer",
+        "effect",
+        "time-stylization",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Add a generated Posterize Time adjustment layer with typed effect/property read-back while comp frame-rate and retiming semantics stay out of scope.",
+        "appliesWhen": [
+          "The user asks to add a Posterize Time adjustment layer, stepped-time look, low frame-rate motion effect, stop-motion timing look or posterized motion over a composition.",
+          "A generated adjustment-layer effect adaptation is acceptable instead of changing comp frame rate or retiming existing layers."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "A new generated comp created by the plan, the active comp, or an explicit existing comp target read back before adjustment-layer creation."
+        },
+        {
+          "name": "posterizeFrameRate",
+          "type": "number",
+          "required": false,
+          "description": "Optional frame-rate value to apply only after get_effect_details identifies the exact Posterize Time frame-rate property."
+        },
+        {
+          "name": "adjustmentLayerName",
+          "type": "string",
+          "required": false,
+          "description": "Optional generated layer name; must keep a generated prefix for cleanup/read-back safety."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow may add one generated adjustment layer and one ADBE Posterize Time effect but must not copy raw source script behavior.",
+        "Target comp dimensions, duration and pixel aspect are known from create_comp output or get_comp_details read-back before adjustment-layer creation.",
+        "Existing user layers are not deleted, renamed, relinked, retimed or reordered by this recipe.",
+        "Comp frame-rate mutation, time-remapping keyframes, nested precomp retiming, per-layer timing edits and exact stack/index placement remain typed-tool gaps."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/add-posterize-time-adjustment-layer-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "create_adjustment_layer",
+          "add_effect",
+          "get_effect_details",
+          "set_effect_property",
+          "get_comp_details",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read back the target comp, generated adjustment layer, ADBE Posterize Time effect and optional frame-rate property after mutation.",
+        "steps": [
+          "Run get_active_comp or get_comp_details before mutation to capture target comp identity, dimensions and duration.",
+          "Run create_adjustment_layer once with a generated-prefix name, full comp dimensions and comp duration.",
+          "Run add_effect with ADBE Posterize Time on the generated adjustment layer.",
+          "Run get_effect_details before any requested frame-rate mutation and identify the exact frame-rate property.",
+          "Run set_effect_property only when the frame-rate property evidence is unambiguous, then run get_effect_details again.",
+          "Run get_comp_details and get_layer_details after mutation and fail closed if comp frame-rate, retiming, nested precomp or exact stack/index semantics are required."
+        ],
+        "expectedEvidence": [
+          "Post-run get_layer_details shows one generated adjustment layer in the target comp with adjustmentLayer:true.",
+          "get_effect_details shows ADBE Posterize Time on the generated adjustment layer.",
+          "When a posterize frame rate is requested, effect details show the frame-rate property before and after set_effect_property.",
+          "Post-run get_comp_details shows no unexpected user-layer deletion, rename, relink, retiming or reorder.",
+          "The plan reports comp frame-rate mutation, time-remapping and exact stack/index behavior as unsupported by current typed tools."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-compositions-add-posterize-time-adjustment-layer generic repository importer as advisory typed-plan coverage for generated Posterize Time adjustment layers.",
+          "AUX-045 documented auto-lane synthesis readiness for this candidate family; this detached child-run only updates planned recipe, registry, smoke, plan and handoff paths."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-27",
+          "from": "generic-repo-importer-tool-compositions-add-posterize-time-adjustment-layer",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Add_Posterize_Time_Adjustment_Layer.jsx into existing typed tools as a generated adjustment layer with ADBE Posterize Time effect read-back; no source JSX copied. AUX-045 established the safe auto-lane synthesis context for this candidate family; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "This recipe creates a generated adjustment layer with ADBE Posterize Time; it does not change comp frame-rate, retime existing layers, add time-remapping keyframes, or alter nested precomp timing.",
+        "Require a separate typed-tool contract for exact comp frame-rate mutation, per-layer retiming, time-remapping, nested precomp timing, or exact source stack/index semantics.",
+        "Use generated-prefix layer names and never delete, rename, relink, retime or reorder existing user layers as part of this workflow.",
+        "Do not use this recipe for render queue changes, expression edits, source relinking, template batch changes, existing layer cleanup or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "calculate-distance-between-layers-typed-plan",
       "title": "Calculate Distance Between Layers Typed Plan",
       "status": "recipe",

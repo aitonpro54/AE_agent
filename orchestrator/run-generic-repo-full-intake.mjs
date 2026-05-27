@@ -1418,6 +1418,7 @@ function processLiveLaneResolutionTickets({ ledger, ledgerPath, registry, runId,
 function processImportFailureResolutionTickets({ ledger, runId, runRoot, targetRepo }) {
   const tickets = [];
   const requeuedCandidateIds = [];
+  const buckets = new Map();
   for (const entry of ledger.entries) {
     const kind = recoverableImportFailureKind(entry);
     if (!kind || !SAFE_CLASSIFICATIONS.has(entry.classification)) {
@@ -1429,13 +1430,21 @@ function processImportFailureResolutionTickets({ ledger, runId, runRoot, targetR
       reason: entry.failClosed?.reason || entry.implementation?.failureReason || kind,
       type: kind === "child_timeout" ? "child-timeout" : "import-retry",
     });
+    if (!buckets.has(groupId)) {
+      buckets.set(groupId, { entries: [], kind });
+    }
+    buckets.get(groupId).entries.push(entry);
+  }
+  for (const [groupId, bucket] of buckets) {
+    const representative = bucket.entries[0];
+    const kind = bucket.kind;
     const ticket = recordResolutionTicket({
-      affected: [entry],
+      affected: bucket.entries,
       evidence: {
-        batchReport: entry.failClosed?.batchReport || entry.implementation?.batchReport || null,
-        failureReason: entry.failClosed?.reason || entry.implementation?.failureReason || null,
-        familyId: entry.liveGate?.synthesisFamily || null,
-        retryNonce: safeId(`${groupId}-${sha256Text(`${entry.id}:${runId}`).slice(0, 8)}`),
+        batchReport: representative.failClosed?.batchReport || representative.implementation?.batchReport || null,
+        failureReason: representative.failClosed?.reason || representative.implementation?.failureReason || null,
+        familyId: representative.liveGate?.synthesisFamily || null,
+        retryNonce: safeId(`${groupId}-${sha256Text(`${bucket.entries.map((entry) => entry.id).sort().join(",")}:${runId}`).slice(0, 8)}`),
       },
       groupId,
       reason: kind === "child_timeout" ? "child_timeout_patch_recovery_queued" : "fresh_retry_queued_after_manifest_mismatch",
@@ -1446,26 +1455,28 @@ function processImportFailureResolutionTickets({ ledger, runId, runRoot, targetR
       type: kind === "child_timeout" ? "child-timeout" : "import-retry",
     });
     const retryNonce = ticket.evidence.retryNonce;
-    const recoveryIntent = kind === "child_timeout"
-      ? {
-          mode: "recover_child_timeout_patch",
-          batchReport: ticket.evidence.batchReport,
-          retryNonce,
-          ticketPath: ticket.isolation.ticketPath,
-        }
-      : {
-          mode: "retry_narrow_once",
-          previousFailure: ticket.evidence.failureReason,
-          retryNonce,
-          ticketPath: ticket.isolation.ticketPath,
-        };
-    requeueEntryAfterResolution(entry, ticket, {
-      recoveryAttemptCount: Number(entry.implementation?.recoveryAttemptCount || 0),
-      recoveryIntent,
-      retryNonce,
-    });
+    for (const entry of bucket.entries) {
+      const recoveryIntent = kind === "child_timeout"
+        ? {
+            mode: "recover_child_timeout_patch",
+            batchReport: entry.failClosed?.batchReport || entry.implementation?.batchReport || ticket.evidence.batchReport,
+            retryNonce,
+            ticketPath: ticket.isolation.ticketPath,
+          }
+        : {
+            mode: "retry_narrow_once",
+            previousFailure: entry.failClosed?.reason || entry.implementation?.failureReason || ticket.evidence.failureReason,
+            retryNonce,
+            ticketPath: ticket.isolation.ticketPath,
+          };
+      requeueEntryAfterResolution(entry, ticket, {
+        recoveryAttemptCount: Number(entry.implementation?.recoveryAttemptCount || 0),
+        recoveryIntent,
+        retryNonce,
+      });
+      requeuedCandidateIds.push(entry.id);
+    }
     tickets.push(ticket);
-    requeuedCandidateIds.push(entry.id);
   }
   return { requeuedCandidateIds, tickets };
 }
@@ -1622,6 +1633,56 @@ function spawnGitApply(targetRepo, args, label) {
   };
 }
 
+function spawnGit(targetRepo, args, label) {
+  const result = spawnSync("git", args, {
+    cwd: targetRepo,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  return {
+    ok: result.status === 0,
+    exitCode: result.status,
+    label,
+    stderr: result.stderr,
+    stdout: result.stdout,
+  };
+}
+
+function rollbackChildTimeoutPatch({ applyPaths, patchPath, targetRepo }) {
+  const reverse = spawnGitApply(targetRepo, ["-R", patchPath], "recovery-git-apply-reverse");
+  if (!reverse.ok) {
+    return {
+      ok: false,
+      reason: `reverse-failed:${reverse.stderr || reverse.stdout}`,
+    };
+  }
+  const unstage = spawnGit(targetRepo, ["restore", "--staged", "--source=HEAD", "--", ...applyPaths], "recovery-git-restore-staged");
+  if (!unstage.ok) {
+    return {
+      ok: false,
+      reason: `unstage-failed:${unstage.stderr || unstage.stdout}`,
+    };
+  }
+  const remainingDirty = gitChangedPaths(targetRepo).filter((repoPath) => applyPaths.includes(repoPath));
+  if (remainingDirty.length > 0) {
+    const restore = spawnGit(targetRepo, ["restore", "--worktree", "--source=HEAD", "--", ...remainingDirty], "recovery-git-restore-worktree");
+    if (!restore.ok) {
+      return {
+        ok: false,
+        reason: `worktree-restore-failed:${restore.stderr || restore.stdout}`,
+      };
+    }
+  }
+  const dirtyAfterRollback = gitChangedPaths(targetRepo).filter((repoPath) => applyPaths.includes(repoPath));
+  if (dirtyAfterRollback.length > 0) {
+    return {
+      ok: false,
+      reason: `rollback-left-dirty-paths:${dirtyAfterRollback.join(",")}`,
+    };
+  }
+  return { ok: true };
+}
+
 function buildDiffPatchFromWorktree({ applyPaths, patchPath, worktreePath }) {
   const untrackedExisting = applyPaths.filter((repoPath) => {
     const absolute = path.join(worktreePath, repoPath);
@@ -1729,9 +1790,9 @@ function recoverChildTimeoutPatch({ candidate, runId, runRoot, targetRepo, timeo
   validation.reportPath = normalizeRepoPath(path.relative(targetRepo, path.join(recoveryRoot, "recovery-validation-report.json")));
   writeJson(path.join(recoveryRoot, "recovery-validation-report.json"), validation);
   if (!validation.ok) {
-    const reverse = spawnGitApply(targetRepo, ["-R", patchPath], "recovery-git-apply-reverse");
-    if (!reverse.ok) {
-      throw new Error(`child-timeout-recovery-validation-failed-and-reverse-failed:${reverse.stderr || reverse.stdout}`);
+    const rollback = rollbackChildTimeoutPatch({ applyPaths, patchPath, targetRepo });
+    if (!rollback.ok) {
+      throw new Error(`child-timeout-recovery-validation-failed-and-rollback-failed:${rollback.reason}`);
     }
     throw new Error(`child-timeout-recovery-validation-failed:${validation.failedCommand?.label || "unknown"}`);
   }

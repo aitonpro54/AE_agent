@@ -34,7 +34,8 @@ const IMPORTED_ADVISORY_IDS = [
   "duplicate-selected-layer-typed-plan",
   "add-assorted-composition-guides-typed-plan",
   "add-background-layer-typed-plan",
-  "add-composition-guide-typed-plan"
+  "add-composition-guide-typed-plan",
+  "add-posterize-time-adjustment-layer-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -46,6 +47,7 @@ const AVAILABLE_TOOLS = [
   "get_render_queue_status",
   "create_comp",
   "create_shape_layer",
+  "create_adjustment_layer",
   "list_effect_presets",
   "list_effects",
   "add_effect",
@@ -483,6 +485,32 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for native guide semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Composition_Guide/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /AUX-043/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+    } else if (id === "add-posterize-time-adjustment-layer-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "create_adjustment_layer", "add_effect", "get_effect_details", "set_effect_property", "get_comp_details", "get_layer_details"],
+        `${id}: imported posterize-time adjustment workflow should stay on the narrow adjustment/effect typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: posterize-time adjustment workflow must be mutating.`);
+      assert(text.includes("create_adjustment_layer"), `${id}: recipe should use the adjustment-layer typed tool.`);
+      assert(text.includes("ADBE Posterize Time"), `${id}: recipe should require the Posterize Time matchName.`);
+      assert(text.includes("get_effect_details"), `${id}: recipe should require effect read-back.`);
+      assert(text.includes("set_effect_property"), `${id}: recipe should use property setting only after effect detail evidence.`);
+      assert(text.includes("frame-rate property"), `${id}: recipe should require frame-rate property evidence.`);
+      assert(text.includes("adjustmentLayer:true"), `${id}: recipe should require adjustment-layer read-back evidence.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require adjustment layer read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /create_adjustment_layer/.test(step)), `${id}: verification must include adjustment layer creation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /ADBE Posterize Time/.test(step)), `${id}: verification must include Posterize Time effect addition.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_effect_details/.test(step)), `${id}: verification must include effect read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /frame-rate property/.test(step)), `${id}: verification must require frame-rate property evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read adjustment layer details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /adjustmentLayer:true/.test(item)), `${id}: verification must require adjustmentLayer evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /ADBE Posterize Time/.test(item)), `${id}: verification must require Posterize Time effect evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /frame-rate property/.test(item)), `${id}: verification must require posterize frame-rate evidence.`);
+      assert(solution.notes.some((note) => /comp frame-rate/.test(note)), `${id}: notes must reject comp frame-rate mutation claims.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact timing semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Add_Posterize_Time_Adjustment_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /AUX-045/.test(entry.evidence)), `${id}: promotion evidence should mention auto-lane synthesis context.`);
     } else {
       throw new Error(`Unhandled imported advisory solution quality checks: ${id}`);
     }
@@ -736,6 +764,21 @@ function assertActualRetrieval(registry) {
   assert(compositionGuidePromptSection.includes("guideLayer=true"), "prompt section should preserve native guide-layer warning.");
   assert(!/run_extendscript/i.test(compositionGuidePromptSection), "composition guide guidance should not recommend raw ExtendScript.");
 
+  const posterizeTimeAdjustmentRetrieval = retrieveSolutionHints("Add a Posterize Time adjustment layer at 12 fps to the active comp and read back the effect.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(posterizeTimeAdjustmentRetrieval.ok, true);
+  assert(ids(posterizeTimeAdjustmentRetrieval).includes("add-posterize-time-adjustment-layer-typed-plan"), "posterize time adjustment advisory recipe should surface for posterize-time prompts.");
+  const posterizeTimeAdjustmentPromptSection = formatSolutionHintsForPrompt(posterizeTimeAdjustmentRetrieval);
+  assert(posterizeTimeAdjustmentPromptSection.includes("Add Posterize Time Adjustment Layer Typed Plan"), "prompt section should include posterize-time adjustment advisory title.");
+  assert(posterizeTimeAdjustmentPromptSection.includes("create_adjustment_layer"), "prompt section should prefer create_adjustment_layer for posterize-time adjustment layers.");
+  assert(posterizeTimeAdjustmentPromptSection.includes("ADBE Posterize Time"), "prompt section should preserve Posterize Time matchName guidance.");
+  assert(posterizeTimeAdjustmentPromptSection.includes("get_effect_details"), "prompt section should require effect read-back for posterize-time workflows.");
+  assert(posterizeTimeAdjustmentPromptSection.includes("set_effect_property"), "prompt section should preserve property-setting evidence guidance.");
+  assert(!/run_extendscript/i.test(posterizeTimeAdjustmentPromptSection), "posterize-time adjustment guidance should not recommend raw ExtendScript.");
+
   return {
     contextRetrieval,
     alignRetrieval,
@@ -759,7 +802,8 @@ function assertActualRetrieval(registry) {
       duplicateSelectedLayer: ids(duplicateSelectedLayerRetrieval),
       assortedGuides: ids(assortedGuidesRetrieval),
       backgroundLayer: ids(backgroundLayerRetrieval),
-      compositionGuide: ids(compositionGuideRetrieval)
+      compositionGuide: ids(compositionGuideRetrieval),
+      posterizeTimeAdjustment: ids(posterizeTimeAdjustmentRetrieval)
     }
   };
 }

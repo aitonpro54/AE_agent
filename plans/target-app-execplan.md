@@ -1783,6 +1783,19 @@
 - Passed live `get_bridge_status`, `ping_ae`, `node scripts/cep-panel-cdp-smoke.js inspect`, `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`, and broad `node scripts/cep-panel-cdp-smoke.js smoke`.
 - The broad live smoke generated a read-only Local/Ollama plan, recovered it through `Recovered saved structured plan through bridge proposal ...`, then completed dry run and read-only run without project mutation.
 
+### AUX-050 Generic Full-Intake Resolution Recovery
+
+- Added runtime-only resolution ticket recovery for generic full-intake blockers that previously failed closed: missing generated-only live verification/family/mapping and child import timeouts.
+- Resolution tickets are written under ignored `.codex-runtime/sdk/generic-repo-full-intake/<run-id>/resolution-tickets/`, group live-lane blockers by suggested tools, safety signals, and synthesis family, and keep shared tracked merges serial-only.
+- Added reusable generated-only family synthesis for layer timing, layer transform/fit, project item rename/source, and effect property typed-tool groups, each requiring existing typed tools, read-back, semantic verification, OpenAI CLI, no Local/Ollama, no fallback provider, and no broad CEP smoke.
+- Added narrow AUX-050 CEP scenario fixtures and read-back verifiers for those generated-only families; repaired acceptance to count `set_layer_transform` and `set_effect_property` as mutating typed tools and to read `get_layer_details` timing/identity through the returned `layer` object.
+- Child-timeout recovery now inspects importer-owned ignored worktrees, applies only planned non-forbidden paths, validates, and on validation failure rolls back both worktree and staged index state for the applied paths before retry/fail-closed handling.
+- Recovered the timed-out `tool-compositions-add-posterize-time-adjustment-layer` child patch into a generated adjustment-layer advisory recipe with `ADBE Posterize Time` read-back guidance, registry entry, and solution-library validation coverage; no source JSX was copied.
+- Grouped import-retry tickets so manifest-hash mismatch candidates sharing the same tools/signals/family produce one isolated ticket with all affected candidates instead of overwriting duplicate ticket files.
+- Validation passed before commit with `node --check` for `orchestrator/run-generic-repo-full-intake.mjs`, `scripts/agent-scenario-fixtures.js`, `scripts/agent-scenario-report-smoke.js`, `scripts/cep-panel-cdp-smoke.js`, and `scripts/solution-library-validation-smoke.js`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/sdk-generic-repo-full-intake-smoke.js`; `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`; and `git diff --check` with only LF-to-CRLF working-copy warnings.
+- Full-intake has not yet been rerun after this recovery milestone because the main queue must run from a clean committed target. Next step is to commit this milestone, rerun the required main command, import all newly safe candidates, and record terminal resolution evidence.
+- No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad/default CEP smoke, push, PR/GitHub automation, or non-generated user-asset mutation was performed.
+
 ### Handoff
 
 `.codex/handoff.md` is writable from the parent Codex process and is updated after milestone work. Use it as the primary continuation record. If a roadmap writer child hits local sandbox/ACL denial on `.codex/handoff.md`, record the handoff state in this active plan and let the supervisor/parent finalize the handoff file.

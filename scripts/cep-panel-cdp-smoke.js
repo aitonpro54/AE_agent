@@ -4160,17 +4160,18 @@ async function verifyGeneratedLayerTimingReadBack(scenario, expected) {
       layerIndex: layer.index,
       includeProperties: false
     });
+    const timing = layerDetails.layer || {};
     for (const field of ["startTime", "inPoint", "outPoint"]) {
-      if (!numbersMatch(layerExpectation[field], layerDetails[field], 0.01)) {
-        throw new Error(`${scenario.id}: generated timing ${field} mismatch for ${layerExpectation.name}; expected ${layerExpectation[field]}, got ${layerDetails[field]}.`);
+      if (!numbersMatch(layerExpectation[field], timing[field], 0.01)) {
+        throw new Error(`${scenario.id}: generated timing ${field} mismatch for ${layerExpectation.name}; expected ${layerExpectation[field]}, got ${timing[field]}.`);
       }
     }
     details.push({
       name: layer.name,
       index: layer.index,
-      startTime: layerDetails.startTime,
-      inPoint: layerDetails.inPoint,
-      outPoint: layerDetails.outPoint
+      startTime: timing.startTime,
+      inPoint: timing.inPoint,
+      outPoint: timing.outPoint
     });
   }
   return {
@@ -4191,7 +4192,8 @@ async function verifyGeneratedLayerTransformReadBack(scenario, expected) {
     layerIndex: 1,
     includeProperties: false
   });
-  if (!details || details.name !== expected.layerName) {
+  const layer = details && details.layer ? details.layer : {};
+  if (!layer || layer.name !== expected.layerName) {
     throw new Error(`${scenario.id}: generated transform layer ${expected.layerName} was not found by read-back.`);
   }
   const transform = details.transform || {};
@@ -4206,8 +4208,8 @@ async function verifyGeneratedLayerTransformReadBack(scenario, expected) {
   return {
     ok: true,
     layer: {
-      index: details.index,
-      name: details.name,
+      index: layer.index,
+      name: layer.name,
       position,
       opacity
     }
@@ -4228,13 +4230,13 @@ async function verifyGeneratedProjectItemsReadBack(scenario, expected) {
   }
   const folder = await callBridgeTool("list_project_folder_items", {
     folderName: expected.folderName,
-    recursive: false,
+    recursive: true,
     type: "comp",
     limit: 20
   });
   const folderItems = Array.isArray(folder.items) ? folder.items : [];
   if (!folderItems.some((item) => item.name === expected.renamedReplacementName)) {
-    throw new Error(`${scenario.id}: generated folder did not contain renamed replacement comp.`);
+    throw new Error(`${scenario.id}: generated folder did not contain renamed replacement comp; saw ${folderItems.map((item) => item.name).join(", ") || "no comp items"}.`);
   }
   const compMatch = await findGeneratedCompByExactName(scenario, expected.mainCompName);
   const comp = await callBridgeTool("get_comp_details", {
