@@ -26,7 +26,8 @@ const IMPORTED_ADVISORY_IDS = [
   "add-markers-to-selected-layers-typed-plan",
   "append-to-layer-name-typed-plan",
   "rename-selected-layers-with-numbers-typed-plan",
-  "rename-selected-layers-with-letters-typed-plan"
+  "rename-selected-layers-with-letters-typed-plan",
+  "replace-text-in-layer-name-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -301,6 +302,29 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /Do not infer AA\/AB/.test(note)), `${id}: notes must reject inferred double-letter suffixes.`);
       assert(solution.notes.some((note) => /project item rename/.test(note)), `${id}: notes must keep project item rename out of scope.`);
       assert(solution.promotionHistory.some((entry) => /kmlrl1/.test(entry.evidence)), `${id}: promotion evidence should mention kmlrl1.`);
+    } else if (id === "replace-text-in-layer-name-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "rename_layers", "get_comp_details"],
+        `${id}: imported find/replace layer rename workflow should stay on the narrow typed tool sequence.`
+      );
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("rename_layers"), `${id}: recipe should use the layer rename typed tool.`);
+      assert(text.includes('mode:"findReplace"'), `${id}: recipe should require findReplace rename mode.`);
+      assert(text.includes("literal find/replace only"), `${id}: recipe should document literal-only replacement.`);
+      assert(text.includes("true regex semantics"), `${id}: recipe should fail closed for true regex semantics.`);
+      assert(text.includes("caseSensitive"), `${id}: recipe should require explicit case-sensitivity behavior.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp details read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /mode findReplace/.test(step)), `${id}: verification must include findReplace rename mode.`);
+      assert(solution.verificationRecipe.steps.some((step) => /true regex semantics/.test(step)), `${id}: verification must fail closed for regex semantics.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read comp details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /changedCount/.test(item)), `${id}: verification must require rename count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /literal replacement/.test(item)), `${id}: verification must require literal replacement read-back evidence.`);
+      assert(solution.notes.some((note) => /RegEx semantics/.test(note)), `${id}: notes must reject source RegEx semantics for this recipe.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate typed-tool contract for regex behavior.`);
+      assert(solution.notes.some((note) => /project item rename/.test(note)), `${id}: notes must keep project item rename out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /Replace_Text_In_Layer_Name/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else {
       throw new Error(`Unhandled imported advisory solution quality checks: ${id}`);
     }
@@ -439,6 +463,21 @@ function assertActualRetrieval(registry) {
   assert(letteredLayerNamePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
   assert(!/run_extendscript/i.test(letteredLayerNamePromptSection), "selected-layer lettered rename guidance should not recommend raw ExtendScript.");
 
+  const replaceLayerNameRetrieval = retrieveSolutionHints("Replace Alpha with Beta in the selected layer names after inspecting the selection. Use literal text replacement, not regex.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(replaceLayerNameRetrieval.ok, true);
+  assert(ids(replaceLayerNameRetrieval).includes("replace-text-in-layer-name-typed-plan"), "selected-layer find/replace rename advisory recipe should surface for literal text replacement prompt.");
+  const replaceLayerNamePromptSection = formatSolutionHintsForPrompt(replaceLayerNameRetrieval);
+  assert(replaceLayerNamePromptSection.includes("Replace Text In Layer Name Typed Plan"), "prompt section should include selected-layer find/replace rename advisory title.");
+  assert(replaceLayerNamePromptSection.includes("literal"), "prompt section should preserve literal find/replace semantics.");
+  assert(replaceLayerNamePromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for find/replace layer rename workflows.");
+  assert(replaceLayerNamePromptSection.includes("rename_layers"), "prompt section should prefer rename_layers for find/replace layer renaming.");
+  assert(replaceLayerNamePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
+  assert(!/run_extendscript/i.test(replaceLayerNamePromptSection), "selected-layer find/replace rename guidance should not recommend raw ExtendScript.");
+
   return {
     contextRetrieval,
     alignRetrieval,
@@ -454,7 +493,8 @@ function assertActualRetrieval(registry) {
       addMarkers: ids(addMarkersRetrieval),
       appendLayerName: ids(appendLayerNameRetrieval),
       numberedLayerName: ids(numberedLayerNameRetrieval),
-      letteredLayerName: ids(letteredLayerNameRetrieval)
+      letteredLayerName: ids(letteredLayerNameRetrieval),
+      replaceLayerName: ids(replaceLayerNameRetrieval)
     }
   };
 }
