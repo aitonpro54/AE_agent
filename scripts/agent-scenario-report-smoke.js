@@ -11,6 +11,7 @@ const {
 } = require("./agent-scenario-report");
 const {
   agentDakkshinTypedToolsScenarioPlans,
+  agentRenameFindReplaceScenarioPlans,
   agentResetWorkAreaScenarioPlans
 } = require("./agent-scenario-fixtures");
 
@@ -199,9 +200,53 @@ function assertResetWorkAreaGeneratedOnlyFixture() {
   assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
 }
 
+function assertRenameFindReplaceGeneratedOnlyFixture() {
+  const [scenario] = agentRenameFindReplaceScenarioPlans("Codex QA AUX032 Fixture");
+  assert(scenario, "AUX-032 rename findReplace scenario should be registered.");
+  assert.strictEqual(scenario.id, "generated-rename-find-replace");
+  assert.strictEqual(scenario.cleanupPrefix, "Codex QA AUX032 Fixture Rename Find Replace");
+  assert.deepStrictEqual(scenario.expectedTools, [
+    "create_comp",
+    "create_solid_layer",
+    "create_text_layer",
+    "get_comp_details",
+    "rename_layers"
+  ]);
+  assert.strictEqual(scenario.expectedStepCount, 6);
+  assert.strictEqual(scenario.expectedMutatingCount, 4);
+  assert.strictEqual(scenario.expectedReadBack.findReplaceLayerRename, true);
+  assert.strictEqual(scenario.expectedReadBack.compName.indexOf(scenario.cleanupPrefix), 0);
+  assert.deepStrictEqual(scenario.expectedReadBack.beforeNames, [
+    "Codex QA AUX032 Fixture Rename Find Replace Alpha Plate",
+    "Codex QA AUX032 Fixture Rename Find Replace Alpha Text"
+  ]);
+  assert.deepStrictEqual(scenario.expectedReadBack.afterNames, [
+    "Codex QA AUX032 Fixture Rename Find Replace Beta Plate",
+    "Codex QA AUX032 Fixture Rename Find Replace Beta Text"
+  ]);
+
+  const toolSequence = scenario.plan.steps.map((step) => step.tool);
+  assert.deepStrictEqual(toolSequence, [
+    "create_comp",
+    "create_solid_layer",
+    "create_text_layer",
+    "get_comp_details",
+    "rename_layers",
+    "get_comp_details"
+  ]);
+  assert.strictEqual(scenario.plan.steps[4].args.mode, "findReplace");
+  assert.strictEqual(scenario.plan.steps[4].args.find, "Alpha");
+  assert.strictEqual(scenario.plan.steps[4].args.replace, "Beta");
+  assert.strictEqual(scenario.plan.steps[4].args.caseSensitive, true);
+  assert(!toolSequence.includes("run_extendscript"), "AUX-032 fixture must not use raw ExtendScript.");
+  assert(!toolSequence.includes("cleanup_test_items"), "AUX-032 fixture cleanup is owned by the scenario runner.");
+  assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
+}
+
 function main() {
   assertDakkshinGeneratedOnlyFixture();
   assertResetWorkAreaGeneratedOnlyFixture();
+  assertRenameFindReplaceGeneratedOnlyFixture();
 
   const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "ae-agent-run-report-"));
   const artifact = writeAgentRunReport(fixtureReport(), {

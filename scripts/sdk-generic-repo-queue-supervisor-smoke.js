@@ -243,11 +243,14 @@ function assertDirtyTargetFailsClosed() {
   const fixture = createFixture("dirty");
   try {
     const ledgerPath = writeLedger(fixture, validLedger(fixture));
+    fs.appendFileSync(path.join(fixture.target, "README.md"), "dirty tracked change\n", "utf8");
     fs.writeFileSync(path.join(fixture.target, "untracked.txt"), "dirty\n", "utf8");
     const output = parseBlockedJson(
       run(["--plan-only", "--ledger", ledgerPath, "--target-repo", fixture.target, "--json"]),
       "target-repo-dirty",
     );
+    assert(output.target.changedPaths.includes("README.md"));
+    assert(!output.target.changedPaths.includes("EADME.md"));
     assert(output.target.changedPaths.includes("untracked.txt"));
   } finally {
     removeFixture(fixture.root);

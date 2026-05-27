@@ -220,7 +220,8 @@ function gitOutput(cwd, args, label) {
 }
 
 function statusEntryPath(entry) {
-  const raw = entry.slice(3).trim();
+  const match = String(entry || "").match(/^.{1,2}\s+(.+)$/);
+  const raw = (match ? match[1] : entry.slice(3)).trim();
   const renameIndex = raw.indexOf(" -> ");
   return normalizeRepoPath(renameIndex === -1 ? raw : raw.slice(renameIndex + 4));
 }

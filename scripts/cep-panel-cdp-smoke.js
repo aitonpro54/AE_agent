@@ -9,6 +9,7 @@ const {
   agentMaskSafetyScenarioPlans,
   agentMarkerLifecycleScenarioPlans,
   agentNewToolsScenarioPlans,
+  agentRenameFindReplaceScenarioPlans,
   agentResetWorkAreaScenarioPlans,
   agentScenarioPlans
 } = require("./agent-scenario-fixtures");
@@ -166,6 +167,24 @@ function openAiCliResetWorkAreaScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_RESET_WORK_AREA_PREFIX || "Codex QA AUX026",
     scenarioFactory: agentResetWorkAreaScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliRenameFindReplaceScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-rename-find-replace",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_RENAME_FIND_REPLACE_PREFIX || "Codex QA AUX032",
+    scenarioFactory: agentRenameFindReplaceScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -3832,6 +3851,47 @@ async function verifyResetWorkAreaReadBack(scenario, expected) {
   };
 }
 
+async function verifyFindReplaceLayerRenameReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const names = layers.map((layer) => layer.name);
+
+  for (const beforeName of expected.beforeNames || []) {
+    if (names.includes(beforeName)) {
+      throw new Error(`${scenario.id}: generated pre-rename layer name ${beforeName} was still present after findReplace.`);
+    }
+  }
+  for (const afterName of expected.afterNames || []) {
+    if (!names.includes(afterName)) {
+      throw new Error(`${scenario.id}: generated renamed layer ${afterName} was not found by read-back.`);
+    }
+  }
+  if (typeof expected.layerCountAfter === "number" && Number(comp.numLayers) !== expected.layerCountAfter) {
+    throw new Error(`${scenario.id}: expected ${expected.layerCountAfter} layer(s) after rename_layers, got ${comp.numLayers}.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      numLayers: comp.numLayers
+    },
+    rename: {
+      find: expected.find || null,
+      replace: expected.replace || null,
+      beforeNames: expected.beforeNames || [],
+      afterNames: expected.afterNames || [],
+      observedNames: names
+    }
+  };
+}
+
 async function findGeneratedCompByExactName(scenario, compName) {
   const found = await callBridgeTool("find_project_items", {
     query: compName,
@@ -4006,6 +4066,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.resetWorkArea) {
     return verifyResetWorkAreaReadBack(scenario, expected);
+  }
+
+  if (expected.findReplaceLayerRename) {
+    return verifyFindReplaceLayerRenameReadBack(scenario, expected);
   }
 
   if (expected.markerLifecycle) {
@@ -4627,6 +4691,10 @@ async function main() {
   }
   if (command === "agent-reset-work-area-openai-cli-smoke" || command === "full-ui-agent-reset-work-area-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliResetWorkAreaScenarioConfig());
+    return;
+  }
+  if (command === "agent-rename-find-replace-openai-cli-smoke" || command === "full-ui-agent-rename-find-replace-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliRenameFindReplaceScenarioConfig());
     return;
   }
   if (command === "openai-api-setup-smoke") {

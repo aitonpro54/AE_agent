@@ -944,6 +944,124 @@ function agentResetWorkAreaScenarioPlans(runPrefix) {
   }));
 }
 
+function agentRenameFindReplaceScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Rename Find Replace`;
+  const compName = `${base} Comp`;
+  const layerAName = `${base} Alpha Plate`;
+  const layerBName = `${base} Alpha Text`;
+  const expectedLayerAName = `${base} Beta Plate`;
+  const expectedLayerBName = `${base} Beta Text`;
+
+  return [
+    {
+      id: "generated-rename-find-replace",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "create_text_layer",
+        "get_comp_details",
+        "rename_layers"
+      ],
+      expectedReadBack: {
+        findReplaceLayerRename: true,
+        compName,
+        beforeNames: [layerAName, layerBName],
+        afterNames: [expectedLayerAName, expectedLayerBName],
+        find: "Alpha",
+        replace: "Beta",
+        layerCountAfter: 2
+      },
+      plan: {
+        summary: "AUX-032 generated-only live QA for rename_layers findReplace on generated layer names.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          {
+            title: "Create generated rename find-replace comp",
+            tool: "create_comp",
+            args: {
+              name: compName,
+              width: 640,
+              height: 360,
+              pixelAspect: 1,
+              duration: 3,
+              frameRate: 24,
+              bgColor: [0.08, 0.1, 0.12],
+              allowDuplicateName: false,
+              openInViewer: false,
+              comment: "AUX-032 generated-only rename findReplace validation"
+            }
+          },
+          {
+            title: "Create first generated rename source layer",
+            tool: "create_solid_layer",
+            args: {
+              compName,
+              name: layerAName,
+              color: [0.2, 0.52, 0.86],
+              width: 240,
+              height: 180,
+              pixelAspect: 1,
+              startTime: 0,
+              duration: 3
+            }
+          },
+          {
+            title: "Create second generated rename source layer",
+            tool: "create_text_layer",
+            args: {
+              compName,
+              name: layerBName,
+              text: "AUX-032 Alpha",
+              position: [320, 180],
+              fontSize: 44,
+              fillColor: [0.95, 0.95, 0.85],
+              startTime: 0,
+              duration: 3
+            }
+          },
+          {
+            title: "Read generated layer names before find replace",
+            tool: "get_comp_details",
+            args: {
+              compName,
+              includeLayers: true,
+              layerLimit: 10
+            }
+          },
+          {
+            title: "Find and replace generated layer name text",
+            tool: "rename_layers",
+            args: {
+              compName,
+              layerIndices: [1, 2],
+              mode: "findReplace",
+              find: "Alpha",
+              replace: "Beta",
+              caseSensitive: true
+            }
+          },
+          {
+            title: "Read generated layer names after find replace",
+            tool: "get_comp_details",
+            args: {
+              compName,
+              includeLayers: true,
+              layerLimit: 10
+            }
+          }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentManualTypedToolsScenarioPlans(runPrefix) {
   const base = `${runPrefix} Manual Typed Tools`;
   const folderBase = `${base} Folder Move`;
@@ -1367,6 +1485,7 @@ module.exports = {
   agentMaskSafetyScenarioPlans,
   agentMarkerLifecycleScenarioPlans,
   agentNewToolsScenarioPlans,
+  agentRenameFindReplaceScenarioPlans,
   agentResetWorkAreaScenarioPlans,
   agentScenarioPlans,
   buildAgentPlannerRegressionCorpus,
