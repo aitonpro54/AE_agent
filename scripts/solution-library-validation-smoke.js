@@ -25,7 +25,8 @@ const IMPORTED_ADVISORY_IDS = [
   "reset-composition-work-area-typed-plan",
   "add-markers-to-selected-layers-typed-plan",
   "append-to-layer-name-typed-plan",
-  "rename-selected-layers-with-numbers-typed-plan"
+  "rename-selected-layers-with-numbers-typed-plan",
+  "rename-selected-layers-with-letters-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -276,6 +277,30 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /multi-layer exact mode appends unpadded numbers/.test(note)), `${id}: notes must document why target names are computed explicitly.`);
       assert(solution.notes.some((note) => /project item rename/.test(note)), `${id}: notes must keep project item rename out of scope.`);
       assert(solution.promotionHistory.some((entry) => /kmlrn1/.test(entry.evidence)), `${id}: promotion evidence should mention kmlrn1.`);
+    } else if (id === "rename-selected-layers-with-letters-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "rename_layers", "get_comp_details"],
+        `${id}: imported lettered layer rename workflow should stay on the narrow typed tool sequence.`
+      );
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("rename_layers"), `${id}: recipe should use the layer rename typed tool.`);
+      assert(text.includes('mode:"exact"'), `${id}: recipe should require exact rename mode.`);
+      assert(text.includes("letter suffix"), `${id}: recipe should require letter suffix target names.`);
+      assert(text.includes("one `rename_layers` step per concrete selected layer"), `${id}: recipe should require one exact rename per selected layer.`);
+      assert(text.includes("explicit user-provided target names"), `${id}: recipe should fail closed to explicit target names when suffixes are ambiguous.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp details read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /explicit non-duplicated letter-suffix list/.test(step)), `${id}: verification must require non-duplicated letter suffixes.`);
+      assert(solution.verificationRecipe.steps.some((step) => /one rename_layers step per selected layer/.test(step)), `${id}: verification must include one rename step per selected layer.`);
+      assert(solution.verificationRecipe.steps.some((step) => /mode exact/.test(step)), `${id}: verification must require exact rename mode.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read comp details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /changedCount:1/.test(item)), `${id}: verification must require one-layer rename count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /letter suffix/.test(item)), `${id}: verification must require letter-suffix read-back evidence.`);
+      assert(solution.notes.some((note) => /ambiguous or duplicated/.test(note)), `${id}: notes must document ambiguous or duplicated suffix risk.`);
+      assert(solution.notes.some((note) => /Do not infer AA\/AB/.test(note)), `${id}: notes must reject inferred double-letter suffixes.`);
+      assert(solution.notes.some((note) => /project item rename/.test(note)), `${id}: notes must keep project item rename out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /kmlrl1/.test(entry.evidence)), `${id}: promotion evidence should mention kmlrl1.`);
     } else {
       throw new Error(`Unhandled imported advisory solution quality checks: ${id}`);
     }
@@ -400,6 +425,20 @@ function assertActualRetrieval(registry) {
   assert(numberedLayerNamePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
   assert(!/run_extendscript/i.test(numberedLayerNamePromptSection), "selected-layer numbered rename guidance should not recommend raw ExtendScript.");
 
+  const letteredLayerNameRetrieval = retrieveSolutionHints("Rename the selected layers with base name Shot and letter suffixes A, B and C after inspecting the selection.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(letteredLayerNameRetrieval.ok, true);
+  assert(ids(letteredLayerNameRetrieval).includes("rename-selected-layers-with-letters-typed-plan"), "selected-layer lettered rename advisory recipe should surface for letter-suffix rename prompt.");
+  const letteredLayerNamePromptSection = formatSolutionHintsForPrompt(letteredLayerNameRetrieval);
+  assert(letteredLayerNamePromptSection.includes("Rename Selected Layers With Letters Typed Plan"), "prompt section should include selected-layer lettered rename advisory title.");
+  assert(letteredLayerNamePromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for lettered layer rename workflows.");
+  assert(letteredLayerNamePromptSection.includes("rename_layers"), "prompt section should prefer rename_layers for lettered layer renaming.");
+  assert(letteredLayerNamePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
+  assert(!/run_extendscript/i.test(letteredLayerNamePromptSection), "selected-layer lettered rename guidance should not recommend raw ExtendScript.");
+
   return {
     contextRetrieval,
     alignRetrieval,
@@ -414,7 +453,8 @@ function assertActualRetrieval(registry) {
       resetWorkArea: ids(resetWorkAreaRetrieval),
       addMarkers: ids(addMarkersRetrieval),
       appendLayerName: ids(appendLayerNameRetrieval),
-      numberedLayerName: ids(numberedLayerNameRetrieval)
+      numberedLayerName: ids(numberedLayerNameRetrieval),
+      letteredLayerName: ids(letteredLayerNameRetrieval)
     }
   };
 }
