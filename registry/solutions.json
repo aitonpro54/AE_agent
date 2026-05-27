@@ -1502,6 +1502,118 @@
         "Do not promise exact below-source placement or final selection state; require a separate typed-tool contract when those semantics matter.",
         "Do not use this recipe for deep precomp/source duplication, layer deletion, source relinking, mask/path edits, timing changes, marker edits, render queue items, or broad cleanup."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "add-assorted-composition-guides-typed-plan",
+      "title": "Add Assorted Composition Guides Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "guides",
+        "guide-overlays",
+        "safe-area",
+        "shape-layers",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Add visual composition guide overlays as generated shape layers, with typed read-back and native guide semantics explicitly out of scope.",
+        "appliesWhen": [
+          "The user asks to add assorted composition guides, center guides, edge guides, action safe or title safe visual guides.",
+          "A shape-layer overlay adaptation is acceptable instead of native AE ruler/composition guide records."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "A new generated comp created by the plan, or an explicit existing comp target read back before guide creation."
+        },
+        {
+          "name": "guideSet",
+          "type": "array",
+          "required": false,
+          "description": "Requested guide overlays; defaults to edge frame, center vertical, center horizontal, action safe and title safe."
+        },
+        {
+          "name": "guideColor",
+          "type": "array",
+          "required": false,
+          "description": "Optional guide color applied through ADBE Fill when styling is requested."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow may add generated overlay shape layers but must not mutate native AE composition guide records.",
+        "Target comp dimensions are known from create_comp output or get_comp_details read-back before guide geometry is computed.",
+        "Existing user layers are not deleted, renamed, relinked or reordered by this recipe."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/add-assorted-composition-guides-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "create_comp",
+          "create_shape_layer",
+          "add_effect",
+          "get_comp_details",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read back the target comp and generated guide layers, then confirm guide overlay count, geometry and ADBE Fill evidence.",
+        "steps": [
+          "Run create_comp only when the user requests a new generated comp; otherwise use get_comp_details to verify the explicit target comp before mutation.",
+          "Run create_shape_layer for the edge frame, center vertical, center horizontal, action safe and title safe guide overlays.",
+          "Run add_effect with ADBE Fill on the intended generated guide layer or layers when guide coloring is needed.",
+          "Run get_comp_details after mutation and compare generated guide layer names, count and comp dimensions.",
+          "Run get_layer_details for the generated guide/effect layer evidence and fail closed if native CompItem.addGuide semantics are required."
+        ],
+        "expectedEvidence": [
+          "Post-run get_comp_details shows five generated guide overlay layers in the target comp and no unexpected user-layer mutation.",
+          "Guide layer names use a generated prefix and correspond to edge frame, center vertical, center horizontal, action safe and title safe overlays.",
+          "get_layer_details or effect read-back shows ADBE Fill on the intended generated guide layer or layers.",
+          "The plan reports native AE guide objects as unsupported by current typed tools instead of claiming CompItem.addGuide behavior."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-compositions-add-assorted-composition-guides generic repository importer as advisory typed-plan coverage for generated guide overlays.",
+          "Live evidence was proved in AUX-039 with generated-only OpenAI CLI guide-overlay lane over create_comp, create_shape_layer, add_effect, get_comp_details and get_layer_details."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-27",
+          "from": "generic-repo-importer-tool-compositions-add-assorted-composition-guides",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Add_Assorted_Composition_Guides.jsx into existing typed tools as generated shape-layer guide overlays; no source JSX copied. AUX-039 registered and proved the generated-only OpenAI CLI guide-overlay lane.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "This recipe creates generated shape-layer overlays, not native guide objects; require a separate typed-tool contract for native CompItem.addGuide, ruler snapping, removeGuide or guide-index semantics.",
+        "Use generated-prefix layer names and never delete, rename, relink or reorder existing user layers as part of this workflow.",
+        "Do not use this recipe for template batch changes, layer cleanup, masks, expressions, source relinking, render queue items or broad composition mutation."
+      ]
     }
   ]
 }

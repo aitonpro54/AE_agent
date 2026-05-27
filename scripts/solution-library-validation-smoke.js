@@ -29,7 +29,8 @@ const IMPORTED_ADVISORY_IDS = [
   "rename-selected-layers-with-letters-typed-plan",
   "replace-text-in-layer-name-typed-plan",
   "get-selected-layer-duration-typed-plan",
-  "duplicate-selected-layer-typed-plan"
+  "duplicate-selected-layer-typed-plan",
+  "add-assorted-composition-guides-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -40,6 +41,7 @@ const AVAILABLE_TOOLS = [
   "get_comp_details",
   "get_render_queue_status",
   "create_comp",
+  "create_shape_layer",
   "list_effect_presets",
   "list_effects",
   "add_effect",
@@ -377,6 +379,25 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /deep precomp\/source duplication/.test(note)), `${id}: notes must keep deep duplication out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Duplicate_Selected_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /AUX-036/.test(entry.evidence)), `${id}: promotion evidence should mention reusable live lane proof.`);
+    } else if (id === "add-assorted-composition-guides-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["create_comp", "create_shape_layer", "add_effect", "get_comp_details", "get_layer_details"],
+        `${id}: imported assorted composition guide workflow should stay on the narrow guide-overlay typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: assorted guide overlay workflow must be mutating.`);
+      assert(text.includes("generated shape-layer guide overlays"), `${id}: recipe should document shape-layer guide overlay adaptation.`);
+      assert(text.includes("create_shape_layer"), `${id}: recipe should use the shape layer creation typed tool.`);
+      assert(text.includes("ADBE Fill"), `${id}: recipe should document fill-effect styling.`);
+      assert(text.includes("CompItem.addGuide"), `${id}: recipe should fail closed for native AE guide semantics.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require guide/effect layer read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /create_shape_layer/.test(step)), `${id}: verification must include shape-layer guide creation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /ADBE Fill/.test(step)), `${id}: verification must include fill-effect evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /five generated guide overlay layers/.test(item)), `${id}: verification must require five generated guide overlays.`);
+      assert(solution.notes.some((note) => /native guide objects/.test(note)), `${id}: notes must reject native guide-object claims.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for native guide semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Add_Assorted_Composition_Guides/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /AUX-039/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
     } else {
       throw new Error(`Unhandled imported advisory solution quality checks: ${id}`);
     }
@@ -558,6 +579,20 @@ function assertActualRetrieval(registry) {
   assert(duplicateSelectedLayerPromptSection.includes("get_comp_details"), "prompt section should require comp details read-back for selected-layer duplication.");
   assert(!/run_extendscript/i.test(duplicateSelectedLayerPromptSection), "selected-layer duplicate guidance should not recommend raw ExtendScript.");
 
+  const assortedGuidesRetrieval = retrieveSolutionHints("Add assorted composition guide overlays with center lines, edge frame, action safe and title safe guide layers to a generated comp.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(assortedGuidesRetrieval.ok, true);
+  assert(ids(assortedGuidesRetrieval).includes("add-assorted-composition-guides-typed-plan"), "assorted composition guides advisory recipe should surface for guide overlay prompts.");
+  const assortedGuidesPromptSection = formatSolutionHintsForPrompt(assortedGuidesRetrieval);
+  assert(assortedGuidesPromptSection.includes("Add Assorted Composition Guides Typed Plan"), "prompt section should include assorted composition guides advisory title.");
+  assert(assortedGuidesPromptSection.includes("create_shape_layer"), "prompt section should prefer create_shape_layer for guide overlays.");
+  assert(assortedGuidesPromptSection.includes("ADBE Fill"), "prompt section should preserve fill-effect guide styling.");
+  assert(assortedGuidesPromptSection.includes("get_comp_details"), "prompt section should require comp details read-back for guide overlays.");
+  assert(!/run_extendscript/i.test(assortedGuidesPromptSection), "assorted guide guidance should not recommend raw ExtendScript.");
+
   return {
     contextRetrieval,
     alignRetrieval,
@@ -576,7 +611,8 @@ function assertActualRetrieval(registry) {
       letteredLayerName: ids(letteredLayerNameRetrieval),
       replaceLayerName: ids(replaceLayerNameRetrieval),
       selectedLayerDuration: ids(selectedLayerDurationRetrieval),
-      duplicateSelectedLayer: ids(duplicateSelectedLayerRetrieval)
+      duplicateSelectedLayer: ids(duplicateSelectedLayerRetrieval),
+      assortedGuides: ids(assortedGuidesRetrieval)
     }
   };
 }
