@@ -40,11 +40,15 @@ const IMPORTED_ADVISORY_IDS = [
   "center-composition-typed-plan",
   "find-specific-effect-typed-plan",
   "set-to-average-position-typed-plan",
-  "zero-position-typed-plan"
+  "zero-position-typed-plan",
+  "merge-imported-selected-items-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
   "get_project_info",
+  "get_project_snapshot",
+  "find_project_items",
+  "list_project_folder_items",
   "get_active_comp",
   "get_selected_layers",
   "list_layers",
@@ -68,6 +72,7 @@ const AVAILABLE_TOOLS = [
   "get_layer_details",
   "duplicate_layers",
   "deep_duplicate_precomp_sources",
+  "move_project_items_to_folder",
   "run_extendscript_file"
 ];
 
@@ -602,6 +607,27 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Zero_Position/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "merge-imported-selected-items-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "get_project_snapshot", "find_project_items", "list_project_folder_items", "move_project_items_to_folder"],
+        `${id}: imported project-item merge workflow should stay on the narrow project-item typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: project-item merge workflow must be mutating.`);
+      assert(text.includes("imported project items"), `${id}: recipe should document imported project item scope.`);
+      assert(text.includes("get_project_snapshot"), `${id}: recipe should require project snapshot evidence.`);
+      assert(text.includes("list_project_folder_items"), `${id}: recipe should require folder content read-back.`);
+      assert(text.includes("move_project_items_to_folder"), `${id}: recipe should use the project item move typed tool.`);
+      assert(text.includes("targetRoot:true"), `${id}: recipe should document root-destination binding.`);
+      assert(text.includes("project-panel selection"), `${id}: recipe should fail closed for project-panel selection reads.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_project_snapshot/.test(step)), `${id}: verification must inspect project inventory.`);
+      assert(solution.verificationRecipe.steps.some((step) => /list_project_folder_items/.test(step)), `${id}: verification must include folder read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /move_project_items_to_folder/.test(step)), `${id}: verification must include project item movement.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /concrete `itemIndices` list/.test(item)), `${id}: verification must require explicit item indices.`);
+      assert(solution.notes.some((note) => /project-panel selection reads/.test(note)), `${id}: notes must reject project-panel selection claims.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Merge_Imported_Selected_Items/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "find-specific-effect-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -951,6 +977,21 @@ function assertActualRetrieval(registry) {
   assert(zeroPositionPromptSection.includes("set_layer_transform"), "prompt section should prefer set_layer_transform for zero-position workflows.");
   assert(zeroPositionPromptSection.includes("zero position"), "prompt section should preserve zero-position guidance.");
   assert(!/run_extendscript/i.test(zeroPositionPromptSection), "zero-position guidance should not recommend raw ExtendScript.");
+
+  const mergeImportedRetrieval = retrieveSolutionHints("Merge imported selected project items from an imported AEP folder into the project root by listing imported folder contents, moving explicit item indices with move_project_items_to_folder, and reading back the project snapshot.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(mergeImportedRetrieval.ok, true);
+  assert(ids(mergeImportedRetrieval).includes("merge-imported-selected-items-typed-plan"), "merge imported selected items advisory recipe should surface for project item merge prompts.");
+  const mergeImportedPromptSection = formatSolutionHintsForPrompt(mergeImportedRetrieval);
+  assert(mergeImportedPromptSection.includes("Merge Imported Selected Items Typed Plan"), "prompt section should include merge-imported advisory title.");
+  assert(mergeImportedPromptSection.includes("get_project_snapshot"), "prompt section should require project snapshot evidence for imported item workflows.");
+  assert(mergeImportedPromptSection.includes("list_project_folder_items"), "prompt section should require folder listing evidence for imported item workflows.");
+  assert(mergeImportedPromptSection.includes("move_project_items_to_folder"), "prompt section should prefer move_project_items_to_folder for imported item workflows.");
+  assert(mergeImportedPromptSection.includes("project-panel selection"), "prompt section should preserve project-panel selection warning.");
+  assert(!/run_extendscript/i.test(mergeImportedPromptSection), "merge-imported guidance should not recommend raw ExtendScript.");
 
   const findSpecificEffectRetrieval = retrieveSolutionHints("Find the specific ADBE Fill effect on layers in the active comp, list matching layer indexes, and inspect effect properties without changing anything.", {
     registry,

@@ -2685,6 +2685,116 @@
         "Require current get_selected_layers or explicit get_layer_details evidence before mutating layer transform values; do not infer targets from prior chat context.",
         "Do not use this recipe for render queue changes, expression edits, source relinking, template batch changes, layer cleanup, effect edits, marker edits, selection mutation, or broad composition mutation."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "merge-imported-selected-items-typed-plan",
+      "title": "Merge Imported Selected Items Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "project",
+        "project-item",
+        "imported",
+        "merge",
+        "selected-items",
+        "folder",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Move explicitly identified imported project items from an imported folder or search result into the project root or one explicit destination folder.",
+        "appliesWhen": [
+          "The user asks to merge imported selected items, flatten imported AEP folder contents, or move imported project items into the current project root/folder.",
+          "Typed project-item movement from explicit item indices is acceptable instead of project-panel selection, deletion, duplicate-name merging, source relinking, or exact source JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "importedItems",
+          "type": "project-item-selection",
+          "required": true,
+          "description": "Concrete project item indices read from current project snapshot, search, or imported folder listing evidence before mutation."
+        },
+        {
+          "name": "destination",
+          "type": "project-folder-or-root",
+          "required": true,
+          "description": "Project root via targetRoot:true or one explicit destination folder identified by current typed evidence."
+        }
+      ],
+      "targetAssumptions": [
+        "Every moved item is bound by explicit itemIndices from current typed project evidence before mutation.",
+        "The destination is either targetRoot:true or one concrete target folder reference from current typed evidence.",
+        "Current typed tools support project item movement but do not expose current project-panel selection.",
+        "Existing item names, item sources, comp contents, layer source references, render queue items and unlisted project items are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/merge-imported-selected-items-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_project_info",
+          "get_project_snapshot",
+          "find_project_items",
+          "list_project_folder_items",
+          "move_project_items_to_folder"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read project/imported folder evidence, bind explicit item indices, move them to root or a proven folder, then read back project inventory and folder membership.",
+        "steps": [
+          "Run get_project_info and get_project_snapshot before mutation to capture project inventory and candidate imported folder/item names.",
+          "Run find_project_items or list_project_folder_items to enumerate the imported project items to move.",
+          "Require a concrete itemIndices list from current typed evidence and a single destination expressed as targetRoot:true, targetFolderItemIndex or targetFolderName.",
+          "Run move_project_items_to_folder with only those explicit itemIndices and the proven destination.",
+          "Run get_project_snapshot and list_project_folder_items after mutation; fail closed if project-panel selection reads, duplicate-name merge behavior, folder deletion, source relinking, dependency cleanup or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies the source imported folder or query and every concrete `itemIndices` list entry.",
+          "Pre-run typed evidence identifies exactly one destination as project root or a concrete folder reference.",
+          "Post-run get_project_snapshot shows the moved imported items still exist with the same item identities, names and types.",
+          "Post-run list_project_folder_items shows every moved imported item under the target root/folder and no unlisted project items moved.",
+          "Post-run evidence shows no unexpected project item deletion, rename, source replacement, layer relink, import, render queue mutation or folder cleanup."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-project-merge-imported-selected-items generic repository importer as advisory typed-plan coverage for imported project item movement.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed project-item tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-27",
+          "from": "generic-repo-importer-tool-project-merge-imported-selected-items",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Project/Merge_Imported_Selected_Items.jsx into existing typed tools as explicit imported project item movement; no source JSX copied. Project-panel selection reads, automatic duplicate-name merging, imported wrapper folder deletion, dependency cleanup, source relinking and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "This recipe moves explicit imported project item indices only; it does not delete imported wrapper folders, rename project items, import footage, consolidate duplicate names, relink sources, replace layer sources or clean dependencies.",
+        "Require a separate typed-tool contract for project-panel selection reads, automatic duplicate-name merging, folder deletion, dependency cleanup, footage consolidation, source relinking or exact source JSX semantics.",
+        "Require current get_project_snapshot, find_project_items or list_project_folder_items evidence before mutating project item parent folders; do not infer item targets from prior chat context.",
+        "Do not use this recipe for layer source replacement, deep precomp/source duplication, project item deletion, project item rename, render queue changes, user-asset cleanup or broad project mutation."
+      ]
     }
   ]
 }
