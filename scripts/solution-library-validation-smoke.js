@@ -39,7 +39,8 @@ const IMPORTED_ADVISORY_IDS = [
   "add-posterize-time-adjustment-layer-typed-plan",
   "center-composition-typed-plan",
   "find-specific-effect-typed-plan",
-  "set-to-average-position-typed-plan"
+  "set-to-average-position-typed-plan",
+  "zero-position-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -579,6 +580,28 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Set_To_Average_Position/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "zero-position-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details", "set_layer_transform", "get_comp_details"],
+        `${id}: imported zero-position workflow should stay on the narrow layer-transform typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: zero-position workflow must be mutating.`);
+      assert(text.includes("zero position"), `${id}: recipe should document zero-position intent.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence for selected workflows.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer position read-back.`);
+      assert(text.includes("set_layer_transform"), `${id}: recipe should use the transform typed tool.`);
+      assert(text.includes("[0, 0]"), `${id}: recipe should document 2D zero-position values.`);
+      assert(text.includes("[0, 0, 0]"), `${id}: recipe should document 3D zero-position values.`);
+      assert(text.includes("comp-space"), `${id}: recipe should fail closed for unproven comp-space semantics.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read target layer positions.`);
+      assert(solution.verificationRecipe.steps.some((step) => /zero position/.test(step)), `${id}: verification must compute dimensionality-matched zero positions.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_transform/.test(step)), `${id}: verification must include transform positioning.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /computed zero position/.test(item)), `${id}: verification must require zero-position evidence.`);
+      assert(solution.notes.some((note) => /anchor point/.test(note)), `${id}: notes must reject anchor reset claims.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Zero_Position/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "find-specific-effect-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -914,6 +937,21 @@ function assertActualRetrieval(registry) {
   assert(averagePositionPromptSection.includes("average position"), "prompt section should preserve average-position guidance.");
   assert(!/run_extendscript/i.test(averagePositionPromptSection), "average-position guidance should not recommend raw ExtendScript.");
 
+  const zeroPositionRetrieval = retrieveSolutionHints("Set the selected layers to zero position by reading current Position values, moving each selected layer to [0, 0] or [0, 0, 0], and reading them back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(zeroPositionRetrieval.ok, true);
+  assert(ids(zeroPositionRetrieval).includes("zero-position-typed-plan"), "zero-position advisory recipe should surface for zero-position prompts.");
+  const zeroPositionPromptSection = formatSolutionHintsForPrompt(zeroPositionRetrieval);
+  assert(zeroPositionPromptSection.includes("Zero Position Typed Plan"), "prompt section should include zero-position advisory title.");
+  assert(zeroPositionPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for zero-position workflows.");
+  assert(zeroPositionPromptSection.includes("get_layer_details"), "prompt section should require layer position read-back for zero-position workflows.");
+  assert(zeroPositionPromptSection.includes("set_layer_transform"), "prompt section should prefer set_layer_transform for zero-position workflows.");
+  assert(zeroPositionPromptSection.includes("zero position"), "prompt section should preserve zero-position guidance.");
+  assert(!/run_extendscript/i.test(zeroPositionPromptSection), "zero-position guidance should not recommend raw ExtendScript.");
+
   const findSpecificEffectRetrieval = retrieveSolutionHints("Find the specific ADBE Fill effect on layers in the active comp, list matching layer indexes, and inspect effect properties without changing anything.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -956,6 +994,7 @@ function assertActualRetrieval(registry) {
       posterizeTimeAdjustment: ids(posterizeTimeAdjustmentRetrieval),
       centerComposition: ids(centerCompositionRetrieval),
       averagePosition: ids(averagePositionRetrieval),
+      zeroPosition: ids(zeroPositionRetrieval),
       findSpecificEffect: ids(findSpecificEffectRetrieval)
     }
   };
