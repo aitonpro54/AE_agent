@@ -4,6 +4,7 @@ const http = require("http");
 const { writeAgentRunReport } = require("./agent-scenario-report");
 const {
   agentAssortedCompositionGuidesScenarioPlans,
+  agentBackgroundLayerScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
   agentDuplicateLayersScenarioPlans,
   agentManualTypedToolsScenarioPlans,
@@ -204,6 +205,24 @@ function openAiCliAssortedCompositionGuidesScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_ASSORTED_GUIDES_PREFIX || "Codex QA AUX039",
     scenarioFactory: agentAssortedCompositionGuidesScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliBackgroundLayerScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-background-layer",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_BACKGROUND_LAYER_PREFIX || "Codex QA AUX041",
+    scenarioFactory: agentBackgroundLayerScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -3990,6 +4009,78 @@ async function verifyAssortedCompositionGuidesReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedBackgroundLayerReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 10
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const background = layers.find((layer) => layer.name === expected.backgroundName);
+  const foreground = layers.find((layer) => layer.name === expected.foregroundName);
+  if (!background || !background.index) {
+    throw new Error(`${scenario.id}: generated background layer ${expected.backgroundName} was not found by read-back.`);
+  }
+  if (!foreground || !foreground.index) {
+    throw new Error(`${scenario.id}: generated foreground proof layer ${expected.foregroundName} was not found by read-back.`);
+  }
+  if (typeof expected.layerCountAfter === "number" && Number(comp.numLayers) !== expected.layerCountAfter) {
+    throw new Error(`${scenario.id}: expected ${expected.layerCountAfter} generated layer(s), got ${comp.numLayers}.`);
+  }
+  if (typeof expected.backgroundIndexAfter === "number" && Number(background.index) !== expected.backgroundIndexAfter) {
+    throw new Error(`${scenario.id}: expected generated background layer index ${expected.backgroundIndexAfter}, got ${background.index}.`);
+  }
+  if (typeof expected.foregroundIndexAfter === "number" && Number(foreground.index) !== expected.foregroundIndexAfter) {
+    throw new Error(`${scenario.id}: expected generated foreground layer index ${expected.foregroundIndexAfter}, got ${foreground.index}.`);
+  }
+
+  const layerDetails = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: background.index,
+    includeProperties: false
+  });
+  const position = numberPreviewArray(layerDetails.transform && layerDetails.transform.position);
+  if (!numberArraysMatch(expected.backgroundPosition, position, 0.01)) {
+    throw new Error(`${scenario.id}: generated background position read-back mismatch.`);
+  }
+  const effects = Array.isArray(layerDetails.effects) ? layerDetails.effects : [];
+  const effect = effects.find((item) => (
+    item.name === expected.effectName &&
+    (!expected.effectMatchName || item.matchName === expected.effectMatchName)
+  ));
+  if (!effect) {
+    throw new Error(`${scenario.id}: generated background effect ${expected.effectName} was not found by read-back.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      width: comp.width,
+      height: comp.height,
+      numLayers: comp.numLayers
+    },
+    layers: {
+      background: {
+        name: background.name,
+        index: background.index,
+        position
+      },
+      foreground: {
+        name: foreground.name,
+        index: foreground.index
+      }
+    },
+    effect: {
+      layerName: expected.backgroundName,
+      name: effect.name,
+      matchName: effect.matchName
+    }
+  };
+}
+
 async function findGeneratedCompByExactName(scenario, compName) {
   const found = await callBridgeTool("find_project_items", {
     query: compName,
@@ -4172,6 +4263,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.assortedCompositionGuides) {
     return verifyAssortedCompositionGuidesReadBack(scenario, expected);
+  }
+
+  if (expected.generatedBackgroundLayer) {
+    return verifyGeneratedBackgroundLayerReadBack(scenario, expected);
   }
 
   if (expected.markerLifecycle) {
@@ -4801,6 +4896,10 @@ async function main() {
   }
   if (command === "agent-assorted-composition-guides-openai-cli-smoke" || command === "full-ui-agent-assorted-composition-guides-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliAssortedCompositionGuidesScenarioConfig());
+    return;
+  }
+  if (command === "agent-background-layer-openai-cli-smoke" || command === "full-ui-agent-background-layer-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliBackgroundLayerScenarioConfig());
     return;
   }
   if (command === "openai-api-setup-smoke") {

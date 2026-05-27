@@ -1220,6 +1220,131 @@ function agentAssortedCompositionGuidesScenarioPlans(runPrefix) {
   }));
 }
 
+function agentBackgroundLayerScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Background Layer`;
+  const compName = `${base} Comp`;
+  const backgroundName = `${base} Background`;
+  const foregroundName = `${base} Foreground`;
+  const effectName = `${base} Fill Effect`;
+
+  return [
+    {
+      id: "generated-background-layer",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "add_effect",
+        "get_comp_details",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedBackgroundLayer: true,
+        compName,
+        backgroundName,
+        foregroundName,
+        layerCountAfter: 2,
+        backgroundIndexAfter: 2,
+        foregroundIndexAfter: 1,
+        backgroundSize: [640, 360],
+        backgroundPosition: [320, 180],
+        effectName,
+        effectMatchName: "ADBE Fill"
+      },
+      plan: {
+        summary: "AUX-041 generated-only live QA for adding a generated full-comp background layer.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          {
+            title: "Create generated background QA comp",
+            tool: "create_comp",
+            args: {
+              name: compName,
+              width: 640,
+              height: 360,
+              pixelAspect: 1,
+              duration: 3,
+              frameRate: 24,
+              bgColor: [0.06, 0.07, 0.08],
+              allowDuplicateName: false,
+              openInViewer: false,
+              comment: "AUX-041 generated-only background layer validation"
+            }
+          },
+          {
+            title: "Create generated full-comp background layer",
+            tool: "create_shape_layer",
+            args: {
+              compName,
+              name: backgroundName,
+              shape: "rectangle",
+              size: [640, 360],
+              position: [320, 180],
+              fillColor: [0.18, 0.2, 0.24],
+              strokeColor: [0.18, 0.2, 0.24],
+              strokeWidth: 0,
+              startTime: 0,
+              duration: 3
+            }
+          },
+          {
+            title: "Add generated background fill effect",
+            tool: "add_effect",
+            args: {
+              compName,
+              effect: "ADBE Fill",
+              name: effectName
+            },
+            resultBindings: {
+              layerIndex: "{{steps.2.layer.index}}"
+            }
+          },
+          {
+            title: "Create generated foreground proof layer",
+            tool: "create_shape_layer",
+            args: {
+              compName,
+              name: foregroundName,
+              shape: "rectangle",
+              size: [220, 120],
+              position: [320, 180],
+              fillColor: [0.86, 0.42, 0.2],
+              strokeColor: [1, 1, 1],
+              strokeWidth: 3,
+              startTime: 0,
+              duration: 3
+            }
+          },
+          {
+            title: "Read generated background layer stack",
+            tool: "get_comp_details",
+            args: {
+              compName,
+              includeLayers: true,
+              layerLimit: 10
+            }
+          },
+          {
+            title: "Read generated background effect layer",
+            tool: "get_layer_details",
+            args: {
+              compName,
+              layerIndex: 2,
+              includeProperties: false
+            }
+          }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentManualTypedToolsScenarioPlans(runPrefix) {
   const base = `${runPrefix} Manual Typed Tools`;
   const folderBase = `${base} Folder Move`;
@@ -1638,6 +1763,7 @@ module.exports = {
   DEFAULT_PLANNER_FIXTURE_PREFIX,
   DEFAULT_RENDER_QUEUE_BASELINE_TOTAL,
   agentAssortedCompositionGuidesScenarioPlans,
+  agentBackgroundLayerScenarioPlans,
   agentDuplicateLayersScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
   agentManualTypedToolsScenarioPlans,

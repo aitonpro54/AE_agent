@@ -11,6 +11,7 @@ const {
 } = require("./agent-scenario-report");
 const {
   agentAssortedCompositionGuidesScenarioPlans,
+  agentBackgroundLayerScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
   agentResetWorkAreaScenarioPlans
@@ -298,11 +299,53 @@ function assertAssortedCompositionGuidesGeneratedOnlyFixture() {
   assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
 }
 
+function assertBackgroundLayerGeneratedOnlyFixture() {
+  const [scenario] = agentBackgroundLayerScenarioPlans("Codex QA AUX041 Fixture");
+  assert(scenario, "AUX-041 background layer scenario should be registered.");
+  assert.strictEqual(scenario.id, "generated-background-layer");
+  assert.strictEqual(scenario.cleanupPrefix, "Codex QA AUX041 Fixture Background Layer");
+  assert.deepStrictEqual(scenario.expectedTools, [
+    "create_comp",
+    "create_shape_layer",
+    "add_effect",
+    "get_comp_details",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(scenario.expectedStepCount, 6);
+  assert.strictEqual(scenario.expectedMutatingCount, 4);
+  assert.strictEqual(scenario.expectedReadBack.generatedBackgroundLayer, true);
+  assert.strictEqual(scenario.expectedReadBack.compName.indexOf(scenario.cleanupPrefix), 0);
+  assert.strictEqual(scenario.expectedReadBack.layerCountAfter, 2);
+  assert.strictEqual(scenario.expectedReadBack.backgroundIndexAfter, 2);
+  assert.strictEqual(scenario.expectedReadBack.foregroundIndexAfter, 1);
+  assert.deepStrictEqual(scenario.expectedReadBack.backgroundSize, [640, 360]);
+  assert.deepStrictEqual(scenario.expectedReadBack.backgroundPosition, [320, 180]);
+  assert.strictEqual(scenario.expectedReadBack.effectMatchName, "ADBE Fill");
+  assert.strictEqual(scenario.expectedReadBack.effectLayerName, undefined);
+
+  const toolSequence = scenario.plan.steps.map((step) => step.tool);
+  assert.deepStrictEqual(toolSequence, [
+    "create_comp",
+    "create_shape_layer",
+    "add_effect",
+    "create_shape_layer",
+    "get_comp_details",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(scenario.plan.steps[2].args.effect, "ADBE Fill");
+  assert.strictEqual(scenario.plan.steps[2].resultBindings.layerIndex, "{{steps.2.layer.index}}");
+  assert.strictEqual(scenario.plan.steps[5].args.layerIndex, 2);
+  assert(!toolSequence.includes("run_extendscript"), "AUX-041 fixture must not use raw ExtendScript.");
+  assert(!toolSequence.includes("cleanup_test_items"), "AUX-041 fixture cleanup is owned by the scenario runner.");
+  assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
+}
+
 function main() {
   assertDakkshinGeneratedOnlyFixture();
   assertResetWorkAreaGeneratedOnlyFixture();
   assertRenameFindReplaceGeneratedOnlyFixture();
   assertAssortedCompositionGuidesGeneratedOnlyFixture();
+  assertBackgroundLayerGeneratedOnlyFixture();
 
   const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "ae-agent-run-report-"));
   const artifact = writeAgentRunReport(fixtureReport(), {
