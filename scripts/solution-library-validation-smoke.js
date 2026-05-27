@@ -41,7 +41,8 @@ const IMPORTED_ADVISORY_IDS = [
   "find-specific-effect-typed-plan",
   "set-to-average-position-typed-plan",
   "zero-position-typed-plan",
-  "merge-imported-selected-items-typed-plan"
+  "merge-imported-selected-items-typed-plan",
+  "rename-selected-project-items-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -69,6 +70,7 @@ const AVAILABLE_TOOLS = [
   "set_comp_work_area",
   "add_layer_marker",
   "rename_layers",
+  "rename_project_items",
   "get_layer_details",
   "duplicate_layers",
   "deep_duplicate_precomp_sources",
@@ -628,6 +630,31 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Merge_Imported_Selected_Items/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "rename-selected-project-items-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "get_project_snapshot", "find_project_items", "list_project_folder_items", "rename_project_items"],
+        `${id}: imported selected project-item rename workflow should stay on the narrow project-item typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: project-item rename workflow must be mutating.`);
+      assert(text.includes("get_project_snapshot"), `${id}: recipe should require project snapshot evidence.`);
+      assert(text.includes("find_project_items"), `${id}: recipe should require project item search evidence.`);
+      assert(text.includes("list_project_folder_items"), `${id}: recipe should allow folder-scoped project item evidence.`);
+      assert(text.includes("rename_project_items"), `${id}: recipe should use the project item rename typed tool.`);
+      assert(text.includes('mode:"exact"'), `${id}: recipe should require exact project-item rename mode.`);
+      assert(text.includes("one `rename_project_items` step per concrete project item"), `${id}: recipe should require one exact rename per project item.`);
+      assert(text.includes("Project panel selection"), `${id}: recipe should fail closed for Project panel selection reads.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_project_snapshot/.test(step)), `${id}: verification must inspect project inventory.`);
+      assert(solution.verificationRecipe.steps.some((step) => /find_project_items/.test(step)), `${id}: verification must include item search evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /rename_project_items/.test(step)), `${id}: verification must include project item rename.`);
+      assert(solution.verificationRecipe.steps.some((step) => /mode exact/.test(step)), `${id}: verification must require exact rename mode.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /changedCount:1/.test(item)), `${id}: verification must require one-item rename count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /same exact requested text/.test(item)), `${id}: verification must require same-text read-back evidence.`);
+      assert(solution.notes.some((note) => /one exact rename_project_items step per concrete project item/.test(note)), `${id}: notes must document one exact rename per project item.`);
+      assert(solution.notes.some((note) => /Project panel selection reads/.test(note)), `${id}: notes must reject Project panel selection claims.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Rename_Selected_Project_Items/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "find-specific-effect-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -992,6 +1019,21 @@ function assertActualRetrieval(registry) {
   assert(mergeImportedPromptSection.includes("move_project_items_to_folder"), "prompt section should prefer move_project_items_to_folder for imported item workflows.");
   assert(mergeImportedPromptSection.includes("project-panel selection"), "prompt section should preserve project-panel selection warning.");
   assert(!/run_extendscript/i.test(mergeImportedPromptSection), "merge-imported guidance should not recommend raw ExtendScript.");
+
+  const renameSelectedProjectItemsRetrieval = retrieveSolutionHints("Rename selected project items to the exact text Review Plate after reading the current project snapshot, binding explicit itemIndices, using rename_project_items, and reading back project inventory.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(renameSelectedProjectItemsRetrieval.ok, true);
+  assert(ids(renameSelectedProjectItemsRetrieval).includes("rename-selected-project-items-typed-plan"), "selected project item rename advisory recipe should surface for project item rename prompts.");
+  const renameSelectedProjectItemsPromptSection = formatSolutionHintsForPrompt(renameSelectedProjectItemsRetrieval);
+  assert(renameSelectedProjectItemsPromptSection.includes("Rename Selected Project Items Typed Plan"), "prompt section should include selected project-item rename advisory title.");
+  assert(renameSelectedProjectItemsPromptSection.includes("get_project_snapshot"), "prompt section should require project snapshot evidence for project item rename workflows.");
+  assert(renameSelectedProjectItemsPromptSection.includes("find_project_items"), "prompt section should preserve item search evidence for project item rename workflows.");
+  assert(renameSelectedProjectItemsPromptSection.includes("rename_project_items"), "prompt section should prefer rename_project_items for project item rename workflows.");
+  assert(renameSelectedProjectItemsPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning.");
+  assert(!/run_extendscript/i.test(renameSelectedProjectItemsPromptSection), "selected project-item rename guidance should not recommend raw ExtendScript.");
 
   const findSpecificEffectRetrieval = retrieveSolutionHints("Find the specific ADBE Fill effect on layers in the active comp, list matching layer indexes, and inspect effect properties without changing anything.", {
     registry,

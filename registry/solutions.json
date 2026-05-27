@@ -2795,6 +2795,117 @@
         "Require current get_project_snapshot, find_project_items or list_project_folder_items evidence before mutating project item parent folders; do not infer item targets from prior chat context.",
         "Do not use this recipe for layer source replacement, deep precomp/source duplication, project item deletion, project item rename, render queue changes, user-asset cleanup or broad project mutation."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "rename-selected-project-items-typed-plan",
+      "title": "Rename Selected Project Items Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "project",
+        "project-item",
+        "rename",
+        "exact",
+        "selected-items",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Rename explicitly identified project items to one exact user-provided text value, then read project inventory back.",
+        "appliesWhen": [
+          "The user asks to rename selected project items or a known Project panel item set to a concrete text value.",
+          "Typed project-item renaming from explicit item indices is acceptable instead of Project panel selection reads, prompt UI behavior, source relinking, item deletion, movement, or exact source JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "projectItemIndices",
+          "type": "project-item-selection",
+          "required": true,
+          "description": "Concrete project item indices read from current project snapshot, search, or folder listing evidence before mutation."
+        },
+        {
+          "name": "targetName",
+          "type": "string",
+          "required": true,
+          "description": "Explicit non-empty user-provided text to apply as the exact name for every targeted project item."
+        }
+      ],
+      "targetAssumptions": [
+        "Every renamed item is bound by explicit itemIndices from current typed project evidence before mutation.",
+        "The workflow changes only the names of targeted project items to one exact user-provided text value.",
+        "Current typed tools support project item rename by explicit itemIndices or scoped search but do not expose current Project panel selection.",
+        "Because multi-item exact rename_project_items appends numbers when one name targets multiple items, the safe same-text adaptation uses one exact rename step per concrete project item.",
+        "Existing item sources, item types, parent folders, comp contents, layer source references, render queue items and unlisted project items are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/rename-selected-project-items-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_project_info",
+          "get_project_snapshot",
+          "find_project_items",
+          "list_project_folder_items",
+          "rename_project_items"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read project evidence, bind explicit item indices, rename each item exactly once, then read back project inventory and item names.",
+        "steps": [
+          "Run get_project_info and get_project_snapshot before mutation to capture project inventory and candidate item names.",
+          "Run find_project_items or list_project_folder_items to enumerate the project items to rename.",
+          "Require a concrete itemIndices list from current typed evidence and one explicit non-empty target name.",
+          "Run one rename_project_items step per project item with mode exact, a single item index and the same explicit name.",
+          "Run get_project_snapshot, find_project_items or list_project_folder_items after mutation; fail closed if Project panel selection reads, selection order, prompt behavior, source relinking, item deletion, movement, folder cleanup or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies every concrete `itemIndices` list entry.",
+          "Each rename_project_items call reports changedCount:1 and before/after name evidence for one project item.",
+          "Post-run project read-back shows every affected project item has the same exact requested text.",
+          "Post-run project read-back shows unchanged item sources, item types, parent folders and unrelated project inventory.",
+          "Post-run evidence shows no unexpected project item deletion, movement, source replacement, layer relink, import, render queue mutation or folder cleanup."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-project-rename-selected-project-items generic repository importer as advisory typed-plan coverage for exact same-text project item renaming.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed project-item tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-27",
+          "from": "generic-repo-importer-tool-project-rename-selected-project-items",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Project/Rename_Selected_Project_Items.jsx into existing typed project-item rename tools; no source JSX copied. Current typed tools do not expose Project panel selection, so the safe same-text adaptation requires explicit itemIndices from current typed evidence and one rename_project_items mode:\"exact\" mutation per concrete project item; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Use one exact rename_project_items step per concrete project item when the requested behavior is the same exact text on every targeted project item.",
+        "This recipe renames explicit project item indices only; it does not move project items, delete project items, import files, consolidate duplicate names, relink sources, replace layer sources or clean dependencies.",
+        "Require a separate typed-tool contract for Project panel selection reads, source-exact prompt behavior, selection ordering, source relinking, item deletion, movement, folder deletion, dependency cleanup or exact source JSX semantics.",
+        "Require current get_project_snapshot, find_project_items or list_project_folder_items evidence before mutating project item names; do not infer item targets from prior chat context.",
+        "Do not use this recipe for selected-layer rename, layer source replacement, deep precomp/source duplication, project item movement, render queue changes, user-asset cleanup or broad project mutation."
+      ]
     }
   ]
 }
