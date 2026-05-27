@@ -564,6 +564,7 @@ function loadOrCreateState({ ledgerPath, maxItems, runId, runRoot, targetRepo })
     }
     const resumed = {
       ...state,
+      maxItems,
       resumeCount: Number(state.resumeCount || 0) + 1,
       updatedAt: new Date().toISOString(),
     };
@@ -1154,6 +1155,68 @@ function findNextSafeQueuedCandidate(ledger, completedId) {
   );
 }
 
+function updateLedgerNextCandidate(ledger, completedId) {
+  const next = findNextSafeQueuedCandidate(ledger, completedId);
+  ledger.nextCandidate = next
+    ? {
+        id: next.id,
+        sourcePath: next.sourcePath,
+        classification: next.classification,
+        suggestedTools: next.suggestedTools,
+        reason: next.shortReason || next.description || "Next safe queued candidate selected by full-intake orchestrator.",
+      }
+    : null;
+}
+
+function updateLedgerTerminalStatus({ candidate, item, ledger, ledgerPath, targetRepo }) {
+  const entry = ledger.entries.find((candidateEntry) => candidateEntry.id === candidate.id);
+  if (!entry) {
+    throw new Error(`candidate-missing-during-terminal-update: ${candidate.id}`);
+  }
+  const now = new Date().toISOString();
+  entry.status = item.status;
+  entry.blockedAt = now;
+  entry.nextAction = `${safeId(item.status)}_by_${safeId(item.runId)}`;
+  entry.failClosed = {
+    schema: "generic-repo-full-intake.fail-closed.v1",
+    runId: item.runId,
+    candidateId: candidate.id,
+    sourcePath: candidate.sourcePath,
+    status: item.status,
+    reason: item.reason || null,
+    blockers: item.blockers || [],
+    liveLaneStatus: item.liveLaneStatus || null,
+    liveLaneReport: item.liveLaneReport || null,
+    batchReport: item.batchReport || null,
+    safetyPolicy: {
+      broadCepSmokeAllowed: false,
+      dependencyPackageChangesAllowed: false,
+      fallbackProviderAllowed: false,
+      localOllamaAllowed: false,
+      rawJsxCopyAllowed: false,
+      sourceRepoWritesAllowed: false,
+      userAssetMutationOutsideGeneratedOnlyLaneAllowed: false,
+    },
+    createdAt: now,
+  };
+  entry.implementation = {
+    ...(entry.implementation || {}),
+    failureReason: item.reason || null,
+    batchReport: item.batchReport || entry.implementation?.batchReport || null,
+    plannedPaths: Array.isArray(entry.implementation?.plannedPaths) ? entry.implementation.plannedPaths : [],
+  };
+  if (item.liveLaneStatus || item.liveLaneReport) {
+    entry.liveGate = {
+      ...entry.liveGate,
+      status: item.liveLaneStatus || entry.liveGate.status,
+      failClosedEvidence: item.liveLaneReport || null,
+      updatedAt: now,
+    };
+  }
+  updateLedgerNextCandidate(ledger, candidate.id);
+  writeJson(ledgerPath, ledger);
+}
+
 function updateLedgerCompletion({ batch, candidate, commitId, ledger, ledgerPath, liveRerun, targetRepo }) {
   const entry = ledger.entries.find((item) => item.id === candidate.id);
   if (!entry) {
@@ -1176,29 +1239,23 @@ function updateLedgerCompletion({ batch, candidate, commitId, ledger, ledgerPath
     plannedPaths: importedItem ? importedItem.plannedPaths : candidatePlannedPaths(candidate),
     sliceId: entry.implementation?.sliceId || safeId(`${candidate.id}-recipe-only-import`),
   };
-  const next = findNextSafeQueuedCandidate(ledger, candidate.id);
-  ledger.nextCandidate = next
-    ? {
-        id: next.id,
-        sourcePath: next.sourcePath,
-        classification: next.classification,
-        suggestedTools: next.suggestedTools,
-        reason: next.shortReason || next.description || "Next safe queued candidate selected by full-intake orchestrator.",
-      }
-    : null;
+  updateLedgerNextCandidate(ledger, candidate.id);
   writeJson(ledgerPath, ledger);
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function insertAfterHeading(text, heading, line) {
   if (text.includes(line)) {
     return text;
   }
-  const marker = `${heading}\n`;
-  const index = text.indexOf(marker);
-  if (index === -1) {
+  const match = new RegExp(`(^|\\r?\\n)${escapeRegExp(heading)}\\r?\\n`).exec(text);
+  if (!match) {
     return `${text.replace(/\s*$/, "\n\n")}${heading}\n\n${line}\n`;
   }
-  const insertAt = index + marker.length;
+  const insertAt = match.index + match[0].length;
   const prefix = text.slice(0, insertAt);
   const suffix = text.slice(insertAt);
   return `${prefix}\n${line}${suffix.startsWith("\n") ? "" : "\n"}${suffix}`;
@@ -1208,12 +1265,11 @@ function insertValidationRow(text, row) {
   if (text.includes(row)) {
     return text;
   }
-  const heading = "## Validation\n";
-  const index = text.indexOf(heading);
-  if (index === -1) {
+  const match = /(^|\r?\n)## Validation\r?\n/.exec(text);
+  if (!match) {
     return `${text.replace(/\s*$/, "\n\n")}## Validation\n\n${row}\n`;
   }
-  const afterHeading = index + heading.length;
+  const afterHeading = match.index + match[0].length;
   const nextSection = text.indexOf("\n## ", afterHeading);
   const sectionEnd = nextSection === -1 ? text.length : nextSection;
   const section = text.slice(afterHeading, sectionEnd);
@@ -1233,9 +1289,10 @@ function updatePlanDocument({ candidate, commitId, item, targetRepo }) {
   }
   const marker = `full-intake:${item.runId}:${candidate.id}`;
   let text = readFileSync(planPath, "utf8");
-  const progressLine = `- [x] Full intake ${candidate.id}: completed by reusable generic full-intake orchestrator (${marker}); live gate ${item.liveLaneStatus || "not_required"}, importer batch ${item.batchRunId || "n/a"}, commit ${commitId || "pending"}.`;
+  const commitText = commitId || "recorded after candidate commit";
+  const progressLine = `- [x] Full intake ${candidate.id}: completed by reusable generic full-intake orchestrator (${marker}); live gate ${item.liveLaneStatus || "not_required"}, importer batch ${item.batchRunId || "n/a"}, commit ${commitText}.`;
   const decisionLine = `- 2026-05-27: Generic full-intake orchestrator processed \`${candidate.sourcePath}\` as \`${candidate.id}\`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (${marker}).`;
-  const validationRow = `| Full intake ${candidate.id} | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run \`${item.runId}\`: live lane \`${item.liveLaneStatus || "not_required"}\`, batch \`${item.batchRunId || "n/a"}\`, live rerun \`${item.liveRerunStatus || "not_required"}\`, commit \`${commitId || "pending"}\`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |`;
+  const validationRow = `| Full intake ${candidate.id} | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run \`${item.runId}\`: live lane \`${item.liveLaneStatus || "not_required"}\`, batch \`${item.batchRunId || "n/a"}\`, live rerun \`${item.liveRerunStatus || "not_required"}\`, commit \`${commitText}\`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |`;
   text = insertAfterHeading(text, "## Progress", progressLine);
   text = insertAfterHeading(text, "## Decision Log", decisionLine);
   text = insertValidationRow(text, validationRow);
@@ -1376,10 +1433,12 @@ function itemFromCandidate(candidate, runId) {
   };
 }
 
-function terminalProcessedIds(state) {
+function terminalProcessedIds(state, ledger) {
+  const ledgerStatusById = new Map((ledger.entries || []).map((entry) => [entry.id, entry.status]));
   return new Set(
     (state.items || [])
       .filter((entry) => TERMINAL_ITEM_STATUSES.has(entry.status))
+      .filter((entry) => ledgerStatusById.get(entry.candidateId) !== "queued")
       .map((entry) => entry.candidateId),
   );
 }
@@ -1444,7 +1503,7 @@ export function runFullIntake(options, cwd = process.cwd()) {
   }
 
   let considered = 0;
-  const processedIds = terminalProcessedIds(state);
+  const processedIds = terminalProcessedIds(state, initialLedger);
 
   while (considered < maxItems) {
     const dirtyBefore = gitChangedPaths(targetRepo);
@@ -1457,6 +1516,7 @@ export function runFullIntake(options, cwd = process.cwd()) {
 
     const ledger = readJson(ledgerPath, "queue-ledger");
     assertRequiredLedgerShape(ledger);
+    let activeLedger = ledger;
     const candidate = selectNextQueuedRankedCandidate(ledger, processedIds);
     if (!candidate) {
       report.status = considered === 0 ? "completed_no_candidates" : "completed";
@@ -1472,18 +1532,20 @@ export function runFullIntake(options, cwd = process.cwd()) {
       item.reason = `classification_not_allowed:${candidate.classification}`;
       item.completedAt = new Date().toISOString();
       processedIds.add(candidate.id);
+      updateLedgerTerminalStatus({ candidate, item, ledger: activeLedger, ledgerPath, targetRepo });
       state = saveState(runRoot, pushItem(state, item));
       report.items.push(item);
       appendEvent(runRoot, { candidateId: candidate.id, event: "candidate_skipped_unsafe", runId });
       continue;
     }
 
-    const policyBlockers = candidatePolicyBlockers(candidate, ledger, targetRepo);
+    const policyBlockers = candidatePolicyBlockers(candidate, activeLedger, targetRepo);
     if (policyBlockers.length > 0) {
       item.status = "blocked_policy";
       item.blockers = policyBlockers;
       item.completedAt = new Date().toISOString();
       processedIds.add(candidate.id);
+      updateLedgerTerminalStatus({ candidate, item, ledger: activeLedger, ledgerPath, targetRepo });
       state = saveState(runRoot, pushItem(state, item));
       report.items.push(item);
       appendEvent(runRoot, { candidateId: candidate.id, event: "candidate_blocked_policy", runId, blockers: policyBlockers });
@@ -1492,7 +1554,7 @@ export function runFullIntake(options, cwd = process.cwd()) {
 
     let liveGate = liveLaneReady(candidate.liveGate);
     if (!liveGate.ok) {
-      const liveReport = runAutoLiveLane({ candidate, ledger, ledgerPath, registry, runRoot, runId, targetRepo, timeoutMs });
+      const liveReport = runAutoLiveLane({ candidate, ledger: activeLedger, ledgerPath, registry, runRoot, runId, targetRepo, timeoutMs });
       item.liveLaneReport = normalizeRepoPath(path.relative(targetRepo, liveReport.reportPath));
       item.liveLaneStatus = liveReport.status;
       if (!liveReport.ok) {
@@ -1500,6 +1562,7 @@ export function runFullIntake(options, cwd = process.cwd()) {
         item.reason = liveReport.reason || liveReport.failedCommand?.label || "live_lane_failed";
         item.completedAt = new Date().toISOString();
         processedIds.add(candidate.id);
+        updateLedgerTerminalStatus({ candidate, item, ledger, ledgerPath, targetRepo });
         state = saveState(runRoot, pushItem(state, item));
         report.items.push(item);
         appendEvent(runRoot, { candidateId: candidate.id, event: "candidate_blocked_live_lane", runId, status: item.status });
@@ -1507,6 +1570,7 @@ export function runFullIntake(options, cwd = process.cwd()) {
       }
       const refreshedLedger = readJson(ledgerPath, "queue-ledger");
       const refreshedCandidate = refreshedLedger.entries.find((entry) => entry.id === candidate.id);
+      activeLedger = refreshedLedger;
       Object.assign(candidate, refreshedCandidate);
       liveGate = liveLaneReady(candidate.liveGate);
     } else {
@@ -1518,6 +1582,7 @@ export function runFullIntake(options, cwd = process.cwd()) {
       item.reason = "live_command_missing_after_lane_gate";
       item.completedAt = new Date().toISOString();
       processedIds.add(candidate.id);
+      updateLedgerTerminalStatus({ candidate, item, ledger: activeLedger, ledgerPath, targetRepo });
       state = saveState(runRoot, pushItem(state, item));
       report.items.push(item);
       continue;
@@ -1525,7 +1590,7 @@ export function runFullIntake(options, cwd = process.cwd()) {
 
     let batch;
     try {
-      batch = runCandidateImport({ candidate, ledger, runId, runRoot, targetRepo });
+      batch = runCandidateImport({ candidate, ledger: activeLedger, runId, runRoot, targetRepo });
       item.batchRunId = batch.batchRunId;
       item.batchReport = batch.report.reportPath;
       item.importStatus = batch.report.status;
@@ -1535,6 +1600,7 @@ export function runFullIntake(options, cwd = process.cwd()) {
       item.batchReport = error.report?.reportPath || null;
       item.completedAt = new Date().toISOString();
       processedIds.add(candidate.id);
+      updateLedgerTerminalStatus({ candidate, item, ledger: activeLedger, ledgerPath, targetRepo });
       state = saveState(runRoot, pushItem(state, item));
       report.items.push(item);
       appendEvent(runRoot, { candidateId: candidate.id, event: "candidate_import_failed", reason: error.message, runId });
@@ -1562,6 +1628,8 @@ export function runFullIntake(options, cwd = process.cwd()) {
         item.reason = liveRerun.failedCommand?.label || "live_rerun_failed";
         item.completedAt = new Date().toISOString();
         processedIds.add(candidate.id);
+        const failedLedger = readJson(ledgerPath, "queue-ledger");
+        updateLedgerTerminalStatus({ candidate, item, ledger: failedLedger, ledgerPath, targetRepo });
         state = saveState(runRoot, pushItem(state, item));
         report.items.push(item);
         report.status = "stopped_after_failed_live_rerun";

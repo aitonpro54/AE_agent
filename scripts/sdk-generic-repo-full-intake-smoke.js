@@ -412,6 +412,11 @@ function assertAutoLaneSynthesisFailClosedEvidence() {
       assert.strictEqual(synthesis.ok, false);
       assert(Array.isArray(synthesis.candidateTools));
     }
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    assert.strictEqual(ledger.entries[0].status, "blocked_live_lane_synthesis_unsafe");
+    assert.strictEqual(ledger.entries[1].status, "blocked_live_lane_synthesis_ambiguous");
+    assert.strictEqual(ledger.entries[0].failClosed.status, "blocked_live_lane_synthesis_unsafe");
+    assert.strictEqual(ledger.entries[1].failClosed.status, "blocked_live_lane_synthesis_ambiguous");
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);
@@ -457,7 +462,9 @@ function assertUnsafeCandidateSkipAndContinue() {
     assert.strictEqual(output.items[1].status, "completed");
     const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
     assert.strictEqual(ledger.entries.find((item) => item.id === "tool-layers-read-only-fixture").status, "completed");
-    assert.strictEqual(ledger.entries.find((item) => item.id === "tool-unsafe-render-queue-delete").status, "queued");
+    const skipped = ledger.entries.find((item) => item.id === "tool-unsafe-render-queue-delete");
+    assert.strictEqual(skipped.status, "skipped_unsafe_candidate");
+    assert.strictEqual(skipped.failClosed.status, "skipped_unsafe_candidate");
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);
@@ -484,8 +491,75 @@ function assertLiveLaneFailureEvidence() {
     assert.strictEqual(report.failedCommand.exitCode, 7);
     assert(fs.existsSync(path.join(fixture.target, report.failedCommand.logPath)));
     const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
-    assert.strictEqual(ledger.entries[0].status, "queued");
-    assert.strictEqual(ledger.entries[0].liveGate.status, "needed_or_reusable_lane_required");
+    assert.strictEqual(ledger.entries[0].status, "blocked_live_lane_validation_failed");
+    assert.strictEqual(ledger.entries[0].liveGate.status, "blocked_live_lane_validation_failed");
+    assert.strictEqual(ledger.entries[0].failClosed.status, "blocked_live_lane_validation_failed");
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertQueuedLedgerStaleBlockedStateIsRetried() {
+  const fixture = createFixture("stale-blocked-resume");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [posterizeEntry()]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const runId = "fixture-stale-blocked-resume";
+    const runRoot = path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-full-intake", runId);
+    fs.mkdirSync(runRoot, { recursive: true });
+    fs.writeFileSync(
+      path.join(runRoot, "state.json"),
+      `${JSON.stringify(
+        {
+          schema: "generic-repo-full-intake.state.v1",
+          auxiliaryId: "AUX-043",
+          runId,
+          status: "completed_with_blocked_candidates",
+          startedAt: "2026-05-27T00:00:00.000Z",
+          updatedAt: "2026-05-27T00:00:00.000Z",
+          ledgerPath,
+          maxItems: 1,
+          resumeCount: 0,
+          items: [
+            {
+              candidateId: "tool-compositions-add-posterize-time-adjustment-layer",
+              status: "blocked_live_lane_template_missing"
+            }
+          ],
+          completedCandidateIds: [],
+          blockedCandidateIds: ["tool-compositions-add-posterize-time-adjustment-layer"],
+          skippedCandidateIds: [],
+          commitIds: []
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+
+    const output = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        runId,
+        1,
+        fakeCodexEnv(binDir)
+      )
+    );
+    assert.strictEqual(output.resumed, true);
+    assert.strictEqual(output.status, "completed");
+    assert.strictEqual(output.items[0].candidateId, "tool-compositions-add-posterize-time-adjustment-layer");
+    assert.strictEqual(output.items[0].status, "completed");
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    assert.strictEqual(ledger.entries[0].status, "completed");
+    assert.strictEqual(ledger.entries[0].liveGate.templateSource, "auto_synthesis");
+    const state = JSON.parse(fs.readFileSync(path.join(runRoot, "state.json"), "utf8"));
+    assert.strictEqual(state.items[0].status, "completed");
+    assert.deepStrictEqual(state.blockedCandidateIds, []);
+    assert.strictEqual(state.maxItems, 1);
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);
@@ -519,6 +593,7 @@ function main() {
   assertAutoLaneSynthesisFailClosedEvidence();
   assertUnsafeCandidateSkipAndContinue();
   assertLiveLaneFailureEvidence();
+  assertQueuedLedgerStaleBlockedStateIsRetried();
   assertResumeFromState();
   console.log(JSON.stringify({ ok: true, smoke: "generic-repo-full-intake" }, null, 2));
 }
