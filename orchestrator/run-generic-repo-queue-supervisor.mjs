@@ -2,17 +2,22 @@
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
+import { runImporter } from "./run-generic-repo-tool-importer.mjs";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..");
 const PLAN_SCHEMA = "generic-repo-queue-supervisor.plan-only.v1";
+const BATCH_SCHEMA = "generic-repo-queue-supervisor.batch-report.v1";
 const AUXILIARY_ID = "AUX-031";
+const BATCH_AUXILIARY_ID = "AUX-038";
 const DEFAULT_LEDGER_PATH =
   ".codex-runtime/sdk/generic-repo-importer/kyletmartinez-after-effects-scripts-intake/queue-ledger.json";
+const BATCH_ROOT_RELATIVE = ".codex-runtime/sdk/generic-repo-queue-supervisor";
 const SAFE_CLASSIFICATIONS = new Set([
   "existing_typed_tools_recipe_only",
   "small_safe_typed_tool_library_recipe_addition",
@@ -48,14 +53,23 @@ Generic repository queue supervisor plan-only proof
 
 Usage:
   node orchestrator/run-generic-repo-queue-supervisor.mjs --plan-only --ledger <path> --max-items <n> --json
+  node orchestrator/run-generic-repo-queue-supervisor.mjs --batch --ledger <path> --max-items <n> --json
 
 Options:
   --ledger <path>        Durable generic repository importer ledger.
                         Defaults to ${DEFAULT_LEDGER_PATH}
   --target-repo <path>   Optional target repo override. Defaults to ledger.target.repoPath.
   --max-items <n>        Number of queued safe ranked candidates to plan. Default 3.
+  --run-id <id>          Optional stable batch runtime id.
+  --report-dir <path>    Optional report root inside target repo.
   --context-percent <n>  Fail closed at >= 70 before any new work.
   --plan-only            Required; this supervisor never executes candidates.
+  --batch                Process a bounded queue batch. Safe candidates with a
+                        ready/not-required live gate run through importer
+                        non-live validation; missing live lanes are recorded
+                        per candidate as blocked_needs_live_lane.
+  --prepare-only         With --batch, stop after importer analysis and
+                        implementation planning instead of child runs/merge.
   --json                 Print machine-readable output.
   --help                 Show this help.
 
@@ -63,10 +77,15 @@ This first bounded layer only reads the ledger, verifies safety gates, and emits
 a deterministic plan-only run list. It does not create worktrees, run child
 commands, perform controlled merge, run validation, run live AE/CEP/CDP/OpenAI
 CLI lanes, write source repositories, change packages, push, or create PRs.
+
+Batch mode is still non-live: it writes ignored runtime evidence, rejects
+Local/Ollama and fallback providers, never runs live AE/CEP/CDP/OpenAI CLI lanes,
+never writes source repositories, never changes package files, and never pushes
+or creates PRs.
 `;
 
-const VALUE_OPTIONS = new Set(["context-percent", "ledger", "max-items", "target-repo"]);
-const BOOLEAN_OPTIONS = new Set(["help", "json", "plan-only"]);
+const VALUE_OPTIONS = new Set(["context-percent", "ledger", "max-items", "report-dir", "run-id", "target-repo"]);
+const BOOLEAN_OPTIONS = new Set(["batch", "help", "json", "plan-only", "prepare-only"]);
 
 class QueueSupervisorError extends Error {
   constructor(message, report = null) {
@@ -152,6 +171,20 @@ function stableStringify(value) {
 
 function sha256Text(value) {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function safeId(value, fallback = "batch") {
+  return (
+    String(value || fallback)
+      .replace(/[^A-Za-z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 96) || fallback
+  );
+}
+
+function writeJson(filePath, value) {
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
 function parsePositiveInteger(value, label, fallback) {
@@ -246,6 +279,15 @@ function pathStartsWith(child, parent) {
   return normalizedChild === normalizedParent || normalizedChild.startsWith(`${normalizedParent}/`);
 }
 
+function resolveInside(root, candidate, label) {
+  const resolved = path.resolve(root, candidate);
+  const relative = path.relative(root, resolved);
+  if (relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative))) {
+    return resolved;
+  }
+  throw new Error(`${label}-outside-target-repo: ${candidate}`);
+}
+
 function resolveLedgerPath(cwd, value) {
   const candidate = value || DEFAULT_LEDGER_PATH;
   return path.isAbsolute(candidate) ? candidate : path.resolve(cwd, candidate);
@@ -258,6 +300,15 @@ function resolveTargetRepo(cwd, ledger, options) {
     throw new Error(`target-repo-missing: ${resolved}`);
   }
   gitOutput(resolved, ["rev-parse", "--show-toplevel"], "show-toplevel");
+  return resolved;
+}
+
+function resolveSourceCheckout(targetRepo, ledger) {
+  const checkout = ledger.source?.checkout || "";
+  const resolved = path.isAbsolute(checkout) ? checkout : path.resolve(targetRepo, checkout);
+  if (!existsSync(resolved) || !statSync(resolved).isDirectory()) {
+    throw new Error(`source-checkout-missing: ${resolved}`);
+  }
   return resolved;
 }
 
@@ -489,6 +540,36 @@ function candidateBlockers(entry, ledger) {
   return blockers;
 }
 
+function candidateNonLiveSafetyBlockers(entry, ledger) {
+  return candidateBlockers(entry, ledger).filter((entryBlocker) => entryBlocker.code !== "required-live-lane-missing");
+}
+
+function targetPolicyBlockers(ledger, changedPaths) {
+  const policyBlockers = [];
+
+  if (changedPaths.length > 0) {
+    policyBlockers.push(
+      blocker("target-repo-dirty", `Target repository has dirty paths: ${changedPaths.join(", ")}`, { changedPaths }),
+    );
+  }
+  if (ledger.constraints.pushAllowed === true || ledger.constraints.pullRequestAllowed === true) {
+    policyBlockers.push(blocker("push-pr-policy-unsafe", "Ledger constraints must not allow push or PR creation."));
+  }
+  if (ledger.constraints.noLocalOllama !== true) {
+    policyBlockers.push(blocker("local-ollama-policy-missing", "Ledger must explicitly forbid Local/Ollama."));
+  }
+  if (ledger.constraints.noDependencyOrPackageChanges !== true) {
+    policyBlockers.push(
+      blocker("dependency-package-policy-missing", "Ledger must explicitly forbid dependency/package changes."),
+    );
+  }
+  if (ledger.constraints.noRawJsxCopiedIntoProduct !== true) {
+    policyBlockers.push(blocker("raw-jsx-policy-missing", "Ledger must explicitly forbid raw JSX product copies."));
+  }
+
+  return policyBlockers;
+}
+
 function buildRunItem(entry, index, ledger) {
   const liveLane = liveLaneEvidence(entry.liveGate);
   const uniquePaths = sortedUnique([plannedRecipePath(entry), ...entry.implementation.plannedPaths, ...SHARED_OWNER_PATHS]);
@@ -588,6 +669,470 @@ function selectQueuedSafeCandidates(ledger, maxItems) {
   return { blockers, selected: candidates.slice(0, maxItems) };
 }
 
+function selectQueuedRankedCandidatesForBatch(ledger, maxItems) {
+  const candidates = [];
+  const unrankedSafeCandidates = [];
+
+  ledger.entries.forEach((entry, index) => {
+    validateEntryShape(entry, `ledger.entries[${index}]`);
+    const safe = SAFE_CLASSIFICATIONS.has(entry.classification);
+    const ranked = Number.isInteger(entry.queueRank);
+    if (entry.status === "queued" && ranked) {
+      candidates.push(entry);
+    } else if (entry.status === "queued" && safe && !ranked) {
+      unrankedSafeCandidates.push({
+        candidateId: entry.id,
+        classification: entry.classification,
+        sourcePath: entry.sourcePath,
+        status: "skipped_missing_queue_rank",
+      });
+    }
+  });
+
+  candidates.sort((left, right) => left.queueRank - right.queueRank || left.id.localeCompare(right.id));
+  return { selected: candidates.slice(0, maxItems), unrankedSafeCandidates };
+}
+
+function classifyBatchCandidate(entry, index, ledger) {
+  const runItem = buildRunItem(entry, index, ledger);
+  const liveLane = liveLaneEvidence(entry.liveGate);
+  const safeClassification = SAFE_CLASSIFICATIONS.has(entry.classification);
+  const safetyBlockers = candidateNonLiveSafetyBlockers(entry, ledger);
+  let status = "eligible_for_import";
+  let reason = "safe_candidate_ready_for_non_live_import";
+  let blockers = [];
+
+  if (!safeClassification) {
+    status = "skipped_unsafe_classification";
+    reason = `classification_not_allowed:${entry.classification}`;
+    blockers = [
+      blocker("unsafe-ranked-candidate", `Queued ranked candidate ${entry.id} has unsafe classification ${entry.classification}.`, {
+        classification: entry.classification,
+        queueRank: entry.queueRank,
+      }),
+    ];
+  } else if (safetyBlockers.length > 0) {
+    status = "blocked_policy";
+    reason = "candidate_non_live_safety_policy_blocked";
+    blockers = safetyBlockers;
+  } else if (!liveLane.ok) {
+    status = "blocked_needs_live_lane";
+    reason = liveLane.reason;
+    blockers = [
+      blocker("required-live-lane-missing", `Required generated-only live lane is not registered for ${entry.id}.`, {
+        liveGateStatus: entry.liveGate.status,
+        reason: liveLane.reason,
+        sourcePath: entry.sourcePath,
+      }),
+    ];
+  }
+
+  return {
+    ...runItem,
+    status,
+    reason,
+    blockers,
+    eligibleForImport: status === "eligible_for_import",
+  };
+}
+
+function batchRunId(options, ledgerHash) {
+  if (options.runId) {
+    return safeId(options.runId, "aux038-batch").slice(0, 80);
+  }
+  return safeId(`aux038-${Date.now().toString(36)}-${ledgerHash.slice(0, 8)}`, "aux038-batch").slice(0, 80);
+}
+
+function batchReportPath(targetRepo, options, runId) {
+  const reportRoot = options.reportDir
+    ? resolveInside(targetRepo, options.reportDir, "batch-report-dir")
+    : path.join(targetRepo, BATCH_ROOT_RELATIVE);
+  return path.join(reportRoot, runId, "batch-report.json");
+}
+
+function importerManifestPath(targetRepo, options, runId) {
+  const reportRoot = options.reportDir
+    ? resolveInside(targetRepo, options.reportDir, "batch-report-dir")
+    : path.join(targetRepo, BATCH_ROOT_RELATIVE);
+  return path.join(reportRoot, runId, "importer.manifest.json");
+}
+
+function batchStatus({ eligibleItems, importError, importerResult, items, policyBlockers, prepareOnly }) {
+  if (policyBlockers.length > 0) {
+    return "blocked_before_batch";
+  }
+  if (importError) {
+    return "failed_during_import";
+  }
+  if (eligibleItems.length === 0) {
+    return items.some((item) => item.status === "blocked_needs_live_lane")
+      ? "completed_with_blocked_candidates"
+      : "completed_no_importable_candidates";
+  }
+  if (prepareOnly) {
+    return "prepared";
+  }
+  if (importerResult?.nonLiveValidationComplete === true) {
+    return "imported_non_live_validated";
+  }
+  return "completed";
+}
+
+function buildImporterManifest({ eligibleItems, ledger, runId, sourceCheckout, targetRepo }) {
+  const plannedPaths = sortedUnique(eligibleItems.flatMap((item) => item.plannedPaths));
+  const candidateIds = eligibleItems.map((item) => item.candidateId);
+  const batchId = safeId(`queue-batch-${candidateIds.length}-${sha256Text(candidateIds.join("|")).slice(0, 10)}`);
+
+  return {
+    schema: "generic-repo-tool-importer.manifest.v1",
+    run: {
+      runId: safeId(`queue-${runId}`, "queue-batch").slice(0, 80),
+      createdAt: new Date().toISOString(),
+      requestedGoal: `Import safe generic repository queue candidates: ${candidateIds.join(", ")}`,
+      codexCliOnly: true,
+      resumable: true,
+      resumeFromState: true,
+      defaultModel: "gpt-5.5",
+      webSearch: "disabled",
+    },
+    sourceRepo: {
+      inputKind: "local-path",
+      location: sourceCheckout,
+      revision: ledger.source.revision,
+      allowedReadRoots: [sourceCheckout],
+      deniedReadRoots: [".git", "node_modules"],
+    },
+    targetRepo: {
+      path: targetRepo,
+      allowedWritePaths: plannedPaths,
+      forbiddenWritePaths: [
+        ".git/**",
+        "node_modules/**",
+        "package.json",
+        "package-lock.json",
+        "npm-shrinkwrap.json",
+        "pnpm-lock.yaml",
+        "yarn.lock",
+        "bun.lockb",
+        "deno.json",
+        "deno.lock",
+        "jsr.json",
+        "cep-panel/**",
+      ],
+      branchPolicy: "do-not-create-branch-by-default",
+      pushPolicy: "manual-user-approval-required",
+    },
+    intake: {
+      fingerprintFiles: ["package.json", "README.md"],
+      inventoryRules: ["queue-supervisor-safe-ranked-candidates"],
+      licensePolicy: "classify-before-import",
+      secretPolicy: "reject-secrets",
+      sizeLimits: {
+        maxFiles: 1000,
+        maxBytes: 20 * 1024 * 1024,
+      },
+    },
+    analysis: {
+      toolDiscovery: { enabled: true },
+      automationDiscovery: { enabled: true },
+      contractExtraction: { enabled: true },
+      riskClassification: { enabled: true },
+      readBackRequirements: { required: true },
+      batching: {
+        maxParallelAnalysisWorkers: 1,
+        maxParallelImplementationBatches: 1,
+      },
+    },
+    implementation: {
+      batchWorktrees: { mode: "future-isolated-per-tool-or-batch" },
+      plannedPathsPerBatch: [
+        {
+          id: batchId,
+          candidateIds,
+          plannedPaths,
+        },
+      ],
+      codexCliInvocation: {
+        engine: "codex-cli",
+        sandbox: "workspace-write",
+        approvalPolicy: "never",
+        webSearch: "disabled",
+        localOllama: false,
+      },
+      reviewerPolicy: { readOnly: true },
+      artifactPolicy: { runtimeOnlyUntilPromotion: true },
+    },
+    merge: {
+      supervisor: "single controlled merge supervisor",
+      mergePlan: { mode: "future-controlled-merge" },
+      diffPolicy: { plannedPathsOnly: true },
+      conflictPolicy: { failClosed: true },
+      plannedPathGate: { required: true },
+    },
+    validation: {
+      nonLiveCommands: ["node --check <touched-js-files>", "git diff --check"],
+      nodeCheckTouchedJs: true,
+      gitDiffCheck: true,
+      semanticVerification: { requiredBeforeLive: true },
+      reportPath: "validation/non-live-report.json",
+    },
+    liveAcceptance: {
+      queue: "serial-live-ae-cep-acceptance-queue",
+      lock: "locks/live-ae-cep.lock",
+      mode: "generated-only-openai-cli-when-available",
+      providerPath: "OpenAI CLI through Codex CLI only",
+      flow: ["m100_proposal", "dry_run", "confirmed_run", "read_back", "semantic_verification"],
+      generatedOnlyPolicy: { required: true },
+      readBackPolicy: { required: true },
+      semanticVerification: { required: true },
+    },
+    approvals: {
+      manualUserApprovalRequiredFor: ["push", "pull_request"],
+      automaticSafetyGatesFor: [
+        "external repository intake",
+        "parallel analysis",
+        "parallel implementation worktrees",
+        "dependency change rejection",
+        "controlled merge",
+        "non-live validation",
+        "generated-only live queue gating",
+      ],
+    },
+    safety: {
+      forbiddenActions: [
+        "use_local_ollama",
+        "use_external_provider_fallback",
+        "write_source_repository",
+        "push_without_manual_user_approval",
+        "create_pr_without_manual_user_approval",
+        "run_live_cep_ae_without_serial_lock",
+        "run_mutating_live_without_m100_flow",
+        "merge_unvalidated_batch",
+        "change_dependencies_without_manifest_allowance",
+        "continue_after_context_hard_handoff",
+      ],
+      forbiddenPaths: [
+        ".git/**",
+        "node_modules/**",
+        "package.json",
+        "package-lock.json",
+        "npm-shrinkwrap.json",
+        "pnpm-lock.yaml",
+        "yarn.lock",
+        "bun.lockb",
+        "deno.json",
+        "deno.lock",
+        "jsr.json",
+        "cep-panel/**",
+      ],
+      stopGates: [
+        "manifest-schema-invalid",
+        "target-repo-dirty-unowned",
+        "source-repo-write-attempt",
+        "local-ollama-selected",
+        "dependency-change-requested",
+        "context-pressure",
+      ],
+      auditEvidence: { required: true },
+    },
+  };
+}
+
+function runBatch(options, cwd = process.cwd()) {
+  if (options.batch !== true) {
+    throw new Error("--batch is required for generic repo queue batch mode.");
+  }
+  if (options.planOnly === true) {
+    throw new Error("--batch and --plan-only are mutually exclusive.");
+  }
+
+  const maxItems = parsePositiveInteger(options.maxItems, "max-items", 3);
+  const ledgerPath = resolveLedgerPath(cwd, options.ledger);
+  if (!existsSync(ledgerPath) || !statSync(ledgerPath).isFile()) {
+    throw new Error(`ledger-missing: ${ledgerPath}`);
+  }
+
+  const ledger = readJson(ledgerPath, "queue-ledger");
+  assertRequiredLedgerShape(ledger);
+  const targetRepo = resolveTargetRepo(cwd, ledger, options);
+  const ledgerHash = sha256File(ledgerPath);
+  const runId = batchRunId(options, ledgerHash);
+  const reportPath = batchReportPath(targetRepo, options, runId);
+  const manifestPath = importerManifestPath(targetRepo, options, runId);
+  const context = contextBlockers(options);
+  const changedPathsBefore = gitChangedPaths(targetRepo);
+  const selection = selectQueuedRankedCandidatesForBatch(ledger, maxItems);
+  const items = selection.selected.map((entry, index) => classifyBatchCandidate(entry, index + 1, ledger));
+  const eligibleItems = items.filter((item) => item.eligibleForImport);
+  const policyBlockers = [...context.blockers, ...targetPolicyBlockers(ledger, changedPathsBefore)];
+  const prepareOnly = options.prepareOnly === true;
+  let importerResult = null;
+  let importerError = null;
+  let importerManifest = null;
+  let sourceCheckout = null;
+
+  if (policyBlockers.length === 0 && eligibleItems.length > 0) {
+    try {
+      sourceCheckout = resolveSourceCheckout(targetRepo, ledger);
+      importerManifest = buildImporterManifest({
+        eligibleItems,
+        ledger,
+        runId,
+        sourceCheckout,
+        targetRepo,
+      });
+      writeJson(manifestPath, importerManifest);
+      importerResult = runImporter(
+        {
+          manifest: manifestPath,
+          "run-analysis": true,
+          "plan-implementation": true,
+          "run-implementation-worktrees": !prepareOnly,
+          "run-implementation-child-runs": !prepareOnly,
+          "apply-controlled-merge": !prepareOnly,
+          "run-non-live-validation": !prepareOnly,
+        },
+        REPO_ROOT,
+      );
+      for (const item of eligibleItems) {
+        item.status = prepareOnly ? "prepared" : "imported_non_live_validated";
+        item.reason = prepareOnly ? "importer_prepared_candidate_batch" : "importer_non_live_validation_passed";
+        item.importerRunId = importerResult.runId;
+      }
+    } catch (error) {
+      importerError = error;
+      for (const item of eligibleItems) {
+        item.status = "failed_importer";
+        item.reason = error.message;
+        item.importerRunId = importerManifest?.run?.runId || null;
+      }
+    }
+  }
+
+  const changedPathsAfter = gitChangedPaths(targetRepo);
+  const importedCandidateCount =
+    importerResult && importerError === null && prepareOnly === false ? eligibleItems.length : 0;
+  const preparedCandidateCount =
+    importerResult && importerError === null && prepareOnly === true ? eligibleItems.length : 0;
+  const report = {
+    schema: BATCH_SCHEMA,
+    auxiliaryId: BATCH_AUXILIARY_ID,
+    ok: policyBlockers.length === 0 && importerError === null,
+    status: batchStatus({
+      eligibleItems,
+      importError: importerError,
+      importerResult,
+      items,
+      policyBlockers,
+      prepareOnly,
+    }),
+    mode: "batch",
+    runId,
+    reportPath: normalizeRepoPath(path.relative(targetRepo, reportPath)),
+    ledgerPath: normalizeRepoPath(path.relative(targetRepo, ledgerPath)),
+    ledgerSha256: ledgerHash,
+    targetRepo,
+    target: {
+      branch: gitOutput(targetRepo, ["branch", "--show-current"], "branch-show-current"),
+      changedPathsBefore,
+      changedPathsAfter,
+      currentHead: gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head"),
+      ledgerBranch: ledger.target.branch,
+      ledgerHead: ledger.target.head,
+      remoteBranch: ledger.target.remoteBranch,
+      remoteName: ledger.target.remoteName,
+    },
+    source: {
+      checkout: sourceCheckout
+        ? normalizeRepoPath(path.relative(targetRepo, sourceCheckout)) || normalizeRepoPath(sourceCheckout)
+        : normalizeRepoPath(ledger.source.checkout),
+      repo: ledger.source.repo,
+      revision: ledger.source.revision,
+    },
+    maxItems,
+    consideredCandidateCount: items.length,
+    eligibleCandidateCount: eligibleItems.length,
+    importedCandidateCount,
+    preparedCandidateCount,
+    blockedCandidateCount: items.filter((item) => item.status.startsWith("blocked_")).length,
+    skippedCandidateCount: items.filter((item) => item.status.startsWith("skipped_")).length,
+    selectedCandidateIds: items.map((item) => item.candidateId),
+    eligibleCandidateIds: eligibleItems.map((item) => item.candidateId),
+    blockedCandidateIds: items
+      .filter((item) => item.status === "blocked_needs_live_lane")
+      .map((item) => item.candidateId),
+    unrankedSafeCandidates: selection.unrankedSafeCandidates,
+    nextCandidate: ledger.nextCandidate || null,
+    prepareOnly,
+    runImports: !prepareOnly,
+    importer: importerManifest
+      ? {
+          manifestPath: normalizeRepoPath(path.relative(targetRepo, manifestPath)),
+          runId: importerManifest.run.runId,
+          result: importerResult,
+          error: importerError ? importerError.message : null,
+        }
+      : {
+          manifestPath: null,
+          runId: null,
+          result: null,
+          error: null,
+          skippedReason: policyBlockers.length > 0 ? "policy_blocked" : "no_eligible_candidates",
+        },
+    validation: {
+      nonLiveValidationRun: importerResult?.validationCommandsRun === true,
+      nonLiveValidationComplete: importerResult?.nonLiveValidationComplete === true,
+      liveCepAeRun: false,
+      localOllamaUsed: false,
+      fallbackProviderUsed: false,
+      pushOrPrCreated: false,
+    },
+    safetyPolicy: {
+      dependencyPackageChangesAllowed: false,
+      liveAeCepAllowed: false,
+      liveParallelismAllowed: false,
+      localOllamaAllowed: false,
+      packageWritesAllowed: false,
+      pushAllowed: false,
+      pullRequestAllowed: false,
+      rawJsxCopyAllowed: false,
+      sourceRepoWritesAllowed: false,
+      userAssetMutationAllowed: false,
+    },
+    items,
+    blockers: policyBlockers,
+    context,
+    createdAt: new Date().toISOString(),
+  };
+  report.batchSha256 = sha256Text(
+    stableStringify({
+      eligibleCandidateIds: report.eligibleCandidateIds,
+      items: report.items.map((item) => ({
+        candidateId: item.candidateId,
+        plannedPaths: item.plannedPaths,
+        queueRank: item.queueRank,
+        reason: item.reason,
+        status: item.status,
+      })),
+      ledgerHash,
+      maxItems,
+      prepareOnly,
+      status: report.status,
+    }),
+  );
+
+  writeJson(reportPath, report);
+  if (!report.ok) {
+    throw new QueueSupervisorError(
+      policyBlockers.length > 0
+        ? policyBlockers.map((entry) => entry.code).join("; ")
+        : `batch-importer-failed: ${importerError.message}`,
+      report,
+    );
+  }
+  return report;
+}
+
 function buildPlan(options, cwd = process.cwd()) {
   if (options.planOnly !== true) {
     throw new Error("--plan-only is required for the generic repo queue supervisor.");
@@ -608,27 +1153,7 @@ function buildPlan(options, cwd = process.cwd()) {
   const selection = selectQueuedSafeCandidates(ledger, maxItems);
   const runList = selection.selected.map((entry, index) => buildRunItem(entry, index + 1, ledger));
   const candidateSafetyBlockers = selection.selected.flatMap((entry) => candidateBlockers(entry, ledger));
-  const policyBlockers = [];
-
-  if (changedPaths.length > 0) {
-    policyBlockers.push(
-      blocker("target-repo-dirty", `Target repository has dirty paths: ${changedPaths.join(", ")}`, { changedPaths }),
-    );
-  }
-  if (ledger.constraints.pushAllowed === true || ledger.constraints.pullRequestAllowed === true) {
-    policyBlockers.push(blocker("push-pr-policy-unsafe", "Ledger constraints must not allow push or PR creation."));
-  }
-  if (ledger.constraints.noLocalOllama !== true) {
-    policyBlockers.push(blocker("local-ollama-policy-missing", "Ledger must explicitly forbid Local/Ollama."));
-  }
-  if (ledger.constraints.noDependencyOrPackageChanges !== true) {
-    policyBlockers.push(
-      blocker("dependency-package-policy-missing", "Ledger must explicitly forbid dependency/package changes."),
-    );
-  }
-  if (ledger.constraints.noRawJsxCopiedIntoProduct !== true) {
-    policyBlockers.push(blocker("raw-jsx-policy-missing", "Ledger must explicitly forbid raw JSX product copies."));
-  }
+  const policyBlockers = targetPolicyBlockers(ledger, changedPaths);
 
   const blockers = [
     ...context.blockers,
@@ -733,6 +1258,14 @@ function printResult(report, asJson) {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     return;
   }
+  if (report.schema === BATCH_SCHEMA) {
+    process.stdout.write(`Generic repo queue supervisor batch: ${report.status}\n`);
+    process.stdout.write(`Considered: ${report.selectedCandidateIds.join(", ") || "none"}\n`);
+    process.stdout.write(`Eligible: ${report.eligibleCandidateIds.join(", ") || "none"}\n`);
+    process.stdout.write(`Report: ${report.reportPath}\n`);
+    process.stdout.write(`Blockers: ${report.blockers.length ? report.blockers.map((entry) => entry.code).join(", ") : "none"}\n`);
+    return;
+  }
   process.stdout.write(`Generic repo queue supervisor: ${report.status}\n`);
   process.stdout.write(`Selected: ${report.selectedCandidateIds.join(", ") || "none"}\n`);
   process.stdout.write(`Plan hash: ${report.planSha256}\n`);
@@ -748,7 +1281,7 @@ async function main() {
       process.stdout.write(HELP.trimStart());
       return;
     }
-    const report = buildPlan(options, REPO_ROOT);
+    const report = options.batch === true ? runBatch(options, REPO_ROOT) : buildPlan(options, REPO_ROOT);
     printResult(report, asJson);
   } catch (error) {
     if (error instanceof QueueSupervisorError && error.report && asJson) {
@@ -759,7 +1292,7 @@ async function main() {
   }
 }
 
-export { buildPlan };
+export { buildPlan, runBatch };
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   main();

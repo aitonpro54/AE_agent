@@ -19,9 +19,10 @@ function sh(cwd, args) {
   return result.stdout.trim();
 }
 
-function run(args, cwd = repo) {
+function run(args, cwd = repo, env = {}) {
   return spawnSync(process.execPath, [runner, ...args], {
     cwd,
+    env: { ...process.env, ...env },
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     timeout: 60000,
@@ -49,6 +50,25 @@ function createFixture(name) {
   const source = path.join(root, "source-checkout");
   fs.mkdirSync(target, { recursive: true });
   fs.mkdirSync(source, { recursive: true });
+  fs.mkdirSync(path.join(source, "Layers"), { recursive: true });
+  fs.mkdirSync(path.join(source, "Compositions"), { recursive: true });
+  fs.writeFileSync(path.join(source, "package.json"), `${JSON.stringify({ name: "fixture-source" }, null, 2)}\n`, "utf8");
+  fs.writeFileSync(path.join(source, "README.md"), "# source\n", "utf8");
+  fs.writeFileSync(
+    path.join(source, "Layers", "Replace_Text_In_Layer_Name.jsx"),
+    "function replaceTextInLayerName() { return true; }\n",
+    "utf8",
+  );
+  fs.writeFileSync(
+    path.join(source, "Compositions", "Add_Background_Layer.jsx"),
+    "function addBackgroundLayer() { return true; }\n",
+    "utf8",
+  );
+  fs.writeFileSync(
+    path.join(source, "Compositions", "Needs_Lane.jsx"),
+    "function needsLane() { return true; }\n",
+    "utf8",
+  );
   fs.writeFileSync(path.join(target, ".gitignore"), ".codex-runtime/\n", "utf8");
   fs.writeFileSync(path.join(target, "README.md"), "# target\n", "utf8");
   sh(target, ["git", "init"]);
@@ -116,6 +136,62 @@ function entry(overrides = {}) {
     queueRank: 1,
     nextAction: "queued_after_prior_safe_candidates",
     ...overrides,
+  };
+}
+
+function writeFakeCodex(root) {
+  const binDir = path.join(root, "fake-bin");
+  fs.mkdirSync(binDir, { recursive: true });
+  const fakeScript = path.join(binDir, "fake-codex.js");
+  fs.writeFileSync(
+    fakeScript,
+    [
+      '"use strict";',
+      'const fs = require("fs");',
+      'const path = require("path");',
+      'const cdIndex = process.argv.indexOf("--cd");',
+      'const cwd = cdIndex >= 0 ? process.argv[cdIndex + 1] : process.cwd();',
+      'let input = "";',
+      'process.stdin.setEncoding("utf8");',
+      'process.stdin.on("data", (chunk) => { input += chunk; });',
+      'process.stdin.on("end", () => {',
+      '  if (!input.includes("AUX-021 generic repository importer child-run execution wrapper")) {',
+      '    console.error("missing AUX-021 wrapper");',
+      '    process.exit(9);',
+      '  }',
+      '  const match = input.match(/<child_run_intent_json>\\n([\\s\\S]*?)\\n<\\/child_run_intent_json>/);',
+      '  const intent = match ? JSON.parse(match[1]) : { plannedPaths: [] };',
+      '  const relative = process.env.FAKE_CODEX_WRITE_PATH || intent.plannedPaths.find((item) => /\\.js$/i.test(item)) || intent.plannedPaths[0];',
+      '  if (!relative) {',
+      '    console.error("missing planned path");',
+      '    process.exit(8);',
+      '  }',
+      '  const absolute = path.join(cwd, relative);',
+      '  fs.mkdirSync(path.dirname(absolute), { recursive: true });',
+      '  fs.writeFileSync(absolute, `// fake queue import\\nmodule.exports = ${JSON.stringify(relative)};\\n`, "utf8");',
+      '  console.log(`fake codex wrote ${relative}`);',
+      '});',
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+
+  if (process.platform === "win32") {
+    fs.writeFileSync(path.join(binDir, "codex.cmd"), '@echo off\r\nnode "%~dp0fake-codex.js" %*\r\n', "utf8");
+  } else {
+    const binPath = path.join(binDir, "codex");
+    fs.writeFileSync(binPath, `#!/bin/sh\nnode "${fakeScript}" "$@"\n`, "utf8");
+    fs.chmodSync(binPath, 0o755);
+  }
+  return binDir;
+}
+
+function fakeCodexEnv(binDir) {
+  const currentPath = process.env.PATH || process.env.Path || "";
+  const nextPath = `${binDir}${path.delimiter}${currentPath}`;
+  return {
+    PATH: nextPath,
+    Path: nextPath,
   };
 }
 
@@ -314,6 +390,126 @@ function assertRequiredLiveLaneMissingFailsClosed() {
   }
 }
 
+function assertBatchRecordsMissingLiveLaneAndContinues() {
+  const fixture = createFixture("batch-missing-lane-continues");
+  try {
+    const eligiblePath = "scripts/imported-tools/tool-compositions-add-background-layer.js";
+    const ledgerPath = writeLedger(
+      fixture,
+      validLedger(fixture, [
+        entry({
+          id: "tool-compositions-add-assorted-composition-guides",
+          sourcePath: "Compositions/Add_Assorted_Composition_Guides.jsx",
+          liveGate: { required: true, status: "needed_or_reusable_lane_required" },
+          queueRank: 1,
+        }),
+        entry({
+          id: "tool-compositions-add-background-layer",
+          sourcePath: "Compositions/Add_Background_Layer.jsx",
+          classification: "small_safe_typed_tool_library_recipe_addition",
+          liveGate: {
+            required: true,
+            status: "registered",
+            command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-fixture-openai-cli-smoke",
+          },
+          implementation: {
+            sliceId: null,
+            plannedPaths: [eligiblePath],
+          },
+          suggestedTools: ["get_active_comp", "create_shape_layer", "get_layer_details"],
+          queueRank: 2,
+        }),
+      ]),
+    );
+    const binDir = writeFakeCodex(fixture.root);
+    const output = parseJson(
+      run(
+        [
+          "--batch",
+          "--ledger",
+          ledgerPath,
+          "--target-repo",
+          fixture.target,
+          "--max-items",
+          "2",
+          "--run-id",
+          "b1",
+          "--json",
+        ],
+        repo,
+        fakeCodexEnv(binDir),
+      ),
+    );
+    assert.strictEqual(output.schema, "generic-repo-queue-supervisor.batch-report.v1");
+    assert.strictEqual(output.auxiliaryId, "AUX-038");
+    assert.strictEqual(output.ok, true);
+    assert.strictEqual(output.status, "imported_non_live_validated");
+    assert.strictEqual(output.items[0].status, "blocked_needs_live_lane");
+    assert.strictEqual(output.items[1].status, "imported_non_live_validated");
+    assert.deepStrictEqual(output.blockedCandidateIds, ["tool-compositions-add-assorted-composition-guides"]);
+    assert.deepStrictEqual(output.eligibleCandidateIds, ["tool-compositions-add-background-layer"]);
+    assert.strictEqual(output.validation.nonLiveValidationRun, true);
+    assert.strictEqual(output.validation.nonLiveValidationComplete, true);
+    assert.strictEqual(output.validation.liveCepAeRun, false);
+    assert.strictEqual(output.validation.localOllamaUsed, false);
+    assert.strictEqual(output.validation.fallbackProviderUsed, false);
+    assert(output.importer.result.nonLiveValidationComplete);
+    assert(fs.existsSync(path.join(fixture.target, output.reportPath)), "batch report must be written");
+    assert(fs.existsSync(path.join(fixture.target, output.importer.manifestPath)), "batch manifest must be written");
+    assert(fs.existsSync(path.join(fixture.target, eligiblePath)), "eligible candidate should be imported");
+    assert(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]).includes(eligiblePath));
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertBatchAllBlockedWritesReportWithoutFailure() {
+  const fixture = createFixture("batch-all-blocked");
+  try {
+    const ledgerPath = writeLedger(
+      fixture,
+      validLedger(fixture, [
+        entry({
+          id: "tool-compositions-add-assorted-composition-guides",
+          sourcePath: "Compositions/Add_Assorted_Composition_Guides.jsx",
+          liveGate: { required: true, status: "needed_or_reusable_lane_required" },
+          queueRank: 1,
+        }),
+        entry({
+          id: "tool-compositions-add-background-layer",
+          sourcePath: "Compositions/Add_Background_Layer.jsx",
+          classification: "small_safe_typed_tool_library_recipe_addition",
+          liveGate: { required: true, status: "needed_or_reusable_lane_required" },
+          queueRank: 2,
+        }),
+      ]),
+    );
+    const output = parseJson(
+      run([
+        "--batch",
+        "--ledger",
+        ledgerPath,
+        "--target-repo",
+        fixture.target,
+        "--max-items",
+        "2",
+        "--run-id",
+        "b2",
+        "--json",
+      ]),
+    );
+    assert.strictEqual(output.status, "completed_with_blocked_candidates");
+    assert.strictEqual(output.ok, true);
+    assert.strictEqual(output.eligibleCandidateCount, 0);
+    assert.strictEqual(output.blockedCandidateCount, 2);
+    assert.strictEqual(output.importer.skippedReason, "no_eligible_candidates");
+    assert(fs.existsSync(path.join(fixture.target, output.reportPath)), "blocked batch report must be written");
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertForbiddenCandidatePathsFailClosed() {
   const fixture = createFixture("forbidden-paths");
   try {
@@ -386,6 +582,8 @@ function main() {
   assertMissingLedgerFieldsFailClosed();
   assertUnsafeRankedClassificationFailsClosed();
   assertRequiredLiveLaneMissingFailsClosed();
+  assertBatchRecordsMissingLiveLaneAndContinues();
+  assertBatchAllBlockedWritesReportWithoutFailure();
   assertForbiddenCandidatePathsFailClosed();
   assertContextPressureFailsClosed();
   assertLocalOllamaPolicyFailsClosed();
