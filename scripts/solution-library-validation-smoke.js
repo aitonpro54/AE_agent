@@ -30,7 +30,8 @@ const IMPORTED_ADVISORY_IDS = [
   "replace-text-in-layer-name-typed-plan",
   "get-selected-layer-duration-typed-plan",
   "duplicate-selected-layer-typed-plan",
-  "add-assorted-composition-guides-typed-plan"
+  "add-assorted-composition-guides-typed-plan",
+  "add-background-layer-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -398,6 +399,26 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for native guide semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Assorted_Composition_Guides/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /AUX-039/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+    } else if (id === "add-background-layer-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["create_comp", "create_shape_layer", "add_effect", "get_comp_details", "get_layer_details"],
+        `${id}: imported background layer workflow should stay on the narrow generated-background typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: generated background layer workflow must be mutating.`);
+      assert(text.includes("generated full-comp background layer"), `${id}: recipe should document full-comp generated background adaptation.`);
+      assert(text.includes("create_shape_layer"), `${id}: recipe should use the shape layer creation typed tool.`);
+      assert(text.includes("ADBE Fill"), `${id}: recipe should document fill-effect styling.`);
+      assert(text.includes("moveToEnd"), `${id}: recipe should fail closed for exact source stack semantics.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require background layer read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /create_shape_layer/.test(step)), `${id}: verification must include background shape-layer creation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /ADBE Fill/.test(step)), `${id}: verification must include fill-effect evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /one generated full-comp background layer/.test(item)), `${id}: verification must require one generated background layer.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /behind the generated foreground layer/.test(item)), `${id}: verification must preserve background-behind-foreground evidence.`);
+      assert(solution.notes.some((note) => /persistent native background-layer stack management/.test(note)), `${id}: notes must reject persistent native background stack claims.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Add_Background_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /AUX-041/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
     } else {
       throw new Error(`Unhandled imported advisory solution quality checks: ${id}`);
     }
@@ -593,6 +614,21 @@ function assertActualRetrieval(registry) {
   assert(assortedGuidesPromptSection.includes("get_comp_details"), "prompt section should require comp details read-back for guide overlays.");
   assert(!/run_extendscript/i.test(assortedGuidesPromptSection), "assorted guide guidance should not recommend raw ExtendScript.");
 
+  const backgroundLayerRetrieval = retrieveSolutionHints("Add a generated full-comp background layer behind the foreground artwork with a fill color, then read back the layer stack.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(backgroundLayerRetrieval.ok, true);
+  assert(ids(backgroundLayerRetrieval).includes("add-background-layer-typed-plan"), "background layer advisory recipe should surface for background prompts.");
+  const backgroundLayerPromptSection = formatSolutionHintsForPrompt(backgroundLayerRetrieval);
+  assert(backgroundLayerPromptSection.includes("Add Background Layer Typed Plan"), "prompt section should include background layer advisory title.");
+  assert(backgroundLayerPromptSection.includes("create_shape_layer"), "prompt section should prefer create_shape_layer for generated backgrounds.");
+  assert(backgroundLayerPromptSection.includes("ADBE Fill"), "prompt section should preserve fill-effect background styling.");
+  assert(backgroundLayerPromptSection.includes("get_layer_details"), "prompt section should require background layer read-back.");
+  assert(backgroundLayerPromptSection.includes("moveToEnd"), "prompt section should preserve exact stack-semantics warning.");
+  assert(!/run_extendscript/i.test(backgroundLayerPromptSection), "background layer guidance should not recommend raw ExtendScript.");
+
   return {
     contextRetrieval,
     alignRetrieval,
@@ -612,7 +648,8 @@ function assertActualRetrieval(registry) {
       replaceLayerName: ids(replaceLayerNameRetrieval),
       selectedLayerDuration: ids(selectedLayerDurationRetrieval),
       duplicateSelectedLayer: ids(duplicateSelectedLayerRetrieval),
-      assortedGuides: ids(assortedGuidesRetrieval)
+      assortedGuides: ids(assortedGuidesRetrieval),
+      backgroundLayer: ids(backgroundLayerRetrieval)
     }
   };
 }

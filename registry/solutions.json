@@ -1614,6 +1614,120 @@
         "Use generated-prefix layer names and never delete, rename, relink or reorder existing user layers as part of this workflow.",
         "Do not use this recipe for template batch changes, layer cleanup, masks, expressions, source relinking, render queue items or broad composition mutation."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "add-background-layer-typed-plan",
+      "title": "Add Background Layer Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "background",
+        "background-layer",
+        "shape-layers",
+        "generated-layer",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Add a generated full-comp background shape layer with typed read-back while exact source JSX stack semantics stay out of scope.",
+        "appliesWhen": [
+          "The user asks to add a background layer, color background, generated backdrop or full-frame rectangle behind generated artwork.",
+          "A generated shape-layer background adaptation is acceptable instead of persistent native background-layer stack management."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "A new generated comp created by the plan, or an explicit existing comp target read back before background creation."
+        },
+        {
+          "name": "backgroundColor",
+          "type": "array",
+          "required": false,
+          "description": "Optional requested RGB color represented by shape fill and ADBE Fill evidence."
+        },
+        {
+          "name": "backgroundLayerName",
+          "type": "string",
+          "required": false,
+          "description": "Optional generated layer name; must keep a generated prefix for cleanup/read-back safety."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow may add a generated full-comp shape layer but must not copy raw ExtendScript behavior.",
+        "Target comp dimensions and duration are known from create_comp output or get_comp_details read-back before background geometry is computed.",
+        "Existing user layers are not deleted, renamed, relinked or reordered by this recipe.",
+        "Exact expression-driven auto-resize, arbitrary existing-layer moveToEnd placement and native background-layer stack management remain typed-tool gaps."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/add-background-layer-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "create_comp",
+          "create_shape_layer",
+          "add_effect",
+          "get_comp_details",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read back target comp/background layer, confirm full-comp geometry and ADBE Fill evidence, and fail closed for exact moveToEnd/native stack semantics.",
+        "steps": [
+          "Run create_comp only when the user requests a new generated comp; otherwise use get_comp_details to verify the explicit target comp before mutation.",
+          "Run create_shape_layer for one generated rectangle background layer sized to the target comp width and height and centered at width/2, height/2.",
+          "Run add_effect with ADBE Fill on the generated background layer when color styling must be represented as effect evidence.",
+          "Run get_comp_details after mutation and compare generated background layer name, count, comp dimensions and layer stack evidence.",
+          "Run get_layer_details for the generated background layer and fail closed if expression-driven resize, arbitrary moveToEnd or persistent native background-layer semantics are required."
+        ],
+        "expectedEvidence": [
+          "Post-run get_comp_details shows one generated full-comp background layer in the target comp and no unexpected user-layer mutation.",
+          "Background layer names use a generated prefix and the generated rectangle size/position matches the comp dimensions and center.",
+          "get_layer_details or effect read-back shows ADBE Fill on the generated background layer when color styling is requested.",
+          "For generated proof artwork, read-back shows the generated background behind the generated foreground layer.",
+          "The plan reports expression-driven resize, arbitrary existing-layer moveToEnd and persistent native background stack semantics as unsupported by current typed tools."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-compositions-add-background-layer generic repository importer as advisory typed-plan coverage for generated full-comp background shape layers.",
+          "Live evidence was proved in AUX-041 with generated-only OpenAI CLI background-layer lane over create_comp, create_shape_layer, add_effect, get_comp_details and get_layer_details."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-27",
+          "from": "generic-repo-importer-tool-compositions-add-background-layer",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Add_Background_Layer.jsx into existing typed tools as a generated full-comp shape-layer background; no source JSX copied. AUX-041 registered and proved the generated-only OpenAI CLI background-layer lane.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "This recipe creates a generated full-comp shape-layer background, not persistent native background-layer stack management; require a separate typed-tool contract for expression-driven auto-resize, arbitrary existing-layer moveToEnd, or exact source JSX semantics.",
+        "Use generated-prefix layer names and never delete, rename, relink or reorder existing user layers as part of this workflow.",
+        "Do not use this recipe for template batch changes, layer cleanup, masks, expressions, source relinking, render queue items or broad composition mutation."
+      ]
     }
   ]
 }
