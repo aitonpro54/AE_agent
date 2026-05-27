@@ -1,6 +1,8 @@
 "use strict";
 
+const childProcess = require("child_process");
 const http = require("http");
+const path = require("path");
 const { writeAgentRunReport } = require("./agent-scenario-report");
 const {
   agentAssortedCompositionGuidesScenarioPlans,
@@ -39,6 +41,9 @@ const PROMPT = process.env.CEP_PANEL_PROMPT ||
 const MUTATING_PREFIX = "Codex Test Safe Run";
 const AGENT_SCENARIO_PREFIX = process.env.CEP_PANEL_AGENT_SCENARIO_PREFIX || "Codex QA 1.2";
 const AGENT_SCENARIO_WAIT_MS = Number(process.env.CEP_PANEL_AGENT_SCENARIO_WAIT_MS || 180000);
+const PROJECT_ROOT = path.resolve(__dirname, "..");
+const DAEMON_PATH = path.join(PROJECT_ROOT, "mcp-server", "bridge-daemon.js");
+const ENSURE_DAEMON_TIMEOUT_MS = Number(process.env.CEP_PANEL_ENSURE_DAEMON_TIMEOUT_MS || 8000);
 
 function defaultAgentScenarioConfig() {
   return {
@@ -299,6 +304,117 @@ function getJson(url) {
       });
     }).on("error", reject);
   });
+}
+
+function getJsonWithTimeout(url, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const req = http.get(url, (res) => {
+      let body = "";
+      res.setEncoding("utf8");
+      res.on("data", (chunk) => {
+        body += chunk;
+      });
+      res.on("end", () => {
+        try {
+          resolve(JSON.parse(body));
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+    req.setTimeout(timeoutMs, () => {
+      req.destroy(new Error(`Timed out after ${timeoutMs}ms: ${url}`));
+    });
+    req.on("error", reject);
+  });
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function localBridgeEndpoint() {
+  const target = new URL(BRIDGE_URL);
+  const hostname = String(target.hostname || "").toLowerCase();
+  const local = target.protocol === "http:" && (
+    hostname === "127.0.0.1" ||
+    hostname === "localhost" ||
+    hostname === "::1"
+  );
+  return {
+    host: hostname === "localhost" ? "127.0.0.1" : target.hostname,
+    local,
+    port: Number(target.port || 80),
+    protocol: target.protocol
+  };
+}
+
+async function readBridgeHealth(timeoutMs) {
+  const health = await getJsonWithTimeout(`${BRIDGE_URL.replace(/\/$/, "")}/health`, timeoutMs || 1200);
+  if (!health || health.ok !== true) {
+    throw new Error(`Bridge health returned not-ok: ${JSON.stringify(health)}`);
+  }
+  return health;
+}
+
+function startLocalBridgeDaemon(endpoint) {
+  const child = childProcess.spawn(process.execPath, [DAEMON_PATH], {
+    cwd: PROJECT_ROOT,
+    detached: true,
+    env: {
+      ...process.env,
+      AE_BRIDGE_HOST: endpoint.host || "127.0.0.1",
+      AE_BRIDGE_PORT: String(endpoint.port || 3456),
+      AE_BRIDGE_TOKEN: BRIDGE_TOKEN
+    },
+    stdio: "ignore",
+    windowsHide: true
+  });
+  child.unref();
+  return child.pid;
+}
+
+async function ensureBridgeDaemonRunning(reason) {
+  if (process.env.CEP_PANEL_ENSURE_DAEMON === "0") {
+    return { ok: true, skipped: true, reason: "disabled_by_env" };
+  }
+
+  try {
+    const health = await readBridgeHealth(1200);
+    return { ok: true, alreadyRunning: true, health, reason };
+  } catch (initialError) {
+    const endpoint = localBridgeEndpoint();
+    if (!endpoint.local) {
+      throw new Error(`Bridge daemon is unreachable and ${BRIDGE_URL} is not a local auto-start endpoint: ${initialError.message}`);
+    }
+
+    const startedPid = startLocalBridgeDaemon(endpoint);
+    const startedAt = Date.now();
+    let lastError = initialError;
+    while (Date.now() - startedAt < ENSURE_DAEMON_TIMEOUT_MS) {
+      await sleep(250);
+      try {
+        const health = await readBridgeHealth(1200);
+        return {
+          ok: true,
+          alreadyRunning: false,
+          health,
+          reason,
+          startedPid,
+          waitedMs: Date.now() - startedAt
+        };
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw new Error(`Bridge daemon did not become healthy after ${ENSURE_DAEMON_TIMEOUT_MS}ms; startedPid=${startedPid}; lastError=${lastError.message}`);
+  }
+}
+
+function shouldEnsureDaemonForCommand(command) {
+  if (command === "offline-smoke") return false;
+  return true;
 }
 
 function postBridge(path, payload) {
@@ -4880,6 +4996,14 @@ async function mutatingSmoke() {
 
 async function main() {
   const command = process.argv[2] || "inspect";
+  if (command === "ensure-daemon-only") {
+    const ensured = await ensureBridgeDaemonRunning(command);
+    console.log(JSON.stringify(ensured, null, 2));
+    return;
+  }
+  if (shouldEnsureDaemonForCommand(command)) {
+    await ensureBridgeDaemonRunning(command);
+  }
   if (command === "inspect") {
     await inspect();
     return;
