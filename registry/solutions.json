@@ -1296,6 +1296,101 @@
         "Ask for clarification or require a separate typed-tool contract when the user needs true regex, captures, lookarounds, wildcards or flags.",
         "Do not use this recipe for prefix/suffix rename, numbered or lettered exact rename, project item rename, source relinking, layer timing changes, marker edits, render queue items, or broad cleanup."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "get-selected-layer-duration-typed-plan",
+      "title": "Get Selected Layer Duration Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "selected-layers",
+        "layer-duration",
+        "duration",
+        "timing",
+        "read-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Report selected layer visible duration in seconds from read-only inPoint and outPoint evidence.",
+        "appliesWhen": [
+          "The user asks for the duration of the selected layer.",
+          "The workflow needs read-only selected-layer timing information without changing layer timing."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedLayerIndices",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Selected layers verified by get_selected_layers before duration is reported."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists and selected layers are read before reporting duration.",
+        "Layer duration is computed as outPoint minus inPoint from read-only layer timing evidence.",
+        "Multiple selected layers require reporting each selected layer duration or asking which layer to inspect instead of guessing a primary selection."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/get-selected-layer-duration-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Read selected layer timing and confirm each reported duration equals outPoint minus inPoint.",
+        "steps": [
+          "Run get_active_comp before reporting to capture active comp identity.",
+          "Run get_selected_layers and bind concrete selected layerIndex values from that evidence.",
+          "Compute duration as outPoint minus inPoint for the selected layer or for each selected layer when multiple are selected.",
+          "Run get_layer_details for each reported layer when detailed read-back is needed, then compare layer.inPoint and layer.outPoint with selected-layer evidence."
+        ],
+        "expectedEvidence": [
+          "Selected-layer duration plans include get_selected_layers evidence before duration values are reported.",
+          "Each reported duration equals outPoint - inPoint for the same selected layer index and name.",
+          "Optional get_layer_details read-back shows matching inPoint and outPoint timing evidence for each reported layer."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-layers-get-selected-layer-duration generic repository importer as advisory typed-plan coverage for read-only selected-layer duration reporting."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-27",
+          "from": "generic-repo-importer-tool-layers-get-selected-layer-duration",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Get_Selected_Layer_Duration.jsx into existing read-only typed tools; no source JSX copied.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution uses normal Agent plan validation and read-only typed tools.",
+        "Do not guess a primary selected layer when multiple layers are selected; report all selected durations or ask which layer to inspect.",
+        "Do not use this recipe for changing layer duration, trimming layers, aligning layers, marker edits, name changes, source relinking, render queue items, or broad timeline cleanup."
+      ]
     }
   ]
 }

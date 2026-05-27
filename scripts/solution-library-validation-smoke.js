@@ -27,7 +27,8 @@ const IMPORTED_ADVISORY_IDS = [
   "append-to-layer-name-typed-plan",
   "rename-selected-layers-with-numbers-typed-plan",
   "rename-selected-layers-with-letters-typed-plan",
-  "replace-text-in-layer-name-typed-plan"
+  "replace-text-in-layer-name-typed-plan",
+  "get-selected-layer-duration-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -203,13 +204,20 @@ function assertImportedAdvisoryQuality(registry) {
     assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
 
     const gates = solution.requiredSafetyGates;
-    assert.strictEqual(solution.execution.mutating, true, `${id}: imported advisory recipe describes a protected mutation.`);
-    assert.strictEqual(gates.planValidation, true, `${id}: mutating recipe needs plan validation.`);
-    assert.strictEqual(gates.explicitConfirmation, true, `${id}: mutating recipe needs explicit confirmation.`);
-    assert.strictEqual(gates.allowMutations, true, `${id}: mutating recipe needs mutation permission.`);
-    assert.strictEqual(gates.idempotency, true, `${id}: mutating recipe needs idempotency.`);
-    assert.strictEqual(gates.checkpointOrEditSession, true, `${id}: mutating recipe should keep checkpoint/edit-session protection.`);
-    assert.strictEqual(gates.postMutationReadBack, true, `${id}: mutating recipe needs read-back verification.`);
+    assert.strictEqual(gates.planValidation, true, `${id}: imported advisory recipe needs plan validation.`);
+    if (solution.execution.mutating) {
+      assert.strictEqual(gates.explicitConfirmation, true, `${id}: mutating recipe needs explicit confirmation.`);
+      assert.strictEqual(gates.allowMutations, true, `${id}: mutating recipe needs mutation permission.`);
+      assert.strictEqual(gates.idempotency, true, `${id}: mutating recipe needs idempotency.`);
+      assert.strictEqual(gates.checkpointOrEditSession, true, `${id}: mutating recipe should keep checkpoint/edit-session protection.`);
+      assert.strictEqual(gates.postMutationReadBack, true, `${id}: mutating recipe needs read-back verification.`);
+    } else {
+      assert.strictEqual(gates.explicitConfirmation, false, `${id}: read-only recipe must not require explicit confirmation.`);
+      assert.strictEqual(gates.allowMutations, false, `${id}: read-only recipe must not allow mutations.`);
+      assert.strictEqual(gates.idempotency, false, `${id}: read-only recipe must not require idempotency.`);
+      assert.strictEqual(gates.checkpointOrEditSession, false, `${id}: read-only recipe must not require checkpoint/edit-session protection.`);
+      assert.strictEqual(gates.postMutationReadBack, false, `${id}: read-only recipe must not require post-mutation read-back.`);
+    }
 
     if (id === "reset-composition-work-area-typed-plan") {
       assert.deepStrictEqual(
@@ -325,6 +333,26 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate typed-tool contract for regex behavior.`);
       assert(solution.notes.some((note) => /project item rename/.test(note)), `${id}: notes must keep project item rename out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Replace_Text_In_Layer_Name/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "get-selected-layer-duration-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details"],
+        `${id}: imported selected-layer duration workflow should stay on the narrow read-only typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: selected-layer duration workflow must stay read-only.`);
+      assert.strictEqual(solution.requiredSafetyGates.allowMutations, false, `${id}: duration reporting must not allow mutations.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should use optional layer detail read-back.`);
+      assert(text.includes("outPoint - inPoint"), `${id}: recipe should compute duration from timing evidence.`);
+      assert(text.includes("Do not guess a primary selection"), `${id}: recipe should fail closed for ambiguous multi-selection.`);
+      assert(text.includes("set_layer_time_range"), `${id}: recipe should explicitly avoid timing mutations.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /outPoint minus inPoint/.test(step)), `${id}: verification must compute duration from timing fields.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include optional layer details read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /outPoint - inPoint/.test(item)), `${id}: verification must require duration arithmetic evidence.`);
+      assert(solution.notes.some((note) => /primary selected layer/.test(note)), `${id}: notes must reject primary-selection guessing.`);
+      assert(solution.notes.some((note) => /changing layer duration/.test(note)), `${id}: notes must keep timing mutation out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /Get_Selected_Layer_Duration/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else {
       throw new Error(`Unhandled imported advisory solution quality checks: ${id}`);
     }
@@ -478,6 +506,20 @@ function assertActualRetrieval(registry) {
   assert(replaceLayerNamePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
   assert(!/run_extendscript/i.test(replaceLayerNamePromptSection), "selected-layer find/replace rename guidance should not recommend raw ExtendScript.");
 
+  const selectedLayerDurationRetrieval = retrieveSolutionHints("Tell me the duration in seconds of the selected layer after inspecting the selected layer timing.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(selectedLayerDurationRetrieval.ok, true);
+  assert(ids(selectedLayerDurationRetrieval).includes("get-selected-layer-duration-typed-plan"), "selected-layer duration advisory recipe should surface for duration prompt.");
+  const selectedLayerDurationPromptSection = formatSolutionHintsForPrompt(selectedLayerDurationRetrieval);
+  assert(selectedLayerDurationPromptSection.includes("Get Selected Layer Duration Typed Plan"), "prompt section should include selected-layer duration advisory title.");
+  assert(selectedLayerDurationPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for duration workflows.");
+  assert(selectedLayerDurationPromptSection.includes("get_layer_details"), "prompt section should prefer get_layer_details for selected-layer duration read-back.");
+  assert(selectedLayerDurationPromptSection.includes("outPoint"), "prompt section should preserve timing-field duration guidance.");
+  assert(!/run_extendscript/i.test(selectedLayerDurationPromptSection), "selected-layer duration guidance should not recommend raw ExtendScript.");
+
   return {
     contextRetrieval,
     alignRetrieval,
@@ -494,7 +536,8 @@ function assertActualRetrieval(registry) {
       appendLayerName: ids(appendLayerNameRetrieval),
       numberedLayerName: ids(numberedLayerNameRetrieval),
       letteredLayerName: ids(letteredLayerNameRetrieval),
-      replaceLayerName: ids(replaceLayerNameRetrieval)
+      replaceLayerName: ids(replaceLayerNameRetrieval),
+      selectedLayerDuration: ids(selectedLayerDurationRetrieval)
     }
   };
 }
