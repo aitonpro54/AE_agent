@@ -34,6 +34,13 @@ const SAFE_CLASSIFICATIONS = new Set([
   "existing_typed_tools_recipe_only",
   "small_safe_typed_tool_library_recipe_addition",
 ]);
+const LIVE_LANE_RECLASSIFIABLE_CLASSIFICATIONS = new Set([
+  "live_lane_needed",
+]);
+const SYNTHESIZABLE_CLASSIFICATIONS = new Set([
+  ...SAFE_CLASSIFICATIONS,
+  ...LIVE_LANE_RECLASSIFIABLE_CLASSIFICATIONS,
+]);
 const LIVE_LANE_READY_STATUSES = new Set([
   "available",
   "generated_only_lane_registered",
@@ -238,6 +245,60 @@ const AUTO_LANE_FAMILIES = Object.freeze([
     semanticVerification: true,
     scope:
       "generated-only effect property family proof using add_effect, get_effect_details, set_effect_property, and read-back; expression-rig semantics and locale-specific property assumptions remain explicit recipe constraints",
+  },
+  {
+    id: "selected-property-expression-generated-only",
+    requiredTools: ["get_selected_properties", "set_expression", "clear_expression"],
+    allowedTools: [
+      "clear_expression",
+      "get_active_comp",
+      "get_layer_details",
+      "get_selected_properties",
+      "set_expression",
+    ],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-expression-openai-cli-smoke",
+    proofLane: "selected-property-expression",
+    readBackTools: ["get_selected_properties", "get_layer_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/cep-panel-cdp-smoke.js",
+    ],
+    reclassifiedClassification: "existing_typed_tools_recipe_only",
+    scope:
+      "generated-only expression set/clear family proof using get_selected_properties, set_expression, clear_expression, get_layer_details, read-back, semantic verification, and cleanup; source-specific selected-property semantics remain explicit recipe constraints",
+  },
+  {
+    id: "comp-properties-work-area-generated-only",
+    requiredTools: ["get_comp_details", "set_comp_properties", "set_comp_work_area"],
+    allowedTools: [
+      "get_active_comp",
+      "get_comp_details",
+      "rename_project_items",
+      "set_comp_properties",
+      "set_comp_work_area",
+      "set_property_value",
+    ],
+    candidateIds: [
+      "tool-compositions-change-nested-composition-background",
+      "tool-compositions-change-nested-composition-duration",
+      "tool-compositions-change-nested-composition-duration-with-timecode",
+      "tool-compositions-change-nested-composition-frame-rate",
+      "tool-compositions-change-nested-composition-start-frame",
+      "tool-compositions-change-nested-composition-work-area",
+      "tool-compositions-cycle-composition-background-color",
+    ],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-comp-properties-openai-cli-smoke",
+    proofLane: "comp-properties-work-area",
+    readBackTools: ["get_comp_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/cep-panel-cdp-smoke.js",
+    ],
+    reclassifiedClassification: "existing_typed_tools_recipe_only",
+    scope:
+      "generated-only explicit composition properties/work-area proof using set_comp_properties, set_comp_work_area, get_comp_details, read-back, semantic verification, and cleanup; recursive nested-comp traversal, layer switches, and broad composition workflows remain fail-closed",
   },
 ]);
 
@@ -741,6 +802,13 @@ function familyAllowsAllTools(family, tools) {
   return tools.every((tool) => allowed.has(tool));
 }
 
+function familyAppliesToCandidate(family, candidate) {
+  if (!Array.isArray(family.candidateIds) || family.candidateIds.length === 0) {
+    return true;
+  }
+  return family.candidateIds.includes(candidate.id);
+}
+
 function failClosedSynthesisReport({ candidate, reason, runId, status, tools, extra = {} }) {
   return {
     schema: "generic-repo-full-intake.auto-live-lane-synthesis.v1",
@@ -758,6 +826,7 @@ function failClosedSynthesisReport({ candidate, reason, runId, status, tools, ex
       proofLane: family.proofLane,
       readBackTools: family.readBackTools.slice(),
       requiredTools: family.requiredTools.slice(),
+      candidateIds: Array.isArray(family.candidateIds) ? family.candidateIds.slice() : null,
       semanticVerification: family.semanticVerification === true,
     })),
     ...extra,
@@ -768,7 +837,7 @@ function failClosedSynthesisReport({ candidate, reason, runId, status, tools, ex
 function synthesizeLiveLaneTemplate(candidate, runId) {
   const tools = candidateTools(candidate);
   const unsafeSignals = unsafeSynthesisSignals(candidate);
-  if (!SAFE_CLASSIFICATIONS.has(candidate.classification)) {
+  if (!SYNTHESIZABLE_CLASSIFICATIONS.has(candidate.classification)) {
     return failClosedSynthesisReport({
       candidate,
       reason: `classification_not_allowed:${candidate.classification}`,
@@ -797,7 +866,9 @@ function synthesizeLiveLaneTemplate(candidate, runId) {
     });
   }
 
-  const requirementMatches = AUTO_LANE_FAMILIES.filter((family) => familyRequirementMatches(family, tools));
+  const requirementMatches = AUTO_LANE_FAMILIES
+    .filter((family) => familyAppliesToCandidate(family, candidate))
+    .filter((family) => familyRequirementMatches(family, tools));
   const exactMatches = requirementMatches.filter((family) => familyAllowsAllTools(family, tools));
   if (exactMatches.length > 1) {
     return failClosedSynthesisReport({
@@ -878,9 +949,14 @@ function synthesizeLiveLaneTemplate(candidate, runId) {
       candidateId: candidate.id,
       command: family.command,
       laneId,
-      nonLiveValidationCommands: AUTO_LANE_COMMON_NON_LIVE_COMMANDS.slice(),
-      plannedPaths: ["scripts/cep-panel-cdp-smoke.js"],
+      nonLiveValidationCommands: Array.isArray(family.nonLiveValidationCommands)
+        ? family.nonLiveValidationCommands.slice()
+        : AUTO_LANE_COMMON_NON_LIVE_COMMANDS.slice(),
+      plannedPaths: Array.isArray(family.plannedPaths)
+        ? family.plannedPaths.slice()
+        : ["scripts/cep-panel-cdp-smoke.js"],
       providerPath: "openai-cli",
+      reclassifiedClassification: family.reclassifiedClassification || null,
       scope: `${family.scope}; synthesized for ${candidate.id}`,
       synthesis,
       synthesized: true,
@@ -1189,8 +1265,13 @@ function hasReasonFragment(entry, fragments) {
 }
 
 function isRecoverableLiveLaneEntry(entry) {
-  if (!SAFE_CLASSIFICATIONS.has(entry.classification)) return false;
-  if (entry.status === "completed" || entry.status === "queued") return false;
+  if (!SYNTHESIZABLE_CLASSIFICATIONS.has(entry.classification)) return false;
+  if (entry.status === "completed") return false;
+  if (entry.status === "queued") {
+    return entry.classification === "live_lane_needed" &&
+      entry.liveGate?.required === true &&
+      !liveLaneReady(entry.liveGate).ok;
+  }
   if (RECOVERABLE_LIVE_LANE_STATUSES.has(entry.status)) return true;
   if (RECOVERABLE_LIVE_LANE_STATUSES.has(entry.failClosed?.status)) return true;
   return /candidate_tools_(?:do_not_match|exceed|match_multiple)|auto_lane_family_missing/i.test(entry.failClosed?.reason || "");
@@ -1337,8 +1418,27 @@ function requeueEntryAfterResolution(entry, ticket, extraImplementation = {}) {
   attachResolutionReference(entry, ticket, "resolved_requeued");
 }
 
-function applyFamilyProofToEntry(entry, ticket, liveReport, template) {
+function nextQueueRankAllocator(ledger) {
+  let nextRank = ledger.entries.reduce((max, entry) => (
+    Number.isInteger(entry.queueRank) ? Math.max(max, entry.queueRank) : max
+  ), 0) + 1;
+  return () => {
+    const rank = nextRank;
+    nextRank += 1;
+    return rank;
+  };
+}
+
+function applyFamilyProofToEntry(entry, ticket, liveReport, template, allocateQueueRank) {
+  const previousClassification = entry.classification;
   requeueEntryAfterResolution(entry, ticket);
+  if (LIVE_LANE_RECLASSIFIABLE_CLASSIFICATIONS.has(previousClassification)) {
+    entry.previousClassification = previousClassification;
+    entry.classification = template.reclassifiedClassification || "existing_typed_tools_recipe_only";
+  }
+  if (!Number.isInteger(entry.queueRank)) {
+    entry.queueRank = allocateQueueRank();
+  }
   entry.liveGate = {
     ...(entry.liveGate || {}),
     required: true,
@@ -1359,10 +1459,22 @@ function applyFamilyProofToEntry(entry, ticket, liveReport, template) {
     templateSource: template.templateSource || "auto_synthesis",
     updatedAt: new Date().toISOString(),
   };
+  entry.implementation = {
+    ...(entry.implementation || {}),
+    liveLaneReclassification: {
+      from: previousClassification,
+      to: entry.classification,
+      familyId: template.synthesis?.familyId || ticket.evidence.familyId || null,
+      queueRank: entry.queueRank,
+      ticketPath: ticket.isolation.ticketPath,
+      updatedAt: new Date().toISOString(),
+    },
+  };
 }
 
 function processLiveLaneResolutionTickets({ ledger, ledgerPath, registry, runId, runRoot, targetRepo, timeoutMs }) {
   const recoverable = ledger.entries.filter(isRecoverableLiveLaneEntry);
+  const allocateQueueRank = nextQueueRankAllocator(ledger);
   const buckets = new Map();
   for (const entry of recoverable) {
     const synthesis = synthesizeLiveLaneTemplate(entry, runId);
@@ -1448,7 +1560,7 @@ function processLiveLaneResolutionTickets({ ledger, ledgerPath, registry, runId,
     });
     if (liveReport.ok) {
       for (const entry of bucket.entries) {
-        applyFamilyProofToEntry(entry, ticket, liveReport, template);
+        applyFamilyProofToEntry(entry, ticket, liveReport, template, allocateQueueRank);
         requeuedCandidateIds.push(entry.id);
       }
     } else {

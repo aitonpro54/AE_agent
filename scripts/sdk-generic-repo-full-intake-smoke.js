@@ -43,6 +43,7 @@ function createFixture(name) {
   fs.mkdirSync(target, { recursive: true });
   fs.mkdirSync(source, { recursive: true });
   fs.mkdirSync(path.join(source, "Compositions"), { recursive: true });
+  fs.mkdirSync(path.join(source, "Expressions"), { recursive: true });
   fs.mkdirSync(path.join(source, "Layers"), { recursive: true });
   fs.writeFileSync(path.join(source, "README.md"), "# Source fixture\n", "utf8");
   fs.writeFileSync(path.join(source, "LICENSE"), "Fixture license\n", "utf8");
@@ -55,6 +56,16 @@ function createFixture(name) {
   fs.writeFileSync(
     path.join(source, "Compositions", "Add_Posterize_Time_Adjustment_Layer.jsx"),
     "function addPosterizeTimeAdjustmentLayer() { return true; }\n",
+    "utf8"
+  );
+  fs.writeFileSync(
+    path.join(source, "Compositions", "Change_Nested_Composition_Work_Area.jsx"),
+    "function changeNestedCompositionWorkArea() { return true; }\n",
+    "utf8"
+  );
+  fs.writeFileSync(
+    path.join(source, "Expressions", "Add_Simple_Loop_Expression.jsx"),
+    "function addSimpleLoopExpression() { return true; }\n",
     "utf8"
   );
   fs.writeFileSync(path.join(source, "Layers", "Read_Only_Fixture.jsx"), "function readOnlyTool() { return true; }\n", "utf8");
@@ -229,6 +240,49 @@ function timingEntry(overrides = {}) {
       sliceId: "fixture-layer-timing-import",
       plannedPaths: ["scripts/imported-tools/layer-timing.js"]
     },
+    ...overrides
+  });
+}
+
+function expressionLiveLaneNeededEntry(overrides = {}) {
+  return entry({
+    id: "tool-expressions-add-simple-loop-expression",
+    sourcePath: "Expressions/Add_Simple_Loop_Expression.jsx",
+    name: "Add Simple Loop Expression",
+    description: "Fixture expression set/clear live-lane-needed candidate.",
+    classification: "live_lane_needed",
+    shortReason: "Expression edits need generated-only set/clear proof.",
+    suggestedTools: ["get_active_comp", "get_selected_properties", "set_expression", "clear_expression", "get_layer_details"],
+    implementation: {
+      sliceId: "fixture-expression-import",
+      plannedPaths: ["scripts/imported-tools/expression.js"]
+    },
+    queueRank: null,
+    ...overrides
+  });
+}
+
+function compPropertiesLiveLaneNeededEntry(overrides = {}) {
+  return entry({
+    id: "tool-compositions-change-nested-composition-work-area",
+    sourcePath: "Compositions/Change_Nested_Composition_Work_Area.jsx",
+    name: "Change Nested Composition Work Area",
+    description: "Fixture comp properties/work-area live-lane-needed candidate.",
+    classification: "live_lane_needed",
+    shortReason: "Comp property edits need generated-only set_comp_properties/set_comp_work_area proof.",
+    suggestedTools: [
+      "get_active_comp",
+      "get_comp_details",
+      "set_comp_properties",
+      "set_comp_work_area",
+      "rename_project_items",
+      "set_property_value"
+    ],
+    implementation: {
+      sliceId: "fixture-comp-properties-import",
+      plannedPaths: ["scripts/imported-tools/comp-properties.js"]
+    },
+    queueRank: null,
     ...overrides
   });
 }
@@ -647,6 +701,54 @@ function assertResolutionTicketRequeuesBlockedFamily() {
   }
 }
 
+function assertQueuedLiveLaneNeededFamiliesAreProvedAndRanked() {
+  const fixture = createFixture("qln-family");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const expression = expressionLiveLaneNeededEntry();
+    const compProperties = compPropertiesLiveLaneNeededEntry();
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [expression, compProperties]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const output = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        "fixture-qln-family",
+        2,
+        fakeCodexEnv(binDir)
+      )
+    );
+    assert.strictEqual(output.status, "completed");
+    assert.deepStrictEqual(output.resolutionQueue.requeuedCandidateIds.sort(), [
+      "tool-compositions-change-nested-composition-work-area",
+      "tool-expressions-add-simple-loop-expression"
+    ]);
+
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    const completedExpression = ledger.entries.find((item) => item.id === "tool-expressions-add-simple-loop-expression");
+    const completedCompProperties = ledger.entries.find((item) => item.id === "tool-compositions-change-nested-composition-work-area");
+    assert.strictEqual(completedExpression.status, "completed");
+    assert.strictEqual(completedExpression.previousClassification, "live_lane_needed");
+    assert.strictEqual(completedExpression.classification, "existing_typed_tools_recipe_only");
+    assert.strictEqual(completedExpression.liveGate.synthesisFamily, "selected-property-expression-generated-only");
+    assert.strictEqual(completedExpression.liveGate.command, "node scripts/cep-panel-cdp-smoke.js full-ui-agent-expression-openai-cli-smoke");
+    assert(Number.isInteger(completedExpression.queueRank));
+    assert.strictEqual(completedCompProperties.status, "completed");
+    assert.strictEqual(completedCompProperties.previousClassification, "live_lane_needed");
+    assert.strictEqual(completedCompProperties.classification, "existing_typed_tools_recipe_only");
+    assert.strictEqual(completedCompProperties.liveGate.synthesisFamily, "comp-properties-work-area-generated-only");
+    assert.strictEqual(completedCompProperties.liveGate.command, "node scripts/cep-panel-cdp-smoke.js full-ui-agent-comp-properties-openai-cli-smoke");
+    assert(Number.isInteger(completedCompProperties.queueRank));
+    assert(completedExpression.queueRank < completedCompProperties.queueRank);
+    assert(fs.existsSync(path.join(fixture.target, "scripts", "imported-tools", "expression.js")));
+    assert(fs.existsSync(path.join(fixture.target, "scripts", "imported-tools", "comp-properties.js")));
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function writeChildTimeoutEvidence(fixture, entryToRecover) {
   const importerRunId = "queue-fixture-child-timeout-import";
   const batchRunId = "fixture-child-timeout-import";
@@ -895,6 +997,7 @@ function main() {
   assertLiveLaneFailureEvidence();
   assertQueuedLedgerStaleBlockedStateIsRetried();
   assertResolutionTicketRequeuesBlockedFamily();
+  assertQueuedLiveLaneNeededFamiliesAreProvedAndRanked();
   assertChildTimeoutResolutionRecoversImporterWorktreePatch();
   assertChildTimeoutTerminalTicketDoesNotRequeue();
   assertResumeFromState();

@@ -1264,6 +1264,106 @@ function agentEffectPropertyScenarioPlans(runPrefix) {
   }));
 }
 
+function agentExpressionScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Expression`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Shape`;
+  const propertyPath = "ADBE Transform Group.ADBE Position";
+  const expression = "value + [Math.sin(time * 2) * 4, 0]";
+
+  return [
+    {
+      id: "generated-expression-set-clear",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "get_selected_properties",
+        "set_expression",
+        "get_layer_details",
+        "clear_expression",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedExpressionSetClear: true,
+        compName,
+        layerName,
+        propertyPath: ["ADBE Transform Group", "ADBE Position"],
+        expression
+      },
+      plan: {
+        summary: "AUX-061 generated-only live QA for expression set/clear typed tools.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated expression comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.08, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "AUX-061 generated-only expression validation" } },
+          { title: "Create generated expression shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [180, 120], position: [320, 180], fillColor: [0.18, 0.55, 0.92], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Inspect generated selected-property state", tool: "get_selected_properties", args: { includeValues: true, includeExpressions: true } },
+          { title: "Set generated position expression", tool: "set_expression", args: { compName, layerIndex: 1, propertyPath, expression, enabled: true } },
+          { title: "Read generated expression after set", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeExpressions: true } },
+          { title: "Clear generated position expression", tool: "clear_expression", args: { compName, layerIndex: 1, propertyPath } },
+          { title: "Read generated expression after clear", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeExpressions: true } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
+function agentCompPropertiesScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Comp Properties`;
+  const compName = `${base} Comp`;
+  const compProperties = {
+    width: 720,
+    height: 405,
+    pixelAspect: 1,
+    duration: 6,
+    frameRate: 30,
+    bgColor: [0.12, 0.18, 0.24],
+    displayStartTime: 1
+  };
+  const workArea = { start: 1.25, duration: 3.5 };
+
+  return [
+    {
+      id: "generated-comp-properties-work-area",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "set_comp_properties",
+        "set_comp_work_area",
+        "get_comp_details"
+      ],
+      expectedReadBack: {
+        generatedCompPropertiesWorkArea: true,
+        compName,
+        compProperties,
+        workArea
+      },
+      plan: {
+        summary: "AUX-061 generated-only live QA for explicit comp properties and work-area typed tools.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated comp-properties comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 4, frameRate: 24, bgColor: [0.04, 0.05, 0.07], allowDuplicateName: false, openInViewer: false, comment: "AUX-061 generated-only comp properties validation" } },
+          { title: "Set generated comp properties", tool: "set_comp_properties", args: { compName, ...compProperties } },
+          { title: "Set generated comp work area", tool: "set_comp_work_area", args: { compName, ...workArea } },
+          { title: "Read generated comp properties", tool: "get_comp_details", args: { compName, includeLayers: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentAssortedCompositionGuidesScenarioPlans(runPrefix) {
   const base = `${runPrefix} Assorted Guides`;
   const compName = `${base} Comp`;
@@ -2058,10 +2158,12 @@ module.exports = {
   DEFAULT_RENDER_QUEUE_BASELINE_TOTAL,
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
+  agentCompPropertiesScenarioPlans,
   agentCompositionGuideScenarioPlans,
   agentDuplicateLayersScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
   agentEffectPropertyScenarioPlans,
+  agentExpressionScenarioPlans,
   agentLayerTimingScenarioPlans,
   agentLayerTransformScenarioPlans,
   agentManualTypedToolsScenarioPlans,

@@ -1972,6 +1972,19 @@ AUX-058 child-run handoff state: goal is the `tool-project-replace-text-in-proje
 - Typed-tool gaps recorded in the inventory: no generated typed property/key selection setup tool, no recursive/global nested-comp traversal tool, no controller/null parenting proof for the camera candidate, no proven collapse-transform/motion-blur switch contract, and render-queue workflows still need a separate generated-only no-render lane before they can leave fail-closed state.
 - Implementation was intentionally deferred because this chat reached the AGENTS 150K prepare-handoff threshold before the first lane edit. Next implementation should start in a fresh thread with expression and comp-property lanes, then add a reclassify/requeue path for affected `live_lane_needed` candidates before running full-intake.
 
+### AUX-061 Expression And Comp-Property Live Lane Support
+
+- Added reusable generated-only OpenAI CLI lane synthesis for expression set/clear candidates and explicit comp properties/work-area candidates, using only existing typed tools and read-only CEP/CDP preflight.
+- Added panel Agent scenario fixtures and read-back verifiers for `set_expression`/`clear_expression` with `get_selected_properties`/`get_layer_details`, and for `set_comp_properties`/`set_comp_work_area` with `get_comp_details`.
+- Updated full-intake resolution handling so proved `queued/live_lane_needed` family members can be reclassified to `existing_typed_tools_recipe_only`, requeued, and assigned integer `queueRank` values while preserving resolution-ticket evidence.
+- Decision: comp-property synthesis is candidate-id gated to the seven inventory comp-property/work-area candidates, so layer-switch and ambiguous composition workflows with overlapping suggested tools remain fail-closed.
+- Validation passed: touched JS `node --check`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/agent-planner-corpus-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/sdk-generic-repo-full-intake-smoke.js`; `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`; `git diff --check` with only LF-to-CRLF working-copy warnings; read-only `node scripts/cep-panel-cdp-smoke.js inspect`; read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`.
+- Reran the required kyletmartinez command:
+  `node orchestrator/run-generic-repo-full-intake.mjs --ledger .codex-runtime/sdk/generic-repo-importer/kyletmartinez-after-effects-scripts-intake/queue-ledger.json --run-id full-intake-kyletmartinez --max-items 999 --json`.
+- Final run result: `completed_no_candidates`, resumed existing run, `items:[]`, `openTicketCount:0`, `terminalTicketCount:17`, `requeuedCandidateIds:[]`; no candidates were imported because both new live proof lanes failed closed before mutation with `After Effects project must be saved before live QA mutations can run`.
+- Runtime evidence: expression ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-selected-property-expression-generated-only/ticket.json`; comp-property ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-comp-properties-work-area-generated-only/ticket.json`.
+- No Local/Ollama, fallback provider, broad/default CEP smoke, dependency/package change, raw JSX copy, source checkout write, push, PR/GitHub automation, or non-generated user asset mutation was performed.
+
 ### Handoff
 
 `.codex/handoff.md` is writable from the parent Codex process and is updated after milestone work. Use it as the primary continuation record. If a roadmap writer child hits local sandbox/ACL denial on `.codex/handoff.md`, record the handoff state in this active plan and let the supervisor/parent finalize the handoff file.

@@ -12,9 +12,11 @@ const {
 const {
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
+  agentCompPropertiesScenarioPlans,
   agentCompositionGuideScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
   agentEffectPropertyScenarioPlans,
+  agentExpressionScenarioPlans,
   agentLayerTimingScenarioPlans,
   agentLayerTransformScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
@@ -430,7 +432,33 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   ]);
   assert.strictEqual(effectProperty.plan.steps[4].args.propertyIndex, 3);
 
-  for (const scenario of [timing, transform, projectItems, effectProperty]) {
+  const [expression] = agentExpressionScenarioPlans("Codex QA AUX061 Fixture");
+  assert.strictEqual(expression.id, "generated-expression-set-clear");
+  assert.strictEqual(expression.expectedReadBack.generatedExpressionSetClear, true);
+  assert.deepStrictEqual(expression.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "get_selected_properties",
+    "set_expression",
+    "get_layer_details",
+    "clear_expression",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(expression.plan.steps[3].args.propertyPath, "ADBE Transform Group.ADBE Position");
+
+  const [compProperties] = agentCompPropertiesScenarioPlans("Codex QA AUX061 Fixture");
+  assert.strictEqual(compProperties.id, "generated-comp-properties-work-area");
+  assert.strictEqual(compProperties.expectedReadBack.generatedCompPropertiesWorkArea, true);
+  assert.deepStrictEqual(compProperties.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "set_comp_properties",
+    "set_comp_work_area",
+    "get_comp_details"
+  ]);
+  assert.strictEqual(compProperties.plan.steps[1].args.width, 720);
+  assert.strictEqual(compProperties.plan.steps[2].args.duration, 3.5);
+
+  for (const scenario of [timing, transform, projectItems, effectProperty, expression, compProperties]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }
