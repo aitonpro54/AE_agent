@@ -4244,6 +4244,118 @@
         "Require a separate typed-tool contract for expression mutation, keyframe rounding, color rounding, text/path mutation, separated-dimension rewiring, broad property scans, selection side effects or exact source JSX semantics.",
         "Do not use this recipe for expression edits, keyframe edits, layer transform edits beyond the selected property value, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "set-new-color-typed-plan",
+      "title": "Set New Color Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "properties",
+        "property-values",
+        "color-values",
+        "selected-properties",
+        "set-property-value",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Set explicitly selected static color property values to a reviewed newColor with typed selected-property evidence, set_property_value, and layer/property read-back.",
+        "appliesWhen": [
+          "The user asks to set a new color, recolor, change selected color properties or apply an explicit color to currently selected properties.",
+          "Typed selected-property color mutation is acceptable only when current selected-property evidence includes color-like numeric array values, exact layer/property targets, no expression/keyframe mutation requirement and an explicit reviewed newColor."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties evidence containing one or more concrete selected color property targets with layerIndex, propertyPath, current value, expression state and keyframe/animated state when available."
+        },
+        {
+          "name": "newColor",
+          "type": "array",
+          "required": true,
+          "description": "Explicit reviewed AE-compatible RGB or RGBA numeric color array normalized to the accepted target value shape."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated property is bound from current get_selected_properties evidence before mutation.",
+        "Every accepted target has a static color-like numeric array value with three or four finite components.",
+        "The plan normalizes and displays the previous color value and newColor before confirmation.",
+        "The workflow changes only the explicitly selected property value through set_property_value with setAtTime:false.",
+        "Expressions, keyframes, text, shape/path data, non-color values, layer names, layer label colors, sources, timing, effects, masks, render queue items, selection state and unselected properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/set-new-color-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "set_property_value",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected color property values, normalize newColor per accepted target, set each accepted property with set_property_value setAtTime:false, then read layer/property values back.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation to capture active comp identity, selected property targets, layerIndex values, propertyPath values, current color values, expression state and keyframe/animated state when available.",
+          "Fail closed when selected-property evidence is empty, lacks layer/property path targets, has expression text or enabled expressions, appears animated/keyframed, is not color-like, has incompatible component count, is text/document/path data, or lacks an explicit reviewed newColor.",
+          "Show the previous color value and normalized newColor for every accepted target before confirmation.",
+          "Run one set_property_value step per accepted selected property target with the normalized newColor, setAtTime:false, the evidence-backed layerIndex and exact propertyPath.",
+          "Run get_layer_details for every affected layer with property value read-back.",
+          "Fail closed if color picker UI behavior, broad fill or stroke discovery, layer label color changes, effect creation, expression mutation, keyframe color mutation, TextDocument/path mutation, separated-dimension rewiring, broad property scans, selection side effects or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties identifies every concrete selected color property target, its owning layer, current value, expression state and keyframe/animated state when available.",
+          "Each set_property_value result reports the expected property path, setAtTime:false and exact newColor array shape.",
+          "Post-run get_layer_details shows each affected property value equals the normalized newColor on the expected layer/property path.",
+          "Skipped targets are reported with explicit typed-tool gap reasons instead of being silently changed.",
+          "Post-run evidence shows no keyframe, expression, timing, effect, source, render queue, layer name, layer label color, selection state, project item or unselected property mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-properties-set-new-color generic repository importer as advisory typed-plan coverage for selected color property value workflows.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed property-value tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-28",
+          "from": "generic-repo-importer-tool-properties-set-new-color",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Properties/Set_New_Color.jsx into existing typed tools as selected-property set_property_value guidance for setting static color property values to an explicit reviewed newColor; no source JSX copied. Current typed tools require current get_selected_properties color value evidence, previous/newColor disclosure, set_property_value with setAtTime:false and get_layer_details read-back; color picker UI behavior, broad fill/stroke discovery, layer label color changes, effect creation, expression mutation, keyframe color mutation, TextDocument/path mutation, separated-dimension rewiring, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties before mutating color property values; do not infer targets from prior chat context.",
+        "Apply this recipe only to static color-like numeric array property values where an explicit reviewed newColor can be normalized to the accepted target shape.",
+        "Require previous color value and newColor disclosure before confirmation, and use set_property_value with setAtTime:false.",
+        "Do not set expression-driven, animated/keyframed, non-color, TextDocument, path, shape, separated-dimension or unsupported complex values as part of this workflow.",
+        "Require a separate typed-tool contract for color picker UI behavior, broad fill/stroke discovery, layer label color changes, effect creation, expression mutation, keyframe color mutation, text/path mutation, separated-dimension rewiring, broad property scans, selection side effects or exact source JSX semantics.",
+        "Do not use this recipe for expression edits, keyframe edits, effect creation or edits, layer label color changes, layer transform edits beyond the selected property value, layer timing changes, source relinking, render queue changes, selected-layer rename or broad composition mutation."
+      ]
     }
   ]
 }
