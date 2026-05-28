@@ -23,6 +23,8 @@ const REPO_ROOT = path.resolve(__dirname, "..");
 const { boundedSpawnSyncResult, readCompactJson, writeProcessLog } = boundedProcess;
 const RUN_SCHEMA = "generic-repo-full-intake.run.v1";
 const STATE_SCHEMA = "generic-repo-full-intake.state.v1";
+const PROOF_ENVELOPE_SCHEMA = "generic-repo-full-intake.proof-envelope.v1";
+const RESUME_CARD_SCHEMA = "generic-repo-full-intake.resume-card.v1";
 const RESOLUTION_TICKET_SCHEMA = "generic-repo-full-intake.resolution-ticket.v1";
 const RECOVERY_VALIDATION_SCHEMA = "generic-repo-full-intake.recovery-validation.v1";
 const CHILD_TIMEOUT_RECOVERY_SCHEMA = "generic-repo-full-intake.child-timeout-recovery.v1";
@@ -35,6 +37,26 @@ const DEFAULT_COMMAND_TIMEOUT_MS = 10 * 60 * 1000;
 const DEFAULT_RESULT_TAIL_LINES = 40;
 const CHILD_RESULT_SUMMARY_MAX_BYTES = 64 * 1024;
 const BATCH_REPORT_SUMMARY_MAX_BYTES = 192 * 1024;
+const PROOF_ENVELOPE_MAX_BYTES = 32 * 1024;
+const RESUME_CARD_MAX_BYTES = 8 * 1024;
+const RESUME_CARD_MAX_LINES = 30;
+const DEFAULT_CONTEXT_BUDGET = Object.freeze({
+  softStopPercent: 50,
+  noNewWorkPercent: 55,
+  handoffPercent: 60,
+  hardStopPercent: 70,
+});
+const CONTEXT_STEP_COST = Object.freeze({
+  recoveryBranch: 8,
+  childRun: 10,
+  importerPhase: 10,
+  liveLane: 8,
+  liveRerun: 8,
+  ledgerMutation: 2,
+  docsHandoffWrite: 3,
+  commit: 3,
+  finalization: 2,
+});
 const SAFE_CLASSIFICATIONS = new Set([
   "existing_typed_tools_recipe_only",
   "small_safe_typed_tool_library_recipe_addition",
@@ -66,6 +88,7 @@ const TERMINAL_ITEM_STATUSES = new Set([
   "completed",
   "failed_import",
   "failed_live_rerun",
+  "recovered_patch_non_live_validated_pending_semantic_review",
   "skipped_unsafe_candidate",
 ]);
 const RECOVERABLE_LIVE_LANE_STATUSES = new Set([
@@ -323,9 +346,19 @@ Options:
                               Defaults to ${DEFAULT_LIVE_LANE_REGISTRY}
   --report-dir <path>          Optional run root inside target repo.
   --context-percent <n>        Stop before new work at >= 70.
+  --soft-stop-percent <n>      Start conservative resume posture. Default ${DEFAULT_CONTEXT_BUDGET.softStopPercent}.
+  --no-new-work-percent <n>    Refuse new work when current+predicted cost reaches this. Default ${DEFAULT_CONTEXT_BUDGET.noNewWorkPercent}.
+  --handoff-percent <n>        Write only compact handoff/resume artifacts at this point. Default ${DEFAULT_CONTEXT_BUDGET.handoffPercent}.
+  --hard-stop-percent <n>      Fail closed with context pressure at this point. Default ${DEFAULT_CONTEXT_BUDGET.hardStopPercent}.
+  --next-step-context-cost <n> Override the first predicted step cost.
   --command-timeout-ms <n>     Per-command timeout. Default ${DEFAULT_COMMAND_TIMEOUT_MS}.
+  --allow-batch-mode           Explicitly approve parent-facing max-items > 1.
+  --allow-self-improvement-lane-synthesis
+                              Allow bounded live-lane synthesis. Default is disabled.
   --no-commit                  Do not create git commits after completed candidates.
-  --json                       Print machine-readable output.
+  --json                       Write full machine-readable output only with --output, or print only with --allow-full-json-for-debug.
+  --output <path>              Full JSON output path for --json. Stdout stays compact.
+  --allow-full-json-for-debug  Permit full run report on stdout for local debug only.
   --compact-json               Print bounded parent-facing machine-readable output.
   --help                       Show this help.
 
@@ -340,12 +373,26 @@ const VALUE_OPTIONS = new Set([
   "context-percent",
   "ledger",
   "live-lane-registry",
+  "handoff-percent",
+  "hard-stop-percent",
   "max-items",
+  "next-step-context-cost",
+  "no-new-work-percent",
+  "output",
   "report-dir",
   "run-id",
+  "soft-stop-percent",
   "target-repo",
 ]);
-const BOOLEAN_OPTIONS = new Set(["compact-json", "help", "json", "no-commit"]);
+const BOOLEAN_OPTIONS = new Set([
+  "allow-batch-mode",
+  "allow-full-json-for-debug",
+  "allow-self-improvement-lane-synthesis",
+  "compact-json",
+  "help",
+  "json",
+  "no-commit",
+]);
 const COMPACT_OUTPUT_ID_LIMIT = 16;
 const COMPACT_OUTPUT_FAMILY_LIMIT = 12;
 const COMPACT_OUTPUT_COMMIT_LIMIT = 24;
@@ -445,6 +492,17 @@ function sha256Text(value) {
   return createHash("sha256").update(String(value)).digest("hex");
 }
 
+function sha256FileIfExists(filePath) {
+  if (!filePath || !existsSync(filePath) || !statSync(filePath).isFile()) {
+    return null;
+  }
+  return createHash("sha256").update(readFileSync(filePath)).digest("hex");
+}
+
+function sha256Json(value) {
+  return sha256Text(stableStringify(value));
+}
+
 function parsePositiveInteger(value, label, fallback) {
   if (value === undefined || value === null || value === "") {
     return fallback;
@@ -463,6 +521,17 @@ function parseFiniteNumber(value, label) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
     throw new Error(`${label} must be a finite number`);
+  }
+  return parsed;
+}
+
+function parsePercent(value, label, fallback) {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+  const parsed = parseFiniteNumber(value, label);
+  if (parsed < 0 || parsed > 100) {
+    throw new Error(`${label} must be between 0 and 100`);
   }
   return parsed;
 }
@@ -516,6 +585,18 @@ function gitChangedPaths(cwd) {
   return gitStatusEntries(cwd).map(statusEntryPath).filter(Boolean).sort();
 }
 
+function gitStatusSha256(cwd) {
+  return sha256Text(gitStatusEntries(cwd).join("\n"));
+}
+
+function gitCommitChangedPaths(cwd, commitId) {
+  if (!commitId) {
+    return [];
+  }
+  const output = gitOutput(cwd, ["show", "--name-only", "--format=", commitId], "show-name-only");
+  return output.split(/\r?\n/).map(normalizeRepoPath).filter(Boolean).sort();
+}
+
 function gitPathIsIgnored(cwd, repoPath) {
   const result = spawnSync("git", ["check-ignore", "-q", repoPath], {
     cwd,
@@ -555,6 +636,67 @@ function resolveInside(root, candidate, label) {
     return resolved;
   }
   throw new Error(`${label}-outside-target-repo: ${candidate}`);
+}
+
+function contextBudgetFromOptions(options) {
+  const softStopPercent = parsePercent(options.softStopPercent, "soft-stop-percent", DEFAULT_CONTEXT_BUDGET.softStopPercent);
+  const noNewWorkPercent = parsePercent(options.noNewWorkPercent, "no-new-work-percent", DEFAULT_CONTEXT_BUDGET.noNewWorkPercent);
+  const handoffPercent = parsePercent(options.handoffPercent, "handoff-percent", DEFAULT_CONTEXT_BUDGET.handoffPercent);
+  const hardStopPercent = parsePercent(options.hardStopPercent, "hard-stop-percent", DEFAULT_CONTEXT_BUDGET.hardStopPercent);
+  if (!(softStopPercent <= noNewWorkPercent && noNewWorkPercent <= handoffPercent && handoffPercent <= hardStopPercent)) {
+    throw new Error("context-budget-thresholds-out-of-order");
+  }
+  return {
+    currentContextPercent: parsePercent(options.contextPercent, "context-percent", 0),
+    hardStopPercent,
+    handoffPercent,
+    noNewWorkPercent,
+    overrideNextStepCost: parsePercent(options.nextStepContextCost, "next-step-context-cost", null),
+    predictedContextPercent: parsePercent(options.contextPercent, "context-percent", 0),
+    softStopPercent,
+  };
+}
+
+function estimateNextStepContextCost(budget, step, fallbackCost) {
+  if (budget.overrideNextStepCost !== undefined && budget.overrideNextStepCost !== null) {
+    const value = budget.overrideNextStepCost;
+    budget.overrideNextStepCost = null;
+    return value;
+  }
+  return fallbackCost ?? CONTEXT_STEP_COST[step] ?? 1;
+}
+
+function checkContextBudget(budget, step, fallbackCost) {
+  const predictedCost = estimateNextStepContextCost(budget, step, fallbackCost);
+  const nextPercent = budget.predictedContextPercent + predictedCost;
+  const decision = {
+    currentContextPercent: budget.currentContextPercent,
+    nextStep: step,
+    predictedNextStepCost: predictedCost,
+    predictedContextPercent: nextPercent,
+    threshold: null,
+    action: "continue",
+  };
+  if (nextPercent >= budget.hardStopPercent || budget.currentContextPercent >= budget.hardStopPercent) {
+    decision.action = "hard_stop";
+    decision.threshold = "hardStopPercent";
+    return decision;
+  }
+  if (nextPercent >= budget.handoffPercent || budget.currentContextPercent >= budget.handoffPercent) {
+    decision.action = "handoff_only";
+    decision.threshold = "handoffPercent";
+    return decision;
+  }
+  if (nextPercent >= budget.noNewWorkPercent || budget.currentContextPercent >= budget.noNewWorkPercent) {
+    decision.action = "resume_only";
+    decision.threshold = "noNewWorkPercent";
+    return decision;
+  }
+  if (nextPercent >= budget.softStopPercent || budget.currentContextPercent >= budget.softStopPercent) {
+    decision.threshold = "softStopPercent";
+  }
+  budget.predictedContextPercent = nextPercent;
+  return decision;
 }
 
 function resolveOptionalPath(base, value, fallback) {
@@ -778,6 +920,26 @@ function readLiveLaneRegistry(registryPath) {
     requireArray(registry.selfImprovementFamilies, "live-lane-registry.selfImprovementFamilies");
   }
   return registry;
+}
+
+function captureBindingSnapshot({ ledgerPath, registryPath, runRoot, safetyPolicy, step, targetRepo }) {
+  return {
+    schema: "generic-repo-full-intake.binding-snapshot.v1",
+    step,
+    queueSha256: sha256FileIfExists(ledgerPath),
+    ledgerSha256: sha256FileIfExists(ledgerPath),
+    runtimeStateSha256: sha256FileIfExists(path.join(runRoot, "state.json")),
+    policySha256: sha256Json(safetyPolicy || {}),
+    gitHead: gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head"),
+    gitStatusSha256: gitStatusSha256(targetRepo),
+    liveBindingsSha256: sha256FileIfExists(registryPath),
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function appendBindingSnapshot(runRoot, snapshot) {
+  appendEvent(runRoot, { event: "binding_snapshot", ...snapshot });
+  return snapshot;
 }
 
 function liveLaneTemplateFor(registry, candidate) {
@@ -1392,7 +1554,18 @@ function updateLedgerLiveGate({ candidate, ledger, ledgerPath, liveReport, targe
   writeJson(ledgerPath, ledger);
 }
 
-function runAutoLiveLane({ candidate, ledger, ledgerPath, registry, runRoot, runId, targetRepo, timeoutMs, templateOverride = null }) {
+function runAutoLiveLane({
+  allowSelfImprovementLaneSynthesis = false,
+  candidate,
+  ledger,
+  ledgerPath,
+  registry,
+  runRoot,
+  runId,
+  targetRepo,
+  timeoutMs,
+  templateOverride = null,
+}) {
   let template = templateOverride || liveLaneTemplateFor(registry, candidate);
   const laneRoot = path.join(runRoot, "candidates", safeId(candidate.id), "live-lane");
   const logDir = path.join(laneRoot, "logs");
@@ -1401,6 +1574,20 @@ function runAutoLiveLane({ candidate, ledger, ledgerPath, registry, runRoot, run
   let synthesisReportPath = null;
 
   if (!template) {
+    if (!allowSelfImprovementLaneSynthesis) {
+      const report = {
+        schema: "generic-repo-full-intake.live-lane-report.v1",
+        runId,
+        candidateId: candidate.id,
+        status: "blocked_live_lane_template_missing",
+        ok: false,
+        reason: "self_improvement_lane_synthesis_disabled",
+        createdAt: new Date().toISOString(),
+      };
+      report.reportPath = path.join(laneRoot, "live-lane-report.json");
+      writeJson(report.reportPath, report);
+      return report;
+    }
     synthesisReport = synthesizeLiveLaneTemplate(candidate, runId);
     synthesisReportPath = path.join(laneRoot, "live-lane-synthesis.json");
     writeJson(synthesisReportPath, synthesisReport);
@@ -1757,7 +1944,16 @@ function applyFamilyProofToEntry(entry, ticket, liveReport, template, allocateQu
   };
 }
 
-function processLiveLaneResolutionTickets({ ledger, ledgerPath, registry, runId, runRoot, targetRepo, timeoutMs }) {
+function processLiveLaneResolutionTickets({
+  allowSelfImprovementLaneSynthesis = false,
+  ledger,
+  ledgerPath,
+  registry,
+  runId,
+  runRoot,
+  targetRepo,
+  timeoutMs,
+}) {
   const recoverable = ledger.entries.filter(isRecoverableLiveLaneEntry);
   const allocateQueueRank = nextQueueRankAllocator(ledger);
   const buckets = new Map();
@@ -1781,6 +1977,28 @@ function processLiveLaneResolutionTickets({ ledger, ledgerPath, registry, runId,
   for (const [groupId, bucket] of buckets) {
     const representative = bucket.entries[0];
     if (!bucket.synthesis.ok) {
+      if (!allowSelfImprovementLaneSynthesis) {
+        const ticket = recordResolutionTicket({
+          affected: bucket.entries,
+          evidence: {
+            familyId: bucket.familyId,
+            selfImprovement: { status: "disabled_by_context_budgeted_safe_mode" },
+            synthesis: bucket.synthesis,
+          },
+          groupId,
+          reason: bucket.synthesis.reason || "self_improvement_lane_synthesis_disabled",
+          runId,
+          runRoot,
+          status: "terminal_unresolved",
+          targetRepo,
+          type: "live-lane-family",
+        });
+        for (const entry of bucket.entries) {
+          attachResolutionReference(entry, ticket, "terminal_unresolved");
+        }
+        tickets.push(ticket);
+        continue;
+      }
       const selfImprovement = runSelfImprovementPipeline({
         bucket,
         groupId,
@@ -1876,6 +2094,7 @@ function processLiveLaneResolutionTickets({ ledger, ledgerPath, registry, runId,
       runId,
       targetRepo,
       timeoutMs,
+      templateOverride: bucket.synthesis.template,
     });
     const template = bucket.synthesis.template;
     const status = liveReport.ok ? "proved_requeued" : "terminal_unresolved";
@@ -2044,9 +2263,27 @@ function closeStaleRunningChildTimeoutTickets({ ledger, runId, runRoot, targetRe
   return { closedCandidateIds: sortedUnique(closedCandidateIds), tickets };
 }
 
-function processResolutionTickets({ ledger, ledgerPath, registry, runId, runRoot, targetRepo, timeoutMs }) {
+function processResolutionTickets({
+  allowSelfImprovementLaneSynthesis = false,
+  ledger,
+  ledgerPath,
+  registry,
+  runId,
+  runRoot,
+  targetRepo,
+  timeoutMs,
+}) {
   const closed = closeStaleRunningChildTimeoutTickets({ ledger, runId, runRoot, targetRepo });
-  const live = processLiveLaneResolutionTickets({ ledger, ledgerPath, registry, runId, runRoot, targetRepo, timeoutMs });
+  const live = processLiveLaneResolutionTickets({
+    allowSelfImprovementLaneSynthesis,
+    ledger,
+    ledgerPath,
+    registry,
+    runId,
+    runRoot,
+    targetRepo,
+    timeoutMs,
+  });
   const imports = processImportFailureResolutionTickets({ ledger, runId, runRoot, targetRepo });
   if (closed.tickets.length > 0 || live.tickets.length > 0 || imports.tickets.length > 0) {
     updateLedgerNextCandidate(ledger, null);
@@ -2163,14 +2400,236 @@ function compactPathsForParent(report) {
   const ledgerPath = normalizeRepoPath(report.ledgerPath || "");
   return {
     runRoot,
-    runReport: runRoot ? normalizeRepoPath(`${runRoot}/run-report.json`) : null,
+    proofEnvelope: report.proofEnvelopePath || (runRoot ? normalizeRepoPath(`${runRoot}/proof-envelope.json`) : null),
+    resumeCard: report.resumeCardPath || (runRoot ? normalizeRepoPath(`${runRoot}/resume-card.json`) : null),
     ledger: ledgerPath || null,
     compactStatusCommand: report.runId
       ? `node orchestrator/full-intake-status.mjs --run-id ${report.runId} --compact --event-limit 8 --batch-limit 1`
       : null,
+    proofCommand: report.runId
+      ? `node orchestrator/full-intake-proof.mjs --run-id ${report.runId} --compact-json`
+      : null,
+    fullJsonOutput: report.fullJsonOutputPath || null,
     ledgerSummaryCommand: ledgerPath
       ? `node orchestrator/full-intake-ledger-summary.mjs --ledger ${ledgerPath} --compact`
       : null,
+  };
+}
+
+function pathFromTarget(targetRepo, repoPath) {
+  if (!repoPath) return null;
+  return path.isAbsolute(repoPath) ? repoPath : path.resolve(targetRepo, repoPath);
+}
+
+function proofHashForRepoPath(targetRepo, repoPath) {
+  const absolute = pathFromTarget(targetRepo, repoPath);
+  return sha256FileIfExists(absolute);
+}
+
+function compactPathArray(values, limit = COMPACT_OUTPUT_ID_LIMIT) {
+  return Array.from(new Set((values || []).map(normalizeRepoPath).filter(Boolean))).sort().slice(0, limit);
+}
+
+function validationCommandsFromReports({ batch, liveRerun }) {
+  const commands = [];
+  const importerSummary = batch?.report?.importer?.resultSummary || null;
+  for (const value of [
+    ...(Array.isArray(importerSummary?.validationCommandsRun) ? importerSummary.validationCommandsRun : []),
+    ...(Array.isArray(importerSummary?.validationCommands) ? importerSummary.validationCommands : []),
+  ]) {
+    if (typeof value === "string") {
+      commands.push(value);
+    } else if (value?.command) {
+      commands.push(value.command);
+    }
+  }
+  if (liveRerun?.command) {
+    commands.push(liveRerun.command);
+  }
+  return compactPathArray(commands, 24);
+}
+
+function importerSummaryPathFromBatch(targetRepo, batch) {
+  const summaryPath = batch?.report?.importer?.resultSummary?.resultSummaryPath || null;
+  if (!summaryPath) return null;
+  return pathFromTarget(targetRepo, summaryPath);
+}
+
+function importerRunRoot(targetRepo, batch) {
+  const importerRunId = batch?.report?.importer?.runId || null;
+  if (!importerRunId) return null;
+  return path.join(targetRepo, ".codex-runtime", "sdk", "generic-repo-importer", importerRunId);
+}
+
+function nonLiveReportPathFromBatch(targetRepo, batch) {
+  if (batch?.report?.recovery?.validationReport) {
+    return pathFromTarget(targetRepo, batch.report.recovery.validationReport);
+  }
+  const root = importerRunRoot(targetRepo, batch);
+  if (!root) return null;
+  const reportPath = path.join(root, "validation", "non-live-report.json");
+  return existsSync(reportPath) ? reportPath : null;
+}
+
+function controlledMergeReportPathFromBatch(targetRepo, batch) {
+  const root = importerRunRoot(targetRepo, batch);
+  if (!root) return null;
+  for (const candidate of [
+    path.join(root, "merge", "controlled-merge-report.json"),
+    path.join(root, "merge", "supervisor-merge-plan.json"),
+  ]) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function childSummaryPathFromBatch(targetRepo, batch) {
+  const importerRunId = batch?.report?.importer?.runId || null;
+  if (!importerRunId) return null;
+  const dir = path.join(targetRepo, ".codex-runtime", "sdk", "generic-repo-importer", importerRunId, "implementation", "child-run-summaries");
+  if (!existsSync(dir)) return null;
+  const summaries = readdirSync(dir)
+    .filter((entry) => entry.endsWith(".json"))
+    .sort()
+    .map((entry) => path.join(dir, entry));
+  return summaries[0] || null;
+}
+
+function expectedHashesPresent(envelope) {
+  if (envelope.status !== "completed") {
+    return false;
+  }
+  const always = [
+    "queueSha256",
+    "ledgerSha256Before",
+    "ledgerSha256After",
+    "manifestSha256",
+    "runtimeStateSha256",
+    "changedPathsSha256",
+  ];
+  return always.every((field) => typeof envelope[field] === "string" && envelope[field].length > 0);
+}
+
+function buildProofEnvelope({ batch, candidate, gitHeadAfter, gitHeadBefore, item, ledgerSha256Before, liveRerun, registryPath, report, runRoot, state, targetRepo }) {
+  const changedPaths = compactPathArray(
+    item?.commitId ? gitCommitChangedPaths(targetRepo, item.commitId) : gitChangedPaths(targetRepo),
+    64,
+  );
+  const plannedPaths = compactPathArray(item?.plannedPaths || (candidate ? candidatePlannedPaths(candidate) : []), 64);
+  const plannedSet = new Set(plannedPaths);
+  const unplannedPaths = changedPaths.filter((entry) => !plannedSet.has(entry) && !SHARED_OWNER_PATHS.includes(entry));
+  const childSummaryPath = childSummaryPathFromBatch(targetRepo, batch);
+  const importerSummaryPath = importerSummaryPathFromBatch(targetRepo, batch);
+  const controlledMergeReportPath = controlledMergeReportPathFromBatch(targetRepo, batch);
+  const nonLiveReportPath = nonLiveReportPathFromBatch(targetRepo, batch);
+  const liveRerunReportPath = pathFromTarget(targetRepo, item?.liveRerunReport);
+  const manifestPath = batch?.singleLedgerPath || null;
+  const ledgerPath = pathFromTarget(targetRepo, report.ledgerPath);
+  const envelope = {
+    schema: PROOF_ENVELOPE_SCHEMA,
+    runId: report.runId,
+    candidateId: candidate?.id || item?.candidateId || null,
+    phase: item?.status === "completed" ? "candidate_completed" : report.status || item?.status || "unknown",
+    status: item?.status || report.status,
+    contractComplete: false,
+    gitHeadBefore: gitHeadBefore || null,
+    gitHeadAfter: gitHeadAfter || null,
+    queueSha256: sha256FileIfExists(ledgerPath),
+    ledgerSha256Before: ledgerSha256Before || null,
+    ledgerSha256After: sha256FileIfExists(ledgerPath),
+    manifestSha256: sha256FileIfExists(manifestPath),
+    runtimeStateSha256: sha256FileIfExists(path.join(runRoot, "state.json")),
+    changedPaths,
+    changedPathsSha256: sha256Json(changedPaths),
+    plannedPaths,
+    unplannedPaths,
+    childResultSummarySha256: sha256FileIfExists(childSummaryPath),
+    importerResultSummarySha256: sha256FileIfExists(importerSummaryPath),
+    controlledMergeReportSha256: sha256FileIfExists(controlledMergeReportPath),
+    nonLiveReportSha256: sha256FileIfExists(nonLiveReportPath),
+    liveRerunReportSha256: sha256FileIfExists(liveRerunReportPath),
+    validationCommandsRun: validationCommandsFromReports({ batch, liveRerun }),
+    nonLiveValidationComplete: Boolean(nonLiveReportPath || batch?.report?.status === "completed"),
+    liveCepAeRun: Boolean(liveRerun),
+    fallbackProviderUsed: false,
+    localOllamaUsed: false,
+    dependencyChanged: changedPaths.some(isDependencyPath),
+    pushOrPrCreated: false,
+    nextCommand: `node orchestrator/run-generic-repo-full-intake.mjs --ledger ${report.ledgerPath} --run-id ${report.runId} --max-items 1 --compact-json`,
+    artifactPaths: {
+      childResultSummary: childSummaryPath ? normalizeRepoPath(path.relative(targetRepo, childSummaryPath)) : null,
+      controlledMergeReport: controlledMergeReportPath ? normalizeRepoPath(path.relative(targetRepo, controlledMergeReportPath)) : null,
+      importerResultSummary: importerSummaryPath ? normalizeRepoPath(path.relative(targetRepo, importerSummaryPath)) : null,
+      liveRerunReport: liveRerunReportPath ? normalizeRepoPath(path.relative(targetRepo, liveRerunReportPath)) : null,
+      manifest: manifestPath ? normalizeRepoPath(path.relative(targetRepo, manifestPath)) : null,
+      nonLiveReport: nonLiveReportPath ? normalizeRepoPath(path.relative(targetRepo, nonLiveReportPath)) : null,
+    },
+    bindingSha256: {
+      liveBindingsSha256: sha256FileIfExists(registryPath),
+      policySha256: sha256Json(report.safetyPolicy || {}),
+      stateSha256: sha256FileIfExists(path.join(runRoot, "state.json")),
+    },
+    createdAt: new Date().toISOString(),
+  };
+  envelope.contractComplete = expectedHashesPresent(envelope);
+  return envelope;
+}
+
+function writeProofEnvelope(args) {
+  const envelope = buildProofEnvelope(args);
+  const proofPath = path.join(args.runRoot, "proof-envelope.json");
+  writeJson(proofPath, envelope);
+  const size = statSync(proofPath).size;
+  if (size > PROOF_ENVELOPE_MAX_BYTES) {
+    throw new Error(`proof-envelope-too-large:${size}>${PROOF_ENVELOPE_MAX_BYTES}`);
+  }
+  return {
+    envelope,
+    path: normalizeRepoPath(path.relative(args.targetRepo, proofPath)),
+    sha256: sha256FileIfExists(proofPath),
+  };
+}
+
+function buildResumeCard({ blockers = [], candidate, item, ledgerPath, proof, queuePath, report, runRoot, targetRepo }) {
+  const ledgerSha256 = sha256FileIfExists(ledgerPath);
+  const queueSha256 = sha256FileIfExists(queuePath || ledgerPath);
+  return {
+    schema: RESUME_CARD_SCHEMA,
+    runId: report.runId,
+    lastCompletedPhase: proof?.envelope?.phase || item?.status || report.status,
+    candidateId: candidate?.id || item?.candidateId || null,
+    status: item?.status || report.status,
+    blockers,
+    proofEnvelopePath: proof?.path || normalizeRepoPath(path.relative(targetRepo, path.join(runRoot, "proof-envelope.json"))),
+    proofEnvelopeSha256: proof?.sha256 || sha256FileIfExists(path.join(runRoot, "proof-envelope.json")),
+    ledgerPath: normalizeRepoPath(path.relative(targetRepo, ledgerPath)) || normalizeRepoPath(ledgerPath),
+    ledgerSha256,
+    queuePath: normalizeRepoPath(path.relative(targetRepo, queuePath || ledgerPath)) || normalizeRepoPath(queuePath || ledgerPath),
+    queueSha256,
+    nextCommand: proof?.envelope?.nextCommand || `node orchestrator/run-generic-repo-full-intake.mjs --ledger ${report.ledgerPath} --run-id ${report.runId} --max-items 1 --compact-json`,
+    forbiddenNextActions: [
+      "do not print full runtime reports in parent chat",
+      "do not run max-items > 1 without explicit batch approval",
+      "do not use Local/Ollama or fallback providers",
+      "do not commit recovered timeout patches before semantic review proof",
+    ],
+  };
+}
+
+function writeResumeCard(args) {
+  const card = buildResumeCard(args);
+  const cardPath = path.join(args.runRoot, "resume-card.json");
+  writeJson(cardPath, card);
+  const size = statSync(cardPath).size;
+  if (size > RESUME_CARD_MAX_BYTES) {
+    throw new Error(`resume-card-too-large:${size}>${RESUME_CARD_MAX_BYTES}`);
+  }
+  return {
+    card,
+    path: normalizeRepoPath(path.relative(args.targetRepo, cardPath)),
+    sha256: sha256FileIfExists(cardPath),
   };
 }
 
@@ -2218,6 +2677,15 @@ function compactParentReport(report) {
     requeuedCandidateIds: resolutionSummary.requeuedCandidateIds,
     failedCandidateIds,
     resolutionQueue: resolutionSummary,
+    proofEnvelope: {
+      path: report.proofEnvelopePath || null,
+      sha256: report.proofEnvelopeSha256 || null,
+      contractComplete: report.proofEnvelopeContractComplete === true,
+    },
+    resumeCard: {
+      path: report.resumeCardPath || null,
+      sha256: report.resumeCardSha256 || null,
+    },
     nextAction: inferParentNextAction(report, resolutionSummary, failedCandidateIds),
     compactPaths: compactPathsForParent(report),
   };
@@ -2931,49 +3399,33 @@ function updatePlanDocument({ candidate, commitId, item, targetRepo }) {
 function writeHandoff({ candidate, commitId, item, state, targetRepo }) {
   const handoffPath = path.join(targetRepo, ".codex", "handoff.md");
   mkdirSync(path.dirname(handoffPath), { recursive: true });
-  const changedPaths = gitChangedPaths(targetRepo);
+  const ledgerPath = pathFromTarget(targetRepo, state.ledgerPath);
+  const ledgerSha256 = sha256FileIfExists(ledgerPath);
+  const proofEnvelopePath = item.proofEnvelopePath || ".codex-runtime/sdk/generic-repo-full-intake/<run-id>/proof-envelope.json";
+  const proofEnvelopeSha256 = item.proofEnvelopeSha256 || "pending";
+  const nextCommand = `node orchestrator/run-generic-repo-full-intake.mjs --ledger ${state.ledgerPath} --run-id ${state.runId} --max-items 1 --compact-json`;
   const text = [
-    `# Handoff: generic repository full-intake orchestrator, ${new Date().toISOString()}`,
-    "",
-    "## Текущая цель",
-    "",
-    "Довести generic repository full-intake loop так, чтобы один верхнеуровневый запуск шел по ledger queue без ручного запуска каждого кандидата.",
-    "",
-    "## Текущее состояние",
-    "",
-    `- Run id: \`${state.runId}\`.`,
-    `- Последний кандидат: \`${candidate.id}\` (${candidate.sourcePath}).`,
-    `- Статус кандидата: \`${item.status}\`.`,
-    `- Live lane: \`${item.liveLaneStatus || "not_required"}\`.`,
-    `- Import batch: \`${item.batchRunId || "n/a"}\`.`,
-    `- Live rerun: \`${item.liveRerunStatus || "not_required"}\`.`,
-    `- Commit: \`${commitId || "pending"}\`.`,
-    "",
-    "## Файлы затронуты",
-    "",
-    ...(changedPaths.length ? changedPaths.map((entry) => `- \`${entry}\``) : ["- Нет tracked working-tree изменений на момент handoff."]),
-    "",
-    "## Валидация",
-    "",
-    `- Lane report: \`${item.liveLaneReport || "not_required"}\`.`,
-    `- Batch report: \`${item.batchReport || "n/a"}\`.`,
-    `- Live rerun report: \`${item.liveRerunReport || "not_required"}\`.`,
-    "",
-    "## Решения",
-    "",
-    "- Full-intake loop keeps shared files, validation, live proof, plan/handoff, and commit serial.",
-    "- Missing live lanes are resolved through registry-backed generated-only OpenAI CLI templates when available; otherwise the candidate is blocked with evidence and the loop can continue.",
-    "",
-    "## Риски / блокеры",
-    "",
-    "- Push/PR не выполнялись и требуют отдельного approval.",
-    "- Local/Ollama, fallback providers, broad/default CEP smoke, dependency/package changes, raw JSX copies, and source checkout writes remain forbidden.",
-    "",
-    "## Точный Prompt Для Следующего Чата",
-    "",
-    "Продолжи в `C:\\Users\\Ant\\Documents\\Codex\\AE_agent`. Прочитай `AGENTS.md`, `.codex/handoff.md`, `specs/target-app.md`, `plans/target-app-execplan.md` в UTF-8. Начни с `git status --short --branch` и `git remote -v`; `origin` указывает на ae-mcp-bridge, push туда не делать. Продолжай generic repository full-intake loop по ledger, соблюдая no Local/Ollama, no fallback providers, no dependency/package changes, no raw JSX copy, no source checkout writes, no broad CEP smoke, no PR/push без approval.",
+    "# Resume Card",
+    `runId: ${state.runId}`,
+    `lastCompletedPhase: ${item.status || "unknown"}`,
+    `candidateId: ${candidate.id}`,
+    `status: ${item.status || "unknown"}`,
+    `blockers: ${item.reason || "none"}`,
+    `proofEnvelopePath: ${proofEnvelopePath}`,
+    `proofEnvelopeSha256: ${proofEnvelopeSha256}`,
+    `ledgerPath: ${state.ledgerPath}`,
+    `ledgerSha256: ${ledgerSha256 || "pending"}`,
+    `queuePath: ${state.ledgerPath}`,
+    `queueSha256: ${ledgerSha256 || "pending"}`,
+    `nextCommand: ${nextCommand}`,
+    "forbiddenNextActions: no full runtime reports; no maxItems>1 without approval; no Local/Ollama; no fallback providers; no broad live acceptance; no recovered-timeout commit before semantic proof",
+    `commit: ${commitId || "pending"}`,
     "",
   ].join("\n");
+  const lineCount = text.split(/\r?\n/).filter(Boolean).length;
+  if (lineCount > RESUME_CARD_MAX_LINES || Buffer.byteLength(text, "utf8") > RESUME_CARD_MAX_BYTES) {
+    throw new Error("handoff-resume-card-too-large");
+  }
   writeFileSync(handoffPath, text, "utf8");
   return normalizeRepoPath(path.relative(targetRepo, handoffPath));
 }
@@ -3077,8 +3529,11 @@ export function runFullIntake(options, cwd = process.cwd()) {
     throw new Error("--run-id is required for generic repo full-intake runs");
   }
   const maxItems = parsePositiveInteger(options.maxItems, "max-items", 1);
+  if (maxItems > 1 && options.allowBatchMode !== true) {
+    throw new Error("max-items-greater-than-1-requires-allow-batch-mode");
+  }
   const timeoutMs = parsePositiveInteger(options.commandTimeoutMs, "command-timeout-ms", DEFAULT_COMMAND_TIMEOUT_MS);
-  const contextPercent = parseFiniteNumber(options.contextPercent, "context-percent");
+  const contextBudget = contextBudgetFromOptions(options);
   const ledgerPath = resolveOptionalPath(cwd, options.ledger, DEFAULT_LEDGER_PATH);
   if (!existsSync(ledgerPath) || !statSync(ledgerPath).isFile()) {
     throw new Error(`ledger-missing: ${ledgerPath}`);
@@ -3091,6 +3546,8 @@ export function runFullIntake(options, cwd = process.cwd()) {
   const registry = readLiveLaneRegistry(registryPath);
   const { resumed, state: loadedState } = loadOrCreateState({ ledgerPath, maxItems, runId, runRoot, targetRepo });
   let state = loadedState;
+  const gitHeadBefore = gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head");
+  const ledgerSha256Before = sha256FileIfExists(ledgerPath);
   const report = {
     schema: RUN_SCHEMA,
     auxiliaryId: AUXILIARY_ID,
@@ -3103,6 +3560,11 @@ export function runFullIntake(options, cwd = process.cwd()) {
     targetRepo,
     maxItems,
     resumed,
+    gitHeadBefore,
+    contextBudget: {
+      ...contextBudget,
+      overrideNextStepCost: contextBudget.overrideNextStepCost ?? null,
+    },
     items: [],
     resolutionQueue: null,
     blockers: [],
@@ -3122,16 +3584,101 @@ export function runFullIntake(options, cwd = process.cwd()) {
     createdAt: new Date().toISOString(),
   };
 
-  if (contextPercent !== null && contextPercent >= 70) {
+  appendBindingSnapshot(runRoot, captureBindingSnapshot({
+    ledgerPath,
+    registryPath,
+    runRoot,
+    safetyPolicy: report.safetyPolicy,
+    step: "run_start",
+    targetRepo,
+  }));
+
+  if (contextBudget.currentContextPercent >= contextBudget.hardStopPercent) {
     report.status = "handoff_required";
     report.ok = false;
-    report.blockers.push({ code: "context-pressure", contextPercent });
+    report.blockers.push({ code: "context-pressure", contextPercent: contextBudget.currentContextPercent });
     state.status = report.status;
     state = saveState(runRoot, state);
+    const proof = writeProofEnvelope({
+      batch: null,
+      candidate: null,
+      gitHeadAfter: gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head"),
+      gitHeadBefore,
+      item: null,
+      ledgerSha256Before,
+      liveRerun: null,
+      registryPath,
+      report,
+      runRoot,
+      state,
+      targetRepo,
+    });
+    report.proofEnvelopePath = proof.path;
+    report.proofEnvelopeSha256 = proof.sha256;
+    report.proofEnvelopeContractComplete = proof.envelope.contractComplete;
+    const resume = writeResumeCard({
+      blockers: report.blockers,
+      candidate: null,
+      item: null,
+      ledgerPath,
+      proof,
+      queuePath: ledgerPath,
+      report,
+      runRoot,
+      targetRepo,
+    });
+    report.resumeCardPath = resume.path;
+    report.resumeCardSha256 = resume.sha256;
     throw new FullIntakeError("context-pressure", report);
   }
 
+  const firstBudgetDecision = checkContextBudget(contextBudget, "childRun", CONTEXT_STEP_COST.childRun);
+  report.contextBudget.lastDecision = firstBudgetDecision;
+  if (firstBudgetDecision.action !== "continue") {
+    report.status = firstBudgetDecision.action === "hard_stop" ? "context_pressure" : "resume_only_context_budget";
+    report.ok = firstBudgetDecision.action !== "hard_stop";
+    report.blockers.push({ code: "context-budget", decision: firstBudgetDecision });
+    state.status = report.status;
+    state = saveState(runRoot, state);
+    const proof = writeProofEnvelope({
+      batch: null,
+      candidate: null,
+      gitHeadAfter: gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head"),
+      gitHeadBefore,
+      item: null,
+      ledgerSha256Before,
+      liveRerun: null,
+      registryPath,
+      report,
+      runRoot,
+      state,
+      targetRepo,
+    });
+    report.proofEnvelopePath = proof.path;
+    report.proofEnvelopeSha256 = proof.sha256;
+    report.proofEnvelopeContractComplete = proof.envelope.contractComplete;
+    const resume = writeResumeCard({
+      blockers: report.blockers,
+      candidate: null,
+      item: null,
+      ledgerPath,
+      proof,
+      queuePath: ledgerPath,
+      report,
+      runRoot,
+      targetRepo,
+    });
+    report.resumeCardPath = resume.path;
+    report.resumeCardSha256 = resume.sha256;
+    writeJson(path.join(runRoot, "run-report.json"), report);
+    if (firstBudgetDecision.action === "hard_stop") {
+      throw new FullIntakeError("context-pressure", report);
+    }
+    return report;
+  }
+
   const resolutionQueue = processResolutionTickets({
+    allowSelfImprovementLaneSynthesis: options.allowSelfImprovementLaneSynthesis === true,
     ledger: initialLedger,
     ledgerPath,
     registry,
@@ -3161,6 +3708,10 @@ export function runFullIntake(options, cwd = process.cwd()) {
 
   let considered = 0;
   const processedIds = terminalProcessedIds(state, initialLedger);
+  let lastBatch = null;
+  let lastCandidate = null;
+  let lastItem = null;
+  let lastLiveRerun = null;
 
   while (considered < maxItems) {
     const dirtyBefore = gitChangedPaths(targetRepo);
@@ -3182,6 +3733,10 @@ export function runFullIntake(options, cwd = process.cwd()) {
     considered += 1;
 
     const item = itemFromCandidate(candidate, runId);
+    item.gitHeadBefore = gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head");
+    item.ledgerSha256Before = sha256FileIfExists(ledgerPath);
+    lastCandidate = candidate;
+    lastItem = item;
     appendEvent(runRoot, { candidateId: candidate.id, event: "candidate_started", runId });
 
     if (!SAFE_CLASSIFICATIONS.has(candidate.classification)) {
@@ -3211,7 +3766,29 @@ export function runFullIntake(options, cwd = process.cwd()) {
 
     let liveGate = liveLaneReady(candidate.liveGate);
     if (!liveGate.ok) {
-      const liveReport = runAutoLiveLane({ candidate, ledger: activeLedger, ledgerPath, registry, runRoot, runId, targetRepo, timeoutMs });
+      const liveDecision = checkContextBudget(contextBudget, "liveLane", CONTEXT_STEP_COST.liveLane);
+      report.contextBudget.lastDecision = liveDecision;
+      if (liveDecision.action !== "continue") {
+        item.status = liveDecision.action === "hard_stop" ? "failed_context_pressure" : "blocked_context_budget_resume_required";
+        item.reason = `context-budget-${liveDecision.threshold}`;
+        item.completedAt = new Date().toISOString();
+        report.status = liveDecision.action === "hard_stop" ? "context_pressure" : "resume_only_context_budget";
+        report.ok = liveDecision.action !== "hard_stop";
+        report.blockers.push({ code: "context-budget", decision: liveDecision, candidateId: candidate.id });
+        report.items.push(item);
+        break;
+      }
+      const liveReport = runAutoLiveLane({
+        allowSelfImprovementLaneSynthesis: options.allowSelfImprovementLaneSynthesis === true,
+        candidate,
+        ledger: activeLedger,
+        ledgerPath,
+        registry,
+        runRoot,
+        runId,
+        targetRepo,
+        timeoutMs,
+      });
       item.liveLaneReport = normalizeRepoPath(path.relative(targetRepo, liveReport.reportPath));
       item.liveLaneStatus = liveReport.status;
       if (!liveReport.ok) {
@@ -3247,18 +3824,57 @@ export function runFullIntake(options, cwd = process.cwd()) {
 
     let batch;
     try {
+      const importDecision = checkContextBudget(contextBudget, "importerPhase", CONTEXT_STEP_COST.importerPhase);
+      report.contextBudget.lastDecision = importDecision;
+      if (importDecision.action !== "continue") {
+        item.status = importDecision.action === "hard_stop" ? "failed_context_pressure" : "blocked_context_budget_resume_required";
+        item.reason = `context-budget-${importDecision.threshold}`;
+        item.completedAt = new Date().toISOString();
+        report.status = importDecision.action === "hard_stop" ? "context_pressure" : "resume_only_context_budget";
+        report.ok = importDecision.action !== "hard_stop";
+        report.blockers.push({ code: "context-budget", decision: importDecision, candidateId: candidate.id });
+        report.items.push(item);
+        break;
+      }
+      appendBindingSnapshot(runRoot, captureBindingSnapshot({
+        ledgerPath,
+        registryPath,
+        runRoot,
+        safetyPolicy: report.safetyPolicy,
+        step: "before_importer_phase",
+        targetRepo,
+      }));
       if (candidate.implementation?.recoveryIntent?.mode === "recover_child_timeout_patch") {
         batch = recoverChildTimeoutPatch({ candidate, runId, runRoot, targetRepo, timeoutMs });
       } else {
         batch = runCandidateImport({ candidate, ledger: activeLedger, runId, runRoot, targetRepo });
       }
+      appendBindingSnapshot(runRoot, captureBindingSnapshot({
+        ledgerPath,
+        registryPath,
+        runRoot,
+        safetyPolicy: report.safetyPolicy,
+        step: "after_importer_phase",
+        targetRepo,
+      }));
       item.batchRunId = batch.batchRunId;
       item.batchReport = batch.report.reportPath;
       item.importStatus = batch.report.status;
+      item.plannedPaths = compactPathArray(
+        ((batch.report.items || []).find((entry) => entry.candidateId === candidate.id) || {}).plannedPaths ||
+          candidatePlannedPaths(candidate),
+        64,
+      );
+      lastBatch = batch;
     } catch (error) {
       let recoveryError = null;
       let recoveredBatch = null;
       try {
+        const recoveryDecision = checkContextBudget(contextBudget, "recoveryBranch", CONTEXT_STEP_COST.recoveryBranch);
+        report.contextBudget.lastDecision = recoveryDecision;
+        if (recoveryDecision.action !== "continue") {
+          throw new Error(`context-budget-${recoveryDecision.threshold}`);
+        }
         recoveredBatch = tryRecoverImportFailure({
           candidate,
           error,
@@ -3276,6 +3892,24 @@ export function runFullIntake(options, cwd = process.cwd()) {
         item.batchRunId = batch.batchRunId;
         item.batchReport = batch.report.reportPath;
         item.importStatus = batch.report.status;
+        item.plannedPaths = compactPathArray(candidatePlannedPaths(candidate), 64);
+        lastBatch = batch;
+        item.status = "recovered_patch_non_live_validated_pending_semantic_review";
+        item.reason = "child_timeout_recovery_requires_separate_semantic_review_slice";
+        item.completedAt = new Date().toISOString();
+        processedIds.add(candidate.id);
+        updateLedgerTerminalStatus({ candidate, item, ledger: activeLedger, ledgerPath, targetRepo });
+        state = saveState(runRoot, pushItem(state, item));
+        report.items.push(item);
+        report.status = "stopped_recovery_pending_semantic_review";
+        report.ok = true;
+        appendEvent(runRoot, {
+          candidateId: candidate.id,
+          event: "candidate_recovery_pending_semantic_review",
+          runId,
+          status: item.status,
+        });
+        break;
       } else {
         const finalError = recoveryError || error;
         item.status = "failed_import";
@@ -3303,8 +3937,39 @@ export function runFullIntake(options, cwd = process.cwd()) {
       }
     }
 
+    if (batch?.report?.mode === "child-timeout-recovery" || batch?.report?.recovery) {
+      item.status = "recovered_patch_non_live_validated_pending_semantic_review";
+      item.reason = "child_timeout_recovery_requires_separate_semantic_review_slice";
+      item.completedAt = new Date().toISOString();
+      processedIds.add(candidate.id);
+      updateLedgerTerminalStatus({ candidate, item, ledger: activeLedger, ledgerPath, targetRepo });
+      state = saveState(runRoot, pushItem(state, item));
+      report.items.push(item);
+      report.status = "stopped_recovery_pending_semantic_review";
+      report.ok = true;
+      appendEvent(runRoot, {
+        candidateId: candidate.id,
+        event: "candidate_recovery_pending_semantic_review",
+        runId,
+        status: item.status,
+      });
+      break;
+    }
+
     let liveRerun = null;
     if (candidate.liveGate.required === true) {
+      const liveRerunDecision = checkContextBudget(contextBudget, "liveRerun", CONTEXT_STEP_COST.liveRerun);
+      report.contextBudget.lastDecision = liveRerunDecision;
+      if (liveRerunDecision.action !== "continue") {
+        item.status = liveRerunDecision.action === "hard_stop" ? "failed_context_pressure" : "blocked_context_budget_resume_required";
+        item.reason = `context-budget-${liveRerunDecision.threshold}`;
+        item.completedAt = new Date().toISOString();
+        report.status = liveRerunDecision.action === "hard_stop" ? "context_pressure" : "resume_only_context_budget";
+        report.ok = liveRerunDecision.action !== "hard_stop";
+        report.blockers.push({ code: "context-budget", decision: liveRerunDecision, candidateId: candidate.id });
+        report.items.push(item);
+        break;
+      }
       liveRerun = runLiveRerun({
         candidate,
         command: candidate.liveGate.command,
@@ -3312,6 +3977,7 @@ export function runFullIntake(options, cwd = process.cwd()) {
         targetRepo,
         timeoutMs,
       });
+      lastLiveRerun = liveRerun;
       item.liveRerunReport = normalizeRepoPath(path.relative(targetRepo, liveRerun.reportPath));
       item.liveRerunStatus = liveRerun.status;
       if (!liveRerun.ok) {
@@ -3332,16 +3998,41 @@ export function runFullIntake(options, cwd = process.cwd()) {
       item.liveRerunStatus = "not_required";
     }
 
+    const docsDecision = checkContextBudget(contextBudget, "docsHandoffWrite", CONTEXT_STEP_COST.docsHandoffWrite);
+    report.contextBudget.lastDecision = docsDecision;
+    if (docsDecision.action !== "continue") {
+      item.status = docsDecision.action === "hard_stop" ? "failed_context_pressure" : "blocked_context_budget_resume_required";
+      item.reason = `context-budget-${docsDecision.threshold}`;
+      item.completedAt = new Date().toISOString();
+      report.status = docsDecision.action === "hard_stop" ? "context_pressure" : "resume_only_context_budget";
+      report.ok = docsDecision.action !== "hard_stop";
+      report.blockers.push({ code: "context-budget", decision: docsDecision, candidateId: candidate.id });
+      report.items.push(item);
+      break;
+    }
     const planPath = updatePlanDocument({ candidate, commitId: null, item, targetRepo });
     item.planPath = planPath;
     const handoffPath = writeHandoff({ candidate, commitId: null, item, state, targetRepo });
     item.handoffPath = handoffPath;
 
+    const commitDecision = checkContextBudget(contextBudget, "commit", CONTEXT_STEP_COST.commit);
+    report.contextBudget.lastDecision = commitDecision;
+    if (commitDecision.action !== "continue") {
+      item.status = commitDecision.action === "hard_stop" ? "failed_context_pressure" : "blocked_context_budget_resume_required";
+      item.reason = `context-budget-${commitDecision.threshold}`;
+      item.completedAt = new Date().toISOString();
+      report.status = commitDecision.action === "hard_stop" ? "context_pressure" : "resume_only_context_budget";
+      report.ok = commitDecision.action !== "hard_stop";
+      report.blockers.push({ code: "context-budget", decision: commitDecision, candidateId: candidate.id });
+      report.items.push(item);
+      break;
+    }
     const commitId =
       options.noCommit === true
         ? null
         : stageAndCommitReviewableChanges(targetRepo, `feat: import ${safeId(candidate.id)} recipe`);
     item.commitId = commitId;
+    item.gitHeadAfter = gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head");
     if (commitId) {
       report.commits.push(commitId);
       state.commitIds = [...(state.commitIds || []), commitId];
@@ -3380,8 +4071,59 @@ export function runFullIntake(options, cwd = process.cwd()) {
     runId,
     status: report.status,
   }));
+  report.contextBudget = {
+    ...report.contextBudget,
+    predictedContextPercent: contextBudget.predictedContextPercent,
+  };
   state.status = report.status;
   state = saveState(runRoot, state);
+  const finalItem = report.items[report.items.length - 1] || lastItem || null;
+  const finalCandidate = finalItem?.candidateId && (!lastCandidate || lastCandidate.id !== finalItem.candidateId)
+    ? (readJson(ledgerPath, "queue-ledger").entries || []).find((entry) => entry.id === finalItem.candidateId) || lastCandidate
+    : lastCandidate;
+  const proof = writeProofEnvelope({
+    batch: lastBatch,
+    candidate: finalCandidate,
+    gitHeadAfter: gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head"),
+    gitHeadBefore,
+    item: finalItem,
+    ledgerSha256Before,
+    liveRerun: lastLiveRerun,
+    registryPath,
+    report,
+    runRoot,
+    state,
+    targetRepo,
+  });
+  report.proofEnvelopePath = proof.path;
+  report.proofEnvelopeSha256 = proof.sha256;
+  report.proofEnvelopeContractComplete = proof.envelope.contractComplete;
+  if (finalItem) {
+    finalItem.proofEnvelopePath = proof.path;
+    finalItem.proofEnvelopeSha256 = proof.sha256;
+  }
+  const resume = writeResumeCard({
+    blockers: report.blockers,
+    candidate: finalCandidate,
+    item: finalItem,
+    ledgerPath,
+    proof,
+    queuePath: ledgerPath,
+    report,
+    runRoot,
+    targetRepo,
+  });
+  report.resumeCardPath = resume.path;
+  report.resumeCardSha256 = resume.sha256;
+  if (finalCandidate && finalItem) {
+    writeHandoff({
+      candidate: finalCandidate,
+      commitId: finalItem.commitId || null,
+      item: finalItem,
+      state,
+      targetRepo,
+    });
+  }
   writeJson(path.join(runRoot, "run-report.json"), report);
 
   if (report.ok === false) {
@@ -3390,18 +4132,35 @@ export function runFullIntake(options, cwd = process.cwd()) {
   return report;
 }
 
-function printResult(report, outputMode) {
+function printResult(report, outputMode, options = {}, cwd = process.cwd()) {
   if (outputMode === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return;
+    if (options.output) {
+      const outputPath = resolveOptionalPath(cwd, options.output, options.output);
+      writeJson(outputPath, report);
+      const compact = compactParentReport({
+        ...report,
+        fullJsonOutputPath: normalizeRepoPath(path.relative(report.targetRepo || cwd, outputPath)) || normalizeRepoPath(outputPath),
+      });
+      process.stdout.write(`${JSON.stringify(compact, null, 2)}\n`);
+      return;
+    }
+    if (options.allowFullJsonForDebug === true) {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return;
+    }
+    throw new Error("full-json-stdout-forbidden-use-compact-json-or-json-output-or-allow-full-json-for-debug");
   }
   if (outputMode === "compact-json") {
-    process.stdout.write(`${JSON.stringify(compactParentReport(report), null, 2)}\n`);
+    const text = `${JSON.stringify(compactParentReport(report), null, 2)}\n`;
+    if (Buffer.byteLength(text, "utf8") > RESUME_CARD_MAX_BYTES) {
+      throw new Error("compact-parent-output-too-large");
+    }
+    process.stdout.write(text);
     return;
   }
   process.stdout.write(`Generic repo full intake: ${report.status}\n`);
-  process.stdout.write(`Items: ${report.items.map((item) => `${item.candidateId}:${item.status}`).join(", ") || "none"}\n`);
-  process.stdout.write(`Commits: ${report.commits.join(", ") || "none"}\n`);
+  process.stdout.write(`Proof: ${report.proofEnvelopePath || "pending"}\n`);
+  process.stdout.write(`Resume: ${report.resumeCardPath || "pending"}\n`);
 }
 
 async function main() {
@@ -3413,13 +4172,18 @@ async function main() {
       process.stdout.write(HELP.trimStart());
       return;
     }
+    if (outputMode === "json" && !options.output && options.allowFullJsonForDebug !== true) {
+      throw new Error("full-json-stdout-forbidden-use-compact-json-or-json-output-or-allow-full-json-for-debug");
+    }
     const report = runFullIntake(options, REPO_ROOT);
-    printResult(report, outputMode);
+    printResult(report, outputMode, options, REPO_ROOT);
   } catch (error) {
-    if (error instanceof FullIntakeError && error.report && outputMode === "json") {
-      process.stdout.write(`${JSON.stringify(error.report, null, 2)}\n`);
-    } else if (error instanceof FullIntakeError && error.report && outputMode === "compact-json") {
-      process.stdout.write(`${JSON.stringify(compactParentReport(error.report), null, 2)}\n`);
+    if (error instanceof FullIntakeError && error.report && (outputMode === "json" || outputMode === "compact-json")) {
+      try {
+        printResult(error.report, outputMode === "json" ? "json" : "compact-json", parseArgs(process.argv.slice(2)), REPO_ROOT);
+      } catch {
+        process.stdout.write(`${JSON.stringify(compactParentReport(error.report), null, 2)}\n`);
+      }
     }
     console.error(error.message);
     process.exitCode = 1;

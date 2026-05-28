@@ -398,7 +398,8 @@ function writeRegistry(fixture, overrides = {}) {
   return registryPath;
 }
 
-function runFullIntakeFixture(fixture, ledgerPath, registryPath, runId, maxItems, env = {}) {
+function runFullIntakeFixture(fixture, ledgerPath, registryPath, runId, maxItems, env = {}, extraArgs = []) {
+  const batchArgs = maxItems > 1 ? ["--allow-batch-mode"] : [];
   return run(
     [
       "--ledger",
@@ -411,14 +412,18 @@ function runFullIntakeFixture(fixture, ledgerPath, registryPath, runId, maxItems
       String(maxItems),
       "--target-repo",
       fixture.target,
-      "--json"
+      "--json",
+      "--allow-full-json-for-debug",
+      ...batchArgs,
+      ...extraArgs
     ],
     repo,
     env
   );
 }
 
-function runFullIntakeFixtureCompact(fixture, ledgerPath, registryPath, runId, maxItems, env = {}) {
+function runFullIntakeFixtureCompact(fixture, ledgerPath, registryPath, runId, maxItems, env = {}, extraArgs = []) {
+  const batchArgs = maxItems > 1 ? ["--allow-batch-mode"] : [];
   return run(
     [
       "--ledger",
@@ -431,7 +436,9 @@ function runFullIntakeFixtureCompact(fixture, ledgerPath, registryPath, runId, m
       String(maxItems),
       "--target-repo",
       fixture.target,
-      "--compact-json"
+      "--compact-json",
+      ...batchArgs,
+      ...extraArgs
     ],
     repo,
     env
@@ -535,8 +542,188 @@ function assertCompactParentOutputDoesNotLeakRuntimeDetails() {
     assert.strictEqual(output.counts.items, 1);
     assert.strictEqual(output.lastItem.candidateId, "tool-compositions-add-composition-guide");
     assert.strictEqual(output.resolutionQueue.ticketCount, 0);
+    assert(output.proofEnvelope.path.endsWith("proof-envelope.json"));
+    assert(output.proofEnvelope.sha256);
+    assert(output.resumeCard.path.endsWith("resume-card.json"));
     assert(output.compactPaths.compactStatusCommand.includes("full-intake-status.mjs"));
+    assert(output.compactPaths.proofCommand.includes("full-intake-proof.mjs"));
     assert(output.compactPaths.ledgerSummaryCommand.includes("full-intake-ledger-summary.mjs"));
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertParentJsonIsSealedAndBatchRequiresApproval() {
+  const fixture = createFixture("json-sealed");
+  try {
+    const ledgerPath = writeLedger(fixture, validLedger(fixture));
+    const registryPath = writeRegistry(fixture);
+    const fullJson = run(
+      [
+        "--ledger",
+        ledgerPath,
+        "--live-lane-registry",
+        registryPath,
+        "--run-id",
+        "fixture-json-refusal",
+        "--max-items",
+        "1",
+        "--target-repo",
+        fixture.target,
+        "--json"
+      ],
+      repo
+    );
+    assert.notStrictEqual(fullJson.status, 0, "full --json without output/debug must be refused before work starts");
+    assert(fullJson.stderr.includes("full-json-stdout-forbidden"), fullJson.stderr || fullJson.stdout);
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+
+    const batch = run(
+      [
+        "--ledger",
+        ledgerPath,
+        "--live-lane-registry",
+        registryPath,
+        "--run-id",
+        "fixture-batch-refusal",
+        "--max-items",
+        "2",
+        "--target-repo",
+        fixture.target,
+        "--compact-json"
+      ],
+      repo
+    );
+    assert.notStrictEqual(batch.status, 0, "max-items > 1 must require explicit batch approval");
+    assert(batch.stderr.includes("max-items-greater-than-1-requires-allow-batch-mode"), batch.stderr || batch.stdout);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertContextBudgetStopsBeforeNewWork() {
+  const fixture = createFixture("context-budget");
+  try {
+    const ledgerPath = writeLedger(fixture, validLedger(fixture));
+    const registryPath = writeRegistry(fixture);
+    const result = runFullIntakeFixtureCompact(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "fixture-context-budget",
+      1,
+      {},
+      ["--context-percent", "50"]
+    );
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    const output = JSON.parse(result.stdout);
+    assert.strictEqual(output.status, "resume_only_context_budget");
+    assert.strictEqual(output.counts.items, 0);
+    assert(output.proofEnvelope.path.endsWith("proof-envelope.json"));
+    assert.strictEqual(output.proofEnvelope.contractComplete, false);
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    assert.strictEqual(ledger.entries[0].status, "queued");
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertContextRegressionOutputBounds() {
+  for (const count of [1, 3, 10]) {
+    const fixture = createFixture(`context-regression-${count}`);
+    try {
+      const candidates = Array.from({ length: count }, (_, index) => entry({
+        id: `tool-unsafe-${index + 1}`,
+        sourcePath: `Unsafe_${index + 1}.jsx`,
+        classification: "unsafe_destructive_operation",
+        liveGate: { required: false, status: "not_required_for_read_only_or_skip" },
+        implementation: { sliceId: `unsafe-${index + 1}`, plannedPaths: [`scripts/imported-tools/unsafe-${index + 1}.js`] },
+        queueRank: index + 1
+      }));
+      const ledgerPath = writeLedger(fixture, validLedger(fixture, candidates));
+      const registryPath = writeRegistry(fixture);
+      const result = runFullIntakeFixtureCompact(fixture, ledgerPath, registryPath, `fixture-context-regression-${count}`, count);
+      assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+      assert(result.stdout.length < 12 * 1024, `compact output for ${count} candidates exceeded bound: ${result.stdout.length}`);
+      const output = JSON.parse(result.stdout);
+      assertCompactParentOutputIsBounded(result.stdout, output);
+      assert.strictEqual(output.counts.items, count);
+      assert(!result.stdout.includes("items\": ["), "compact output must not expose item arrays");
+    } finally {
+      removeFixture(fixture.root);
+    }
+  }
+}
+
+function assertProofAndDiagnoseCommandsAreBounded() {
+  const fixture = createFixture("proof-diagnose");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const ledgerPath = writeLedger(fixture, validLedger(fixture));
+    const registryPath = writeRegistry(fixture);
+    const result = runFullIntakeFixtureCompact(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "fixture-proof-diagnose",
+      1,
+      fakeCodexEnv(binDir)
+    );
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    const output = JSON.parse(result.stdout);
+    assert.strictEqual(output.proofEnvelope.contractComplete, true);
+
+    const proofRunner = path.join(repo, "orchestrator", "full-intake-proof.mjs");
+    const proof = spawnSync(process.execPath, [
+      proofRunner,
+      "--target-repo",
+      fixture.target,
+      "--run-id",
+      "fixture-proof-diagnose",
+      "--candidate",
+      "tool-compositions-add-composition-guide",
+      "--compact-json"
+    ], { cwd: repo, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    assert.strictEqual(proof.status, 0, proof.stderr || proof.stdout);
+    assert(proof.stdout.length < 4096, `proof output too large: ${proof.stdout.length}`);
+    const proofOutput = JSON.parse(proof.stdout);
+    assert.strictEqual(proofOutput.contractComplete, true);
+
+    const diagnoseRunner = path.join(repo, "orchestrator", "full-intake-diagnose.mjs");
+    const diagnose = spawnSync(process.execPath, [
+      diagnoseRunner,
+      "--target-repo",
+      fixture.target,
+      "--run-id",
+      "fixture-proof-diagnose",
+      "--candidate",
+      "tool-compositions-add-composition-guide",
+      "--phase",
+      "importer",
+      "--max-bytes",
+      "1024",
+      "--compact-json"
+    ], { cwd: repo, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    assert.strictEqual(diagnose.status, 0, diagnose.stderr || diagnose.stdout);
+    assert(diagnose.stdout.length < 4096, `diagnose output too large: ${diagnose.stdout.length}`);
+    assert(!diagnose.stdout.includes("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH"));
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertSelfImprovementSynthesisDisabledByDefault() {
+  const fixture = createFixture("synth-disabled");
+  try {
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [posterizeEntry()]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const output = parseJson(runFullIntakeFixture(fixture, ledgerPath, registryPath, "fixture-synth-disabled", 1));
+    assert.strictEqual(output.status, "completed_with_blocked_candidates");
+    assert.strictEqual(output.items[0].status, "blocked_live_lane_template_missing");
+    assert.strictEqual(output.items[0].reason, "self_improvement_lane_synthesis_disabled");
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    assert.strictEqual(ledger.entries[0].status, "blocked_live_lane_template_missing");
   } finally {
     removeFixture(fixture.root);
   }
@@ -555,7 +742,8 @@ function assertSynthesizedAutoLaneCompletesWithoutRegistryEntry() {
         registryPath,
         "fixture-synth-lane",
         1,
-        fakeCodexEnv(binDir)
+        fakeCodexEnv(binDir),
+        ["--allow-self-improvement-lane-synthesis", "--no-new-work-percent", "95", "--handoff-percent", "98", "--hard-stop-percent", "100"]
       )
     );
     assert.strictEqual(output.status, "completed");
@@ -596,7 +784,15 @@ function assertAutoLaneSynthesisFailClosedEvidence() {
     });
     const ledgerPath = writeLedger(fixture, validLedger(fixture, [unsafe, ambiguous]));
     const registryPath = writeRegistry(fixture, { entries: [] });
-    const output = parseJson(runFullIntakeFixture(fixture, ledgerPath, registryPath, "fixture-synth-fail", 2));
+    const output = parseJson(runFullIntakeFixture(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "fixture-synth-fail",
+      2,
+      {},
+      ["--allow-self-improvement-lane-synthesis"]
+    ));
     assert.strictEqual(output.status, "completed_with_blocked_candidates");
     assert.deepStrictEqual(output.items.map((item) => item.status), [
       "blocked_live_lane_synthesis_unsafe",
@@ -746,7 +942,8 @@ function assertQueuedLedgerStaleBlockedStateIsRetried() {
         registryPath,
         runId,
         1,
-        fakeCodexEnv(binDir)
+        fakeCodexEnv(binDir),
+        ["--allow-self-improvement-lane-synthesis", "--no-new-work-percent", "95", "--handoff-percent", "98", "--hard-stop-percent", "100"]
       )
     );
     assert.strictEqual(output.resumed, true);
@@ -899,7 +1096,8 @@ function assertQueuedLiveLaneNeededFamiliesAreProvedAndRanked() {
         registryPath,
         "fixture-qln-family",
         2,
-        fakeCodexEnv(binDir)
+        fakeCodexEnv(binDir),
+        ["--allow-self-improvement-lane-synthesis", "--no-new-work-percent", "95", "--handoff-percent", "98", "--hard-stop-percent", "100"]
       )
     );
     assert.strictEqual(output.status, "completed");
@@ -988,7 +1186,8 @@ function assertBoundedSelfImprovementCreatesAndRejectsLanes() {
         registryPath,
         "fixture-self-improvement",
         1,
-        fakeCodexEnv(binDir)
+        fakeCodexEnv(binDir),
+        ["--allow-self-improvement-lane-synthesis"]
       )
     );
     assert.strictEqual(output.status, "completed");
@@ -1142,16 +1341,16 @@ function assertChildTimeoutResolutionRecoversImporterWorktreePatch() {
         1
       )
     );
-    assert.strictEqual(output.status, "completed");
-    assert.strictEqual(output.items[0].status, "completed");
+    assert.strictEqual(output.status, "stopped_recovery_pending_semantic_review");
+    assert.strictEqual(output.items[0].status, "recovered_patch_non_live_validated_pending_semantic_review");
     assert.strictEqual(output.items[0].importStatus, "imported_non_live_validated");
     assert(fs.existsSync(path.join(fixture.target, evidence.recoveredPath)));
     const recovered = fs.readFileSync(path.join(fixture.target, evidence.recoveredPath), "utf8");
     assert(recovered.includes("child-timeout"));
     const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
-    assert.strictEqual(ledger.entries[0].status, "completed");
-    assert.strictEqual(ledger.entries[0].implementation.importerNonLiveReport.includes("recovery-validation-report.json"), true);
-    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+    assert.strictEqual(ledger.entries[0].status, "recovered_patch_non_live_validated_pending_semantic_review");
+    assert.strictEqual(ledger.entries[0].failClosed.status, "recovered_patch_non_live_validated_pending_semantic_review");
+    assert(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]).includes("recovered-child-timeout.js"));
   } finally {
     removeFixture(fixture.root);
   }
@@ -1365,6 +1564,11 @@ function main() {
   assertCompletedCandidateAndAutoLane();
   assertHugeChildOutputDoesNotBloatParentReports();
   assertCompactParentOutputDoesNotLeakRuntimeDetails();
+  assertParentJsonIsSealedAndBatchRequiresApproval();
+  assertContextBudgetStopsBeforeNewWork();
+  assertContextRegressionOutputBounds();
+  assertProofAndDiagnoseCommandsAreBounded();
+  assertSelfImprovementSynthesisDisabledByDefault();
   assertSynthesizedAutoLaneCompletesWithoutRegistryEntry();
   assertAutoLaneSynthesisFailClosedEvidence();
   assertUnsafeCandidateSkipAndContinue();
