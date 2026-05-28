@@ -3901,6 +3901,118 @@
         "Require a separate typed-tool contract for automatic pick-whip source discovery, AST-level expression repair, expression controllers, keyframe generation, broad property scans, selection side effects or exact source JSX semantics.",
         "Do not use this recipe for expression clearing, expression deletion, expression generation from scratch, keyframe edits, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "update-expressions-typed-plan",
+      "title": "Update Expressions Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "expressions",
+        "expression",
+        "properties",
+        "update-expression",
+        "replace-expression",
+        "selected-properties",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Update existing expressions on explicitly selected expression-capable properties with explicit reviewed updatedExpressionText, then read expression details back.",
+        "appliesWhen": [
+          "The user asks to update, replace, revise or overwrite existing expressions on selected properties.",
+          "Typed selected-property expression replacement is acceptable only when current expression evidence and explicit updatedExpressionText or an explicit per-target mapping are available instead of source-exact selection side effects, broad property scans, automatic syntax repair, controller rigs or raw JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties evidence containing one or more expression-capable targets with concrete layerIndex, propertyPath, current expression text, and expression enabled state."
+        },
+        {
+          "name": "updatedExpressionText",
+          "type": "string",
+          "required": true,
+          "description": "Explicit reviewed final expression text, or an explicit per-target mapping when different selected properties need different updated expressions."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated property is bound from current get_selected_properties evidence before mutation.",
+        "Every target has current expression text from typed evidence; properties without expression text are reported as skipped instead of initialized.",
+        "The final expression is explicit, non-empty and shown in the dry-run plan together with the exact previous expression.",
+        "The workflow changes only expression text/enabled state on explicitly selected properties.",
+        "Layer names, sources, timing, effects, masks, keyframes, render queue items, selection state and unselected properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/update-expressions-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "set_expression",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected property expression evidence, replace each current expression with explicit reviewed updatedExpressionText, then read layer/property expression details back.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation to capture active comp identity, selected property targets, layerIndex values, propertyPath values, current expression text and expressionEnabled state.",
+          "Fail closed when selected-property evidence is empty, lacks layer/property path targets, is not expression-capable, lacks current expression text, or lacks explicit updatedExpressionText or an explicit per-target final-expression mapping.",
+          "Show the previous expression and exact updatedExpressionText for every target before confirmation.",
+          "Run one set_expression step per selected property target with the final updatedExpressionText, the intended enabled state, the evidence-backed layerIndex and exact propertyPath.",
+          "Run get_layer_details for every affected layer with expression/property detail read-back.",
+          "Fail closed if expression creation from scratch, automatic syntax repair, expression controllers, keyframe creation, broad property scans, selection side effects or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties identifies every concrete selected property target, its owning layer, current expression text and expressionEnabled state.",
+          "Each set_expression result reports the exact final updatedExpressionText, expected expressionEnabled state and no expressionError.",
+          "Post-run get_layer_details shows each affected property has the exact updated expression on the expected layer/property path.",
+          "Post-run evidence shows no keyframe, timing, effect, source, render queue, layer name, selection state or unselected property mutation.",
+          "Unsupported expression creation, syntax repair, expression controller setup, broad scans and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-expressions-update-expressions generic repository importer as advisory typed-plan coverage for selected-property expression update workflows.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed expression tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-28",
+          "from": "generic-repo-importer-tool-expressions-update-expressions",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Expressions/Update_Expressions.jsx into existing typed tools as selected-property set_expression guidance for replacing current expression text with explicit reviewed updatedExpressionText; no source JSX copied. Current typed tools require current get_selected_properties expression evidence, previous/final expression disclosure, set_expression and get_layer_details read-back; expression creation from scratch, automatic syntax repair, expression controllers, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties before mutating expression text; do not infer targets from prior chat context.",
+        "Require explicit updatedExpressionText or an explicit per-target final-expression mapping and show the exact final expression before confirmation.",
+        "Do not silently update expression syntax or initialize empty expressions as part of this update workflow.",
+        "Require a separate typed-tool contract for expression creation from scratch, automatic syntax repair, expression controllers, keyframe generation, broad property scans, selection side effects or exact source JSX semantics.",
+        "Do not use this recipe for expression clearing, expression deletion, keyframe edits, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
+      ]
     }
   ]
 }

@@ -31,6 +31,7 @@ const IMPORTED_ADVISORY_IDS = [
   "replace-text-in-layer-name-typed-plan",
   "add-simple-loop-expression-typed-plan",
   "append-to-expression-typed-plan",
+  "update-expressions-typed-plan",
   "apply-maintain-stroke-width-expression-typed-plan",
   "toggle-maintain-scale-expression-typed-plan",
   "disable-selected-expressions-typed-plan",
@@ -436,6 +437,33 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Append_To_Expression/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "update-expressions-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "set_expression", "get_layer_details"],
+        `${id}: imported update-expressions workflow should stay on the narrow selected-property expression typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: update-expressions workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+      assert(text.includes("expression-capable"), `${id}: recipe should require expression-capable property evidence.`);
+      assert(text.includes("current expression text"), `${id}: recipe should require current expression text evidence.`);
+      assert(text.includes("updatedExpressionText"), `${id}: recipe should require explicit updated expression text.`);
+      assert(text.includes("previous expression"), `${id}: recipe should show previous expression evidence.`);
+      assert(text.includes("set_expression"), `${id}: recipe should use the expression typed tool.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require expression read-back through layer details.`);
+      assert(text.includes("Do not silently update expression syntax"), `${id}: recipe should avoid silent expression rewriting.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /current expression text/.test(step)), `${id}: verification must include current expression evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /updatedExpressionText/.test(step)), `${id}: verification must include final updated expression text.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_expression/.test(step)), `${id}: verification must include set_expression.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /final updatedExpressionText/.test(item)), `${id}: verification must require final expression result evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionEnabled/.test(item)), `${id}: verification must require expression enabled evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionError/.test(item)), `${id}: verification must require expression error evidence.`);
+      assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Update_Expressions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "apply-maintain-stroke-width-expression-typed-plan") {
       assert.deepStrictEqual(
@@ -1127,6 +1155,22 @@ function assertActualRetrieval(registry) {
   assert(appendExpressionPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
   assert(!/run_extendscript/i.test(appendExpressionPromptSection), "append-to-expression guidance should not recommend raw ExtendScript.");
 
+  const updateExpressionsRetrieval = retrieveSolutionHints("Update the existing expressions on the selected properties after inspecting current selected property expressions, use the reviewed updatedExpressionText, then read back expression details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(updateExpressionsRetrieval.ok, true);
+  assert(ids(updateExpressionsRetrieval).includes("update-expressions-typed-plan"), "update-expressions advisory recipe should surface for selected expression update prompts.");
+  const updateExpressionsPromptSection = formatSolutionHintsForPrompt(updateExpressionsRetrieval);
+  assert(updateExpressionsPromptSection.includes("Update Expressions Typed Plan"), "prompt section should include update-expressions advisory title.");
+  assert(updateExpressionsPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for expression update workflows.");
+  assert(updateExpressionsPromptSection.includes("current expression"), "prompt section should preserve current expression evidence guidance.");
+  assert(updateExpressionsPromptSection.includes("updatedExpressionText"), "prompt section should preserve explicit updated expression text guidance.");
+  assert(updateExpressionsPromptSection.includes("set_expression"), "prompt section should prefer set_expression for expression update workflows.");
+  assert(updateExpressionsPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
+  assert(!/run_extendscript/i.test(updateExpressionsPromptSection), "update-expressions guidance should not recommend raw ExtendScript.");
+
   const maintainStrokeExpressionRetrieval = retrieveSolutionHints("Apply a maintain stroke width expression to the selected shape layer stroke width properties so their strokes stay constant while scaling, then read back expression details.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -1464,6 +1508,7 @@ function assertActualRetrieval(registry) {
       replaceLayerName: ids(replaceLayerNameRetrieval),
       simpleLoopExpression: ids(simpleLoopExpressionRetrieval),
       appendExpression: ids(appendExpressionRetrieval),
+      updateExpressions: ids(updateExpressionsRetrieval),
       enableSelectedExpressions: ids(enableSelectedExpressionsRetrieval),
       fixFreshPickwhipExpression: ids(fixFreshPickwhipExpressionRetrieval),
       selectedLayerDuration: ids(selectedLayerDurationRetrieval),
