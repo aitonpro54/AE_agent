@@ -4131,6 +4131,119 @@
         "Require a separate typed-tool contract for expression creation from scratch, automatic syntax repair, expression controllers, keyframe generation, broad property scans, selection side effects or exact source JSX semantics.",
         "Do not use this recipe for expression clearing, expression deletion, keyframe edits, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "round-selected-property-values-typed-plan",
+      "title": "Round Selected Property Values Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "properties",
+        "property-values",
+        "round",
+        "numeric-values",
+        "selected-properties",
+        "set-property-value",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Round current static numeric values on explicitly selected properties with typed selected-property evidence, set_property_value, and layer/property read-back.",
+        "appliesWhen": [
+          "The user asks to round, snap to integer or clean up numeric values on currently selected properties.",
+          "Typed selected-property value mutation is acceptable only when current selected-property evidence includes numeric scalar or numeric array values, exact layer/property targets and no expression/keyframe mutation requirement."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties evidence containing one or more concrete selected numeric property targets with layerIndex, propertyPath, current value, expression state and keyframe/animated state when available."
+        },
+        {
+          "name": "roundingMode",
+          "type": "string",
+          "required": false,
+          "description": "Nearest-integer component-wise rounding by default; other rounding modes require explicit support in the plan."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated property is bound from current get_selected_properties evidence before mutation.",
+        "Every accepted target has a static numeric scalar or numeric array value that can be rounded deterministically.",
+        "The plan computes and displays the previous value and roundedValue before confirmation.",
+        "The workflow changes only the explicitly selected property value through set_property_value with setAtTime:false.",
+        "Expressions, keyframes, text, shape/path data, color-like values, layer names, sources, timing, effects, masks, render queue items, selection state and unselected properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/round-selected-property-values-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "set_property_value",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected numeric property values, compute roundedValue per target, set each accepted property with set_property_value setAtTime:false, then read layer/property values back.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation to capture active comp identity, selected property targets, layerIndex values, propertyPath values, current values, expression state and keyframe/animated state when available.",
+          "Fail closed when selected-property evidence is empty, lacks layer/property path targets, has expression text or enabled expressions, appears animated/keyframed, is nonnumeric, is color-like, is text/document/path data, or cannot be rounded deterministically.",
+          "Show the previous value and computed roundedValue for every accepted target before confirmation.",
+          "Run one set_property_value step per accepted selected property target with the roundedValue, setAtTime:false, the evidence-backed layerIndex and exact propertyPath.",
+          "Run get_layer_details for every affected layer with property value read-back.",
+          "Fail closed if expression mutation, keyframe rounding, color rounding, TextDocument/path mutation, separated-dimension rewiring, broad property scans, selection side effects or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties identifies every concrete selected numeric property target, its owning layer, current value, expression state and keyframe/animated state when available.",
+          "Each set_property_value result reports the expected property path, setAtTime:false and exact roundedValue shape.",
+          "Post-run get_layer_details shows each affected property value equals the computed roundedValue on the expected layer/property path.",
+          "Skipped targets are reported with explicit typed-tool gap reasons instead of being silently changed.",
+          "Post-run evidence shows no keyframe, expression, timing, effect, source, render queue, layer name, selection state, project item or unselected property mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-properties-round-selected-property-values generic repository importer as advisory typed-plan coverage for selected numeric property value rounding workflows.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed property-value tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-28",
+          "from": "generic-repo-importer-tool-properties-round-selected-property-values",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Properties/Round_Selected_Property_Values.jsx into existing typed tools as selected-property set_property_value guidance for rounding static numeric property values; no source JSX copied. Current typed tools require current get_selected_properties value evidence, previous/roundedValue disclosure, set_property_value with setAtTime:false and get_layer_details read-back; expression mutation, keyframe rounding, color rounding, TextDocument/path mutation, separated-dimension rewiring, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties before mutating property values; do not infer targets from prior chat context.",
+        "Apply this recipe only to static numeric scalar or numeric array property values where nearest-integer component-wise rounding is the requested behavior.",
+        "Require previous value and roundedValue disclosure before confirmation, and use set_property_value with setAtTime:false.",
+        "Do not round expression-driven, animated/keyframed, color-like, TextDocument, path, shape, separated-dimension or unsupported complex values as part of this workflow.",
+        "Require a separate typed-tool contract for expression mutation, keyframe rounding, color rounding, text/path mutation, separated-dimension rewiring, broad property scans, selection side effects or exact source JSX semantics.",
+        "Do not use this recipe for expression edits, keyframe edits, layer transform edits beyond the selected property value, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
+      ]
     }
   ]
 }

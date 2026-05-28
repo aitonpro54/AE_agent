@@ -32,6 +32,7 @@ const IMPORTED_ADVISORY_IDS = [
   "add-simple-loop-expression-typed-plan",
   "append-to-expression-typed-plan",
   "update-expressions-typed-plan",
+  "round-selected-property-values-typed-plan",
   "apply-maintain-stroke-width-expression-typed-plan",
   "update-stroke-weight-expressions-typed-plan",
   "toggle-maintain-scale-expression-typed-plan",
@@ -64,6 +65,7 @@ const AVAILABLE_TOOLS = [
   "get_active_comp",
   "get_selected_layers",
   "get_selected_properties",
+  "set_property_value",
   "list_layers",
   "get_comp_details",
   "get_render_queue_status",
@@ -465,6 +467,33 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Update_Expressions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "round-selected-property-values-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "set_property_value", "get_layer_details"],
+        `${id}: imported selected-property value rounding workflow should stay on the narrow selected-property value typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: selected-property value rounding workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+      assert(text.includes("includeValues:true"), `${id}: recipe should require current value evidence.`);
+      assert(text.includes("numeric scalar or numeric array"), `${id}: recipe should limit rounding to numeric values.`);
+      assert(text.includes("roundedValue"), `${id}: recipe should disclose computed rounded values.`);
+      assert(text.includes("set_property_value"), `${id}: recipe should use the property-value typed tool.`);
+      assert(text.includes("setAtTime:false"), `${id}: recipe should avoid keyframe creation.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require property value read-back through layer details.`);
+      assert(text.includes("Do not round expression-driven"), `${id}: recipe should guard expression/keyframed and unsupported values.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /roundedValue/.test(step)), `${id}: verification must include computed roundedValue.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_property_value/.test(step)), `${id}: verification must include set_property_value.`);
+      assert(solution.verificationRecipe.steps.some((step) => /setAtTime:false/.test(step)), `${id}: verification must require non-keyframed value setting.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /roundedValue/.test(item)), `${id}: verification must require roundedValue read-back evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Skipped targets/.test(item)), `${id}: verification must require skipped-target gap evidence.`);
+      assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
+      assert(solution.notes.some((note) => /set_property_value/.test(note)), `${id}: notes must require set_property_value.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Round_Selected_Property_Values/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "apply-maintain-stroke-width-expression-typed-plan") {
       assert.deepStrictEqual(
@@ -1204,6 +1233,23 @@ function assertActualRetrieval(registry) {
   assert(updateExpressionsPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
   assert(!/run_extendscript/i.test(updateExpressionsPromptSection), "update-expressions guidance should not recommend raw ExtendScript.");
 
+  const roundSelectedPropertyValuesRetrieval = retrieveSolutionHints("Round the selected numeric property values to whole numbers after inspecting selected property values, then set the roundedValue with set_property_value and read back the property values.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(roundSelectedPropertyValuesRetrieval.ok, true);
+  assert(ids(roundSelectedPropertyValuesRetrieval).includes("round-selected-property-values-typed-plan"), "round-selected-property-values advisory recipe should surface for selected property value rounding prompts.");
+  const roundSelectedPropertyValuesPromptSection = formatSolutionHintsForPrompt(roundSelectedPropertyValuesRetrieval);
+  assert(roundSelectedPropertyValuesPromptSection.includes("Round Selected Property Values Typed Plan"), "prompt section should include selected-property value rounding advisory title.");
+  assert(roundSelectedPropertyValuesPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for property value rounding workflows.");
+  assert(roundSelectedPropertyValuesPromptSection.includes("numeric"), "prompt section should preserve numeric-value scope.");
+  assert(roundSelectedPropertyValuesPromptSection.includes("roundedValue"), "prompt section should preserve computed rounded value guidance.");
+  assert(roundSelectedPropertyValuesPromptSection.includes("set_property_value"), "prompt section should prefer set_property_value for property value rounding workflows.");
+  assert(roundSelectedPropertyValuesPromptSection.includes("setAtTime:false"), "prompt section should preserve non-keyframed value setting.");
+  assert(roundSelectedPropertyValuesPromptSection.includes("get_layer_details"), "prompt section should require property value read-back.");
+  assert(!/run_extendscript/i.test(roundSelectedPropertyValuesPromptSection), "round-selected-property-values guidance should not recommend raw ExtendScript.");
+
   const maintainStrokeExpressionRetrieval = retrieveSolutionHints("Apply a maintain stroke width expression to the selected shape layer stroke width properties so their strokes stay constant while scaling, then read back expression details.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -1559,6 +1605,7 @@ function assertActualRetrieval(registry) {
       simpleLoopExpression: ids(simpleLoopExpressionRetrieval),
       appendExpression: ids(appendExpressionRetrieval),
       updateExpressions: ids(updateExpressionsRetrieval),
+      roundSelectedPropertyValues: ids(roundSelectedPropertyValuesRetrieval),
       enableSelectedExpressions: ids(enableSelectedExpressionsRetrieval),
       fixFreshPickwhipExpression: ids(fixFreshPickwhipExpressionRetrieval),
       selectedLayerDuration: ids(selectedLayerDurationRetrieval),
