@@ -3676,6 +3676,119 @@
         "Require a separate typed-tool contract for project-wide recursive all-comp scans, source-exact selection side effects, nested property traversal gaps, expression mutation, syntax repair, expression controllers, keyframe generation or exact source JSX semantics.",
         "Do not use this recipe for expression generation, expression clearing, keyframe edits, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "fix-fresh-pickwhip-expression-typed-plan",
+      "title": "Fix Fresh Pickwhip Expression Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "expressions",
+        "expression",
+        "properties",
+        "pickwhip",
+        "fresh-pickwhip",
+        "fix-expression",
+        "selected-properties",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Replace a current fresh pickwhip expression on explicitly selected expression-capable properties with explicit reviewed fixed expression text, then read expression details back.",
+        "appliesWhen": [
+          "The user asks to fix, clean up or normalize a fresh pickwhip expression on selected properties.",
+          "Typed selected-property expression replacement is acceptable only when current expression evidence and an explicit fixedExpressionText or deterministic previous-to-final rewrite are available instead of source-exact selection side effects, automatic source-target discovery, broad property scans or raw JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties evidence containing one or more expression-capable targets with concrete layerIndex, propertyPath, current expression text, and expression enabled state."
+        },
+        {
+          "name": "fixedExpressionText",
+          "type": "string",
+          "required": true,
+          "description": "Explicit reviewed final expression text, or the deterministic final text computed from the cited previous fresh pickwhip expression and shown before confirmation."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated property is bound from current get_selected_properties evidence before mutation.",
+        "Every target has current expression text that the user intends to fix as a fresh pickwhip expression.",
+        "The final expression is explicit, non-empty and shown in the dry-run plan together with the exact previous expression.",
+        "The workflow changes only expression text/enabled state on explicitly selected properties.",
+        "Layer names, sources, timing, effects, masks, keyframes, render queue items, selection state and unselected properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/fix-fresh-pickwhip-expression-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "set_expression",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected property expression evidence, replace each current fresh pickwhip expression with explicit reviewed final expression text, then read layer/property expression details back.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation to capture active comp identity, selected property targets, layerIndex values, propertyPath values, current expression text and expressionEnabled state.",
+          "Fail closed when selected-property evidence is empty, lacks layer/property path targets, is not expression-capable, lacks current expression text, or lacks explicit fixedExpressionText or a deterministic previous-to-final rewrite.",
+          "Show the previous expression and exact final fixedExpressionText for every target before confirmation.",
+          "Run one set_expression step per selected property target with the final fixedExpressionText, the intended enabled state, the evidence-backed layerIndex and exact propertyPath.",
+          "Run get_layer_details for every affected layer with expression/property detail read-back.",
+          "Fail closed if automatic pick-whip source discovery, source-target inference, AST-level repair, expression controllers, keyframe creation, broad property scans, selection side effects or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties identifies every concrete selected property target, its owning layer, current expression text and expressionEnabled state.",
+          "Each set_expression result reports the exact final fixedExpressionText, expected expressionEnabled state and no expressionError.",
+          "Post-run get_layer_details shows each affected property has the exact final expression on the expected layer/property path.",
+          "Post-run evidence shows no keyframe, timing, effect, source, render queue, layer name, selection state or unselected property mutation.",
+          "Unsupported automatic source discovery, AST-level expression repair, controller setup, broad scans and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-expressions-fix-fresh-pickwhip-expression generic repository importer as advisory typed-plan coverage for selected-property fresh pickwhip expression repair workflows.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed expression tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-28",
+          "from": "generic-repo-importer-tool-expressions-fix-fresh-pickwhip-expression",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Expressions/Fix_Fresh_Pickwhip_Expression.jsx into existing typed tools as selected-property set_expression guidance for replacing a current fresh pickwhip expression with explicit reviewed fixedExpressionText; no source JSX copied. Current typed tools require current get_selected_properties expression evidence, previous/final expression disclosure, set_expression and get_layer_details read-back; automatic pick-whip source target discovery, AST-level expression repair, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties before mutating expression text; do not infer targets or pick-whip source properties from prior chat context.",
+        "Require explicit fixedExpressionText or a deterministic previous-to-final rewrite and show the exact final expression before confirmation.",
+        "Do not silently rewrite expression syntax or claim source-exact pick-whip repair when typed evidence cannot prove the source target.",
+        "Require a separate typed-tool contract for automatic pick-whip source discovery, AST-level expression repair, expression controllers, keyframe generation, broad property scans, selection side effects or exact source JSX semantics.",
+        "Do not use this recipe for expression clearing, expression deletion, expression generation from scratch, keyframe edits, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
+      ]
     }
   ]
 }

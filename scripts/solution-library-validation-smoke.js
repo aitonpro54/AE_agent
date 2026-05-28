@@ -35,6 +35,7 @@ const IMPORTED_ADVISORY_IDS = [
   "disable-selected-expressions-typed-plan",
   "enable-selected-expressions-typed-plan",
   "find-all-expressions-typed-plan",
+  "fix-fresh-pickwhip-expression-typed-plan",
   "get-selected-layer-duration-typed-plan",
   "calculate-distance-between-layers-typed-plan",
   "layer-selection-get-typed-plan",
@@ -540,6 +541,34 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /read-only/.test(note)), `${id}: notes must preserve read-only scope.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Find_All_Expressions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "fix-fresh-pickwhip-expression-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "set_expression", "get_layer_details"],
+        `${id}: imported fresh-pickwhip expression fix workflow should stay on the narrow selected-property expression typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: fresh-pickwhip expression fix workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+      assert(text.includes("expression-capable"), `${id}: recipe should require expression-capable property evidence.`);
+      assert(text.includes("current expression text"), `${id}: recipe should require current expression text evidence.`);
+      assert(text.includes("fixedExpressionText"), `${id}: recipe should require explicit fixed expression text.`);
+      assert(text.includes("previous expression"), `${id}: recipe should show previous expression evidence.`);
+      assert(text.includes("set_expression"), `${id}: recipe should use the expression typed tool.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require expression read-back through layer details.`);
+      assert(text.includes("Do not silently rewrite expression syntax"), `${id}: recipe should avoid silent syntax rewriting.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /current expression text/.test(step)), `${id}: verification must include current expression evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /fixedExpressionText/.test(step)), `${id}: verification must include final fixed expression text.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_expression/.test(step)), `${id}: verification must include set_expression.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /final fixedExpressionText/.test(item)), `${id}: verification must require final expression result evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionEnabled/.test(item)), `${id}: verification must require expression enabled evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionError/.test(item)), `${id}: verification must require expression error evidence.`);
+      assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
+      assert(solution.notes.some((note) => /pick-whip source properties/.test(note)), `${id}: notes must reject inferred pick-whip source targets.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Fix_Fresh_Pickwhip_Expression/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "get-selected-layer-duration-typed-plan") {
       assert.deepStrictEqual(
@@ -1130,6 +1159,22 @@ function assertActualRetrieval(registry) {
   assert(findAllExpressionsPromptSection.includes("expression"), "prompt section should preserve expression reporting guidance.");
   assert(!/run_extendscript/i.test(findAllExpressionsPromptSection), "find-all-expressions guidance should not recommend raw ExtendScript.");
 
+  const fixFreshPickwhipExpressionRetrieval = retrieveSolutionHints("Fix the fresh pickwhip expression on the selected properties after inspecting current selected property expressions, use the reviewed fixedExpressionText, then read back expression details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(fixFreshPickwhipExpressionRetrieval.ok, true);
+  assert(ids(fixFreshPickwhipExpressionRetrieval).includes("fix-fresh-pickwhip-expression-typed-plan"), "fresh-pickwhip expression fix advisory recipe should surface for selected expression repair prompts.");
+  const fixFreshPickwhipExpressionPromptSection = formatSolutionHintsForPrompt(fixFreshPickwhipExpressionRetrieval);
+  assert(fixFreshPickwhipExpressionPromptSection.includes("Fix Fresh Pickwhip Expression Typed Plan"), "prompt section should include fresh-pickwhip expression fix advisory title.");
+  assert(fixFreshPickwhipExpressionPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for fresh-pickwhip expression fixes.");
+  assert(fixFreshPickwhipExpressionPromptSection.includes("current expression"), "prompt section should preserve current expression evidence guidance.");
+  assert(fixFreshPickwhipExpressionPromptSection.includes("fixedExpressionText"), "prompt section should preserve explicit fixed expression text guidance.");
+  assert(fixFreshPickwhipExpressionPromptSection.includes("set_expression"), "prompt section should prefer set_expression for fresh-pickwhip expression fixes.");
+  assert(fixFreshPickwhipExpressionPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
+  assert(!/run_extendscript/i.test(fixFreshPickwhipExpressionPromptSection), "fresh-pickwhip expression fix guidance should not recommend raw ExtendScript.");
+
   const selectedLayerDurationRetrieval = retrieveSolutionHints("Tell me the duration in seconds of the selected layer after inspecting the selected layer timing.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -1371,6 +1416,7 @@ function assertActualRetrieval(registry) {
       simpleLoopExpression: ids(simpleLoopExpressionRetrieval),
       appendExpression: ids(appendExpressionRetrieval),
       enableSelectedExpressions: ids(enableSelectedExpressionsRetrieval),
+      fixFreshPickwhipExpression: ids(fixFreshPickwhipExpressionRetrieval),
       selectedLayerDuration: ids(selectedLayerDurationRetrieval),
       layerDistance: ids(layerDistanceRetrieval),
       layerSelectionGet: ids(layerSelectionGetRetrieval),
