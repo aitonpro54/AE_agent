@@ -34,6 +34,7 @@ const IMPORTED_ADVISORY_IDS = [
   "apply-maintain-stroke-width-expression-typed-plan",
   "disable-selected-expressions-typed-plan",
   "enable-selected-expressions-typed-plan",
+  "find-all-expressions-typed-plan",
   "get-selected-layer-duration-typed-plan",
   "calculate-distance-between-layers-typed-plan",
   "layer-selection-get-typed-plan",
@@ -515,6 +516,30 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /generate or replace expression source/.test(note)), `${id}: notes must reject expression generation/replacement for enabling.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Enable_Selected_Expressions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "find-all-expressions-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "list_layers", "get_comp_details", "get_layer_details", "get_selected_properties"],
+        `${id}: imported find-all-expressions workflow should stay on the narrow read-only expression inspection typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: find-all-expressions workflow must stay read-only.`);
+      assert.strictEqual(solution.requiredSafetyGates.allowMutations, false, `${id}: expression inventory reporting must not allow mutations.`);
+      assert(text.includes("list_layers"), `${id}: recipe should enumerate active-comp layers.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should inspect layer property expression details.`);
+      assert(text.includes("expressionEnabled"), `${id}: recipe should report expression enabled state.`);
+      assert(text.includes("expressionError"), `${id}: recipe should report expression error state.`);
+      assert(text.includes("Do not change selection state"), `${id}: recipe should explicitly avoid selection mutation.`);
+      assert(text.includes("project-wide recursive all-comp scans"), `${id}: recipe should fail closed for broad project scans without explicit typed support.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_active_comp/.test(step)), `${id}: verification must capture comp evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /list_layers/.test(step) || /get_comp_details/.test(step)), `${id}: verification must enumerate active-comp layers.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must support selected-property scoped expression audits.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must inspect layer details for expressions.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /propertyPath/.test(item)), `${id}: verification must require property path evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expression text/.test(item)), `${id}: verification must require expression text evidence.`);
+      assert(solution.notes.some((note) => /read-only/.test(note)), `${id}: notes must preserve read-only scope.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Find_All_Expressions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "get-selected-layer-duration-typed-plan") {
       assert.deepStrictEqual(
@@ -1089,6 +1114,21 @@ function assertActualRetrieval(registry) {
   assert(enableSelectedExpressionsPromptSection.includes("enabled:true"), "prompt section should preserve enabled expression state guidance.");
   assert(enableSelectedExpressionsPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
   assert(!/run_extendscript/i.test(enableSelectedExpressionsPromptSection), "enable-selected-expressions guidance should not recommend raw ExtendScript.");
+
+  const findAllExpressionsRetrieval = retrieveSolutionHints("Find all expressions in the active composition and report layer names, property paths, expression text, enabled state and expression errors without changing anything.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(findAllExpressionsRetrieval.ok, true);
+  assert(ids(findAllExpressionsRetrieval).includes("find-all-expressions-typed-plan"), "find-all-expressions advisory recipe should surface for active-comp expression inventory prompts.");
+  const findAllExpressionsPromptSection = formatSolutionHintsForPrompt(findAllExpressionsRetrieval);
+  assert(findAllExpressionsPromptSection.includes("Find All Expressions Typed Plan"), "prompt section should include find-all-expressions advisory title.");
+  assert(findAllExpressionsPromptSection.includes("list_layers"), "prompt section should prefer layer enumeration for active-comp expression inventory.");
+  assert(findAllExpressionsPromptSection.includes("get_layer_details"), "prompt section should require layer expression detail read-back.");
+  assert(findAllExpressionsPromptSection.includes("read-only"), "prompt section should preserve read-only expression inventory guidance.");
+  assert(findAllExpressionsPromptSection.includes("expression"), "prompt section should preserve expression reporting guidance.");
+  assert(!/run_extendscript/i.test(findAllExpressionsPromptSection), "find-all-expressions guidance should not recommend raw ExtendScript.");
 
   const selectedLayerDurationRetrieval = retrieveSolutionHints("Tell me the duration in seconds of the selected layer after inspecting the selected layer timing.", {
     registry,

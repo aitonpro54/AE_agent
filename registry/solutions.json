@@ -3563,6 +3563,119 @@
         "Require a separate typed-tool contract for expression creation/replacement, syntax repair, expression controllers, keyframe generation, broad property scans, selection side effects or exact source JSX semantics.",
         "Do not use this recipe for expression generation, expression clearing, keyframe edits, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "find-all-expressions-typed-plan",
+      "title": "Find All Expressions Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "expressions",
+        "expression",
+        "properties",
+        "find",
+        "search",
+        "list",
+        "report",
+        "layers",
+        "read-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Find and report existing property expressions in the active or explicit composition through read-only typed layer/property inspection.",
+        "appliesWhen": [
+          "The user asks to find, list, report or audit all expressions in the active or explicitly named composition.",
+          "Typed read-only comp/layer/property inspection is acceptable instead of source-exact selection side effects, expression mutation, broad project scans or raw JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetScope",
+          "type": "string",
+          "required": false,
+          "description": "active-comp by default, selected-properties when explicitly requested, or an explicit composition target backed by typed comp/project evidence."
+        },
+        {
+          "name": "includeDisabled",
+          "type": "boolean",
+          "required": false,
+          "description": "Whether disabled expressions should be included; the safe default is to report all expression text found with its expressionEnabled state."
+        }
+      ],
+      "targetAssumptions": [
+        "An active or explicit composition is read before expression inventory results are reported.",
+        "Layer targets are concrete indices from list_layers, get_comp_details, or equivalent typed comp/layer evidence before get_layer_details expression inspection.",
+        "Selected-property scoped audits are bound only from current get_selected_properties evidence with includeExpressions:true.",
+        "Reported matches come only from typed property expression evidence, including propertyPath, expression text, expressionEnabled state and expressionError state when available.",
+        "The workflow is read-only and does not change selection state, expression text, expression enabled state, layers, effects, keyframes, sources, render queue items or project structure."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/find-all-expressions-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "list_layers",
+          "get_comp_details",
+          "get_layer_details",
+          "get_selected_properties"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Enumerate concrete layer or selected-property targets, read property expression details, then report only expression evidence without mutating the project.",
+        "steps": [
+          "Run get_active_comp before reporting to capture target comp identity, or bind an explicit composition target from typed evidence.",
+          "For active-comp searches, run list_layers or get_comp_details before binding concrete layerIndex values.",
+          "Run get_layer_details for each concrete layer target with expression/property details enabled.",
+          "For selected-property scoped searches, run get_selected_properties with includeExpressions:true and report only those current selected properties.",
+          "Fail closed if the requested scope requires project-wide recursive scans, changing selection, expression mutation, missing nested property expression detail or exact source JSX behavior."
+        ],
+        "expectedEvidence": [
+          "The search scope is backed by get_active_comp, list_layers, get_comp_details or get_selected_properties evidence.",
+          "Each reported expression includes layer identity, exact propertyPath, expression text, expressionEnabled state and expressionError state when available.",
+          "Zero matches, missing nested expression details, unsupported project-wide scans and source-exact raw JSX semantics are reported without mutation or raw script fallback.",
+          "Post-search evidence shows no selection, expression, keyframe, timing, effect, source, render queue, layer name or project-structure mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-expressions-find-all-expressions generic repository importer as advisory typed-plan coverage for read-only expression inventory workflows.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed read tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-28",
+          "from": "generic-repo-importer-tool-expressions-find-all-expressions",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Expressions/Find_All_Expressions.jsx into existing read-only typed tools for active-comp expression inventory; no source JSX copied. Current typed tools require get_active_comp, concrete layer enumeration through list_layers or get_comp_details, get_layer_details expression/property read-back, or get_selected_properties for selected-property scope; expression mutation, selection side effects, project-wide recursive scans, missing nested property expression detail and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution uses normal Agent plan validation and read-only typed tools.",
+        "Require current comp/layer/property evidence before reporting expression inventory; do not infer expression-bearing properties from prior chat context.",
+        "Report expression text, expressionEnabled state and expressionError state when available; do not enable, disable, clear, rewrite, repair or generate expressions.",
+        "Require a separate typed-tool contract for project-wide recursive all-comp scans, source-exact selection side effects, nested property traversal gaps, expression mutation, syntax repair, expression controllers, keyframe generation or exact source JSX semantics.",
+        "Do not use this recipe for expression generation, expression clearing, keyframe edits, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
+      ]
     }
   ]
 }
