@@ -16,6 +16,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 import { runBatch } from "./run-generic-repo-queue-supervisor.mjs";
+import { runImporter } from "./run-generic-repo-tool-importer.mjs";
 import boundedProcess from "./bounded-process-result.cjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -57,6 +58,15 @@ const CONTEXT_STEP_COST = Object.freeze({
   commit: 3,
   finalization: 2,
 });
+const STRICT_PHASES = Object.freeze([
+  "select_candidate",
+  "prove_or_register_live_lane",
+  "run_importer_phase",
+  "controlled_merge",
+  "non_live_validation",
+  "generated_only_live_rerun",
+  "ledger_docs_handoff_commit_finalization",
+]);
 const SAFE_CLASSIFICATIONS = new Set([
   "existing_typed_tools_recipe_only",
   "small_safe_typed_tool_library_recipe_addition",
@@ -360,12 +370,14 @@ Options:
   --output <path>              Full JSON output path for --json. Stdout stays compact.
   --allow-full-json-for-debug  Permit full run report on stdout for local debug only.
   --compact-json               Print bounded parent-facing machine-readable output.
+                              This parent-facing mode runs exactly one durable
+                              transaction phase per invocation.
   --help                       Show this help.
 
-The loop is serial at shared gates: live proof, importer controlled merge,
-non-live validation, live rerun, plan/handoff updates, and commit. It may skip
-blocked or unsafe candidates and continue to the next safe queued item when no
-tracked target mutation has happened.
+The parent-facing loop is serial at strict durable boundaries:
+select_candidate, prove_or_register_live_lane, run_importer_phase,
+controlled_merge, non_live_validation, generated_only_live_rerun, and
+ledger_docs_handoff_commit_finalization.
 `;
 
 const VALUE_OPTIONS = new Set([
@@ -2380,6 +2392,9 @@ function inferParentNextAction(report, resolutionSummary, failedCandidateIds) {
   if (report.ok === false) {
     return "stop and resolve the compact blocker before rerunning";
   }
+  if (report.status === "phase_boundary") {
+    return `rerun compact full-intake to continue next strict phase: ${report.phaseBoundary?.nextPhase || report.nextPhase || "unknown"}`;
+  }
   if (failedCandidateIds.count > 0) {
     return "inspect the named failed candidate through compact evidence only, then rerun with --compact-json";
   }
@@ -2545,8 +2560,12 @@ function buildProofEnvelope({ batch, candidate, gitHeadAfter, gitHeadBefore, ite
     schema: PROOF_ENVELOPE_SCHEMA,
     runId: report.runId,
     candidateId: candidate?.id || item?.candidateId || null,
-    phase: item?.status === "completed" ? "candidate_completed" : report.status || item?.status || "unknown",
+    phase: item?.status === "completed"
+      ? "candidate_completed"
+      : report.phaseBoundary?.completedPhase || report.currentPhase || report.status || item?.status || "unknown",
+    nextPhase: report.phaseBoundary?.nextPhase || report.nextPhase || null,
     status: item?.status || report.status,
+    strictOnePhase: report.strictOnePhase?.enabled === true,
     contractComplete: false,
     gitHeadBefore: gitHeadBefore || null,
     gitHeadAfter: gitHeadAfter || null,
@@ -2620,6 +2639,8 @@ function buildResumeCard({ blockers = [], candidate, item, ledgerPath, proof, qu
     schema: RESUME_CARD_SCHEMA,
     runId: report.runId,
     lastCompletedPhase: proof?.envelope?.phase || item?.status || report.status,
+    nextPhase: proof?.envelope?.nextPhase || report.nextPhase || null,
+    strictOnePhase: report.strictOnePhase?.enabled === true,
     candidateId: candidate?.id || item?.candidateId || null,
     status: item?.status || report.status,
     blockers,
@@ -2682,6 +2703,14 @@ function compactParentReport(report) {
     ok: report.ok === true,
     status: report.status || null,
     runId: report.runId || null,
+    strictOnePhase: report.strictOnePhase?.enabled === true
+      ? {
+          enabled: true,
+          completedPhase: report.phaseBoundary?.completedPhase || report.currentPhase || null,
+          nextPhase: report.phaseBoundary?.nextPhase || report.nextPhase || null,
+          stopBoundary: report.phaseBoundary?.stopBoundary || null,
+        }
+      : { enabled: false },
     counts: {
       items: items.length,
       completed: completedCandidateIds.count,
@@ -3522,6 +3551,326 @@ function pushItem(state, item) {
   return state;
 }
 
+function nextStrictPhase(phase) {
+  const index = STRICT_PHASES.indexOf(phase);
+  if (index < 0) {
+    throw new Error(`strict-phase-unknown:${phase}`);
+  }
+  return STRICT_PHASES[index + 1] || null;
+}
+
+function strictItemStatusForPhase(phase) {
+  return {
+    select_candidate: "selected",
+    prove_or_register_live_lane: "live_lane_ready",
+    run_importer_phase: "importer_phase_complete",
+    controlled_merge: "controlled_merge_complete",
+    non_live_validation: "non_live_validation_complete",
+    generated_only_live_rerun: "generated_only_live_rerun_complete",
+    ledger_docs_handoff_commit_finalization: "completed",
+  }[phase] || "phase_complete";
+}
+
+function activeStrictTransaction(state) {
+  const transaction = state.activeTransaction || null;
+  if (!transaction) return null;
+  if (transaction.schema !== "generic-repo-full-intake.transaction.v1") {
+    throw new Error("strict-transaction-schema-mismatch");
+  }
+  if (!STRICT_PHASES.includes(transaction.nextPhase)) {
+    throw new Error(`strict-transaction-next-phase-invalid:${transaction.nextPhase || "missing"}`);
+  }
+  return transaction;
+}
+
+function saveStrictTransaction({ runRoot, state, transaction }) {
+  const nextState = {
+    ...state,
+    activeTransaction: {
+      ...transaction,
+      updatedAt: new Date().toISOString(),
+    },
+    strictOnePhase: {
+      enabled: true,
+      phases: STRICT_PHASES,
+    },
+  };
+  return saveState(runRoot, nextState);
+}
+
+function clearStrictTransaction({ runRoot, state }) {
+  const nextState = {
+    ...state,
+    strictOnePhase: {
+      enabled: true,
+      phases: STRICT_PHASES,
+    },
+  };
+  delete nextState.activeTransaction;
+  return saveState(runRoot, nextState);
+}
+
+function beginStrictTransaction({ candidate, item, phase, runId }) {
+  return {
+    schema: "generic-repo-full-intake.transaction.v1",
+    runId,
+    candidate,
+    item,
+    batch: null,
+    liveRerun: null,
+    lastCompletedPhase: phase,
+    nextPhase: nextStrictPhase(phase),
+    phaseProofs: [],
+    startedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function recordStrictBoundary({ completedPhase, nextPhase, report, transaction }) {
+  report.status = "phase_boundary";
+  report.currentPhase = completedPhase;
+  report.nextPhase = nextPhase;
+  report.phaseBoundary = {
+    schema: "generic-repo-full-intake.phase-boundary.v1",
+    completedPhase,
+    nextPhase,
+    candidateId: transaction?.candidate?.id || transaction?.item?.candidateId || null,
+    strictOnePhase: true,
+    stopBoundary: "phase_boundary",
+  };
+}
+
+function readImporterSummaryFromResult(importerResult, targetRepo) {
+  const summaryPath = importerResult?.resultSummaryPath || null;
+  if (!summaryPath) return null;
+  const absolute = path.isAbsolute(summaryPath) ? summaryPath : path.resolve(targetRepo, summaryPath);
+  return readCompactJson(absolute, `strict-importer-result-summary:${absolute}`, CHILD_RESULT_SUMMARY_MAX_BYTES);
+}
+
+function patchBatchWithImporterResult({ batch, importerResult, status, targetRepo }) {
+  const resultSummary = readImporterSummaryFromResult(importerResult, targetRepo);
+  const report = {
+    ...batch.report,
+    ok: true,
+    status,
+    importer: {
+      ...(batch.report.importer || {}),
+      error: null,
+      manifestPath: batch.report.importer?.manifestPath || importerResult?.manifestPath || null,
+      resultSummary,
+      runId: importerResult?.runId || batch.report.importer?.runId || null,
+    },
+    importSummary: {
+      ...(batch.report.importSummary || {}),
+      manifestPath: batch.report.importer?.manifestPath || importerResult?.manifestPath || null,
+      resultSummaryPath: resultSummary?.resultSummaryPath || importerResult?.resultSummaryPath || null,
+      runId: importerResult?.runId || batch.report.importer?.runId || null,
+    },
+    validation: {
+      ...(batch.report.validation || {}),
+      nonLiveValidationRun: importerResult?.validationCommandsRun === true,
+      nonLiveValidationComplete: importerResult?.nonLiveValidationComplete === true,
+      liveCepAeRun: false,
+      localOllamaUsed: false,
+      fallbackProviderUsed: false,
+      pushOrPrCreated: false,
+    },
+  };
+  const reportPath = pathFromTarget(targetRepo, report.reportPath);
+  if (reportPath) {
+    writeJson(reportPath, report);
+  }
+  return { ...batch, report };
+}
+
+function importerManifestPathFromBatch(targetRepo, batch) {
+  const manifestPath = batch?.report?.importer?.manifestPath || batch?.report?.importSummary?.manifestPath || null;
+  if (!manifestPath) {
+    throw new Error("strict-importer-manifest-missing");
+  }
+  return pathFromTarget(targetRepo, manifestPath);
+}
+
+function runCandidateImporterPhase({ candidate, ledger, runId, runRoot, targetRepo }) {
+  const singleLedgerPath = createSingleCandidateLedger({ candidate, ledger, runRoot, targetRepo });
+  const retryNonce = candidate.implementation?.retryNonce || candidate.implementation?.recoveryIntent?.retryNonce || "";
+  const batchRunId = safeId(
+    `${safeId(runId).slice(0, 36)}-${sha256Text(`${candidate.id}:${retryNonce}`).slice(0, 10)}-import`,
+  ).slice(0, 60);
+  const reportDir = normalizeRepoPath(path.relative(targetRepo, path.join(runRoot, "queue-supervisor")));
+  const prepareReport = runBatch(
+    {
+      batch: true,
+      ledger: singleLedgerPath,
+      maxItems: "1",
+      prepareOnly: true,
+      reportDir,
+      runId: batchRunId,
+      targetRepo,
+    },
+    REPO_ROOT,
+  );
+  if (!prepareReport.ok) {
+    const error = new Error(`strict-importer-prepare-failed:${prepareReport.status}`);
+    error.report = prepareReport;
+    throw error;
+  }
+  let batch = { batchRunId, report: prepareReport, singleLedgerPath };
+  const manifestPath = importerManifestPathFromBatch(targetRepo, batch);
+  const importerResult = runImporter(
+    {
+      manifest: manifestPath,
+      "run-implementation-worktrees": true,
+      "run-implementation-child-runs": true,
+    },
+    REPO_ROOT,
+  );
+  batch = patchBatchWithImporterResult({
+    batch,
+    importerResult,
+    status: "stopped_after_implementation_child_runs",
+    targetRepo,
+  });
+  return batch;
+}
+
+function runImporterBoundaryPhase({ batch, flag, status, targetRepo }) {
+  const manifestPath = importerManifestPathFromBatch(targetRepo, batch);
+  const importerResult = runImporter(
+    {
+      manifest: manifestPath,
+      [flag]: true,
+    },
+    REPO_ROOT,
+  );
+  return patchBatchWithImporterResult({ batch, importerResult, status, targetRepo });
+}
+
+function strictTerminalStatusForItems(items) {
+  const completed = items.filter((item) => item.status === "completed").length;
+  const blocked = items.filter((item) => String(item.status || "").startsWith("blocked_")).length;
+  const failed = items.filter((item) => String(item.status || "").startsWith("failed_")).length;
+  const skipped = items.filter((item) => String(item.status || "").startsWith("skipped_")).length;
+  if (failed > 0) return "completed_with_failed_candidates";
+  if (blocked > 0 || skipped > 0) {
+    return completed > 0 ? "completed_with_blocked_or_skipped_candidates" : "completed_with_blocked_candidates";
+  }
+  return completed > 0 ? "completed" : "completed_no_candidates";
+}
+
+function finishStrictImporterBoundaryFailure({
+  batch,
+  candidate,
+  error,
+  gitHeadBefore,
+  item,
+  ledger,
+  ledgerPath,
+  ledgerSha256Before,
+  liveRerun,
+  registryPath,
+  report,
+  runRoot,
+  state,
+  targetRepo,
+}) {
+  item.status = "failed_import";
+  item.reason = error.message;
+  item.completedAt = new Date().toISOString();
+  updateLedgerTerminalStatus({ candidate, item, ledger, ledgerPath, targetRepo });
+  state = clearStrictTransaction({ runRoot, state: pushItem(state, item) });
+  report.items.push(item);
+  appendEvent(runRoot, { candidateId: candidate.id, event: "candidate_import_failed", reason: error.message, runId: item.runId });
+  if (gitChangedPaths(targetRepo).length > 0) {
+    report.status = "stopped_after_failed_import_dirty_target";
+    report.ok = false;
+  }
+  return finishStrictPhaseReport({
+    batch,
+    candidate,
+    gitHeadBefore,
+    item,
+    ledgerPath,
+    ledgerSha256Before,
+    liveRerun,
+    registryPath,
+    report,
+    runRoot,
+    state,
+    targetRepo,
+  });
+}
+
+function finishStrictPhaseReport({
+  batch,
+  candidate,
+  gitHeadBefore,
+  item,
+  ledgerPath,
+  ledgerSha256Before,
+  liveRerun,
+  registryPath,
+  report,
+  runRoot,
+  state,
+  targetRepo,
+}) {
+  if (report.status === "running") {
+    report.status = strictTerminalStatusForItems(report.items || []);
+  }
+  report.completedCandidateIds = state.completedCandidateIds || [];
+  report.blockedCandidateIds = state.blockedCandidateIds || [];
+  report.skippedCandidateIds = state.skippedCandidateIds || [];
+  report.finishedAt = new Date().toISOString();
+  report.runSha256 = sha256Text(stableStringify({
+    items: (report.items || []).map((entry) => ({ candidateId: entry.candidateId, status: entry.status })),
+    phaseBoundary: report.phaseBoundary || null,
+    runId: report.runId,
+    status: report.status,
+  }));
+  state.status = report.status;
+  state = saveState(runRoot, state);
+  const proof = writeProofEnvelope({
+    batch,
+    candidate,
+    gitHeadAfter: gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head"),
+    gitHeadBefore,
+    item,
+    ledgerSha256Before,
+    liveRerun,
+    registryPath,
+    report,
+    runRoot,
+    state,
+    targetRepo,
+  });
+  report.proofEnvelopePath = proof.path;
+  report.proofEnvelopeSha256 = proof.sha256;
+  report.proofEnvelopeContractComplete = proof.envelope.contractComplete;
+  if (item) {
+    item.proofEnvelopePath = proof.path;
+    item.proofEnvelopeSha256 = proof.sha256;
+  }
+  const resume = writeResumeCard({
+    blockers: report.blockers,
+    candidate,
+    item,
+    ledgerPath,
+    proof,
+    queuePath: ledgerPath,
+    report,
+    runRoot,
+    targetRepo,
+  });
+  report.resumeCardPath = resume.path;
+  report.resumeCardSha256 = resume.sha256;
+  writeJson(path.join(runRoot, "run-report.json"), report);
+  if (report.ok === false) {
+    throw new FullIntakeError(report.blockers.map((entry) => entry.code).join("; ") || report.status, report);
+  }
+  return report;
+}
+
 function itemFromCandidate(candidate, runId) {
   return {
     candidateId: candidate.id,
@@ -3542,6 +3891,804 @@ function terminalProcessedIds(state, ledger) {
       .filter((entry) => ledgerStatusById.get(entry.candidateId) !== "queued")
       .map((entry) => entry.candidateId),
   );
+}
+
+function runStrictOnePhase({
+  contextBudget,
+  gitHeadBefore,
+  initialLedger,
+  ledgerPath,
+  ledgerSha256Before,
+  options,
+  registry,
+  registryPath,
+  report,
+  runId,
+  runRoot,
+  state,
+  targetRepo,
+  timeoutMs,
+}) {
+  report.strictOnePhase = {
+    enabled: true,
+    phases: STRICT_PHASES,
+  };
+
+  let transaction = activeStrictTransaction(state);
+  let completedPhase = transaction?.nextPhase || "select_candidate";
+  report.currentPhase = completedPhase;
+  report.nextPhase = completedPhase;
+
+  let candidate = transaction?.candidate || null;
+  let item = transaction?.item || null;
+  let batch = transaction?.batch || null;
+  let liveRerun = transaction?.liveRerun || null;
+
+  if (completedPhase === "select_candidate") {
+    const dirtyBefore = gitChangedPaths(targetRepo);
+    if (dirtyBefore.length > 0) {
+      report.status = "blocked_target_dirty";
+      report.ok = false;
+      report.blockers.push({ code: "target-repo-dirty", changedPaths: dirtyBefore });
+      return finishStrictPhaseReport({
+        batch,
+        candidate,
+        gitHeadBefore,
+        item,
+        ledgerPath,
+        ledgerSha256Before,
+        liveRerun,
+        registryPath,
+        report,
+        runRoot,
+        state,
+        targetRepo,
+      });
+    }
+
+    const processedIds = terminalProcessedIds(state, initialLedger);
+    candidate = selectNextQueuedRankedCandidate(initialLedger, processedIds);
+    if (!candidate) {
+      report.status = "completed_no_candidates";
+      state = clearStrictTransaction({ runRoot, state });
+      return finishStrictPhaseReport({
+        batch: null,
+        candidate: null,
+        gitHeadBefore,
+        item: null,
+        ledgerPath,
+        ledgerSha256Before,
+        liveRerun: null,
+        registryPath,
+        report,
+        runRoot,
+        state,
+        targetRepo,
+      });
+    }
+
+    item = itemFromCandidate(candidate, runId);
+    item.gitHeadBefore = gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head");
+    item.ledgerSha256Before = sha256FileIfExists(ledgerPath);
+    appendEvent(runRoot, { candidateId: candidate.id, event: "candidate_started", runId });
+
+    if (!SAFE_CLASSIFICATIONS.has(candidate.classification)) {
+      item.status = "skipped_unsafe_candidate";
+      item.reason = `classification_not_allowed:${candidate.classification}`;
+      item.completedAt = new Date().toISOString();
+      updateLedgerTerminalStatus({ candidate, item, ledger: initialLedger, ledgerPath, targetRepo });
+      state = clearStrictTransaction({ runRoot, state: pushItem(state, item) });
+      report.items.push(item);
+      appendEvent(runRoot, { candidateId: candidate.id, event: "candidate_skipped_unsafe", runId });
+      return finishStrictPhaseReport({
+        batch: null,
+        candidate,
+        gitHeadBefore,
+        item,
+        ledgerPath,
+        ledgerSha256Before,
+        liveRerun: null,
+        registryPath,
+        report,
+        runRoot,
+        state,
+        targetRepo,
+      });
+    }
+
+    const policyBlockers = candidatePolicyBlockers(candidate, initialLedger, targetRepo);
+    if (policyBlockers.length > 0) {
+      item.status = "blocked_policy";
+      item.blockers = policyBlockers;
+      item.completedAt = new Date().toISOString();
+      updateLedgerTerminalStatus({ candidate, item, ledger: initialLedger, ledgerPath, targetRepo });
+      state = clearStrictTransaction({ runRoot, state: pushItem(state, item) });
+      report.items.push(item);
+      appendEvent(runRoot, { candidateId: candidate.id, event: "candidate_blocked_policy", runId, blockers: policyBlockers });
+      return finishStrictPhaseReport({
+        batch: null,
+        candidate,
+        gitHeadBefore,
+        item,
+        ledgerPath,
+        ledgerSha256Before,
+        liveRerun: null,
+        registryPath,
+        report,
+        runRoot,
+        state,
+        targetRepo,
+      });
+    }
+
+    item.status = strictItemStatusForPhase(completedPhase);
+    transaction = beginStrictTransaction({ candidate, item, phase: completedPhase, runId });
+    state = saveStrictTransaction({ runRoot, state, transaction });
+    report.items.push(item);
+    recordStrictBoundary({ completedPhase, nextPhase: transaction.nextPhase, report, transaction });
+    appendEvent(runRoot, { candidateId: candidate.id, event: "strict_phase_boundary", phase: completedPhase, runId });
+    return finishStrictPhaseReport({
+      batch,
+      candidate,
+      gitHeadBefore,
+      item,
+      ledgerPath,
+      ledgerSha256Before,
+      liveRerun,
+      registryPath,
+      report,
+      runRoot,
+      state,
+      targetRepo,
+    });
+  }
+
+  if (!transaction || !candidate || !item) {
+    throw new Error("strict-transaction-missing-active-candidate");
+  }
+
+  const ledger = readJson(ledgerPath, "queue-ledger");
+  assertRequiredLedgerShape(ledger);
+  const refreshedCandidate = ledger.entries.find((entry) => entry.id === candidate.id);
+  if (refreshedCandidate) {
+    candidate = { ...candidate, ...refreshedCandidate };
+    transaction.candidate = candidate;
+  }
+
+  if (completedPhase === "prove_or_register_live_lane") {
+    let liveGate = liveLaneReady(candidate.liveGate);
+    if (!liveGate.ok) {
+      const liveDecision = checkContextBudget(contextBudget, "liveLane", CONTEXT_STEP_COST.liveLane);
+      report.contextBudget.lastDecision = liveDecision;
+      if (liveDecision.action !== "continue") {
+        item.status = liveDecision.action === "hard_stop" ? "failed_context_pressure" : "blocked_context_budget_resume_required";
+        item.reason = `context-budget-${liveDecision.threshold}`;
+        item.completedAt = new Date().toISOString();
+        report.status = liveDecision.action === "hard_stop" ? "context_pressure" : "resume_only_context_budget";
+        report.ok = liveDecision.action !== "hard_stop";
+        report.blockers.push({ code: "context-budget", decision: liveDecision, candidateId: candidate.id });
+        state = saveStrictTransaction({ runRoot, state, transaction: { ...transaction, item } });
+        report.items.push(item);
+        return finishStrictPhaseReport({
+          batch,
+          candidate,
+          gitHeadBefore,
+          item,
+          ledgerPath,
+          ledgerSha256Before,
+          liveRerun,
+          registryPath,
+          report,
+          runRoot,
+          state,
+          targetRepo,
+        });
+      }
+      const liveReport = runAutoLiveLane({
+        allowSelfImprovementLaneSynthesis: options.allowSelfImprovementLaneSynthesis === true,
+        candidate,
+        ledger,
+        ledgerPath,
+        registry,
+        runRoot,
+        runId,
+        targetRepo,
+        timeoutMs,
+      });
+      item.liveLaneReport = normalizeRepoPath(path.relative(targetRepo, liveReport.reportPath));
+      item.liveLaneStatus = liveReport.status;
+      if (!liveReport.ok) {
+        item.status = liveReport.status;
+        item.reason = liveReport.reason || liveReport.failedCommand?.label || "live_lane_failed";
+        item.completedAt = new Date().toISOString();
+        updateLedgerTerminalStatus({ candidate, item, ledger, ledgerPath, targetRepo });
+        state = clearStrictTransaction({ runRoot, state: pushItem(state, item) });
+        report.items.push(item);
+        appendEvent(runRoot, { candidateId: candidate.id, event: "candidate_blocked_live_lane", runId, status: item.status });
+        return finishStrictPhaseReport({
+          batch,
+          candidate,
+          gitHeadBefore,
+          item,
+          ledgerPath,
+          ledgerSha256Before,
+          liveRerun,
+          registryPath,
+          report,
+          runRoot,
+          state,
+          targetRepo,
+        });
+      }
+      const nextLedger = readJson(ledgerPath, "queue-ledger");
+      const nextCandidate = nextLedger.entries.find((entry) => entry.id === candidate.id);
+      if (nextCandidate) {
+        candidate = { ...candidate, ...nextCandidate };
+      }
+      liveGate = liveLaneReady(candidate.liveGate);
+    } else {
+      item.liveLaneStatus = liveGate.status;
+    }
+
+    if (candidate.liveGate.required === true && !candidate.liveGate.command) {
+      item.status = "blocked_live_proof_failed";
+      item.reason = "live_command_missing_after_lane_gate";
+      item.completedAt = new Date().toISOString();
+      updateLedgerTerminalStatus({ candidate, item, ledger, ledgerPath, targetRepo });
+      state = clearStrictTransaction({ runRoot, state: pushItem(state, item) });
+      report.items.push(item);
+      return finishStrictPhaseReport({
+        batch,
+        candidate,
+        gitHeadBefore,
+        item,
+        ledgerPath,
+        ledgerSha256Before,
+        liveRerun,
+        registryPath,
+        report,
+        runRoot,
+        state,
+        targetRepo,
+      });
+    }
+
+    item.status = strictItemStatusForPhase(completedPhase);
+    transaction = {
+      ...transaction,
+      candidate,
+      item,
+      lastCompletedPhase: completedPhase,
+      nextPhase: nextStrictPhase(completedPhase),
+    };
+    state = saveStrictTransaction({ runRoot, state, transaction });
+    report.items.push(item);
+    recordStrictBoundary({ completedPhase, nextPhase: transaction.nextPhase, report, transaction });
+    appendEvent(runRoot, { candidateId: candidate.id, event: "strict_phase_boundary", phase: completedPhase, runId });
+    return finishStrictPhaseReport({
+      batch,
+      candidate,
+      gitHeadBefore,
+      item,
+      ledgerPath,
+      ledgerSha256Before,
+      liveRerun,
+      registryPath,
+      report,
+      runRoot,
+      state,
+      targetRepo,
+    });
+  }
+
+  if (completedPhase === "run_importer_phase") {
+    try {
+      const importDecision = checkContextBudget(contextBudget, "importerPhase", CONTEXT_STEP_COST.importerPhase);
+      report.contextBudget.lastDecision = importDecision;
+      if (importDecision.action !== "continue") {
+        item.status = importDecision.action === "hard_stop" ? "failed_context_pressure" : "blocked_context_budget_resume_required";
+        item.reason = `context-budget-${importDecision.threshold}`;
+        item.completedAt = new Date().toISOString();
+        report.status = importDecision.action === "hard_stop" ? "context_pressure" : "resume_only_context_budget";
+        report.ok = importDecision.action !== "hard_stop";
+        report.blockers.push({ code: "context-budget", decision: importDecision, candidateId: candidate.id });
+        transaction = { ...transaction, item };
+        state = saveStrictTransaction({ runRoot, state, transaction });
+        report.items.push(item);
+        return finishStrictPhaseReport({
+          batch,
+          candidate,
+          gitHeadBefore,
+          item,
+          ledgerPath,
+          ledgerSha256Before,
+          liveRerun,
+          registryPath,
+          report,
+          runRoot,
+          state,
+          targetRepo,
+        });
+      }
+      appendBindingSnapshot(runRoot, captureBindingSnapshot({
+        ledgerPath,
+        registryPath,
+        runRoot,
+        safetyPolicy: report.safetyPolicy,
+        step: "strict_before_importer_phase",
+        targetRepo,
+      }));
+      if (candidate.implementation?.recoveryIntent?.mode === "recover_child_timeout_patch") {
+        batch = recoverChildTimeoutPatch({ candidate, runId, runRoot, targetRepo, timeoutMs });
+      } else {
+        batch = runCandidateImporterPhase({ candidate, ledger, runId, runRoot, targetRepo });
+      }
+      appendBindingSnapshot(runRoot, captureBindingSnapshot({
+        ledgerPath,
+        registryPath,
+        runRoot,
+        safetyPolicy: report.safetyPolicy,
+        step: "strict_after_importer_phase",
+        targetRepo,
+      }));
+      item.batchRunId = batch.batchRunId;
+      item.batchReport = batch.report.reportPath;
+      item.importStatus = batch.report.status;
+      item.plannedPaths = compactPathArray(
+        ((batch.report.items || []).find((entry) => entry.candidateId === candidate.id) || {}).plannedPaths ||
+          candidatePlannedPaths(candidate),
+        64,
+      );
+    } catch (error) {
+      let recoveryError = null;
+      let recoveredBatch = null;
+      try {
+        const recoveryDecision = checkContextBudget(contextBudget, "recoveryBranch", CONTEXT_STEP_COST.recoveryBranch);
+        report.contextBudget.lastDecision = recoveryDecision;
+        if (recoveryDecision.action !== "continue") {
+          throw new Error(`context-budget-${recoveryDecision.threshold}`);
+        }
+        recoveredBatch = tryRecoverImportFailure({
+          candidate,
+          error,
+          ledger,
+          runId,
+          runRoot,
+          targetRepo,
+          timeoutMs,
+        });
+      } catch (innerError) {
+        recoveryError = innerError;
+      }
+      if (recoveredBatch) {
+        batch = recoveredBatch;
+        item.batchRunId = batch.batchRunId;
+        item.batchReport = batch.report.reportPath;
+        item.importStatus = batch.report.status;
+        item.plannedPaths = compactPathArray(candidatePlannedPaths(candidate), 64);
+        item.status = "recovered_patch_non_live_validated_pending_semantic_review";
+        item.reason = "child_timeout_recovery_requires_separate_semantic_review_slice";
+        item.completedAt = new Date().toISOString();
+        updateLedgerTerminalStatus({ candidate, item, ledger, ledgerPath, targetRepo });
+        state = clearStrictTransaction({ runRoot, state: pushItem(state, item) });
+        report.items.push(item);
+        report.status = "stopped_recovery_pending_semantic_review";
+        report.ok = true;
+        appendEvent(runRoot, {
+          candidateId: candidate.id,
+          event: "candidate_recovery_pending_semantic_review",
+          runId,
+          status: item.status,
+        });
+        return finishStrictPhaseReport({
+          batch,
+          candidate,
+          gitHeadBefore,
+          item,
+          ledgerPath,
+          ledgerSha256Before,
+          liveRerun,
+          registryPath,
+          report,
+          runRoot,
+          state,
+          targetRepo,
+        });
+      }
+      const finalError = recoveryError || error;
+      item.status = "failed_import";
+      item.reason = finalError.message;
+      item.batchReport = error.report?.reportPath || null;
+      if (finalError.resolutionTicket) {
+        item.resolutionTicket = finalError.resolutionTicket;
+        item.resolutionStatus = finalError.resolutionStatus || "terminal_unresolved";
+      }
+      if (finalError.childTimeoutRecoveryExhausted === true) {
+        item.childTimeoutRecoveryExhausted = true;
+      }
+      item.completedAt = new Date().toISOString();
+      updateLedgerTerminalStatus({ candidate, item, ledger, ledgerPath, targetRepo });
+      state = clearStrictTransaction({ runRoot, state: pushItem(state, item) });
+      report.items.push(item);
+      appendEvent(runRoot, { candidateId: candidate.id, event: "candidate_import_failed", reason: finalError.message, runId });
+      return finishStrictPhaseReport({
+        batch,
+        candidate,
+        gitHeadBefore,
+        item,
+        ledgerPath,
+        ledgerSha256Before,
+        liveRerun,
+        registryPath,
+        report,
+        runRoot,
+        state,
+        targetRepo,
+      });
+    }
+
+    if (batch?.report?.mode === "child-timeout-recovery" || batch?.report?.recovery) {
+      item.status = "recovered_patch_non_live_validated_pending_semantic_review";
+      item.reason = "child_timeout_recovery_requires_separate_semantic_review_slice";
+      item.completedAt = new Date().toISOString();
+      updateLedgerTerminalStatus({ candidate, item, ledger, ledgerPath, targetRepo });
+      state = clearStrictTransaction({ runRoot, state: pushItem(state, item) });
+      report.items.push(item);
+      report.status = "stopped_recovery_pending_semantic_review";
+      report.ok = true;
+      appendEvent(runRoot, {
+        candidateId: candidate.id,
+        event: "candidate_recovery_pending_semantic_review",
+        runId,
+        status: item.status,
+      });
+      return finishStrictPhaseReport({
+        batch,
+        candidate,
+        gitHeadBefore,
+        item,
+        ledgerPath,
+        ledgerSha256Before,
+        liveRerun,
+        registryPath,
+        report,
+        runRoot,
+        state,
+        targetRepo,
+      });
+    }
+
+    item.status = strictItemStatusForPhase(completedPhase);
+    transaction = {
+      ...transaction,
+      batch,
+      candidate,
+      item,
+      lastCompletedPhase: completedPhase,
+      nextPhase: nextStrictPhase(completedPhase),
+    };
+    state = saveStrictTransaction({ runRoot, state, transaction });
+    report.items.push(item);
+    recordStrictBoundary({ completedPhase, nextPhase: transaction.nextPhase, report, transaction });
+    appendEvent(runRoot, { candidateId: candidate.id, event: "strict_phase_boundary", phase: completedPhase, runId });
+    return finishStrictPhaseReport({
+      batch,
+      candidate,
+      gitHeadBefore,
+      item,
+      ledgerPath,
+      ledgerSha256Before,
+      liveRerun,
+      registryPath,
+      report,
+      runRoot,
+      state,
+      targetRepo,
+    });
+  }
+
+  if (completedPhase === "controlled_merge") {
+    try {
+      batch = runImporterBoundaryPhase({
+        batch,
+        flag: "apply-controlled-merge",
+        status: "stopped_after_controlled_source_merge",
+        targetRepo,
+      });
+    } catch (error) {
+      return finishStrictImporterBoundaryFailure({
+        batch,
+        candidate,
+        error,
+        gitHeadBefore,
+        item,
+        ledger,
+        ledgerPath,
+        ledgerSha256Before,
+        liveRerun,
+        registryPath,
+        report,
+        runRoot,
+        state,
+        targetRepo,
+      });
+    }
+    item.batchReport = batch.report.reportPath;
+    item.importStatus = batch.report.status;
+    item.status = strictItemStatusForPhase(completedPhase);
+    transaction = {
+      ...transaction,
+      batch,
+      item,
+      lastCompletedPhase: completedPhase,
+      nextPhase: nextStrictPhase(completedPhase),
+    };
+    state = saveStrictTransaction({ runRoot, state, transaction });
+    report.items.push(item);
+    recordStrictBoundary({ completedPhase, nextPhase: transaction.nextPhase, report, transaction });
+    appendEvent(runRoot, { candidateId: candidate.id, event: "strict_phase_boundary", phase: completedPhase, runId });
+    return finishStrictPhaseReport({
+      batch,
+      candidate,
+      gitHeadBefore,
+      item,
+      ledgerPath,
+      ledgerSha256Before,
+      liveRerun,
+      registryPath,
+      report,
+      runRoot,
+      state,
+      targetRepo,
+    });
+  }
+
+  if (completedPhase === "non_live_validation") {
+    try {
+      batch = runImporterBoundaryPhase({
+        batch,
+        flag: "run-non-live-validation",
+        status: "stopped_after_non_live_validation",
+        targetRepo,
+      });
+    } catch (error) {
+      return finishStrictImporterBoundaryFailure({
+        batch,
+        candidate,
+        error,
+        gitHeadBefore,
+        item,
+        ledger,
+        ledgerPath,
+        ledgerSha256Before,
+        liveRerun,
+        registryPath,
+        report,
+        runRoot,
+        state,
+        targetRepo,
+      });
+    }
+    item.batchReport = batch.report.reportPath;
+    item.importStatus = batch.report.status;
+    item.status = strictItemStatusForPhase(completedPhase);
+    transaction = {
+      ...transaction,
+      batch,
+      item,
+      lastCompletedPhase: completedPhase,
+      nextPhase: candidate.liveGate?.required === true ? nextStrictPhase(completedPhase) : "ledger_docs_handoff_commit_finalization",
+    };
+    state = saveStrictTransaction({ runRoot, state, transaction });
+    report.items.push(item);
+    recordStrictBoundary({ completedPhase, nextPhase: transaction.nextPhase, report, transaction });
+    appendEvent(runRoot, { candidateId: candidate.id, event: "strict_phase_boundary", phase: completedPhase, runId });
+    return finishStrictPhaseReport({
+      batch,
+      candidate,
+      gitHeadBefore,
+      item,
+      ledgerPath,
+      ledgerSha256Before,
+      liveRerun,
+      registryPath,
+      report,
+      runRoot,
+      state,
+      targetRepo,
+    });
+  }
+
+  if (completedPhase === "generated_only_live_rerun") {
+    if (candidate.liveGate?.required === true) {
+      const liveRerunDecision = checkContextBudget(contextBudget, "liveRerun", CONTEXT_STEP_COST.liveRerun);
+      report.contextBudget.lastDecision = liveRerunDecision;
+      if (liveRerunDecision.action !== "continue") {
+        item.status = liveRerunDecision.action === "hard_stop" ? "failed_context_pressure" : "blocked_context_budget_resume_required";
+        item.reason = `context-budget-${liveRerunDecision.threshold}`;
+        item.completedAt = new Date().toISOString();
+        report.status = liveRerunDecision.action === "hard_stop" ? "context_pressure" : "resume_only_context_budget";
+        report.ok = liveRerunDecision.action !== "hard_stop";
+        report.blockers.push({ code: "context-budget", decision: liveRerunDecision, candidateId: candidate.id });
+        transaction = { ...transaction, item };
+        state = saveStrictTransaction({ runRoot, state, transaction });
+        report.items.push(item);
+        return finishStrictPhaseReport({
+          batch,
+          candidate,
+          gitHeadBefore,
+          item,
+          ledgerPath,
+          ledgerSha256Before,
+          liveRerun,
+          registryPath,
+          report,
+          runRoot,
+          state,
+          targetRepo,
+        });
+      }
+      liveRerun = runLiveRerun({
+        candidate,
+        command: candidate.liveGate.command,
+        runRoot,
+        targetRepo,
+        timeoutMs,
+      });
+      item.liveRerunReport = normalizeRepoPath(path.relative(targetRepo, liveRerun.reportPath));
+      item.liveRerunStatus = liveRerun.status;
+      if (!liveRerun.ok) {
+        item.status = "failed_live_rerun";
+        item.reason = liveRerun.failedCommand?.label || "live_rerun_failed";
+        item.completedAt = new Date().toISOString();
+        updateLedgerTerminalStatus({ candidate, item, ledger, ledgerPath, targetRepo });
+        state = clearStrictTransaction({ runRoot, state: pushItem(state, item) });
+        report.items.push(item);
+        report.status = "stopped_after_failed_live_rerun";
+        report.ok = false;
+        appendEvent(runRoot, { candidateId: candidate.id, event: "candidate_live_rerun_failed", runId });
+        return finishStrictPhaseReport({
+          batch,
+          candidate,
+          gitHeadBefore,
+          item,
+          ledgerPath,
+          ledgerSha256Before,
+          liveRerun,
+          registryPath,
+          report,
+          runRoot,
+          state,
+          targetRepo,
+        });
+      }
+    } else {
+      item.liveRerunStatus = "not_required";
+    }
+    item.status = strictItemStatusForPhase(completedPhase);
+    transaction = {
+      ...transaction,
+      item,
+      liveRerun,
+      lastCompletedPhase: completedPhase,
+      nextPhase: nextStrictPhase(completedPhase),
+    };
+    state = saveStrictTransaction({ runRoot, state, transaction });
+    report.items.push(item);
+    recordStrictBoundary({ completedPhase, nextPhase: transaction.nextPhase, report, transaction });
+    appendEvent(runRoot, { candidateId: candidate.id, event: "strict_phase_boundary", phase: completedPhase, runId });
+    return finishStrictPhaseReport({
+      batch,
+      candidate,
+      gitHeadBefore,
+      item,
+      ledgerPath,
+      ledgerSha256Before,
+      liveRerun,
+      registryPath,
+      report,
+      runRoot,
+      state,
+      targetRepo,
+    });
+  }
+
+  if (completedPhase === "ledger_docs_handoff_commit_finalization") {
+    const docsDecision = checkContextBudget(contextBudget, "docsHandoffWrite", CONTEXT_STEP_COST.docsHandoffWrite);
+    report.contextBudget.lastDecision = docsDecision;
+    if (docsDecision.action !== "continue") {
+      item.status = docsDecision.action === "hard_stop" ? "failed_context_pressure" : "blocked_context_budget_resume_required";
+      item.reason = `context-budget-${docsDecision.threshold}`;
+      item.completedAt = new Date().toISOString();
+      report.status = docsDecision.action === "hard_stop" ? "context_pressure" : "resume_only_context_budget";
+      report.ok = docsDecision.action !== "hard_stop";
+      report.blockers.push({ code: "context-budget", decision: docsDecision, candidateId: candidate.id });
+      transaction = { ...transaction, item };
+      state = saveStrictTransaction({ runRoot, state, transaction });
+      report.items.push(item);
+      return finishStrictPhaseReport({
+        batch,
+        candidate,
+        gitHeadBefore,
+        item,
+        ledgerPath,
+        ledgerSha256Before,
+        liveRerun,
+        registryPath,
+        report,
+        runRoot,
+        state,
+        targetRepo,
+      });
+    }
+    const planPath = updatePlanDocument({ candidate, commitId: null, item, targetRepo });
+    item.planPath = planPath;
+    const handoffPath = writeHandoff({ candidate, commitId: null, item, state, targetRepo });
+    item.handoffPath = handoffPath;
+
+    const commitDecision = checkContextBudget(contextBudget, "commit", CONTEXT_STEP_COST.commit);
+    report.contextBudget.lastDecision = commitDecision;
+    if (commitDecision.action !== "continue") {
+      item.status = commitDecision.action === "hard_stop" ? "failed_context_pressure" : "blocked_context_budget_resume_required";
+      item.reason = `context-budget-${commitDecision.threshold}`;
+      item.completedAt = new Date().toISOString();
+      report.status = commitDecision.action === "hard_stop" ? "context_pressure" : "resume_only_context_budget";
+      report.ok = commitDecision.action !== "hard_stop";
+      report.blockers.push({ code: "context-budget", decision: commitDecision, candidateId: candidate.id });
+      transaction = { ...transaction, item };
+      state = saveStrictTransaction({ runRoot, state, transaction });
+      report.items.push(item);
+      return finishStrictPhaseReport({
+        batch,
+        candidate,
+        gitHeadBefore,
+        item,
+        ledgerPath,
+        ledgerSha256Before,
+        liveRerun,
+        registryPath,
+        report,
+        runRoot,
+        state,
+        targetRepo,
+      });
+    }
+    const commitId =
+      options.noCommit === true
+        ? null
+        : stageAndCommitReviewableChanges(targetRepo, `feat: import ${safeId(candidate.id)} recipe`);
+    item.commitId = commitId;
+    item.gitHeadAfter = gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head");
+    if (commitId) {
+      report.commits.push(commitId);
+      state.commitIds = [...(state.commitIds || []), commitId];
+    }
+
+    item.status = "completed";
+    item.completedAt = new Date().toISOString();
+    writeHandoff({ candidate, commitId, item, state, targetRepo });
+    const completionLedger = readJson(ledgerPath, "queue-ledger");
+    updateLedgerCompletion({ batch, candidate, commitId, ledger: completionLedger, ledgerPath, liveRerun, targetRepo });
+    state = clearStrictTransaction({ runRoot, state: pushItem(state, item) });
+    report.items.push(item);
+    appendEvent(runRoot, { candidateId: candidate.id, commitId, event: "candidate_completed", runId });
+    return finishStrictPhaseReport({
+      batch,
+      candidate,
+      gitHeadBefore,
+      item,
+      ledgerPath,
+      ledgerSha256Before,
+      liveRerun,
+      registryPath,
+      report,
+      runRoot,
+      state,
+      targetRepo,
+    });
+  }
+
+  throw new Error(`strict-phase-unhandled:${completedPhase}`);
 }
 
 export function runFullIntake(options, cwd = process.cwd()) {
@@ -3698,16 +4845,27 @@ export function runFullIntake(options, cwd = process.cwd()) {
     return report;
   }
 
-  const resolutionQueue = processResolutionTickets({
-    allowSelfImprovementLaneSynthesis: options.allowSelfImprovementLaneSynthesis === true,
-    ledger: initialLedger,
-    ledgerPath,
-    registry,
-    runId,
-    runRoot,
-    targetRepo,
-    timeoutMs,
-  });
+  const strictOnePhase = options.compactJson === true;
+  const hasActiveStrictTransaction = strictOnePhase && activeStrictTransaction(state) !== null;
+  const resolutionQueue = hasActiveStrictTransaction
+    ? {
+        closedCandidateIds: [],
+        openTicketCount: 0,
+        requeuedCandidateIds: [],
+        status: "skipped_active_strict_transaction",
+        terminalTicketCount: 0,
+        tickets: [],
+      }
+    : processResolutionTickets({
+        allowSelfImprovementLaneSynthesis: options.allowSelfImprovementLaneSynthesis === true,
+        ledger: initialLedger,
+        ledgerPath,
+        registry,
+        runId,
+        runRoot,
+        targetRepo,
+        timeoutMs,
+      });
   report.resolutionQueue = {
     closedCandidateIds: resolutionQueue.closedCandidateIds || [],
     openTicketCount: resolutionQueue.openTicketCount,
@@ -3725,6 +4883,25 @@ export function runFullIntake(options, cwd = process.cwd()) {
     });
     initialLedger = readJson(ledgerPath, "queue-ledger");
     assertRequiredLedgerShape(initialLedger);
+  }
+
+  if (strictOnePhase) {
+    return runStrictOnePhase({
+      contextBudget,
+      gitHeadBefore,
+      initialLedger,
+      ledgerPath,
+      ledgerSha256Before,
+      options,
+      registry,
+      registryPath,
+      report,
+      runId,
+      runRoot,
+      state,
+      targetRepo,
+      timeoutMs,
+    });
   }
 
   let considered = 0;

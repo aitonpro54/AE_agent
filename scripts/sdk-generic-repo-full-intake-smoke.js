@@ -422,7 +422,7 @@ function runFullIntakeFixture(fixture, ledgerPath, registryPath, runId, maxItems
   );
 }
 
-function runFullIntakeFixtureCompact(fixture, ledgerPath, registryPath, runId, maxItems, env = {}, extraArgs = []) {
+function runFullIntakeFixtureCompactPhase(fixture, ledgerPath, registryPath, runId, maxItems, env = {}, extraArgs = []) {
   const batchArgs = maxItems > 1 ? ["--allow-batch-mode"] : [];
   return run(
     [
@@ -443,6 +443,21 @@ function runFullIntakeFixtureCompact(fixture, ledgerPath, registryPath, runId, m
     repo,
     env
   );
+}
+
+function runFullIntakeFixtureCompact(fixture, ledgerPath, registryPath, runId, maxItems, env = {}, extraArgs = []) {
+  let last = null;
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    last = runFullIntakeFixtureCompactPhase(fixture, ledgerPath, registryPath, runId, maxItems, env, extraArgs);
+    if (last.status !== 0) {
+      return last;
+    }
+    const output = JSON.parse(last.stdout);
+    if (output.status !== "phase_boundary") {
+      return last;
+    }
+  }
+  return last;
 }
 
 function assertCompletedCandidateAndAutoLane() {
@@ -521,7 +536,7 @@ function assertHugeChildOutputDoesNotBloatParentReports() {
 }
 
 function assertCompactParentOutputDoesNotLeakRuntimeDetails() {
-  const fixture = createFixture("compact-huge-child-output");
+  const fixture = createFixture("compact-bounds");
   try {
     const binDir = writeFakeCodex(fixture.root);
     const ledgerPath = writeLedger(fixture, validLedger(fixture));
@@ -530,7 +545,7 @@ function assertCompactParentOutputDoesNotLeakRuntimeDetails() {
       fixture,
       ledgerPath,
       registryPath,
-      "fixture-compact-huge-child-output",
+      "fixture-compact-bounds",
       1,
       { ...fakeCodexEnv(binDir), FAKE_CODEX_HUGE_STDOUT: "1" }
     );
@@ -538,7 +553,7 @@ function assertCompactParentOutputDoesNotLeakRuntimeDetails() {
     assert(result.stdout.length < 16 * 1024, `compact parent output should stay tiny, got ${result.stdout.length}`);
     const output = JSON.parse(result.stdout);
     assertCompactParentOutputIsBounded(result.stdout, output);
-    assert(String(output.status || "").startsWith("completed"));
+    assert(String(output.status || "").startsWith("completed"), result.stdout);
     assert.strictEqual(output.counts.items, 1);
     assert.strictEqual(output.lastItem.candidateId, "tool-compositions-add-composition-guide");
     assert.strictEqual(output.resolutionQueue.ticketCount, 0);
@@ -548,6 +563,62 @@ function assertCompactParentOutputDoesNotLeakRuntimeDetails() {
     assert(output.compactPaths.compactStatusCommand.includes("full-intake-status.mjs"));
     assert(output.compactPaths.proofCommand.includes("full-intake-proof.mjs"));
     assert(output.compactPaths.ledgerSummaryCommand.includes("full-intake-ledger-summary.mjs"));
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertStrictCompactParentRunsOnePhaseAtBoundary() {
+  const fixture = createFixture("strict-phase");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const ledgerPath = writeLedger(fixture, validLedger(fixture));
+    const registryPath = writeRegistry(fixture);
+    const env = fakeCodexEnv(binDir);
+    const expectedPhases = [
+      ["select_candidate", "prove_or_register_live_lane"],
+      ["prove_or_register_live_lane", "run_importer_phase"],
+      ["run_importer_phase", "controlled_merge"],
+      ["controlled_merge", "non_live_validation"],
+      ["non_live_validation", "generated_only_live_rerun"],
+      ["generated_only_live_rerun", "ledger_docs_handoff_commit_finalization"]
+    ];
+
+    for (const [completedPhase, nextPhase] of expectedPhases) {
+      const result = runFullIntakeFixtureCompactPhase(
+        fixture,
+        ledgerPath,
+        registryPath,
+        "fixture-strict-phase",
+        1,
+        env
+      );
+      assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+      const output = JSON.parse(result.stdout);
+      assertCompactParentOutputIsBounded(result.stdout, output);
+      assert.strictEqual(output.status, "phase_boundary", result.stdout);
+      assert.strictEqual(output.strictOnePhase.enabled, true);
+      assert.strictEqual(output.strictOnePhase.completedPhase, completedPhase);
+      assert.strictEqual(output.strictOnePhase.nextPhase, nextPhase);
+      assert.strictEqual(output.proofEnvelope.contractComplete, false);
+    }
+
+    const final = runFullIntakeFixtureCompactPhase(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "fixture-strict-phase",
+      1,
+      env
+    );
+    assert.strictEqual(final.status, 0, final.stderr || final.stdout);
+    const output = JSON.parse(final.stdout);
+    assertCompactParentOutputIsBounded(final.stdout, output);
+    assert.strictEqual(output.status, "completed");
+    assert.strictEqual(output.strictOnePhase.enabled, true);
+    assert.strictEqual(output.proofEnvelope.contractComplete, true);
+    assert.strictEqual(output.lastItem.status, "completed");
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);
   }
@@ -643,12 +714,12 @@ function assertContextRegressionOutputBounds() {
       }));
       const ledgerPath = writeLedger(fixture, validLedger(fixture, candidates));
       const registryPath = writeRegistry(fixture);
-      const result = runFullIntakeFixtureCompact(fixture, ledgerPath, registryPath, `fixture-context-regression-${count}`, count);
+      const result = runFullIntakeFixtureCompactPhase(fixture, ledgerPath, registryPath, `fixture-context-regression-${count}`, count);
       assert.strictEqual(result.status, 0, result.stderr || result.stdout);
       assert(result.stdout.length < 12 * 1024, `compact output for ${count} candidates exceeded bound: ${result.stdout.length}`);
       const output = JSON.parse(result.stdout);
       assertCompactParentOutputIsBounded(result.stdout, output);
-      assert.strictEqual(output.counts.items, count);
+      assert.strictEqual(output.counts.items, 1);
       assert(!result.stdout.includes("items\": ["), "compact output must not expose item arrays");
     } finally {
       removeFixture(fixture.root);
@@ -1082,7 +1153,7 @@ function assertCompactParentOutputSummarizesResolutionQueue() {
     });
     const ledgerPath = writeLedger(fixture, validLedger(fixture, [first, second]));
     const registryPath = writeRegistry(fixture, { entries: [] });
-    const result = runFullIntakeFixtureCompact(
+    const result = runFullIntakeFixtureCompactPhase(
       fixture,
       ledgerPath,
       registryPath,
@@ -1589,6 +1660,7 @@ function main() {
   assertCompletedCandidateAndAutoLane();
   assertHugeChildOutputDoesNotBloatParentReports();
   assertCompactParentOutputDoesNotLeakRuntimeDetails();
+  assertStrictCompactParentRunsOnePhaseAtBoundary();
   assertParentJsonIsSealedAndBatchRequiresApproval();
   assertContextBudgetStopsBeforeNewWork();
   assertContextRegressionOutputBounds();
