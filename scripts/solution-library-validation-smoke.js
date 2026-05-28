@@ -33,6 +33,7 @@ const IMPORTED_ADVISORY_IDS = [
   "append-to-expression-typed-plan",
   "update-expressions-typed-plan",
   "apply-maintain-stroke-width-expression-typed-plan",
+  "update-stroke-weight-expressions-typed-plan",
   "toggle-maintain-scale-expression-typed-plan",
   "disable-selected-expressions-typed-plan",
   "enable-selected-expressions-typed-plan",
@@ -492,6 +493,38 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /stroke width properties/.test(note)), `${id}: notes must limit use to stroke width properties.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Apply_Maintain_Stroke_Width_Expression/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "update-stroke-weight-expressions-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "set_expression", "get_layer_details"],
+        `${id}: imported update-stroke-weight workflow should stay on the narrow selected-property expression typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: update-stroke-weight expression workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+      assert(text.includes("stroke width"), `${id}: recipe should require stroke width property evidence.`);
+      assert(text.includes("stroke weight"), `${id}: recipe should preserve stroke weight wording.`);
+      assert(text.includes("expression-capable"), `${id}: recipe should require expression-capable property evidence.`);
+      assert(text.includes("current expression text"), `${id}: recipe should require current expression text evidence.`);
+      assert(text.includes("updatedStrokeWeightExpressionText"), `${id}: recipe should require explicit updated stroke weight expression text.`);
+      assert(text.includes("previous expression"), `${id}: recipe should show previous expression evidence.`);
+      assert(text.includes("set_expression"), `${id}: recipe should use the expression typed tool.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require expression read-back through layer details.`);
+      assert(text.includes("Do not silently update expression syntax"), `${id}: recipe should avoid silent expression rewriting.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /stroke width/.test(step)), `${id}: verification must require stroke width identity evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /current expression text/.test(step)), `${id}: verification must include current expression evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /updatedStrokeWeightExpressionText/.test(step)), `${id}: verification must include final updated stroke weight expression text.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_expression/.test(step)), `${id}: verification must include set_expression.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /final updatedStrokeWeightExpressionText/.test(item)), `${id}: verification must require final expression result evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /stroke width property/.test(item)), `${id}: verification must require stroke width target evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionEnabled/.test(item)), `${id}: verification must require expression enabled evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionError/.test(item)), `${id}: verification must require expression error evidence.`);
+      assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
+      assert(solution.notes.some((note) => /stroke width properties/.test(note)), `${id}: notes must limit use to stroke width properties.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Update_Stroke_Weight_Expressions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "toggle-maintain-scale-expression-typed-plan") {
       assert.deepStrictEqual(
@@ -1186,6 +1219,23 @@ function assertActualRetrieval(registry) {
   assert(maintainStrokeExpressionPromptSection.includes("transform.scale[0]"), "prompt section should preserve bounded x-scale compensation guidance.");
   assert(maintainStrokeExpressionPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
   assert(!/run_extendscript/i.test(maintainStrokeExpressionPromptSection), "maintain-stroke-width guidance should not recommend raw ExtendScript.");
+
+  const updateStrokeWeightExpressionRetrieval = retrieveSolutionHints("Update the stroke weight expressions on the selected shape stroke width properties after inspecting current selected property expressions, use the reviewed updatedStrokeWeightExpressionText, then read back expression details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(updateStrokeWeightExpressionRetrieval.ok, true);
+  assert(ids(updateStrokeWeightExpressionRetrieval).includes("update-stroke-weight-expressions-typed-plan"), "update-stroke-weight advisory recipe should surface for selected stroke weight expression update prompts.");
+  const updateStrokeWeightExpressionPromptSection = formatSolutionHintsForPrompt(updateStrokeWeightExpressionRetrieval);
+  assert(updateStrokeWeightExpressionPromptSection.includes("Update Stroke Weight Expressions Typed Plan"), "prompt section should include update-stroke-weight advisory title.");
+  assert(updateStrokeWeightExpressionPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for update-stroke-weight workflows.");
+  assert(updateStrokeWeightExpressionPromptSection.includes("stroke width"), "prompt section should preserve stroke width target guidance.");
+  assert(updateStrokeWeightExpressionPromptSection.includes("current expression"), "prompt section should preserve current expression evidence guidance.");
+  assert(updateStrokeWeightExpressionPromptSection.includes("updatedStrokeWeightExpressionText"), "prompt section should preserve explicit updated stroke weight expression text guidance.");
+  assert(updateStrokeWeightExpressionPromptSection.includes("set_expression"), "prompt section should prefer set_expression for update-stroke-weight workflows.");
+  assert(updateStrokeWeightExpressionPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
+  assert(!/run_extendscript/i.test(updateStrokeWeightExpressionPromptSection), "update-stroke-weight guidance should not recommend raw ExtendScript.");
 
   const toggleMaintainScaleExpressionRetrieval = retrieveSolutionHints("Toggle the maintain scale expression on the selected layers' Transform Scale properties after inspecting the current Scale expression state; if the maintain-scale expression is already enabled turn it off, otherwise enable the parent transform scale compensation and read back expression details.", {
     registry,

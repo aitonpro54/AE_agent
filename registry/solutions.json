@@ -3356,6 +3356,124 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "update-stroke-weight-expressions-typed-plan",
+      "title": "Update Stroke Weight Expressions Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "expressions",
+        "expression",
+        "properties",
+        "stroke",
+        "stroke-weight",
+        "stroke-width",
+        "shape-layer",
+        "update-expression",
+        "replace-expression",
+        "selected-properties",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Update existing stroke weight/stroke width expressions on explicitly selected shape stroke width properties with explicit reviewed updatedStrokeWeightExpressionText, then read expression details back.",
+        "appliesWhen": [
+          "The user asks to update, replace, revise or overwrite stroke weight expressions or stroke width expressions on selected shape stroke width properties.",
+          "Typed selected stroke width expression replacement is acceptable only when current expression evidence, stroke width identity evidence and explicit updatedStrokeWeightExpressionText or an explicit per-target mapping are available instead of source-exact selection side effects, broad stroke discovery, automatic syntax repair, controller rigs or raw JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties evidence containing one or more expression-capable stroke width targets with concrete layerIndex, propertyPath, stroke width identity evidence, current expression text, and expression enabled state."
+        },
+        {
+          "name": "updatedStrokeWeightExpressionText",
+          "type": "string",
+          "required": true,
+          "description": "Explicit reviewed final stroke weight expression text, or an explicit per-target mapping when different selected stroke width properties need different updated expressions."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated property is bound from current get_selected_properties evidence before mutation.",
+        "Every target is clearly identified as a stroke width/stroke weight property by current property path or property identity evidence.",
+        "Every target has current expression text from typed evidence; properties without expression text are reported as skipped instead of initialized.",
+        "The final stroke weight expression is explicit, non-empty and shown in the dry-run plan together with the exact previous expression.",
+        "The workflow changes only expression text/enabled state on explicitly selected stroke width properties.",
+        "Layer transforms, names, sources, timing, effects, masks, keyframes, render queue items, selection state and unselected properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/update-stroke-weight-expressions-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "set_expression",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected stroke width property expression evidence, replace each current stroke weight expression with explicit reviewed updatedStrokeWeightExpressionText, then read layer/property expression details back.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation to capture active comp identity, selected stroke width property targets, layerIndex values, propertyPath values, stroke width identity evidence, current expression text and expressionEnabled state.",
+          "Fail closed when selected-property evidence is empty, lacks layer/property path targets, is not expression-capable, is not clearly a stroke width property, lacks current expression text, or lacks explicit updatedStrokeWeightExpressionText or an explicit per-target final-expression mapping.",
+          "Show the previous expression and exact updatedStrokeWeightExpressionText for every stroke width target before confirmation.",
+          "Run one set_expression step per selected stroke width property target with the final updatedStrokeWeightExpressionText, the intended enabled state, the evidence-backed layerIndex and exact propertyPath.",
+          "Run get_layer_details for every affected layer with expression/property detail read-back.",
+          "Fail closed if broad stroke discovery, expression creation from scratch, automatic syntax repair, expression controllers, keyframe creation, nonuniform-scale compensation, nested shape transform traversal, selection side effects or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties identifies every concrete selected stroke width property target, its owning layer, current expression text and expressionEnabled state.",
+          "Each set_expression result reports the exact final updatedStrokeWeightExpressionText, expected expressionEnabled state and no expressionError.",
+          "Post-run get_layer_details shows each affected stroke width property has the exact updated stroke weight expression on the expected layer/property path.",
+          "Post-run evidence shows no keyframe, timing, effect, source, render queue, layer transform, layer name, selection state or unselected property mutation.",
+          "Unsupported broad stroke discovery, expression creation, syntax repair, expression controller setup, nonuniform-scale compensation, nested shape transform traversal, broad scans and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-expressions-update-stroke-weight-expressions generic repository importer as advisory typed-plan coverage for selected stroke weight expression update workflows.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed expression tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-28",
+          "from": "generic-repo-importer-tool-expressions-update-stroke-weight-expressions",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Expressions/Update_Stroke_Weight_Expressions.jsx into existing typed tools as selected stroke width property set_expression guidance for replacing current stroke weight expression text with explicit reviewed updatedStrokeWeightExpressionText; no source JSX copied. Current typed tools require current get_selected_properties expression evidence, stroke width identity evidence, previous/final expression disclosure, set_expression and get_layer_details read-back; broad stroke discovery, expression creation from scratch, automatic syntax repair, expression controllers, nonuniform-scale compensation, nested shape transform traversal, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties before mutating stroke weight expression text; do not infer targets from prior chat context.",
+        "Apply this recipe only to explicitly selected stroke width properties with property-path or property-identity evidence.",
+        "Require explicit updatedStrokeWeightExpressionText or an explicit per-target final-expression mapping and show the exact final expression before confirmation.",
+        "Do not silently update expression syntax or initialize empty expressions as part of this stroke weight update workflow.",
+        "Require a separate typed-tool contract for broad stroke discovery, expression creation from scratch, automatic syntax repair, expression controllers, nonuniform-scale compensation, nested shape transform traversal, broad property scans, selection side effects or exact source JSX semantics.",
+        "Do not use this recipe for expression clearing, expression deletion, keyframe edits, layer transform edits, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "toggle-maintain-scale-expression-typed-plan",
       "title": "Toggle Maintain Scale Expression Typed Plan",
       "status": "recipe",
