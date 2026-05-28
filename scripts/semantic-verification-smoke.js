@@ -34,6 +34,30 @@ function aePropertyPreview(value) {
   return preview;
 }
 
+function propertyPathSegments(value) {
+  const raw = Array.isArray(value) ? value : String(value || "").split(".");
+  return raw
+    .map((segment) => {
+      if (segment && typeof segment === "object" && !Array.isArray(segment)) {
+        return String(segment.matchName || segment.name || segment.propertyIndex || "");
+      }
+      return String(segment || "");
+    })
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+}
+
+function fakePropertyInfo(propertyPath, value) {
+  const segments = propertyPathSegments(propertyPath);
+  const name = segments[segments.length - 1] || "Property";
+  return {
+    name,
+    matchName: name,
+    propertyPath: segments.map((segment) => ({ name: segment, matchName: segment })),
+    value: aePropertyPreview(value)
+  };
+}
+
 function quantizedAeColor(color) {
   return color.map((channel) => Math.round(channel * 255) / 255);
 }
@@ -511,6 +535,20 @@ function fakeMutationResult(step, state) {
       changed: (args.layerIndices || [1]).map((index) => ({ after: layerInfo(`Layer ${index}`, { index }), scale: [100, 100, 100], position: [320, 180] }))
     }, compName);
   }
+  if (step.tool === "set_property_value") {
+    const property = fakePropertyInfo(args.propertyPath, args.value);
+    const key = JSON.stringify(property.propertyPath);
+    state.propertyValues = state.propertyValues.filter((item) => JSON.stringify(item.propertyPath) !== key);
+    state.propertyValues.push(property);
+    return withVerification({
+      comp: { name: compName },
+      layer: layerInfo(`Layer ${args.layerIndex}`, { index: args.layerIndex }),
+      property,
+      properties: [property],
+      setAtTime: args.setAtTime === true,
+      time: args.time || null
+    }, compName);
+  }
   if (step.tool === "set_property_keyframes") {
     return withVerification({
       comp: { name: compName },
@@ -654,7 +692,8 @@ function fakeReadBackResult(step, state) {
         returned: state.layerMarkers.length,
         truncated: false,
         items: state.layerMarkers.slice()
-      }
+      },
+      propertyTree: state.propertyValues.slice()
     };
   }
   if (step.tool === "get_comp_details" || step.tool === "list_layers") {
@@ -686,6 +725,7 @@ function fakeRunForPlan(plan) {
     lastCompName: "",
     projectItems: [],
     layers: [],
+    propertyValues: [],
     renderQueueItems: [],
     layerMarkers: [],
     masks: [],
@@ -1463,6 +1503,41 @@ function assertAddLayerMarkerPasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("add_layer_marker:marker") >= 0), "add layer marker check should be reported.");
 }
 
+function assertSetPropertyValuePasses() {
+  const plan = {
+    summary: "Set one explicit generated layer property value and inspect property read-back.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Set opacity value",
+        tool: "set_property_value",
+        args: {
+          compName: "Property Fixture",
+          layerIndex: 1,
+          propertyPath: "ADBE Transform Group.ADBE Opacity",
+          value: 42,
+          setAtTime: false
+        }
+      },
+      {
+        title: "Read property layer",
+        tool: "get_layer_details",
+        args: {
+          compName: "Property Fixture",
+          layerIndex: 1,
+          includeProperties: true,
+          includeValues: true
+        }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `set_property_value semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_property_value:value") >= 0 && check.status === "passed"), "set_property_value read-back check should pass.");
+}
+
 function assertUpdateLayerMarkerPasses() {
   const plan = {
     summary: "Update one explicit timeline marker and inspect marker read-back.",
@@ -1620,6 +1695,7 @@ function main() {
   assertSetLayerMaskMissingReadBackNeedsReview();
   assertDakkshinFixtureMutationScopedReadBackPasses();
   assertDakkshinLiveAeEvidenceShapePasses();
+  assertSetPropertyValuePasses();
   assertAddLayerMarkerPasses();
   assertUpdateLayerMarkerPasses();
   assertDeleteLayerMarkerPasses();

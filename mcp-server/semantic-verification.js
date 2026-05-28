@@ -17,6 +17,7 @@ const MUTATING_TOOLS = new Set([
   "create_shape_layer",
   "create_layer_mask",
   "fit_layer_to_comp",
+  "set_property_value",
   "set_property_keyframes",
   "apply_keyframe_ease",
   "set_expression",
@@ -66,6 +67,14 @@ function compactText(value, maxLength = 180) {
   const text = String(value === undefined || value === null ? "" : value).replace(/\s+/g, " ").trim();
   if (text.length <= maxLength) return text;
   return `${text.slice(0, Math.max(0, maxLength - 1))}...`;
+}
+
+function stableStringify(value) {
+  try {
+    return JSON.stringify(value);
+  } catch (_error) {
+    return String(value === undefined ? "" : value);
+  }
 }
 
 function numberValue(value) {
@@ -240,8 +249,69 @@ function createEvidenceStore(readBackSteps) {
     comps: [],
     masks: [],
     markers: [],
-    markerSignatures: new Set()
+    markerSignatures: new Set(),
+    properties: []
   };
+}
+
+function propertyPathSegments(value) {
+  const raw = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(".")
+      : [];
+  return raw
+    .map((segment) => {
+      if (isPlainObject(segment)) {
+        if (segment.matchName !== undefined && segment.matchName !== null) return String(segment.matchName);
+        if (segment.name !== undefined && segment.name !== null) return String(segment.name);
+        if (segment.propertyIndex !== undefined && segment.propertyIndex !== null) return String(segment.propertyIndex);
+      }
+      return String(segment === undefined || segment === null ? "" : segment);
+    })
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+}
+
+function propertyPathText(value) {
+  return propertyPathSegments(value).join(".");
+}
+
+function propertyPathMatches(actualPath, expectedPath) {
+  const actual = propertyPathSegments(actualPath);
+  const expected = propertyPathSegments(expectedPath);
+  if (!actual.length || !expected.length || actual.length < expected.length) return false;
+  const tail = actual.slice(actual.length - expected.length);
+  return expected.every((segment, index) => tail[index] === segment);
+}
+
+function propertyValueMatches(expected, observed, tolerance = 0.001) {
+  const expectedNumbers = numberArrayValue(expected);
+  if (expectedNumbers) {
+    const observedNumbers = numberArrayValue(observed);
+    return Boolean(observedNumbers) &&
+      observedNumbers.length >= expectedNumbers.length &&
+      expectedNumbers.every((value, index) => nearlyEqual(value, observedNumbers[index], tolerance));
+  }
+
+  const expectedNumber = numberValue(expected);
+  if (expectedNumber !== null) {
+    return nearlyEqual(expectedNumber, observed, tolerance);
+  }
+
+  return stableStringify(expected) === stableStringify(isPlainObject(observed) && hasOwn(observed, "value") ? observed.value : observed);
+}
+
+function addPropertyEvidence(target, value, source) {
+  if (!isPlainObject(value)) return;
+  if (!hasOwn(value, "value") && !value.propertyPath && !value.matchName && !value.name) return;
+  target.properties.push({
+    name: value.name || null,
+    matchName: value.matchName || null,
+    propertyPath: Array.isArray(value.propertyPath) ? value.propertyPath : [],
+    value: hasOwn(value, "value") ? value.value : undefined,
+    source: source || "observed property"
+  });
 }
 
 function markerSignature(marker) {
@@ -303,6 +373,11 @@ function collectPayloadEvidence(payload, evidence, source, depth = 0) {
   addLayerEvidence(evidence, payload, source);
   addCompEvidence(evidence, payload, source);
   addMaskEvidence(evidence, payload, source);
+  addPropertyEvidence(evidence, payload, source);
+  if (isPlainObject(payload.property)) addPropertyEvidence(evidence, payload.property, source);
+  if (Array.isArray(payload.properties)) {
+    for (const property of payload.properties) addPropertyEvidence(evidence, property, source);
+  }
   if (typeof payload.before === "string") addName(evidence, payload.before, source);
   if (typeof payload.after === "string") addName(evidence, payload.after, source);
   if (typeof payload.file === "string") addOutputPath(evidence, payload.file, source);
@@ -653,6 +728,39 @@ function checkPointListField(checks, step, arg, observedValue, title) {
     observed: observed.length ? observed.slice(0, expected.length).map((point) => Array.isArray(point) ? point.join(",") : String(point)).join(" | ") : "missing",
     passed: !mismatch,
     evidence: !mismatch ? stepLabel(step) : `${arg} read-back did not match requested points.`
+  });
+}
+
+function observedPropertyValueEvidence(evidence, args) {
+  for (const property of evidence.properties || []) {
+    if (propertyPathMatches(property.propertyPath, args.propertyPath) && propertyValueMatches(args.value, property.value, 0.01)) {
+      return property.source || `Read ${propertyPathText(args.propertyPath)} after set_property_value.`;
+    }
+  }
+  return null;
+}
+
+function checkSetPropertyValue(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const properties = Array.isArray(payload.properties)
+    ? payload.properties
+    : payload.property
+      ? [payload.property]
+      : [];
+  const resultMatch = properties.find((property) => (
+    propertyPathMatches(property.propertyPath, args.propertyPath) &&
+    propertyValueMatches(args.value, property.value, 0.01)
+  ));
+  const readBackEvidence = observedPropertyValueEvidence(evidence.readBack, args);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:value`,
+    title: "Layer property value matches request",
+    expected: `${propertyPathText(args.propertyPath)} = ${compactText(stableStringify(args.value), 80)}`,
+    observed: resultMatch
+      ? `${propertyPathText(resultMatch.propertyPath)} = ${compactText(stableStringify(resultMatch.value), 80)}`
+      : "missing or mismatched property value",
+    passed: Boolean(resultMatch) && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run layer/property read-back matched set_property_value."
   });
 }
 
@@ -1103,6 +1211,11 @@ function verifyStep(checks, step, evidence) {
       passed: arrayLength(payload.changed) > 0 && (!args.mode || payload.mode === args.mode),
       evidence: stepLabel(step)
     });
+    return;
+  }
+
+  if (step.tool === "set_property_value") {
+    checkSetPropertyValue(checks, step, payload, evidence);
     return;
   }
 

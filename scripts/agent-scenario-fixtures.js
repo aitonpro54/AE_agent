@@ -21,6 +21,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "create_shape_layer",
   "fit_layer_to_comp",
   "set_layer_transform",
+  "set_property_value",
   "set_property_keyframes",
   "set_effect_property",
   "apply_keyframe_ease",
@@ -1364,6 +1365,52 @@ function agentCompPropertiesScenarioPlans(runPrefix) {
   }));
 }
 
+function agentSelectedPropertyValueScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Selected Property Value`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Shape`;
+  const propertyPath = "ADBE Transform Group.ADBE Opacity";
+  const expectedValue = 42;
+
+  return [
+    {
+      id: "generated-selected-property-value",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "get_selected_properties",
+        "set_property_value",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedSelectedPropertyValue: true,
+        compName,
+        layerName,
+        propertyPath: ["ADBE Transform Group", "ADBE Opacity"],
+        value: expectedValue
+      },
+      plan: {
+        summary: "AUX-072 generated-only live QA for selected/generated layer property value edits.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated selected-property comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.07, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "AUX-072 generated-only selected property value validation" } },
+          { title: "Create generated selected-property shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [200, 120], position: [320, 180], fillColor: [0.82, 0.36, 0.18], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Inspect generated selected-property state", tool: "get_selected_properties", args: { includeValues: true, includeExpressions: true } },
+          { title: "Set generated opacity value", tool: "set_property_value", args: { compName, layerIndex: 1, propertyPath, value: expectedValue, setAtTime: false } },
+          { title: "Read generated opacity value", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeValues: true, includeExpressions: true } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentAssortedCompositionGuidesScenarioPlans(runPrefix) {
   const base = `${runPrefix} Assorted Guides`;
   const compName = `${base} Comp`;
@@ -2173,6 +2220,7 @@ module.exports = {
   agentProjectItemsScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
   agentResetWorkAreaScenarioPlans,
+  agentSelectedPropertyValueScenarioPlans,
   agentScenarioPlans,
   buildAgentPlannerRegressionCorpus,
   exactPlanPrompt,

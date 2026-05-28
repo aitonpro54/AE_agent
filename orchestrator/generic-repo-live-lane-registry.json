@@ -21,5 +21,53 @@
         "node scripts/semantic-verification-smoke.js"
       ]
     }
+  ],
+  "selfImprovementFamilies": [
+    {
+      "id": "selected-property-value-generated-only",
+      "requiredTools": [
+        "get_selected_properties",
+        "set_property_value"
+      ],
+      "allowedTools": [
+        "get_active_comp",
+        "get_selected_properties",
+        "set_property_value",
+        "get_layer_details"
+      ],
+      "candidateIds": [
+        "tool-properties-round-selected-property-values",
+        "tool-properties-set-new-color",
+        "tool-properties-swap-property-values",
+        "tool-properties-swap-selected-property-dimensions"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-selected-property-value-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "selected-property-value",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_selected_properties",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "mcp-server/semantic-verification.js",
+        "scripts/semantic-verification-smoke.js"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only selected/generated property value proof using get_selected_properties, set_property_value, get_layer_details, read-back, semantic verification, and cleanup; expression-driven dimension separation remains fail-closed"
+    }
   ]
 }

@@ -21,7 +21,8 @@ const {
   agentLayerTransformScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
   agentProjectItemsScenarioPlans,
-  agentResetWorkAreaScenarioPlans
+  agentResetWorkAreaScenarioPlans,
+  agentSelectedPropertyValueScenarioPlans
 } = require("./agent-scenario-fixtures");
 
 function fixtureReport() {
@@ -458,7 +459,20 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(compProperties.plan.steps[1].args.width, 720);
   assert.strictEqual(compProperties.plan.steps[2].args.duration, 3.5);
 
-  for (const scenario of [timing, transform, projectItems, effectProperty, expression, compProperties]) {
+  const [selectedPropertyValue] = agentSelectedPropertyValueScenarioPlans("Codex QA AUX072 Fixture");
+  assert.strictEqual(selectedPropertyValue.id, "generated-selected-property-value");
+  assert.strictEqual(selectedPropertyValue.expectedReadBack.generatedSelectedPropertyValue, true);
+  assert.deepStrictEqual(selectedPropertyValue.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "get_selected_properties",
+    "set_property_value",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(selectedPropertyValue.plan.steps[3].args.propertyPath, "ADBE Transform Group.ADBE Opacity");
+  assert.strictEqual(selectedPropertyValue.plan.steps[3].args.value, 42);
+
+  for (const scenario of [timing, transform, projectItems, effectProperty, expression, compProperties, selectedPropertyValue]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }

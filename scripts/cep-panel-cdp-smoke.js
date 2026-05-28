@@ -22,6 +22,7 @@ const {
   agentProjectItemsScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
   agentResetWorkAreaScenarioPlans,
+  agentSelectedPropertyValueScenarioPlans,
   agentScenarioPlans
 } = require("./agent-scenario-fixtures");
 const {
@@ -361,6 +362,24 @@ function openAiCliCompPropertiesScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_COMP_PROPERTIES_PREFIX || "Codex QA AUX061",
     scenarioFactory: agentCompPropertiesScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliSelectedPropertyValueScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-selected-property-value",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_SELECTED_PROPERTY_VALUE_PREFIX || "Codex QA AUX072",
+    scenarioFactory: agentSelectedPropertyValueScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -4422,6 +4441,56 @@ async function verifyGeneratedExpressionReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedSelectedPropertyValueReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const selected = await callBridgeTool("get_selected_properties", {
+    includeValues: true,
+    includeExpressions: true
+  });
+  if (!selected || !selected.comp || selected.comp.name !== expected.compName) {
+    throw new Error(`${scenario.id}: get_selected_properties did not read the generated comp context.`);
+  }
+
+  const details = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: 1,
+    includeProperties: true,
+    propertyDepth: 2,
+    propertyLimit: 80,
+    includeValues: true,
+    includeExpressions: true
+  });
+  const layer = details && details.layer ? details.layer : {};
+  if (layer.name !== expected.layerName) {
+    throw new Error(`${scenario.id}: generated selected-property layer ${expected.layerName} was not found by read-back.`);
+  }
+  const property = findPropertyInTree(details.propertyTree || [], expected.propertyPath);
+  if (!property) {
+    throw new Error(`${scenario.id}: generated selected-property value target was not found by read-back.`);
+  }
+  const observedValue = valuePreviewNumber(property.value);
+  if (!numbersMatch(expected.value, observedValue, 0.01)) {
+    throw new Error(`${scenario.id}: generated property value mismatch; expected ${expected.value}, got ${observedValue}.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: compMatch.itemIndex,
+      name: compMatch.name,
+      selectedPropertyCount: Array.isArray(selected.selectedProperties) ? selected.selectedProperties.length : 0
+    },
+    layer: {
+      index: layer.index,
+      name: layer.name
+    },
+    property: {
+      propertyPath: expected.propertyPath,
+      value: observedValue
+    }
+  };
+}
+
 async function verifyGeneratedCompPropertiesReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const comp = await callBridgeTool("get_comp_details", {
@@ -4869,6 +4938,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedExpressionSetClear) {
     return verifyGeneratedExpressionReadBack(scenario, expected);
+  }
+
+  if (expected.generatedSelectedPropertyValue) {
+    return verifyGeneratedSelectedPropertyValueReadBack(scenario, expected);
   }
 
   if (expected.generatedCompPropertiesWorkArea) {
@@ -5542,6 +5615,10 @@ async function main() {
   }
   if (command === "agent-comp-properties-openai-cli-smoke" || command === "full-ui-agent-comp-properties-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliCompPropertiesScenarioConfig());
+    return;
+  }
+  if (command === "agent-selected-property-value-openai-cli-smoke" || command === "full-ui-agent-selected-property-value-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliSelectedPropertyValueScenarioConfig());
     return;
   }
   if (command === "openai-api-setup-smoke") {
