@@ -9,18 +9,30 @@ import { fileURLToPath } from "node:url";
 
 import { runImporter } from "./run-generic-repo-tool-importer.mjs";
 import boundedProcess from "./bounded-process-result.cjs";
+import {
+  artifactRef,
+  assertRequiredProofHashes,
+  boundedParentOutput,
+  compactBlockers,
+  compactList,
+  writeBoundedJsonArtifact,
+} from "./parent-proof-contract.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..");
 const { readCompactJson } = boundedProcess;
 const PLAN_SCHEMA = "generic-repo-queue-supervisor.plan-only.v1";
 const BATCH_SCHEMA = "generic-repo-queue-supervisor.batch-report.v1";
+const PROOF_ENVELOPE_SCHEMA = "generic-repo-queue-supervisor.proof-envelope.v1";
+const PARENT_OUTPUT_SCHEMA = "generic-repo-queue-supervisor.parent-compact-output.v1";
 const AUXILIARY_ID = "AUX-031";
 const BATCH_AUXILIARY_ID = "AUX-038";
 const DEFAULT_LEDGER_PATH =
   ".codex-runtime/sdk/generic-repo-importer/kyletmartinez-after-effects-scripts-intake/queue-ledger.json";
 const BATCH_ROOT_RELATIVE = ".codex-runtime/sdk/generic-repo-queue-supervisor";
 const IMPORTER_RESULT_SUMMARY_MAX_BYTES = 64 * 1024;
+const PROOF_ENVELOPE_MAX_BYTES = 32 * 1024;
+const PARENT_OUTPUT_MAX_BYTES = 32 * 1024;
 const SAFE_CLASSIFICATIONS = new Set([
   "existing_typed_tools_recipe_only",
   "small_safe_typed_tool_library_recipe_addition",
@@ -57,6 +69,7 @@ Generic repository queue supervisor plan-only proof
 Usage:
   node orchestrator/run-generic-repo-queue-supervisor.mjs --plan-only --ledger <path> --max-items <n> --json
   node orchestrator/run-generic-repo-queue-supervisor.mjs --batch --ledger <path> --max-items <n> --json
+  node orchestrator/run-generic-repo-queue-supervisor.mjs --batch --ledger <path> --max-items <n> --compact-json
 
 Options:
   --ledger <path>        Durable generic repository importer ledger.
@@ -73,7 +86,8 @@ Options:
                         per candidate as blocked_needs_live_lane.
   --prepare-only         With --batch, stop after importer analysis and
                         implementation planning instead of child runs/merge.
-  --json                 Print machine-readable output.
+  --json                 Print full machine-readable output for local debug.
+  --compact-json         Print bounded parent-facing output with proof refs.
   --help                 Show this help.
 
 This first bounded layer only reads the ledger, verifies safety gates, and emits
@@ -88,7 +102,7 @@ or creates PRs.
 `;
 
 const VALUE_OPTIONS = new Set(["context-percent", "ledger", "max-items", "report-dir", "run-id", "target-repo"]);
-const BOOLEAN_OPTIONS = new Set(["batch", "help", "json", "plan-only", "prepare-only"]);
+const BOOLEAN_OPTIONS = new Set(["batch", "compact-json", "help", "json", "plan-only", "prepare-only"]);
 
 class QueueSupervisorError extends Error {
   constructor(message, report = null) {
@@ -746,11 +760,25 @@ function batchRunId(options, ledgerHash) {
   return safeId(`aux038-${Date.now().toString(36)}-${ledgerHash.slice(0, 8)}`, "aux038-batch").slice(0, 80);
 }
 
+function planRunId(options, ledgerHash, maxItems) {
+  if (options.runId) {
+    return safeId(options.runId, "aux031-plan").slice(0, 80);
+  }
+  return safeId(`aux031-${ledgerHash.slice(0, 8)}-${maxItems}`, "aux031-plan").slice(0, 80);
+}
+
 function batchReportPath(targetRepo, options, runId) {
   const reportRoot = options.reportDir
     ? resolveInside(targetRepo, options.reportDir, "batch-report-dir")
     : path.join(targetRepo, BATCH_ROOT_RELATIVE);
   return path.join(reportRoot, runId, "batch-report.json");
+}
+
+function planReportPath(targetRepo, options, runId) {
+  const reportRoot = options.reportDir
+    ? resolveInside(targetRepo, options.reportDir, "queue-plan-report-dir")
+    : path.join(targetRepo, BATCH_ROOT_RELATIVE);
+  return path.join(reportRoot, runId, "plan-report.json");
 }
 
 function importerManifestPath(targetRepo, options, runId) {
@@ -976,6 +1004,170 @@ function readImporterResultSummary(importerResult, targetRepo) {
   };
 }
 
+function relativeArtifactRef(targetRepo, filePath) {
+  return artifactRef(targetRepo, filePath);
+}
+
+function reportArtifactPath(targetRepo, report) {
+  if (!report?.reportPath) return null;
+  return path.isAbsolute(report.reportPath) ? report.reportPath : path.resolve(targetRepo, report.reportPath);
+}
+
+function importerManifestArtifactPath(targetRepo, report) {
+  const manifestPath = report?.importSummary?.manifestPath || report?.importer?.manifestPath || null;
+  if (!manifestPath) return null;
+  return path.isAbsolute(manifestPath) ? manifestPath : path.resolve(targetRepo, manifestPath);
+}
+
+function importerResultSummaryArtifactPath(targetRepo, report) {
+  const summaryPath = report?.importSummary?.resultSummaryPath || report?.importer?.resultSummary?.resultSummaryPath || null;
+  if (!summaryPath) return null;
+  return path.isAbsolute(summaryPath) ? summaryPath : path.resolve(targetRepo, summaryPath);
+}
+
+function candidateStatusCounts(report) {
+  const records = report.mode === "plan-only" ? report.runList : report.items;
+  const values = Array.isArray(records) ? records : [];
+  const counts = {};
+  for (const item of values) {
+    const status = item?.status || "unknown";
+    counts[status] = (counts[status] || 0) + 1;
+  }
+  return counts;
+}
+
+function nextQueueCommand(report) {
+  const base = [
+    "node orchestrator/run-generic-repo-queue-supervisor.mjs",
+    report.mode === "batch" ? "--batch" : "--plan-only",
+    `--ledger ${report.ledgerPath}`,
+    `--max-items ${report.maxItems}`,
+  ];
+  if (report.runId) {
+    base.push(`--run-id ${report.runId}`);
+  }
+  base.push("--compact-json");
+  return base.join(" ");
+}
+
+function buildQueueProofEnvelope(report, targetRepo) {
+  const reportPath = reportArtifactPath(targetRepo, report);
+  const manifestPath = importerManifestArtifactPath(targetRepo, report);
+  const importerSummaryPath = importerResultSummaryArtifactPath(targetRepo, report);
+  const requiredHashFields = ["ledgerSha256", "reportSha256"];
+  const reportRef = relativeArtifactRef(targetRepo, reportPath);
+  const manifestRef = relativeArtifactRef(targetRepo, manifestPath);
+  const importerSummaryRef = relativeArtifactRef(targetRepo, importerSummaryPath);
+  if (report.mode === "batch" && report.eligibleCandidateCount > 0) {
+    requiredHashFields.push("manifestSha256");
+    if (report.importedCandidateCount > 0 || report.preparedCandidateCount > 0) {
+      requiredHashFields.push("importerResultSummarySha256");
+    }
+  }
+  const envelope = {
+    schema: PROOF_ENVELOPE_SCHEMA,
+    runId: report.runId || null,
+    mode: report.mode || null,
+    status: report.status || null,
+    ok: report.ok === true,
+    contractComplete: false,
+    ledgerPath: report.ledgerPath || null,
+    ledgerSha256: report.ledgerSha256 || null,
+    reportPath: reportRef?.path || report.reportPath || null,
+    reportSha256: reportRef?.sha256 || null,
+    manifestPath: manifestRef?.path || null,
+    manifestSha256: manifestRef?.sha256 || null,
+    importerResultSummaryPath: importerSummaryRef?.path || null,
+    importerResultSummarySha256: importerSummaryRef?.sha256 || null,
+    counts: {
+      blocked: report.blockedCandidateCount || 0,
+      considered: report.consideredCandidateCount || report.selectedCandidateCount || 0,
+      eligible: report.eligibleCandidateCount || 0,
+      imported: report.importedCandidateCount || 0,
+      prepared: report.preparedCandidateCount || 0,
+      selected: Array.isArray(report.selectedCandidateIds) ? report.selectedCandidateIds.length : 0,
+      skipped: report.skippedCandidateCount || 0,
+    },
+    statusCountsSha256: sha256Text(stableStringify(candidateStatusCounts(report))),
+    validation: {
+      liveCepAeRun: report.validation?.liveCepAeRun === true,
+      localOllamaUsed: report.validation?.localOllamaUsed === true,
+      fallbackProviderUsed: report.validation?.fallbackProviderUsed === true,
+      nonLiveValidationComplete: report.validation?.nonLiveValidationComplete === true,
+      nonLiveValidationRun: report.validation?.nonLiveValidationRun === true,
+    },
+    nextCommand: nextQueueCommand(report),
+    createdAt: new Date().toISOString(),
+  };
+  if (report.ok === true) {
+    return assertRequiredProofHashes(envelope, requiredHashFields, "queue-proof-envelope");
+  }
+  envelope.missingRequiredHashes = requiredHashFields.filter((field) => {
+    const value = envelope[field];
+    return typeof value !== "string" || value.length === 0;
+  });
+  envelope.contractComplete = false;
+  return envelope;
+}
+
+function attachQueueProof(report, targetRepo) {
+  const reportPath = reportArtifactPath(targetRepo, report);
+  const proofPath = path.join(path.dirname(reportPath), "proof-envelope.json");
+  const envelope = buildQueueProofEnvelope(report, targetRepo);
+  const written = writeBoundedJsonArtifact(proofPath, envelope, PROOF_ENVELOPE_MAX_BYTES, "queue-proof-envelope");
+  report.proofEnvelope = {
+    contractComplete: envelope.contractComplete === true,
+    path: normalizeRepoPath(path.relative(targetRepo, proofPath)),
+    sha256: written.sha256,
+  };
+  return report;
+}
+
+function compactQueueParentOutput(report, targetRepo) {
+  const reportRef = relativeArtifactRef(targetRepo, reportArtifactPath(targetRepo, report));
+  const manifestRef = relativeArtifactRef(targetRepo, importerManifestArtifactPath(targetRepo, report));
+  const importerSummaryRef = relativeArtifactRef(targetRepo, importerResultSummaryArtifactPath(targetRepo, report));
+  const proofRef = relativeArtifactRef(targetRepo, path.join(path.dirname(reportArtifactPath(targetRepo, report)), "proof-envelope.json"));
+  return {
+    schema: PARENT_OUTPUT_SCHEMA,
+    ok: report.ok === true,
+    status: report.status || null,
+    mode: report.mode || null,
+    runId: report.runId || null,
+    maxItems: report.maxItems || null,
+    counts: {
+      blocked: report.blockedCandidateCount || 0,
+      considered: report.consideredCandidateCount || report.selectedCandidateCount || 0,
+      eligible: report.eligibleCandidateCount || 0,
+      imported: report.importedCandidateCount || 0,
+      prepared: report.preparedCandidateCount || 0,
+      selected: Array.isArray(report.selectedCandidateIds) ? report.selectedCandidateIds.length : 0,
+      skipped: report.skippedCandidateCount || 0,
+    },
+    candidateStatusCounts: candidateStatusCounts(report),
+    selectedCandidateIds: compactList(report.selectedCandidateIds),
+    eligibleCandidateIds: compactList(report.eligibleCandidateIds),
+    blockedCandidateIds: compactList(report.blockedCandidateIds),
+    blockers: compactBlockers(report.blockers),
+    artifacts: {
+      sourceReport: reportRef,
+      proofEnvelope: proofRef,
+      ledger: {
+        path: report.ledgerPath || null,
+        sha256: report.ledgerSha256 || null,
+      },
+      importerManifest: manifestRef,
+      importerResultSummary: importerSummaryRef,
+    },
+    proofEnvelope: {
+      path: proofRef?.path || null,
+      sha256: proofRef?.sha256 || null,
+      contractComplete: report.proofEnvelope?.contractComplete === true,
+    },
+    nextCommand: nextQueueCommand(report),
+  };
+}
+
 function runBatch(options, cwd = process.cwd()) {
   if (options.batch !== true) {
     throw new Error("--batch is required for generic repo queue batch mode.");
@@ -1162,6 +1354,7 @@ function runBatch(options, cwd = process.cwd()) {
   );
 
   writeJson(reportPath, report);
+  attachQueueProof(report, targetRepo);
   if (!report.ok) {
     throw new QueueSupervisorError(
       policyBlockers.length > 0
@@ -1188,6 +1381,8 @@ function buildPlan(options, cwd = process.cwd()) {
   assertRequiredLedgerShape(ledger);
   const targetRepo = resolveTargetRepo(cwd, ledger, options);
   const ledgerHash = sha256File(ledgerPath);
+  const runId = planRunId(options, ledgerHash, maxItems);
+  const reportPath = planReportPath(targetRepo, options, runId);
   const context = contextBlockers(options);
   const changedPaths = gitChangedPaths(targetRepo);
   const selection = selectQueuedSafeCandidates(ledger, maxItems);
@@ -1223,6 +1418,8 @@ function buildPlan(options, cwd = process.cwd()) {
     ok: blockers.length === 0,
     status: blockers.length === 0 ? "plan_only_ready" : "blocked",
     mode: "plan-only",
+    runId,
+    reportPath: normalizeRepoPath(path.relative(targetRepo, reportPath)),
     ledgerPath: normalizeRepoPath(path.relative(targetRepo, ledgerPath)),
     ledgerSha256: ledgerHash,
     targetRepo,
@@ -1287,14 +1484,20 @@ function buildPlan(options, cwd = process.cwd()) {
     createdAt: new Date().toISOString(),
   };
 
+  writeJson(reportPath, report);
+  attachQueueProof(report, targetRepo);
   if (!report.ok) {
     throw new QueueSupervisorError(blockers.map((entry) => entry.code).join("; "), report);
   }
   return report;
 }
 
-function printResult(report, asJson) {
-  if (asJson) {
+function printResult(report, outputMode) {
+  if (outputMode === "compact-json") {
+    process.stdout.write(boundedParentOutput(compactQueueParentOutput(report, report.targetRepo), "queue-parent-output", PARENT_OUTPUT_MAX_BYTES));
+    return;
+  }
+  if (outputMode === "json") {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     return;
   }
@@ -1313,19 +1516,19 @@ function printResult(report, asJson) {
 }
 
 async function main() {
-  let asJson = false;
+  let outputMode = "text";
   try {
     const options = parseArgs(process.argv.slice(2));
-    asJson = options.json === true;
+    outputMode = options.compactJson === true ? "compact-json" : options.json === true ? "json" : "text";
     if (options.help) {
       process.stdout.write(HELP.trimStart());
       return;
     }
     const report = options.batch === true ? runBatch(options, REPO_ROOT) : buildPlan(options, REPO_ROOT);
-    printResult(report, asJson);
+    printResult(report, outputMode);
   } catch (error) {
-    if (error instanceof QueueSupervisorError && error.report && asJson) {
-      process.stdout.write(`${JSON.stringify(error.report, null, 2)}\n`);
+    if (error instanceof QueueSupervisorError && error.report && (outputMode === "json" || outputMode === "compact-json")) {
+      printResult(error.report, outputMode);
     }
     console.error(error.message);
     process.exitCode = 1;

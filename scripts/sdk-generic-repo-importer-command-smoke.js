@@ -34,6 +34,21 @@ function parseJson(result) {
   return JSON.parse(result.stdout);
 }
 
+function assertNoParentFacingRuntimeLeak(text) {
+  for (const forbidden of [
+    '"items"',
+    '"runList"',
+    '"tickets"',
+    '"prompt"',
+    '"stdout"',
+    '"stderr"',
+    '"transcript"',
+    '"runtimeState"'
+  ]) {
+    assert(!text.includes(forbidden), `parent-facing output leaked ${forbidden}`);
+  }
+}
+
 function createTempFixture(name) {
   const parent = path.resolve(os.tmpdir());
   const root = fs.mkdtempSync(path.join(parent, `generic-importer-${name}-`));
@@ -1100,6 +1115,35 @@ function assertSuccessfulImplementationChildRunFixture() {
   }
 }
 
+function assertCompactImporterParentOutputExcludesRuntimeState() {
+  const fixture = createTempFixture("compact-parent");
+  try {
+    const runId = "aux021-compact-parent";
+    const { manifestPath } = prepareImplementationWorktreeFixture(fixture, runId);
+    const binDir = writeFakeCodex(fixture.root);
+    const result = run(
+      ["--manifest", manifestPath, "--run-implementation-child-runs", "--compact-json"],
+      repo,
+      fakeCodexEnv(binDir, "success", "scripts/imported-tools/tool-tool.js"),
+    );
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    assert(result.stdout.length < 8192, `compact importer output too large: ${result.stdout.length}`);
+    assertNoParentFacingRuntimeLeak(result.stdout);
+    const output = JSON.parse(result.stdout);
+    assert.strictEqual(output.schema, "generic-repo-tool-importer.parent-compact-output.v1");
+    assert.strictEqual(output.ok, true);
+    assert.strictEqual(output.status, "stopped_after_implementation_child_runs");
+    assert.strictEqual(output.proofEnvelope.contractComplete, true);
+    assert(output.artifacts.proofEnvelope.path.endsWith("proof-envelope.json"));
+    assert(output.artifacts.resultSummary.path.endsWith("result-summary.json"));
+    assert(output.artifacts.artifactHashManifest.path.endsWith("proof-artifact-hashes.json"));
+    assert(fs.existsSync(path.join(fixture.target, output.artifacts.proofEnvelope.path)));
+    assert(fs.existsSync(path.join(fixture.target, output.artifacts.resultSummary.path)));
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertImplementationChildRunMissingIntentFixture() {
   const fixture = createTempFixture("implementation-child-missing-intent");
   try {
@@ -2085,6 +2129,7 @@ function main() {
   assertImplementationWorktreeRunOwnedPathFixture();
   assertImplementationWorktreeResumeFixture();
   assertSuccessfulImplementationChildRunFixture();
+  assertCompactImporterParentOutputExcludesRuntimeState();
   assertImplementationChildRunMissingIntentFixture();
   assertImplementationChildRunUnplannedPathFixture();
   assertImplementationChildRunDirtyWorktreeFixture();

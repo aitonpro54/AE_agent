@@ -14,14 +14,27 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
+import {
+  artifactRef,
+  assertRequiredProofHashes,
+  boundedParentOutput,
+  compactBlockers,
+  compactList,
+  writeBoundedJsonArtifact,
+} from "./parent-proof-contract.mjs";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..");
 const IMPORTER_ROOT_RELATIVE = ".codex-runtime/sdk/generic-repo-importer";
 const SUPERVISOR_ROOT_RELATIVE = ".codex-runtime/sdk/generic-repo-importer-supervisor";
 const STATUS_SCHEMA = "generic-repo-importer-supervisor.status.v1";
 const STATE_SCHEMA = "generic-repo-importer-supervisor.state.v1";
+const PROOF_ENVELOPE_SCHEMA = "generic-repo-importer-supervisor.proof-envelope.v1";
+const PARENT_OUTPUT_SCHEMA = "generic-repo-importer-supervisor.parent-compact-output.v1";
 const AUXILIARY_ID = "AUX-025";
 const DEFAULT_LIVE_TIMEOUT_MS = 45000;
+const PROOF_ENVELOPE_MAX_BYTES = 32 * 1024;
+const PARENT_OUTPUT_MAX_BYTES = 32 * 1024;
 
 const DEPENDENCY_PATHS = new Set([
   "package.json",
@@ -41,6 +54,7 @@ Generic repository importer supervisor mission shell
 Usage:
   node orchestrator/run-generic-repo-importer-supervisor.mjs --run-id <id> --status
   node orchestrator/run-generic-repo-importer-supervisor.mjs --state <path> --status --json
+  node orchestrator/run-generic-repo-importer-supervisor.mjs --state <path> --status --compact-json
   node orchestrator/run-generic-repo-importer-supervisor.mjs --run-id <id> --closeout --inspect-live --write-handoff
 
 Options:
@@ -60,7 +74,8 @@ Options:
                          Permit --live-command execution after generated-only/OpenAI CLI policy checks.
   --closeout            Stop at the current reviewable closeout gate and record live unavailable/pass evidence.
   --write-handoff       Update .codex/handoff.md in the target repo with compact mission state.
-  --json                Print machine-readable output.
+  --json                Print full machine-readable output for local debug.
+  --compact-json        Print bounded parent-facing output with proof refs.
   --help                Show this help.
 
 The supervisor is a small durable shell for existing importer runs. It does not
@@ -84,6 +99,7 @@ const BOOLEAN_OPTIONS = new Set([
   "allow-generated-live",
   "allow-ancestor-head-drift",
   "closeout",
+  "compact-json",
   "help",
   "inspect-live",
   "json",
@@ -882,6 +898,126 @@ Commit еще не создан этим handoff. Создать один review
   return normalizeRepoPath(path.relative(targetRepo, handoffPath));
 }
 
+function supervisorStatusReportPath(report) {
+  return path.join(report.targetRepo, report.supervisorRunRoot, "status-report.json");
+}
+
+function nextSupervisorCommand(report) {
+  const base = [
+    "node orchestrator/run-generic-repo-importer-supervisor.mjs",
+    `--run-id ${report.runId}`,
+  ];
+  if (report.nextAction?.safeAction === "run_closeout_without_live") {
+    base.push("--closeout");
+  } else {
+    base.push("--status");
+  }
+  base.push("--compact-json");
+  return base.join(" ");
+}
+
+function buildSupervisorProofEnvelope(report, runtime) {
+  const targetRepo = report.targetRepo;
+  const statusRef = artifactRef(targetRepo, runtime.statusReportPath);
+  const shellRef = artifactRef(targetRepo, runtime.statePath);
+  const importerRef = artifactRef(targetRepo, path.resolve(targetRepo, report.importerStatePath));
+  const manifestRef = artifactRef(targetRepo, path.resolve(targetRepo, report.importerManifestPath));
+  const nonLiveRef = artifactRef(targetRepo, path.resolve(targetRepo, report.validation.nonLiveReportPath));
+  const envelope = {
+    schema: PROOF_ENVELOPE_SCHEMA,
+    runId: report.runId,
+    mission: report.mission,
+    status: report.status,
+    ok: report.ok === true,
+    currentPhase: report.currentPhase,
+    nextPhase: report.nextPhase,
+    contractComplete: false,
+    statusReportPath: statusRef?.path || null,
+    statusReportSha256: statusRef?.sha256 || null,
+    shellStatePath: shellRef?.path || null,
+    shellStateSha256: shellRef?.sha256 || null,
+    importerStatePath: importerRef?.path || null,
+    importerStateSha256: importerRef?.sha256 || null,
+    importerManifestPath: manifestRef?.path || null,
+    importerManifestSha256: manifestRef?.sha256 || null,
+    nonLiveReportPath: nonLiveRef?.path || null,
+    nonLiveReportSha256: nonLiveRef?.sha256 || null,
+    blockerCount: Array.isArray(report.blockers) ? report.blockers.length : 0,
+    ownedDirtyPathCount: Array.isArray(report.ownedDirtyPaths) ? report.ownedDirtyPaths.length : 0,
+    liveAcceptanceStatus: report.liveAcceptance?.status || null,
+    nextCommand: nextSupervisorCommand(report),
+    createdAt: new Date().toISOString(),
+  };
+  const required = ["statusReportSha256", "shellStateSha256", "importerStateSha256", "importerManifestSha256", "nonLiveReportSha256"];
+  if (report.ok === true) {
+    return assertRequiredProofHashes(envelope, required, "importer-supervisor-proof-envelope");
+  }
+  envelope.missingRequiredHashes = required.filter((field) => {
+    const value = envelope[field];
+    return typeof value !== "string" || value.length === 0;
+  });
+  envelope.contractComplete = false;
+  return envelope;
+}
+
+function attachSupervisorProof(report, runtime) {
+  const proofPath = path.join(runtime.absolute, "proof-envelope.json");
+  const envelope = buildSupervisorProofEnvelope(report, runtime);
+  const written = writeBoundedJsonArtifact(proofPath, envelope, PROOF_ENVELOPE_MAX_BYTES, "importer-supervisor-proof-envelope");
+  report.proofEnvelope = {
+    contractComplete: envelope.contractComplete === true,
+    path: normalizeRepoPath(path.relative(report.targetRepo, proofPath)),
+    sha256: written.sha256,
+  };
+  return report;
+}
+
+function compactSupervisorParentOutput(report, runtime) {
+  const targetRepo = report.targetRepo;
+  const statusRef = artifactRef(targetRepo, runtime?.statusReportPath || supervisorStatusReportPath(report));
+  const proofPath = runtime?.absolute
+    ? path.join(runtime.absolute, "proof-envelope.json")
+    : path.join(targetRepo, report.supervisorRunRoot, "proof-envelope.json");
+  const proofRef = artifactRef(targetRepo, proofPath);
+  return {
+    schema: PARENT_OUTPUT_SCHEMA,
+    ok: report.ok === true,
+    status: report.status,
+    mission: report.mission,
+    runId: report.runId,
+    currentPhase: report.currentPhase,
+    nextPhase: report.nextPhase,
+    validation: {
+      status: report.validation?.status || null,
+      snapshotStatus: report.validation?.snapshotStatus || null,
+    },
+    counts: {
+      blockers: Array.isArray(report.blockers) ? report.blockers.length : 0,
+      changedPaths: Array.isArray(report.changedPaths) ? report.changedPaths.length : 0,
+      dependencyDirtyPaths: Array.isArray(report.dependencyDirtyPaths) ? report.dependencyDirtyPaths.length : 0,
+      ownedDirtyPaths: Array.isArray(report.ownedDirtyPaths) ? report.ownedDirtyPaths.length : 0,
+      unownedDirtyPaths: Array.isArray(report.unownedDirtyPaths) ? report.unownedDirtyPaths.length : 0,
+    },
+    ownedDirtyPaths: compactList(report.ownedDirtyPaths),
+    blockers: compactBlockers(report.blockers),
+    liveAcceptance: {
+      status: report.liveAcceptance?.status || null,
+      policyStatus: report.liveAcceptance?.policyStatus || null,
+    },
+    artifacts: {
+      statusReport: statusRef,
+      proofEnvelope: proofRef,
+    },
+    proofEnvelope: {
+      path: proofRef?.path || null,
+      sha256: proofRef?.sha256 || null,
+      contractComplete: report.proofEnvelope?.contractComplete === true,
+    },
+    nextAction: report.nextAction || null,
+    nextCommand: nextSupervisorCommand(report),
+  };
+}
+
 export function runSupervisor(options, cwd = process.cwd()) {
   const run = resolveRunContext(options, cwd);
   const runtime = createRuntime(run.targetRepo, run.runId, options);
@@ -894,6 +1030,7 @@ export function runSupervisor(options, cwd = process.cwd()) {
     writeJson(runtime.statusReportPath, report);
     writeSupervisorState(runtime, report);
   }
+  attachSupervisorProof(report, runtime);
   appendEvent(runtime, {
     blockers: report.blockers.map((entry) => entry.code),
     event: "supervisor_completed",
@@ -906,8 +1043,12 @@ export function runSupervisor(options, cwd = process.cwd()) {
   return report;
 }
 
-function printResult(report, asJson) {
-  if (asJson) {
+function printResult(report, outputMode, runtime = null) {
+  if (outputMode === "compact-json") {
+    process.stdout.write(boundedParentOutput(compactSupervisorParentOutput(report, runtime), "importer-supervisor-parent-output", PARENT_OUTPUT_MAX_BYTES));
+    return;
+  }
+  if (outputMode === "json") {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     return;
   }
@@ -921,10 +1062,10 @@ function printResult(report, asJson) {
 }
 
 async function main() {
-  let asJson = false;
+  let outputMode = "text";
   try {
     const options = parseArgs(process.argv.slice(2));
-    asJson = options.json === true;
+    outputMode = options.compactJson === true ? "compact-json" : options.json === true ? "json" : "text";
     if (options.help) {
       process.stdout.write(HELP.trimStart());
       return;
@@ -933,10 +1074,10 @@ async function main() {
       options.status = true;
     }
     const report = runSupervisor(options);
-    printResult(report, asJson);
+    printResult(report, outputMode);
   } catch (error) {
-    if (error instanceof SupervisorError && error.report && asJson) {
-      process.stdout.write(`${JSON.stringify(error.report, null, 2)}\n`);
+    if (error instanceof SupervisorError && error.report && (outputMode === "json" || outputMode === "compact-json")) {
+      printResult(error.report, outputMode);
     }
     console.error(error.message);
     process.exitCode = 1;

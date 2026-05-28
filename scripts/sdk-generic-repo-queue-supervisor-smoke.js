@@ -34,6 +34,23 @@ function parseJson(result) {
   return JSON.parse(result.stdout);
 }
 
+function assertNoParentFacingRuntimeLeak(text) {
+  for (const forbidden of [
+    '"items"',
+    '"runList"',
+    '"tickets"',
+    '"prompt"',
+    '"stdout"',
+    '"stderr"',
+    '"transcript"',
+    '"runtimeState"',
+    "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH",
+    "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+  ]) {
+    assert(!text.includes(forbidden), `parent-facing output leaked ${forbidden}`);
+  }
+}
+
 function parseBlockedJson(result, code) {
   assert.notStrictEqual(result.status, 0, result.stderr || result.stdout);
   const output = JSON.parse(result.stdout);
@@ -513,6 +530,56 @@ function assertBatchReportDoesNotEmbedHugeImporterOutput() {
   }
 }
 
+function assertCompactBatchParentOutputExcludesNestedRuntimeState() {
+  const fixture = createFixture("batch-compact-parent");
+  try {
+    const eligiblePath = "scripts/imported-tools/tool-layers-replace-text-in-layer-name.js";
+    const ledgerPath = writeLedger(
+      fixture,
+      validLedger(fixture, [
+        entry({
+          implementation: {
+            sliceId: null,
+            plannedPaths: [eligiblePath],
+          },
+        }),
+      ]),
+    );
+    const binDir = writeFakeCodex(fixture.root);
+    const result = run(
+      [
+        "--batch",
+        "--ledger",
+        ledgerPath,
+        "--target-repo",
+        fixture.target,
+        "--max-items",
+        "1",
+        "--run-id",
+        "compact-parent",
+        "--compact-json",
+      ],
+      repo,
+      { ...fakeCodexEnv(binDir), FAKE_CODEX_HUGE_STDOUT: "1" },
+    );
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    assert(result.stdout.length < 8192, `compact queue output too large: ${result.stdout.length}`);
+    assertNoParentFacingRuntimeLeak(result.stdout);
+    const output = JSON.parse(result.stdout);
+    assert.strictEqual(output.schema, "generic-repo-queue-supervisor.parent-compact-output.v1");
+    assert.strictEqual(output.ok, true);
+    assert.strictEqual(output.counts.imported, 1);
+    assert.strictEqual(output.proofEnvelope.contractComplete, true);
+    assert(output.artifacts.sourceReport.path.endsWith("batch-report.json"));
+    assert(output.artifacts.proofEnvelope.path.endsWith("proof-envelope.json"));
+    assert(output.artifacts.importerResultSummary.path.endsWith("result-summary.json"));
+    assert(fs.existsSync(path.join(fixture.target, output.artifacts.sourceReport.path)));
+    assert(fs.existsSync(path.join(fixture.target, output.artifacts.proofEnvelope.path)));
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertBatchAllBlockedWritesReportWithoutFailure() {
   const fixture = createFixture("batch-all-blocked");
   try {
@@ -632,9 +699,10 @@ function main() {
   assertMissingLedgerFieldsFailClosed();
   assertUnsafeRankedClassificationFailsClosed();
   assertRequiredLiveLaneMissingFailsClosed();
-  assertBatchRecordsMissingLiveLaneAndContinues();
-  assertBatchReportDoesNotEmbedHugeImporterOutput();
-  assertBatchAllBlockedWritesReportWithoutFailure();
+assertBatchRecordsMissingLiveLaneAndContinues();
+assertBatchReportDoesNotEmbedHugeImporterOutput();
+assertCompactBatchParentOutputExcludesNestedRuntimeState();
+assertBatchAllBlockedWritesReportWithoutFailure();
   assertForbiddenCandidatePathsFailClosed();
   assertContextPressureFailsClosed();
   assertLocalOllamaPolicyFailsClosed();

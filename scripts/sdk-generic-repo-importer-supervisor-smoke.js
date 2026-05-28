@@ -34,6 +34,21 @@ function parseJson(result) {
   return JSON.parse(result.stdout);
 }
 
+function assertNoParentFacingRuntimeLeak(text) {
+  for (const forbidden of [
+    '"items"',
+    '"runList"',
+    '"tickets"',
+    '"prompt"',
+    '"stdout"',
+    '"stderr"',
+    '"transcript"',
+    '"runtimeState"'
+  ]) {
+    assert(!text.includes(forbidden), `parent-facing output leaked ${forbidden}`);
+  }
+}
+
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
@@ -186,6 +201,27 @@ function assertStatusInspection() {
   }
 }
 
+function assertCompactStatusInspection() {
+  const fixture = createFixture("compact-status");
+  try {
+    const result = run(["--state", fixture.statePath, "--status", "--session-id", "compact-status-fixture", "--compact-json"], fixture.target);
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    assert(result.stdout.length < 8192, `compact supervisor output too large: ${result.stdout.length}`);
+    assertNoParentFacingRuntimeLeak(result.stdout);
+    const output = JSON.parse(result.stdout);
+    assert.strictEqual(output.schema, "generic-repo-importer-supervisor.parent-compact-output.v1");
+    assert.strictEqual(output.ok, true);
+    assert.strictEqual(output.validation.status, "passed");
+    assert.strictEqual(output.proofEnvelope.contractComplete, true);
+    assert(output.artifacts.statusReport.path.endsWith("status-report.json"));
+    assert(output.artifacts.proofEnvelope.path.endsWith("proof-envelope.json"));
+    assert(fs.existsSync(path.join(fixture.target, output.artifacts.statusReport.path)));
+    assert(fs.existsSync(path.join(fixture.target, output.artifacts.proofEnvelope.path)));
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertDirtyUnownedFailsClosed() {
   const fixture = createFixture("dirty-unowned");
   try {
@@ -279,6 +315,7 @@ function assertAncestorHeadDriftGate() {
 }
 
 assertStatusInspection();
+assertCompactStatusInspection();
 assertDirtyUnownedFailsClosed();
 assertMissingReportFailsClosed();
 assertStaleReportFailsClosed();

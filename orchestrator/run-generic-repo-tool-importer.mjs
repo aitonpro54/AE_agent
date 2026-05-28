@@ -17,6 +17,16 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
+import {
+  artifactRef,
+  assertRequiredProofHashes,
+  boundedParentOutput,
+  compactList,
+  sha256Json,
+  writeBoundedJsonArtifact,
+  writeJsonArtifact,
+} from "./parent-proof-contract.mjs";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..");
 const CONTRACT_PATH = ".codex-audit/sdk-generic-repo-importer/aux-014-generic-repo-importer-contract.json";
@@ -31,6 +41,8 @@ const CONTROLLED_SOURCE_MERGE_SCHEMA = "generic-repo-tool-importer.controlled-so
 const NON_LIVE_VALIDATION_SCHEMA = "generic-repo-tool-importer.non-live-validation.v1";
 const MERGE_PLAN_SCHEMA = "generic-repo-tool-importer.merge-plan.v1";
 const LIVE_QUEUE_PLAN_SCHEMA = "generic-repo-tool-importer.live-queue-plan.v1";
+const PROOF_ENVELOPE_SCHEMA = "generic-repo-tool-importer.proof-envelope.v1";
+const PARENT_OUTPUT_SCHEMA = "generic-repo-tool-importer.parent-compact-output.v1";
 const ANALYSIS_ARTIFACTS = Object.freeze([
   "analysis/repo-fingerprint.json",
   "analysis/risk-map.json",
@@ -78,6 +90,8 @@ const DEPENDENCY_PATHS = new Set([
 const TEXT_FILE_MAX_BYTES = 256 * 1024;
 const CHILD_RUN_OUTPUT_MAX_BUFFER_BYTES = 2 * 1024 * 1024;
 const CHILD_RUN_SUMMARY_MAX_BYTES = 64 * 1024;
+const PROOF_ENVELOPE_MAX_BYTES = 32 * 1024;
+const PARENT_OUTPUT_MAX_BYTES = 32 * 1024;
 const RESULT_SUMMARY_MAX_ARTIFACT_PATHS = 200;
 const DEFAULT_CHILD_RUN_TIMEOUT_MS = 10 * 60 * 1000;
 const MAX_CHILD_RUN_TIMEOUT_MS = 30 * 60 * 1000;
@@ -99,6 +113,7 @@ Usage:
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --plan-merge
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --plan-live-queue
   node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --json
+  node orchestrator/run-generic-repo-tool-importer.mjs --manifest <path> --compact-json
 
 Options:
   --manifest <path>  generic-repo-tool-importer.manifest.v1 JSON file.
@@ -129,7 +144,8 @@ Options:
                       then stop before applying changes or live validation.
   --plan-live-queue Run the AUX-019 fixture-only serial live queue evidence
                      planner, then stop before live AE/CEP execution.
-  --json             Print machine-readable output.
+  --json             Print full machine-readable output for local debug.
+  --compact-json     Print bounded parent-facing output with proof refs.
   --help             Show this help.
 
 This skeleton validates the AUX-014 manifest contract, creates an ignored run
@@ -145,6 +161,7 @@ files outside planned paths, push, create PRs, or trigger GitHub automation.
 const VALUE_OPTIONS = new Set(["manifest"]);
 const BOOLEAN_OPTIONS = new Set([
   "help",
+  "compact-json",
   "json",
   "run-analysis",
   "plan-implementation",
@@ -4718,6 +4735,158 @@ function importerResultSummary(result, artifacts) {
   };
 }
 
+function nextImporterCommand(result) {
+  const manifestPath = result.manifestPath || null;
+  if (!manifestPath) return null;
+  const phaseFlagByNextPhase = {
+    analysis: "--run-analysis",
+    implementation_planning: "--plan-implementation",
+    implementation_worktrees: "--run-implementation-worktrees",
+    implementation_child_runs: "--run-implementation-child-runs",
+    controlled_merge: "--apply-controlled-merge",
+    non_live_validation: "--run-non-live-validation",
+    live_queue_planning: "--plan-live-queue",
+  };
+  const flag = phaseFlagByNextPhase[result.nextPhase];
+  if (!flag) {
+    return null;
+  }
+  return `node orchestrator/run-generic-repo-tool-importer.mjs --manifest ${normalizeRepoPath(manifestPath)} ${flag} --compact-json`;
+}
+
+function buildArtifactHashManifest({ artifacts, result, runRoot, targetRepo }) {
+  const entries = artifacts.map((relativePath) => {
+    const absolute = path.join(runRoot, relativePath);
+    const ref = artifactRef(targetRepo, absolute);
+    return {
+      path: ref?.path || normalizeRepoPath(path.relative(targetRepo, absolute)),
+      bytes: ref?.bytes || null,
+      sha256: ref?.sha256 || null,
+    };
+  });
+  return {
+    schema: "generic-repo-tool-importer.proof-artifact-hashes.v1",
+    runId: result.runId,
+    status: result.status,
+    currentPhase: result.currentPhase,
+    nextPhase: result.nextPhase,
+    artifactCount: entries.length,
+    missingArtifactCount: entries.filter((entry) => !entry.sha256).length,
+    entries,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function attachImporterProof({ artifacts, result, runRoot, summaryPath, targetRepo }) {
+  const hashManifestPath = path.join(runRoot, "proof-artifact-hashes.json");
+  const hashManifest = buildArtifactHashManifest({ artifacts, result, runRoot, targetRepo });
+  writeJsonArtifact(hashManifestPath, hashManifest);
+  if (hashManifest.missingArtifactCount > 0) {
+    throw new Error(
+      `importer-proof-missing-artifacts:${hashManifest.entries
+        .filter((entry) => !entry.sha256)
+        .slice(0, 12)
+        .map((entry) => entry.path)
+        .join(",")}`,
+    );
+  }
+  const stateRef = artifactRef(targetRepo, path.join(runRoot, "state.json"));
+  const manifestRef = artifactRef(targetRepo, path.join(runRoot, "manifest.normalized.json"));
+  const summaryRef = artifactRef(targetRepo, summaryPath);
+  const hashManifestRef = artifactRef(targetRepo, hashManifestPath);
+  const envelope = assertRequiredProofHashes(
+    {
+      schema: PROOF_ENVELOPE_SCHEMA,
+      runId: result.runId,
+      status: result.status,
+      currentPhase: result.currentPhase,
+      nextPhase: result.nextPhase,
+      contractComplete: false,
+      durableStatePath: stateRef?.path || null,
+      durableStateSha256: stateRef?.sha256 || null,
+      manifestPath: manifestRef?.path || null,
+      manifestSha256: manifestRef?.sha256 || null,
+      resultSummaryPath: summaryRef?.path || null,
+      resultSummarySha256: summaryRef?.sha256 || null,
+      artifactHashManifestPath: hashManifestRef?.path || null,
+      artifactHashManifestSha256: hashManifestRef?.sha256 || null,
+      artifactCount: artifacts.length,
+      artifactSetSha256: sha256Json(hashManifest.entries.map((entry) => ({ path: entry.path, sha256: entry.sha256 }))),
+      nonLiveValidationComplete: result.nonLiveValidationComplete === true,
+      validationCommandsRun: result.validationCommandsRun === true,
+      liveCepAeRun: result.liveCepAeRun === true,
+      localOllamaUsed: result.localOllamaUsed === true,
+      fallbackProviderUsed: result.fallbackProviderUsed === true,
+      nextCommand: nextImporterCommand(result),
+      createdAt: new Date().toISOString(),
+    },
+    ["durableStateSha256", "manifestSha256", "resultSummarySha256", "artifactHashManifestSha256", "artifactSetSha256"],
+    "importer-proof-envelope",
+  );
+  const proofPath = path.join(runRoot, "proof-envelope.json");
+  const written = writeBoundedJsonArtifact(proofPath, envelope, PROOF_ENVELOPE_MAX_BYTES, "importer-proof-envelope");
+  result.proofEnvelopePath = proofPath;
+  result.proofEnvelopeSha256 = written.sha256;
+  result.proofEnvelopeContractComplete = envelope.contractComplete === true;
+  result.artifactHashManifestPath = hashManifestPath;
+  result.artifactHashManifestSha256 = hashManifestRef?.sha256 || null;
+  return envelope;
+}
+
+function compactImporterParentOutput(result) {
+  const targetRepo = result.targetRepo;
+  const proofRef = artifactRef(targetRepo, result.proofEnvelopePath);
+  const summaryRef = artifactRef(targetRepo, result.resultSummaryPath);
+  const manifestRef = artifactRef(targetRepo, result.manifestPath);
+  const hashManifestRef = artifactRef(targetRepo, result.artifactHashManifestPath);
+  return {
+    schema: PARENT_OUTPUT_SCHEMA,
+    ok: true,
+    runId: result.runId,
+    status: result.status,
+    currentPhase: result.currentPhase,
+    nextPhase: result.nextPhase,
+    resumed: result.resumed === true,
+    counts: {
+      artifactCount: Array.isArray(result.artifacts) ? result.artifacts.length : 0,
+      validationCommandsRun: result.validationCommandsRun === true ? 1 : 0,
+    },
+    phaseFlags: {
+      analysisCompleted: result.analysisCompleted === true,
+      implementationPlanned: result.implementationPlanned === true,
+      implementationWorktreesReady: result.implementationWorktreesReady === true,
+      implementationChildRunsComplete: result.implementationChildRunsComplete === true,
+      sourceMerged: result.sourceMerged === true,
+      nonLiveValidationComplete: result.nonLiveValidationComplete === true,
+      mergePlanned: result.mergePlanned === true,
+      liveQueuePlanned: result.liveQueuePlanned === true,
+    },
+    safetyFlags: {
+      branchCreated: result.branchCreated === true,
+      childRunsCreated: result.childRunsCreated === true,
+      controlledMergeApplied: result.controlledMergeApplied === true,
+      fallbackProviderUsed: result.fallbackProviderUsed === true,
+      liveCepAeRun: result.liveCepAeRun === true,
+      localOllamaUsed: result.localOllamaUsed === true,
+      sourceMergeApplied: result.sourceMergeApplied === true,
+      worktreesCreated: result.worktreesCreated === true,
+    },
+    selectedArtifactPaths: compactList([]),
+    artifacts: {
+      proofEnvelope: proofRef,
+      resultSummary: summaryRef,
+      manifest: manifestRef,
+      artifactHashManifest: hashManifestRef,
+    },
+    proofEnvelope: {
+      path: proofRef?.path || null,
+      sha256: proofRef?.sha256 || null,
+      contractComplete: result.proofEnvelopeContractComplete === true,
+    },
+    nextCommand: nextImporterCommand(result),
+  };
+}
+
 export function runImporter(options, cwd = process.cwd()) {
   if (!options.manifest) {
     throw new Error("Missing --manifest <path>");
@@ -4867,6 +5036,7 @@ export function runImporter(options, cwd = process.cwd()) {
     status,
     resumed,
     manifestHash,
+    manifestPath: state.manifestPath || path.join(runRoot, "manifest.normalized.json"),
     targetRepo,
     runRoot,
     artifacts,
@@ -4897,9 +5067,10 @@ export function runImporter(options, cwd = process.cwd()) {
   if (statSync(summaryPath).size > CHILD_RUN_SUMMARY_MAX_BYTES) {
     throw new Error(`importer-result-summary-too-large: ${statSync(summaryPath).size}`);
   }
+  result.resultSummaryPath = summaryPath;
+  attachImporterProof({ artifacts, result, runRoot, summaryPath, targetRepo });
   return {
     ...result,
-    resultSummaryPath: summaryPath,
   };
 }
 
@@ -4911,7 +5082,9 @@ async function main() {
       return;
     }
     const result = runImporter(options);
-    if (options.json) {
+    if (options["compact-json"]) {
+      process.stdout.write(boundedParentOutput(compactImporterParentOutput(result), "importer-parent-output", PARENT_OUTPUT_MAX_BYTES));
+    } else if (options.json) {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } else {
       process.stdout.write(`Generic repo importer skeleton initialized ${result.runId}; ${result.status}.\n`);
