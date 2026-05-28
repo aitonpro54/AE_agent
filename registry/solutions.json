@@ -3356,6 +3356,118 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "toggle-maintain-scale-expression-typed-plan",
+      "title": "Toggle Maintain Scale Expression Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "expressions",
+        "layers",
+        "properties",
+        "scale",
+        "maintain-scale",
+        "parent-scale",
+        "toggle-expression",
+        "selected-layers",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Toggle a bounded immediate-parent maintain-scale expression on selected layers' Transform > Scale properties, then read expression details back.",
+        "appliesWhen": [
+          "The user asks to toggle, turn on, turn off, or apply a maintain scale expression on selected layers' Scale properties.",
+          "Typed selected-layer Scale expression mutation is acceptable instead of source-exact selection side effects, expression deletion, nested parent-chain compensation, controller rigs, expression syntax repair, broad property scans, or raw JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedLayers",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_layers and get_layer_details evidence containing one or more selected layers with concrete layerIndex values and Transform > Scale expression state."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated Scale property is bound from current get_selected_layers and get_layer_details evidence before mutation.",
+        "Every target is clearly identified as the selected layer's Transform > Scale property with an exact propertyPath and expression-capable state.",
+        "The default safe expression text is a reviewed immediate-parent maintain-scale expression using parent.transform.scale with a try/catch fallback to value, represented with line breaks in the plan.",
+        "Toggle-on sets the reviewed maintain-scale expression with enabled:true when no expression exists or the same maintain-scale expression is currently disabled.",
+        "Toggle-off preserves the current maintain-scale expression text and sets enabled:false; it does not clear expression text.",
+        "Existing unrelated expressions are not overwritten or disabled unless the plan reports prior expression evidence and the user explicitly confirms replacement.",
+        "The workflow changes only expression text/enabled state on explicitly selected layers' Scale properties.",
+        "Layer transform values, names, sources, timing, effects, masks, keyframes, render queue items, selection state and unselected layers are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/toggle-maintain-scale-expression-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details",
+          "set_expression"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected-layer and Scale expression evidence, toggle the reviewed maintain-scale expression on each explicit Transform > Scale target, then read layer/property expression details back.",
+        "steps": [
+          "Run get_active_comp, get_selected_layers and get_layer_details before mutation to capture active comp identity, selected layerIndex values, exact Transform > Scale propertyPath values, current expression text and expressionEnabled state.",
+          "Fail closed when selected-layer evidence is empty, lacks concrete layerIndex targets, lacks Transform > Scale property evidence, is not expression-capable, or shows an unrelated existing expression that the user has not confirmed replacing.",
+          "Run one set_expression step per selected Scale property target with the reviewed maintain-scale expression and enabled:true when toggling on, or with the same current maintain-scale expression text and enabled:false when toggling off.",
+          "Run get_layer_details for every affected layer with expression/property detail read-back.",
+          "Fail closed if expression deletion, nested parent-chain compensation, separated-dimension handling, expression controllers, syntax repair, broad property scans, selection side effects or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies every concrete selected layer target and its Transform > Scale property path.",
+          "Each set_expression result reports the expected maintain-scale expression text, expected expressionEnabled state and no expressionError.",
+          "Post-run get_layer_details shows each affected selected layer's Scale property has the expected maintain-scale expression text and enabled state on the expected layer/property path.",
+          "Post-run evidence shows no keyframe, timing, effect, source, render queue, layer transform value, layer name, selection state or unselected layer mutation.",
+          "Unsupported expression deletion, unrelated-expression replacement, nested parent-chain compensation, expression controller setup, broad scans and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-expressions-toggle-maintain-scale-expression generic repository importer as advisory typed-plan coverage for selected-layer Scale maintain-expression toggle workflows.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed expression tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-28",
+          "from": "generic-repo-importer-tool-expressions-toggle-maintain-scale-expression",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Expressions/Toggle_Maintain_Scale_Expression.jsx into existing typed tools as selected-layer Transform > Scale set_expression guidance for toggling a reviewed immediate-parent maintain-scale expression; no source JSX copied. Current typed tools require current get_selected_layers and get_layer_details evidence, explicit Scale property paths, set_expression enabled:true/false toggle state and get_layer_details read-back; expression deletion, nested parent-chain compensation, expression controllers, syntax repair, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-layer evidence from get_selected_layers plus get_layer_details Scale expression evidence before mutating expression text or enabled state; do not infer targets from prior chat context.",
+        "Apply this recipe only to explicitly selected layers' Scale properties with exact Transform > Scale property-path evidence.",
+        "Use the reviewed immediate-parent parent.transform.scale maintain-scale expression exactly as disclosed in the plan unless a separate typed-tool contract covers a different expression.",
+        "Do not use clear_expression for toggle-off; preserve the current maintain-scale expression text and set enabled:false.",
+        "Do not overwrite or disable unrelated existing expressions unless prior expression evidence is surfaced and the user explicitly confirms replacement.",
+        "Require a separate typed-tool contract for nested parent-chain compensation, separated dimensions, controller rigs, expression syntax repair, broad property scans, selection side effects, expression deletion or exact source JSX semantics.",
+        "Do not use this recipe for expression clearing, keyframe edits, layer transform value edits, layer timing changes, effect edits, source relinking, render queue changes, layer parenting changes, selected-layer rename or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "disable-selected-expressions-typed-plan",
       "title": "Disable Selected Expressions Typed Plan",
       "status": "recipe",

@@ -32,6 +32,7 @@ const IMPORTED_ADVISORY_IDS = [
   "add-simple-loop-expression-typed-plan",
   "append-to-expression-typed-plan",
   "apply-maintain-stroke-width-expression-typed-plan",
+  "toggle-maintain-scale-expression-typed-plan",
   "disable-selected-expressions-typed-plan",
   "enable-selected-expressions-typed-plan",
   "find-all-expressions-typed-plan",
@@ -463,6 +464,36 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /stroke width properties/.test(note)), `${id}: notes must limit use to stroke width properties.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Apply_Maintain_Stroke_Width_Expression/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "toggle-maintain-scale-expression-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details", "set_expression"],
+        `${id}: imported toggle-maintain-scale workflow should stay on the narrow selected-layer Scale expression typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: toggle-maintain-scale expression workflow must be mutating.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("Transform > Scale"), `${id}: recipe should target the layer Scale property.`);
+      assert(text.includes("expression-capable"), `${id}: recipe should require expression-capable Scale evidence.`);
+      assert(text.includes("maintain-scale expression"), `${id}: recipe should preserve maintain-scale expression guidance.`);
+      assert(text.includes("parent.transform.scale"), `${id}: recipe should preserve parent scale compensation guidance.`);
+      assert(text.includes("set_expression"), `${id}: recipe should use the expression typed tool.`);
+      assert(text.includes("enabled:true"), `${id}: recipe should define toggle-on expression state.`);
+      assert(text.includes("enabled:false"), `${id}: recipe should define toggle-off expression state.`);
+      assert(text.includes("Do not use `clear_expression`"), `${id}: recipe should avoid expression clearing for toggle-off.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require expression read-back through layer details.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /Transform > Scale/.test(step)), `${id}: verification must target the Scale property.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_expression/.test(step)), `${id}: verification must include set_expression.`);
+      assert(solution.verificationRecipe.steps.some((step) => /enabled:true/.test(step) || /enabled:false/.test(step)), `${id}: verification must include toggle enabled state.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /maintain-scale expression/.test(item)), `${id}: verification must require maintain-scale expression result evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionEnabled/.test(item)), `${id}: verification must require expression enabled evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionError/.test(item)), `${id}: verification must require expression error evidence.`);
+      assert(solution.notes.some((note) => /selected-layer evidence/.test(note)), `${id}: notes must require selected-layer evidence.`);
+      assert(solution.notes.some((note) => /Scale properties/.test(note)), `${id}: notes must limit use to Scale properties.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Toggle_Maintain_Scale_Expression/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "disable-selected-expressions-typed-plan") {
       assert.deepStrictEqual(
@@ -1111,6 +1142,24 @@ function assertActualRetrieval(registry) {
   assert(maintainStrokeExpressionPromptSection.includes("transform.scale[0]"), "prompt section should preserve bounded x-scale compensation guidance.");
   assert(maintainStrokeExpressionPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
   assert(!/run_extendscript/i.test(maintainStrokeExpressionPromptSection), "maintain-stroke-width guidance should not recommend raw ExtendScript.");
+
+  const toggleMaintainScaleExpressionRetrieval = retrieveSolutionHints("Toggle the maintain scale expression on the selected layers' Transform Scale properties after inspecting the current Scale expression state; if the maintain-scale expression is already enabled turn it off, otherwise enable the parent transform scale compensation and read back expression details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(toggleMaintainScaleExpressionRetrieval.ok, true);
+  assert(ids(toggleMaintainScaleExpressionRetrieval).includes("toggle-maintain-scale-expression-typed-plan"), "toggle-maintain-scale advisory recipe should surface for selected layer Scale expression prompts.");
+  const toggleMaintainScaleExpressionPromptSection = formatSolutionHintsForPrompt(toggleMaintainScaleExpressionRetrieval);
+  assert(toggleMaintainScaleExpressionPromptSection.includes("Toggle Maintain Scale Expression Typed Plan"), "prompt section should include toggle-maintain-scale advisory title.");
+  assert(toggleMaintainScaleExpressionPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for toggle-maintain-scale workflows.");
+  assert(toggleMaintainScaleExpressionPromptSection.includes("Transform > Scale"), "prompt section should preserve Scale property target guidance.");
+  assert(toggleMaintainScaleExpressionPromptSection.includes("set_expression"), "prompt section should prefer set_expression for toggle-maintain-scale workflows.");
+  assert(toggleMaintainScaleExpressionPromptSection.includes("parent.transform.scale"), "prompt section should preserve parent scale compensation guidance.");
+  assert(toggleMaintainScaleExpressionPromptSection.includes("enabled:true"), "prompt section should preserve toggle-on guidance.");
+  assert(toggleMaintainScaleExpressionPromptSection.includes("enabled:false"), "prompt section should preserve toggle-off guidance.");
+  assert(toggleMaintainScaleExpressionPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
+  assert(!/run_extendscript/i.test(toggleMaintainScaleExpressionPromptSection), "toggle-maintain-scale guidance should not recommend raw ExtendScript.");
 
   const disableSelectedExpressionsRetrieval = retrieveSolutionHints("Disable the existing expressions on the selected properties after inspecting selected property expressions, but do not delete or clear the expression text; read back expression enabled state.", {
     registry,
