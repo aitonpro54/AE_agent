@@ -30,6 +30,7 @@ const IMPORTED_ADVISORY_IDS = [
   "rename-selected-layers-with-letters-typed-plan",
   "replace-text-in-layer-name-typed-plan",
   "add-simple-loop-expression-typed-plan",
+  "append-to-expression-typed-plan",
   "get-selected-layer-duration-typed-plan",
   "calculate-distance-between-layers-typed-plan",
   "layer-selection-get-typed-plan",
@@ -403,6 +404,32 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Simple_Loop_Expression/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "append-to-expression-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "set_expression", "get_layer_details"],
+        `${id}: imported append-to-expression workflow should stay on the narrow selected-property expression typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: append-to-expression workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+      assert(text.includes("expression-capable"), `${id}: recipe should require expression-capable property evidence.`);
+      assert(text.includes("set_expression"), `${id}: recipe should use the expression typed tool.`);
+      assert(text.includes("appendText"), `${id}: recipe should require explicit append text.`);
+      assert(text.includes("current expression evidence"), `${id}: recipe should require existing expression evidence.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require expression read-back through layer details.`);
+      assert(text.includes("Do not append to expressions without current expression evidence"), `${id}: recipe should guard existing expression reads.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /appendText/.test(step)), `${id}: verification must include appendText.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_expression/.test(step)), `${id}: verification must include set_expression.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /existing expression text/.test(item)), `${id}: verification must require existing expression evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /appended final expression/.test(item)), `${id}: verification must require appended expression evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionEnabled:true/.test(item)), `${id}: verification must require enabled expression evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionError/.test(item)), `${id}: verification must require expression error evidence.`);
+      assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Append_To_Expression/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "get-selected-layer-duration-typed-plan") {
       assert.deepStrictEqual(
@@ -915,6 +942,21 @@ function assertActualRetrieval(registry) {
   assert(simpleLoopExpressionPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
   assert(!/run_extendscript/i.test(simpleLoopExpressionPromptSection), "simple loop expression guidance should not recommend raw ExtendScript.");
 
+  const appendExpressionRetrieval = retrieveSolutionHints("Append this wiggle snippet to the existing expressions on the selected properties after inspecting selected property expressions, then read back expression details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(appendExpressionRetrieval.ok, true);
+  assert(ids(appendExpressionRetrieval).includes("append-to-expression-typed-plan"), "append-to-expression advisory recipe should surface for selected-property expression append prompts.");
+  const appendExpressionPromptSection = formatSolutionHintsForPrompt(appendExpressionRetrieval);
+  assert(appendExpressionPromptSection.includes("Append To Expression Typed Plan"), "prompt section should include append-to-expression advisory title.");
+  assert(appendExpressionPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for expression append workflows.");
+  assert(appendExpressionPromptSection.includes("set_expression"), "prompt section should prefer set_expression for expression append workflows.");
+  assert(appendExpressionPromptSection.includes("appendText"), "prompt section should preserve explicit appendText guidance.");
+  assert(appendExpressionPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
+  assert(!/run_extendscript/i.test(appendExpressionPromptSection), "append-to-expression guidance should not recommend raw ExtendScript.");
+
   const selectedLayerDurationRetrieval = retrieveSolutionHints("Tell me the duration in seconds of the selected layer after inspecting the selected layer timing.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -1154,6 +1196,7 @@ function assertActualRetrieval(registry) {
       letteredLayerName: ids(letteredLayerNameRetrieval),
       replaceLayerName: ids(replaceLayerNameRetrieval),
       simpleLoopExpression: ids(simpleLoopExpressionRetrieval),
+      appendExpression: ids(appendExpressionRetrieval),
       selectedLayerDuration: ids(selectedLayerDurationRetrieval),
       layerDistance: ids(layerDistanceRetrieval),
       layerSelectionGet: ids(layerSelectionGetRetrieval),

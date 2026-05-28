@@ -3135,6 +3135,116 @@
         "Require a separate typed-tool contract for loopIn, pingpong/offset/continue loop variants, keyframe creation, expression controllers, time-remap setup, broad property scans, selection side effects or exact source JSX semantics.",
         "Do not use this recipe for expression clearing, keyframe edits, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "append-to-expression-typed-plan",
+      "title": "Append To Expression Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "expressions",
+        "properties",
+        "append-expression",
+        "selected-properties",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Append explicit appendText to existing expressions on explicitly selected expression-capable properties, then read expression details back.",
+        "appliesWhen": [
+          "The user asks to append or add text/snippet to the existing expression on selected properties.",
+          "Typed selected-property expression mutation is acceptable instead of source-exact prompt behavior, selection side effects, broad property scans, expression syntax repair, controller rigs, or raw JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties evidence containing one or more expression-capable targets with concrete layerIndex, propertyPath, and current expression values."
+        },
+        {
+          "name": "appendText",
+          "type": "string",
+          "required": true,
+          "description": "Explicit non-empty expression snippet to append after the existing expression, with the final expression shown before confirmation."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated property is bound from current get_selected_properties evidence before mutation.",
+        "The append text is explicit, non-empty and shown in the dry-run plan together with the exact final expression.",
+        "The workflow appends to current expression text by computing previous expression plus an explicit separator plus appendText.",
+        "The workflow changes only expression text/enabled state on explicitly selected properties.",
+        "Layer names, sources, timing, effects, masks, keyframes, render queue items and unselected properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/append-to-expression-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "set_expression",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected property expression evidence, append explicit appendText by setting the computed final expression on each concrete target, then read layer/property expression details back.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation to capture active comp identity, selected property targets, layerIndex values, propertyPath values and current expression values.",
+          "Fail closed when selected-property evidence is empty, lacks layer/property path targets, is not expression-capable, lacks current expression evidence, or appendText is empty.",
+          "Compute each final expression from the cited existing expression plus an explicit separator plus appendText, and show previous/final expression text before confirmation.",
+          "Run one set_expression step per selected property target with the computed final expression, enabled true, the evidence-backed layerIndex and exact propertyPath.",
+          "Run get_layer_details for every affected layer with expression/property detail read-back.",
+          "Fail closed if source-exact prompt behavior, syntax repair, expression controllers, keyframe creation, broad property scans, expression clearing, selection side effects or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties identifies every concrete selected property target, its owning layer and its existing expression text.",
+          "Each set_expression result reports the expected appended final expression, expressionEnabled:true and no expressionError.",
+          "Post-run get_layer_details shows each affected property has the expected appended final expression enabled on the expected layer/property path.",
+          "Post-run evidence shows no keyframe, timing, effect, source, render queue, layer name or unselected property mutation.",
+          "Unsupported source-exact prompt behavior, syntax repair, expression controller setup, broad scans and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-expressions-append-to-expression generic repository importer as advisory typed-plan coverage for selected-property expression append workflows.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed expression tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-28",
+          "from": "generic-repo-importer-tool-expressions-append-to-expression",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Expressions/Append_To_Expression.jsx into existing typed tools as selected-property set_expression append guidance; no source JSX copied. Current typed tools require current get_selected_properties expression evidence, explicit appendText, computed final-expression disclosure and get_layer_details read-back; syntax repair, expression controllers, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties before mutating expression text; do not infer targets from prior chat context.",
+        "Require explicit appendText and show the exact final expression before confirmation.",
+        "Do not append to expressions without current expression evidence; do not replace the whole expression except with the cited previous-expression-plus-append result.",
+        "Require a separate typed-tool contract for source-exact prompt behavior, syntax repair, expression controllers, keyframe generation, broad property scans, selection side effects or exact source JSX semantics.",
+        "Do not use this recipe for expression clearing, keyframe edits, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
+      ]
     }
   ]
 }
