@@ -31,6 +31,7 @@ const IMPORTED_ADVISORY_IDS = [
   "replace-text-in-layer-name-typed-plan",
   "add-simple-loop-expression-typed-plan",
   "append-to-expression-typed-plan",
+  "apply-maintain-stroke-width-expression-typed-plan",
   "get-selected-layer-duration-typed-plan",
   "calculate-distance-between-layers-typed-plan",
   "layer-selection-get-typed-plan",
@@ -430,6 +431,34 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Append_To_Expression/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "apply-maintain-stroke-width-expression-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "set_expression", "get_layer_details"],
+        `${id}: imported maintain-stroke-width workflow should stay on the narrow selected-property expression typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: maintain-stroke-width expression workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+      assert(text.includes("stroke width"), `${id}: recipe should require stroke width property evidence.`);
+      assert(text.includes("expression-capable"), `${id}: recipe should require expression-capable property evidence.`);
+      assert(text.includes("set_expression"), `${id}: recipe should use the expression typed tool.`);
+      assert(text.includes("transform.scale[0]"), `${id}: recipe should preserve bounded x-scale compensation expression.`);
+      assert(text.includes("sx === 0 ? value : value / sx"), `${id}: recipe should preserve division-by-zero guard.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require expression read-back through layer details.`);
+      assert(text.includes("Do not overwrite an existing expression"), `${id}: recipe should guard existing expressions.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /stroke width/.test(step)), `${id}: verification must require stroke width identity evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_expression/.test(step)), `${id}: verification must include set_expression.`);
+      assert(solution.verificationRecipe.steps.some((step) => /maintain-stroke-width expression/.test(step)), `${id}: verification must require maintain-stroke-width expression text.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /maintain-stroke-width expression/.test(item)), `${id}: verification must require maintain-stroke-width expression result evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionEnabled:true/.test(item)), `${id}: verification must require enabled expression evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionError/.test(item)), `${id}: verification must require expression error evidence.`);
+      assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
+      assert(solution.notes.some((note) => /stroke width properties/.test(note)), `${id}: notes must limit use to stroke width properties.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Apply_Maintain_Stroke_Width_Expression/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "get-selected-layer-duration-typed-plan") {
       assert.deepStrictEqual(
@@ -956,6 +985,22 @@ function assertActualRetrieval(registry) {
   assert(appendExpressionPromptSection.includes("appendText"), "prompt section should preserve explicit appendText guidance.");
   assert(appendExpressionPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
   assert(!/run_extendscript/i.test(appendExpressionPromptSection), "append-to-expression guidance should not recommend raw ExtendScript.");
+
+  const maintainStrokeExpressionRetrieval = retrieveSolutionHints("Apply a maintain stroke width expression to the selected shape layer stroke width properties so their strokes stay constant while scaling, then read back expression details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(maintainStrokeExpressionRetrieval.ok, true);
+  assert(ids(maintainStrokeExpressionRetrieval).includes("apply-maintain-stroke-width-expression-typed-plan"), "maintain-stroke-width advisory recipe should surface for selected stroke width expression prompts.");
+  const maintainStrokeExpressionPromptSection = formatSolutionHintsForPrompt(maintainStrokeExpressionRetrieval);
+  assert(maintainStrokeExpressionPromptSection.includes("Apply Maintain Stroke Width Expression Typed Plan"), "prompt section should include maintain-stroke-width advisory title.");
+  assert(maintainStrokeExpressionPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for maintain-stroke-width workflows.");
+  assert(maintainStrokeExpressionPromptSection.includes("stroke width"), "prompt section should preserve stroke width target guidance.");
+  assert(maintainStrokeExpressionPromptSection.includes("set_expression"), "prompt section should prefer set_expression for maintain-stroke-width workflows.");
+  assert(maintainStrokeExpressionPromptSection.includes("transform.scale[0]"), "prompt section should preserve bounded x-scale compensation guidance.");
+  assert(maintainStrokeExpressionPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
+  assert(!/run_extendscript/i.test(maintainStrokeExpressionPromptSection), "maintain-stroke-width guidance should not recommend raw ExtendScript.");
 
   const selectedLayerDurationRetrieval = retrieveSolutionHints("Tell me the duration in seconds of the selected layer after inspecting the selected layer timing.", {
     registry,
