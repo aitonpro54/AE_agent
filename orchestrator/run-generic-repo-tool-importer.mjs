@@ -77,6 +77,8 @@ const DEPENDENCY_PATHS = new Set([
 ]);
 const TEXT_FILE_MAX_BYTES = 256 * 1024;
 const CHILD_RUN_OUTPUT_MAX_BUFFER_BYTES = 2 * 1024 * 1024;
+const CHILD_RUN_SUMMARY_MAX_BYTES = 64 * 1024;
+const RESULT_SUMMARY_MAX_ARTIFACT_PATHS = 200;
 const DEFAULT_CHILD_RUN_TIMEOUT_MS = 10 * 60 * 1000;
 const MAX_CHILD_RUN_TIMEOUT_MS = 30 * 60 * 1000;
 const SECRET_PATTERN =
@@ -2381,6 +2383,8 @@ function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootR
   const stderrPath = `implementation/child-run-logs/${safeBatchId}.stderr.txt`;
   writeFileSync(path.join(runRoot, stdoutPath), result.stdout || "", "utf8");
   writeFileSync(path.join(runRoot, stderrPath), result.stderr || "", "utf8");
+  const stdoutSummary = streamSummary(result.stdout || "");
+  const stderrSummary = streamSummary(result.stderr || "");
 
   const childRunResult = {
     schema: "generic-repo-tool-importer.implementation-child-run-result.v1",
@@ -2417,6 +2421,12 @@ function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootR
     error: result.error ? result.error.message : null,
     stdoutPath,
     stderrPath,
+    stdoutBytes: stdoutSummary.bytes,
+    stdoutTail: stdoutSummary.tail,
+    stdoutTruncated: stdoutSummary.truncated,
+    stderrBytes: stderrSummary.bytes,
+    stderrTail: stderrSummary.tail,
+    stderrTruncated: stderrSummary.truncated,
     preRunHead,
     postRunHead,
     preRunWorktreeClean: true,
@@ -2436,9 +2446,57 @@ function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootR
   };
 
   const childRunResultPath = `implementation/child-run-results/${safeBatchId}.json`;
+  const childRunSummaryPath = `implementation/child-run-summaries/${safeBatchId}.result-summary.json`;
+  const childRunSummary = {
+    schema: "generic-repo-tool-importer.implementation-child-run-result-summary.v1",
+    runId: childRunResult.runId,
+    manifestHash,
+    batchId: childRunResult.batchId,
+    status: childRunResult.status,
+    startedAt,
+    completedAt,
+    timeoutMs,
+    plannedPaths: childRunResult.plannedPaths,
+    changedPaths: childRunResult.changedPaths,
+    unplannedPaths: childRunResult.unplannedPaths,
+    plannedPathGate: childRunResult.plannedPathGate,
+    childRunIntentPath: childRunResult.childRunIntentPath,
+    childRunResultPath,
+    actualWorktreePath: childRunResult.actualWorktreePath,
+    actualWorktreeRelativePath: childRunResult.actualWorktreeRelativePath,
+    exitCode: childRunResult.exitCode,
+    signal: childRunResult.signal,
+    error: childRunResult.error,
+    stdoutPath,
+    stderrPath,
+    stdout: stdoutSummary,
+    stderr: stderrSummary,
+    preRunHead,
+    postRunHead,
+    preRunWorktreeClean: true,
+    detachedWorktreeVerified: true,
+    worktreeCreated: true,
+    branchCreated: false,
+    childRunCreated: true,
+    controlledMergeApplied: false,
+    sourceMergeApplied: false,
+    validationCommandsRun: false,
+    liveCepAeRun: false,
+    localOllamaUsed: false,
+    fallbackProviderUsed: false,
+    dependencyChanged: false,
+    productRuntimeEdited: false,
+    pushOrPrCreated: false,
+  };
+  mkdirSync(path.dirname(path.join(runRoot, childRunSummaryPath)), { recursive: true });
+  writeJson(path.join(runRoot, childRunSummaryPath), childRunSummary);
+  if (statSync(path.join(runRoot, childRunSummaryPath)).size > CHILD_RUN_SUMMARY_MAX_BYTES) {
+    throw new Error(`implementation-child-run-summary-too-large: ${batch.id}`);
+  }
+  childRunResult.resultSummaryPath = childRunSummaryPath;
   writeJson(path.join(runRoot, childRunResultPath), childRunResult);
   assertChildRunResultPassed(childRunResult);
-  return { ...childRunResult, childRunResultPath };
+  return { ...childRunResult, childRunResultPath, resultSummaryPath: childRunSummaryPath };
 }
 
 function buildImplementationChildRunArtifacts(manifest, manifestHash, targetRepo, runRoot, runRootRelative) {
@@ -2462,7 +2520,7 @@ function buildImplementationChildRunArtifacts(manifest, manifestHash, targetRepo
       targetRepo,
       batch,
     });
-    artifactPaths.push(childResult.childRunResultPath, childResult.stdoutPath, childResult.stderrPath);
+    artifactPaths.push(childResult.childRunResultPath, childResult.resultSummaryPath, childResult.stdoutPath, childResult.stderrPath);
     batches.push(childResult);
   }
 
@@ -2493,11 +2551,14 @@ function buildImplementationChildRunArtifacts(manifest, manifestHash, targetRepo
       plannedPathGate: batch.plannedPathGate,
       childRunIntentPath: batch.childRunIntentPath,
       childRunResultPath: batch.childRunResultPath,
+      resultSummaryPath: batch.resultSummaryPath,
       actualWorktreePath: batch.actualWorktreePath,
       actualWorktreeRelativePath: batch.actualWorktreeRelativePath,
       exitCode: batch.exitCode,
       stdoutPath: batch.stdoutPath,
       stderrPath: batch.stderrPath,
+      stdoutBytes: batch.stdoutBytes,
+      stderrBytes: batch.stderrBytes,
     })),
     checks: {
       manifestHashBinding: "passed",
@@ -2869,6 +2930,26 @@ function textSummary(value, limit = 2000) {
     return text;
   }
   return `${text.slice(0, limit)}\n...[truncated ${text.length - limit} chars]`;
+}
+
+function tailLines(value, maxLines = 40, maxChars = 4000) {
+  const text = String(value || "").trimEnd();
+  if (!text) return "";
+  const tail = text.split(/\r?\n/).slice(-maxLines).join("\n").trim();
+  return tail.length > maxChars ? tail.slice(tail.length - maxChars) : tail;
+}
+
+function streamSummary(value, maxLines = 40) {
+  const text = String(value || "");
+  const trimmed = text.trimEnd();
+  const lineCount = trimmed ? trimmed.split(/\r?\n/).length : 0;
+  return {
+    bytes: Buffer.byteLength(text, "utf8"),
+    lineCount,
+    tail: tailLines(text, maxLines),
+    tailLineCount: Math.min(lineCount, maxLines),
+    truncated: lineCount > maxLines,
+  };
 }
 
 function fileSnapshot(targetRepo, relativePath) {
@@ -4607,6 +4688,36 @@ function runLiveQueuePlanningPhase({ manifest, manifestHash, runRoot, runRootRel
   }
 }
 
+function importerResultSummary(result, artifacts) {
+  const artifactPaths = artifacts.slice(0, RESULT_SUMMARY_MAX_ARTIFACT_PATHS);
+  return {
+    schema: "generic-repo-tool-importer.result-summary.v1",
+    runId: result.runId,
+    status: result.status,
+    currentPhase: result.currentPhase,
+    nextPhase: result.nextPhase,
+    artifactCount: artifacts.length,
+    artifactPaths,
+    artifactPathsTruncated: artifacts.length > artifactPaths.length,
+    nonLiveValidationComplete: result.nonLiveValidationComplete === true,
+    validationCommandsRun: result.validationCommandsRun === true,
+    flags: {
+      analysisCompleted: result.analysisCompleted === true,
+      branchCreated: result.branchCreated === true,
+      childRunsCreated: result.childRunsCreated === true,
+      controlledMergeApplied: result.controlledMergeApplied === true,
+      dependencyChanged: false,
+      fallbackProviderUsed: result.fallbackProviderUsed === true,
+      liveCepAeRun: result.liveCepAeRun === true,
+      localOllamaUsed: result.localOllamaUsed === true,
+      sourceMergeApplied: result.sourceMergeApplied === true,
+      validationCommandsRun: result.validationCommandsRun === true,
+      worktreesCreated: result.worktreesCreated === true,
+    },
+    createdAt: new Date().toISOString(),
+  };
+}
+
 export function runImporter(options, cwd = process.cwd()) {
   if (!options.manifest) {
     throw new Error("Missing --manifest <path>");
@@ -4733,7 +4844,7 @@ export function runImporter(options, cwd = process.cwd()) {
     artifacts.push(...(state.liveQueueArtifacts || []));
   }
 
-  return {
+  const result = {
     schema: RUNNER_SCHEMA,
     auxiliaryId: liveQueuePlanned
       ? "AUX-019"
@@ -4779,6 +4890,16 @@ export function runImporter(options, cwd = process.cwd()) {
     liveCepAeRun: state.flags.liveCepAeRun === true,
     localOllamaUsed: state.flags.localOllamaUsed === true,
     fallbackProviderUsed: state.flags.fallbackProviderUsed === true,
+  };
+  const summaryPath = path.join(runRoot, "result-summary.json");
+  const summary = importerResultSummary(result, artifacts);
+  writeJson(summaryPath, summary);
+  if (statSync(summaryPath).size > CHILD_RUN_SUMMARY_MAX_BYTES) {
+    throw new Error(`importer-result-summary-too-large: ${statSync(summaryPath).size}`);
+  }
+  return {
+    ...result,
+    resultSummaryPath: summaryPath,
   };
 }
 

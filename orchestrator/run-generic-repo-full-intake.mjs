@@ -16,9 +16,11 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 import { runBatch } from "./run-generic-repo-queue-supervisor.mjs";
+import boundedProcess from "./bounded-process-result.cjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..");
+const { boundedSpawnSyncResult, readCompactJson, writeProcessLog } = boundedProcess;
 const RUN_SCHEMA = "generic-repo-full-intake.run.v1";
 const STATE_SCHEMA = "generic-repo-full-intake.state.v1";
 const RESOLUTION_TICKET_SCHEMA = "generic-repo-full-intake.resolution-ticket.v1";
@@ -30,6 +32,9 @@ const DEFAULT_LEDGER_PATH =
 const DEFAULT_RUN_ROOT_RELATIVE = ".codex-runtime/sdk/generic-repo-full-intake";
 const DEFAULT_LIVE_LANE_REGISTRY = "orchestrator/generic-repo-live-lane-registry.json";
 const DEFAULT_COMMAND_TIMEOUT_MS = 10 * 60 * 1000;
+const DEFAULT_RESULT_TAIL_LINES = 40;
+const CHILD_RESULT_SUMMARY_MAX_BYTES = 64 * 1024;
+const BATCH_REPORT_SUMMARY_MAX_BYTES = 192 * 1024;
 const SAFE_CLASSIFICATIONS = new Set([
   "existing_typed_tools_recipe_only",
   "small_safe_typed_tool_library_recipe_addition",
@@ -760,11 +765,14 @@ function saveState(runRoot, state) {
 
 function readLiveLaneRegistry(registryPath) {
   if (!existsSync(registryPath)) {
-    return { schema: "generic-repo-live-lane-registry.v1", entries: [] };
+    return { schema: "generic-repo-live-lane-registry.v1", entries: [], selfImprovementFamilies: [] };
   }
   const registry = readJson(registryPath, "live-lane-registry");
   requireObject(registry, "live-lane-registry");
   requireArray(registry.entries, "live-lane-registry.entries");
+  if (registry.selfImprovementFamilies !== undefined) {
+    requireArray(registry.selfImprovementFamilies, "live-lane-registry.selfImprovementFamilies");
+  }
   return registry;
 }
 
@@ -965,6 +973,267 @@ function synthesizeLiveLaneTemplate(candidate, runId) {
   };
 }
 
+function selfImprovementWorkPacket({ entries, groupId, reason, runId, tools }) {
+  return {
+    schema: "generic-repo-full-intake.self-improvement-work-packet.v1",
+    runId,
+    groupId,
+    reason,
+    candidateCount: entries.length,
+    candidateIds: entries.map((entry) => entry.id).sort(),
+    candidates: entries.map((entry) => ({
+      id: entry.id,
+      classification: entry.classification,
+      sourcePath: entry.sourcePath,
+      suggestedTools: candidateTools(entry),
+      safetySignals: normalizedSafetySignalSummary(entry),
+      plannedPaths: candidatePlannedPaths(entry),
+    })),
+    requestedRoles: [
+      "lane-designer",
+      "lane-implementer",
+      "lane-reviewer",
+      "validation-runner",
+    ],
+    constraints: {
+      compactSummaryRequired: true,
+      fallbackProviderAllowed: false,
+      localOllamaAllowed: false,
+      rawJsxCopyAllowed: false,
+      sourceCheckoutWritesAllowed: false,
+    },
+    toolPattern: tools,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function selfImprovementFamilyMatches(family, candidate, tools) {
+  if (!family || typeof family !== "object") return false;
+  if (Array.isArray(family.candidateIds) && family.candidateIds.length > 0 && !family.candidateIds.includes(candidate.id)) {
+    return false;
+  }
+  if (Array.isArray(family.requiredTools) && !familyRequirementMatches(family, tools)) {
+    return false;
+  }
+  if (Array.isArray(family.allowedTools) && !familyAllowsAllTools(family, tools)) {
+    return false;
+  }
+  return true;
+}
+
+function matchingSelfImprovementFamily(registry, candidate, tools) {
+  const families = Array.isArray(registry.selfImprovementFamilies) ? registry.selfImprovementFamilies : [];
+  const matches = families.filter((family) => selfImprovementFamilyMatches(family, candidate, tools));
+  if (matches.length !== 1) {
+    return { family: null, reason: matches.length > 1 ? "self_improvement_family_ambiguous" : "self_improvement_family_missing" };
+  }
+  return { family: matches[0], reason: null };
+}
+
+function templateFromSelfImprovementFamily(family, candidate, runId) {
+  const familyId = safeId(family.id || `self-improvement-${sha256Text(stableStringify(family)).slice(0, 12)}`);
+  if (family.productionTypedTools !== true) {
+    throw new Error(`self-improvement-production-typed-tool-proof-missing:${familyId}`);
+  }
+  if (family.semanticVerification !== true || !Array.isArray(family.readBackTools) || family.readBackTools.length === 0) {
+    throw new Error(`self-improvement-read-back-contract-missing:${familyId}`);
+  }
+  const laneId = safeId(`self-improved-${familyId}-${candidate.id}-openai-cli`).slice(0, 96);
+  const synthesis = {
+    schema: "generic-repo-full-intake.self-improvement-synthesis.v1",
+    runId,
+    candidateId: candidate.id,
+    familyId,
+    proofLane: family.proofLane || familyId,
+    readBackPolicy: AUTO_LANE_READ_BACK_POLICY,
+    readBackTools: family.readBackTools.slice(),
+    candidateTools: candidateTools(candidate),
+    semanticVerification: true,
+    status: "designed",
+    ok: true,
+    createdAt: new Date().toISOString(),
+  };
+  return {
+    candidateId: candidate.id,
+    command: family.command,
+    laneId,
+    nonLiveValidationCommands: Array.isArray(family.nonLiveValidationCommands)
+      ? family.nonLiveValidationCommands.slice()
+      : AUTO_LANE_COMMON_NON_LIVE_COMMANDS.slice(),
+    plannedPaths: Array.isArray(family.plannedPaths) ? family.plannedPaths.slice() : ["scripts/cep-panel-cdp-smoke.js"],
+    providerPath: family.providerPath || "openai-cli",
+    reclassifiedClassification: family.reclassifiedClassification || "existing_typed_tools_recipe_only",
+    scope: `${family.scope || "self-improved generated-only OpenAI CLI live lane"}; synthesized for ${candidate.id}`,
+    synthesis,
+    synthesized: true,
+    templateSource: "bounded_self_improvement",
+  };
+}
+
+function writeSelfImprovementRoleSummary(root, role, summary) {
+  const summaryPath = path.join(root, role, "result-summary.json");
+  mkdirSync(path.dirname(summaryPath), { recursive: true });
+  writeJson(summaryPath, {
+    schema: "generic-repo-full-intake.self-improvement-role-summary.v1",
+    role,
+    ...summary,
+    createdAt: new Date().toISOString(),
+  });
+  const stats = statSync(summaryPath);
+  if (stats.size > CHILD_RESULT_SUMMARY_MAX_BYTES) {
+    throw new Error(`self-improvement-role-summary-too-large:${role}:${stats.size}`);
+  }
+  return summaryPath;
+}
+
+function runSelfImprovementPipeline({ bucket, groupId, registry, runId, runRoot, targetRepo }) {
+  const representative = bucket.entries[0];
+  const tools = candidateTools(representative);
+  const root = path.join(runRoot, "self-improvement", safeId(groupId));
+  mkdirSync(root, { recursive: true });
+  const packet = selfImprovementWorkPacket({
+    entries: bucket.entries,
+    groupId,
+    reason: bucket.synthesis.reason,
+    runId,
+    tools,
+  });
+  const packetPath = path.join(root, "work-packet.json");
+  writeJson(packetPath, packet);
+
+  const baseEvidence = {
+    groupId,
+    packetPath: normalizeRepoPath(path.relative(targetRepo, packetPath)),
+    roles: {},
+  };
+  const unsafeSignals = unsafeSynthesisSignals(representative);
+  if (unsafeSignals.length > 0) {
+    const rolePath = writeSelfImprovementRoleSummary(root, "lane-designer", {
+      ok: false,
+      reason: `unsafe_safety_signals:${unsafeSignals.join(",")}`,
+      status: "rejected_unsafe",
+    });
+    return {
+      ok: false,
+      reason: `unsafe_safety_signals:${unsafeSignals.join(",")}`,
+      status: "blocked_self_improvement_unsafe",
+      evidence: {
+        ...baseEvidence,
+        roles: { "lane-designer": normalizeRepoPath(path.relative(targetRepo, rolePath)) },
+      },
+    };
+  }
+
+  const match = matchingSelfImprovementFamily(registry, representative, tools);
+  if (!match.family) {
+    const rolePath = writeSelfImprovementRoleSummary(root, "lane-designer", {
+      ok: false,
+      reason: match.reason,
+      status: "missing_family_contract",
+      toolPattern: tools,
+    });
+    return {
+      ok: false,
+      reason: match.reason,
+      status: "blocked_self_improvement_missing_lane_contract",
+      evidence: {
+        ...baseEvidence,
+        roles: { "lane-designer": normalizeRepoPath(path.relative(targetRepo, rolePath)) },
+      },
+    };
+  }
+
+  let template;
+  try {
+    template = templateFromSelfImprovementFamily(match.family, representative, runId);
+    validateLiveLaneTemplate(template, representative, targetRepo);
+  } catch (error) {
+    const rolePath = writeSelfImprovementRoleSummary(root, "lane-reviewer", {
+      ok: false,
+      reason: error.message,
+      status: "rejected_contract",
+      toolPattern: tools,
+    });
+    return {
+      ok: false,
+      reason: error.message,
+      status: /production-typed-tool-proof-missing/i.test(error.message)
+        ? "blocked_self_improvement_missing_production_typed_tool"
+        : "blocked_self_improvement_unsafe",
+      evidence: {
+        ...baseEvidence,
+        familyId: match.family.id || null,
+        roles: { "lane-reviewer": normalizeRepoPath(path.relative(targetRepo, rolePath)) },
+      },
+    };
+  }
+
+  const designerPath = writeSelfImprovementRoleSummary(root, "lane-designer", {
+    familyId: template.synthesis.familyId,
+    ok: true,
+    status: "designed",
+    template: {
+      command: template.command,
+      laneId: template.laneId,
+      readBackTools: template.synthesis.readBackTools,
+    },
+  });
+  const implementerPath = writeSelfImprovementRoleSummary(root, "lane-implementer", {
+    ok: true,
+    plannedPaths: template.plannedPaths,
+    status: "implemented_as_registry_bounded_lane",
+  });
+  const reviewerPath = writeSelfImprovementRoleSummary(root, "lane-reviewer", {
+    ok: true,
+    providerPath: template.providerPath,
+    semanticVerification: template.synthesis.semanticVerification,
+    status: "reviewed",
+  });
+  const validationRunnerPath = writeSelfImprovementRoleSummary(root, "validation-runner", {
+    ok: true,
+    command: template.command,
+    liveAcceptance: "serialized_by_parent_after_summary",
+    status: "ready_for_serial_live_acceptance",
+  });
+
+  const synthesisReportPath = path.join(root, "self-improvement-synthesis.json");
+  const report = {
+    schema: "generic-repo-full-intake.self-improvement-synthesis-report.v1",
+    runId,
+    groupId,
+    status: "lane_ready_for_serial_acceptance",
+    ok: true,
+    familyId: template.synthesis.familyId,
+    packetPath: normalizeRepoPath(path.relative(targetRepo, packetPath)),
+    roles: {
+      "lane-designer": normalizeRepoPath(path.relative(targetRepo, designerPath)),
+      "lane-implementer": normalizeRepoPath(path.relative(targetRepo, implementerPath)),
+      "lane-reviewer": normalizeRepoPath(path.relative(targetRepo, reviewerPath)),
+      "validation-runner": normalizeRepoPath(path.relative(targetRepo, validationRunnerPath)),
+    },
+    safetyPolicy: {
+      fallbackProviderAllowed: false,
+      localOllamaAllowed: false,
+      rawJsxCopyAllowed: false,
+      sourceCheckoutWritesAllowed: false,
+    },
+    template,
+    createdAt: new Date().toISOString(),
+  };
+  writeJson(synthesisReportPath, report);
+  return {
+    ok: true,
+    status: report.status,
+    template,
+    evidence: {
+      familyId: template.synthesis.familyId,
+      reportPath: normalizeRepoPath(path.relative(targetRepo, synthesisReportPath)),
+      roles: report.roles,
+      packetPath: report.packetPath,
+    },
+  };
+}
+
 function validateLiveLaneTemplate(template, candidate, targetRepo) {
   requireObject(template, `liveLaneTemplate:${candidate.id}`);
   requireString(template.candidateId, "liveLaneTemplate.candidateId");
@@ -1001,6 +1270,7 @@ function validateLiveLaneTemplate(template, candidate, targetRepo) {
 function runCommand({ command, cwd, env, label, logPath, timeoutMs }) {
   mkdirSync(path.dirname(logPath), { recursive: true });
   const startedAt = new Date().toISOString();
+  const startedMs = Date.now();
   const result = spawnSync(command, [], {
     cwd,
     encoding: "utf8",
@@ -1010,42 +1280,46 @@ function runCommand({ command, cwd, env, label, logPath, timeoutMs }) {
     timeout: timeoutMs,
   });
   const completedAt = new Date().toISOString();
-  const timedOut = result.error && result.error.code === "ETIMEDOUT";
-  const record = {
+  const durationMs = Date.now() - startedMs;
+  writeProcessLog(logPath, {
     command,
     completedAt,
+    durationMs,
     error: result.error ? result.error.message : null,
     exitCode: result.status,
     label,
     signal: result.signal || null,
     startedAt,
-    timedOut: Boolean(timedOut),
-  };
-  writeFileSync(
+    stderr: result.stderr,
+    stdout: result.stdout,
+    timedOut: result.error && result.error.code === "ETIMEDOUT",
+  });
+  const bounded = boundedSpawnSyncResult(result, {
+    command,
+    completedAt,
+    durationMs,
+    label,
     logPath,
-    [
-      `# ${label}`,
-      `command: ${command}`,
-      `startedAt: ${startedAt}`,
-      `completedAt: ${completedAt}`,
-      `exitCode: ${result.status}`,
-      `signal: ${result.signal || ""}`,
-      `timedOut: ${Boolean(timedOut)}`,
-      "",
-      "## stdout",
-      result.stdout || "",
-      "",
-      "## stderr",
-      result.stderr || "",
-    ].join("\n"),
-    "utf8",
-  );
+    startedAt,
+    tailLines: DEFAULT_RESULT_TAIL_LINES,
+  });
   return {
-    ...record,
+    command,
+    completedAt,
+    durationMs,
+    error: bounded.error,
+    exitCode: bounded.exitCode,
+    label,
     logPath,
-    ok: result.status === 0 && !result.error,
-    stderrTail: tailText(result.stderr),
-    stdoutTail: tailText(result.stdout),
+    ok: bounded.ok,
+    signal: bounded.signal,
+    stderrBytes: bounded.stderr.bytes,
+    stderrTail: bounded.stderr.tail,
+    stderrTruncated: bounded.stderr.truncated,
+    stdoutBytes: bounded.stdout.bytes,
+    stdoutTail: bounded.stdout.tail,
+    stdoutTruncated: bounded.stdout.truncated,
+    timedOut: bounded.timedOut,
   };
 }
 
@@ -1057,10 +1331,17 @@ function tailText(value, maxLength = 1000) {
 function commandEvidence(commandResult, targetRepo) {
   return {
     command: commandResult.command,
+    durationMs: commandResult.durationMs ?? null,
     exitCode: commandResult.exitCode,
     label: commandResult.label,
     logPath: normalizeRepoPath(path.relative(targetRepo, commandResult.logPath)),
     ok: commandResult.ok,
+    stderrBytes: commandResult.stderrBytes ?? null,
+    stderrTail: commandResult.stderrTail || "",
+    stderrTruncated: commandResult.stderrTruncated === true,
+    stdoutBytes: commandResult.stdoutBytes ?? null,
+    stdoutTail: commandResult.stdoutTail || "",
+    stdoutTruncated: commandResult.stdoutTruncated === true,
     timedOut: commandResult.timedOut,
   };
 }
@@ -1107,8 +1388,8 @@ function updateLedgerLiveGate({ candidate, ledger, ledgerPath, liveReport, targe
   writeJson(ledgerPath, ledger);
 }
 
-function runAutoLiveLane({ candidate, ledger, ledgerPath, registry, runRoot, runId, targetRepo, timeoutMs }) {
-  let template = liveLaneTemplateFor(registry, candidate);
+function runAutoLiveLane({ candidate, ledger, ledgerPath, registry, runRoot, runId, targetRepo, timeoutMs, templateOverride = null }) {
+  let template = templateOverride || liveLaneTemplateFor(registry, candidate);
   const laneRoot = path.join(runRoot, "candidates", safeId(candidate.id), "live-lane");
   const logDir = path.join(laneRoot, "logs");
   mkdirSync(logDir, { recursive: true });
@@ -1496,14 +1777,79 @@ function processLiveLaneResolutionTickets({ ledger, ledgerPath, registry, runId,
   for (const [groupId, bucket] of buckets) {
     const representative = bucket.entries[0];
     if (!bucket.synthesis.ok) {
+      const selfImprovement = runSelfImprovementPipeline({
+        bucket,
+        groupId,
+        registry,
+        runId,
+        runRoot,
+        targetRepo,
+      });
+      if (selfImprovement.ok) {
+        const liveReport = runAutoLiveLane({
+          candidate: representative,
+          ledger,
+          ledgerPath,
+          registry,
+          runRoot,
+          runId,
+          targetRepo,
+          timeoutMs,
+          templateOverride: selfImprovement.template,
+        });
+        const template = selfImprovement.template;
+        const status = liveReport.ok ? "proved_requeued" : "terminal_unresolved";
+        const ticket = recordResolutionTicket({
+          affected: bucket.entries,
+          evidence: {
+            familyId: selfImprovement.evidence.familyId,
+            liveLaneReport: normalizeRepoPath(path.relative(targetRepo, liveReport.reportPath)),
+            ok: liveReport.ok,
+            readBackPolicy: AUTO_LANE_READ_BACK_POLICY,
+            reason: liveReport.reason || null,
+            selfImprovement: selfImprovement.evidence,
+            status: liveReport.status,
+            targetRepo,
+            template: {
+              command: template.command,
+              laneId: template.laneId,
+              proofLane: template.synthesis.proofLane,
+              readBackTools: template.synthesis.readBackTools,
+              semanticVerification: template.synthesis.semanticVerification,
+            },
+          },
+          groupId,
+          reason: liveReport.ok
+            ? "bounded_self_improvement_lane_proved_with_read_back_and_semantic_verification"
+            : liveReport.reason || liveReport.status,
+          runId,
+          runRoot,
+          status,
+          targetRepo,
+          type: "live-lane-family",
+        });
+        if (liveReport.ok) {
+          for (const entry of bucket.entries) {
+            applyFamilyProofToEntry(entry, ticket, liveReport, template, allocateQueueRank);
+            requeuedCandidateIds.push(entry.id);
+          }
+        } else {
+          for (const entry of bucket.entries) {
+            attachResolutionReference(entry, ticket, "terminal_unresolved");
+          }
+        }
+        tickets.push(ticket);
+        continue;
+      }
       const ticket = recordResolutionTicket({
         affected: bucket.entries,
         evidence: {
           familyId: bucket.familyId,
+          selfImprovement: selfImprovement.evidence,
           synthesis: bucket.synthesis,
         },
         groupId,
-        reason: bucket.synthesis.reason,
+        reason: selfImprovement.reason || bucket.synthesis.reason,
         runId,
         runRoot,
         status: "terminal_unresolved",
@@ -1779,17 +2125,26 @@ function readJsonIfExists(filePath, label) {
   return readJson(filePath, label);
 }
 
-function childRunResultsForImporter(targetRepo, importerRunId) {
-  const dir = path.join(targetRepo, ".codex-runtime", "sdk", "generic-repo-importer", importerRunId, "implementation", "child-run-results");
+function readCompactJsonIfExists(filePath, label, maxBytes) {
+  if (!filePath || !existsSync(filePath)) return null;
+  return readCompactJson(filePath, label, maxBytes);
+}
+
+function childRunSummariesForImporter(targetRepo, importerRunId) {
+  const dir = path.join(targetRepo, ".codex-runtime", "sdk", "generic-repo-importer", importerRunId, "implementation", "child-run-summaries");
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
     .filter((entry) => entry.endsWith(".json"))
     .map((entry) => path.join(dir, entry))
-    .map((filePath) => readJson(filePath, `child-run-result:${filePath}`));
+    .map((filePath) => readCompactJson(filePath, `child-run-summary:${filePath}`, CHILD_RESULT_SUMMARY_MAX_BYTES));
 }
 
 function resolveChildTimeoutEvidence({ candidate, targetRepo, batchReportPath }) {
-  const report = readJsonIfExists(absoluteReportPath(targetRepo, batchReportPath), "child-timeout-batch-report");
+  const report = readCompactJsonIfExists(
+    absoluteReportPath(targetRepo, batchReportPath),
+    "child-timeout-batch-report",
+    BATCH_REPORT_SUMMARY_MAX_BYTES,
+  );
   if (!report) {
     throw new Error(`child-timeout-batch-report-missing:${batchReportPath || "none"}`);
   }
@@ -1797,14 +2152,17 @@ function resolveChildTimeoutEvidence({ candidate, targetRepo, batchReportPath })
   if (!importerRunId) {
     throw new Error("child-timeout-importer-run-id-missing");
   }
-  const childResults = childRunResultsForImporter(targetRepo, importerRunId);
-  const childResult = childResults.find((entry) => (
+  const childSummaries = childRunSummariesForImporter(targetRepo, importerRunId);
+  if (childSummaries.length === 0) {
+    throw new Error(`child-timeout-child-summary-missing:${importerRunId}`);
+  }
+  const childResult = childSummaries.find((entry) => (
     entry.status === "failed_timeout" &&
     Array.isArray(entry.changedPaths) &&
     entry.changedPaths.length > 0
-  )) || childResults.find((entry) => entry.status === "failed_timeout") || null;
+  )) || childSummaries.find((entry) => entry.status === "failed_timeout") || null;
   if (!childResult) {
-    throw new Error(`child-timeout-result-missing:${importerRunId}`);
+    throw new Error(`child-timeout-summary-result-missing:${importerRunId}`);
   }
   return { childResult, importerRunId, report };
 }
@@ -2079,11 +2437,13 @@ function recoverChildTimeoutPatch({ candidate, runId, runRoot, targetRepo, timeo
       importer: {
         manifestPath: sourceBatchReport.importer?.manifestPath || null,
         runId: importerRunId,
-        result: {
+        resultSummary: {
           artifacts: [recoveryReport.validationReport],
           nonLiveValidationComplete: true,
           recoveryReport: recoveryReport.reportPath,
           runId: importerRunId,
+          schema: "generic-repo-tool-importer.result-summary.v1",
+          status: "recovered_child_timeout_patch",
           validationCommandsRun: true,
         },
         error: null,
@@ -2341,7 +2701,8 @@ function updateLedgerCompletion({ batch, candidate, commitId, ledger, ledgerPath
     commit: commitId || null,
     importerNonLiveReport: batch.report.recovery?.validationReport
       ? batch.report.recovery.validationReport
-      : batch.report.importer?.result?.artifacts?.includes("validation/non-live-report.json")
+      : batch.report.importer?.resultSummary?.artifactPaths?.includes("validation/non-live-report.json") ||
+          batch.report.importer?.resultSummary?.artifacts?.includes("validation/non-live-report.json")
       ? normalizeRepoPath(`.codex-runtime/sdk/generic-repo-importer/${batch.report.importer.runId}/validation/non-live-report.json`)
       : null,
     importerRunId: batch.report.importer?.runId || null,

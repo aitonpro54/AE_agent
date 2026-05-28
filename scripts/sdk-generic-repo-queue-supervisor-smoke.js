@@ -169,6 +169,10 @@ function writeFakeCodex(root) {
       '  const absolute = path.join(cwd, relative);',
       '  fs.mkdirSync(path.dirname(absolute), { recursive: true });',
       '  fs.writeFileSync(absolute, `// fake queue import\\nmodule.exports = ${JSON.stringify(relative)};\\n`, "utf8");',
+      '  if (process.env.FAKE_CODEX_HUGE_STDOUT === "1") {',
+      '    console.log("H".repeat(512 * 1024));',
+      '    console.error("E".repeat(256 * 1024));',
+      '  }',
       '  console.log(`fake codex wrote ${relative}`);',
       '});',
       "",
@@ -453,11 +457,57 @@ function assertBatchRecordsMissingLiveLaneAndContinues() {
     assert.strictEqual(output.validation.liveCepAeRun, false);
     assert.strictEqual(output.validation.localOllamaUsed, false);
     assert.strictEqual(output.validation.fallbackProviderUsed, false);
-    assert(output.importer.result.nonLiveValidationComplete);
+    assert(!Object.prototype.hasOwnProperty.call(output.importer, "result"));
+    assert(output.importer.resultSummary.nonLiveValidationComplete);
+    assert(output.importer.resultSummary.resultSummaryPath.endsWith("result-summary.json"));
     assert(fs.existsSync(path.join(fixture.target, output.reportPath)), "batch report must be written");
     assert(fs.existsSync(path.join(fixture.target, output.importer.manifestPath)), "batch manifest must be written");
     assert(fs.existsSync(path.join(fixture.target, eligiblePath)), "eligible candidate should be imported");
     assert(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]).includes(eligiblePath));
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertBatchReportDoesNotEmbedHugeImporterOutput() {
+  const fixture = createFixture("batch-huge-output");
+  try {
+    const eligiblePath = "scripts/imported-tools/tool-layers-replace-text-in-layer-name.js";
+    const ledgerPath = writeLedger(
+      fixture,
+      validLedger(fixture, [
+        entry({
+          implementation: {
+            sliceId: null,
+            plannedPaths: [eligiblePath],
+          },
+        }),
+      ]),
+    );
+    const binDir = writeFakeCodex(fixture.root);
+    const output = parseJson(
+      run(
+        [
+          "--batch",
+          "--ledger",
+          ledgerPath,
+          "--target-repo",
+          fixture.target,
+          "--max-items",
+          "1",
+          "--run-id",
+          "huge-output",
+          "--json",
+        ],
+        repo,
+        { ...fakeCodexEnv(binDir), FAKE_CODEX_HUGE_STDOUT: "1" },
+      ),
+    );
+    const reportText = fs.readFileSync(path.join(fixture.target, output.reportPath), "utf8");
+    assert(reportText.length < 64 * 1024, `batch report should stay compact, got ${reportText.length}`);
+    assert(!reportText.includes("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH"));
+    assert(!Object.prototype.hasOwnProperty.call(output.importer, "result"));
+    assert(output.importer.resultSummary.resultSummaryPath.endsWith("result-summary.json"));
   } finally {
     removeFixture(fixture.root);
   }
@@ -583,6 +633,7 @@ function main() {
   assertUnsafeRankedClassificationFailsClosed();
   assertRequiredLiveLaneMissingFailsClosed();
   assertBatchRecordsMissingLiveLaneAndContinues();
+  assertBatchReportDoesNotEmbedHugeImporterOutput();
   assertBatchAllBlockedWritesReportWithoutFailure();
   assertForbiddenCandidatePathsFailClosed();
   assertContextPressureFailsClosed();

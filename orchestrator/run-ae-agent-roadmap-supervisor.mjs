@@ -14,6 +14,7 @@ import {
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import boundedProcess from "./bounded-process-result.cjs";
 
 export const DEFAULT_QUEUE_PATH =
   ".codex-audit/sdk-roadmap-supervisor/199-roadmap-supervisor-queue.json";
@@ -24,6 +25,7 @@ export const HARD_MAX_ITEMS = 5;
 export const HARD_MAX_MINUTES = 300;
 export const DEFAULT_TAIL_LINES = 80;
 const CHILD_OUTPUT_MAX_BUFFER_BYTES = 30 * 1024 * 1024;
+const { boundedSpawnSyncResult, writeProcessLog } = boundedProcess;
 const REVIEWER_LIMIT = 2;
 const LIVE_CHECK_TIMEOUT_MS = 5 * 60 * 1000;
 const REVIEWER_SDK_PROCESS_TERMINATION_RE =
@@ -930,6 +932,26 @@ function writeFinalReport(runtime, report) {
 }
 
 function writeLog(filePath, result) {
+  if (result.stdout !== undefined || result.stderr !== undefined) {
+    writeFileSync(
+      filePath,
+      [
+        `createdAt: ${new Date().toISOString()}`,
+        `status: ${result.status}`,
+        `signal: ${result.signal || ""}`,
+        `error: ${result.error ? result.error.message : ""}`,
+        "",
+        "## stdout",
+        result.stdout || "(empty)",
+        "",
+        "## stderr",
+        result.stderr || "(empty)",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+    return;
+  }
   writeFileSync(
     filePath,
     [
@@ -937,12 +959,13 @@ function writeLog(filePath, result) {
       `status: ${result.status}`,
       `signal: ${result.signal || ""}`,
       `error: ${result.error ? result.error.message : ""}`,
+      `durationMs: ${result.durationMs ?? ""}`,
       "",
-      "## stdout",
-      result.stdout || "(empty)",
+      "## stdout tail",
+      result.stdoutTail || "(empty)",
       "",
-      "## stderr",
-      result.stderr || "(empty)",
+      "## stderr tail",
+      result.stderrTail || "(empty)",
       "",
     ].join("\n"),
     "utf8",
@@ -1007,6 +1030,57 @@ function runShellCommand(cwd, command, timeoutMs = 120000) {
     stdio: ["ignore", "pipe", "pipe"],
     timeout: timeoutMs,
   });
+}
+
+function runBoundedSpawnSyncWithLog({ args, command, cwd, input, label, logPath, timeoutMs }) {
+  const startedAt = new Date().toISOString();
+  const startedMs = Date.now();
+  const result = spawnSync(command, args, {
+    cwd,
+    encoding: "utf8",
+    input,
+    maxBuffer: CHILD_OUTPUT_MAX_BUFFER_BYTES,
+    stdio: input === undefined ? ["ignore", "pipe", "pipe"] : ["pipe", "pipe", "pipe"],
+    timeout: timeoutMs,
+  });
+  const completedAt = new Date().toISOString();
+  const durationMs = Date.now() - startedMs;
+  writeProcessLog(logPath, {
+    command: [command, ...args].join(" "),
+    completedAt,
+    durationMs,
+    error: result.error ? result.error.message : null,
+    exitCode: result.status,
+    label,
+    signal: result.signal || null,
+    startedAt,
+    stderr: result.stderr,
+    stdout: result.stdout,
+    timedOut: result.error && result.error.code === "ETIMEDOUT",
+  });
+  const bounded = boundedSpawnSyncResult(result, {
+    command: [command, ...args].join(" "),
+    completedAt,
+    durationMs,
+    label,
+    logPath,
+    startedAt,
+    tailLines: DEFAULT_TAIL_LINES,
+  });
+  return {
+    error: result.error,
+    logPath,
+    status: result.status,
+    signal: result.signal || null,
+    durationMs,
+    stderrBytes: bounded.stderr.bytes,
+    stderrTail: bounded.stderr.tail,
+    stderrTruncated: bounded.stderr.truncated,
+    stdoutBytes: bounded.stdout.bytes,
+    stdoutTail: bounded.stdout.tail,
+    stdoutTruncated: bounded.stdout.truncated,
+    timedOut: bounded.timedOut,
+  };
 }
 
 function liveConnectivityCommands() {
@@ -1334,21 +1408,73 @@ function runWriterChild(cwd, runtime, item, engine) {
     return { ...result, logPath };
   }
   if (item.runner.kind === "roadmap-sdk") {
-    const result = engine === "cli" ? runRoadmapCliWriter(cwd, item) : runRoadmapSdkWriter(cwd, item);
-    writeLog(logPath, result);
-    return { ...result, logPath };
+    const prompt = buildRoadmapSdkPrompt(item);
+    if (engine === "cli") {
+      const args = [
+        "/d",
+        "/s",
+        "/c",
+        "codex",
+        "exec",
+        "--cd",
+        cwd,
+        "--sandbox",
+        "workspace-write",
+        "--ephemeral",
+        "-c",
+        "approval_policy=\"never\"",
+        "-c",
+        "model_reasoning_effort=\"high\"",
+        "-c",
+        "sandbox_workspace_write.network_access=false",
+        "--disable",
+        "web_search",
+        "-",
+      ];
+      return runBoundedSpawnSyncWithLog({
+        args,
+        command: "cmd.exe",
+        cwd,
+        input: prompt,
+        label: `writer-${item.id}`,
+        logPath,
+        timeoutMs: item.maxMinutes * 60 * 1000,
+      });
+    }
+    const args = [
+      path.join("orchestrator", "codex-sdk-orchestrator.mjs"),
+      "--cwd",
+      cwd,
+      "--sandbox",
+      "workspace-write",
+      "--approval",
+      "never",
+      "--web-search",
+      "disabled",
+      "--reasoning",
+      "high",
+      "--prompt",
+      prompt,
+    ];
+    return runBoundedSpawnSyncWithLog({
+      args,
+      command: process.execPath,
+      cwd,
+      label: `writer-${item.id}`,
+      logPath,
+      timeoutMs: item.maxMinutes * 60 * 1000,
+    });
   }
 
   const { command, args } = buildBoundedRunnerCommand(item, engine);
-  const result = spawnSync(command, args, {
+  return runBoundedSpawnSyncWithLog({
+    args,
+    command,
     cwd,
-    encoding: "utf8",
-    maxBuffer: CHILD_OUTPUT_MAX_BUFFER_BYTES,
-    stdio: ["ignore", "pipe", "pipe"],
-    timeout: item.maxMinutes * 60 * 1000,
+    label: `writer-${item.id}`,
+    logPath,
+    timeoutMs: item.maxMinutes * 60 * 1000,
   });
-  writeLog(logPath, result);
-  return { ...result, logPath };
 }
 
 function buildReviewerPrompt(item, task) {
@@ -1400,28 +1526,58 @@ function buildReviewerInvocation(cwd, prompt, engine) {
 function runReviewerAttempt(cwd, invocation) {
   return new Promise((resolve) => {
     let settled = false;
+    const stdoutTail = [];
+    const stderrTail = [];
+    let stdoutBytes = 0;
+    let stderrBytes = 0;
+    let stdoutLines = 0;
+    let stderrLines = 0;
+    let hasBlockingFinding = false;
+    function pushTail(target, chunk) {
+      const text = chunk.toString("utf8");
+      const lines = text.split(/\r?\n/);
+      for (const line of lines) {
+        if (line.length === 0) continue;
+        target.push(line);
+      }
+      while (target.length > DEFAULT_TAIL_LINES) target.shift();
+      return lines.length;
+    }
     function finish(result) {
       if (settled) {
         return;
       }
       settled = true;
-      resolve(result);
+      resolve({
+        ...result,
+        hasBlockingFinding,
+        stderrBytes,
+        stderrTail: stderrTail.join("\n"),
+        stderrTruncated: stderrLines > DEFAULT_TAIL_LINES,
+        stdoutBytes,
+        stdoutTail: stdoutTail.join("\n"),
+        stdoutTruncated: stdoutLines > DEFAULT_TAIL_LINES,
+      });
     }
 
     const child = spawn(invocation.command, invocation.args, {
       cwd,
       stdio: ["pipe", "pipe", "pipe"],
     });
-    let stdout = "";
-    let stderr = "";
     child.stdout.on("data", (chunk) => {
-      stdout += chunk.toString("utf8");
+      const text = chunk.toString("utf8");
+      stdoutBytes += Buffer.byteLength(text, "utf8");
+      stdoutLines += pushTail(stdoutTail, chunk);
+      if (/\b(CRITICAL|BLOCKING)\b/i.test(text)) hasBlockingFinding = true;
     });
     child.stderr.on("data", (chunk) => {
-      stderr += chunk.toString("utf8");
+      const text = chunk.toString("utf8");
+      stderrBytes += Buffer.byteLength(text, "utf8");
+      stderrLines += pushTail(stderrTail, chunk);
+      if (/\b(CRITICAL|BLOCKING)\b/i.test(text)) hasBlockingFinding = true;
     });
     child.on("error", (error) => {
-      finish({ error, status: 1, stderr, stdout });
+      finish({ error, status: 1 });
     });
     if (invocation.input !== undefined) {
       child.stdin.end(invocation.input);
@@ -1429,7 +1585,7 @@ function runReviewerAttempt(cwd, invocation) {
       child.stdin.end();
     }
     child.on("close", (status, signal) => {
-      finish({ status, signal, stdout, stderr });
+      finish({ status, signal });
     });
   });
 }
@@ -1438,7 +1594,7 @@ function isSdkProcessTerminationResult(result) {
   if (!result || result.status === 0) {
     return false;
   }
-  return isReviewerSdkProcessTerminationText(`${result.stderr || ""}\n${result.stdout || ""}`);
+  return isReviewerSdkProcessTerminationText(`${result.stderr || result.stderrTail || ""}\n${result.stdout || result.stdoutTail || ""}`);
 }
 
 function isReviewerSdkProcessTermination(result) {
@@ -1463,20 +1619,21 @@ function combineReviewerFallbackResult(primary, fallback) {
   return {
     error: fallback.error,
     fallbackEngine: "cli",
+    hasBlockingFinding: primary.hasBlockingFinding === true || fallback.hasBlockingFinding === true,
     primaryStatus: primary.status,
     signal: fallback.signal,
     status: fallback.status,
-    stderr: [
+    stderrTail: [
       "## sdk reviewer attempt stderr",
-      primary.stderr || "(empty)",
+      primary.stderrTail || "(empty)",
       "## cli reviewer fallback stderr",
-      fallback.stderr || "(empty)",
+      fallback.stderrTail || "(empty)",
     ].join("\n"),
-    stdout: [
+    stdoutTail: [
       "## sdk reviewer attempt stdout",
-      primary.stdout || "(empty)",
+      primary.stdoutTail || "(empty)",
       "## cli reviewer fallback stdout",
-      fallback.stdout || "(empty)",
+      fallback.stdoutTail || "(empty)",
     ].join("\n"),
   };
 }
@@ -1511,7 +1668,7 @@ async function runReviewers(cwd, runtime, item, mode, engine) {
     selectedTasks.map((task, index) => runReviewerProcess(cwd, runtime, item, task, index, engine)),
   );
   for (const result of results) {
-    const output = `${result.stdout || ""}\n${result.stderr || ""}`;
+    const output = `${result.stdout || result.stdoutTail || ""}\n${result.stderr || result.stderrTail || ""}`;
     if (result.status !== 0) {
       throw new Error(
         [
@@ -1521,7 +1678,7 @@ async function runReviewers(cwd, runtime, item, mode, engine) {
         ].join("\n"),
       );
     }
-    if (item.reviewerBlocking === true && /\b(CRITICAL|BLOCKING)\b/i.test(output)) {
+    if (item.reviewerBlocking === true && (result.hasBlockingFinding === true || /\b(CRITICAL|BLOCKING)\b/i.test(output))) {
       throw new Error(`Read-only reviewer reported a blocking finding for ${item.id}: ${result.id}`);
     }
   }
@@ -1818,7 +1975,7 @@ async function executeQueueItem(cwd, runtime, state, queue, item, options, preAp
     }
     if (!writerParserTerminationRecovered) {
       throw new Error(
-        `Writer child failed for ${item.id}: ${normalizeRepoPath(path.relative(cwd, childResult.logPath))}\n${tailLines(childResult.stderr || childResult.stdout, options.tailLines)}`,
+        `Writer child failed for ${item.id}: ${normalizeRepoPath(path.relative(cwd, childResult.logPath))}\n${childResult.stderrTail || childResult.stdoutTail || tailLines(childResult.stderr || childResult.stdout, options.tailLines)}`,
       );
     }
   }

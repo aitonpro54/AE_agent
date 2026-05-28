@@ -5,6 +5,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import boundedProcess from "./bounded-process-result.cjs";
 
 const DEFAULT_QUEUE_PATH =
   ".codex-audit/sdk-feature-conveyor/184-dakkshin-intake-feature-queue.json";
@@ -14,6 +15,7 @@ const DEFAULT_LIVE_VALIDATION_REPORT_DIR = ".codex-runtime/sdk/feature-conveyor-
 const DEFAULT_TAIL_LINES = 80;
 const CHILD_OUTPUT_MAX_BUFFER_BYTES = 50 * 1024 * 1024;
 const LIVE_VALIDATION_CHILD_TIMEOUT_MS = 20 * 60 * 1000;
+const { boundedSpawnSyncResult, writeProcessLog } = boundedProcess;
 
 export const EXECUTE_APPROVAL_TEXT =
   "I approve one SDK feature conveyor workspace-write run for the selected queued feature item planned paths only";
@@ -599,6 +601,31 @@ function writeExecutionLog(cwd, prepared, commandLine, result) {
   return logPath;
 }
 
+function compactExecutionResult(result, commandLine, logPath, tailLinesCount) {
+  const bounded = boundedSpawnSyncResult(result, {
+    command: commandLine,
+    completedAt: new Date().toISOString(),
+    durationMs: result.durationMs ?? null,
+    label: "feature-conveyor-child",
+    logPath: logPath.repoPath,
+    startedAt: null,
+    tailLines: tailLinesCount || DEFAULT_TAIL_LINES,
+  });
+  return {
+    error: result.error,
+    logPath: logPath.repoPath,
+    signal: result.signal || null,
+    status: result.status,
+    stderrBytes: bounded.stderr.bytes,
+    stderrTail: bounded.stderr.tail,
+    stderrTruncated: bounded.stderr.truncated,
+    stdoutBytes: bounded.stdout.bytes,
+    stdoutTail: bounded.stdout.tail,
+    stdoutTruncated: bounded.stdout.truncated,
+    timedOut: bounded.timedOut,
+  };
+}
+
 function runChildProcess(prepared, cwd) {
   if (prepared.engine === "cli") {
     const args = ["/d", "/s", "/c", "codex", ...buildCliCommand(prepared.options)];
@@ -888,8 +915,8 @@ function writeLiveValidationReport(cwd, prepared, report) {
 }
 
 function buildFailureTail(result, tailLineCount) {
-  const stderrTail = tailLines(result.stderr, tailLineCount);
-  const stdoutTail = tailLines(result.stdout, tailLineCount);
+  const stderrTail = result.stderrTail || tailLines(result.stderr, tailLineCount);
+  const stdoutTail = result.stdoutTail || tailLines(result.stdout, tailLineCount);
   const sections = [];
   if (stderrTail) {
     sections.push(`stderr tail:\n${stderrTail}`);
@@ -1083,6 +1110,7 @@ export function runFeatureConveyor(prepared, cwd = process.cwd()) {
 
   const { commandLine, result } = runChildProcess(prepared, cwd);
   const logPath = writeExecutionLog(cwd, prepared, commandLine, result);
+  const compactResult = compactExecutionResult(result, commandLine, logPath, prepared.tailLineCount);
 
   if (prepared.options.streamOutput) {
     const stdout = normalizeChildOutput(result.stdout);
@@ -1099,13 +1127,13 @@ export function runFeatureConveyor(prepared, cwd = process.cwd()) {
 
   if (result.error) {
     throw new Error(
-      `Codex feature conveyor run failed before completion: ${result.error.message}. Full log: ${logPath.repoPath}${buildFailureTail(result, prepared.tailLineCount)}`,
+      `Codex feature conveyor run failed before completion: ${result.error.message}. Full log: ${logPath.repoPath}${buildFailureTail(compactResult, prepared.tailLineCount)}`,
     );
   }
 
   if (result.status !== 0) {
     throw new Error(
-      `Codex feature conveyor run failed with exit code ${result.status}. Full log: ${logPath.repoPath}${buildFailureTail(result, prepared.tailLineCount)}`,
+      `Codex feature conveyor run failed with exit code ${result.status}. Full log: ${logPath.repoPath}${buildFailureTail(compactResult, prepared.tailLineCount)}`,
     );
   }
 
@@ -1119,6 +1147,10 @@ export function runFeatureConveyor(prepared, cwd = process.cwd()) {
     headChanged: postRunChanges.headChanged,
     items: prepared.selectedItems.map((item) => item.id),
     logPath: logPath.repoPath,
+    stderrBytes: compactResult.stderrBytes,
+    stderrTruncated: compactResult.stderrTruncated,
+    stdoutBytes: compactResult.stdoutBytes,
+    stdoutTruncated: compactResult.stdoutTruncated,
     mode: prepared.engine === "cli" ? "executed-cli" : "executed-sdk",
     plannedPaths: prepared.plannedPaths,
     postHead: postRunChanges.postHead,

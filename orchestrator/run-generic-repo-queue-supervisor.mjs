@@ -8,9 +8,11 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 import { runImporter } from "./run-generic-repo-tool-importer.mjs";
+import boundedProcess from "./bounded-process-result.cjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..");
+const { readCompactJson } = boundedProcess;
 const PLAN_SCHEMA = "generic-repo-queue-supervisor.plan-only.v1";
 const BATCH_SCHEMA = "generic-repo-queue-supervisor.batch-report.v1";
 const AUXILIARY_ID = "AUX-031";
@@ -18,6 +20,7 @@ const BATCH_AUXILIARY_ID = "AUX-038";
 const DEFAULT_LEDGER_PATH =
   ".codex-runtime/sdk/generic-repo-importer/kyletmartinez-after-effects-scripts-intake/queue-ledger.json";
 const BATCH_ROOT_RELATIVE = ".codex-runtime/sdk/generic-repo-queue-supervisor";
+const IMPORTER_RESULT_SUMMARY_MAX_BYTES = 64 * 1024;
 const SAFE_CLASSIFICATIONS = new Set([
   "existing_typed_tools_recipe_only",
   "small_safe_typed_tool_library_recipe_addition",
@@ -938,6 +941,41 @@ function buildImporterManifest({ eligibleItems, ledger, runId, sourceCheckout, t
   };
 }
 
+function importerSummaryPath(importerResult) {
+  if (!importerResult) return null;
+  if (importerResult.resultSummaryPath) return importerResult.resultSummaryPath;
+  if (importerResult.runRoot) return path.join(importerResult.runRoot, "result-summary.json");
+  return null;
+}
+
+function readImporterResultSummary(importerResult, targetRepo) {
+  const summaryPath = importerSummaryPath(importerResult);
+  if (!summaryPath) {
+    throw new Error("importer-result-summary-missing:none");
+  }
+  const absolute = path.isAbsolute(summaryPath) ? summaryPath : path.resolve(targetRepo, summaryPath);
+  const summary = readCompactJson(absolute, "importer-result-summary", IMPORTER_RESULT_SUMMARY_MAX_BYTES);
+  if (summary.schema !== "generic-repo-tool-importer.result-summary.v1") {
+    throw new Error(`importer-result-summary-schema-mismatch:${summary.schema || "missing"}`);
+  }
+  if (summary.runId !== importerResult.runId) {
+    throw new Error(`importer-result-summary-run-mismatch:${summary.runId || "missing"}`);
+  }
+  return {
+    artifactCount: summary.artifactCount,
+    artifactPaths: summary.artifactPaths || [],
+    artifactPathsTruncated: summary.artifactPathsTruncated === true,
+    currentPhase: summary.currentPhase,
+    flags: summary.flags || {},
+    nonLiveValidationComplete: summary.nonLiveValidationComplete === true,
+    resultSummaryPath: normalizeRepoPath(path.relative(targetRepo, absolute)),
+    runId: summary.runId,
+    schema: summary.schema,
+    status: summary.status,
+    validationCommandsRun: summary.validationCommandsRun === true,
+  };
+}
+
 function runBatch(options, cwd = process.cwd()) {
   if (options.batch !== true) {
     throw new Error("--batch is required for generic repo queue batch mode.");
@@ -967,6 +1005,7 @@ function runBatch(options, cwd = process.cwd()) {
   const policyBlockers = [...context.blockers, ...targetPolicyBlockers(ledger, changedPathsBefore)];
   const prepareOnly = options.prepareOnly === true;
   let importerResult = null;
+  let importerResultSummary = null;
   let importerError = null;
   let importerManifest = null;
   let sourceCheckout = null;
@@ -994,10 +1033,11 @@ function runBatch(options, cwd = process.cwd()) {
         },
         REPO_ROOT,
       );
+      importerResultSummary = readImporterResultSummary(importerResult, targetRepo);
       for (const item of eligibleItems) {
         item.status = prepareOnly ? "prepared" : "imported_non_live_validated";
         item.reason = prepareOnly ? "importer_prepared_candidate_batch" : "importer_non_live_validation_passed";
-        item.importerRunId = importerResult.runId;
+        item.importerRunId = importerResultSummary.runId;
       }
     } catch (error) {
       importerError = error;
@@ -1069,7 +1109,7 @@ function runBatch(options, cwd = process.cwd()) {
       ? {
           manifestPath: normalizeRepoPath(path.relative(targetRepo, manifestPath)),
           runId: importerManifest.run.runId,
-          result: importerResult,
+          resultSummary: importerResultSummary,
           error: importerError ? importerError.message : null,
         }
       : {
@@ -1080,8 +1120,8 @@ function runBatch(options, cwd = process.cwd()) {
           skippedReason: policyBlockers.length > 0 ? "policy_blocked" : "no_eligible_candidates",
         },
     validation: {
-      nonLiveValidationRun: importerResult?.validationCommandsRun === true,
-      nonLiveValidationComplete: importerResult?.nonLiveValidationComplete === true,
+      nonLiveValidationRun: importerResultSummary?.validationCommandsRun === true,
+      nonLiveValidationComplete: importerResultSummary?.nonLiveValidationComplete === true,
       liveCepAeRun: false,
       localOllamaUsed: false,
       fallbackProviderUsed: false,

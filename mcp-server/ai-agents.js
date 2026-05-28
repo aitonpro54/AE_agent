@@ -5,6 +5,7 @@ const http = require("http");
 const https = require("https");
 const path = require("path");
 const { spawn, spawnSync } = require("child_process");
+const { createTailAccumulator } = require("../orchestrator/bounded-process-result.cjs");
 
 const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1";
 const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
@@ -43,6 +44,7 @@ const DEFAULT_OPENROUTER_FREE_MODELS = [
 ];
 const DEFAULT_TIMEOUT_MS = Number(process.env.AE_AGENT_HTTP_TIMEOUT_MS || 45000);
 const DEFAULT_CODEX_CLI_TIMEOUT_MS = Number(process.env.AE_CODEX_CLI_TIMEOUT_MS || 120000);
+const CODEX_CLI_TAIL_LINES = 40;
 const DEFAULT_MODEL_LIST_TIMEOUT_MS = Number(process.env.AE_AGENT_MODEL_LIST_TIMEOUT_MS || 3500);
 const ANTHROPIC_VERSION = process.env.ANTHROPIC_VERSION || "2023-06-01";
 const PROVIDER_ERROR_STATUSES = {
@@ -1415,6 +1417,73 @@ function parseCodexJsonl(stdout) {
   };
 }
 
+function createCodexJsonlParser() {
+  let buffer = "";
+  const assistantTexts = [];
+  const errors = [];
+  const eventsTail = [];
+  const malformedLines = [];
+  let eventCount = 0;
+  let threadId = null;
+  let usage = null;
+
+  function handleLine(line) {
+    if (!line) return;
+    let event = null;
+    try {
+      event = JSON.parse(line);
+    } catch (_error) {
+      malformedLines.push(line);
+      return;
+    }
+    eventCount += 1;
+    eventsTail.push(event);
+    if (eventsTail.length > 20) eventsTail.shift();
+    if (event.type === "error" && event.message) errors.push(event.message);
+    const itemText = codexItemText(event.item);
+    if (itemText) assistantTexts.push(itemText);
+    const directText = codexItemText(event);
+    if (directText) assistantTexts.push(directText);
+    if (!threadId && event.thread_id) threadId = event.thread_id;
+    if (event.usage) usage = event.usage;
+  }
+
+  return {
+    push(chunk) {
+      buffer += String(chunk || "");
+      const lines = buffer.split(/\r?\n/);
+      buffer = lines.pop() || "";
+      for (const line of lines) handleLine(line);
+    },
+    finish() {
+      if (buffer) {
+        handleLine(buffer);
+        buffer = "";
+      }
+      return {
+        eventCount,
+        eventsTail,
+        text: assistantTexts.length ? assistantTexts[assistantTexts.length - 1] : "",
+        errors,
+        threadId,
+        usage,
+        malformedLineCount: malformedLines.length,
+        malformedPreview: compactString(malformedLines.slice(0, 3).join("\n"), 1000)
+      };
+    }
+  };
+}
+
+function codexCliLogPaths() {
+  const root = path.join(process.cwd(), ".codex-runtime", "mcp-server", "codex-cli");
+  fs.mkdirSync(root, { recursive: true });
+  const token = new Date().toISOString().replace(/[:.]/g, "-");
+  return {
+    stderrPath: path.join(root, `${token}.stderr.txt`),
+    stdoutPath: path.join(root, `${token}.stdout.jsonl`)
+  };
+}
+
 function runCodexCli(agent, model, messages, options) {
   const status = getCodexCliStatus();
   if (!status.installed) return Promise.reject(new Error(status.error || "Codex CLI was not found."));
@@ -1441,53 +1510,77 @@ function runCodexCli(agent, model, messages, options) {
   const timeoutMs = options && options.timeoutMs ? options.timeoutMs : DEFAULT_CODEX_CLI_TIMEOUT_MS;
 
   return new Promise((resolve, reject) => {
+    const logPaths = codexCliLogPaths();
+    const stdoutLog = fs.createWriteStream(logPaths.stdoutPath, { encoding: "utf8" });
+    const stderrLog = fs.createWriteStream(logPaths.stderrPath, { encoding: "utf8" });
+    const stdoutTail = createTailAccumulator(CODEX_CLI_TAIL_LINES);
+    const stderrTail = createTailAccumulator(CODEX_CLI_TAIL_LINES);
+    const parser = createCodexJsonlParser();
     const child = spawn(command, args, {
       cwd: process.cwd(),
       env: process.env,
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"]
     });
-    let stdout = "";
-    let stderr = "";
     let finished = false;
+    function boundedSummary() {
+      return {
+        stderr: stderrTail.summary(),
+        stderrPath: logPaths.stderrPath,
+        stdout: stdoutTail.summary(),
+        stdoutPath: logPaths.stdoutPath
+      };
+    }
     const timer = setTimeout(() => {
       if (finished) return;
+      finished = true;
       child.kill();
+      stdoutLog.end();
+      stderrLog.end();
       const error = new Error(`Codex CLI timed out after ${timeoutMs}ms.`);
       error.code = "model_timeout";
       error.phase = "model_timeout";
-      error.stderr = stderr;
-      error.stdout = stdout;
+      error.codexCli = boundedSummary();
       reject(error);
     }, timeoutMs);
 
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
     child.stdout.on("data", (chunk) => {
-      stdout += chunk;
+      stdoutLog.write(chunk);
+      stdoutTail.push(chunk);
+      parser.push(chunk);
     });
     child.stderr.on("data", (chunk) => {
-      stderr += chunk;
+      stderrLog.write(chunk);
+      stderrTail.push(chunk);
     });
     child.on("error", (error) => {
       if (finished) return;
       finished = true;
       clearTimeout(timer);
+      stdoutLog.end();
+      stderrLog.end();
+      error.codexCli = boundedSummary();
       reject(error);
     });
     child.on("close", (code) => {
       if (finished) return;
       finished = true;
       clearTimeout(timer);
-      const parsed = parseCodexJsonl(stdout);
+      stdoutLog.end();
+      stderrLog.end();
+      const parsed = parser.finish();
+      const summary = boundedSummary();
       if (code !== 0) {
-        const message = parsed.errors.length ? parsed.errors[parsed.errors.length - 1] : compactString(stderr || stdout || `Codex CLI exited with ${code}.`, 1000);
+        const message = parsed.errors.length
+          ? parsed.errors[parsed.errors.length - 1]
+          : compactString(summary.stderr.tail || summary.stdout.tail || `Codex CLI exited with ${code}.`, 1000);
         const error = new Error(message);
         error.code = "codex_nonzero_exit";
         error.phase = "codex_exec";
         error.exitCode = code;
-        error.stderr = stderr;
-        error.stdout = stdout;
+        error.codexCli = summary;
         reject(error);
         return;
       }
@@ -1496,14 +1589,13 @@ function runCodexCli(agent, model, messages, options) {
         const error = new Error(compactString(
           malformedJsonl
             ? "Codex CLI returned malformed JSONL and no assistant message."
-            : stderr || "Codex CLI did not return an assistant message.",
+            : summary.stderr.tail || "Codex CLI did not return an assistant message.",
           1000
         ));
         error.code = malformedJsonl ? "codex_malformed_jsonl" : "codex_no_assistant_text";
         error.phase = malformedJsonl ? "protocol_validation" : "codex_exec";
-        error.stderr = stderr;
-        error.stdout = stdout;
-        error.rawPreview = malformedJsonl ? parsed.malformedPreview : compactString(stderr || stdout, 1000);
+        error.codexCli = summary;
+        error.rawPreview = malformedJsonl ? parsed.malformedPreview : compactString(summary.stderr.tail || summary.stdout.tail, 1000);
         reject(error);
         return;
       }
@@ -1518,7 +1610,9 @@ function runCodexCli(agent, model, messages, options) {
         finishReason: "completed",
         usage: parsed.usage,
         codexThreadId: parsed.threadId,
-        rawResponse: options && options.includeRawResponse ? { stdout, stderr, events: parsed.events } : undefined
+        rawResponse: options && options.includeRawResponse
+          ? { ...summary, eventCount: parsed.eventCount, eventsTail: parsed.eventsTail }
+          : undefined
       });
     });
   });

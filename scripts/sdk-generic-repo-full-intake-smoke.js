@@ -45,6 +45,7 @@ function createFixture(name) {
   fs.mkdirSync(path.join(source, "Compositions"), { recursive: true });
   fs.mkdirSync(path.join(source, "Expressions"), { recursive: true });
   fs.mkdirSync(path.join(source, "Layers"), { recursive: true });
+  fs.mkdirSync(path.join(source, "Properties"), { recursive: true });
   fs.writeFileSync(path.join(source, "README.md"), "# Source fixture\n", "utf8");
   fs.writeFileSync(path.join(source, "LICENSE"), "Fixture license\n", "utf8");
   fs.writeFileSync(path.join(source, "package.json"), "{\"name\":\"source-fixture\"}\n", "utf8");
@@ -71,6 +72,7 @@ function createFixture(name) {
   fs.writeFileSync(path.join(source, "Layers", "Read_Only_Fixture.jsx"), "function readOnlyTool() { return true; }\n", "utf8");
   fs.writeFileSync(path.join(source, "Layers", "Extend_All_Layers.jsx"), "function extendAllLayers() { return true; }\n", "utf8");
   fs.writeFileSync(path.join(source, "Layers", "Shift_Layer_Start_Time.jsx"), "function shiftLayerStartTime() { return true; }\n", "utf8");
+  fs.writeFileSync(path.join(source, "Properties", "Set_Selected_Property_Value.jsx"), "function setSelectedPropertyValue() { return true; }\n", "utf8");
 
   fs.mkdirSync(path.join(target, "plans"), { recursive: true });
   fs.mkdirSync(path.join(target, "scripts"), { recursive: true });
@@ -165,6 +167,10 @@ function writeFakeCodex(root) {
       '  const absolute = path.join(cwd, relative);',
       '  fs.mkdirSync(path.dirname(absolute), { recursive: true });',
       '  fs.writeFileSync(absolute, `// fake full-intake import\\nmodule.exports = ${JSON.stringify(relative)};\\n`, "utf8");',
+      '  if (process.env.FAKE_CODEX_HUGE_STDOUT === "1") {',
+      '    console.log("H".repeat(512 * 1024));',
+      '    console.error("E".repeat(256 * 1024));',
+      '  }',
       '  console.log(`fake codex wrote ${relative}`);',
       '});',
       ""
@@ -287,6 +293,24 @@ function compPropertiesLiveLaneNeededEntry(overrides = {}) {
   });
 }
 
+function selectedPropertyValueLiveLaneNeededEntry(overrides = {}) {
+  return entry({
+    id: "tool-properties-set-selected-property-value",
+    sourcePath: "Properties/Set_Selected_Property_Value.jsx",
+    name: "Set Selected Property Value",
+    description: "Fixture unknown selected-property value live-lane-needed candidate.",
+    classification: "live_lane_needed",
+    shortReason: "Selected property value edits need a generated-only value proof.",
+    suggestedTools: ["get_active_comp", "get_selected_properties", "set_property_value", "get_layer_details"],
+    implementation: {
+      sliceId: "fixture-selected-property-value-import",
+      plannedPaths: ["scripts/imported-tools/selected-property-value.js"]
+    },
+    queueRank: null,
+    ...overrides
+  });
+}
+
 function validLedger(fixture, entries = null) {
   const ledgerEntries = entries || [entry()];
   return {
@@ -344,7 +368,8 @@ function writeRegistry(fixture, overrides = {}) {
       ];
   const registry = {
     schema: "generic-repo-live-lane-registry.v1",
-    entries
+    entries,
+    selfImprovementFamilies: overrides.selfImprovementFamilies || []
   };
   const registryPath = path.join(fixture.root, "live-lane-registry.json");
   fs.writeFileSync(registryPath, `${JSON.stringify(registry, null, 2)}\n`, "utf8");
@@ -407,6 +432,39 @@ function assertCompletedCandidateAndAutoLane() {
     assert.strictEqual(completed.implementation.commit, output.commits[0]);
     assert(fs.existsSync(path.join(fixture.target, "scripts", "imported-tools", "composition-guide.js")));
     assert(fs.readFileSync(path.join(fixture.target, "plans", "target-app-execplan.md"), "utf8").includes("full-intake:fixture-registry-lane:tool-compositions-add-composition-guide"));
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertHugeChildOutputDoesNotBloatParentReports() {
+  const fixture = createFixture("huge-child-output");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const ledgerPath = writeLedger(fixture, validLedger(fixture));
+    const registryPath = writeRegistry(fixture);
+    const result = runFullIntakeFixture(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "fixture-huge-child-output",
+      1,
+      { ...fakeCodexEnv(binDir), FAKE_CODEX_HUGE_STDOUT: "1" }
+    );
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    assert(result.stdout.length < 64 * 1024, `full-intake JSON should stay compact, got ${result.stdout.length}`);
+    assert(!result.stdout.includes("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH"));
+    const output = JSON.parse(result.stdout);
+    const runReportText = fs.readFileSync(
+      path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-full-intake", "fixture-huge-child-output", "run-report.json"),
+      "utf8"
+    );
+    assert(runReportText.length < 64 * 1024, `run report should stay compact, got ${runReportText.length}`);
+    assert(!runReportText.includes("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH"));
+    const batchReportText = fs.readFileSync(path.join(fixture.target, output.items[0].batchReport), "utf8");
+    assert(batchReportText.length < 64 * 1024, `batch report should stay compact, got ${batchReportText.length}`);
+    assert(!batchReportText.includes("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH"));
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);
@@ -749,13 +807,96 @@ function assertQueuedLiveLaneNeededFamiliesAreProvedAndRanked() {
   }
 }
 
+function assertBoundedSelfImprovementCreatesAndRejectsLanes() {
+  const fixture = createFixture("self-improvement");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const accepted = selectedPropertyValueLiveLaneNeededEntry();
+    const rejected = selectedPropertyValueLiveLaneNeededEntry({
+      id: "tool-properties-set-selected-property-value-missing-tool",
+      sourcePath: "Properties/Set_Selected_Property_Value.jsx",
+      implementation: {
+        sliceId: "fixture-selected-property-value-rejected",
+        plannedPaths: ["scripts/imported-tools/selected-property-value-rejected.js"]
+      },
+      suggestedTools: ["get_active_comp", "get_selected_properties", "set_property_value", "missing_production_tool"],
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [accepted, rejected]));
+    const registryPath = writeRegistry(fixture, {
+      entries: [],
+      selfImprovementFamilies: [
+        {
+          id: "selected-property-value-generated-only",
+          requiredTools: ["get_selected_properties", "set_property_value"],
+          allowedTools: ["get_active_comp", "get_selected_properties", "set_property_value", "get_layer_details"],
+          command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-selected-property-value-openai-cli-smoke",
+          providerPath: "openai-cli",
+          proofLane: "selected-property-value",
+          productionTypedTools: true,
+          readBackTools: ["get_selected_properties", "get_layer_details"],
+          semanticVerification: true,
+          plannedPaths: ["scripts/cep-panel-cdp-smoke.js"],
+          nonLiveValidationCommands: ["node --check scripts/cep-panel-cdp-smoke.js"],
+          reclassifiedClassification: "existing_typed_tools_recipe_only",
+          scope: "fixture selected-property value generated-only proof"
+        },
+        {
+          id: "selected-property-value-missing-production-tool",
+          requiredTools: ["get_selected_properties", "set_property_value", "missing_production_tool"],
+          allowedTools: ["get_active_comp", "get_selected_properties", "set_property_value", "missing_production_tool"],
+          command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-selected-property-value-openai-cli-smoke",
+          providerPath: "openai-cli",
+          proofLane: "selected-property-value",
+          productionTypedTools: false,
+          readBackTools: ["get_selected_properties"],
+          semanticVerification: true,
+          plannedPaths: ["scripts/cep-panel-cdp-smoke.js"],
+          nonLiveValidationCommands: ["node --check scripts/cep-panel-cdp-smoke.js"],
+          scope: "fixture missing production typed tool proof"
+        }
+      ]
+    });
+    const output = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        "fixture-self-improvement",
+        1,
+        fakeCodexEnv(binDir)
+      )
+    );
+    assert.strictEqual(output.status, "completed");
+    assert.deepStrictEqual(output.resolutionQueue.requeuedCandidateIds, ["tool-properties-set-selected-property-value"]);
+    assert(output.resolutionQueue.terminalTicketCount >= 1);
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    const completed = ledger.entries.find((item) => item.id === accepted.id);
+    const terminal = ledger.entries.find((item) => item.id === rejected.id);
+    assert.strictEqual(completed.status, "completed");
+    assert.strictEqual(completed.liveGate.templateSource, "bounded_self_improvement");
+    assert.strictEqual(completed.liveGate.providerPath, "openai-cli");
+    assert.strictEqual(completed.liveGate.synthesisFamily, "selected-property-value-generated-only");
+    assert(Number.isInteger(completed.queueRank));
+    assert.strictEqual(terminal.resolution.status, "terminal_unresolved");
+    const ticket = JSON.parse(fs.readFileSync(path.join(fixture.target, terminal.resolution.latestTicket), "utf8"));
+    assert(ticket.evidence.selfImprovement.packetPath);
+    assert(ticket.evidence.selfImprovement.roles["lane-designer"] || ticket.evidence.selfImprovement.roles["lane-reviewer"]);
+    assert(!JSON.stringify(ticket).includes("Local/Ollama"));
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function writeChildTimeoutEvidence(fixture, entryToRecover) {
   const importerRunId = "queue-fixture-child-timeout-import";
   const batchRunId = "fixture-child-timeout-import";
   const batchId = "queue-batch-1-childtimeout";
   const runRoot = path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-importer", importerRunId);
   const childResultDir = path.join(runRoot, "implementation", "child-run-results");
+  const childSummaryDir = path.join(runRoot, "implementation", "child-run-summaries");
   fs.mkdirSync(childResultDir, { recursive: true });
+  fs.mkdirSync(childSummaryDir, { recursive: true });
 
   const worktreePath = path.join(runRoot, "worktrees", batchId);
   fs.mkdirSync(path.dirname(worktreePath), { recursive: true });
@@ -792,6 +933,18 @@ function writeChildTimeoutEvidence(fixture, entryToRecover) {
     productRuntimeEdited: false
   };
   fs.writeFileSync(path.join(childResultDir, `${batchId}.json`), `${JSON.stringify(childResult, null, 2)}\n`, "utf8");
+  const childSummaryPath = path.join(childSummaryDir, `${batchId}.result-summary.json`);
+  fs.writeFileSync(
+    childSummaryPath,
+    `${JSON.stringify({
+      schema: "generic-repo-tool-importer.implementation-child-run-result-summary.v1",
+      ...childResult,
+      childRunResultPath: `implementation/child-run-results/${batchId}.json`,
+      stdout: { bytes: 0, lineCount: 0, tail: "", tailLineCount: 0, truncated: false },
+      stderr: { bytes: 0, lineCount: 0, tail: "", tailLineCount: 0, truncated: false }
+    }, null, 2)}\n`,
+    "utf8"
+  );
 
   const batchReportPath = path.join(
     fixture.target,
@@ -829,7 +982,7 @@ function writeChildTimeoutEvidence(fixture, entryToRecover) {
     ]
   };
   fs.writeFileSync(batchReportPath, `${JSON.stringify(batchReport, null, 2)}\n`, "utf8");
-  return { batchReportPath: relativeBatchReportPath, recoveredPath };
+  return { batchReportPath: relativeBatchReportPath, childSummaryPath, recoveredPath };
 }
 
 function assertChildTimeoutResolutionRecoversImporterWorktreePatch() {
@@ -876,6 +1029,58 @@ function assertChildTimeoutResolutionRecoversImporterWorktreePatch() {
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);
+  }
+}
+
+function assertChildTimeoutSummaryContractFailsClosed() {
+  for (const variant of ["missing", "too-large"]) {
+    const fixture = createFixture(`child-summary-${variant}`);
+    try {
+      const failed = entry({
+        id: `tool-layers-child-summary-${variant}`,
+        sourcePath: "Layers/Read_Only_Fixture.jsx",
+        classification: "existing_typed_tools_recipe_only",
+        liveGate: { required: false, status: "not_required_for_read_only_or_skip" },
+        implementation: {
+          sliceId: `fixture-child-summary-${variant}`,
+          plannedPaths: ["scripts/imported-tools/recovered-child-timeout.js"]
+        },
+        status: "failed_import",
+        queueRank: 1
+      });
+      const evidence = writeChildTimeoutEvidence(fixture, failed);
+      if (variant === "missing") {
+        fs.rmSync(evidence.childSummaryPath, { force: true });
+      } else {
+        fs.writeFileSync(evidence.childSummaryPath, `${JSON.stringify({ huge: "x".repeat(80 * 1024) })}\n`, "utf8");
+      }
+      failed.failClosed = {
+        status: "failed_import",
+        reason: "batch-importer-failed: implementation-child-run-timeout: queue-batch-1-childtimeout",
+        batchReport: evidence.batchReportPath
+      };
+      const ledgerPath = writeLedger(fixture, validLedger(fixture, [failed]));
+      const registryPath = writeRegistry(fixture, { entries: [] });
+      const output = parseJson(
+        runFullIntakeFixture(
+          fixture,
+          ledgerPath,
+          registryPath,
+          `fixture-child-summary-${variant}`,
+          1
+        )
+      );
+      assert.strictEqual(output.status, "completed_with_failed_candidates");
+      assert.strictEqual(output.items[0].status, "failed_import");
+      assert.match(output.items[0].reason, variant === "missing" ? /child-summary-missing/ : /too-large/);
+      assert(!fs.existsSync(path.join(fixture.target, evidence.recoveredPath)));
+      const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+      assert.strictEqual(ledger.entries[0].status, "failed_import");
+      assert.match(ledger.entries[0].failClosed.reason, variant === "missing" ? /child-summary-missing/ : /too-large/);
+      assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+    } finally {
+      removeFixture(fixture.root);
+    }
   }
 }
 
@@ -991,6 +1196,7 @@ function assertResumeFromState() {
 
 function main() {
   assertCompletedCandidateAndAutoLane();
+  assertHugeChildOutputDoesNotBloatParentReports();
   assertSynthesizedAutoLaneCompletesWithoutRegistryEntry();
   assertAutoLaneSynthesisFailClosedEvidence();
   assertUnsafeCandidateSkipAndContinue();
@@ -998,7 +1204,9 @@ function main() {
   assertQueuedLedgerStaleBlockedStateIsRetried();
   assertResolutionTicketRequeuesBlockedFamily();
   assertQueuedLiveLaneNeededFamiliesAreProvedAndRanked();
+  assertBoundedSelfImprovementCreatesAndRejectsLanes();
   assertChildTimeoutResolutionRecoversImporterWorktreePatch();
+  assertChildTimeoutSummaryContractFailsClosed();
   assertChildTimeoutTerminalTicketDoesNotRequeue();
   assertResumeFromState();
   console.log(JSON.stringify({ ok: true, smoke: "generic-repo-full-intake" }, null, 2));
