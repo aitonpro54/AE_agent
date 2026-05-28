@@ -34,6 +34,28 @@ function parseJson(result) {
   return JSON.parse(result.stdout);
 }
 
+function assertCompactParentOutputIsBounded(rawOutput, output) {
+  const text = rawOutput || JSON.stringify(output);
+  assert.strictEqual(output.schema, "generic-repo-full-intake.parent-compact-output.v1");
+  assert(!Object.prototype.hasOwnProperty.call(output, "items"), "compact parent output must not include full items array");
+  assert(!Array.isArray(output.resolutionQueue?.tickets), "compact parent output must not include resolutionQueue.tickets");
+  for (const forbidden of [
+    '"stdout"',
+    '"stderr"',
+    '"transcript"',
+    '"prompt"',
+    '"importer"',
+    '"result"',
+    '"batchReport"',
+    '"state"',
+    "batch-report.json",
+    "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH",
+    "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+  ]) {
+    assert(!text.includes(forbidden), `compact parent output leaked forbidden content: ${forbidden}`);
+  }
+}
+
 function createFixture(name) {
   const parent = path.resolve(os.tmpdir());
   const root = fs.mkdtempSync(path.join(parent, `generic-full-intake-${name}-`));
@@ -396,6 +418,26 @@ function runFullIntakeFixture(fixture, ledgerPath, registryPath, runId, maxItems
   );
 }
 
+function runFullIntakeFixtureCompact(fixture, ledgerPath, registryPath, runId, maxItems, env = {}) {
+  return run(
+    [
+      "--ledger",
+      ledgerPath,
+      "--live-lane-registry",
+      registryPath,
+      "--run-id",
+      runId,
+      "--max-items",
+      String(maxItems),
+      "--target-repo",
+      fixture.target,
+      "--compact-json"
+    ],
+    repo,
+    env
+  );
+}
+
 function assertCompletedCandidateAndAutoLane() {
   const fixture = createFixture("registry-lane");
   try {
@@ -466,6 +508,35 @@ function assertHugeChildOutputDoesNotBloatParentReports() {
     assert(batchReportText.length < 64 * 1024, `batch report should stay compact, got ${batchReportText.length}`);
     assert(!batchReportText.includes("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH"));
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertCompactParentOutputDoesNotLeakRuntimeDetails() {
+  const fixture = createFixture("compact-huge-child-output");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const ledgerPath = writeLedger(fixture, validLedger(fixture));
+    const registryPath = writeRegistry(fixture);
+    const result = runFullIntakeFixtureCompact(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "fixture-compact-huge-child-output",
+      1,
+      { ...fakeCodexEnv(binDir), FAKE_CODEX_HUGE_STDOUT: "1" }
+    );
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    assert(result.stdout.length < 16 * 1024, `compact parent output should stay tiny, got ${result.stdout.length}`);
+    const output = JSON.parse(result.stdout);
+    assertCompactParentOutputIsBounded(result.stdout, output);
+    assert(String(output.status || "").startsWith("completed"));
+    assert.strictEqual(output.counts.items, 1);
+    assert.strictEqual(output.lastItem.candidateId, "tool-compositions-add-composition-guide");
+    assert.strictEqual(output.resolutionQueue.ticketCount, 0);
+    assert(output.compactPaths.compactStatusCommand.includes("full-intake-status.mjs"));
+    assert(output.compactPaths.ledgerSummaryCommand.includes("full-intake-ledger-summary.mjs"));
   } finally {
     removeFixture(fixture.root);
   }
@@ -754,6 +825,60 @@ function assertResolutionTicketRequeuesBlockedFamily() {
     assert.strictEqual(queued.liveGate.command, "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-timing-openai-cli-smoke");
     assert(fs.existsSync(path.join(fixture.target, output.resolutionQueue.tickets[0].path)));
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertCompactParentOutputSummarizesResolutionQueue() {
+  const fixture = createFixture("compact-resolution-family");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const first = timingEntry({
+      status: "blocked_live_lane_synthesis_incomplete",
+      failClosed: {
+        status: "blocked_live_lane_synthesis_incomplete",
+        reason: "candidate_tools_do_not_match_a_supported_auto_lane_family"
+      },
+      liveGate: { required: true, status: "blocked_live_lane_synthesis_incomplete" },
+      queueRank: 1
+    });
+    const second = timingEntry({
+      id: "tool-layers-shift-layer-start-time",
+      sourcePath: "Layers/Shift_Layer_Start_Time.jsx",
+      status: "blocked_live_lane_synthesis_incomplete",
+      failClosed: {
+        status: "blocked_live_lane_synthesis_incomplete",
+        reason: "candidate_tools_do_not_match_a_supported_auto_lane_family"
+      },
+      implementation: {
+        sliceId: "fixture-layer-shift-import",
+        plannedPaths: ["scripts/imported-tools/layer-shift.js"]
+      },
+      liveGate: { required: true, status: "blocked_live_lane_synthesis_incomplete" },
+      queueRank: 2
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [first, second]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const result = runFullIntakeFixtureCompact(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "fixture-compact-resolution-family",
+      1,
+      fakeCodexEnv(binDir)
+    );
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    const output = JSON.parse(result.stdout);
+    assertCompactParentOutputIsBounded(result.stdout, output);
+    assert.strictEqual(output.resolutionQueue.terminalTicketCount, 1);
+    assert.strictEqual(output.resolutionQueue.requeuedCandidateIds.count, 2);
+    assert.deepStrictEqual(output.requeuedCandidateIds.ids.sort(), [
+      "tool-layers-extend-all-layers",
+      "tool-layers-shift-layer-start-time"
+    ]);
+    assert.strictEqual(output.resolutionQueue.affectedFamilies.length, 1);
+    assert.strictEqual(output.resolutionQueue.affectedFamilies[0].affectedCandidateIds.count, 2);
   } finally {
     removeFixture(fixture.root);
   }
@@ -1084,6 +1209,48 @@ function assertChildTimeoutSummaryContractFailsClosed() {
   }
 }
 
+function assertCompactParentOutputListsFailedIdsWithoutEvidenceBlob() {
+  const fixture = createFixture("compact-child-summary-missing");
+  try {
+    const failed = entry({
+      id: "tool-layers-compact-child-summary-missing",
+      sourcePath: "Layers/Read_Only_Fixture.jsx",
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "not_required_for_read_only_or_skip" },
+      implementation: {
+        sliceId: "fixture-compact-child-summary-missing",
+        plannedPaths: ["scripts/imported-tools/recovered-child-timeout.js"]
+      },
+      status: "failed_import",
+      queueRank: 1
+    });
+    const evidence = writeChildTimeoutEvidence(fixture, failed);
+    fs.rmSync(evidence.childSummaryPath, { force: true });
+    failed.failClosed = {
+      status: "failed_import",
+      reason: "batch-importer-failed: implementation-child-run-timeout: queue-batch-1-childtimeout",
+      batchReport: evidence.batchReportPath
+    };
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [failed]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const result = runFullIntakeFixtureCompact(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "fixture-compact-child-summary-missing",
+      1
+    );
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    const output = JSON.parse(result.stdout);
+    assertCompactParentOutputIsBounded(result.stdout, output);
+    assert.strictEqual(output.status, "completed_with_failed_candidates");
+    assert.deepStrictEqual(output.failedCandidateIds.ids, ["tool-layers-compact-child-summary-missing"]);
+    assert.match(output.lastItem.reason, /child-summary-missing/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertChildTimeoutTerminalTicketDoesNotRequeue() {
   const fixture = createFixture("child-timeout-terminal");
   try {
@@ -1197,16 +1364,19 @@ function assertResumeFromState() {
 function main() {
   assertCompletedCandidateAndAutoLane();
   assertHugeChildOutputDoesNotBloatParentReports();
+  assertCompactParentOutputDoesNotLeakRuntimeDetails();
   assertSynthesizedAutoLaneCompletesWithoutRegistryEntry();
   assertAutoLaneSynthesisFailClosedEvidence();
   assertUnsafeCandidateSkipAndContinue();
   assertLiveLaneFailureEvidence();
   assertQueuedLedgerStaleBlockedStateIsRetried();
   assertResolutionTicketRequeuesBlockedFamily();
+  assertCompactParentOutputSummarizesResolutionQueue();
   assertQueuedLiveLaneNeededFamiliesAreProvedAndRanked();
   assertBoundedSelfImprovementCreatesAndRejectsLanes();
   assertChildTimeoutResolutionRecoversImporterWorktreePatch();
   assertChildTimeoutSummaryContractFailsClosed();
+  assertCompactParentOutputListsFailedIdsWithoutEvidenceBlob();
   assertChildTimeoutTerminalTicketDoesNotRequeue();
   assertResumeFromState();
   console.log(JSON.stringify({ ok: true, smoke: "generic-repo-full-intake" }, null, 2));

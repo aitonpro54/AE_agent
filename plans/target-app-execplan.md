@@ -2209,6 +2209,29 @@ AUX-073 child-run handoff state: goal is the `tool-properties-set-new-color` det
 
 AUX-074 child-run handoff state: goal is the `tool-properties-swap-selected-property-dimensions` detached child-run patch; current state is recipe/registry/smoke/plan updated, `.codex/handoff.md` blocked by patch-tool path rejection plus ACL access denial; files touched are `plans/target-app-execplan.md`, `recipes/swap-selected-property-dimensions-typed-plan.md`, `registry/solutions.json`, and `scripts/solution-library-validation-smoke.js`; validation was not run by wrapper boundary; no commit was created because the wrapper forbids commits. Exact next prompt: Continue the generic repository importer parent flow for run `queue-full-intake-kyletmartinez-358ff3627c-import`, batch `queue-batch-1-fb1877299f`. Inspect the detached child-run planned-path patch for `tool-properties-swap-selected-property-dimensions`, apply only accepted planned paths through the controlled source merge lane, then run the parent-owned planned-path gates, non-live validation gates and any required generated-only live acceptance. Do not use Local/Ollama, fallback providers, broad/default CEP smoke, source JSX copy, dependency/package changes, user-asset mutation, push, PR, or GitHub automation.
 
+### AUX-076 Full-Intake Parent Output Bloat Guard
+
+Progress:
+- Added `--compact-json` to `orchestrator/run-generic-repo-full-intake.mjs` for parent-facing full-intake output. The compact contract prints bounded status/counts, last item, commit ids, requeued ids, failed ids, compact resolution-family counts/affected ids, next action, and compact follow-up paths/commands.
+- Added `orchestrator/full-intake-ledger-summary.mjs` as a durable-ledger-only summary command for compact family counts, queued `live_lane_needed` ids, failed ids/reasons, and terminal status counts without runtime JSON.
+- Extended full-intake smoke coverage and added `scripts/full-intake-ledger-summary-smoke.js` to prove compact output does not include full `resolutionQueue.tickets`, child stdout/stderr, transcripts, prompts, importer result payloads, batch reports, or runtime state.
+
+Decision Log:
+- Kept legacy `--json` output unchanged for existing machine consumers and made the parent-safe path explicit as `--compact-json`.
+- The recommended long-run command flow after live/import runs is now: `node orchestrator/run-generic-repo-full-intake.mjs ... --compact-json`, then `node orchestrator/full-intake-status.mjs --run-id <id> --compact --event-limit 8 --batch-limit 1`, then `node orchestrator/full-intake-ledger-summary.mjs --ledger <ledger> --compact`.
+- Parent chats should not paste or inspect full runtime `state.json`, `run-report.json`, queue `batch-report.json`, child stdout/stderr, transcripts, prompts, importer result objects, or broad summaries unless a later narrow debugging milestone explicitly names a blocker and records why.
+
+Validation:
+- Passed `node --check orchestrator/run-generic-repo-full-intake.mjs`.
+- Passed `node --check orchestrator/full-intake-ledger-summary.mjs`.
+- Passed `node --check scripts/sdk-generic-repo-full-intake-smoke.js`.
+- Passed `node --check scripts/full-intake-ledger-summary-smoke.js`.
+- Passed `node scripts/sdk-generic-repo-full-intake-smoke.js`.
+- Passed `node scripts/full-intake-ledger-summary-smoke.js`.
+- Passed `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`.
+- Passed `git diff --check` with only LF-to-CRLF working-copy warnings on touched files.
+- Live CEP/OpenAI CLI lanes were intentionally not run because this was a pure orchestration-output milestone.
+
 ### Handoff
 
 `.codex/handoff.md` is writable from the parent Codex process and is updated after milestone work. Use it as the primary continuation record. If a roadmap writer child hits local sandbox/ACL denial on `.codex/handoff.md`, record the handoff state in this active plan and let the supervisor/parent finalize the handoff file.

@@ -326,6 +326,7 @@ Options:
   --command-timeout-ms <n>     Per-command timeout. Default ${DEFAULT_COMMAND_TIMEOUT_MS}.
   --no-commit                  Do not create git commits after completed candidates.
   --json                       Print machine-readable output.
+  --compact-json               Print bounded parent-facing machine-readable output.
   --help                       Show this help.
 
 The loop is serial at shared gates: live proof, importer controlled merge,
@@ -344,7 +345,10 @@ const VALUE_OPTIONS = new Set([
   "run-id",
   "target-repo",
 ]);
-const BOOLEAN_OPTIONS = new Set(["help", "json", "no-commit"]);
+const BOOLEAN_OPTIONS = new Set(["compact-json", "help", "json", "no-commit"]);
+const COMPACT_OUTPUT_ID_LIMIT = 16;
+const COMPACT_OUTPUT_FAMILY_LIMIT = 12;
+const COMPACT_OUTPUT_COMMIT_LIMIT = 24;
 
 class FullIntakeError extends Error {
   constructor(message, report = null) {
@@ -2066,6 +2070,159 @@ function processResolutionTickets({ ledger, ledgerPath, registry, runId, runRoot
   };
 }
 
+function boundedStrings(values, limit = COMPACT_OUTPUT_ID_LIMIT) {
+  const seen = new Set();
+  const all = [];
+  for (const value of Array.isArray(values) ? values : []) {
+    const text = String(value || "").trim();
+    if (!text || seen.has(text)) {
+      continue;
+    }
+    seen.add(text);
+    all.push(text);
+  }
+  return {
+    count: all.length,
+    ids: all.slice(0, limit),
+    omitted: Math.max(0, all.length - limit),
+  };
+}
+
+function compactTicketFamily(ticket) {
+  return String(ticket?.groupId || ticket?.type || "unknown-family").trim() || "unknown-family";
+}
+
+function summarizeResolutionQueueForParent(resolutionQueue) {
+  const tickets = Array.isArray(resolutionQueue?.tickets) ? resolutionQueue.tickets : [];
+  const families = new Map();
+  for (const ticket of tickets) {
+    const family = compactTicketFamily(ticket);
+    const current = families.get(family) || { affectedCandidateIds: [], ticketCount: 0 };
+    current.ticketCount += 1;
+    current.affectedCandidateIds.push(...(Array.isArray(ticket.affectedCandidateIds) ? ticket.affectedCandidateIds : []));
+    families.set(family, current);
+  }
+  const familyEntries = Array.from(families.entries())
+    .sort(([left], [right]) => left.localeCompare(right))
+    .slice(0, COMPACT_OUTPUT_FAMILY_LIMIT)
+    .map(([family, value]) => ({
+      family,
+      ticketCount: value.ticketCount,
+      affectedCandidateIds: boundedStrings(value.affectedCandidateIds, COMPACT_OUTPUT_ID_LIMIT),
+    }));
+  return {
+    status: resolutionQueue?.status || null,
+    openTicketCount: Number(resolutionQueue?.openTicketCount || 0),
+    terminalTicketCount: Number(resolutionQueue?.terminalTicketCount || 0),
+    ticketCount: tickets.length,
+    closedCandidateIds: boundedStrings(resolutionQueue?.closedCandidateIds, COMPACT_OUTPUT_ID_LIMIT),
+    requeuedCandidateIds: boundedStrings(resolutionQueue?.requeuedCandidateIds, COMPACT_OUTPUT_ID_LIMIT),
+    affectedFamilies: familyEntries,
+    affectedFamilyCount: families.size,
+    affectedFamilyOmitted: Math.max(0, families.size - COMPACT_OUTPUT_FAMILY_LIMIT),
+  };
+}
+
+function compactLastItem(item) {
+  if (!item) {
+    return null;
+  }
+  return {
+    candidateId: item.candidateId || null,
+    status: item.status || null,
+    reason: item.reason || null,
+    importStatus: item.importStatus || null,
+    liveLaneStatus: item.liveLaneStatus || null,
+    liveRerunStatus: item.liveRerunStatus || null,
+    commitId: item.commitId || null,
+    completedAt: item.completedAt || null,
+  };
+}
+
+function inferParentNextAction(report, resolutionSummary, failedCandidateIds) {
+  if (report.ok === false) {
+    return "stop and resolve the compact blocker before rerunning";
+  }
+  if (failedCandidateIds.count > 0) {
+    return "inspect the named failed candidate through compact evidence only, then rerun with --compact-json";
+  }
+  if (resolutionSummary.requeuedCandidateIds.count > 0) {
+    return "rerun the full-intake supervisor with --compact-json to process requeued candidates";
+  }
+  if (report.status === "completed_no_candidates") {
+    return "use compact status and ledger summary to choose the next bounded lane";
+  }
+  if (String(report.status || "").startsWith("completed")) {
+    return "review compact status and ledger summary; avoid full runtime reports in parent chat";
+  }
+  return "continue only through compact-json/status/ledger-summary commands";
+}
+
+function compactPathsForParent(report) {
+  const runRoot = normalizeRepoPath(report.runRoot || "");
+  const ledgerPath = normalizeRepoPath(report.ledgerPath || "");
+  return {
+    runRoot,
+    runReport: runRoot ? normalizeRepoPath(`${runRoot}/run-report.json`) : null,
+    ledger: ledgerPath || null,
+    compactStatusCommand: report.runId
+      ? `node orchestrator/full-intake-status.mjs --run-id ${report.runId} --compact --event-limit 8 --batch-limit 1`
+      : null,
+    ledgerSummaryCommand: ledgerPath
+      ? `node orchestrator/full-intake-ledger-summary.mjs --ledger ${ledgerPath} --compact`
+      : null,
+  };
+}
+
+function compactParentReport(report) {
+  const items = Array.isArray(report.items) ? report.items : [];
+  const resolutionSummary = summarizeResolutionQueueForParent(report.resolutionQueue);
+  const failedCandidateIds = boundedStrings(
+    items
+      .filter((item) => String(item.status || "").startsWith("failed_"))
+      .map((item) => item.candidateId),
+    COMPACT_OUTPUT_ID_LIMIT,
+  );
+  const blockedCandidateIds = boundedStrings(
+    items
+      .filter((item) => String(item.status || "").startsWith("blocked_"))
+      .map((item) => item.candidateId),
+    COMPACT_OUTPUT_ID_LIMIT,
+  );
+  const skippedCount = items.filter((item) => String(item.status || "").startsWith("skipped_")).length;
+  const completedCandidateIds = boundedStrings(
+    items
+      .filter((item) => item.status === "completed")
+      .map((item) => item.candidateId),
+    COMPACT_OUTPUT_ID_LIMIT,
+  );
+  const commits = boundedStrings(report.commits, COMPACT_OUTPUT_COMMIT_LIMIT);
+  return {
+    schema: "generic-repo-full-intake.parent-compact-output.v1",
+    ok: report.ok === true,
+    status: report.status || null,
+    runId: report.runId || null,
+    counts: {
+      items: items.length,
+      completed: completedCandidateIds.count,
+      blocked: blockedCandidateIds.count,
+      failed: failedCandidateIds.count,
+      skipped: skippedCount,
+      commits: commits.count,
+      requeued: resolutionSummary.requeuedCandidateIds.count,
+      terminalTickets: resolutionSummary.terminalTicketCount,
+      openTickets: resolutionSummary.openTicketCount,
+    },
+    lastItem: compactLastItem(items[items.length - 1] || null),
+    commits,
+    requeuedCandidateIds: resolutionSummary.requeuedCandidateIds,
+    failedCandidateIds,
+    resolutionQueue: resolutionSummary,
+    nextAction: inferParentNextAction(report, resolutionSummary, failedCandidateIds),
+    compactPaths: compactPathsForParent(report),
+  };
+}
+
 function createSingleCandidateLedger({ candidate, ledger, runRoot, targetRepo }) {
   const currentHead = gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head");
   const currentBranch = gitOutput(targetRepo, ["branch", "--show-current"], "branch-show-current");
@@ -3233,9 +3390,13 @@ export function runFullIntake(options, cwd = process.cwd()) {
   return report;
 }
 
-function printResult(report, asJson) {
-  if (asJson) {
+function printResult(report, outputMode) {
+  if (outputMode === "json") {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return;
+  }
+  if (outputMode === "compact-json") {
+    process.stdout.write(`${JSON.stringify(compactParentReport(report), null, 2)}\n`);
     return;
   }
   process.stdout.write(`Generic repo full intake: ${report.status}\n`);
@@ -3244,19 +3405,21 @@ function printResult(report, asJson) {
 }
 
 async function main() {
-  let asJson = false;
+  let outputMode = "text";
   try {
     const options = parseArgs(process.argv.slice(2));
-    asJson = options.json === true;
+    outputMode = options.compactJson === true ? "compact-json" : options.json === true ? "json" : "text";
     if (options.help) {
       process.stdout.write(HELP.trimStart());
       return;
     }
     const report = runFullIntake(options, REPO_ROOT);
-    printResult(report, asJson);
+    printResult(report, outputMode);
   } catch (error) {
-    if (error instanceof FullIntakeError && error.report && asJson) {
+    if (error instanceof FullIntakeError && error.report && outputMode === "json") {
       process.stdout.write(`${JSON.stringify(error.report, null, 2)}\n`);
+    } else if (error instanceof FullIntakeError && error.report && outputMode === "compact-json") {
+      process.stdout.write(`${JSON.stringify(compactParentReport(error.report), null, 2)}\n`);
     }
     console.error(error.message);
     process.exitCode = 1;
