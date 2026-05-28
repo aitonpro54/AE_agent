@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-05-27",
+  "updatedAt": "2026-05-28",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -3030,6 +3030,110 @@
         "Require a separate typed-tool contract for Project panel selection reads, source-exact prompt behavior, selection ordering, source relinking, item deletion, movement, folder deletion, dependency cleanup or exact source JSX semantics.",
         "Require current get_project_snapshot, find_project_items or list_project_folder_items evidence before mutating project item names; do not infer item targets from prior chat context.",
         "Do not use this recipe for selected-layer rename, layer source replacement, deep precomp/source duplication, project item movement, render queue changes, user-asset cleanup or broad project mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "add-simple-loop-expression-typed-plan",
+      "title": "Add Simple Loop Expression Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "expressions",
+        "properties",
+        "loop",
+        "loopout",
+        "selected-properties",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Set the simple loopOut() expression on explicitly selected expression-capable properties, then read expression details back.",
+        "appliesWhen": [
+          "The user asks to add a simple loop expression, loopOut expression, or loop selected animated properties.",
+          "Typed selected-property expression mutation is acceptable instead of source-exact selection side effects, broad property scans, keyframe creation, time-remap setup, controller rigs, or raw JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties evidence containing one or more expression-capable targets with concrete layerIndex and propertyPath values."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated property is bound from current get_selected_properties evidence before mutation.",
+        "The default safe expression text for a simple loop request is exactly loopOut().",
+        "Existing property expressions are not overwritten unless the plan reports prior expression evidence and the user confirms replacement.",
+        "The workflow changes only expression text/enabled state on explicitly selected properties.",
+        "Layer names, sources, timing, effects, masks, keyframes, render queue items and unselected properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/add-simple-loop-expression-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "set_expression",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected property evidence, set loopOut() on each explicit expression-capable target, then read layer/property expression details back.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation to capture active comp identity, selected property targets, layerIndex values and propertyPath values.",
+          "Fail closed when selected-property evidence is empty, lacks layer/property path targets, is not expression-capable, or shows an existing expression that the user has not confirmed replacing.",
+          "Run one set_expression step per selected property target with expression loopOut(), enabled true, the evidence-backed layerIndex and exact propertyPath.",
+          "Run get_layer_details for every affected layer with expression/property detail read-back.",
+          "Fail closed if loop type variants, expression controllers, keyframe creation, time-remap setup, broad property scans, expression clearing, selection side effects or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties identifies every concrete selected property target and its owning layer.",
+          "Each set_expression result reports expression:\"loopOut()\", expressionEnabled:true and no expressionError.",
+          "Post-run get_layer_details shows each affected property has loopOut() enabled on the expected layer/property path.",
+          "Post-run evidence shows no keyframe, timing, effect, source, render queue, layer name or unselected property mutation.",
+          "Unsupported loop variants, expression controller setup, broad scans and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-expressions-add-simple-loop-expression generic repository importer as advisory typed-plan coverage for selected-property loopOut() expression workflows.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed expression tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-28",
+          "from": "generic-repo-importer-tool-expressions-add-simple-loop-expression",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Expressions/Add_Simple_Loop_Expression.jsx into existing typed tools as selected-property set_expression loopOut() guidance; no source JSX copied. Current typed tools require current get_selected_properties evidence and get_layer_details read-back; loop variants, keyframe generation, expression controllers, time-remap setup, broad property scans and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties before mutating expression text; do not infer targets from prior chat context.",
+        "The default simple loop expression is exactly loopOut(); do not invent loop type arguments or controller rigs unless a separate typed-tool contract covers them.",
+        "Do not overwrite existing expressions unless prior expression evidence is surfaced and the user explicitly confirms replacement.",
+        "Require a separate typed-tool contract for loopIn, pingpong/offset/continue loop variants, keyframe creation, expression controllers, time-remap setup, broad property scans, selection side effects or exact source JSX semantics.",
+        "Do not use this recipe for expression clearing, keyframe edits, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
       ]
     }
   ]

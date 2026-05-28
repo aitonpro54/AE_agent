@@ -29,6 +29,7 @@ const IMPORTED_ADVISORY_IDS = [
   "rename-selected-layers-with-numbers-typed-plan",
   "rename-selected-layers-with-letters-typed-plan",
   "replace-text-in-layer-name-typed-plan",
+  "add-simple-loop-expression-typed-plan",
   "get-selected-layer-duration-typed-plan",
   "calculate-distance-between-layers-typed-plan",
   "layer-selection-get-typed-plan",
@@ -53,6 +54,7 @@ const AVAILABLE_TOOLS = [
   "list_project_folder_items",
   "get_active_comp",
   "get_selected_layers",
+  "get_selected_properties",
   "list_layers",
   "get_comp_details",
   "get_render_queue_status",
@@ -67,6 +69,8 @@ const AVAILABLE_TOOLS = [
   "align_layers_to_time",
   "set_property_keyframes",
   "apply_keyframe_ease",
+  "set_expression",
+  "clear_expression",
   "set_layer_transform",
   "set_comp_work_area",
   "add_layer_marker",
@@ -376,6 +380,30 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate typed-tool contract for regex behavior.`);
       assert(solution.notes.some((note) => /project item rename/.test(note)), `${id}: notes must keep project item rename out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Replace_Text_In_Layer_Name/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "add-simple-loop-expression-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "set_expression", "get_layer_details"],
+        `${id}: imported simple loop expression workflow should stay on the narrow selected-property expression typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: simple loop expression workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+      assert(text.includes("expression-capable"), `${id}: recipe should require expression-capable property evidence.`);
+      assert(text.includes("set_expression"), `${id}: recipe should use the expression typed tool.`);
+      assert(text.includes("loopOut()"), `${id}: recipe should preserve simple loopOut expression text.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require expression read-back through layer details.`);
+      assert(text.includes("Do not overwrite existing property expressions"), `${id}: recipe should guard existing expressions.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_expression/.test(step)), `${id}: verification must include set_expression.`);
+      assert(solution.verificationRecipe.steps.some((step) => /loopOut\(\)/.test(step)), `${id}: verification must require loopOut expression text.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expression:"loopOut\(\)"/.test(item)), `${id}: verification must require loopOut expression result evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionEnabled:true/.test(item)), `${id}: verification must require enabled expression evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionError/.test(item)), `${id}: verification must require expression error evidence.`);
+      assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Add_Simple_Loop_Expression/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "get-selected-layer-duration-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -872,6 +900,21 @@ function assertActualRetrieval(registry) {
   assert(replaceLayerNamePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
   assert(!/run_extendscript/i.test(replaceLayerNamePromptSection), "selected-layer find/replace rename guidance should not recommend raw ExtendScript.");
 
+  const simpleLoopExpressionRetrieval = retrieveSolutionHints("Add a simple loopOut expression to the selected animated properties after inspecting selected properties, then read back expression details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(simpleLoopExpressionRetrieval.ok, true);
+  assert(ids(simpleLoopExpressionRetrieval).includes("add-simple-loop-expression-typed-plan"), "simple loop expression advisory recipe should surface for selected-property loopOut prompts.");
+  const simpleLoopExpressionPromptSection = formatSolutionHintsForPrompt(simpleLoopExpressionRetrieval);
+  assert(simpleLoopExpressionPromptSection.includes("Add Simple Loop Expression Typed Plan"), "prompt section should include simple loop expression advisory title.");
+  assert(simpleLoopExpressionPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for expression workflows.");
+  assert(simpleLoopExpressionPromptSection.includes("set_expression"), "prompt section should prefer set_expression for expression workflows.");
+  assert(simpleLoopExpressionPromptSection.includes("loopOut()"), "prompt section should preserve simple loopOut expression text.");
+  assert(simpleLoopExpressionPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
+  assert(!/run_extendscript/i.test(simpleLoopExpressionPromptSection), "simple loop expression guidance should not recommend raw ExtendScript.");
+
   const selectedLayerDurationRetrieval = retrieveSolutionHints("Tell me the duration in seconds of the selected layer after inspecting the selected layer timing.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -1110,6 +1153,7 @@ function assertActualRetrieval(registry) {
       numberedLayerName: ids(numberedLayerNameRetrieval),
       letteredLayerName: ids(letteredLayerNameRetrieval),
       replaceLayerName: ids(replaceLayerNameRetrieval),
+      simpleLoopExpression: ids(simpleLoopExpressionRetrieval),
       selectedLayerDuration: ids(selectedLayerDurationRetrieval),
       layerDistance: ids(layerDistanceRetrieval),
       layerSelectionGet: ids(layerSelectionGetRetrieval),
