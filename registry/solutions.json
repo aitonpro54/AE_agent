@@ -4373,7 +4373,7 @@
         "typed-tool"
       ],
       "intent": {
-        "summary": "Swap reviewed dimensional components on explicitly selected static numeric array properties with typed selected-property evidence, set_property_value, and layer/property read-back.",
+        "summary": "Swap reviewed dimensional components on explicitly selected static numeric array properties with set_property_value setAtTime:false and layer/property read-back.",
         "appliesWhen": [
           "The user asks to swap selected property dimensions, swap X/Y, flip horizontal and vertical components, or exchange dimensional components on currently selected properties.",
           "Typed selected-property value mutation is acceptable only when current selected-property evidence includes static numeric array values, exact layer/property targets, no expression/keyframe mutation requirement and a reviewed dimensionSwap."
