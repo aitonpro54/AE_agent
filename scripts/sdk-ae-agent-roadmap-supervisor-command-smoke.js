@@ -60,6 +60,16 @@ function initRepo(temp) {
       "}",
       "const promptIndex = process.argv.indexOf('--prompt');",
       "const prompt = promptIndex === -1 ? '' : process.argv[promptIndex + 1] || '';",
+      "if (prompt.includes('BIG_NON_BLOCKING_REVIEWER_OUTPUT')) {",
+      "  console.log('NON_BLOCKING reviewer note: noisy but not blocking.');",
+      "  console.log('NOISY_REVIEWER_TOKEN_' + 'N'.repeat(24000));",
+      "  process.exit(0);",
+      "}",
+      "if (prompt.includes('BLOCKING_REVIEWER_OUTPUT')) {",
+      "  console.log('BLOCKING reviewer finding: compact parent output must reference the artifact only.');",
+      "  console.log('BLOCKING_REVIEWER_TOKEN_' + 'B'.repeat(24000));",
+      "  process.exit(0);",
+      "}",
       "const match = prompt.match(/<roadmap_item_json>\\n([\\s\\S]*?)\\n<\\/roadmap_item_json>/);",
       "if (!match) { console.log('read-only reviewer no-op'); process.exit(0); }",
       "const item = JSON.parse(match[1]);",
@@ -96,6 +106,16 @@ function initRepo(temp) {
       "import fs from 'node:fs';",
       "import path from 'node:path';",
       "const prompt = fs.readFileSync(0, 'utf8');",
+      "if (prompt.includes('BIG_NON_BLOCKING_REVIEWER_OUTPUT')) {",
+      "  console.log('NON_BLOCKING reviewer note: noisy but not blocking.');",
+      "  console.log('NOISY_REVIEWER_TOKEN_' + 'N'.repeat(24000));",
+      "  process.exit(0);",
+      "}",
+      "if (prompt.includes('BLOCKING_REVIEWER_OUTPUT')) {",
+      "  console.log('BLOCKING reviewer finding: compact parent output must reference the artifact only.');",
+      "  console.log('BLOCKING_REVIEWER_TOKEN_' + 'B'.repeat(24000));",
+      "  process.exit(0);",
+      "}",
       "const match = prompt.match(/<roadmap_item_json>\\n([\\s\\S]*?)\\n<\\/roadmap_item_json>/);",
       "if (!match) { console.log('read-only reviewer no-op'); process.exit(0); }",
       "const item = JSON.parse(match[1]);",
@@ -662,6 +682,135 @@ function assertReadOnlyReviewerSdkParseFailureFallsBackAndRunsWriter() {
     "localized-read-only",
     /Failed to parse item: .*19728.*12472/,
   );
+}
+
+function assertNoReviewerParentLeak(text) {
+  for (const forbidden of [
+    "NOISY_REVIEWER_TOKEN",
+    "BLOCKING_REVIEWER_TOKEN",
+    "PARENT_PROMPT_SHOULD_NOT_LEAK",
+    "BIG_NON_BLOCKING_REVIEWER_OUTPUT",
+    "BLOCKING_REVIEWER_OUTPUT",
+    '"stdout"',
+    '"stderr"',
+    "stdoutTail",
+    "stderrTail",
+  ]) {
+    assert(!text.includes(forbidden), `parent output leaked reviewer data: ${forbidden}`);
+  }
+}
+
+function assertReviewerOutputDemotesNoisyNonBlockingText() {
+  const temp = createTempRepo("reviewer-output-demotion");
+  try {
+    const queuePath = writeQueue(temp, [item("one", 1, {
+      approvalState: "pending-explicit-approval",
+      reviewerBlocking: true,
+      reviewerTasks: [
+        {
+          id: "noisy-reviewer",
+          kind: "sdk-readonly",
+          prompt: "BIG_NON_BLOCKING_REVIEWER_OUTPUT PARENT_PROMPT_SHOULD_NOT_LEAK",
+        },
+      ],
+      runnerKind: "roadmap-sdk",
+    })]);
+    const approval = approvalFor(temp, queuePath, ["--max-items", "1"]);
+    const raw = run([
+      "--run-until-budget",
+      "--queue",
+      queuePath,
+      "--max-items",
+      "1",
+      "--session-id",
+      "reviewer-output-demotion",
+      "--reviewers",
+      "parallel",
+      "--approval-text",
+      approval,
+      "--json",
+    ], temp, {
+      env: envWithFakeCodex(temp),
+    });
+    assert.strictEqual(raw.status, 0, raw.stderr || raw.stdout);
+    assert(raw.stdout.length < 16000, `parent output should stay compact, got ${raw.stdout.length}`);
+    assertNoReviewerParentLeak(raw.stdout);
+    const result = JSON.parse(raw.stdout);
+    const reviewer = result.results[0].reviewerResults[0];
+    assert.strictEqual(reviewer.blockingFinding, false);
+    assert.strictEqual(reviewer.nonBlockingFinding, true);
+    assert.strictEqual(reviewer.readOnly, true);
+    assert.match(reviewer.logSha256, /^[a-f0-9]{64}$/);
+    assert(reviewer.promptArtifact && reviewer.promptArtifact.path.endsWith(".prompt.txt"));
+    assert.match(reviewer.promptArtifact.sha256, /^[a-f0-9]{64}$/);
+    assert.strictEqual(reviewer.outputArtifacts.length, 1);
+    assert.match(reviewer.outputArtifacts[0].sha256, /^[a-f0-9]{64}$/);
+    assert(reviewer.streamBytes.out > 24000, "reviewer summary should retain output byte count");
+    const finalReportText = fs.readFileSync(path.join(temp, result.finalReportPath), "utf8");
+    assertNoReviewerParentLeak(finalReportText);
+    const outputArtifact = fs.readFileSync(path.join(temp, reviewer.outputArtifacts[0].path), "utf8");
+    assert(outputArtifact.includes("NOISY_REVIEWER_TOKEN"), "full noisy reviewer output should remain on disk");
+    const promptArtifact = fs.readFileSync(path.join(temp, reviewer.promptArtifact.path), "utf8");
+    assert(promptArtifact.includes("PARENT_PROMPT_SHOULD_NOT_LEAK"), "full reviewer prompt should remain on disk");
+    assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
+  } finally {
+    removeTempRepo(temp);
+  }
+}
+
+function assertBlockingReviewerFailsClosedCompactly() {
+  const temp = createTempRepo("reviewer-blocking-compact");
+  try {
+    const queuePath = writeQueue(temp, [item("one", 1, {
+      approvalState: "pending-explicit-approval",
+      reviewerBlocking: true,
+      reviewerTasks: [
+        {
+          id: "blocking-reviewer",
+          kind: "sdk-readonly",
+          prompt: "BLOCKING_REVIEWER_OUTPUT PARENT_PROMPT_SHOULD_NOT_LEAK",
+        },
+      ],
+      runnerKind: "roadmap-sdk",
+    })]);
+    const approval = approvalFor(temp, queuePath, ["--max-items", "1"]);
+    const result = run([
+      "--run-until-budget",
+      "--queue",
+      queuePath,
+      "--max-items",
+      "1",
+      "--session-id",
+      "reviewer-blocking-compact",
+      "--reviewers",
+      "parallel",
+      "--approval-text",
+      approval,
+      "--json",
+    ], temp, {
+      env: envWithFakeCodex(temp),
+    });
+    assert.notStrictEqual(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stderr, /reviewer_blocking_finding:one:blocking-reviewer/);
+    assert.match(result.stderr, /logSha256=[a-f0-9]{64}/);
+    assert.match(result.stderr, /promptArtifact=.*\.prompt\.txt@[a-f0-9]{64}/);
+    assert.match(result.stderr, /outputArtifacts=.*\.sdk-output\.txt@[a-f0-9]{64}/);
+    assertNoReviewerParentLeak(result.stderr);
+    assert(result.stderr.length < 2048, `blocking reviewer parent error should stay compact, got ${result.stderr.length}`);
+    const outputArtifact = path.join(
+      temp,
+      ".codex-runtime",
+      "sdk",
+      "roadmap-supervisor",
+      "reviewer-blocking-compact",
+      "reviewers",
+      "one-1.sdk-output.txt",
+    );
+    assert(fs.readFileSync(outputArtifact, "utf8").includes("BLOCKING_REVIEWER_TOKEN"));
+    assert.strictEqual(sh(temp, ["git", "status", "--porcelain"]), "");
+  } finally {
+    removeTempRepo(temp);
+  }
 }
 
 function assertPromptOnlyMissionCreatesQueueAndExecutes() {
@@ -1234,6 +1383,8 @@ function main() {
   assertRoadmapSdkExecuteOneCommits();
   assertRoadmapSdkCliExecuteOneCommits();
   assertReadOnlyReviewerSdkParseFailureFallsBackAndRunsWriter();
+  assertReviewerOutputDemotesNoisyNonBlockingText();
+  assertBlockingReviewerFailsClosedCompactly();
   assertPromptOnlyMissionCreatesQueueAndExecutes();
   assertExistingQueueMissionRunsWithoutPlanCopying();
   assertMissionFailureFollowupAndRetry();

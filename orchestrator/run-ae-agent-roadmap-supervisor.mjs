@@ -27,6 +27,7 @@ export const DEFAULT_TAIL_LINES = 80;
 const CHILD_OUTPUT_MAX_BUFFER_BYTES = 30 * 1024 * 1024;
 const { boundedSpawnSyncResult, writeProcessLog } = boundedProcess;
 const REVIEWER_LIMIT = 2;
+const REVIEWER_PARENT_ARTIFACT_LIMIT = 4;
 const LIVE_CHECK_TIMEOUT_MS = 5 * 60 * 1000;
 const REVIEWER_SDK_PROCESS_TERMINATION_RE =
   /Failed to parse item:\s*(?:SUCCESS:\s*The process with PID \d+ \(child process of PID \d+\) has been terminated\.|Успешно:\s*.*?\d+.*?\d+.*?заверш[её]н)/i;
@@ -313,6 +314,19 @@ function fileSha256(cwd, repoPath) {
     return null;
   }
   return sha256(readFileSync(absolute));
+}
+
+function artifactRefFromAbsolute(cwd, absolutePath) {
+  if (!absolutePath || !existsSync(absolutePath) || !statSync(absolutePath).isFile()) {
+    return null;
+  }
+  const repoPath = normalizeRepoPath(path.relative(cwd, absolutePath));
+  const stats = statSync(absolutePath);
+  return {
+    bytes: stats.size,
+    path: repoPath,
+    sha256: fileSha256(cwd, repoPath),
+  };
 }
 
 function fileFingerprint(cwd, repoPath) {
@@ -1103,9 +1117,11 @@ function runLoggedCommand(cwd, runtime, command, id, directory, timeoutMs = 1200
   const result = runShellCommand(cwd, command, timeoutMs);
   const logPath = path.join(directory, `${safeSessionToken(id)}.log`);
   writeLog(logPath, result);
+  const logRef = artifactRefFromAbsolute(cwd, logPath);
   return {
     command,
-    logPath: normalizeRepoPath(path.relative(cwd, logPath)),
+    logPath: logRef ? logRef.path : normalizeRepoPath(path.relative(cwd, logPath)),
+    logSha256: logRef ? logRef.sha256 : null,
     ok: !result.error && result.status === 0,
     status: result.status,
     stderrTail: tailLines(result.stderr, DEFAULT_TAIL_LINES),
@@ -1113,13 +1129,28 @@ function runLoggedCommand(cwd, runtime, command, id, directory, timeoutMs = 1200
   };
 }
 
+function compactLoggedCommandResult(result) {
+  return {
+    command: result.command,
+    id: result.id || null,
+    logPath: result.logPath,
+    logSha256: result.logSha256 || null,
+    mode: result.mode || null,
+    ok: result.ok === true,
+    status: result.status,
+  };
+}
+
 function runLiveConnectivityCheck(cwd, runtime) {
   const results = [];
   for (const command of liveConnectivityCommands()) {
     const result = runLoggedCommand(cwd, runtime, command.command, command.id, runtime.liveDir, command.timeoutMs);
-    results.push({ ...result, id: command.id, mode: "read-only-connectivity" });
+    const compact = compactLoggedCommandResult({ ...result, id: command.id, mode: "read-only-connectivity" });
+    results.push(compact);
     if (!result.ok) {
-      throw new Error(`Live AE/CEP connectivity failed: ${command.id}. ${result.logPath}\n${result.stderrTail || result.stdoutTail}`);
+      throw new Error(
+        `Live AE/CEP connectivity failed: ${command.id}; log=${result.logPath}; logSha256=${result.logSha256 || "missing"}; nextAction=inspect the runtime log artifact on disk`,
+      );
     }
   }
   return results;
@@ -1164,9 +1195,11 @@ function runItemLiveValidation(cwd, runtime, queue, item, options) {
   for (const [index, command] of policy.commands.entries()) {
     const id = `item-live-${item.id}-${index + 1}`;
     const result = runLoggedCommand(cwd, runtime, command, id, runtime.liveDir, item.maxMinutes * 60 * 1000);
-    results.push({ ...result, id, mode: policy.mode });
+    results.push(compactLoggedCommandResult({ ...result, id, mode: policy.mode }));
     if (!result.ok) {
-      throw new Error(`Item live validation failed for ${item.id}: ${command}. ${result.logPath}\n${result.stderrTail || result.stdoutTail}`);
+      throw new Error(
+        `Item live validation failed for ${item.id}: ${command}; log=${result.logPath}; logSha256=${result.logSha256 || "missing"}; nextAction=inspect the runtime log artifact on disk`,
+      );
     }
   }
   return results;
@@ -1485,6 +1518,40 @@ function buildReviewerPrompt(item, task) {
   ].join("\n");
 }
 
+function reviewerArtifactPath(logPath, suffix) {
+  const parsed = path.parse(logPath);
+  return path.join(parsed.dir, `${parsed.name}.${suffix}.txt`);
+}
+
+function writeReviewerPromptArtifact(logPath, prompt) {
+  const promptPath = reviewerArtifactPath(logPath, "prompt");
+  writeFileSync(promptPath, prompt, "utf8");
+  return promptPath;
+}
+
+function reviewerHasNonBlockingFinding(text) {
+  return /\bNON[-_\s]?BLOCKING\b/i.test(String(text || ""));
+}
+
+function reviewerHasBlockingFinding(text) {
+  return String(text || "")
+    .split(/\r?\n/)
+    .some((line) => {
+      if (reviewerHasNonBlockingFinding(line)) {
+        return false;
+      }
+      return /\b(CRITICAL|BLOCKING)\b/i.test(line);
+    });
+}
+
+function appendReviewerOutputArtifact(artifactPath, streamName, text) {
+  appendFileSync(
+    artifactPath,
+    [``, `## ${streamName}`, text || ""].join("\n"),
+    "utf8",
+  );
+}
+
 function buildReviewerInvocation(cwd, prompt, engine) {
   const command = engine === "cli" ? "cmd.exe" : process.execPath;
   const args = engine === "cli"
@@ -1523,7 +1590,7 @@ function buildReviewerInvocation(cwd, prompt, engine) {
   return { args, command, input: engine === "cli" ? prompt : "" };
 }
 
-function runReviewerAttempt(cwd, invocation) {
+function runReviewerAttempt(cwd, invocation, outputArtifactPath) {
   return new Promise((resolve) => {
     let settled = false;
     const stdoutTail = [];
@@ -1533,6 +1600,21 @@ function runReviewerAttempt(cwd, invocation) {
     let stdoutLines = 0;
     let stderrLines = 0;
     let hasBlockingFinding = false;
+    let hasNonBlockingFinding = false;
+    if (outputArtifactPath) {
+      mkdirSync(path.dirname(outputArtifactPath), { recursive: true });
+      writeFileSync(
+        outputArtifactPath,
+        [
+          "# reviewer-output-artifact",
+          `createdAt: ${new Date().toISOString()}`,
+          `commandSha256: ${sha256(stableJson({ args: invocation.args, command: invocation.command }))}`,
+          `inputSha256: ${sha256(invocation.input || "")}`,
+          "",
+        ].join("\n"),
+        "utf8",
+      );
+    }
     function pushTail(target, chunk) {
       const text = chunk.toString("utf8");
       const lines = text.split(/\r?\n/);
@@ -1551,6 +1633,8 @@ function runReviewerAttempt(cwd, invocation) {
       resolve({
         ...result,
         hasBlockingFinding,
+        hasNonBlockingFinding,
+        outputArtifactPaths: outputArtifactPath ? [outputArtifactPath] : [],
         stderrBytes,
         stderrTail: stderrTail.join("\n"),
         stderrTruncated: stderrLines > DEFAULT_TAIL_LINES,
@@ -1568,13 +1652,17 @@ function runReviewerAttempt(cwd, invocation) {
       const text = chunk.toString("utf8");
       stdoutBytes += Buffer.byteLength(text, "utf8");
       stdoutLines += pushTail(stdoutTail, chunk);
-      if (/\b(CRITICAL|BLOCKING)\b/i.test(text)) hasBlockingFinding = true;
+      if (outputArtifactPath) appendReviewerOutputArtifact(outputArtifactPath, "stdout", text);
+      if (reviewerHasBlockingFinding(text)) hasBlockingFinding = true;
+      if (reviewerHasNonBlockingFinding(text)) hasNonBlockingFinding = true;
     });
     child.stderr.on("data", (chunk) => {
       const text = chunk.toString("utf8");
       stderrBytes += Buffer.byteLength(text, "utf8");
       stderrLines += pushTail(stderrTail, chunk);
-      if (/\b(CRITICAL|BLOCKING)\b/i.test(text)) hasBlockingFinding = true;
+      if (outputArtifactPath) appendReviewerOutputArtifact(outputArtifactPath, "stderr", text);
+      if (reviewerHasBlockingFinding(text)) hasBlockingFinding = true;
+      if (reviewerHasNonBlockingFinding(text)) hasNonBlockingFinding = true;
     });
     child.on("error", (error) => {
       finish({ error, status: 1 });
@@ -1620,43 +1708,126 @@ function combineReviewerFallbackResult(primary, fallback) {
     error: fallback.error,
     fallbackEngine: "cli",
     hasBlockingFinding: primary.hasBlockingFinding === true || fallback.hasBlockingFinding === true,
+    hasNonBlockingFinding: primary.hasNonBlockingFinding === true || fallback.hasNonBlockingFinding === true,
+    outputArtifactPaths: [
+      ...(Array.isArray(primary.outputArtifactPaths) ? primary.outputArtifactPaths : []),
+      ...(Array.isArray(fallback.outputArtifactPaths) ? fallback.outputArtifactPaths : []),
+    ],
     primaryStatus: primary.status,
     signal: fallback.signal,
     status: fallback.status,
+    stderrBytes: (primary.stderrBytes || 0) + (fallback.stderrBytes || 0),
     stderrTail: [
       "## sdk reviewer attempt stderr",
       primary.stderrTail || "(empty)",
       "## cli reviewer fallback stderr",
       fallback.stderrTail || "(empty)",
     ].join("\n"),
+    stderrTruncated: primary.stderrTruncated === true || fallback.stderrTruncated === true,
+    stdoutBytes: (primary.stdoutBytes || 0) + (fallback.stdoutBytes || 0),
     stdoutTail: [
       "## sdk reviewer attempt stdout",
       primary.stdoutTail || "(empty)",
       "## cli reviewer fallback stdout",
       fallback.stdoutTail || "(empty)",
     ].join("\n"),
+    stdoutTruncated: primary.stdoutTruncated === true || fallback.stdoutTruncated === true,
   };
+}
+
+function compactReviewerResultForParent(cwd, result) {
+  const logRef = artifactRefFromAbsolute(cwd, result.logPath);
+  const promptRef = artifactRefFromAbsolute(cwd, result.promptArtifactPath);
+  const outputArtifacts = (Array.isArray(result.outputArtifactPaths) ? result.outputArtifactPaths : [])
+    .map((entry) => artifactRefFromAbsolute(cwd, entry))
+    .filter(Boolean)
+    .slice(0, REVIEWER_PARENT_ARTIFACT_LIMIT);
+  return {
+    ...(result.fallbackEngine ? { fallbackEngine: result.fallbackEngine } : {}),
+    ...(result.primaryStatus !== undefined ? { primaryStatus: result.primaryStatus } : {}),
+    blockingFinding: result.hasBlockingFinding === true,
+    id: result.id,
+    logPath: logRef ? logRef.path : normalizeRepoPath(path.relative(cwd, result.logPath)),
+    logSha256: logRef ? logRef.sha256 : null,
+    nonBlockingFinding: result.hasNonBlockingFinding === true,
+    outputArtifacts,
+    streamBytes: {
+      err: result.stderrBytes || 0,
+      out: result.stdoutBytes || 0,
+    },
+    streamTruncated: {
+      err: result.stderrTruncated === true,
+      out: result.stdoutTruncated === true,
+    },
+    promptArtifact: promptRef,
+    readOnly: true,
+    status: result.status,
+  };
+}
+
+function reviewerFailureMessage(kind, item, summary) {
+  const outputRefs = (summary.outputArtifacts || [])
+    .map((entry) => `${entry.path}@${entry.sha256 || "missing"}`)
+    .join(",");
+  return [
+    `reviewer_${kind}:${item.id}:${summary.id}`,
+    `status=${summary.status}`,
+    `blocking=${summary.blockingFinding === true}`,
+    `nonBlocking=${summary.nonBlockingFinding === true}`,
+    `log=${summary.logPath}`,
+    `logSha256=${summary.logSha256 || "missing"}`,
+    `promptArtifact=${summary.promptArtifact ? `${summary.promptArtifact.path}@${summary.promptArtifact.sha256 || "missing"}` : "missing"}`,
+    `outputArtifacts=${outputRefs || "missing"}`,
+    "nextAction=inspect reviewer artifacts on disk; do not paste raw reviewer streams into parent chat",
+  ].join("\n");
 }
 
 async function runReviewerProcess(cwd, runtime, item, task, index, engine) {
   const logPath = path.join(runtime.reviewerDir, `${safeSessionToken(item.id)}-${index + 1}.log`);
   if (task.kind === "noop") {
+    const outputArtifactPath = reviewerArtifactPath(logPath, "output");
     const result = {
+      hasBlockingFinding: false,
+      hasNonBlockingFinding: false,
+      outputArtifactPaths: [outputArtifactPath],
       status: 0,
       stdout: `noop reviewer ${task.id || index + 1} used read-only contract\n`,
       stderr: "",
     };
+    writeFileSync(
+      outputArtifactPath,
+      [
+        "# reviewer-output-artifact",
+        `createdAt: ${new Date().toISOString()}`,
+        "",
+        "## stdout",
+        result.stdout,
+        "",
+        "## stderr",
+        result.stderr,
+        "",
+      ].join("\n"),
+      "utf8",
+    );
     writeLog(logPath, result);
     return { ...result, id: task.id || `reviewer-${index + 1}`, logPath, readOnly: true };
   }
 
   const prompt = buildReviewerPrompt(item, task);
-  const primary = await runReviewerAttempt(cwd, buildReviewerInvocation(cwd, prompt, engine));
+  const promptArtifactPath = writeReviewerPromptArtifact(logPath, prompt);
+  const primary = await runReviewerAttempt(
+    cwd,
+    buildReviewerInvocation(cwd, prompt, engine),
+    reviewerArtifactPath(logPath, `${engine}-output`),
+  );
   const result = engine === "sdk" && isReviewerSdkProcessTermination(primary)
-    ? combineReviewerFallbackResult(primary, await runReviewerAttempt(cwd, buildReviewerInvocation(cwd, prompt, "cli")))
+    ? combineReviewerFallbackResult(
+        primary,
+        await runReviewerAttempt(cwd, buildReviewerInvocation(cwd, prompt, "cli"), reviewerArtifactPath(logPath, "cli-output")),
+      )
     : primary;
   writeLog(logPath, result);
-  return { ...result, id: task.id || `reviewer-${index + 1}`, logPath, readOnly: true };
+  return { ...result, id: task.id || `reviewer-${index + 1}`, logPath, promptArtifactPath, readOnly: true };
 }
 
 async function runReviewers(cwd, runtime, item, mode, engine) {
@@ -1668,27 +1839,15 @@ async function runReviewers(cwd, runtime, item, mode, engine) {
     selectedTasks.map((task, index) => runReviewerProcess(cwd, runtime, item, task, index, engine)),
   );
   for (const result of results) {
-    const output = `${result.stdout || result.stdoutTail || ""}\n${result.stderr || result.stderrTail || ""}`;
+    const summary = compactReviewerResultForParent(cwd, result);
     if (result.status !== 0) {
-      throw new Error(
-        [
-          `Read-only reviewer failed for ${item.id}: ${result.id}`,
-          `Log: ${normalizeRepoPath(path.relative(cwd, result.logPath))}`,
-          tailLines(output, 20),
-        ].join("\n"),
-      );
+      throw new Error(reviewerFailureMessage("failed", item, summary));
     }
-    if (item.reviewerBlocking === true && (result.hasBlockingFinding === true || /\b(CRITICAL|BLOCKING)\b/i.test(output))) {
-      throw new Error(`Read-only reviewer reported a blocking finding for ${item.id}: ${result.id}`);
+    if (item.reviewerBlocking === true && summary.blockingFinding === true) {
+      throw new Error(reviewerFailureMessage("blocking_finding", item, summary));
     }
   }
-  return results.map((result) => ({
-    ...(result.fallbackEngine ? { fallbackEngine: result.fallbackEngine } : {}),
-    id: result.id,
-    logPath: normalizeRepoPath(path.relative(cwd, result.logPath)),
-    readOnly: true,
-    status: result.status,
-  }));
+  return results.map((result) => compactReviewerResultForParent(cwd, result));
 }
 
 function runValidationCommands(cwd, runtime, item) {
@@ -1700,14 +1859,16 @@ function runValidationCommands(cwd, runtime, item) {
     const result = runShellCommand(cwd, command);
     const logPath = path.join(runtime.childDir, `${safeSessionToken(item.id)}-validation-${index + 1}.log`);
     writeLog(logPath, result);
+    const logRef = artifactRefFromAbsolute(cwd, logPath);
     results.push({
       command,
-      logPath: normalizeRepoPath(path.relative(cwd, logPath)),
+      logPath: logRef ? logRef.path : normalizeRepoPath(path.relative(cwd, logPath)),
+      logSha256: logRef ? logRef.sha256 : null,
       status: result.status,
     });
     if (result.error || result.status !== 0) {
       throw new Error(
-        `Validation failed for ${item.id}: ${command}. ${normalizeRepoPath(path.relative(cwd, logPath))}\n${tailLines(result.stderr || result.stdout, DEFAULT_TAIL_LINES)}`,
+        `Validation failed for ${item.id}: ${command}; log=${normalizeRepoPath(path.relative(cwd, logPath))}; logSha256=${logRef ? logRef.sha256 : "missing"}; nextAction=inspect the validation log artifact on disk`,
       );
     }
   });
@@ -1845,7 +2006,9 @@ function writeSupervisorHandoff(cwd, item, context) {
   const handoffPath = normalizeRepoPath(item.handoffPolicy.path);
   const validationLines = context.validationResults.map((entry) => `- ${entry.command}: status ${entry.status}`);
   const liveLines = context.itemLiveValidationResults.map((entry) => `- ${entry.command}: status ${entry.status}`);
-  const reviewerLines = context.reviewerResults.map((entry) => `- ${entry.id}: status ${entry.status}`);
+  const reviewerLines = context.reviewerResults.map((entry) => (
+    `- ${entry.id}: status ${entry.status}; blocking=${entry.blockingFinding === true}; nonBlocking=${entry.nonBlockingFinding === true}; log=${entry.logPath}; logSha256=${entry.logSha256 || "missing"}`
+  ));
   const lines = [
     `# Handoff: ${item.id}, ${new Date().toISOString()}`,
     "",
