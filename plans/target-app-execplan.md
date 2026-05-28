@@ -2,6 +2,7 @@
 
 ## Progress
 
+- [x] AUX-077 GPT Pro long-run orchestrator review packet refresh: rebuilt the single-file Pro review bundle from current `f86ea8a` source after the parent-output mechanism changed; the 8-file source allowlist now includes the new `orchestrator/full-intake-ledger-summary.mjs` and drops the broad `orchestrator/README.md`, keeping the review focused on SDK/supervisor/importer/full-intake/compact-output contracts.
 - [x] AUX-075 property-value full-intake closeout: selected-property-value generated-only OpenAI CLI lane proof passed through read-only CEP/CDP preflight and full-intake; imported `tool-properties-round-selected-property-values`, `tool-properties-set-new-color`, and `tool-properties-swap-selected-property-dimensions`; `tool-properties-swap-property-values` failed closed on importer child failure; `tool-properties-separate-size-dimensions` stayed terminal because it needs a separate expression/dimension-separation contract.
 - [x] Full intake tool-properties-swap-selected-property-dimensions: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-swap-selected-property-dimensions); live gate ready, importer batch full-intake-kyletmartinez-358ff3627c-import, commit recorded after candidate commit.
 - [x] AUX-074 swap-selected-property-dimensions child patch: `tool-properties-swap-selected-property-dimensions` prepared inside detached importer-owned worktree `queue-batch-1-fb1877299f` as mutating selected numeric-array property dimension-swap advisory recipe/registry/smoke coverage; parent importer owns controlled merge, validation, generated-only live policy and commit authority.
@@ -960,6 +961,7 @@
 
 ## Decision Log
 
+- 2026-05-28: AUX-077 treats the GPT Pro review packet as a review artifact, not an implementation approval. The packet source snapshot is `f86ea8a85f220b8abf09b24852eb705e0d77aef7`; it intentionally includes source evidence for `codex-sdk-orchestrator`, AE Agent policy, bounded process results, roadmap supervisor, full-intake, full-intake ledger summary, queue supervisor, and generic repo importer. It excludes ignored runtime logs, `.codex-runtime`, `.env`, provider/browser auth state, After Effects project files, user assets, and broad README material so Pro reviews the changed mechanism rather than stale general docs.
 - 2026-05-28: AUX-075 closes the property-value family as far as current safe evidence allows. The generated-only selected-property-value lane passed and requeued four candidates; three imported with live rerun evidence, while `tool-properties-swap-property-values` failed closed during importer child execution and remains blocked. `tool-properties-separate-size-dimensions` remains excluded from this family because it carries `expressionMutation:true`; composition, keyframe, marker, and render-queue/project families remain queued with compact terminal tickets until a narrow typed-tool/lane contract is added.
 - 2026-05-27: Generic full-intake orchestrator processed `Properties/Swap_Selected_Property_Dimensions.jsx` as `tool-properties-swap-selected-property-dimensions`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-swap-selected-property-dimensions).
 
@@ -1206,6 +1208,7 @@
 
 | Check | Current requirement | Latest result |
 | --- | --- | --- |
+| AUX-077 GPT Pro long-run orchestrator review packet | Required to refresh the review artifact after the full-intake parent-output mechanism changed, while staying within the user-requested 8-file GPT Pro upload constraint and avoiding runtime/secret/user-asset material. | Passed on 2026-05-28: rebuilt `pro-review-bundles/gpt-pro-orchestrator-longrun-2026-05-28/GPT_PRO_ORCHESTRATOR_LONGRUN_REVIEW_BUNDLE.md`; manifest reports `COMPLETE`, `Included files: 8`, `Skipped files: 0`, `Warnings: 0`, `Redactions: 0`; package includes `orchestrator/full-intake-ledger-summary.mjs` and no longer includes broad `orchestrator/README.md`; source snapshot recorded as `f86ea8a85f220b8abf09b24852eb705e0d77aef7`. Validation passed: `node --check orchestrator/run-generic-repo-full-intake.mjs`; `node --check orchestrator/full-intake-ledger-summary.mjs`; `node --check scripts/sdk-generic-repo-full-intake-smoke.js`; `node --check scripts/full-intake-ledger-summary-smoke.js`; `node scripts/full-intake-ledger-summary-smoke.js`; `node scripts/sdk-generic-repo-full-intake-smoke.js`; `git diff --check` with the usual LF-to-CRLF warning on the plan. No live CEP/AE, provider calls, Local/Ollama, dependency changes, push, PR, or user-asset mutation were performed. |
 | AUX-075 property-value full-intake closeout | Required to prove/import the safe property-value family and record terminal/failed siblings without reading large runtime JSON. | Passed on 2026-05-28: read-only `node scripts/cep-panel-cdp-smoke.js inspect`; read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; `node orchestrator/run-generic-repo-full-intake.mjs --ledger .codex-runtime/sdk/generic-repo-importer/kyletmartinez-after-effects-scripts-intake/queue-ledger.json --run-id full-intake-kyletmartinez --max-items 999 --json`; compact status reported `items=40`, `completed=24`, `blocked=16`, `commits=24`; compact ledger summary reported `completed:34`, `queued:29`, `failed_import:7`, `blocked_or_skipped:75`, `blocked_live_lane_synthesis_incomplete:9`. Additional validation passed: `node --check scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `node scripts/sdk-generic-repo-full-intake-smoke.js`; `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`; `git diff --check` with only LF-to-CRLF warning after the registry prompt-surface fix. No Local/Ollama, fallback provider, broad/default CEP smoke, dependency/package change, raw JSX copy, source checkout write, push, PR/GitHub automation, or non-generated user asset mutation was performed. |
 | Full intake tool-properties-swap-selected-property-dimensions | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-358ff3627c-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 | Full intake tool-properties-set-new-color | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-77912d0cb9-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
@@ -2231,6 +2234,31 @@ Validation:
 - Passed `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`.
 - Passed `git diff --check` with only LF-to-CRLF working-copy warnings on touched files.
 - Live CEP/OpenAI CLI lanes were intentionally not run because this was a pure orchestration-output milestone.
+
+### AUX-077 GPT Pro Long-Run Orchestrator Review Packet
+
+Progress:
+- Created `.codex-audit/pro-review/gpt-pro-orchestrator-longrun-review-request.md` as the tracked review prompt for a skeptical GPT Pro review of the long-run orchestrator mechanism rather than the whole AE Agent project.
+- Rebuilt `pro-review-bundles/gpt-pro-orchestrator-longrun-2026-05-28/GPT_PRO_ORCHESTRATOR_LONGRUN_REVIEW_BUNDLE.md` from current `f86ea8a85f220b8abf09b24852eb705e0d77aef7` source after the parent-output mechanism changed.
+- Kept the packet to one uploadable Markdown bundle with 8 included source files: SDK wrapper, AE Agent policy, bounded subprocess summaries, roadmap supervisor, full-intake, full-intake ledger summary, queue supervisor, and generic repo importer.
+
+Decision Log:
+- Replaced broad `orchestrator/README.md` context with `orchestrator/full-intake-ledger-summary.mjs` because the latest mechanism change is specifically the parent-safe compact output and durable-ledger summary layer.
+- The bundle is a review artifact only. GPT Pro feedback must be brought back into Codex and logged before any implementation changes.
+- Ignored runtime directories, `.env`, auth/browser state, provider keys, AE project files, user assets, full runtime reports, and full child logs remain out of scope.
+
+Validation:
+- Bundle manifest verified as `COMPLETE`, `Included files: 8`, `Skipped files: 0`, `Warnings: 0`, `Redactions: 0`.
+- Verified the bundle contains `orchestrator/full-intake-ledger-summary.mjs` and no longer contains `orchestrator/README.md` in the included source list.
+- Verified the review request records source snapshot `f86ea8a85f220b8abf09b24852eb705e0d77aef7`.
+- Passed `node --check orchestrator/run-generic-repo-full-intake.mjs`.
+- Passed `node --check orchestrator/full-intake-ledger-summary.mjs`.
+- Passed `node --check scripts/sdk-generic-repo-full-intake-smoke.js`.
+- Passed `node --check scripts/full-intake-ledger-summary-smoke.js`.
+- Passed `node scripts/full-intake-ledger-summary-smoke.js`.
+- Passed `node scripts/sdk-generic-repo-full-intake-smoke.js`.
+- Passed `git diff --check` with the usual LF-to-CRLF warning on `plans/target-app-execplan.md`.
+- No live CEP/AE, provider calls, Local/Ollama, dependency changes, push, PR, or user-asset mutation were performed.
 
 ### Handoff
 
