@@ -2512,6 +2512,20 @@ function expectedHashesPresent(envelope) {
   return always.every((field) => typeof envelope[field] === "string" && envelope[field].length > 0);
 }
 
+function missingCompletionProofHashes(envelope) {
+  if (envelope.status !== "completed") {
+    return [];
+  }
+  return [
+    "queueSha256",
+    "ledgerSha256Before",
+    "ledgerSha256After",
+    "manifestSha256",
+    "runtimeStateSha256",
+    "changedPathsSha256",
+  ].filter((field) => typeof envelope[field] !== "string" || envelope[field].length === 0);
+}
+
 function buildProofEnvelope({ batch, candidate, gitHeadAfter, gitHeadBefore, item, ledgerSha256Before, liveRerun, registryPath, report, runRoot, state, targetRepo }) {
   const changedPaths = compactPathArray(
     item?.commitId ? gitCommitChangedPaths(targetRepo, item.commitId) : gitChangedPaths(targetRepo),
@@ -2573,12 +2587,19 @@ function buildProofEnvelope({ batch, candidate, gitHeadAfter, gitHeadBefore, ite
     },
     createdAt: new Date().toISOString(),
   };
+  if (process.env.AE_AGENT_FULL_INTAKE_TEST_DROP_MANIFEST_HASH === "1" && envelope.status === "completed") {
+    envelope.manifestSha256 = null;
+  }
+  envelope.missingRequiredHashes = missingCompletionProofHashes(envelope);
   envelope.contractComplete = expectedHashesPresent(envelope);
   return envelope;
 }
 
 function writeProofEnvelope(args) {
   const envelope = buildProofEnvelope(args);
+  if (envelope.status === "completed" && envelope.contractComplete !== true) {
+    throw new Error(`proof-envelope-missing-required-hashes:${envelope.missingRequiredHashes.join(",")}`);
+  }
   const proofPath = path.join(args.runRoot, "proof-envelope.json");
   writeJson(proofPath, envelope);
   const size = statSync(proofPath).size;

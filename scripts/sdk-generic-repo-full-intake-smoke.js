@@ -713,6 +713,31 @@ function assertProofAndDiagnoseCommandsAreBounded() {
   }
 }
 
+function assertMissingProofHashesPreventCompletion() {
+  const fixture = createFixture("proof-missing-hash");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const ledgerPath = writeLedger(fixture, validLedger(fixture));
+    const registryPath = writeRegistry(fixture);
+    const result = runFullIntakeFixtureCompact(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "fixture-proof-missing-hash",
+      1,
+      {
+        ...fakeCodexEnv(binDir),
+        AE_AGENT_FULL_INTAKE_TEST_DROP_MANIFEST_HASH: "1"
+      }
+    );
+    assert.notStrictEqual(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stderr, /proof-envelope-missing-required-hashes:manifestSha256/);
+    assert(!result.stdout.includes('"status": "completed"'), "missing proof hashes must not print completed parent output");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertSelfImprovementSynthesisDisabledByDefault() {
   const fixture = createFixture("synth-disabled");
   try {
@@ -1568,6 +1593,7 @@ function main() {
   assertContextBudgetStopsBeforeNewWork();
   assertContextRegressionOutputBounds();
   assertProofAndDiagnoseCommandsAreBounded();
+  assertMissingProofHashesPreventCompletion();
   assertSelfImprovementSynthesisDisabledByDefault();
   assertSynthesizedAutoLaneCompletesWithoutRegistryEntry();
   assertAutoLaneSynthesisFailClosedEvidence();
