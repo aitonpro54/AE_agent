@@ -32,6 +32,7 @@ const IMPORTED_ADVISORY_IDS = [
   "add-simple-loop-expression-typed-plan",
   "append-to-expression-typed-plan",
   "apply-maintain-stroke-width-expression-typed-plan",
+  "disable-selected-expressions-typed-plan",
   "get-selected-layer-duration-typed-plan",
   "calculate-distance-between-layers-typed-plan",
   "layer-selection-get-typed-plan",
@@ -459,6 +460,33 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /stroke width properties/.test(note)), `${id}: notes must limit use to stroke width properties.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Apply_Maintain_Stroke_Width_Expression/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "disable-selected-expressions-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "set_expression", "get_layer_details"],
+        `${id}: imported disable-selected-expressions workflow should stay on the narrow selected-property expression typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: disable-selected-expressions workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+      assert(text.includes("expression-capable"), `${id}: recipe should require expression-capable property evidence.`);
+      assert(text.includes("current expression text"), `${id}: recipe should require current expression text evidence.`);
+      assert(text.includes("set_expression"), `${id}: recipe should use the expression typed tool.`);
+      assert(text.includes("enabled:false"), `${id}: recipe should disable expressions instead of clearing them.`);
+      assert(text.includes("Do not use `clear_expression`"), `${id}: recipe should avoid expression clearing for disable workflows.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require expression read-back through layer details.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /current expression text/.test(step)), `${id}: verification must include current expression evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_expression/.test(step)), `${id}: verification must include set_expression.`);
+      assert(solution.verificationRecipe.steps.some((step) => /enabled:false/.test(step)), `${id}: verification must require disabled expression state.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /unchanged expression text/.test(item)), `${id}: verification must require expression text preservation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionEnabled:false/.test(item)), `${id}: verification must require disabled expression evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionError/.test(item)), `${id}: verification must require expression error evidence.`);
+      assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
+      assert(solution.notes.some((note) => /clear_expression/.test(note)), `${id}: notes must reject clear_expression for disabling.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Disable_Selected_Expressions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "get-selected-layer-duration-typed-plan") {
       assert.deepStrictEqual(
@@ -1001,6 +1029,22 @@ function assertActualRetrieval(registry) {
   assert(maintainStrokeExpressionPromptSection.includes("transform.scale[0]"), "prompt section should preserve bounded x-scale compensation guidance.");
   assert(maintainStrokeExpressionPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
   assert(!/run_extendscript/i.test(maintainStrokeExpressionPromptSection), "maintain-stroke-width guidance should not recommend raw ExtendScript.");
+
+  const disableSelectedExpressionsRetrieval = retrieveSolutionHints("Disable the existing expressions on the selected properties after inspecting selected property expressions, but do not delete or clear the expression text; read back expression enabled state.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(disableSelectedExpressionsRetrieval.ok, true);
+  assert(ids(disableSelectedExpressionsRetrieval).includes("disable-selected-expressions-typed-plan"), "disable-selected-expressions advisory recipe should surface for selected expression disable prompts.");
+  const disableSelectedExpressionsPromptSection = formatSolutionHintsForPrompt(disableSelectedExpressionsRetrieval);
+  assert(disableSelectedExpressionsPromptSection.includes("Disable Selected Expressions Typed Plan"), "prompt section should include disable-selected-expressions advisory title.");
+  assert(disableSelectedExpressionsPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for expression disable workflows.");
+  assert(disableSelectedExpressionsPromptSection.includes("current expression"), "prompt section should preserve current expression evidence guidance.");
+  assert(disableSelectedExpressionsPromptSection.includes("set_expression"), "prompt section should prefer set_expression for expression disable workflows.");
+  assert(disableSelectedExpressionsPromptSection.includes("enabled:false"), "prompt section should preserve disabled expression state guidance.");
+  assert(disableSelectedExpressionsPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
+  assert(!/run_extendscript/i.test(disableSelectedExpressionsPromptSection), "disable-selected-expressions guidance should not recommend raw ExtendScript.");
 
   const selectedLayerDurationRetrieval = retrieveSolutionHints("Tell me the duration in seconds of the selected layer after inspecting the selected layer timing.", {
     registry,

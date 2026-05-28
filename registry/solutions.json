@@ -3353,6 +3353,111 @@
         "Require a separate typed-tool contract for broad stroke discovery, nonuniform-scale compensation, nested shape transform traversal, controller rigs, expression syntax repair, selection side effects or exact source JSX semantics.",
         "Do not use this recipe for expression clearing, keyframe edits, layer transform edits, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "disable-selected-expressions-typed-plan",
+      "title": "Disable Selected Expressions Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "expressions",
+        "properties",
+        "disable-expression",
+        "expression-enabled",
+        "selected-properties",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Disable existing expressions on explicitly selected expression-capable properties while preserving expression text, then read expression details back.",
+        "appliesWhen": [
+          "The user asks to disable, turn off, or temporarily suspend expressions on selected properties without deleting expression text.",
+          "Typed selected-property expression mutation is acceptable instead of source-exact selection side effects, broad property scans, expression clearing, expression syntax repair, controller rigs, or raw JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties evidence containing one or more expression-capable targets with concrete layerIndex, propertyPath, current expression values, and expression enabled state."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated property is bound from current get_selected_properties evidence before mutation.",
+        "Every target has current expression text from typed evidence; properties without expression text are reported as skipped instead of initialized.",
+        "The workflow preserves existing expression text and changes only expressionEnabled state by calling set_expression with enabled:false.",
+        "Already-disabled expressions are reported as no-op targets unless the user explicitly asks only for read-back confirmation.",
+        "Layer names, sources, timing, effects, masks, keyframes, render queue items and unselected properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/disable-selected-expressions-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "set_expression",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected property expression evidence, disable each current expression by preserving its expression text and setting enabled:false, then read layer/property expression details back.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation to capture active comp identity, selected property targets, layerIndex values, propertyPath values, current expression text and expressionEnabled state.",
+          "Fail closed when selected-property evidence is empty, lacks layer/property path targets, is not expression-capable, lacks current expression text, or requires expression clearing instead of disabling.",
+          "Report properties without expression text as skipped, and report already-disabled expressions as no-op targets unless only read-back confirmation is requested.",
+          "Run one set_expression step per selected property target with the same current expression text, enabled:false, the evidence-backed layerIndex and exact propertyPath.",
+          "Run get_layer_details for every affected layer with expression/property detail read-back.",
+          "Fail closed if expression deletion, syntax repair, expression controllers, keyframe creation, broad property scans, selection side effects or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties identifies every concrete selected property target, its owning layer, current expression text and expressionEnabled state.",
+          "Each set_expression result reports the unchanged expression text, expressionEnabled:false and no expressionError.",
+          "Post-run get_layer_details shows each affected property still has the same expression text with expression enabled state false on the expected layer/property path.",
+          "Post-run evidence shows no keyframe, timing, effect, source, render queue, layer name, selection state or unselected property mutation.",
+          "Unsupported expression clearing, expression deletion, syntax repair, expression controller setup, broad scans and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-expressions-disable-selected-expressions generic repository importer as advisory typed-plan coverage for selected-property expression disabling workflows.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed expression tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-28",
+          "from": "generic-repo-importer-tool-expressions-disable-selected-expressions",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Expressions/Disable_Selected_Expressions.jsx into existing typed tools as selected-property set_expression guidance for disabling current expressions without deleting expression text; no source JSX copied. Current typed tools require current get_selected_properties expression evidence, preservation of the same expression text, set_expression enabled:false and get_layer_details read-back; expression clearing/deletion, syntax repair, expression controllers, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties before mutating expression enabled state; do not infer targets from prior chat context.",
+        "Preserve the existing expression text and use set_expression with enabled:false; do not use clear_expression for this disable workflow.",
+        "Skip or report properties without current expression text instead of initializing empty expressions.",
+        "Require a separate typed-tool contract for expression clearing/deletion, syntax repair, expression controllers, keyframe generation, broad property scans, selection side effects or exact source JSX semantics.",
+        "Do not use this recipe for expression generation, expression clearing, keyframe edits, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
+      ]
     }
   ]
 }
