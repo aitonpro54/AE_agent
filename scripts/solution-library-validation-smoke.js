@@ -34,6 +34,7 @@ const IMPORTED_ADVISORY_IDS = [
   "update-expressions-typed-plan",
   "round-selected-property-values-typed-plan",
   "set-new-color-typed-plan",
+  "swap-selected-property-dimensions-typed-plan",
   "apply-maintain-stroke-width-expression-typed-plan",
   "update-stroke-weight-expressions-typed-plan",
   "toggle-maintain-scale-expression-typed-plan",
@@ -522,6 +523,35 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /set_property_value/.test(note)), `${id}: notes must require set_property_value.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Set_New_Color/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "swap-selected-property-dimensions-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "set_property_value", "get_layer_details"],
+        `${id}: imported selected-property dimension swap workflow should stay on the narrow selected-property value typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: selected-property dimension swap workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+      assert(text.includes("includeValues:true"), `${id}: recipe should require current value evidence.`);
+      assert(text.includes("dimensionSwap"), `${id}: recipe should require reviewed dimensionSwap guidance.`);
+      assert(text.includes("static numeric array"), `${id}: recipe should limit changes to dimensional arrays.`);
+      assert(text.includes("swappedValue"), `${id}: recipe should disclose computed swapped values.`);
+      assert(text.includes("set_property_value"), `${id}: recipe should use the property-value typed tool.`);
+      assert(text.includes("setAtTime:false"), `${id}: recipe should avoid keyframe creation.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require property value read-back through layer details.`);
+      assert(text.includes("Do not swap expression-driven"), `${id}: recipe should guard expression/keyframed and unsupported values.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /swappedValue/.test(step)), `${id}: verification must include computed swappedValue.`);
+      assert(solution.verificationRecipe.steps.some((step) => /dimensionSwap/.test(step)), `${id}: verification must include reviewed dimensionSwap.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_property_value/.test(step)), `${id}: verification must include set_property_value.`);
+      assert(solution.verificationRecipe.steps.some((step) => /setAtTime:false/.test(step)), `${id}: verification must require non-keyframed value setting.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /swappedValue/.test(item)), `${id}: verification must require swappedValue read-back evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Skipped targets/.test(item)), `${id}: verification must require skipped-target gap evidence.`);
+      assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
+      assert(solution.notes.some((note) => /set_property_value/.test(note)), `${id}: notes must require set_property_value.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Swap_Selected_Property_Dimensions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "apply-maintain-stroke-width-expression-typed-plan") {
       assert.deepStrictEqual(
@@ -1294,6 +1324,23 @@ function assertActualRetrieval(registry) {
   assert(setNewColorPromptSection.includes("setAtTime:false"), "prompt section should preserve non-keyframed value setting.");
   assert(setNewColorPromptSection.includes("get_layer_details"), "prompt section should require property value read-back.");
   assert(!/run_extendscript/i.test(setNewColorPromptSection), "set-new-color guidance should not recommend raw ExtendScript.");
+
+  const swapSelectedPropertyDimensionsRetrieval = retrieveSolutionHints("Swap X and Y dimensions on selected numeric property arrays after inspecting selected property values, then set the swappedValue with set_property_value and read back property dimensions.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(swapSelectedPropertyDimensionsRetrieval.ok, true);
+  assert(ids(swapSelectedPropertyDimensionsRetrieval).includes("swap-selected-property-dimensions-typed-plan"), "swap-selected-property-dimensions advisory recipe should surface for selected property dimension swap prompts.");
+  const swapSelectedPropertyDimensionsPromptSection = formatSolutionHintsForPrompt(swapSelectedPropertyDimensionsRetrieval);
+  assert(swapSelectedPropertyDimensionsPromptSection.includes("Swap Selected Property Dimensions Typed Plan"), "prompt section should include selected-property dimension swap advisory title.");
+  assert(swapSelectedPropertyDimensionsPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for dimension swap workflows.");
+  assert(swapSelectedPropertyDimensionsPromptSection.includes("dimensionSwap"), "prompt section should preserve reviewed dimension swap guidance.");
+  assert(swapSelectedPropertyDimensionsPromptSection.includes("swappedValue"), "prompt section should preserve computed swapped value guidance.");
+  assert(swapSelectedPropertyDimensionsPromptSection.includes("set_property_value"), "prompt section should prefer set_property_value for dimension swap workflows.");
+  assert(swapSelectedPropertyDimensionsPromptSection.includes("setAtTime:false"), "prompt section should preserve non-keyframed value setting.");
+  assert(swapSelectedPropertyDimensionsPromptSection.includes("get_layer_details"), "prompt section should require property value read-back.");
+  assert(!/run_extendscript/i.test(swapSelectedPropertyDimensionsPromptSection), "swap-selected-property-dimensions guidance should not recommend raw ExtendScript.");
 
   const maintainStrokeExpressionRetrieval = retrieveSolutionHints("Apply a maintain stroke width expression to the selected shape layer stroke width properties so their strokes stay constant while scaling, then read back expression details.", {
     registry,
