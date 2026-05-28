@@ -3491,7 +3491,7 @@
         "typed-tool"
       ],
       "intent": {
-        "summary": "Toggle a bounded immediate-parent maintain-scale expression on selected layers' Transform > Scale properties, then read expression details back.",
+        "summary": "Toggle a bounded immediate-parent maintain-scale expression using parent.transform.scale on selected layers' Transform > Scale properties with enabled:true or enabled:false state, then read expression details back.",
         "appliesWhen": [
           "The user asks to toggle, turn on, turn off, or apply a maintain scale expression on selected layers' Scale properties.",
           "Typed selected-layer Scale expression mutation is acceptable instead of source-exact selection side effects, expression deletion, nested parent-chain compensation, controller rigs, expression syntax repair, broad property scans, or raw JSX semantics."

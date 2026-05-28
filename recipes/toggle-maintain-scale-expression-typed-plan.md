@@ -8,7 +8,7 @@
 
 - Пользователь просит toggle/turn on/turn off a maintain scale expression on selected layers, or keep selected layers visually scaled while their immediate parent scale changes.
 - Активная композиция, выбранные layers, and current `Transform > Scale` expression state must be read before mutation.
-- Workflow targets only selected layers returned by current `get_selected_layers` evidence with concrete `layerIndex` values and `get_layer_details` evidence for the layer's `Transform > Scale` property path and expression state.
+- Workflow targets only selected layers returned by current `get_selected_layers` evidence with concrete `layerIndex` values and `get_layer_details` evidence for the layer's expression-capable `Transform > Scale` property path and expression state.
 - The safe adaptation toggles only this reviewed bounded immediate-parent maintain-scale expression unless the user supplies a separately reviewed expression:
 
 ```js
@@ -34,7 +34,7 @@ try {
 1. Run `get_active_comp` to confirm the active comp and capture the target composition identity.
 2. Run `get_selected_layers` to capture current selected-layer evidence and concrete `layerIndex` values.
 3. Run `get_layer_details` for every selected layer with transform/expression detail enabled.
-4. Bind only each selected layer's explicit `Transform > Scale` property path from current evidence. Fail closed if any target lacks concrete layer ownership, a scale property path, expression capability, or current expression state.
+4. Bind only each selected layer's explicit expression-capable `Transform > Scale` property path from current evidence. Fail closed if any target lacks concrete layer ownership, a scale property path, expression-capable evidence, or current expression state.
 5. Determine the toggle action per target from current evidence:
    - no current expression text: set the reviewed maintain-scale expression with `enabled:true`;
    - same reviewed maintain-scale expression and `expressionEnabled:true`: preserve the expression text and set `enabled:false`;
