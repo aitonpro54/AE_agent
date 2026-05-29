@@ -260,6 +260,9 @@ function writeFakeCodex(root) {
       '    console.error("fake codex failure");',
       '    process.exit(7);',
       '  }',
+      '  if (mode === "large-output") {',
+      '    process.stdout.write("L".repeat(3 * 1024 * 1024));',
+      '  }',
       '  if (mode !== "no-change") {',
       '    const relative = process.env.FAKE_CODEX_WRITE_PATH || "scripts/imported-tools/tool-tool.js";',
       '    const absolute = path.join(cwd, relative);',
@@ -1110,6 +1113,29 @@ function assertSuccessfulImplementationChildRunFixture() {
     );
     assert.strictEqual(output.resumed, true);
     assertImplementationChildRunArtifacts(output, fixture, runId);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertImplementationChildRunLargeOutputFixture() {
+  const fixture = createTempFixture("implementation-child-large-output");
+  try {
+    const runId = "aux021-child-large-output";
+    const { manifestPath, runRoot } = prepareImplementationWorktreeFixture(fixture, runId);
+    const binDir = writeFakeCodex(fixture.root);
+    const output = parseJson(
+      run(
+        ["--manifest", manifestPath, "--run-implementation-child-runs", "--json"],
+        repo,
+        fakeCodexEnv(binDir, "large-output", "scripts/imported-tools/tool-tool.js"),
+      ),
+    );
+    assert.strictEqual(output.resumed, true);
+    const childResult = readJson(path.join(runRoot, "implementation", "child-run-results", "fixture-analysis-batch-1.json"));
+    assert.strictEqual(childResult.status, "child_run_completed");
+    assert(childResult.stdoutBytes > 2 * 1024 * 1024, "large child stdout must not fail with ENOBUFS");
+    assert(fs.readFileSync(path.join(runRoot, childResult.stdoutPath), "utf8").includes("fake codex large-output"));
   } finally {
     removeFixture(fixture.root);
   }
@@ -2129,6 +2155,7 @@ function main() {
   assertImplementationWorktreeRunOwnedPathFixture();
   assertImplementationWorktreeResumeFixture();
   assertSuccessfulImplementationChildRunFixture();
+  assertImplementationChildRunLargeOutputFixture();
   assertCompactImporterParentOutputExcludesRuntimeState();
   assertImplementationChildRunMissingIntentFixture();
   assertImplementationChildRunUnplannedPathFixture();
