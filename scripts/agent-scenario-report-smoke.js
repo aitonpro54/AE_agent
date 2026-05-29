@@ -454,11 +454,12 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.deepStrictEqual(compProperties.plan.steps.map((step) => step.tool), [
     "create_comp",
     "set_comp_properties",
+    "get_comp_details",
     "set_comp_work_area",
     "get_comp_details"
   ]);
   assert.strictEqual(compProperties.plan.steps[1].args.width, 720);
-  assert.strictEqual(compProperties.plan.steps[2].args.duration, 3.5);
+  assert.strictEqual(compProperties.plan.steps[3].args.duration, 3.5);
 
   const [selectedPropertyValue] = agentSelectedPropertyValueScenarioPlans("Codex QA AUX072 Fixture");
   assert.strictEqual(selectedPropertyValue.id, "generated-selected-property-value");

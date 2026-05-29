@@ -1327,7 +1327,7 @@ function agentCompPropertiesScenarioPlans(runPrefix) {
     bgColor: [0.12, 0.18, 0.24],
     displayStartTime: 1
   };
-  const workArea = { start: 1.25, duration: 3.5 };
+  const workArea = { start: 1.2, duration: 3.5 };
 
   return [
     {
@@ -1352,6 +1352,7 @@ function agentCompPropertiesScenarioPlans(runPrefix) {
         steps: [
           { title: "Create generated comp-properties comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 4, frameRate: 24, bgColor: [0.04, 0.05, 0.07], allowDuplicateName: false, openInViewer: false, comment: "AUX-061 generated-only comp properties validation" } },
           { title: "Set generated comp properties", tool: "set_comp_properties", args: { compName, ...compProperties } },
+          { title: "Read generated comp properties after property update", tool: "get_comp_details", args: { compName, includeLayers: false } },
           { title: "Set generated comp work area", tool: "set_comp_work_area", args: { compName, ...workArea } },
           { title: "Read generated comp properties", tool: "get_comp_details", args: { compName, includeLayers: false } }
         ]
