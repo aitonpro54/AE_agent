@@ -365,6 +365,9 @@ Options:
   --allow-batch-mode           Explicitly approve parent-facing max-items > 1.
   --allow-self-improvement-lane-synthesis
                               Allow bounded live-lane synthesis. Default is disabled.
+  --resolution-candidate-ids <ids>
+                              Optional comma-separated candidate ids for scoped
+                              live-lane/import-failure resolution processing.
   --no-commit                  Do not create git commits after completed candidates.
   --json                       Write full machine-readable output only with --output, or print only with --allow-full-json-for-debug.
   --output <path>              Full JSON output path for --json. Stdout stays compact.
@@ -392,6 +395,7 @@ const VALUE_OPTIONS = new Set([
   "no-new-work-percent",
   "output",
   "report-dir",
+  "resolution-candidate-ids",
   "run-id",
   "soft-stop-percent",
   "target-repo",
@@ -546,6 +550,19 @@ function parsePercent(value, label, fallback) {
     throw new Error(`${label} must be between 0 and 100`);
   }
   return parsed;
+}
+
+function parseCsvSet(value) {
+  const items = String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return items.length ? new Set(items) : null;
+}
+
+function candidateAllowedByResolutionScope(entry, scopeIds) {
+  if (!scopeIds || scopeIds.size === 0) return true;
+  return scopeIds.has(entry.id);
 }
 
 function requireObject(value, label) {
@@ -1961,12 +1978,15 @@ function processLiveLaneResolutionTickets({
   ledger,
   ledgerPath,
   registry,
+  resolutionCandidateIds = null,
   runId,
   runRoot,
   targetRepo,
   timeoutMs,
 }) {
-  const recoverable = ledger.entries.filter(isRecoverableLiveLaneEntry);
+  const recoverable = ledger.entries
+    .filter((entry) => candidateAllowedByResolutionScope(entry, resolutionCandidateIds))
+    .filter(isRecoverableLiveLaneEntry);
   const allocateQueueRank = nextQueueRankAllocator(ledger);
   const buckets = new Map();
   for (const entry of recoverable) {
@@ -2154,11 +2174,14 @@ function processLiveLaneResolutionTickets({
   return { requeuedCandidateIds, tickets };
 }
 
-function processImportFailureResolutionTickets({ ledger, runId, runRoot, targetRepo }) {
+function processImportFailureResolutionTickets({ ledger, resolutionCandidateIds = null, runId, runRoot, targetRepo }) {
   const tickets = [];
   const requeuedCandidateIds = [];
   const buckets = new Map();
   for (const entry of ledger.entries) {
+    if (!candidateAllowedByResolutionScope(entry, resolutionCandidateIds)) {
+      continue;
+    }
     const kind = recoverableImportFailureKind(entry);
     if (!kind || !SAFE_CLASSIFICATIONS.has(entry.classification)) {
       continue;
@@ -2280,6 +2303,7 @@ function processResolutionTickets({
   ledger,
   ledgerPath,
   registry,
+  resolutionCandidateIds = null,
   runId,
   runRoot,
   targetRepo,
@@ -2291,12 +2315,13 @@ function processResolutionTickets({
     ledger,
     ledgerPath,
     registry,
+    resolutionCandidateIds,
     runId,
     runRoot,
     targetRepo,
     timeoutMs,
   });
-  const imports = processImportFailureResolutionTickets({ ledger, runId, runRoot, targetRepo });
+  const imports = processImportFailureResolutionTickets({ ledger, resolutionCandidateIds, runId, runRoot, targetRepo });
   if (closed.tickets.length > 0 || live.tickets.length > 0 || imports.tickets.length > 0) {
     updateLedgerNextCandidate(ledger, null);
     writeJson(ledgerPath, ledger);
@@ -4712,6 +4737,7 @@ export function runFullIntake(options, cwd = process.cwd()) {
   const runRoot = resolveRunRoot(targetRepo, runId, options.reportDir);
   const registryPath = resolveOptionalPath(cwd, options.liveLaneRegistry, DEFAULT_LIVE_LANE_REGISTRY);
   const registry = readLiveLaneRegistry(registryPath);
+  const resolutionCandidateIds = parseCsvSet(options.resolutionCandidateIds);
   const { resumed, state: loadedState } = loadOrCreateState({ ledgerPath, maxItems, runId, runRoot, targetRepo });
   let state = loadedState;
   const gitHeadBefore = gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head");
@@ -4861,6 +4887,7 @@ export function runFullIntake(options, cwd = process.cwd()) {
         ledger: initialLedger,
         ledgerPath,
         registry,
+        resolutionCandidateIds,
         runId,
         runRoot,
         targetRepo,

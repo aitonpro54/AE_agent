@@ -13,6 +13,7 @@ const {
   agentDuplicateLayersScenarioPlans,
   agentEffectPropertyScenarioPlans,
   agentExpressionScenarioPlans,
+  agentKeyframeScenarioPlans,
   agentLayerTimingScenarioPlans,
   agentLayerTransformScenarioPlans,
   agentManualTypedToolsScenarioPlans,
@@ -380,6 +381,24 @@ function openAiCliSelectedPropertyValueScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_SELECTED_PROPERTY_VALUE_PREFIX || "Codex QA AUX072",
     scenarioFactory: agentSelectedPropertyValueScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliKeyframeScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-keyframes",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_KEYFRAMES_PREFIX || "Codex QA AUX083",
+    scenarioFactory: agentKeyframeScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -4491,6 +4510,57 @@ async function verifyGeneratedSelectedPropertyValueReadBack(scenario, expected) 
   };
 }
 
+async function verifyGeneratedKeyframeReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const selected = await callBridgeTool("get_selected_properties", {
+    includeValues: true,
+    includeExpressions: true
+  });
+  if (!selected || !selected.comp || selected.comp.name !== expected.compName) {
+    throw new Error(`${scenario.id}: get_selected_properties did not read the generated comp context.`);
+  }
+
+  const details = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: 1,
+    includeProperties: true,
+    propertyDepth: 2,
+    propertyLimit: 80,
+    includeValues: true,
+    includeExpressions: true
+  });
+  const layer = details && details.layer ? details.layer : {};
+  if (layer.name !== expected.layerName) {
+    throw new Error(`${scenario.id}: generated keyframe layer ${expected.layerName} was not found by read-back.`);
+  }
+  const property = findPropertyInTree(details.propertyTree || [], expected.propertyPath);
+  if (!property) {
+    throw new Error(`${scenario.id}: generated keyframe property was not found by read-back.`);
+  }
+  if (Number(property.numKeys || 0) !== Number(expected.keyframeCount || 0)) {
+    throw new Error(`${scenario.id}: expected ${expected.keyframeCount} generated keyframe(s), got ${property.numKeys || 0}.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: compMatch.itemIndex,
+      name: compMatch.name,
+      selectedPropertyCount: Array.isArray(selected.selectedProperties) ? selected.selectedProperties.length : 0
+    },
+    layer: {
+      index: layer.index,
+      name: layer.name
+    },
+    keyframes: {
+      propertyPath: expected.propertyPath,
+      count: Number(property.numKeys || 0),
+      easedKeyIndices: expected.keyIndices || [],
+      interpolation: expected.interpolation || null
+    }
+  };
+}
+
 async function verifyGeneratedCompPropertiesReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const comp = await callBridgeTool("get_comp_details", {
@@ -4942,6 +5012,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedSelectedPropertyValue) {
     return verifyGeneratedSelectedPropertyValueReadBack(scenario, expected);
+  }
+
+  if (expected.generatedKeyframeEase) {
+    return verifyGeneratedKeyframeReadBack(scenario, expected);
   }
 
   if (expected.generatedCompPropertiesWorkArea) {
@@ -5619,6 +5693,10 @@ async function main() {
   }
   if (command === "agent-selected-property-value-openai-cli-smoke" || command === "full-ui-agent-selected-property-value-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliSelectedPropertyValueScenarioConfig());
+    return;
+  }
+  if (command === "agent-keyframes-openai-cli-smoke" || command === "full-ui-agent-keyframes-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliKeyframeScenarioConfig());
     return;
   }
   if (command === "openai-api-setup-smoke") {

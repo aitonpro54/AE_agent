@@ -1411,6 +1411,60 @@ function agentSelectedPropertyValueScenarioPlans(runPrefix) {
   }));
 }
 
+function agentKeyframeScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Keyframes`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Shape`;
+  const propertyPath = "ADBE Transform Group.ADBE Opacity";
+  const keyframes = [
+    { time: 0, value: 15 },
+    { time: 1, value: 85 },
+    { time: 2, value: 35 }
+  ];
+
+  return [
+    {
+      id: "generated-keyframe-ease",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "get_selected_properties",
+        "set_property_keyframes",
+        "apply_keyframe_ease",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedKeyframeEase: true,
+        compName,
+        layerName,
+        propertyPath: ["ADBE Transform Group", "ADBE Opacity"],
+        keyframeCount: keyframes.length,
+        keyIndices: [1, 2, 3],
+        interpolation: "bezier"
+      },
+      plan: {
+        summary: "AUX-083 generated-only live QA for explicit property keyframes and temporal ease.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated keyframe comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.06, 0.07, 0.09], allowDuplicateName: false, openInViewer: true, comment: "AUX-083 generated-only keyframe validation" } },
+          { title: "Create generated keyframe target shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [220, 120], position: [320, 180], fillColor: [0.22, 0.62, 0.88], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Inspect generated selected-property state", tool: "get_selected_properties", args: { includeValues: true, includeExpressions: true } },
+          { title: "Set generated opacity keyframes", tool: "set_property_keyframes", args: { compName, layerIndex: 1, propertyPath, clearExisting: true, keyframes } },
+          { title: "Apply generated opacity keyframe ease", tool: "apply_keyframe_ease", args: { compName, layerIndex: 1, propertyPath, keyIndices: [1, 2, 3], interpolation: "bezier", easeIn: { speed: 0, influence: 40 }, easeOut: { speed: 0, influence: 40 } } },
+          { title: "Read generated keyframe property", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeValues: true, includeExpressions: true } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentAssortedCompositionGuidesScenarioPlans(runPrefix) {
   const base = `${runPrefix} Assorted Guides`;
   const compName = `${base} Comp`;
@@ -2211,6 +2265,7 @@ module.exports = {
   agentDakkshinTypedToolsScenarioPlans,
   agentEffectPropertyScenarioPlans,
   agentExpressionScenarioPlans,
+  agentKeyframeScenarioPlans,
   agentLayerTimingScenarioPlans,
   agentLayerTransformScenarioPlans,
   agentManualTypedToolsScenarioPlans,

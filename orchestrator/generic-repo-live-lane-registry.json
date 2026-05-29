@@ -68,6 +68,57 @@
       ],
       "reclassifiedClassification": "existing_typed_tools_recipe_only",
       "scope": "generated-only selected/generated property value proof using get_selected_properties, set_property_value, get_layer_details, read-back, semantic verification, and cleanup; expression-driven dimension separation remains fail-closed"
+    },
+    {
+      "id": "selected-property-keyframe-generated-only",
+      "requiredTools": [
+        "get_selected_properties",
+        "set_property_keyframes",
+        "apply_keyframe_ease"
+      ],
+      "allowedTools": [
+        "get_active_comp",
+        "get_selected_properties",
+        "set_property_keyframes",
+        "apply_keyframe_ease",
+        "get_layer_details"
+      ],
+      "candidateIds": [
+        "tool-keyframes-add-text-animation",
+        "tool-keyframes-calculate-difference-between-keyframe-values",
+        "tool-keyframes-calculate-frames-to-selected-keyframe",
+        "tool-keyframes-invert-selected-keyframes",
+        "tool-keyframes-keyframe-group-opacities",
+        "tool-keyframes-make-hold-keyframes",
+        "tool-keyframes-multiply-selected-keyframes",
+        "tool-keyframes-posterize-keyframes",
+        "tool-keyframes-remove-redundant-keyframes",
+        "tool-keyframes-round-selected-keyframe-values"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-keyframes-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "selected-property-keyframe",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_selected_properties",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only selected/generated property keyframe proof using get_selected_properties, set_property_keyframes, apply_keyframe_ease, get_layer_details, read-back, semantic verification, and cleanup; expression-derived sampling, spatial tangent editing, selected-key discovery without explicit reviewed keyframes, and source-exact keyframe algorithms remain fail-closed"
     }
   ]
 }

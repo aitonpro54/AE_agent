@@ -17,6 +17,7 @@ const {
   agentDakkshinTypedToolsScenarioPlans,
   agentEffectPropertyScenarioPlans,
   agentExpressionScenarioPlans,
+  agentKeyframeScenarioPlans,
   agentLayerTimingScenarioPlans,
   agentLayerTransformScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
@@ -472,7 +473,22 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(selectedPropertyValue.plan.steps[3].args.propertyPath, "ADBE Transform Group.ADBE Opacity");
   assert.strictEqual(selectedPropertyValue.plan.steps[3].args.value, 42);
 
-  for (const scenario of [timing, transform, projectItems, effectProperty, expression, compProperties, selectedPropertyValue]) {
+  const [keyframes] = agentKeyframeScenarioPlans("Codex QA AUX083 Fixture");
+  assert.strictEqual(keyframes.id, "generated-keyframe-ease");
+  assert.strictEqual(keyframes.expectedReadBack.generatedKeyframeEase, true);
+  assert.deepStrictEqual(keyframes.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "get_selected_properties",
+    "set_property_keyframes",
+    "apply_keyframe_ease",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(keyframes.plan.steps[3].args.propertyPath, "ADBE Transform Group.ADBE Opacity");
+  assert.strictEqual(keyframes.plan.steps[3].args.keyframes.length, 3);
+  assert.deepStrictEqual(keyframes.plan.steps[4].args.keyIndices, [1, 2, 3]);
+
+  for (const scenario of [timing, transform, projectItems, effectProperty, expression, compProperties, selectedPropertyValue, keyframes]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }

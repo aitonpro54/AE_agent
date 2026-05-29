@@ -66,6 +66,7 @@ function createFixture(name) {
   fs.mkdirSync(source, { recursive: true });
   fs.mkdirSync(path.join(source, "Compositions"), { recursive: true });
   fs.mkdirSync(path.join(source, "Expressions"), { recursive: true });
+  fs.mkdirSync(path.join(source, "Keyframes"), { recursive: true });
   fs.mkdirSync(path.join(source, "Layers"), { recursive: true });
   fs.mkdirSync(path.join(source, "Properties"), { recursive: true });
   fs.writeFileSync(path.join(source, "README.md"), "# Source fixture\n", "utf8");
@@ -89,6 +90,11 @@ function createFixture(name) {
   fs.writeFileSync(
     path.join(source, "Expressions", "Add_Simple_Loop_Expression.jsx"),
     "function addSimpleLoopExpression() { return true; }\n",
+    "utf8"
+  );
+  fs.writeFileSync(
+    path.join(source, "Keyframes", "Round_Selected_Keyframe_Values.jsx"),
+    "function roundSelectedKeyframeValues() { return true; }\n",
     "utf8"
   );
   fs.writeFileSync(path.join(source, "Layers", "Read_Only_Fixture.jsx"), "function readOnlyTool() { return true; }\n", "utf8");
@@ -327,6 +333,24 @@ function selectedPropertyValueLiveLaneNeededEntry(overrides = {}) {
     implementation: {
       sliceId: "fixture-selected-property-value-import",
       plannedPaths: ["scripts/imported-tools/selected-property-value.js"]
+    },
+    queueRank: null,
+    ...overrides
+  });
+}
+
+function keyframeLiveLaneNeededEntry(overrides = {}) {
+  return entry({
+    id: "tool-keyframes-round-selected-keyframe-values",
+    sourcePath: "Keyframes/Round_Selected_Keyframe_Values.jsx",
+    name: "Round Selected Keyframe Values",
+    description: "Fixture selected-property keyframe live-lane-needed candidate.",
+    classification: "live_lane_needed",
+    shortReason: "Keyframe edits need generated-only set/ease proof.",
+    suggestedTools: ["get_active_comp", "get_selected_properties", "set_property_keyframes", "apply_keyframe_ease", "get_layer_details"],
+    implementation: {
+      sliceId: "fixture-keyframe-import",
+      plannedPaths: ["scripts/imported-tools/keyframes.js"]
     },
     queueRank: null,
     ...overrides
@@ -1308,6 +1332,66 @@ function assertBoundedSelfImprovementCreatesAndRejectsLanes() {
   }
 }
 
+function assertScopedResolutionCandidateIdsOnlyProcessRequestedLane() {
+  const fixture = createFixture("scoped-resolution");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const keyframes = keyframeLiveLaneNeededEntry();
+    const compProperties = compPropertiesLiveLaneNeededEntry();
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [keyframes, compProperties]));
+    const registryPath = writeRegistry(fixture, {
+      entries: [],
+      selfImprovementFamilies: [
+        {
+          id: "selected-property-keyframe-generated-only",
+          requiredTools: ["get_selected_properties", "set_property_keyframes", "apply_keyframe_ease"],
+          allowedTools: ["get_active_comp", "get_selected_properties", "set_property_keyframes", "apply_keyframe_ease", "get_layer_details"],
+          candidateIds: [keyframes.id],
+          command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-keyframes-openai-cli-smoke",
+          providerPath: "openai-cli",
+          proofLane: "selected-property-keyframe",
+          productionTypedTools: true,
+          readBackTools: ["get_selected_properties", "get_layer_details"],
+          semanticVerification: true,
+          plannedPaths: ["scripts/cep-panel-cdp-smoke.js"],
+          nonLiveValidationCommands: ["node --check scripts/cep-panel-cdp-smoke.js"],
+          reclassifiedClassification: "existing_typed_tools_recipe_only",
+          scope: "fixture keyframe generated-only proof"
+        }
+      ]
+    });
+    const output = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        "fixture-scoped-resolution",
+        1,
+        fakeCodexEnv(binDir),
+        [
+          "--allow-self-improvement-lane-synthesis",
+          "--resolution-candidate-ids",
+          keyframes.id
+        ]
+      )
+    );
+    assert.strictEqual(output.status, "completed");
+    assert.deepStrictEqual(output.resolutionQueue.requeuedCandidateIds, [keyframes.id]);
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    const completedKeyframes = ledger.entries.find((item) => item.id === keyframes.id);
+    const untouchedCompProperties = ledger.entries.find((item) => item.id === compProperties.id);
+    assert.strictEqual(completedKeyframes.status, "completed");
+    assert.strictEqual(completedKeyframes.liveGate.synthesisFamily, "selected-property-keyframe-generated-only");
+    assert.strictEqual(completedKeyframes.liveGate.command, "node scripts/cep-panel-cdp-smoke.js full-ui-agent-keyframes-openai-cli-smoke");
+    assert.strictEqual(untouchedCompProperties.status, "queued");
+    assert.strictEqual(untouchedCompProperties.classification, "live_lane_needed");
+    assert.strictEqual(untouchedCompProperties.resolution, undefined);
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function writeChildTimeoutEvidence(fixture, entryToRecover) {
   const importerRunId = "queue-fixture-child-timeout-import";
   const batchRunId = "fixture-child-timeout-import";
@@ -1676,6 +1760,7 @@ function main() {
   assertCompactParentOutputSummarizesResolutionQueue();
   assertQueuedLiveLaneNeededFamiliesAreProvedAndRanked();
   assertBoundedSelfImprovementCreatesAndRejectsLanes();
+  assertScopedResolutionCandidateIdsOnlyProcessRequestedLane();
   assertChildTimeoutResolutionRecoversImporterWorktreePatch();
   assertChildTimeoutSummaryContractFailsClosed();
   assertCompactParentOutputListsFailedIdsWithoutEvidenceBlob();
