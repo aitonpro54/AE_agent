@@ -7,6 +7,7 @@ const { writeAgentRunReport } = require("./agent-scenario-report");
 const {
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
+  agentCompositionVersionScenarioPlans,
   agentCompPropertiesScenarioPlans,
   agentCompositionGuideScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
@@ -311,6 +312,24 @@ function openAiCliProjectItemsScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_PROJECT_ITEMS_PREFIX || "Codex QA AUX050",
     scenarioFactory: agentProjectItemsScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliCompositionVersionScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-composition-version",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_COMPOSITION_VERSION_PREFIX || "Codex QA AUX097",
+    scenarioFactory: agentCompositionVersionScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -4386,6 +4405,40 @@ async function verifyGeneratedProjectItemsReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedCompositionVersionReadBack(scenario, expected) {
+  const found = await callBridgeTool("find_project_items", {
+    query: expected.base,
+    type: "comp",
+    caseSensitive: true,
+    limit: 10
+  });
+  const matches = Array.isArray(found.matches) ? found.matches : [];
+  const names = matches.map((item) => item.name);
+  const missingRenamed = expected.renamedNames.filter((name) => !names.includes(name));
+  if (missingRenamed.length) {
+    throw new Error(`${scenario.id}: renamed generated versioned comp(s) missing: ${missingRenamed.join(", ")}.`);
+  }
+  const staleNames = expected.originalNames.filter((name) => names.includes(name));
+  if (staleNames.length) {
+    throw new Error(`${scenario.id}: stale generated version token name(s) remained: ${staleNames.join(", ")}.`);
+  }
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.renamedNames[0]);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: false
+  });
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      numLayers: comp.numLayers
+    },
+    renamedNames: expected.renamedNames.slice(),
+    returned: found.returned
+  };
+}
+
 function effectPropertyValueMatches(properties, propertyIndex, expectedValue) {
   const property = (properties || []).find((item) => Number(item.index) === Number(propertyIndex));
   if (!property) return false;
@@ -5081,6 +5134,10 @@ async function verifyAgentScenarioReadBack(scenario) {
     return verifyGeneratedProjectItemsReadBack(scenario, expected);
   }
 
+  if (expected.generatedCompositionVersionToken) {
+    return verifyGeneratedCompositionVersionReadBack(scenario, expected);
+  }
+
   if (expected.generatedEffectProperty) {
     return verifyGeneratedEffectPropertyReadBack(scenario, expected);
   }
@@ -5760,6 +5817,10 @@ async function main() {
   }
   if (command === "agent-project-items-openai-cli-smoke" || command === "full-ui-agent-project-items-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliProjectItemsScenarioConfig());
+    return;
+  }
+  if (command === "agent-composition-version-openai-cli-smoke" || command === "full-ui-agent-composition-version-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliCompositionVersionScenarioConfig());
     return;
   }
   if (command === "agent-effect-property-openai-cli-smoke" || command === "full-ui-agent-effect-property-openai-cli-smoke") {

@@ -1218,6 +1218,52 @@ function agentProjectItemsScenarioPlans(runPrefix) {
   }));
 }
 
+function agentCompositionVersionScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Composition Version`;
+  const firstName = `${base} Main v001`;
+  const secondName = `${base} Secondary v001`;
+  const renamedFirstName = `${base} Main v002`;
+  const renamedSecondName = `${base} Secondary v002`;
+
+  return [
+    {
+      id: "generated-composition-version-token",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "rename_project_items",
+        "find_project_items",
+        "get_comp_details"
+      ],
+      expectedReadBack: {
+        generatedCompositionVersionToken: true,
+        base,
+        originalNames: [firstName, secondName],
+        renamedNames: [renamedFirstName, renamedSecondName],
+        beforeToken: "v001",
+        afterToken: "v002"
+      },
+      plan: {
+        summary: "AUX-097 generated-only live QA for explicit composition version-token rename.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create first generated versioned comp", tool: "create_comp", args: { name: firstName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.08, 0.1, 0.12], allowDuplicateName: false, openInViewer: false, comment: "AUX-097 generated-only composition version validation" } },
+          { title: "Create second generated versioned comp", tool: "create_comp", args: { name: secondName, width: 320, height: 180, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.1, 0.08, 0.14], allowDuplicateName: false, openInViewer: false, comment: "AUX-097 generated-only secondary version source" } },
+          { title: "Rename generated version token", tool: "rename_project_items", args: { query: base, type: "comp", exactName: false, caseSensitive: true, limit: 2, mode: "findReplace", find: "v001", replace: "v002" } },
+          { title: "Find generated versioned comps after rename", tool: "find_project_items", args: { query: base, type: "comp", limit: 10, caseSensitive: true } },
+          { title: "Read first generated renamed comp", tool: "get_comp_details", args: { compName: renamedFirstName, includeLayers: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentEffectPropertyScenarioPlans(runPrefix) {
   const base = `${runPrefix} Effect Property`;
   const compName = `${base} Comp`;
@@ -2371,6 +2417,7 @@ module.exports = {
   DEFAULT_RENDER_QUEUE_BASELINE_TOTAL,
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
+  agentCompositionVersionScenarioPlans,
   agentCompPropertiesScenarioPlans,
   agentCompositionGuideScenarioPlans,
   agentDuplicateLayersScenarioPlans,

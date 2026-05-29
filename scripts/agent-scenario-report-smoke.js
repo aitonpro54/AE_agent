@@ -12,6 +12,7 @@ const {
 const {
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
+  agentCompositionVersionScenarioPlans,
   agentCompPropertiesScenarioPlans,
   agentCompositionGuideScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
@@ -422,6 +423,20 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert(projectItems.plan.steps.some((step) => step.tool === "replace_layer_source"));
   assert(projectItems.plan.steps.some((step) => step.tool === "rename_project_items"));
   assert.strictEqual(projectItems.plan.steps[6].resultBindings.itemIndices, "{{steps.6.renamed.0.itemIndex}}");
+
+  const [compositionVersion] = agentCompositionVersionScenarioPlans("Codex QA AUX097 Fixture");
+  assert.strictEqual(compositionVersion.id, "generated-composition-version-token");
+  assert.strictEqual(compositionVersion.expectedReadBack.generatedCompositionVersionToken, true);
+  assert.deepStrictEqual(compositionVersion.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_comp",
+    "rename_project_items",
+    "find_project_items",
+    "get_comp_details"
+  ]);
+  assert.strictEqual(compositionVersion.plan.steps[2].args.mode, "findReplace");
+  assert.strictEqual(compositionVersion.plan.steps[2].args.find, "v001");
+  assert.strictEqual(compositionVersion.plan.steps[2].args.replace, "v002");
 
   const [effectProperty] = agentEffectPropertyScenarioPlans("Codex QA AUX050 Fixture");
   assert.strictEqual(effectProperty.id, "generated-effect-property");

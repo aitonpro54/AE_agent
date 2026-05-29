@@ -125,6 +125,49 @@
       "scope": "generated-only explicit layer switch proof using set_property_value on whitelisted collapseTransformation and motionBlur layer attributes plus get_layer_details/get_comp_details read-back, semantic verification, and cleanup; camera parenting, controller setup, comp-wide motion blur, recursive/global traversal, onion skinning, version duplication, and arbitrary layer fields remain fail-closed"
     },
     {
+      "id": "composition-version-token-generated-only",
+      "requiredTools": [
+        "rename_project_items"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "find_project_items",
+        "get_active_comp",
+        "get_comp_details",
+        "rename_project_items",
+        "set_comp_properties",
+        "set_comp_work_area",
+        "set_property_value"
+      ],
+      "candidateIds": [
+        "tool-compositions-increment-composition-versions"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-composition-version-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "composition-version-token",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "find_project_items",
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only explicit composition version-token proof using rename_project_items findReplace on generated comps plus find_project_items/get_comp_details read-back; arbitrary version parsing, recursive/global traversal, source relinking, onion skinning, camera/controller parenting, and raw JSX semantics remain fail-closed"
+    },
+    {
       "id": "selected-property-keyframe-generated-only",
       "requiredTools": [
         "get_selected_properties",

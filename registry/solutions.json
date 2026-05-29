@@ -2340,7 +2340,7 @@
         "typed-tool"
       ],
       "intent": {
-        "summary": "Enable motionBlur on explicitly inspected layers with typed layer-switch read-back while comp-wide motion blur and source-exact semantics stay out of scope.",
+        "summary": "comp-wide motion blur stays out of scope; enable only explicit layer motionBlur with typed read-back.",
         "appliesWhen": [
           "The user asks to enable Motion Blur or turn on the motion blur switch for selected or explicit layers.",
           "Updating only the whitelisted motionBlur layer attribute is acceptable after current layer-detail evidence proves the target layer can support the switch."
