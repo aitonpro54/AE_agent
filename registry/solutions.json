@@ -2089,6 +2089,125 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "cycle-composition-background-color-typed-plan",
+      "title": "Cycle Composition Background Color Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "active-comp",
+        "active-composition",
+        "background",
+        "background-color",
+        "bgColor",
+        "cycle",
+        "grayscale",
+        "comp-properties",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Cycle the active composition bgColor through a reviewed next color or grayscale cycle with typed read-back while rendered background-layer and source-exact palette semantics stay out of scope.",
+        "appliesWhen": [
+          "The user asks to cycle composition background color, cycle active comp background, rotate comp background color, or advance the comp background through a grayscale cycle.",
+          "Updating only the active composition bgColor field is acceptable instead of creating a visible rendered background layer."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Current active composition proven by get_active_comp and get_comp_details before mutation."
+        },
+        {
+          "name": "cycleMode",
+          "type": "string",
+          "required": false,
+          "description": "Reviewed cycle mode, such as reviewedPaletteStep or grayscaleCycleStep."
+        },
+        {
+          "name": "nextBgColor",
+          "type": "array",
+          "required": true,
+          "description": "Computed next RGB bgColor as three normalized numbers from 0 to 1, shown before confirmation."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow changes only the verified active composition bgColor field through set_comp_properties.",
+        "The active comp and its current bgColor are read before mutation; the plan must not infer the target comp or current color from prior chat context.",
+        "The computed nextBgColor is reviewed before confirmation, including the palette or grayscale cycle rule used to derive it.",
+        "Visible full-frame rendered background layers, generated solids or shapes, source-exact hidden palette behavior, project-wide comp traversal, nested source-comp changes and exact source JSX behavior remain typed-tool gaps."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/cycle-composition-background-color-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "set_comp_properties"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read the active comp bgColor, disclose the reviewed cycle rule and nextBgColor, set only bgColor, then read back the active comp bgColor and unchanged comp fields.",
+        "steps": [
+          "Run get_active_comp to identify the active composition before choosing a target.",
+          "Run get_comp_details for the active composition before mutation and record bgColor, width, height, duration, frameRate, layer count and work area.",
+          "Compute and disclose currentBgColor, cycleMode, optional cyclePalette and nextBgColor before confirmation.",
+          "Run set_comp_properties once against the verified active composition with only bgColor, verifyAfter and idempotency evidence.",
+          "Run get_comp_details after mutation and compare bgColor plus unchanged width, height, duration, frameRate, layer count and work area."
+        ],
+        "expectedEvidence": [
+          "get_active_comp identifies the active comp before mutation.",
+          "Pre-run get_comp_details records currentBgColor and structural comp fields.",
+          "Dry-run evidence lists currentBgColor, cycleMode and requested next bgColor before confirmation.",
+          "The set_comp_properties step updates only bgColor on the verified active composition.",
+          "Post-run get_comp_details shows the requested next bgColor and unchanged width, height, duration, frameRate, layer count and work area on the same active comp.",
+          "The plan reports rendered background layer needs, source-exact grayscale cycling, project-wide traversal, nested source-comp updates and exact source JSX semantics as unsupported by current typed tools."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-compositions-cycle-composition-background-color generic repository importer as advisory typed-plan coverage for active comp bgColor cycling.",
+          "AUX-095 already proved a candidate-id-gated generated-only active-comp bgColor lane over get_active_comp, set_comp_properties and get_comp_details; this detached child patch records recipe, registry, smoke and handoff guidance for parent-controlled merge."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-29",
+          "from": "generic-repo-importer-tool-compositions-cycle-composition-background-color",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Cycle_Composition_Background_Color.jsx into existing typed tools as active composition bgColor cycling through set_comp_properties; no source JSX copied. The recipe requires current active comp read-back, currentBgColor, reviewed cycleMode, disclosed nextBgColor and post-mutation get_comp_details evidence. Source-exact grayscale cycling, rendered background layers, project-wide traversal, nested source-comp updates, template batch changes and exact source JSX semantics require a separate typed-tool contract. AUX-095 proved generated-only active-comp bgColor read-back and parent importer owns validation plus live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "This recipe changes an active composition bgColor only; it does not create rendered background layers, solids, shape layers, or persistent background stacks.",
+        "Require current active-comp evidence from get_active_comp and get_comp_details before mutating; do not infer the comp or current color from prior chat context.",
+        "Require the computed nextBgColor and cycleMode to be shown before confirmation; fail closed if exact source palette behavior is required.",
+        "Require a separate typed-tool contract for rendered background layers, generated solids/shapes, project-wide comp traversal, nested source-comp updates, native viewer behavior or exact source JSX semantics.",
+        "Do not use this recipe for template batch changes, layer cleanup, masks, expressions, effects, render queue items, source relinking or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "change-nested-composition-duration-typed-plan",
       "title": "Change Nested Composition Duration Typed Plan",
       "status": "recipe",

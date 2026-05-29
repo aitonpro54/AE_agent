@@ -56,6 +56,7 @@ const IMPORTED_ADVISORY_IDS = [
   "add-assorted-composition-guides-typed-plan",
   "add-background-layer-typed-plan",
   "change-nested-composition-background-typed-plan",
+  "cycle-composition-background-color-typed-plan",
   "change-nested-composition-duration-typed-plan",
   "change-nested-composition-duration-with-timecode-typed-plan",
   "change-nested-composition-start-frame-typed-plan",
@@ -1137,6 +1138,29 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Change_Nested_Composition_Background/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "cycle-composition-background-color-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "set_comp_properties"],
+        `${id}: imported active composition background cycle workflow should stay on the narrow comp-property typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: active composition background cycle workflow must be mutating.`);
+      assert(text.includes("active composition `bgColor`"), `${id}: recipe should document active composition bgColor targeting.`);
+      assert(text.includes("get_active_comp"), `${id}: recipe should require active-comp evidence.`);
+      assert(text.includes("set_comp_properties"), `${id}: recipe should use the comp properties typed tool.`);
+      assert(text.includes("grayscale cycle"), `${id}: recipe should preserve grayscale cycle guidance.`);
+      assert(text.includes("visible rendered background layer"), `${id}: recipe should reject rendered background-layer semantics.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_active_comp/.test(step)), `${id}: verification must include active-comp evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read active comp details before and after mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_comp_properties/.test(step)), `${id}: verification must include comp bgColor mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /currentBgColor/.test(item)), `${id}: verification must require current color evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /requested next bgColor/.test(item)), `${id}: verification must require requested next bgColor read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /unchanged width/.test(item)), `${id}: verification must require unchanged structural comp fields.`);
+      assert(solution.notes.some((note) => /rendered background layers/.test(note)), `${id}: notes must reject rendered background layer claims.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Cycle_Composition_Background_Color/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /AUX-095/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "change-nested-composition-duration-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2085,6 +2109,21 @@ function assertActualRetrieval(registry) {
   assert(nestedCompositionBackgroundPromptSection.includes("shared source comp"), "prompt section should preserve shared-source warning.");
   assert(!/run_extendscript/i.test(nestedCompositionBackgroundPromptSection), "nested composition background guidance should not recommend raw ExtendScript.");
 
+  const activeCompositionBackgroundCycleRetrieval = retrieveSolutionHints("Cycle the active composition background color from its current bgColor to the next grayscale cycle step using set_comp_properties, then read back the active comp bgColor.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(activeCompositionBackgroundCycleRetrieval.ok, true);
+  assert(ids(activeCompositionBackgroundCycleRetrieval).includes("cycle-composition-background-color-typed-plan"), "active composition background cycle advisory recipe should surface for active comp bgColor cycle prompts.");
+  const activeCompositionBackgroundCyclePromptSection = formatSolutionHintsForPrompt(activeCompositionBackgroundCycleRetrieval);
+  assert(activeCompositionBackgroundCyclePromptSection.includes("Cycle Composition Background Color Typed Plan"), "prompt section should include active composition background cycle advisory title.");
+  assert(activeCompositionBackgroundCyclePromptSection.includes("set_comp_properties"), "prompt section should prefer set_comp_properties for active comp bgColor cycling.");
+  assert(activeCompositionBackgroundCyclePromptSection.includes("bgColor"), "prompt section should preserve bgColor-only mutation guidance.");
+  assert(activeCompositionBackgroundCyclePromptSection.includes("grayscale cycle"), "prompt section should preserve cycle guidance.");
+  assert(activeCompositionBackgroundCyclePromptSection.includes("get_active_comp"), "prompt section should require active-comp evidence.");
+  assert(!/run_extendscript/i.test(activeCompositionBackgroundCyclePromptSection), "active composition background cycle guidance should not recommend raw ExtendScript.");
+
   const nestedCompositionDurationRetrieval = retrieveSolutionHints("Change the selected nested precomp source composition duration to 12 seconds, then read back the nested source comp duration without retiming layers.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -2336,6 +2375,7 @@ function assertActualRetrieval(registry) {
       assortedGuides: ids(assortedGuidesRetrieval),
       backgroundLayer: ids(backgroundLayerRetrieval),
       nestedCompositionBackground: ids(nestedCompositionBackgroundRetrieval),
+      activeCompositionBackgroundCycle: ids(activeCompositionBackgroundCycleRetrieval),
       nestedCompositionDurationWithTimecode: ids(nestedCompositionDurationWithTimecodeRetrieval),
       compositionGuide: ids(compositionGuideRetrieval),
       posterizeTimeAdjustment: ids(posterizeTimeAdjustmentRetrieval),
