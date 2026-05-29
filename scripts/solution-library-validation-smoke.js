@@ -35,6 +35,7 @@ const IMPORTED_ADVISORY_IDS = [
   "round-selected-property-values-typed-plan",
   "set-new-color-typed-plan",
   "swap-selected-property-dimensions-typed-plan",
+  "invert-selected-keyframes-typed-plan",
   "apply-maintain-stroke-width-expression-typed-plan",
   "update-stroke-weight-expressions-typed-plan",
   "toggle-maintain-scale-expression-typed-plan",
@@ -552,6 +553,36 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /set_property_value/.test(note)), `${id}: notes must require set_property_value.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Swap_Selected_Property_Dimensions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "invert-selected-keyframes-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "set_property_keyframes", "apply_keyframe_ease", "get_layer_details"],
+        `${id}: imported selected-keyframe inversion workflow should stay on the narrow selected-property keyframe typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: selected-keyframe inversion workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+      assert(text.includes("includeValues:true"), `${id}: recipe should require current value/keyframe evidence.`);
+      assert(text.includes("selectedKeyframes"), `${id}: recipe should require explicit selectedKeyframes guidance.`);
+      assert(text.includes("invertedKeyframes"), `${id}: recipe should disclose computed inverted keyframes.`);
+      assert(text.includes("reverseValueOrderAtSameTimes"), `${id}: recipe should define the bounded default inversion mode.`);
+      assert(text.includes("set_property_keyframes"), `${id}: recipe should use the property-keyframe typed tool.`);
+      assert(text.includes("clearExisting:false"), `${id}: recipe should preserve unselected existing keys.`);
+      assert(text.includes("apply_keyframe_ease"), `${id}: recipe should gate optional easing through explicit key indices.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require keyframe read-back through layer details.`);
+      assert(text.includes("Do not infer selected keyframes"), `${id}: recipe should guard selected-key discovery gaps.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /selectedKeyframes/.test(step)), `${id}: verification must include selectedKeyframes.`);
+      assert(solution.verificationRecipe.steps.some((step) => /invertedKeyframes/.test(step)), `${id}: verification must include computed invertedKeyframes.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_property_keyframes/.test(step)), `${id}: verification must include set_property_keyframes.`);
+      assert(solution.verificationRecipe.steps.some((step) => /clearExisting:false/.test(step)), `${id}: verification must preserve existing keys.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /invertedKeyframes/.test(item)), `${id}: verification must require invertedKeyframes read-back evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Skipped targets/.test(item)), `${id}: verification must require skipped-target gap evidence.`);
+      assert(solution.notes.some((note) => /selected-keyframe evidence/.test(note)), `${id}: notes must require selected-keyframe evidence.`);
+      assert(solution.notes.some((note) => /set_property_keyframes/.test(note)), `${id}: notes must require set_property_keyframes.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Invert_Selected_Keyframes/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "apply-maintain-stroke-width-expression-typed-plan") {
       assert.deepStrictEqual(
@@ -1342,6 +1373,23 @@ function assertActualRetrieval(registry) {
   assert(swapSelectedPropertyDimensionsPromptSection.includes("get_layer_details"), "prompt section should require property value read-back.");
   assert(!/run_extendscript/i.test(swapSelectedPropertyDimensionsPromptSection), "swap-selected-property-dimensions guidance should not recommend raw ExtendScript.");
 
+  const invertSelectedKeyframesRetrieval = retrieveSolutionHints("Invert selected keyframes on the selected property after inspecting selectedKeyframes, compute invertedKeyframes with reverseValueOrderAtSameTimes, set_property_keyframes with clearExisting:false, optionally apply_keyframe_ease with explicit keyIndices, and read back keyframes.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(invertSelectedKeyframesRetrieval.ok, true);
+  assert(ids(invertSelectedKeyframesRetrieval).includes("invert-selected-keyframes-typed-plan"), "invert-selected-keyframes advisory recipe should surface for selected keyframe inversion prompts.");
+  const invertSelectedKeyframesPromptSection = formatSolutionHintsForPrompt(invertSelectedKeyframesRetrieval);
+  assert(invertSelectedKeyframesPromptSection.includes("Invert Selected Keyframes Typed Plan"), "prompt section should include selected-keyframe inversion advisory title.");
+  assert(invertSelectedKeyframesPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for keyframe inversion workflows.");
+  assert(invertSelectedKeyframesPromptSection.includes("selectedKeyframes"), "prompt section should preserve explicit selectedKeyframes guidance.");
+  assert(invertSelectedKeyframesPromptSection.includes("invertedKeyframes"), "prompt section should preserve computed inverted keyframe guidance.");
+  assert(invertSelectedKeyframesPromptSection.includes("set_property_keyframes"), "prompt section should prefer set_property_keyframes for keyframe inversion workflows.");
+  assert(invertSelectedKeyframesPromptSection.includes("apply_keyframe_ease"), "prompt section should surface optional explicit keyframe easing guidance.");
+  assert(invertSelectedKeyframesPromptSection.includes("get_layer_details"), "prompt section should require keyframe read-back.");
+  assert(!/run_extendscript/i.test(invertSelectedKeyframesPromptSection), "invert-selected-keyframes guidance should not recommend raw ExtendScript.");
+
   const maintainStrokeExpressionRetrieval = retrieveSolutionHints("Apply a maintain stroke width expression to the selected shape layer stroke width properties so their strokes stay constant while scaling, then read back expression details.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -1698,6 +1746,7 @@ function assertActualRetrieval(registry) {
       appendExpression: ids(appendExpressionRetrieval),
       updateExpressions: ids(updateExpressionsRetrieval),
       roundSelectedPropertyValues: ids(roundSelectedPropertyValuesRetrieval),
+      invertSelectedKeyframes: ids(invertSelectedKeyframesRetrieval),
       enableSelectedExpressions: ids(enableSelectedExpressionsRetrieval),
       fixFreshPickwhipExpression: ids(fixFreshPickwhipExpressionRetrieval),
       selectedLayerDuration: ids(selectedLayerDurationRetrieval),

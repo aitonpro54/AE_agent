@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-05-28",
+  "updatedAt": "2026-05-29",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -4469,6 +4469,138 @@
         "Do not use this recipe to swap values across different selected properties; each accepted selected property is transformed independently.",
         "Require a separate typed-tool contract for cross-property value swaps, color channel swaps, expression mutation, keyframe mutation, text/path mutation, separated-dimension rewiring, arbitrary axis permutation, broad property scans, selection side effects or exact source JSX semantics.",
         "Do not use this recipe for expression edits, keyframe edits, layer transform edits beyond the selected property value, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "invert-selected-keyframes-typed-plan",
+      "title": "Invert Selected Keyframes Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "keyframes",
+        "selected-keyframes",
+        "selected-properties",
+        "set-property-keyframes",
+        "apply-keyframe-ease",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Invert an explicit selected-keyframe value sequence on currently selected properties with typed selected-property evidence, set_property_keyframes, optional apply_keyframe_ease, and layer/property read-back.",
+        "appliesWhen": [
+          "The user asks to invert selected keyframes, reverse selected keyframes, flip selected keyframe values, or invert a reviewed selected-keyframe value sequence.",
+          "Typed selected-property keyframe mutation is acceptable only when current selected-property evidence and explicit reviewed selectedKeyframes identify exact layer/property targets, selected keyframe times, selected keyframe values, value shape, and the bounded inversion mode."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties evidence containing one or more concrete selected property targets with layerIndex, propertyPath, current value shape, expression state and keyframe/animated state when available."
+        },
+        {
+          "name": "selectedKeyframes",
+          "type": "array",
+          "required": true,
+          "description": "Explicit reviewed selected keyframe evidence for each accepted target, including keyframe indices, times and values."
+        },
+        {
+          "name": "inversionMode",
+          "type": "string",
+          "required": false,
+          "description": "Reviewed inversion mode. Defaults only to reverseValueOrderAtSameTimes when the request is unambiguous."
+        },
+        {
+          "name": "invertedKeyframes",
+          "type": "array",
+          "required": false,
+          "description": "Computed reviewed keyframes to set, preserving selected keyframe times and assigning the inverted value sequence."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated property is bound from current get_selected_properties evidence before mutation.",
+        "Every accepted target has explicit reviewed selectedKeyframes with concrete times, values, key indices and compatible value shapes.",
+        "The default supported inversion is reverseValueOrderAtSameTimes: preserve selected keyframe times and reverse the selected keyframe value order.",
+        "The plan displays previous selectedKeyframes, inversionMode and computed invertedKeyframes before confirmation.",
+        "The workflow changes only the explicitly reviewed selected keyframe values through set_property_keyframes with clearExisting:false.",
+        "Expressions, unselected keyframes, key removal, spatial tangents, layer names, sources, timing, effects, masks, render queue items, selection state and unselected properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/invert-selected-keyframes-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "set_property_keyframes",
+          "apply_keyframe_ease",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected property/keyframe evidence, compute invertedKeyframes from explicit selectedKeyframes, set those keyframes with set_property_keyframes clearExisting:false, optionally apply reviewed easing by explicit keyIndices, then read layer/property keyframes back.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation to capture active comp identity, selected property targets, layerIndex values, propertyPath values, current value shape, expression state and keyframe/animated state when available.",
+          "Require explicit reviewed selectedKeyframes for every accepted property target, including keyframe indices, times, values and compatible value shapes.",
+          "Fail closed when selected-property evidence is empty, lacks layer/property path targets, lacks exact selected keyframe times and values, has expression text or enabled expressions, has unsupported value shapes, requires removing keys, or requires source-exact selected-key discovery.",
+          "Resolve inversionMode; default only to reverseValueOrderAtSameTimes when the request is unambiguous and selectedKeyframes can be inverted without changing key times or value shapes.",
+          "Show previous selectedKeyframes, inversionMode and computed invertedKeyframes for every accepted target before confirmation.",
+          "Run one set_property_keyframes step per accepted selected property target with the computed invertedKeyframes, clearExisting:false, the evidence-backed layerIndex and exact propertyPath.",
+          "Run apply_keyframe_ease only when the plan has explicit reviewed keyIndices plus requested ease/interpolation settings after the keyframe values are set.",
+          "Run get_layer_details for every affected layer with property keyframe read-back.",
+          "Fail closed if selected-key discovery without explicit reviewed keyframes, spatial tangent editing, exact interpolation/ease preservation, expression-derived sampling, destructive key removal, broad property scans, selection side effects or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties identifies every concrete selected property target, its owning layer, current value shape, expression state and keyframe/animated state when available.",
+          "Dry-run evidence lists previous selectedKeyframes, inversionMode and computed invertedKeyframes for every accepted target.",
+          "Each set_property_keyframes result reports the expected property path, clearExisting:false and expected invertedKeyframes count.",
+          "Any apply_keyframe_ease result reports only the explicit reviewed keyIndices.",
+          "Post-run get_layer_details shows the selected keyframe times now carry the computed inverted values on the expected layer/property path.",
+          "Skipped targets are reported with explicit typed-tool gap reasons instead of being silently changed.",
+          "Post-run evidence shows no expression, timing, effect, source, render queue, layer name, selection state, project item, key removal, unselected keyframe or unselected property mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-keyframes-invert-selected-keyframes generic repository importer as advisory typed-plan coverage for explicit selected-property keyframe inversion workflows.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed keyframe tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-29",
+          "from": "generic-repo-importer-tool-keyframes-invert-selected-keyframes",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Keyframes/Invert_Selected_Keyframes.jsx into existing typed tools as selected-property set_property_keyframes guidance for inverting explicit reviewed selectedKeyframes into computed invertedKeyframes; no source JSX copied. Current typed tools require current get_selected_properties evidence, explicit selectedKeyframes with times/values/indices, previous/invertedKeyframes disclosure, set_property_keyframes with clearExisting:false and get_layer_details read-back; optional apply_keyframe_ease requires explicit keyIndices. Selected-key discovery without explicit reviewed keyframes, spatial tangent editing, exact interpolation/ease preservation, expression-derived sampling, destructive key removal, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties before mutating keyframes; do not infer targets from prior chat context.",
+        "Require explicit reviewed selected-keyframe evidence with times, values and key indices before computing invertedKeyframes.",
+        "Apply this recipe only when reverseValueOrderAtSameTimes or an explicit reviewed inversionMode can be applied without changing key times or value shape.",
+        "Use set_property_keyframes with clearExisting:false so unselected existing keys are preserved.",
+        "Use apply_keyframe_ease only with explicit reviewed keyIndices; do not rely on default selected-key behavior.",
+        "Require a separate typed-tool contract for selected-key discovery without explicit reviewed keyframes, spatial tangent editing, exact interpolation/ease preservation, expression-derived sampling, destructive key removal, broad property scans, selection side effects or exact source JSX semantics.",
+        "Do not use this recipe for expression edits, static property value edits without keyframes, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
       ]
     }
   ]
