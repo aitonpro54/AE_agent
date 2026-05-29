@@ -58,6 +58,7 @@ const IMPORTED_ADVISORY_IDS = [
   "change-nested-composition-background-typed-plan",
   "cycle-composition-background-color-typed-plan",
   "enable-collapse-transformations-typed-plan",
+  "enable-motion-blur-typed-plan",
   "change-nested-composition-duration-typed-plan",
   "change-nested-composition-duration-with-timecode-typed-plan",
   "change-nested-composition-start-frame-typed-plan",
@@ -1188,6 +1189,32 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.promotionHistory.some((entry) => /Enable_Collapse_Transformations/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /AUX-096/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "enable-motion-blur-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details", "set_property_value"],
+        `${id}: imported motion-blur workflow should stay on the narrow layer-switch typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: motion-blur workflow must be mutating.`);
+      assert(text.includes("motionBlur"), `${id}: recipe should document the motionBlur layer switch.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence for selected workflows.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer-switch read-back.`);
+      assert(text.includes("canSetMotionBlur"), `${id}: recipe should require motion blur support evidence or guarded failure.`);
+      assert(text.includes("set_property_value"), `${id}: recipe should use the property-value typed tool.`);
+      assert(text.includes("propertyPath:\"motionBlur\""), `${id}: recipe should bind the exact layer attribute property path.`);
+      assert(text.includes("setAtTime:false"), `${id}: recipe should avoid keyframe creation.`);
+      assert(text.includes("comp-wide motion blur"), `${id}: recipe should reject comp-wide motion blur semantics.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must include selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer details before and after mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /motionBlur/.test(step)), `${id}: verification must include motionBlur evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_property_value/.test(step)), `${id}: verification must include set_property_value.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /motionBlur:true/.test(item)), `${id}: verification must require motionBlur read-back evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Skipped targets/.test(item)), `${id}: verification must require skipped unsupported target evidence.`);
+      assert(solution.notes.some((note) => /comp-wide motion blur/.test(note)), `${id}: notes must warn on comp-wide motion blur scope.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Enable_Motion_Blur/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /AUX-096/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "change-nested-composition-duration-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2166,6 +2193,21 @@ function assertActualRetrieval(registry) {
   assert(collapseTransformationsPromptSection.includes("canSetCollapseTransformation"), "prompt section should preserve unsupported-layer guard guidance.");
   assert(!/run_extendscript/i.test(collapseTransformationsPromptSection), "collapse-transformations guidance should not recommend raw ExtendScript.");
 
+  const motionBlurRetrieval = retrieveSolutionHints("Enable motion blur on the selected layer after reading selected layer details, set propertyPath motionBlur to true with set_property_value setAtTime:false, then read back motionBlur.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(motionBlurRetrieval.ok, true);
+  assert(ids(motionBlurRetrieval).includes("enable-motion-blur-typed-plan"), "motion-blur advisory recipe should surface for selected layer switch prompts.");
+  const motionBlurPromptSection = formatSolutionHintsForPrompt(motionBlurRetrieval);
+  assert(motionBlurPromptSection.includes("Enable Motion Blur Typed Plan"), "prompt section should include motion-blur advisory title.");
+  assert(motionBlurPromptSection.includes("set_property_value"), "prompt section should prefer set_property_value for motionBlur switches.");
+  assert(motionBlurPromptSection.includes("motionBlur"), "prompt section should preserve motionBlur mutation guidance.");
+  assert(motionBlurPromptSection.includes("get_layer_details"), "prompt section should require layer detail read-back.");
+  assert(motionBlurPromptSection.includes("comp-wide motion blur"), "prompt section should preserve comp-wide motion blur scope warning.");
+  assert(!/run_extendscript/i.test(motionBlurPromptSection), "motion-blur guidance should not recommend raw ExtendScript.");
+
   const nestedCompositionDurationRetrieval = retrieveSolutionHints("Change the selected nested precomp source composition duration to 12 seconds, then read back the nested source comp duration without retiming layers.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -2419,6 +2461,7 @@ function assertActualRetrieval(registry) {
       nestedCompositionBackground: ids(nestedCompositionBackgroundRetrieval),
       activeCompositionBackgroundCycle: ids(activeCompositionBackgroundCycleRetrieval),
       collapseTransformations: ids(collapseTransformationsRetrieval),
+      motionBlur: ids(motionBlurRetrieval),
       nestedCompositionDurationWithTimecode: ids(nestedCompositionDurationWithTimecodeRetrieval),
       compositionGuide: ids(compositionGuideRetrieval),
       posterizeTimeAdjustment: ids(posterizeTimeAdjustmentRetrieval),

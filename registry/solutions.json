@@ -2324,6 +2324,120 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "enable-motion-blur-typed-plan",
+      "title": "Enable Motion Blur Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "layers",
+        "selected-layers",
+        "layer-switch",
+        "motion-blur",
+        "motionBlur",
+        "set-property-value",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Enable motionBlur on explicitly inspected layers with typed layer-switch read-back while comp-wide motion blur and source-exact semantics stay out of scope.",
+        "appliesWhen": [
+          "The user asks to enable Motion Blur or turn on the motion blur switch for selected or explicit layers.",
+          "Updating only the whitelisted motionBlur layer attribute is acceptable after current layer-detail evidence proves the target layer can support the switch."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetLayers",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Selected or explicit layer targets verified by get_selected_layers and get_layer_details before mutation."
+        },
+        {
+          "name": "motionBlur",
+          "type": "boolean",
+          "required": true,
+          "description": "Reviewed final switch value; this imported recipe supports enabling the switch with true."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow changes only the whitelisted motionBlur layer attribute through set_property_value.",
+        "Every target layer is inspected with current get_layer_details evidence before mutation; the plan must not infer targets from prior chat context.",
+        "Every accepted target supports the motionBlur switch, or the guarded typed tool result proves support; unsupported layers fail closed.",
+        "Comp-wide motion blur enablement, renderer or shutter settings, recursive all-nested-comp traversal, project-wide layer traversal, onion-skinning, version duplication, camera/controller parenting, source duplication/relinking and exact source JSX behavior remain typed-tool gaps."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/enable-motion-blur-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details",
+          "set_property_value"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected layer details, require canSetMotionBlur support when available, set only motionBlur true, then read it back.",
+        "steps": [
+          "Run get_active_comp before choosing target layers.",
+          "Run get_selected_layers for selected-layer workflows, or bind only explicit layer targets from current typed evidence.",
+          "Run get_layer_details for every candidate target and require layer identity, source/type context, current motionBlur state, and canSetMotionBlur support evidence when exposed.",
+          "Disclose accepted target layers, skipped unsupported layers, previous motionBlur values and requested motionBlur:true before confirmation.",
+          "Run one set_property_value step per accepted layer with propertyPath motionBlur, value true, setAtTime:false, verifyAfter and idempotency evidence.",
+          "Run get_layer_details after mutation and compare motionBlur plus unchanged layer index/name/source context for every affected layer."
+        ],
+        "expectedEvidence": [
+          "Selected-layer plans include get_selected_layers evidence before a layer index is bound.",
+          "Pre-run get_layer_details identifies every accepted target layer, its current motionBlur value, source/type context and canSetMotionBlur support or guarded support outcome.",
+          "Dry-run evidence lists previous motionBlur values, skipped unsupported layers and requested motionBlur:true for every accepted target.",
+          "Each set_property_value result reports propertyPath motionBlur, value true, setAtTime:false and the expected layer index.",
+          "Post-run get_layer_details shows motionBlur:true on the same layer index/name/source context for every accepted target.",
+          "Skipped targets are reported with explicit typed-tool gap reasons instead of being silently changed.",
+          "Post-run evidence shows no collapseTransformation, threeDLayer, source, timing, order, name, effect, mask, expression, keyframe, comp setting, renderer/shutter setting, project item, render queue, selection state, recursive nested comp or unrelated layer mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-compositions-enable-motion-blur generic repository importer as advisory typed-plan coverage for explicit motionBlur layer-switch enabling.",
+          "AUX-096 already proved a generated-only layer-switch lane over set_property_value, get_layer_details, semantic verification and cleanup; this detached child patch records recipe, registry, smoke and handoff guidance for parent-controlled merge."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-29",
+          "from": "generic-repo-importer-tool-compositions-enable-motion-blur",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Enable_Motion_Blur.jsx into existing typed tools as explicit layer-switch motionBlur enabling through set_property_value; no source JSX copied. The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, and existing AUX-096 layer-switch lane proof. The recipe requires current active comp and layer-detail evidence, accepted target disclosure, propertyPath motionBlur, value true, setAtTime:false and post-mutation get_layer_details read-back. Unsupported layer kinds, comp-wide motion blur enablement, renderer or shutter settings, recursive all-nested-comp traversal, project-wide layer traversal, onion-skinning, version duplication, camera/controller parenting, source duplication/relinking and exact source JSX semantics require a separate typed-tool contract. AUX-096 proved generated-only layer-switch read-back and parent importer owns validation plus live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-layer or explicit layer-detail evidence before mutating; do not infer layer targets from prior chat context.",
+        "Use set_property_value only for the whitelisted motionBlur layer attribute with setAtTime:false, then require get_layer_details read-back.",
+        "Treat unsupported layers as typed-tool gaps unless a separate typed-tool contract proves safe behavior for that layer kind.",
+        "Require a separate typed-tool contract for comp-wide motion blur enablement, renderer or shutter settings, recursive all-nested-comp traversal, project-wide layer traversal, onion-skinning, version duplication, camera/controller parenting, source duplication/relinking, arbitrary layer fields or exact source JSX semantics.",
+        "Do not use this recipe for layer timing changes, layer reorder/rename, expression edits, keyframe edits, effects, masks, render queue items, source relinking, template batch changes or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "change-nested-composition-duration-typed-plan",
       "title": "Change Nested Composition Duration Typed Plan",
       "status": "recipe",
