@@ -4602,6 +4602,134 @@
         "Require a separate typed-tool contract for selected-key discovery without explicit reviewed keyframes, spatial tangent editing, exact interpolation/ease preservation, expression-derived sampling, destructive key removal, broad property scans, selection side effects or exact source JSX semantics.",
         "Do not use this recipe for expression edits, static property value edits without keyframes, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "make-hold-keyframes-typed-plan",
+      "title": "Make Hold Keyframes Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "keyframes",
+        "selected-keyframes",
+        "selected-properties",
+        "hold-keyframes",
+        "apply-keyframe-ease",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Convert explicit selected keyframes on currently selected properties to hold interpolation with typed selected-property evidence, apply_keyframe_ease, and layer/property read-back.",
+        "appliesWhen": [
+          "The user asks to make selected keyframes hold, convert selected keyframes to hold keyframes, set selected keyframe interpolation to hold, or freeze a reviewed selected-keyframe sequence.",
+          "Typed selected-property keyframe interpolation mutation is acceptable only when current selected-property evidence and explicit reviewed selectedKeyframes identify exact layer/property targets, selected keyframe indices, selected keyframe times, current values, and the bounded holdInterpolation mode."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties evidence containing one or more concrete selected property targets with layerIndex, propertyPath, current value shape, expression state and keyframe/animated state when available."
+        },
+        {
+          "name": "selectedKeyframes",
+          "type": "array",
+          "required": true,
+          "description": "Explicit reviewed selected keyframe evidence for each accepted target, including keyframe indices, times and current values."
+        },
+        {
+          "name": "interpolationMode",
+          "type": "string",
+          "required": false,
+          "description": "Reviewed interpolation mode. This recipe supports only holdInterpolation."
+        },
+        {
+          "name": "holdKeyframes",
+          "type": "array",
+          "required": false,
+          "description": "Computed reviewed keyframe targets to convert, preserving selected keyframe indices, times and values while applying hold interpolation."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated property is bound from current get_selected_properties evidence before mutation.",
+        "Every accepted target has explicit reviewed selectedKeyframes with concrete keyframe indices, times, values and compatible value shapes.",
+        "The supported mutation is holdInterpolation: preserve selected keyframe times and values, and apply interpolation:\"hold\" to the reviewed keyIndices.",
+        "The plan displays previous selectedKeyframes, interpolationMode and computed holdKeyframes before confirmation.",
+        "The workflow changes only interpolation for the explicitly reviewed selected keyframes through apply_keyframe_ease with explicit keyIndices.",
+        "Expressions, keyframe values, key times, unselected keyframes, key creation/removal, spatial tangents, layer names, sources, timing, effects, masks, render queue items, selection state and unselected properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/make-hold-keyframes-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "apply_keyframe_ease",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected property/keyframe evidence, disclose holdKeyframes from explicit selectedKeyframes, apply interpolation:\"hold\" through apply_keyframe_ease by explicit keyIndices, then read layer/property keyframes back.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation to capture active comp identity, selected property targets, layerIndex values, propertyPath values, current value shape, expression state and keyframe/animated state when available.",
+          "Require explicit reviewed selectedKeyframes for every accepted property target, including keyframe indices, times, current values and compatible value shapes.",
+          "Fail closed when selected-property evidence is empty, lacks layer/property path targets, lacks exact selected keyframe indices and times, has expression text or enabled expressions, is not keyframed/animated, requires creating/removing keys, or requires source-exact selected-key discovery.",
+          "Resolve interpolationMode only as holdInterpolation and show previous selectedKeyframes plus computed holdKeyframes for every accepted target before confirmation.",
+          "Run one apply_keyframe_ease step per accepted selected property target with interpolation:\"hold\", the explicit reviewed keyIndices, the evidence-backed layerIndex and exact propertyPath.",
+          "Run get_layer_details for every affected layer with property keyframe read-back.",
+          "Fail closed if selected-key discovery without explicit reviewed keyframes, spatial tangent editing, exact source selection side effects, value generation, destructive key removal, broad property scans, selection side effects or interpolation preservation beyond hold conversion is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties identifies every concrete selected property target, its owning layer, current value shape, expression state and keyframe/animated state when available.",
+          "Dry-run evidence lists previous selectedKeyframes, interpolationMode:\"holdInterpolation\" and computed holdKeyframes for every accepted target.",
+          "Each apply_keyframe_ease result reports the expected property path, interpolation:\"hold\" and only the explicit reviewed keyIndices.",
+          "Post-run get_layer_details shows the selected keyframe times and values are preserved on the expected layer/property path with hold interpolation evidence when exposed by read-back.",
+          "Skipped targets are reported with explicit typed-tool gap reasons instead of being silently changed.",
+          "Post-run evidence shows no expression, timing, effect, source, render queue, layer name, selection state, project item, key creation/removal, key value, unselected keyframe or unselected property mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-keyframes-make-hold-keyframes generic repository importer as advisory typed-plan coverage for explicit selected-property hold-keyframe interpolation workflows.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed keyframe tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-29",
+          "from": "generic-repo-importer-tool-keyframes-make-hold-keyframes",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Keyframes/Make_Hold_Keyframes.jsx into existing typed tools as selected-property apply_keyframe_ease guidance for converting explicit reviewed selectedKeyframes to hold interpolation; no source JSX copied. Current typed tools require current get_selected_properties evidence, explicit selectedKeyframes with times/values/indices, previous/holdKeyframes disclosure, apply_keyframe_ease with interpolation:\"hold\" and explicit keyIndices, and get_layer_details read-back. Selected-key discovery without explicit reviewed keyframes, spatial tangent editing, exact source selection side effects, value generation, destructive key removal, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties before mutating keyframe interpolation; do not infer targets from prior chat context.",
+        "Require explicit reviewed selected-keyframe evidence with times, values and key indices before computing holdKeyframes.",
+        "Apply this recipe only when holdInterpolation can be applied without changing key times, key values or value shape.",
+        "Use apply_keyframe_ease with interpolation:\"hold\" and explicit reviewed keyIndices; do not rely on default selected-key behavior.",
+        "Do not use set_property_keyframes for this recipe unless a separate reviewed plan explicitly needs keyframe value repair.",
+        "Require a separate typed-tool contract for selected-key discovery without explicit reviewed keyframes, spatial tangent editing, exact source selection side effects, value generation, destructive key removal, broad property scans, selection side effects or exact source JSX semantics.",
+        "Do not use this recipe for expression edits, static property value edits without keyframes, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
+      ]
     }
   ]
 }

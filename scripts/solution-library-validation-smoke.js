@@ -36,6 +36,7 @@ const IMPORTED_ADVISORY_IDS = [
   "set-new-color-typed-plan",
   "swap-selected-property-dimensions-typed-plan",
   "invert-selected-keyframes-typed-plan",
+  "make-hold-keyframes-typed-plan",
   "apply-maintain-stroke-width-expression-typed-plan",
   "update-stroke-weight-expressions-typed-plan",
   "toggle-maintain-scale-expression-typed-plan",
@@ -583,6 +584,35 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /set_property_keyframes/.test(note)), `${id}: notes must require set_property_keyframes.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Invert_Selected_Keyframes/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "make-hold-keyframes-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "apply_keyframe_ease", "get_layer_details"],
+        `${id}: imported make-hold-keyframes workflow should stay on the narrow selected-property keyframe interpolation typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: selected-keyframe hold interpolation workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+      assert(text.includes("includeValues:true"), `${id}: recipe should require current value/keyframe evidence.`);
+      assert(text.includes("selectedKeyframes"), `${id}: recipe should require explicit selectedKeyframes guidance.`);
+      assert(text.includes("holdKeyframes"), `${id}: recipe should disclose computed hold keyframe targets.`);
+      assert(text.includes("holdInterpolation"), `${id}: recipe should define the bounded hold interpolation mode.`);
+      assert(text.includes("apply_keyframe_ease"), `${id}: recipe should use the keyframe interpolation typed tool.`);
+      assert(text.includes('interpolation:"hold"'), `${id}: recipe should apply hold interpolation explicitly.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require keyframe read-back through layer details.`);
+      assert(text.includes("Do not infer selected keyframes"), `${id}: recipe should guard selected-key discovery gaps.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /selectedKeyframes/.test(step)), `${id}: verification must include selectedKeyframes.`);
+      assert(solution.verificationRecipe.steps.some((step) => /holdKeyframes/.test(step)), `${id}: verification must include computed holdKeyframes.`);
+      assert(solution.verificationRecipe.steps.some((step) => /apply_keyframe_ease/.test(step)), `${id}: verification must include apply_keyframe_ease.`);
+      assert(solution.verificationRecipe.steps.some((step) => /interpolation:"hold"/.test(step)), `${id}: verification must require hold interpolation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /holdKeyframes/.test(item)), `${id}: verification must require holdKeyframes evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Skipped targets/.test(item)), `${id}: verification must require skipped-target gap evidence.`);
+      assert(solution.notes.some((note) => /selected-keyframe evidence/.test(note)), `${id}: notes must require selected-keyframe evidence.`);
+      assert(solution.notes.some((note) => /apply_keyframe_ease/.test(note)), `${id}: notes must require apply_keyframe_ease.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Make_Hold_Keyframes/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "apply-maintain-stroke-width-expression-typed-plan") {
       assert.deepStrictEqual(
@@ -1389,6 +1419,23 @@ function assertActualRetrieval(registry) {
   assert(invertSelectedKeyframesPromptSection.includes("apply_keyframe_ease"), "prompt section should surface optional explicit keyframe easing guidance.");
   assert(invertSelectedKeyframesPromptSection.includes("get_layer_details"), "prompt section should require keyframe read-back.");
   assert(!/run_extendscript/i.test(invertSelectedKeyframesPromptSection), "invert-selected-keyframes guidance should not recommend raw ExtendScript.");
+
+  const makeHoldKeyframesRetrieval = retrieveSolutionHints("Make selected keyframes hold after inspecting selectedKeyframes on the selected property, compute holdKeyframes, apply_keyframe_ease with interpolation hold and explicit keyIndices, then read back keyframe interpolation.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(makeHoldKeyframesRetrieval.ok, true);
+  assert(ids(makeHoldKeyframesRetrieval).includes("make-hold-keyframes-typed-plan"), "make-hold-keyframes advisory recipe should surface for selected keyframe hold-interpolation prompts.");
+  const makeHoldKeyframesPromptSection = formatSolutionHintsForPrompt(makeHoldKeyframesRetrieval);
+  assert(makeHoldKeyframesPromptSection.includes("Make Hold Keyframes Typed Plan"), "prompt section should include make-hold-keyframes advisory title.");
+  assert(makeHoldKeyframesPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for hold keyframe workflows.");
+  assert(makeHoldKeyframesPromptSection.includes("selectedKeyframes"), "prompt section should preserve explicit selectedKeyframes guidance.");
+  assert(makeHoldKeyframesPromptSection.includes("holdKeyframes"), "prompt section should preserve computed hold keyframe guidance.");
+  assert(makeHoldKeyframesPromptSection.includes("holdInterpolation"), "prompt section should preserve hold interpolation mode guidance.");
+  assert(makeHoldKeyframesPromptSection.includes("apply_keyframe_ease"), "prompt section should prefer apply_keyframe_ease for hold keyframe workflows.");
+  assert(makeHoldKeyframesPromptSection.includes("get_layer_details"), "prompt section should require keyframe read-back.");
+  assert(!/run_extendscript/i.test(makeHoldKeyframesPromptSection), "make-hold-keyframes guidance should not recommend raw ExtendScript.");
 
   const maintainStrokeExpressionRetrieval = retrieveSolutionHints("Apply a maintain stroke width expression to the selected shape layer stroke width properties so their strokes stay constant while scaling, then read back expression details.", {
     registry,
