@@ -5016,6 +5016,139 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "round-selected-keyframe-values-typed-plan",
+      "title": "Round Selected Keyframe Values Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "keyframes",
+        "selected-keyframes",
+        "selected-properties",
+        "round-keyframe-values",
+        "set-property-keyframes",
+        "apply-keyframe-ease",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Round explicit selected-keyframe numeric values on currently selected properties with typed selected-property evidence, a reviewed nearest-integer roundingMode, computed roundedKeyframes, set_property_keyframes clearExisting:false, optional apply_keyframe_ease, and layer/property read-back.",
+        "appliesWhen": [
+          "The user asks to round selected keyframe values, round selected keyframes, snap selected keyframe values to integers, or clean numeric selected-keyframe values.",
+          "Typed selected-property keyframe value mutation is acceptable only when current selected-property evidence and explicit reviewed selectedKeyframes identify exact layer/property targets, selected keyframe times, selected keyframe values, numeric value shape, and the bounded roundValuesAtSameTimes mode."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties evidence containing one or more concrete selected property targets with layerIndex, propertyPath, current value shape, expression state and keyframe/animated state when available."
+        },
+        {
+          "name": "selectedKeyframes",
+          "type": "array",
+          "required": true,
+          "description": "Explicit reviewed selected keyframe evidence for each accepted target, including keyframe indices, times and numeric scalar or numeric-array values."
+        },
+        {
+          "name": "roundingMode",
+          "type": "string",
+          "required": true,
+          "description": "Reviewed rounding mode. This recipe supports nearestInteger only."
+        },
+        {
+          "name": "roundedKeyframes",
+          "type": "array",
+          "required": false,
+          "description": "Computed reviewed keyframes to set, preserving selected keyframe times and assigning nearest-integer rounded values."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated property is bound from current get_selected_properties evidence before mutation.",
+        "Every accepted target has explicit reviewed selectedKeyframes with concrete times, values, key indices and compatible numeric value shapes.",
+        "The supported rounding is roundValuesAtSameTimes with roundingMode nearestInteger: preserve selected keyframe times and round selected numeric scalar or numeric-array value components.",
+        "The plan displays previous selectedKeyframes, roundingMode and computed roundedKeyframes before confirmation.",
+        "The workflow changes only the explicitly reviewed selected keyframe values through set_property_keyframes with clearExisting:false.",
+        "Expressions, unselected keyframes, key times, key removal, spatial tangents, layer names, sources, timing, effects, masks, render queue items, selection state and unselected properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/round-selected-keyframe-values-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "set_property_keyframes",
+          "apply_keyframe_ease",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected property/keyframe evidence, compute roundedKeyframes from explicit selectedKeyframes and nearestInteger roundingMode, set those keyframes with set_property_keyframes clearExisting:false, optionally apply reviewed easing by explicit keyIndices, then read layer/property keyframes back.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation to capture active comp identity, selected property targets, layerIndex values, propertyPath values, current value shape, expression state and keyframe/animated state when available.",
+          "Require explicit reviewed selectedKeyframes for every accepted property target, including keyframe indices, times, numeric values and compatible value shapes.",
+          "Require roundingMode nearestInteger and fail closed when selected-property evidence is empty, lacks layer/property path targets, lacks exact selected keyframe times and numeric values, has expression text or enabled expressions, has unsupported value shapes, requires removing keys, requests decimal precision/increment rounding, or requires source-exact selected-key discovery.",
+          "Resolve rounding mode only as roundValuesAtSameTimes when selectedKeyframes can be rounded without changing key times or value shapes.",
+          "Show previous selectedKeyframes, roundingMode and computed roundedKeyframes for every accepted target before confirmation.",
+          "Run one set_property_keyframes step per accepted selected property target with the computed roundedKeyframes, clearExisting:false, the evidence-backed layerIndex and exact propertyPath.",
+          "Run apply_keyframe_ease only when the plan has explicit reviewed keyIndices plus requested ease/interpolation settings after the keyframe values are set.",
+          "Run get_layer_details for every affected layer with property keyframe read-back.",
+          "Fail closed if selected-key discovery without explicit reviewed keyframes, decimal precision/increment rounding, color/text/path mutation, exact interpolation/ease preservation, expression-derived sampling, destructive key removal, broad property scans, selection side effects or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties identifies every concrete selected property target, its owning layer, current value shape, expression state and keyframe/animated state when available.",
+          "Dry-run evidence lists previous selectedKeyframes, roundingMode and computed roundedKeyframes for every accepted target.",
+          "Each set_property_keyframes result reports the expected property path, clearExisting:false and expected roundedKeyframes count.",
+          "Any apply_keyframe_ease result reports only the explicit reviewed keyIndices.",
+          "Post-run get_layer_details shows the selected keyframe times now carry the computed rounded values on the expected layer/property path.",
+          "Skipped targets are reported with explicit typed-tool gap reasons instead of being silently changed.",
+          "Post-run evidence shows no expression, timing, effect, source, render queue, layer name, selection state, project item, key removal, key time, unselected keyframe or unselected property mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-keyframes-round-selected-keyframe-values generic repository importer as advisory typed-plan coverage for explicit selected-property keyframe value rounding workflows.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed keyframe tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-29",
+          "from": "generic-repo-importer-tool-keyframes-round-selected-keyframe-values",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Keyframes/Round_Selected_Keyframe_Values.jsx into existing typed tools as selected-property set_property_keyframes guidance for rounding explicit reviewed selectedKeyframes by roundingMode nearestInteger into computed roundedKeyframes; no source JSX copied. Current typed tools require current get_selected_properties evidence, explicit selectedKeyframes with times/values/indices, numeric scalar or numeric-array value shapes, previous/roundedKeyframes disclosure, set_property_keyframes with clearExisting:false and get_layer_details read-back; optional apply_keyframe_ease requires explicit keyIndices. Selected-key discovery without explicit reviewed keyframes, decimal precision/increment rounding, color/text/path mutation, exact interpolation/ease preservation, expression-derived sampling, destructive key removal, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties before mutating keyframes; do not infer targets from prior chat context.",
+        "Require explicit reviewed selected-keyframe evidence with times, numeric values and key indices before computing roundedKeyframes.",
+        "Require reviewed roundingMode nearestInteger and apply this recipe only when roundValuesAtSameTimes can be applied without changing key times or value shape.",
+        "Use set_property_keyframes with clearExisting:false so unselected existing keys are preserved.",
+        "Use apply_keyframe_ease only with explicit reviewed keyIndices; do not rely on default selected-key behavior.",
+        "Require a separate typed-tool contract for selected-key discovery without explicit reviewed keyframes, decimal precision/increment rounding, color/text/path mutation, exact interpolation/ease preservation, expression-derived sampling, destructive key removal, broad property scans, selection side effects or exact source semantics.",
+        "Do not use this recipe for expression edits, static property value edits without keyframes, nonnumeric value edits, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "remove-redundant-keyframes-typed-plan",
       "title": "Remove Redundant Keyframes Typed Plan",
       "status": "recipe",

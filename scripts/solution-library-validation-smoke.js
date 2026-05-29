@@ -40,6 +40,7 @@ const IMPORTED_ADVISORY_IDS = [
   "multiply-selected-keyframes-typed-plan",
   "posterize-keyframes-typed-plan",
   "remove-redundant-keyframes-typed-plan",
+  "round-selected-keyframe-values-typed-plan",
   "apply-maintain-stroke-width-expression-typed-plan",
   "update-stroke-weight-expressions-typed-plan",
   "toggle-maintain-scale-expression-typed-plan",
@@ -649,6 +650,39 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /set_property_keyframes/.test(note)), `${id}: notes must require set_property_keyframes.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Multiply_Selected_Keyframes/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "round-selected-keyframe-values-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "set_property_keyframes", "apply_keyframe_ease", "get_layer_details"],
+        `${id}: imported round-selected-keyframe-values workflow should stay on the narrow selected-property keyframe typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: selected-keyframe value rounding workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+      assert(text.includes("includeValues:true"), `${id}: recipe should require current value/keyframe evidence.`);
+      assert(text.includes("selectedKeyframes"), `${id}: recipe should require explicit selectedKeyframes guidance.`);
+      assert(text.includes("roundingMode"), `${id}: recipe should require a reviewed rounding mode.`);
+      assert(text.includes("roundedKeyframes"), `${id}: recipe should disclose computed rounded keyframes.`);
+      assert(text.includes("roundValuesAtSameTimes"), `${id}: recipe should define the bounded rounding mode.`);
+      assert(text.includes("numeric scalar or numeric-array"), `${id}: recipe should limit mutation to numeric keyframe values.`);
+      assert(text.includes("set_property_keyframes"), `${id}: recipe should use the property-keyframe typed tool.`);
+      assert(text.includes("clearExisting:false"), `${id}: recipe should preserve unselected existing keys.`);
+      assert(text.includes("apply_keyframe_ease"), `${id}: recipe should gate optional easing through explicit key indices.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require keyframe read-back through layer details.`);
+      assert(text.includes("Do not infer selected properties or selected keyframes"), `${id}: recipe should guard selected-key discovery gaps.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /selectedKeyframes/.test(step)), `${id}: verification must include selectedKeyframes.`);
+      assert(solution.verificationRecipe.steps.some((step) => /roundingMode/.test(step)), `${id}: verification must include the reviewed rounding mode.`);
+      assert(solution.verificationRecipe.steps.some((step) => /roundedKeyframes/.test(step)), `${id}: verification must include computed roundedKeyframes.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_property_keyframes/.test(step)), `${id}: verification must include set_property_keyframes.`);
+      assert(solution.verificationRecipe.steps.some((step) => /clearExisting:false/.test(step)), `${id}: verification must preserve existing keys.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /roundedKeyframes/.test(item)), `${id}: verification must require roundedKeyframes read-back evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Skipped targets/.test(item)), `${id}: verification must require skipped-target gap evidence.`);
+      assert(solution.notes.some((note) => /selected-keyframe evidence/.test(note)), `${id}: notes must require selected-keyframe evidence.`);
+      assert(solution.notes.some((note) => /set_property_keyframes/.test(note)), `${id}: notes must require set_property_keyframes.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Round_Selected_Keyframe_Values/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "posterize-keyframes-typed-plan") {
       assert.deepStrictEqual(
@@ -1560,6 +1594,25 @@ function assertActualRetrieval(registry) {
   assert(multiplySelectedKeyframesPromptSection.includes("clearExisting:false"), "prompt section should preserve existing keyframes.");
   assert(multiplySelectedKeyframesPromptSection.includes("get_layer_details"), "prompt section should require keyframe read-back.");
   assert(!/run_extendscript/i.test(multiplySelectedKeyframesPromptSection), "multiply-selected-keyframes guidance should not recommend raw ExtendScript.");
+
+  const roundSelectedKeyframeValuesRetrieval = retrieveSolutionHints("Round selected keyframe values to nearest integers after inspecting selectedKeyframes on the selected property, compute roundedKeyframes with roundingMode nearestInteger, set_property_keyframes with clearExisting:false, optionally apply_keyframe_ease with explicit keyIndices, and read back keyframes.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(roundSelectedKeyframeValuesRetrieval.ok, true);
+  assert(ids(roundSelectedKeyframeValuesRetrieval).includes("round-selected-keyframe-values-typed-plan"), "round-selected-keyframe-values advisory recipe should surface for selected keyframe value rounding prompts.");
+  const roundSelectedKeyframeValuesPromptSection = formatSolutionHintsForPrompt(roundSelectedKeyframeValuesRetrieval);
+  assert(roundSelectedKeyframeValuesPromptSection.includes("Round Selected Keyframe Values Typed Plan"), "prompt section should include round-selected-keyframe-values advisory title.");
+  assert(roundSelectedKeyframeValuesPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for keyframe value rounding workflows.");
+  assert(roundSelectedKeyframeValuesPromptSection.includes("selectedKeyframes"), "prompt section should preserve explicit selectedKeyframes guidance.");
+  assert(roundSelectedKeyframeValuesPromptSection.includes("roundingMode"), "prompt section should preserve reviewed rounding mode guidance.");
+  assert(roundSelectedKeyframeValuesPromptSection.includes("roundedKeyframes"), "prompt section should preserve computed rounded keyframe guidance.");
+  assert(roundSelectedKeyframeValuesPromptSection.includes("roundValuesAtSameTimes"), "prompt section should preserve bounded rounding mode guidance.");
+  assert(roundSelectedKeyframeValuesPromptSection.includes("set_property_keyframes"), "prompt section should prefer set_property_keyframes for keyframe value rounding workflows.");
+  assert(roundSelectedKeyframeValuesPromptSection.includes("clearExisting:false"), "prompt section should preserve existing keyframes.");
+  assert(roundSelectedKeyframeValuesPromptSection.includes("get_layer_details"), "prompt section should require keyframe read-back.");
+  assert(!/run_extendscript/i.test(roundSelectedKeyframeValuesPromptSection), "round-selected-keyframe-values guidance should not recommend raw ExtendScript.");
 
   const posterizeKeyframesRetrieval = retrieveSolutionHints("Posterize selected keyframes to a reviewed 12 fps posterizeFrameGrid after inspecting selectedKeyframes and completePropertyKeyframes, compute posterizedKeyframes and preservedUnselectedKeyframes, rewrite with set_property_keyframes clearExisting:true only when unselected keyframes are preserved, then read back keyframes.", {
     registry,
