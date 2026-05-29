@@ -68,6 +68,7 @@ function createFixture(name) {
   fs.mkdirSync(path.join(source, "Expressions"), { recursive: true });
   fs.mkdirSync(path.join(source, "Keyframes"), { recursive: true });
   fs.mkdirSync(path.join(source, "Layers"), { recursive: true });
+  fs.mkdirSync(path.join(source, "Project"), { recursive: true });
   fs.mkdirSync(path.join(source, "Properties"), { recursive: true });
   fs.writeFileSync(path.join(source, "README.md"), "# Source fixture\n", "utf8");
   fs.writeFileSync(path.join(source, "LICENSE"), "Fixture license\n", "utf8");
@@ -100,6 +101,7 @@ function createFixture(name) {
   fs.writeFileSync(path.join(source, "Layers", "Read_Only_Fixture.jsx"), "function readOnlyTool() { return true; }\n", "utf8");
   fs.writeFileSync(path.join(source, "Layers", "Extend_All_Layers.jsx"), "function extendAllLayers() { return true; }\n", "utf8");
   fs.writeFileSync(path.join(source, "Layers", "Shift_Layer_Start_Time.jsx"), "function shiftLayerStartTime() { return true; }\n", "utf8");
+  fs.writeFileSync(path.join(source, "Project", "Add_Selected_Compositions_To_Render_Queue.jsx"), "function addSelectedCompsToRenderQueue() { return true; }\n", "utf8");
   fs.writeFileSync(path.join(source, "Properties", "Set_Selected_Property_Value.jsx"), "function setSelectedPropertyValue() { return true; }\n", "utf8");
 
   fs.mkdirSync(path.join(target, "plans"), { recursive: true });
@@ -352,6 +354,25 @@ function keyframeLiveLaneNeededEntry(overrides = {}) {
       sliceId: "fixture-keyframe-import",
       plannedPaths: ["scripts/imported-tools/keyframes.js"]
     },
+    queueRank: null,
+    ...overrides
+  });
+}
+
+function renderQueueLiveLaneNeededEntry(overrides = {}) {
+  return entry({
+    id: "tool-project-add-selected-compositions-to-render-queue",
+    sourcePath: "Project/Add_Selected_Compositions_To_Render_Queue.jsx",
+    name: "Add Selected Compositions To Render Queue",
+    description: "Fixture render queue live-lane-needed candidate.",
+    classification: "live_lane_needed",
+    shortReason: "Render queue edits need generated-only setup, read-back, and cleanup proof.",
+    suggestedTools: ["get_project_info", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"],
+    implementation: {
+      sliceId: "fixture-render-queue-import",
+      plannedPaths: ["scripts/imported-tools/render-queue.js"]
+    },
+    safetySignals: { usesRenderQueue: true },
     queueRank: null,
     ...overrides
   });
@@ -1332,6 +1353,67 @@ function assertBoundedSelfImprovementCreatesAndRejectsLanes() {
   }
 }
 
+function assertBoundedSelfImprovementAllowsDeclaredRenderQueueSignal() {
+  const fixture = createFixture("si-rq");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const accepted = renderQueueLiveLaneNeededEntry();
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [accepted]));
+    const registryPath = writeRegistry(fixture, {
+      entries: [],
+      selfImprovementFamilies: [
+        {
+          id: "render-queue-generated-only",
+          requiredTools: ["add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"],
+          allowedTools: ["get_project_info", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"],
+          allowedUnsafeSignals: ["usesRenderQueue"],
+          candidateIds: [accepted.id],
+          command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-render-queue-openai-cli-smoke",
+          providerPath: "openai-cli",
+          proofLane: "render-queue",
+          productionTypedTools: true,
+          readBackTools: ["get_render_queue_status"],
+          semanticVerification: true,
+          plannedPaths: ["scripts/cep-panel-cdp-smoke.js"],
+          nonLiveValidationCommands: ["node --check scripts/cep-panel-cdp-smoke.js"],
+          reclassifiedClassification: "existing_typed_tools_recipe_only",
+          scope: "fixture generated-only render queue proof"
+        }
+      ]
+    });
+    const output = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        "fixture-si-rq",
+        1,
+        fakeCodexEnv(binDir),
+        ["--allow-self-improvement-lane-synthesis"]
+      )
+    );
+    assert.strictEqual(output.status, "completed");
+    assert.deepStrictEqual(output.resolutionQueue.requeuedCandidateIds, [accepted.id]);
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    const completed = ledger.entries.find((item) => item.id === accepted.id);
+    assert.strictEqual(completed.status, "completed");
+    assert.strictEqual(completed.liveGate.synthesisFamily, "render-queue-generated-only");
+    assert.strictEqual(completed.liveGate.command, "node scripts/cep-panel-cdp-smoke.js full-ui-agent-render-queue-openai-cli-smoke");
+    const template = JSON.parse(fs.readFileSync(path.join(
+      fixture.target,
+      output.runRoot,
+      "candidates",
+      accepted.id,
+      "live-lane",
+      "live-lane-template.json"
+    ), "utf8"));
+    assert.deepStrictEqual(template.synthesis.allowedUnsafeSignals, ["usesRenderQueue"]);
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertScopedResolutionCandidateIdsOnlyProcessRequestedLane() {
   const fixture = createFixture("scoped-resolution");
   try {
@@ -1812,6 +1894,7 @@ function main() {
   assertCompactParentOutputSummarizesResolutionQueue();
   assertQueuedLiveLaneNeededFamiliesAreProvedAndRanked();
   assertBoundedSelfImprovementCreatesAndRejectsLanes();
+  assertBoundedSelfImprovementAllowsDeclaredRenderQueueSignal();
   assertScopedResolutionCandidateIdsOnlyProcessRequestedLane();
   assertChildTimeoutResolutionRecoversImporterWorktreePatch();
   assertChildTimeoutRecoveryDiscoversMissingBatchReportPath();

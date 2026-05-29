@@ -3086,7 +3086,7 @@
         "typed-tool"
       ],
       "intent": {
-        "summary": "Increment explicit generated composition version tokens in project item names with rename_project_items findReplace and typed read-back while arbitrary parsing and traversal stay out of scope.",
+        "summary": "findReplace version token rename for explicit generated composition items using rename_project_items and typed read-back.",
         "appliesWhen": [
           "The user asks to increment composition versions, bump generated comp version names, or rename generated compositions from one explicit version token to another.",
           "Updating only explicit generated composition project item names by literal version-token find/replace is acceptable instead of source relinking, comp duplication, or all-composition traversal."

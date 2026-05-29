@@ -986,6 +986,12 @@ function unsafeSynthesisSignals(candidate) {
   return AUTO_LANE_UNSAFE_SIGNAL_FIELDS.filter((field) => signals[field] === true);
 }
 
+function selfImprovementAllowedUnsafeSignals(family) {
+  if (!family || !Array.isArray(family.allowedUnsafeSignals)) return [];
+  const knownUnsafeFields = new Set(AUTO_LANE_UNSAFE_SIGNAL_FIELDS);
+  return sortedUnique(family.allowedUnsafeSignals.filter((field) => knownUnsafeFields.has(field)));
+}
+
 function normalizedSafetySignalSummary(candidate) {
   const signals = candidate.safetySignals && typeof candidate.safetySignals === "object"
     ? candidate.safetySignals
@@ -1242,6 +1248,7 @@ function templateFromSelfImprovementFamily(family, candidate, runId) {
     proofLane: family.proofLane || familyId,
     readBackPolicy: AUTO_LANE_READ_BACK_POLICY,
     readBackTools: family.readBackTools.slice(),
+    allowedUnsafeSignals: selfImprovementAllowedUnsafeSignals(family),
     candidateTools: candidateTools(candidate),
     semanticVerification: true,
     status: "designed",
@@ -1302,15 +1309,19 @@ function runSelfImprovementPipeline({ bucket, groupId, registry, runId, runRoot,
     roles: {},
   };
   const unsafeSignals = unsafeSynthesisSignals(representative);
-  if (unsafeSignals.length > 0) {
+  const match = matchingSelfImprovementFamily(registry, representative, tools);
+  const allowedUnsafeSignals = new Set(selfImprovementAllowedUnsafeSignals(match.family));
+  const disallowedUnsafeSignals = unsafeSignals.filter((signal) => !allowedUnsafeSignals.has(signal));
+  if (disallowedUnsafeSignals.length > 0) {
     const rolePath = writeSelfImprovementRoleSummary(root, "lane-designer", {
       ok: false,
-      reason: `unsafe_safety_signals:${unsafeSignals.join(",")}`,
+      reason: `unsafe_safety_signals:${disallowedUnsafeSignals.join(",")}`,
       status: "rejected_unsafe",
+      allowedUnsafeSignals: Array.from(allowedUnsafeSignals),
     });
     return {
       ok: false,
-      reason: `unsafe_safety_signals:${unsafeSignals.join(",")}`,
+      reason: `unsafe_safety_signals:${disallowedUnsafeSignals.join(",")}`,
       status: "blocked_self_improvement_unsafe",
       evidence: {
         ...baseEvidence,
@@ -1319,7 +1330,6 @@ function runSelfImprovementPipeline({ bucket, groupId, registry, runId, runRoot,
     };
   }
 
-  const match = matchingSelfImprovementFamily(registry, representative, tools);
   if (!match.family) {
     const rolePath = writeSelfImprovementRoleSummary(root, "lane-designer", {
       ok: false,

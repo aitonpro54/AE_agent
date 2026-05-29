@@ -24,6 +24,7 @@ const {
   agentNewToolsScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
+  agentRenderQueueScenarioPlans,
   agentResetWorkAreaScenarioPlans,
   agentSelectedKeyframeMarkerScenarioPlans,
   agentSelectedPropertyValueScenarioPlans,
@@ -331,6 +332,23 @@ function openAiCliCompositionVersionScenarioConfig() {
     runPrefixBase: process.env.CEP_PANEL_AGENT_COMPOSITION_VERSION_PREFIX || "Codex QA AUX097",
     scenarioFactory: agentCompositionVersionScenarioPlans,
     skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliRenderQueueScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-render-queue",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_RENDER_QUEUE_PREFIX || "Codex QA AUX098",
+    scenarioFactory: agentRenderQueueScenarioPlans,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
     disallowProviderFallbacks: true
@@ -4439,6 +4457,36 @@ async function verifyGeneratedCompositionVersionReadBack(scenario, expected) {
   };
 }
 
+function renderQueueOutputPath(item) {
+  const modules = Array.isArray(item && item.outputModules) ? item.outputModules : [];
+  const first = modules.find((outputModule) => outputModule && typeof outputModule.file === "string");
+  return first ? first.file : "";
+}
+
+async function verifyGeneratedRenderQueueReadBack(scenario, expected) {
+  const status = await callBridgeTool("get_render_queue_status", { limit: Math.max(20, Number(expected.renderQueueItemIndex || 0) + 5) });
+  const items = Array.isArray(status.items) ? status.items : [];
+  const item = items.find((candidate) => renderQueueItemCompName(candidate) === expected.compName);
+  if (!item) {
+    throw new Error(`${scenario.id}: generated render queue item for ${expected.compName} was not found by read-back.`);
+  }
+  const outputPath = renderQueueOutputPath(item);
+  const normalizedOutput = outputPath.replace(/\\/g, "/");
+  const normalizedExpected = String(expected.outputPath || "").replace(/\\/g, "/");
+  if (!normalizedOutput.endsWith(normalizedExpected)) {
+    throw new Error(`${scenario.id}: generated render queue output mismatch; expected suffix ${normalizedExpected}, got ${outputPath || "empty output path"}.`);
+  }
+  return {
+    ok: true,
+    renderQueueItem: {
+      index: item.index,
+      compName: expected.compName,
+      outputPath
+    },
+    totalItems: status.totalItems
+  };
+}
+
 function effectPropertyValueMatches(properties, propertyIndex, expectedValue) {
   const property = (properties || []).find((item) => Number(item.index) === Number(propertyIndex));
   if (!property) return false;
@@ -5138,6 +5186,10 @@ async function verifyAgentScenarioReadBack(scenario) {
     return verifyGeneratedCompositionVersionReadBack(scenario, expected);
   }
 
+  if (expected.generatedRenderQueue) {
+    return verifyGeneratedRenderQueueReadBack(scenario, expected);
+  }
+
   if (expected.generatedEffectProperty) {
     return verifyGeneratedEffectPropertyReadBack(scenario, expected);
   }
@@ -5821,6 +5873,10 @@ async function main() {
   }
   if (command === "agent-composition-version-openai-cli-smoke" || command === "full-ui-agent-composition-version-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliCompositionVersionScenarioConfig());
+    return;
+  }
+  if (command === "agent-render-queue-openai-cli-smoke" || command === "full-ui-agent-render-queue-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliRenderQueueScenarioConfig());
     return;
   }
   if (command === "agent-effect-property-openai-cli-smoke" || command === "full-ui-agent-effect-property-openai-cli-smoke") {

@@ -25,6 +25,7 @@ const {
   agentRenameFindReplaceScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentResetWorkAreaScenarioPlans,
+  agentRenderQueueScenarioPlans,
   agentSelectedKeyframeMarkerScenarioPlans,
   agentSelectedPropertyValueScenarioPlans
 } = require("./agent-scenario-fixtures");
@@ -437,6 +438,18 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(compositionVersion.plan.steps[2].args.mode, "findReplace");
   assert.strictEqual(compositionVersion.plan.steps[2].args.find, "v001");
   assert.strictEqual(compositionVersion.plan.steps[2].args.replace, "v002");
+
+  const [renderQueue] = agentRenderQueueScenarioPlans("Codex QA AUX098 Fixture", 2);
+  assert.strictEqual(renderQueue.id, "generated-render-queue-setup");
+  assert.strictEqual(renderQueue.expectedReadBack.generatedRenderQueue, true);
+  assert.deepStrictEqual(renderQueue.plan.steps.map((step) => step.tool), [
+    "create_test_comp",
+    "add_comp_to_render_queue",
+    "set_render_queue_output",
+    "get_render_queue_status"
+  ]);
+  assert.strictEqual(renderQueue.plan.steps[2].args.renderQueueItemIndex, 3);
+  assert.strictEqual(renderQueue.plan.steps[3].args.limit, 6);
 
   const [effectProperty] = agentEffectPropertyScenarioPlans("Codex QA AUX050 Fixture");
   assert.strictEqual(effectProperty.id, "generated-effect-property");

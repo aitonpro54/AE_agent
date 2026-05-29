@@ -168,6 +168,57 @@
       "scope": "generated-only explicit composition version-token proof using rename_project_items findReplace on generated comps plus find_project_items/get_comp_details read-back; arbitrary version parsing, recursive/global traversal, source relinking, onion skinning, camera/controller parenting, and raw JSX semantics remain fail-closed"
     },
     {
+      "id": "render-queue-generated-only",
+      "requiredTools": [
+        "add_comp_to_render_queue",
+        "set_render_queue_output",
+        "get_render_queue_status"
+      ],
+      "allowedTools": [
+        "add_comp_to_render_queue",
+        "create_comp",
+        "create_test_comp",
+        "get_project_info",
+        "get_render_queue_status",
+        "set_render_queue_output"
+      ],
+      "allowedUnsafeSignals": [
+        "usesRenderQueue"
+      ],
+      "candidateIds": [
+        "tool-project-add-labeled-items-to-render-queue",
+        "tool-project-add-selected-compositions-to-render-queue"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-render-queue-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "render-queue",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_render_queue_status"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "orchestrator/run-generic-repo-full-intake.mjs",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/sdk-generic-repo-full-intake-smoke.js"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/sdk-generic-repo-full-intake-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/sdk-generic-repo-full-intake-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only render queue setup proof using add_comp_to_render_queue, set_render_queue_output, get_render_queue_status, semantic verification, and generated-prefix cleanup; no render start, non-generated comps, arbitrary output templates, user render queue mutation, or raw JSX/source semantics are covered"
+    },
+    {
       "id": "selected-property-keyframe-generated-only",
       "requiredTools": [
         "get_selected_properties",
