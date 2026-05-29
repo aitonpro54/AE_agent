@@ -14,6 +14,7 @@ const {
   agentEffectPropertyScenarioPlans,
   agentExpressionScenarioPlans,
   agentKeyframeScenarioPlans,
+  agentLayerSwitchScenarioPlans,
   agentLayerTimingScenarioPlans,
   agentLayerTransformScenarioPlans,
   agentManualTypedToolsScenarioPlans,
@@ -382,6 +383,24 @@ function openAiCliSelectedPropertyValueScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_SELECTED_PROPERTY_VALUE_PREFIX || "Codex QA AUX072",
     scenarioFactory: agentSelectedPropertyValueScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliLayerSwitchScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-layer-switches",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_LAYER_SWITCH_PREFIX || "Codex QA AUX096",
+    scenarioFactory: agentLayerSwitchScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -4529,6 +4548,47 @@ async function verifyGeneratedSelectedPropertyValueReadBack(scenario, expected) 
   };
 }
 
+async function verifyGeneratedLayerSwitchReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const listedLayer = layers.find((layer) => layer.name === expected.layerName);
+  if (!listedLayer || !listedLayer.index) {
+    throw new Error(`${scenario.id}: generated layer-switch layer ${expected.layerName} was not found by comp read-back.`);
+  }
+
+  const details = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: listedLayer.index,
+    includeProperties: false
+  });
+  const layer = details && details.layer ? details.layer : {};
+  const switches = expected.switches || {};
+  for (const field of ["collapseTransformation", "motionBlur"]) {
+    if (switches[field] === true && layer[field] !== true) {
+      throw new Error(`${scenario.id}: generated layer switch ${field} was not enabled by read-back.`);
+    }
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: compMatch.itemIndex,
+      name: compMatch.name
+    },
+    layer: {
+      index: listedLayer.index,
+      name: layer.name,
+      collapseTransformation: layer.collapseTransformation === true,
+      motionBlur: layer.motionBlur === true
+    }
+  };
+}
+
 async function verifyGeneratedKeyframeReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const selected = await callBridgeTool("get_selected_properties", {
@@ -5031,6 +5091,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedSelectedPropertyValue) {
     return verifyGeneratedSelectedPropertyValueReadBack(scenario, expected);
+  }
+
+  if (expected.generatedLayerSwitches) {
+    return verifyGeneratedLayerSwitchReadBack(scenario, expected);
   }
 
   if (expected.generatedKeyframeEase) {
@@ -5712,6 +5776,10 @@ async function main() {
   }
   if (command === "agent-selected-property-value-openai-cli-smoke" || command === "full-ui-agent-selected-property-value-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliSelectedPropertyValueScenarioConfig());
+    return;
+  }
+  if (command === "agent-layer-switches-openai-cli-smoke" || command === "full-ui-agent-layer-switches-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliLayerSwitchScenarioConfig());
     return;
   }
   if (command === "agent-keyframes-openai-cli-smoke" || command === "full-ui-agent-keyframes-openai-cli-smoke") {

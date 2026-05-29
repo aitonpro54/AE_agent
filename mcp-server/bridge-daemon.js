@@ -6014,6 +6014,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For explicit bulk layer duplication, use duplicate_layers with concrete layerIndices after inspecting the target comp/layers. Pair sourceNames with layerIndices in current AE stack order, or insert get_comp_details before duplication when source-layer order is ambiguous. For selected-layer duplication, inspect with get_selected_layers first and bind layerIndices from {{selectedLayerIndices}}; never use duplicate_layers for deletion, source/precomp relinking, mask/path edits, or audio workflows.",
     "For destructive single-layer deletion, use delete_layer only after inspecting the explicit target comp/layer. Provide compItemIndex or compName, layerIndex, and expectedLayerName, then read back the comp/layer stack to prove the deleted layer is absent; never use selection-only, broad, multi-layer, or name-optional deletion.",
     "For composition settings, use set_comp_properties only for width, height, pixelAspect, duration, frameRate, bgColor, and displayStartTime on one explicit comp, then read back the comp before reporting success. Do not route arbitrary comp fields, layers, effects, masks, or property paths through this tool.",
+    "For explicit layer switches, use set_property_value only with whitelisted layer attributes threeDLayer, collapseTransformation, or motionBlur on inspected layer indices, setAtTime:false, then read back with get_layer_details. Do not use it for parenting, selection changes, timeline switches, or arbitrary layer fields.",
     "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
     "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, set_layer_mask, and fit_layer_to_comp. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Update mode needs one explicit maskIndex; do not delete masks, target multiple masks/layers, run roto, or edit arbitrary mask property trees.",
     "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, set_expression, and clear_expression.",
@@ -8524,7 +8525,7 @@ const tools = [
         },
         propertyPath: {
           type: ["array", "string"],
-          description: "Property path from the layer. Segments can be names, numeric indexes, or objects with matchName/name/propertyIndex. Also accepts layer attributes such as threeDLayer.",
+          description: "Property path from the layer. Segments can be names, numeric indexes, or objects with matchName/name/propertyIndex. Also accepts whitelisted layer attributes: threeDLayer, collapseTransformation, or motionBlur.",
           items: {}
         },
         value: {
@@ -9439,6 +9440,8 @@ async function callTool(name, args) {
         try { info.guideLayer = !!layer.guideLayer; } catch (__guideLayerError) {}
         try { info.adjustmentLayer = !!layer.adjustmentLayer; } catch (__adjustmentLayerError) {}
         try { info.threeDLayer = !!layer.threeDLayer; } catch (__threeDError) {}
+        try { info.collapseTransformation = !!layer.collapseTransformation; } catch (__collapseError) {}
+        try { info.motionBlur = !!layer.motionBlur; } catch (__motionBlurError) {}
         try { info.blendingMode = layer.blendingMode; } catch (__blendError) {}
         try { info.markerCount = __codexLayerMarkers(layer, 0).count; } catch (__markerCountError) {}
         try { info.parent = layer.parent ? __codexLayerInfo(layer.parent) : null; } catch (__parentError) {}
@@ -12358,7 +12361,13 @@ async function callTool(name, args) {
       var requestedValue = ${aeLiteral(value)};
       var shouldSetAtTime = ${setAtTime ? "true" : "false"};
       var targetTime = ${time === null ? "null" : time};
-      var isThreeDLayerAttribute = propertyPath.length === 1 && String(propertyPath[0]) === "threeDLayer";
+      var layerAttributeName = propertyPath.length === 1 ? String(propertyPath[0]) : "";
+      var layerAttributeSetters = {
+        threeDLayer: true,
+        collapseTransformation: true,
+        motionBlur: true
+      };
+      var isLayerAttribute = layerAttributeSetters[layerAttributeName] === true;
 
       app.beginUndoGroup("Codex Set Property Value");
       var layers = [];
@@ -12368,14 +12377,22 @@ async function callTool(name, args) {
         if (!layer) throw new Error("Layer not found at index " + layerIndices[__li] + ".");
         if (layer.locked) throw new Error("Layer is locked: " + layer.name);
 
-        if (isThreeDLayerAttribute) {
-          if (shouldSetAtTime) throw new Error("threeDLayer cannot be keyframed with setAtTime.");
-          layer.threeDLayer = !!requestedValue;
+        if (isLayerAttribute) {
+          if (shouldSetAtTime) throw new Error(layerAttributeName + " cannot be keyframed with setAtTime.");
+          if (layerAttributeName === "collapseTransformation") {
+            var canSetCollapseTransformation = true;
+            try { canSetCollapseTransformation = layer.canSetCollapseTransformation !== false; } catch (__collapseCheckError) {}
+            if (!canSetCollapseTransformation) {
+              throw new Error("Layer cannot set collapseTransformation. Use a precomp/vector-capable layer and read it back.");
+            }
+          }
+          layer[layerAttributeName] = !!requestedValue;
           layers.push(__codexLayerInfo(layer));
           properties.push({
-            name: "threeDLayer",
-            matchName: "threeDLayer",
-            value: !!layer.threeDLayer
+            name: layerAttributeName,
+            matchName: layerAttributeName,
+            propertyPath: [{ name: layerAttributeName, matchName: layerAttributeName }],
+            value: !!layer[layerAttributeName]
           });
           continue;
         }

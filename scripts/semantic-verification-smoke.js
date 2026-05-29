@@ -1538,6 +1538,81 @@ function assertSetPropertyValuePasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("set_property_value:value") >= 0 && check.status === "passed"), "set_property_value read-back check should pass.");
 }
 
+function assertSetLayerSwitchValuePasses() {
+  const plan = {
+    summary: "Set one explicit generated layer switch and inspect layer read-back.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Enable collapse transformations",
+        tool: "set_property_value",
+        args: {
+          compName: "Layer Switch Fixture",
+          layerIndex: 1,
+          propertyPath: "collapseTransformation",
+          value: true,
+          setAtTime: false
+        }
+      },
+      {
+        title: "Read layer switch",
+        tool: "get_layer_details",
+        args: {
+          compName: "Layer Switch Fixture",
+          layerIndex: 1,
+          includeProperties: false
+        }
+      }
+    ]
+  };
+  const run = {
+    ok: true,
+    dryRun: false,
+    steps: [
+      {
+        index: 1,
+        title: "Enable collapse transformations",
+        tool: "set_property_value",
+        args: clone(plan.steps[0].args),
+        mutatesProject: true,
+        status: "completed",
+        result: {
+          comp: { name: "Layer Switch Fixture" },
+          layer: { ...layerInfo("Layer Switch Shape", { index: 1 }), collapseTransformation: true },
+          property: {
+            name: "collapseTransformation",
+            matchName: "collapseTransformation",
+            propertyPath: [{ name: "collapseTransformation", matchName: "collapseTransformation" }],
+            value: true
+          },
+          properties: [{
+            name: "collapseTransformation",
+            matchName: "collapseTransformation",
+            propertyPath: [{ name: "collapseTransformation", matchName: "collapseTransformation" }],
+            value: true
+          }]
+        }
+      },
+      {
+        index: 2,
+        title: "Read layer switch",
+        tool: "get_layer_details",
+        args: clone(plan.steps[1].args),
+        mutatesProject: false,
+        status: "completed",
+        result: {
+          comp: { name: "Layer Switch Fixture" },
+          layer: { ...layerInfo("Layer Switch Shape", { index: 1 }), collapseTransformation: true }
+        }
+      }
+    ]
+  };
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `layer switch semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_property_value:value") >= 0 && check.status === "passed"), "layer switch read-back check should pass.");
+}
+
 function assertUpdateLayerMarkerPasses() {
   const plan = {
     summary: "Update one explicit timeline marker and inspect marker read-back.",
@@ -1696,6 +1771,7 @@ function main() {
   assertDakkshinFixtureMutationScopedReadBackPasses();
   assertDakkshinLiveAeEvidenceShapePasses();
   assertSetPropertyValuePasses();
+  assertSetLayerSwitchValuePasses();
   assertAddLayerMarkerPasses();
   assertUpdateLayerMarkerPasses();
   assertDeleteLayerMarkerPasses();

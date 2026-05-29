@@ -70,6 +70,61 @@
       "scope": "generated-only selected/generated property value proof using get_selected_properties, set_property_value, get_layer_details, read-back, semantic verification, and cleanup; expression-driven dimension separation remains fail-closed"
     },
     {
+      "id": "explicit-layer-switch-generated-only",
+      "requiredTools": [
+        "set_property_value"
+      ],
+      "allowedTools": [
+        "add_project_item_to_comp",
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_comp_details",
+        "get_layer_details",
+        "rename_project_items",
+        "set_comp_properties",
+        "set_comp_work_area",
+        "set_property_value"
+      ],
+      "candidateIds": [
+        "tool-compositions-enable-collapse-transformations",
+        "tool-compositions-enable-motion-blur"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-switches-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "explicit-layer-switches",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_layer_details",
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/smoke-test.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/smoke-test.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/smoke-test.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only explicit layer switch proof using set_property_value on whitelisted collapseTransformation and motionBlur layer attributes plus get_layer_details/get_comp_details read-back, semantic verification, and cleanup; camera parenting, controller setup, comp-wide motion blur, recursive/global traversal, onion skinning, version duplication, and arbitrary layer fields remain fail-closed"
+    },
+    {
       "id": "selected-property-keyframe-generated-only",
       "requiredTools": [
         "get_selected_properties",

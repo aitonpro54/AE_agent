@@ -18,6 +18,7 @@ const {
   agentEffectPropertyScenarioPlans,
   agentExpressionScenarioPlans,
   agentKeyframeScenarioPlans,
+  agentLayerSwitchScenarioPlans,
   agentLayerTimingScenarioPlans,
   agentLayerTransformScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
@@ -475,6 +476,22 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(selectedPropertyValue.plan.steps[3].args.propertyPath, "ADBE Transform Group.ADBE Opacity");
   assert.strictEqual(selectedPropertyValue.plan.steps[3].args.value, 42);
 
+  const [layerSwitches] = agentLayerSwitchScenarioPlans("Codex QA AUX096 Fixture");
+  assert.strictEqual(layerSwitches.id, "generated-layer-switches");
+  assert.strictEqual(layerSwitches.expectedReadBack.generatedLayerSwitches, true);
+  assert.deepStrictEqual(layerSwitches.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_comp",
+    "add_project_item_to_comp",
+    "get_layer_details",
+    "set_property_value",
+    "get_layer_details",
+    "set_property_value",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(layerSwitches.plan.steps[4].args.propertyPath, "collapseTransformation");
+  assert.strictEqual(layerSwitches.plan.steps[6].args.propertyPath, "motionBlur");
+
   const [keyframes] = agentKeyframeScenarioPlans("Codex QA AUX083 Fixture");
   assert.strictEqual(keyframes.id, "generated-keyframe-ease");
   assert.strictEqual(keyframes.expectedReadBack.generatedKeyframeEase, true);
@@ -504,7 +521,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(selectedKeyframeMarker.plan.steps[4].args.time, 1);
   assert.strictEqual(selectedKeyframeMarker.plan.steps[4].args.comment, "");
 
-  for (const scenario of [timing, transform, projectItems, effectProperty, expression, compProperties, selectedPropertyValue, keyframes, selectedKeyframeMarker]) {
+  for (const scenario of [timing, transform, projectItems, effectProperty, expression, compProperties, selectedPropertyValue, layerSwitches, keyframes, selectedKeyframeMarker]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }

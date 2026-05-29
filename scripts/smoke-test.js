@@ -333,8 +333,8 @@ async function main() {
   if (!layerAttributeCommand.body.command || layerAttributeCommand.body.command.script.indexOf("var layerIndices = [1,2]") < 0) {
     throw new Error("Expected set_property_value to accept multiple layer indexes.");
   }
-  if (layerAttributeCommand.body.command.script.indexOf("isThreeDLayerAttribute") < 0) {
-    throw new Error("Expected set_property_value to handle the threeDLayer layer attribute.");
+  if (layerAttributeCommand.body.command.script.indexOf("layerAttributeSetters") < 0) {
+    throw new Error("Expected set_property_value to handle whitelisted layer attributes.");
   }
   await requestJsonWithOptions({
     hostname: "127.0.0.1",
@@ -354,13 +354,13 @@ async function main() {
         comp: { itemIndex: 1, name: "Smoke Comp" },
         layer: null,
         layers: [
-          { index: 1, name: "Smoke Layer 1", threeDLayer: true },
-          { index: 2, name: "Smoke Layer 2", threeDLayer: true }
+          { index: 1, name: "Smoke Layer 1", threeDLayer: true, collapseTransformation: false, motionBlur: false },
+          { index: 2, name: "Smoke Layer 2", threeDLayer: true, collapseTransformation: false, motionBlur: false }
         ],
         property: null,
         properties: [
-          { name: "threeDLayer", value: true },
-          { name: "threeDLayer", value: true }
+          { name: "threeDLayer", propertyPath: [{ name: "threeDLayer", matchName: "threeDLayer" }], value: true },
+          { name: "threeDLayer", propertyPath: [{ name: "threeDLayer", matchName: "threeDLayer" }], value: true }
         ]
       }
     })

@@ -8,6 +8,7 @@ const MUTATING_TOOLS = new Set([
   "create_solid_layer",
   "create_text_layer",
   "create_camera_layer",
+  "add_project_item_to_comp",
   "set_comp_work_area",
   "set_layer_time_range",
   "stagger_layers",
@@ -164,17 +165,28 @@ function addLayerCount(target, value, source) {
   });
 }
 
+function boolValue(value) {
+  if (value === true || value === false) return value;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return null;
+}
+
 function addLayerEvidence(target, value, source) {
   if (!isPlainObject(value)) return;
   const index = numberValue(value.index);
   const name = compactText(value.name, 160);
   if (index === null || index < 1 || !name) return;
-  target.layers.push({
+  const layer = {
     index,
     name,
     id: value.id === undefined || value.id === null ? null : String(value.id),
     source: source || "observed layer"
-  });
+  };
+  for (const field of ["threeDLayer", "collapseTransformation", "motionBlur"]) {
+    if (hasOwn(value, field)) layer[field] = boolValue(value[field]);
+  }
+  target.layers.push(layer);
 }
 
 function addCompEvidence(target, value, source) {
@@ -735,6 +747,17 @@ function observedPropertyValueEvidence(evidence, args) {
   for (const property of evidence.properties || []) {
     if (propertyPathMatches(property.propertyPath, args.propertyPath) && propertyValueMatches(args.value, property.value, 0.01)) {
       return property.source || `Read ${propertyPathText(args.propertyPath)} after set_property_value.`;
+    }
+  }
+  const path = propertyPathSegments(args.propertyPath);
+  const layerAttribute = path.length === 1 && ["threeDLayer", "collapseTransformation", "motionBlur"].includes(path[0])
+    ? path[0]
+    : null;
+  if (layerAttribute) {
+    for (const layer of evidence.layers || []) {
+      if (hasOwn(layer, layerAttribute) && propertyValueMatches(args.value, layer[layerAttribute], 0.01)) {
+        return layer.source || `Read ${layerAttribute} after set_property_value.`;
+      }
     }
   }
   return null;

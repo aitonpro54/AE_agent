@@ -10,6 +10,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "create_solid_layer",
   "create_text_layer",
   "create_camera_layer",
+  "add_project_item_to_comp",
   "create_layer_mask",
   "move_project_items_to_folder",
   "set_comp_work_area",
@@ -1412,6 +1413,60 @@ function agentSelectedPropertyValueScenarioPlans(runPrefix) {
   }));
 }
 
+function agentLayerSwitchScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Layer Switches`;
+  const compName = `${base} Comp`;
+  const sourceCompName = `${base} Source`;
+  const layerName = `${base} Precomp Layer`;
+
+  return [
+    {
+      id: "generated-layer-switches",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_comp",
+        "add_project_item_to_comp",
+        "get_layer_details",
+        "set_property_value",
+        "get_layer_details",
+        "set_property_value",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedLayerSwitches: true,
+        compName,
+        sourceCompName,
+        layerName,
+        switches: {
+          collapseTransformation: true,
+          motionBlur: true
+        }
+      },
+      plan: {
+        summary: "AUX-096 generated-only live QA for explicit layer switch attributes.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated layer-switch comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.05, 0.06, 0.08], allowDuplicateName: false, openInViewer: true, comment: "AUX-096 generated-only layer switch validation" } },
+          { title: "Create generated layer-switch source comp", tool: "create_comp", args: { name: sourceCompName, width: 320, height: 180, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.02, 0.03, 0.05], allowDuplicateName: false, openInViewer: false, comment: "AUX-096 generated-only layer switch source validation" } },
+          { title: "Add generated source comp as layer", tool: "add_project_item_to_comp", args: { compName, itemName: sourceCompName, itemType: "comp", name: layerName, duration: 3 } },
+          { title: "Inspect generated layer switches", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } },
+          { title: "Enable generated collapse transformations", tool: "set_property_value", args: { compName, layerIndex: 1, propertyPath: "collapseTransformation", value: true, setAtTime: false } },
+          { title: "Read generated collapse switch", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } },
+          { title: "Enable generated motion blur", tool: "set_property_value", args: { compName, layerIndex: 1, propertyPath: "motionBlur", value: true, setAtTime: false } },
+          { title: "Read generated layer switches", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentKeyframeScenarioPlans(runPrefix) {
   const base = `${runPrefix} Keyframes`;
   const compName = `${base} Comp`;
@@ -2323,6 +2378,7 @@ module.exports = {
   agentEffectPropertyScenarioPlans,
   agentExpressionScenarioPlans,
   agentKeyframeScenarioPlans,
+  agentLayerSwitchScenarioPlans,
   agentLayerTimingScenarioPlans,
   agentLayerTransformScenarioPlans,
   agentManualTypedToolsScenarioPlans,
