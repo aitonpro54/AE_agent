@@ -59,6 +59,7 @@ const IMPORTED_ADVISORY_IDS = [
   "change-nested-composition-duration-with-timecode-typed-plan",
   "change-nested-composition-start-frame-typed-plan",
   "change-nested-composition-frame-rate-typed-plan",
+  "change-nested-composition-work-area-typed-plan",
   "add-composition-guide-typed-plan",
   "add-posterize-time-adjustment-layer-typed-plan",
   "center-composition-typed-plan",
@@ -1212,6 +1213,34 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Change_Nested_Composition_Frame_Rate/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "change-nested-composition-work-area-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details", "get_comp_details", "set_comp_work_area"],
+        `${id}: imported nested composition work-area workflow should stay on the narrow comp-work-area typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: nested composition work-area workflow must be mutating.`);
+      assert(text.includes("nested source composition"), `${id}: recipe should document nested source composition targeting.`);
+      assert(text.includes("workAreaStart"), `${id}: recipe should preserve workAreaStart mutation guidance.`);
+      assert(text.includes("workAreaDuration"), `${id}: recipe should preserve workAreaDuration mutation guidance.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence for selected workflows.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require parent layer source read-back.`);
+      assert(text.includes("set_comp_work_area"), `${id}: recipe should use the comp work-area typed tool.`);
+      assert(text.includes("shared source comp"), `${id}: recipe should fail closed for shared-source ambiguity.`);
+      assert(text.includes("layer retiming"), `${id}: recipe should reject layer-retiming semantics.`);
+      assert(text.includes("duration changes"), `${id}: recipe should reject duration-change semantics.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must include selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include parent layer source read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_comp_work_area/.test(step)), `${id}: verification must include comp work-area mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read nested comp details before and after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /source comp itemIndex\/name/.test(item)), `${id}: verification must require source comp identity evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /requested workAreaStart/.test(item)), `${id}: verification must require requested workAreaStart read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /requested workAreaDuration/.test(item)), `${id}: verification must require requested workAreaDuration read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /unchanged width/.test(item)), `${id}: verification must require unchanged structural comp fields.`);
+      assert(solution.notes.some((note) => /shared source comp mutation/.test(note)), `${id}: notes must warn on shared source comp mutation.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Change_Nested_Composition_Work_Area/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "add-composition-guide-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2070,6 +2099,23 @@ function assertActualRetrieval(registry) {
   assert(nestedCompositionFrameRatePromptSection.includes("shared source comp"), "prompt section should preserve shared-source warning.");
   assert(nestedCompositionFrameRatePromptSection.includes("layer retiming"), "prompt section should preserve layer-retiming warning.");
   assert(!/run_extendscript/i.test(nestedCompositionFrameRatePromptSection), "nested composition frame-rate guidance should not recommend raw ExtendScript.");
+
+  const nestedCompositionWorkAreaRetrieval = retrieveSolutionHints("Change the selected nested precomp source composition work area to start at 2 seconds for 8 seconds, then read back workAreaStart and workAreaDuration without retiming layers or changing duration.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(nestedCompositionWorkAreaRetrieval.ok, true);
+  assert(ids(nestedCompositionWorkAreaRetrieval).includes("change-nested-composition-work-area-typed-plan"), "nested composition work-area advisory recipe should surface for nested work-area prompts.");
+  const nestedCompositionWorkAreaPromptSection = formatSolutionHintsForPrompt(nestedCompositionWorkAreaRetrieval);
+  assert(nestedCompositionWorkAreaPromptSection.includes("Change Nested Composition Work Area Typed Plan"), "prompt section should include nested composition work-area advisory title.");
+  assert(nestedCompositionWorkAreaPromptSection.includes("set_comp_work_area"), "prompt section should prefer set_comp_work_area for nested comp work area.");
+  assert(nestedCompositionWorkAreaPromptSection.includes("workAreaStart"), "prompt section should preserve workAreaStart guidance.");
+  assert(nestedCompositionWorkAreaPromptSection.includes("workAreaDuration"), "prompt section should preserve workAreaDuration guidance.");
+  assert(nestedCompositionWorkAreaPromptSection.includes("get_layer_details"), "prompt section should require parent layer source read-back.");
+  assert(nestedCompositionWorkAreaPromptSection.includes("shared source comp"), "prompt section should preserve shared-source warning.");
+  assert(nestedCompositionWorkAreaPromptSection.includes("layer retiming"), "prompt section should preserve layer-retiming warning.");
+  assert(!/run_extendscript/i.test(nestedCompositionWorkAreaPromptSection), "nested composition work-area guidance should not recommend raw ExtendScript.");
 
   const compositionGuideRetrieval = retrieveSolutionHints("Add a single 16:9 composition guide overlay shape layer to a generated comp, then read back the guide layer.", {
     registry,
