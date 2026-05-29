@@ -24,6 +24,7 @@ const TOOL_BACKED_IDS = ["bulk-layer-duplicate-typed-tool"];
 const IMPORTED_ADVISORY_IDS = [
   "reset-composition-work-area-typed-plan",
   "add-markers-to-selected-layers-typed-plan",
+  "add-markers-at-selected-keyframes-typed-plan",
   "append-to-layer-name-typed-plan",
   "rename-selected-layers-with-text-typed-plan",
   "rename-selected-layers-with-numbers-typed-plan",
@@ -300,6 +301,38 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /time/.test(item)), `${id}: verification must require marker time evidence.`);
       assert(solution.notes.some((note) => /audio analysis/.test(note)), `${id}: notes must keep audio analysis out of scope.`);
       assert(solution.promotionHistory.some((entry) => /kmmsl1/.test(entry.evidence)), `${id}: promotion evidence should mention kmmsl1.`);
+    } else if (id === "add-markers-at-selected-keyframes-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "add_layer_marker", "get_layer_details"],
+        `${id}: imported selected-keyframe marker workflow should stay on the narrow selected-property marker typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: selected-keyframe marker workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+      assert(text.includes("includeValues:true"), `${id}: recipe should require current value/keyframe evidence.`);
+      assert(text.includes("selectedKeyframes"), `${id}: recipe should require explicit selectedKeyframes guidance.`);
+      assert(text.includes("markerTargets"), `${id}: recipe should disclose computed markerTargets.`);
+      assert(text.includes("markerTargetsFromSelectedKeyframeTimes"), `${id}: recipe should define the bounded marker-target mode.`);
+      assert(text.includes("add_layer_marker"), `${id}: recipe should use the marker add typed tool.`);
+      assert(text.includes("comment field") || text.includes("`comment` field"), `${id}: recipe should require the add_layer_marker comment field.`);
+      assert(text.includes("empty string"), `${id}: recipe should document reviewed blank marker comments.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require marker read-back through layer details.`);
+      assert(text.includes("Do not infer selected keyframes"), `${id}: recipe should guard selected-key discovery gaps.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /selectedKeyframes/.test(step)), `${id}: verification must include selectedKeyframes.`);
+      assert(solution.verificationRecipe.steps.some((step) => /markerTargets/.test(step)), `${id}: verification must include computed markerTargets.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_layer_marker/.test(step)), `${id}: verification must include add_layer_marker.`);
+      assert(solution.verificationRecipe.steps.some((step) => /comment field/.test(step)), `${id}: verification must require an explicit marker comment field.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer marker details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /markerTargets/.test(item)), `${id}: verification must require markerTargets evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /comment/.test(item)), `${id}: verification must require marker comment evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /time/.test(item)), `${id}: verification must require marker time evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Skipped targets/.test(item)), `${id}: verification must require skipped-target gap evidence.`);
+      assert(solution.notes.some((note) => /selected-keyframe evidence/.test(note)), `${id}: notes must require selected-keyframe evidence.`);
+      assert(solution.notes.some((note) => /add_layer_marker/.test(note)), `${id}: notes must require add_layer_marker.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Add_Markers_At_Selected_Keyframes/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "append-to-layer-name-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -1541,6 +1574,22 @@ function assertActualRetrieval(registry) {
   assert(addMarkersPromptSection.includes("add_layer_marker"), "prompt section should prefer add_layer_marker for marker creation.");
   assert(addMarkersPromptSection.includes("get_layer_details"), "prompt section should require marker read-back.");
   assert(!/run_extendscript/i.test(addMarkersPromptSection), "selected-layer marker guidance should not recommend raw ExtendScript.");
+
+  const selectedKeyframeMarkersRetrieval = retrieveSolutionHints("Add blank layer markers at every selected keyframe time on the selected properties.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(selectedKeyframeMarkersRetrieval.ok, true);
+  assert(ids(selectedKeyframeMarkersRetrieval).includes("add-markers-at-selected-keyframes-typed-plan"), "selected-keyframe marker advisory recipe should surface for selected keyframe marker prompts.");
+  const selectedKeyframeMarkersPromptSection = formatSolutionHintsForPrompt(selectedKeyframeMarkersRetrieval);
+  assert(selectedKeyframeMarkersPromptSection.includes("Add Markers At Selected Keyframes Typed Plan"), "prompt section should include selected-keyframe marker advisory title.");
+  assert(selectedKeyframeMarkersPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for selected keyframe marker workflows.");
+  assert(selectedKeyframeMarkersPromptSection.includes("selectedKeyframes"), "prompt section should require explicit selectedKeyframes.");
+  assert(selectedKeyframeMarkersPromptSection.includes("markerTargets"), "prompt section should expose markerTargets guidance.");
+  assert(selectedKeyframeMarkersPromptSection.includes("add_layer_marker"), "prompt section should prefer add_layer_marker for selected keyframe marker creation.");
+  assert(selectedKeyframeMarkersPromptSection.includes("get_layer_details"), "prompt section should require marker read-back.");
+  assert(!/run_extendscript/i.test(selectedKeyframeMarkersPromptSection), "selected-keyframe marker guidance should not recommend raw ExtendScript.");
 
   const appendLayerNameRetrieval = retrieveSolutionHints("Prefix the selected layer names with Shot 10 after inspecting the selection.", {
     registry,

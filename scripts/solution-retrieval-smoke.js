@@ -290,7 +290,7 @@ function run() {
   });
   assert.strictEqual(candidateRetrieval.entries.length, 1);
   assert.strictEqual(candidateRetrieval.entries[0].status, "typed-tool-candidate");
-  assert(formatSolutionHintsForPrompt(candidateRetrieval).indexOf("recommend implementing") >= 0);
+  assert(formatSolutionHintsForPrompt(candidateRetrieval).indexOf("typed-tool-candidate: implement or use a narrow typed tool first") >= 0);
 
   console.log(JSON.stringify({
     ok: true,

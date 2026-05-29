@@ -862,6 +862,138 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "add-markers-at-selected-keyframes-typed-plan",
+      "title": "Add Markers At Selected Keyframes Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "markers",
+        "marker",
+        "layer-marker",
+        "keyframes",
+        "selected-keyframes",
+        "selected-properties",
+        "add-layer-marker",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Add explicit layer markers at reviewed selected-keyframe times on currently selected properties with typed selected-property evidence, markerTargets, add_layer_marker, and layer marker read-back.",
+        "appliesWhen": [
+          "The user asks to add markers at selected keyframes, add blank markers at selected keyframe times, or mark selected property keyframes with layer markers.",
+          "Typed selected-keyframe marker creation is acceptable only when current selected-property evidence and explicit reviewed selectedKeyframes identify exact layer/property targets and selected keyframe times."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties evidence containing one or more concrete selected property targets with layerIndex, propertyPath, expression state and keyframe/animated state when available."
+        },
+        {
+          "name": "selectedKeyframes",
+          "type": "array",
+          "required": true,
+          "description": "Explicit reviewed selected keyframe evidence for each accepted target, including keyframe indices and times."
+        },
+        {
+          "name": "markerComment",
+          "type": "string",
+          "required": false,
+          "description": "Reviewed marker comment. Use an explicit empty string only when blank marker semantics are intended; the add_layer_marker comment field must still be present."
+        },
+        {
+          "name": "markerTargets",
+          "type": "array",
+          "required": false,
+          "description": "Computed reviewed marker targets derived from selectedKeyframes, with concrete layerIndex and selected keyframe time values."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated layer is bound from current get_selected_properties evidence before mutation.",
+        "Every accepted target has explicit reviewed selectedKeyframes with concrete times and key indices.",
+        "The supported behavior is markerTargetsFromSelectedKeyframeTimes: add layer markers at selected keyframe times without changing property values or keyframes.",
+        "The plan displays selectedKeyframes, markerTargets and the exact markerComment before confirmation, including comment:\"\" when blank markers are intended.",
+        "The workflow creates only layer markers through add_layer_marker and verifies them with get_layer_details.",
+        "Expressions, property values, keyframe values, keyframe times, interpolation/ease, layer timing, layer names, sources, effects, masks, render queue items, project items, selection state, existing markers, composition markers and unselected properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/add-markers-at-selected-keyframes-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "add_layer_marker",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected property/keyframe evidence, compute markerTargets from explicit selectedKeyframes, add layer markers with add_layer_marker at reviewed keyframe times, then read layer marker details back.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation to capture active comp identity, selected property targets, layerIndex values, propertyPath values, expression state and keyframe/animated state when available.",
+          "Require explicit reviewed selectedKeyframes for every accepted property target, including keyframe indices and times.",
+          "Fail closed when selected-property evidence is empty, lacks layer/property path targets, lacks exact selected keyframe times, requires selected-key discovery, requests composition markers, requests audio-derived markers, requests marker update/delete, or requires source-exact selected-key behavior.",
+          "Resolve marker mode only as markerTargetsFromSelectedKeyframeTimes and show selectedKeyframes, markerTargets and markerComment for every accepted target before confirmation.",
+          "Run one add_layer_marker step per reviewed markerTarget with the evidence-backed layerIndex, exact selected keyframe time, reviewed comment field, verifyAfter:true and stable idempotency.",
+          "Run get_layer_details for every affected layer with marker read-back.",
+          "Fail closed if the add_layer_marker comment field would be omitted; an explicit empty string is allowed only as a reviewed value.",
+          "Fail closed if property/keyframe value edits, keyframe time edits, interpolation/ease changes, layer timing changes, broad property scans, selection side effects or raw JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties identifies every concrete selected property target, its owning layer, current expression state and keyframe/animated state when available.",
+          "Dry-run evidence lists previous selectedKeyframes, computed markerTargets and exact markerComment for every accepted target.",
+          "Each add_layer_marker result reports the expected layer target, selected keyframe time and reviewed comment.",
+          "Post-run get_layer_details shows the expected marker time on the expected affected layer.",
+          "Post-run get_layer_details shows the expected marker comment, including an empty comment when comment:\"\" was reviewed.",
+          "Skipped targets are reported with explicit typed-tool gap reasons instead of being silently changed.",
+          "Post-run evidence shows no expression, property value, keyframe value, keyframe time, interpolation/ease, timing, effect, source, render queue, layer name, selection state, project item, existing marker, composition marker, unselected keyframe or unselected property mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-markers-add-markers-at-selected-keyframes generic repository importer as advisory typed-plan coverage for explicit selected-property keyframe-to-layer-marker workflows.",
+          "The parent support slice inspected the source behavior and adapted only the marker-at-selected-keyframe idea into existing typed marker tools; no source JSX was copied."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-29",
+          "from": "generic-repo-importer-tool-markers-add-markers-at-selected-keyframes",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Markers/Add_Markers_At_Selected_Keyframes.jsx into existing typed tools as selected-property keyframe-to-layer-marker guidance for adding layer markers at explicit reviewed selectedKeyframes; no source JSX copied. Current typed tools require current get_selected_properties evidence, explicit selectedKeyframes with times/indices, computed markerTargets disclosure, add_layer_marker with a present comment field and get_layer_details marker read-back. Selected-key discovery without explicit reviewed keyframes, composition markers, audio-derived markers, marker update/delete, property/keyframe value edits, keyframe time edits, layer timing changes, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties before creating markers; do not infer targets from prior chat context.",
+        "Require explicit reviewed selected-keyframe evidence with times and key indices before computing markerTargets.",
+        "Use add_layer_marker only after markerTargets and markerComment are reviewed; do not omit the comment field.",
+        "Allow comment:\"\" only as an explicit reviewed blank marker value.",
+        "Require get_layer_details marker read-back for every affected layer.",
+        "Require a separate typed-tool contract for selected-key discovery without explicit reviewed keyframes, composition markers, audio-derived markers, marker update/delete, property/keyframe value edits, keyframe time edits, layer timing changes, broad property scans, selection side effects or exact source semantics.",
+        "Do not use this recipe for expression edits, property value edits, keyframe value edits, keyframe time edits, interpolation/ease changes, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename, composition marker creation or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "append-to-layer-name-typed-plan",
       "title": "Append To Layer Name Typed Plan",
       "status": "recipe",

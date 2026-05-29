@@ -12,6 +12,8 @@ const DEFAULT_MAX_HINTS = 3;
 const MIN_RELEVANCE_SCORE = 5;
 const MIN_TOOL_MATCH_SCORE = 60;
 const GENERIC_TAGS = new Set(["typed-tool", "reviewed-jsx", "fixture", "smoke", "candidate"]);
+const MARKER_TAGS = new Set(["marker", "markers", "layer-marker"]);
+const MARKER_PROMPT_TOKENS = new Set(["marker", "markers", "mark", "marks", "marked"]);
 const PROMPT_KEY_TERMS = Object.freeze([
   "includeValues:true",
   "setAtTime:false",
@@ -135,6 +137,17 @@ function solutionTags(solution) {
   return stringArray(solution && solution.tags).map((tag) => tag.toLowerCase());
 }
 
+function isMarkerSolution(solution) {
+  return solutionTags(solution).some((tag) => MARKER_TAGS.has(tag));
+}
+
+function promptHasMarkerIntent(promptTokens) {
+  for (const token of promptTokens) {
+    if (MARKER_PROMPT_TOKENS.has(token)) return true;
+  }
+  return false;
+}
+
 function meaningfulTagSet(solution) {
   return new Set(solutionTags(solution).filter((tag) => !GENERIC_TAGS.has(tag)));
 }
@@ -171,6 +184,7 @@ function isRawExtendscriptSolution(solution) {
 
 function scoreSolution(solution, promptTokens) {
   if (!solution || promptTokens.size === 0) return 0;
+  if (isMarkerSolution(solution) && !promptHasMarkerIntent(promptTokens)) return 0;
   let score = 0;
   const tags = solutionTags(solution);
   for (const tag of tags) {
