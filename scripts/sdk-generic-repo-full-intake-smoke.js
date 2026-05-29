@@ -1536,6 +1536,58 @@ function assertChildTimeoutResolutionRecoversImporterWorktreePatch() {
   }
 }
 
+function assertChildTimeoutRecoveryDiscoversMissingBatchReportPath() {
+  const fixture = createFixture("child-timeout-discover");
+  try {
+    const runId = "fixture-child-timeout";
+    const failed = entry({
+      id: "tool-layers-child-timeout-discover",
+      sourcePath: "Layers/Read_Only_Fixture.jsx",
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "not_required_for_read_only_or_skip" },
+      implementation: {
+        childTimeoutRecoveryExhausted: true,
+        failureReason: "child-timeout-recovery-exhausted:batch-importer-failed: implementation-child-run-timeout: queue-batch-1-childtimeout",
+        plannedPaths: ["scripts/imported-tools/recovered-child-timeout.js"],
+        sliceId: "fixture-child-timeout-discover"
+      },
+      status: "failed_import",
+      queueRank: 1
+    });
+    const evidence = writeChildTimeoutEvidence(fixture, failed);
+    failed.failClosed = {
+      status: "failed_import",
+      reason: "child-timeout-recovery-exhausted:batch-importer-failed: implementation-child-run-timeout: queue-batch-1-childtimeout",
+      batchReport: null
+    };
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [failed]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const output = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        runId,
+        1
+      )
+    );
+    assert.strictEqual(output.status, "stopped_recovery_pending_semantic_review");
+    assert.strictEqual(output.items[0].status, "recovered_patch_non_live_validated_pending_semantic_review");
+    assert.strictEqual(output.items[0].importStatus, "imported_non_live_validated");
+    assert(fs.existsSync(path.join(fixture.target, evidence.recoveredPath)));
+    const recovered = fs.readFileSync(path.join(fixture.target, evidence.recoveredPath), "utf8");
+    assert(recovered.includes("child-timeout"));
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    assert.strictEqual(ledger.entries[0].status, "recovered_patch_non_live_validated_pending_semantic_review");
+    const recoveryReportPath = ledger.entries[0].implementation.batchReport;
+    const recoveryReport = JSON.parse(fs.readFileSync(path.join(fixture.target, recoveryReportPath), "utf8"));
+    assert.strictEqual(recoveryReport.sourceBatchReport, evidence.batchReportPath);
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]).includes("recovered-child-timeout.js"), true);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertChildTimeoutSummaryContractFailsClosed() {
   for (const variant of ["missing", "too-large"]) {
     const fixture = createFixture(`child-summary-${variant}`);
@@ -1762,6 +1814,7 @@ function main() {
   assertBoundedSelfImprovementCreatesAndRejectsLanes();
   assertScopedResolutionCandidateIdsOnlyProcessRequestedLane();
   assertChildTimeoutResolutionRecoversImporterWorktreePatch();
+  assertChildTimeoutRecoveryDiscoversMissingBatchReportPath();
   assertChildTimeoutSummaryContractFailsClosed();
   assertCompactParentOutputListsFailedIdsWithoutEvidenceBlob();
   assertChildTimeoutTerminalTicketDoesNotRequeue();

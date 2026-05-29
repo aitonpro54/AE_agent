@@ -2178,11 +2178,32 @@ function processImportFailureResolutionTickets({ ledger, resolutionCandidateIds 
   const tickets = [];
   const requeuedCandidateIds = [];
   const buckets = new Map();
+  const batchReportByCandidateId = new Map();
   for (const entry of ledger.entries) {
     if (!candidateAllowedByResolutionScope(entry, resolutionCandidateIds)) {
       continue;
     }
-    const kind = recoverableImportFailureKind(entry);
+    const knownBatchReport = entry.failClosed?.batchReport || entry.implementation?.batchReport || null;
+    const verifiedKnownBatchReport = knownBatchReport && existsSync(absoluteReportPath(targetRepo, knownBatchReport))
+      ? knownBatchReport
+      : null;
+    const discoveredBatchReport = verifiedKnownBatchReport || discoverCandidateBatchReportPath({
+      candidateId: entry.id,
+      runRoot,
+      targetRepo,
+    });
+    if (discoveredBatchReport) {
+      batchReportByCandidateId.set(entry.id, discoveredBatchReport);
+    }
+    let kind = recoverableImportFailureKind(entry);
+    if (
+      !kind &&
+      discoveredBatchReport &&
+      childTimeoutRecoveryExhausted(entry) &&
+      hasReasonFragment(entry, CHILD_TIMEOUT_REASONS)
+    ) {
+      kind = "child_timeout";
+    }
     if (!kind || !SAFE_CLASSIFICATIONS.has(entry.classification)) {
       continue;
     }
@@ -2203,7 +2224,7 @@ function processImportFailureResolutionTickets({ ledger, resolutionCandidateIds 
     const ticket = recordResolutionTicket({
       affected: bucket.entries,
       evidence: {
-        batchReport: representative.failClosed?.batchReport || representative.implementation?.batchReport || null,
+        batchReport: batchReportByCandidateId.get(representative.id) || representative.failClosed?.batchReport || representative.implementation?.batchReport || null,
         failureReason: representative.failClosed?.reason || representative.implementation?.failureReason || null,
         familyId: representative.liveGate?.synthesisFamily || null,
         retryNonce: safeId(`${groupId}-${sha256Text(`${bucket.entries.map((entry) => entry.id).sort().join(",")}:${runId}`).slice(0, 8)}`),
@@ -2219,12 +2240,12 @@ function processImportFailureResolutionTickets({ ledger, resolutionCandidateIds 
     const retryNonce = ticket.evidence.retryNonce;
     for (const entry of bucket.entries) {
       const recoveryIntent = kind === "child_timeout"
-        ? {
-            mode: "recover_child_timeout_patch",
-            batchReport: entry.failClosed?.batchReport || entry.implementation?.batchReport || ticket.evidence.batchReport,
-            retryNonce,
-            ticketPath: ticket.isolation.ticketPath,
-          }
+          ? {
+              mode: "recover_child_timeout_patch",
+              batchReport: batchReportByCandidateId.get(entry.id) || entry.failClosed?.batchReport || entry.implementation?.batchReport || ticket.evidence.batchReport,
+              retryNonce,
+              ticketPath: ticket.isolation.ticketPath,
+            }
         : {
             mode: "retry_narrow_once",
             previousFailure: entry.failClosed?.reason || entry.implementation?.failureReason || ticket.evidence.failureReason,
@@ -2801,17 +2822,31 @@ function runCandidateImport({ candidate, ledger, runId, runRoot, targetRepo }) {
     `${safeId(runId).slice(0, 36)}-${sha256Text(`${candidate.id}:${retryNonce}`).slice(0, 10)}-import`,
   ).slice(0, 60);
   const reportDir = normalizeRepoPath(path.relative(targetRepo, path.join(runRoot, "queue-supervisor")));
-  const report = runBatch(
-    {
-      batch: true,
-      ledger: singleLedgerPath,
-      maxItems: "1",
-      reportDir,
-      runId: batchRunId,
-      targetRepo,
-    },
-    REPO_ROOT,
-  );
+  let report = null;
+  try {
+    report = runBatch(
+      {
+        batch: true,
+        ledger: singleLedgerPath,
+        maxItems: "1",
+        reportDir,
+        runId: batchRunId,
+        targetRepo,
+      },
+      REPO_ROOT,
+    );
+  } catch (error) {
+    const reportPath = discoverCandidateBatchReportPath({ candidateId: candidate.id, runRoot, targetRepo });
+    const discoveredReport = readCompactJsonIfExists(
+      absoluteReportPath(targetRepo, reportPath),
+      "candidate-import-error-batch-report",
+      BATCH_REPORT_SUMMARY_MAX_BYTES,
+    );
+    if (discoveredReport) {
+      error.report = discoveredReport;
+    }
+    throw error;
+  }
   return { batchRunId, report, singleLedgerPath };
 }
 
@@ -2837,6 +2872,34 @@ function childRunSummariesForImporter(targetRepo, importerRunId) {
     .filter((entry) => entry.endsWith(".json"))
     .map((entry) => path.join(dir, entry))
     .map((filePath) => readCompactJson(filePath, `child-run-summary:${filePath}`, CHILD_RESULT_SUMMARY_MAX_BYTES));
+}
+
+function batchReportMentionsCandidate(report, candidateId) {
+  if (!report || !candidateId) return false;
+  if (report.nextCandidate?.id === candidateId) return true;
+  if (Array.isArray(report.selectedCandidateIds) && report.selectedCandidateIds.includes(candidateId)) return true;
+  if (Array.isArray(report.eligibleCandidateIds) && report.eligibleCandidateIds.includes(candidateId)) return true;
+  return Array.isArray(report.items) && report.items.some((item) => item?.candidateId === candidateId);
+}
+
+function discoverCandidateBatchReportPath({ candidateId, runRoot, targetRepo }) {
+  const queueRoot = path.join(runRoot, "queue-supervisor");
+  if (!candidateId || !existsSync(queueRoot)) return null;
+  const matches = [];
+  for (const entry of readdirSync(queueRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const reportPath = path.join(queueRoot, entry.name, "batch-report.json");
+    if (!existsSync(reportPath)) continue;
+    const report = readCompactJsonIfExists(reportPath, `candidate-batch-report:${entry.name}`, BATCH_REPORT_SUMMARY_MAX_BYTES);
+    if (!batchReportMentionsCandidate(report, candidateId)) continue;
+    matches.push({
+      createdAtMs: Date.parse(report.createdAt || "") || 0,
+      mtimeMs: statSync(reportPath).mtimeMs,
+      reportPath,
+    });
+  }
+  matches.sort((left, right) => (right.createdAtMs || right.mtimeMs) - (left.createdAtMs || left.mtimeMs));
+  return matches.length > 0 ? normalizeRepoPath(path.relative(targetRepo, matches[0].reportPath)) : null;
 }
 
 function resolveChildTimeoutEvidence({ candidate, targetRepo, batchReportPath }) {
@@ -3042,7 +3105,11 @@ function recoverChildTimeoutPatch({ candidate, runId, runRoot, targetRepo, timeo
   const recoveryRoot = path.join(runRoot, "candidates", safeId(candidate.id), "import-recovery");
   const logDir = path.join(recoveryRoot, "logs");
   mkdirSync(logDir, { recursive: true });
-  const batchReportPath = intent.batchReport || candidate.failClosed?.batchReport || candidate.implementation?.batchReport || null;
+  const batchReportPath =
+    intent.batchReport ||
+    candidate.failClosed?.batchReport ||
+    candidate.implementation?.batchReport ||
+    discoverCandidateBatchReportPath({ candidateId: candidate.id, runRoot, targetRepo });
   const { childResult, importerRunId, report: sourceBatchReport } = resolveChildTimeoutEvidence({
     batchReportPath,
     candidate,
@@ -3169,7 +3236,11 @@ function recoverChildTimeoutPatch({ candidate, runId, runRoot, targetRepo, timeo
 
 function tryRecoverImportFailure({ candidate, error, ledger, runId, runRoot, targetRepo, timeoutMs }) {
   const message = error && error.message ? error.message : String(error || "");
-  const reportPath = error?.report?.reportPath || null;
+  const reportPath =
+    error?.report?.reportPath ||
+    candidate.failClosed?.batchReport ||
+    candidate.implementation?.batchReport ||
+    discoverCandidateBatchReportPath({ candidateId: candidate.id, runRoot, targetRepo });
   if (!CHILD_TIMEOUT_REASONS.some((fragment) => message.includes(fragment))) {
     return null;
   }
