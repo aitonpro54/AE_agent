@@ -2205,6 +2205,137 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "change-nested-composition-start-frame-typed-plan",
+      "title": "Change Nested Composition Start Frame Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "nested-composition",
+        "precomp",
+        "source-comp",
+        "start-frame",
+        "displayStartTime",
+        "frame-rate",
+        "timing",
+        "comp-properties",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Change the displayed start frame of an explicitly identified nested source composition by converting reviewed startFrame and frameRate to displayStartTime with typed read-back while layer retiming and exact displayStartFrame semantics stay out of scope.",
+        "appliesWhen": [
+          "The user asks to change a nested composition start frame, nested comp display start frame, precomp source start frame, or selected nested/precomp source start frame.",
+          "Updating the source composition displayStartTime from a reviewed startFrame/frameRate conversion is acceptable instead of retiming layers, changing the parent layer startTime, shifting keyframes, or changing work area."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetLayer",
+          "type": "layer-selection",
+          "required": false,
+          "description": "Selected or explicitly identified parent layer whose source is the nested composition to inspect before mutation."
+        },
+        {
+          "name": "targetNestedComp",
+          "type": "comp",
+          "required": true,
+          "description": "Nested source composition itemIndex/name proven by get_layer_details or explicit get_comp_details evidence before mutation."
+        },
+        {
+          "name": "startFrame",
+          "type": "number",
+          "required": true,
+          "description": "Reviewed finite integer start frame requested for the nested source composition display start."
+        },
+        {
+          "name": "displayStartTime",
+          "type": "number",
+          "required": true,
+          "description": "Seconds value computed as startFrame divided by the verified nested comp frameRate."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow changes only the verified nested source composition displayStartTime field through set_comp_properties.",
+        "The parent layer source composition is read before mutation; the plan must not infer a nested comp from prior chat context.",
+        "The nested source comp frameRate is read before converting the reviewed startFrame to displayStartTime.",
+        "Changing a shared source comp can affect every layer that references that source, so shared-source ambiguity remains fail-closed until explicitly confirmed.",
+        "Parent layer startTime/in-out retiming, stretch changes, keyframe/expression shifts, duration or work-area conversion, recursive all-nested-comp traversal, source duplication/relinking, footage interpretation changes, native integer displayStartFrame mutation and exact source JSX behavior remain typed-tool gaps."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/change-nested-composition-start-frame-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details",
+          "get_comp_details",
+          "set_comp_properties"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read the parent layer source comp, convert reviewed startFrame against the nested comp frameRate, set only the nested source comp displayStartTime, then read back displayStartTime, derived start frame and unchanged comp/layer identity.",
+        "steps": [
+          "Run get_active_comp and get_selected_layers for selected precomp workflows, or bind an explicit parent comp/layer target from current typed evidence.",
+          "Run get_layer_details for the parent layer and require source comp itemIndex/name evidence before choosing the nested source composition.",
+          "Run get_comp_details for the nested source composition before mutation and record displayStartTime, frameRate, duration, width, height, bgColor, layer count and work area.",
+          "Normalize the requested startFrame to a finite integer, convert it to displayStartTime using the verified nested comp frameRate, and fail closed for missing frameRate, non-positive frameRate, fractional frames, ambiguous timing intent or off-frame round-trip mismatch.",
+          "Run set_comp_properties once against the verified nested source composition with only displayStartTime, verifyAfter and idempotency evidence.",
+          "Run get_comp_details after mutation and compare displayStartTime, derived start frame and unchanged frameRate, duration, width, height, bgColor, layer count and work area.",
+          "Run get_layer_details for the parent layer after mutation when selection was used, confirming the same source comp itemIndex/name remains linked and parent layer timing was not changed."
+        ],
+        "expectedEvidence": [
+          "Selected-layer plans include get_selected_layers evidence before a layer index is bound.",
+          "get_layer_details shows the parent layer source comp itemIndex/name before mutation.",
+          "Pre-run get_comp_details shows the nested source comp frameRate used for startFrame to displayStartTime conversion.",
+          "Dry-run evidence lists the requested startFrame, verified frameRate, computed displayStartTime and frame-alignment decision.",
+          "The set_comp_properties step updates only displayStartTime on the verified nested source composition.",
+          "Post-run get_comp_details shows the requested start frame derived from computed displayStartTime and unchanged width, height, duration, frameRate, bgColor, layer count and work area on the same source comp.",
+          "Post-run parent layer read-back shows no rename, relink, source change, startTime change, in/out timing change, stretch change, layer-order mutation, expression edit or keyframe edit.",
+          "The plan reports shared source comp risk, layer retiming, parent startTime changes, stretch/keyframe/expression changes, duration/work-area conversion, footage interpretation changes, recursive traversal, source duplication, native displayStartFrame mutation and exact source JSX semantics as unsupported by current typed tools."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-compositions-change-nested-composition-start-frame generic repository importer as advisory typed-plan coverage for nested source comp displayStartTime mutation from reviewed startFrame.",
+          "The source JSX and prompt artifact were not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed tools and leaves parent importer validation plus any generated-only live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-29",
+          "from": "generic-repo-importer-tool-compositions-change-nested-composition-start-frame",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Change_Nested_Composition_Start_Frame.jsx into existing typed tools as explicit nested source composition displayStartTime mutation through reviewed startFrame/frameRate conversion and set_comp_properties; no source JSX copied. Parent layer retiming/startTime changes, keyframe/expression shifts, duration/work-area conversion, native displayStartFrame semantics, recursive traversal, shared-source ambiguity, source duplication/relinking and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "This recipe changes a nested source composition displayStartTime only after converting a reviewed startFrame against the nested comp frameRate; it does not retime layers, change parent layer startTime, stretch parent precomp layers, shift keyframes, edit expressions, preserve duration, change work area, or change footage interpretation.",
+        "Treat shared source comp mutation as unsafe unless the user explicitly confirms that all uses of the source comp may inherit the new display start.",
+        "Require a separate typed-tool contract for native integer displayStartFrame mutation, parent layer retiming/startTime changes, duration/work-area conversion, keyframe/expression shifts, recursive all-nested-comp traversal, source duplication before mutation, source relinking, footage interpretation changes or exact source JSX semantics.",
+        "Do not use this recipe for template batch changes, layer cleanup, masks, effects, render queue items, source relinking, footage interpretation or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "change-nested-composition-frame-rate-typed-plan",
       "title": "Change Nested Composition Frame Rate Typed Plan",
       "status": "recipe",

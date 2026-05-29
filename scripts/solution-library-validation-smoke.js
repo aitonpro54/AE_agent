@@ -57,6 +57,7 @@ const IMPORTED_ADVISORY_IDS = [
   "change-nested-composition-background-typed-plan",
   "change-nested-composition-duration-typed-plan",
   "change-nested-composition-duration-with-timecode-typed-plan",
+  "change-nested-composition-start-frame-typed-plan",
   "change-nested-composition-frame-rate-typed-plan",
   "add-composition-guide-typed-plan",
   "add-posterize-time-adjustment-layer-typed-plan",
@@ -1154,6 +1155,36 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Change_Nested_Composition_Duration_With_Timecode/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "change-nested-composition-start-frame-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details", "get_comp_details", "set_comp_properties"],
+        `${id}: imported nested composition start-frame workflow should stay on the narrow comp-property typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: nested composition start-frame workflow must be mutating.`);
+      assert(text.includes("nested source composition"), `${id}: recipe should document nested source composition targeting.`);
+      assert(text.includes("startFrame"), `${id}: recipe should preserve reviewed startFrame guidance.`);
+      assert(text.includes("displayStartTime"), `${id}: recipe should adapt start frame through displayStartTime.`);
+      assert(text.includes("frameRate"), `${id}: recipe should require frameRate evidence for start-frame conversion.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence for selected workflows.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require parent layer source read-back.`);
+      assert(text.includes("set_comp_properties"), `${id}: recipe should use the comp properties typed tool.`);
+      assert(text.includes("shared source comp"), `${id}: recipe should fail closed for shared-source ambiguity.`);
+      assert(text.includes("layer retiming"), `${id}: recipe should reject layer-retiming semantics.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must include selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include parent layer source read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /startFrame/.test(step)), `${id}: verification must include reviewed startFrame conversion.`);
+      assert(solution.verificationRecipe.steps.some((step) => /displayStartTime/.test(step)), `${id}: verification must include displayStartTime mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_comp_properties/.test(step)), `${id}: verification must include comp displayStartTime mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read nested comp details before and after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /source comp itemIndex\/name/.test(item)), `${id}: verification must require source comp identity evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /requested start frame/.test(item)), `${id}: verification must require requested start-frame read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /computed displayStartTime/.test(item)), `${id}: verification must require computed displayStartTime evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /unchanged width/.test(item)), `${id}: verification must require unchanged structural comp fields.`);
+      assert(solution.notes.some((note) => /shared source comp mutation/.test(note)), `${id}: notes must warn on shared source comp mutation.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Change_Nested_Composition_Start_Frame/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "change-nested-composition-frame-rate-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2006,6 +2037,23 @@ function assertActualRetrieval(registry) {
   assert(nestedCompositionDurationWithTimecodePromptSection.includes("get_layer_details"), "prompt section should require parent layer source read-back.");
   assert(nestedCompositionDurationWithTimecodePromptSection.includes("shared source comp"), "prompt section should preserve shared-source warning.");
   assert(!/run_extendscript/i.test(nestedCompositionDurationWithTimecodePromptSection), "nested composition duration with timecode guidance should not recommend raw ExtendScript.");
+
+  const nestedCompositionStartFrameRetrieval = retrieveSolutionHints("Change the selected nested precomp source composition start frame to 100 by setting only displayStartTime from the nested comp frameRate, then read back the nested source comp without retiming layers.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(nestedCompositionStartFrameRetrieval.ok, true);
+  assert(ids(nestedCompositionStartFrameRetrieval).includes("change-nested-composition-start-frame-typed-plan"), "nested composition start-frame advisory recipe should surface for nested start frame prompts.");
+  const nestedCompositionStartFramePromptSection = formatSolutionHintsForPrompt(nestedCompositionStartFrameRetrieval);
+  assert(nestedCompositionStartFramePromptSection.includes("Change Nested Composition Start Frame Typed Plan"), "prompt section should include nested composition start-frame advisory title.");
+  assert(nestedCompositionStartFramePromptSection.includes("set_comp_properties"), "prompt section should prefer set_comp_properties for nested comp displayStartTime.");
+  assert(nestedCompositionStartFramePromptSection.includes("startFrame"), "prompt section should preserve reviewed startFrame guidance.");
+  assert(nestedCompositionStartFramePromptSection.includes("displayStartTime"), "prompt section should preserve displayStartTime conversion guidance.");
+  assert(nestedCompositionStartFramePromptSection.includes("frameRate"), "prompt section should require nested comp frameRate evidence.");
+  assert(nestedCompositionStartFramePromptSection.includes("get_layer_details"), "prompt section should require parent layer source read-back.");
+  assert(nestedCompositionStartFramePromptSection.includes("shared source comp"), "prompt section should preserve shared-source warning.");
+  assert(!/run_extendscript/i.test(nestedCompositionStartFramePromptSection), "nested composition start-frame guidance should not recommend raw ExtendScript.");
 
   const nestedCompositionFrameRateRetrieval = retrieveSolutionHints("Change the selected nested precomp source composition frameRate to 24 fps, then read back the nested source comp without retiming layers or changing duration.", {
     registry,
