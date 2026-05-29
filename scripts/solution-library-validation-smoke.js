@@ -54,6 +54,7 @@ const IMPORTED_ADVISORY_IDS = [
   "duplicate-selected-layer-typed-plan",
   "add-assorted-composition-guides-typed-plan",
   "add-background-layer-typed-plan",
+  "change-nested-composition-background-typed-plan",
   "add-composition-guide-typed-plan",
   "add-posterize-time-adjustment-layer-typed-plan",
   "center-composition-typed-plan",
@@ -91,6 +92,7 @@ const AVAILABLE_TOOLS = [
   "set_expression",
   "clear_expression",
   "set_layer_transform",
+  "set_comp_properties",
   "set_comp_work_area",
   "add_layer_marker",
   "rename_layers",
@@ -1072,6 +1074,31 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Background_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /AUX-041/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+    } else if (id === "change-nested-composition-background-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details", "get_comp_details", "set_comp_properties"],
+        `${id}: imported nested composition background workflow should stay on the narrow comp-property typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: nested composition background workflow must be mutating.`);
+      assert(text.includes("nested source composition"), `${id}: recipe should document nested source composition targeting.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence for selected workflows.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require parent layer source read-back.`);
+      assert(text.includes("set_comp_properties"), `${id}: recipe should use the comp properties typed tool.`);
+      assert(text.includes("bgColor"), `${id}: recipe should preserve bgColor-only mutation guidance.`);
+      assert(text.includes("shared source comp"), `${id}: recipe should fail closed for shared-source ambiguity.`);
+      assert(text.includes("visible full-frame rendered background"), `${id}: recipe should reject rendered background-layer semantics.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must include selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include parent layer source read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_comp_properties/.test(step)), `${id}: verification must include comp bgColor mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read nested comp details before and after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /source comp itemIndex\/name/.test(item)), `${id}: verification must require source comp identity evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /requested bgColor/.test(item)), `${id}: verification must require requested bgColor read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /unchanged width/.test(item)), `${id}: verification must require unchanged structural comp fields.`);
+      assert(solution.notes.some((note) => /shared source comp mutation/.test(note)), `${id}: notes must warn on shared source comp mutation.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Change_Nested_Composition_Background/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "add-composition-guide-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -1852,6 +1879,21 @@ function assertActualRetrieval(registry) {
   assert(backgroundLayerPromptSection.includes("moveToEnd"), "prompt section should preserve exact stack-semantics warning.");
   assert(!/run_extendscript/i.test(backgroundLayerPromptSection), "background layer guidance should not recommend raw ExtendScript.");
 
+  const nestedCompositionBackgroundRetrieval = retrieveSolutionHints("Change the selected nested precomp source composition background color by updating only its bgColor, then read back the nested source comp.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(nestedCompositionBackgroundRetrieval.ok, true);
+  assert(ids(nestedCompositionBackgroundRetrieval).includes("change-nested-composition-background-typed-plan"), "nested composition background advisory recipe should surface for nested bgColor prompts.");
+  const nestedCompositionBackgroundPromptSection = formatSolutionHintsForPrompt(nestedCompositionBackgroundRetrieval);
+  assert(nestedCompositionBackgroundPromptSection.includes("Change Nested Composition Background Typed Plan"), "prompt section should include nested composition background advisory title.");
+  assert(nestedCompositionBackgroundPromptSection.includes("set_comp_properties"), "prompt section should prefer set_comp_properties for nested comp bgColor.");
+  assert(nestedCompositionBackgroundPromptSection.includes("bgColor"), "prompt section should preserve bgColor-only mutation guidance.");
+  assert(nestedCompositionBackgroundPromptSection.includes("get_layer_details"), "prompt section should require parent layer source read-back.");
+  assert(nestedCompositionBackgroundPromptSection.includes("shared source comp"), "prompt section should preserve shared-source warning.");
+  assert(!/run_extendscript/i.test(nestedCompositionBackgroundPromptSection), "nested composition background guidance should not recommend raw ExtendScript.");
+
   const compositionGuideRetrieval = retrieveSolutionHints("Add a single 16:9 composition guide overlay shape layer to a generated comp, then read back the guide layer.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -2021,6 +2063,7 @@ function assertActualRetrieval(registry) {
       duplicateSelectedLayer: ids(duplicateSelectedLayerRetrieval),
       assortedGuides: ids(assortedGuidesRetrieval),
       backgroundLayer: ids(backgroundLayerRetrieval),
+      nestedCompositionBackground: ids(nestedCompositionBackgroundRetrieval),
       compositionGuide: ids(compositionGuideRetrieval),
       posterizeTimeAdjustment: ids(posterizeTimeAdjustmentRetrieval),
       centerComposition: ids(centerCompositionRetrieval),

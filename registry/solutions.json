@@ -1836,6 +1836,125 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "change-nested-composition-background-typed-plan",
+      "title": "Change Nested Composition Background Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "nested-composition",
+        "precomp",
+        "source-comp",
+        "background",
+        "bgColor",
+        "comp-properties",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Change the bgColor of an explicitly identified nested source composition with typed read-back while visible background-layer and recursive semantics stay out of scope.",
+        "appliesWhen": [
+          "The user asks to change a nested composition background, nested comp background color, precomp background, or source composition background color.",
+          "Updating the source composition bgColor field is acceptable instead of creating a visible rendered full-frame background layer."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetLayer",
+          "type": "layer-selection",
+          "required": false,
+          "description": "Selected or explicitly identified parent layer whose source is the nested composition to inspect before mutation."
+        },
+        {
+          "name": "targetNestedComp",
+          "type": "comp",
+          "required": true,
+          "description": "Nested source composition itemIndex/name proven by get_layer_details or explicit get_comp_details evidence before mutation."
+        },
+        {
+          "name": "backgroundColor",
+          "type": "array",
+          "required": true,
+          "description": "Requested RGB bgColor as three normalized numbers from 0 to 1."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow changes only the verified nested source composition bgColor field through set_comp_properties.",
+        "The parent layer source composition is read before mutation; the plan must not infer a nested comp from prior chat context.",
+        "Changing a shared source comp can affect every layer that references that source, so shared-source ambiguity remains fail-closed until explicitly confirmed.",
+        "Visible full-frame rendered background layers, recursive all-nested-comp traversal, deep duplication before mutation, source relinking and exact source JSX behavior remain typed-tool gaps."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/change-nested-composition-background-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details",
+          "get_comp_details",
+          "set_comp_properties"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read the parent layer source comp, set only the nested source comp bgColor, then read back bgColor and unchanged comp/layer identity.",
+        "steps": [
+          "Run get_active_comp and get_selected_layers for selected precomp workflows, or bind an explicit parent comp/layer target from current typed evidence.",
+          "Run get_layer_details for the parent layer and require source comp itemIndex/name evidence before choosing the nested source composition.",
+          "Run get_comp_details for the nested source composition before mutation and record bgColor, width, height, duration, frameRate and layer count.",
+          "Run set_comp_properties once against the verified nested source composition with only bgColor, verifyAfter and idempotency evidence.",
+          "Run get_comp_details after mutation and compare bgColor plus unchanged width, height, duration, frameRate and layer count.",
+          "Run get_layer_details for the parent layer after mutation when selection was used, confirming the same source comp itemIndex/name remains linked."
+        ],
+        "expectedEvidence": [
+          "Selected-layer plans include get_selected_layers evidence before a layer index is bound.",
+          "get_layer_details shows the parent layer source comp itemIndex/name before mutation.",
+          "The set_comp_properties step updates only bgColor on the verified nested source composition.",
+          "Post-run get_comp_details shows the requested bgColor and unchanged width, height, duration, frameRate and layer count on the same source comp.",
+          "Post-run parent layer read-back shows no rename, relink, source change, timing change or layer-order mutation.",
+          "The plan reports shared source comp risk, visible rendered background needs, recursive traversal, source duplication and exact source JSX semantics as unsupported by current typed tools."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-compositions-change-nested-composition-background generic repository importer as advisory typed-plan coverage for nested source comp bgColor mutation.",
+          "This detached child-run updates planned recipe, registry, smoke and plan paths; handoff creation was blocked locally and parent importer owns validation plus any generated-only live acceptance."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-29",
+          "from": "generic-repo-importer-tool-compositions-change-nested-composition-background",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Change_Nested_Composition_Background.jsx into existing typed tools as explicit nested source composition bgColor mutation through set_comp_properties; no source JSX copied. Visible rendered background layers, recursive traversal, shared-source ambiguity, source duplication/relinking and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "This recipe changes a nested source composition bgColor only; it does not create rendered background layers, solids, shape layers, or persistent background stacks.",
+        "Treat shared source comp mutation as unsafe unless the user explicitly confirms that all uses of the source comp may inherit the new bgColor.",
+        "Require a separate typed-tool contract for visible full-frame rendered backgrounds, deep precomp duplication before mutation, recursive all-nested-comp traversal, source relinking, native viewer behavior or exact source JSX semantics.",
+        "Do not use this recipe for template batch changes, layer cleanup, masks, expressions, effects, render queue items, source relinking or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "add-composition-guide-typed-plan",
       "title": "Add Composition Guide Typed Plan",
       "status": "recipe",
