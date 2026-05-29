@@ -1466,6 +1466,62 @@ function agentKeyframeScenarioPlans(runPrefix) {
   }));
 }
 
+function agentSelectedKeyframeMarkerScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Selected Keyframe Marker`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Shape`;
+  const propertyPath = "ADBE Transform Group.ADBE Opacity";
+  const markerComment = "";
+  const markerTime = 1;
+  const keyframes = [
+    { time: 0, value: 20 },
+    { time: markerTime, value: 88 },
+    { time: 2, value: 35 }
+  ];
+
+  return [
+    {
+      id: "generated-selected-keyframe-layer-marker",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "set_property_keyframes",
+        "get_selected_properties",
+        "add_layer_marker",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        markerReadBack: true,
+        compName,
+        layerName,
+        propertyPath: ["ADBE Transform Group", "ADBE Opacity"],
+        markerComment,
+        markerTime,
+        markerDuration: 0
+      },
+      plan: {
+        summary: "AUX-093 generated-only live QA for adding layer markers at reviewed selected keyframe times.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated selected-keyframe marker comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.07, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "AUX-093 generated-only selected keyframe marker validation" } },
+          { title: "Create generated selected-keyframe marker shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [220, 120], position: [320, 180], fillColor: [0.3, 0.66, 0.82], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Create reviewed marker keyframes", tool: "set_property_keyframes", args: { compName, layerIndex: 1, propertyPath, clearExisting: true, keyframes } },
+          { title: "Inspect generated selected-keyframe property state", tool: "get_selected_properties", args: { includeValues: true, includeKeyframes: true, includeExpressions: true } },
+          { title: "Add generated layer marker at reviewed keyframe time", tool: "add_layer_marker", args: { compName, layerIndex: 1, time: markerTime, comment: markerComment, duration: 0 } },
+          { title: "Read generated marker and keyframes", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeValues: true, includeExpressions: true } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentAssortedCompositionGuidesScenarioPlans(runPrefix) {
   const base = `${runPrefix} Assorted Guides`;
   const compName = `${base} Comp`;
@@ -2277,6 +2333,7 @@ module.exports = {
   agentRenameFindReplaceScenarioPlans,
   agentResetWorkAreaScenarioPlans,
   agentSelectedPropertyValueScenarioPlans,
+  agentSelectedKeyframeMarkerScenarioPlans,
   agentScenarioPlans,
   buildAgentPlannerRegressionCorpus,
   exactPlanPrompt,

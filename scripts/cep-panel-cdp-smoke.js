@@ -23,6 +23,7 @@ const {
   agentProjectItemsScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
   agentResetWorkAreaScenarioPlans,
+  agentSelectedKeyframeMarkerScenarioPlans,
   agentSelectedPropertyValueScenarioPlans,
   agentScenarioPlans
 } = require("./agent-scenario-fixtures");
@@ -399,6 +400,24 @@ function openAiCliKeyframeScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_KEYFRAMES_PREFIX || "Codex QA AUX083",
     scenarioFactory: agentKeyframeScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliSelectedKeyframeMarkerScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-selected-keyframe-marker",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_SELECTED_KEYFRAME_MARKER_PREFIX || "Codex QA AUX093",
+    scenarioFactory: agentSelectedKeyframeMarkerScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -5697,6 +5716,10 @@ async function main() {
   }
   if (command === "agent-keyframes-openai-cli-smoke" || command === "full-ui-agent-keyframes-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliKeyframeScenarioConfig());
+    return;
+  }
+  if (command === "agent-selected-keyframe-marker-openai-cli-smoke" || command === "full-ui-agent-selected-keyframe-marker-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliSelectedKeyframeMarkerScenarioConfig());
     return;
   }
   if (command === "openai-api-setup-smoke") {

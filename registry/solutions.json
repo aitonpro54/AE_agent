@@ -284,6 +284,8 @@
         "keyframes",
         "transform",
         "selected-layers",
+        "animate-selected-layers",
+        "opacity-position-keyframes",
         "dakkshin-advisory",
         "typed-tool"
       ],

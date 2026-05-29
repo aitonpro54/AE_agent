@@ -1555,6 +1555,13 @@ function hasArg(args, name) {
   return Object.prototype.hasOwnProperty.call(args, name) && args[name] !== undefined && args[name] !== null && args[name] !== "";
 }
 
+function hasRequiredPlanArg(toolName, args, name) {
+  if (toolName === "add_layer_marker" && name === "comment") {
+    return Object.prototype.hasOwnProperty.call(args, name) && args[name] !== undefined && args[name] !== null;
+  }
+  return hasArg(args, name);
+}
+
 function optionalNumber(args, name, fallback) {
   if (!hasArg(args, name)) return fallback;
   const value = Number(args[name]);
@@ -3131,7 +3138,7 @@ function validateAgentPlanObject(plan, requestId, context) {
     } else {
       executableCount += 1;
       for (const field of requiredSchemaFields(tool)) {
-        if (hasArg(safeArgs, field)) continue;
+        if (hasRequiredPlanArg(toolName, safeArgs, field)) continue;
         if (hasArg(resultBindings, field)) {
           boundRequired.push(field);
         } else {
@@ -14049,10 +14056,11 @@ async function callTool(name, args) {
     const compName = optionalString(args, "compName", "");
     const layerIndex = requiredPositiveInteger(args, "layerIndex");
     const time = optionalNumber(args, "time", null);
-    const comment = optionalString(args, "comment", "");
+    const hasExplicitComment = Object.prototype.hasOwnProperty.call(args, "comment") && args.comment !== undefined && args.comment !== null;
+    const comment = hasExplicitComment ? String(args.comment) : "";
     const duration = optionalNumber(args, "duration", null);
 
-    if (!comment) return toolResult("comment is required.", true);
+    if (!hasExplicitComment) return toolResult("comment is required.", true);
     if (time !== null && time < 0) return toolResult("time must be 0 or greater.", true);
     if (duration !== null && duration < 0) return toolResult("duration must be 0 or greater.", true);
 

@@ -754,6 +754,27 @@ async function main() {
       items: [{ keyIndex: 1, time: 1.25, comment: "Smoke Marker", duration: 0.5 }]
     }
   }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "add_layer_marker", {
+    compName: "Smoke Comp",
+    layerIndex: 1,
+    time: 1.75,
+    comment: "",
+    duration: 0,
+    verifyAfter: false
+  }, ["Codex Add Layer Marker", "var markerComment = \"\";", "new MarkerValue(markerComment)", "__codexMarkerInfo"], {
+    comp: { itemIndex: 1, name: "Smoke Comp" },
+    layer: { index: 1, name: "Smoke Layer", markerCount: 2 },
+    marker: { keyIndex: 2, time: 1.75, comment: "", duration: 0 },
+    markers: {
+      count: 2,
+      returned: 2,
+      truncated: false,
+      items: [
+        { keyIndex: 1, time: 1.25, comment: "Smoke Marker", duration: 0.5 },
+        { keyIndex: 2, time: 1.75, comment: "", duration: 0 }
+      ]
+    }
+  }));
   queuedToolResponses.push(await callQueuedDevTool(port, token, "update_layer_marker", {
     compName: "Smoke Comp",
     layerIndex: 1,
@@ -1839,7 +1860,7 @@ async function main() {
   if (alignLayers.status !== 200 || !alignLayers.body.ok || alignLayers.body.result.changedCount !== 2) {
     throw new Error("Expected align_layers_to_time to align multiple layer timings");
   }
-  if (queuedToolResponses.length !== 30 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
+  if (queuedToolResponses.length !== 31 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
     throw new Error("Expected all new typed tool queue smokes to pass");
   }
   const deepDuplicateQueuedPayload = deepDuplicateQueuedResponse.response.body.result || {};

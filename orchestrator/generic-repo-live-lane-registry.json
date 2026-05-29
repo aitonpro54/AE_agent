@@ -119,6 +119,48 @@
       ],
       "reclassifiedClassification": "existing_typed_tools_recipe_only",
       "scope": "generated-only selected/generated property keyframe proof using get_selected_properties, set_property_keyframes, apply_keyframe_ease, get_layer_details, read-back, semantic verification, and cleanup; expression-derived sampling, spatial tangent editing, selected-key discovery without explicit reviewed keyframes, and source-exact keyframe algorithms remain fail-closed"
+    },
+    {
+      "id": "selected-keyframe-layer-marker-generated-only",
+      "requiredTools": [
+        "get_selected_properties",
+        "add_layer_marker"
+      ],
+      "allowedTools": [
+        "add_layer_marker",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_layer_details",
+        "get_selected_properties",
+        "set_property_keyframes"
+      ],
+      "candidateIds": [
+        "tool-markers-add-markers-at-selected-keyframes"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-selected-keyframe-marker-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "selected-keyframe-layer-marker",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_selected_properties",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only selected-keyframe-to-layer-marker proof using get_selected_properties, a reviewed keyframe time, add_layer_marker, get_layer_details, read-back, semantic verification, and cleanup; automatic multi-selected-key discovery, composition markers, and raw ExtendScript source semantics remain fail-closed"
     }
   ]
 }

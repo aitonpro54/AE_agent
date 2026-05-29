@@ -23,6 +23,7 @@ const {
   agentRenameFindReplaceScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentResetWorkAreaScenarioPlans,
+  agentSelectedKeyframeMarkerScenarioPlans,
   agentSelectedPropertyValueScenarioPlans
 } = require("./agent-scenario-fixtures");
 
@@ -489,7 +490,21 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(keyframes.plan.steps[3].args.keyframes.length, 3);
   assert.deepStrictEqual(keyframes.plan.steps[4].args.keyIndices, [1, 2, 3]);
 
-  for (const scenario of [timing, transform, projectItems, effectProperty, expression, compProperties, selectedPropertyValue, keyframes]) {
+  const [selectedKeyframeMarker] = agentSelectedKeyframeMarkerScenarioPlans("Codex QA AUX093 Fixture");
+  assert.strictEqual(selectedKeyframeMarker.id, "generated-selected-keyframe-layer-marker");
+  assert.strictEqual(selectedKeyframeMarker.expectedReadBack.markerReadBack, true);
+  assert.deepStrictEqual(selectedKeyframeMarker.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "set_property_keyframes",
+    "get_selected_properties",
+    "add_layer_marker",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(selectedKeyframeMarker.plan.steps[4].args.time, 1);
+  assert.strictEqual(selectedKeyframeMarker.plan.steps[4].args.comment, "");
+
+  for (const scenario of [timing, transform, projectItems, effectProperty, expression, compProperties, selectedPropertyValue, keyframes, selectedKeyframeMarker]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }

@@ -10,7 +10,61 @@ const RETRIEVABLE_STATUSES = new Set(["recipe", "typed-tool-candidate"]);
 const PLANNER_USE = "advisory-retrieval-enabled";
 const DEFAULT_MAX_HINTS = 3;
 const MIN_RELEVANCE_SCORE = 5;
+const MIN_TOOL_MATCH_SCORE = 60;
 const GENERIC_TAGS = new Set(["typed-tool", "reviewed-jsx", "fixture", "smoke", "candidate"]);
+const PROMPT_KEY_TERMS = Object.freeze([
+  "includeValues:true",
+  "setAtTime:false",
+  "loopOut()",
+  "appendText",
+  "updatedExpressionText",
+  "updatedStrokeWeightExpressionText",
+  "fixedExpressionText",
+  "previous expression",
+  "current expression",
+  "transform.scale[0]",
+  "sx === 0 ? value : value / sx",
+  "parent.transform.scale",
+  "Transform > Scale",
+  "ADBE Fill",
+  "moveToEnd",
+  "shared source comp",
+  "layer retiming",
+  "viewer zoom/pan",
+  "project-panel selection",
+  "Project panel selection",
+  "enabled:false",
+  "enabled:true",
+  "roundedValue",
+  "newColor",
+  "dimensionSwap",
+  "swappedValue",
+  "selectedKeyframes",
+  "invertedKeyframes",
+  "reverseValueOrderAtSameTimes",
+  "clearExisting:false",
+  "holdKeyframes",
+  "holdInterpolation",
+  "interpolation:\"hold\"",
+  "keyframeValueMultiplier",
+  "multipliedKeyframes",
+  "multiplyValuesAtSameTimes",
+  "numeric scalar or numeric-array",
+  "roundingMode",
+  "roundedKeyframes",
+  "roundValuesAtSameTimes",
+  "completePropertyKeyframes",
+  "posterizeFrameGrid",
+  "posterizedKeyframes",
+  "preservedUnselectedKeyframes",
+  "clearExisting:true",
+  "redundancyRule",
+  "redundantKeyframes",
+  "removedRedundantKeyframes",
+  "preservedKeyframes",
+  "prunedKeyframes",
+  "rewriteWithoutReviewedRedundantKeyframes",
+]);
 
 function defaultRegistryPath() {
   return process.env.AE_SOLUTION_REGISTRY_PATH
@@ -66,6 +120,11 @@ function compactText(value, limit = 180) {
   const text = String(value || "").replace(/\s+/g, " ").trim();
   if (!text || text.length <= limit) return text;
   return `${text.slice(0, Math.max(0, limit - 1)).trim()}...`;
+}
+
+function solutionPromptKeyTerms(solution) {
+  const text = collectStrings(solution).join("\n");
+  return PROMPT_KEY_TERMS.filter((term) => text.includes(term)).slice(0, 10);
 }
 
 function compactList(value, limit) {
@@ -158,6 +217,8 @@ function compactSolution(solution, score) {
     mode: execution.mode || null,
     mutating: Boolean(execution.mutating),
     riskLevel: execution.riskLevel || "unknown",
+    inputNames: compactList(Array.isArray(solution.inputs) ? solution.inputs.map((input) => input && input.name).filter(Boolean) : [], 5),
+    keyTerms: solutionPromptKeyTerms(solution),
     preferredTools: compactList(execution.preferredTools, 8),
     recipePath: typeof execution.recipePath === "string" ? execution.recipePath : null,
     verificationSummary: compactText(verification.summary || "", 160),
@@ -282,7 +343,9 @@ function retrieveSolutionHints(userPrompt, options = {}) {
 
     if (solution.status === "tool") {
       result.omitted.toolStatus += 1;
-      toolMatches.push({ solution, score });
+      if (score >= MIN_TOOL_MATCH_SCORE) {
+        toolMatches.push({ solution, score });
+      }
       continue;
     }
 
@@ -344,15 +407,17 @@ function formatSolutionHintsForPrompt(retrieval) {
   const entriesForPrompt = retrieval.toolMatches && retrieval.toolMatches.length ? retrieval.entries.slice(0, 1) : retrieval.entries;
   for (const entry of entriesForPrompt) {
     const statusNote = entry.status === "typed-tool-candidate"
-      ? "typed-tool-candidate: recommend implementing or using a narrow typed bridge tool; do not treat as an execution shortcut."
-      : "recipe: may be suggested as an advisory planning pattern.";
+      ? "typed-tool-candidate: implement or use a narrow typed tool first."
+      : "recipe: advisory planning pattern.";
     const riskNote = entry.rawExtendscriptRisk
       ? " RAW EXTENDSCRIPT REVIEWED FILE: risky escape hatch; prefer typed tools and only plan run_extendscript_file when no typed tool fits and raw execution is explicitly allowed."
       : "";
-    const applies = entry.appliesWhen.length ? ` Applies when: ${entry.appliesWhen.join(" | ")}.` : "";
+    const applies = entry.appliesWhen.length ? ` Applies when: ${entry.appliesWhen.map((item) => compactText(item, 70)).join(" | ")}.` : "";
+    const inputs = entry.inputNames && entry.inputNames.length ? ` Inputs: ${entry.inputNames.join(", ")}.` : "";
+    const keyTerms = entry.keyTerms && entry.keyTerms.length ? ` Key terms: ${entry.keyTerms.join(", ")}.` : "";
     const tools = entry.preferredTools.length ? ` Preferred tools: ${entry.preferredTools.join(", ")}.` : "";
-    const verify = entry.verificationSummary ? ` Verify: ${entry.verificationSummary}.` : "";
-    lines.push(`- ${entry.title} [${entry.status}; risk=${entry.riskLevel}; ${entry.mutating ? "mutating" : "read-only"}]. ${statusNote}${riskNote} Intent: ${entry.intentSummary}.${applies}${tools}${verify}`);
+    const verify = entry.verificationSummary ? ` Verify: ${compactText(entry.verificationSummary, 100)}.` : "";
+    lines.push(`- ${entry.title} [${entry.status}; risk=${entry.riskLevel}; ${entry.mutating ? "mutating" : "read-only"}]. ${statusNote}${riskNote} Intent: ${compactText(entry.intentSummary, 110)}.${applies}${inputs}${keyTerms}${tools}${verify}`);
   }
 
   return lines.join("\n");
