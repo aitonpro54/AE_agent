@@ -39,6 +39,7 @@ const IMPORTED_ADVISORY_IDS = [
   "make-hold-keyframes-typed-plan",
   "multiply-selected-keyframes-typed-plan",
   "posterize-keyframes-typed-plan",
+  "remove-redundant-keyframes-typed-plan",
   "apply-maintain-stroke-width-expression-typed-plan",
   "update-stroke-weight-expressions-typed-plan",
   "toggle-maintain-scale-expression-typed-plan",
@@ -681,6 +682,42 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /set_property_keyframes/.test(note)), `${id}: notes must require set_property_keyframes.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Posterize_Keyframes/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "remove-redundant-keyframes-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "get_layer_details", "set_property_keyframes", "apply_keyframe_ease"],
+        `${id}: imported remove-redundant-keyframes workflow should stay on the narrow selected-property keyframe rewrite typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: selected-keyframe removal workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+      assert(text.includes("includeValues:true"), `${id}: recipe should require current value/keyframe evidence.`);
+      assert(text.includes("completePropertyKeyframes"), `${id}: recipe should require complete property keyframe read-back.`);
+      assert(text.includes("redundancyRule"), `${id}: recipe should require a reviewed redundancy rule.`);
+      assert(text.includes("redundantKeyframes"), `${id}: recipe should require explicit redundant keyframes.`);
+      assert(text.includes("removedRedundantKeyframes"), `${id}: recipe should disclose removed redundant keyframes.`);
+      assert(text.includes("preservedKeyframes"), `${id}: recipe should disclose preserved keyframes.`);
+      assert(text.includes("prunedKeyframes"), `${id}: recipe should disclose computed pruned keyframes.`);
+      assert(text.includes("rewriteWithoutReviewedRedundantKeyframes"), `${id}: recipe should define the bounded removal mode.`);
+      assert(text.includes("set_property_keyframes"), `${id}: recipe should use the property-keyframe typed tool.`);
+      assert(text.includes("clearExisting:true"), `${id}: recipe should gate full-property rewrites explicitly.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require complete keyframe read-back through layer details.`);
+      assert(text.includes("Do not infer selected properties"), `${id}: recipe should guard redundant-key discovery gaps.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details before or after mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /completePropertyKeyframes/.test(step)), `${id}: verification must include completePropertyKeyframes.`);
+      assert(solution.verificationRecipe.steps.some((step) => /redundancyRule/.test(step)), `${id}: verification must include redundancyRule.`);
+      assert(solution.verificationRecipe.steps.some((step) => /redundantKeyframes/.test(step)), `${id}: verification must include redundantKeyframes.`);
+      assert(solution.verificationRecipe.steps.some((step) => /prunedKeyframes/.test(step)), `${id}: verification must include computed prunedKeyframes.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_property_keyframes/.test(step)), `${id}: verification must include set_property_keyframes.`);
+      assert(solution.verificationRecipe.steps.some((step) => /clearExisting:true/.test(step)), `${id}: verification must gate full-property rewrites.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /preservedKeyframes/.test(item)), `${id}: verification must require preserved keyframe evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /redundant keyframe was removed/.test(item)), `${id}: verification must require removed redundant-key evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Skipped targets/.test(item)), `${id}: verification must require skipped-target gap evidence.`);
+      assert(solution.notes.some((note) => /completePropertyKeyframes/.test(note)), `${id}: notes must require complete keyframe evidence.`);
+      assert(solution.notes.some((note) => /set_property_keyframes/.test(note)), `${id}: notes must require set_property_keyframes.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Remove_Redundant_Keyframes/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "apply-maintain-stroke-width-expression-typed-plan") {
       assert.deepStrictEqual(
@@ -1542,6 +1579,26 @@ function assertActualRetrieval(registry) {
   assert(posterizeKeyframesPromptSection.includes("clearExisting:true"), "prompt section should gate full-property keyframe rewrites.");
   assert(posterizeKeyframesPromptSection.includes("get_layer_details"), "prompt section should require keyframe read-back.");
   assert(!/run_extendscript/i.test(posterizeKeyframesPromptSection), "posterize-keyframes guidance should not recommend raw ExtendScript.");
+
+  const removeRedundantKeyframesRetrieval = retrieveSolutionHints("Remove redundant keyframes from the selected property after inspecting completePropertyKeyframes, apply a reviewed redundancyRule, compute removedRedundantKeyframes, preservedKeyframes, and prunedKeyframes, rewrite with set_property_keyframes clearExisting:true, then read back keyframes.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(removeRedundantKeyframesRetrieval.ok, true);
+  assert(ids(removeRedundantKeyframesRetrieval).includes("remove-redundant-keyframes-typed-plan"), "remove-redundant-keyframes advisory recipe should surface for selected keyframe cleanup prompts.");
+  const removeRedundantKeyframesPromptSection = formatSolutionHintsForPrompt(removeRedundantKeyframesRetrieval);
+  assert(removeRedundantKeyframesPromptSection.includes("Remove Redundant Keyframes Typed Plan"), "prompt section should include remove-redundant-keyframes advisory title.");
+  assert(removeRedundantKeyframesPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for redundant keyframe removal workflows.");
+  assert(removeRedundantKeyframesPromptSection.includes("completePropertyKeyframes"), "prompt section should preserve complete-property rewrite guidance.");
+  assert(removeRedundantKeyframesPromptSection.includes("redundancyRule"), "prompt section should preserve reviewed redundancy rule guidance.");
+  assert(removeRedundantKeyframesPromptSection.includes("removedRedundantKeyframes"), "prompt section should preserve removed redundant keyframe guidance.");
+  assert(removeRedundantKeyframesPromptSection.includes("preservedKeyframes"), "prompt section should preserve preserved keyframe guidance.");
+  assert(removeRedundantKeyframesPromptSection.includes("prunedKeyframes"), "prompt section should preserve computed pruned keyframe guidance.");
+  assert(removeRedundantKeyframesPromptSection.includes("set_property_keyframes"), "prompt section should prefer set_property_keyframes for redundant keyframe removal workflows.");
+  assert(removeRedundantKeyframesPromptSection.includes("clearExisting:true"), "prompt section should gate full-property keyframe rewrites.");
+  assert(removeRedundantKeyframesPromptSection.includes("get_layer_details"), "prompt section should require keyframe read-back.");
+  assert(!/run_extendscript/i.test(removeRedundantKeyframesPromptSection), "remove-redundant-keyframes guidance should not recommend raw ExtendScript.");
 
   const maintainStrokeExpressionRetrieval = retrieveSolutionHints("Apply a maintain stroke width expression to the selected shape layer stroke width properties so their strokes stay constant while scaling, then read back expression details.", {
     registry,
