@@ -2074,6 +2074,137 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "change-nested-composition-duration-with-timecode-typed-plan",
+      "title": "Change Nested Composition Duration With Timecode Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "nested-composition",
+        "precomp",
+        "source-comp",
+        "duration",
+        "timecode",
+        "frame-rate",
+        "timing",
+        "comp-properties",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Change the duration of an explicitly identified nested source composition from a reviewed timecode duration with typed read-back and shared source comp risk disclosure while layer retiming and drop-frame semantics stay out of scope.",
+        "appliesWhen": [
+          "The user asks to change a nested composition duration with timecode, set a precomp source duration to a timecode value, or apply an HH:MM:SS:FF duration to a selected nested/precomp source.",
+          "Updating the source composition duration field from a reviewed timecode-to-seconds conversion is acceptable instead of retiming layers, stretching the parent layer, shifting keyframes, or changing work area."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetLayer",
+          "type": "layer-selection",
+          "required": false,
+          "description": "Selected or explicitly identified parent layer whose source is the nested composition to inspect before mutation."
+        },
+        {
+          "name": "targetNestedComp",
+          "type": "comp",
+          "required": true,
+          "description": "Nested source composition itemIndex/name proven by get_layer_details or explicit get_comp_details evidence before mutation."
+        },
+        {
+          "name": "durationTimecode",
+          "type": "string",
+          "required": true,
+          "description": "Reviewed duration timecode such as HH:MM:SS:FF or MM:SS:FF."
+        },
+        {
+          "name": "durationSeconds",
+          "type": "number",
+          "required": true,
+          "description": "Positive finite seconds value computed from durationTimecode and the verified nested comp frameRate."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow changes only the verified nested source composition duration field through set_comp_properties.",
+        "The parent layer source composition is read before mutation; the plan must not infer a nested comp from prior chat context.",
+        "The nested source comp frameRate is read before converting the reviewed timecode duration to durationSeconds.",
+        "Changing a shared source comp can affect every layer that references that source, so shared-source ambiguity remains fail-closed until explicitly confirmed.",
+        "Layer in/out retiming, stretch changes, keyframe/expression shifts, drop-frame timecode semantics, recursive all-nested-comp traversal, source duplication/relinking, work-area changes and exact source JSX behavior remain typed-tool gaps."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/change-nested-composition-duration-with-timecode-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details",
+          "get_comp_details",
+          "set_comp_properties"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read the parent layer source comp, convert reviewed timecode against the nested comp frameRate, set only the nested source comp duration, then read back duration and unchanged comp/layer identity.",
+        "steps": [
+          "Run get_active_comp and get_selected_layers for selected precomp workflows, or bind an explicit parent comp/layer target from current typed evidence.",
+          "Run get_layer_details for the parent layer and require source comp itemIndex/name evidence before choosing the nested source composition.",
+          "Run get_comp_details for the nested source composition before mutation and record duration, frameRate, width, height, bgColor, layer count and work area.",
+          "Parse the reviewed durationTimecode against the nested comp frameRate, fail closed for drop-frame punctuation, unknown frame rate, invalid frame components or ambiguous timing intent, and disclose computed durationSeconds before confirmation.",
+          "Run set_comp_properties once against the verified nested source composition with only duration, verifyAfter and idempotency evidence.",
+          "Run get_comp_details after mutation and compare duration plus unchanged width, height, frameRate, bgColor, layer count and work area.",
+          "Run get_layer_details for the parent layer after mutation when selection was used, confirming the same source comp itemIndex/name remains linked and parent layer timing was not changed."
+        ],
+        "expectedEvidence": [
+          "Selected-layer plans include get_selected_layers evidence before a layer index is bound.",
+          "get_layer_details shows the parent layer source comp itemIndex/name before mutation.",
+          "Pre-run get_comp_details shows the nested source comp frameRate used for timecode conversion.",
+          "Dry-run evidence lists the reviewed durationTimecode, frameRate, computed durationSeconds and frame-alignment decision.",
+          "The set_comp_properties step updates only duration on the verified nested source composition.",
+          "Post-run get_comp_details shows the requested duration from timecode conversion and unchanged width, height, frameRate, bgColor, layer count and work area on the same source comp.",
+          "Post-run parent layer read-back shows no rename, relink, source change, in/out timing change, stretch change, layer-order mutation, expression edit or keyframe edit.",
+          "The plan reports shared source comp risk, layer retiming, stretch/keyframe/expression changes, drop-frame timecode semantics, recursive traversal, source duplication and exact source JSX semantics as unsupported by current typed tools."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-compositions-change-nested-composition-duration-with-timecode generic repository importer as advisory typed-plan coverage for nested source comp duration mutation from reviewed timecode.",
+          "The source JSX and prompt artifact were not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-29",
+          "from": "generic-repo-importer-tool-compositions-change-nested-composition-duration-with-timecode",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Change_Nested_Composition_Duration_With_Timecode.jsx into existing typed tools as explicit nested source composition duration mutation through reviewed timecode-to-durationSeconds conversion and set_comp_properties; no source JSX copied. Layer retiming, parent layer stretch/in-out changes, keyframe/expression shifts, drop-frame timecode semantics, recursive traversal, shared-source ambiguity, source duplication/relinking, work-area changes and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "This recipe changes a nested source composition duration only after converting a reviewed timecode duration against the nested comp frameRate; it does not retime layers, stretch parent precomp layers, shift keyframes, edit expressions, or change work area.",
+        "Treat shared source comp mutation as unsafe unless the user explicitly confirms that all uses of the source comp may inherit the new duration.",
+        "Require a separate typed-tool contract for drop-frame timecode semantics, layer retiming, parent layer stretch/in-out changes, keyframe/expression shifts, recursive all-nested-comp traversal, source duplication before mutation, source relinking, work-area changes or exact source JSX semantics.",
+        "Do not use this recipe for template batch changes, layer cleanup, masks, effects, render queue items, source relinking or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "add-composition-guide-typed-plan",
       "title": "Add Composition Guide Typed Plan",
       "status": "recipe",

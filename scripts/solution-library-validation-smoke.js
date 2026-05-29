@@ -56,6 +56,7 @@ const IMPORTED_ADVISORY_IDS = [
   "add-background-layer-typed-plan",
   "change-nested-composition-background-typed-plan",
   "change-nested-composition-duration-typed-plan",
+  "change-nested-composition-duration-with-timecode-typed-plan",
   "add-composition-guide-typed-plan",
   "add-posterize-time-adjustment-layer-typed-plan",
   "center-composition-typed-plan",
@@ -1125,6 +1126,33 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Change_Nested_Composition_Duration/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "change-nested-composition-duration-with-timecode-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details", "get_comp_details", "set_comp_properties"],
+        `${id}: imported nested composition duration with timecode workflow should stay on the narrow comp-property typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: nested composition duration with timecode workflow must be mutating.`);
+      assert(text.includes("nested source composition"), `${id}: recipe should document nested source composition targeting.`);
+      assert(text.includes("durationTimecode"), `${id}: recipe should require reviewed durationTimecode evidence.`);
+      assert(text.includes("frameRate"), `${id}: recipe should require frameRate evidence for timecode conversion.`);
+      assert(text.includes("durationSeconds"), `${id}: recipe should disclose computed seconds from timecode.`);
+      assert(text.includes("set_comp_properties"), `${id}: recipe should use the comp properties typed tool.`);
+      assert(text.includes("shared source comp"), `${id}: recipe should fail closed for shared-source ambiguity.`);
+      assert(text.includes("drop-frame"), `${id}: recipe should reject unsupported drop-frame semantics.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must include selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include parent layer source read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /durationTimecode/.test(step)), `${id}: verification must include timecode conversion.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_comp_properties/.test(step)), `${id}: verification must include comp duration mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read nested comp details before and after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /source comp itemIndex\/name/.test(item)), `${id}: verification must require source comp identity evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /durationTimecode/.test(item)), `${id}: verification must require durationTimecode evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /requested duration from timecode conversion/.test(item)), `${id}: verification must require requested converted duration read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /unchanged width/.test(item)), `${id}: verification must require unchanged structural comp fields.`);
+      assert(solution.notes.some((note) => /shared source comp mutation/.test(note)), `${id}: notes must warn on shared source comp mutation.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Change_Nested_Composition_Duration_With_Timecode/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "add-composition-guide-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -1935,6 +1963,22 @@ function assertActualRetrieval(registry) {
   assert(nestedCompositionDurationPromptSection.includes("shared source comp"), "prompt section should preserve shared-source warning.");
   assert(!/run_extendscript/i.test(nestedCompositionDurationPromptSection), "nested composition duration guidance should not recommend raw ExtendScript.");
 
+  const nestedCompositionDurationWithTimecodeRetrieval = retrieveSolutionHints("Change the selected nested precomp source composition duration to timecode 00:00:12:15 using the nested comp frame rate, then read back duration seconds without retiming layers.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(nestedCompositionDurationWithTimecodeRetrieval.ok, true);
+  assert(ids(nestedCompositionDurationWithTimecodeRetrieval).includes("change-nested-composition-duration-with-timecode-typed-plan"), "nested composition duration with timecode advisory recipe should surface for nested timecode duration prompts.");
+  const nestedCompositionDurationWithTimecodePromptSection = formatSolutionHintsForPrompt(nestedCompositionDurationWithTimecodeRetrieval);
+  assert(nestedCompositionDurationWithTimecodePromptSection.includes("Change Nested Composition Duration With Timecode Typed Plan"), "prompt section should include nested composition duration with timecode advisory title.");
+  assert(nestedCompositionDurationWithTimecodePromptSection.includes("set_comp_properties"), "prompt section should prefer set_comp_properties for nested comp duration with timecode.");
+  assert(nestedCompositionDurationWithTimecodePromptSection.includes("timecode"), "prompt section should preserve timecode conversion guidance.");
+  assert(nestedCompositionDurationWithTimecodePromptSection.includes("frameRate"), "prompt section should require nested comp frameRate evidence.");
+  assert(nestedCompositionDurationWithTimecodePromptSection.includes("get_layer_details"), "prompt section should require parent layer source read-back.");
+  assert(nestedCompositionDurationWithTimecodePromptSection.includes("shared source comp"), "prompt section should preserve shared-source warning.");
+  assert(!/run_extendscript/i.test(nestedCompositionDurationWithTimecodePromptSection), "nested composition duration with timecode guidance should not recommend raw ExtendScript.");
+
   const compositionGuideRetrieval = retrieveSolutionHints("Add a single 16:9 composition guide overlay shape layer to a generated comp, then read back the guide layer.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -2105,6 +2149,7 @@ function assertActualRetrieval(registry) {
       assortedGuides: ids(assortedGuidesRetrieval),
       backgroundLayer: ids(backgroundLayerRetrieval),
       nestedCompositionBackground: ids(nestedCompositionBackgroundRetrieval),
+      nestedCompositionDurationWithTimecode: ids(nestedCompositionDurationWithTimecodeRetrieval),
       compositionGuide: ids(compositionGuideRetrieval),
       posterizeTimeAdjustment: ids(posterizeTimeAdjustmentRetrieval),
       centerComposition: ids(centerCompositionRetrieval),
