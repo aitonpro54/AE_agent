@@ -57,6 +57,7 @@ const IMPORTED_ADVISORY_IDS = [
   "add-background-layer-typed-plan",
   "change-nested-composition-background-typed-plan",
   "cycle-composition-background-color-typed-plan",
+  "enable-collapse-transformations-typed-plan",
   "change-nested-composition-duration-typed-plan",
   "change-nested-composition-duration-with-timecode-typed-plan",
   "change-nested-composition-start-frame-typed-plan",
@@ -1161,6 +1162,32 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.promotionHistory.some((entry) => /Cycle_Composition_Background_Color/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /AUX-095/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "enable-collapse-transformations-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details", "set_property_value"],
+        `${id}: imported collapse-transformations workflow should stay on the narrow layer-switch typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: collapse-transformations workflow must be mutating.`);
+      assert(text.includes("collapseTransformation"), `${id}: recipe should document the collapseTransformation layer switch.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence for selected workflows.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer-switch read-back.`);
+      assert(text.includes("canSetCollapseTransformation"), `${id}: recipe should require collapse switch support evidence or guarded failure.`);
+      assert(text.includes("set_property_value"), `${id}: recipe should use the property-value typed tool.`);
+      assert(text.includes("propertyPath:\"collapseTransformation\""), `${id}: recipe should bind the exact layer attribute property path.`);
+      assert(text.includes("setAtTime:false"), `${id}: recipe should avoid keyframe creation.`);
+      assert(text.includes("recursive all-nested-comp"), `${id}: recipe should reject recursive source behavior.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must include selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer details before and after mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /collapseTransformation/.test(step)), `${id}: verification must include collapseTransformation evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_property_value/.test(step)), `${id}: verification must include set_property_value.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /collapseTransformation:true/.test(item)), `${id}: verification must require collapseTransformation read-back evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Skipped targets/.test(item)), `${id}: verification must require skipped unsupported target evidence.`);
+      assert(solution.notes.some((note) => /unsupported layers/.test(note)), `${id}: notes must warn on unsupported layers.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Enable_Collapse_Transformations/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /AUX-096/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "change-nested-composition-duration-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2124,6 +2151,21 @@ function assertActualRetrieval(registry) {
   assert(activeCompositionBackgroundCyclePromptSection.includes("get_active_comp"), "prompt section should require active-comp evidence.");
   assert(!/run_extendscript/i.test(activeCompositionBackgroundCyclePromptSection), "active composition background cycle guidance should not recommend raw ExtendScript.");
 
+  const collapseTransformationsRetrieval = retrieveSolutionHints("Enable collapse transformations on the selected precomp layer after reading selected layer details, set propertyPath collapseTransformation to true with set_property_value setAtTime:false, then read back collapseTransformation.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(collapseTransformationsRetrieval.ok, true);
+  assert(ids(collapseTransformationsRetrieval).includes("enable-collapse-transformations-typed-plan"), "collapse transformations advisory recipe should surface for selected precomp layer switch prompts.");
+  const collapseTransformationsPromptSection = formatSolutionHintsForPrompt(collapseTransformationsRetrieval);
+  assert(collapseTransformationsPromptSection.includes("Enable Collapse Transformations Typed Plan"), "prompt section should include collapse-transformations advisory title.");
+  assert(collapseTransformationsPromptSection.includes("set_property_value"), "prompt section should prefer set_property_value for collapseTransformation switches.");
+  assert(collapseTransformationsPromptSection.includes("collapseTransformation"), "prompt section should preserve collapseTransformation mutation guidance.");
+  assert(collapseTransformationsPromptSection.includes("get_layer_details"), "prompt section should require layer detail read-back.");
+  assert(collapseTransformationsPromptSection.includes("canSetCollapseTransformation"), "prompt section should preserve unsupported-layer guard guidance.");
+  assert(!/run_extendscript/i.test(collapseTransformationsPromptSection), "collapse-transformations guidance should not recommend raw ExtendScript.");
+
   const nestedCompositionDurationRetrieval = retrieveSolutionHints("Change the selected nested precomp source composition duration to 12 seconds, then read back the nested source comp duration without retiming layers.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -2376,6 +2418,7 @@ function assertActualRetrieval(registry) {
       backgroundLayer: ids(backgroundLayerRetrieval),
       nestedCompositionBackground: ids(nestedCompositionBackgroundRetrieval),
       activeCompositionBackgroundCycle: ids(activeCompositionBackgroundCycleRetrieval),
+      collapseTransformations: ids(collapseTransformationsRetrieval),
       nestedCompositionDurationWithTimecode: ids(nestedCompositionDurationWithTimecodeRetrieval),
       compositionGuide: ids(compositionGuideRetrieval),
       posterizeTimeAdjustment: ids(posterizeTimeAdjustmentRetrieval),
