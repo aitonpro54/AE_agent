@@ -59,6 +59,7 @@ const IMPORTED_ADVISORY_IDS = [
   "cycle-composition-background-color-typed-plan",
   "enable-collapse-transformations-typed-plan",
   "enable-motion-blur-typed-plan",
+  "increment-composition-versions-typed-plan",
   "change-nested-composition-duration-typed-plan",
   "change-nested-composition-duration-with-timecode-typed-plan",
   "change-nested-composition-start-frame-typed-plan",
@@ -1215,6 +1216,38 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.promotionHistory.some((entry) => /Enable_Motion_Blur/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /AUX-096/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "increment-composition-versions-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["find_project_items", "get_comp_details", "rename_project_items"],
+        `${id}: imported composition version workflow should stay on the narrow generated-comp project-item rename typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: composition version workflow must be mutating.`);
+      assert(text.includes("generated composition names only"), `${id}: recipe should limit scope to generated composition names only.`);
+      assert(text.includes("version token"), `${id}: recipe should document version token replacement.`);
+      assert(text.includes("currentVersionToken"), `${id}: recipe should require currentVersionToken evidence.`);
+      assert(text.includes("nextVersionToken"), `${id}: recipe should require nextVersionToken evidence.`);
+      assert(text.includes("find_project_items"), `${id}: recipe should require project item search evidence.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require composition read-back.`);
+      assert(text.includes("rename_project_items"), `${id}: recipe should use the project item rename typed tool.`);
+      assert(text.includes('mode:"findReplace"'), `${id}: recipe should require findReplace project-item rename mode.`);
+      assert(text.includes("arbitrary version parsing"), `${id}: recipe should fail closed for arbitrary version parsing.`);
+      assert(text.includes("all-composition traversal"), `${id}: recipe should reject all-composition traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /find_project_items/.test(step)), `${id}: verification must include project item search evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must include comp details read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /currentVersionToken/.test(step)), `${id}: verification must include currentVersionToken.`);
+      assert(solution.verificationRecipe.steps.some((step) => /nextVersionToken/.test(step)), `${id}: verification must include nextVersionToken.`);
+      assert(solution.verificationRecipe.steps.some((step) => /mode findReplace/.test(step)), `${id}: verification must include findReplace rename mode.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /changedCount/.test(item)), `${id}: verification must require rename count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /generated composition names/.test(item)), `${id}: verification must require generated composition name read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /requested next version token/.test(item)), `${id}: verification must require next version token read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /unchanged width/.test(item)), `${id}: verification must require unchanged structural comp fields.`);
+      assert(solution.notes.some((note) => /generated composition names only/.test(note)), `${id}: notes must keep scope to generated composition names only.`);
+      assert(solution.notes.some((note) => /non-generated user assets/.test(note)), `${id}: notes must reject non-generated user-asset mutation.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Increment_Composition_Versions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /AUX-097/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "change-nested-composition-duration-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2207,6 +2240,22 @@ function assertActualRetrieval(registry) {
   assert(motionBlurPromptSection.includes("get_layer_details"), "prompt section should require layer detail read-back.");
   assert(motionBlurPromptSection.includes("comp-wide motion blur"), "prompt section should preserve comp-wide motion blur scope warning.");
   assert(!/run_extendscript/i.test(motionBlurPromptSection), "motion-blur guidance should not recommend raw ExtendScript.");
+
+  const incrementCompositionVersionsRetrieval = retrieveSolutionHints("Increment generated composition version tokens from _v001 to _v002 for explicit generated comp names using rename_project_items mode findReplace, then find_project_items and get_comp_details read back the renamed compositions without source relinking.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(incrementCompositionVersionsRetrieval.ok, true);
+  assert(ids(incrementCompositionVersionsRetrieval).includes("increment-composition-versions-typed-plan"), "composition version advisory recipe should surface for generated comp version-token prompts.");
+  const incrementCompositionVersionsPromptSection = formatSolutionHintsForPrompt(incrementCompositionVersionsRetrieval);
+  assert(incrementCompositionVersionsPromptSection.includes("Increment Composition Versions Typed Plan"), "prompt section should include composition version advisory title.");
+  assert(incrementCompositionVersionsPromptSection.includes("rename_project_items"), "prompt section should prefer rename_project_items for version-token renaming.");
+  assert(incrementCompositionVersionsPromptSection.includes("version token"), "prompt section should preserve version-token guidance.");
+  assert(incrementCompositionVersionsPromptSection.includes("generated composition"), "prompt section should preserve generated composition scope.");
+  assert(incrementCompositionVersionsPromptSection.includes("findReplace"), "prompt section should preserve findReplace rename mode.");
+  assert(incrementCompositionVersionsPromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
+  assert(!/run_extendscript/i.test(incrementCompositionVersionsPromptSection), "composition version guidance should not recommend raw ExtendScript.");
 
   const nestedCompositionDurationRetrieval = retrieveSolutionHints("Change the selected nested precomp source composition duration to 12 seconds, then read back the nested source comp duration without retiming layers.", {
     registry,

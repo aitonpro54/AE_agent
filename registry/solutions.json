@@ -3070,6 +3070,130 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "increment-composition-versions-typed-plan",
+      "title": "Increment Composition Versions Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "generated-composition",
+        "project-item",
+        "rename",
+        "version",
+        "version-token",
+        "find-replace",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Increment explicit generated composition version tokens in project item names with rename_project_items findReplace and typed read-back while arbitrary parsing and traversal stay out of scope.",
+        "appliesWhen": [
+          "The user asks to increment composition versions, bump generated comp version names, or rename generated compositions from one explicit version token to another.",
+          "Updating only explicit generated composition project item names by literal version-token find/replace is acceptable instead of source relinking, comp duplication, or all-composition traversal."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetCompItems",
+          "type": "project-item-selection",
+          "required": true,
+          "description": "Concrete generated composition project item indices found through current typed project evidence before mutation."
+        },
+        {
+          "name": "currentVersionToken",
+          "type": "string",
+          "required": true,
+          "description": "Explicit literal version token currently present in every accepted target comp name."
+        },
+        {
+          "name": "nextVersionToken",
+          "type": "string",
+          "required": true,
+          "description": "Explicit literal replacement version token shown before confirmation."
+        },
+        {
+          "name": "caseSensitive",
+          "type": "boolean",
+          "required": false,
+          "description": "Literal find/replace matching is case-sensitive by default unless the user explicitly asks otherwise."
+        }
+      ],
+      "targetAssumptions": [
+        "Every renamed item is a generated composition project item bound by explicit itemIndices from current find_project_items and get_comp_details evidence before mutation.",
+        "The workflow changes only explicit generated composition names by literal currentVersionToken to nextVersionToken replacement.",
+        "Current typed tools support project item rename by explicit itemIndices but do not expose source-exact version parsing, native script prompts, or Project panel selection ordering.",
+        "Arbitrary version parsing, numeric carry behavior, regex matching, all-composition traversal, source relinking, comp duplication, onion-skinning, camera/controller parenting and exact source JSX behavior remain typed-tool gaps.",
+        "Existing comp settings, layers, sources, layer source references, folders, render queue items and non-generated user assets are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/increment-composition-versions-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "find_project_items",
+          "get_comp_details",
+          "rename_project_items"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read explicit generated composition names, disclose current and next version token, run rename_project_items findReplace, then read back renamed comps.",
+        "steps": [
+          "Run find_project_items to enumerate explicit generated composition project items before mutation.",
+          "Run get_comp_details for every accepted generated composition and record current name, item identity and unchanged structural fields.",
+          "Require literal currentVersionToken, literal nextVersionToken, explicit case sensitivity, expected next names and collision checks before confirmation.",
+          "Run rename_project_items with mode findReplace, concrete itemIndices, literal currentVersionToken and literal nextVersionToken.",
+          "Run find_project_items for expected renamed names and get_comp_details after mutation; fail closed if arbitrary version parsing, all-composition traversal or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies every concrete generated composition itemIndices entry.",
+          "Dry-run evidence lists currentVersionToken, nextVersionToken, case sensitivity, previous names, expected next names and skipped targets.",
+          "rename_project_items reports changedCount for the accepted target count and before/after version-token rename evidence.",
+          "Post-run find_project_items and get_comp_details show generated composition names with the requested next version token and no remaining current token on accepted targets.",
+          "Post-run get_comp_details shows unchanged width, height, duration, frameRate, layer count and comp item identity for every accepted generated comp.",
+          "Post-run evidence shows no source relink, comp duplication, layer mutation, comp property mutation, render queue mutation, all-composition traversal or non-generated user-asset mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-compositions-increment-composition-versions generic repository importer as advisory typed-plan coverage for generated composition version-token renaming.",
+          "AUX-097 already added a candidate-id-gated generated-only lane over explicit generated comp names using rename_project_items findReplace, find_project_items and get_comp_details read-back; this detached child patch records recipe, registry, smoke and handoff guidance for parent-controlled merge."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-29",
+          "from": "generic-repo-importer-tool-compositions-increment-composition-versions",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Increment_Composition_Versions.jsx into existing typed tools as explicit generated composition project item version-token rename through rename_project_items mode:\"findReplace\"; no source JSX copied. The recipe requires current find_project_items and get_comp_details evidence, generated composition names only, literal currentVersionToken and nextVersionToken disclosure, collision review and post-mutation read-back. Arbitrary version parsing, numeric carry behavior, all-composition traversal, source relinking, comp duplication, onion-skinning, camera/controller parenting, non-generated user-asset mutation and exact source JSX semantics require a separate typed-tool contract. AUX-097 proved generated-only composition version-token read-back and parent importer owns validation plus live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Use this recipe for generated composition names only; do not mutate non-generated user assets or broad project inventory.",
+        "Literal find/replace only; do not infer arbitrary version parsing, regex matching, numeric carry behavior or source-exact prompt semantics.",
+        "Require current find_project_items and get_comp_details evidence before mutating project item names; do not infer targets from prior chat context.",
+        "Require a separate typed-tool contract for all-composition traversal, source relinking, comp duplication, source replacement, onion-skinning, camera/controller parenting, native version prompt behavior or exact source JSX semantics.",
+        "Do not use this recipe for layer rename, comp property changes, source relinking, deep precomp/source duplication, render queue changes, user-asset cleanup or broad project mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "add-composition-guide-typed-plan",
       "title": "Add Composition Guide Typed Plan",
       "status": "recipe",
