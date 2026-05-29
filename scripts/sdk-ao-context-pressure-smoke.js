@@ -171,8 +171,8 @@ function main() {
   assert.deepStrictEqual(belowPacket.stopReasons, []);
 
   const prepare = buildFixture(root, "prepare-handoff", {
-    tokenCount: 151000,
-    percent: 61,
+    tokenCount: 181000,
+    percent: 48,
   });
   const prepareResult = runGuard(prepare);
   assert.strictEqual(prepareResult.status, 0, prepareResult.stderr);
@@ -185,8 +185,8 @@ function main() {
   assert(preparePacket.warningReasons.includes("context_prepare_handoff_threshold"));
 
   const mandatory = buildFixture(root, "mandatory-handoff", {
-    tokenCount: 186000,
-    percent: 73,
+    tokenCount: 216000,
+    percent: 48,
   });
   const mandatoryResult = runGuard(mandatory);
   assert.strictEqual(mandatoryResult.status, 1);
@@ -199,8 +199,8 @@ function main() {
   assert(mandatoryPacket.stopReasons.includes("context_mandatory_handoff_threshold"));
 
   const hard = buildFixture(root, "hard-ceiling", {
-    tokenCount: 196000,
-    percent: 77,
+    tokenCount: 226000,
+    percent: 48,
   });
   const hardResult = runGuard(hard);
   assert.strictEqual(hardResult.status, 1);

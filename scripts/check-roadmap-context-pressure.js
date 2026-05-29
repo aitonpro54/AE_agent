@@ -5,35 +5,35 @@ const path = require("path");
 
 const THRESHOLDS = {
   prepare_handoff: {
-    tokens: 150000,
+    tokens: 180000,
     percent: 60,
     reason: "context_prepare_handoff_threshold",
     nextRequiredAction: "prepare_handoff_soon",
     stop: false,
   },
   no_new_work: {
-    tokens: 170000,
+    tokens: 200000,
     percent: 66,
     reason: "context_no_new_work_threshold",
     nextRequiredAction: "stop_before_new_work_and_prepare_handoff",
     stop: true,
   },
   mandatory_handoff: {
-    tokens: 185000,
+    tokens: 215000,
     percent: 72,
     reason: "context_mandatory_handoff_threshold",
     nextRequiredAction: "stop_implementation_update_handoff",
     stop: true,
   },
   hard_ceiling: {
-    tokens: 195000,
+    tokens: 225000,
     percent: 76,
     reason: "context_hard_ceiling_threshold",
     nextRequiredAction: "only_handoff_text_allowed",
     stop: true,
   },
   absolute_ceiling: {
-    tokens: 200000,
+    tokens: 230000,
     percent: 78,
     reason: "context_absolute_ceiling_threshold",
     nextRequiredAction: "only_handoff_text_allowed",
