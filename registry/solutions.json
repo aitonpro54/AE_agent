@@ -2205,6 +2205,126 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "change-nested-composition-frame-rate-typed-plan",
+      "title": "Change Nested Composition Frame Rate Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "nested-composition",
+        "precomp",
+        "source-comp",
+        "frame-rate",
+        "timing",
+        "comp-properties",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Change the frameRate of an explicitly identified nested source composition with typed read-back while layer retiming, duration conversion and recursive semantics stay out of scope.",
+        "appliesWhen": [
+          "The user asks to change a nested composition frame rate, nested comp FPS, precomp source frame rate, or selected nested/precomp source FPS.",
+          "Updating the source composition frameRate field is acceptable instead of retiming layers, preserving a frame-count duration, shifting keyframes, changing work area, or changing footage interpretation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetLayer",
+          "type": "layer-selection",
+          "required": false,
+          "description": "Selected or explicitly identified parent layer whose source is the nested composition to inspect before mutation."
+        },
+        {
+          "name": "targetNestedComp",
+          "type": "comp",
+          "required": true,
+          "description": "Nested source composition itemIndex/name proven by get_layer_details or explicit get_comp_details evidence before mutation."
+        },
+        {
+          "name": "frameRate",
+          "type": "number",
+          "required": true,
+          "description": "Requested positive finite composition frame rate."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow changes only the verified nested source composition frameRate field through set_comp_properties.",
+        "The parent layer source composition is read before mutation; the plan must not infer a nested comp from prior chat context.",
+        "Changing a shared source comp can affect every layer that references that source, so shared-source ambiguity remains fail-closed until explicitly confirmed.",
+        "Layer in/out retiming, stretch changes, keyframe/expression shifts, duration or work-area conversion, recursive all-nested-comp traversal, source duplication/relinking, footage interpretation changes and exact source JSX behavior remain typed-tool gaps."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/change-nested-composition-frame-rate-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details",
+          "get_comp_details",
+          "set_comp_properties"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read the parent layer source comp, set only the nested source comp frameRate, then read back frameRate and unchanged comp/layer identity.",
+        "steps": [
+          "Run get_active_comp and get_selected_layers for selected precomp workflows, or bind an explicit parent comp/layer target from current typed evidence.",
+          "Run get_layer_details for the parent layer and require source comp itemIndex/name evidence before choosing the nested source composition.",
+          "Run get_comp_details for the nested source composition before mutation and record frameRate, duration, width, height, bgColor, layer count and work area.",
+          "Normalize the requested frameRate to a positive finite number and fail closed when the request implies layer retiming, duration/work-area conversion, frame-count preservation, keyframe shifts or footage interpretation edits.",
+          "Run set_comp_properties once against the verified nested source composition with only frameRate, verifyAfter and idempotency evidence.",
+          "Run get_comp_details after mutation and compare frameRate plus unchanged width, height, duration, bgColor, layer count and work area.",
+          "Run get_layer_details for the parent layer after mutation when selection was used, confirming the same source comp itemIndex/name remains linked and parent layer timing was not changed."
+        ],
+        "expectedEvidence": [
+          "Selected-layer plans include get_selected_layers evidence before a layer index is bound.",
+          "get_layer_details shows the parent layer source comp itemIndex/name before mutation.",
+          "The set_comp_properties step updates only frameRate on the verified nested source composition.",
+          "Post-run get_comp_details shows the requested frameRate and unchanged width, height, duration, bgColor, layer count and work area on the same source comp.",
+          "Post-run parent layer read-back shows no rename, relink, source change, in/out timing change, stretch change, layer-order mutation, expression edit or keyframe edit.",
+          "The plan reports shared source comp risk, layer retiming, stretch/keyframe/expression changes, duration/work-area conversion, footage interpretation changes, recursive traversal, source duplication and exact source JSX semantics as unsupported by current typed tools."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-compositions-change-nested-composition-frame-rate generic repository importer as advisory typed-plan coverage for nested source comp frameRate mutation.",
+          "The source JSX and prompt artifact were not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed tools and leaves parent importer validation plus any generated-only live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-29",
+          "from": "generic-repo-importer-tool-compositions-change-nested-composition-frame-rate",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Change_Nested_Composition_Frame_Rate.jsx into existing typed tools as explicit nested source composition frameRate mutation through set_comp_properties; no source JSX copied. Layer retiming, parent layer stretch/in-out changes, keyframe/expression shifts, duration/work-area conversion, frame-count preservation, footage interpretation changes, recursive traversal, shared-source ambiguity, source duplication/relinking and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "This recipe changes a nested source composition frameRate only; it does not retime layers, stretch parent precomp layers, shift keyframes, edit expressions, preserve frame-count duration, change work area, or change footage interpretation.",
+        "Treat shared source comp mutation as unsafe unless the user explicitly confirms that all uses of the source comp may inherit the new frameRate.",
+        "Require a separate typed-tool contract for layer retiming, parent layer stretch/in-out changes, duration/work-area conversion, frame-count preservation, keyframe/expression shifts, recursive all-nested-comp traversal, source duplication before mutation, source relinking, footage interpretation changes or exact source JSX semantics.",
+        "Do not use this recipe for template batch changes, layer cleanup, masks, effects, render queue items, source relinking, footage interpretation or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "add-composition-guide-typed-plan",
       "title": "Add Composition Guide Typed Plan",
       "status": "recipe",
