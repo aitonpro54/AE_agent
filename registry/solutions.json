@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-05-29",
+  "updatedAt": "2026-05-30",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -4152,6 +4152,121 @@
         "Require a separate typed-tool contract for project-panel selection reads, automatic duplicate-name merging, folder deletion, dependency cleanup, footage consolidation, source relinking or exact source JSX semantics.",
         "Require current get_project_snapshot, find_project_items or list_project_folder_items evidence before mutating project item parent folders; do not infer item targets from prior chat context.",
         "Do not use this recipe for layer source replacement, deep precomp/source duplication, project item deletion, project item rename, render queue changes, user-asset cleanup or broad project mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "add-labeled-items-to-render-queue-typed-plan",
+      "title": "Add Labeled Items To Render Queue Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "project",
+        "project-item",
+        "composition",
+        "generated-composition",
+        "render-queue",
+        "labeled-items",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Add explicit generated composition project items to the render queue using add_comp_to_render_queue, optional set_render_queue_output, and render queue read-back.",
+        "appliesWhen": [
+          "The user asks to add labeled items to the render queue or queue labeled generated compositions.",
+          "The label-based source intent can be safely adapted to an explicit generated composition target list; current typed tools do not expose project item label colors."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetCompItems",
+          "type": "project-item-selection",
+          "required": true,
+          "description": "Concrete generated composition project item indices or exact comp names found through current typed project evidence before mutation."
+        },
+        {
+          "name": "outputSettings",
+          "type": "render-output-settings",
+          "required": false,
+          "description": "Optional reviewed renderSettingsTemplate, outputModuleTemplate, and/or outputPath for the new render queue items."
+        }
+      ],
+      "targetAssumptions": [
+        "Every queued item is an explicit generated composition project item bound by current find_project_items and get_comp_details evidence before mutation.",
+        "The workflow changes only the render queue by adding accepted generated comps and optional reviewed output settings; it does not start rendering.",
+        "Current typed tools support render queue insertion/read-back but do not expose project item label colors or Project panel selection.",
+        "True label-color discovery, Project panel selection reads, footage/folder queueing, render start, queue cleanup/reordering, save/saveAs and exact source JSX behavior remain typed-tool gaps.",
+        "Existing comp settings, layers, sources, footage, folders, labels, existing render queue items and non-generated user assets are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/add-labeled-items-to-render-queue-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_project_info",
+          "find_project_items",
+          "get_comp_details",
+          "add_comp_to_render_queue",
+          "set_render_queue_output",
+          "get_render_queue_status"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read explicit generated composition targets and render queue baseline, add those comps to the render queue, optionally set output settings, then read back render queue status.",
+        "steps": [
+          "Run get_project_info and get_render_queue_status before mutation to capture project state and render queue baseline.",
+          "Run find_project_items with type comp to enumerate explicit generated composition targets.",
+          "Run get_comp_details for every accepted generated composition and record current name, item identity and unchanged structural fields.",
+          "Require concrete target comp identities, baseline render queue count, skipped target disclosure and reviewed output settings before confirmation.",
+          "Run add_comp_to_render_queue once per accepted generated comp; when needed, run set_render_queue_output with concrete new renderQueueItemIndex values.",
+          "Run get_render_queue_status after mutation; fail closed if label-color scanning, Project panel selection, footage/folder queueing, render start, queue cleanup/reordering, save/saveAs or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies every concrete generated composition target.",
+          "Dry-run evidence lists accepted comps, skipped targets, baseline render queue count, expected new queue items, optional output settings and label-discovery limitation.",
+          "add_comp_to_render_queue returns renderQueueItem evidence for every accepted generated comp.",
+          "set_render_queue_output reports reviewed output path/template settings for each adjusted queue item when output settings are requested.",
+          "Post-run get_render_queue_status shows new render queue items for the accepted generated comps and the expected item count increase.",
+          "Post-run evidence shows no render start, comp/layer/source mutation, project item label mutation, queue deletion/reordering, save/saveAs, source relink or non-generated user-asset mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-project-add-labeled-items-to-render-queue generic repository importer as advisory typed-plan coverage for generated-only render queue setup.",
+          "AUX-098 already added a candidate-id-gated generated-only render queue lane over add_comp_to_render_queue, set_render_queue_output and get_render_queue_status; this detached child patch records recipe, registry, smoke and handoff guidance for parent-controlled merge."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-30",
+          "from": "generic-repo-importer-tool-project-add-labeled-items-to-render-queue",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Project/Add_Labeled_Items_To_Render_Queue.jsx into existing typed tools as explicit generated composition render queue setup through add_comp_to_render_queue, optional set_render_queue_output, and get_render_queue_status read-back; no source JSX copied. Current typed tools do not expose project item label colors, so true label-color discovery, Project panel selection reads, footage/folder queueing, render start, queue cleanup/reordering, save/saveAs, non-generated user-asset mutation and exact source JSX semantics require a separate typed-tool contract. AUX-098 proved generated-only render queue read-back/cleanup and parent importer owns validation plus live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Use this recipe for explicit generated composition render queue setup only; do not mutate non-generated user assets or broad project inventory.",
+        "Current typed tools do not expose project item label colors; require a separate typed-tool contract for true label-color discovery or source-exact label behavior.",
+        "Require current find_project_items, get_comp_details and get_render_queue_status evidence before adding comps to the render queue; do not infer targets from prior chat context.",
+        "Do not start renders, save the project, delete/reorder render queue items, change labels, queue footage/folders, or perform source relinking/replacement.",
+        "Do not use this recipe for render execution, render queue cleanup, Project panel selection reads, non-generated assets, arbitrary output templating, user-asset cleanup or raw script execution."
       ]
     },
     {

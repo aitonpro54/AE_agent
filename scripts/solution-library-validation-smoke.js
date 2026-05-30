@@ -72,6 +72,7 @@ const IMPORTED_ADVISORY_IDS = [
   "set-to-average-position-typed-plan",
   "zero-position-typed-plan",
   "merge-imported-selected-items-typed-plan",
+  "add-labeled-items-to-render-queue-typed-plan",
   "replace-text-in-project-item-name-typed-plan",
   "rename-selected-project-items-typed-plan"
 ];
@@ -104,6 +105,8 @@ const AVAILABLE_TOOLS = [
   "set_layer_transform",
   "set_comp_properties",
   "set_comp_work_area",
+  "add_comp_to_render_queue",
+  "set_render_queue_output",
   "add_layer_marker",
   "rename_layers",
   "rename_project_items",
@@ -1517,6 +1520,32 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Merge_Imported_Selected_Items/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "add-labeled-items-to-render-queue-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "find_project_items", "get_comp_details", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"],
+        `${id}: imported render queue workflow should stay on the narrow generated-comp render queue typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: render queue workflow must be mutating.`);
+      assert(text.includes("generated composition"), `${id}: recipe should limit scope to generated compositions.`);
+      assert(text.includes("get_render_queue_status"), `${id}: recipe should require render queue baseline/read-back.`);
+      assert(text.includes("find_project_items"), `${id}: recipe should require project item search evidence.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp details read-back.`);
+      assert(text.includes("add_comp_to_render_queue"), `${id}: recipe should use the render queue add typed tool.`);
+      assert(text.includes("set_render_queue_output"), `${id}: recipe should document optional output updates.`);
+      assert(text.includes("label colors"), `${id}: recipe should fail closed for label-color discovery.`);
+      assert(text.includes("no render start"), `${id}: recipe should reject render execution.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_render_queue_status/.test(step)), `${id}: verification must include render queue status.`);
+      assert(solution.verificationRecipe.steps.some((step) => /find_project_items/.test(step)), `${id}: verification must include project item search evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must include comp details read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_comp_to_render_queue/.test(step)), `${id}: verification must include render queue add.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expected item count increase/.test(item)), `${id}: verification must require queue count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /no render start/.test(item)), `${id}: verification must prove no render started.`);
+      assert(solution.notes.some((note) => /label colors/.test(note)), `${id}: notes must reject label-color discovery claims.`);
+      assert(solution.notes.some((note) => /Do not start renders/.test(note)), `${id}: notes must reject render start.`);
+      assert(solution.promotionHistory.some((entry) => /Add_Labeled_Items_To_Render_Queue/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /AUX-098/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "replace-text-in-project-item-name-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2427,6 +2456,21 @@ function assertActualRetrieval(registry) {
   assert(mergeImportedPromptSection.includes("move_project_items_to_folder"), "prompt section should prefer move_project_items_to_folder for imported item workflows.");
   assert(mergeImportedPromptSection.includes("project-panel selection"), "prompt section should preserve project-panel selection warning.");
   assert(!/run_extendscript/i.test(mergeImportedPromptSection), "merge-imported guidance should not recommend raw ExtendScript.");
+
+  const addLabeledRenderQueueRetrieval = retrieveSolutionHints("Add labeled generated composition items to the render queue after finding explicit generated comp names, using add_comp_to_render_queue and get_render_queue_status read-back without starting a render.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(addLabeledRenderQueueRetrieval.ok, true);
+  assert(ids(addLabeledRenderQueueRetrieval).includes("add-labeled-items-to-render-queue-typed-plan"), "add labeled items render queue advisory recipe should surface for render queue prompts.");
+  const addLabeledRenderQueuePromptSection = formatSolutionHintsForPrompt(addLabeledRenderQueueRetrieval);
+  assert(addLabeledRenderQueuePromptSection.includes("Add Labeled Items To Render Queue Typed Plan"), "prompt section should include labeled render queue advisory title.");
+  assert(addLabeledRenderQueuePromptSection.includes("add_comp_to_render_queue"), "prompt section should prefer add_comp_to_render_queue for render queue setup.");
+  assert(addLabeledRenderQueuePromptSection.includes("get_render_queue_status"), "prompt section should require render queue read-back.");
+  assert(addLabeledRenderQueuePromptSection.includes("generated composition"), "prompt section should preserve generated composition scope.");
+  assert(addLabeledRenderQueuePromptSection.includes("label"), "prompt section should preserve label-discovery warning.");
+  assert(!/run_extendscript/i.test(addLabeledRenderQueuePromptSection), "labeled render queue guidance should not recommend raw ExtendScript.");
 
   const renameSelectedProjectItemsRetrieval = retrieveSolutionHints("Rename selected project items to the exact text Review Plate after reading the current project snapshot, binding explicit itemIndices, using rename_project_items, and reading back project inventory.", {
     registry,
