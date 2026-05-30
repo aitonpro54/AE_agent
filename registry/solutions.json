@@ -4186,7 +4186,7 @@
         },
         {
           "name": "outputSettings",
-          "type": "render-output-settings",
+          "type": "object",
           "required": false,
           "description": "Optional reviewed renderSettingsTemplate, outputModuleTemplate, and/or outputPath for the new render queue items."
         }
@@ -4301,7 +4301,7 @@
         },
         {
           "name": "outputSettings",
-          "type": "render-output-settings",
+          "type": "object",
           "required": false,
           "description": "Optional reviewed renderSettingsTemplate, outputModuleTemplate, and/or outputPath for the new render queue items."
         }
