@@ -187,6 +187,14 @@ function writeFakeCodex(root) {
       '    console.error("missing AUX-021 wrapper");',
       '    process.exit(9);',
       '  }',
+      '  if (process.argv[process.argv.indexOf("--model") + 1] !== "gpt-5.5") {',
+      '    console.error("missing gpt-5.5 writer model");',
+      '    process.exit(10);',
+      '  }',
+      '  if (process.argv[process.argv.indexOf("--reasoning-effort") + 1] !== "high") {',
+      '    console.error("missing high reasoning effort");',
+      '    process.exit(11);',
+      '  }',
       '  const match = input.match(/<child_run_intent_json>\\n([\\s\\S]*?)\\n<\\/child_run_intent_json>/);',
       '  const intent = match ? JSON.parse(match[1]) : { plannedPaths: [] };',
       '  const relative = process.env.FAKE_CODEX_WRITE_PATH || intent.plannedPaths.find((item) => /\\.js$/i.test(item)) || intent.plannedPaths[0];',
@@ -443,8 +451,13 @@ function writeRegistry(fixture, overrides = {}) {
   return registryPath;
 }
 
+function withDefaultContextPercent(extraArgs) {
+  return extraArgs.includes("--context-percent") ? extraArgs : ["--context-percent", "5", ...extraArgs];
+}
+
 function runFullIntakeFixture(fixture, ledgerPath, registryPath, runId, maxItems, env = {}, extraArgs = []) {
   const batchArgs = maxItems > 1 ? ["--allow-batch-mode"] : [];
+  const contextArgs = withDefaultContextPercent(extraArgs);
   return run(
     [
       "--ledger",
@@ -460,7 +473,7 @@ function runFullIntakeFixture(fixture, ledgerPath, registryPath, runId, maxItems
       "--json",
       "--allow-full-json-for-debug",
       ...batchArgs,
-      ...extraArgs
+      ...contextArgs
     ],
     repo,
     env
@@ -469,6 +482,7 @@ function runFullIntakeFixture(fixture, ledgerPath, registryPath, runId, maxItems
 
 function runFullIntakeFixtureCompactPhase(fixture, ledgerPath, registryPath, runId, maxItems, env = {}, extraArgs = []) {
   const batchArgs = maxItems > 1 ? ["--allow-batch-mode"] : [];
+  const contextArgs = withDefaultContextPercent(extraArgs);
   return run(
     [
       "--ledger",
@@ -483,7 +497,7 @@ function runFullIntakeFixtureCompactPhase(fixture, ledgerPath, registryPath, run
       fixture.target,
       "--compact-json",
       ...batchArgs,
-      ...extraArgs
+      ...contextArgs
     ],
     repo,
     env
@@ -745,6 +759,71 @@ function assertContextBudgetStopsBeforeNewWork() {
   }
 }
 
+function assertUnknownContextStopsBeforeNewWork() {
+  const fixture = createFixture("unknown-context");
+  try {
+    const ledgerPath = writeLedger(fixture, validLedger(fixture));
+    const registryPath = writeRegistry(fixture);
+    const result = run(
+      [
+        "--ledger",
+        ledgerPath,
+        "--live-lane-registry",
+        registryPath,
+        "--run-id",
+        "fixture-unknown-context",
+        "--max-items",
+        "1",
+        "--target-repo",
+        fixture.target,
+        "--compact-json"
+      ],
+      repo
+    );
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    const output = JSON.parse(result.stdout);
+    assert.strictEqual(output.status, "resume_only_context_budget");
+    assert.strictEqual(output.counts.items, 0);
+    assert.strictEqual(output.contextBudget.lastDecision.threshold, "contextPercentUnknown");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertHighContextThresholdsFailClosed() {
+  const fixture = createFixture("high-thresholds");
+  try {
+    const ledgerPath = writeLedger(fixture, validLedger(fixture));
+    const registryPath = writeRegistry(fixture);
+    const result = run(
+      [
+        "--ledger",
+        ledgerPath,
+        "--live-lane-registry",
+        registryPath,
+        "--run-id",
+        "fixture-high-thresholds",
+        "--max-items",
+        "1",
+        "--target-repo",
+        fixture.target,
+        "--context-percent",
+        "5",
+        "--handoff-percent",
+        "98",
+        "--hard-stop-percent",
+        "100",
+        "--compact-json"
+      ],
+      repo
+    );
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /context-budget-threshold-too-high/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertContextRegressionOutputBounds() {
   for (const count of [1, 3, 10]) {
     const fixture = createFixture(`context-regression-${count}`);
@@ -884,7 +963,7 @@ function assertSynthesizedAutoLaneCompletesWithoutRegistryEntry() {
         "fixture-synth-lane",
         1,
         fakeCodexEnv(binDir),
-        ["--allow-self-improvement-lane-synthesis", "--no-new-work-percent", "95", "--handoff-percent", "98", "--hard-stop-percent", "100"]
+        ["--allow-self-improvement-lane-synthesis"]
       )
     );
     assert.strictEqual(output.status, "completed");
@@ -1084,7 +1163,7 @@ function assertQueuedLedgerStaleBlockedStateIsRetried() {
         runId,
         1,
         fakeCodexEnv(binDir),
-        ["--allow-self-improvement-lane-synthesis", "--no-new-work-percent", "95", "--handoff-percent", "98", "--hard-stop-percent", "100"]
+        ["--allow-self-improvement-lane-synthesis"]
       )
     );
     assert.strictEqual(output.resumed, true);
@@ -1238,7 +1317,17 @@ function assertQueuedLiveLaneNeededFamiliesAreProvedAndRanked() {
         "fixture-qln-family",
         2,
         fakeCodexEnv(binDir),
-        ["--allow-self-improvement-lane-synthesis", "--no-new-work-percent", "95", "--handoff-percent", "98", "--hard-stop-percent", "100"]
+        [
+          "--allow-self-improvement-lane-synthesis",
+          "--soft-stop-percent",
+          "70",
+          "--no-new-work-percent",
+          "80",
+          "--handoff-percent",
+          "80",
+          "--hard-stop-percent",
+          "90"
+        ]
       )
     );
     assert.strictEqual(output.status, "completed");
@@ -1881,6 +1970,8 @@ function main() {
   assertStrictCompactParentRunsOnePhaseAtBoundary();
   assertParentJsonIsSealedAndBatchRequiresApproval();
   assertContextBudgetStopsBeforeNewWork();
+  assertUnknownContextStopsBeforeNewWork();
+  assertHighContextThresholdsFailClosed();
   assertContextRegressionOutputBounds();
   assertProofAndDiagnoseCommandsAreBounded();
   assertMissingProofHashesPreventCompletion();

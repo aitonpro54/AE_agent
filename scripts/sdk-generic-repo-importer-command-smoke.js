@@ -111,7 +111,7 @@ function validManifest(fixture, runId = "aux015-valid") {
       codexCliOnly: true,
       resumable: true,
       resumeFromState: true,
-      defaultModel: "gpt-5.3-codex",
+      defaultModel: "gpt-5.5",
       webSearch: "disabled",
     },
     sourceRepo: {
@@ -158,6 +158,8 @@ function validManifest(fixture, runId = "aux015-valid") {
         approvalPolicy: "never",
         webSearch: "disabled",
         localOllama: false,
+        writerModel: "gpt-5.5",
+        reasoningEffort: "high",
       },
       reviewerPolicy: { readOnly: true },
       artifactPolicy: { runtimeOnlyUntilPromotion: true },
@@ -256,12 +258,27 @@ function writeFakeCodex(root) {
       '    console.error("missing AUX-021 wrapper");',
       '    process.exit(9);',
       '  }',
+      '  if (process.argv[process.argv.indexOf("--model") + 1] !== "gpt-5.5") {',
+      '    console.error("missing gpt-5.5 writer model");',
+      '    process.exit(10);',
+      '  }',
+      '  if (process.argv[process.argv.indexOf("--reasoning-effort") + 1] !== "high") {',
+      '    console.error("missing high reasoning effort");',
+      '    process.exit(11);',
+      '  }',
       '  if (mode === "fail") {',
       '    console.error("fake codex failure");',
       '    process.exit(7);',
       '  }',
       '  if (mode === "large-output") {',
       '    process.stdout.write("L".repeat(3 * 1024 * 1024));',
+      '  }',
+      '  if (process.env.FAKE_CODEX_USAGE_TOKENS) {',
+      '    const total = Number(process.env.FAKE_CODEX_USAGE_TOKENS);',
+      '    process.stdout.write(`${JSON.stringify({ type: "turn.completed", usage: { total_tokens: total } })}\\n`);',
+      '  }',
+      '  if (process.env.FAKE_CODEX_STDOUT_BYTES) {',
+      '    process.stdout.write("O".repeat(Number(process.env.FAKE_CODEX_STDOUT_BYTES)));',
       '  }',
       '  if (mode !== "no-change") {',
       '    const relative = process.env.FAKE_CODEX_WRITE_PATH || "scripts/imported-tools/tool-tool.js";',
@@ -333,7 +350,9 @@ function assertValidRunArtifacts(output, fixture, runId) {
   const normalized = readJson(path.join(runRoot, "manifest.normalized.json"));
   assert.strictEqual(normalized._meta.manifestHash, state.manifestHash);
   assert.strictEqual(normalized._meta.sourceContractPath.endsWith("aux-014-generic-repo-importer-contract.json"), true);
-  assert.strictEqual(normalized.run.defaultModel, "gpt-5.3-codex");
+  assert.strictEqual(normalized.run.defaultModel, "gpt-5.5");
+  assert.strictEqual(normalized.implementation.codexCliInvocation.writerModel, "gpt-5.5");
+  assert.strictEqual(normalized.implementation.codexCliInvocation.reasoningEffort, "high");
 
   const supervisorPlan = readJson(path.join(runRoot, "supervisor-plan.json"));
   assert.strictEqual(supervisorPlan.schema, "generic-repo-tool-importer.supervisor-plan.v1");
@@ -1062,9 +1081,13 @@ function assertImplementationChildRunArtifacts(output, fixture, runId) {
   assert.strictEqual(childRun.checks.plannedPathGate, "passed");
   assert.strictEqual(childRun.checks.sourceMergeApplication, "not_started");
   assert.strictEqual(childRun.checks.validationCommands, "not_started");
+  assert.strictEqual(childRun.checks.contextGuard, "passed");
   assert(childRun.batches.length > 0);
 
   const firstBatch = childRun.batches[0];
+  assert.strictEqual(firstBatch.model, "gpt-5.5");
+  assert.strictEqual(firstBatch.reasoningEffort, "high");
+  assert.strictEqual(firstBatch.contextGuardStatus, "passed");
   assert(fs.existsSync(path.join(runRoot, firstBatch.childRunResultPath)), "child run result must exist");
   assert(fs.existsSync(path.join(runRoot, firstBatch.stdoutPath)), "child run stdout must exist");
   assert(fs.existsSync(path.join(runRoot, firstBatch.stderrPath)), "child run stderr must exist");
@@ -1073,6 +1096,9 @@ function assertImplementationChildRunArtifacts(output, fixture, runId) {
   const childResult = readJson(path.join(runRoot, firstBatch.childRunResultPath));
   assert.strictEqual(childResult.schema, "generic-repo-tool-importer.implementation-child-run-result.v1");
   assert.strictEqual(childResult.status, "child_run_completed");
+  assert.strictEqual(childResult.model, "gpt-5.5");
+  assert.strictEqual(childResult.reasoningEffort, "high");
+  assert.strictEqual(childResult.contextGuard.status, "passed");
   assert.deepStrictEqual(childResult.changedPaths, ["scripts/imported-tools/tool-tool.js"]);
   assert.deepStrictEqual(childResult.unplannedPaths, []);
   assert.strictEqual(childResult.plannedPathGate, "passed");
@@ -1137,6 +1163,53 @@ function assertImplementationChildRunLargeOutputFixture() {
     assert.strictEqual(childResult.status, "child_run_completed");
     assert(childResult.stdoutBytes > 2 * 1024 * 1024, "large child stdout must not fail with ENOBUFS");
     assert(fs.readFileSync(path.join(runRoot, childResult.stdoutPath), "utf8").includes("fake codex large-output"));
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertImplementationChildRunTokenGuardFixture() {
+  const fixture = createTempFixture("implementation-child-token-guard");
+  try {
+    const runId = "aux021-child-token-guard";
+    const { manifestPath, runRoot } = prepareImplementationWorktreeFixture(fixture, runId);
+    const binDir = writeFakeCodex(fixture.root);
+    const result = run(
+      ["--manifest", manifestPath, "--run-implementation-child-runs", "--json"],
+      repo,
+      { ...fakeCodexEnv(binDir, "success", "scripts/imported-tools/tool-tool.js"), FAKE_CODEX_USAGE_TOKENS: "150001" },
+    );
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /implementation-child-run-context-guard: fixture-analysis-batch-1:token-usage-limit-exceeded/);
+    const childRun = readJson(path.join(runRoot, "implementation", "child-run-run.json"));
+    assert.strictEqual(childRun.status, "child_runs_stopped_fail_closed_source_merge_not_started");
+    assert.strictEqual(childRun.checks.contextGuard, "failed_closed");
+    const childResult = readJson(path.join(runRoot, "implementation", "child-run-results", "fixture-analysis-batch-1.json"));
+    assert.strictEqual(childResult.status, "failed_context_guard");
+    assert.strictEqual(childResult.contextGuard.totalTokens, 150001);
+    assert.strictEqual(childResult.contextGuard.violations[0].code, "token-usage-limit-exceeded");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertImplementationChildRunOutputGuardFixture() {
+  const fixture = createTempFixture("implementation-child-output-guard");
+  try {
+    const runId = "aux021-child-output-guard";
+    const { manifestPath, runRoot } = prepareImplementationWorktreeFixture(fixture, runId);
+    const binDir = writeFakeCodex(fixture.root);
+    const result = run(
+      ["--manifest", manifestPath, "--run-implementation-child-runs", "--json"],
+      repo,
+      { ...fakeCodexEnv(binDir, "success", "scripts/imported-tools/tool-tool.js"), FAKE_CODEX_STDOUT_BYTES: String(9 * 1024 * 1024) },
+    );
+    assert.notStrictEqual(result.status, 0);
+    assert.match(result.stderr, /implementation-child-run-context-guard: fixture-analysis-batch-1:stdout-too-large/);
+    const childResult = readJson(path.join(runRoot, "implementation", "child-run-results", "fixture-analysis-batch-1.json"));
+    assert.strictEqual(childResult.status, "failed_context_guard");
+    assert(childResult.stdoutBytes > 8 * 1024 * 1024);
+    assert.strictEqual(childResult.contextGuard.violations[0].code, "stdout-too-large");
   } finally {
     removeFixture(fixture.root);
   }
@@ -2157,6 +2230,8 @@ function main() {
   assertImplementationWorktreeResumeFixture();
   assertSuccessfulImplementationChildRunFixture();
   assertImplementationChildRunLargeOutputFixture();
+  assertImplementationChildRunTokenGuardFixture();
+  assertImplementationChildRunOutputGuardFixture();
   assertCompactImporterParentOutputExcludesRuntimeState();
   assertImplementationChildRunMissingIntentFixture();
   assertImplementationChildRunUnplannedPathFixture();

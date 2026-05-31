@@ -176,6 +176,14 @@ function writeFakeCodex(root) {
       '    console.error("missing AUX-021 wrapper");',
       '    process.exit(9);',
       '  }',
+      '  if (process.argv[process.argv.indexOf("--model") + 1] !== "gpt-5.5") {',
+      '    console.error("missing gpt-5.5 writer model");',
+      '    process.exit(10);',
+      '  }',
+      '  if (process.argv[process.argv.indexOf("--reasoning-effort") + 1] !== "high") {',
+      '    console.error("missing high reasoning effort");',
+      '    process.exit(11);',
+      '  }',
       '  const match = input.match(/<child_run_intent_json>\\n([\\s\\S]*?)\\n<\\/child_run_intent_json>/);',
       '  const intent = match ? JSON.parse(match[1]) : { plannedPaths: [] };',
       '  const relative = process.env.FAKE_CODEX_WRITE_PATH || intent.plannedPaths.find((item) => /\\.js$/i.test(item)) || intent.plannedPaths[0];',
@@ -451,6 +459,8 @@ function assertBatchRecordsMissingLiveLaneAndContinues() {
           ledgerPath,
           "--target-repo",
           fixture.target,
+          "--context-percent",
+          "5",
           "--max-items",
           "2",
           "--run-id",
@@ -480,7 +490,9 @@ function assertBatchRecordsMissingLiveLaneAndContinues() {
     assert(fs.existsSync(path.join(fixture.target, output.reportPath)), "batch report must be written");
     assert(fs.existsSync(path.join(fixture.target, output.importer.manifestPath)), "batch manifest must be written");
     const manifest = JSON.parse(fs.readFileSync(path.join(fixture.target, output.importer.manifestPath), "utf8"));
-    assert.strictEqual(manifest.run.defaultModel, "gpt-5.3-codex");
+    assert.strictEqual(manifest.run.defaultModel, "gpt-5.5");
+    assert.strictEqual(manifest.implementation.codexCliInvocation.writerModel, "gpt-5.5");
+    assert.strictEqual(manifest.implementation.codexCliInvocation.reasoningEffort, "high");
     assert(fs.existsSync(path.join(fixture.target, eligiblePath)), "eligible candidate should be imported");
     assert(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]).includes(eligiblePath));
   } finally {
@@ -512,6 +524,8 @@ function assertBatchReportDoesNotEmbedHugeImporterOutput() {
           ledgerPath,
           "--target-repo",
           fixture.target,
+          "--context-percent",
+          "5",
           "--max-items",
           "1",
           "--run-id",
@@ -555,6 +569,8 @@ function assertCompactBatchParentOutputExcludesNestedRuntimeState() {
         ledgerPath,
         "--target-repo",
         fixture.target,
+        "--context-percent",
+        "5",
         "--max-items",
         "1",
         "--run-id",
@@ -610,6 +626,8 @@ function assertBatchAllBlockedWritesReportWithoutFailure() {
         ledgerPath,
         "--target-repo",
         fixture.target,
+        "--context-percent",
+        "5",
         "--max-items",
         "2",
         "--run-id",
@@ -681,6 +699,28 @@ function assertContextPressureFailsClosed() {
   }
 }
 
+function assertBatchRequiresContextPercent() {
+  const fixture = createFixture("batch-context-required");
+  try {
+    const ledgerPath = writeLedger(fixture, validLedger(fixture));
+    parseBlockedJson(
+      run([
+        "--batch",
+        "--ledger",
+        ledgerPath,
+        "--target-repo",
+        fixture.target,
+        "--max-items",
+        "1",
+        "--json",
+      ]),
+      "context-percent-required",
+    );
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertLocalOllamaPolicyFailsClosed() {
   const fixture = createFixture("local-ollama");
   try {
@@ -707,6 +747,7 @@ assertCompactBatchParentOutputExcludesNestedRuntimeState();
 assertBatchAllBlockedWritesReportWithoutFailure();
   assertForbiddenCandidatePathsFailClosed();
   assertContextPressureFailsClosed();
+  assertBatchRequiresContextPercent();
   assertLocalOllamaPolicyFailsClosed();
   console.log("SDK generic repo queue supervisor smoke: pass");
 }

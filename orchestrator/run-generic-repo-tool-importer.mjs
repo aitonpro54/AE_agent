@@ -89,12 +89,22 @@ const DEPENDENCY_PATHS = new Set([
 ]);
 const TEXT_FILE_MAX_BYTES = 256 * 1024;
 const CHILD_RUN_OUTPUT_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
+const CHILD_RUN_STDIO_GUARD_MAX_BYTES = 8 * 1024 * 1024;
 const CHILD_RUN_SUMMARY_MAX_BYTES = 64 * 1024;
+const CHILD_RUN_TOKEN_GUARD_MAX_TOKENS = 150000;
 const PROOF_ENVELOPE_MAX_BYTES = 32 * 1024;
 const PARENT_OUTPUT_MAX_BYTES = 32 * 1024;
 const RESULT_SUMMARY_MAX_ARTIFACT_PATHS = 200;
 const DEFAULT_CHILD_RUN_TIMEOUT_MS = 10 * 60 * 1000;
 const MAX_CHILD_RUN_TIMEOUT_MS = 30 * 60 * 1000;
+const GENERIC_IMPORTER_CHILD_WRITER_MODEL = "gpt-5.5";
+const GENERIC_IMPORTER_CHILD_REASONING_EFFORT = "high";
+const CHILD_RUN_MONOLITH_PATHS = new Set([
+  ".codex/handoff.md",
+  "plans/target-app-execplan.md",
+  "registry/solutions.json",
+  "scripts/solution-library-validation-smoke.js",
+]);
 const SECRET_PATTERN =
   /\b(?:[A-Z0-9]+[_-])*?(?:api[_-]?key|access[_-]?token|secret|password)\b\s*[:=]\s*["']?(?:sk-|xox|ghp_|[A-Za-z0-9_\-]{12,})/i;
 const NAMED_REPO_ASSUMPTION_PATTERN = /\bdakkshin\b/i;
@@ -400,6 +410,8 @@ function validateManifest(contract, manifest) {
     throw new Error(`manifest.implementation.codexCliInvocation.webSearch must be ${schema.implementation.codexCliInvocation.webSearch}`);
   }
   requireBoolean(codexInvocation.localOllama, "manifest.implementation.codexCliInvocation.localOllama", false);
+  assertNoLocalOllamaProvider(codexInvocation.writerModel, "manifest.implementation.codexCliInvocation.writerModel");
+  assertNoLocalOllamaProvider(codexInvocation.reasoningEffort, "manifest.implementation.codexCliInvocation.reasoningEffort");
 
   if (manifest.liveAcceptance.lock !== schema.liveAcceptance.lock) {
     throw new Error(`manifest.liveAcceptance.lock must be ${schema.liveAcceptance.lock}`);
@@ -554,6 +566,8 @@ function createSupervisorPlan(manifest, manifestHash, runRootRelative) {
       approvalPolicy: "never",
       webSearch: "disabled",
       localOllama: false,
+      writerModel: manifest.implementation?.codexCliInvocation?.writerModel || GENERIC_IMPORTER_CHILD_WRITER_MODEL,
+      reasoningEffort: childRunReasoningEffort(manifest),
       executionStarted: false,
     },
     phasePlan: [
@@ -1981,6 +1995,25 @@ function validateImplementationWorktreeInputs(manifest, plannedPaths, worktreePl
   validateSharedPathOwnership(manifest, batches);
 }
 
+function childRunTouchesMonolith(batch) {
+  return (batch.plannedPaths || []).some((plannedPath) => CHILD_RUN_MONOLITH_PATHS.has(normalizeRepoPath(plannedPath)));
+}
+
+function childRunWriterModel(manifest, batch) {
+  const configured = manifest.implementation?.codexCliInvocation?.writerModel;
+  if (configured) {
+    return configured;
+  }
+  if (childRunTouchesMonolith(batch)) {
+    return GENERIC_IMPORTER_CHILD_WRITER_MODEL;
+  }
+  return GENERIC_IMPORTER_CHILD_WRITER_MODEL;
+}
+
+function childRunReasoningEffort(manifest) {
+  return manifest.implementation?.codexCliInvocation?.reasoningEffort || GENERIC_IMPORTER_CHILD_REASONING_EFFORT;
+}
+
 function buildChildRunIntent(manifest, batch, worktreePath) {
   return {
     schema: "generic-repo-tool-importer.child-run-intent.v1",
@@ -1992,6 +2025,9 @@ function buildChildRunIntent(manifest, batch, worktreePath) {
     approvalPolicy: manifest.implementation.codexCliInvocation.approvalPolicy,
     webSearch: manifest.implementation.codexCliInvocation.webSearch,
     localOllama: false,
+    model: childRunWriterModel(manifest, batch),
+    reasoningEffort: childRunReasoningEffort(manifest),
+    modelProfile: childRunTouchesMonolith(batch) ? "writer-high-reasoning-monolith-safe" : "writer-high-reasoning",
     cwd: worktreePath,
     promptPath: batch.promptPath,
     plannedPaths: batch.plannedPaths,
@@ -2248,6 +2284,12 @@ function validateChildRunIntent({ manifest, intent, batch, worktreePath }) {
   if (intent.localOllama !== false) {
     throw new Error(`implementation-child-run-local-ollama-not-allowed: ${batch.id}`);
   }
+  if (intent.model !== childRunWriterModel(manifest, batch)) {
+    throw new Error(`implementation-child-run-model-mismatch: ${batch.id}`);
+  }
+  if (intent.reasoningEffort !== childRunReasoningEffort(manifest)) {
+    throw new Error(`implementation-child-run-reasoning-mismatch: ${batch.id}`);
+  }
   if (path.resolve(intent.cwd || "") !== worktreePath) {
     throw new Error(`implementation-child-run-cwd-mismatch: ${batch.id}`);
   }
@@ -2278,6 +2320,7 @@ function buildChildRunPrompt(intent, promptText) {
     "",
     "Hard boundaries:",
     "- Edit only the planned paths in the child-run intent.",
+    `- Use the child-run model profile recorded in the intent: model=${intent.model}, reasoning=${intent.reasoningEffort}.`,
     "- Do not create branches, commits, extra worktrees, source merges, validation runs, live AE/CEP/CDP/OpenAI CLI planner runs, package/dependency changes, push, PR, GitHub automation, or user-asset mutations.",
     "- Do not use Local/Ollama, fallback providers, or web search.",
     "- Leave changes in this detached worktree only; the parent importer will stop before any source merge application.",
@@ -2290,7 +2333,7 @@ function buildChildRunPrompt(intent, promptText) {
   ].join("\n");
 }
 
-function buildCodexChildRunInvocation(manifest, worktreePath) {
+function buildCodexChildRunInvocation(manifest, batch, worktreePath) {
   const codexArgs = [
     "exec",
     "--cd",
@@ -2305,8 +2348,13 @@ function buildCodexChildRunInvocation(manifest, worktreePath) {
     "--disable",
     "web_search",
   ];
-  if (manifest.run.defaultModel) {
-    codexArgs.push("--model", manifest.run.defaultModel);
+  const model = childRunWriterModel(manifest, batch);
+  if (model) {
+    codexArgs.push("--model", model);
+  }
+  const reasoningEffort = childRunReasoningEffort(manifest);
+  if (reasoningEffort) {
+    codexArgs.push("--reasoning-effort", reasoningEffort);
   }
   codexArgs.push("-");
   if (process.platform === "win32") {
@@ -2325,12 +2373,15 @@ function buildCodexChildRunInvocation(manifest, worktreePath) {
   };
 }
 
-function resultStatusForChildRun({ changedPaths, exitCode, error, postRunHead, preRunHead, timedOut, unplannedPaths }) {
+function resultStatusForChildRun({ changedPaths, contextGuard, exitCode, error, postRunHead, preRunHead, timedOut, unplannedPaths }) {
   if (timedOut) {
     return "failed_timeout";
   }
   if (error || exitCode !== 0) {
     return "failed_process";
+  }
+  if (contextGuard?.status === "failed") {
+    return "failed_context_guard";
   }
   if (postRunHead !== preRunHead) {
     return "failed_commit_created";
@@ -2347,6 +2398,10 @@ function assertChildRunResultPassed(result) {
   }
   if (result.status === "failed_process") {
     throw new Error(`implementation-child-run-failed: ${result.batchId}`);
+  }
+  if (result.status === "failed_context_guard") {
+    const codes = (result.contextGuard?.violations || []).map((entry) => entry.code).join(",") || "unknown";
+    throw new Error(`implementation-child-run-context-guard: ${result.batchId}:${codes}`);
   }
   if (result.status === "failed_commit_created") {
     throw new Error(`implementation-child-run-commit-created: ${result.batchId}`);
@@ -2378,7 +2433,7 @@ function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootR
   }
 
   const prompt = buildChildRunPrompt(intent, readFileSync(promptPath, "utf8"));
-  const invocation = buildCodexChildRunInvocation(manifest, worktreePath);
+  const invocation = buildCodexChildRunInvocation(manifest, batch, worktreePath);
   const timeoutMs = childRunTimeoutMs(manifest);
   const startedAt = new Date().toISOString();
   const preRunHead = runGit(worktreePath, ["rev-parse", "HEAD"], `implementation child pre-run head ${batch.id}`);
@@ -2402,6 +2457,13 @@ function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootR
   writeFileSync(path.join(runRoot, stderrPath), result.stderr || "", "utf8");
   const stdoutSummary = streamSummary(result.stdout || "");
   const stderrSummary = streamSummary(result.stderr || "");
+  const contextGuard = childRunContextGuard({
+    stderrSummary,
+    stdout: result.stdout || "",
+    stdoutSummary,
+  });
+  const model = childRunWriterModel(manifest, batch);
+  const reasoningEffort = childRunReasoningEffort(manifest);
 
   const childRunResult = {
     schema: "generic-repo-tool-importer.implementation-child-run-result.v1",
@@ -2410,6 +2472,7 @@ function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootR
     batchId: batch.id,
     status: resultStatusForChildRun({
       changedPaths,
+      contextGuard,
       error: result.error,
       exitCode: result.status,
       postRunHead,
@@ -2420,6 +2483,9 @@ function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootR
     startedAt,
     completedAt,
     timeoutMs,
+    model,
+    reasoningEffort,
+    modelProfile: intent.modelProfile || null,
     plannedPaths: batch.plannedPaths,
     changedPaths,
     unplannedPaths,
@@ -2444,6 +2510,9 @@ function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootR
     stderrBytes: stderrSummary.bytes,
     stderrTail: stderrSummary.tail,
     stderrTruncated: stderrSummary.truncated,
+    contextGuard,
+    tokenUsage: contextGuard.tokenUsage,
+    totalTokens: contextGuard.totalTokens,
     preRunHead,
     postRunHead,
     preRunWorktreeClean: true,
@@ -2473,6 +2542,9 @@ function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootR
     startedAt,
     completedAt,
     timeoutMs,
+    model,
+    reasoningEffort,
+    modelProfile: childRunResult.modelProfile,
     plannedPaths: childRunResult.plannedPaths,
     changedPaths: childRunResult.changedPaths,
     unplannedPaths: childRunResult.unplannedPaths,
@@ -2488,6 +2560,9 @@ function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootR
     stderrPath,
     stdout: stdoutSummary,
     stderr: stderrSummary,
+    contextGuard,
+    tokenUsage: contextGuard.tokenUsage,
+    totalTokens: contextGuard.totalTokens,
     preRunHead,
     postRunHead,
     preRunWorktreeClean: true,
@@ -2512,7 +2587,6 @@ function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootR
   }
   childRunResult.resultSummaryPath = childRunSummaryPath;
   writeJson(path.join(runRoot, childRunResultPath), childRunResult);
-  assertChildRunResultPassed(childRunResult);
   return { ...childRunResult, childRunResultPath, resultSummaryPath: childRunSummaryPath };
 }
 
@@ -2528,6 +2602,7 @@ function buildImplementationChildRunArtifacts(manifest, manifestHash, targetRepo
 
   const artifactPaths = [...IMPLEMENTATION_CHILD_RUN_ARTIFACTS];
   const batches = [];
+  let childRunError = null;
   for (const batch of worktreeRun.batches) {
     const childResult = runImplementationChildBatch({
       manifest,
@@ -2539,13 +2614,20 @@ function buildImplementationChildRunArtifacts(manifest, manifestHash, targetRepo
     });
     artifactPaths.push(childResult.childRunResultPath, childResult.resultSummaryPath, childResult.stdoutPath, childResult.stderrPath);
     batches.push(childResult);
+    try {
+      assertChildRunResultPassed(childResult);
+    } catch (error) {
+      childRunError = error;
+      break;
+    }
   }
 
   writeJson(path.join(runRoot, "implementation", "child-run-run.json"), {
     schema: IMPLEMENTATION_CHILD_RUN_SCHEMA,
     runId: manifest.run.runId,
     manifestHash,
-    status: "child_runs_completed_source_merge_not_started",
+    status: childRunError ? "child_runs_stopped_fail_closed_source_merge_not_started" : "child_runs_completed_source_merge_not_started",
+    stopReason: childRunError ? childRunError.message : null,
     sourceImplementationWorktreeRun: "implementation/worktree-run.json",
     worktreesCreated: true,
     branchCreated: false,
@@ -2572,10 +2654,15 @@ function buildImplementationChildRunArtifacts(manifest, manifestHash, targetRepo
       actualWorktreePath: batch.actualWorktreePath,
       actualWorktreeRelativePath: batch.actualWorktreeRelativePath,
       exitCode: batch.exitCode,
+      model: batch.model,
+      reasoningEffort: batch.reasoningEffort,
+      modelProfile: batch.modelProfile,
       stdoutPath: batch.stdoutPath,
       stderrPath: batch.stderrPath,
       stdoutBytes: batch.stdoutBytes,
       stderrBytes: batch.stderrBytes,
+      totalTokens: batch.totalTokens,
+      contextGuardStatus: batch.contextGuard?.status || null,
     })),
     checks: {
       manifestHashBinding: "passed",
@@ -2590,9 +2677,13 @@ function buildImplementationChildRunArtifacts(manifest, manifestHash, targetRepo
       liveValidation: "not_started",
       localOllama: "rejected",
       fallbackProvider: "rejected",
+      contextGuard: childRunError ? "failed_closed" : "passed",
     },
   });
 
+  if (childRunError) {
+    throw childRunError;
+  }
   return { artifactPaths, batches };
 }
 
@@ -2966,6 +3057,85 @@ function streamSummary(value, maxLines = 40) {
     tail: tailLines(text, maxLines),
     tailLineCount: Math.min(lineCount, maxLines),
     truncated: lineCount > maxLines,
+  };
+}
+
+function latestCodexUsageFromJsonl(stdout) {
+  let usage = null;
+  const lines = String(stdout || "").split(/\r?\n/).filter(Boolean);
+  for (const line of lines) {
+    try {
+      const event = JSON.parse(line);
+      if (event && event.usage && typeof event.usage === "object") {
+        usage = event.usage;
+      }
+    } catch (_error) {
+      // Child stdout can include non-JSON status lines in tests and old CLI modes.
+    }
+  }
+  return usage;
+}
+
+function firstNumericField(value, fields) {
+  for (const field of fields) {
+    const candidate = value?.[field];
+    if (Number.isFinite(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function childTokenCountFromUsage(usage) {
+  if (!usage || typeof usage !== "object") {
+    return null;
+  }
+  const explicitTotal = firstNumericField(usage, ["total_tokens", "totalTokens", "total"]);
+  if (explicitTotal !== null) {
+    return explicitTotal;
+  }
+  const input = firstNumericField(usage, ["input_tokens", "prompt_tokens", "inputTokens", "promptTokens"]) || 0;
+  const output = firstNumericField(usage, ["output_tokens", "completion_tokens", "outputTokens", "completionTokens"]) || 0;
+  const reasoning = firstNumericField(usage, ["reasoning_output_tokens", "reasoning_tokens", "reasoningTokens"]) || 0;
+  const total = input + output + reasoning;
+  return total > 0 ? total : null;
+}
+
+function childRunContextGuard({ stderrSummary, stdout, stdoutSummary }) {
+  const usage = latestCodexUsageFromJsonl(stdout);
+  const totalTokens = childTokenCountFromUsage(usage);
+  const violations = [];
+  if (totalTokens !== null && totalTokens > CHILD_RUN_TOKEN_GUARD_MAX_TOKENS) {
+    violations.push({
+      code: "token-usage-limit-exceeded",
+      actual: totalTokens,
+      limit: CHILD_RUN_TOKEN_GUARD_MAX_TOKENS,
+    });
+  }
+  if (stdoutSummary.bytes > CHILD_RUN_STDIO_GUARD_MAX_BYTES) {
+    violations.push({
+      code: "stdout-too-large",
+      actual: stdoutSummary.bytes,
+      limit: CHILD_RUN_STDIO_GUARD_MAX_BYTES,
+    });
+  }
+  if (stderrSummary.bytes > CHILD_RUN_STDIO_GUARD_MAX_BYTES) {
+    violations.push({
+      code: "stderr-too-large",
+      actual: stderrSummary.bytes,
+      limit: CHILD_RUN_STDIO_GUARD_MAX_BYTES,
+    });
+  }
+  return {
+    status: violations.length > 0 ? "failed" : "passed",
+    tokenUsage: usage,
+    totalTokens,
+    tokenLimit: CHILD_RUN_TOKEN_GUARD_MAX_TOKENS,
+    stdioByteLimit: CHILD_RUN_STDIO_GUARD_MAX_BYTES,
+    violations,
+    escalation: violations.length > 0
+      ? "stop_parent_and_write_compact_handoff_before_next_child_run"
+      : null,
   };
 }
 

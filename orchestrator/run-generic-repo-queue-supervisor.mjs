@@ -78,7 +78,7 @@ Options:
   --max-items <n>        Number of queued safe ranked candidates to plan. Default 3.
   --run-id <id>          Optional stable batch runtime id.
   --report-dir <path>    Optional report root inside target repo.
-  --context-percent <n>  Fail closed at >= 70 before any new work.
+  --context-percent <n>  Required for --batch; fail closed at >= 70 before any new work.
   --plan-only            Required; this supervisor never executes candidates.
   --batch                Process a bounded queue batch. Safe candidates with a
                         ready/not-required live gate run through importer
@@ -222,6 +222,9 @@ function parseFiniteNumber(value, label) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
     throw new Error(`${label}-invalid-number: ${value}`);
+  }
+  if (parsed < 0 || parsed > 100) {
+    throw new Error(`${label}-out-of-range: ${value}`);
   }
   return parsed;
 }
@@ -369,9 +372,18 @@ function validateEntryShape(entry, label) {
   requireObject(entry.safetySignals, `${label}.safetySignals`);
 }
 
-function contextBlockers(options) {
+function contextBlockers(options, { requireKnown = false } = {}) {
   const contextPercent = parseFiniteNumber(options.contextPercent, "context-percent");
   if (contextPercent === null) {
+    if (requireKnown) {
+      return {
+        blockers: [
+          blocker("context-percent-required", "Batch work requires an explicit --context-percent so unknown context is not treated as 0%."),
+        ],
+        contextPercent: null,
+        status: "handoff_required",
+      };
+    }
     return { blockers: [], contextPercent: null, status: "not_provided" };
   }
   if (contextPercent >= 70) {
@@ -823,7 +835,7 @@ function buildImporterManifest({ eligibleItems, ledger, runId, sourceCheckout, t
       codexCliOnly: true,
       resumable: true,
       resumeFromState: true,
-      defaultModel: "gpt-5.3-codex",
+      defaultModel: "gpt-5.5",
       webSearch: "disabled",
     },
     sourceRepo: {
@@ -889,6 +901,8 @@ function buildImporterManifest({ eligibleItems, ledger, runId, sourceCheckout, t
         approvalPolicy: "never",
         webSearch: "disabled",
         localOllama: false,
+        writerModel: "gpt-5.5",
+        reasoningEffort: "high",
       },
       reviewerPolicy: { readOnly: true },
       artifactPolicy: { runtimeOnlyUntilPromotion: true },
@@ -1189,7 +1203,7 @@ function runBatch(options, cwd = process.cwd()) {
   const runId = batchRunId(options, ledgerHash);
   const reportPath = batchReportPath(targetRepo, options, runId);
   const manifestPath = importerManifestPath(targetRepo, options, runId);
-  const context = contextBlockers(options);
+  const context = contextBlockers(options, { requireKnown: true });
   const changedPathsBefore = gitChangedPaths(targetRepo);
   const selection = selectQueuedRankedCandidatesForBatch(ledger, maxItems);
   const items = selection.selected.map((entry, index) => classifyBatchCandidate(entry, index + 1, ledger));

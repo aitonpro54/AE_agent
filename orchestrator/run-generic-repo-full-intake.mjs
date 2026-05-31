@@ -47,6 +47,8 @@ const DEFAULT_CONTEXT_BUDGET = Object.freeze({
   handoffPercent: 60,
   hardStopPercent: 70,
 });
+const MAX_NORMAL_HANDOFF_PERCENT = 80;
+const MAX_NORMAL_HARD_STOP_PERCENT = 90;
 const CONTEXT_STEP_COST = Object.freeze({
   recoveryBranch: 8,
   childRun: 10,
@@ -355,11 +357,11 @@ Options:
   --live-lane-registry <path>  Candidate live-lane template registry.
                               Defaults to ${DEFAULT_LIVE_LANE_REGISTRY}
   --report-dir <path>          Optional run root inside target repo.
-  --context-percent <n>        Stop before new work at >= 70.
+  --context-percent <n>        Required for longrun work; unknown context stops before new work.
   --soft-stop-percent <n>      Start conservative resume posture. Default ${DEFAULT_CONTEXT_BUDGET.softStopPercent}.
   --no-new-work-percent <n>    Refuse new work when current+predicted cost reaches this. Default ${DEFAULT_CONTEXT_BUDGET.noNewWorkPercent}.
-  --handoff-percent <n>        Write only compact handoff/resume artifacts at this point. Default ${DEFAULT_CONTEXT_BUDGET.handoffPercent}.
-  --hard-stop-percent <n>      Fail closed with context pressure at this point. Default ${DEFAULT_CONTEXT_BUDGET.hardStopPercent}.
+  --handoff-percent <n>        Write only compact handoff/resume artifacts at this point. Default ${DEFAULT_CONTEXT_BUDGET.handoffPercent}; normal max ${MAX_NORMAL_HANDOFF_PERCENT}.
+  --hard-stop-percent <n>      Fail closed with context pressure at this point. Default ${DEFAULT_CONTEXT_BUDGET.hardStopPercent}; normal max ${MAX_NORMAL_HARD_STOP_PERCENT}.
   --next-step-context-cost <n> Override the first predicted step cost.
   --command-timeout-ms <n>     Per-command timeout. Default ${DEFAULT_COMMAND_TIMEOUT_MS}.
   --allow-batch-mode           Explicitly approve parent-facing max-items > 1.
@@ -672,16 +674,21 @@ function contextBudgetFromOptions(options) {
   const noNewWorkPercent = parsePercent(options.noNewWorkPercent, "no-new-work-percent", DEFAULT_CONTEXT_BUDGET.noNewWorkPercent);
   const handoffPercent = parsePercent(options.handoffPercent, "handoff-percent", DEFAULT_CONTEXT_BUDGET.handoffPercent);
   const hardStopPercent = parsePercent(options.hardStopPercent, "hard-stop-percent", DEFAULT_CONTEXT_BUDGET.hardStopPercent);
+  if (handoffPercent > MAX_NORMAL_HANDOFF_PERCENT || hardStopPercent > MAX_NORMAL_HARD_STOP_PERCENT) {
+    throw new Error(`context-budget-threshold-too-high: handoff<=${MAX_NORMAL_HANDOFF_PERCENT}, hard-stop<=${MAX_NORMAL_HARD_STOP_PERCENT}`);
+  }
   if (!(softStopPercent <= noNewWorkPercent && noNewWorkPercent <= handoffPercent && handoffPercent <= hardStopPercent)) {
     throw new Error("context-budget-thresholds-out-of-order");
   }
+  const currentContextPercent = parsePercent(options.contextPercent, "context-percent", null);
   return {
-    currentContextPercent: parsePercent(options.contextPercent, "context-percent", 0),
+    contextPercentKnown: currentContextPercent !== null,
+    currentContextPercent,
     hardStopPercent,
     handoffPercent,
     noNewWorkPercent,
     overrideNextStepCost: parsePercent(options.nextStepContextCost, "next-step-context-cost", null),
-    predictedContextPercent: parsePercent(options.contextPercent, "context-percent", 0),
+    predictedContextPercent: currentContextPercent,
     softStopPercent,
   };
 }
@@ -696,6 +703,16 @@ function estimateNextStepContextCost(budget, step, fallbackCost) {
 }
 
 function checkContextBudget(budget, step, fallbackCost) {
+  if (budget.currentContextPercent === null || budget.predictedContextPercent === null) {
+    return {
+      currentContextPercent: null,
+      nextStep: step,
+      predictedNextStepCost: null,
+      predictedContextPercent: null,
+      threshold: "contextPercentUnknown",
+      action: "handoff_only",
+    };
+  }
   const predictedCost = estimateNextStepContextCost(budget, step, fallbackCost);
   const nextPercent = budget.predictedContextPercent + predictedCost;
   const decision = {
@@ -726,6 +743,14 @@ function checkContextBudget(budget, step, fallbackCost) {
   }
   budget.predictedContextPercent = nextPercent;
   return decision;
+}
+
+function nestedBatchContextPercent(budget) {
+  const value = budget.predictedContextPercent ?? budget.currentContextPercent;
+  if (value === null || value === undefined) {
+    throw new Error("context-percent-required-before-nested-batch");
+  }
+  return String(Math.min(100, Math.max(0, Math.ceil(value))));
 }
 
 function resolveOptionalPath(base, value, fallback) {
@@ -2792,6 +2817,11 @@ function compactParentReport(report) {
       path: report.resumeCardPath || null,
       sha256: report.resumeCardSha256 || null,
     },
+    contextBudget: {
+      currentContextPercent: report.contextBudget?.currentContextPercent ?? null,
+      predictedContextPercent: report.contextBudget?.predictedContextPercent ?? null,
+      lastDecision: report.contextBudget?.lastDecision || null,
+    },
     nextAction: inferParentNextAction(report, resolutionSummary, failedCandidateIds),
     compactPaths: compactPathsForParent(report),
   };
@@ -2825,7 +2855,7 @@ function createSingleCandidateLedger({ candidate, ledger, runRoot, targetRepo })
   return ledgerPath;
 }
 
-function runCandidateImport({ candidate, ledger, runId, runRoot, targetRepo }) {
+function runCandidateImport({ candidate, contextPercent, ledger, runId, runRoot, targetRepo }) {
   const singleLedgerPath = createSingleCandidateLedger({ candidate, ledger, runRoot, targetRepo });
   const retryNonce = candidate.implementation?.retryNonce || candidate.implementation?.recoveryIntent?.retryNonce || "";
   const batchRunId = safeId(
@@ -2837,6 +2867,7 @@ function runCandidateImport({ candidate, ledger, runId, runRoot, targetRepo }) {
     report = runBatch(
       {
         batch: true,
+        contextPercent,
         ledger: singleLedgerPath,
         maxItems: "1",
         reportDir,
@@ -3244,7 +3275,7 @@ function recoverChildTimeoutPatch({ candidate, runId, runRoot, targetRepo, timeo
   };
 }
 
-function tryRecoverImportFailure({ candidate, error, ledger, runId, runRoot, targetRepo, timeoutMs }) {
+function tryRecoverImportFailure({ candidate, contextPercent, error, ledger, runId, runRoot, targetRepo, timeoutMs }) {
   const message = error && error.message ? error.message : String(error || "");
   const reportPath =
     error?.report?.reportPath ||
@@ -3329,7 +3360,7 @@ function tryRecoverImportFailure({ candidate, error, ledger, runId, runRoot, tar
       retryNonce: ticket.evidence.retryNonce,
     };
     try {
-      return runCandidateImport({ candidate: retryCandidate, ledger, runId, runRoot, targetRepo });
+      return runCandidateImport({ candidate: retryCandidate, contextPercent, ledger, runId, runRoot, targetRepo });
     } catch (retryError) {
       throw childTimeoutRecoveryExhaustedError({
         affected: [candidate],
@@ -3797,7 +3828,7 @@ function importerManifestPathFromBatch(targetRepo, batch) {
   return pathFromTarget(targetRepo, manifestPath);
 }
 
-function runCandidateImporterPhase({ candidate, ledger, runId, runRoot, targetRepo }) {
+function runCandidateImporterPhase({ candidate, contextPercent, ledger, runId, runRoot, targetRepo }) {
   const singleLedgerPath = createSingleCandidateLedger({ candidate, ledger, runRoot, targetRepo });
   const retryNonce = candidate.implementation?.retryNonce || candidate.implementation?.recoveryIntent?.retryNonce || "";
   const batchRunId = safeId(
@@ -3807,6 +3838,7 @@ function runCandidateImporterPhase({ candidate, ledger, runId, runRoot, targetRe
   const prepareReport = runBatch(
     {
       batch: true,
+      contextPercent,
       ledger: singleLedgerPath,
       maxItems: "1",
       prepareOnly: true,
@@ -4327,7 +4359,14 @@ function runStrictOnePhase({
       if (candidate.implementation?.recoveryIntent?.mode === "recover_child_timeout_patch") {
         batch = recoverChildTimeoutPatch({ candidate, runId, runRoot, targetRepo, timeoutMs });
       } else {
-        batch = runCandidateImporterPhase({ candidate, ledger, runId, runRoot, targetRepo });
+        batch = runCandidateImporterPhase({
+          candidate,
+          contextPercent: nestedBatchContextPercent(contextBudget),
+          ledger,
+          runId,
+          runRoot,
+          targetRepo,
+        });
       }
       appendBindingSnapshot(runRoot, captureBindingSnapshot({
         ledgerPath,
@@ -4356,6 +4395,7 @@ function runStrictOnePhase({
         }
         recoveredBatch = tryRecoverImportFailure({
           candidate,
+          contextPercent: nestedBatchContextPercent(contextBudget),
           error,
           ledger,
           runId,
@@ -4868,7 +4908,7 @@ export function runFullIntake(options, cwd = process.cwd()) {
     targetRepo,
   }));
 
-  if (contextBudget.currentContextPercent >= contextBudget.hardStopPercent) {
+  if (contextBudget.currentContextPercent !== null && contextBudget.currentContextPercent >= contextBudget.hardStopPercent) {
     report.status = "handoff_required";
     report.ok = false;
     report.blockers.push({ code: "context-pressure", contextPercent: contextBudget.currentContextPercent });
@@ -5153,7 +5193,14 @@ export function runFullIntake(options, cwd = process.cwd()) {
       if (candidate.implementation?.recoveryIntent?.mode === "recover_child_timeout_patch") {
         batch = recoverChildTimeoutPatch({ candidate, runId, runRoot, targetRepo, timeoutMs });
       } else {
-        batch = runCandidateImport({ candidate, ledger: activeLedger, runId, runRoot, targetRepo });
+        batch = runCandidateImport({
+          candidate,
+          contextPercent: nestedBatchContextPercent(contextBudget),
+          ledger: activeLedger,
+          runId,
+          runRoot,
+          targetRepo,
+        });
       }
       appendBindingSnapshot(runRoot, captureBindingSnapshot({
         ledgerPath,
@@ -5183,6 +5230,7 @@ export function runFullIntake(options, cwd = process.cwd()) {
         }
         recoveredBatch = tryRecoverImportFailure({
           candidate,
+          contextPercent: nestedBatchContextPercent(contextBudget),
           error,
           ledger: activeLedger,
           runId,
