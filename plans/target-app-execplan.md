@@ -85,6 +85,10 @@ Codex App dev-request handoff for repository work.
   failed closed at generated-only proof read-back, so no candidates were requeued
   and the ledger still has nine `blocked_live_lane_synthesis_incomplete` entries,
   zero `queued`, and zero `queued live_lane_needed`.
+- [x] Milestone 11: Full Intaker unsafe-skip triage. The 75
+  `unsafe_skip_tool_gap` entries were grouped in
+  `plans/full-intake-unsafe-skip-triage.md`: 28 safe-next generated-only, 32 needing
+  new typed-tool contracts, and 15 approval-gated/last.
 
 ## Current Dirty State
 
@@ -93,13 +97,10 @@ new work only after a fresh context/status check.
 
 ## Next Milestone
 
-Milestone 11: choose the next bounded repair strategy. The latest blocked live-lane
-drain proved the current layer-timing and effect-property generated-only lanes are
-not sufficient: layer timing failed a start-time read-back expectation, and effect
-property failed to find the generated effect property value by read-back. Prefer a
-targeted lane-fixture repair or candidate-specific family review before retrying
-those nine entries; otherwise inspect one `failed_import` candidate at a time from
-compact evidence.
+Milestone 12: start one bounded repair slice. Best first choice is the Selection
+unsafe-skip family from `plans/full-intake-unsafe-skip-triage.md`; alternatively fix
+the layer-timing/effect-property proof lanes before retrying the nine blocked
+live-lane candidates.
 
 ## Decision Log
 
@@ -153,6 +154,10 @@ compact evidence.
   timing start-time read-back expected `0.5` and got `2.75`. The effect-property
   generated-only proof failed because the generated effect property value was not
   found by read-back.
+- Milestone 11 treated `unsafe_skip_tool_gap` as a backlog triage problem, not an
+  importer retry problem. No source merge or lane retry was run; the next useful
+  slice is Selection because it has many candidates and clear generated-only
+  read-back semantics.
 
 ## Validation
 
@@ -378,6 +383,14 @@ Milestone 10 targeted validation:
 Not run by design: source merge, importer phases, mutating live CEP/AE validation,
 broad/default CEP smoke, Local/Ollama provider validation, dependency changes,
 push/PR, old longrun, and importer `max-items > 1`.
+
+Milestone 11 targeted validation:
+
+- [x] Read durable ledger only and confirmed 75 `blocked_or_skipped` entries, all
+  `unsafe_skip_tool_gap`.
+- [x] Created `plans/full-intake-unsafe-skip-triage.md` with all 75 ids grouped into
+  28 safe-next, 32 contract-needed, and 15 approval-gated/last entries.
+- [x] No source files or runtime importer state were changed.
 
 ## Handoff
 
