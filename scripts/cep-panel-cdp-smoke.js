@@ -1791,8 +1791,17 @@ function installHardcoreAutopilotFakeExpression() {
             maxAttempts: payload.maxAttempts || 3,
             projectOwner: payload.projectOwner === true,
             reasoningEffort: payload.reasoning_effort || null,
-            rawFallbackUsed: false,
-            typedToolFailures: [],
+            rawFallbackUsed: true,
+            typedToolFailures: [
+              {
+                tool: "get_project_checkpoint_details",
+                reason: "The typed tool failed during the owner session and needs a targeted bridge fix.",
+                bundle: {
+                  startPromptFile: "logs/dev-requests/hardcore-ui-smoke/start-prompt.md",
+                  startPrompt: "Continue development from this targeted typed-tool failure. Do not assume a Codex App chat was created automatically."
+                }
+              }
+            ],
             attempts: [
               {
                 index: 1,
@@ -2708,6 +2717,11 @@ async function hardcoreAutopilotUiSmoke() {
       state.sendDisabled === false &&
       state.transcript.indexOf("Agent Hardcore: verified") >= 0 &&
       state.transcript.indexOf("Protected run: ok") >= 0 &&
+      state.transcript.indexOf("TypedTool failures:") >= 0 &&
+      state.transcript.indexOf("get_project_checkpoint_details: marked not working.") >= 0 &&
+      state.transcript.indexOf("Codex App start prompt file: logs/dev-requests/hardcore-ui-smoke/start-prompt.md") >= 0 &&
+      state.transcript.indexOf("Continue development from this targeted typed-tool failure.") >= 0 &&
+      state.transcript.indexOf("Fallback: raw ExtendScript was used after a matching dry-run gate.") >= 0 &&
       state.transcript.indexOf("Resource report: hardcore owner session") >= 0 &&
       state.transcript.indexOf("Session evidence: logs/hardcore-sessions/hardcore-ui-smoke/session.json") >= 0 &&
       state.hardcoreRequests.length === 1
@@ -2741,6 +2755,11 @@ async function hardcoreAutopilotUiSmoke() {
         allowMutations: payload.allowMutations,
         autoEditSession: payload.autoEditSession,
         autoPromoteKnowledge: payload.autoPromoteKnowledge
+      },
+      typedToolHandoff: {
+        markedNotWorking: finished.transcript.indexOf("get_project_checkpoint_details: marked not working.") >= 0,
+        startPromptFile: finished.transcript.indexOf("Codex App start prompt file:") >= 0,
+        noAutoChatClaim: finished.transcript.indexOf("Do not assume a Codex App chat was created automatically.") >= 0
       },
       transcriptTail: finished.transcript.slice(-2000)
     }, null, 2));

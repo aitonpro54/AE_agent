@@ -49,15 +49,19 @@ Codex App dev-request handoff for repository work.
   only `panel.js`, clearing only this extension's CEP cache while preserving Local
   Storage, and the targeted live self-test smoke proved `checkModels=0` with no
   `ollama-local` probe.
+- [x] Milestone 6: Agent Hardcore typed-tool handoff proof. Failed TypedTools in the
+  Hardcore transcript now name the `Codex App start prompt`, and the targeted live
+  Hardcore UI smoke proves the typed tool is marked not working, the start prompt is
+  shown, and no automatic Codex App dev chat is implied.
 
 ## Current Dirty State
 
-No known pre-existing dirty recovery state remains after Milestone 5. Continue with
+No known pre-existing dirty recovery state remains after Milestone 6. Continue with
 new work only after a fresh context/status check.
 
 ## Next Milestone
 
-Milestone 6: resume normal target-app progression from this compact baseline with a
+Milestone 7: resume normal target-app progression from this compact baseline with a
 new narrow, reviewable task. Do not read archives/runtime reports by default, and keep
 the same guardrails: no Local/Ollama, broad/default CEP smoke, dependency/package
 changes, push/PR, old longrun, or importer `max-items > 1` without explicit approval.
@@ -85,6 +89,9 @@ changes, push/PR, old longrun, or importer `max-items > 1` without explicit appr
 - The installed-panel validation gap was closed with the sync helper instead of the
   full installer, because only tracked CEP file drift was present and full
   PlayerDebugMode/install work was unnecessary.
+- Agent Hardcore transcript copy should say `Codex App start prompt` for typed-tool
+  failure handoffs. The panel prepares a manual continuation prompt; it does not claim
+  that a Codex App dev chat was created automatically.
 
 ## Validation
 
@@ -155,6 +162,31 @@ dependency/package changes, push/PR, old longrun, real importer runs with
 `max-items > 1`, live CEP/AE mutation, and the full local smoke suite because this
 milestone changed no source behavior beyond syncing the already validated installed
 CEP panel bundle.
+
+Milestone 6 targeted validation:
+
+- [x] `node --check cep-panel/panel.js` passed.
+- [x] `node --check scripts/cep-panel-cdp-smoke.js` passed.
+- [x] `git diff --check` passed with existing CRLF normalization warnings only.
+- [x] `npm.cmd run check:rules` passed.
+- [x] `node scripts/cep-sync-health.js --check` first reported only `panel.js`
+  drift; `node scripts/cep-sync-health.js --sync --check` copied only `panel.js`;
+  post-sync `node scripts/cep-sync-health.js --check` passed.
+- [x] `node scripts/cep-panel-cdp-smoke.js inspect` passed against the installed
+  panel.
+- [x] `node scripts/cep-panel-cdp-smoke.js connector-status-smoke` passed.
+- [x] `node scripts/cep-panel-cdp-smoke.js hardcore-autopilot-ui-smoke` passed and
+  proved `marked not working`, `Codex App start prompt file`, and the no-auto-chat
+  start prompt claim.
+- [x] Required local smoke scripts passed: provider contract, Solution Library
+  registry/candidate/promotion/retrieval/validation, project intent memory, plan
+  classification, plan repair, semantic verification, reliability suite smoke,
+  ChatGPT connector, provider API, prompt optimization, bridge-only smoke, and
+  `scripts/smoke-test.js`.
+
+Not run by design: broad/default CEP smoke, Local/Ollama provider validation,
+dependency/package changes, push/PR, old longrun, real importer runs with
+`max-items > 1`, and live CEP/AE mutation.
 
 ## Handoff
 

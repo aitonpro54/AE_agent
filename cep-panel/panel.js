@@ -3062,9 +3062,9 @@
         var bundle = failure.bundle || {};
         lines.push("- " + (failure.tool || "typed tool") + ": marked not working.");
         if (failure.reason) lines.push("   reason: " + failure.reason);
-        if (bundle.startPromptFile) lines.push("   Codex App prompt file: " + bundle.startPromptFile);
+        if (bundle.startPromptFile) lines.push("   Codex App start prompt file: " + bundle.startPromptFile);
         if (bundle.startPrompt) {
-          lines.push("   Codex App prompt:");
+          lines.push("   Codex App start prompt:");
           lines.push(String(bundle.startPrompt).slice(0, 1400));
         }
       }
