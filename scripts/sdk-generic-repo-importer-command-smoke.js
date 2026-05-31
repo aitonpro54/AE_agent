@@ -111,7 +111,7 @@ function validManifest(fixture, runId = "aux015-valid") {
       codexCliOnly: true,
       resumable: true,
       resumeFromState: true,
-      defaultModel: "gpt-5.5",
+      defaultModel: "gpt-5.3-codex",
       webSearch: "disabled",
     },
     sourceRepo: {
@@ -333,6 +333,7 @@ function assertValidRunArtifacts(output, fixture, runId) {
   const normalized = readJson(path.join(runRoot, "manifest.normalized.json"));
   assert.strictEqual(normalized._meta.manifestHash, state.manifestHash);
   assert.strictEqual(normalized._meta.sourceContractPath.endsWith("aux-014-generic-repo-importer-contract.json"), true);
+  assert.strictEqual(normalized.run.defaultModel, "gpt-5.3-codex");
 
   const supervisorPlan = readJson(path.join(runRoot, "supervisor-plan.json"));
   assert.strictEqual(supervisorPlan.schema, "generic-repo-tool-importer.supervisor-plan.v1");

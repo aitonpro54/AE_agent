@@ -97,6 +97,12 @@ async function assertCommitAwareAllowlist() {
 }
 
 async function main() {
+  const runnerModule = await import(
+    pathToFileURL(path.join(repo, "orchestrator/run-ae-agent-cleanup-conveyor.mjs")).href
+  );
+  assert.strictEqual(runnerModule.DEFAULT_CHILD_MODEL, "gpt-5.3-codex");
+  assert.strictEqual(runnerModule.DEFAULT_CHILD_REASONING, "high");
+
   assert.strictEqual(
     artifact.commandRunner.packageScript,
     "codex:orchestrator:ae-agent-cleanup-conveyor",

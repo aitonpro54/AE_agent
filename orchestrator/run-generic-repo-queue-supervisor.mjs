@@ -823,7 +823,7 @@ function buildImporterManifest({ eligibleItems, ledger, runId, sourceCheckout, t
       codexCliOnly: true,
       resumable: true,
       resumeFromState: true,
-      defaultModel: "gpt-5.5",
+      defaultModel: "gpt-5.3-codex",
       webSearch: "disabled",
     },
     sourceRepo: {

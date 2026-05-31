@@ -479,6 +479,8 @@ function assertBatchRecordsMissingLiveLaneAndContinues() {
     assert(output.importer.resultSummary.resultSummaryPath.endsWith("result-summary.json"));
     assert(fs.existsSync(path.join(fixture.target, output.reportPath)), "batch report must be written");
     assert(fs.existsSync(path.join(fixture.target, output.importer.manifestPath)), "batch manifest must be written");
+    const manifest = JSON.parse(fs.readFileSync(path.join(fixture.target, output.importer.manifestPath), "utf8"));
+    assert.strictEqual(manifest.run.defaultModel, "gpt-5.3-codex");
     assert(fs.existsSync(path.join(fixture.target, eligiblePath)), "eligible candidate should be imported");
     assert(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]).includes(eligiblePath));
   } finally {

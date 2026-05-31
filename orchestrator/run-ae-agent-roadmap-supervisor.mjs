@@ -24,6 +24,9 @@ export const DEFAULT_MAX_MINUTES = 180;
 export const HARD_MAX_ITEMS = 5;
 export const HARD_MAX_MINUTES = 300;
 export const DEFAULT_TAIL_LINES = 80;
+export const COST_CONTROL_MODEL = "gpt-5.3-codex";
+export const WRITER_REASONING_EFFORT = "high";
+export const REVIEWER_REASONING_EFFORT = "medium";
 const CHILD_OUTPUT_MAX_BUFFER_BYTES = 30 * 1024 * 1024;
 const { boundedSpawnSyncResult, writeProcessLog } = boundedProcess;
 const REVIEWER_LIMIT = 2;
@@ -1386,8 +1389,10 @@ function runRoadmapSdkWriter(cwd, item) {
     "never",
     "--web-search",
     "disabled",
+    "--model",
+    COST_CONTROL_MODEL,
     "--reasoning",
-    "high",
+    WRITER_REASONING_EFFORT,
     "--prompt",
     prompt,
   ];
@@ -1413,10 +1418,12 @@ function runRoadmapCliWriter(cwd, item) {
     "--sandbox",
     "workspace-write",
     "--ephemeral",
+    "--model",
+    COST_CONTROL_MODEL,
     "-c",
     "approval_policy=\"never\"",
     "-c",
-    "model_reasoning_effort=\"high\"",
+    `model_reasoning_effort="${WRITER_REASONING_EFFORT}"`,
     "-c",
     "sandbox_workspace_write.network_access=false",
     "--disable",
@@ -1454,10 +1461,12 @@ function runWriterChild(cwd, runtime, item, engine) {
         "--sandbox",
         "workspace-write",
         "--ephemeral",
+        "--model",
+        COST_CONTROL_MODEL,
         "-c",
         "approval_policy=\"never\"",
         "-c",
-        "model_reasoning_effort=\"high\"",
+        `model_reasoning_effort="${WRITER_REASONING_EFFORT}"`,
         "-c",
         "sandbox_workspace_write.network_access=false",
         "--disable",
@@ -1484,8 +1493,10 @@ function runWriterChild(cwd, runtime, item, engine) {
       "never",
       "--web-search",
       "disabled",
+      "--model",
+      COST_CONTROL_MODEL,
       "--reasoning",
-      "high",
+      WRITER_REASONING_EFFORT,
       "--prompt",
       prompt,
     ];
@@ -1566,8 +1577,12 @@ function buildReviewerInvocation(cwd, prompt, engine) {
         "--sandbox",
         "read-only",
         "--ephemeral",
+        "--model",
+        COST_CONTROL_MODEL,
         "-c",
         "approval_policy=\"never\"",
+        "-c",
+        `model_reasoning_effort="${REVIEWER_REASONING_EFFORT}"`,
         "-c",
         "sandbox_workspace_write.network_access=false",
         "--disable",
@@ -1584,6 +1599,10 @@ function buildReviewerInvocation(cwd, prompt, engine) {
         "never",
         "--web-search",
         "disabled",
+        "--model",
+        COST_CONTROL_MODEL,
+        "--reasoning",
+        REVIEWER_REASONING_EFFORT,
         "--prompt",
         prompt,
       ];

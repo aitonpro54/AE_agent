@@ -174,6 +174,12 @@ function assertLiveValidationDirtyGitBlock() {
 }
 
 async function main() {
+  const runnerModule = await import(
+    pathToFileURL(path.join(repo, "orchestrator/run-ae-agent-feature-conveyor.mjs")).href
+  );
+  assert.strictEqual(runnerModule.DEFAULT_CHILD_MODEL, "gpt-5.3-codex");
+  assert.strictEqual(runnerModule.DEFAULT_CHILD_REASONING, "high");
+
   assert.strictEqual(queue.commandRunner.packageScript, "codex:orchestrator:ae-agent-feature-conveyor");
   assert.strictEqual(queue.commandRunner.sdkThreadCreatedByDryRun, false);
   assert.strictEqual(queue.commandRunner.executionApprovedNow, true);

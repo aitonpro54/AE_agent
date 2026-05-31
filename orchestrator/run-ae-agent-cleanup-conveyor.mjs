@@ -10,6 +10,8 @@ const DEFAULT_QUEUE_PATH =
   ".codex-audit/sdk-milestone-conveyor/173-ae-agent-cleanup-conveyor-queue.json";
 const DEFAULT_EXECUTION_LOG_DIR = ".codex-runtime/sdk/cleanup-conveyor-logs";
 const DEFAULT_TAIL_LINES = 80;
+export const DEFAULT_CHILD_MODEL = "gpt-5.3-codex";
+export const DEFAULT_CHILD_REASONING = "high";
 const CHILD_OUTPUT_MAX_BUFFER_BYTES = 50 * 1024 * 1024;
 
 export const EXECUTE_APPROVAL_TEXT =
@@ -35,8 +37,8 @@ Options:
   --execute                  Start one AI workspace-write turn with the selected engine.
   --execute-sdk              Start one workspace-write Codex SDK turn. Omit for dry-run.
   --approval-text <text>     Required exact approval text for --execute-sdk.
-  --model <name>             Optional Codex model override.
-  --reasoning <effort>       minimal, low, medium, high, or xhigh. Default: high.
+  --model <name>             Optional Codex model override. Default: ${DEFAULT_CHILD_MODEL}.
+  --reasoning <effort>       minimal, low, medium, high, or xhigh. Default: ${DEFAULT_CHILD_REASONING}.
   --codex-path <path>        Optional Codex executable override.
   --log-dir <path>           Full child stdout/stderr log directory.
                              Must stay under .codex-runtime/.
@@ -377,15 +379,14 @@ function buildSdkCommand(options, prompt) {
     "never",
     "--web-search",
     "disabled",
+    "--model",
+    options.model || DEFAULT_CHILD_MODEL,
     "--reasoning",
-    options.reasoning || "high",
+    options.reasoning || DEFAULT_CHILD_REASONING,
     "--prompt",
     prompt,
   ];
 
-  if (options.model) {
-    args.splice(args.length - 2, 0, "--model", options.model);
-  }
   if (options.codexPath) {
     args.splice(args.length - 2, 0, "--codex-path", options.codexPath);
   }
@@ -401,13 +402,13 @@ function buildCliCommand(options) {
     "--sandbox",
     "workspace-write",
     "--ephemeral",
+    "--model",
+    options.model || DEFAULT_CHILD_MODEL,
     "-c",
     "approval_policy=\"never\"",
+    "-c",
+    `model_reasoning_effort="${options.reasoning || DEFAULT_CHILD_REASONING}"`,
   ];
-
-  if (options.model) {
-    args.push("--model", options.model);
-  }
 
   args.push("-");
   return args;

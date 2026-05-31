@@ -2,6 +2,8 @@
 
 ## Progress
 
+- [x] Orchestrator cost-control model profile: bounded roadmap writer children, read-only roadmap reviewers, feature/cleanup conveyor workspace-write children, and generic repo importer child manifests now default to `gpt-5.3-codex` (`high` for writers, `medium` for read-only reviewers), while Full UI Agent live acceptance and Agent Hardcore remain on their explicit `gpt-5.5` paths.
+
 - [x] Render queue recipe registry schema follow-up: after both render queue tails were imported and committed, full validation caught that the new `outputSettings` inputs used non-schema type `render-output-settings`. Updated both render queue recipe registry entries to use the existing allowed `object` input type while preserving the reviewed output-settings description.
 
 - [x] Full intake tool-project-add-selected-compositions-to-render-queue: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-project-add-selected-compositions-to-render-queue); live gate ready, importer batch full-intake-kyletmartinez-b7adcecb32-import, commit recorded after candidate commit.
@@ -1025,6 +1027,8 @@
 
 ## Decision Log
 
+- 2026-05-31: Cost-control profile keeps `gpt-5.5` for Full UI Agent live acceptance, Agent Hardcore, and safety-critical product decisions. Bounded workspace-write writer children and generic importer child runs use `gpt-5.3-codex` with `high` reasoning; read-only roadmap reviewers use `gpt-5.3-codex` with `medium` reasoning. Ambiguous or failing 5.3 output must fail closed through the existing validation gates and be manually escalated to `gpt-5.5`, not auto-retried inside a dirty workspace.
+
 - 2026-05-30: Render queue recipe `outputSettings` are represented as registry input type `object`, not a new custom `render-output-settings` schema type. This keeps the solution registry contract stable while the recipe text still constrains the object to reviewed render settings template, output module template and/or output path fields.
 
 - 2026-05-27: Generic full-intake orchestrator processed `Project/Add_Selected_Compositions_To_Render_Queue.jsx` as `tool-project-add-selected-compositions-to-render-queue`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-project-add-selected-compositions-to-render-queue).
@@ -1346,6 +1350,7 @@
 
 | Check | Current requirement | Latest result |
 | --- | --- | --- |
+| Orchestrator cost-control model profile | Required to reduce routine orchestrator spend without weakening live acceptance: safe bounded child writer/reviewer runs and generic importer manifests should default to `gpt-5.3-codex`, while generated-only Full UI Agent live lanes and safety-critical arbitration stay on `gpt-5.5`. | Passed on 2026-05-31: touched JS `node --check`; targeted smokes for roadmap supervisor readiness/command, feature conveyor command, cleanup conveyor command, generic repo queue supervisor, generic repo importer command, and generic repo full-intake; `npm.cmd run check:rules`; all configured AGENTS non-live smoke scripts; read-only CEP/CDP `inspect` and `connector-status-smoke`; `.codex/handoff.md` updated; `git diff --check` passed with only normal LF-to-CRLF working-copy warnings. No Local/Ollama, broad/default CEP smoke, mutating live run, dependency change, push, PR, or automatic 5.5 retry was introduced. |
 | Render queue recipe registry schema follow-up | Required because post-import validation caught a non-schema custom input type in the two new render queue recipe registry entries. | Passed on 2026-05-30: changed `outputSettings.type` from `render-output-settings` to allowed `object` in both render queue recipe entries; `node --check scripts/solution-library-validation-smoke.js`; JSON parse for `registry/solutions.json`; `npm.cmd run check:rules`; all configured AGENTS non-live smoke scripts; `node scripts/cep-panel-cdp-smoke.js inspect`; `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; `git diff --check` passed with only CRLF normalization warnings. |
 | Full intake tool-project-add-selected-compositions-to-render-queue | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-b7adcecb32-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 | Full intake tool-project-add-labeled-items-to-render-queue | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-9b5da17cf7-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
@@ -1776,7 +1781,7 @@
 ### Milestone 204
 
 - Added `roadmap-sdk` runner support to `orchestrator/run-ae-agent-roadmap-supervisor.mjs`.
-- `roadmap-sdk` writer children run directly through `orchestrator/codex-sdk-orchestrator.mjs` with workspace-write, approval `never`, web search disabled, reasoning `high`, and model default.
+- `roadmap-sdk` writer children run directly through `orchestrator/codex-sdk-orchestrator.mjs` with workspace-write, approval `never`, web search disabled, reasoning `high`, and the current cost-control default model `gpt-5.3-codex`.
 - Supervisor approval text now binds repo path, queue path, `queueSha256`, all queue item ids, max items/minutes, auto-commit/no-push/no-dependency policy, and generated-only live bindings.
 - Updated the M203 duplicate-layers queue to use `roadmap-sdk` and self-contained `allowedActions` / `forbiddenActions`, so future execution no longer needs lower feature-conveyor item activation.
 - Generated-only live validation can be authorized by the single supervisor approval only when the queue item declares `generatedOnlyLive=true`, `noUserAssetMutation=true`, and the exact command appears in `liveBindings`; `--live-approval-text` remains the fallback for older or unbound live items.
