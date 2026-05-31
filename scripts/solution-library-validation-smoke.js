@@ -55,6 +55,7 @@ const IMPORTED_ADVISORY_IDS = [
   "duplicate-selected-layer-typed-plan",
   "add-assorted-composition-guides-typed-plan",
   "add-background-layer-typed-plan",
+  "add-camera-with-controller-typed-plan",
   "change-nested-composition-background-typed-plan",
   "cycle-composition-background-color-typed-plan",
   "enable-collapse-transformations-typed-plan",
@@ -1127,6 +1128,32 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Background_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /AUX-041/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+    } else if (id === "add-camera-with-controller-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "create_camera_with_controller", "get_layer_details"],
+        `${id}: imported camera-controller workflow should stay on the narrow camera rig typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: camera-controller workflow must be mutating.`);
+      assert(text.includes("create_camera_with_controller"), `${id}: recipe should use the camera-controller typed tool.`);
+      assert(text.includes("camera.parent"), `${id}: recipe should require camera parent read-back evidence.`);
+      assert(text.includes("3D null controller"), `${id}: recipe should preserve 3D controller scope.`);
+      assert(text.includes("separateControllerPositionDimensions"), `${id}: recipe should preserve reviewed controller separation guidance.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer read-back evidence.`);
+      assert(text.includes("existing user layers"), `${id}: recipe should preserve existing-user-layer guard guidance.`);
+      assert(text.includes("multi-camera switch systems"), `${id}: recipe should fail closed for multi-camera switch semantics.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_active_comp/.test(step)), `${id}: verification must include active-comp evidence for active workflows.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must include explicit comp evidence option.`);
+      assert(solution.verificationRecipe.steps.some((step) => /create_camera_with_controller/.test(step)), `${id}: verification must include camera-controller creation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include camera/controller read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /camera\.parent/.test(item)), `${id}: verification must require camera parent evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /threeDLayer:true/.test(item)), `${id}: verification must require controller 3D evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /positionDimensionsSeparated:true/.test(item)), `${id}: verification must require separated-position evidence.`);
+      assert(solution.notes.some((note) => /existing user-layer parenting/.test(note)), `${id}: notes must reject existing user-layer re-parenting.`);
+      assert(solution.notes.some((note) => /separate typed-tool contracts/.test(note)), `${id}: notes must require separate contracts for broader camera rig semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Add_Camera_With_Controller/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /AUX-099/.test(entry.evidence)), `${id}: promotion evidence should mention typed contract proof.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "change-nested-composition-background-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2244,6 +2271,21 @@ function assertActualRetrieval(registry) {
   assert(backgroundLayerPromptSection.includes("moveToEnd"), "prompt section should preserve exact stack-semantics warning.");
   assert(!/run_extendscript/i.test(backgroundLayerPromptSection), "background layer guidance should not recommend raw ExtendScript.");
 
+  const cameraWithControllerRetrieval = retrieveSolutionHints("Add a generated camera with a generated null controller in an explicit composition using create_camera_with_controller, then read back camera parent linkage and controller 3D/separated-position state without re-parenting existing user layers.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(cameraWithControllerRetrieval.ok, true);
+  assert(ids(cameraWithControllerRetrieval).includes("add-camera-with-controller-typed-plan"), "camera-controller advisory recipe should surface for camera rig prompts.");
+  const cameraWithControllerPromptSection = formatSolutionHintsForPrompt(cameraWithControllerRetrieval);
+  assert(cameraWithControllerPromptSection.includes("Add Camera With Controller Typed Plan"), "prompt section should include camera-controller advisory title.");
+  assert(cameraWithControllerPromptSection.includes("create_camera_with_controller"), "prompt section should prefer create_camera_with_controller for camera-controller workflows.");
+  assert(cameraWithControllerPromptSection.includes("get_layer_details"), "prompt section should require layer read-back for camera/controller workflows.");
+  assert(cameraWithControllerPromptSection.includes("camera.parent"), "prompt section should preserve parent-link verification guidance.");
+  assert(cameraWithControllerPromptSection.includes("multi-camera switch"), "prompt section should preserve multi-camera fail-closed warning.");
+  assert(!/run_extendscript/i.test(cameraWithControllerPromptSection), "camera-controller guidance should not recommend raw ExtendScript.");
+
   const nestedCompositionBackgroundRetrieval = retrieveSolutionHints("Change the selected nested precomp source composition background color by updating only its bgColor, then read back the nested source comp.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -2600,6 +2642,7 @@ function assertActualRetrieval(registry) {
       duplicateSelectedLayer: ids(duplicateSelectedLayerRetrieval),
       assortedGuides: ids(assortedGuidesRetrieval),
       backgroundLayer: ids(backgroundLayerRetrieval),
+      cameraWithController: ids(cameraWithControllerRetrieval),
       nestedCompositionBackground: ids(nestedCompositionBackgroundRetrieval),
       activeCompositionBackgroundCycle: ids(activeCompositionBackgroundCycleRetrieval),
       collapseTransformations: ids(collapseTransformationsRetrieval),

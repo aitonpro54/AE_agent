@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-05-30",
+  "updatedAt": "2026-05-31",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -1966,6 +1966,158 @@
         "This recipe creates a generated full-comp shape-layer background, not persistent native background-layer stack management; require a separate typed-tool contract for expression-driven auto-resize, arbitrary existing-layer moveToEnd, or exact source JSX semantics.",
         "Use generated-prefix layer names and never delete, rename, relink or reorder existing user layers as part of this workflow.",
         "Do not use this recipe for template batch changes, layer cleanup, masks, expressions, source relinking, render queue items or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "add-camera-with-controller-typed-plan",
+      "title": "Add Camera With Controller Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "camera",
+        "controller",
+        "camera-rig",
+        "parenting",
+        "three-d-null",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Create one generated camera and 3D null controller rig in an explicit composition with typed parent/controller read-back.",
+        "appliesWhen": [
+          "The user asks to add a camera with controller, create a camera rig, or parent a camera to a null controller in a composition.",
+          "A safe adaptation is acceptable: one explicit comp target, one create_camera_with_controller step, and explicit camera/controller read-back evidence."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Explicit target composition identity proven by current active-comp or comp-detail typed evidence before mutation."
+        },
+        {
+          "name": "cameraName",
+          "type": "string",
+          "required": false,
+          "description": "Optional generated camera layer name."
+        },
+        {
+          "name": "controllerName",
+          "type": "string",
+          "required": false,
+          "description": "Optional generated controller null layer name."
+        },
+        {
+          "name": "pointOfInterest",
+          "type": "array",
+          "required": false,
+          "description": "Optional camera point of interest as [x, y] or [x, y, z]."
+        },
+        {
+          "name": "cameraPosition",
+          "type": "array",
+          "required": false,
+          "description": "Optional camera position as [x, y, z]."
+        },
+        {
+          "name": "zoom",
+          "type": "number",
+          "required": false,
+          "description": "Optional camera zoom in pixels."
+        },
+        {
+          "name": "startTime",
+          "type": "number",
+          "required": false,
+          "description": "Optional layer start time in seconds for both created layers."
+        },
+        {
+          "name": "duration",
+          "type": "number",
+          "required": false,
+          "description": "Optional layer duration in seconds for both created layers."
+        },
+        {
+          "name": "separateControllerPositionDimensions",
+          "type": "boolean",
+          "required": false,
+          "description": "Whether the controller Position dimensions should be separated; defaults to true."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow creates exactly one generated camera plus one generated 3D null controller in one explicit composition.",
+        "The camera-parenting contract is bounded to camera.parent -> generated controller and optional separated controller Position dimensions.",
+        "Current typed tools can prove camera/controller creation and read-back via create_camera_with_controller and get_layer_details.",
+        "Existing user layers and project items are preserved; this recipe does not re-parent existing user layers.",
+        "Multi-camera orchestration, existing-layer re-parenting, expression-controller rigs, recursive/global camera setup and exact source JSX behavior remain typed-tool gaps."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/add-camera-with-controller-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "create_camera_with_controller",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Verify camera.parent -> controller; fail closed for multi-camera switch; read 3D/separated controller state.",
+        "steps": [
+          "Run get_active_comp for active-comp workflows, or get_comp_details for explicit comp targeting before mutation.",
+          "Require reviewed comp identity, camera/controller names, camera options, timing values and separateControllerPositionDimensions behavior before confirmation.",
+          "Run create_camera_with_controller once with explicit comp targeting and reviewed inputs.",
+          "Run get_layer_details for the returned cameraLayer and controllerLayer indices to verify parenting and controller state.",
+          "Fail closed if existing-layer re-parenting, multi-camera switch orchestration, expression-controller rigs, recursive/global traversal or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "create_camera_with_controller returns comp identity plus concrete cameraLayer and controllerLayer evidence.",
+          "The mutating step shows camera.parent bound to the generated controller identity.",
+          "Post-run get_layer_details read-back confirms camera identity and the same parent controller identity.",
+          "Post-run get_layer_details read-back confirms controller threeDLayer:true and positionDimensionsSeparated:true when requested.",
+          "Post-run evidence shows no unrelated existing-layer re-parenting, no source relinking, and no render queue or non-generated user-asset mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-compositions-add-camera-with-controller generic repository importer as advisory typed-plan coverage over create_camera_with_controller.",
+          "AUX-099 already added and validated production typed camera-controller contract coverage with generated-only OpenAI CLI read-back/semantic proof."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-05-31",
+          "from": "generic-repo-importer-tool-compositions-add-camera-with-controller",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Add_Camera_With_Controller.jsx into existing typed tools as explicit create_camera_with_controller guidance plus get_layer_details parent/controller read-back; no source JSX copied. Current contract remains fail-closed for existing-layer re-parenting, multi-camera switch rigs, expression-controller orchestration, recursive/global camera setup and exact source JSX semantics. AUX-099 proved the typed camera-controller contract and parent importer owns validation plus live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Use this recipe for one explicit generated camera-controller rig only; do not mutate existing user-layer parenting.",
+        "Require explicit comp targeting and reviewed camera/controller settings before create_camera_with_controller mutation.",
+        "Require separate typed-tool contracts for existing-layer re-parenting, multi-camera switch systems, expression-controller networks, recursive/global camera automation, or exact source semantics.",
+        "Do not use this recipe for render queue edits, project save/saveAs, dependency/package changes, source relinking, or raw script execution."
       ]
     },
     {

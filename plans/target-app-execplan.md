@@ -35,26 +35,22 @@ Codex App dev-request handoff for repository work.
 - [x] Milestone 2: Baseline reset active docs. The oversized active plan was archived,
   this compact baseline became the only active plan, archive/runtime-read guardrails
   were added, and active plan/handoff size guards were established.
+- [x] Milestone 3: Camera-controller recovery review. The existing dirty recovery
+  patch was salvaged as a typed-plan advisory recipe, and compact prompt guidance now
+  preserves `camera.parent` verification plus the `multi-camera switch` fail-closed
+  warning.
 
-## Current Dirty State Not Owned By Milestone 2
+## Current Dirty State
 
-These files were already dirty before the baseline reset and are intentionally left
-untouched for the next recovery milestone:
-
-- `registry/solutions.json`
-- `scripts/solution-library-validation-smoke.js`
-- `recipes/add-camera-with-controller-typed-plan.md`
-
-The pre-existing validation issue is still the camera-controller recovery patch:
-`node scripts/solution-library-validation-smoke.js` fails because the prompt section
-does not preserve parent-link verification guidance.
+No known pre-existing dirty recovery state remains after Milestone 3. Continue with
+new work only after a fresh context/status check.
 
 ## Next Milestone
 
-Milestone 3: review and salvage the existing camera-controller recovery patch from
-the dirty files above. Fix or reject that recovery change with targeted validation.
-Do not resume old longrun/importer work, do not use Local/Ollama, and do not run
-broad/default CEP smoke.
+Milestone 4: resume normal target-app progression from this compact baseline with a
+new narrow, reviewable task. Do not read archives/runtime reports by default, and keep
+the same guardrails: no Local/Ollama, broad/default CEP smoke, dependency/package
+changes, push/PR, old longrun, or importer `max-items > 1` without explicit approval.
 
 ## Decision Log
 
@@ -65,6 +61,14 @@ broad/default CEP smoke.
   handoff/status first and only open old reports by exact path when needed.
 - Existing camera-controller recovery changes are separate from Milestone 2 and remain
   outside this commit except for being named as the next review target.
+- Milestone 3 accepted the camera-controller recovery change rather than rejecting it:
+  the recipe stays bounded to one generated camera plus one generated 3D null
+  controller, uses `create_camera_with_controller` and `get_layer_details`, rejects
+  existing-layer re-parenting and broader camera-rig semantics, and records that no
+  source JSX was copied.
+- The parent-link failure was a compact prompt-guidance issue, not a missing recipe
+  safety rule. The registry `verificationRecipe.summary` was shortened so retrieval
+  prompt text includes both `camera.parent` and `multi-camera switch`.
 
 ## Validation
 
@@ -79,6 +83,18 @@ Milestone 2 targeted validation:
 
 The failing smoke is not caused by this documentation reset and remains the next
 milestone's target.
+
+Milestone 3 targeted validation:
+
+- [x] `node --check scripts/solution-library-validation-smoke.js` passed.
+- [x] `node scripts/solution-registry-smoke.js` passed.
+- [x] `node scripts/solution-retrieval-smoke.js` passed.
+- [x] `node scripts/solution-library-validation-smoke.js` passed.
+- [x] `git diff --check -- registry/solutions.json scripts/solution-library-validation-smoke.js recipes/add-camera-with-controller-typed-plan.md` passed with existing CRLF normalization warnings only.
+
+Not run by design for this targeted recovery review: Local/Ollama, broad/default CEP
+smoke, live CEP/AE mutation, dependency/package changes, push/PR, old longrun, and
+real importer runs with `max-items > 1`.
 
 ## Handoff
 
