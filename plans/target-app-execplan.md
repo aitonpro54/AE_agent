@@ -53,6 +53,15 @@ Codex App dev-request handoff for repository work.
   Hardcore transcript now name the `Codex App start prompt`, and the targeted live
   Hardcore UI smoke proves the typed tool is marked not working, the start prompt is
   shown, and no automatic Codex App dev chat is implied.
+- [x] Milestone 7: Full Intaker bounded onion-skinning tail review. Compact ledger
+  status showed the old remaining six as five `queued` candidates plus the already
+  reviewed camera-controller recovery entry. The first queued candidate,
+  `tool-compositions-toggle-onion-skinning`, was advanced through strict one-phase
+  `select_candidate`, `prove_or_register_live_lane`, and `run_importer_phase`.
+  Its registered generated-only live lane was ready, but the importer stopped before
+  implementation with `implementation-child-run-failed:
+  queue-batch-1-5fc7d26bd2`; the candidate is now terminal `failed_import`, leaving
+  four queued candidates and zero `queued live_lane_needed`.
 
 ## Current Dirty State
 
@@ -61,10 +70,10 @@ new work only after a fresh context/status check.
 
 ## Next Milestone
 
-Milestone 7: resume normal target-app progression from this compact baseline with a
-new narrow, reviewable task. Do not read archives/runtime reports by default, and keep
-the same guardrails: no Local/Ollama, broad/default CEP smoke, dependency/package
-changes, push/PR, old longrun, or importer `max-items > 1` without explicit approval.
+Milestone 8: continue the new bounded Full Intaker loop with one remaining queued
+candidate, preferably another already registered generated-only typed-tool lane. Start
+with compact status/ledger/proof commands and keep `max-items 1`; do not read archives
+or large runtime reports without a precise reason.
 
 ## Decision Log
 
@@ -92,6 +101,14 @@ changes, push/PR, old longrun, or importer `max-items > 1` without explicit appr
 - Agent Hardcore transcript copy should say `Codex App start prompt` for typed-tool
   failure handoffs. The panel prepares a manual continuation prompt; it does not claim
   that a Codex App dev chat was created automatically.
+- For the resumed Full Intaker work, the camera-controller recovery ledger entry is
+  treated as historically stale relative to Milestone 3's reviewed commit, while the
+  remaining actionable old tails are the current `queued` and `failed_import` ledger
+  entries.
+- `tool-compositions-toggle-onion-skinning` was selected because it was first in the
+  queue and already had a registered generated-only `toggle_onion_skinning` live lane.
+  Since implementation planning failed before any source merge or live run, no CEP/AE
+  mutation or OpenAI CLI live acceptance lane was started in this milestone.
 
 ## Validation
 
@@ -187,6 +204,36 @@ Milestone 6 targeted validation:
 Not run by design: broad/default CEP smoke, Local/Ollama provider validation,
 dependency/package changes, push/PR, old longrun, real importer runs with
 `max-items > 1`, and live CEP/AE mutation.
+
+Milestone 7 targeted validation:
+
+- [x] `git status --short --branch --untracked-files=all` started and ended clean on
+  `road-map-2.0`.
+- [x] `node orchestrator/full-intake-status.mjs --run-id full-intake-kyletmartinez
+  --compact --event-limit 8 --batch-limit 1` showed
+  `tool-compositions-toggle-onion-skinning -> failed_import`.
+- [x] `node orchestrator/full-intake-ledger-summary.mjs --compact` showed
+  `queued:4`, `failed_import:12`, and `Queued live_lane_needed: 0`.
+- [x] `node orchestrator/full-intake-proof.mjs --run-id full-intake-kyletmartinez
+  --compact-json` showed phase `run_importer_phase`, status `failed_import`,
+  `changedPathCount:0`, and `contractComplete:false`.
+- [x] No JavaScript files were touched, so no `node --check` target was required.
+- [x] `git diff --check` passed with existing CRLF normalization warnings only.
+- [x] `npm.cmd run check:rules` passed.
+- [x] Required local smoke scripts passed: provider contract, Solution Library
+  registry/candidate/promotion/retrieval/validation, project intent memory, plan
+  classification, plan repair, semantic verification, reliability suite smoke,
+  ChatGPT connector, provider API, prompt optimization, bridge-only smoke, and
+  `scripts/smoke-test.js`.
+- [x] Read-only live connectivity checks passed:
+  `node scripts/cep-panel-cdp-smoke.js inspect` and
+  `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`.
+
+Not run by design: mutating live CEP/AE validation and OpenAI CLI generated-only lane,
+because the candidate failed during importer implementation planning before any source
+merge or live rerun requirement. Broad/default CEP smoke, Local/Ollama provider
+validation, dependency changes, push/PR, old longrun, and importer `max-items > 1`
+remain prohibited.
 
 ## Handoff
 
