@@ -39,15 +39,20 @@ Codex App dev-request handoff for repository work.
   patch was salvaged as a typed-plan advisory recipe, and compact prompt guidance now
   preserves `camera.parent` verification plus the `multi-camera switch` fail-closed
   warning.
+- [x] Milestone 4: Provider self-test guardrail hardening. The CEP provider
+  self-test now uses setup/readiness-only checks with `checkModels=0`, keeps
+  Local/Ollama visible as a manual `Detect Ollama` / `Check model` path, and smoke
+  coverage now asserts that the shared self-test button does not probe Local/Ollama
+  or refresh provider model lists.
 
 ## Current Dirty State
 
-No known pre-existing dirty recovery state remains after Milestone 3. Continue with
+No known pre-existing dirty recovery state remains after Milestone 4. Continue with
 new work only after a fresh context/status check.
 
 ## Next Milestone
 
-Milestone 4: resume normal target-app progression from this compact baseline with a
+Milestone 5: resume normal target-app progression from this compact baseline with a
 new narrow, reviewable task. Do not read archives/runtime reports by default, and keep
 the same guardrails: no Local/Ollama, broad/default CEP smoke, dependency/package
 changes, push/PR, old longrun, or importer `max-items > 1` without explicit approval.
@@ -69,6 +74,9 @@ changes, push/PR, old longrun, or importer `max-items > 1` without explicit appr
 - The parent-link failure was a compact prompt-guidance issue, not a missing recipe
   safety rule. The registry `verificationRecipe.summary` was shortened so retrieval
   prompt text includes both `camera.parent` and `multi-camera switch`.
+- The provider self-test is a lightweight setup/auth preflight, not a model catalog
+  refresh or Local/Ollama detector. The explicit `Check model` action and Local
+  `Detect Ollama` control remain the opt-in paths for those checks.
 
 ## Validation
 
@@ -95,6 +103,29 @@ Milestone 3 targeted validation:
 Not run by design for this targeted recovery review: Local/Ollama, broad/default CEP
 smoke, live CEP/AE mutation, dependency/package changes, push/PR, old longrun, and
 real importer runs with `max-items > 1`.
+
+Milestone 4 targeted validation:
+
+- [x] `node --check cep-panel/panel.js` passed.
+- [x] `node --check scripts/cep-panel-cdp-smoke.js` passed.
+- [x] `npm.cmd run check:rules` passed after plain `npm run check:rules` was blocked
+  by PowerShell `npm.ps1` ExecutionPolicy.
+- [x] Required local smoke scripts passed: provider contract, Solution Library
+  registry/candidate/promotion/retrieval/validation, project intent memory, plan
+  classification, plan repair, semantic verification, reliability suite smoke,
+  ChatGPT connector, provider API, prompt optimization, bridge-only smoke, and
+  `scripts/smoke-test.js`.
+- [x] `git diff --check` passed with existing CRLF normalization warnings only.
+- [x] `node scripts/cep-panel-cdp-smoke.js inspect` passed against the installed CEP
+  panel.
+- [x] `node scripts/cep-panel-cdp-smoke.js connector-status-smoke` passed.
+
+Not run by design: broad/default CEP smoke, Local/Ollama provider validation,
+dependency/package changes, push/PR, old longrun, real importer runs with
+`max-items > 1`, and live CEP mutation. The targeted
+`provider-self-test-smoke` was not run against the installed panel because the
+installed `%AppData%` CEP bundle was older than the worktree and syncing/installing
+the panel plus clearing CEP cache was not explicitly approved in this turn.
 
 ## Handoff
 

@@ -882,6 +882,7 @@ function stateExpression() {
       state: row.querySelector(".self-test-state") ? row.querySelector(".self-test-state").textContent : "",
       detail: row.querySelector(".self-test-detail") ? row.querySelector(".self-test-detail").textContent : ""
     })),
+    providerSelfTestReadinessUrls: (window.__codexProviderSelfTestReadinessUrls || []).slice(),
     model: document.getElementById("agentModel") ? document.getElementById("agentModel").value : "",
     modelOptions: Array.from(document.querySelectorAll("#agentModel option")).map((option) => ({ value: option.value, text: option.textContent })),
     setupTitle: document.getElementById("agentSetupTitle") ? document.getElementById("agentSetupTitle").textContent : "",
@@ -1243,6 +1244,7 @@ function installProviderSelfTestFakeExpression() {
   return `(function () {
     var OriginalXHR = window.__codexOriginalProviderSelfTestXHR || window.XMLHttpRequest;
     window.__codexOriginalProviderSelfTestXHR = OriginalXHR;
+    window.__codexProviderSelfTestReadinessUrls = [];
     function queryValue(url, name) {
       var match = new RegExp("[?&]" + name + "=([^&]*)").exec(String(url || ""));
       return match ? decodeURIComponent(match[1].replace(/\\+/g, " ")) : "";
@@ -1306,6 +1308,7 @@ function installProviderSelfTestFakeExpression() {
     function readinessFor(url) {
       var agentId = queryValue(url, "agentId");
       var model = queryValue(url, "model") || "smoke-model";
+      var checkModels = queryValue(url, "checkModels") !== "0";
       if (agentId === "openai-api") {
         return {
           checkedAt: "2026-05-15T00:00:00.000Z",
@@ -1365,6 +1368,20 @@ function installProviderSelfTestFakeExpression() {
         };
       }
       if (agentId === "claude-api") {
+        if (!checkModels) {
+          return {
+            checkedAt: "2026-05-15T00:00:00.000Z",
+            model: model,
+            configured: true,
+            reachable: null,
+            modelAvailable: true,
+            modelSource: "not_checked",
+            canChat: true,
+            status: "ready_unverified",
+            error: null,
+            agent: { id: "claude-api", label: "Claude", apiKeyEnv: "ANTHROPIC_API_KEY", requiresApiKey: true }
+          };
+        }
         return {
           checkedAt: "2026-05-15T00:00:00.000Z",
           model: model,
@@ -1437,7 +1454,11 @@ function installProviderSelfTestFakeExpression() {
       var self = this;
       var urlText = String(this._url || "");
       var fakeAgents = urlText.indexOf("/agents?") >= 0 || urlText.slice(-7) === "/agents";
-      var fakeReadiness = urlText.indexOf("/agents/readiness") >= 0 ? readinessFor(this._url) : null;
+      var fakeReadiness = null;
+      if (urlText.indexOf("/agents/readiness") >= 0) {
+        window.__codexProviderSelfTestReadinessUrls.push(urlText);
+        fakeReadiness = readinessFor(this._url);
+      }
       if (fakeAgents) {
         setTimeout(function () {
           self.readyState = 4;
@@ -2940,6 +2961,10 @@ async function providerSelfTestSmoke() {
 
     const tested = await waitFor(send, "provider self-test diagnostics", (state) => {
       const rows = selfTestRowsByKey(state);
+      const readinessUrls = state.providerSelfTestReadinessUrls || [];
+      const setupOnlyReadiness = readinessUrls.length === 5 &&
+        readinessUrls.every((url) => String(url).indexOf("checkModels=0") >= 0) &&
+        readinessUrls.every((url) => String(url).indexOf("agentId=ollama-local") < 0);
       return rows["openai-api"] &&
         rows["openai-api"].state === "Setup" &&
         rows["openai-api"].detail.indexOf("OPENAI_API_KEY") >= 0 &&
@@ -2952,14 +2977,15 @@ async function providerSelfTestSmoke() {
         rows["gemini-api"].state === "Setup" &&
         rows["gemini-api"].detail.indexOf("GEMINI_API_KEY") >= 0 &&
         rows["claude-api"] &&
-        rows["claude-api"].state === "Model missing" &&
-        rows["claude-api"].detail.indexOf("model list") >= 0 &&
+        rows["claude-api"].state === "Ready" &&
+        rows["claude-api"].detail.indexOf("model list was not refreshed") >= 0 &&
         rows["openrouter"] &&
         rows["openrouter"].state === "Setup" &&
         rows["openrouter"].detail.indexOf("OPENROUTER_API_KEY") >= 0 &&
         rows["ollama-local"] &&
-        rows["ollama-local"].state === "Offline" &&
-        rows["ollama-local"].detail.indexOf("Ollama is offline for CEP smoke") >= 0 &&
+        rows["ollama-local"].state === "Manual" &&
+        rows["ollama-local"].detail.indexOf("Detect Ollama") >= 0 &&
+        setupOnlyReadiness &&
         state.selfTestButtonDisabled === false &&
         state.apiKeyValue === "";
     }, 15000);
@@ -2967,7 +2993,8 @@ async function providerSelfTestSmoke() {
     console.log(JSON.stringify({
       ok: true,
       page: { title: page.title, url: page.url },
-      selfTestRows: tested.selfTestRows
+      selfTestRows: tested.selfTestRows,
+      providerSelfTestReadinessUrls: tested.providerSelfTestReadinessUrls
     }, null, 2));
   } finally {
     if (backup) {

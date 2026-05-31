@@ -127,7 +127,7 @@
     { key: "gemini-api", label: "Gemini", agentId: "gemini-api" },
     { key: "claude-api", label: "Claude", agentId: "claude-api" },
     { key: "openrouter", label: "OpenRouter", agentId: "openrouter" },
-    { key: "ollama-local", label: "Local/Ollama", agentId: "ollama-local" }
+    { key: "ollama-local", label: "Local/Ollama", agentId: "ollama-local", manualOnly: true }
   ];
   var WORKFLOW_PRESETS = [
     {
@@ -736,7 +736,11 @@
     var providerError = readiness.providerError || responseAgent.providerError || null;
     var detail = "";
     if (readiness.canChat === true) {
-      detail = "Model " + (readiness.model || selfTestModel(agent) || "-") + " ready";
+      if (readiness.modelSource === "not_checked") {
+        detail = "Setup ready for " + (readiness.model || selfTestModel(agent) || "-") + "; model list was not refreshed.";
+      } else {
+        detail = "Model " + (readiness.model || selfTestModel(agent) || "-") + " ready";
+      }
       if (typeof readiness.modelCount === "number") {
         detail += " - " + readiness.modelCount + " models";
       }
@@ -771,6 +775,15 @@
   }
 
   function baselineSelfTestResult(spec) {
+    if (spec && spec.manualOnly) {
+      return {
+        key: spec.key,
+        label: spec.label,
+        status: "Manual",
+        tone: "",
+        detail: "Use Detect Ollama or Check model when you want to probe 127.0.0.1:11434."
+      };
+    }
     var agent = findAgent(spec.agentId);
     if (!agent) {
       return {
@@ -813,7 +826,7 @@
       label: spec.label,
       status: "Not checked",
       tone: "",
-      detail: "Checks setup and model availability for " + (selfTestModel(agent) || "the default model") + "."
+      detail: "Checks setup/auth readiness for " + (selfTestModel(agent) || "the default model") + " without refreshing provider model lists."
     };
   }
 
@@ -857,7 +870,7 @@
   function providerReadinessPath(agent, model) {
     return "/agents/readiness?agentId=" + encodeURIComponent(agent.id) +
       "&model=" + encodeURIComponent(model) +
-      "&checkModels=1&freeOnly=" + (freeModelsOnlyEl.checked ? "1" : "0");
+      "&checkModels=0&freeOnly=" + (freeModelsOnlyEl.checked ? "1" : "0");
   }
 
   function runProviderSelfTestAt(index) {
@@ -871,6 +884,12 @@
     }
 
     var spec = PROVIDER_SELF_TESTS[index];
+    if (spec.manualOnly) {
+      providerSelfTestResults[spec.key] = baselineSelfTestResult(spec);
+      renderProviderSelfTest();
+      runProviderSelfTestAt(index + 1);
+      return;
+    }
     var agent = findAgent(spec.agentId);
     if (!agent) {
       providerSelfTestResults[spec.key] = baselineSelfTestResult(spec);
@@ -929,7 +948,7 @@
     if (providerSelfTestInFlight || readinessInFlight || chatInFlight) return;
     providerSelfTestInFlight = true;
     providerSelfTestResults = {};
-    setAgentStatus("Testing providers...");
+    setAgentStatus("Testing provider setup...");
     updateProviderSelfTestButton();
     renderProviderSelfTest();
     runProviderSelfTestAt(0);
