@@ -92,6 +92,11 @@ Codex App dev-request handoff for repository work.
 - [x] Milestone 12: Selection typed-tool/lane prep. Added bounded
   `set_layer_selection`, semantic/fixture coverage, and scoped
   `selection-generated-only`; live acceptance and retry still need approval.
+- [x] Milestone 13: Selection live acceptance and scoped retry. With explicit user
+  approval, the generated-only OpenAI CLI Selection lane passed after restarting the
+  stale bridge daemon process. Exactly the 11 Selection `unsafe_skip_tool_gap` ids
+  were requeued through the scoped resolver, then each reached `live_lane_ready` and
+  failed closed during `run_importer_phase` before source merge or commit.
 
 ## Current Dirty State
 
@@ -100,8 +105,11 @@ new work only after a fresh context/status check.
 
 ## Next Milestone
 
-Milestone 13: with explicit approval, run only the Selection generated-only OpenAI
-CLI live lane, then scoped bounded retry for the 11 Selection unsafe-skip candidates.
+Milestone 14: compactly review the 11 Selection `failed_import` child-run failures
+from Milestone 13 and decide whether a narrow importer recovery patch is warranted;
+do not run live lanes, old longrun, unscoped retry, Local/Ollama, broad/default CEP
+smoke, dependency changes, push/PR, or source merge outside a scoped importer flow
+without explicit approval.
 
 ## Decision Log
 
@@ -161,208 +169,23 @@ CLI live lane, then scoped bounded retry for the 11 Selection unsafe-skip candid
   read-back semantics.
 - Milestone 12 uses explicit layer indices plus optional expected names for selection
   mutation, and only allows unsafe-skip requeue when scoped ids are provided.
+- Milestone 13 treated the first failed Selection live acceptance as stale daemon
+  drift, not a tool-design failure: repository and installed CEP files already had
+  `set_layer_selection`, but the running bridge process had to be restarted before
+  the panel planner recognized it.
+- The Selection resolver grouped all 11 scoped unsafe-skip ids into one
+  `selection-generated-only` family. The family proof passed, so the entries were
+  reclassified/requeued, but importer implementation child runs failed closed before
+  any source merge.
 
 ## Validation
 
-Milestone 2 targeted validation:
-
-- [x] `git diff --check` passed with existing CRLF normalization warnings.
-- [x] `node scripts/solution-registry-smoke.js` passed.
-- [x] `node scripts/solution-retrieval-smoke.js` passed.
-- [ ] `node scripts/solution-library-validation-smoke.js` failed on the pre-existing
-  camera-controller recovery patch: `prompt section should preserve parent-link
-  verification guidance`.
-
-The failing smoke is not caused by this documentation reset and remains the next
-milestone's target.
-
-Milestone 3 targeted validation:
-
-- [x] `node --check scripts/solution-library-validation-smoke.js` passed.
-- [x] `node scripts/solution-registry-smoke.js` passed.
-- [x] `node scripts/solution-retrieval-smoke.js` passed.
-- [x] `node scripts/solution-library-validation-smoke.js` passed.
-- [x] `git diff --check -- registry/solutions.json scripts/solution-library-validation-smoke.js recipes/add-camera-with-controller-typed-plan.md` passed with existing CRLF normalization warnings only.
-
-Not run by design for this targeted recovery review: Local/Ollama, broad/default CEP
-smoke, live CEP/AE mutation, dependency/package changes, push/PR, old longrun, and
-real importer runs with `max-items > 1`.
-
-Milestone 4 targeted validation:
-
-- [x] `node --check cep-panel/panel.js` passed.
-- [x] `node --check scripts/cep-panel-cdp-smoke.js` passed.
-- [x] `npm.cmd run check:rules` passed after plain `npm run check:rules` was blocked
-  by PowerShell `npm.ps1` ExecutionPolicy.
-- [x] Required local smoke scripts passed: provider contract, Solution Library
-  registry/candidate/promotion/retrieval/validation, project intent memory, plan
-  classification, plan repair, semantic verification, reliability suite smoke,
-  ChatGPT connector, provider API, prompt optimization, bridge-only smoke, and
-  `scripts/smoke-test.js`.
-- [x] `git diff --check` passed with existing CRLF normalization warnings only.
-- [x] `node scripts/cep-panel-cdp-smoke.js inspect` passed against the installed CEP
-  panel.
-- [x] `node scripts/cep-panel-cdp-smoke.js connector-status-smoke` passed.
-
-Not run by design: broad/default CEP smoke, Local/Ollama provider validation,
-dependency/package changes, push/PR, old longrun, real importer runs with
-`max-items > 1`, and live CEP mutation. The targeted
-`provider-self-test-smoke` was not run against the installed panel because the
-installed `%AppData%` CEP bundle was older than the worktree and syncing/installing
-the panel plus clearing CEP cache was not explicitly approved in this turn.
-
-Milestone 5 targeted validation:
-
-- [x] Pre-sync `node scripts/cep-sync-health.js --check` failed as expected with only
-  `panel.js` different between repo and the installed CEP panel.
-- [x] `node scripts/cep-sync-health.js --sync --check` passed; copied 1 file
-  (`panel.js`), skipped 3 same files, cleared 4 extension CEP cache folders, and
-  preserved Local Storage.
-- [x] Post-sync `node scripts/cep-sync-health.js --check` passed.
-- [x] `node scripts/cep-panel-cdp-smoke.js inspect` passed against the installed
-  panel.
-- [x] `node scripts/cep-panel-cdp-smoke.js provider-self-test-smoke` passed with 5
-  readiness URLs, all `checkModels=0`, and no `agentId=ollama-local`.
-- [x] `node scripts/cep-panel-cdp-smoke.js connector-status-smoke` passed.
-- [x] `git diff --check` passed with existing CRLF normalization warnings only.
-
-Not run by design: broad/default CEP smoke, Local/Ollama provider validation,
-dependency/package changes, push/PR, old longrun, real importer runs with
-`max-items > 1`, live CEP/AE mutation, and the full local smoke suite because this
-milestone changed no source behavior beyond syncing the already validated installed
-CEP panel bundle.
-
-Milestone 6 targeted validation:
-
-- [x] `node --check cep-panel/panel.js` passed.
-- [x] `node --check scripts/cep-panel-cdp-smoke.js` passed.
-- [x] `git diff --check` passed with existing CRLF normalization warnings only.
-- [x] `npm.cmd run check:rules` passed.
-- [x] `node scripts/cep-sync-health.js --check` first reported only `panel.js`
-  drift; `node scripts/cep-sync-health.js --sync --check` copied only `panel.js`;
-  post-sync `node scripts/cep-sync-health.js --check` passed.
-- [x] `node scripts/cep-panel-cdp-smoke.js inspect` passed against the installed
-  panel.
-- [x] `node scripts/cep-panel-cdp-smoke.js connector-status-smoke` passed.
-- [x] `node scripts/cep-panel-cdp-smoke.js hardcore-autopilot-ui-smoke` passed and
-  proved `marked not working`, `Codex App start prompt file`, and the no-auto-chat
-  start prompt claim.
-- [x] Required local smoke scripts passed: provider contract, Solution Library
-  registry/candidate/promotion/retrieval/validation, project intent memory, plan
-  classification, plan repair, semantic verification, reliability suite smoke,
-  ChatGPT connector, provider API, prompt optimization, bridge-only smoke, and
-  `scripts/smoke-test.js`.
-
-Not run by design: broad/default CEP smoke, Local/Ollama provider validation,
-dependency/package changes, push/PR, old longrun, real importer runs with
-`max-items > 1`, and live CEP/AE mutation.
-
-Milestone 7 targeted validation:
-
-- [x] `git status --short --branch --untracked-files=all` started and ended clean on
-  `road-map-2.0`.
-- [x] `node orchestrator/full-intake-status.mjs --run-id full-intake-kyletmartinez
-  --compact --event-limit 8 --batch-limit 1` showed
-  `tool-compositions-toggle-onion-skinning -> failed_import`.
-- [x] `node orchestrator/full-intake-ledger-summary.mjs --compact` showed
-  `queued:4`, `failed_import:12`, and `Queued live_lane_needed: 0`.
-- [x] `node orchestrator/full-intake-proof.mjs --run-id full-intake-kyletmartinez
-  --compact-json` showed phase `run_importer_phase`, status `failed_import`,
-  `changedPathCount:0`, and `contractComplete:false`.
-- [x] No JavaScript files were touched, so no `node --check` target was required.
-- [x] `git diff --check` passed with existing CRLF normalization warnings only.
-- [x] `npm.cmd run check:rules` passed.
-- [x] Required local smoke scripts passed: provider contract, Solution Library
-  registry/candidate/promotion/retrieval/validation, project intent memory, plan
-  classification, plan repair, semantic verification, reliability suite smoke,
-  ChatGPT connector, provider API, prompt optimization, bridge-only smoke, and
-  `scripts/smoke-test.js`.
-- [x] Read-only live connectivity checks passed:
-  `node scripts/cep-panel-cdp-smoke.js inspect` and
-  `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`.
-
-Not run by design: mutating live CEP/AE validation and OpenAI CLI generated-only lane,
-because the candidate failed during importer implementation planning before any source
-merge or live rerun requirement. Broad/default CEP smoke, Local/Ollama provider
-validation, dependency changes, push/PR, old longrun, and importer `max-items > 1`
-remain prohibited.
-
-Milestone 8 targeted validation:
-
-- [x] `git status --short --branch --untracked-files=all` started clean on
-  `road-map-2.0`.
-- [x] `node orchestrator/run-generic-repo-full-intake.mjs --ledger
-  .codex-runtime/sdk/generic-repo-importer/kyletmartinez-after-effects-scripts-intake/queue-ledger.json
-  --run-id full-intake-kyletmartinez --max-items 1 --resolution-candidate-ids
-  tool-keyframes-fill-in-keyframes --context-percent 20 --compact-json` was run
-  three times, one strict phase per invocation.
-- [x] `node orchestrator/full-intake-status.mjs --run-id full-intake-kyletmartinez
-  --compact --event-limit 8 --batch-limit 1` showed
-  `tool-keyframes-fill-in-keyframes -> failed_import`.
-- [x] `node orchestrator/full-intake-ledger-summary.mjs --compact` showed
-  `queued:3`, `failed_import:13`, and `Queued live_lane_needed: 0`.
-- [x] `node orchestrator/full-intake-proof.mjs --run-id full-intake-kyletmartinez
-  --compact-json` showed phase `run_importer_phase`, status `failed_import`,
-  `changedPathCount:0`, and `contractComplete:false`.
-- [x] No JavaScript files were touched, so no `node --check` target was required.
-- [x] `git diff --check` passed with existing CRLF normalization warnings only.
-- [x] `npm.cmd run check:rules` passed.
-- [x] Required local smoke scripts passed: provider contract, Solution Library
-  registry/candidate/promotion/retrieval/validation, project intent memory, plan
-  classification, plan repair, semantic verification, reliability suite smoke,
-  ChatGPT connector, provider API, prompt optimization, bridge-only smoke, and
-  `scripts/smoke-test.js`.
-- [x] Read-only live connectivity checks passed:
-  `node scripts/cep-panel-cdp-smoke.js inspect` and
-  `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`.
-
-Note: the first `node scripts/plan-repair-smoke.js` attempt failed with a transient
-bridge health `socket hang up`; the immediate targeted rerun passed.
-
-Not run by design: mutating live CEP/AE validation and OpenAI CLI generated-only
-lane, because the candidate failed during importer implementation planning before
-any source merge or live rerun requirement. Broad/default CEP smoke, Local/Ollama
-provider validation, dependency changes, push/PR, old longrun, and importer
-`max-items > 1` remain prohibited.
-
-Milestone 9 targeted validation:
-
-- [x] `git status --short --branch --untracked-files=all` started clean on
-  `road-map-2.0`.
-- [x] Compact status/ledger/proof checks were run before the queue drain.
-- [x] `node orchestrator/run-generic-repo-full-intake.mjs --ledger
-  .codex-runtime/sdk/generic-repo-importer/kyletmartinez-after-effects-scripts-intake/queue-ledger.json
-  --run-id full-intake-kyletmartinez --max-items 1 --resolution-candidate-ids
-  <candidate> --context-percent 20 --compact-json` was run three strict phases each
-  for `tool-keyframes-keyframe-current-value-from-expression`,
-  `tool-keyframes-set-spacial-in-tanget`, and
-  `tool-properties-separate-size-dimensions`.
-- [x] Final `node orchestrator/full-intake-status.mjs --run-id
-  full-intake-kyletmartinez --compact --event-limit 8 --batch-limit 1` showed
-  `tool-properties-separate-size-dimensions -> failed_import`.
-- [x] Final `node orchestrator/full-intake-ledger-summary.mjs --compact` showed
-  `failed_import:16`, no `queued` count, and `Queued live_lane_needed: 0`.
-- [x] Final queued-entry check showed `queued=0`.
-- [x] Final `node orchestrator/full-intake-proof.mjs --run-id
-  full-intake-kyletmartinez --compact-json` showed phase `run_importer_phase`,
-  status `failed_import`, `changedPathCount:0`, and `contractComplete:false`.
-- [x] No JavaScript files were touched, so no `node --check` target was required.
-- [x] `git diff --check` passed with existing CRLF normalization warnings only.
-- [x] `npm.cmd run check:rules` passed.
-- [x] Required local smoke scripts passed: provider contract, Solution Library
-  registry/candidate/promotion/retrieval/validation, project intent memory, plan
-  classification, plan repair, semantic verification, reliability suite smoke,
-  ChatGPT connector, provider API, prompt optimization, bridge-only smoke, and
-  `scripts/smoke-test.js`.
-- [x] Read-only live connectivity checks passed:
-  `node scripts/cep-panel-cdp-smoke.js inspect` and
-  `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`.
-
-Not run by design: mutating live CEP/AE validation and OpenAI CLI generated-only
-lane, because all three candidates failed during importer implementation planning
-before any source merge or live rerun requirement. Broad/default CEP smoke,
-Local/Ollama provider validation, dependency changes, push/PR, old longrun, and
-importer `max-items > 1` remain prohibited.
+Milestones 2-9 targeted validation is archived in
+`plans/archive/target-app-execplan-history-through-2026-05-31.md`. Compact outcome:
+the active baseline reset, provider/CEP validation work, Hardcore handoff proof, and
+bounded Full Intaker queue drain all completed with the documented guardrails; no
+Local/Ollama, broad/default CEP smoke, old longrun, dependency changes, push/PR, or
+`max-items > 1` importer run was used without approval.
 
 Milestone 10 targeted validation:
 
@@ -398,6 +221,25 @@ Milestone 11 targeted validation:
 Milestone 12 targeted validation: touched JS `node --check`, registry JSON parse,
 `npm.cmd run check:rules`, required local smoke suite, `sdk-generic-repo-full-intake`,
 `git diff --check`, and read-only CEP checks passed. Selection live lane/retry not run.
+
+Milestone 13 targeted validation:
+
+- [x] Initial Selection live lane failed closed because the running bridge daemon did
+  not yet expose `set_layer_selection` to the panel validator.
+- [x] `node scripts/cep-sync-health.js --check` showed installed CEP files in sync.
+- [x] Restarted only the local `bridge-daemon.js` process from this repo.
+- [x] `node scripts/cep-panel-cdp-smoke.js inspect` confirmed the panel reconnected.
+- [x] `node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-selection-openai-cli-smoke`
+  passed: planner accepted 8 steps / 5 mutating, dry run passed, protected run
+  passed, semantic verification passed, and generated cleanup completed.
+- [x] Scoped Full Intaker retry used exactly the 11 Selection ids from
+  `plans/full-intake-unsafe-skip-triage.md` with `--max-items 1`, scoped
+  `--resolution-candidate-ids`, and `--allow-self-improvement-lane-synthesis`.
+- [x] All 11 Selection ids were requeued, reached `live_lane_ready`, then failed
+  closed as `failed_import` during `run_importer_phase`; no source merge or commit
+  was produced by the importer.
+- [x] Compact status/proof showed `completed_no_candidates`, `changedPathCount:0`,
+  `unplannedPathCount:0`, and zero related processes.
 
 ## Handoff
 
