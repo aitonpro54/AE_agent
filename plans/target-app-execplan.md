@@ -69,6 +69,14 @@ Codex App dev-request handoff for repository work.
   implementation with `implementation-child-run-failed:
   queue-batch-1-75b0df2dec`; the candidate is now terminal `failed_import`, leaving
   three queued candidates and zero `queued live_lane_needed`.
+- [x] Milestone 9: Full Intaker remaining queue drain. At the user's request, the
+  remaining queue was completed in one work block while preserving strict one-phase
+  `max-items 1` runs per candidate. `tool-keyframes-keyframe-current-value-from-expression`,
+  `tool-keyframes-set-spacial-in-tanget`, and
+  `tool-properties-separate-size-dimensions` all had ready generated-only live lanes,
+  then stopped before implementation with `implementation-child-run-failed`
+  terminal `failed_import` results. The durable ledger now has zero `queued`
+  candidates and zero `queued live_lane_needed`.
 
 ## Current Dirty State
 
@@ -77,10 +85,10 @@ new work only after a fresh context/status check.
 
 ## Next Milestone
 
-Milestone 9: continue the new bounded Full Intaker loop with one remaining queued
-candidate, preferably `tool-keyframes-keyframe-current-value-from-expression`. Start
-with compact status/ledger/proof commands and keep `max-items 1`; do not read archives
-or large runtime reports without a precise reason.
+Milestone 10: choose the next recovery strategy for the Full Intaker tail now that
+the durable ledger has zero queued candidates. Prefer a targeted inspection/repair
+path for one `failed_import` candidate at a time, starting from compact evidence and
+avoiding archives or large runtime reports without a precise reason.
 
 ## Decision Log
 
@@ -120,6 +128,11 @@ or large runtime reports without a precise reason.
   with no `live_lane_needed` backlog. Since implementation planning failed before any
   source merge or live run, no CEP/AE mutation or OpenAI CLI live acceptance lane was
   started in this milestone.
+- The remaining queue was drained in Milestone 9 because the user explicitly asked
+  for the whole queue. The safety shape stayed bounded: three separate candidate
+  transactions, each preserving `max-items 1` and strict phase boundaries. No source
+  merge, live rerun, CEP/AE mutation, or OpenAI CLI live acceptance lane was started
+  because each candidate failed during importer implementation planning.
 
 ## Validation
 
@@ -283,6 +296,45 @@ lane, because the candidate failed during importer implementation planning befor
 any source merge or live rerun requirement. Broad/default CEP smoke, Local/Ollama
 provider validation, dependency changes, push/PR, old longrun, and importer
 `max-items > 1` remain prohibited.
+
+Milestone 9 targeted validation:
+
+- [x] `git status --short --branch --untracked-files=all` started clean on
+  `road-map-2.0`.
+- [x] Compact status/ledger/proof checks were run before the queue drain.
+- [x] `node orchestrator/run-generic-repo-full-intake.mjs --ledger
+  .codex-runtime/sdk/generic-repo-importer/kyletmartinez-after-effects-scripts-intake/queue-ledger.json
+  --run-id full-intake-kyletmartinez --max-items 1 --resolution-candidate-ids
+  <candidate> --context-percent 20 --compact-json` was run three strict phases each
+  for `tool-keyframes-keyframe-current-value-from-expression`,
+  `tool-keyframes-set-spacial-in-tanget`, and
+  `tool-properties-separate-size-dimensions`.
+- [x] Final `node orchestrator/full-intake-status.mjs --run-id
+  full-intake-kyletmartinez --compact --event-limit 8 --batch-limit 1` showed
+  `tool-properties-separate-size-dimensions -> failed_import`.
+- [x] Final `node orchestrator/full-intake-ledger-summary.mjs --compact` showed
+  `failed_import:16`, no `queued` count, and `Queued live_lane_needed: 0`.
+- [x] Final queued-entry check showed `queued=0`.
+- [x] Final `node orchestrator/full-intake-proof.mjs --run-id
+  full-intake-kyletmartinez --compact-json` showed phase `run_importer_phase`,
+  status `failed_import`, `changedPathCount:0`, and `contractComplete:false`.
+- [x] No JavaScript files were touched, so no `node --check` target was required.
+- [x] `git diff --check` passed with existing CRLF normalization warnings only.
+- [x] `npm.cmd run check:rules` passed.
+- [x] Required local smoke scripts passed: provider contract, Solution Library
+  registry/candidate/promotion/retrieval/validation, project intent memory, plan
+  classification, plan repair, semantic verification, reliability suite smoke,
+  ChatGPT connector, provider API, prompt optimization, bridge-only smoke, and
+  `scripts/smoke-test.js`.
+- [x] Read-only live connectivity checks passed:
+  `node scripts/cep-panel-cdp-smoke.js inspect` and
+  `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`.
+
+Not run by design: mutating live CEP/AE validation and OpenAI CLI generated-only
+lane, because all three candidates failed during importer implementation planning
+before any source merge or live rerun requirement. Broad/default CEP smoke,
+Local/Ollama provider validation, dependency changes, push/PR, old longrun, and
+importer `max-items > 1` remain prohibited.
 
 ## Handoff
 
