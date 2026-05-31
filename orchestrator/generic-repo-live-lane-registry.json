@@ -346,6 +346,332 @@
       ],
       "reclassifiedClassification": "existing_typed_tools_recipe_only",
       "scope": "generated-only active composition bgColor proof using get_active_comp, set_comp_properties, get_comp_details, read-back, semantic verification, and cleanup; source-exact color cycling from the current averaged bgColor remains recipe guidance, not a broad/default live lane"
+    },
+    {
+      "id": "camera-controller-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "create_camera_layer",
+        "get_comp_details"
+      ],
+      "allowedTools": [
+        "get_active_comp",
+        "create_camera_layer",
+        "get_comp_details",
+        "create_camera_with_controller",
+        "get_layer_details"
+      ],
+      "candidateIds": [
+        "tool-compositions-add-camera-with-controller"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-remaining-tail-contracts-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "camera-controller-parenting",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "mcp-server/plan-repair.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/solution-library-validation-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only camera plus generated 3D null controller proof using create_camera_with_controller and get_layer_details/get_comp_details read-back for camera parent, controller 3D state, camera position, and separated controller position dimensions; arbitrary parenting, selected-layer controller reuse, and raw JSX camera rigging remain fail-closed"
+    },
+    {
+      "id": "onion-skinning-wide-time-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_comp_details"
+      ],
+      "allowedTools": [
+        "get_active_comp",
+        "get_comp_details",
+        "set_comp_properties",
+        "set_comp_work_area",
+        "rename_project_items",
+        "set_property_value",
+        "toggle_onion_skinning",
+        "get_layer_details",
+        "get_effect_details"
+      ],
+      "candidateIds": [
+        "tool-compositions-toggle-onion-skinning"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-remaining-tail-contracts-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "onion-skinning-wide-time",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_layer_details",
+        "get_effect_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "mcp-server/plan-repair.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/solution-library-validation-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only onion skinning proof using toggle_onion_skinning on a generated comp plus layer/effect read-back for generated adjustment layer, CC Wide Time effect, and comp comment token; global property traversal and non-generated layer cleanup remain fail-closed"
+    },
+    {
+      "id": "fill-in-keyframes-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_selected_properties",
+        "set_property_keyframes"
+      ],
+      "allowedTools": [
+        "get_active_comp",
+        "get_selected_properties",
+        "set_property_keyframes",
+        "apply_keyframe_ease",
+        "get_layer_details",
+        "fill_in_keyframes"
+      ],
+      "candidateIds": [
+        "tool-keyframes-fill-in-keyframes"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-remaining-tail-contracts-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "fill-in-keyframes-expression-sampling",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_selected_properties",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "mcp-server/plan-repair.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/solution-library-validation-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only fill-in-keyframes proof using fill_in_keyframes against an explicit generated property plus keyframe read-back for sampled expression values, cleared expression, redundant-key pruning, and linear interpolation; selected-property discovery and broad expression conversion remain fail-closed"
+    },
+    {
+      "id": "current-expression-keyframe-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_selected_properties",
+        "set_property_keyframes"
+      ],
+      "allowedTools": [
+        "get_active_comp",
+        "get_selected_properties",
+        "set_property_keyframes",
+        "apply_keyframe_ease",
+        "get_layer_details",
+        "keyframe_current_value_from_expression"
+      ],
+      "candidateIds": [
+        "tool-keyframes-keyframe-current-value-from-expression"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-remaining-tail-contracts-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "current-expression-keyframe",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_selected_properties",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "mcp-server/plan-repair.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/solution-library-validation-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only current-expression keyframe proof using keyframe_current_value_from_expression against an explicit generated property plus keyframe read-back for valueAtTime(current,false) semantics; selected-property traversal and raw JSX expression mutation remain fail-closed"
+    },
+    {
+      "id": "spatial-in-tangent-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_selected_properties",
+        "set_property_keyframes"
+      ],
+      "allowedTools": [
+        "get_active_comp",
+        "get_selected_properties",
+        "set_property_keyframes",
+        "apply_keyframe_ease",
+        "get_layer_details",
+        "set_spatial_in_tangent"
+      ],
+      "candidateIds": [
+        "tool-keyframes-set-spacial-in-tanget"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-remaining-tail-contracts-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "spatial-in-tangent",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_selected_properties",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "mcp-server/plan-repair.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/solution-library-validation-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only spatial in-tangent proof using set_spatial_in_tangent against an explicit generated position keyframe plus keyframe read-back for previous-current tangent math and preserved out tangent; arbitrary selected-key traversal remains fail-closed"
+    },
+    {
+      "id": "shape-size-dimensions-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_selected_properties",
+        "set_property_value"
+      ],
+      "allowedTools": [
+        "get_active_comp",
+        "get_selected_properties",
+        "set_property_value",
+        "get_layer_details",
+        "separate_shape_size_dimensions",
+        "get_effect_details"
+      ],
+      "candidateIds": [
+        "tool-properties-separate-size-dimensions"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-remaining-tail-contracts-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "shape-size-dimension-separation",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_selected_properties",
+        "get_layer_details",
+        "get_effect_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "mcp-server/plan-repair.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/solution-library-validation-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only shape size dimension-separation proof using separate_shape_size_dimensions against an explicit generated rectangle/ellipse size property plus read-back for X Size/Y Size sliders and size expression; arbitrary property traversal and non-shape properties remain fail-closed"
     }
   ]
 }

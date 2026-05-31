@@ -9,6 +9,7 @@ const {
 const {
   AGENT_SCENARIO_MUTATING_TOOLS,
   agentDakkshinTypedToolsScenarioPlans,
+  agentRemainingTailContractsScenarioPlans,
   agentScenarioPlans
 } = require("./agent-scenario-fixtures");
 
@@ -174,6 +175,49 @@ function fakeMutationResult(step, state) {
         pointOfInterest: args.pointOfInterest || [320, 180, 0],
         zoom: args.zoom || 600
       }
+    }, compName, layer);
+  }
+  if (step.tool === "create_camera_with_controller") {
+    const controller = insertLayerAtTop(state, layerInfo(args.controllerName || "Camera Controller", {
+      index: 1,
+      nullLayer: true,
+      threeDLayer: true
+    }));
+    const camera = insertLayerAtTop(state, layerInfo(args.cameraName || "Camera 1", {
+      index: 1,
+      matchName: "ADBE Camera Layer",
+      parent: { name: controller.name, index: controller.index + 1 },
+      transform: {
+        position: args.cameraPosition || [0, 0, -900],
+        pointOfInterest: args.pointOfInterest || [320, 180, 0]
+      }
+    }));
+    return withVerification({
+      comp: { name: compName },
+      cameraLayer: { ...camera, parent: { name: controller.name, index: controller.index + 1 } },
+      controllerLayer: { ...controller, index: controller.index + 1, threeDLayer: true },
+      camera: {
+        position: args.cameraPosition || [0, 0, -900],
+        pointOfInterest: args.pointOfInterest || [320, 180, 0],
+        zoom: args.zoom || 600
+      },
+      controller: {
+        threeDLayer: true,
+        positionDimensionsSeparated: args.separateControllerPositionDimensions !== false
+      }
+    }, compName, camera);
+  }
+  if (step.tool === "toggle_onion_skinning") {
+    const layer = insertLayerAtTop(state, layerInfo(args.layerName || "Onion Skin", {
+      index: 1,
+      adjustmentLayer: true
+    }));
+    return withVerification({
+      comp: { name: compName, comment: "*onion-skinning*1" },
+      enabled: args.mode !== "disable",
+      layer,
+      effect: { name: args.effectName || "Onion Skin", matchName: "CC Wide Time" },
+      properties: [{ name: "Blend", matchName: "CC Wide Time-0001", value: aePropertyPreview(50) }]
     }, compName, layer);
   }
   if (step.tool === "create_layer_mask") {
@@ -550,11 +594,62 @@ function fakeMutationResult(step, state) {
     }, compName);
   }
   if (step.tool === "set_property_keyframes") {
+    const keyframes = (args.keyframes || []).map((keyframe, index) => ({
+      index: index + 1,
+      time: keyframe.time,
+      value: keyframe.value,
+      inInterpolation: "linear",
+      outInterpolation: "linear"
+    }));
     return withVerification({
       comp: { name: compName },
       layer: layerInfo(`Layer ${args.layerIndex}`, { index: args.layerIndex }),
       keyframeCount: (args.keyframes || []).length,
-      property: { matchName: args.propertyPath, numKeys: (args.keyframes || []).length }
+      property: {
+        matchName: args.propertyPath,
+        propertyPath: propertyPathSegments(args.propertyPath).map((segment) => ({ name: segment, matchName: segment })),
+        numKeys: (args.keyframes || []).length,
+        keyframes
+      }
+    }, compName);
+  }
+  if (step.tool === "fill_in_keyframes") {
+    const keyframes = [0, 1, 2].map((time, index) => ({
+      index: index + 1,
+      time,
+      value: index === 0 ? 20 : 80,
+      inInterpolation: "linear",
+      outInterpolation: "linear"
+    }));
+    return withVerification({
+      comp: { name: compName },
+      layer: layerInfo(`Layer ${args.layerIndex}`, { index: args.layerIndex }),
+      property: {
+        matchName: args.propertyPath,
+        propertyPath: propertyPathSegments(args.propertyPath).map((segment) => ({ name: segment, matchName: segment })),
+        numKeys: keyframes.length,
+        keyframes,
+        expression: ""
+      },
+      sampledCount: 5,
+      removedRedundantCount: 2,
+      keyframeCount: keyframes.length
+    }, compName);
+  }
+  if (step.tool === "keyframe_current_value_from_expression") {
+    const time = args.time === undefined ? 1 : args.time;
+    const value = time * 40 + 10;
+    return withVerification({
+      comp: { name: compName, time },
+      layer: layerInfo(`Layer ${args.layerIndex}`, { index: args.layerIndex }),
+      property: {
+        matchName: args.propertyPath,
+        propertyPath: propertyPathSegments(args.propertyPath).map((segment) => ({ name: segment, matchName: segment })),
+        numKeys: 1,
+        keyframes: [{ index: 1, time, value, inInterpolation: "linear", outInterpolation: "linear" }],
+        expression: args.requireExpression === false ? "" : "time * 40 + 10"
+      },
+      keyframe: { time, value }
     }, compName);
   }
   if (step.tool === "apply_keyframe_ease") {
@@ -565,6 +660,27 @@ function fakeMutationResult(step, state) {
       interpolation: args.interpolation || null
     }, compName);
   }
+  if (step.tool === "set_spatial_in_tangent") {
+    const tangent = [-100, -50];
+    const keyIndex = args.keyIndex || 2;
+    return withVerification({
+      comp: { name: compName },
+      layer: layerInfo(`Layer ${args.layerIndex}`, { index: args.layerIndex }),
+      property: {
+        matchName: args.propertyPath || "ADBE Transform Group.ADBE Position",
+        propertyPath: propertyPathSegments(args.propertyPath || "ADBE Transform Group.ADBE Position").map((segment) => ({ name: segment, matchName: segment })),
+        numKeys: 2,
+        keyframes: [
+          { index: 1, time: 0, value: [100, 100], outSpatialTangent: [0, 0] },
+          { index: keyIndex, time: 1, value: [300, 200], inSpatialTangent: tangent, outSpatialTangent: [0, 0] }
+        ]
+      },
+      keyIndex,
+      factor: args.factor || 0.5,
+      inSpatialTangent: tangent,
+      outSpatialTangent: [0, 0]
+    }, compName);
+  }
   if (step.tool === "set_expression") {
     return withVerification({
       comp: { name: compName },
@@ -572,6 +688,23 @@ function fakeMutationResult(step, state) {
       expression: args.expression,
       expressionEnabled: args.enabled !== false,
       expressionError: ""
+    }, compName);
+  }
+  if (step.tool === "separate_shape_size_dimensions") {
+    const expression = `var x = effect("${args.xSliderName || "X Size"}")("Slider").value;\nvar y = effect("${args.ySliderName || "Y Size"}")("Slider").value;\n[x, y];`;
+    return withVerification({
+      comp: { name: compName },
+      layer: layerInfo(`Layer ${args.layerIndex}`, { index: args.layerIndex }),
+      property: {
+        matchName: "ADBE Vector Rect Size",
+        propertyPath: propertyPathSegments(args.propertyPath).map((segment) => ({ name: segment, matchName: segment })),
+        expression
+      },
+      sliders: [
+        { name: args.xSliderName || "X Size", value: 240 },
+        { name: args.ySliderName || "Y Size", value: 120 }
+      ],
+      expression
     }, compName);
   }
   if (step.tool === "clear_expression") {
@@ -1613,6 +1746,22 @@ function assertSetLayerSwitchValuePasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("set_property_value:value") >= 0 && check.status === "passed"), "layer switch read-back check should pass.");
 }
 
+function assertRemainingTailContractToolsPass() {
+  const scenarios = agentRemainingTailContractsScenarioPlans("Semantic Remaining");
+  for (const scenario of scenarios) {
+    const run = fakeRunForPlan(scenario.plan);
+    const semantic = buildSemanticVerification(scenario.plan, run);
+    assert.strictEqual(semantic.status, "passed", `${scenario.id} semantic verification should pass: ${semantic.summary}`);
+  }
+  const combinedChecks = scenarios.flatMap((scenario) => buildSemanticVerification(scenario.plan, fakeRunForPlan(scenario.plan)).checks);
+  assert(combinedChecks.some((check) => check.id.indexOf("create_camera_with_controller:parent") >= 0), "camera controller check should be reported.");
+  assert(combinedChecks.some((check) => check.id.indexOf("toggle_onion_skinning:state") >= 0), "onion skinning check should be reported.");
+  assert(combinedChecks.some((check) => check.id.indexOf("fill_in_keyframes:keyframes") >= 0), "fill-in keyframes check should be reported.");
+  assert(combinedChecks.some((check) => check.id.indexOf("keyframe_current_value_from_expression:keyframe") >= 0), "expression keyframe check should be reported.");
+  assert(combinedChecks.some((check) => check.id.indexOf("set_spatial_in_tangent:spatial-tangent") >= 0), "spatial tangent check should be reported.");
+  assert(combinedChecks.some((check) => check.id.indexOf("separate_shape_size_dimensions:sliders-expression") >= 0), "separate size dimensions check should be reported.");
+}
+
 function assertUpdateLayerMarkerPasses() {
   const plan = {
     summary: "Update one explicit timeline marker and inspect marker read-back.",
@@ -1772,6 +1921,7 @@ function main() {
   assertDakkshinLiveAeEvidenceShapePasses();
   assertSetPropertyValuePasses();
   assertSetLayerSwitchValuePasses();
+  assertRemainingTailContractToolsPass();
   assertAddLayerMarkerPasses();
   assertUpdateLayerMarkerPasses();
   assertDeleteLayerMarkerPasses();

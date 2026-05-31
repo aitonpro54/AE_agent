@@ -10,6 +10,8 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "create_solid_layer",
   "create_text_layer",
   "create_camera_layer",
+  "create_camera_with_controller",
+  "toggle_onion_skinning",
   "add_project_item_to_comp",
   "create_layer_mask",
   "move_project_items_to_folder",
@@ -24,10 +26,14 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "set_layer_transform",
   "set_property_value",
   "set_property_keyframes",
+  "fill_in_keyframes",
+  "keyframe_current_value_from_expression",
   "set_effect_property",
   "apply_keyframe_ease",
+  "set_spatial_in_tangent",
   "set_expression",
   "clear_expression",
+  "separate_shape_size_dimensions",
   "duplicate_layer",
   "duplicate_layers",
   "delete_layer",
@@ -1665,6 +1671,209 @@ function agentSelectedKeyframeMarkerScenarioPlans(runPrefix) {
   }));
 }
 
+function agentRemainingTailContractsScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Remaining Tail Contracts`;
+  const cameraBase = `${base} Camera Controller`;
+  const onionBase = `${base} Onion Skin`;
+  const fillBase = `${base} Fill Keyframes`;
+  const currentValueBase = `${base} Current Expression`;
+  const spatialBase = `${base} Spatial Tangent`;
+  const sizeBase = `${base} Separate Size`;
+  const rectSizePath = [
+    "ADBE Root Vectors Group",
+    "Rectangle",
+    "ADBE Vectors Group",
+    "ADBE Vector Shape - Rect",
+    "ADBE Vector Rect Size"
+  ];
+  const opacityPath = "ADBE Transform Group.ADBE Opacity";
+  const positionPath = "ADBE Transform Group.ADBE Position";
+
+  return [
+    {
+      id: "generated-camera-controller-rig",
+      cleanupPrefix: cameraBase,
+      expectedTools: [
+        "create_comp",
+        "create_camera_with_controller",
+        "get_layer_details",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedCameraController: true,
+        compName: `${cameraBase} Comp`,
+        cameraName: `${cameraBase} Camera`,
+        controllerName: `${cameraBase} Controller`,
+        cameraZoom: 650
+      },
+      plan: {
+        summary: "AUX-099 generated-only live QA for a camera parented to a 3D null controller.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated camera-controller comp", tool: "create_comp", args: { name: `${cameraBase} Comp`, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.05, 0.07, 0.09], allowDuplicateName: false, openInViewer: true, comment: "AUX-099 generated-only camera controller validation" } },
+          { title: "Create generated camera with controller", tool: "create_camera_with_controller", args: { compName: `${cameraBase} Comp`, cameraName: `${cameraBase} Camera`, controllerName: `${cameraBase} Controller`, pointOfInterest: [320, 180, 0], cameraPosition: [0, 0, -888.8889], zoom: 650, startTime: 0, duration: 3, separateControllerPositionDimensions: true } },
+          { title: "Read generated camera parent", tool: "get_layer_details", args: { compName: `${cameraBase} Comp`, includeProperties: false }, resultBindings: { layerIndex: "{{steps.2.cameraLayer.index}}" } },
+          { title: "Read generated controller state", tool: "get_layer_details", args: { compName: `${cameraBase} Comp`, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeValues: true }, resultBindings: { layerIndex: "{{steps.2.controllerLayer.index}}" } }
+        ]
+      }
+    },
+    {
+      id: "generated-onion-skinning-wide-time",
+      cleanupPrefix: onionBase,
+      expectedTools: [
+        "create_comp",
+        "toggle_onion_skinning",
+        "get_layer_details",
+        "get_effect_details"
+      ],
+      expectedReadBack: {
+        generatedOnionSkinning: true,
+        compName: `${onionBase} Comp`,
+        layerName: "Onion Skin",
+        effectName: "Onion Skin"
+      },
+      plan: {
+        summary: "AUX-099 generated-only live QA for CC Wide Time onion skinning.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated onion-skin comp", tool: "create_comp", args: { name: `${onionBase} Comp`, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.03, 0.04, 0.06], allowDuplicateName: false, openInViewer: true, comment: "AUX-099 generated-only onion skin validation" } },
+          { title: "Enable generated onion skinning", tool: "toggle_onion_skinning", args: { compName: `${onionBase} Comp`, mode: "enable", layerName: "Onion Skin", effectName: "Onion Skin" } },
+          { title: "Read generated onion skin layer", tool: "get_layer_details", args: { compName: `${onionBase} Comp`, includeProperties: false }, resultBindings: { layerIndex: "{{steps.2.layer.index}}" } },
+          { title: "Read generated CC Wide Time effect", tool: "get_effect_details", args: { compName: `${onionBase} Comp`, effectName: "Onion Skin", includeProperties: true, includeValues: true }, resultBindings: { layerIndex: "{{steps.2.layer.index}}" } }
+        ]
+      }
+    },
+    {
+      id: "generated-fill-in-keyframes",
+      cleanupPrefix: fillBase,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "set_expression",
+        "fill_in_keyframes",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedFillInKeyframes: true,
+        compName: `${fillBase} Comp`,
+        layerName: `${fillBase} Shape`,
+        propertyPath: ["ADBE Transform Group", "ADBE Opacity"],
+        minKeyframeCount: 3
+      },
+      plan: {
+        summary: "AUX-099 generated-only live QA for expression fill-in keyframes with redundant-key removal.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated fill-keyframes comp", tool: "create_comp", args: { name: `${fillBase} Comp`, width: 640, height: 360, pixelAspect: 1, duration: 2, frameRate: 24, bgColor: [0.06, 0.06, 0.08], allowDuplicateName: false, openInViewer: true, comment: "AUX-099 generated-only fill keyframes validation" } },
+          { title: "Create generated fill-keyframes shape", tool: "create_shape_layer", args: { compName: `${fillBase} Comp`, name: `${fillBase} Shape`, shape: "rectangle", size: [220, 120], position: [320, 180], fillColor: [0.25, 0.55, 0.9], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 2 } },
+          { title: "Set generated stepped opacity expression", tool: "set_expression", args: { compName: `${fillBase} Comp`, layerIndex: 1, propertyPath: opacityPath, expression: "time < 1 ? 20 : 80", enabled: true } },
+          { title: "Fill generated expression into keyframes", tool: "fill_in_keyframes", args: { compName: `${fillBase} Comp`, layerIndex: 1, propertyPath: opacityPath, startTime: 0, endTime: 2, sampleEveryFrames: 12, removeRedundant: true, clearExpression: true } },
+          { title: "Read generated filled keyframes", tool: "get_layer_details", args: { compName: `${fillBase} Comp`, layerIndex: 1, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeValues: true, includeExpressions: true } }
+        ]
+      }
+    },
+    {
+      id: "generated-current-expression-keyframe",
+      cleanupPrefix: currentValueBase,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "set_expression",
+        "keyframe_current_value_from_expression",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedCurrentExpressionKeyframe: true,
+        compName: `${currentValueBase} Comp`,
+        layerName: `${currentValueBase} Shape`,
+        propertyPath: ["ADBE Transform Group", "ADBE Opacity"],
+        keyframeTime: 1.25,
+        keyframeValue: 60
+      },
+      plan: {
+        summary: "AUX-099 generated-only live QA for keyframing the current post-expression value.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated current-expression comp", tool: "create_comp", args: { name: `${currentValueBase} Comp`, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.07, 0.06, 0.05], allowDuplicateName: false, openInViewer: true, comment: "AUX-099 generated-only current expression validation" } },
+          { title: "Create generated current-expression shape", tool: "create_shape_layer", args: { compName: `${currentValueBase} Comp`, name: `${currentValueBase} Shape`, shape: "rectangle", size: [220, 120], position: [320, 180], fillColor: [0.82, 0.52, 0.24], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Set generated opacity expression", tool: "set_expression", args: { compName: `${currentValueBase} Comp`, layerIndex: 1, propertyPath: opacityPath, expression: "time * 40 + 10", enabled: true } },
+          { title: "Keyframe generated current expression value", tool: "keyframe_current_value_from_expression", args: { compName: `${currentValueBase} Comp`, layerIndex: 1, propertyPath: opacityPath, time: 1.25, requireExpression: true } },
+          { title: "Read generated expression keyframe", tool: "get_layer_details", args: { compName: `${currentValueBase} Comp`, layerIndex: 1, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeValues: true, includeExpressions: true } }
+        ]
+      }
+    },
+    {
+      id: "generated-spatial-in-tangent",
+      cleanupPrefix: spatialBase,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "set_property_keyframes",
+        "set_spatial_in_tangent",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedSpatialInTangent: true,
+        compName: `${spatialBase} Comp`,
+        layerName: `${spatialBase} Shape`,
+        propertyPath: ["ADBE Transform Group", "ADBE Position"],
+        keyIndex: 2,
+        inSpatialTangent: [-100, -50]
+      },
+      plan: {
+        summary: "AUX-099 generated-only live QA for setting a spatial in tangent from previous keyframe distance.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated spatial-tangent comp", tool: "create_comp", args: { name: `${spatialBase} Comp`, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.04, 0.07, 0.06], allowDuplicateName: false, openInViewer: true, comment: "AUX-099 generated-only spatial tangent validation" } },
+          { title: "Create generated spatial-tangent shape", tool: "create_shape_layer", args: { compName: `${spatialBase} Comp`, name: `${spatialBase} Shape`, shape: "rectangle", size: [120, 80], position: [120, 120], fillColor: [0.35, 0.8, 0.55], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Set generated position keyframes", tool: "set_property_keyframes", args: { compName: `${spatialBase} Comp`, layerIndex: 1, propertyPath: positionPath, clearExisting: true, keyframes: [{ time: 0, value: [100, 100] }, { time: 1, value: [300, 200] }, { time: 2, value: [420, 260] }] } },
+          { title: "Set generated spatial in tangent", tool: "set_spatial_in_tangent", args: { compName: `${spatialBase} Comp`, layerIndex: 1, propertyPath: positionPath, keyIndex: 2, factor: 0.5 } },
+          { title: "Read generated spatial tangent", tool: "get_layer_details", args: { compName: `${spatialBase} Comp`, layerIndex: 1, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeValues: true, includeExpressions: true } }
+        ]
+      }
+    },
+    {
+      id: "generated-separate-shape-size-dimensions",
+      cleanupPrefix: sizeBase,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "separate_shape_size_dimensions",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedSeparateShapeSizeDimensions: true,
+        compName: `${sizeBase} Comp`,
+        layerName: `${sizeBase} Shape`,
+        propertyPath: rectSizePath,
+        xSliderName: "X Size",
+        ySliderName: "Y Size"
+      },
+      plan: {
+        summary: "AUX-099 generated-only live QA for separating rectangle size dimensions with sliders.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated separate-size comp", tool: "create_comp", args: { name: `${sizeBase} Comp`, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.06, 0.05, 0.07], allowDuplicateName: false, openInViewer: true, comment: "AUX-099 generated-only separate size validation" } },
+          { title: "Create generated separate-size shape", tool: "create_shape_layer", args: { compName: `${sizeBase} Comp`, name: `${sizeBase} Shape`, shape: "rectangle", size: [240, 120], position: [320, 180], fillColor: [0.66, 0.42, 0.86], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Separate generated shape size dimensions", tool: "separate_shape_size_dimensions", args: { compName: `${sizeBase} Comp`, layerIndex: 1, propertyPath: rectSizePath, xSliderName: "X Size", ySliderName: "Y Size" } },
+          { title: "Read generated separate-size expression", tool: "get_layer_details", args: { compName: `${sizeBase} Comp`, layerIndex: 1, includeProperties: true, propertyDepth: 4, propertyLimit: 160, includeValues: true, includeExpressions: true } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentAssortedCompositionGuidesScenarioPlans(runPrefix) {
   const base = `${runPrefix} Assorted Guides`;
   const compName = `${base} Comp`;
@@ -2476,6 +2685,7 @@ module.exports = {
   agentNewToolsScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
+  agentRemainingTailContractsScenarioPlans,
   agentRenderQueueScenarioPlans,
   agentResetWorkAreaScenarioPlans,
   agentSelectedPropertyValueScenarioPlans,

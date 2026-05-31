@@ -24,6 +24,7 @@ const {
   agentNewToolsScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
+  agentRemainingTailContractsScenarioPlans,
   agentRenderQueueScenarioPlans,
   agentResetWorkAreaScenarioPlans,
   agentSelectedKeyframeMarkerScenarioPlans,
@@ -474,6 +475,24 @@ function openAiCliSelectedKeyframeMarkerScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_SELECTED_KEYFRAME_MARKER_PREFIX || "Codex QA AUX093",
     scenarioFactory: agentSelectedKeyframeMarkerScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliRemainingTailContractsScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-remaining-tail-contracts",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_REMAINING_TAILS_PREFIX || "Codex QA AUX099",
+    scenarioFactory: agentRemainingTailContractsScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -4741,6 +4760,184 @@ async function verifyGeneratedKeyframeReadBack(scenario, expected) {
   };
 }
 
+async function readGeneratedLayerProperty(scenario, expected, options = {}) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const listedLayer = layers.find((layer) => layer.name === expected.layerName);
+  if (!listedLayer || !listedLayer.index) {
+    throw new Error(`${scenario.id}: generated layer ${expected.layerName} was not found by read-back.`);
+  }
+  const details = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: listedLayer.index,
+    includeProperties: true,
+    propertyDepth: options.propertyDepth || 2,
+    propertyLimit: options.propertyLimit || 120,
+    includeValues: true,
+    includeExpressions: true
+  });
+  const property = findPropertyInTree(details.propertyTree || [], expected.propertyPath);
+  if (!property) {
+    throw new Error(`${scenario.id}: generated property ${expected.propertyPath.join(".")} was not found by read-back.`);
+  }
+  return { comp: compMatch, layer: details.layer || listedLayer, property, details };
+}
+
+async function verifyGeneratedCameraControllerReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const camera = layers.find((layer) => layer.name === expected.cameraName);
+  const controller = layers.find((layer) => layer.name === expected.controllerName);
+  if (!camera || !controller) {
+    throw new Error(`${scenario.id}: generated camera/controller layers were not found by read-back.`);
+  }
+  const cameraDetails = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: camera.index,
+    includeProperties: false
+  });
+  const controllerDetails = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: controller.index,
+    includeProperties: true,
+    propertyDepth: 2,
+    propertyLimit: 80,
+    includeValues: true
+  });
+  const parent = cameraDetails.layer && cameraDetails.layer.parent ? cameraDetails.layer.parent : {};
+  if (parent.name !== expected.controllerName) {
+    throw new Error(`${scenario.id}: camera parent mismatch; expected ${expected.controllerName}, got ${parent.name || "none"}.`);
+  }
+  if (!controllerDetails.layer || controllerDetails.layer.threeDLayer !== true) {
+    throw new Error(`${scenario.id}: controller was not read back as 3D.`);
+  }
+  const zoom = valuePreviewNumber(cameraDetails.camera && cameraDetails.camera.zoom);
+  if (typeof expected.cameraZoom === "number" && !numbersMatch(expected.cameraZoom, zoom, 0.01)) {
+    throw new Error(`${scenario.id}: camera zoom mismatch; expected ${expected.cameraZoom}, got ${zoom}.`);
+  }
+  return {
+    ok: true,
+    comp: { itemIndex: compMatch.itemIndex, name: compMatch.name },
+    camera: { index: camera.index, name: camera.name, parent: parent.name, zoom },
+    controller: { index: controller.index, name: controller.name, threeDLayer: true }
+  };
+}
+
+async function verifyGeneratedOnionSkinningReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layer = (Array.isArray(comp.layers) ? comp.layers : []).find((item) => item.name === expected.layerName);
+  if (!layer || !layer.index) {
+    throw new Error(`${scenario.id}: generated onion skin layer was not found by read-back.`);
+  }
+  const details = await callBridgeTool("get_effect_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: layer.index,
+    effectName: expected.effectName,
+    includeProperties: true,
+    includeValues: true,
+    propertyDepth: 1,
+    propertyLimit: 80
+  });
+  const effectText = `${details.effect && details.effect.name || ""} ${details.effect && details.effect.matchName || ""}`;
+  if (!/wide time/i.test(effectText)) {
+    throw new Error(`${scenario.id}: CC Wide Time effect was not found by read-back; got ${effectText || "missing"}.`);
+  }
+  return {
+    ok: true,
+    comp: { itemIndex: compMatch.itemIndex, name: compMatch.name },
+    layer: { index: layer.index, name: layer.name },
+    effect: { name: details.effect.name, matchName: details.effect.matchName, propertiesReturned: details.propertiesReturned }
+  };
+}
+
+async function verifyGeneratedFillInKeyframesReadBack(scenario, expected) {
+  const { comp, layer, property } = await readGeneratedLayerProperty(scenario, expected, { propertyDepth: 2, propertyLimit: 100 });
+  const count = Number(property.numKeys || 0);
+  if (count < Number(expected.minKeyframeCount || 1)) {
+    throw new Error(`${scenario.id}: expected at least ${expected.minKeyframeCount} filled keyframes, got ${count}.`);
+  }
+  if (property.expression) {
+    throw new Error(`${scenario.id}: fill_in_keyframes did not clear expression by read-back.`);
+  }
+  return {
+    ok: true,
+    comp: { itemIndex: comp.itemIndex, name: comp.name },
+    layer: { index: layer.index, name: layer.name },
+    keyframes: { count, propertyPath: expected.propertyPath }
+  };
+}
+
+async function verifyGeneratedCurrentExpressionKeyframeReadBack(scenario, expected) {
+  const { comp, layer, property } = await readGeneratedLayerProperty(scenario, expected, { propertyDepth: 2, propertyLimit: 100 });
+  const keyframes = Array.isArray(property.keyframes) ? property.keyframes : [];
+  const keyframe = keyframes.find((item) => numbersMatch(expected.keyframeTime, item.time, 0.001));
+  if (!keyframe) {
+    throw new Error(`${scenario.id}: expected expression snapshot keyframe at ${expected.keyframeTime}.`);
+  }
+  if (typeof expected.keyframeValue === "number" && !numbersMatch(expected.keyframeValue, keyframe.value, 0.01)) {
+    throw new Error(`${scenario.id}: expression snapshot value mismatch; expected ${expected.keyframeValue}, got ${keyframe.value}.`);
+  }
+  return {
+    ok: true,
+    comp: { itemIndex: comp.itemIndex, name: comp.name },
+    layer: { index: layer.index, name: layer.name },
+    keyframe: { time: keyframe.time, value: keyframe.value }
+  };
+}
+
+async function verifyGeneratedSpatialInTangentReadBack(scenario, expected) {
+  const { comp, layer, property } = await readGeneratedLayerProperty(scenario, expected, { propertyDepth: 2, propertyLimit: 100 });
+  const keyframes = Array.isArray(property.keyframes) ? property.keyframes : [];
+  const keyframe = keyframes.find((item) => Number(item.index) === Number(expected.keyIndex));
+  if (!keyframe) {
+    throw new Error(`${scenario.id}: expected keyframe ${expected.keyIndex} for spatial tangent read-back.`);
+  }
+  if (!numberArraysMatch(expected.inSpatialTangent, keyframe.inSpatialTangent, 0.001)) {
+    throw new Error(`${scenario.id}: spatial in tangent mismatch; expected ${expected.inSpatialTangent}, got ${keyframe.inSpatialTangent || "missing"}.`);
+  }
+  return {
+    ok: true,
+    comp: { itemIndex: comp.itemIndex, name: comp.name },
+    layer: { index: layer.index, name: layer.name },
+    keyframe: { index: keyframe.index, inSpatialTangent: keyframe.inSpatialTangent }
+  };
+}
+
+async function verifyGeneratedSeparateShapeSizeDimensionsReadBack(scenario, expected) {
+  const { comp, layer, property, details } = await readGeneratedLayerProperty(scenario, expected, { propertyDepth: 4, propertyLimit: 180 });
+  const expression = String(property.expression || "");
+  if (!expression.includes(expected.xSliderName) || !expression.includes(expected.ySliderName)) {
+    throw new Error(`${scenario.id}: separate size expression did not reference both slider names.`);
+  }
+  const effects = Array.isArray(details.effects) ? details.effects : [];
+  const effectNames = effects.map((effect) => effect.name);
+  if (!effectNames.includes(expected.xSliderName) || !effectNames.includes(expected.ySliderName)) {
+    throw new Error(`${scenario.id}: separate size sliders were not found by read-back.`);
+  }
+  return {
+    ok: true,
+    comp: { itemIndex: comp.itemIndex, name: comp.name },
+    layer: { index: layer.index, name: layer.name },
+    sliders: effectNames.filter((name) => name === expected.xSliderName || name === expected.ySliderName),
+    expressionPresent: true
+  };
+}
+
 async function verifyGeneratedCompPropertiesReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const comp = await callBridgeTool("get_comp_details", {
@@ -5208,6 +5405,30 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedKeyframeEase) {
     return verifyGeneratedKeyframeReadBack(scenario, expected);
+  }
+
+  if (expected.generatedCameraController) {
+    return verifyGeneratedCameraControllerReadBack(scenario, expected);
+  }
+
+  if (expected.generatedOnionSkinning) {
+    return verifyGeneratedOnionSkinningReadBack(scenario, expected);
+  }
+
+  if (expected.generatedFillInKeyframes) {
+    return verifyGeneratedFillInKeyframesReadBack(scenario, expected);
+  }
+
+  if (expected.generatedCurrentExpressionKeyframe) {
+    return verifyGeneratedCurrentExpressionKeyframeReadBack(scenario, expected);
+  }
+
+  if (expected.generatedSpatialInTangent) {
+    return verifyGeneratedSpatialInTangentReadBack(scenario, expected);
+  }
+
+  if (expected.generatedSeparateShapeSizeDimensions) {
+    return verifyGeneratedSeparateShapeSizeDimensionsReadBack(scenario, expected);
   }
 
   if (expected.generatedCompPropertiesWorkArea) {
@@ -5905,6 +6126,10 @@ async function main() {
   }
   if (command === "agent-selected-keyframe-marker-openai-cli-smoke" || command === "full-ui-agent-selected-keyframe-marker-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliSelectedKeyframeMarkerScenarioConfig());
+    return;
+  }
+  if (command === "agent-remaining-tail-contracts-openai-cli-smoke" || command === "full-ui-agent-remaining-tail-contracts-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliRemainingTailContractsScenarioConfig());
     return;
   }
   if (command === "openai-api-setup-smoke") {

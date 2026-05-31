@@ -23,6 +23,7 @@ const {
   agentLayerTimingScenarioPlans,
   agentLayerTransformScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
+  agentRemainingTailContractsScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentResetWorkAreaScenarioPlans,
   agentRenderQueueScenarioPlans,
@@ -549,7 +550,23 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(selectedKeyframeMarker.plan.steps[4].args.time, 1);
   assert.strictEqual(selectedKeyframeMarker.plan.steps[4].args.comment, "");
 
-  for (const scenario of [timing, transform, projectItems, effectProperty, expression, compProperties, selectedPropertyValue, layerSwitches, keyframes, selectedKeyframeMarker]) {
+  const remainingTails = agentRemainingTailContractsScenarioPlans("Codex QA AUX099 Fixture");
+  assert.deepStrictEqual(remainingTails.map((scenario) => scenario.id), [
+    "generated-camera-controller-rig",
+    "generated-onion-skinning-wide-time",
+    "generated-fill-in-keyframes",
+    "generated-current-expression-keyframe",
+    "generated-spatial-in-tangent",
+    "generated-separate-shape-size-dimensions"
+  ]);
+  assert(remainingTails[0].plan.steps.some((step) => step.tool === "create_camera_with_controller"));
+  assert(remainingTails[1].plan.steps.some((step) => step.tool === "toggle_onion_skinning"));
+  assert(remainingTails[2].plan.steps.some((step) => step.tool === "fill_in_keyframes"));
+  assert(remainingTails[3].plan.steps.some((step) => step.tool === "keyframe_current_value_from_expression"));
+  assert(remainingTails[4].plan.steps.some((step) => step.tool === "set_spatial_in_tangent"));
+  assert(remainingTails[5].plan.steps.some((step) => step.tool === "separate_shape_size_dimensions"));
+
+  for (const scenario of [timing, transform, projectItems, effectProperty, expression, compProperties, selectedPropertyValue, layerSwitches, keyframes, selectedKeyframeMarker, ...remainingTails]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }

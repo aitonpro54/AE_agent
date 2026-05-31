@@ -2,6 +2,10 @@
 
 ## Progress
 
+- [x] AUX-099 remaining-tail typed contract prerequisite: added production typed tools and semantic/read-back contracts for `create_camera_with_controller`, `toggle_onion_skinning`, `fill_in_keyframes`, `keyframe_current_value_from_expression`, `set_spatial_in_tangent`, and `separate_shape_size_dimensions`; added generated-only Full UI Agent OpenAI CLI fixtures, report/smoke coverage, planner-repair aliases, and solution-library validation awareness for the six remaining `live_lane_needed` tails.
+
+- [x] AUX-099 remaining-tail Full Intaker live-gate requeue: scoped `full-intake-kyletmartinez-aux099-remaining-tails-retry2` proved the registered self-improvement families and requeued all six tails as `existing_typed_tools_recipe_only` with `liveGate.status:"passed"`. The parent stopped at `blocked_target_dirty` before importer application because the prerequisite typed-tool source changes were intentionally still uncommitted; next run should start from a clean commit and perform the recipe import pass.
+
 - [x] Orchestrator cost-control model profile: bounded roadmap writer children, read-only roadmap reviewers, feature/cleanup conveyor workspace-write children, and generic repo importer child manifests now default to `gpt-5.3-codex` (`high` for writers, `medium` for read-only reviewers), while Full UI Agent live acceptance and Agent Hardcore remain on their explicit `gpt-5.5` paths.
 
 - [x] Render queue recipe registry schema follow-up: after both render queue tails were imported and committed, full validation caught that the new `outputSettings` inputs used non-schema type `render-output-settings`. Updated both render queue recipe registry entries to use the existing allowed `object` input type while preserving the reviewed output-settings description.
@@ -1027,6 +1031,9 @@
 
 ## Decision Log
 
+- 2026-05-31: The final six kyletmartinez queue tails are closed by narrow production typed tools plus generated-only Full UI Agent proof, not by raw JSX/source-copy recipes. The reusable remaining-tail proof command is acceptable as a live gate because it is OpenAI CLI only, generated-prefix scoped, requires panel-authored plans, dry-run, protected run, read-back, semantic verification, and cleanup; Local/Ollama, fallback providers, broad/default CEP smoke, dependency changes, and non-generated asset mutation remain forbidden.
+- 2026-05-31: `separate_shape_size_dimensions` must reacquire AE property/effect references after adding slider effects, because adding properties to AE indexed groups can invalidate prior object references. The runtime tool stores slider indices/names and resolves fresh read-back objects before setting/returning expression evidence.
+
 - 2026-05-31: Cost-control profile keeps `gpt-5.5` for Full UI Agent live acceptance, Agent Hardcore, and safety-critical product decisions. Bounded workspace-write writer children and generic importer child runs use `gpt-5.3-codex` with `high` reasoning; read-only roadmap reviewers use `gpt-5.3-codex` with `medium` reasoning. Ambiguous or failing 5.3 output must fail closed through the existing validation gates and be manually escalated to `gpt-5.5`, not auto-retried inside a dirty workspace.
 
 - 2026-05-30: Render queue recipe `outputSettings` are represented as registry input type `object`, not a new custom `render-output-settings` schema type. This keeps the solution registry contract stable while the recipe text still constrains the object to reviewed render settings template, output module template and/or output path fields.
@@ -1345,6 +1352,11 @@
 - 2026-05-13: New mutating tools must join the existing checkpoint/idempotency/verification model.
 
 ## Validation
+
+- 2026-05-31 AUX-099 prerequisite validation passed: touched JS `node --check`, `git diff --check`, and the required non-live smoke suite all passed (`provider-contract`, `solution-registry`, `solution-candidate-report`, `solution-promotion`, `solution-retrieval`, `solution-library-validation`, `project-intent-memory`, `plan-classification`, `plan-repair`, `semantic-verification`, `reliability-validation-suite`, `chatgpt-connector`, `provider-api`, `prompt-optimization`, `bridge-only`, `smoke-test`). `smoke-test.js` confirmed the six new typed tools are in the bridge catalog.
+- 2026-05-31 AUX-099 live validation passed after restarting the local bridge on the updated source: `node scripts/cep-panel-cdp-smoke.js full-ui-agent-remaining-tail-contracts-openai-cli-smoke` completed all six generated-only scenarios with protected runs, read-back, semantic verification, cleanup, and report `logs/agent-run-reports/2026-05-31T08-59-42.781Z-openai-cli-gpt-5.5-remaining-tail-contracts-Codex-QA-AUX099-17713879.json`.
+- 2026-05-31 AUX-099 Full Intaker validation: `full-intake-kyletmartinez-aux099-remaining-tails-retry2` passed live-lane reports for the five affected self-improvement families covering all six candidate ids, requeued them with `liveGate.status:"passed"`, then stopped before import with `blocked_target_dirty`; compact status and proof envelope are under `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez-aux099-remaining-tails-retry2/`.
+- 2026-05-31 CEP read-only state after local validation: `connector-status-smoke` passed and, after reloading the panel back onto the standard `127.0.0.1:3456` bridge, `inspect` showed status `Connected`, badge `online`, and `agentValue:"openai-cli"`.
 
 ### Current validation matrix
 

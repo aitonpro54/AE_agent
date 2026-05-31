@@ -159,6 +159,22 @@ const EFFECT_PRESETS = [
     notes: "Useful for simple two-color looks. Inspect property tree before setting map colors."
   },
   {
+    id: "cc-wide-time",
+    name: "CC Wide Time",
+    matchName: "CC Wide Time",
+    category: "time",
+    description: "Time echo effect used by the onion-skinning typed contract.",
+    notes: "Availability can vary by AE install; toggle_onion_skinning and add_effect report if it is unavailable."
+  },
+  {
+    id: "slider-control",
+    name: "Slider Control",
+    matchName: "ADBE Slider Control",
+    category: "expression-controls",
+    description: "Adds a numeric slider effect for expression-driven controls.",
+    notes: "Used by separate_shape_size_dimensions for generated rectangle/ellipse Size controls."
+  },
+  {
     id: "tritone",
     name: "Tritone",
     matchName: "ADBE Tritone",
@@ -849,6 +865,8 @@ const MUTATING_TOOL_NAMES = new Set([
   "create_null_layer",
   "create_adjustment_layer",
   "create_camera_layer",
+  "create_camera_with_controller",
+  "toggle_onion_skinning",
   "create_layer_mask",
   "set_layer_mask",
   "add_project_item_to_comp",
@@ -873,9 +891,13 @@ const MUTATING_TOOL_NAMES = new Set([
   "create_shape_layer",
   "fit_layer_to_comp",
   "set_property_keyframes",
+  "fill_in_keyframes",
+  "keyframe_current_value_from_expression",
   "apply_keyframe_ease",
+  "set_spatial_in_tangent",
   "set_expression",
   "clear_expression",
+  "separate_shape_size_dimensions",
   "add_comp_to_render_queue",
   "set_render_queue_output",
   "align_layers_to_time",
@@ -4075,6 +4097,8 @@ const PLANNING_TOOL_NAMES = [
   "create_null_layer",
   "create_adjustment_layer",
   "create_camera_layer",
+  "create_camera_with_controller",
+  "toggle_onion_skinning",
   "create_layer_mask",
   "set_layer_mask",
   "add_project_item_to_comp",
@@ -4100,9 +4124,13 @@ const PLANNING_TOOL_NAMES = [
   "create_shape_layer",
   "fit_layer_to_comp",
   "set_property_keyframes",
+  "fill_in_keyframes",
+  "keyframe_current_value_from_expression",
   "apply_keyframe_ease",
+  "set_spatial_in_tangent",
   "set_expression",
   "clear_expression",
+  "separate_shape_size_dimensions",
   "add_comp_to_render_queue",
   "set_render_queue_output",
   "get_render_queue_status",
@@ -6017,7 +6045,9 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For explicit layer switches, use set_property_value only with whitelisted layer attributes threeDLayer, collapseTransformation, or motionBlur on inspected layer indices, setAtTime:false, then read back with get_layer_details. Do not use it for parenting, selection changes, timeline switches, or arbitrary layer fields.",
     "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
     "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, set_layer_mask, and fit_layer_to_comp. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Update mode needs one explicit maskIndex; do not delete masks, target multiple masks/layers, run roto, or edit arbitrary mask property trees.",
-    "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, set_expression, and clear_expression.",
+    "For camera controller rigs, use create_camera_with_controller instead of raw ExtendScript or ad hoc parenting; read back both camera.parent and controller 3D/separated-position state with get_layer_details.",
+    "For onion skinning, use toggle_onion_skinning and read back the generated adjustment layer plus CC Wide Time effect; do not use broad property traversal.",
+    "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, fill_in_keyframes, keyframe_current_value_from_expression, set_spatial_in_tangent, set_expression, and clear_expression. Use separate_shape_size_dimensions for generated rectangle/ellipse size slider separation.",
     "For render queue setup, use add_comp_to_render_queue, set_render_queue_output, and get_render_queue_status. Do not start a render.",
     "For requests about selected layers, inspect with get_active_comp or get_selected_layers first. A later layerIndex field may use {{selectedLayerIndices}} to target the selected layers.",
     "For later steps that need the active comp, compItemIndex may use {{compItemIndex}} after get_active_comp, get_comp_details, or get_selected_layers.",
@@ -8203,6 +8233,86 @@ const tools = [
     }
   },
   {
+    name: "create_camera_with_controller",
+    description: "Create a camera and a 3D null controller, parent the camera to the controller, separate controller Position dimensions, and return read-back evidence.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        cameraName: {
+          type: "string",
+          description: "Optional camera layer name. Defaults to Camera 1."
+        },
+        controllerName: {
+          type: "string",
+          description: "Optional controller null name. Defaults to Camera Controller."
+        },
+        pointOfInterest: {
+          type: "array",
+          items: { type: "number" },
+          description: "Optional [x, y] or [x, y, z] point of interest. Defaults to comp center."
+        },
+        cameraPosition: {
+          type: "array",
+          items: { type: "number" },
+          description: "Optional [x, y, z] camera position. Defaults to [0, 0, (comp.width / 0.72) * -1]."
+        },
+        zoom: {
+          type: "number",
+          description: "Optional camera zoom in pixels. Must be greater than 0."
+        },
+        startTime: {
+          type: "number",
+          description: "Optional layer start time in seconds for both created layers."
+        },
+        duration: {
+          type: "number",
+          description: "Optional layer duration in seconds for both created layers. Defaults to the composition duration."
+        },
+        separateControllerPositionDimensions: {
+          type: "boolean",
+          description: "Whether to separate the controller Position dimensions. Defaults to true."
+        }
+      }
+    }
+  },
+  {
+    name: "toggle_onion_skinning",
+    description: "Enable, disable, or toggle generated onion skinning on one composition using an adjustment layer with CC Wide Time.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        mode: {
+          type: "string",
+          description: "enable, disable, or toggle. Defaults to toggle."
+        },
+        layerName: {
+          type: "string",
+          description: "Optional generated onion skin adjustment layer name. Defaults to Onion Skin."
+        },
+        effectName: {
+          type: "string",
+          description: "Optional CC Wide Time effect instance name. Defaults to Onion Skin."
+        }
+      }
+    }
+  },
+  {
     name: "add_project_item_to_comp",
     description: "Add an existing footage or composition project item as a layer in a target composition.",
     inputSchema: {
@@ -8869,6 +8979,41 @@ const tools = [
     }
   },
   {
+    name: "fill_in_keyframes",
+    description: "Sample a property's evaluated expression/value over a bounded time range, set linear keyframes, remove redundant identical triples, and optionally clear the expression.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndex: { type: "number", description: "1-based layer index in the target composition." },
+        propertyPath: { type: ["array", "string"], description: "Property path from the layer.", items: {} },
+        startTime: { type: "number", description: "Optional start time in seconds. Defaults to the first keyframe time, workAreaStart, or 0." },
+        endTime: { type: "number", description: "Optional end time in seconds. Defaults to the last keyframe time, workArea end, or comp duration." },
+        sampleEveryFrames: { type: "number", description: "Positive frame step for sampling. Defaults to 1." },
+        removeRedundant: { type: "boolean", description: "Whether to remove interior keyframes whose previous/current/next values are identical. Defaults to true." },
+        clearExpression: { type: "boolean", description: "Whether to clear the expression after baking keyframes. Defaults to true." }
+      },
+      required: ["layerIndex", "propertyPath"]
+    }
+  },
+  {
+    name: "keyframe_current_value_from_expression",
+    description: "Evaluate the current post-expression property value at a time and write it as a keyframe on the same property.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndex: { type: "number", description: "1-based layer index in the target composition." },
+        propertyPath: { type: ["array", "string"], description: "Property path from the layer.", items: {} },
+        time: { type: "number", description: "Optional time in seconds. Defaults to the composition current time." },
+        requireExpression: { type: "boolean", description: "Whether to require a non-empty expression before keyframing. Defaults to true." }
+      },
+      required: ["layerIndex", "propertyPath"]
+    }
+  },
+  {
     name: "apply_keyframe_ease",
     description: "Apply temporal ease and optional interpolation to selected or explicit keyframes on a layer property.",
     inputSchema: {
@@ -8887,6 +9032,22 @@ const tools = [
     }
   },
   {
+    name: "set_spatial_in_tangent",
+    description: "Set the spatial in tangent for a spatial keyframe from the previous keyframe delta, preserving the existing out tangent.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndex: { type: "number", description: "1-based layer index in the target composition." },
+        propertyPath: { type: ["array", "string"], description: "Spatial property path from the layer. Defaults to Transform Position.", items: {} },
+        keyIndex: { type: "number", description: "1-based keyframe index. Defaults to the first selected key." },
+        factor: { type: "number", description: "Multiplier for previous-current delta. Defaults to 0.5." }
+      },
+      required: ["layerIndex"]
+    }
+  },
+  {
     name: "set_expression",
     description: "Set an expression on any expression-capable layer property.",
     inputSchema: {
@@ -8900,6 +9061,22 @@ const tools = [
         enabled: { type: "boolean", description: "Whether the expression should be enabled. Defaults to true." }
       },
       required: ["layerIndex", "propertyPath", "expression"]
+    }
+  },
+  {
+    name: "separate_shape_size_dimensions",
+    description: "Add X Size and Y Size slider controls to a shape layer and drive a rectangle/ellipse Size property with an expression.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndex: { type: "number", description: "1-based shape layer index in the target composition." },
+        propertyPath: { type: ["array", "string"], description: "Rectangle or ellipse Size property path from the layer.", items: {} },
+        xSliderName: { type: "string", description: "Optional X slider effect name. Defaults to X Size." },
+        ySliderName: { type: "string", description: "Optional Y slider effect name. Defaults to Y Size." }
+      },
+      required: ["layerIndex", "propertyPath"]
     }
   },
   {
@@ -9593,6 +9770,55 @@ async function callTool(name, args) {
         }
       }
 
+      function __codexValueData(value) {
+        if (value === null || value === undefined) return null;
+        if (typeof value === "number" || typeof value === "boolean" || typeof value === "string") return value;
+        if (value instanceof Array) {
+          var items = [];
+          for (var __vd = 0; __vd < value.length && __vd < 20; __vd++) items.push(value[__vd]);
+          return items;
+        }
+        try {
+          if (value.text !== undefined) return { text: value.text };
+        } catch (__valueDataTextError) {}
+        try {
+          return String(value);
+        } catch (__valueDataStringError) {
+          return "[object]";
+        }
+      }
+
+      function __codexInterpolationName(value) {
+        try {
+          if (value === KeyframeInterpolationType.LINEAR) return "linear";
+          if (value === KeyframeInterpolationType.BEZIER) return "bezier";
+          if (value === KeyframeInterpolationType.HOLD) return "hold";
+        } catch (__interpNameError) {}
+        return String(value);
+      }
+
+      function __codexArrayCopy(value) {
+        if (!(value instanceof Array)) return null;
+        var copy = [];
+        for (var __ac = 0; __ac < value.length; __ac++) copy.push(value[__ac]);
+        return copy;
+      }
+
+      function __codexKeyframeInfo(prop, keyIndex) {
+        var info = {
+          index: keyIndex,
+          time: null,
+          value: null
+        };
+        try { info.time = prop.keyTime(keyIndex); } catch (__keyTimeError) {}
+        try { info.value = __codexValueData(prop.keyValue(keyIndex)); } catch (__keyValueError) {}
+        try { info.inInterpolation = __codexInterpolationName(prop.keyInInterpolationType(keyIndex)); } catch (__keyInInterpError) {}
+        try { info.outInterpolation = __codexInterpolationName(prop.keyOutInterpolationType(keyIndex)); } catch (__keyOutInterpError) {}
+        try { info.inSpatialTangent = __codexArrayCopy(prop.keyInSpatialTangent(keyIndex)); } catch (__keyInSpatialError) {}
+        try { info.outSpatialTangent = __codexArrayCopy(prop.keyOutSpatialTangent(keyIndex)); } catch (__keyOutSpatialError) {}
+        return info;
+      }
+
       function __codexPropertyPath(prop) {
         var path = [];
         var current = prop;
@@ -9837,6 +10063,16 @@ async function callTool(name, args) {
             }
           }
         } catch (__selectedKeysError) {}
+        try {
+          if (includeValue && info.numKeys > 0) {
+            info.keyframes = [];
+            var maxKeyframes = Math.min(info.numKeys, 80);
+            for (var __ki = 1; __ki <= maxKeyframes; __ki++) {
+              info.keyframes.push(__codexKeyframeInfo(prop, __ki));
+            }
+            info.keyframesTruncated = info.numKeys > maxKeyframes;
+          }
+        } catch (__keyframeInfoError) {}
 
         return info;
       }
@@ -11373,6 +11609,215 @@ async function callTool(name, args) {
           zoom: cameraOptions ? __codexReadValue(cameraOptions.property("ADBE Camera Zoom")) : null
         }
       };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "create_camera_with_controller") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const cameraName = optionalString(args, "cameraName", "Camera 1");
+    const controllerName = optionalString(args, "controllerName", "Camera Controller");
+    const pointOfInterest = optionalNumberArray(args, "pointOfInterest", null, 2, 3);
+    const cameraPosition = optionalNumberArray(args, "cameraPosition", null, 3, 3);
+    const zoom = optionalNumber(args, "zoom", null);
+    const startTime = optionalNumber(args, "startTime", null);
+    const duration = optionalNumber(args, "duration", null);
+    const separateControllerPositionDimensions = optionalBoolean(args, "separateControllerPositionDimensions", true);
+    const coordinateLimit = 1000000;
+
+    if (pointOfInterest && pointOfInterest.some((value) => Math.abs(value) > coordinateLimit)) {
+      return toolResult("pointOfInterest values must be between -1000000 and 1000000.", true);
+    }
+    if (cameraPosition && cameraPosition.some((value) => Math.abs(value) > coordinateLimit)) {
+      return toolResult("cameraPosition values must be between -1000000 and 1000000.", true);
+    }
+    if (zoom !== null && zoom <= 0) return toolResult("zoom must be greater than 0.", true);
+    if (duration !== null && duration <= 0) return toolResult("duration must be greater than 0.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var cameraName = ${aeLiteral(cameraName)};
+      var controllerName = ${aeLiteral(controllerName)};
+      var requestedPointOfInterest = ${pointOfInterest ? aeLiteral(pointOfInterest) : "null"};
+      var requestedCameraPosition = ${cameraPosition ? aeLiteral(cameraPosition) : "null"};
+      var requestedZoom = ${zoom === null ? "null" : zoom};
+      var requestedStartTime = ${startTime === null ? "null" : startTime};
+      var requestedDuration = ${duration === null ? "comp.duration" : duration};
+      var shouldSeparateControllerPosition = ${separateControllerPositionDimensions ? "true" : "false"};
+
+      function __codexCameraPoint3(value) {
+        if (!value) return null;
+        return value.length >= 3 ? value : [value[0], value[1], 0];
+      }
+
+      function __codexReadRawValue(prop) {
+        try {
+          if (!prop) return null;
+          return __codexValueData(prop.value);
+        } catch (__readRawValueError) {
+          return null;
+        }
+      }
+
+      function __codexApplyLayerTiming(layer) {
+        if (requestedStartTime !== null) {
+          layer.startTime = requestedStartTime;
+          layer.inPoint = requestedStartTime;
+        }
+        if (requestedDuration !== null) {
+          var baseTime = requestedStartTime !== null ? requestedStartTime : layer.inPoint;
+          layer.outPoint = Math.min(baseTime + requestedDuration, comp.duration);
+        }
+      }
+
+      app.beginUndoGroup("Codex Create Camera With Controller");
+      var centerPoint = requestedPointOfInterest ? [requestedPointOfInterest[0], requestedPointOfInterest[1]] : [comp.width / 2, comp.height / 2];
+      var cameraLayer = comp.layers.addCamera(cameraName || "Camera 1", centerPoint);
+      var controllerLayer = comp.layers.addNull(requestedDuration || comp.duration);
+      if (cameraName) cameraLayer.name = cameraName;
+      if (controllerName) {
+        controllerLayer.name = controllerName;
+        try { if (controllerLayer.source) controllerLayer.source.name = controllerName; } catch (__controllerSourceNameError) {}
+      }
+      controllerLayer.threeDLayer = true;
+      cameraLayer.parent = controllerLayer;
+
+      var cameraTransform = cameraLayer.property("ADBE Transform Group");
+      var controllerTransform = controllerLayer.property("ADBE Transform Group");
+      var cameraPosition = requestedCameraPosition || [0, 0, (comp.width / 0.72) * -1];
+      if (requestedPointOfInterest !== null) {
+        var pointProp = cameraTransform.property("ADBE Point of Interest") || cameraTransform.property("ADBE Anchor Point");
+        if (pointProp) pointProp.setValue(__codexCameraPoint3(requestedPointOfInterest));
+      }
+      cameraTransform.property("ADBE Position").setValue(cameraPosition);
+      if (shouldSeparateControllerPosition && controllerTransform) {
+        var controllerPosition = controllerTransform.property("ADBE Position");
+        if (controllerPosition) {
+          try { controllerPosition.dimensionsSeparated = true; } catch (__separateControllerPositionError) {}
+        }
+      }
+      var cameraOptions = cameraLayer.property("ADBE Camera Options Group");
+      if (requestedZoom !== null && cameraOptions) {
+        var zoomProp = cameraOptions.property("ADBE Camera Zoom");
+        if (zoomProp) zoomProp.setValue(requestedZoom);
+      }
+      __codexApplyLayerTiming(cameraLayer);
+      __codexApplyLayerTiming(controllerLayer);
+
+      var controllerPositionProp = controllerTransform ? controllerTransform.property("ADBE Position") : null;
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        cameraLayer: __codexLayerInfo(cameraLayer),
+        controllerLayer: __codexLayerInfo(controllerLayer),
+        camera: {
+          pointOfInterest: cameraTransform ? __codexReadRawValue(cameraTransform.property("ADBE Point of Interest") || cameraTransform.property("ADBE Anchor Point")) : null,
+          position: cameraTransform ? __codexReadRawValue(cameraTransform.property("ADBE Position")) : null,
+          zoom: cameraOptions ? __codexReadRawValue(cameraOptions.property("ADBE Camera Zoom")) : null
+        },
+        controller: {
+          threeDLayer: controllerLayer.threeDLayer === true,
+          positionDimensionsSeparated: controllerPositionProp ? controllerPositionProp.dimensionsSeparated === true : false
+        }
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "toggle_onion_skinning") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const mode = optionalString(args, "mode", "toggle");
+    const layerName = optionalString(args, "layerName", "Onion Skin");
+    const effectName = optionalString(args, "effectName", "Onion Skin");
+
+    if (!["enable", "disable", "toggle"].includes(mode)) return toolResult("mode must be one of: enable, disable, toggle.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var mode = ${aeLiteral(mode)};
+      var layerName = ${aeLiteral(layerName)};
+      var effectName = ${aeLiteral(effectName)};
+      var token = "*onion-skinning*";
+
+      function __codexFindOnionLayer() {
+        for (var __l = 1; __l <= comp.numLayers; __l++) {
+          var candidate = comp.layer(__l);
+          if (!candidate || candidate.name !== layerName) continue;
+          try {
+            var parade = candidate.property("ADBE Effect Parade");
+            if (parade && (parade.property(effectName) || parade.property("CC Wide Time"))) return candidate;
+          } catch (__findEffectError) {}
+        }
+        return null;
+      }
+
+      function __codexDisableOnion() {
+        var removed = [];
+        var comment = comp.comment || "";
+        var parts = comment.split(token);
+        comp.comment = parts[0] || "";
+        if (parts.length > 1) {
+          var id = Number(parts[1]);
+          if (id) {
+            try {
+              var item = app.project.itemByID(id);
+              if (item !== null) {
+                removed.push(__codexItemReference(item));
+                item.remove();
+              }
+            } catch (__removeSourceError) {}
+          }
+        }
+        var layer = __codexFindOnionLayer();
+        if (layer) {
+          removed.push(__codexLayerInfo(layer));
+          layer.remove();
+        }
+        return removed;
+      }
+
+      app.beginUndoGroup("Codex Toggle Onion Skinning");
+      var wasEnabled = String(comp.comment || "").indexOf(token) >= 0 || __codexFindOnionLayer() !== null;
+      var shouldEnable = mode === "enable" || (mode === "toggle" && !wasEnabled);
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        previousEnabled: wasEnabled,
+        enabled: false,
+        mode: shouldEnable ? "enable" : "disable",
+        removed: []
+      };
+
+      if (shouldEnable) {
+        if (wasEnabled) __codexDisableOnion();
+        var layer = comp.layers.addSolid([0, 0, 0], layerName || "Onion Skin", comp.width, comp.height, comp.pixelAspect, comp.duration);
+        layer.adjustmentLayer = true;
+        try { layer.label = 0; } catch (__labelError) {}
+        try { layer.moveToBeginning(); } catch (__moveError) {}
+        var sourceId = null;
+        try { sourceId = layer.source.id; } catch (__sourceIdError) {}
+        comp.comment = String(comp.comment || "") + token + String(sourceId || "");
+        var effectGroup = layer.property("ADBE Effect Parade");
+        if (!effectGroup) throw new Error("Onion skin layer cannot receive effects.");
+        var effect = effectGroup.addProperty("CC Wide Time");
+        if (!effect) throw new Error("Could not add CC Wide Time.");
+        if (effectName) effect.name = effectName;
+        response.enabled = true;
+        response.layer = __codexLayerInfo(layer);
+        response.effect = __codexPropertyInfo(effect, layer, false, true);
+        response.properties = __codexEffectProperties(effect, layer, true, true);
+        response.comp.comment = comp.comment || "";
+      } else {
+        response.removed = __codexDisableOnion();
+        response.enabled = false;
+        response.comp.comment = comp.comment || "";
+      }
       app.endUndoGroup();
       return response;
     `);
@@ -13725,6 +14170,161 @@ async function callTool(name, args) {
     return toolResult(result.result);
   }
 
+  if (name === "fill_in_keyframes") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const startTime = optionalNumber(args, "startTime", null);
+    const endTime = optionalNumber(args, "endTime", null);
+    const sampleEveryFrames = Math.max(1, Math.floor(optionalNumber(args, "sampleEveryFrames", 1)));
+    const removeRedundant = optionalBoolean(args, "removeRedundant", true);
+    const clearExpression = optionalBoolean(args, "clearExpression", true);
+    let propertyPath;
+    try {
+      propertyPath = normalizePropertyPathArg(args, "propertyPath");
+    } catch (error) {
+      return toolResult(error.message, true);
+    }
+
+    if (startTime !== null && endTime !== null && endTime < startTime) return toolResult("endTime must be greater than or equal to startTime.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      var propertyPath = ${aeLiteral(propertyPath)};
+      var requestedStart = ${startTime === null ? "null" : startTime};
+      var requestedEnd = ${endTime === null ? "null" : endTime};
+      var sampleEveryFrames = ${sampleEveryFrames};
+      var removeRedundant = ${removeRedundant ? "true" : "false"};
+      var clearExpression = ${clearExpression ? "true" : "false"};
+      var prop = __codexResolveProperty(layer, propertyPath);
+      if (!prop || !prop.canVaryOverTime) throw new Error("Property cannot be keyframed.");
+      try {
+        if (prop.propertyValueType === PropertyValueType.NO_VALUE) throw new Error("Property has no value.");
+      } catch (__noValueProbeError) {}
+
+      function __codexValuesEqual(valueA, valueB) {
+        var arrayA = valueA instanceof Array ? valueA : [valueA];
+        var arrayB = valueB instanceof Array ? valueB : [valueB];
+        if (arrayA.length !== arrayB.length) return false;
+        for (var __e = 0; __e < arrayA.length; __e++) {
+          if (arrayA[__e] !== arrayB[__e]) return false;
+        }
+        return true;
+      }
+
+      function __codexCopyValue(value) {
+        if (value instanceof Array) {
+          var copy = [];
+          for (var __cv = 0; __cv < value.length; __cv++) copy.push(value[__cv]);
+          return copy;
+        }
+        return value;
+      }
+
+      var frameDuration = comp.frameDuration || (1 / comp.frameRate);
+      var step = frameDuration * sampleEveryFrames;
+      var rangeStart = requestedStart !== null ? requestedStart : (prop.numKeys && prop.numKeys > 0 ? prop.keyTime(1) : (comp.workAreaStart || 0));
+      var rangeEnd = requestedEnd !== null ? requestedEnd : (prop.numKeys && prop.numKeys > 0 ? prop.keyTime(prop.numKeys) : Math.min(comp.duration, (comp.workAreaStart || 0) + (comp.workAreaDuration || comp.duration)));
+      if (rangeEnd < rangeStart) throw new Error("Computed keyframe range is invalid.");
+
+      var samples = [];
+      var guard = 0;
+      for (var t = rangeStart; t <= rangeEnd + 0.0001 && guard < 2000; t += step) {
+        var sampleTime = Math.min(t, rangeEnd);
+        samples.push({ time: sampleTime, value: __codexCopyValue(prop.valueAtTime(sampleTime, false)) });
+        guard++;
+      }
+      if (!samples.length || Math.abs(samples[samples.length - 1].time - rangeEnd) > 0.0001) {
+        samples.push({ time: rangeEnd, value: __codexCopyValue(prop.valueAtTime(rangeEnd, false)) });
+      }
+
+      app.beginUndoGroup("Codex Fill In Keyframes");
+      while (prop.numKeys && prop.numKeys > 0) {
+        prop.removeKey(prop.numKeys);
+      }
+      for (var __i = 0; __i < samples.length; __i++) {
+        prop.setValueAtTime(samples[__i].time, __codexPreparePropertyValue(prop, samples[__i].value));
+      }
+      var removed = 0;
+      if (removeRedundant && prop.numKeys > 2) {
+        for (var __k = prop.numKeys - 1; __k > 1; __k--) {
+          var previousValue = prop.keyValue(__k - 1);
+          var currentValue = prop.keyValue(__k);
+          var nextValue = prop.keyValue(__k + 1);
+          if (__codexValuesEqual(previousValue, currentValue) && __codexValuesEqual(currentValue, nextValue)) {
+            prop.removeKey(__k);
+            removed++;
+          }
+        }
+      }
+      for (var __linear = 1; __linear <= prop.numKeys; __linear++) {
+        try { prop.setInterpolationTypeAtKey(__linear, KeyframeInterpolationType.LINEAR, KeyframeInterpolationType.LINEAR); } catch (__linearError) {}
+      }
+      if (clearExpression && prop.canSetExpression) {
+        try { prop.expression = ""; } catch (__clearExpressionError) {}
+      }
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        layer: __codexLayerInfo(layer),
+        property: __codexPropertyInfo(prop, layer, true, true),
+        sampledCount: samples.length,
+        removedRedundantCount: removed,
+        keyframeCount: prop.numKeys || 0,
+        range: { startTime: rangeStart, endTime: rangeEnd, sampleEveryFrames: sampleEveryFrames },
+        clearExpression: clearExpression
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "keyframe_current_value_from_expression") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const time = optionalNumber(args, "time", null);
+    const requireExpression = optionalBoolean(args, "requireExpression", true);
+    let propertyPath;
+    try {
+      propertyPath = normalizePropertyPathArg(args, "propertyPath");
+    } catch (error) {
+      return toolResult(error.message, true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      var propertyPath = ${aeLiteral(propertyPath)};
+      var targetTime = ${time === null ? "comp.time" : time};
+      var requireExpression = ${requireExpression ? "true" : "false"};
+      var prop = __codexResolveProperty(layer, propertyPath);
+      if (!prop || !prop.canVaryOverTime) throw new Error("Property cannot be keyframed.");
+      if (requireExpression && (!prop.canSetExpression || !prop.expression)) throw new Error("Property has no expression to evaluate.");
+
+      app.beginUndoGroup("Codex Keyframe Current Value From Expression");
+      var currentValue = prop.valueAtTime(targetTime, false);
+      prop.setValueAtTime(targetTime, __codexPreparePropertyValue(prop, currentValue));
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name, time: comp.time },
+        layer: __codexLayerInfo(layer),
+        property: __codexPropertyInfo(prop, layer, true, true),
+        keyframe: { time: targetTime, value: __codexValueData(currentValue) },
+        expression: prop.canSetExpression ? prop.expression || "" : ""
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
   if (name === "apply_keyframe_ease") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
@@ -13813,6 +14413,69 @@ async function callTool(name, args) {
     return toolResult(result.result);
   }
 
+  if (name === "set_spatial_in_tangent") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const keyIndexArg = optionalPositiveInteger(args, "keyIndex");
+    const factor = optionalNumber(args, "factor", 0.5);
+    let propertyPath;
+    try {
+      propertyPath = hasArg(args, "propertyPath")
+        ? normalizePropertyPathArg(args, "propertyPath")
+        : ["ADBE Transform Group", "ADBE Position"];
+    } catch (error) {
+      return toolResult(error.message, true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      var propertyPath = ${aeLiteral(propertyPath)};
+      var requestedKeyIndex = ${keyIndexArg === null ? "null" : keyIndexArg};
+      var factor = ${factor};
+      var prop = __codexResolveProperty(layer, propertyPath);
+      if (!prop || !prop.numKeys) throw new Error("Property has no keyframes.");
+      var keyIndex = requestedKeyIndex;
+      if (keyIndex === null) {
+        try { keyIndex = prop.selectedKeys && prop.selectedKeys.length ? prop.selectedKeys[0] : null; } catch (__selectedKeyError) {}
+      }
+      if (!keyIndex) throw new Error("Provide keyIndex or select one keyframe.");
+      if (keyIndex < 2 || keyIndex > prop.numKeys) throw new Error("keyIndex must target keyframe 2 or later.");
+      var currentValue = prop.keyValue(keyIndex);
+      var previousValue = prop.keyValue(keyIndex - 1);
+      if (!(currentValue instanceof Array) || !(previousValue instanceof Array)) throw new Error("Spatial tangent requires array keyframe values.");
+      var inTangent = [];
+      for (var __d = 0; __d < currentValue.length; __d++) {
+        inTangent.push((previousValue[__d] - currentValue[__d]) * factor);
+      }
+      var outTangent = null;
+      try { outTangent = prop.keyOutSpatialTangent(keyIndex); } catch (__outSpatialError) {}
+      if (!(outTangent instanceof Array)) {
+        outTangent = [];
+        for (var __o = 0; __o < currentValue.length; __o++) outTangent.push(0);
+      }
+
+      app.beginUndoGroup("Codex Set Spatial In Tangent");
+      prop.setSpatialTangentsAtKey(keyIndex, inTangent, outTangent);
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        layer: __codexLayerInfo(layer),
+        property: __codexPropertyInfo(prop, layer, true, true),
+        keyIndex: keyIndex,
+        factor: factor,
+        inSpatialTangent: __codexArrayCopy(inTangent),
+        outSpatialTangent: __codexArrayCopy(outTangent)
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
   if (name === "set_expression" || name === "clear_expression") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
@@ -13849,6 +14512,86 @@ async function callTool(name, args) {
         expression: prop.expression || "",
         expressionEnabled: prop.expressionEnabled || false,
         expressionError: prop.expressionError || ""
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "separate_shape_size_dimensions") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const xSliderName = optionalString(args, "xSliderName", "X Size");
+    const ySliderName = optionalString(args, "ySliderName", "Y Size");
+    let propertyPath;
+    try {
+      propertyPath = normalizePropertyPathArg(args, "propertyPath");
+    } catch (error) {
+      return toolResult(error.message, true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      var propertyPath = ${aeLiteral(propertyPath)};
+      var xSliderName = ${aeLiteral(xSliderName)};
+      var ySliderName = ${aeLiteral(ySliderName)};
+      var prop = __codexResolveProperty(layer, propertyPath);
+      var supported = prop && (prop.matchName === "ADBE Vector Rect Size" || prop.matchName === "ADBE Vector Ellipse Size");
+      if (!supported) throw new Error("Property must be ADBE Vector Rect Size or ADBE Vector Ellipse Size.");
+      if (!prop.canSetExpression) throw new Error("Size property cannot receive expressions.");
+      var currentSize = prop.value;
+      if (!(currentSize instanceof Array) || currentSize.length < 2) throw new Error("Size property must be a two-dimensional value.");
+      var effectGroup = layer.property("ADBE Effect Parade");
+      if (!effectGroup) throw new Error("Layer cannot receive slider controls.");
+
+      function __codexAddSlider(name, value) {
+        var group = layer.property("ADBE Effect Parade");
+        if (!group) throw new Error("Layer cannot receive slider controls.");
+        var slider = group.addProperty("ADBE Slider Control");
+        if (!slider) throw new Error("Could not add slider control.");
+        slider.name = name;
+        var sliderIndex = slider.propertyIndex;
+        var sliderName = slider.name;
+        var sliderValue = slider.property(1);
+        if (sliderValue) sliderValue.setValue(value);
+        return { index: sliderIndex, name: sliderName, value: value };
+      }
+
+      function __codexSliderByIndex(index) {
+        var group = layer.property("ADBE Effect Parade");
+        if (!group) return null;
+        return group.property(index);
+      }
+
+      app.beginUndoGroup("Codex Separate Shape Size Dimensions");
+      var xSliderInfo = __codexAddSlider(xSliderName || "X Size", currentSize[0]);
+      var ySliderInfo = __codexAddSlider(ySliderName || "Y Size", currentSize[1]);
+      prop = __codexResolveProperty(layer, propertyPath);
+      if (!prop || !prop.canSetExpression) throw new Error("Size property cannot receive expressions after adding sliders.");
+      var expression = [
+        "var x = effect(" + JSON.stringify(xSliderInfo.name) + ")(\\"Slider\\").value;",
+        "var y = effect(" + JSON.stringify(ySliderInfo.name) + ")(\\"Slider\\").value;",
+        "[x, y];"
+      ].join("\\n");
+      prop.expression = expression;
+      try { prop.expressionEnabled = true; } catch (__expressionEnabledError) {}
+      var xSlider = __codexSliderByIndex(xSliderInfo.index);
+      var ySlider = __codexSliderByIndex(ySliderInfo.index);
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        layer: __codexLayerInfo(layer),
+        property: __codexPropertyInfo(prop, layer, true, true),
+        sliders: [
+          { name: xSliderInfo.name, effect: xSlider ? __codexPropertyInfo(xSlider, layer, false, true) : null, value: currentSize[0], properties: xSlider ? __codexEffectProperties(xSlider, layer, true, true) : [] },
+          { name: ySliderInfo.name, effect: ySlider ? __codexPropertyInfo(ySlider, layer, false, true) : null, value: currentSize[1], properties: ySlider ? __codexEffectProperties(ySlider, layer, true, true) : [] }
+        ],
+        expression: expression
       };
       app.endUndoGroup();
       return response;

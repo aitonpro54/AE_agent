@@ -8,6 +8,8 @@ const MUTATING_TOOLS = new Set([
   "create_solid_layer",
   "create_text_layer",
   "create_camera_layer",
+  "create_camera_with_controller",
+  "toggle_onion_skinning",
   "add_project_item_to_comp",
   "set_comp_work_area",
   "set_layer_time_range",
@@ -20,9 +22,13 @@ const MUTATING_TOOLS = new Set([
   "fit_layer_to_comp",
   "set_property_value",
   "set_property_keyframes",
+  "fill_in_keyframes",
+  "keyframe_current_value_from_expression",
   "apply_keyframe_ease",
+  "set_spatial_in_tangent",
   "set_expression",
   "clear_expression",
+  "separate_shape_size_dimensions",
   "duplicate_layer",
   "duplicate_layers",
   "delete_layer",
@@ -787,6 +793,117 @@ function checkSetPropertyValue(checks, step, payload, evidence) {
   });
 }
 
+function keyframeAtTime(property, time) {
+  const keyframes = Array.isArray(property && property.keyframes) ? property.keyframes : [];
+  const target = Number(time);
+  return keyframes.find((keyframe) => nearlyEqual(Number(keyframe && keyframe.time), target, 0.001)) || null;
+}
+
+function checkCameraWithController(checks, step, payload) {
+  const camera = payload.cameraLayer || {};
+  const controller = payload.controllerLayer || {};
+  const parent = camera.parent || {};
+  const cameraName = step.args && (step.args.cameraName || "Camera 1");
+  const controllerName = step.args && (step.args.controllerName || "Camera Controller");
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:parent`,
+    title: "Camera is parented to the generated controller",
+    expected: `${cameraName} parent = ${controllerName}`,
+    observed: `${camera.name || "missing camera"} parent = ${parent.name || "missing parent"}`,
+    passed: camera.name === cameraName && controller.name === controllerName && parent.name === controllerName,
+    evidence: stepLabel(step)
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:controller`,
+    title: "Controller is 3D with separated Position dimensions",
+    expected: "threeDLayer:true, positionDimensionsSeparated:true",
+    observed: `threeDLayer:${payload.controller && payload.controller.threeDLayer === true}, positionDimensionsSeparated:${payload.controller && payload.controller.positionDimensionsSeparated === true}`,
+    passed: Boolean(payload.controller && payload.controller.threeDLayer === true && payload.controller.positionDimensionsSeparated === true),
+    evidence: stepLabel(step)
+  });
+}
+
+function checkToggleOnionSkinning(checks, step, payload) {
+  const args = step.args || {};
+  const expectedEnabled = args.mode === "disable" ? false : true;
+  const effect = payload.effect || {};
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:state`,
+    title: "Onion skinning state matches request",
+    expected: expectedEnabled ? "enabled with CC Wide Time" : "disabled",
+    observed: payload.enabled ? `${payload.layer && payload.layer.name || "layer"} / ${effect.name || effect.matchName || "missing effect"}` : "disabled",
+    passed: expectedEnabled ? payload.enabled === true && /wide time/i.test(`${effect.name || ""} ${effect.matchName || ""}`) : payload.enabled === false,
+    evidence: stepLabel(step)
+  });
+}
+
+function checkFillInKeyframes(checks, step, payload) {
+  const property = payload.property || {};
+  const keyframes = Array.isArray(property.keyframes) ? property.keyframes : [];
+  const clearExpression = !step.args || step.args.clearExpression !== false;
+  const allLinear = keyframes.length > 0 && keyframes.every((keyframe) => (
+    (!keyframe.inInterpolation || keyframe.inInterpolation === "linear") &&
+    (!keyframe.outInterpolation || keyframe.outInterpolation === "linear")
+  ));
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:keyframes`,
+    title: "Expression/value samples were baked into linear keyframes",
+    expected: "sampled keyframes with linear interpolation",
+    observed: `${payload.keyframeCount || 0} keyframe(s), sampled=${payload.sampledCount || 0}`,
+    passed: Number(payload.keyframeCount || 0) >= 2 && allLinear && (!clearExpression || !property.expression),
+    evidence: stepLabel(step)
+  });
+}
+
+function checkCurrentExpressionKeyframe(checks, step, payload) {
+  const time = hasOwn(step.args || {}, "time") ? step.args.time : payload.comp && payload.comp.time;
+  const property = payload.property || {};
+  const keyframe = keyframeAtTime(property, time);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:keyframe`,
+    title: "Current post-expression value was written as a keyframe",
+    expected: `keyframe at ${time}`,
+    observed: keyframe ? `keyframe at ${keyframe.time}` : "missing keyframe",
+    passed: Boolean(keyframe),
+    evidence: stepLabel(step)
+  });
+}
+
+function checkSpatialInTangent(checks, step, payload) {
+  const tangent = numberArrayValue(payload.inSpatialTangent);
+  const keyIndex = Number(payload.keyIndex || step.args && step.args.keyIndex || 0);
+  const property = payload.property || {};
+  const keyframes = Array.isArray(property.keyframes) ? property.keyframes : [];
+  const keyframe = keyframes.find((item) => Number(item && item.index) === keyIndex);
+  const readBackTangent = numberArrayValue(keyframe && keyframe.inSpatialTangent);
+  const matches = tangent && readBackTangent &&
+    tangent.length === readBackTangent.length &&
+    tangent.every((value, index) => nearlyEqual(value, readBackTangent[index], 0.001));
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:spatial-tangent`,
+    title: "Spatial in tangent was written and read back",
+    expected: tangent ? tangent.join(",") : "computed tangent",
+    observed: readBackTangent ? readBackTangent.join(",") : "missing tangent",
+    passed: Boolean(matches),
+    evidence: stepLabel(step)
+  });
+}
+
+function checkSeparateShapeSizeDimensions(checks, step, payload) {
+  const sliders = Array.isArray(payload.sliders) ? payload.sliders : [];
+  const expression = String(payload.expression || payload.property && payload.property.expression || "");
+  const xName = step.args && (step.args.xSliderName || "X Size");
+  const yName = step.args && (step.args.ySliderName || "Y Size");
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:sliders-expression`,
+    title: "Shape Size is driven by X/Y slider controls",
+    expected: `${xName}, ${yName}, expression`,
+    observed: `${sliders.map((slider) => slider.name).join(", ")}; expression=${expression ? "present" : "missing"}`,
+    passed: sliders.length >= 2 && expression.includes(xName) && expression.includes(yName),
+    evidence: stepLabel(step)
+  });
+}
+
 function arrayLength(value) {
   return Array.isArray(value) ? value.length : 0;
 }
@@ -1155,6 +1272,16 @@ function verifyStep(checks, step, evidence) {
     return;
   }
 
+  if (step.tool === "create_camera_with_controller") {
+    checkCameraWithController(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "toggle_onion_skinning") {
+    checkToggleOnionSkinning(checks, step, payload);
+    return;
+  }
+
   if (step.tool === "set_comp_work_area") {
     checkNumberFields(checks, step, [
       { arg: "start", label: "workAreaStart", read: (value) => value && value.workAreaStart },
@@ -1254,6 +1381,16 @@ function verifyStep(checks, step, evidence) {
     return;
   }
 
+  if (step.tool === "fill_in_keyframes") {
+    checkFillInKeyframes(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "keyframe_current_value_from_expression") {
+    checkCurrentExpressionKeyframe(checks, step, payload);
+    return;
+  }
+
   if (step.tool === "apply_keyframe_ease") {
     pushCheck(checks, {
       id: `${step.index || "step"}:${step.tool}:ease`,
@@ -1266,6 +1403,11 @@ function verifyStep(checks, step, evidence) {
     return;
   }
 
+  if (step.tool === "set_spatial_in_tangent") {
+    checkSpatialInTangent(checks, step, payload);
+    return;
+  }
+
   if (step.tool === "set_expression") {
     pushCheck(checks, {
       id: `${step.index || "step"}:${step.tool}:expression`,
@@ -1275,6 +1417,11 @@ function verifyStep(checks, step, evidence) {
       passed: sameString(payload.expression, args.expression) && !payload.expressionError,
       evidence: payload.expressionError || stepLabel(step)
     });
+    return;
+  }
+
+  if (step.tool === "separate_shape_size_dimensions") {
+    checkSeparateShapeSizeDimensions(checks, step, payload);
     return;
   }
 
