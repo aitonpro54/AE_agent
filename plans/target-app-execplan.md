@@ -77,6 +77,14 @@ Codex App dev-request handoff for repository work.
   then stopped before implementation with `implementation-child-run-failed`
   terminal `failed_import` results. The durable ledger now has zero `queued`
   candidates and zero `queued live_lane_needed`.
+- [x] Milestone 10: Full Intaker blocked live-lane synthesis drain. A scoped
+  resolution pass was run only for the nine
+  `blocked_live_lane_synthesis_incomplete` candidates requested by the user. The
+  existing resolution path grouped them into two generated-only OpenAI CLI families:
+  six layer-timing candidates and three effect-property candidates. Both families
+  failed closed at generated-only proof read-back, so no candidates were requeued
+  and the ledger still has nine `blocked_live_lane_synthesis_incomplete` entries,
+  zero `queued`, and zero `queued live_lane_needed`.
 
 ## Current Dirty State
 
@@ -85,10 +93,13 @@ new work only after a fresh context/status check.
 
 ## Next Milestone
 
-Milestone 10: choose the next recovery strategy for the Full Intaker tail now that
-the durable ledger has zero queued candidates. Prefer a targeted inspection/repair
-path for one `failed_import` candidate at a time, starting from compact evidence and
-avoiding archives or large runtime reports without a precise reason.
+Milestone 11: choose the next bounded repair strategy. The latest blocked live-lane
+drain proved the current layer-timing and effect-property generated-only lanes are
+not sufficient: layer timing failed a start-time read-back expectation, and effect
+property failed to find the generated effect property value by read-back. Prefer a
+targeted lane-fixture repair or candidate-specific family review before retrying
+those nine entries; otherwise inspect one `failed_import` candidate at a time from
+compact evidence.
 
 ## Decision Log
 
@@ -133,6 +144,15 @@ avoiding archives or large runtime reports without a precise reason.
   transactions, each preserving `max-items 1` and strict phase boundaries. No source
   merge, live rerun, CEP/AE mutation, or OpenAI CLI live acceptance lane was started
   because each candidate failed during importer implementation planning.
+- For Milestone 10, `--resolution-candidate-ids` with the nine explicit candidate
+  ids was treated as the safe bounded path. The command kept `--compact-json`,
+  `--max-items 1`, and `--no-commit`, so the run processed resolution tickets and
+  stopped at `completed_no_candidates` without importer/source merge phases.
+- The nine blocked entries now have fresh terminal resolution tickets in two
+  families. The layer-timing generated-only proof failed because a generated layer
+  timing start-time read-back expected `0.5` and got `2.75`. The effect-property
+  generated-only proof failed because the generated effect property value was not
+  found by read-back.
 
 ## Validation
 
@@ -335,6 +355,29 @@ lane, because all three candidates failed during importer implementation plannin
 before any source merge or live rerun requirement. Broad/default CEP smoke,
 Local/Ollama provider validation, dependency changes, push/PR, old longrun, and
 importer `max-items > 1` remain prohibited.
+
+Milestone 10 targeted validation:
+
+- [x] Context/status check completed; no active goal budget was reported by the
+  Codex context tool.
+- [x] `git status --short --branch --untracked-files=all` showed branch
+  `road-map-2.0` ahead 3 and no worktree changes before documentation updates.
+- [x] `node orchestrator/full-intake-ledger-summary.mjs --compact` showed
+  `blocked_live_lane_synthesis_incomplete:9`, zero `queued`, and
+  `Queued live_lane_needed: 0`.
+- [x] Scoped bounded run:
+  `node orchestrator/run-generic-repo-full-intake.mjs --ledger .codex-runtime/sdk/generic-repo-importer/kyletmartinez-after-effects-scripts-intake/queue-ledger.json --run-id full-intake-kyletmartinez --max-items 1 --resolution-candidate-ids <nine requested ids> --context-percent 20 --allow-self-improvement-lane-synthesis --compact-json --no-commit`
+  completed with `status: completed_no_candidates`, `terminalTickets:2`,
+  `requeued:0`, and `items:0`.
+- [x] Post-run compact status and proof showed `changedPathCount:0`,
+  `unplannedPathCount:0`, no active related processes, and last event
+  `resolution_queue_processed`.
+- [x] Fresh resolution tickets showed both generated-only proof lanes failed closed:
+  layer timing read-back mismatch and effect-property read-back missing value.
+
+Not run by design: source merge, importer phases, mutating live CEP/AE validation,
+broad/default CEP smoke, Local/Ollama provider validation, dependency changes,
+push/PR, old longrun, and importer `max-items > 1`.
 
 ## Handoff
 
