@@ -30,6 +30,10 @@ Always update `.codex/handoff.md` according to the milestone handoff format afte
 Avoid broad repository scans unless explicitly requested.
 Use targeted `rg`, `sed`, `head`, `tail`, and file-specific reads.
 For large command outputs, save full logs to a file and summarize only the relevant lines.
+- Do not read `plans/archive/**` by default. Open archived plan history only for a targeted lookup with a specific reason.
+- Do not read old `.codex-runtime/**`, proof envelopes, batch reports, or generated runtime/proof reports by default. Prefer compact handoff/status files and targeted searches.
+- Keep `plans/target-app-execplan.md` compact: target under 24 KB, hard cap 32 KB. If it grows past the target, archive stale detail before starting new work.
+- Keep `.codex/handoff.md` compact: target under 12 KB, hard cap 16 KB. If it grows past the target, replace stale detail with a concise continuation state.
 
 ## Windows PowerShell encoding
 
