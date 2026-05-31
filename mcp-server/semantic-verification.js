@@ -31,6 +31,7 @@ const MUTATING_TOOLS = new Set([
   "separate_shape_size_dimensions",
   "duplicate_layer",
   "duplicate_layers",
+  "set_layer_selection",
   "delete_layer",
   "set_comp_properties",
   "set_layer_mask",
@@ -1463,6 +1464,29 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "duplicate_layers") {
     checkDuplicateLayers(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_layer_selection") {
+    const requested = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
+    const observed = Array.isArray(payload.selectedIndices) ? payload.selectedIndices.map(Number) : [];
+    const expectedNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
+    const observedNames = Array.isArray(payload.selectedNames) ? payload.selectedNames.map(String) : [];
+    const indexMatches = requested.length > 0 &&
+      requested.length === observed.length &&
+      requested.every((value, index) => observed[index] === value);
+    const nameMatches = !expectedNames.length ||
+      (expectedNames.length === observedNames.length && expectedNames.every((value, index) => observedNames[index] === value));
+    const readBackEvidence = observedNameEvidence(evidence.readBack, observedNames[0]) ||
+      observedNameEvidence(evidence.all, observedNames[0]);
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:selection`,
+      title: "Layer selection matches explicit request",
+      expected: requested.join(", "),
+      observed: observed.join(", "),
+      passed: indexMatches && nameMatches && Boolean(readBackEvidence),
+      evidence: readBackEvidence || "No selected-layer read-back matched the requested selection."
+    });
     return;
   }
 

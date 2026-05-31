@@ -9,6 +9,7 @@ const {
 const {
   AGENT_SCENARIO_MUTATING_TOOLS,
   agentDakkshinTypedToolsScenarioPlans,
+  agentLayerSelectionScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
   agentScenarioPlans
 } = require("./agent-scenario-fixtures");
@@ -296,6 +297,37 @@ function fakeMutationResult(step, state) {
         pairNameMatches: true
       }
     }, compName, pairs[0] && pairs[0].duplicate);
+  }
+  if (step.tool === "set_layer_selection") {
+    const requestedLayerIndices = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
+    if (!state.layers.length) {
+      state.layers = requestedLayerIndices.map((index) => layerInfo(`Selection Fixture Layer ${index}`, { index }));
+    }
+    const expectedLayerNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
+    const selectedLayers = requestedLayerIndices.map((layerIndex, index) => {
+      const existing = state.layers.find((layer) => Number(layer.index) === Number(layerIndex));
+      return existing || layerInfo(expectedLayerNames[index] || `Selection Fixture Layer ${layerIndex}`, { index: layerIndex });
+    }).map((layer, index) => ({
+      ...layer,
+      name: expectedLayerNames[index] || layer.name
+    }));
+    state.selectedLayers = selectedLayers;
+    return withVerification({
+      comp: { name: compName, numLayers: state.layers.length },
+      requestedLayerIndices,
+      expectedLayerNames,
+      selectedLayers,
+      selectedIndices: selectedLayers.map((layer) => layer.index),
+      selectedNames: selectedLayers.map((layer) => layer.name),
+      changedCount: selectedLayers.length,
+      postVerification: {
+        ok: true,
+        requestedCount: requestedLayerIndices.length,
+        selectedCount: selectedLayers.length,
+        indexMatches: true,
+        nameMatches: true
+      }
+    }, compName, selectedLayers[0]);
   }
   if (step.tool === "delete_layer") {
     if (!state.layers.length) {
@@ -829,6 +861,16 @@ function fakeReadBackResult(step, state) {
       propertyTree: state.propertyValues.slice()
     };
   }
+  if (step.tool === "get_selected_layers") {
+    const selectedLayers = Array.isArray(state.selectedLayers) ? state.selectedLayers.slice() : [];
+    return {
+      comp: {
+        name: step.args && step.args.compName || state.lastCompName || "Fixture Comp",
+        numLayers: state.layers.length
+      },
+      selectedLayers
+    };
+  }
   if (step.tool === "get_comp_details" || step.tool === "list_layers") {
     const layers = state.layers.slice();
     return {
@@ -858,6 +900,7 @@ function fakeRunForPlan(plan) {
     lastCompName: "",
     projectItems: [],
     layers: [],
+    selectedLayers: [],
     propertyValues: [],
     renderQueueItems: [],
     layerMarkers: [],
@@ -1182,6 +1225,14 @@ function assertDuplicateLayersMissingReadBackNeedsReview() {
   const semantic = buildSemanticVerification(plan, run);
   assert.strictEqual(semantic.status, "needs_review", "duplicate_layers must not pass without post-run read-back evidence.");
   assert(semantic.checks.some((check) => check.id.indexOf("duplicate_layers:names") >= 0 && check.status === "failed"), "missing duplicate_layers read-back names should fail.");
+}
+
+function assertLayerSelectionPasses() {
+  const [scenario] = agentLayerSelectionScenarioPlans("Codex Semantic Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  assert.strictEqual(semantic.status, "passed", `set_layer_selection semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_selection:selection") >= 0 && check.status === "passed"), "set_layer_selection read-back check should pass.");
 }
 
 function assertDeleteLayerPasses() {
@@ -1911,6 +1962,7 @@ function main() {
   assertDuplicateLayersJsonStringReadBackPasses();
   assertDuplicateLayersMissingReadBackNeedsReview();
   assertDuplicateLayersPairOrderMismatchNeedsReview();
+  assertLayerSelectionPasses();
   assertDeleteLayerPasses();
   assertDeleteLayerMissingReadBackNeedsReview();
   assertSetCompPropertiesPasses();

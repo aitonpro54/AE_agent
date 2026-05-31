@@ -36,6 +36,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "separate_shape_size_dimensions",
   "duplicate_layer",
   "duplicate_layers",
+  "set_layer_selection",
   "delete_layer",
   "set_comp_properties",
   "set_layer_mask",
@@ -681,6 +682,59 @@ function agentDuplicateLayersScenarioPlans(runPrefix) {
               layerLimit: 10
             }
           }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
+function agentLayerSelectionScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Layer Selection`;
+  const compName = `${base} Comp`;
+  const solidName = `${base} Plate`;
+  const shapeName = `${base} Shape`;
+  const textName = `${base} Text`;
+  const selectedLayerIndices = [1, 2];
+  const selectedLayerNames = [textName, shapeName];
+
+  return [
+    {
+      id: "generated-layer-selection-set",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "create_shape_layer",
+        "create_text_layer",
+        "get_comp_details",
+        "set_layer_selection",
+        "get_selected_layers",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedLayerSelection: true,
+        compName,
+        selectedLayerIndices,
+        selectedLayerNames
+      },
+      plan: {
+        summary: "AUX-101 generated-only live QA for explicit layer selection mutation and read-back.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated layer-selection comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.06, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "AUX-101 generated-only layer selection validation" } },
+          { title: "Create generated selection solid", tool: "create_solid_layer", args: { compName, name: solidName, color: [0.18, 0.24, 0.32], width: 320, height: 180, pixelAspect: 1, startTime: 0, duration: 3 } },
+          { title: "Create generated selection shape", tool: "create_shape_layer", args: { compName, name: shapeName, shape: "rectangle", size: [180, 120], position: [280, 180], fillColor: [0.25, 0.62, 0.82], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Create generated selection text", tool: "create_text_layer", args: { compName, text: "Selection", name: textName, position: [360, 180], fontSize: 48, fillColor: [0.9, 0.9, 0.86], startTime: 0, duration: 3 } },
+          { title: "Read generated layer stack before selection", tool: "get_comp_details", args: { compName, includeLayers: true, layerLimit: 10 } },
+          { title: "Set generated layer selection explicitly", tool: "set_layer_selection", args: { compName, layerIndices: selectedLayerIndices, expectedLayerNames: selectedLayerNames, makeActive: true } },
+          { title: "Read generated selected layers", tool: "get_selected_layers", args: {} },
+          { title: "Read first selected layer details", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } }
         ]
       }
     }
@@ -2676,6 +2730,7 @@ module.exports = {
   agentEffectPropertyScenarioPlans,
   agentExpressionScenarioPlans,
   agentKeyframeScenarioPlans,
+  agentLayerSelectionScenarioPlans,
   agentLayerSwitchScenarioPlans,
   agentLayerTimingScenarioPlans,
   agentLayerTransformScenarioPlans,

@@ -872,6 +872,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "add_project_item_to_comp",
   "duplicate_layer",
   "duplicate_layers",
+  "set_layer_selection",
   "delete_layer",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
@@ -4104,6 +4105,7 @@ const PLANNING_TOOL_NAMES = [
   "add_project_item_to_comp",
   "duplicate_layer",
   "duplicate_layers",
+  "set_layer_selection",
   "delete_layer",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
@@ -6039,6 +6041,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For timeline trims, work areas, sequencing, splitting, and offsets, use set_comp_work_area, set_layer_time_range, stagger_layers, or split_layers_at_time.",
     "For precomp/source workflows, use precompose_layers, replace_layer_source, deep_duplicate_precomp_sources, rename_layers, and rename_project_items before considering raw ExtendScript.",
     "For explicit single-layer duplication, use duplicate_layer after inspecting the target comp/layer and pairing layerIndex with the sourceName in current AE stack order. AE inserts newly created and duplicated layers at layer index 1; do not assume creation order equals layer-index order.",
+    "For explicit layer selection changes, use set_layer_selection only with concrete layerIndices from current get_comp_details/list_layers/get_layer_details evidence and expectedLayerNames when possible; do not use raw ExtendScript to select layers.",
     "For explicit bulk layer duplication, use duplicate_layers with concrete layerIndices after inspecting the target comp/layers. Pair sourceNames with layerIndices in current AE stack order, or insert get_comp_details before duplication when source-layer order is ambiguous. For selected-layer duplication, inspect with get_selected_layers first and bind layerIndices from {{selectedLayerIndices}}; never use duplicate_layers for deletion, source/precomp relinking, mask/path edits, or audio workflows.",
     "For destructive single-layer deletion, use delete_layer only after inspecting the explicit target comp/layer. Provide compItemIndex or compName, layerIndex, and expectedLayerName, then read back the comp/layer stack to prove the deleted layer is absent; never use selection-only, broad, multi-layer, or name-optional deletion.",
     "For composition settings, use set_comp_properties only for width, height, pixelAspect, duration, frameRate, bgColor, and displayStartTime on one explicit comp, then read back the comp before reporting success. Do not route arbitrary comp fields, layers, effects, masks, or property paths through this tool.",
@@ -7962,6 +7965,38 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {}
+    }
+  },
+  {
+    name: "set_layer_selection",
+    description: "Set the selected layers in a target composition by explicit layer indexes, with optional layer-name verification.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndices: {
+          type: "array",
+          items: { type: "number" },
+          description: "Explicit non-empty list of 1-based layer indexes to select."
+        },
+        expectedLayerNames: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional names expected at the same positions as layerIndices. The tool fails closed on mismatch."
+        },
+        makeActive: {
+          type: "boolean",
+          description: "Whether to open the target comp in the viewer before setting selection. Defaults to true."
+        }
+      },
+      required: ["layerIndices"]
     }
   },
   {
@@ -11142,6 +11177,113 @@ async function callTool(name, args) {
           numLayers: comp.numLayers
         },
         selectedLayers: layers
+      };
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_layer_selection") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndices = requiredExplicitPositiveIntegerList(args, "layerIndices");
+    const makeActive = optionalBoolean(args, "makeActive", true);
+
+    let expectedLayerNames = null;
+    if (hasArg(args, "expectedLayerNames")) {
+      expectedLayerNames = args.expectedLayerNames;
+      if (typeof expectedLayerNames === "string" && expectedLayerNames.trim().startsWith("[")) {
+        expectedLayerNames = JSON.parse(expectedLayerNames);
+      }
+      if (!Array.isArray(expectedLayerNames)) {
+        return toolResult("expectedLayerNames must be an array when provided.", true);
+      }
+      expectedLayerNames = expectedLayerNames.map((value) => String(value));
+      if (expectedLayerNames.length !== layerIndices.length) {
+        return toolResult("expectedLayerNames must have the same length as layerIndices.", true);
+      }
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var requestedLayerIndices = ${aeLiteral(layerIndices)};
+      var expectedLayerNames = ${expectedLayerNames ? aeLiteral(expectedLayerNames) : "null"};
+      var makeActive = ${makeActive ? "true" : "false"};
+      if (makeActive && comp.openInViewer) comp.openInViewer();
+
+      var targetLayers = [];
+      for (var __selectionIndex = 0; __selectionIndex < requestedLayerIndices.length; __selectionIndex++) {
+        var requestedIndex = requestedLayerIndices[__selectionIndex];
+        if (requestedIndex > comp.numLayers) {
+          throw new Error("Layer index " + requestedIndex + " is out of range for comp with " + comp.numLayers + " layers.");
+        }
+        var layer = comp.layer(requestedIndex);
+        if (!layer) throw new Error("Layer not found at index " + requestedIndex + ".");
+        if (expectedLayerNames && layer.name !== expectedLayerNames[__selectionIndex]) {
+          throw new Error("Layer name mismatch at index " + requestedIndex + ". Expected '" + expectedLayerNames[__selectionIndex] + "' but found '" + layer.name + "'.");
+        }
+        targetLayers.push(layer);
+      }
+
+      var selectedBefore = [];
+      for (var __beforeIndex = 0; __beforeIndex < comp.selectedLayers.length; __beforeIndex++) {
+        selectedBefore.push(__codexLayerInfo(comp.selectedLayers[__beforeIndex]));
+      }
+
+      app.beginUndoGroup("Codex Set Layer Selection");
+      try {
+        for (var __clearIndex = 1; __clearIndex <= comp.numLayers; __clearIndex++) {
+          comp.layer(__clearIndex).selected = false;
+        }
+        for (var __targetIndex = 0; __targetIndex < targetLayers.length; __targetIndex++) {
+          targetLayers[__targetIndex].selected = true;
+        }
+      } finally {
+        app.endUndoGroup();
+      }
+
+      var selectedAfter = [];
+      var selectedIndices = [];
+      var selectedNames = [];
+      for (var __afterIndex = 0; __afterIndex < comp.selectedLayers.length; __afterIndex++) {
+        var selectedLayer = comp.selectedLayers[__afterIndex];
+        selectedAfter.push(__codexLayerInfo(selectedLayer));
+        selectedIndices.push(selectedLayer.index);
+        selectedNames.push(selectedLayer.name);
+      }
+      var indexMatches = selectedIndices.length === requestedLayerIndices.length;
+      for (var __matchIndex = 0; __matchIndex < requestedLayerIndices.length && indexMatches; __matchIndex++) {
+        if (selectedIndices[__matchIndex] !== requestedLayerIndices[__matchIndex]) indexMatches = false;
+      }
+      var nameMatches = true;
+      if (expectedLayerNames) {
+        nameMatches = selectedNames.length === expectedLayerNames.length;
+        for (var __nameIndex = 0; __nameIndex < expectedLayerNames.length && nameMatches; __nameIndex++) {
+          if (selectedNames[__nameIndex] !== expectedLayerNames[__nameIndex]) nameMatches = false;
+        }
+      }
+
+      return {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          time: comp.time,
+          numLayers: comp.numLayers
+        },
+        requestedLayerIndices: requestedLayerIndices,
+        expectedLayerNames: expectedLayerNames,
+        selectedBefore: selectedBefore,
+        selectedLayers: selectedAfter,
+        selectedIndices: selectedIndices,
+        selectedNames: selectedNames,
+        changedCount: selectedAfter.length,
+        postVerification: {
+          ok: indexMatches && nameMatches,
+          requestedCount: requestedLayerIndices.length,
+          selectedCount: selectedAfter.length,
+          indexMatches: indexMatches,
+          nameMatches: nameMatches
+        }
       };
     `);
     return toolResult(result.result);

@@ -89,6 +89,9 @@ Codex App dev-request handoff for repository work.
   `unsafe_skip_tool_gap` entries were grouped in
   `plans/full-intake-unsafe-skip-triage.md`: 28 safe-next generated-only, 32 needing
   new typed-tool contracts, and 15 approval-gated/last.
+- [x] Milestone 12: Selection typed-tool/lane prep. Added bounded
+  `set_layer_selection`, semantic/fixture coverage, and scoped
+  `selection-generated-only`; live acceptance and retry still need approval.
 
 ## Current Dirty State
 
@@ -97,10 +100,8 @@ new work only after a fresh context/status check.
 
 ## Next Milestone
 
-Milestone 12: start one bounded repair slice. Best first choice is the Selection
-unsafe-skip family from `plans/full-intake-unsafe-skip-triage.md`; alternatively fix
-the layer-timing/effect-property proof lanes before retrying the nine blocked
-live-lane candidates.
+Milestone 13: with explicit approval, run only the Selection generated-only OpenAI
+CLI live lane, then scoped bounded retry for the 11 Selection unsafe-skip candidates.
 
 ## Decision Log
 
@@ -158,6 +159,8 @@ live-lane candidates.
   importer retry problem. No source merge or lane retry was run; the next useful
   slice is Selection because it has many candidates and clear generated-only
   read-back semantics.
+- Milestone 12 uses explicit layer indices plus optional expected names for selection
+  mutation, and only allows unsafe-skip requeue when scoped ids are provided.
 
 ## Validation
 
@@ -391,6 +394,10 @@ Milestone 11 targeted validation:
 - [x] Created `plans/full-intake-unsafe-skip-triage.md` with all 75 ids grouped into
   28 safe-next, 32 contract-needed, and 15 approval-gated/last entries.
 - [x] No source files or runtime importer state were changed.
+
+Milestone 12 targeted validation: touched JS `node --check`, registry JSON parse,
+`npm.cmd run check:rules`, required local smoke suite, `sdk-generic-repo-full-intake`,
+`git diff --check`, and read-only CEP checks passed. Selection live lane/retry not run.
 
 ## Handoff
 

@@ -76,6 +76,10 @@ const SAFE_CLASSIFICATIONS = new Set([
 const LIVE_LANE_RECLASSIFIABLE_CLASSIFICATIONS = new Set([
   "live_lane_needed",
 ]);
+const SELF_IMPROVEMENT_RECLASSIFIABLE_CLASSIFICATIONS = new Set([
+  "live_lane_needed",
+  "unsafe_skip_tool_gap",
+]);
 const SYNTHESIZABLE_CLASSIFICATIONS = new Set([
   ...SAFE_CLASSIFICATIONS,
   ...LIVE_LANE_RECLASSIFIABLE_CLASSIFICATIONS,
@@ -1813,6 +1817,12 @@ function isRecoverableLiveLaneEntry(entry) {
   return /candidate_tools_(?:do_not_match|exceed|match_multiple)|auto_lane_family_missing/i.test(entry.failClosed?.reason || "");
 }
 
+function isScopedUnsafeSkipToolGapEntry(entry) {
+  return entry &&
+    entry.status === "blocked_or_skipped" &&
+    entry.classification === "unsafe_skip_tool_gap";
+}
+
 function childTimeoutRecoveryExhausted(entry) {
   if (entry.implementation?.childTimeoutRecoveryExhausted === true) return true;
   if (/child-timeout-recovery-exhausted|child-timeout-recovery-failed/i.test(entry.failClosed?.reason || "")) return true;
@@ -1968,7 +1978,7 @@ function nextQueueRankAllocator(ledger) {
 function applyFamilyProofToEntry(entry, ticket, liveReport, template, allocateQueueRank) {
   const previousClassification = entry.classification;
   requeueEntryAfterResolution(entry, ticket);
-  if (LIVE_LANE_RECLASSIFIABLE_CLASSIFICATIONS.has(previousClassification)) {
+  if (SELF_IMPROVEMENT_RECLASSIFIABLE_CLASSIFICATIONS.has(previousClassification)) {
     entry.previousClassification = previousClassification;
     entry.classification = template.reclassifiedClassification || "existing_typed_tools_recipe_only";
   }
@@ -2019,9 +2029,15 @@ function processLiveLaneResolutionTickets({
   targetRepo,
   timeoutMs,
 }) {
+  const allowScopedUnsafeSkipResolution = allowSelfImprovementLaneSynthesis &&
+    resolutionCandidateIds instanceof Set &&
+    resolutionCandidateIds.size > 0;
   const recoverable = ledger.entries
     .filter((entry) => candidateAllowedByResolutionScope(entry, resolutionCandidateIds))
-    .filter(isRecoverableLiveLaneEntry);
+    .filter((entry) => isRecoverableLiveLaneEntry(entry) || (
+      allowScopedUnsafeSkipResolution &&
+      isScopedUnsafeSkipToolGapEntry(entry)
+    ));
   const allocateQueueRank = nextQueueRankAllocator(ledger);
   const buckets = new Map();
   for (const entry of recoverable) {

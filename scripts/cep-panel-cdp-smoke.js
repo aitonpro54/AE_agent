@@ -15,6 +15,7 @@ const {
   agentEffectPropertyScenarioPlans,
   agentExpressionScenarioPlans,
   agentKeyframeScenarioPlans,
+  agentLayerSelectionScenarioPlans,
   agentLayerSwitchScenarioPlans,
   agentLayerTimingScenarioPlans,
   agentLayerTransformScenarioPlans,
@@ -439,6 +440,24 @@ function openAiCliLayerSwitchScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_LAYER_SWITCH_PREFIX || "Codex QA AUX096",
     scenarioFactory: agentLayerSwitchScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliLayerSelectionScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-layer-selection",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_LAYER_SELECTION_PREFIX || "Codex QA AUX101",
+    scenarioFactory: agentLayerSelectionScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -4755,6 +4774,52 @@ async function verifyGeneratedLayerSwitchReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedLayerSelectionReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const selected = await callBridgeTool("get_selected_layers", {});
+  if (!selected || !selected.comp || selected.comp.name !== expected.compName) {
+    throw new Error(`${scenario.id}: get_selected_layers did not read the generated comp context.`);
+  }
+  const selectedLayers = Array.isArray(selected.selectedLayers) ? selected.selectedLayers : [];
+  const selectedIndices = selectedLayers.map((layer) => Number(layer.index));
+  const selectedNames = selectedLayers.map((layer) => String(layer.name || ""));
+  const expectedIndices = (expected.selectedLayerIndices || []).map(Number);
+  const expectedNames = (expected.selectedLayerNames || []).map(String);
+  const indicesMatch = expectedIndices.length === selectedIndices.length &&
+    expectedIndices.every((value, index) => selectedIndices[index] === value);
+  const namesMatch = expectedNames.length === selectedNames.length &&
+    expectedNames.every((value, index) => selectedNames[index] === value);
+  if (!indicesMatch || !namesMatch) {
+    throw new Error(`${scenario.id}: selected-layer read-back mismatch; expected ${expectedNames.join(", ")}, got ${selectedNames.join(", ")}.`);
+  }
+
+  const details = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: expectedIndices[0],
+    includeProperties: false
+  });
+  const layer = details && details.layer ? details.layer : {};
+  if (layer.name !== expectedNames[0]) {
+    throw new Error(`${scenario.id}: selected layer detail read-back mismatch; expected ${expectedNames[0]}, got ${layer.name || "missing"}.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: compMatch.itemIndex,
+      name: compMatch.name
+    },
+    selection: {
+      selectedIndices,
+      selectedNames
+    },
+    layer: {
+      index: layer.index,
+      name: layer.name
+    }
+  };
+}
+
 async function verifyGeneratedKeyframeReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const selected = await callBridgeTool("get_selected_properties", {
@@ -5447,6 +5512,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedLayerSwitches) {
     return verifyGeneratedLayerSwitchReadBack(scenario, expected);
+  }
+
+  if (expected.generatedLayerSelection) {
+    return verifyGeneratedLayerSelectionReadBack(scenario, expected);
   }
 
   if (expected.generatedKeyframeEase) {
@@ -6164,6 +6233,10 @@ async function main() {
   }
   if (command === "agent-layer-switches-openai-cli-smoke" || command === "full-ui-agent-layer-switches-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliLayerSwitchScenarioConfig());
+    return;
+  }
+  if (command === "agent-layer-selection-openai-cli-smoke" || command === "full-ui-agent-layer-selection-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliLayerSelectionScenarioConfig());
     return;
   }
   if (command === "agent-keyframes-openai-cli-smoke" || command === "full-ui-agent-keyframes-openai-cli-smoke") {

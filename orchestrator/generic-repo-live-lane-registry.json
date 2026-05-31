@@ -125,6 +125,59 @@
       "scope": "generated-only explicit layer switch proof using set_property_value on whitelisted collapseTransformation and motionBlur layer attributes plus get_layer_details/get_comp_details read-back, semantic verification, and cleanup; camera parenting, controller setup, comp-wide motion blur, recursive/global traversal, onion skinning, version duplication, and arbitrary layer fields remain fail-closed"
     },
     {
+      "id": "selection-generated-only",
+      "requiredTools": [
+        "get_selected_layers"
+      ],
+      "allowedTools": [
+        "get_active_comp",
+        "get_selected_layers"
+      ],
+      "candidateIds": [
+        "tool-selection-layer-selection-set",
+        "tool-selection-select-all-children",
+        "tool-selection-select-disabled-layers",
+        "tool-selection-select-guide-layers",
+        "tool-selection-select-layers-below-label",
+        "tool-selection-select-non-null-layers",
+        "tool-selection-select-parent-layer",
+        "tool-selection-select-random-layers",
+        "tool-selection-select-shape-layers",
+        "tool-selection-select-text-layers",
+        "tool-selection-select-unparented-layers"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-selection-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "layer-selection",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_selected_layers",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only explicit layer selection proof using set_layer_selection against generated layer indices plus get_selected_layers/get_layer_details read-back and semantic verification; selection-state persistence, random/non-deterministic selection, project-panel selection, settings storage, and source-exact raw JSX semantics remain fail-closed"
+    },
+    {
       "id": "composition-version-token-generated-only",
       "requiredTools": [
         "rename_project_items"
