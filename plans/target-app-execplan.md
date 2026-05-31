@@ -44,15 +44,20 @@ Codex App dev-request handoff for repository work.
   Local/Ollama visible as a manual `Detect Ollama` / `Check model` path, and smoke
   coverage now asserts that the shared self-test button does not probe Local/Ollama
   or refresh provider model lists.
+- [x] Milestone 5: Provider self-test installed-panel validation. The installed CEP
+  panel was synced through the narrow `cep-sync-health --sync --check` path, copying
+  only `panel.js`, clearing only this extension's CEP cache while preserving Local
+  Storage, and the targeted live self-test smoke proved `checkModels=0` with no
+  `ollama-local` probe.
 
 ## Current Dirty State
 
-No known pre-existing dirty recovery state remains after Milestone 4. Continue with
+No known pre-existing dirty recovery state remains after Milestone 5. Continue with
 new work only after a fresh context/status check.
 
 ## Next Milestone
 
-Milestone 5: resume normal target-app progression from this compact baseline with a
+Milestone 6: resume normal target-app progression from this compact baseline with a
 new narrow, reviewable task. Do not read archives/runtime reports by default, and keep
 the same guardrails: no Local/Ollama, broad/default CEP smoke, dependency/package
 changes, push/PR, old longrun, or importer `max-items > 1` without explicit approval.
@@ -77,6 +82,9 @@ changes, push/PR, old longrun, or importer `max-items > 1` without explicit appr
 - The provider self-test is a lightweight setup/auth preflight, not a model catalog
   refresh or Local/Ollama detector. The explicit `Check model` action and Local
   `Detect Ollama` control remain the opt-in paths for those checks.
+- The installed-panel validation gap was closed with the sync helper instead of the
+  full installer, because only tracked CEP file drift was present and full
+  PlayerDebugMode/install work was unnecessary.
 
 ## Validation
 
@@ -126,6 +134,27 @@ dependency/package changes, push/PR, old longrun, real importer runs with
 `provider-self-test-smoke` was not run against the installed panel because the
 installed `%AppData%` CEP bundle was older than the worktree and syncing/installing
 the panel plus clearing CEP cache was not explicitly approved in this turn.
+
+Milestone 5 targeted validation:
+
+- [x] Pre-sync `node scripts/cep-sync-health.js --check` failed as expected with only
+  `panel.js` different between repo and the installed CEP panel.
+- [x] `node scripts/cep-sync-health.js --sync --check` passed; copied 1 file
+  (`panel.js`), skipped 3 same files, cleared 4 extension CEP cache folders, and
+  preserved Local Storage.
+- [x] Post-sync `node scripts/cep-sync-health.js --check` passed.
+- [x] `node scripts/cep-panel-cdp-smoke.js inspect` passed against the installed
+  panel.
+- [x] `node scripts/cep-panel-cdp-smoke.js provider-self-test-smoke` passed with 5
+  readiness URLs, all `checkModels=0`, and no `agentId=ollama-local`.
+- [x] `node scripts/cep-panel-cdp-smoke.js connector-status-smoke` passed.
+- [x] `git diff --check` passed with existing CRLF normalization warnings only.
+
+Not run by design: broad/default CEP smoke, Local/Ollama provider validation,
+dependency/package changes, push/PR, old longrun, real importer runs with
+`max-items > 1`, live CEP/AE mutation, and the full local smoke suite because this
+milestone changed no source behavior beyond syncing the already validated installed
+CEP panel bundle.
 
 ## Handoff
 
