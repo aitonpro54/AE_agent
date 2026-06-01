@@ -708,7 +708,7 @@ function assertStrictCompactParentRunsOnePhaseAtBoundary() {
     ];
 
     for (const [completedPhase, nextPhase] of expectedPhases) {
-      const contextArgs = completedPhase === "generated_only_live_rerun" ? ["--context-percent", "58"] : [];
+      const contextArgs = completedPhase === "generated_only_live_rerun" ? ["--context-percent", "66"] : [];
       const result = runFullIntakeFixtureCompactPhase(
         fixture,
         ledgerPath,
@@ -884,7 +884,7 @@ function assertContextBudgetStopsBeforeNewWork() {
       "fixture-context-budget",
       1,
       {},
-      ["--context-percent", "65"]
+      ["--context-percent", "79"]
     );
     assert.strictEqual(result.status, 0, result.stderr || result.stdout);
     const output = JSON.parse(result.stdout);
@@ -932,7 +932,7 @@ function assertUnknownContextStopsBeforeNewWork() {
   }
 }
 
-function assertHighContextThresholdsFailClosed() {
+function assertHighContextThresholdsAllowCeiling() {
   const fixture = createFixture("high-thresholds");
   try {
     const ledgerPath = writeLedger(fixture, validLedger(fixture));
@@ -952,15 +952,17 @@ function assertHighContextThresholdsFailClosed() {
         "--context-percent",
         "5",
         "--handoff-percent",
-        "98",
+        "100",
         "--hard-stop-percent",
         "100",
         "--compact-json"
       ],
       repo
     );
-    assert.notStrictEqual(result.status, 0);
-    assert.match(result.stderr, /context-budget-threshold-too-high/);
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    const output = JSON.parse(result.stdout);
+    assert.strictEqual(output.status, "phase_boundary");
+    assert.strictEqual(output.contextBudget.lastDecision.action, "continue");
   } finally {
     removeFixture(fixture.root);
   }
@@ -2260,7 +2262,7 @@ function main() {
   assertParentJsonIsSealedAndBatchRequiresApproval();
   assertContextBudgetStopsBeforeNewWork();
   assertUnknownContextStopsBeforeNewWork();
-  assertHighContextThresholdsFailClosed();
+  assertHighContextThresholdsAllowCeiling();
   assertContextRegressionOutputBounds();
   assertProofAndDiagnoseCommandsAreBounded();
   assertMissingProofHashesPreventCompletion();

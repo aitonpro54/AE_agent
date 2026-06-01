@@ -42,12 +42,12 @@ const PROOF_ENVELOPE_MAX_BYTES = 32 * 1024;
 const RESUME_CARD_MAX_BYTES = 8 * 1024;
 const RESUME_CARD_MAX_LINES = 30;
 const DEFAULT_CONTEXT_BUDGET = Object.freeze({
-  softStopPercent: 60,
-  noNewWorkPercent: 66,
-  handoffPercent: 72,
-  hardStopPercent: 84,
+  softStopPercent: 72,
+  noNewWorkPercent: 80,
+  handoffPercent: 86,
+  hardStopPercent: 100,
 });
-const MAX_NORMAL_HANDOFF_PERCENT = 96;
+const MAX_NORMAL_HANDOFF_PERCENT = 100;
 const MAX_NORMAL_HARD_STOP_PERCENT = 100;
 const CONTEXT_STEP_COST = Object.freeze({
   recoveryBranch: 8,
