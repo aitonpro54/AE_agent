@@ -119,45 +119,40 @@ Codex App dev-request handoff for repository work.
   baking, interpolation/ease preservation, spatial tangents, unsupported value
   shapes, arbitrary expression edits, and selection side effects remain
   fail-closed typed-tool gaps.
-- [ ] Milestone 24: Full Intaker strict continuation stopped at generated-only
-  live rerun for `tool-keyframes-fill-in-keyframes`. The runner completed
-  `select_candidate`, `prove_or_register_live_lane`, `run_importer_phase`,
-  `controlled_merge`, and `non_live_validation`; then the OpenAI CLI
-  generated-only proof failed closed with `bridge_offline / bridge_offline`.
-  Planned-path changes remain uncommitted for this candidate.
-- [ ] Milestone 24 follow-up: Codex started the local bridge daemon on
-  `127.0.0.1:3456`; `/health` returned `ok:true` and `panelConnected:true`.
-  A strict rerun attempt then stopped at `blocked_target_dirty` before live
-  proof, because the previous failed live rerun had made the candidate terminal
-  and the runner no longer treated `recipes/fill-in-keyframes-typed-plan.md` as
-  a planned path during new `select_candidate` preflight.
+- [x] Milestone 24: Full Intaker strict continuation recovered and completed
+  `tool-keyframes-fill-in-keyframes` through the current strict runner after the
+  bridge was brought online. Commit `477f9e0` completed the candidate; the
+  earlier `blocked_target_dirty` note is stale relative to the completed run.
 - [x] Milestone 25: AUX-021 detached importer child-run for
   `tool-keyframes-keyframe-current-value-from-expression`. Added advisory
   recipe/registry/retrieval-smoke metadata for existing
   `keyframe_current_value_from_expression`: one evidence-backed property,
   reviewed time/`requireExpression`, keyframe read-back; no source JSX copied.
+- [x] Milestone 26: Full Intaker strict continuation completed
+  `tool-keyframes-keyframe-current-value-from-expression` through live rerun,
+  docs/handoff finalization, and commit `01edf5a`.
+- [ ] Milestone 27: Full Intaker strict continuation selected
+  `tool-keyframes-set-spacial-in-tanget` and proved its live lane ready, then
+  stopped before `run_importer_phase` because the strict context gate entered
+  `resume_only_context_budget` at `59% -> 66%`.
 
 ## Current Dirty State
 
-`tool-compositions-toggle-onion-skinning` completed and committed as
-`287d1a9`. The current active transaction is
-`tool-keyframes-fill-in-keyframes`, which is failed closed at
-`generated_only_live_rerun`; a follow-up attempt after starting the bridge is
-now blocked at `blocked_target_dirty`. Dirty paths:
-`plans/target-app-execplan.md`, `recipes/fill-in-keyframes-typed-plan.md`,
-`registry/solutions.json`, `scripts/solution-library-validation-smoke.js`, and
-`.codex/handoff.md`. The latest blocked-target proof reports
-`recipes/fill-in-keyframes-typed-plan.md` as unplanned because the runner has
-left the failed live rerun transaction and is trying to select the next
-candidate.
+The worktree was clean after commit `01edf5a` and before this documentation
+handoff update. Branch `road-map-2.0` is ahead of `ae-agent/road-map-2.0` by one
+local commit; do not push without explicit approval. The active strict
+transaction is `tool-keyframes-set-spacial-in-tanget`, with
+`select_candidate` and `prove_or_register_live_lane` complete. No importer
+child-run has started for this candidate.
 
 ## Next Milestone
 
-Milestone 25: resolve the `blocked_target_dirty` state without starting a new
-candidate. The bridge is already online; the next action is to use or add a
-narrow runner-supported recovery path for the current
-`tool-keyframes-fill-in-keyframes` failed-live-rerun transaction, or explicitly
-abandon/clean that transaction through an approved runner path. Keep
+Milestone 27 continuation: resume only the active
+`tool-keyframes-set-spacial-in-tanget` strict transaction from a fresh context,
+starting at `run_importer_phase` through the current
+`run-generic-repo-full-intake` strict runner with `max-items 1`, compact output,
+and an explicit conservative `--context-percent`. Stop again on any budget,
+dirty-target, importer, live-lane, live-rerun, or approval boundary. Keep
 Local/Ollama, broad/default CEP smoke, dependency changes, push/PR, old longrun
 flows, source merge outside the runner, full runtime reports, and `max-items > 1`
 out of scope.
@@ -328,6 +323,9 @@ out of scope.
   range baking, batch keyframing, expression edits, interpolation/ease/tangent
   preservation, selection side effects, and exact source semantics stay
   separate fail-closed contracts.
+- Milestone 27 stopped before starting a new importer child-run when the strict
+  runner predicted `59% -> 66%` and entered `resume_only_context_budget`; this
+  is a context handoff, not a candidate failure.
 
 ## Validation
 
@@ -355,81 +353,30 @@ legacy Codex CLI `--reasoning-effort` bug was patched and smoke-validated;
 completed through the strict runner with commits `3815db8` and `932cc7d`. No
 Local/Ollama, broad/default CEP smoke, dependency change, push/PR, old longrun,
 raw JSX copy, source merge outside the runner, or `max-items > 1` was used.
-- [x] Milestone 18 ran compact status/proof/ledger checks, then advanced only
-  strict `max-items 1` boundaries. `tool-project-rename-selected-layer-source`
-  and `tool-project-rename-source-to-layer-name` failed closed at importer child
-  summary timeouts. `tool-keyframes-calculate-frames-to-selected-keyframe` reached
-  `live_lane_ready` and then hit `context-budget-noNewWorkPercent`; compact proof
-  showed no unplanned paths after cleanup, and `git status` was clean before docs
-  updates. No Local/Ollama, broad/default CEP smoke, dependency/package change,
-  push/PR, full runtime report, old longrun, or `max-items > 1` was used.
-- [x] Milestone 19 validation: `node --check` passed for
-  `orchestrator/run-generic-repo-full-intake.mjs` and
-  `scripts/sdk-generic-repo-full-intake-smoke.js`; the targeted
-  `node scripts/sdk-generic-repo-full-intake-smoke.js` suite passed; `git diff
-  --check` passed. No Local/Ollama, broad/default CEP smoke, dependency change,
-  push/PR, old longrun, full runtime report, or real importer run was used.
-- [x] Milestone 20 validation: active docs were read only from the approved set;
-  compact status/proof/ledger checks passed before and after the strict runner
-  steps. `tool-markers-add-markers-at-selected-keyframes` became terminal
-  `failed_import`; `tool-compositions-toggle-onion-skinning` is selected for the
-  next phase. `git status --short --branch` was clean after conflict cleanup. No
-  Local/Ollama, broad/default CEP smoke, dependency change, push/PR, old longrun,
-  full runtime report, source merge outside the runner, or `max-items > 1` was
-  used.
-- [x] Milestone 21 validation: `node --check` passed for
-  `orchestrator/run-generic-repo-tool-importer.mjs`,
-  `orchestrator/run-generic-repo-full-intake.mjs`, and
-  `scripts/sdk-generic-repo-full-intake-smoke.js`; targeted
-  `node scripts/sdk-generic-repo-full-intake-smoke.js` passed and proves compact
-  context-pack creation plus `58% -> 65%` live-rerun soft-stop behavior. Required
-  local smoke suite, importer smokes, `git diff --check`, and read-only
-  `cep-panel-cdp-smoke.js inspect` / `connector-status-smoke` passed. No
-  Local/Ollama, broad/default CEP smoke, dependency change, push, PR, old
-  longrun, full runtime report, or `max-items > 1` was used.
-- [x] Milestone 22 validation status: active docs only were read first, compact
-  status/proof/ledger checks passed, and the runner completed
-  `non_live_validation` for `tool-compositions-toggle-onion-skinning`. A final
-  `generated_only_live_rerun` was not run because the runner entered
-  `resume_only_context_budget` at `58% -> 68%` predicted context. No
-  Local/Ollama, broad/default CEP smoke, dependency change, push/PR, old
-  longrun, full runtime report, source merge outside the runner, or
-  `max-items > 1` was used.
-- [x] Milestone 23 validation status: no validation commands, node checks,
-  smoke tests, live AE/CEP/CDP runs, OpenAI CLI planner lanes, source merges,
-  commits, branches, pushes, PRs, dependency changes, Local/Ollama calls,
-  fallback providers, web search, or user-asset mutations were run by design
-  under the child-run hard boundaries. `.codex/handoff.md` was attempted but
-  blocked by `UnauthorizedAccess` inside `.codex/`; this active-plan update is
-  the fallback continuation record. The parent importer owns validation and live
-  acceptance after reading this detached worktree output.
-- [ ] Milestone 24 validation status: compact status/proof/ledger checks passed
-  around each strict boundary. `tool-compositions-toggle-onion-skinning` live
-  rerun and finalization passed, commit `287d1a9` was created, and ledger moved
-  to `completed:56`. `tool-keyframes-fill-in-keyframes` reached
-  `non_live_validation_complete`; read-only live preflights
-  `cep-panel-cdp-smoke.js inspect` and `connector-status-smoke` passed, then
-  `full-ui-agent-remaining-tail-contracts-openai-cli-smoke` failed with
-  `bridge_offline / bridge_offline`. Ledger now records `failed_live_rerun:1`,
-  `queued:12`, `failed_import:11`, and no queued `live_lane_needed`. No
-  Local/Ollama, fallback provider, broad/default CEP smoke, dependency change,
-  push/PR, full runtime report, old longrun, source merge outside the runner,
-  or `max-items > 1` was used.
-- [ ] Milestone 24 follow-up validation: bridge daemon was started locally and
-  `http://127.0.0.1:3456/health?token=codex-ae-local` returned `ok:true`,
-  version `2.0.0`, `panelConnected:true`, `pending:0`, `inflight:0`. The strict
-  runner attempt with `--context-percent 18` stopped at
-  `blocked_target_dirty`; compact proof status is `blocked_target_dirty`,
-  changedPathCount `4`, unplannedPathCount `1`
-  (`recipes/fill-in-keyframes-typed-plan.md`). No new child run, live proof,
-  commit, Local/Ollama, broad/default CEP smoke, dependency change, push/PR,
-  full runtime report, old longrun, source merge outside the runner, or
-  `max-items > 1` followed that blocker.
-- [x] Milestone 25 validation status: no validation commands, node checks,
-  smoke/live runs, commits, branches, dependency changes, web search,
-  Local/Ollama, fallback providers, or user-asset mutations were run by design.
-  `.codex/handoff.md` write was blocked by `UnauthorizedAccess`; this plan entry
-  is the fallback continuation record. Parent importer owns validation.
+- [x] Milestones 18-25 compact validation: strict runner/status/proof/ledger
+  checks were used at bounded phase boundaries; context stops, failed imports,
+  bridge recovery, and detached AUX child-run work stayed within recorded
+  guardrails. No Local/Ollama, broad/default CEP smoke, dependency change,
+  push/PR, old longrun, full runtime report, source merge outside the runner,
+  or `max-items > 1` was used unless explicitly noted above.
+- [x] Milestone 26 validation status: strict runner completed
+  `tool-keyframes-keyframe-current-value-from-expression`: live lane `ready`,
+  importer batch `full-intake-kyletmartinez-e96375bafc-import`, non-live
+  validation complete, generated-only live rerun `passed`, docs/handoff
+  finalization complete, commit `01edf5a`. Compact proof
+  `e2d99a6f6a6ab980d89e793264c61d3ee8979976adf6bb18900b03a2effa9d25`;
+  ledger after commit was `completed:58`, `queued:11`, `failed_import:11`, no
+  queued `live_lane_needed`.
+- [ ] Milestone 27 validation status: compact status/proof/ledger checks passed;
+  `tool-keyframes-set-spacial-in-tanget` completed `select_candidate` and
+  `prove_or_register_live_lane` (`liveLaneStatus: ready`). The next
+  `run_importer_phase` invocation stopped before child-run with
+  `resume_only_context_budget`, reason `context-budget-noNewWorkPercent`,
+  predicted `59% -> 66%`. Compact proof
+  `5442033df18d32ae23f96c3754589fcefb1674c288c053a48c64b50ca32e13e5`,
+  changedPathCount `0`, unplannedPathCount `0`. No Local/Ollama,
+  broad/default CEP smoke, dependency change, push/PR, old longrun, full runtime
+  report, source merge outside the runner, or `max-items > 1` was used.
 
 Not run by design across this compact block unless explicitly noted: Local/Ollama,
 broad/default CEP smoke, dependency/package changes, push/PR, unscoped retry, old
