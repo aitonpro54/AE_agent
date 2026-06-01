@@ -7406,6 +7406,137 @@
         "Require a separate typed-tool contract for selected-key discovery without explicit reviewed keyframes, incomplete keyframe read-back, automatic fuzzy duplicate detection, interpolation/ease preservation, spatial tangent preservation, expression-derived sampling, broad cleanup heuristics, selection side effects or exact source semantics.",
         "Do not use this recipe for expression edits, static property value edits without keyframes, value simplification without explicit redundancy evidence, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "fill-in-keyframes-typed-plan",
+      "title": "Fill In Keyframes Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "keyframes",
+        "expressions",
+        "expression-baking",
+        "selected-properties",
+        "fill-in-keyframes",
+        "fill_in_keyframes",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Bake one reviewed property expression or evaluated value range into linear keyframes with typed selected-property evidence, reviewed start/end/sample settings, optional redundant-sample pruning, optional expression clearing, fill_in_keyframes, and layer/property read-back.",
+        "appliesWhen": [
+          "The user asks to fill in keyframes, bake an expression to keyframes, sample a property over time, or convert a generated expression/value range into keyframes.",
+          "Typed expression/value sampling is acceptable only when current property evidence, a bounded fillRange, sampleEveryFrames, removeRedundant, clearExpression, and the sampleEvaluatedPropertyRange mode are reviewed before confirmation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties evidence containing exactly one concrete target property with layerIndex, propertyPath, value shape, expression state and keyframe/animated state when available."
+        },
+        {
+          "name": "fillRange",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed startTime, endTime and positive sampleEveryFrames used by fill_in_keyframes."
+        },
+        {
+          "name": "removeRedundant",
+          "type": "boolean",
+          "required": true,
+          "description": "Whether interior identical samples may be pruned after sampling. Defaults should be disclosed before confirmation."
+        },
+        {
+          "name": "clearExpression",
+          "type": "boolean",
+          "required": true,
+          "description": "Whether the source expression should be cleared after baking. This must be explicit before mutation."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated property is bound from current get_selected_properties evidence or equivalent current explicit layer/property evidence before mutation.",
+        "The workflow targets exactly one property unless a separate batch contract is approved.",
+        "The supported fill mode is sampleEvaluatedPropertyRange: sample a bounded time range, write linear keyframes, optionally remove redundant identical interior samples, and optionally clear the expression.",
+        "The plan displays previous expression state, existing keyframe state when available, startTime, endTime, sampleEveryFrames, removeRedundant and clearExpression before confirmation.",
+        "Expressions on unrelated properties, unsupported value shapes, interpolation/ease preservation, spatial tangents, layer names, sources, effects, masks, render queue items, selection state and unselected properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/fill-in-keyframes-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "fill_in_keyframes",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and selected-property evidence, review fillRange with sampleEveryFrames/removeRedundant/clearExpression, run fill_in_keyframes on one evidence-backed property, then read layer/property keyframes and expression state back.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation to capture active comp identity, selected property targets, layerIndex values, propertyPath values, current value shape, expression state and keyframe/animated state when available.",
+          "Require exactly one accepted property target unless a separate batch contract is approved.",
+          "Require reviewed startTime, endTime, positive sampleEveryFrames, removeRedundant and clearExpression before confirmation.",
+          "Fail closed when selected-property evidence is empty, lacks layer/property path targets, targets multiple properties, has unsupported value shapes, has an ambiguous or unbounded time range, or requires source-exact selection/UI behavior.",
+          "Resolve fill mode only as sampleEvaluatedPropertyRange when the property can be sampled over the reviewed finite range.",
+          "Show previous expression state, existing keyframe state when available, fillRange, sampleEveryFrames, removeRedundant, clearExpression and expected sampled-keyframe mode before confirmation.",
+          "Run one fill_in_keyframes step with the evidence-backed comp target, layerIndex, exact propertyPath, startTime, endTime, sampleEveryFrames, removeRedundant and clearExpression.",
+          "Run get_layer_details for the affected layer with property keyframe and expression read-back.",
+          "Fail closed if broad expression conversion, multi-property batch baking, unsupported value shapes, interpolation/ease preservation, spatial tangent preservation, arbitrary expression edits, selection side effects or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties identifies exactly one concrete property target, its owning layer, current value shape, expression state and keyframe/animated state when available.",
+          "Dry-run evidence lists previous expression state, existing keyframe state when available, startTime, endTime, sampleEveryFrames, removeRedundant and clearExpression.",
+          "fill_in_keyframes result reports the expected property path, sampled count, final keyframe count and linear keyframe write evidence.",
+          "Post-run get_layer_details shows sampled linear keyframes on the expected layer/property path.",
+          "When clearExpression:true, post-run read-back shows the expression has been cleared; when clearExpression:false, the expression-clearing choice is preserved according to the bridge result.",
+          "Skipped targets are reported with explicit typed-tool gap reasons instead of being silently changed.",
+          "Post-run evidence shows no unrelated expression, effect, source, render queue, layer name, selection state, project item, comp setting, unselected property or unrelated keyframe mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-keyframes-fill-in-keyframes generic repository importer as advisory typed-plan coverage for the existing fill_in_keyframes typed tool.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea using the existing fill_in_keyframes contract, semantic verification, and registered generated-only fill-in-keyframes lane."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-01",
+          "from": "generic-repo-importer-tool-keyframes-fill-in-keyframes",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Keyframes/Fill_In_Keyframes.jsx into existing typed tools as expression/value sampling guidance through fill_in_keyframes; no source JSX copied. The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, existing fill_in_keyframes contract, semantic verification, and registered fill-in-keyframes-expression-sampling generated-only lane. The recipe requires current selected-property evidence or equivalent explicit property evidence, one target property, reviewed startTime/endTime/sampleEveryFrames/removeRedundant/clearExpression settings, fill_in_keyframes execution, and get_layer_details read-back for sampled linear keyframes plus expression clearing state. Broad expression conversion, multi-property batch baking, unsupported value shapes, interpolation/ease preservation, spatial tangent preservation, arbitrary expression edits, selection side effects and exact source semantics require a separate typed-tool contract. AUX-099 includes generated-only fill-in-keyframes read-back and parent importer owns validation plus live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties before mutating keyframes; do not infer targets from prior chat context.",
+        "Require exactly one reviewed property target unless a separate batch contract is approved.",
+        "Require reviewed startTime, endTime, positive sampleEveryFrames, removeRedundant and clearExpression before running fill_in_keyframes.",
+        "Use fill_in_keyframes only for bounded sampleEvaluatedPropertyRange behavior that writes linear keyframes and optionally clears the expression.",
+        "Require get_layer_details read-back for sampled keyframes and expression clearing state.",
+        "Require a separate typed-tool contract for broad expression conversion, multi-property batch baking, unsupported value shapes, interpolation/ease preservation, spatial tangent preservation, arbitrary expression edits, selection side effects or exact source semantics.",
+        "Do not use this recipe for effect edits, source relinking, render queue changes, selected-layer rename, static value edits without sampling, selected-keyframe timing edits, redundant-key cleanup without sampling, or broad composition mutation."
+      ]
     }
   ]
 }

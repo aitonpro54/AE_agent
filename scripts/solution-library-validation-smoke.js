@@ -41,6 +41,7 @@ const IMPORTED_ADVISORY_IDS = [
   "multiply-selected-keyframes-typed-plan",
   "posterize-keyframes-typed-plan",
   "remove-redundant-keyframes-typed-plan",
+  "fill-in-keyframes-typed-plan",
   "round-selected-keyframe-values-typed-plan",
   "apply-maintain-stroke-width-expression-typed-plan",
   "update-stroke-weight-expressions-typed-plan",
@@ -2141,6 +2142,24 @@ function assertActualRetrieval(registry) {
   assert(removeRedundantKeyframesPromptSection.includes("get_layer_details"), "prompt section should require keyframe read-back.");
   assert(!/run_extendscript/i.test(removeRedundantKeyframesPromptSection), "remove-redundant-keyframes guidance should not recommend raw ExtendScript.");
 
+  const fillInKeyframesRetrieval = retrieveSolutionHints("Bake a selected opacity expression into linear keyframes from 0 to 2 seconds using fill_in_keyframes sampleEveryFrames 12, removeRedundant true, clearExpression true, then read back sampled keyframes.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(fillInKeyframesRetrieval.ok, true);
+  assert(ids(fillInKeyframesRetrieval).includes("fill-in-keyframes-typed-plan"), "fill-in-keyframes advisory recipe should surface for expression baking prompts.");
+  const fillInKeyframesPromptSection = formatSolutionHintsForPrompt(fillInKeyframesRetrieval);
+  assert(fillInKeyframesPromptSection.includes("Fill In Keyframes Typed Plan"), "prompt section should include fill-in-keyframes advisory title.");
+  assert(fillInKeyframesPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for fill-in-keyframes workflows.");
+  assert(fillInKeyframesPromptSection.includes("fill_in_keyframes"), "prompt section should prefer fill_in_keyframes for expression sampling workflows.");
+  assert(fillInKeyframesPromptSection.includes("sampleEveryFrames"), "prompt section should preserve sample cadence guidance.");
+  assert(fillInKeyframesPromptSection.includes("removeRedundant"), "prompt section should preserve redundant-sample pruning guidance.");
+  assert(fillInKeyframesPromptSection.includes("clearExpression"), "prompt section should preserve expression clearing guidance.");
+  assert(fillInKeyframesPromptSection.includes("linear keyframes"), "prompt section should preserve linear keyframe read-back guidance.");
+  assert(fillInKeyframesPromptSection.includes("get_layer_details"), "prompt section should require keyframe read-back.");
+  assert(!/run_extendscript/i.test(fillInKeyframesPromptSection), "fill-in-keyframes guidance should not recommend raw ExtendScript.");
+
   const maintainStrokeExpressionRetrieval = retrieveSolutionHints("Apply a maintain stroke width expression to the selected shape layer stroke width properties so their strokes stay constant while scaling, then read back expression details.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -2747,6 +2766,7 @@ function assertActualRetrieval(registry) {
       makeHoldKeyframes: ids(makeHoldKeyframesRetrieval),
       multiplySelectedKeyframes: ids(multiplySelectedKeyframesRetrieval),
       posterizeKeyframes: ids(posterizeKeyframesRetrieval),
+      fillInKeyframes: ids(fillInKeyframesRetrieval),
       enableSelectedExpressions: ids(enableSelectedExpressionsRetrieval),
       fixFreshPickwhipExpression: ids(fixFreshPickwhipExpressionRetrieval),
       selectedLayerDuration: ids(selectedLayerDurationRetrieval),

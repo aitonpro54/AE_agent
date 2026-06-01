@@ -30,6 +30,8 @@ Codex App dev-request handoff for repository work.
 
 ## Progress
 
+- [x] Full intake tool-keyframes-fill-in-keyframes: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-keyframes-fill-in-keyframes); live gate ready, importer batch full-intake-kyletmartinez-cc68b277f1-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-compositions-toggle-onion-skinning: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-compositions-toggle-onion-skinning); live gate ready, importer batch full-intake-kyletmartinez-f67a738f74-import, commit recorded after candidate commit.
 
 - [x] Milestones 1-6: importer child-run guard stabilization (`39b36f5`),
@@ -103,31 +105,59 @@ Codex App dev-request handoff for repository work.
   traversal, custom effect graphs, renderer settings, and unrelated
   layer/property edits. Work stopped before `generated_only_live_rerun` because
   context budget entered `resume_only_context_budget`.
+- [x] Milestone 23: AUX-021 detached importer child-run for
+  `tool-keyframes-fill-in-keyframes`. Added advisory typed-plan coverage for the
+  existing `fill_in_keyframes` bridge tool, requiring current selected-property
+  or explicit property evidence, one reviewed target property, bounded
+  `startTime`/`endTime`/`sampleEveryFrames`, reviewed `removeRedundant` and
+  `clearExpression` choices, sampled linear keyframe write evidence, and
+  `get_layer_details` read-back for keyframes plus expression state. The child
+  worktree did not contain the source JSX, so no source JSX was copied and
+  exact source semantics, broad expression conversion, multi-property batch
+  baking, interpolation/ease preservation, spatial tangents, unsupported value
+  shapes, arbitrary expression edits, and selection side effects remain
+  fail-closed typed-tool gaps.
+- [ ] Milestone 24: Full Intaker strict continuation stopped at generated-only
+  live rerun for `tool-keyframes-fill-in-keyframes`. The runner completed
+  `select_candidate`, `prove_or_register_live_lane`, `run_importer_phase`,
+  `controlled_merge`, and `non_live_validation`; then the OpenAI CLI
+  generated-only proof failed closed with `bridge_offline / bridge_offline`.
+  Planned-path changes remain uncommitted for this candidate.
+- [ ] Milestone 24 follow-up: Codex started the local bridge daemon on
+  `127.0.0.1:3456`; `/health` returned `ok:true` and `panelConnected:true`.
+  A strict rerun attempt then stopped at `blocked_target_dirty` before live
+  proof, because the previous failed live rerun had made the candidate terminal
+  and the runner no longer treated `recipes/fill-in-keyframes-typed-plan.md` as
+  a planned path during new `select_candidate` preflight.
 
 ## Current Dirty State
 
-The AUX compact child-run context commit `7c73772` has been fast-forwarded into
-the main `road-map-2.0` flow. Planned-path dirty changes remain for
-`tool-compositions-toggle-onion-skinning`: the advisory recipe, solution
-registry entry, solution-library validation smoke, compact plan update, and
-`.codex/handoff.md`. The candidate is
-`non_live_validation_complete` and waiting for `generated_only_live_rerun`.
-No source JSX was copied. No live rerun, finalization commit, push, PR,
-Local/Ollama, broad/default CEP smoke, dependency change, old longrun, full
-runtime report, or `max-items > 1` was run.
+`tool-compositions-toggle-onion-skinning` completed and committed as
+`287d1a9`. The current active transaction is
+`tool-keyframes-fill-in-keyframes`, which is failed closed at
+`generated_only_live_rerun`; a follow-up attempt after starting the bridge is
+now blocked at `blocked_target_dirty`. Dirty paths:
+`plans/target-app-execplan.md`, `recipes/fill-in-keyframes-typed-plan.md`,
+`registry/solutions.json`, `scripts/solution-library-validation-smoke.js`, and
+`.codex/handoff.md`. The latest blocked-target proof reports
+`recipes/fill-in-keyframes-typed-plan.md` as unplanned because the runner has
+left the failed live rerun transaction and is trying to select the next
+candidate.
 
 ## Next Milestone
 
-Milestone 23: from a fresh safe context budget, continue the active strict
-transaction for `tool-compositions-toggle-onion-skinning` at
-`generated_only_live_rerun` using the AUX compact budget protocol, then let the
-runner perform
-`ledger_docs_handoff_commit_finalization` if the live rerun passes. Keep
-Local/Ollama, broad/default CEP smoke, dependency changes, old longrun, full
-runtime reports, source merge outside the runner, push/PR, and `max-items > 1`
+Milestone 25: resolve the `blocked_target_dirty` state without starting a new
+candidate. The bridge is already online; the next action is to use or add a
+narrow runner-supported recovery path for the current
+`tool-keyframes-fill-in-keyframes` failed-live-rerun transaction, or explicitly
+abandon/clean that transaction through an approved runner path. Keep
+Local/Ollama, broad/default CEP smoke, dependency changes, push/PR, old longrun
+flows, source merge outside the runner, full runtime reports, and `max-items > 1`
 out of scope.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `Keyframes/Fill_In_Keyframes.jsx` as `tool-keyframes-fill-in-keyframes`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-keyframes-fill-in-keyframes).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Compositions/Toggle_Onion_Skinning.jsx` as `tool-compositions-toggle-onion-skinning`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-compositions-toggle-onion-skinning).
 
@@ -263,9 +293,31 @@ out of scope.
 - The generated-only live rerun was not started at `currentContextPercent:58`
   before the AUX compact budget merge because the old estimator predicted `68%`,
   crossing `noNewWorkPercent:66`.
+- Milestone 23 treated `Keyframes/Fill_In_Keyframes.jsx` as advisory typed-plan
+  guidance only. The detached child worktree did not include the source JSX, so
+  scope was derived from the child-run wrapper, candidate name, existing
+  `fill_in_keyframes` contract, semantic verification, and the registered
+  `fill-in-keyframes-expression-sampling` generated-only lane.
+- `fill_in_keyframes` guidance is limited to one evidence-backed property and a
+  reviewed finite sampling range. Broad expression conversion, batch property
+  baking, exact source UI/selection behavior, unsupported value shapes,
+  interpolation/ease preservation, spatial tangents, arbitrary expression edits,
+  and unrelated layer/property mutations remain separate typed-tool contracts.
+- Milestone 24 treated the failed live rerun as an environmental/connectivity
+  blocker, not approval to retry broadly or start the next candidate. Read-only
+  preflights passed, but the required generated-only OpenAI CLI lane failed with
+  `bridge_offline / bridge_offline` and instructed that the local bridge should
+  be started from Codex and connected before rerun.
+- After the user challenged the bridge start assumption, Codex started the bridge
+  itself using the project daemon on port `3456`. Health confirmed the daemon
+  and CEP panel connection. The subsequent strict runner attempt exposed a
+  separate runner-state blocker: failed-live-rerun transactions are terminal in
+  the ledger, so the next preflight attempted candidate selection and refused
+  the still-dirty recipe as unplanned.
 
 ## Validation
 
+| Full intake tool-keyframes-fill-in-keyframes | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-cc68b277f1-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 | Full intake tool-compositions-toggle-onion-skinning | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-f67a738f74-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 Milestones 2-9 targeted validation is archived in
@@ -327,6 +379,36 @@ raw JSX copy, source merge outside the runner, or `max-items > 1` was used.
   Local/Ollama, broad/default CEP smoke, dependency change, push/PR, old
   longrun, full runtime report, source merge outside the runner, or
   `max-items > 1` was used.
+- [x] Milestone 23 validation status: no validation commands, node checks,
+  smoke tests, live AE/CEP/CDP runs, OpenAI CLI planner lanes, source merges,
+  commits, branches, pushes, PRs, dependency changes, Local/Ollama calls,
+  fallback providers, web search, or user-asset mutations were run by design
+  under the child-run hard boundaries. `.codex/handoff.md` was attempted but
+  blocked by `UnauthorizedAccess` inside `.codex/`; this active-plan update is
+  the fallback continuation record. The parent importer owns validation and live
+  acceptance after reading this detached worktree output.
+- [ ] Milestone 24 validation status: compact status/proof/ledger checks passed
+  around each strict boundary. `tool-compositions-toggle-onion-skinning` live
+  rerun and finalization passed, commit `287d1a9` was created, and ledger moved
+  to `completed:56`. `tool-keyframes-fill-in-keyframes` reached
+  `non_live_validation_complete`; read-only live preflights
+  `cep-panel-cdp-smoke.js inspect` and `connector-status-smoke` passed, then
+  `full-ui-agent-remaining-tail-contracts-openai-cli-smoke` failed with
+  `bridge_offline / bridge_offline`. Ledger now records `failed_live_rerun:1`,
+  `queued:12`, `failed_import:11`, and no queued `live_lane_needed`. No
+  Local/Ollama, fallback provider, broad/default CEP smoke, dependency change,
+  push/PR, full runtime report, old longrun, source merge outside the runner,
+  or `max-items > 1` was used.
+- [ ] Milestone 24 follow-up validation: bridge daemon was started locally and
+  `http://127.0.0.1:3456/health?token=codex-ae-local` returned `ok:true`,
+  version `2.0.0`, `panelConnected:true`, `pending:0`, `inflight:0`. The strict
+  runner attempt with `--context-percent 18` stopped at
+  `blocked_target_dirty`; compact proof status is `blocked_target_dirty`,
+  changedPathCount `4`, unplannedPathCount `1`
+  (`recipes/fill-in-keyframes-typed-plan.md`). No new child run, live proof,
+  commit, Local/Ollama, broad/default CEP smoke, dependency change, push/PR,
+  full runtime report, old longrun, source merge outside the runner, or
+  `max-items > 1` followed that blocker.
 
 Not run by design across this compact block unless explicitly noted: Local/Ollama,
 broad/default CEP smoke, dependency/package changes, push/PR, unscoped retry, old
