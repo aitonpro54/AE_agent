@@ -2354,7 +2354,7 @@ function buildCodexChildRunInvocation(manifest, batch, worktreePath) {
   }
   const reasoningEffort = childRunReasoningEffort(manifest);
   if (reasoningEffort) {
-    codexArgs.push("--reasoning-effort", reasoningEffort);
+    codexArgs.push("-c", `model_reasoning_effort="${reasoningEffort}"`);
   }
   codexArgs.push("-");
   if (process.platform === "win32") {

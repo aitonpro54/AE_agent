@@ -97,6 +97,13 @@ Codex App dev-request handoff for repository work.
   stale bridge daemon process. Exactly the 11 Selection `unsafe_skip_tool_gap` ids
   were requeued through the scoped resolver, then each reached `live_lane_ready` and
   failed closed during `run_importer_phase` before source merge or commit.
+- [x] Milestone 14: Selection importer child-run recovery patch. Compact evidence
+  review showed all 11 child runs failed before model execution because Codex CLI
+  0.131.0 rejects the old `--reasoning-effort` flag. The importer now passes
+  `model_reasoning_effort="high"` through `-c`, matching the other local
+  orchestrator child-run lanes; related importer/queue/full-intake smoke fixtures
+  were updated. No Selection retry, live lane, source merge, Local/Ollama, old
+  longrun, dependency change, push, or PR was run.
 
 ## Current Dirty State
 
@@ -105,11 +112,12 @@ new work only after a fresh context/status check.
 
 ## Next Milestone
 
-Milestone 14: compactly review the 11 Selection `failed_import` child-run failures
-from Milestone 13 and decide whether a narrow importer recovery patch is warranted;
-do not run live lanes, old longrun, unscoped retry, Local/Ollama, broad/default CEP
-smoke, dependency changes, push/PR, or source merge outside a scoped importer flow
-without explicit approval.
+Milestone 15: run a narrow post-patch retry only if explicitly approved for the
+scoped importer flow. Recommended first slice is one Selection candidate with
+`--max-items 1` and explicit Selection ids, stopping at the normal importer gates.
+Do not run live lanes, old longrun, unscoped retry, Local/Ollama, broad/default CEP
+smoke, dependency changes, push/PR, or source merge outside that scoped importer
+flow without explicit approval.
 
 ## Decision Log
 
@@ -177,6 +185,13 @@ without explicit approval.
   `selection-generated-only` family. The family proof passed, so the entries were
   reclassified/requeued, but importer implementation child runs failed closed before
   any source merge.
+- Milestone 14 treated the repeated Selection importer failure as a Codex CLI
+  invocation compatibility bug, not a candidate/tool-design failure: every child
+  result had `failed_process`, exit code 2, zero changed/unplanned paths, and stderr
+  `unexpected argument '--reasoning-effort'`.
+- The narrow recovery patch uses `-c model_reasoning_effort="high"` instead of
+  `--reasoning-effort`, preserving the recorded child-run intent while matching the
+  current Codex CLI surface and existing roadmap/feature conveyor command style.
 
 ## Validation
 
@@ -240,6 +255,31 @@ Milestone 13 targeted validation:
   was produced by the importer.
 - [x] Compact status/proof showed `completed_no_candidates`, `changedPathCount:0`,
   `unplannedPathCount:0`, and zero related processes.
+
+Milestone 14 targeted validation:
+
+- [x] Context/status check completed; no active goal budget was reported by the
+  Codex context tool. Branch `road-map-2.0` was ahead 7 and worktree was clean
+  before the patch.
+- [x] Active docs only were read before evidence review.
+- [x] Compact failure evidence reviewed: full-intake status/proof, ledger Selection
+  slice, queue-supervisor batch reports, importer result summaries, and one child
+  result. All 11 failures shared the same Codex CLI argument error before model
+  execution.
+- [x] `cmd /d /s /c codex exec --help` confirmed Codex CLI 0.131.0 does not expose
+  `--reasoning-effort`; existing local orchestrator lanes use
+  `model_reasoning_effort` via `-c`.
+- [x] Touched JS `node --check` passed for importer and three smoke files.
+- [x] `node scripts/sdk-generic-repo-importer-command-smoke.js`,
+  `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`, and
+  `node scripts/sdk-generic-repo-full-intake-smoke.js` passed.
+- [x] `npm.cmd run check:rules`, required solution/provider/planning/semantic/
+  reliability/prompt local smoke scripts, `node scripts/bridge-only-smoke-test.js`,
+  `node scripts/smoke-test.js`, and `git diff --check` passed.
+
+Not run by design: Selection retry, live CEP/AE lanes, broad/default CEP smoke,
+Local/Ollama provider validation, old longrun, dependency/package changes, source
+merge, push, or PR.
 
 ## Handoff
 

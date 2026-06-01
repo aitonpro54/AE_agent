@@ -262,7 +262,7 @@ function writeFakeCodex(root) {
       '    console.error("missing gpt-5.5 writer model");',
       '    process.exit(10);',
       '  }',
-      '  if (process.argv[process.argv.indexOf("--reasoning-effort") + 1] !== "high") {',
+      '  if (!process.argv.includes("model_reasoning_effort=\\"high\\"")) {',
       '    console.error("missing high reasoning effort");',
       '    process.exit(11);',
       '  }',
