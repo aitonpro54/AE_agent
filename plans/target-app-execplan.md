@@ -30,6 +30,8 @@ Codex App dev-request handoff for repository work.
 
 ## Progress
 
+- [x] Full intake tool-selection-select-all-children: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-selection-select-all-children); live gate ready, importer batch full-intake-kyletmartinez-20aa9a79d6-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-selection-layer-selection-set: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-selection-layer-selection-set); live gate ready, importer batch full-intake-kyletmartinez-6045da30f2-import, commit recorded after candidate commit.
 
 - [x] Milestone 1: AUX-100 importer child-run guard stabilization committed as
@@ -119,22 +121,36 @@ Codex App dev-request handoff for repository work.
   existing recipes/lane cover layer markers, while the four remaining triage Marker
   unsafe-skip ids require composition-marker typed-tool contracts before retry.
   Updated the triage counts and moved those four ids out of immediate safe-next.
+- [x] Milestone 17: AUX-021 detached importer child-run for
+  `tool-selection-select-all-children`. Added an advisory typed-plan recipe and
+  registry/smoke-library metadata for selecting direct child layers of one reviewed
+  parent through `get_selected_layers`, `get_comp_details` parent evidence,
+  computed child `layerIndices`, `set_layer_selection`, and `get_selected_layers`
+  read-back. Handoff file creation was attempted but blocked by local `.codex`
+  ACL/sandbox write denial. No source JSX was copied, and no validation, live lane,
+  source merge, commit, Local/Ollama, dependency change, push, PR, or AE/CEP
+  mutation was run in this child-run.
 
 ## Current Dirty State
 
-No known pre-existing dirty recovery state remains. Milestone 15 planned paths are
-scoped to `tool-selection-layer-selection-set`.
+This detached child-run intentionally leaves changes in the importer-owned worktree
+only. Dirty file paths are scoped to `tool-selection-select-all-children` planned
+paths: `plans/target-app-execplan.md`,
+`recipes/select-all-children-typed-plan.md`, `registry/solutions.json`, and
+`scripts/solution-library-validation-smoke.js`. `.codex/handoff.md` was planned but
+could not be written because the local `.codex` path denied writes in this sandbox.
 
 ## Next Milestone
 
-Milestone 17: either continue only with explicit approval for the narrow
-generated-only live rerun of `tool-selection-layer-selection-set`, or start a
-non-live composition-marker typed-tool contract prep block before any Marker retry.
-Do not run old longrun, unscoped retry, Local/Ollama, broad/default CEP smoke,
-dependency changes, push/PR, source merge, or any live lane without explicit
-approval.
+Next parent-controlled step: parent importer should inspect this detached child-run
+diff and decide whether to run its own allowed non-live validation/merge gates for
+`tool-selection-select-all-children`. Separately, do not run old longrun, unscoped
+retry, Local/Ollama, broad/default CEP smoke, dependency changes, push/PR, source
+merge, or any live lane without explicit approval.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `Selection/Select_All_Children.jsx` as `tool-selection-select-all-children`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-selection-select-all-children).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Selection/Layer_Selection_Set.jsx` as `tool-selection-layer-selection-set`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-selection-layer-selection-set).
 
@@ -220,8 +236,18 @@ approval.
   composition-marker `markerProperty` add/read/copy semantics. The four remaining
   Marker unsafe-skip ids should not be retried until a composition-marker contract,
   generated-only fixture, read-back, and semantic verification lane exist.
+- AUX-021 adapted `Selection/Select_All_Children.jsx` as advisory typed-plan
+  guidance only. The recipe selects direct children of one reviewed parent layer by
+  deriving child `layerIndices` from current `get_comp_details` `parent.index`
+  evidence, then using `set_layer_selection` replacement semantics and
+  `get_selected_layers` read-back. Recursive descendants, fuzzy parent matching,
+  child discovery without typed parent evidence, parenting changes, cross-comp or
+  Project panel selection, and exact native UI/source JSX semantics remain separate
+  typed-tool contracts.
 
 ## Validation
+
+| Full intake tool-selection-select-all-children | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-20aa9a79d6-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-selection-layer-selection-set | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-6045da30f2-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
@@ -366,6 +392,22 @@ Milestone 16 targeted validation:
   `npm.cmd run check:rules`, provider/solution/project-intent/planning/semantic/
   reliability/ChatGPT connector/provider API/prompt optimization smokes,
   `node scripts/bridge-only-smoke-test.js`, and `node scripts/smoke-test.js`.
+
+Milestone 17 targeted validation:
+
+- [x] Read only active docs and planned-path context required for the detached
+  AUX-021 child-run.
+- [x] Added `recipes/select-all-children-typed-plan.md`.
+- [x] Updated `registry/solutions.json` with advisory metadata for
+  `select-all-children-typed-plan`.
+- [x] Updated `scripts/solution-library-validation-smoke.js` metadata/assertions so
+  parent-controlled validation can cover the new advisory recipe.
+- [x] Attempted to create `.codex/handoff.md`, but both `apply_patch` and
+  PowerShell write attempts were blocked by local `.codex` ACL/sandbox denial.
+
+Not run by child-run boundary: validation commands, live CEP/AE/CDP/OpenAI CLI lanes,
+source merge, dependency/package changes, Local/Ollama, branch/commit creation,
+push, PR, or GitHub automation.
 
 ## Handoff
 

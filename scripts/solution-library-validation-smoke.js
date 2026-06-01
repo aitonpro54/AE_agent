@@ -53,6 +53,7 @@ const IMPORTED_ADVISORY_IDS = [
   "calculate-distance-between-layers-typed-plan",
   "layer-selection-get-typed-plan",
   "layer-selection-set-typed-plan",
+  "select-all-children-typed-plan",
   "duplicate-selected-layer-typed-plan",
   "add-assorted-composition-guides-typed-plan",
   "add-background-layer-typed-plan",
@@ -1088,6 +1089,28 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /get_comp_details/.test(note)), `${id}: notes must require layer inventory evidence.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must keep unsupported selection semantics out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Layer_Selection_Set/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "select-all-children-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_comp_details", "set_layer_selection", "get_selected_layers"],
+        `${id}: imported select-all-children workflow should stay on the narrow typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: select-all-children workflow must be mutating.`);
+      assert(text.includes("direct child layers"), `${id}: recipe should document direct child scope.`);
+      assert(text.includes("parent.index"), `${id}: recipe should require parent index evidence.`);
+      assert(text.includes("set_layer_selection"), `${id}: recipe should use the set_layer_selection typed tool.`);
+      assert(text.includes("replacement selection"), `${id}: recipe should document replacement selection semantics.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer read-back.`);
+      assert(text.includes("Recursive descendants"), `${id}: recipe should fail closed for recursive descendant semantics.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected parent or post-selection evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must capture layer inventory evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /parent\.index/.test(step)), `${id}: verification must compute children from parent.index evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_selection/.test(step)), `${id}: verification must include set_layer_selection.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /direct child count/.test(item)), `${id}: verification must require direct child count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /recursive descendant selection/.test(item)), `${id}: verification must reject recursive descendant selection.`);
+      assert(solution.notes.some((note) => /parent evidence/.test(note)), `${id}: notes must require parent evidence.`);
+      assert(solution.notes.some((note) => /direct children only/.test(note)), `${id}: notes must keep recursive descendants out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /Select_All_Children/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else if (id === "duplicate-selected-layer-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2264,6 +2287,21 @@ function assertActualRetrieval(registry) {
   assert(layerSelectionSetPromptSection.includes("replacement selection"), "prompt section should preserve replacement selection guidance.");
   assert(!/run_extendscript/i.test(layerSelectionSetPromptSection), "layer-selection set guidance should not recommend raw ExtendScript.");
 
+  const selectAllChildrenRetrieval = retrieveSolutionHints("Select all direct child layers of the currently selected parent layer after reading layer parent evidence, then read back the selected child layer count and names.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(selectAllChildrenRetrieval.ok, true);
+  assert(ids(selectAllChildrenRetrieval).includes("select-all-children-typed-plan"), "select-all-children advisory recipe should surface for child layer selection prompts.");
+  const selectAllChildrenPromptSection = formatSolutionHintsForPrompt(selectAllChildrenRetrieval);
+  assert(selectAllChildrenPromptSection.includes("Select All Children Typed Plan"), "prompt section should include select-all-children advisory title.");
+  assert(selectAllChildrenPromptSection.includes("get_comp_details"), "prompt section should require layer inventory evidence for child selection.");
+  assert(selectAllChildrenPromptSection.includes("set_layer_selection"), "prompt section should prefer set_layer_selection for child selection mutation.");
+  assert(selectAllChildrenPromptSection.includes("direct child"), "prompt section should preserve direct child scope.");
+  assert(selectAllChildrenPromptSection.includes("parent evidence"), "prompt section should preserve parent evidence guidance.");
+  assert(!/run_extendscript/i.test(selectAllChildrenPromptSection), "select-all-children guidance should not recommend raw ExtendScript.");
+
   const duplicateSelectedLayerRetrieval = retrieveSolutionHints("Duplicate the selected layer after inspecting the selected layer first, then read back the duplicate layer.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -2676,6 +2714,7 @@ function assertActualRetrieval(registry) {
       layerDistance: ids(layerDistanceRetrieval),
       layerSelectionGet: ids(layerSelectionGetRetrieval),
       layerSelectionSet: ids(layerSelectionSetRetrieval),
+      selectAllChildren: ids(selectAllChildrenRetrieval),
       duplicateSelectedLayer: ids(duplicateSelectedLayerRetrieval),
       assortedGuides: ids(assortedGuidesRetrieval),
       backgroundLayer: ids(backgroundLayerRetrieval),
