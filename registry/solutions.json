@@ -2590,6 +2590,134 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "toggle-onion-skinning-typed-plan",
+      "title": "Toggle Onion Skinning Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "onion-skinning",
+        "wide-time",
+        "adjustment-layer",
+        "cc-wide-time",
+        "comp-comment-token",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Enable, disable, or toggle generated onion-skinning on one verified composition through toggle_onion_skinning with generated layer/effect read-back.",
+        "appliesWhen": [
+          "The user asks to turn onion skinning on or off for the active comp or one explicit composition.",
+          "Using the bridge-owned generated onion skin adjustment layer, CC Wide Time effect, and comp comment token is acceptable instead of copying source JSX."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Active comp or exact compName/compItemIndex verified by current typed evidence before mutation."
+        },
+        {
+          "name": "mode",
+          "type": "string",
+          "required": true,
+          "description": "Reviewed onion-skinning mode: enable, disable, or toggle. Prefer enable/disable when the final state is known."
+        },
+        {
+          "name": "layerName",
+          "type": "string",
+          "required": false,
+          "description": "Generated onion skin adjustment layer name. Defaults to Onion Skin."
+        },
+        {
+          "name": "effectName",
+          "type": "string",
+          "required": false,
+          "description": "Generated CC Wide Time effect instance name. Defaults to Onion Skin."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow targets exactly one verified composition.",
+        "The workflow creates, removes, or toggles only the generated onion skin adjustment layer/effect and comp comment token managed by toggle_onion_skinning.",
+        "The requested final state is disclosed before confirmation; use mode enable or disable instead of toggle when the user states a specific desired state.",
+        "CC Wide Time availability can vary by AE install, so unavailable effect support remains a fail-closed typed-tool result.",
+        "Arbitrary source JSX behavior, global property traversal, cleanup of non-generated layers, custom effect graphs, renderer settings, recursive precomp traversal, source relinking, comp duplication and unrelated layer/property edits remain typed-tool gaps."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/toggle-onion-skinning-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "toggle_onion_skinning",
+          "get_layer_details",
+          "get_effect_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read one target composition, run toggle_onion_skinning with a reviewed mode, then read back the generated adjustment layer, CC Wide Time effect, and comp comment token state.",
+        "steps": [
+          "Run get_active_comp before targeting the active composition, or bind one explicit composition from current get_comp_details evidence.",
+          "Disclose the target composition, reviewed mode, generated layerName, generated effectName, prior onion-skin state when known and expected final state before confirmation.",
+          "Run one toggle_onion_skinning step with the reviewed target comp identifier, mode, layerName and effectName.",
+          "For enable or toggle-to-enable plans, run get_layer_details and get_effect_details to read back the generated onion skin adjustment layer and CC Wide Time effect.",
+          "For disable or toggle-to-disable plans, run get_comp_details or layer read-back and confirm the generated onion skin layer/effect plus comp comment token are absent.",
+          "Fail closed if the request requires arbitrary source JSX behavior, global property traversal, non-generated user-layer cleanup, custom effect graphs, renderer settings, recursive precomp traversal or adjacent layer/property mutation."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies exactly one target composition and the reviewed onion-skinning mode.",
+          "Dry-run evidence lists generated layerName, generated effectName, prior enabled state when available and expected final state.",
+          "toggle_onion_skinning returns target comp, previousEnabled, final enabled state, normalized mode and removed generated artifacts when disabling.",
+          "Enable read-back shows a generated adjustment layer named as requested and a CC Wide Time effect instance named as requested.",
+          "Enable read-back shows the comp comment includes the *onion-skinning* token managed by the typed tool.",
+          "Disable read-back shows the generated onion skin layer/effect and comp comment token are absent.",
+          "Post-run evidence shows no non-generated user layer, source, timing, expression, keyframe, mask, unrelated effect, project item name, render queue, selection state, renderer setting, recursive nested comp or unrelated composition mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-compositions-toggle-onion-skinning generic repository importer as advisory typed-plan coverage for the existing toggle_onion_skinning typed tool.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea using the registered generated-only onion-skinning lane and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-01",
+          "from": "generic-repo-importer-tool-compositions-toggle-onion-skinning",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Toggle_Onion_Skinning.jsx into existing typed tools as generated onion-skinning enable/disable/toggle guidance through toggle_onion_skinning; no source JSX copied. The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, existing toggle_onion_skinning contract, semantic verification, and registered onion-skinning-wide-time generated-only lane. The recipe requires one verified target comp, reviewed mode, generated layer/effect disclosure, toggle_onion_skinning execution, and get_layer_details/get_effect_details or comp read-back for generated adjustment layer, CC Wide Time effect, and *onion-skinning* comp comment token. Arbitrary source JSX behavior, global property traversal, cleanup of non-generated layers, custom effect graphs, renderer settings, recursive precomp traversal, source relinking, comp duplication and unrelated layer/property edits require a separate typed-tool contract. AUX-099 proved generated-only onion-skinning read-back and parent importer owns validation plus live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current active-comp or explicit get_comp_details evidence before mutating; do not infer the target comp from prior chat context.",
+        "Use toggle_onion_skinning only for the generated onion skin adjustment layer, CC Wide Time effect and comp comment token managed by the bridge.",
+        "Prefer mode enable or disable when the final state is known; use toggle only when the user explicitly asks for toggle semantics.",
+        "Treat missing CC Wide Time support, ambiguous existing onion-skin artifacts, or non-generated layer cleanup as typed-tool gaps unless a separate contract proves safe behavior.",
+        "Require a separate typed-tool contract for arbitrary source JSX behavior, global property traversal, cleanup of non-generated layers, custom effect graphs, renderer settings, recursive precomp traversal, source relinking, comp duplication, batch multi-comp toggles, unrelated layer/property fields or exact source semantics.",
+        "Do not use this recipe for layer timing changes, layer reorder/rename outside the generated onion layer, expression edits, keyframe edits, masks, render queue items, source relinking, template batch changes or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "change-nested-composition-duration-typed-plan",
       "title": "Change Nested Composition Duration Typed Plan",
       "status": "recipe",

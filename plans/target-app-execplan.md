@@ -30,6 +30,8 @@ Codex App dev-request handoff for repository work.
 
 ## Progress
 
+- [x] Full intake tool-compositions-toggle-onion-skinning: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-compositions-toggle-onion-skinning); live gate ready, importer batch full-intake-kyletmartinez-f67a738f74-import, commit recorded after candidate commit.
+
 - [x] Milestones 1-6: importer child-run guard stabilization (`39b36f5`),
   compact active-plan reset, camera-controller recovery review, provider
   self-test guardrail hardening plus installed-panel validation, and Agent
@@ -126,6 +128,8 @@ runtime reports, source merge outside the runner, push/PR, and `max-items > 1`
 out of scope.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `Compositions/Toggle_Onion_Skinning.jsx` as `tool-compositions-toggle-onion-skinning`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-compositions-toggle-onion-skinning).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Selection/Select_All_Children.jsx` as `tool-selection-select-all-children`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-selection-select-all-children).
 
@@ -261,6 +265,8 @@ out of scope.
   crossing `noNewWorkPercent:66`.
 
 ## Validation
+
+| Full intake tool-compositions-toggle-onion-skinning | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-f67a738f74-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 Milestones 2-9 targeted validation is archived in
 `plans/archive/target-app-execplan-history-through-2026-05-31.md`. Compact outcome:

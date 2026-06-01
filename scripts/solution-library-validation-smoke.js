@@ -62,6 +62,7 @@ const IMPORTED_ADVISORY_IDS = [
   "cycle-composition-background-color-typed-plan",
   "enable-collapse-transformations-typed-plan",
   "enable-motion-blur-typed-plan",
+  "toggle-onion-skinning-typed-plan",
   "increment-composition-versions-typed-plan",
   "change-nested-composition-duration-typed-plan",
   "change-nested-composition-duration-with-timecode-typed-plan",
@@ -1299,6 +1300,29 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.promotionHistory.some((entry) => /Enable_Motion_Blur/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /AUX-096/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "toggle-onion-skinning-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "toggle_onion_skinning", "get_layer_details", "get_effect_details"],
+        `${id}: imported onion-skinning workflow should stay on the narrow typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: onion-skinning workflow must be mutating.`);
+      assert(text.includes("toggle_onion_skinning"), `${id}: recipe should use the onion-skinning typed tool.`);
+      assert(text.includes("CC Wide Time"), `${id}: recipe should document the generated CC Wide Time effect.`);
+      assert(text.includes("*onion-skinning*"), `${id}: recipe should require comp comment token evidence.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require generated layer read-back.`);
+      assert(text.includes("get_effect_details"), `${id}: recipe should require generated effect read-back.`);
+      assert(text.includes("non-generated"), `${id}: recipe should reject non-generated user-layer cleanup.`);
+      assert(solution.verificationRecipe.steps.some((step) => /toggle_onion_skinning/.test(step)), `${id}: verification must include toggle_onion_skinning.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer details read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_effect_details/.test(step)), `${id}: verification must include effect details read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /CC Wide Time/.test(item)), `${id}: verification must require CC Wide Time evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /\*onion-skinning\*/.test(item)), `${id}: verification must require comp comment token evidence.`);
+      assert(solution.notes.some((note) => /mode enable or disable/.test(note)), `${id}: notes must prefer explicit final-state modes.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Toggle_Onion_Skinning/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /AUX-099/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "increment-composition-versions-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2420,6 +2444,21 @@ function assertActualRetrieval(registry) {
   assert(motionBlurPromptSection.includes("comp-wide motion blur"), "prompt section should preserve comp-wide motion blur scope warning.");
   assert(!/run_extendscript/i.test(motionBlurPromptSection), "motion-blur guidance should not recommend raw ExtendScript.");
 
+  const toggleOnionSkinningRetrieval = retrieveSolutionHints("Enable onion skinning on the active generated comp using toggle_onion_skinning, then read back the generated adjustment layer, CC Wide Time effect, and comp comment token.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(toggleOnionSkinningRetrieval.ok, true);
+  assert(ids(toggleOnionSkinningRetrieval).includes("toggle-onion-skinning-typed-plan"), "onion-skinning advisory recipe should surface for toggle_onion_skinning prompts.");
+  const toggleOnionSkinningPromptSection = formatSolutionHintsForPrompt(toggleOnionSkinningRetrieval);
+  assert(toggleOnionSkinningPromptSection.includes("Toggle Onion Skinning Typed Plan"), "prompt section should include onion-skinning advisory title.");
+  assert(toggleOnionSkinningPromptSection.includes("toggle_onion_skinning"), "prompt section should prefer toggle_onion_skinning.");
+  assert(toggleOnionSkinningPromptSection.includes("CC Wide Time"), "prompt section should preserve CC Wide Time read-back guidance.");
+  assert(toggleOnionSkinningPromptSection.includes("*onion-skinning*"), "prompt section should preserve comp comment token guidance.");
+  assert(toggleOnionSkinningPromptSection.includes("non-generated"), "prompt section should preserve non-generated cleanup warning.");
+  assert(!/run_extendscript/i.test(toggleOnionSkinningPromptSection), "onion-skinning guidance should not recommend raw ExtendScript.");
+
   const incrementCompositionVersionsRetrieval = retrieveSolutionHints("Increment generated composition version tokens from _v001 to _v002 for explicit generated comp names using rename_project_items mode findReplace, then find_project_items and get_comp_details read back the renamed compositions without source relinking.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -2723,6 +2762,7 @@ function assertActualRetrieval(registry) {
       activeCompositionBackgroundCycle: ids(activeCompositionBackgroundCycleRetrieval),
       collapseTransformations: ids(collapseTransformationsRetrieval),
       motionBlur: ids(motionBlurRetrieval),
+      toggleOnionSkinning: ids(toggleOnionSkinningRetrieval),
       nestedCompositionDurationWithTimecode: ids(nestedCompositionDurationWithTimecodeRetrieval),
       compositionGuide: ids(compositionGuideRetrieval),
       posterizeTimeAdjustment: ids(posterizeTimeAdjustmentRetrieval),
