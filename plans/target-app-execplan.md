@@ -30,29 +30,10 @@ Codex App dev-request handoff for repository work.
 
 ## Progress
 
-- [x] Milestone 1: AUX-100 importer child-run guard stabilization committed as
-  `39b36f5`.
-- [x] Milestone 2: Baseline reset active docs. The oversized active plan was archived,
-  this compact baseline became the only active plan, archive/runtime-read guardrails
-  were added, and active plan/handoff size guards were established.
-- [x] Milestone 3: Camera-controller recovery review. The existing dirty recovery
-  patch was salvaged as a typed-plan advisory recipe, and compact prompt guidance now
-  preserves `camera.parent` verification plus the `multi-camera switch` fail-closed
-  warning.
-- [x] Milestone 4: Provider self-test guardrail hardening. The CEP provider
-  self-test now uses setup/readiness-only checks with `checkModels=0`, keeps
-  Local/Ollama visible as a manual `Detect Ollama` / `Check model` path, and smoke
-  coverage now asserts that the shared self-test button does not probe Local/Ollama
-  or refresh provider model lists.
-- [x] Milestone 5: Provider self-test installed-panel validation. The installed CEP
-  panel was synced through the narrow `cep-sync-health --sync --check` path, copying
-  only `panel.js`, clearing only this extension's CEP cache while preserving Local
-  Storage, and the targeted live self-test smoke proved `checkModels=0` with no
-  `ollama-local` probe.
-- [x] Milestone 6: Agent Hardcore typed-tool handoff proof. Failed TypedTools in the
-  Hardcore transcript now name the `Codex App start prompt`, and the targeted live
-  Hardcore UI smoke proves the typed tool is marked not working, the start prompt is
-  shown, and no automatic Codex App dev chat is implied.
+- [x] Milestones 1-6: importer child-run guard stabilization (`39b36f5`),
+  compact active-plan reset, camera-controller recovery review, provider
+  self-test guardrail hardening plus installed-panel validation, and Agent
+  Hardcore typed-tool handoff proof all completed with documented validation.
 - [x] Milestone 7: Full Intaker bounded onion-skinning tail review. Compact ledger
   status showed the old remaining six as five `queued` candidates plus the already
   reviewed camera-controller recovery entry. The first queued candidate,
@@ -148,22 +129,28 @@ Codex App dev-request handoff for repository work.
   conflict was cleaned back to a clean tree. The next candidate,
   `tool-compositions-toggle-onion-skinning`, was selected, then work stopped
   before the next child-run because it would cross the handoff threshold.
+- [x] Milestone 21: AUX compact child-run context protocol. On branch
+  `codex/AUX-compact-child-run-context`, importer child runs now receive a bounded
+  `child-run-context-pack` instead of expanding the full batch prompt into child
+  stdin. Full-intake strict budget now uses a lightweight resume preflight gate
+  plus compact child/import/live-rerun costs, so a generated-only live rerun at
+  `58%` context can continue as a soft-stop `65%` prediction instead of failing
+  early at a false `68%` no-new-work estimate.
 
 ## Current Dirty State
 
-No known dirty recovery state remains. The current strict transaction has
-`tool-compositions-toggle-onion-skinning` selected and waiting for
-`prove_or_register_live_lane`. The durable ledger has 14 queued candidates
-remaining, 11 `failed_import`, and zero `queued live_lane_needed`.
+This AUX worktree is independent from the main `road-map-2.0` worktree. The main
+worktree still carries the onion-skinning planned-path state described in its
+handoff; this branch only changes orchestrator code and smoke coverage.
 
 ## Next Milestone
 
-Milestone 21: from a fresh safe context budget, continue the current strict
-transaction for `tool-compositions-toggle-onion-skinning`, starting with
-`prove_or_register_live_lane`, one `max-items 1` boundary at a time. Use updated
-runner defaults. Do not run old longrun, Local/Ollama, broad/default CEP smoke,
-dependency changes, push/PR, source merge outside the runner, full runtime
-reports, or `max-items > 1`.
+Milestone 22: bring the AUX compact child-run context commit back to the main
+`road-map-2.0` line when the active onion-skinning transaction can safely resume,
+then continue that transaction at its next strict boundary. Do not use
+Local/Ollama, broad/default CEP smoke, dependency changes, old longrun, full
+runtime reports, source merge outside the runner, push/PR, or `max-items > 1`
+without explicit approval.
 
 ## Decision Log
 
@@ -281,6 +268,15 @@ reports, or `max-items > 1`.
   coverage stayed intact, so the partial patch was cleaned.
 - The next onion-skinning phase was not started at predicted 63% because the
   following child-run would cross the widened 72% handoff threshold.
+- Milestone 21 uses an AUX branch/worktree because the main worktree contains an
+  unfinished Full Intaker transaction. The branch keeps orchestrator improvement
+  separate from candidate recipe/registry state.
+- Child-run stdin is now a compact context-pack protocol: full batch prompt stays
+  as a hashed audit artifact, while the child receives bounded planned paths,
+  candidate summaries, hard boundaries, and output contract.
+- The first full-intake context gate is now a resume preflight instead of a
+  duplicate abstract child-run charge. Actual phase gates still enforce their own
+  costs and thresholds before importer, live-lane, live-rerun, docs, and commit.
 
 ## Validation
 
@@ -295,33 +291,14 @@ validation, generated-only live rerun, docs/handoff, and commit, with no
 Local/Ollama, broad/default CEP smoke, dependency change, source checkout write
 outside the runner, push, PR, or `max-items > 1`.
 
-Milestones 10-17 compact validation:
-
-- [x] Milestone 10 scoped only the nine
-  `blocked_live_lane_synthesis_incomplete` ids; both generated-only proof families
-  failed closed, with no source merge, live mutation, Local/Ollama, dependency
-  change, push/PR, old longrun, or `max-items > 1`.
-- [x] Milestone 11 produced `plans/full-intake-unsafe-skip-triage.md` from the 75
-  `unsafe_skip_tool_gap` entries without source/runtime importer changes.
-- [x] Milestone 12 added Selection typed-tool/lane prep; touched JS checks,
-  registry parse, rules, required local smokes, `git diff --check`, and read-only
-  CEP checks passed.
-- [x] Milestone 13 ran the approved generated-only Selection live lane after a
-  bridge restart, then scoped/requeued exactly the 11 Selection ids; all failed
-  closed before source merge because importer child runs failed.
-- [x] Milestone 14 patched legacy Codex CLI `--reasoning-effort` invocation to
-  `-c model_reasoning_effort="high"`; targeted importer smokes, rules, required
-  local smoke suite, and `git diff --check` passed.
-- [x] Milestone 15 imported `tool-selection-layer-selection-set` through
-  controlled merge and non-live validation, then paused before generated-only live
-  rerun; planned-path proof showed `changedPathCount:4` and `unplannedPathCount:0`.
-- [x] Milestone 16 corrected Marker readiness classification and passed the
-  required local validation suite; no retry/live/source merge was run.
-- [x] Milestone 17 resumed current strict full-intake longrun: `tool-selection-layer-selection-set`
-  completed generated-only live rerun plus finalization (`3815db8`), the remaining
-  ten Selection ids were scoped/requeued, and `tool-selection-select-all-children`
-  completed import, controlled merge, non-live validation, generated-only live
-  rerun, finalization, and commit (`932cc7d`).
+Milestones 10-17 compact validation: scoped blocked-lane resolution failed closed
+without source/live mutation; unsafe-skip triage stayed docs-only; Selection
+typed-tool/lane prep and live acceptance passed after a bridge restart; the
+legacy Codex CLI `--reasoning-effort` bug was patched and smoke-validated;
+`tool-selection-layer-selection-set` and `tool-selection-select-all-children`
+completed through the strict runner with commits `3815db8` and `932cc7d`. No
+Local/Ollama, broad/default CEP smoke, dependency change, push/PR, old longrun,
+raw JSX copy, source merge outside the runner, or `max-items > 1` was used.
 - [x] Milestone 18 ran compact status/proof/ledger checks, then advanced only
   strict `max-items 1` boundaries. `tool-project-rename-selected-layer-source`
   and `tool-project-rename-source-to-layer-name` failed closed at importer child
@@ -344,6 +321,16 @@ Milestones 10-17 compact validation:
   Local/Ollama, broad/default CEP smoke, dependency change, push/PR, old longrun,
   full runtime report, source merge outside the runner, or `max-items > 1` was
   used.
+- [x] Milestone 21 validation: `node --check` passed for
+  `orchestrator/run-generic-repo-tool-importer.mjs`,
+  `orchestrator/run-generic-repo-full-intake.mjs`, and
+  `scripts/sdk-generic-repo-full-intake-smoke.js`; targeted
+  `node scripts/sdk-generic-repo-full-intake-smoke.js` passed and proves compact
+  context-pack creation plus `58% -> 65%` live-rerun soft-stop behavior. Required
+  local smoke suite, importer smokes, `git diff --check`, and read-only
+  `cep-panel-cdp-smoke.js inspect` / `connector-status-smoke` passed. No
+  Local/Ollama, broad/default CEP smoke, dependency change, push, PR, old
+  longrun, full runtime report, or `max-items > 1` was used.
 
 Not run by design across this compact block unless explicitly noted: Local/Ollama,
 broad/default CEP smoke, dependency/package changes, push/PR, unscoped retry, old

@@ -37,6 +37,7 @@ const ANALYSIS_SCHEMA = "generic-repo-tool-importer.analysis-fixture.v1";
 const IMPLEMENTATION_PLAN_SCHEMA = "generic-repo-tool-importer.implementation-plan.v1";
 const IMPLEMENTATION_WORKTREE_SCHEMA = "generic-repo-tool-importer.implementation-worktree-run.v1";
 const IMPLEMENTATION_CHILD_RUN_SCHEMA = "generic-repo-tool-importer.implementation-child-run.v1";
+const CHILD_RUN_CONTEXT_PACK_SCHEMA = "generic-repo-tool-importer.child-run-context-pack.v1";
 const CONTROLLED_SOURCE_MERGE_SCHEMA = "generic-repo-tool-importer.controlled-source-merge.v1";
 const NON_LIVE_VALIDATION_SCHEMA = "generic-repo-tool-importer.non-live-validation.v1";
 const MERGE_PLAN_SCHEMA = "generic-repo-tool-importer.merge-plan.v1";
@@ -89,6 +90,9 @@ const DEPENDENCY_PATHS = new Set([
 ]);
 const TEXT_FILE_MAX_BYTES = 256 * 1024;
 const CHILD_RUN_OUTPUT_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
+const CHILD_RUN_CONTEXT_PACK_MAX_BYTES = 24 * 1024;
+const CHILD_RUN_PROMPT_MAX_BYTES = 32 * 1024;
+const CHILD_RUN_SOURCE_PROMPT_EXCERPT_MAX_BYTES = 4 * 1024;
 const CHILD_RUN_STDIO_GUARD_MAX_BYTES = 8 * 1024 * 1024;
 const CHILD_RUN_SUMMARY_MAX_BYTES = 64 * 1024;
 const CHILD_RUN_TOKEN_GUARD_MAX_TOKENS = 150000;
@@ -251,6 +255,22 @@ function sha256Text(value) {
 
 function writeJson(filePath, value) {
   writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
+function utf8Bytes(value) {
+  return Buffer.byteLength(String(value || ""), "utf8");
+}
+
+function truncateUtf8(value, maxBytes) {
+  const text = String(value || "");
+  if (utf8Bytes(text) <= maxBytes) {
+    return text;
+  }
+  let truncated = text.slice(0, maxBytes);
+  while (utf8Bytes(truncated) > maxBytes && truncated.length > 0) {
+    truncated = truncated.slice(0, -1);
+  }
+  return `${truncated.replace(/\s+$/, "")}\n[truncated:${utf8Bytes(text)}>${maxBytes}]`;
 }
 
 function appendEvent(runRoot, event) {
@@ -2312,11 +2332,93 @@ function childRunTimeoutMs(manifest) {
   return configured;
 }
 
-function buildChildRunPrompt(intent, promptText) {
-  return [
+function parsePromptCandidateSummaries(promptText) {
+  const match = /Candidates:\s*```json\s*([\s\S]*?)\s*```/i.exec(String(promptText || ""));
+  if (!match) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(match[1]);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed.map((candidate) => ({
+      id: candidate.id || null,
+      kind: candidate.kind || null,
+      sourcePath: candidate.sourcePath || null,
+      risk: candidate.risk || null,
+    }));
+  } catch (_error) {
+    return [];
+  }
+}
+
+function buildChildRunContextPack({ batch, intent, manifest, promptText }) {
+  return {
+    schema: CHILD_RUN_CONTEXT_PACK_SCHEMA,
+    runId: manifest.run.runId,
+    batchId: batch.id,
+    phase: "implementation_child_run",
+    protocol: "compact_context_pack_v1",
+    requestedGoal: manifest.run.requestedGoal || null,
+    model: intent.model,
+    reasoningEffort: intent.reasoningEffort,
+    modelProfile: intent.modelProfile || null,
+    cwd: intent.cwd,
+    promptArtifact: {
+      path: intent.promptPath,
+      sha256: sha256Text(promptText),
+      bytes: utf8Bytes(promptText),
+      inlineExcerptBytes: Math.min(utf8Bytes(promptText), CHILD_RUN_SOURCE_PROMPT_EXCERPT_MAX_BYTES),
+      fullPromptOmittedFromChildStdin: true,
+    },
+    candidateIds: batch.candidateIds || [],
+    candidates: parsePromptCandidateSummaries(promptText),
+    plannedPaths: batch.plannedPaths,
+    sharedFileOwnerFor: batch.sharedFileOwnerFor || [],
+    hardBoundaries: [
+      "edit_only_planned_paths",
+      "detached_importer_owned_worktree_only",
+      "no_branches_commits_or_extra_worktrees",
+      "no_source_merge_or_parent_repo_write",
+      "no_validation_live_cep_ae_or_openai_cli_planner_runs",
+      "no_dependency_or_package_changes",
+      "no_local_ollama_fallback_provider_web_search_push_pr_or_github_automation",
+    ],
+    outputContract: {
+      stdout: "brief_status_only",
+      durableEvidence: "changed_files_and_parent_captured_child_summary",
+      parentReads: [
+        "implementation/child-run-summaries/<batch>.result-summary.json",
+        "implementation/child-run-context-packs/<batch>.json",
+      ],
+    },
+    sourcePromptExcerpt: truncateUtf8(promptText, CHILD_RUN_SOURCE_PROMPT_EXCERPT_MAX_BYTES),
+  };
+}
+
+function writeChildRunContextPack({ batch, contextPack, runRoot }) {
+  const safeBatchId = safeId(batch.id);
+  const relativePath = `implementation/child-run-context-packs/${safeBatchId}.json`;
+  const absolutePath = path.join(runRoot, relativePath);
+  mkdirSync(path.dirname(absolutePath), { recursive: true });
+  writeJson(absolutePath, contextPack);
+  const size = statSync(absolutePath).size;
+  if (size > CHILD_RUN_CONTEXT_PACK_MAX_BYTES) {
+    throw new Error(`implementation-child-run-context-pack-too-large: ${batch.id}:${size}`);
+  }
+  return {
+    bytes: size,
+    path: relativePath,
+    sha256: sha256Text(JSON.stringify(contextPack)),
+  };
+}
+
+function buildChildRunPrompt(intent, contextPack) {
+  const prompt = [
     "AUX-021 generic repository importer child-run execution wrapper.",
     "Execute this batch now inside the already-selected detached importer-owned worktree.",
-    "This wrapper supersedes older plan-only wording inside the batch prompt artifact.",
+    "Use the compact context pack below. The older plan-only batch prompt is an audit artifact and is intentionally not expanded into child stdin.",
     "",
     "Hard boundaries:",
     "- Edit only the planned paths in the child-run intent.",
@@ -2329,8 +2431,16 @@ function buildChildRunPrompt(intent, promptText) {
     JSON.stringify(intent, null, 2),
     "</child_run_intent_json>",
     "",
-    promptText,
+    "<child_run_context_pack_json>",
+    JSON.stringify(contextPack, null, 2),
+    "</child_run_context_pack_json>",
+    "",
+    "Return concise status only. Do not paste file contents, logs, or broad explanations into stdout.",
   ].join("\n");
+  if (utf8Bytes(prompt) > CHILD_RUN_PROMPT_MAX_BYTES) {
+    throw new Error(`implementation-child-run-prompt-too-large:${intent.batchId}:${utf8Bytes(prompt)}`);
+  }
+  return prompt;
 }
 
 function buildCodexChildRunInvocation(manifest, batch, worktreePath) {
@@ -2432,7 +2542,10 @@ function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootR
     throw new Error(`implementation-child-run-prompt-missing: ${batch.id}:${intent.promptPath}`);
   }
 
-  const prompt = buildChildRunPrompt(intent, readFileSync(promptPath, "utf8"));
+  const promptText = readFileSync(promptPath, "utf8");
+  const contextPack = buildChildRunContextPack({ batch, intent, manifest, promptText });
+  const contextPackArtifact = writeChildRunContextPack({ batch, contextPack, runRoot });
+  const prompt = buildChildRunPrompt(intent, contextPack);
   const invocation = buildCodexChildRunInvocation(manifest, batch, worktreePath);
   const timeoutMs = childRunTimeoutMs(manifest);
   const startedAt = new Date().toISOString();
@@ -2491,13 +2604,17 @@ function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootR
     unplannedPaths,
     plannedPathGate: unplannedPaths.length === 0 ? "passed" : "failed",
     promptPath: intent.promptPath,
+    promptBytes: utf8Bytes(prompt),
+    contextPackPath: contextPackArtifact.path,
+    contextPackSha256: contextPackArtifact.sha256,
+    contextPackBytes: contextPackArtifact.bytes,
     childRunIntentPath: intentPath,
     actualWorktreePath: worktreePath,
     actualWorktreeRelativePath: batch.actualWorktreeRelativePath,
     command: {
       name: invocation.displayCommand,
       args: invocation.displayArgs,
-      stdin: "batch prompt wrapper",
+      stdin: "compact child context pack wrapper",
     },
     exitCode: result.status,
     signal: result.signal || null,
@@ -2549,6 +2666,10 @@ function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootR
     changedPaths: childRunResult.changedPaths,
     unplannedPaths: childRunResult.unplannedPaths,
     plannedPathGate: childRunResult.plannedPathGate,
+    promptBytes: childRunResult.promptBytes,
+    contextPackPath: childRunResult.contextPackPath,
+    contextPackSha256: childRunResult.contextPackSha256,
+    contextPackBytes: childRunResult.contextPackBytes,
     childRunIntentPath: childRunResult.childRunIntentPath,
     childRunResultPath,
     actualWorktreePath: childRunResult.actualWorktreePath,
@@ -2612,7 +2733,13 @@ function buildImplementationChildRunArtifacts(manifest, manifestHash, targetRepo
       targetRepo,
       batch,
     });
-    artifactPaths.push(childResult.childRunResultPath, childResult.resultSummaryPath, childResult.stdoutPath, childResult.stderrPath);
+    artifactPaths.push(
+      childResult.childRunResultPath,
+      childResult.resultSummaryPath,
+      childResult.contextPackPath,
+      childResult.stdoutPath,
+      childResult.stderrPath,
+    );
     batches.push(childResult);
     try {
       assertChildRunResultPassed(childResult);

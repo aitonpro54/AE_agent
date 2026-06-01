@@ -51,10 +51,11 @@ const MAX_NORMAL_HANDOFF_PERCENT = 96;
 const MAX_NORMAL_HARD_STOP_PERCENT = 100;
 const CONTEXT_STEP_COST = Object.freeze({
   recoveryBranch: 8,
-  childRun: 10,
-  importerPhase: 10,
+  resumePreflight: 1,
+  childRun: 6,
+  importerPhase: 6,
   liveLane: 8,
-  liveRerun: 8,
+  liveRerun: 6,
   ledgerMutation: 2,
   docsHandoffWrite: 3,
   commit: 3,
@@ -3767,6 +3768,22 @@ function activeStrictTransaction(state) {
   return transaction;
 }
 
+function firstContextBudgetStep({ state, strictOnePhase }) {
+  if (!strictOnePhase) {
+    return {
+      cost: CONTEXT_STEP_COST.resumePreflight,
+      step: "resumePreflight",
+    };
+  }
+  const transaction = activeStrictTransaction(state);
+  const phase = transaction?.nextPhase || "select_candidate";
+  return {
+    cost: CONTEXT_STEP_COST.resumePreflight,
+    phase,
+    step: `strict_${phase}_resume_preflight`,
+  };
+}
+
 function saveStrictTransaction({ runRoot, state, transaction }) {
   const nextState = {
     ...state,
@@ -4994,7 +5011,9 @@ export function runFullIntake(options, cwd = process.cwd()) {
     throw new FullIntakeError("context-pressure", report);
   }
 
-  const firstBudgetDecision = checkContextBudget(contextBudget, "childRun", CONTEXT_STEP_COST.childRun);
+  const strictOnePhase = options.compactJson === true;
+  const firstBudgetStep = firstContextBudgetStep({ state, strictOnePhase });
+  const firstBudgetDecision = checkContextBudget(contextBudget, firstBudgetStep.step, firstBudgetStep.cost);
   report.contextBudget.lastDecision = firstBudgetDecision;
   if (firstBudgetDecision.action !== "continue") {
     report.status = firstBudgetDecision.action === "hard_stop" ? "context_pressure" : "resume_only_context_budget";
@@ -5039,7 +5058,6 @@ export function runFullIntake(options, cwd = process.cwd()) {
     return report;
   }
 
-  const strictOnePhase = options.compactJson === true;
   const hasActiveStrictTransaction = strictOnePhase && activeStrictTransaction(state) !== null;
   const resolutionQueue = hasActiveStrictTransaction
     ? {

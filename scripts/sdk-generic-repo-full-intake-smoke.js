@@ -167,6 +167,22 @@ function removeFixture(root) {
   fs.rmSync(root, { recursive: true, force: true });
 }
 
+function findFiles(root, predicate) {
+  if (!fs.existsSync(root)) {
+    return [];
+  }
+  const found = [];
+  for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+    const absolute = path.join(root, entry.name);
+    if (entry.isDirectory()) {
+      found.push(...findFiles(absolute, predicate));
+    } else if (predicate(absolute)) {
+      found.push(absolute);
+    }
+  }
+  return found.sort();
+}
+
 function writeFakeCodex(root) {
   const binDir = path.join(root, "fake-bin");
   fs.mkdirSync(binDir, { recursive: true });
@@ -197,6 +213,24 @@ function writeFakeCodex(root) {
       '  }',
       '  const match = input.match(/<child_run_intent_json>\\n([\\s\\S]*?)\\n<\\/child_run_intent_json>/);',
       '  const intent = match ? JSON.parse(match[1]) : { plannedPaths: [] };',
+      '  const packMatch = input.match(/<child_run_context_pack_json>\\n([\\s\\S]*?)\\n<\\/child_run_context_pack_json>/);',
+      '  if (!packMatch) {',
+      '    console.error("missing compact child context pack");',
+      '    process.exit(12);',
+      '  }',
+      '  const contextPack = JSON.parse(packMatch[1]);',
+      '  if (contextPack.schema !== "generic-repo-tool-importer.child-run-context-pack.v1") {',
+      '    console.error("bad compact child context pack schema");',
+      '    process.exit(13);',
+      '  }',
+      '  if (contextPack.promptArtifact.fullPromptOmittedFromChildStdin !== true) {',
+      '    console.error("prompt artifact should be omitted from child stdin");',
+      '    process.exit(14);',
+      '  }',
+      '  if (Buffer.byteLength(input, "utf8") > 32 * 1024) {',
+      '    console.error("child stdin prompt too large");',
+      '    process.exit(15);',
+      '  }',
       '  const relative = process.env.FAKE_CODEX_WRITE_PATH || intent.plannedPaths.find((item) => /\\.js$/i.test(item)) || intent.plannedPaths[0];',
       '  if (!relative) {',
       '    console.error("missing planned path");',
@@ -555,6 +589,19 @@ function assertCompletedCandidateAndAutoLane() {
     assert.strictEqual(completed.implementation.commit, output.commits[0]);
     assert(fs.existsSync(path.join(fixture.target, "scripts", "imported-tools", "composition-guide.js")));
     assert(fs.readFileSync(path.join(fixture.target, "plans", "target-app-execplan.md"), "utf8").includes("full-intake:fixture-registry-lane:tool-compositions-add-composition-guide"));
+    const contextPacks = findFiles(
+      path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-importer"),
+      (filePath) => filePath.endsWith(".json") && filePath.includes(`${path.sep}child-run-context-packs${path.sep}`)
+    );
+    assert.strictEqual(contextPacks.length, 1, `expected one compact child context pack, got ${contextPacks.length}`);
+    const contextPackText = fs.readFileSync(contextPacks[0], "utf8");
+    assert(contextPackText.length < 24 * 1024, `compact child context pack too large: ${contextPackText.length}`);
+    const contextPack = JSON.parse(contextPackText);
+    assert.strictEqual(contextPack.schema, "generic-repo-tool-importer.child-run-context-pack.v1");
+    assert.strictEqual(contextPack.protocol, "compact_context_pack_v1");
+    assert.strictEqual(contextPack.promptArtifact.fullPromptOmittedFromChildStdin, true);
+    assert(contextPack.plannedPaths.includes("scripts/imported-tools/composition-guide.js"));
+    assert(contextPack.plannedPaths.length <= 8, "compact context pack should not balloon planned paths");
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);
@@ -644,13 +691,15 @@ function assertStrictCompactParentRunsOnePhaseAtBoundary() {
     ];
 
     for (const [completedPhase, nextPhase] of expectedPhases) {
+      const contextArgs = completedPhase === "generated_only_live_rerun" ? ["--context-percent", "58"] : [];
       const result = runFullIntakeFixtureCompactPhase(
         fixture,
         ledgerPath,
         registryPath,
         "fixture-strict-phase",
         1,
-        env
+        env,
+        contextArgs
       );
       assert.strictEqual(result.status, 0, result.stderr || result.stdout);
       const output = JSON.parse(result.stdout);
@@ -660,6 +709,11 @@ function assertStrictCompactParentRunsOnePhaseAtBoundary() {
       assert.strictEqual(output.strictOnePhase.completedPhase, completedPhase);
       assert.strictEqual(output.strictOnePhase.nextPhase, nextPhase);
       assert.strictEqual(output.proofEnvelope.contractComplete, false);
+      if (completedPhase === "generated_only_live_rerun") {
+        assert.strictEqual(output.contextBudget.lastDecision.nextStep, "liveRerun");
+        assert.strictEqual(output.contextBudget.lastDecision.predictedNextStepCost, 6);
+        assert.strictEqual(output.contextBudget.lastDecision.threshold, "softStopPercent");
+      }
     }
 
     const final = runFullIntakeFixtureCompactPhase(
@@ -743,7 +797,7 @@ function assertContextBudgetStopsBeforeNewWork() {
       "fixture-context-budget",
       1,
       {},
-      ["--context-percent", "60"]
+      ["--context-percent", "65"]
     );
     assert.strictEqual(result.status, 0, result.stderr || result.stdout);
     const output = JSON.parse(result.stdout);
