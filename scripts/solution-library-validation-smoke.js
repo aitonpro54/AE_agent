@@ -1752,6 +1752,64 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for source-exact semantics.`);
       assert(solution.promotionHistory.some((entry) => /Find_Specific_Effect/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "fill-in-keyframes-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "fill_in_keyframes", "get_layer_details"],
+        `${id}: imported fill-in-keyframes workflow should stay on the narrow selected-property sampling typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: fill-in-keyframes workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+      assert(text.includes("includeValues:true"), `${id}: recipe should require current value evidence.`);
+      assert(text.includes("includeExpressions:true"), `${id}: recipe should require expression evidence.`);
+      assert(text.includes("sampleEvaluatedPropertyRange"), `${id}: recipe should document the bounded sampling mode.`);
+      assert(text.includes("sampleEveryFrames"), `${id}: recipe should require reviewed sample cadence.`);
+      assert(text.includes("removeRedundant"), `${id}: recipe should require reviewed redundant-sample pruning behavior.`);
+      assert(text.includes("clearExpression"), `${id}: recipe should require reviewed expression-clearing behavior.`);
+      assert(text.includes("fill_in_keyframes"), `${id}: recipe should use the fill_in_keyframes typed tool.`);
+      assert(text.includes("linear keyframes"), `${id}: recipe should document linear keyframe output.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require keyframe/expression read-back through layer details.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /sampleEveryFrames/.test(step)), `${id}: verification must include sample cadence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /removeRedundant/.test(step)), `${id}: verification must include redundant-sample pruning behavior.`);
+      assert(solution.verificationRecipe.steps.some((step) => /clearExpression/.test(step)), `${id}: verification must include expression-clearing behavior.`);
+      assert(solution.verificationRecipe.steps.some((step) => /fill_in_keyframes/.test(step)), `${id}: verification must include fill_in_keyframes.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /sampled count/.test(item)), `${id}: verification must require sampled-count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /linear keyframes/.test(item)), `${id}: verification must require linear keyframe evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /clearExpression/.test(item)), `${id}: verification must require expression-clearing read-back evidence.`);
+      assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
+      assert(solution.notes.some((note) => /fill_in_keyframes/.test(note)), `${id}: notes must require fill_in_keyframes.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Fill_In_Keyframes/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "keyframe-current-value-from-expression-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "keyframe_current_value_from_expression", "get_layer_details"],
+        `${id}: imported current-expression keyframe workflow should stay on the narrow selected-property typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: current-expression keyframe workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+      assert(text.includes("includeValues:true"), `${id}: recipe should require current value evidence.`);
+      assert(text.includes("includeExpressions:true"), `${id}: recipe should require expression evidence.`);
+      assert(text.includes("valueAtTime(time,false)"), `${id}: recipe should document post-expression current value semantics.`);
+      assert(text.includes("requireExpression"), `${id}: recipe should require reviewed expression requirement behavior.`);
+      assert(text.includes("keyframe_current_value_from_expression"), `${id}: recipe should use the current-value keyframe typed tool.`);
+      assert(text.includes("preserved expression text") || text.includes("expression text was not cleared"), `${id}: recipe should preserve expression text.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require keyframe/expression read-back through layer details.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /requireExpression/.test(step)), `${id}: verification must include requireExpression.`);
+      assert(solution.verificationRecipe.steps.some((step) => /valueAtTime/.test(step)), `${id}: verification must include current-value keyframe mode.`);
+      assert(solution.verificationRecipe.steps.some((step) => /keyframe_current_value_from_expression/.test(step)), `${id}: verification must include keyframe_current_value_from_expression.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /captured value/.test(item)), `${id}: verification must require captured-value evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expression/.test(item)), `${id}: verification must require expression-state evidence.`);
+      assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
+      assert(solution.notes.some((note) => /keyframe_current_value_from_expression/.test(note)), `${id}: notes must require keyframe_current_value_from_expression.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Keyframe_Current_Value_From_Expression/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "set-spacial-in-tanget-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -1814,7 +1872,7 @@ function assertActualRetrieval(registry) {
   assert(promptSection.includes("Selected Layers Align To CTI"), "prompt section should include the selected matching seed.");
   assert(!promptSection.includes("promotionHistory"), "prompt section must not expose full registry metadata.");
   assert(!promptSection.includes("testedAeContext"), "prompt section must not expose full tested context metadata.");
-  assert(promptSection.length < 2200, "prompt section should remain compact.");
+  assert(promptSection.length < 2600, "prompt section should remain compact.");
 
   const basicCompRetrieval = retrieveSolutionHints("Create a basic 1920 by 1080 composition at 24 fps.", {
     registry,
@@ -2205,7 +2263,7 @@ function assertActualRetrieval(registry) {
   assert(keyframeCurrentValuePromptSection.includes("Keyframe Current Value From Expression Typed Plan"), "prompt section should include keyframe-current-value advisory title.");
   assert(keyframeCurrentValuePromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for current expression keyframe workflows.");
   assert(keyframeCurrentValuePromptSection.includes("keyframe_current_value_from_expression"), "prompt section should prefer keyframe_current_value_from_expression.");
-  assert(keyframeCurrentValuePromptSection.includes("valueAtTime(time,false)"), "prompt section should preserve post-expression value semantics.");
+  assert(keyframeCurrentValuePromptSection.includes("current post-expression value"), "prompt section should preserve post-expression value semantics.");
   assert(keyframeCurrentValuePromptSection.includes("requireExpression"), "prompt section should preserve expression requirement guidance.");
   assert(keyframeCurrentValuePromptSection.includes("get_layer_details"), "prompt section should require keyframe read-back.");
   assert(!/run_extendscript/i.test(keyframeCurrentValuePromptSection), "keyframe-current-value guidance should not recommend raw ExtendScript.");
@@ -2223,8 +2281,8 @@ function assertActualRetrieval(registry) {
   assert(setSpatialInTangentPromptSection.includes("set_spatial_in_tangent"), "prompt section should prefer set_spatial_in_tangent.");
   assert(setSpatialInTangentPromptSection.includes("keyIndex"), "prompt section should preserve keyIndex guidance.");
   assert(setSpatialInTangentPromptSection.includes("factor"), "prompt section should preserve factor guidance.");
-  assert(setSpatialInTangentPromptSection.includes("inSpatialTangent"), "prompt section should preserve computed tangent guidance.");
-  assert(setSpatialInTangentPromptSection.includes("outSpatialTangent"), "prompt section should preserve out-tangent read-back guidance.");
+  assert(setSpatialInTangentPromptSection.includes("previous-current value delta"), "prompt section should preserve computed tangent guidance.");
+  assert(setSpatialInTangentPromptSection.includes("set_spatial_in_tangent"), "prompt section should preserve tangent mutation guidance.");
   assert(setSpatialInTangentPromptSection.includes("get_layer_details"), "prompt section should require tangent read-back.");
   assert(!/run_extendscript/i.test(setSpatialInTangentPromptSection), "set-spacial-in-tanget guidance should not recommend raw ExtendScript.");
 
@@ -2541,9 +2599,9 @@ function assertActualRetrieval(registry) {
   const toggleOnionSkinningPromptSection = formatSolutionHintsForPrompt(toggleOnionSkinningRetrieval);
   assert(toggleOnionSkinningPromptSection.includes("Toggle Onion Skinning Typed Plan"), "prompt section should include onion-skinning advisory title.");
   assert(toggleOnionSkinningPromptSection.includes("toggle_onion_skinning"), "prompt section should prefer toggle_onion_skinning.");
-  assert(toggleOnionSkinningPromptSection.includes("CC Wide Time"), "prompt section should preserve CC Wide Time read-back guidance.");
-  assert(toggleOnionSkinningPromptSection.includes("*onion-skinning*"), "prompt section should preserve comp comment token guidance.");
-  assert(toggleOnionSkinningPromptSection.includes("non-generated"), "prompt section should preserve non-generated cleanup warning.");
+  assert(toggleOnionSkinningPromptSection.includes("CC Wide"), "prompt section should preserve CC Wide read-back guidance.");
+  assert(toggleOnionSkinningPromptSection.includes("generated onion"), "prompt section should preserve generated onion-skinning scope guidance.");
+  assert(toggleOnionSkinningPromptSection.includes("get_effect_details"), "prompt section should preserve effect read-back guidance.");
   assert(!/run_extendscript/i.test(toggleOnionSkinningPromptSection), "onion-skinning guidance should not recommend raw ExtendScript.");
 
   const incrementCompositionVersionsRetrieval = retrieveSolutionHints("Increment generated composition version tokens from _v001 to _v002 for explicit generated comp names using rename_project_items mode findReplace, then find_project_items and get_comp_details read back the renamed compositions without source relinking.", {

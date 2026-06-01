@@ -267,7 +267,7 @@ async function main() {
 
   const fixturePlannedPath = "orchestrator/fixtures/sdk-write/m169-post-run-contract-smoke.json";
   const fixtureDirectoryPost = syntheticSnapshot(
-    { "orchestrator/fixtures/sdk-write": "directory-changed" },
+    { "orchestrator/fixtures/sdk-write/": "directory-changed" },
     "fixture-dir-post",
   );
   const fixtureDirectoryContract = coreHelpers.validateSdkWriteDiffAllowlist({
@@ -280,7 +280,7 @@ async function main() {
   });
   assert.deepStrictEqual(fixtureDirectoryContract.actualChangedFiles, [fixturePlannedPath]);
   assert.deepStrictEqual(fixtureDirectoryContract.normalizedDirectoryEntries, [
-    "orchestrator/fixtures/sdk-write",
+    "orchestrator/fixtures/sdk-write/",
   ]);
   assertThrowsWithMessage(
     () =>

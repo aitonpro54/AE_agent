@@ -133,10 +133,10 @@ Codex App dev-request handoff for repository work.
 - [x] Milestone 26: Full Intaker strict continuation completed
   `tool-keyframes-keyframe-current-value-from-expression` through live rerun,
   docs/handoff finalization, and commit `01edf5a`.
-- [ ] Milestone 27: Full Intaker strict continuation selected
-  `tool-keyframes-set-spacial-in-tanget` and proved its live lane ready, then
-  stopped before `run_importer_phase` because the strict context gate entered
-  `resume_only_context_budget` at `59% -> 66%`.
+- [x] Milestone 27: Full Intaker strict continuation completed
+  `tool-keyframes-set-spacial-in-tanget` through import, controlled merge,
+  non-live validation, generated-only live rerun, docs/handoff finalization,
+  and candidate commit `972399a`.
 - [x] Milestone 28: Full Intaker context-budget tolerance bump, second pass.
   Per user direction, the strict runner defaults were raised another 20% from
   the current values: soft-stop `60 -> 72`, no-new-work `66 -> 80`, handoff
@@ -147,34 +147,26 @@ Codex App dev-request handoff for repository work.
   tool: one evidence-backed spatial property, reviewed `keyIndex` `2+`,
   reviewed `factor`, previous/current keyframe value disclosure, computed
   `inSpatialTangent`, preserved `outSpatialTangent`, and `get_layer_details`
-  read-back. No source JSX was copied. The strict parent transaction is still
-  incomplete until parent-controlled merge, non-live validation, generated-only
-  live rerun, docs finalization, and commit run under the parent guardrails.
+  read-back. No source JSX was copied. The strict parent transaction later
+  completed under Milestone 27 guardrails.
 
-## Current Dirty State
+## Current State
 
-The detached AUX-021 child-run worktree now contains advisory metadata for
-`tool-keyframes-set-spacial-in-tanget` in the planned recipe/registry/smoke/plan
-paths only. `.codex/handoff.md` could not be written because the sandbox denied
-write access to `.codex/` after directory creation. The parent strict
-transaction remains active: `select_candidate` and
-`prove_or_register_live_lane` were already complete before this child-run, and
-parent-controlled merge/non-live validation/live rerun/docs/commit are still
-pending. Branch `road-map-2.0` was ahead of `ae-agent/road-map-2.0` by two local
-commits before this milestone; do not push without explicit approval.
+`tool-keyframes-set-spacial-in-tanget` is complete in the parent strict runner.
+The candidate commit is `972399a`; validation hardening for the smoke coverage
+was added immediately afterward and should remain a separate local review
+commit. Branch `road-map-2.0` is ahead of `ae-agent/road-map-2.0`; do not push
+without explicit approval.
 
 ## Next Milestone
 
-Milestone 27 continuation after the threshold bump: resume only the active
-`tool-keyframes-set-spacial-in-tanget` strict transaction from the parent
-importer after it captures this child-run summary. Continue with
-parent-controlled merge/non-live validation/generated-only live rerun/docs/commit
-only under the current strict runner with `max-items 1`, compact output, and an
-explicit conservative `--context-percent`. Stop again on any budget,
-dirty-target, importer, live-lane, live-rerun, or approval boundary. Keep
-Local/Ollama, broad/default CEP smoke, dependency changes, push/PR, old longrun
-flows, source merge outside the runner, full runtime reports, and `max-items > 1`
-out of scope.
+Resume the Full Intaker queue in a fresh thread only. Start with active docs and
+compact status/proof/ledger checks, then let the strict runner select or resume
+the next queued candidate with `max-items 1`, compact output, and an explicit
+conservative `--context-percent`. Stop on any budget, dirty-target, importer,
+live-lane, live-rerun, or approval boundary. Keep Local/Ollama, broad/default
+CEP smoke, dependency changes, push/PR, old longrun flows, source merge outside
+the runner, full runtime reports, and `max-items > 1` out of scope.
 
 ## Decision Log
 
@@ -337,28 +329,32 @@ raw JSX copy, source merge outside the runner, or `max-items > 1` was used.
   `e2d99a6f6a6ab980d89e793264c61d3ee8979976adf6bb18900b03a2effa9d25`;
   ledger after commit was `completed:58`, `queued:11`, `failed_import:11`, no
   queued `live_lane_needed`.
-- [ ] Milestone 27 validation status: compact status/proof/ledger checks passed;
-  `tool-keyframes-set-spacial-in-tanget` completed `select_candidate` and
-  `prove_or_register_live_lane` (`liveLaneStatus: ready`). The next
-  `run_importer_phase` invocation stopped before child-run with
-  `resume_only_context_budget`, reason `context-budget-noNewWorkPercent`,
-  predicted `59% -> 66%`. Compact proof
-  `5442033df18d32ae23f96c3754589fcefb1674c288c053a48c64b50ca32e13e5`,
-  changedPathCount `0`, unplannedPathCount `0`. No Local/Ollama,
-  broad/default CEP smoke, dependency change, push/PR, old longrun, full runtime
-  report, source merge outside the runner, or `max-items > 1` was used.
+- [x] Milestone 27 validation status: compact status/proof/ledger checks passed;
+  `tool-keyframes-set-spacial-in-tanget` completed live lane `ready`, importer
+  batch `full-intake-kyletmartinez-7e72e8fd45-import`, controlled merge,
+  non-live validation, generated-only live rerun `passed`, docs/handoff
+  finalization, and candidate commit `972399a`. Final proof
+  `18d2fa644288607d209fb8f558a11caf288777c10eaa02db15f2efaa6522d40d`;
+  ledger after completion was `completed:59`, `queued:10`,
+  `failed_import:11`, no queued `live_lane_needed`.
+- [x] Milestone 27 final validation hardening: `node --check` passed for
+  `scripts/solution-library-validation-smoke.js` and
+  `scripts/sdk-post-run-contract-extraction-smoke.js`;
+  `npm.cmd run check:rules --silent`, `git diff --check`, the required provider/solution/plan/semantic/
+  reliability/chatgpt/provider-api/prompt/bridge smoke scripts, `smoke-test.js`,
+  and read-only CEP/CDP `inspect` plus `connector-status-smoke` all passed. No
+  Local/Ollama, fallback provider, dependency/package change, broad CEP smoke,
+  push/PR, source checkout write outside the runner, or `max-items > 1` was used.
 - [x] Milestone 28 validation status: `node --check` passed for
   `orchestrator/run-generic-repo-full-intake.mjs` and
   `scripts/sdk-generic-repo-full-intake-smoke.js`; targeted
   `node scripts/sdk-generic-repo-full-intake-smoke.js` passed. No Local/Ollama,
   broad/default CEP smoke, live AE/CEP mutation, dependency change, push/PR, old
   longrun, full runtime report, or `max-items > 1` was used.
-- [ ] Milestone 29 validation status: validation was not run by design in this
+- [x] Milestone 29 validation status: validation was not run by design in this
   detached child-run because the batch explicitly forbade validation runs. The
-  child changed planned recipe/registry/smoke/plan paths and left parent
-  merge/non-live validation/generated-only live rerun/docs/commit to the parent
-  importer. `.codex/handoff.md` was planned but could not be created because
-  writing to `.codex/` returned access denied in this sandbox.
+  child changed planned recipe/registry/smoke/plan paths only; parent validation
+  and live rerun are now covered by completed Milestone 27.
 
 Not run by design across this compact block unless explicitly noted: Local/Ollama,
 broad/default CEP smoke, dependency/package changes, push/PR, unscoped retry, old
