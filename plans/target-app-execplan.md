@@ -142,19 +142,28 @@ Codex App dev-request handoff for repository work.
   70 -> 84. Normal threshold caps were raised from handoff/hard-stop 80/90 to
   96/100 so explicit longrun overrides can use the wider budget. Context smoke
   coverage was updated to prove the new default no-new-work stop point.
+- [x] Milestone 20: Full Intaker strict continuation to context handoff.
+  `tool-markers-add-markers-at-selected-keyframes` selected, reached
+  `live_lane_ready`, then failed closed at importer patch conflicts; the partial
+  conflict was cleaned back to a clean tree. The next candidate,
+  `tool-compositions-toggle-onion-skinning`, was selected, then work stopped
+  before the next child-run because it would cross the handoff threshold.
 
 ## Current Dirty State
 
-No known dirty recovery state remains. The durable ledger has 15 queued
-candidates remaining and zero `queued live_lane_needed`.
+No known dirty recovery state remains. The current strict transaction has
+`tool-compositions-toggle-onion-skinning` selected and waiting for
+`prove_or_register_live_lane`. The durable ledger has 14 queued candidates
+remaining, 11 `failed_import`, and zero `queued live_lane_needed`.
 
 ## Next Milestone
 
-Milestone 20: continue the current full-intake strict phase runner only from a
-fresh safe context budget, one `max-items 1` boundary at a time. Use the updated
-runner defaults unless a newer user override is given. Do not run old
-longrun, Local/Ollama, broad/default CEP smoke, dependency changes, push/PR,
-source merge outside the runner, full runtime reports, or `max-items > 1`.
+Milestone 21: from a fresh safe context budget, continue the current strict
+transaction for `tool-compositions-toggle-onion-skinning`, starting with
+`prove_or_register_live_lane`, one `max-items 1` boundary at a time. Use updated
+runner defaults. Do not run old longrun, Local/Ollama, broad/default CEP smoke,
+dependency changes, push/PR, source merge outside the runner, full runtime
+reports, or `max-items > 1`.
 
 ## Decision Log
 
@@ -165,8 +174,8 @@ source merge outside the runner, full runtime reports, or `max-items > 1`.
 - The old active plan was preserved as history rather than summarized in place, because
   it contained useful historical proof but was too large for safe active-context use.
 - The active plan is now a baseline and queue pointer, not a complete execution log.
-- Runtime/proof artifacts are treated as cold storage. New chats should read compact
-  handoff/status first and only open old reports by exact path when needed.
+- Runtime artifacts are storage. New chats should read compact handoff/status
+  first and open old reports only by exact path.
 - Existing camera-controller recovery changes are separate from Milestone 2 and remain
   outside this commit except for being named as the next review target.
 - Milestone 3 accepted the camera-controller recovery change rather than rejecting it:
@@ -267,19 +276,24 @@ source merge outside the runner, full runtime reports, or `max-items > 1`.
   thresholds/caps, not inflating predicted step costs, because the problem was
   premature budget stops. The runner still requires explicit context percent for
   longrun work and still refuses unknown context before new work.
+- Milestone 20 treated marker patch conflicts as failed importer output, not
+  approval for manual source integration. The existing marker recipe/registry/smoke
+  coverage stayed intact, so the partial patch was cleaned.
+- The next onion-skinning phase was not started at predicted 63% because the
+  following child-run would cross the widened 72% handoff threshold.
 
 ## Validation
-
-| Full intake tool-selection-select-all-children | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-20aa9a79d6-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
-
-| Full intake tool-selection-layer-selection-set | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-6045da30f2-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 Milestones 2-9 targeted validation is archived in
 `plans/archive/target-app-execplan-history-through-2026-05-31.md`. Compact outcome:
 the active baseline reset, provider/CEP validation work, Hardcore handoff proof, and
-bounded Full Intaker queue drain all completed with the documented guardrails; no
-Local/Ollama, broad/default CEP smoke, old longrun, dependency changes, push/PR, or
-`max-items > 1` importer run was used without approval.
+bounded Full Intaker queue drain completed with documented guardrails.
+
+The two completed Selection imports in Milestone 17 both passed through the current
+`full-intake-kyletmartinez` strict flow: lane ready, recipe import, non-live
+validation, generated-only live rerun, docs/handoff, and commit, with no
+Local/Ollama, broad/default CEP smoke, dependency change, source checkout write
+outside the runner, push, PR, or `max-items > 1`.
 
 Milestones 10-17 compact validation:
 
@@ -322,6 +336,14 @@ Milestones 10-17 compact validation:
   `node scripts/sdk-generic-repo-full-intake-smoke.js` suite passed; `git diff
   --check` passed. No Local/Ollama, broad/default CEP smoke, dependency change,
   push/PR, old longrun, full runtime report, or real importer run was used.
+- [x] Milestone 20 validation: active docs were read only from the approved set;
+  compact status/proof/ledger checks passed before and after the strict runner
+  steps. `tool-markers-add-markers-at-selected-keyframes` became terminal
+  `failed_import`; `tool-compositions-toggle-onion-skinning` is selected for the
+  next phase. `git status --short --branch` was clean after conflict cleanup. No
+  Local/Ollama, broad/default CEP smoke, dependency change, push/PR, old longrun,
+  full runtime report, source merge outside the runner, or `max-items > 1` was
+  used.
 
 Not run by design across this compact block unless explicitly noted: Local/Ollama,
 broad/default CEP smoke, dependency/package changes, push/PR, unscoped retry, old
