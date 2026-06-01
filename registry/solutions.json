@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-05-31",
+  "updatedAt": "2026-06-01",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -3765,6 +3765,120 @@
         "Advisory recipe only; execution uses normal Agent plan validation and read-only typed tools.",
         "Do not infer selected layers from prior chat context or layer names; require get_selected_layers evidence for current selection state.",
         "Do not use this recipe for changing selection, selecting by type/label/randomness, deselecting layers, layer duplication, layer mutation, source relinking, render queue items, or broad timeline cleanup."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "layer-selection-set-typed-plan",
+      "title": "Layer Selection Set Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "selection",
+        "layers",
+        "selected-layers",
+        "set-selection",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Set the current active-comp layer selection to explicit layer indices through set_layer_selection, then read back selected layers.",
+        "appliesWhen": [
+          "The user asks to select, set or replace the current layer selection with explicit layers.",
+          "The workflow can bind concrete one-based layerIndices from current active comp layer inventory before mutating selection state."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "layerIndices",
+          "type": "array",
+          "required": true,
+          "description": "Concrete one-based layer indices to select, bound from current active comp layer read-back."
+        },
+        {
+          "name": "expectedNames",
+          "type": "array",
+          "required": false,
+          "description": "Optional expected layer names paired with layerIndices for source guard evidence."
+        },
+        {
+          "name": "selectionMode",
+          "type": "string",
+          "required": false,
+          "description": "Selection mode. Use replacement selection unless an explicitly supported typed-tool mode is requested and available."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists before selection state is changed.",
+        "Target layer indices are explicit and are verified from current get_comp_details layer inventory before mutation.",
+        "The safe adaptation changes only active-comp layer selection state, not layer names, timing, sources, effects, keyframes, masks, project items or render queue items.",
+        "Persistent named selection sets, fuzzy name matching, selection by type/label/randomness, cross-comp selection and exact native UI side effects remain typed-tool gaps unless a separate contract proves them."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/layer-selection-set-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "set_layer_selection",
+          "get_selected_layers"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and layer inventory, set explicit replacement selection with set_layer_selection, then read selected layers back and compare selected count, indices and expected names.",
+        "steps": [
+          "Run get_active_comp and get_comp_details before mutation to capture active comp identity and layer inventory.",
+          "Bind explicit one-based layerIndices and optional expectedNames only from current layer inventory evidence.",
+          "Fail closed when the request requires fuzzy matching, persistent named selection sets, selection by type or label, random selection, cross-comp selection, or layers missing from the inspected comp.",
+          "Run set_layer_selection with explicit layerIndices, optional expectedNames, replacement selection semantics, verifyAfter:true and a stable idempotency key.",
+          "Run get_selected_layers after mutation and compare the selected layer count, selected layerIndices and expected names with the requested target selection."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_comp_details identifies every target layer index and expected name before selection mutation.",
+          "set_layer_selection result reports the requested explicit layerIndices and replacement selection semantics.",
+          "Post-run get_selected_layers shows the expected selected layer count, selected layer indices and expected names when provided.",
+          "Skipped or missing target layers are reported as typed-tool gaps instead of approximate or silent selection changes.",
+          "Post-run evidence shows no layer rename, deletion, timing, source, effect, keyframe, mask, project item or render queue mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-selection-layer-selection-set generic repository importer as advisory typed-plan coverage for explicit active-comp layer selection mutation.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into typed selection guidance and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-01",
+          "from": "generic-repo-importer-tool-selection-layer-selection-set",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Layer_Selection_Set.jsx into typed set_layer_selection guidance for explicit layerIndices with optional expectedNames, replacement selection semantics, verifyAfter:true and get_selected_layers read-back; no source JSX copied. Persistent named selection sets, fuzzy name matching, selection by type/label/randomness, cross-comp selection and exact native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current get_comp_details layer inventory before set_layer_selection; do not infer layer indices from prior chat context.",
+        "Use replacement selection semantics unless another mode is explicitly requested and supported by the typed tool contract.",
+        "Require get_selected_layers read-back after mutation to prove selected layer count, selected indices and expected names.",
+        "Require a separate typed-tool contract for persistent named selection sets, fuzzy name matching, selection by type/label/randomness, cross-comp selection, project panel selection or exact native UI side effects.",
+        "Do not use this recipe for layer duplication, deletion, renaming, timing edits, marker edits, effect edits, source relinking, keyframe edits, render queue changes or broad timeline cleanup."
       ]
     },
     {

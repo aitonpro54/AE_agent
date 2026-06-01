@@ -104,20 +104,27 @@ Codex App dev-request handoff for repository work.
   orchestrator child-run lanes; related importer/queue/full-intake smoke fixtures
   were updated. No Selection retry, live lane, source merge, Local/Ollama, old
   longrun, dependency change, push, or PR was run.
+- [x] Milestone 15: AUX-021 detached importer child-run for
+  `tool-selection-layer-selection-set`. Added an advisory typed-plan recipe and
+  registry/smoke-library metadata for explicit active-comp layer selection mutation
+  through `set_layer_selection`, with `get_comp_details` layer inventory evidence,
+  replacement selection semantics, `get_selected_layers` read-back, and fail-closed
+  boundaries for persistent named selection sets or fuzzy/native UI selection
+  behavior. No source JSX was copied. The parent scoped retry reached
+  `non_live_validation_complete` and stopped before `generated_only_live_rerun`.
 
 ## Current Dirty State
 
-No known pre-existing dirty recovery state remains after Milestone 6. Continue with
-new work only after a fresh context/status check.
+No known pre-existing dirty recovery state remains. Milestone 15 planned paths are
+scoped to `tool-selection-layer-selection-set`.
 
 ## Next Milestone
 
-Milestone 15: run a narrow post-patch retry only if explicitly approved for the
-scoped importer flow. Recommended first slice is one Selection candidate with
-`--max-items 1` and explicit Selection ids, stopping at the normal importer gates.
-Do not run live lanes, old longrun, unscoped retry, Local/Ollama, broad/default CEP
-smoke, dependency changes, push/PR, or source merge outside that scoped importer
-flow without explicit approval.
+Milestone 16: continue only with explicit approval for the narrow generated-only
+live rerun of `tool-selection-layer-selection-set`, or defer it and move to the next
+planned safe family. Do not run old longrun, unscoped retry, Local/Ollama,
+broad/default CEP smoke, dependency changes, push/PR, or any live lane beyond the
+single scoped generated-only rerun without explicit approval.
 
 ## Decision Log
 
@@ -192,6 +199,12 @@ flow without explicit approval.
 - The narrow recovery patch uses `-c model_reasoning_effort="high"` instead of
   `--reasoning-effort`, preserving the recorded child-run intent while matching the
   current Codex CLI surface and existing roadmap/feature conveyor command style.
+- AUX-021 adapted `Selection/Layer_Selection_Set.jsx` as advisory typed-plan
+  guidance only. The recipe requires explicit layer indices from current
+  `get_comp_details` evidence, uses `set_layer_selection`, verifies with
+  `get_selected_layers`, and treats persistent named selection sets, fuzzy matching,
+  type/label/random selection, cross-comp selection, and exact native UI side
+  effects as separate typed-tool contracts.
 
 ## Validation
 
@@ -280,6 +293,43 @@ Milestone 14 targeted validation:
 Not run by design: Selection retry, live CEP/AE lanes, broad/default CEP smoke,
 Local/Ollama provider validation, old longrun, dependency/package changes, source
 merge, push, or PR.
+
+Milestone 15 targeted validation:
+
+- [x] Context/status check completed; branch `road-map-2.0` was ahead 8 and clean
+  before Milestone 15 work.
+- [x] Added a narrow import-failure resolver for legacy Codex CLI
+  `--reasoning-effort` child-run failures, guarded by compact child-run summary
+  evidence: `failed_process`, exit code 2, zero changed/unplanned paths, and stderr
+  containing `unexpected argument '--reasoning-effort'`.
+- [x] `node --check orchestrator/run-generic-repo-full-intake.mjs`,
+  `node --check scripts/sdk-generic-repo-full-intake-smoke.js`, and
+  `node scripts/sdk-generic-repo-full-intake-smoke.js` passed.
+- [x] First scoped retry requeued only `tool-selection-layer-selection-set`, then
+  stopped with `blocked_target_dirty` before importer execution because the resolver
+  patch was still uncommitted.
+- [x] Resolver patch was committed as `9a3378c`.
+- [x] Re-ran the same scoped Selection id with `--max-items 1`,
+  `--resolution-candidate-ids tool-selection-layer-selection-set`,
+  `--compact-json`, and `--no-commit`; phases completed through
+  `select_candidate`, `prove_or_register_live_lane`, `run_importer_phase`,
+  `controlled_merge`, and `non_live_validation`.
+- [x] Importer proof after non-live validation showed `changedPathCount:4`,
+  `unplannedPathCount:0`, and next phase `generated_only_live_rerun`.
+- [x] Reviewed planned-path diff and confirmed the import added advisory typed-plan
+  guidance only; no source JSX was copied.
+- [x] `node --check scripts/solution-library-validation-smoke.js`,
+  registry JSON parse, `node scripts/solution-registry-smoke.js`,
+  `node scripts/solution-library-validation-smoke.js`, and `git diff --check`
+  passed after controlled merge.
+- [x] Required local smoke suite passed after controlled merge:
+  `npm.cmd run check:rules`, provider/solution/project-intent/planning/semantic/
+  reliability/ChatGPT connector/provider API/prompt optimization smokes,
+  `node scripts/bridge-only-smoke-test.js`, and `node scripts/smoke-test.js`.
+
+Not run by design: generated-only live rerun, live CEP/AE lanes, broad/default CEP
+smoke, Local/Ollama provider validation, old longrun, unscoped retry,
+dependency/package changes, push, or PR.
 
 ## Handoff
 
