@@ -30,6 +30,8 @@ Codex App dev-request handoff for repository work.
 
 ## Progress
 
+- [x] Full intake tool-selection-layer-selection-set: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-selection-layer-selection-set); live gate ready, importer batch full-intake-kyletmartinez-6045da30f2-import, commit recorded after candidate commit.
+
 - [x] Milestone 1: AUX-100 importer child-run guard stabilization committed as
   `39b36f5`.
 - [x] Milestone 2: Baseline reset active docs. The oversized active plan was archived,
@@ -134,6 +136,8 @@ approval.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Selection/Layer_Selection_Set.jsx` as `tool-selection-layer-selection-set`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-selection-layer-selection-set).
+
 - The old active plan was preserved as history rather than summarized in place, because
   it contained useful historical proof but was too large for safe active-context use.
 - The active plan is now a baseline and queue pointer, not a complete execution log.
@@ -218,6 +222,8 @@ approval.
   generated-only fixture, read-back, and semantic verification lane exist.
 
 ## Validation
+
+| Full intake tool-selection-layer-selection-set | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-6045da30f2-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 Milestones 2-9 targeted validation is archived in
 `plans/archive/target-app-execplan-history-through-2026-05-31.md`. Compact outcome:
