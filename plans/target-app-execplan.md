@@ -30,10 +30,6 @@ Codex App dev-request handoff for repository work.
 
 ## Progress
 
-- [x] Full intake tool-selection-select-all-children: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-selection-select-all-children); live gate ready, importer batch full-intake-kyletmartinez-20aa9a79d6-import, commit recorded after candidate commit.
-
-- [x] Full intake tool-selection-layer-selection-set: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-selection-layer-selection-set); live gate ready, importer batch full-intake-kyletmartinez-6045da30f2-import, commit recorded after candidate commit.
-
 - [x] Milestone 1: AUX-100 importer child-run guard stabilization committed as
   `39b36f5`.
 - [x] Milestone 2: Baseline reset active docs. The oversized active plan was archived,
@@ -121,32 +117,26 @@ Codex App dev-request handoff for repository work.
   existing recipes/lane cover layer markers, while the four remaining triage Marker
   unsafe-skip ids require composition-marker typed-tool contracts before retry.
   Updated the triage counts and moved those four ids out of immediate safe-next.
-- [x] Milestone 17: AUX-021 detached importer child-run for
-  `tool-selection-select-all-children`. Added an advisory typed-plan recipe and
-  registry/smoke-library metadata for selecting direct child layers of one reviewed
-  parent through `get_selected_layers`, `get_comp_details` parent evidence,
-  computed child `layerIndices`, `set_layer_selection`, and `get_selected_layers`
-  read-back. Handoff file creation was attempted but blocked by local `.codex`
-  ACL/sandbox write denial. No source JSX was copied, and no validation, live lane,
-  source merge, commit, Local/Ollama, dependency change, push, PR, or AE/CEP
-  mutation was run in this child-run.
+- [x] Milestone 17: Selection longrun resumed under the current
+  `run-generic-repo-full-intake` strict phase runner. `tool-selection-layer-selection-set`
+  completed its pending generated-only live rerun and finalization, then the
+  remaining ten Selection ids were scoped/requeued. `tool-selection-select-all-children`
+  completed through import, controlled merge, non-live validation, generated-only
+  live rerun, docs/handoff finalization, and commit. Both imported advisory
+  typed-plan recipes use `set_layer_selection` with typed read-back; no source JSX
+  was copied.
 
 ## Current Dirty State
 
-This detached child-run intentionally leaves changes in the importer-owned worktree
-only. Dirty file paths are scoped to `tool-selection-select-all-children` planned
-paths: `plans/target-app-execplan.md`,
-`recipes/select-all-children-typed-plan.md`, `registry/solutions.json`, and
-`scripts/solution-library-validation-smoke.js`. `.codex/handoff.md` was planned but
-could not be written because the local `.codex` path denied writes in this sandbox.
+No known dirty recovery state remains. The current durable Selection retry has
+nine queued candidates remaining and zero `queued live_lane_needed`.
 
 ## Next Milestone
 
-Next parent-controlled step: parent importer should inspect this detached child-run
-diff and decide whether to run its own allowed non-live validation/merge gates for
-`tool-selection-select-all-children`. Separately, do not run old longrun, unscoped
-retry, Local/Ollama, broad/default CEP smoke, dependency changes, push/PR, source
-merge, or any live lane without explicit approval.
+Milestone 18: continue the scoped Selection retry in longrun style through the
+current full-intake strict phase runner, one `max-items 1` boundary at a time. Do
+not run old longrun, unscoped retry, Local/Ollama, broad/default CEP smoke,
+dependency changes, push/PR, source merge outside the runner, or `max-items > 1`.
 
 ## Decision Log
 
@@ -236,6 +226,11 @@ merge, or any live lane without explicit approval.
   composition-marker `markerProperty` add/read/copy semantics. The four remaining
   Marker unsafe-skip ids should not be retried until a composition-marker contract,
   generated-only fixture, read-back, and semantic verification lane exist.
+- Milestone 17 treated the user's longrun approval as approval for the current
+  resumable full-intake strict phase runner and generated-only OpenAI CLI live
+  reruns for scoped Selection candidates only. Local/Ollama, broad/default CEP
+  smoke, dependency/package changes, push/PR, unscoped retry, and `max-items > 1`
+  remain out of scope.
 - AUX-021 adapted `Selection/Select_All_Children.jsx` as advisory typed-plan
   guidance only. The recipe selects direct children of one reviewed parent layer by
   deriving child `layerIndices` from current `get_comp_details` `parent.index`
@@ -258,156 +253,37 @@ bounded Full Intaker queue drain all completed with the documented guardrails; n
 Local/Ollama, broad/default CEP smoke, old longrun, dependency changes, push/PR, or
 `max-items > 1` importer run was used without approval.
 
-Milestone 10 targeted validation:
+Milestones 10-17 compact validation:
 
-- [x] Context/status check completed; no active goal budget was reported by the
-  Codex context tool.
-- [x] `git status --short --branch --untracked-files=all` showed branch
-  `road-map-2.0` ahead 3 and no worktree changes before documentation updates.
-- [x] `node orchestrator/full-intake-ledger-summary.mjs --compact` showed
-  `blocked_live_lane_synthesis_incomplete:9`, zero `queued`, and
-  `Queued live_lane_needed: 0`.
-- [x] Scoped bounded run:
-  `node orchestrator/run-generic-repo-full-intake.mjs --ledger .codex-runtime/sdk/generic-repo-importer/kyletmartinez-after-effects-scripts-intake/queue-ledger.json --run-id full-intake-kyletmartinez --max-items 1 --resolution-candidate-ids <nine requested ids> --context-percent 20 --allow-self-improvement-lane-synthesis --compact-json --no-commit`
-  completed with `status: completed_no_candidates`, `terminalTickets:2`,
-  `requeued:0`, and `items:0`.
-- [x] Post-run compact status and proof showed `changedPathCount:0`,
-  `unplannedPathCount:0`, no active related processes, and last event
-  `resolution_queue_processed`.
-- [x] Fresh resolution tickets showed both generated-only proof lanes failed closed:
-  layer timing read-back mismatch and effect-property read-back missing value.
+- [x] Milestone 10 scoped only the nine
+  `blocked_live_lane_synthesis_incomplete` ids; both generated-only proof families
+  failed closed, with no source merge, live mutation, Local/Ollama, dependency
+  change, push/PR, old longrun, or `max-items > 1`.
+- [x] Milestone 11 produced `plans/full-intake-unsafe-skip-triage.md` from the 75
+  `unsafe_skip_tool_gap` entries without source/runtime importer changes.
+- [x] Milestone 12 added Selection typed-tool/lane prep; touched JS checks,
+  registry parse, rules, required local smokes, `git diff --check`, and read-only
+  CEP checks passed.
+- [x] Milestone 13 ran the approved generated-only Selection live lane after a
+  bridge restart, then scoped/requeued exactly the 11 Selection ids; all failed
+  closed before source merge because importer child runs failed.
+- [x] Milestone 14 patched legacy Codex CLI `--reasoning-effort` invocation to
+  `-c model_reasoning_effort="high"`; targeted importer smokes, rules, required
+  local smoke suite, and `git diff --check` passed.
+- [x] Milestone 15 imported `tool-selection-layer-selection-set` through
+  controlled merge and non-live validation, then paused before generated-only live
+  rerun; planned-path proof showed `changedPathCount:4` and `unplannedPathCount:0`.
+- [x] Milestone 16 corrected Marker readiness classification and passed the
+  required local validation suite; no retry/live/source merge was run.
+- [x] Milestone 17 resumed current strict full-intake longrun: `tool-selection-layer-selection-set`
+  completed generated-only live rerun plus finalization (`3815db8`), the remaining
+  ten Selection ids were scoped/requeued, and `tool-selection-select-all-children`
+  completed import, controlled merge, non-live validation, generated-only live
+  rerun, finalization, and commit (`932cc7d`).
 
-Not run by design: source merge, importer phases, mutating live CEP/AE validation,
-broad/default CEP smoke, Local/Ollama provider validation, dependency changes,
-push/PR, old longrun, and importer `max-items > 1`.
-
-Milestone 11 targeted validation:
-
-- [x] Read durable ledger only and confirmed 75 `blocked_or_skipped` entries, all
-  `unsafe_skip_tool_gap`.
-- [x] Created `plans/full-intake-unsafe-skip-triage.md` with all 75 ids grouped into
-  28 safe-next, 32 contract-needed, and 15 approval-gated/last entries.
-- [x] No source files or runtime importer state were changed.
-
-Milestone 12 targeted validation: touched JS `node --check`, registry JSON parse,
-`npm.cmd run check:rules`, required local smoke suite, `sdk-generic-repo-full-intake`,
-`git diff --check`, and read-only CEP checks passed. Selection live lane/retry not run.
-
-Milestone 13 targeted validation:
-
-- [x] Initial Selection live lane failed closed because the running bridge daemon did
-  not yet expose `set_layer_selection` to the panel validator.
-- [x] `node scripts/cep-sync-health.js --check` showed installed CEP files in sync.
-- [x] Restarted only the local `bridge-daemon.js` process from this repo.
-- [x] `node scripts/cep-panel-cdp-smoke.js inspect` confirmed the panel reconnected.
-- [x] `node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-selection-openai-cli-smoke`
-  passed: planner accepted 8 steps / 5 mutating, dry run passed, protected run
-  passed, semantic verification passed, and generated cleanup completed.
-- [x] Scoped Full Intaker retry used exactly the 11 Selection ids from
-  `plans/full-intake-unsafe-skip-triage.md` with `--max-items 1`, scoped
-  `--resolution-candidate-ids`, and `--allow-self-improvement-lane-synthesis`.
-- [x] All 11 Selection ids were requeued, reached `live_lane_ready`, then failed
-  closed as `failed_import` during `run_importer_phase`; no source merge or commit
-  was produced by the importer.
-- [x] Compact status/proof showed `completed_no_candidates`, `changedPathCount:0`,
-  `unplannedPathCount:0`, and zero related processes.
-
-Milestone 14 targeted validation:
-
-- [x] Context/status check completed; no active goal budget was reported by the
-  Codex context tool. Branch `road-map-2.0` was ahead 7 and worktree was clean
-  before the patch.
-- [x] Active docs only were read before evidence review.
-- [x] Compact failure evidence reviewed: full-intake status/proof, ledger Selection
-  slice, queue-supervisor batch reports, importer result summaries, and one child
-  result. All 11 failures shared the same Codex CLI argument error before model
-  execution.
-- [x] `cmd /d /s /c codex exec --help` confirmed Codex CLI 0.131.0 does not expose
-  `--reasoning-effort`; existing local orchestrator lanes use
-  `model_reasoning_effort` via `-c`.
-- [x] Touched JS `node --check` passed for importer and three smoke files.
-- [x] `node scripts/sdk-generic-repo-importer-command-smoke.js`,
-  `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`, and
-  `node scripts/sdk-generic-repo-full-intake-smoke.js` passed.
-- [x] `npm.cmd run check:rules`, required solution/provider/planning/semantic/
-  reliability/prompt local smoke scripts, `node scripts/bridge-only-smoke-test.js`,
-  `node scripts/smoke-test.js`, and `git diff --check` passed.
-
-Not run by design: Selection retry, live CEP/AE lanes, broad/default CEP smoke,
-Local/Ollama provider validation, old longrun, dependency/package changes, source
-merge, push, or PR.
-
-Milestone 15 targeted validation:
-
-- [x] Context/status check completed; branch `road-map-2.0` was ahead 8 and clean
-  before Milestone 15 work.
-- [x] Added a narrow import-failure resolver for legacy Codex CLI
-  `--reasoning-effort` child-run failures, guarded by compact child-run summary
-  evidence: `failed_process`, exit code 2, zero changed/unplanned paths, and stderr
-  containing `unexpected argument '--reasoning-effort'`.
-- [x] `node --check orchestrator/run-generic-repo-full-intake.mjs`,
-  `node --check scripts/sdk-generic-repo-full-intake-smoke.js`, and
-  `node scripts/sdk-generic-repo-full-intake-smoke.js` passed.
-- [x] First scoped retry requeued only `tool-selection-layer-selection-set`, then
-  stopped with `blocked_target_dirty` before importer execution because the resolver
-  patch was still uncommitted.
-- [x] Resolver patch was committed as `9a3378c`.
-- [x] Re-ran the same scoped Selection id with `--max-items 1`,
-  `--resolution-candidate-ids tool-selection-layer-selection-set`,
-  `--compact-json`, and `--no-commit`; phases completed through
-  `select_candidate`, `prove_or_register_live_lane`, `run_importer_phase`,
-  `controlled_merge`, and `non_live_validation`.
-- [x] Importer proof after non-live validation showed `changedPathCount:4`,
-  `unplannedPathCount:0`, and next phase `generated_only_live_rerun`.
-- [x] Reviewed planned-path diff and confirmed the import added advisory typed-plan
-  guidance only; no source JSX was copied.
-- [x] `node --check scripts/solution-library-validation-smoke.js`,
-  registry JSON parse, `node scripts/solution-registry-smoke.js`,
-  `node scripts/solution-library-validation-smoke.js`, and `git diff --check`
-  passed after controlled merge.
-- [x] Required local smoke suite passed after controlled merge:
-  `npm.cmd run check:rules`, provider/solution/project-intent/planning/semantic/
-  reliability/ChatGPT connector/provider API/prompt optimization smokes,
-  `node scripts/bridge-only-smoke-test.js`, and `node scripts/smoke-test.js`.
-
-Not run by design: generated-only live rerun, live CEP/AE lanes, broad/default CEP
-smoke, Local/Ollama provider validation, old longrun, unscoped retry,
-dependency/package changes, push, or PR.
-
-Milestone 16 targeted validation:
-
-- [x] Context/status check completed; no active goal budget was reported by the
-  Codex context tool. Branch `road-map-2.0` was ahead 10 and clean before work.
-- [x] Active docs only were read before targeted readiness review.
-- [x] Targeted marker ledger query confirmed the four triage Marker ids are still
-  `blocked_or_skipped` with `unsafe_skip_tool_gap` because current marker typed
-  tools cover layer markers, not composition markers.
-- [x] Targeted registry/recipe review confirmed existing marker recipes and live
-  lane coverage are for layer-marker workflows (`add_layer_marker` with
-  `get_layer_details` read-back), not composition-marker transfer.
-- [x] Updated `plans/full-intake-unsafe-skip-triage.md` and this active plan only;
-  no source merge, importer retry, live lane, dependency/package change,
-  Local/Ollama, push, or PR was run.
-- [x] Required local validation suite passed: `git diff --check`,
-  `npm.cmd run check:rules`, provider/solution/project-intent/planning/semantic/
-  reliability/ChatGPT connector/provider API/prompt optimization smokes,
-  `node scripts/bridge-only-smoke-test.js`, and `node scripts/smoke-test.js`.
-
-Milestone 17 targeted validation:
-
-- [x] Read only active docs and planned-path context required for the detached
-  AUX-021 child-run.
-- [x] Added `recipes/select-all-children-typed-plan.md`.
-- [x] Updated `registry/solutions.json` with advisory metadata for
-  `select-all-children-typed-plan`.
-- [x] Updated `scripts/solution-library-validation-smoke.js` metadata/assertions so
-  parent-controlled validation can cover the new advisory recipe.
-- [x] Attempted to create `.codex/handoff.md`, but both `apply_patch` and
-  PowerShell write attempts were blocked by local `.codex` ACL/sandbox denial.
-
-Not run by child-run boundary: validation commands, live CEP/AE/CDP/OpenAI CLI lanes,
-source merge, dependency/package changes, Local/Ollama, branch/commit creation,
-push, PR, or GitHub automation.
+Not run by design across this compact block unless explicitly noted: Local/Ollama,
+broad/default CEP smoke, dependency/package changes, push/PR, unscoped retry, old
+longrun, raw JSX copy, source checkout writes outside the runner, and `max-items > 1`.
 
 ## Handoff
 
