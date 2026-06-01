@@ -125,18 +125,29 @@ Codex App dev-request handoff for repository work.
   live rerun, docs/handoff finalization, and commit. Both imported advisory
   typed-plan recipes use `set_layer_selection` with typed read-back; no source JSX
   was copied.
+- [x] Milestone 18: Full Intaker compact longrun continuation. From a clean
+  `cb8187a` baseline, the current strict phase runner advanced three queued
+  candidates with `max-items 1`: `tool-project-rename-selected-layer-source`
+  reached importer and failed closed with missing child summary,
+  `tool-project-rename-source-to-layer-name` reached importer and failed closed
+  with missing child summary, and
+  `tool-keyframes-calculate-frames-to-selected-keyframe` reached live-lane-ready
+  then stopped at the no-new-work context gate. A partial generated recipe from
+  that failed budget stop was removed uncommitted; no source merge, validation
+  pass, live rerun, Local/Ollama, broad/default CEP smoke, dependency change,
+  push/PR, old longrun, or `max-items > 1` was run.
 
 ## Current Dirty State
 
-No known dirty recovery state remains. The current durable Selection retry has
-nine queued candidates remaining and zero `queued live_lane_needed`.
+No known dirty recovery state remains. The durable ledger has 15 queued
+candidates remaining and zero `queued live_lane_needed`.
 
 ## Next Milestone
 
-Milestone 18: continue the scoped Selection retry in longrun style through the
-current full-intake strict phase runner, one `max-items 1` boundary at a time. Do
-not run old longrun, unscoped retry, Local/Ollama, broad/default CEP smoke,
-dependency changes, push/PR, source merge outside the runner, or `max-items > 1`.
+Milestone 19: continue the current full-intake strict phase runner only from a
+fresh safe context budget, one `max-items 1` boundary at a time. Do not run old
+longrun, Local/Ollama, broad/default CEP smoke, dependency changes, push/PR,
+source merge outside the runner, full runtime reports, or `max-items > 1`.
 
 ## Decision Log
 
@@ -239,6 +250,12 @@ dependency changes, push/PR, source merge outside the runner, or `max-items > 1`
   child discovery without typed parent evidence, parenting changes, cross-comp or
   Project panel selection, and exact native UI/source JSX semantics remain separate
   typed-tool contracts.
+- Milestone 18 treated child-summary timeouts as terminal failed imports for the
+  current queued candidates, not as approval to continue broad recovery. The
+  context-budget stop for `tool-keyframes-calculate-frames-to-selected-keyframe`
+  was allowed to resolve only the already-started dirty state; the unvalidated
+  generated recipe was removed rather than committed without registry integration,
+  non-live validation, or generated-only live rerun.
 
 ## Validation
 
@@ -280,6 +297,14 @@ Milestones 10-17 compact validation:
   ten Selection ids were scoped/requeued, and `tool-selection-select-all-children`
   completed import, controlled merge, non-live validation, generated-only live
   rerun, finalization, and commit (`932cc7d`).
+- [x] Milestone 18 ran compact status/proof/ledger checks, then advanced only
+  strict `max-items 1` boundaries. `tool-project-rename-selected-layer-source`
+  and `tool-project-rename-source-to-layer-name` failed closed at importer child
+  summary timeouts. `tool-keyframes-calculate-frames-to-selected-keyframe` reached
+  `live_lane_ready` and then hit `context-budget-noNewWorkPercent`; compact proof
+  showed no unplanned paths after cleanup, and `git status` was clean before docs
+  updates. No Local/Ollama, broad/default CEP smoke, dependency/package change,
+  push/PR, full runtime report, old longrun, or `max-items > 1` was used.
 
 Not run by design across this compact block unless explicitly noted: Local/Ollama,
 broad/default CEP smoke, dependency/package changes, push/PR, unscoped retry, old
