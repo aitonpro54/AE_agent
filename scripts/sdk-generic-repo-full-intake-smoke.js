@@ -135,6 +135,10 @@ function createFixture(name) {
       '"use strict";',
       "const command = process.argv[2] || 'inspect';",
       "if (command === 'inspect' || command === 'connector-status-smoke' || /openai-cli-smoke$/.test(command)) {",
+      '  if (/openai-cli-smoke$/.test(command) && process.env.FAKE_LIVE_PROOF_FAIL === "1") {',
+      '    console.error("fixture live proof failed");',
+      "    process.exit(7);",
+      "  }",
       "  console.log(JSON.stringify({ ok: true, command }));",
       "  process.exit(0);",
       "}",
@@ -145,6 +149,19 @@ function createFixture(name) {
     "utf8"
   );
   fs.writeFileSync(path.join(target, "scripts", "fail-live-lane.js"), "process.exit(7);\n", "utf8");
+  fs.writeFileSync(
+    path.join(target, "scripts", "flaky-live-proof.js"),
+    [
+      '"use strict";',
+      'if (process.env.FAKE_LIVE_PROOF_FAIL === "1") {',
+      '  console.error("fixture live proof failed");',
+      "  process.exit(7);",
+      "}",
+      'console.log(JSON.stringify({ ok: true, proof: "flaky-live-proof" }));',
+      ""
+    ].join("\n"),
+    "utf8"
+  );
 
   sh(target, ["git", "init", "-b", "main"]);
   sh(target, ["git", "config", "user.name", "Fixture"]);
@@ -731,6 +748,76 @@ function assertStrictCompactParentRunsOnePhaseAtBoundary() {
     assert.strictEqual(output.strictOnePhase.enabled, true);
     assert.strictEqual(output.proofEnvelope.contractComplete, true);
     assert.strictEqual(output.lastItem.status, "completed");
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertFailedLiveRerunCanRecoverPlannedDirtyTransaction() {
+  const fixture = createFixture("live-retry");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const candidate = entry({
+      liveGate: {
+        required: true,
+        status: "needed_or_reusable_lane_required"
+      }
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [candidate]));
+    const registryPath = writeRegistry(fixture, {
+      entry: {
+        command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-fixture-openai-cli-smoke",
+        laneId: "fixture-flaky-live-proof-openai-cli",
+        nonLiveValidationCommands: ["node --check scripts/flaky-live-proof.js"],
+        scope: "fixture generated-only flaky live proof"
+      }
+    });
+    const runId = "fixture-live-retry";
+    const env = fakeCodexEnv(binDir);
+
+    for (const [completedPhase, nextPhase] of [
+      ["select_candidate", "prove_or_register_live_lane"],
+      ["prove_or_register_live_lane", "run_importer_phase"],
+      ["run_importer_phase", "controlled_merge"],
+      ["controlled_merge", "non_live_validation"],
+      ["non_live_validation", "generated_only_live_rerun"]
+    ]) {
+      const result = runFullIntakeFixtureCompactPhase(fixture, ledgerPath, registryPath, runId, 1, env);
+      assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+      const output = JSON.parse(result.stdout);
+      assert.strictEqual(output.status, "phase_boundary", result.stdout);
+      assert.strictEqual(output.strictOnePhase.completedPhase, completedPhase);
+      assert.strictEqual(output.strictOnePhase.nextPhase, nextPhase);
+    }
+
+    const failed = runFullIntakeFixtureCompactPhase(
+      fixture,
+      ledgerPath,
+      registryPath,
+      runId,
+      1,
+      { ...env, FAKE_LIVE_PROOF_FAIL: "1" }
+    );
+    assert.notStrictEqual(failed.status, 0, failed.stdout);
+    const failedOutput = JSON.parse(failed.stdout);
+    assert.strictEqual(failedOutput.status, "stopped_after_failed_live_rerun");
+    assert.strictEqual(failedOutput.lastItem.status, "failed_live_rerun");
+    assert.notStrictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+
+    const recovered = runFullIntakeFixtureCompactPhase(fixture, ledgerPath, registryPath, runId, 1, env);
+    assert.strictEqual(recovered.status, 0, recovered.stderr || recovered.stdout);
+    const recoveredOutput = JSON.parse(recovered.stdout);
+    assert.strictEqual(recoveredOutput.status, "phase_boundary", recovered.stdout);
+    assert.strictEqual(recoveredOutput.strictOnePhase.completedPhase, "generated_only_live_rerun");
+    assert.strictEqual(recoveredOutput.strictOnePhase.nextPhase, "ledger_docs_handoff_commit_finalization");
+    assert.strictEqual(recoveredOutput.lastItem.status, "generated_only_live_rerun_complete");
+
+    const final = runFullIntakeFixtureCompactPhase(fixture, ledgerPath, registryPath, runId, 1, env);
+    assert.strictEqual(final.status, 0, final.stderr || final.stdout);
+    const finalOutput = JSON.parse(final.stdout);
+    assert.strictEqual(finalOutput.status, "completed");
+    assert.strictEqual(finalOutput.lastItem.status, "completed");
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);
@@ -2169,6 +2256,7 @@ function main() {
   assertHugeChildOutputDoesNotBloatParentReports();
   assertCompactParentOutputDoesNotLeakRuntimeDetails();
   assertStrictCompactParentRunsOnePhaseAtBoundary();
+  assertFailedLiveRerunCanRecoverPlannedDirtyTransaction();
   assertParentJsonIsSealedAndBatchRequiresApproval();
   assertContextBudgetStopsBeforeNewWork();
   assertUnknownContextStopsBeforeNewWork();

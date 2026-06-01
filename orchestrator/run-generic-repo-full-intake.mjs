@@ -3768,6 +3768,62 @@ function activeStrictTransaction(state) {
   return transaction;
 }
 
+function loadBatchFromItem({ item, targetRepo }) {
+  if (!item?.batchReport) return null;
+  const reportPath = absoluteReportPath(targetRepo, item.batchReport);
+  if (!existsSync(reportPath) || !statSync(reportPath).isFile()) return null;
+  const report = readJson(reportPath, "strict-recovery-batch-report");
+  const manifestPath = path.join(path.dirname(reportPath), "importer.manifest.json");
+  return {
+    batchRunId: item.batchRunId || report.runId || path.basename(path.dirname(reportPath)),
+    report,
+    singleLedgerPath: existsSync(manifestPath) ? manifestPath : null,
+  };
+}
+
+function findRecoverableFailedLiveRerunTransaction({ dirtyPaths, ledger, runId, state, targetRepo }) {
+  if (!dirtyPaths.length || state.activeTransaction) return null;
+  const failedItem = (state.items || [])
+    .slice()
+    .reverse()
+    .find((entry) => entry?.status === "failed_live_rerun" && Array.isArray(entry.plannedPaths) && entry.plannedPaths.length > 0);
+  if (!failedItem) return null;
+  const plannedSet = new Set(failedItem.plannedPaths.map(normalizeRepoPath));
+  const dirtyIsPlanned = dirtyPaths.every((repoPath) => plannedSet.has(normalizeRepoPath(repoPath)) || SHARED_OWNER_PATHS.includes(normalizeRepoPath(repoPath)));
+  if (!dirtyIsPlanned) return null;
+  const candidate = (ledger.entries || []).find((entry) => entry.id === failedItem.candidateId);
+  if (!candidate || candidate.status !== "failed_live_rerun") return null;
+  if (candidate.liveGate?.required === true && !candidate.liveGate.command) return null;
+  const batch = loadBatchFromItem({ item: failedItem, targetRepo });
+  if (!batch?.report) return null;
+  const item = {
+    ...failedItem,
+    completedAt: null,
+    liveRerunStatus: null,
+    reason: null,
+    status: "non_live_validation_complete",
+  };
+  const transaction = {
+    schema: "generic-repo-full-intake.transaction.v1",
+    runId,
+    candidate,
+    item,
+    batch,
+    liveRerun: null,
+    lastCompletedPhase: "non_live_validation",
+    nextPhase: "generated_only_live_rerun",
+    phaseProofs: [],
+    recovery: {
+      mode: "retry_failed_live_rerun_with_planned_dirty_paths",
+      previousReason: failedItem.reason || null,
+      previousLiveRerunReport: failedItem.liveRerunReport || null,
+    },
+    startedAt: failedItem.startedAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  return { batch, candidate, item, transaction };
+}
+
 function firstContextBudgetStep({ state, strictOnePhase }) {
   if (!strictOnePhase) {
     return {
@@ -4125,6 +4181,31 @@ function runStrictOnePhase({
   let item = transaction?.item || null;
   let batch = transaction?.batch || null;
   let liveRerun = transaction?.liveRerun || null;
+
+  if (completedPhase === "select_candidate" && !transaction) {
+    const dirtyBefore = gitChangedPaths(targetRepo);
+    const recovery = findRecoverableFailedLiveRerunTransaction({
+      dirtyPaths: dirtyBefore,
+      ledger: initialLedger,
+      runId,
+      state,
+      targetRepo,
+    });
+    if (recovery) {
+      ({ batch, candidate, item, transaction } = recovery);
+      liveRerun = null;
+      completedPhase = transaction.nextPhase;
+      report.currentPhase = completedPhase;
+      report.nextPhase = completedPhase;
+      state = saveStrictTransaction({ runRoot, state, transaction });
+      appendEvent(runRoot, {
+        candidateId: candidate.id,
+        event: "strict_failed_live_rerun_recovered",
+        phase: completedPhase,
+        runId,
+      });
+    }
+  }
 
   if (completedPhase === "select_candidate") {
     const dirtyBefore = gitChangedPaths(targetRepo);
