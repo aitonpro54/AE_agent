@@ -136,6 +136,12 @@ Codex App dev-request handoff for repository work.
   that failed budget stop was removed uncommitted; no source merge, validation
   pass, live rerun, Local/Ollama, broad/default CEP smoke, dependency change,
   push/PR, old longrun, or `max-items > 1` was run.
+- [x] Milestone 19: Full Intaker context-budget tolerance bump. Per user
+  direction, the strict full-intake runner's default context thresholds were raised
+  by 20%: soft-stop 50 -> 60, no-new-work 55 -> 66, handoff 60 -> 72, hard-stop
+  70 -> 84. Normal threshold caps were raised from handoff/hard-stop 80/90 to
+  96/100 so explicit longrun overrides can use the wider budget. Context smoke
+  coverage was updated to prove the new default no-new-work stop point.
 
 ## Current Dirty State
 
@@ -144,8 +150,9 @@ candidates remaining and zero `queued live_lane_needed`.
 
 ## Next Milestone
 
-Milestone 19: continue the current full-intake strict phase runner only from a
-fresh safe context budget, one `max-items 1` boundary at a time. Do not run old
+Milestone 20: continue the current full-intake strict phase runner only from a
+fresh safe context budget, one `max-items 1` boundary at a time. Use the updated
+runner defaults unless a newer user override is given. Do not run old
 longrun, Local/Ollama, broad/default CEP smoke, dependency changes, push/PR,
 source merge outside the runner, full runtime reports, or `max-items > 1`.
 
@@ -256,6 +263,10 @@ source merge outside the runner, full runtime reports, or `max-items > 1`.
   was allowed to resolve only the already-started dirty state; the unvalidated
   generated recipe was removed rather than committed without registry integration,
   non-live validation, or generated-only live rerun.
+- Milestone 19 interpreted "increase by 20% everywhere" as widening context-budget
+  thresholds/caps, not inflating predicted step costs, because the problem was
+  premature budget stops. The runner still requires explicit context percent for
+  longrun work and still refuses unknown context before new work.
 
 ## Validation
 
@@ -305,6 +316,12 @@ Milestones 10-17 compact validation:
   showed no unplanned paths after cleanup, and `git status` was clean before docs
   updates. No Local/Ollama, broad/default CEP smoke, dependency/package change,
   push/PR, full runtime report, old longrun, or `max-items > 1` was used.
+- [x] Milestone 19 validation: `node --check` passed for
+  `orchestrator/run-generic-repo-full-intake.mjs` and
+  `scripts/sdk-generic-repo-full-intake-smoke.js`; the targeted
+  `node scripts/sdk-generic-repo-full-intake-smoke.js` suite passed; `git diff
+  --check` passed. No Local/Ollama, broad/default CEP smoke, dependency change,
+  push/PR, old longrun, full runtime report, or real importer run was used.
 
 Not run by design across this compact block unless explicitly noted: Local/Ollama,
 broad/default CEP smoke, dependency/package changes, push/PR, unscoped retry, old

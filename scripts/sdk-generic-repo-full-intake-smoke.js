@@ -743,11 +743,12 @@ function assertContextBudgetStopsBeforeNewWork() {
       "fixture-context-budget",
       1,
       {},
-      ["--context-percent", "50"]
+      ["--context-percent", "60"]
     );
     assert.strictEqual(result.status, 0, result.stderr || result.stdout);
     const output = JSON.parse(result.stdout);
     assert.strictEqual(output.status, "resume_only_context_budget");
+    assert.strictEqual(output.contextBudget.lastDecision.threshold, "noNewWorkPercent");
     assert.strictEqual(output.counts.items, 0);
     assert(output.proofEnvelope.path.endsWith("proof-envelope.json"));
     assert.strictEqual(output.proofEnvelope.contractComplete, false);
