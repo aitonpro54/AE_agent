@@ -118,6 +118,7 @@ const CHILD_TIMEOUT_REASONS = Object.freeze([
 const IMPORT_RETRY_REASONS = Object.freeze([
   "resume-manifest-hash-mismatch",
 ]);
+const LEGACY_REASONING_EFFORT_CLI_ERROR = "unexpected argument '--reasoning-effort'";
 const SHARED_OWNER_PATHS = Object.freeze([
   "registry/solutions.json",
   "scripts/solution-library-validation-smoke.js",
@@ -2255,6 +2256,13 @@ function processImportFailureResolutionTickets({ ledger, resolutionCandidateIds 
     ) {
       kind = "child_timeout";
     }
+    if (
+      !kind &&
+      discoveredBatchReport &&
+      isLegacyReasoningEffortCliFailure({ batchReportPath: discoveredBatchReport, targetRepo })
+    ) {
+      kind = "legacy_reasoning_effort_cli";
+    }
     if (!kind || !SAFE_CLASSIFICATIONS.has(entry.classification)) {
       continue;
     }
@@ -2281,7 +2289,11 @@ function processImportFailureResolutionTickets({ ledger, resolutionCandidateIds 
         retryNonce: safeId(`${groupId}-${sha256Text(`${bucket.entries.map((entry) => entry.id).sort().join(",")}:${runId}`).slice(0, 8)}`),
       },
       groupId,
-      reason: kind === "child_timeout" ? "child_timeout_patch_recovery_queued" : "fresh_retry_queued_after_manifest_mismatch",
+      reason: kind === "child_timeout"
+        ? "child_timeout_patch_recovery_queued"
+        : kind === "legacy_reasoning_effort_cli"
+          ? "fresh_retry_queued_after_legacy_reasoning_effort_cli_arg"
+          : "fresh_retry_queued_after_manifest_mismatch",
       runId,
       runRoot,
       status: "resolved_requeued",
@@ -2957,6 +2969,25 @@ function discoverCandidateBatchReportPath({ candidateId, runRoot, targetRepo }) 
   }
   matches.sort((left, right) => (right.createdAtMs || right.mtimeMs) - (left.createdAtMs || left.mtimeMs));
   return matches.length > 0 ? normalizeRepoPath(path.relative(targetRepo, matches[0].reportPath)) : null;
+}
+
+function isLegacyReasoningEffortCliFailure({ batchReportPath, targetRepo }) {
+  const report = readCompactJsonIfExists(
+    absoluteReportPath(targetRepo, batchReportPath),
+    "legacy-reasoning-effort-batch-report",
+    BATCH_REPORT_SUMMARY_MAX_BYTES,
+  );
+  const importerRunId = report?.importer?.runId || report?.items?.[0]?.importerRunId || null;
+  if (!importerRunId) return false;
+  return childRunSummariesForImporter(targetRepo, importerRunId).some((summary) => (
+    summary?.status === "failed_process" &&
+    summary.exitCode === 2 &&
+    Array.isArray(summary.changedPaths) &&
+    summary.changedPaths.length === 0 &&
+    Array.isArray(summary.unplannedPaths) &&
+    summary.unplannedPaths.length === 0 &&
+    String(summary.stderr?.tail || "").includes(LEGACY_REASONING_EFFORT_CLI_ERROR)
+  ));
 }
 
 function resolveChildTimeoutEvidence({ candidate, targetRepo, batchReportPath }) {

@@ -1563,6 +1563,152 @@ function assertScopedResolutionCandidateIdsOnlyProcessRequestedLane() {
   }
 }
 
+function writeLegacyReasoningEffortCliEvidence(fixture, entryToRecover, runId) {
+  const importerRunId = "queue-fixture-legacy-reasoning-cli-import";
+  const batchRunId = "fixture-legacy-reasoning-cli-import";
+  const batchId = "queue-batch-1-legacyreasoning";
+  const runRoot = path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-importer", importerRunId);
+  const childSummaryDir = path.join(runRoot, "implementation", "child-run-summaries");
+  fs.mkdirSync(childSummaryDir, { recursive: true });
+
+  fs.writeFileSync(
+    path.join(childSummaryDir, `${batchId}.result-summary.json`),
+    `${JSON.stringify({
+      schema: "generic-repo-tool-importer.implementation-child-run-result-summary.v1",
+      runId: importerRunId,
+      manifestHash: "fixture-legacy-reasoning-cli",
+      batchId,
+      status: "failed_process",
+      timeoutMs: 600000,
+      model: "gpt-5.5",
+      reasoningEffort: "high",
+      plannedPaths: entryToRecover.implementation.plannedPaths,
+      changedPaths: [],
+      unplannedPaths: [],
+      plannedPathGate: "passed",
+      exitCode: 2,
+      stdout: { bytes: 0, lineCount: 0, tail: "", tailLineCount: 0, truncated: false },
+      stderr: {
+        bytes: 251,
+        lineCount: 8,
+        tail: "error: unexpected argument '--reasoning-effort' found\n\nUsage: codex exec [OPTIONS] [PROMPT]",
+        tailLineCount: 3,
+        truncated: false
+      },
+      contextGuard: { status: "passed", violations: [] },
+      worktreeCreated: true,
+      childRunCreated: true,
+      controlledMergeApplied: false,
+      validationCommandsRun: false,
+      liveCepAeRun: false,
+      localOllamaUsed: false,
+      fallbackProviderUsed: false,
+      dependencyChanged: false,
+      productRuntimeEdited: false
+    }, null, 2)}\n`,
+    "utf8"
+  );
+
+  const batchReportPath = path.join(
+    fixture.target,
+    ".codex-runtime",
+    "sdk",
+    "generic-repo-full-intake",
+    runId,
+    "queue-supervisor",
+    batchRunId,
+    "batch-report.json"
+  );
+  const relativeBatchReportPath = path.relative(fixture.target, batchReportPath).replace(/\\/g, "/");
+  fs.mkdirSync(path.dirname(batchReportPath), { recursive: true });
+  fs.writeFileSync(
+    batchReportPath,
+    `${JSON.stringify({
+      schema: "generic-repo-queue-supervisor.batch-report.v1",
+      ok: false,
+      status: "failed_during_import",
+      runId: batchRunId,
+      reportPath: relativeBatchReportPath,
+      selectedCandidateIds: [entryToRecover.id],
+      importer: {
+        manifestPath: null,
+        runId: importerRunId,
+        result: null,
+        error: `implementation-child-run-failed: ${batchId}`
+      },
+      items: [
+        {
+          candidateId: entryToRecover.id,
+          sourcePath: entryToRecover.sourcePath,
+          status: "failed_importer",
+          reason: `implementation-child-run-failed: ${batchId}`,
+          importerRunId,
+          plannedPaths: entryToRecover.implementation.plannedPaths
+        }
+      ]
+    }, null, 2)}\n`,
+    "utf8"
+  );
+  return { batchReportPath: relativeBatchReportPath };
+}
+
+function assertLegacyReasoningEffortCliFailureIsScopedImportRetry() {
+  const fixture = createFixture("legacy-cli");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const runId = "legacy-cli";
+    fs.mkdirSync(path.join(fixture.source, "Selection"), { recursive: true });
+    fs.writeFileSync(
+      path.join(fixture.source, "Selection", "Layer_Selection_Set.jsx"),
+      "function layerSelectionSet() { return true; }\n",
+      "utf8"
+    );
+    const failed = entry({
+      id: "tool-selection-layer-selection-set",
+      sourcePath: "Selection/Layer_Selection_Set.jsx",
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "not_required_for_fixture_retry" },
+      suggestedTools: ["get_active_comp", "get_selected_layers"],
+      implementation: {
+        failureReason: "implementation-child-run-failed: queue-batch-1-legacyreasoning",
+        plannedPaths: ["scripts/imported-tools/layer-selection-set.js"],
+        sliceId: "fixture-layer-selection-set-import"
+      },
+      status: "failed_import",
+      queueRank: 1
+    });
+    const evidence = writeLegacyReasoningEffortCliEvidence(fixture, failed, runId);
+    failed.failClosed = {
+      status: "failed_import",
+      reason: "batch-importer-failed: implementation-child-run-failed: queue-batch-1-legacyreasoning",
+      batchReport: evidence.batchReportPath
+    };
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [failed]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const output = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        runId,
+        1,
+        fakeCodexEnv(binDir),
+        ["--resolution-candidate-ids", failed.id]
+      )
+    );
+    assert.strictEqual(output.status, "completed");
+    assert.deepStrictEqual(output.resolutionQueue.requeuedCandidateIds, [failed.id]);
+    const ticket = JSON.parse(fs.readFileSync(path.join(fixture.target, output.resolutionQueue.tickets[0].path), "utf8"));
+    assert.strictEqual(ticket.reason, "fresh_retry_queued_after_legacy_reasoning_effort_cli_arg");
+    assert(fs.existsSync(path.join(fixture.target, "scripts", "imported-tools", "layer-selection-set.js")));
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    assert.strictEqual(ledger.entries[0].status, "completed");
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]).includes("layer-selection-set.js"), false);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function writeChildTimeoutEvidence(fixture, entryToRecover) {
   const importerRunId = "queue-fixture-child-timeout-import";
   const batchRunId = "fixture-child-timeout-import";
@@ -1987,6 +2133,7 @@ function main() {
   assertBoundedSelfImprovementCreatesAndRejectsLanes();
   assertBoundedSelfImprovementAllowsDeclaredRenderQueueSignal();
   assertScopedResolutionCandidateIdsOnlyProcessRequestedLane();
+  assertLegacyReasoningEffortCliFailureIsScopedImportRetry();
   assertChildTimeoutResolutionRecoversImporterWorktreePatch();
   assertChildTimeoutRecoveryDiscoversMissingBatchReportPath();
   assertChildTimeoutSummaryContractFailsClosed();
