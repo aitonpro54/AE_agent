@@ -30,6 +30,8 @@ Codex App dev-request handoff for repository work.
 
 ## Progress
 
+- [x] Full intake tool-keyframes-set-spacial-in-tanget: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-keyframes-set-spacial-in-tanget); live gate ready, importer batch full-intake-kyletmartinez-7e72e8fd45-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-keyframes-keyframe-current-value-from-expression: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-keyframes-keyframe-current-value-from-expression); live gate ready, importer batch full-intake-kyletmartinez-e96375bafc-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-keyframes-fill-in-keyframes: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-keyframes-fill-in-keyframes); live gate ready, importer batch full-intake-kyletmartinez-cc68b277f1-import, commit recorded after candidate commit.
@@ -139,31 +141,44 @@ Codex App dev-request handoff for repository work.
   Per user direction, the strict runner defaults were raised another 20% from
   the current values: soft-stop `60 -> 72`, no-new-work `66 -> 80`, handoff
   `72 -> 86`, hard-stop `84 -> 100`; the normal handoff cap is now `100`.
+- [x] Milestone 29: AUX-021 detached importer child-run for
+  `tool-keyframes-set-spacial-in-tanget`. Added advisory recipe/registry/
+  retrieval-smoke metadata for the existing `set_spatial_in_tangent` bridge
+  tool: one evidence-backed spatial property, reviewed `keyIndex` `2+`,
+  reviewed `factor`, previous/current keyframe value disclosure, computed
+  `inSpatialTangent`, preserved `outSpatialTangent`, and `get_layer_details`
+  read-back. No source JSX was copied. The strict parent transaction is still
+  incomplete until parent-controlled merge, non-live validation, generated-only
+  live rerun, docs finalization, and commit run under the parent guardrails.
 
 ## Current Dirty State
 
-The active source change is Milestone 28's threshold bump in
-`orchestrator/run-generic-repo-full-intake.mjs` plus matching smoke coverage in
-`scripts/sdk-generic-repo-full-intake-smoke.js`. Branch `road-map-2.0` was ahead
-of `ae-agent/road-map-2.0` by two local commits before this milestone; do not
-push without explicit approval. The active strict transaction remains
-`tool-keyframes-set-spacial-in-tanget`, with `select_candidate` and
-`prove_or_register_live_lane` complete; no importer child-run has started for
-that candidate.
+The detached AUX-021 child-run worktree now contains advisory metadata for
+`tool-keyframes-set-spacial-in-tanget` in the planned recipe/registry/smoke/plan
+paths only. `.codex/handoff.md` could not be written because the sandbox denied
+write access to `.codex/` after directory creation. The parent strict
+transaction remains active: `select_candidate` and
+`prove_or_register_live_lane` were already complete before this child-run, and
+parent-controlled merge/non-live validation/live rerun/docs/commit are still
+pending. Branch `road-map-2.0` was ahead of `ae-agent/road-map-2.0` by two local
+commits before this milestone; do not push without explicit approval.
 
 ## Next Milestone
 
 Milestone 27 continuation after the threshold bump: resume only the active
-`tool-keyframes-set-spacial-in-tanget` strict transaction from a fresh context,
-starting at `run_importer_phase` through the current
-`run-generic-repo-full-intake` strict runner with `max-items 1`, compact output,
-and an explicit conservative `--context-percent`. Stop again on any budget,
+`tool-keyframes-set-spacial-in-tanget` strict transaction from the parent
+importer after it captures this child-run summary. Continue with
+parent-controlled merge/non-live validation/generated-only live rerun/docs/commit
+only under the current strict runner with `max-items 1`, compact output, and an
+explicit conservative `--context-percent`. Stop again on any budget,
 dirty-target, importer, live-lane, live-rerun, or approval boundary. Keep
 Local/Ollama, broad/default CEP smoke, dependency changes, push/PR, old longrun
 flows, source merge outside the runner, full runtime reports, and `max-items > 1`
 out of scope.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `Keyframes/Set_Spacial_In_Tanget.jsx` as `tool-keyframes-set-spacial-in-tanget`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-keyframes-set-spacial-in-tanget).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Keyframes/Keyframe_Current_Value_From_Expression.jsx` as `tool-keyframes-keyframe-current-value-from-expression`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-keyframes-keyframe-current-value-from-expression).
 
@@ -266,8 +281,20 @@ out of scope.
   as widening the existing default gates again, clamped at the absolute context
   ceiling: `72/80/86/100`, with normal caps `100/100`. Predicted step costs stay
   unchanged.
+- AUX-021 adapted `Keyframes/Set_Spacial_In_Tanget.jsx` as advisory typed-plan
+  guidance only. Scope was derived from the child-run wrapper, candidate name,
+  existing `set_spatial_in_tangent` contract, semantic verification, and the
+  registered generated-only spatial-in-tangent lane. The recipe uses
+  `set_spatial_in_tangent` with explicit `keyIndex` and `factor`, computes the
+  incoming tangent from `previousValue - currentValue`, preserves the existing
+  out tangent, and treats selected-key discovery, arbitrary tangent vectors,
+  out-tangent editing, first-key requests, path/mask/shape tangents,
+  interpolation/ease preservation, selection side effects, and exact source
+  semantics as separate typed-tool contracts.
 
 ## Validation
+
+| Full intake tool-keyframes-set-spacial-in-tanget | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-7e72e8fd45-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 - Full intake completed candidates in this compact block:
   `tool-compositions-toggle-onion-skinning`, `tool-keyframes-fill-in-keyframes`,
@@ -326,6 +353,12 @@ raw JSX copy, source merge outside the runner, or `max-items > 1` was used.
   `node scripts/sdk-generic-repo-full-intake-smoke.js` passed. No Local/Ollama,
   broad/default CEP smoke, live AE/CEP mutation, dependency change, push/PR, old
   longrun, full runtime report, or `max-items > 1` was used.
+- [ ] Milestone 29 validation status: validation was not run by design in this
+  detached child-run because the batch explicitly forbade validation runs. The
+  child changed planned recipe/registry/smoke/plan paths and left parent
+  merge/non-live validation/generated-only live rerun/docs/commit to the parent
+  importer. `.codex/handoff.md` was planned but could not be created because
+  writing to `.codex/` returned access denied in this sandbox.
 
 Not run by design across this compact block unless explicitly noted: Local/Ollama,
 broad/default CEP smoke, dependency/package changes, push/PR, unscoped retry, old

@@ -7662,6 +7662,133 @@
         "Require a separate typed-tool contract for range baking, broad expression conversion, multi-property batch keyframing, unsupported value shapes, interpolation/ease preservation, spatial tangent preservation, arbitrary expression edits, selection side effects or exact source semantics.",
         "Do not use this recipe for effect edits, source relinking, render queue changes, selected-layer rename, expression text edits, expression clearing, redundant-key cleanup, static value edits without expression-current-value capture, or broad composition mutation."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "set-spacial-in-tanget-typed-plan",
+      "title": "Set Spatial In Tangent Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "keyframes",
+        "spatial",
+        "tangent",
+        "spacial",
+        "tanget",
+        "selected-properties",
+        "selected-keyframes",
+        "set-spacial-in-tanget",
+        "set_spatial_in_tangent",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Set one reviewed spatial keyframe's incoming tangent from the previous-current value delta with typed selected-property evidence, reviewed keyIndex/factor settings, set_spatial_in_tangent, and layer/property read-back.",
+        "appliesWhen": [
+          "The user asks to set a selected keyframe's spatial in tangent, smooth an incoming motion path handle, or adapt the Set Spacial In Tanget workflow on a Position-like spatial property.",
+          "Typed spatial tangent editing is acceptable only when current property evidence, an explicit keyIndex, and a reviewed factor are available before confirmation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties evidence containing exactly one concrete spatial property target with layerIndex, propertyPath, numeric-array keyframe values and keyframe/animated state when available."
+        },
+        {
+          "name": "keyIndex",
+          "type": "number",
+          "required": true,
+          "description": "Reviewed 1-based keyframe index. Must be 2 or later so the previous-current delta can be computed."
+        },
+        {
+          "name": "factor",
+          "type": "number",
+          "required": true,
+          "description": "Reviewed multiplier applied to previousValue - currentValue. Defaults should be disclosed before confirmation."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated property is bound from current get_selected_properties evidence or equivalent current explicit layer/property/keyframe evidence before mutation.",
+        "The workflow targets exactly one spatial property/keyframe unless a separate batch contract is approved.",
+        "The supported tangent mode computes inSpatialTangent from (previousValue - currentValue) * factor and preserves the existing out tangent.",
+        "The plan displays previous value, current value, reviewed keyIndex, reviewed factor, computed inSpatialTangent and outSpatialTangent preservation before confirmation.",
+        "Expressions, keyframe values, keyframe times, interpolation/ease settings, out tangents, path/mask/shape tangents, layer names, sources, effects, masks, render queue items, selection state and unselected properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/set-spacial-in-tanget-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "set_spatial_in_tangent",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and selected-property evidence, review keyIndex and factor, run set_spatial_in_tangent on one evidence-backed spatial property keyframe, then read the layer/property keyframes and tangents back.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation to capture active comp identity, selected property targets, layerIndex values, propertyPath values, numeric-array value shape, expression state, selectedKeyframes or explicit keyIndex, and keyframe/animated state when available.",
+          "Require exactly one accepted spatial property target unless a separate batch contract is approved.",
+          "Require reviewed keyIndex 2 or later plus reviewed factor before confirmation.",
+          "Fail closed when selected-property evidence is empty, lacks layer/property path targets, targets multiple properties, has non-array or mismatched keyframe values, points keyIndex at the first keyframe, lacks a previous keyframe, has an ambiguous factor, or requires source-exact selection/UI behavior.",
+          "Resolve tangent mode only as previousValue - currentValue multiplied by factor, preserving the existing out tangent.",
+          "Show selectedKeyframes or explicit keyIndex, previous value, current value, factor, computed inSpatialTangent and expected outSpatialTangent preservation before confirmation.",
+          "Run one set_spatial_in_tangent step with the evidence-backed comp target, layerIndex, exact propertyPath, keyIndex and factor.",
+          "Run get_layer_details for the affected layer with property keyframe and tangent read-back.",
+          "Fail closed if arbitrary tangent vectors, out-tangent editing, selected-key discovery, non-spatial properties, first-key tangent requests, path/mask/shape tangent workflows, interpolation/ease preservation, selection side effects or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties identifies exactly one concrete spatial property target, its owning layer, current value shape, expression state, keyframe/animated state when available, reviewed keyIndex, previous keyframe value and current keyframe value.",
+          "Dry-run evidence lists selectedKeyframes or explicit keyIndex, factor, previous value, current value, computed inSpatialTangent and expected outSpatialTangent preservation.",
+          "set_spatial_in_tangent result reports the expected property path, keyIndex, factor, computed inSpatialTangent and preserved outSpatialTangent.",
+          "Post-run get_layer_details shows the reviewed keyframe on the expected layer/property path with the expected inSpatialTangent read back.",
+          "Skipped targets are reported with explicit typed-tool gap reasons instead of being silently changed.",
+          "Post-run evidence shows no unrelated expression, keyframe value, keyframe time, interpolation/ease, outSpatialTangent, path/mask/shape, effect, source, render queue, layer name, selection state, project item, unselected keyframe or unselected property mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-keyframes-set-spacial-in-tanget generic repository importer as advisory typed-plan coverage for the existing set_spatial_in_tangent typed tool.",
+          "This detached child-run patch adapts only the candidate idea using the existing set_spatial_in_tangent contract, semantic verification, and registered generated-only spatial-in-tangent lane."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-01",
+          "from": "generic-repo-importer-tool-keyframes-set-spacial-in-tanget",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Keyframes/Set_Spacial_In_Tanget.jsx into existing typed tools as spatial in tangent guidance through set_spatial_in_tangent; no source JSX copied. Scope came from the child-run wrapper, candidate name, existing set_spatial_in_tangent contract, semantic verification, and registered generated-spatial-in-tangent generated-only lane. The recipe requires current selected-property evidence or equivalent explicit property/keyframe evidence, one spatial property, reviewed keyIndex 2 or later, reviewed factor, previous/current keyframe value disclosure, set_spatial_in_tangent execution, and get_layer_details read-back for inSpatialTangent plus preserved outSpatialTangent. Selected-key discovery without explicit reviewed keyframes, arbitrary tangent vectors, out-tangent editing, non-spatial properties, first-key tangent requests, path/mask/shape tangent workflows, interpolation/ease preservation, selection side effects and exact source semantics require a separate typed-tool contract. AUX-099 includes generated-only spatial tangent read-back and parent importer owns validation plus live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties before mutating keyframe tangents; do not infer targets from prior chat context.",
+        "Require exactly one reviewed spatial property target and one reviewed keyIndex unless a separate batch contract is approved.",
+        "Require reviewed keyIndex 2 or later plus reviewed factor before running set_spatial_in_tangent.",
+        "Use set_spatial_in_tangent only for previousValue - currentValue tangent calculation; arbitrary tangent vector editing needs a separate typed-tool contract.",
+        "Require get_layer_details read-back for the written inSpatialTangent and preserved outSpatialTangent.",
+        "Require a separate typed-tool contract for selected-key discovery without explicit reviewed keyframes, arbitrary tangent vectors, out-tangent editing, non-spatial properties, first-key tangent requests, path/mask/shape tangent workflows, interpolation/ease preservation, selection side effects or exact source semantics.",
+        "Do not use this recipe for effect edits, source relinking, render queue changes, selected-layer rename, expression edits, keyframe value/timing edits, shape path tangent edits, static value edits, or broad composition mutation."
+      ]
     }
   ]
 }

@@ -43,6 +43,7 @@ const IMPORTED_ADVISORY_IDS = [
   "remove-redundant-keyframes-typed-plan",
   "fill-in-keyframes-typed-plan",
   "keyframe-current-value-from-expression-typed-plan",
+  "set-spacial-in-tanget-typed-plan",
   "round-selected-keyframe-values-typed-plan",
   "apply-maintain-stroke-width-expression-typed-plan",
   "update-stroke-weight-expressions-typed-plan",
@@ -1751,6 +1752,38 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for source-exact semantics.`);
       assert(solution.promotionHistory.some((entry) => /Find_Specific_Effect/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "set-spacial-in-tanget-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "set_spatial_in_tangent", "get_layer_details"],
+        `${id}: imported spatial-in-tangent workflow should stay on the narrow selected-property tangent typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: spatial-in-tangent workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+      assert(text.includes("includeValues:true"), `${id}: recipe should require current value/keyframe evidence.`);
+      assert(text.includes("selectedKeyframes"), `${id}: recipe should require selectedKeyframes or explicit keyIndex guidance.`);
+      assert(text.includes("keyIndex"), `${id}: recipe should require reviewed keyIndex guidance.`);
+      assert(text.includes("factor"), `${id}: recipe should require reviewed tangent factor guidance.`);
+      assert(text.includes("inSpatialTangent"), `${id}: recipe should disclose computed inSpatialTangent.`);
+      assert(text.includes("previousValue - currentValue"), `${id}: recipe should preserve previous-current delta semantics.`);
+      assert(text.includes("set_spatial_in_tangent"), `${id}: recipe should use the spatial tangent typed tool.`);
+      assert(text.includes("preserves the existing out tangent") || text.includes("Preserve the existing out tangent"), `${id}: recipe should preserve existing out tangent behavior.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require keyframe read-back through layer details.`);
+      assert(text.includes("Do not infer selected properties or selected keyframes"), `${id}: recipe should guard selected-key discovery gaps.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /keyIndex/.test(step)), `${id}: verification must include keyIndex.`);
+      assert(solution.verificationRecipe.steps.some((step) => /factor/.test(step)), `${id}: verification must include the reviewed factor.`);
+      assert(solution.verificationRecipe.steps.some((step) => /inSpatialTangent/.test(step)), `${id}: verification must include computed inSpatialTangent.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_spatial_in_tangent/.test(step)), `${id}: verification must include set_spatial_in_tangent.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details after mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /inSpatialTangent/.test(item)), `${id}: verification must require inSpatialTangent read-back evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /outSpatialTangent/.test(item)), `${id}: verification must require outSpatialTangent preservation evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Skipped targets/.test(item)), `${id}: verification must require skipped-target gap evidence.`);
+      assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
+      assert(solution.notes.some((note) => /set_spatial_in_tangent/.test(note)), `${id}: notes must require set_spatial_in_tangent.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Set_Spacial_In_Tanget/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else {
       throw new Error(`Unhandled imported advisory solution quality checks: ${id}`);
     }
@@ -2176,6 +2209,24 @@ function assertActualRetrieval(registry) {
   assert(keyframeCurrentValuePromptSection.includes("requireExpression"), "prompt section should preserve expression requirement guidance.");
   assert(keyframeCurrentValuePromptSection.includes("get_layer_details"), "prompt section should require keyframe read-back.");
   assert(!/run_extendscript/i.test(keyframeCurrentValuePromptSection), "keyframe-current-value guidance should not recommend raw ExtendScript.");
+
+  const setSpatialInTangentRetrieval = retrieveSolutionHints("Set the spatial in tangent for the selected Position keyframe at keyIndex 2 using factor 0.5, compute inSpatialTangent from the previous-current delta, preserve outSpatialTangent, then read back keyframes.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(setSpatialInTangentRetrieval.ok, true);
+  assert(ids(setSpatialInTangentRetrieval).includes("set-spacial-in-tanget-typed-plan"), "set-spacial-in-tanget advisory recipe should surface for spatial tangent prompts.");
+  const setSpatialInTangentPromptSection = formatSolutionHintsForPrompt(setSpatialInTangentRetrieval);
+  assert(setSpatialInTangentPromptSection.includes("Set Spatial In Tangent Typed Plan"), "prompt section should include set-spacial-in-tanget advisory title.");
+  assert(setSpatialInTangentPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for spatial tangent workflows.");
+  assert(setSpatialInTangentPromptSection.includes("set_spatial_in_tangent"), "prompt section should prefer set_spatial_in_tangent.");
+  assert(setSpatialInTangentPromptSection.includes("keyIndex"), "prompt section should preserve keyIndex guidance.");
+  assert(setSpatialInTangentPromptSection.includes("factor"), "prompt section should preserve factor guidance.");
+  assert(setSpatialInTangentPromptSection.includes("inSpatialTangent"), "prompt section should preserve computed tangent guidance.");
+  assert(setSpatialInTangentPromptSection.includes("outSpatialTangent"), "prompt section should preserve out-tangent read-back guidance.");
+  assert(setSpatialInTangentPromptSection.includes("get_layer_details"), "prompt section should require tangent read-back.");
+  assert(!/run_extendscript/i.test(setSpatialInTangentPromptSection), "set-spacial-in-tanget guidance should not recommend raw ExtendScript.");
 
   const maintainStrokeExpressionRetrieval = retrieveSolutionHints("Apply a maintain stroke width expression to the selected shape layer stroke width properties so their strokes stay constant while scaling, then read back expression details.", {
     registry,
