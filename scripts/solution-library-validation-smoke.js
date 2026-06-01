@@ -36,6 +36,7 @@ const IMPORTED_ADVISORY_IDS = [
   "round-selected-property-values-typed-plan",
   "set-new-color-typed-plan",
   "swap-selected-property-dimensions-typed-plan",
+  "separate-size-dimensions-typed-plan",
   "invert-selected-keyframes-typed-plan",
   "make-hold-keyframes-typed-plan",
   "multiply-selected-keyframes-typed-plan",
@@ -621,6 +622,37 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /set_property_value/.test(note)), `${id}: notes must require set_property_value.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Swap_Selected_Property_Dimensions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "separate-size-dimensions-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "separate_shape_size_dimensions", "get_layer_details", "get_effect_details"],
+        `${id}: imported size-dimension separation workflow should stay on the narrow shape-size typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: size-dimension separation workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property or explicit typed evidence.`);
+      assert(text.includes("includeValues:true"), `${id}: recipe should require current value evidence.`);
+      assert(text.includes("ADBE Vector Rect Size"), `${id}: recipe should limit support to rectangle Size properties.`);
+      assert(text.includes("ADBE Vector Ellipse Size"), `${id}: recipe should limit support to ellipse Size properties.`);
+      assert(text.includes("xSliderName"), `${id}: recipe should disclose reviewed X slider naming.`);
+      assert(text.includes("ySliderName"), `${id}: recipe should disclose reviewed Y slider naming.`);
+      assert(text.includes("separate_shape_size_dimensions"), `${id}: recipe should use the shape size separation typed tool.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require Size expression read-back through layer details.`);
+      assert(text.includes("get_effect_details"), `${id}: recipe should require slider effect read-back when needed.`);
+      assert(text.includes("Do not overwrite existing Size expressions"), `${id}: recipe should guard existing expressions and keyframes.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /separate_shape_size_dimensions/.test(step)), `${id}: verification must include separate_shape_size_dimensions.`);
+      assert(solution.verificationRecipe.steps.some((step) => /xSliderName/.test(step)), `${id}: verification must include reviewed X slider naming.`);
+      assert(solution.verificationRecipe.steps.some((step) => /ySliderName/.test(step)), `${id}: verification must include reviewed Y slider naming.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details after mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_effect_details/.test(step)), `${id}: verification must read generated slider effects when needed.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /slider/.test(item)), `${id}: verification must require generated slider evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expression/.test(item)), `${id}: verification must require Size expression evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Skipped targets/.test(item)), `${id}: verification must require skipped-target gap evidence.`);
+      assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
+      assert(solution.notes.some((note) => /separate_shape_size_dimensions/.test(note)), `${id}: notes must require separate_shape_size_dimensions.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Separate_Size_Dimensions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "invert-selected-keyframes-typed-plan") {
       assert.deepStrictEqual(
@@ -2122,6 +2154,25 @@ function assertActualRetrieval(registry) {
   assert(swapSelectedPropertyDimensionsPromptSection.includes("setAtTime:false"), "prompt section should preserve non-keyframed value setting.");
   assert(swapSelectedPropertyDimensionsPromptSection.includes("get_layer_details"), "prompt section should require property value read-back.");
   assert(!/run_extendscript/i.test(swapSelectedPropertyDimensionsPromptSection), "swap-selected-property-dimensions guidance should not recommend raw ExtendScript.");
+
+  const separateSizeDimensionsRetrieval = retrieveSolutionHints("Separate rectangle shape size dimensions into X Size and Y Size sliders after inspecting the selected Size property, then run separate_shape_size_dimensions and read back the size expression and slider effects.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(separateSizeDimensionsRetrieval.ok, true);
+  assert(ids(separateSizeDimensionsRetrieval).includes("separate-size-dimensions-typed-plan"), "separate-size-dimensions advisory recipe should surface for shape size dimension separation prompts.");
+  const separateSizeDimensionsPromptSection = formatSolutionHintsForPrompt(separateSizeDimensionsRetrieval);
+  assert(separateSizeDimensionsPromptSection.includes("Separate Size Dimensions Typed Plan"), "prompt section should include separate-size-dimensions advisory title.");
+  assert(separateSizeDimensionsPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for shape size separation workflows.");
+  assert(separateSizeDimensionsPromptSection.includes("ADBE Vector Rect Size"), "prompt section should preserve rectangle Size scope.");
+  assert(separateSizeDimensionsPromptSection.includes("ADBE Vector Ellipse Size"), "prompt section should preserve ellipse Size scope.");
+  assert(separateSizeDimensionsPromptSection.includes("separate_shape_size_dimensions"), "prompt section should prefer separate_shape_size_dimensions for shape size separation workflows.");
+  assert(separateSizeDimensionsPromptSection.includes("xSliderName"), "prompt section should preserve reviewed X slider naming.");
+  assert(separateSizeDimensionsPromptSection.includes("ySliderName"), "prompt section should preserve reviewed Y slider naming.");
+  assert(separateSizeDimensionsPromptSection.includes("get_layer_details"), "prompt section should require Size expression read-back.");
+  assert(separateSizeDimensionsPromptSection.includes("get_effect_details"), "prompt section should require slider effect read-back.");
+  assert(!/run_extendscript/i.test(separateSizeDimensionsPromptSection), "separate-size-dimensions guidance should not recommend raw ExtendScript.");
 
   const invertSelectedKeyframesRetrieval = retrieveSolutionHints("Invert selected keyframes on the selected property after inspecting selectedKeyframes, compute invertedKeyframes with reverseValueOrderAtSameTimes, set_property_keyframes with clearExisting:false, optionally apply_keyframe_ease with explicit keyIndices, and read back keyframes.", {
     registry,

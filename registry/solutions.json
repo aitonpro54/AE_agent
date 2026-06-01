@@ -6584,6 +6584,129 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "separate-size-dimensions-typed-plan",
+      "title": "Separate Size Dimensions Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "properties",
+        "shape-layers",
+        "shape-size",
+        "selected-properties",
+        "expressions",
+        "slider-controls",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Separate one explicit ADBE Vector Rect Size or ADBE Vector Ellipse Size property into generated X/Y slider controls with separate_shape_size_dimensions and expression/effect read-back.",
+        "appliesWhen": [
+          "The user asks to separate size dimensions, split X/Y size controls, or make a rectangle or ellipse shape Size independently adjustable.",
+          "Typed shape-size mutation is acceptable only when current selected-property or explicit typed evidence identifies one rectangle or ellipse Size property, exact layer/property target, current two-dimensional size value, no existing expression/keyframe preservation requirement, and reviewed slider names."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties or equivalent explicit typed evidence containing one concrete rectangle or ellipse Size property target with layerIndex, propertyPath, current value, expression state and keyframe/animated state when available."
+        },
+        {
+          "name": "xSliderName",
+          "type": "string",
+          "required": false,
+          "description": "Reviewed X slider effect name. Defaults only to X Size when acceptable for a new generated slider control."
+        },
+        {
+          "name": "ySliderName",
+          "type": "string",
+          "required": false,
+          "description": "Reviewed Y slider effect name. Defaults only to Y Size when acceptable for a new generated slider control."
+        }
+      ],
+      "targetAssumptions": [
+        "Exactly one mutated Size property is bound from current selected-property or explicit typed evidence before mutation.",
+        "The accepted target is ADBE Vector Rect Size or ADBE Vector Ellipse Size on a shape layer and has a two-dimensional numeric value.",
+        "The plan displays the previous size value, exact propertyPath, xSliderName, ySliderName and expression-generation behavior before confirmation.",
+        "The workflow adds generated slider controls and drives only the accepted Size property through separate_shape_size_dimensions.",
+        "Existing expressions, keyframes, non-shape properties, shape paths, layer transforms, layer names, sources, timing, masks, render queue items, project items, selection state and unrelated effects/properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/separate-size-dimensions-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "separate_shape_size_dimensions",
+          "get_layer_details",
+          "get_effect_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read one ADBE Vector Rect Size or ADBE Vector Ellipse Size property target, run separate_shape_size_dimensions with reviewed slider names, then read back the generated Size expression and slider controls.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation to capture active comp identity, selected property targets, layerIndex values, propertyPath values, current values, expression state and keyframe/animated state when available.",
+          "Fail closed when evidence is empty or ambiguous, the target is not ADBE Vector Rect Size or ADBE Vector Ellipse Size, the value is not a two-dimensional numeric size array, the layer is locked, the property already has expression text or keyframes, or the request requires existing expression/keyframe preservation.",
+          "Show the previous size value, exact propertyPath, reviewed xSliderName, reviewed ySliderName and generated expression behavior before confirmation.",
+          "Run one separate_shape_size_dimensions step with the inspected comp target, evidence-backed layerIndex, exact propertyPath and reviewed slider names.",
+          "Run get_layer_details for the affected layer with property and effect read-back for the Size expression and generated slider controls.",
+          "Run get_effect_details when needed to verify the generated X/Y slider effects and initial values.",
+          "Fail closed if arbitrary property traversal, non-shape Size properties, selected-property guessing, existing expression preservation, expression merging, slider reuse, keyframed size preservation, TextDocument/path/mask mutation, selection side effects or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties or equivalent typed evidence identifies one concrete rectangle or ellipse Size property target, its owning layer, current two-component size value, expression state and keyframe/animated state when available.",
+          "The separate_shape_size_dimensions result reports the expected property path, generated expression and at least two slider entries with the reviewed X/Y slider names.",
+          "Post-run get_layer_details shows the Size property expression references both slider names on the expected layer/property path.",
+          "get_effect_details or layer effect read-back shows the generated slider controls exist and their initial values match the original X and Y size components.",
+          "Skipped targets are reported with explicit typed-tool gap reasons instead of being silently changed.",
+          "Post-run evidence shows no unrelated keyframe, transform, shape path, effect, source, render queue, layer name, selection state, project item or unselected property mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-properties-separate-size-dimensions generic repository importer as advisory typed-plan coverage for shape Size dimension-separation workflows.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing separate_shape_size_dimensions typed-tool guidance and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-01",
+          "from": "generic-repo-importer-tool-properties-separate-size-dimensions",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Properties/Separate_Size_Dimensions.jsx into existing typed tools as rectangle/ellipse shape Size separation guidance using separate_shape_size_dimensions; no source JSX copied. Current typed tools require current get_selected_properties or equivalent explicit typed evidence, one reviewed shape Size propertyPath, previous size and reviewed xSliderName/ySliderName disclosure, separate_shape_size_dimensions mutation, get_layer_details expression read-back and get_effect_details slider read-back when needed; arbitrary property traversal, non-shape Size properties, selected-property guessing, existing expression preservation, expression merging, slider reuse, keyframed size preservation, text/path/mask mutation, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties or equivalent explicit typed evidence before mutating a shape Size property; do not infer targets from prior chat context.",
+        "Apply this recipe only to one explicit ADBE Vector Rect Size or ADBE Vector Ellipse Size property on a shape layer with a two-dimensional static numeric value.",
+        "Require previous size value, exact propertyPath, xSliderName, ySliderName and expression-generation behavior disclosure before confirmation.",
+        "Use separate_shape_size_dimensions for mutation and get_layer_details plus get_effect_details when needed for expression and slider read-back.",
+        "Do not overwrite existing Size expressions, preserve keyframed Size animation, reuse sliders, merge expressions, traverse arbitrary properties, or mutate non-shape Size-like properties as part of this workflow.",
+        "Require a separate typed-tool contract for arbitrary property traversal, non-shape Size properties, selected-property guessing, existing expression preservation, expression merging, slider reuse, keyframed size preservation, TextDocument/path/mask mutation, selection side effects or exact source JSX semantics.",
+        "Do not use this recipe for layer transform Scale edits, shape path edits, effect creation beyond generated X/Y sliders, layer timing changes, source relinking, render queue changes, selected-layer rename or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "invert-selected-keyframes-typed-plan",
       "title": "Invert Selected Keyframes Typed Plan",
       "status": "recipe",

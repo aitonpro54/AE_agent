@@ -30,6 +30,8 @@ Codex App dev-request handoff for repository work.
 
 ## Progress
 
+- [x] Full intake tool-properties-separate-size-dimensions: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-separate-size-dimensions); live gate ready, importer batch full-intake-kyletmartinez-854882faa1-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-keyframes-set-spacial-in-tanget: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-keyframes-set-spacial-in-tanget); live gate ready, importer batch full-intake-kyletmartinez-7e72e8fd45-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-keyframes-keyframe-current-value-from-expression: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-keyframes-keyframe-current-value-from-expression); live gate ready, importer batch full-intake-kyletmartinez-e96375bafc-import, commit recorded after candidate commit.
@@ -149,6 +151,17 @@ Codex App dev-request handoff for repository work.
   `inSpatialTangent`, preserved `outSpatialTangent`, and `get_layer_details`
   read-back. No source JSX was copied. The strict parent transaction later
   completed under Milestone 27 guardrails.
+- [x] Milestone 30: AUX-021 detached importer child-run for
+  `tool-properties-separate-size-dimensions`. Added advisory recipe/registry/
+  retrieval-smoke metadata for the existing `separate_shape_size_dimensions`
+  bridge tool: one evidence-backed rectangle/ellipse shape Size property,
+  reviewed `xSliderName`/`ySliderName`, generated X/Y slider controls,
+  Size expression read-back through `get_layer_details`, optional
+  `get_effect_details` slider read-back, and fail-closed boundaries for
+  arbitrary property traversal, non-shape Size properties, selected-property
+  guessing, existing expression preservation, expression merging, slider reuse,
+  keyframed size preservation, text/path/mask mutation, selection side effects,
+  and exact source JSX semantics. No source JSX was copied.
 
 ## Current State
 
@@ -169,6 +182,8 @@ CEP smoke, dependency changes, push/PR, old longrun flows, source merge outside
 the runner, full runtime reports, and `max-items > 1` out of scope.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `Properties/Separate_Size_Dimensions.jsx` as `tool-properties-separate-size-dimensions`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-separate-size-dimensions).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Keyframes/Set_Spacial_In_Tanget.jsx` as `tool-keyframes-set-spacial-in-tanget`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-keyframes-set-spacial-in-tanget).
 
@@ -283,8 +298,21 @@ the runner, full runtime reports, and `max-items > 1` out of scope.
   out-tangent editing, first-key requests, path/mask/shape tangents,
   interpolation/ease preservation, selection side effects, and exact source
   semantics as separate typed-tool contracts.
+- AUX-021 adapted `Properties/Separate_Size_Dimensions.jsx` as advisory
+  typed-plan guidance only. Scope was derived from the child-run wrapper,
+  candidate name, existing `separate_shape_size_dimensions` contract, semantic
+  verification, and the registered generated-only shape-size-dimension lane.
+  The recipe uses `separate_shape_size_dimensions` for one explicit
+  rectangle/ellipse shape Size property with reviewed X/Y slider names and
+  typed read-back, and treats arbitrary property traversal, non-shape Size
+  properties, selected-property guessing, existing expression preservation,
+  expression merging, slider reuse, keyframed size preservation, text/path/mask
+  mutation, selection side effects, and exact source semantics as separate
+  typed-tool contracts.
 
 ## Validation
+
+| Full intake tool-properties-separate-size-dimensions | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-854882faa1-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-keyframes-set-spacial-in-tanget | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-7e72e8fd45-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
@@ -355,6 +383,13 @@ raw JSX copy, source merge outside the runner, or `max-items > 1` was used.
   detached child-run because the batch explicitly forbade validation runs. The
   child changed planned recipe/registry/smoke/plan paths only; parent validation
   and live rerun are now covered by completed Milestone 27.
+- [x] Milestone 30 validation status: validation was not run by design in this
+  detached child-run because the batch explicitly forbade validation runs. The
+  child changed planned recipe/registry/smoke/plan paths only. The planned
+  `.codex/handoff.md` write was blocked by filesystem ACL denial for the
+  sandbox user, so this plan entry records the handoff state; parent importer
+  owns planned-path gates, JSON/script checks, non-live validation, and any
+  generated-only live rerun after controlled merge.
 
 Not run by design across this compact block unless explicitly noted: Local/Ollama,
 broad/default CEP smoke, dependency/package changes, push/PR, unscoped retry, old
