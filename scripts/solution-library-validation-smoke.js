@@ -42,6 +42,7 @@ const IMPORTED_ADVISORY_IDS = [
   "posterize-keyframes-typed-plan",
   "remove-redundant-keyframes-typed-plan",
   "fill-in-keyframes-typed-plan",
+  "keyframe-current-value-from-expression-typed-plan",
   "round-selected-keyframe-values-typed-plan",
   "apply-maintain-stroke-width-expression-typed-plan",
   "update-stroke-weight-expressions-typed-plan",
@@ -2160,6 +2161,22 @@ function assertActualRetrieval(registry) {
   assert(fillInKeyframesPromptSection.includes("get_layer_details"), "prompt section should require keyframe read-back.");
   assert(!/run_extendscript/i.test(fillInKeyframesPromptSection), "fill-in-keyframes guidance should not recommend raw ExtendScript.");
 
+  const keyframeCurrentValueRetrieval = retrieveSolutionHints("Keyframe the current post-expression opacity value at 1.25 seconds using keyframe_current_value_from_expression after inspecting selected property expression evidence, then read back the keyframe value.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(keyframeCurrentValueRetrieval.ok, true);
+  assert(ids(keyframeCurrentValueRetrieval).includes("keyframe-current-value-from-expression-typed-plan"), "keyframe-current-value advisory recipe should surface for current expression keyframe prompts.");
+  const keyframeCurrentValuePromptSection = formatSolutionHintsForPrompt(keyframeCurrentValueRetrieval);
+  assert(keyframeCurrentValuePromptSection.includes("Keyframe Current Value From Expression Typed Plan"), "prompt section should include keyframe-current-value advisory title.");
+  assert(keyframeCurrentValuePromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for current expression keyframe workflows.");
+  assert(keyframeCurrentValuePromptSection.includes("keyframe_current_value_from_expression"), "prompt section should prefer keyframe_current_value_from_expression.");
+  assert(keyframeCurrentValuePromptSection.includes("valueAtTime(time,false)"), "prompt section should preserve post-expression value semantics.");
+  assert(keyframeCurrentValuePromptSection.includes("requireExpression"), "prompt section should preserve expression requirement guidance.");
+  assert(keyframeCurrentValuePromptSection.includes("get_layer_details"), "prompt section should require keyframe read-back.");
+  assert(!/run_extendscript/i.test(keyframeCurrentValuePromptSection), "keyframe-current-value guidance should not recommend raw ExtendScript.");
+
   const maintainStrokeExpressionRetrieval = retrieveSolutionHints("Apply a maintain stroke width expression to the selected shape layer stroke width properties so their strokes stay constant while scaling, then read back expression details.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -2767,6 +2784,7 @@ function assertActualRetrieval(registry) {
       multiplySelectedKeyframes: ids(multiplySelectedKeyframesRetrieval),
       posterizeKeyframes: ids(posterizeKeyframesRetrieval),
       fillInKeyframes: ids(fillInKeyframesRetrieval),
+      keyframeCurrentValue: ids(keyframeCurrentValueRetrieval),
       enableSelectedExpressions: ids(enableSelectedExpressionsRetrieval),
       fixFreshPickwhipExpression: ids(fixFreshPickwhipExpressionRetrieval),
       selectedLayerDuration: ids(selectedLayerDurationRetrieval),

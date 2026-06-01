@@ -7537,6 +7537,131 @@
         "Require a separate typed-tool contract for broad expression conversion, multi-property batch baking, unsupported value shapes, interpolation/ease preservation, spatial tangent preservation, arbitrary expression edits, selection side effects or exact source semantics.",
         "Do not use this recipe for effect edits, source relinking, render queue changes, selected-layer rename, static value edits without sampling, selected-keyframe timing edits, redundant-key cleanup without sampling, or broad composition mutation."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "keyframe-current-value-from-expression-typed-plan",
+      "title": "Keyframe Current Value From Expression Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "keyframes",
+        "expressions",
+        "current-value",
+        "selected-properties",
+        "keyframe-current-value-from-expression",
+        "keyframe_current_value_from_expression",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Write one keyframe from the current post-expression value of a reviewed property with typed selected-property evidence, reviewed time/requireExpression settings, keyframe_current_value_from_expression, and layer/property read-back.",
+        "appliesWhen": [
+          "The user asks to keyframe the current value from an expression, commit the evaluated expression value at the CTI, or capture an expression result as a property keyframe.",
+          "Typed current-expression keyframing is acceptable only when current property evidence, a reviewed time or CTI default, and requireExpression behavior are reviewed before confirmation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties evidence containing exactly one concrete target property with layerIndex, propertyPath, value shape, expression state and keyframe/animated state when available."
+        },
+        {
+          "name": "targetTime",
+          "type": "number",
+          "required": false,
+          "description": "Reviewed keyframe time in seconds. When omitted, the active comp current time is used and must be disclosed."
+        },
+        {
+          "name": "requireExpression",
+          "type": "boolean",
+          "required": true,
+          "description": "Whether the property must have a non-empty expression before the keyframe is written. Defaults should be disclosed before confirmation."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated property is bound from current get_selected_properties evidence or equivalent current explicit layer/property evidence before mutation.",
+        "The workflow targets exactly one property unless a separate batch contract is approved.",
+        "The supported keyframe mode is valueAtTime(time,false): evaluate the reviewed property's current post-expression value at one reviewed time and write that value as a keyframe on the same property.",
+        "The plan displays previous expression state, existing keyframe state when available, target time, requireExpression and expected current-value keyframe behavior before confirmation.",
+        "Expression text, expression enabled state, unrelated keyframes, unsupported value shapes, interpolation/ease preservation, spatial tangents, layer names, sources, effects, masks, render queue items, selection state and unselected properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/keyframe-current-value-from-expression-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "keyframe_current_value_from_expression",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and selected-property evidence, review target time and requireExpression, run keyframe_current_value_from_expression on one evidence-backed property, then read layer/property keyframes and expression state back.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation to capture active comp identity, current time, selected property targets, layerIndex values, propertyPath values, current value shape, expression state and keyframe/animated state when available.",
+          "Require exactly one accepted property target unless a separate batch contract is approved.",
+          "Require reviewed target time or explicit active comp current-time default plus requireExpression before confirmation.",
+          "Fail closed when selected-property evidence is empty, lacks layer/property path targets, targets multiple properties, cannot vary over time, has unsupported value shapes, has no expression while requireExpression:true, has an ambiguous time, or requires source-exact selection/UI behavior.",
+          "Resolve keyframe mode only as valueAtTime(time,false) when the property can be evaluated at the reviewed finite time.",
+          "Show previous expression state, existing keyframe state when available, target time, requireExpression and expected current-value keyframe mode before confirmation.",
+          "Run one keyframe_current_value_from_expression step with the evidence-backed comp target, layerIndex, exact propertyPath, reviewed time when provided, and requireExpression.",
+          "Run get_layer_details for the affected layer with property keyframe and expression read-back.",
+          "Fail closed if range baking, broad expression conversion, multi-property batch keyframing, unsupported value shapes, interpolation/ease preservation, spatial tangent preservation, arbitrary expression edits, selection side effects or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties identifies exactly one concrete property target, its owning layer, current value shape, expression state and keyframe/animated state when available.",
+          "Dry-run evidence lists previous expression state, existing keyframe state when available, target time, requireExpression and expected valueAtTime(time,false) behavior.",
+          "keyframe_current_value_from_expression result reports the expected property path, keyframe time, captured value and preserved expression text.",
+          "Post-run get_layer_details shows a keyframe at the reviewed time on the expected layer/property path with the captured current post-expression value.",
+          "When requireExpression:true, pre-run or run evidence shows a non-empty expression and post-run read-back shows the expression was not cleared by this recipe.",
+          "Skipped targets are reported with explicit typed-tool gap reasons instead of being silently changed.",
+          "Post-run evidence shows no unrelated expression, effect, source, render queue, layer name, selection state, project item, comp setting, unselected property or unrelated keyframe mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-keyframes-keyframe-current-value-from-expression generic repository importer as advisory typed-plan coverage for the existing keyframe_current_value_from_expression typed tool.",
+          "This detached child-run patch adapts only the candidate idea using the existing keyframe_current_value_from_expression contract, semantic verification, and registered generated-only current-expression-keyframe lane."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-01",
+          "from": "generic-repo-importer-tool-keyframes-keyframe-current-value-from-expression",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Keyframes/Keyframe_Current_Value_From_Expression.jsx into existing typed tools as current post-expression value keyframing guidance through keyframe_current_value_from_expression; no source JSX copied. Scope came from the child-run wrapper, candidate name, existing keyframe_current_value_from_expression contract, semantic verification, and registered current-expression-keyframe generated-only lane. The recipe requires current selected-property evidence or equivalent explicit property evidence, one target property, reviewed target time or CTI default, reviewed requireExpression behavior, keyframe_current_value_from_expression execution, and get_layer_details read-back for the captured keyframe plus preserved expression state. Range baking, broad expression conversion, multi-property batch keyframing, unsupported value shapes, interpolation/ease preservation, spatial tangent preservation, arbitrary expression edits, selection side effects and exact source semantics require a separate typed-tool contract. AUX-099 includes generated-only current-expression keyframe read-back and parent importer owns validation plus live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties before mutating keyframes; do not infer targets from prior chat context.",
+        "Require exactly one reviewed property target unless a separate batch contract is approved.",
+        "Require reviewed target time or explicit active comp current-time default plus requireExpression before running keyframe_current_value_from_expression.",
+        "Use keyframe_current_value_from_expression only for one-time valueAtTime(time,false) behavior that writes a keyframe from the current post-expression property value.",
+        "Require get_layer_details read-back for the written keyframe and preserved expression state.",
+        "Require a separate typed-tool contract for range baking, broad expression conversion, multi-property batch keyframing, unsupported value shapes, interpolation/ease preservation, spatial tangent preservation, arbitrary expression edits, selection side effects or exact source semantics.",
+        "Do not use this recipe for effect edits, source relinking, render queue changes, selected-layer rename, expression text edits, expression clearing, redundant-key cleanup, static value edits without expression-current-value capture, or broad composition mutation."
+      ]
     }
   ]
 }

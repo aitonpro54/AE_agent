@@ -30,6 +30,8 @@ Codex App dev-request handoff for repository work.
 
 ## Progress
 
+- [x] Full intake tool-keyframes-keyframe-current-value-from-expression: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-keyframes-keyframe-current-value-from-expression); live gate ready, importer batch full-intake-kyletmartinez-e96375bafc-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-keyframes-fill-in-keyframes: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-keyframes-fill-in-keyframes); live gate ready, importer batch full-intake-kyletmartinez-cc68b277f1-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-compositions-toggle-onion-skinning: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-compositions-toggle-onion-skinning); live gate ready, importer batch full-intake-kyletmartinez-f67a738f74-import, commit recorded after candidate commit.
@@ -129,6 +131,11 @@ Codex App dev-request handoff for repository work.
   proof, because the previous failed live rerun had made the candidate terminal
   and the runner no longer treated `recipes/fill-in-keyframes-typed-plan.md` as
   a planned path during new `select_candidate` preflight.
+- [x] Milestone 25: AUX-021 detached importer child-run for
+  `tool-keyframes-keyframe-current-value-from-expression`. Added advisory
+  recipe/registry/retrieval-smoke metadata for existing
+  `keyframe_current_value_from_expression`: one evidence-backed property,
+  reviewed time/`requireExpression`, keyframe read-back; no source JSX copied.
 
 ## Current Dirty State
 
@@ -156,6 +163,8 @@ flows, source merge outside the runner, full runtime reports, and `max-items > 1
 out of scope.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `Keyframes/Keyframe_Current_Value_From_Expression.jsx` as `tool-keyframes-keyframe-current-value-from-expression`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-keyframes-keyframe-current-value-from-expression).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Keyframes/Fill_In_Keyframes.jsx` as `tool-keyframes-fill-in-keyframes`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-keyframes-fill-in-keyframes).
 
@@ -314,8 +323,15 @@ out of scope.
   separate runner-state blocker: failed-live-rerun transactions are terminal in
   the ledger, so the next preflight attempted candidate selection and refused
   the still-dirty recipe as unplanned.
+- Milestone 25 mapped `Keyframes/Keyframe_Current_Value_From_Expression.jsx` to
+  existing `keyframe_current_value_from_expression` advisory guidance only;
+  range baking, batch keyframing, expression edits, interpolation/ease/tangent
+  preservation, selection side effects, and exact source semantics stay
+  separate fail-closed contracts.
 
 ## Validation
+
+| Full intake tool-keyframes-keyframe-current-value-from-expression | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-e96375bafc-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-keyframes-fill-in-keyframes | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-cc68b277f1-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 | Full intake tool-compositions-toggle-onion-skinning | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-f67a738f74-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
@@ -409,6 +425,11 @@ raw JSX copy, source merge outside the runner, or `max-items > 1` was used.
   commit, Local/Ollama, broad/default CEP smoke, dependency change, push/PR,
   full runtime report, old longrun, source merge outside the runner, or
   `max-items > 1` followed that blocker.
+- [x] Milestone 25 validation status: no validation commands, node checks,
+  smoke/live runs, commits, branches, dependency changes, web search,
+  Local/Ollama, fallback providers, or user-asset mutations were run by design.
+  `.codex/handoff.md` write was blocked by `UnauthorizedAccess`; this plan entry
+  is the fallback continuation record. Parent importer owns validation.
 
 Not run by design across this compact block unless explicitly noted: Local/Ollama,
 broad/default CEP smoke, dependency/package changes, push/PR, unscoped retry, old
