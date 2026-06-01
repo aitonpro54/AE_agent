@@ -34,57 +34,12 @@ Codex App dev-request handoff for repository work.
   compact active-plan reset, camera-controller recovery review, provider
   self-test guardrail hardening plus installed-panel validation, and Agent
   Hardcore typed-tool handoff proof all completed with documented validation.
-- [x] Milestone 7: Full Intaker bounded onion-skinning tail review. Compact ledger
-  status showed the old remaining six as five `queued` candidates plus the already
-  reviewed camera-controller recovery entry. The first queued candidate,
-  `tool-compositions-toggle-onion-skinning`, was advanced through strict one-phase
-  `select_candidate`, `prove_or_register_live_lane`, and `run_importer_phase`.
-  Its registered generated-only live lane was ready, but the importer stopped before
-  implementation with `implementation-child-run-failed:
-  queue-batch-1-5fc7d26bd2`; the candidate is now terminal `failed_import`, leaving
-  four queued candidates and zero `queued live_lane_needed`.
-- [x] Milestone 8: Full Intaker bounded fill-in-keyframes tail review.
-  `tool-keyframes-fill-in-keyframes` was advanced through strict one-phase
-  `select_candidate`, `prove_or_register_live_lane`, and `run_importer_phase`.
-  Its registered generated-only live lane was ready, but the importer stopped before
-  implementation with `implementation-child-run-failed:
-  queue-batch-1-75b0df2dec`; the candidate is now terminal `failed_import`, leaving
-  three queued candidates and zero `queued live_lane_needed`.
-- [x] Milestone 9: Full Intaker remaining queue drain. At the user's request, the
-  remaining queue was completed in one work block while preserving strict one-phase
-  `max-items 1` runs per candidate. `tool-keyframes-keyframe-current-value-from-expression`,
-  `tool-keyframes-set-spacial-in-tanget`, and
-  `tool-properties-separate-size-dimensions` all had ready generated-only live lanes,
-  then stopped before implementation with `implementation-child-run-failed`
-  terminal `failed_import` results. The durable ledger now has zero `queued`
-  candidates and zero `queued live_lane_needed`.
-- [x] Milestone 10: Full Intaker blocked live-lane synthesis drain. A scoped
-  resolution pass was run only for the nine
-  `blocked_live_lane_synthesis_incomplete` candidates requested by the user. The
-  existing resolution path grouped them into two generated-only OpenAI CLI families:
-  six layer-timing candidates and three effect-property candidates. Both families
-  failed closed at generated-only proof read-back, so no candidates were requeued
-  and the ledger still has nine `blocked_live_lane_synthesis_incomplete` entries,
-  zero `queued`, and zero `queued live_lane_needed`.
-- [x] Milestone 11: Full Intaker unsafe-skip triage. The 75
-  `unsafe_skip_tool_gap` entries were grouped in
-  `plans/full-intake-unsafe-skip-triage.md`: 28 safe-next generated-only, 32 needing
-  new typed-tool contracts, and 15 approval-gated/last.
-- [x] Milestone 12: Selection typed-tool/lane prep. Added bounded
-  `set_layer_selection`, semantic/fixture coverage, and scoped
-  `selection-generated-only`; live acceptance and retry still need approval.
-- [x] Milestone 13: Selection live acceptance and scoped retry. With explicit user
-  approval, the generated-only OpenAI CLI Selection lane passed after restarting the
-  stale bridge daemon process. Exactly the 11 Selection `unsafe_skip_tool_gap` ids
-  were requeued through the scoped resolver, then each reached `live_lane_ready` and
-  failed closed during `run_importer_phase` before source merge or commit.
-- [x] Milestone 14: Selection importer child-run recovery patch. Compact evidence
-  review showed all 11 child runs failed before model execution because Codex CLI
-  0.131.0 rejects the old `--reasoning-effort` flag. The importer now passes
-  `model_reasoning_effort="high"` through `-c`, matching the other local
-  orchestrator child-run lanes; related importer/queue/full-intake smoke fixtures
-  were updated. No Selection retry, live lane, source merge, Local/Ollama, old
-  longrun, dependency change, push, or PR was run.
+- [x] Milestones 7-14: bounded Full Intaker tail/retry work drained the old
+  queue tails, scoped blocked live-lane synthesis, triaged unsafe skips, prepared
+  and accepted the Selection lane, and patched the Codex CLI
+  `--reasoning-effort` incompatibility. Historical detail is archived; no
+  Local/Ollama, broad/default CEP smoke, dependency change, push, PR, old
+  longrun, source merge outside runner, or `max-items > 1` was used.
 - [x] Milestone 15: AUX-021 detached importer child-run for
   `tool-selection-layer-selection-set`. Added an advisory typed-plan recipe and
   registry/smoke-library metadata for explicit active-comp layer selection mutation
@@ -136,21 +91,39 @@ Codex App dev-request handoff for repository work.
   plus compact child/import/live-rerun costs, so a generated-only live rerun at
   `58%` context can continue as a soft-stop `65%` prediction instead of failing
   early at a false `68%` no-new-work estimate.
+- [x] Milestone 22: Full Intaker onion-skinning strict continuation.
+  `tool-compositions-toggle-onion-skinning` advanced through
+  `prove_or_register_live_lane`, `run_importer_phase`, `controlled_merge`, and
+  `non_live_validation`. The runner added advisory typed-plan coverage for the
+  existing `toggle_onion_skinning` bridge tool, with generated adjustment layer,
+  `CC Wide Time` effect, comp comment token read-back, and fail-closed
+  boundaries for raw/source-exact semantics, non-generated layer cleanup, global
+  traversal, custom effect graphs, renderer settings, and unrelated
+  layer/property edits. Work stopped before `generated_only_live_rerun` because
+  context budget entered `resume_only_context_budget`.
 
 ## Current Dirty State
 
-This AUX worktree is independent from the main `road-map-2.0` worktree. The main
-worktree still carries the onion-skinning planned-path state described in its
-handoff; this branch only changes orchestrator code and smoke coverage.
+The AUX compact child-run context commit `7c73772` has been fast-forwarded into
+the main `road-map-2.0` flow. Planned-path dirty changes remain for
+`tool-compositions-toggle-onion-skinning`: the advisory recipe, solution
+registry entry, solution-library validation smoke, compact plan update, and
+`.codex/handoff.md`. The candidate is
+`non_live_validation_complete` and waiting for `generated_only_live_rerun`.
+No source JSX was copied. No live rerun, finalization commit, push, PR,
+Local/Ollama, broad/default CEP smoke, dependency change, old longrun, full
+runtime report, or `max-items > 1` was run.
 
 ## Next Milestone
 
-Milestone 22: bring the AUX compact child-run context commit back to the main
-`road-map-2.0` line when the active onion-skinning transaction can safely resume,
-then continue that transaction at its next strict boundary. Do not use
+Milestone 23: from a fresh safe context budget, continue the active strict
+transaction for `tool-compositions-toggle-onion-skinning` at
+`generated_only_live_rerun` using the AUX compact budget protocol, then let the
+runner perform
+`ledger_docs_handoff_commit_finalization` if the live rerun passes. Keep
 Local/Ollama, broad/default CEP smoke, dependency changes, old longrun, full
-runtime reports, source merge outside the runner, push/PR, or `max-items > 1`
-without explicit approval.
+runtime reports, source merge outside the runner, push/PR, and `max-items > 1`
+out of scope.
 
 ## Decision Log
 
@@ -269,14 +242,23 @@ without explicit approval.
 - The next onion-skinning phase was not started at predicted 63% because the
   following child-run would cross the widened 72% handoff threshold.
 - Milestone 21 uses an AUX branch/worktree because the main worktree contains an
-  unfinished Full Intaker transaction. The branch keeps orchestrator improvement
-  separate from candidate recipe/registry state.
+  unfinished Full Intaker transaction. The AUX commit was then fast-forwarded
+  into `road-map-2.0`, leaving the candidate recipe/registry state uncommitted.
 - Child-run stdin is now a compact context-pack protocol: full batch prompt stays
   as a hashed audit artifact, while the child receives bounded planned paths,
   candidate summaries, hard boundaries, and output contract.
 - The first full-intake context gate is now a resume preflight instead of a
   duplicate abstract child-run charge. Actual phase gates still enforce their own
   costs and thresholds before importer, live-lane, live-rerun, docs, and commit.
+- Milestone 22 treated `Compositions/Toggle_Onion_Skinning.jsx` as advisory
+  typed-plan guidance only. Scope was derived from the current runner wrapper,
+  the existing `toggle_onion_skinning` typed-tool contract, semantic
+  verification, and the registered generated-only onion-skinning lane. The
+  recipe uses `toggle_onion_skinning` instead of raw JSX and requires generated
+  layer/effect plus comp comment token read-back.
+- The generated-only live rerun was not started at `currentContextPercent:58`
+  before the AUX compact budget merge because the old estimator predicted `68%`,
+  crossing `noNewWorkPercent:66`.
 
 ## Validation
 
@@ -331,6 +313,14 @@ raw JSX copy, source merge outside the runner, or `max-items > 1` was used.
   `cep-panel-cdp-smoke.js inspect` / `connector-status-smoke` passed. No
   Local/Ollama, broad/default CEP smoke, dependency change, push, PR, old
   longrun, full runtime report, or `max-items > 1` was used.
+- [x] Milestone 22 validation status: active docs only were read first, compact
+  status/proof/ledger checks passed, and the runner completed
+  `non_live_validation` for `tool-compositions-toggle-onion-skinning`. A final
+  `generated_only_live_rerun` was not run because the runner entered
+  `resume_only_context_budget` at `58% -> 68%` predicted context. No
+  Local/Ollama, broad/default CEP smoke, dependency change, push/PR, old
+  longrun, full runtime report, source merge outside the runner, or
+  `max-items > 1` was used.
 
 Not run by design across this compact block unless explicitly noted: Local/Ollama,
 broad/default CEP smoke, dependency/package changes, push/PR, unscoped retry, old
