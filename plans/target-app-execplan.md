@@ -112,6 +112,11 @@ Codex App dev-request handoff for repository work.
   boundaries for persistent named selection sets or fuzzy/native UI selection
   behavior. No source JSX was copied. The parent scoped retry reached
   `non_live_validation_complete` and stopped before `generated_only_live_rerun`.
+- [x] Milestone 16: Marker family readiness correction. With Selection live rerun
+  and source merge still approval-gated, reviewed only targeted marker readiness:
+  existing recipes/lane cover layer markers, while the four remaining triage Marker
+  unsafe-skip ids require composition-marker typed-tool contracts before retry.
+  Updated the triage counts and moved those four ids out of immediate safe-next.
 
 ## Current Dirty State
 
@@ -120,11 +125,12 @@ scoped to `tool-selection-layer-selection-set`.
 
 ## Next Milestone
 
-Milestone 16: continue only with explicit approval for the narrow generated-only
-live rerun of `tool-selection-layer-selection-set`, or defer it and move to the next
-planned safe family. Do not run old longrun, unscoped retry, Local/Ollama,
-broad/default CEP smoke, dependency changes, push/PR, or any live lane beyond the
-single scoped generated-only rerun without explicit approval.
+Milestone 17: either continue only with explicit approval for the narrow
+generated-only live rerun of `tool-selection-layer-selection-set`, or start a
+non-live composition-marker typed-tool contract prep block before any Marker retry.
+Do not run old longrun, unscoped retry, Local/Ollama, broad/default CEP smoke,
+dependency changes, push/PR, source merge, or any live lane without explicit
+approval.
 
 ## Decision Log
 
@@ -205,6 +211,11 @@ single scoped generated-only rerun without explicit approval.
   `get_selected_layers`, and treats persistent named selection sets, fuzzy matching,
   type/label/random selection, cross-comp selection, and exact native UI side
   effects as separate typed-tool contracts.
+- Milestone 16 corrected the Marker triage classification: current marker typed
+  tools and existing advisory recipes cover layer-marker workflows, but not
+  composition-marker `markerProperty` add/read/copy semantics. The four remaining
+  Marker unsafe-skip ids should not be retried until a composition-marker contract,
+  generated-only fixture, read-back, and semantic verification lane exist.
 
 ## Validation
 
@@ -330,6 +341,25 @@ Milestone 15 targeted validation:
 Not run by design: generated-only live rerun, live CEP/AE lanes, broad/default CEP
 smoke, Local/Ollama provider validation, old longrun, unscoped retry,
 dependency/package changes, push, or PR.
+
+Milestone 16 targeted validation:
+
+- [x] Context/status check completed; no active goal budget was reported by the
+  Codex context tool. Branch `road-map-2.0` was ahead 10 and clean before work.
+- [x] Active docs only were read before targeted readiness review.
+- [x] Targeted marker ledger query confirmed the four triage Marker ids are still
+  `blocked_or_skipped` with `unsafe_skip_tool_gap` because current marker typed
+  tools cover layer markers, not composition markers.
+- [x] Targeted registry/recipe review confirmed existing marker recipes and live
+  lane coverage are for layer-marker workflows (`add_layer_marker` with
+  `get_layer_details` read-back), not composition-marker transfer.
+- [x] Updated `plans/full-intake-unsafe-skip-triage.md` and this active plan only;
+  no source merge, importer retry, live lane, dependency/package change,
+  Local/Ollama, push, or PR was run.
+- [x] Required local validation suite passed: `git diff --check`,
+  `npm.cmd run check:rules`, provider/solution/project-intent/planning/semantic/
+  reliability/ChatGPT connector/provider API/prompt optimization smokes,
+  `node scripts/bridge-only-smoke-test.js`, and `node scripts/smoke-test.js`.
 
 ## Handoff
 

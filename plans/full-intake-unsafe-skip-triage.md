@@ -12,9 +12,9 @@ the source scripts are permanently useless.
 
 Recommended order:
 
-1. `safe-next-generated-only`: 28 entries. Start here with one narrow family at a
-   time, beginning with Selection or Markers.
-2. `needs-new-typed-tool-contract`: 32 entries. Useful backlog, but each family
+1. `safe-next-generated-only`: 24 entries. Start here with one narrow family at a
+   time, beginning with remaining Selection or Layers/Utilities items.
+2. `needs-new-typed-tool-contract`: 36 entries. Useful backlog, but each family
    needs an explicit bridge contract, generated-only fixture, read-back, and
    semantic verification before import retry.
 3. `approval-gated-or-last`: 15 entries. Defer until file I/O, render queue,
@@ -38,11 +38,6 @@ comps/layers/items with read-back and no user assets.
   - `tool-layers-set-all-track-matte-labels`
   - `tool-layers-toggle-difference-blend-mode`
   - `tool-layers-unlock-all-layers`
-- Markers:
-  - `tool-markers-add-markers-at-out-points`
-  - `tool-markers-add-markers-at-work-area`
-  - `tool-markers-copy-composition-markers-to-layer`
-  - `tool-markers-copy-layer-markers-to-composition`
 - Selection:
   - `tool-selection-layer-selection-set`
   - `tool-selection-select-all-children`
@@ -62,10 +57,13 @@ comps/layers/items with read-back and no user assets.
 
 First proposed lane: `selection-generated-only`, covering generated layer setup,
 selection mutation, read-back via `get_selected_layers`/`get_layer_details`, and
-deterministic semantics for random selection.
+deterministic semantics for random selection. Milestones 12-15 already prepared
+this lane and advanced `tool-selection-layer-selection-set` through controlled
+merge plus non-live validation; the generated-only live rerun remains approval-gated.
 
-Second proposed lane: `marker-transfer-generated-only`, covering generated markers
-on comps/layers, copy/add operations, and read-back through marker details.
+Second proposed lane: use a remaining safe family that already has typed-tool
+coverage, or first add a composition-marker typed-tool contract before retrying
+marker-transfer/out-point/work-area candidates.
 
 ## Needs New Typed-Tool Contract
 
@@ -92,6 +90,11 @@ tool contract and proof lane for the operation family.
 - Lottie:
   - `tool-lottie-convert-drop-shadows-for-lottie`
   - `tool-lottie-prepare-layer-out-points-for-lottie`
+- Markers:
+  - `tool-markers-add-markers-at-out-points`
+  - `tool-markers-add-markers-at-work-area`
+  - `tool-markers-copy-composition-markers-to-layer`
+  - `tool-markers-copy-layer-markers-to-composition`
 - Project:
   - `tool-project-add-selection-to-new-folder`
   - `tool-project-reset-imported-item-names`
@@ -118,6 +121,7 @@ Likely contract families:
 - `essential-graphics-generated-only`
 - `project-item-metadata-generated-only`
 - `lottie-prep-generated-only`
+- `composition-marker-generated-only`
 
 ## Approval-Gated Or Last
 
@@ -154,5 +158,7 @@ Do not retry all 75. Pick one safe family and prove it end to end:
 3. Reclassify only matching candidates.
 4. Run the normal bounded Full Intaker path with `max-items 1` / scoped ids.
 
-Best first slice: Selection, because it has 11 candidates, no file I/O, no render
-queue, no third-party plugin dependency, and clear read-back semantics.
+Best first slice remains Selection, because it has 11 candidates, no file I/O, no
+render queue, no third-party plugin dependency, and clear read-back semantics.
+If Selection live completion is deferred, do not retry Markers as a family until
+composition-marker add/read/copy contracts and generated-only read-back are present.
