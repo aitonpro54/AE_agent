@@ -65,6 +65,7 @@ const IMPORTED_ADVISORY_IDS = [
   "select-parent-layer-typed-plan",
   "select-random-layers-typed-plan",
   "select-shape-layers-typed-plan",
+  "select-text-layers-typed-plan",
   "duplicate-selected-layer-typed-plan",
   "add-assorted-composition-guides-typed-plan",
   "add-background-layer-typed-plan",
@@ -1285,6 +1286,26 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /shapeLayer:true/.test(note)), `${id}: notes must require typed shape-layer evidence.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must keep unsupported shape-layer semantics out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Select_Shape_Layers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "select-text-layers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "set_layer_selection", "get_selected_layers"],
+        `${id}: imported select-text-layers workflow should stay on the narrow typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: select-text-layers workflow must be mutating.`);
+      assert(text.includes("text layers"), `${id}: recipe should document text-layer discovery.`);
+      assert(text.includes("textLayer:true"), `${id}: recipe should require typed text-layer evidence.`);
+      assert(text.includes("textLayerIndices"), `${id}: recipe should require concrete text layer indices before mutation.`);
+      assert(text.includes("set_layer_selection"), `${id}: recipe should use set_layer_selection.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer read-back.`);
+      assert(text.includes("Do not create text layers"), `${id}: recipe should reject text-layer creation or conversion.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must inspect layer inventory.`);
+      assert(solution.verificationRecipe.steps.some((step) => /textLayerIndices/.test(step)), `${id}: verification must bind concrete text layer indices.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_selection/.test(step)), `${id}: verification must use set_layer_selection.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /text-layer/.test(item)), `${id}: expected evidence must mention text layers.`);
+      assert(solution.notes.some((note) => /textLayer:true/.test(note)), `${id}: notes must require typed text-layer evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must keep unsupported text-layer semantics out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /Select_Text_Layers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else if (id === "duplicate-selected-layer-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2768,6 +2789,22 @@ function assertActualRetrieval(registry) {
   assert(selectShapeLayersPromptSection.includes("shapeLayerIndices"), "prompt section should preserve concrete shape index guidance.");
   assert(selectShapeLayersPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer read-back after shape-layer selection.");
   assert(!/run_extendscript/i.test(selectShapeLayersPromptSection), "select-shape-layers guidance should not recommend raw ExtendScript.");
+
+  const selectTextLayersRetrieval = retrieveSolutionHints("Select all text layers in the active composition after reading typed textLayer:true layer inventory, using set_layer_selection replacement selection and get_selected_layers read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(selectTextLayersRetrieval.ok, true);
+  assert(ids(selectTextLayersRetrieval).includes("select-text-layers-typed-plan"), "select-text-layers advisory recipe should surface for text layer selection prompts.");
+  const selectTextLayersPromptSection = formatSolutionHintsForPrompt(selectTextLayersRetrieval);
+  assert(selectTextLayersPromptSection.includes("Select Text Layers Typed Plan"), "prompt section should include select-text-layers advisory title.");
+  assert(selectTextLayersPromptSection.includes("get_comp_details"), "prompt section should require layer inventory evidence for text-layer selection.");
+  assert(selectTextLayersPromptSection.includes("set_layer_selection"), "prompt section should prefer set_layer_selection for text-layer selection mutation.");
+  assert(selectTextLayersPromptSection.includes("textLayer:true"), "prompt section should preserve typed text-layer evidence guidance.");
+  assert(selectTextLayersPromptSection.includes("textLayerIndices"), "prompt section should preserve concrete text index guidance.");
+  assert(selectTextLayersPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer read-back after text-layer selection.");
+  assert(!/run_extendscript/i.test(selectTextLayersPromptSection), "select-text-layers guidance should not recommend raw ExtendScript.");
 
   const duplicateSelectedLayerRetrieval = retrieveSolutionHints("Duplicate the selected layer after inspecting the selected layer first, then read back the duplicate layer.", {
     registry,
