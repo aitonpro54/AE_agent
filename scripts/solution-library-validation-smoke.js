@@ -66,6 +66,7 @@ const IMPORTED_ADVISORY_IDS = [
   "select-random-layers-typed-plan",
   "select-shape-layers-typed-plan",
   "select-text-layers-typed-plan",
+  "select-unparented-layers-typed-plan",
   "duplicate-selected-layer-typed-plan",
   "add-assorted-composition-guides-typed-plan",
   "add-background-layer-typed-plan",
@@ -1306,6 +1307,26 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /textLayer:true/.test(note)), `${id}: notes must require typed text-layer evidence.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must keep unsupported text-layer semantics out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Select_Text_Layers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "select-unparented-layers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "set_layer_selection", "get_selected_layers"],
+        `${id}: imported select-unparented-layers workflow should stay on the narrow typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: select-unparented-layers workflow must be mutating.`);
+      assert(text.includes("unparented layers"), `${id}: recipe should document unparented-layer discovery.`);
+      assert(text.includes("parentLayerIndex"), `${id}: recipe should require typed parent-link evidence.`);
+      assert(text.includes("unparentedLayerIndices"), `${id}: recipe should require concrete unparented layer indices before mutation.`);
+      assert(text.includes("set_layer_selection"), `${id}: recipe should use set_layer_selection.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer read-back.`);
+      assert(text.includes("Do not assign, clear, change"), `${id}: recipe should reject parent-link mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must inspect layer inventory.`);
+      assert(solution.verificationRecipe.steps.some((step) => /unparentedLayerIndices/.test(step)), `${id}: verification must bind concrete unparented layer indices.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_selection/.test(step)), `${id}: verification must use set_layer_selection.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /unparented-layer/.test(item)), `${id}: expected evidence must mention unparented layers.`);
+      assert(solution.notes.some((note) => /parentLayerIndex/.test(note)), `${id}: notes must require typed parent-link evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must keep unsupported unparented-layer semantics out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /Select_Unparented_Layers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else if (id === "duplicate-selected-layer-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2806,6 +2827,22 @@ function assertActualRetrieval(registry) {
   assert(selectTextLayersPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer read-back after text-layer selection.");
   assert(!/run_extendscript/i.test(selectTextLayersPromptSection), "select-text-layers guidance should not recommend raw ExtendScript.");
 
+  const selectUnparentedLayersRetrieval = retrieveSolutionHints("Select all unparented layers in the active composition after reading typed parentLayerIndex no-parent layer inventory, using set_layer_selection replacement selection and get_selected_layers read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(selectUnparentedLayersRetrieval.ok, true);
+  assert(ids(selectUnparentedLayersRetrieval).includes("select-unparented-layers-typed-plan"), "select-unparented-layers advisory recipe should surface for unparented layer selection prompts.");
+  const selectUnparentedLayersPromptSection = formatSolutionHintsForPrompt(selectUnparentedLayersRetrieval);
+  assert(selectUnparentedLayersPromptSection.includes("Select Unparented Layers Typed Plan"), "prompt section should include select-unparented-layers advisory title.");
+  assert(selectUnparentedLayersPromptSection.includes("get_comp_details"), "prompt section should require layer inventory evidence for unparented-layer selection.");
+  assert(selectUnparentedLayersPromptSection.includes("set_layer_selection"), "prompt section should prefer set_layer_selection for unparented-layer selection mutation.");
+  assert(selectUnparentedLayersPromptSection.includes("parentLayerIndex"), "prompt section should preserve typed parent-link evidence guidance.");
+  assert(selectUnparentedLayersPromptSection.includes("unparentedLayerIndices"), "prompt section should preserve concrete unparented index guidance.");
+  assert(selectUnparentedLayersPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer read-back after unparented-layer selection.");
+  assert(!/run_extendscript/i.test(selectUnparentedLayersPromptSection), "select-unparented-layers guidance should not recommend raw ExtendScript.");
+
   const duplicateSelectedLayerRetrieval = retrieveSolutionHints("Duplicate the selected layer after inspecting the selected layer first, then read back the duplicate layer.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -3241,6 +3278,7 @@ function assertActualRetrieval(registry) {
       selectLayersBelowLabel: ids(selectLayersBelowLabelRetrieval),
       selectNonNullLayers: ids(selectNonNullLayersRetrieval),
       selectShapeLayers: ids(selectShapeLayersRetrieval),
+      selectUnparentedLayers: ids(selectUnparentedLayersRetrieval),
       duplicateSelectedLayer: ids(duplicateSelectedLayerRetrieval),
       assortedGuides: ids(assortedGuidesRetrieval),
       backgroundLayer: ids(backgroundLayerRetrieval),

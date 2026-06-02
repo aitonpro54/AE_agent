@@ -5128,6 +5128,128 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "select-unparented-layers-typed-plan",
+      "title": "Select Unparented Layers Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "selection",
+        "layers",
+        "unparented-layers",
+        "parentLayerIndex",
+        "parent-link",
+        "root-layers",
+        "selected-layers",
+        "set-selection",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Select all unparented active-comp layers by deriving explicit layer indices from current typed parent-link evidence, using set_layer_selection, and reading selected layers back.",
+        "appliesWhen": [
+          "The user asks to select unparented layers, layers without a parent, root layers, or layers whose current parent evidence is empty.",
+          "The active comp layer inventory exposes parent-link state that can be converted into concrete layerIndices before selection mutation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "unparentedLayerIndices",
+          "type": "array",
+          "required": true,
+          "description": "Computed one-based layer indices whose current typed layer inventory evidence reports no parentLayerIndex, parentIndex, parentName, or equivalent parent-link target."
+        },
+        {
+          "name": "expectedNames",
+          "type": "array",
+          "required": false,
+          "description": "Optional unparented layer names paired with unparentedLayerIndices for post-selection read-back."
+        },
+        {
+          "name": "parentLinkEvidence",
+          "type": "array",
+          "required": true,
+          "description": "Current layer inventory fields proving each selected target has no parent before mutation."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists before selection state is changed.",
+        "Unparented layer targets are derived only from current get_comp_details layer inventory parentLayerIndex:null, parentLayerIndex:0, parentIndex:null, parentIndex:0, empty parentName, or equivalent no-parent evidence.",
+        "The safe adaptation changes only active-comp layer selection state, not parent links, layer names, timing, sources, effects, keyframes, masks, project items or render queue items.",
+        "Parent-link discovery without typed evidence, parent-link assignment or clearing, recursive hierarchy traversal, fuzzy name matching, cross-comp selection, project-panel selection and exact native UI side effects remain typed-tool gaps unless a separate contract proves them."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/select-unparented-layers-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "set_layer_selection",
+          "get_selected_layers"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and layer inventory, compute unparentedLayerIndices from typed parent-link evidence, set replacement selection, then read selected unparented layers back.",
+        "steps": [
+          "Run get_active_comp before mutation to capture active comp identity.",
+          "Run get_comp_details with includeLayers:true and a sufficient layerLimit before computing unparented-layer targets.",
+          "Compute unparentedLayerIndices only from layers whose current typed inventory reports parentLayerIndex:null, parentLayerIndex:0, parentIndex:null, parentIndex:0, empty parentName, or equivalent no-parent state.",
+          "Fail closed when layer inventory is truncated, parent-link state is absent, no unparented layers are found, or the request depends on unsupported UI-only state.",
+          "Run set_layer_selection with computed unparentedLayerIndices, optional expectedNames, replacement selection semantics, verifyAfter:true and a stable idempotency key.",
+          "Run get_selected_layers after mutation and compare selected count, selected layer indices and names with the computed unparented layer set."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_comp_details identifies every accepted unparented layer index, optional expected name and typed no-parent evidence.",
+          "Dry-run evidence lists unparentedLayerIndices, expected names when available and the layer inventory field proving each layer has no parent.",
+          "set_layer_selection result reports the computed unparented layerIndices and replacement selection semantics.",
+          "Post-run get_selected_layers shows exactly the expected unparented-layer count, selected layer indices and expected names.",
+          "Skipped, empty, truncated or ambiguous parent-link discovery is reported as a typed-tool gap or no-op decision instead of approximate selection.",
+          "Post-run evidence shows no parent-link assignment/clearing/change, layer order change, layer rename, timing/source/effect/keyframe/mask/project item/render queue mutation, child selection, recursive hierarchy traversal or cross-comp selection."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-selection-select-unparented-layers generic repository importer as advisory typed-plan coverage for unparented active-comp layer selection.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea using existing active-comp inspection, get_comp_details layer inventory, set_layer_selection and get_selected_layers read-back; parent importer owns validation plus any generated-only live acceptance."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-02",
+          "from": "generic-repo-importer-tool-selection-select-unparented-layers",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Select_Unparented_Layers.jsx into existing typed tools as unparented layer selection through get_comp_details parentLayerIndex:null/0, parentIndex:null/0, empty parentName, or equivalent no-parent evidence, computed unparentedLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. The source JSX was not present in this detached child-run worktree, so parent-link discovery without typed layer evidence, parent-link mutation, recursive hierarchy traversal, fuzzy matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current get_comp_details layer inventory with parentLayerIndex:null, parentLayerIndex:0, parentIndex:null, parentIndex:0, empty parentName, or equivalent no-parent evidence before computing unparentedLayerIndices.",
+        "Use replacement selection semantics and select unparented layers only; selecting direct parents, children, descendants, nulls, text, shapes, guide, disabled, random or label-based layers requires a separate typed-tool contract.",
+        "Do not assign, clear, change or repair parent links; this recipe changes only active-comp selection state.",
+        "Require get_selected_layers read-back after mutation to prove selected unparented-layer count, unparented layer indices and expected names.",
+        "Do not infer unparented layers from names, visual hierarchy, screenshots, previous chat context, source type, label color, shy/solo/lock state or approximate UI assumptions.",
+        "Require a separate typed-tool contract for source-exact native unparented-layer semantics, parent-link mutation, recursive hierarchy traversal, cross-comp selection, Project panel selection or exact native UI side effects.",
+        "Do not use this recipe for parent-link edits, hierarchy cleanup, layer duplication, deletion, renaming, timing edits, marker edits, effect edits, source relinking, keyframe edits, render queue changes, project item selection or broad timeline cleanup."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "center-composition-typed-plan",
       "title": "Center Composition Typed Plan",
       "status": "recipe",
