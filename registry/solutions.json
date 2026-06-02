@@ -4759,6 +4759,133 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "select-random-layers-typed-plan",
+      "title": "Select Random Layers Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "selection",
+        "layers",
+        "random-layers",
+        "random-selection",
+        "selected-layers",
+        "set-selection",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Select a reviewed random subset of active-comp layers by deriving explicit layer indices from current typed layer inventory and reviewed randomSelectionPolicy, using set_layer_selection, and reading selected layers back.",
+        "appliesWhen": [
+          "The user asks to select random layers in the active composition.",
+          "The active comp layer inventory exposes an eligible layer pool and the request can be converted into concrete randomLayerIndices before selection mutation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "randomLayerIndices",
+          "type": "array",
+          "required": true,
+          "description": "Computed one-based layer indices selected from the current eligible active-comp layer pool before mutation."
+        },
+        {
+          "name": "randomSelectionPolicy",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed deterministic selection policy, such as explicit indices, finite selectionCount, optional seed, and documented sampling rule."
+        },
+        {
+          "name": "eligibleLayerEvidence",
+          "type": "array",
+          "required": true,
+          "description": "Current layer inventory fields proving the eligible layer pool from which randomLayerIndices were sampled."
+        },
+        {
+          "name": "expectedNames",
+          "type": "array",
+          "required": false,
+          "description": "Optional selected layer names paired with randomLayerIndices for post-selection read-back."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists before selection state is changed.",
+        "Random-layer targets are derived only from current get_comp_details layer inventory and a reviewed randomSelectionPolicy before mutation.",
+        "The safe adaptation changes only active-comp layer selection state, not layer names, ordering, timing, sources, effects, keyframes, masks, project items or render queue items.",
+        "Nondeterministic native UI randomness, random seed persistence, weighted/random-by-type selection, cross-comp selection, project-panel selection and exact native UI side effects remain typed-tool gaps unless a separate contract proves them."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/select-random-layers-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "set_layer_selection",
+          "get_selected_layers"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and layer inventory, compute randomLayerIndices from a reviewed randomSelectionPolicy and eligible layer pool, set replacement selection, then read selected random layers back.",
+        "steps": [
+          "Run get_active_comp before mutation to capture active comp identity.",
+          "Run get_comp_details with includeLayers:true and a sufficient layerLimit before computing the eligible layer pool and random targets.",
+          "Bind a reviewed randomSelectionPolicy before mutation, such as explicit randomLayerIndices, a finite selectionCount, or a deterministic seed plus documented sampling rule.",
+          "Compute randomLayerIndices only from the current eligible layer pool in the same active composition.",
+          "Fail closed when layer inventory is truncated, the eligible pool is empty, randomSelectionPolicy is absent or ambiguous, randomLayerIndices are outside the current inventory, or the request depends on unsupported nondeterministic UI-only behavior.",
+          "Run set_layer_selection with computed randomLayerIndices, optional expectedNames, replacement selection semantics, verifyAfter:true and a stable idempotency key.",
+          "Run get_selected_layers after mutation and compare selected count, selected layer indices and names with the computed random layer set."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_comp_details identifies the eligible layer pool, optional expected names, reviewed randomSelectionPolicy and every accepted random-layer index.",
+          "Dry-run evidence lists randomSelectionPolicy, randomLayerIndices, expected names when available and the reason the sample is deterministic/reviewable.",
+          "set_layer_selection result reports the computed random layerIndices and replacement selection semantics.",
+          "Post-run get_selected_layers shows exactly the expected random-layer count, selected layer indices and expected names.",
+          "Skipped, empty, truncated, unreviewed or nondeterministic random discovery is reported as a typed-tool gap or no-op decision instead of approximate selection.",
+          "Post-run evidence shows no layer order change, layer rename, timing/source/effect/keyframe/mask/project item/render queue mutation, randomness persistence or cross-comp selection."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-selection-select-random-layers generic repository importer as advisory typed-plan coverage for reviewed random active-comp layer selection.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea using existing active-comp inspection, get_comp_details layer inventory, set_layer_selection and get_selected_layers read-back; parent importer owns validation plus any generated-only live acceptance."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-02",
+          "from": "generic-repo-importer-tool-selection-select-random-layers",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Select_Random_Layers.jsx into existing typed tools as reviewed random layer selection through get_comp_details eligible layer inventory, reviewed randomSelectionPolicy, computed randomLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. The source JSX was not present in this detached child-run worktree, so nondeterministic native UI randomness, random seed persistence, weighted/random-by-type selection, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current get_comp_details layer inventory and a reviewed randomSelectionPolicy before computing randomLayerIndices.",
+        "Use replacement selection semantics and select only the computed randomLayerIndices in the same active comp.",
+        "Do not run nondeterministic randomness inside the mutation step; selection targets must be concrete layer indices before set_layer_selection.",
+        "Require get_selected_layers read-back after mutation to prove selected random-layer count, layer indices and expected names.",
+        "Do not infer eligible layers from screenshots, previous chat context, fuzzy names, source type, layer comments, guide/disabled/shy/solo/lock state or approximate UI assumptions unless typed inventory exposes and the plan reviews those constraints.",
+        "Require a separate typed-tool contract for source-exact native random selection semantics, random seed persistence, weighted/random-by-type selection, cross-comp selection, Project panel selection or exact native UI side effects.",
+        "Do not use this recipe for guide/disabled/type/label/parent-group selection, layer duplication, deletion, renaming, timing edits, marker edits, effect edits, source relinking, keyframe edits, render queue changes, project item selection or broad timeline cleanup."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "center-composition-typed-plan",
       "title": "Center Composition Typed Plan",
       "status": "recipe",

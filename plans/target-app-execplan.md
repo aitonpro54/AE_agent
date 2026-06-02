@@ -30,6 +30,8 @@ Codex App dev-request handoff for repository work.
 
 ## Progress
 
+- [x] Full intake tool-selection-select-random-layers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-selection-select-random-layers); live gate ready, importer batch full-intake-kyletmartinez-7f7579d021-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-selection-select-parent-layer: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-selection-select-parent-layer); live gate ready, importer batch full-intake-kyletmartinez-10b9e46e9b-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-selection-select-non-null-layers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-selection-select-non-null-layers); live gate ready, importer batch full-intake-kyletmartinez-a118acc0e4-import, commit recorded after candidate commit.
@@ -62,6 +64,11 @@ Codex App dev-request handoff for repository work.
   `tool-selection-select-parent-layer` in the importer-owned detached worktree
   only. No source merge, commit, validation run, live AE/CEP lane, or provider
   call was performed by design.
+- [x] AUX-021 detached importer child-run batch
+  `queue-batch-1-7fd2104010`: drafted advisory typed-plan import for
+  `tool-selection-select-random-layers` in the importer-owned detached worktree
+  only. No source merge, commit, validation run, live AE/CEP lane, provider
+  call, Local/Ollama, push, or PR was performed by design.
 - [x] AUX parallel candidate worktrees architecture: added explicit opt-in
   scheduling for detached run-owned candidate worktrees, stable proposal schema
   `generic-repo-full-intake.parallel-candidate-proposal.v1`, and a serial
@@ -89,6 +96,17 @@ Detached child-run note: `queue-batch-1-978e9e7c80` now contains the
 `select-parent-layer-typed-plan` advisory recipe, registry entry, and
 solution-library smoke expectations. The parent importer still owns source-merge
 application, validation, proof capture, and any live/generated-only acceptance.
+Detached child-run note: `queue-batch-1-7fd2104010` now contains the
+`select-random-layers-typed-plan` advisory recipe, registry entry, and
+solution-library smoke expectations. The recipe requires current active-comp
+layer inventory, a reviewed deterministic `randomSelectionPolicy`, computed
+`randomLayerIndices`, replacement `set_layer_selection`, and
+`get_selected_layers` read-back. The parent importer still owns source-merge
+application, validation, proof capture, and any live/generated-only acceptance.
+`.codex/handoff.md` creation for batch `queue-batch-1-7fd2104010` was attempted
+but blocked by workspace write policy (`apply_patch` rejected the hidden path
+and PowerShell returned AccessDenied), so this active-plan note is the durable
+handoff substitute for the batch.
 `.codex/handoff.md` creation for batch `queue-batch-1-b3f28610bc` was attempted but
 blocked by workspace write policy (`apply_patch` rejected the hidden path and
 PowerShell returned AccessDenied), so this active-plan note is the durable
@@ -115,6 +133,8 @@ push/PR, old longrun flows, source merge outside the runner, full runtime
 reports, and `max-items > 1` out of scope.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `Selection/Select_Random_Layers.jsx` as `tool-selection-select-random-layers`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-selection-select-random-layers).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Selection/Select_Parent_Layer.jsx` as `tool-selection-select-parent-layer`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-selection-select-parent-layer).
 
@@ -163,6 +183,15 @@ reports, and `max-items > 1` out of scope.
   mutation, recursive ancestor selection, child/descendant selection, fuzzy
   matching, cross-comp/Project panel selection, and exact native UI/source
   semantics require a separate typed-tool contract.
+- AUX-021 child-run adapted `Select_Random_Layers` as fail-closed Selection
+  advisory guidance. The source JSX was not present in this detached worktree,
+  so the recipe adapts only the candidate idea through existing typed tools. It
+  requires current active-comp layer inventory, a reviewed deterministic
+  `randomSelectionPolicy`, computed concrete `randomLayerIndices`, replacement
+  `set_layer_selection`, and `get_selected_layers` read-back. Mutation-time
+  nondeterminism, native random UI semantics, seed persistence, weighted or
+  type-specific random selection, cross-comp/Project panel selection, and exact
+  native UI/source semantics require a separate typed-tool contract.
 - 2026-06-02: AUX parallel candidate worktrees are opt-in only. Child candidate
   worktrees are detached and run-owned under `.codex-runtime/.../<run-id>/`,
   may emit proposals, and must not own central ledger, registry, plan, handoff,
@@ -178,6 +207,8 @@ reports, and `max-items > 1` out of scope.
   penalty for mutating hints instead of weakening the smoke expectation.
 
 ## Validation
+
+| Full intake tool-selection-select-random-layers | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-7f7579d021-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-selection-select-parent-layer | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-10b9e46e9b-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
@@ -226,6 +257,14 @@ reports, and `max-items > 1` out of scope.
   `git diff --check`, `node scripts/solution-registry-smoke.js`, and
   `node scripts/solution-library-validation-smoke.js`, plus the normal strict
   importer proof/acceptance lane if selected by the parent runner.
+- AUX-021 child-run `queue-batch-1-7fd2104010`: no validation commands were run
+  by explicit child-run boundary. Planned validation after parent merge/review:
+  `node --check scripts/solution-library-validation-smoke.js`,
+  `git diff --check`, `node scripts/solution-registry-smoke.js`, and
+  `node scripts/solution-library-validation-smoke.js`, plus the normal strict
+  importer proof/acceptance lane if selected by the parent runner.
+  `.codex/handoff.md` could not be written in this detached worktree because the
+  hidden path write was denied; use the active-plan notes for continuation.
 - AUX parallel candidate worktrees architecture: `node --check
   orchestrator/parallel-candidate-worktrees.mjs`, `node --check
   orchestrator/run-generic-repo-full-intake.mjs`, `node --check

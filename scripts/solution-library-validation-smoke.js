@@ -63,6 +63,7 @@ const IMPORTED_ADVISORY_IDS = [
   "select-layers-below-label-typed-plan",
   "select-non-null-layers-typed-plan",
   "select-parent-layer-typed-plan",
+  "select-random-layers-typed-plan",
   "duplicate-selected-layer-typed-plan",
   "add-assorted-composition-guides-typed-plan",
   "add-background-layer-typed-plan",
@@ -1243,6 +1244,26 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /parentLayerIndex/.test(note)), `${id}: notes must require typed parent evidence.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must keep unsupported parent semantics out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Select_Parent_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "select-random-layers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "set_layer_selection", "get_selected_layers"],
+        `${id}: imported select-random-layers workflow should stay on the narrow typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: select-random-layers workflow must be mutating.`);
+      assert(text.includes("random subset"), `${id}: recipe should document random subset selection.`);
+      assert(text.includes("randomSelectionPolicy"), `${id}: recipe should require reviewed random selection policy evidence.`);
+      assert(text.includes("randomLayerIndices"), `${id}: recipe should require concrete selected indices before mutation.`);
+      assert(text.includes("set_layer_selection"), `${id}: recipe should use set_layer_selection.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer read-back.`);
+      assert(text.includes("Do not run nondeterministic randomness"), `${id}: recipe should reject nondeterministic mutation-time randomness.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must inspect layer inventory.`);
+      assert(solution.verificationRecipe.steps.some((step) => /randomSelectionPolicy/.test(step)), `${id}: verification must bind a reviewed random selection policy.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_selection/.test(step)), `${id}: verification must use set_layer_selection.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /random-layer/.test(item)), `${id}: expected evidence must mention random layers.`);
+      assert(solution.notes.some((note) => /randomSelectionPolicy/.test(note)), `${id}: notes must require reviewed random selection policy.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must keep unsupported random semantics out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /Select_Random_Layers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else if (id === "duplicate-selected-layer-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2694,6 +2715,22 @@ function assertActualRetrieval(registry) {
   assert(selectParentLayerPromptSection.includes("parentLayerIndex"), "prompt section should preserve typed parent evidence guidance.");
   assert(selectParentLayerPromptSection.includes("direct parent"), "prompt section should preserve direct-parent scope.");
   assert(!/run_extendscript/i.test(selectParentLayerPromptSection), "select-parent-layer guidance should not recommend raw ExtendScript.");
+
+  const selectRandomLayersRetrieval = retrieveSolutionHints("Select a reviewed random subset of layers in the active composition after reading layer inventory, using deterministic randomSelectionPolicy, set_layer_selection replacement selection and get_selected_layers read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(selectRandomLayersRetrieval.ok, true);
+  assert(ids(selectRandomLayersRetrieval).includes("select-random-layers-typed-plan"), "select-random-layers advisory recipe should surface for random layer selection prompts.");
+  const selectRandomLayersPromptSection = formatSolutionHintsForPrompt(selectRandomLayersRetrieval);
+  assert(selectRandomLayersPromptSection.includes("Select Random Layers Typed Plan"), "prompt section should include select-random-layers advisory title.");
+  assert(selectRandomLayersPromptSection.includes("get_comp_details"), "prompt section should require layer inventory evidence for random-layer selection.");
+  assert(selectRandomLayersPromptSection.includes("set_layer_selection"), "prompt section should prefer set_layer_selection for random-layer selection mutation.");
+  assert(selectRandomLayersPromptSection.includes("randomSelectionPolicy"), "prompt section should preserve reviewed random policy guidance.");
+  assert(selectRandomLayersPromptSection.includes("randomLayerIndices"), "prompt section should preserve concrete random index guidance.");
+  assert(selectRandomLayersPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer read-back after random-layer selection.");
+  assert(!/run_extendscript/i.test(selectRandomLayersPromptSection), "select-random-layers guidance should not recommend raw ExtendScript.");
 
   const duplicateSelectedLayerRetrieval = retrieveSolutionHints("Duplicate the selected layer after inspecting the selected layer first, then read back the duplicate layer.", {
     registry,
