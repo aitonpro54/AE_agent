@@ -2021,7 +2021,8 @@ function createDetachedImplementationWorktree({ absolute, label, manifest, targe
       ["-c", "core.longpaths=true", "clone", "--no-hardlinks", "--no-checkout", targetRepo, absolute],
       `create implementation clone ${label}`,
     );
-    runGit(absolute, ["checkout", "--detach", targetHead], `detach implementation clone ${label}`);
+    runGit(absolute, ["config", "core.longpaths", "true"], `configure implementation clone longpaths ${label}`);
+    runGit(absolute, ["-c", "core.longpaths=true", "checkout", "--detach", targetHead], `detach implementation clone ${label}`);
     return "local_clone_detached";
   }
   runGit(targetRepo, ["worktree", "add", "--detach", absolute, "HEAD"], `create implementation worktree ${label}`);

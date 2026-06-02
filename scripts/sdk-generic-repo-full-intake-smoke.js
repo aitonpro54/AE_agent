@@ -988,6 +988,7 @@ function assertParallelReducerSeriallyAppliesIndependentProposals() {
 function assertParallelChildExecutionProducesAcceptedFileProposals() {
   const fixture = createFixture("pce");
   try {
+    commitLongCheckoutPath(fixture);
     const binDir = writeFakeCodex(fixture.root);
     const first = entry({
       classification: "existing_typed_tools_recipe_only",
