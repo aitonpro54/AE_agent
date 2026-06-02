@@ -14,6 +14,9 @@ const MIN_TOOL_MATCH_SCORE = 60;
 const GENERIC_TAGS = new Set(["typed-tool", "reviewed-jsx", "fixture", "smoke", "candidate"]);
 const MARKER_TAGS = new Set(["marker", "markers", "layer-marker"]);
 const MARKER_PROMPT_TOKENS = new Set(["marker", "markers", "mark", "marks", "marked"]);
+const TOOL_MATCH_REQUIRED_PROMPT_TOKENS = new Map([
+  ["bulk-layer-duplicate-typed-tool", new Set(["duplicate", "duplicated", "duplicates", "duplicating", "copy", "copied", "copies", "clone", "cloned", "clones", "cloning"])]
+]);
 const PROMPT_KEY_TERMS = Object.freeze([
   "includeValues:true",
   "setAtTime:false",
@@ -35,6 +38,14 @@ const PROMPT_KEY_TERMS = Object.freeze([
   "viewer zoom/pan",
   "project-panel selection",
   "Project panel selection",
+  "parentLayerIndex",
+  "randomSelectionPolicy",
+  "randomLayerIndices",
+  "shapeLayer:true",
+  "shapeLayerIndices",
+  "textLayer:true",
+  "textLayerIndices",
+  "unparentedLayerIndices",
   "enabled:false",
   "enabled:true",
   "roundedValue",
@@ -182,6 +193,13 @@ function isRawExtendscriptSolution(solution) {
   return execution.mode === "extendscript-file" || solutionPreferredTools(solution).includes("run_extendscript_file");
 }
 
+function hasPromptToken(promptTokens, expectedTokens) {
+  for (const token of expectedTokens) {
+    if (promptTokens.has(token)) return true;
+  }
+  return false;
+}
+
 function promptRequestsReadOnlyPreference(userPrompt) {
   const text = String(userPrompt || "").toLowerCase();
   return (
@@ -218,6 +236,13 @@ function scoreSolution(solution, promptTokens, userPrompt = "") {
   if (promptRequestsReadOnlyPreference(userPrompt) && execution.mutating === true) score -= 28;
   if (isRawExtendscriptSolution(solution)) score -= 1;
   return score;
+}
+
+function shouldIncludeToolMatch(solution, score, promptTokens) {
+  if (score < MIN_TOOL_MATCH_SCORE) return false;
+  const requiredPromptTokens = TOOL_MATCH_REQUIRED_PROMPT_TOKENS.get(solution && solution.id);
+  if (requiredPromptTokens && !hasPromptToken(promptTokens, requiredPromptTokens)) return false;
+  return true;
 }
 
 function statusPriority(status) {
@@ -367,7 +392,7 @@ function retrieveSolutionHints(userPrompt, options = {}) {
 
     if (solution.status === "tool") {
       result.omitted.toolStatus += 1;
-      if (score >= MIN_TOOL_MATCH_SCORE) {
+      if (shouldIncludeToolMatch(solution, score, promptTokens)) {
         toolMatches.push({ solution, score });
       }
       continue;
