@@ -4631,6 +4631,134 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "select-parent-layer-typed-plan",
+      "title": "Select Parent Layer Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "selection",
+        "layers",
+        "parent-layer",
+        "parented-layers",
+        "selected-layers",
+        "set-selection",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Select direct parent layers of currently selected active-comp layers by deriving explicit parent layer indices from current typed parent evidence, using set_layer_selection, and reading selected parent layers back.",
+        "appliesWhen": [
+          "The user asks to select parent layers, select the parents of selected layers, or replace the current selection with each selected layer's direct parent.",
+          "The active comp selected-layer and layer-inventory evidence exposes direct parent state that can be converted into concrete layerIndices before selection mutation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedChildLayerIndices",
+          "type": "array",
+          "required": true,
+          "description": "Current one-based selected child layer indices captured before replacing selection with parent layers."
+        },
+        {
+          "name": "parentLayerIndices",
+          "type": "array",
+          "required": true,
+          "description": "Deduplicated one-based direct parent layer indices resolved from current typed parent evidence in the same active composition."
+        },
+        {
+          "name": "parentEvidence",
+          "type": "array",
+          "required": true,
+          "description": "Current selected-layer and layer inventory fields proving each selected child-to-parent relationship before mutation."
+        },
+        {
+          "name": "expectedNames",
+          "type": "array",
+          "required": false,
+          "description": "Optional parent layer names paired with parentLayerIndices for post-selection read-back."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists before selection state is changed.",
+        "Parent layer targets are derived only from current get_selected_layers and get_comp_details evidence such as parentLayerIndex, parentIndex, parentName paired with a unique same-comp layer, or equivalent typed parent state.",
+        "The safe adaptation changes only active-comp layer selection state, not parent links, layer names, timing, sources, effects, keyframes, masks, project items or render queue items.",
+        "Parent discovery without typed evidence, parent-link mutation, recursive ancestor selection, child/descendant selection, fuzzy name matching, cross-comp selection, project-panel selection and exact native UI side effects remain typed-tool gaps unless a separate contract proves them."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/select-parent-layer-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_comp_details",
+          "set_layer_selection"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp, current selected child layers, and layer inventory, compute parentLayerIndices from typed parent evidence, set replacement selection, then read selected parent layers back.",
+        "steps": [
+          "Run get_active_comp before mutation to capture active comp identity.",
+          "Run get_selected_layers before mutation to capture selected child layer indices and names.",
+          "Run get_comp_details with includeLayers:true and a sufficient layerLimit before computing direct parent targets.",
+          "Compute parentLayerIndices only from selected child layers whose current typed inventory resolves a direct parent in the same active composition.",
+          "Fail closed when selected-layer evidence is empty, layer inventory is truncated, parent evidence is absent or ambiguous, no selected layers have parents, or the request depends on recursive ancestors or unsupported UI-only state.",
+          "Run set_layer_selection with computed parentLayerIndices, optional expectedNames, replacement selection semantics, verifyAfter:true and a stable idempotency key.",
+          "Run get_selected_layers after mutation and compare selected count, selected layer indices and names with the computed direct parent layer set."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_layers identifies every selected child layer index and optional expected name.",
+          "Pre-run get_comp_details identifies each accepted child-to-parent relationship, direct parent-layer index, optional parent name and typed parent evidence such as parentLayerIndex.",
+          "Dry-run evidence lists selectedChildLayerIndices, parentLayerIndices, expected parent names when available and the inventory field proving each direct parent relationship.",
+          "set_layer_selection result reports the computed parent layerIndices and replacement selection semantics.",
+          "Post-run get_selected_layers shows exactly the expected parent-layer count, selected layer indices and expected names.",
+          "Skipped, empty, unparented, truncated or ambiguous parent discovery is reported as a typed-tool gap or no-op decision instead of approximate selection.",
+          "Post-run evidence shows no parent-link mutation, recursive ancestor selection, child/descendant selection, layer order change, layer rename, timing/source/effect/keyframe/mask/project item/render queue mutation or cross-comp selection."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-selection-select-parent-layer generic repository importer as advisory typed-plan coverage for selecting direct parent layers of the current active-comp selection.",
+          "This detached child-run patch adapts only the candidate idea using existing active-comp inspection, selected-layer evidence, get_comp_details layer inventory, set_layer_selection and get_selected_layers read-back; parent importer owns validation plus any generated-only live acceptance."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-02",
+          "from": "generic-repo-importer-tool-selection-select-parent-layer",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Select_Parent_Layer.jsx into existing typed tools as direct parent layer selection through get_selected_layers selected child evidence, get_comp_details parentLayerIndex or equivalent typed parent evidence, computed parentLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. Parent discovery without typed layer evidence, parent-link mutation, recursive ancestor selection, child/descendant selection, fuzzy matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current get_selected_layers child evidence plus get_comp_details layer inventory with parentLayerIndex, parentIndex, parentName paired with a unique same-comp layer, or equivalent typed parent evidence before computing parentLayerIndices.",
+        "Use replacement selection semantics and select direct parent layers only; selecting children, descendants, recursive ancestors, unparented layers, random layers, label groups, guide layers, disabled layers or type-based layers requires a separate typed-tool contract.",
+        "Do not assign, clear, change, create, delete, duplicate, rename, reorder or otherwise mutate parent links or layers; this recipe changes only active-comp selection state.",
+        "Require get_selected_layers read-back after mutation to prove selected parent-layer count, parent layer indices and expected names.",
+        "Do not infer parent layers from names, visual hierarchy indentation, screenshots, previous chat context, source type strings, label color, shy/solo/lock state or approximate UI assumptions.",
+        "Require a separate typed-tool contract for source-exact native parent semantics, parent-link mutation, recursive ancestor selection, cross-comp selection, Project panel selection or exact native UI side effects.",
+        "Do not use this recipe for layer parenting changes, layer duplication, deletion, renaming, timing edits, marker edits, effect edits, source relinking, keyframe edits, render queue changes, project item selection or broad timeline cleanup."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "center-composition-typed-plan",
       "title": "Center Composition Typed Plan",
       "status": "recipe",
