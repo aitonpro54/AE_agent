@@ -65,6 +65,35 @@ function createFixture(name) {
   return { root, source };
 }
 
+function createCcByFixture() {
+  const parent = path.resolve(os.tmpdir());
+  const root = fs.mkdtempSync(path.join(parent, "generic-auto-intake-cc-by-"));
+  assert(root.startsWith(`${parent}${path.sep}`), `unexpected temp path: ${root}`);
+  const source = path.join(root, "source-checkout");
+  fs.mkdirSync(path.join(source, "Scripts"), { recursive: true });
+  fs.writeFileSync(
+    path.join(source, "README.md"),
+    [
+      "# CC-BY fixture",
+      "",
+      "All scripts are released under Creative Commons CC-BY 3.0 License.",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  fs.writeFileSync(
+    path.join(source, "Scripts", "By_Author.jsx"),
+    "// Author: Ada Lovelace\nfunction inspectByAuthor() { return true; }\n",
+    "utf8",
+  );
+  fs.writeFileSync(
+    path.join(source, "Scripts", "No_Author.jsx"),
+    "function inspectWithoutAuthor() { return true; }\n",
+    "utf8",
+  );
+  return { root, source };
+}
+
 function readJson(relativePath) {
   return JSON.parse(fs.readFileSync(path.join(repo, relativePath), "utf8"));
 }
@@ -183,5 +212,64 @@ function autoIntakeFixtureSmoke() {
   }
 }
 
+function autoIntakeCcByAttributionSmoke() {
+  const fixture = createCcByFixture();
+  let runtimeRoot = null;
+  try {
+    const result = run([
+      "--repo",
+      fixture.source,
+      "--run-id",
+      "auto-intake-cc-by-smoke",
+      "--context-percent",
+      "5",
+      "--parallel-candidate-limit",
+      "2",
+      "--compact-json",
+    ]);
+    const output = parseJson(result);
+    assertCompactOutputBounded(result.stdout);
+    assert.strictEqual(output.source.license.status, "recognized_permissive");
+    assert.strictEqual(output.source.license.id, "CC-BY-3.0");
+    assert.strictEqual(output.source.license.referenceOnlyDefault, false);
+    assert.strictEqual(output.source.license.attributionRequired, true);
+    assert.strictEqual(output.counts.queuedCandidates, 2);
+    assert.strictEqual(output.counts.referenceOnlyCandidates, 0);
+    assert.strictEqual(output.parallel.selectedCandidateIds.length, 2);
+    assert(output.artifacts.license, "CC-BY intake should emit attribution License artifact");
+
+    runtimeRoot = assertRuntimePathSafe(output.artifacts.runRoot);
+    const inventory = readJson(output.artifacts.inventory);
+    const ledger = readJson(output.artifacts.ledger);
+    const proof = readJson(output.artifacts.proof);
+    const licenseText = fs.readFileSync(path.join(repo, output.artifacts.license), "utf8");
+    const artifactTexts = ["inventory", "ledger", "parallelPlan", "status", "proof", "license"].map((name) =>
+      fs.readFileSync(path.join(repo, output.artifacts[name]), "utf8"),
+    );
+
+    assert.strictEqual(inventory.license.file, "README.md");
+    assert.strictEqual(inventory.license.id, "CC-BY-3.0");
+    assert.strictEqual(inventory.license.attributionRequired, true);
+    assert.strictEqual(ledger.licensePolicy.importAllowed, true);
+    assert.strictEqual(ledger.licensePolicy.attributionRequired, true);
+    assert.strictEqual(ledger.entries.length, 2);
+    assert(ledger.entries.every((entry) => entry.status === "queued"));
+    assert(ledger.entries.every((entry) => entry.license.attributionRequired === true));
+    assert(ledger.entries.every((entry) => entry.implementation.rawJsxCopyAllowed === false));
+    assert.strictEqual(proof.assertions.attributionLicensePresent, true);
+    assert(licenseText.includes("Detected license: CC-BY-3.0"));
+    assert(licenseText.includes("Scripts/By_Author.jsx - Author(s): Ada Lovelace"));
+    assert(licenseText.includes("- Scripts/No_Author.jsx"));
+    assert(!licenseText.includes("No_Author.jsx - Author"));
+    assertNoRawJsxContentInArtifacts(artifactTexts);
+  } finally {
+    if (runtimeRoot && fs.existsSync(runtimeRoot)) {
+      fs.rmSync(runtimeRoot, { recursive: true, force: true });
+    }
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+}
+
 autoIntakeFixtureSmoke();
+autoIntakeCcByAttributionSmoke();
 console.log("sdk-generic-repo-auto-intake-smoke: ok");

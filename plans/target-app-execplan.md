@@ -62,10 +62,11 @@ Historical milestone detail through 2026-05-31 is archived at
   standard candidate proof envelopes keep their existing compact behavior.
 - [x] Controlled ae-scripting GitHub auto-intake plan:
   `https://github.com/ae-scripting/scripting-snippets` produced a bounded
-  `full-intake-ae-scripting-snippets` ledger with 48 JSX entries, all
-  `reference_only` because the source license is missing. Auto-intake produced
-  a plan-only parallel shortlist, read-only subagents audited the artifacts,
-  and the parent Full Intaker plan exposed zero executable queued candidates.
+  `full-intake-ae-scripting-snippets` ledger with 48 JSX entries. The README
+  CC-BY 3.0 statement is now recognized as attribution-required import
+  permission, a separate `License` attribution artifact is generated, and
+  plan-only parallel scheduling exposes two queued ids without running child
+  worktrees or copying raw JSX.
 
 ## Current State
 
@@ -115,29 +116,34 @@ explicit approval.
 - source revision observed by `git ls-remote`: `17bc59a5a158fc6cb49ecb4161018333f7048675`
 - artifact root:
   `.codex-runtime/sdk/generic-repo-importer/ae-scripting-scripting-snippets-55904818-intake`
-- license: `missing`, `referenceOnlyDefault=true`, `importAllowed=false`
+- license: `recognized_permissive`, `id=CC-BY-3.0`,
+  `referenceOnlyDefault=false`, `importAllowed=true`,
+  `attributionRequired=true`, evidence `README.md`
+- attribution artifact:
+  `.codex-runtime/sdk/generic-repo-importer/ae-scripting-scripting-snippets-55904818-intake/License`
 - inventory: 49 interesting files, 48 JSX candidates
-- ledger/status: 48 entries, all `reference_only`, `queued=0`, `importable=0`
+- ledger/status: 48 entries, `queued=23`, `blocked_live_lane_required=22`,
+  `blocked_policy=3`, `reference_only=0`
 - classification buckets: `live_lane_needed=22`,
   `existing_typed_tools_recipe_only=23`, `unsafe_skip_tool_gap=3`
 - auto-intake plan-only shortlist:
-  `tool-batchparent`, `tool-changeallnames`; both remain reference-only and
-  not executable
+  `tool-batchparent`, `tool-changeallnames`; both are queued plan-only ids
 - parent Full Intaker parallel plan:
-  `selectedCandidateIds=[]`, `candidatesExecuted=0`, `childWorktreesCreated=0`,
+  `selectedCandidateIds=[tool-batchparent, tool-changeallnames]`,
+  `candidatesExecuted=0`, `childWorktreesCreated=0`,
   `centralSourceMerge=false`
 - compact proof:
   `mode=parallel_plan_only`, `contractComplete=true`, `changedPathCount=0`,
   `unplannedPathCount=0`, proof sha
-  `a3c86b1eb28b6d8a387bea5902bef35f1b8df26d8aa763fcd330030f7b769a3c`
+  `6d707356cce4fdc2355958e9644364f539f8f3ec13ad5e80deaba9187ce5791d`
 - compact status helper reported `running` with `Processes: 0 related`; treat
   this as stale plan-only state and run a stale-run check before any resume
 
 ## Next Milestone
 
-No queued Full Intaker item remains. The aturtur and ae-scripting ledgers are
-reference-only and have no safe executable scoped candidate ids. Next work
-should not start a broad queue. Choose one bounded follow-up:
+`full-intake-ae-scripting-snippets` now has 23 queued plan-only candidates, but
+no candidate has been executed. Next work should stay bounded and avoid broad
+queue processing. Choose one follow-up:
 
 1. Review Parallel Tool Intake V1 infrastructure before any real broad intake
    longrun; use explicit candidate ids and a bounded
@@ -149,11 +155,10 @@ should not start a broad queue. Choose one bounded follow-up:
    matching candidates.
 4. Continue with strict `max-items 1`, compact output, and an explicit current
    context percent.
-5. For aturtur or ae-scripting only: perform read-only behavior review or
-   create a separate clean-room typed-tool lane from intent, not from copied
-   JSX, after resolving the missing-license/reference-only status. For
-   ae-scripting, the safest first clean-room candidate is likely
-   `tool-changeallnames`; `tool-batchparent` is more semantically fragile.
+5. For ae-scripting, run at most one scoped candidate after reviewing the
+   generated `License` attribution artifact and stale status. The safer first
+   scoped id is likely `tool-changeallnames`; `tool-batchparent` is more
+   semantically fragile.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -204,19 +209,19 @@ outside the runner out of scope.
 - The aturtur source repository is missing a recognized permissive license, so
   all 46 JSX candidates stay `reference_only`. Parent reducer rejected scoped
   execution because the parallel plan exposed no explicit safe candidate ids.
-- The ae-scripting scripting-snippets repository is also missing a recognized
-  permissive license, so all 48 JSX candidates stay `reference_only`.
-  Auto-intake may record a reference-only plan shortlist, but the parent
-  Full Intaker runner must treat scoped execution as no-go unless a separate
-  clean-room lane is approved and explicit safe candidate ids are proven
-  importable without raw JSX copy.
+- The ae-scripting scripting-snippets README contains a CC-BY 3.0 statement.
+  Auto-intake treats it as recognized attribution-required permission:
+  import may proceed only through typed recipe paths, raw JSX copy remains
+  blocked, and every generated run gets a separate `License` text artifact with
+  per-script attribution entries. If a script exposes author metadata, the
+  entry includes `Author(s)`; otherwise it lists the script path only.
 - Subagent audits were read-only only. They confirmed license/reference-only
   fail-closed behavior, coherent ledger/status buckets, hash consistency, and a
   plan-only validation boundary; no child edits or child commits occurred.
-- For ae-scripting, the runRoot auto-intake plan selected two reference-only
-  ids while the parent full-intake parallel plan selected zero executable
-  candidates. This is an expected no-wave reducer outcome, not permission to
-  run those ids through child execution.
+- For ae-scripting, the runRoot auto-intake plan and parent full-intake
+  parallel plan both select `tool-batchparent` and `tool-changeallnames`.
+  This is still plan-only metadata: child execution, worktrees, controlled
+  merge, and live validation remain serial/parent-gated.
 - Plan-only parallel proof envelopes are valid Full Intaker proof artifacts.
   `full-intake-proof.mjs` now falls back from root `proof-envelope.json` to
   `parallel-candidates/parallel-proof-envelope.json` and reports parallel mode
@@ -297,9 +302,22 @@ outside the runner out of scope.
   `node orchestrator/full-intake-ledger-summary.mjs --ledger .codex-runtime/sdk/generic-repo-importer/ae-scripting-scripting-snippets-55904818-intake/queue-ledger.json --compact`;
   `node orchestrator/full-intake-status.mjs --run-id full-intake-ae-scripting-snippets --compact --event-limit 8 --batch-limit 1`;
   `node orchestrator/full-intake-proof.mjs --run-id full-intake-ae-scripting-snippets --compact-json`;
-  read-only subagent audits for license/reference-only, ledger/status/plan
-  consistency, and validation/safety boundary. No scoped wave, child worktree,
-  candidate execution, controlled merge, raw JSX copy, or live validation ran.
+  generated `License` artifact review. The refreshed run reports
+  `CC-BY-3.0`, `queued=23`, selected ids
+  `tool-batchparent, tool-changeallnames`, and proof sha
+  `6d707356cce4fdc2355958e9644364f539f8f3ec13ad5e80deaba9187ce5791d`.
+  No scoped wave, child worktree, candidate execution, controlled merge, raw
+  JSX copy, or live validation ran.
+- CC-BY attribution implementation validation passed:
+  `node --check orchestrator/run-generic-repo-auto-intake.mjs`;
+  `node --check scripts/sdk-generic-repo-auto-intake-smoke.js`;
+  `node scripts/sdk-generic-repo-auto-intake-smoke.js`;
+  `node scripts/sdk-generic-repo-full-intake-smoke.js`;
+  `node scripts/sdk-generic-repo-importer-command-smoke.js`;
+  `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`;
+  `node scripts/solution-library-validation-smoke.js`;
+  `node scripts/solution-registry-smoke.js`;
+  `node scripts/solution-retrieval-smoke.js`.
 - Parallel proof helper fix validation passed:
   `node --check orchestrator/full-intake-proof.mjs`;
   `node --check orchestrator/parallel-candidate-worktrees.mjs`;

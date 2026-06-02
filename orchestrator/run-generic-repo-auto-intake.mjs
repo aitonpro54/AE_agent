@@ -28,6 +28,7 @@ const DEFAULT_MAX_VISITED_FILES = 5000;
 const DEFAULT_MAX_INVENTORY_FILES = 500;
 const DEFAULT_MAX_FILE_BYTES = 2 * 1024 * 1024;
 const MAX_LICENSE_BYTES = 64 * 1024;
+const MAX_AUTHOR_SCAN_BYTES = 16 * 1024;
 
 const SAFE_CLASSIFICATIONS = new Set([
   "existing_typed_tools_recipe_only",
@@ -326,7 +327,103 @@ function readSmallFile(filePath, maxBytes) {
   return buffer.toString("utf8");
 }
 
-function classifyLicense(licenseFiles, sourceRoot) {
+function sortedMarkdownLicenseCandidates(files) {
+  return files
+    .filter((file) => file.category === "markdown")
+    .sort((left, right) => {
+      const leftReadme = /^readme(?:\.[^.]+)?$/i.test(path.basename(left.path)) ? 0 : 1;
+      const rightReadme = /^readme(?:\.[^.]+)?$/i.test(path.basename(right.path)) ? 0 : 1;
+      return leftReadme - rightReadme || left.path.localeCompare(right.path);
+    });
+}
+
+function licenseChecksForText(text) {
+  const normalized = text.toLowerCase();
+  return [
+    {
+      id: "MIT",
+      importAllowed: true,
+      attributionRequired: false,
+      test: () => normalized.includes("mit license") || normalized.includes("permission is hereby granted, free of charge"),
+    },
+    {
+      id: "Apache-2.0",
+      importAllowed: true,
+      attributionRequired: false,
+      test: () => normalized.includes("apache license") && normalized.includes("version 2.0"),
+    },
+    {
+      id: "BSD",
+      importAllowed: true,
+      attributionRequired: false,
+      test: () => normalized.includes("redistribution and use in source and binary forms"),
+    },
+    {
+      id: "ISC",
+      importAllowed: true,
+      attributionRequired: false,
+      test: () => normalized.includes("permission to use, copy, modify, and/or distribute this software"),
+    },
+    {
+      id: "CC-BY-3.0",
+      importAllowed: true,
+      attributionRequired: true,
+      test: () =>
+        /creative commons[\s\S]{0,80}(?:cc[-\s]?by|attribution)[\s\S]{0,40}3\.0/i.test(text) ||
+        /\bcc[-\s]?by\s*3\.0\b/i.test(text),
+    },
+    {
+      id: "MPL",
+      importAllowed: false,
+      attributionRequired: false,
+      test: () => normalized.includes("mozilla public license"),
+    },
+    {
+      id: "GPL-family",
+      importAllowed: false,
+      attributionRequired: false,
+      test: () => normalized.includes("gnu general public license") || normalized.includes("gnu lesser general public license"),
+    },
+  ];
+}
+
+function classifyLicense(files, sourceRoot) {
+  const licenseFiles = files.filter((file) => file.category === "license-like");
+  const markdownFiles = sortedMarkdownLicenseCandidates(files);
+  if (licenseFiles.length === 0 && markdownFiles.length === 0) {
+    return {
+      status: "missing",
+      file: null,
+      id: null,
+      recognized: false,
+      referenceOnlyDefault: true,
+      importAllowed: false,
+      attributionRequired: false,
+      reason: "missing-license",
+    };
+  }
+
+  const evidenceFiles = [...licenseFiles, ...markdownFiles];
+  for (const file of evidenceFiles) {
+    const text = readSmallFile(path.join(sourceRoot, file.path), MAX_LICENSE_BYTES);
+    const match = licenseChecksForText(text).find((entry) => entry.test());
+    if (!match) continue;
+    return {
+      status: match.importAllowed ? "recognized_permissive" : "recognized_reference_only",
+      file: file.path,
+      id: match.id,
+      recognized: true,
+      referenceOnlyDefault: !match.importAllowed,
+      importAllowed: match.importAllowed,
+      attributionRequired: match.attributionRequired,
+      reason: match.attributionRequired
+        ? "recognized-attribution-license"
+        : match.importAllowed
+          ? "recognized-permissive-license"
+          : "recognized-non-permissive-license",
+    };
+  }
+
   if (licenseFiles.length === 0) {
     return {
       status: "missing",
@@ -335,66 +432,52 @@ function classifyLicense(licenseFiles, sourceRoot) {
       recognized: false,
       referenceOnlyDefault: true,
       importAllowed: false,
+      attributionRequired: false,
       reason: "missing-license",
     };
   }
 
-  const first = licenseFiles[0];
-  const text = readSmallFile(path.join(sourceRoot, first.path), MAX_LICENSE_BYTES);
-  const normalized = text.toLowerCase();
-  const checks = [
-    {
-      id: "MIT",
-      permissive: true,
-      test: () => normalized.includes("mit license") || normalized.includes("permission is hereby granted, free of charge"),
-    },
-    {
-      id: "Apache-2.0",
-      permissive: true,
-      test: () => normalized.includes("apache license") && normalized.includes("version 2.0"),
-    },
-    {
-      id: "BSD",
-      permissive: true,
-      test: () => normalized.includes("redistribution and use in source and binary forms"),
-    },
-    {
-      id: "ISC",
-      permissive: true,
-      test: () => normalized.includes("permission to use, copy, modify, and/or distribute this software"),
-    },
-    {
-      id: "MPL",
-      permissive: false,
-      test: () => normalized.includes("mozilla public license"),
-    },
-    {
-      id: "GPL-family",
-      permissive: false,
-      test: () => normalized.includes("gnu general public license") || normalized.includes("gnu lesser general public license"),
-    },
-  ];
-  const match = checks.find((entry) => entry.test());
-  if (!match) {
-    return {
-      status: "unrecognized",
-      file: first.path,
-      id: null,
-      recognized: false,
-      referenceOnlyDefault: true,
-      importAllowed: false,
-      reason: "unrecognized-license",
-    };
-  }
   return {
-    status: match.permissive ? "recognized_permissive" : "recognized_reference_only",
-    file: first.path,
-    id: match.id,
-    recognized: true,
-    referenceOnlyDefault: !match.permissive,
-    importAllowed: match.permissive,
-    reason: match.permissive ? "recognized-permissive-license" : "recognized-non-permissive-license",
+    status: "unrecognized",
+    file: licenseFiles[0].path,
+    id: null,
+    recognized: false,
+    referenceOnlyDefault: true,
+    importAllowed: false,
+    attributionRequired: false,
+    reason: "unrecognized-license",
   };
+}
+
+function sanitizeAuthor(value) {
+  const cleaned = String(value || "")
+    .replace(/\s+/g, " ")
+    .replace(/\s*\*\/\s*$/g, "")
+    .replace(/^[\s:=-]+|[\s;,.]+$/g, "")
+    .replace(/\b(?:all rights reserved|license|licensed under)\b.*$/i, "")
+    .trim();
+  if (!cleaned || cleaned.length > 160) return null;
+  if (/[{};]/.test(cleaned)) return null;
+  return cleaned;
+}
+
+function authorsForSource(text) {
+  const authors = new Set();
+  const lines = String(text || "")
+    .slice(0, MAX_AUTHOR_SCAN_BYTES)
+    .split(/\r?\n/);
+  for (const line of lines) {
+    const cleaned = line
+      .replace(/^\s*(?:\/\/|\/\*+|\*\/?|\*)\s?/g, "")
+      .trim();
+    const match = cleaned.match(
+      /^(?:@author|authors?|written by|created by|made by|copyright(?:\s*(?:\(c\)|\u00a9))?)\s*[:=-]?\s*(.+)$/i,
+    );
+    if (!match) continue;
+    const author = sanitizeAuthor(match[1].replace(/^\d{4}(?:-\d{4})?\s+/, ""));
+    if (author) authors.add(author);
+  }
+  return Array.from(authors);
 }
 
 function collectInventory(sourceRoot, options) {
@@ -453,8 +536,7 @@ function collectInventory(sourceRoot, options) {
     }
   }
 
-  const licenseFiles = files.filter((file) => file.category === "license-like");
-  const license = classifyLicense(licenseFiles, sourceRoot);
+  const license = classifyLicense(files, sourceRoot);
   const counts = files.reduce(
     (accumulator, file) => {
       accumulator[file.category] = (accumulator[file.category] || 0) + 1;
@@ -536,6 +618,7 @@ function buildEntries({ inventory, sourceRoot }) {
     .map((file) => {
       const text = sourceTextForRisk(sourceRoot, file.path, inventory.limits.maxFileBytes);
       const riskFlags = riskFlagsForSource(text);
+      const authors = authorsForSource(text);
       const classification = classifyCandidate(riskFlags);
       const safeClassification = SAFE_CLASSIFICATIONS.has(classification);
       const referenceOnly = inventory.license.referenceOnlyDefault === true;
@@ -572,7 +655,13 @@ function buildEntries({ inventory, sourceRoot }) {
           recognized: inventory.license.recognized,
           referenceOnly,
           importAllowed: !referenceOnly,
+          attributionRequired: inventory.license.attributionRequired === true,
           rawJsxCopyAllowed: false,
+        },
+        attribution: {
+          sourcePath: file.path,
+          authors,
+          creditLine: authors.length > 0 ? `${file.path} - Author(s): ${authors.join("; ")}` : file.path,
         },
         referenceOnly,
         riskFlags,
@@ -621,6 +710,7 @@ function buildLedger({ cwd, entries, identity, inventory, runId, sourceCheckout 
       licenseFile: inventory.license.file,
       licenseStatus: inventory.license.status,
       referenceOnlyDefault: inventory.license.referenceOnlyDefault,
+      attributionRequired: inventory.license.attributionRequired === true,
     },
     target: {
       repoPath: normalizeRepoPath(cwd),
@@ -657,6 +747,7 @@ function buildLedger({ cwd, entries, identity, inventory, runId, sourceCheckout 
       referenceOnlyDefault: inventory.license.referenceOnlyDefault,
       rawJsxCopyAllowed: false,
       importAllowed: inventory.license.importAllowed,
+      attributionRequired: inventory.license.attributionRequired === true,
       status: inventory.license.status,
       id: inventory.license.id,
       file: inventory.license.file,
@@ -744,6 +835,24 @@ function writeJson(filePath, value) {
   writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
+function buildAttributionLicenseText({ entries, identity, inventory }) {
+  const lines = [
+    "License",
+    "",
+    `Source: ${identity.normalizedRepo}`,
+    `Detected license: ${inventory.license.id || inventory.license.status}`,
+    `License evidence: ${inventory.license.file || "none"}`,
+    `Attribution required: ${inventory.license.attributionRequired === true ? "yes" : "no"}`,
+    "",
+    "Attribution entries:",
+  ];
+  for (const entry of entries.slice().sort((left, right) => left.sourcePath.localeCompare(right.sourcePath))) {
+    lines.push(`- ${entry.attribution.creditLine}`);
+  }
+  lines.push("");
+  return lines.join("\n");
+}
+
 function artifactRef(cwd, filePath) {
   return {
     path: relativeTo(cwd, filePath),
@@ -769,6 +878,7 @@ function buildStatus({ artifacts, entries, inventory, limit, runId, selected, sl
       status: inventory.license.status,
       id: inventory.license.id,
       referenceOnlyDefault: inventory.license.referenceOnlyDefault,
+      attributionRequired: inventory.license.attributionRequired === true,
     },
     parallel: {
       mode: "plan_only",
@@ -786,6 +896,7 @@ function buildStatus({ artifacts, entries, inventory, limit, runId, selected, sl
 
 function buildProof({ artifacts, candidateLimit, entries, inventory, parallelPlan, runId, slug }) {
   const missingOrUnrecognized = inventory.license.status === "missing" || inventory.license.status === "unrecognized";
+  const attributionRequired = inventory.license.attributionRequired === true;
   return {
     schema: PROOF_SCHEMA,
     runId,
@@ -802,6 +913,7 @@ function buildProof({ artifacts, candidateLimit, entries, inventory, parallelPla
       noDependencyChanges: true,
       noPushPr: true,
       rawJsxCopyBlocked: entries.every((entry) => entry.implementation.rawJsxCopyAllowed === false),
+      attributionLicensePresent: attributionRequired ? Boolean(artifacts.license?.path) : true,
       noCandidateExecution: parallelPlan.execution.candidatesExecuted === 0,
       noChildWorktrees: parallelPlan.execution.childWorktreesCreated === 0,
       noCentralSourceMerge: parallelPlan.execution.centralSourceMerge === false,
@@ -826,6 +938,7 @@ function writeRuntimeHandoff({ artifacts, entries, inventory, runId, slug }) {
     `- parallelPlan: ${artifacts.parallelPlan.path}`,
     `- status: ${artifacts.status.path}`,
     `- proof: ${artifacts.proof.path}`,
+    ...(artifacts.license ? [`- License: ${artifacts.license.path}`] : []),
     "",
     "decisions:",
     `- licenseStatus=${inventory.license.status}; referenceOnlyDefault=${inventory.license.referenceOnlyDefault}.`,
@@ -851,6 +964,7 @@ function compactOutput({ artifacts, entries, identity, inventory, limit, runId, 
         status: inventory.license.status,
         id: inventory.license.id,
         referenceOnlyDefault: inventory.license.referenceOnlyDefault,
+        attributionRequired: inventory.license.attributionRequired === true,
       },
     },
     counts: {
@@ -938,11 +1052,17 @@ export async function runAutoIntake(options, cwd = process.cwd()) {
   const parallelPlanPath = path.join(runRoot, "parallel-candidates", "parallel-plan.json");
   writeJson(parallelPlanPath, parallelPlan);
 
+  const licensePath = inventory.license.recognized && entries.length > 0 ? path.join(runRoot, "License") : null;
+  if (licensePath) {
+    writeFileSync(licensePath, buildAttributionLicenseText({ entries, identity, inventory }), "utf8");
+  }
+
   const artifactBase = {
     runRoot: { path: relativeTo(cwd, runRoot), sha256: null },
     inventory: artifactRef(cwd, inventoryPath),
     ledger: artifactRef(cwd, ledgerPath),
     parallelPlan: artifactRef(cwd, parallelPlanPath),
+    ...(licensePath ? { license: artifactRef(cwd, licensePath) } : {}),
   };
   const statusPath = path.join(runRoot, "status.json");
   const status = buildStatus({
