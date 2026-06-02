@@ -4886,6 +4886,127 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "select-shape-layers-typed-plan",
+      "title": "Select Shape Layers Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "selection",
+        "layers",
+        "shape-layers",
+        "shapeLayer",
+        "vector-layer",
+        "selected-layers",
+        "set-selection",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Select all shape layers in the active composition by deriving explicit layer indices from current typed shape-layer evidence, using set_layer_selection, and reading selected layers back.",
+        "appliesWhen": [
+          "The user asks to select shape layers in the active composition.",
+          "The active comp layer inventory exposes shape-layer state that can be converted into concrete layerIndices before selection mutation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "shapeLayerIndices",
+          "type": "array",
+          "required": true,
+          "description": "Computed one-based layer indices whose current typed layer inventory evidence reports shapeLayer:true, layerKind:\"shape\", type:\"shape\", or equivalent shape-layer state."
+        },
+        {
+          "name": "expectedNames",
+          "type": "array",
+          "required": false,
+          "description": "Optional shape layer names paired with shapeLayerIndices for post-selection read-back."
+        },
+        {
+          "name": "shapeLayerEvidence",
+          "type": "array",
+          "required": true,
+          "description": "Current layer inventory fields proving each selected target is a shape layer before mutation."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists before selection state is changed.",
+        "Shape layer targets are derived only from current get_comp_details layer inventory shapeLayer:true, layerKind:\"shape\", type:\"shape\", or equivalent shape-layer evidence.",
+        "The safe adaptation changes only active-comp layer selection state, not shape contents, layer type, layer names, timing, sources, effects, keyframes, masks, project items or render queue items.",
+        "Shape-layer discovery without typed evidence, shape content inspection, shape layer creation/conversion, fuzzy name matching, cross-comp selection, project-panel selection and exact native UI side effects remain typed-tool gaps unless a separate contract proves them."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/select-shape-layers-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "set_layer_selection",
+          "get_selected_layers"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and layer inventory, compute shapeLayerIndices from typed shape-layer evidence, set replacement selection, then read selected shape layers back.",
+        "steps": [
+          "Run get_active_comp before mutation to capture active comp identity.",
+          "Run get_comp_details with includeLayers:true and a sufficient layerLimit before computing shape-layer targets.",
+          "Compute shapeLayerIndices only from layers whose current typed inventory reports shapeLayer:true, layerKind:\"shape\", type:\"shape\", or equivalent shape-layer state.",
+          "Fail closed when layer inventory is truncated, shape-layer state is absent, no shape layers are found, or the request depends on shape contents or unsupported UI-only state.",
+          "Run set_layer_selection with computed shapeLayerIndices, optional expectedNames, replacement selection semantics, verifyAfter:true and a stable idempotency key.",
+          "Run get_selected_layers after mutation and compare selected count, selected layer indices and names with the computed shape-layer set."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_comp_details identifies every accepted shape layer index, optional expected name and typed shapeLayer:true or equivalent shape-layer evidence.",
+          "Dry-run evidence lists shapeLayerIndices, expected names when available and the layer inventory field proving each layer is a shape layer.",
+          "set_layer_selection result reports the computed shape layerIndices and replacement selection semantics.",
+          "Post-run get_selected_layers shows exactly the expected shape-layer count, selected layer indices and expected names.",
+          "Skipped, empty, truncated or ambiguous shape-layer discovery is reported as a typed-tool gap or no-op decision instead of approximate selection.",
+          "Post-run evidence shows no shape-layer creation/conversion, shape content edit, layer order change, layer rename, timing/source/effect/keyframe/mask/project item/render queue mutation or cross-comp selection."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-selection-select-shape-layers generic repository importer as advisory typed-plan coverage for shape active-comp layer selection.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea using existing active-comp inspection, get_comp_details layer inventory, set_layer_selection and get_selected_layers read-back; parent importer owns validation plus any generated-only live acceptance."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-02",
+          "from": "generic-repo-importer-tool-selection-select-shape-layers",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Select_Shape_Layers.jsx into existing typed tools as shape layer selection through get_comp_details shapeLayer:true, layerKind:\"shape\", type:\"shape\", or equivalent shape-layer evidence, computed shapeLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. The source JSX was not present in this detached child-run worktree, so shape-layer discovery without typed layer evidence, shape content inspection, shape layer creation/conversion, fuzzy matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current get_comp_details layer inventory with shapeLayer:true, layerKind:\"shape\", type:\"shape\", or equivalent shape-layer evidence before computing shapeLayerIndices.",
+        "Use replacement selection semantics and select shape layers only; selecting text, solids, nulls, cameras, lights, guide, disabled, random or label-based layers requires a separate typed-tool contract.",
+        "Do not create shape layers, edit vector contents, convert layer types, or select shape groups/properties; this recipe changes only active-comp selection state.",
+        "Require get_selected_layers read-back after mutation to prove selected shape-layer count, shape layer indices and expected names.",
+        "Do not infer shape layers from names, source names, screenshots, previous chat context, label color, shy/solo/lock state or approximate UI assumptions.",
+        "Require a separate typed-tool contract for source-exact native shape-layer semantics, shape content inspection, shape layer creation/conversion, cross-comp selection, Project panel selection or exact native UI side effects.",
+        "Do not use this recipe for shape creation/conversion, shape content edits, layer duplication, deletion, renaming, timing edits, marker edits, effect edits, source relinking, keyframe edits, render queue changes, project item selection or broad timeline cleanup."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "center-composition-typed-plan",
       "title": "Center Composition Typed Plan",
       "status": "recipe",
