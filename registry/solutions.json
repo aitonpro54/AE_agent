@@ -4510,6 +4510,127 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "select-non-null-layers-typed-plan",
+      "title": "Select Non Null Layers Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "selection",
+        "layers",
+        "non-null-layers",
+        "nullLayer",
+        "not-null",
+        "selected-layers",
+        "set-selection",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Select all non-null active-comp layers by deriving explicit layer indices from current typed nullLayer:false evidence, using set_layer_selection, and reading selected layers back.",
+        "appliesWhen": [
+          "The user asks to select non-null layers, all layers except null layers, or layers currently reporting nullLayer:false.",
+          "The active comp layer inventory exposes null/non-null state that can be converted into concrete layerIndices before selection mutation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "nonNullLayerIndices",
+          "type": "array",
+          "required": true,
+          "description": "Computed one-based layer indices whose current typed layer inventory evidence reports nullLayer:false, isNull:false, or equivalent non-null state."
+        },
+        {
+          "name": "expectedNames",
+          "type": "array",
+          "required": false,
+          "description": "Optional non-null layer names paired with nonNullLayerIndices for post-selection read-back."
+        },
+        {
+          "name": "nullStateEvidence",
+          "type": "array",
+          "required": true,
+          "description": "Current layer inventory fields proving each selected target is not a null layer before mutation."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists before selection state is changed.",
+        "Non-null layer targets are derived only from current get_comp_details layer inventory nullLayer:false, isNull:false, or equivalent non-null evidence.",
+        "The safe adaptation changes only active-comp layer selection state, not null-layer status, layer names, timing, sources, effects, keyframes, masks, project items or render queue items.",
+        "Null-state discovery without typed evidence, null-layer creation/conversion/deletion, fuzzy name/type matching, cross-comp selection, project-panel selection and exact native UI side effects remain typed-tool gaps unless a separate contract proves them."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/select-non-null-layers-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "set_layer_selection",
+          "get_selected_layers"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and layer inventory, compute nonNullLayerIndices from typed null-state evidence, set replacement selection, then read selected non-null layers back.",
+        "steps": [
+          "Run get_active_comp before mutation to capture active comp identity.",
+          "Run get_comp_details with includeLayers:true and a sufficient layerLimit before computing non-null targets.",
+          "Compute nonNullLayerIndices only from layers whose current typed inventory reports nullLayer:false, isNull:false, or equivalent non-null state.",
+          "Fail closed when layer inventory is truncated, null/non-null state is absent, no non-null layers are found, or the request depends on unsupported UI-only state.",
+          "Run set_layer_selection with computed nonNullLayerIndices, optional expectedNames, replacement selection semantics, verifyAfter:true and a stable idempotency key.",
+          "Run get_selected_layers after mutation and compare selected count, selected layer indices and names with the computed non-null layer set."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_comp_details identifies every accepted non-null layer index, optional expected name and typed nullLayer:false or equivalent non-null evidence.",
+          "Dry-run evidence lists nonNullLayerIndices, expected names when available and the layer inventory field proving each layer is not a null layer.",
+          "set_layer_selection result reports the computed non-null layerIndices and replacement selection semantics.",
+          "Post-run get_selected_layers shows exactly the expected non-null layer count, selected layer indices and expected names.",
+          "Skipped, empty, truncated or ambiguous non-null discovery is reported as a typed-tool gap or no-op decision instead of approximate selection.",
+          "Post-run evidence shows no null-layer creation/conversion/deletion, layer order change, layer rename, timing/source/effect/keyframe/mask/project item/render queue mutation or cross-comp selection."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-selection-select-non-null-layers generic repository importer as advisory typed-plan coverage for non-null active-comp layer selection.",
+          "This detached child-run patch adapts only the candidate idea using existing active-comp inspection, get_comp_details layer inventory, set_layer_selection and get_selected_layers read-back; parent importer owns validation plus any generated-only live acceptance."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-02",
+          "from": "generic-repo-importer-tool-selection-select-non-null-layers",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Select_Non-Null_Layers.jsx into existing typed tools as non-null layer selection through get_comp_details nullLayer:false, isNull:false, or equivalent non-null evidence, computed nonNullLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. Null-state discovery without typed layer evidence, null-layer creation/conversion/deletion, fuzzy name/type matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current get_comp_details layer inventory with nullLayer:false, isNull:false, or equivalent non-null evidence before computing nonNullLayerIndices.",
+        "Use replacement selection semantics and select non-null layers only; selecting null, guide, disabled, type-based, parent-group, random or label-based layers requires a separate typed-tool contract.",
+        "Do not create, delete, convert, rename or otherwise mutate null layers; this recipe changes only active-comp selection state.",
+        "Require get_selected_layers read-back after mutation to prove selected non-null count, non-null layer indices and expected names.",
+        "Do not infer non-null layers from names, source names, screenshots, previous chat context, source type strings, label color, shy/solo/lock state or approximate UI assumptions.",
+        "Require a separate typed-tool contract for source-exact native null-layer semantics, null-layer creation/conversion/deletion, cross-comp selection, Project panel selection or exact native UI side effects.",
+        "Do not use this recipe for layer duplication, deletion, renaming, timing edits, marker edits, effect edits, source relinking, keyframe edits, render queue changes, project item selection or broad timeline cleanup."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "center-composition-typed-plan",
       "title": "Center Composition Typed Plan",
       "status": "recipe",

@@ -30,6 +30,8 @@ Codex App dev-request handoff for repository work.
 
 ## Progress
 
+- [x] Full intake tool-selection-select-non-null-layers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-selection-select-non-null-layers); live gate ready, importer batch full-intake-kyletmartinez-a118acc0e4-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-selection-select-layers-below-label: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-selection-select-layers-below-label); live gate ready, importer batch full-intake-kyletmartinez-e5ce7e11d7-import, commit recorded after candidate commit.
 
 - [x] Historical milestones 1-30: archived/summarized baseline, provider work,
@@ -48,6 +50,11 @@ Codex App dev-request handoff for repository work.
   `tool-selection-select-layers-below-label` in the importer-owned detached
   worktree only. No source merge, commit, validation run, live AE/CEP lane, or
   provider call was performed by design.
+- [x] AUX-021 detached importer child-run batch
+  `queue-batch-1-b3f28610bc`: drafted advisory typed-plan import for
+  `tool-selection-select-non-null-layers` in the importer-owned detached
+  worktree only. No source merge, commit, validation run, live AE/CEP lane, or
+  provider call was performed by design.
 
 ## Current State
 
@@ -62,6 +69,14 @@ Detached child-run note: `queue-batch-1-2c946048a6` now contains the
 `select-layers-below-label-typed-plan` advisory recipe, registry entry, and
 solution-library smoke expectations. The parent importer still owns source-merge
 application, validation, proof capture, and any live/generated-only acceptance.
+Detached child-run note: `queue-batch-1-b3f28610bc` now contains the
+`select-non-null-layers-typed-plan` advisory recipe, registry entry, and
+solution-library smoke expectations. The parent importer still owns source-merge
+application, validation, proof capture, and any live/generated-only acceptance.
+`.codex/handoff.md` creation for this detached child-run was attempted but
+blocked by workspace write policy (`apply_patch` rejected the hidden path and
+PowerShell returned AccessDenied), so this active-plan note is the durable
+handoff substitute for the batch.
 
 ## Next Milestone
 
@@ -80,6 +95,8 @@ push/PR, old longrun flows, source merge outside the runner, full runtime
 reports, and `max-items > 1` out of scope.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `Selection/Select_Non-Null_Layers.jsx` as `tool-selection-select-non-null-layers`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-selection-select-non-null-layers).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Selection/Select_Layers_Below_Label.jsx` as `tool-selection-select-layers-below-label`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-selection-select-layers-below-label).
 
@@ -108,8 +125,17 @@ reports, and `max-items > 1` out of scope.
   read-back. Source-exact label-color scanning, label mutation, fuzzy matching,
   cross-comp/Project panel selection, selecting layers above the anchor, and
   native UI side effects require a separate typed-tool contract.
+- AUX-021 child-run adapted `Select_Non-Null_Layers` as fail-closed Selection
+  advisory guidance. The recipe requires current active-comp layer inventory
+  with `nullLayer:false`, `isNull:false`, or equivalent typed non-null evidence,
+  computed `nonNullLayerIndices`, replacement `set_layer_selection`, and
+  `get_selected_layers` read-back. Null-layer creation/conversion/deletion,
+  fuzzy name/type matching, cross-comp/Project panel selection, and exact native
+  UI/source semantics require a separate typed-tool contract.
 
 ## Validation
+
+| Full intake tool-selection-select-non-null-layers | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-a118acc0e4-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-selection-select-layers-below-label | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-e5ce7e11d7-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
@@ -140,6 +166,14 @@ reports, and `max-items > 1` out of scope.
   `git diff --check`, `node scripts/solution-registry-smoke.js`, and
   `node scripts/solution-library-validation-smoke.js`, plus the normal strict
   importer proof/acceptance lane if selected by the parent runner.
+- AUX-021 child-run `queue-batch-1-b3f28610bc`: no validation commands were run
+  by explicit child-run boundary. Planned validation after parent merge/review:
+  `node --check scripts/solution-library-validation-smoke.js`,
+  `git diff --check`, `node scripts/solution-registry-smoke.js`, and
+  `node scripts/solution-library-validation-smoke.js`, plus the normal strict
+  importer proof/acceptance lane if selected by the parent runner. Handoff file
+  creation was blocked by workspace write policy; use the `queue-batch-1-b3f28610bc`
+  active-plan notes for continuation.
 
 ## Handoff
 
