@@ -52,6 +52,8 @@ const DEFAULT_PARALLEL_LIMIT = 2;
 const DEFAULT_CHILD_PROCESS_TIMEOUT_MS = 30 * 60 * 1000;
 const PROCESS_TAIL_MAX_CHARS = 4096;
 const TEXT_FILE_MAX_BYTES = 256 * 1024;
+const SMOKE_COMPARE_MAX_BYTES = 1024 * 1024;
+const SMOKE_APPEND_MAX_BYTES = 64 * 1024;
 
 export function parallelCandidateWorktreeModeEnabled(options = {}) {
   return options.parallelCandidateWorktrees === true || options.planParallelCandidateWorktrees === true;
@@ -578,6 +580,17 @@ function readTextFileIfSmall(filePath, label) {
   return readFileSync(filePath, "utf8");
 }
 
+function readSmokeTextForAppendCompare(filePath, label) {
+  if (!existsSync(filePath) || !statSync(filePath).isFile()) {
+    return null;
+  }
+  const size = statSync(filePath).size;
+  if (size > SMOKE_COMPARE_MAX_BYTES) {
+    throw new Error(`${label}-too-large:${size}`);
+  }
+  return readFileSync(filePath, "utf8");
+}
+
 function readJsonIfExists(filePath, label) {
   if (!existsSync(filePath) || !statSync(filePath).isFile()) {
     return null;
@@ -598,17 +611,27 @@ function registrySolutionsAddedByChild({ targetRepo, worktreePath }) {
 
 function smokeEntryAddedByChild({ candidate, targetRepo, worktreePath }) {
   const repoPath = "scripts/solution-library-validation-smoke.js";
-  const baseText = readTextFileIfSmall(path.join(targetRepo, repoPath), "parallel-base-smoke") || "";
-  const childText = readTextFileIfSmall(path.join(worktreePath, repoPath), "parallel-child-smoke");
+  const baseText = readSmokeTextForAppendCompare(path.join(targetRepo, repoPath), "parallel-base-smoke") || "";
+  const childText = readSmokeTextForAppendCompare(path.join(worktreePath, repoPath), "parallel-child-smoke");
   if (childText === null || childText === baseText) {
     return null;
   }
-  if (!childText.startsWith(baseText)) {
-    return null;
+  let appendText = null;
+  if (childText.startsWith(baseText)) {
+    appendText = childText.slice(baseText.length);
+  } else {
+    const normalizedBase = baseText.replace(/\r\n/g, "\n");
+    const normalizedChild = childText.replace(/\r\n/g, "\n");
+    if (!normalizedChild.startsWith(normalizedBase)) {
+      return null;
+    }
+    appendText = normalizedChild.slice(normalizedBase.length);
   }
-  const appendText = childText.slice(baseText.length);
   if (!appendText.trim()) {
     return null;
+  }
+  if (Buffer.byteLength(appendText, "utf8") > SMOKE_APPEND_MAX_BYTES) {
+    throw new Error(`parallel-child-smoke-append-too-large:${Buffer.byteLength(appendText, "utf8")}`);
   }
   return {
     id: `${safeId(candidate.id)}-child-smoke`,

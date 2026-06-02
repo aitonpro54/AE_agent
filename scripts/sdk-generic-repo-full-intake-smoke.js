@@ -201,6 +201,16 @@ function commitLongCheckoutPath(fixture) {
   fixture.head = sh(fixture.target, ["git", "rev-parse", "HEAD"]);
 }
 
+function commitLargeSolutionSmoke(fixture) {
+  const smokePath = path.join(fixture.target, "scripts", "solution-library-validation-smoke.js");
+  fs.mkdirSync(path.dirname(smokePath), { recursive: true });
+  const base = fs.existsSync(smokePath) ? fs.readFileSync(smokePath, "utf8") : '"use strict";\n';
+  fs.writeFileSync(smokePath, `${base}\n// large smoke fixture\n${"L".repeat(300 * 1024)}\n`, "utf8");
+  sh(fixture.target, ["git", "add", "scripts/solution-library-validation-smoke.js"]);
+  sh(fixture.target, ["git", "commit", "-m", "fixture large solution smoke"]);
+  fixture.head = sh(fixture.target, ["git", "rev-parse", "HEAD"]);
+}
+
 function findFiles(root, predicate) {
   if (!fs.existsSync(root)) {
     return [];
@@ -273,6 +283,10 @@ function writeFakeCodex(root) {
       '  const absolute = path.join(cwd, relative);',
       '  fs.mkdirSync(path.dirname(absolute), { recursive: true });',
       '  fs.writeFileSync(absolute, `// fake full-intake import\\nmodule.exports = ${JSON.stringify(relative)};\\n`, "utf8");',
+      '  if (process.env.FAKE_CODEX_APPEND_SMOKE === "1") {',
+      '    const smokePath = path.join(cwd, "scripts", "solution-library-validation-smoke.js");',
+      '    fs.appendFileSync(smokePath, `\\n// fake child smoke append ${relative.replace(/[^a-zA-Z0-9_-]+/g, "-")}\\n`, "utf8");',
+      '  }',
       '  if (process.env.FAKE_CODEX_HUGE_STDOUT === "1") {',
       '    console.log("H".repeat(512 * 1024));',
       '    console.error("E".repeat(256 * 1024));',
@@ -989,6 +1003,7 @@ function assertParallelChildExecutionProducesAcceptedFileProposals() {
   const fixture = createFixture("pce");
   try {
     commitLongCheckoutPath(fixture);
+    commitLargeSolutionSmoke(fixture);
     const binDir = writeFakeCodex(fixture.root);
     const first = entry({
       classification: "existing_typed_tools_recipe_only",
@@ -1016,7 +1031,7 @@ function assertParallelChildExecutionProducesAcceptedFileProposals() {
       registryPath,
       "pce",
       1,
-      { ...fakeCodexEnv(binDir), FAKE_CODEX_HUGE_STDOUT: "1" },
+      { ...fakeCodexEnv(binDir), FAKE_CODEX_APPEND_SMOKE: "1", FAKE_CODEX_HUGE_STDOUT: "1" },
       ["--parallel-candidate-worktrees", "--parallel-candidate-limit", "2"]
     );
     assert(result.stdout.length < 64 * 1024, `parallel child output should stay compact, got ${result.stdout.length}`);
@@ -1038,6 +1053,7 @@ function assertParallelChildExecutionProducesAcceptedFileProposals() {
       assert.strictEqual(proposal.importStatus, "imported_non_live_validated");
       assert.strictEqual(proposal.liveRerunRequired, false);
       assert(proposal.structuredChanges.fileChangePaths.length === 1, "expected one file snapshot per child proposal");
+      assert(proposal.structuredChanges.smokeEntryIds.length === 1, "expected one structured smoke append per child proposal");
       assert.strictEqual(fs.existsSync(proposal.worktreePath), false, "child worktree should be removed after reducer");
       const proofPath = path.join(fixture.target, proposal.proofPaths[0]);
       const proof = JSON.parse(fs.readFileSync(proofPath, "utf8"));
@@ -1046,6 +1062,9 @@ function assertParallelChildExecutionProducesAcceptedFileProposals() {
     }
     const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
     assert(ledger.entries.every((item) => item.status === "completed"));
+    const smokeText = fs.readFileSync(path.join(fixture.target, "scripts", "solution-library-validation-smoke.js"), "utf8");
+    assert(smokeText.includes("fake child smoke append scripts-imported-tools-parallel-child-alpha-js"));
+    assert(smokeText.includes("fake child smoke append scripts-imported-tools-parallel-child-beta-js"));
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);
