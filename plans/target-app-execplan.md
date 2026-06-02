@@ -30,6 +30,8 @@ Codex App dev-request handoff for repository work.
 
 ## Progress
 
+- [x] Full intake tool-selection-select-guide-layers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-selection-select-guide-layers); live gate ready, importer batch full-intake-kyletmartinez-c4fe4ae12d-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-selection-select-disabled-layers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-selection-select-disabled-layers); live gate ready, importer batch full-intake-kyletmartinez-3679a3de35-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-properties-separate-size-dimensions: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-separate-size-dimensions); live gate ready, importer batch full-intake-kyletmartinez-854882faa1-import, commit recorded after candidate commit.
@@ -174,12 +176,23 @@ Codex App dev-request handoff for repository work.
   discovery without typed evidence, enabled-state toggling, shy/solo/locked/
   hidden-state selection, fuzzy matching, cross-comp or Project panel selection,
   layer edits, and exact native UI/source semantics remain fail-closed gaps.
+- [x] Milestone 32: AUX-021 detached importer child-run for
+  `tool-selection-select-guide-layers`. Added advisory recipe/registry/
+  retrieval-smoke metadata for guide active-comp layer selection through existing
+  typed tools: `get_active_comp`, `get_comp_details` layer inventory,
+  `set_layer_selection`, and `get_selected_layers` read-back. The recipe selects
+  guide layers only when current inventory exposes `guideLayer:true` or
+  equivalent typed guide-layer evidence. No source JSX was copied; the source
+  JSX was not present in this detached child-run worktree. Native guide records,
+  `guideLayer` flag mutation, generated guide overlay selection by name,
+  guide creation/removal, cross-comp or Project panel selection, layer edits,
+  and exact native UI/source semantics remain fail-closed gaps.
 
 ## Current State
 
 `tool-keyframes-set-spacial-in-tanget` is complete in the parent strict runner.
 The current detached AUX-021 child-run added planned advisory files for
-`tool-selection-select-disabled-layers` only and did not run validation or commit
+`tool-selection-select-guide-layers` only and did not run validation or commit
 by design. Branch `road-map-2.0` is ahead of `ae-agent/road-map-2.0`; do not
 push without explicit approval.
 
@@ -194,6 +207,8 @@ CEP smoke, dependency changes, push/PR, old longrun flows, source merge outside
 the runner, full runtime reports, and `max-items > 1` out of scope.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `Selection/Select_Guide_Layers.jsx` as `tool-selection-select-guide-layers`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-selection-select-guide-layers).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Selection/Select_Disabled_Layers.jsx` as `tool-selection-select-disabled-layers`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-selection-select-disabled-layers).
 
@@ -333,8 +348,21 @@ the runner, full runtime reports, and `max-items > 1` out of scope.
   hidden-state selection, fuzzy matching, cross-comp or Project panel selection,
   layer edits, and exact source/native UI semantics remain separate typed-tool
   contracts.
+- AUX-021 adapted `Selection/Select_Guide_Layers.jsx` as advisory typed-plan
+  guidance only. Scope was derived from the child-run wrapper, candidate name,
+  existing active-comp/layer-inventory and `set_layer_selection` typed tools.
+  The recipe selects guide layers only when current `get_comp_details` evidence
+  exposes `guideLayer:true` or equivalent typed guide-layer state, then verifies
+  the replacement selection with `get_selected_layers`. The source JSX was not
+  present in this detached child-run worktree, and no source JSX was copied.
+  Native guide records, `guideLayer` flag mutation, generated guide overlay
+  selection by name, guide creation/removal, fuzzy matching, cross-comp or
+  Project panel selection, layer edits, and exact source/native UI semantics
+  remain separate typed-tool contracts.
 
 ## Validation
+
+| Full intake tool-selection-select-guide-layers | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-c4fe4ae12d-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-selection-select-disabled-layers | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-3679a3de35-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
@@ -424,6 +452,15 @@ raw JSX copy, source merge outside the runner, or `max-items > 1` was used.
   sandbox user, so this plan entry records the handoff state. Parent importer
   owns JSON/script checks, non-live validation, controlled merge, and any
   generated-only live rerun after this detached worktree is reviewed.
+- [x] Milestone 32 validation status: validation was not run by design in this
+  detached child-run because the batch explicitly forbade validation runs,
+  live AE/CEP/CDP/OpenAI CLI planner lanes, commits, source merges, dependency
+  changes, push, PR, GitHub automation, Local/Ollama, fallback providers, and
+  web search. The child changed planned recipe/registry/smoke/plan paths only.
+  The planned `.codex/handoff.md` write was blocked by filesystem ACL denial
+  for the sandbox user, so this plan entry records the handoff state. Parent
+  importer owns JSON/script checks, non-live validation, controlled merge, and
+  any generated-only live rerun after this detached worktree is reviewed.
 
 Not run by design across this compact block unless explicitly noted: Local/Ollama,
 broad/default CEP smoke, dependency/package changes, push/PR, unscoped retry, old

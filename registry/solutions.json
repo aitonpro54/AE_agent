@@ -4260,6 +4260,126 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "select-guide-layers-typed-plan",
+      "title": "Select Guide Layers Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "selection",
+        "layers",
+        "guide-layers",
+        "guideLayer",
+        "guide-layer",
+        "selected-layers",
+        "set-selection",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Select all active-comp guide layers by deriving explicit layer indices from current typed guideLayer:true evidence, using set_layer_selection, and reading selected layers back.",
+        "appliesWhen": [
+          "The user asks to select guide layers or layers currently reporting guideLayer:true.",
+          "The active comp layer inventory exposes guide-layer state that can be converted into concrete layerIndices before selection mutation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "guideLayerIndices",
+          "type": "array",
+          "required": true,
+          "description": "Computed one-based layer indices whose current typed layer inventory evidence reports guideLayer:true or equivalent guide-layer state."
+        },
+        {
+          "name": "expectedNames",
+          "type": "array",
+          "required": false,
+          "description": "Optional guide layer names paired with guideLayerIndices for post-selection read-back."
+        },
+        {
+          "name": "guideLayerEvidence",
+          "type": "array",
+          "required": true,
+          "description": "Current layer inventory fields proving each selected target is a guide layer before mutation."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists before selection state is changed.",
+        "Guide layer targets are derived only from current get_comp_details layer inventory guideLayer:true or equivalent guide-layer evidence.",
+        "The safe adaptation changes only active-comp layer selection state, not guideLayer flags, native guide records, generated guide overlays, layer names, timing, sources, effects, keyframes, masks, project items or render queue items.",
+        "Guide-layer discovery without typed evidence, native guide record selection, guide overlay creation, guideLayer flag mutation, fuzzy name matching, cross-comp selection, project-panel selection and exact native UI side effects remain typed-tool gaps unless a separate contract proves them."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/select-guide-layers-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "set_layer_selection",
+          "get_selected_layers"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and layer inventory, compute guideLayerIndices from typed guide-layer evidence, set replacement selection, then read selected guide layers back.",
+        "steps": [
+          "Run get_active_comp before mutation to capture active comp identity.",
+          "Run get_comp_details with includeLayers:true and a sufficient layerLimit before computing guide-layer targets.",
+          "Compute guideLayerIndices only from layers whose current typed inventory reports guideLayer:true or equivalent guide-layer state.",
+          "Fail closed when layer inventory is truncated, guide-layer state is absent, no guide layers are found, or the request depends on native guide records or unsupported UI-only state.",
+          "Run set_layer_selection with computed guideLayerIndices, optional expectedNames, replacement selection semantics, verifyAfter:true and a stable idempotency key.",
+          "Run get_selected_layers after mutation and compare selected count, selected layer indices and names with the computed guide-layer set."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_comp_details identifies every accepted guide layer index, optional expected name and typed guideLayer:true or equivalent guide-layer evidence.",
+          "Dry-run evidence lists guideLayerIndices, expected names when available and the layer inventory field proving each layer is a guide layer.",
+          "set_layer_selection result reports the computed guide layerIndices and replacement selection semantics.",
+          "Post-run get_selected_layers shows exactly the expected guide-layer count, selected layer indices and expected names.",
+          "Skipped, empty, truncated or ambiguous guide-layer discovery is reported as a typed-tool gap or no-op decision instead of approximate selection.",
+          "Post-run evidence shows no guideLayer flag mutation, generated guide overlay creation, native guide record mutation, layer order change, layer rename, timing/source/effect/keyframe/mask/project item/render queue mutation or cross-comp selection."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-selection-select-guide-layers generic repository importer as advisory typed-plan coverage for guide active-comp layer selection.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea using existing active-comp inspection, get_comp_details layer inventory, set_layer_selection and get_selected_layers read-back; parent importer owns validation plus any generated-only live acceptance."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-02",
+          "from": "generic-repo-importer-tool-selection-select-guide-layers",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Select_Guide_Layers.jsx into existing typed tools as guide layer selection through get_comp_details guideLayer:true or equivalent guide-layer evidence, computed guideLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. Guide-layer discovery without typed layer evidence, guideLayer flag mutation, native guide record selection, generated guide overlay creation, fuzzy matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current get_comp_details layer inventory with guideLayer:true or equivalent guide-layer evidence before computing guideLayerIndices.",
+        "Use replacement selection semantics and select guide layers only; selecting generated guide overlays by name, native guide records, shy, solo, locked, hidden or label-based layers requires a separate typed-tool contract.",
+        "Do not set or clear guideLayer and do not create guide overlays or native guide records; this recipe changes only active-comp selection state.",
+        "Require get_selected_layers read-back after mutation to prove selected guide-layer count, guide layer indices and expected names.",
+        "Do not infer guide layers from names, generated guide overlay names, screenshots, previous chat context, source type, label color, shy/solo/lock state or approximate UI assumptions.",
+        "Do not use this recipe for guide creation/removal, layer duplication, deletion, renaming, timing edits, marker edits, effect edits, source relinking, keyframe edits, render queue changes, project item selection or broad timeline cleanup."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "center-composition-typed-plan",
       "title": "Center Composition Typed Plan",
       "status": "recipe",
