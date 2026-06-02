@@ -46,6 +46,12 @@ Historical milestone detail through 2026-05-31 is archived at
 - [x] Search safety guard: repository search now has `.rgignore` defaults plus
   `scripts/safe-rg.js`, a bounded ripgrep wrapper that rejects broad generated
   roots and caps output before old logs/runtime reports can flood context.
+- [x] AUX Generic Repo Auto Intake V1: added a top-level
+  `run-generic-repo-auto-intake` shell that accepts a local fixture or GitHub
+  URL, writes ignored bounded inventory/ledger/status/proof/handoff artifacts,
+  fail-closes missing or unrecognized licenses into reference-only candidates,
+  and creates only a plan-only parallel schedule with zero worktrees, zero
+  candidate execution, and zero central source merge.
 
 ## Current State
 
@@ -131,6 +137,16 @@ outside the runner out of scope.
   archival/generated roots for raw `rg`, while `node scripts/safe-rg.js` is the
   required wrapper for searches that include hidden roots, multiple roots, or
   any possible log/runtime expansion.
+- Generic Repo Auto Intake V1 is an orchestration shell, not a broad real-repo
+  processing run. Missing, unrecognized, or recognized non-permissive licenses
+  set `referenceOnly:true`; missing/unrecognized-license entries are not
+  `status:"queued"` and expose no `nextCandidate`, so accidental old
+  full-intake execution does not import them.
+- Auto Intake parallel scheduling is plan-only in V1. It selects only bounded
+  low-risk safe/reference candidates and records that child worktrees,
+  candidate execution, central source merge, Local/Ollama, fallback providers,
+  live CEP/AE, dependency/package changes, push/PR, and raw JSX copy are all
+  disabled.
 
 ## Validation
 
@@ -171,6 +187,24 @@ outside the runner out of scope.
   `node scripts/safe-rg-smoke.js`;
   `git diff --check`;
   standard non-live smoke suite:
+  provider contract, solution registry/candidate/promotion/retrieval/library,
+  project intent memory, plan classification/repair, semantic verification,
+  reliability validation, ChatGPT connector, provider API, prompt optimization,
+  bridge-only, and full smoke test.
+- AUX Generic Repo Auto Intake V1 validation passed:
+  `node --check orchestrator/run-generic-repo-auto-intake.mjs`;
+  `node --check scripts/sdk-generic-repo-auto-intake-smoke.js`;
+  `node scripts/sdk-generic-repo-auto-intake-smoke.js`;
+  `node scripts/sdk-generic-repo-importer-command-smoke.js`;
+  `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`;
+  `node scripts/sdk-generic-repo-full-intake-smoke.js`;
+  `node scripts/solution-library-validation-smoke.js`;
+  `node scripts/solution-registry-smoke.js`;
+  `node scripts/solution-retrieval-smoke.js`.
+  The new smoke uses only a local fixture without network and proves
+  fixture -> inventory -> reference-only ledger -> plan-only parallel plan ->
+  compact status/proof/handoff.
+- Auto Intake closeout also passed the standard non-live smoke suite:
   provider contract, solution registry/candidate/promotion/retrieval/library,
   project intent memory, plan classification/repair, semantic verification,
   reliability validation, ChatGPT connector, provider API, prompt optimization,
