@@ -182,7 +182,16 @@ function isRawExtendscriptSolution(solution) {
   return execution.mode === "extendscript-file" || solutionPreferredTools(solution).includes("run_extendscript_file");
 }
 
-function scoreSolution(solution, promptTokens) {
+function promptRequestsReadOnlyPreference(userPrompt) {
+  const text = String(userPrompt || "").toLowerCase();
+  return (
+    /\bwithout\s+(changing|moving|mutating|modifying)\b/.test(text) ||
+    /\bdo\s+not\s+(change|move|mutate|modify)\b/.test(text) ||
+    /\bno\s+(?:selection\s+)?mutation\b/.test(text)
+  );
+}
+
+function scoreSolution(solution, promptTokens, userPrompt = "") {
   if (!solution || promptTokens.size === 0) return 0;
   if (isMarkerSolution(solution) && !promptHasMarkerIntent(promptTokens)) return 0;
   let score = 0;
@@ -206,6 +215,7 @@ function scoreSolution(solution, promptTokens) {
   score += overlapCount(tokenSet(solution.targetAssumptions || []), promptTokens);
 
   if (execution.riskLevel === "high") score -= 2;
+  if (promptRequestsReadOnlyPreference(userPrompt) && execution.mutating === true) score -= 28;
   if (isRawExtendscriptSolution(solution)) score -= 1;
   return score;
 }
@@ -349,7 +359,7 @@ function retrieveSolutionHints(userPrompt, options = {}) {
       continue;
     }
 
-    const score = scoreSolution(solution, promptTokens);
+    const score = scoreSolution(solution, promptTokens, userPrompt);
     if (score < MIN_RELEVANCE_SCORE) {
       result.omitted.irrelevant += 1;
       continue;

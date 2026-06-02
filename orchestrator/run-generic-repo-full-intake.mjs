@@ -17,6 +17,10 @@ import { fileURLToPath } from "node:url";
 
 import { runBatch } from "./run-generic-repo-queue-supervisor.mjs";
 import { runImporter } from "./run-generic-repo-tool-importer.mjs";
+import {
+  parallelCandidateWorktreeModeEnabled,
+  runParallelCandidateWorktrees,
+} from "./parallel-candidate-worktrees.mjs";
 import boundedProcess from "./bounded-process-result.cjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -376,6 +380,16 @@ Options:
   --resolution-candidate-ids <ids>
                               Optional comma-separated candidate ids for scoped
                               live-lane/import-failure resolution processing.
+  --parallel-candidate-worktrees
+                              Opt in to AUX parallel candidate worktrees and a
+                              serial parent reducer. Default serial behavior is unchanged.
+  --parallel-candidate-limit <n>
+                              Maximum candidates to schedule in opt-in parallel mode.
+  --parallel-candidate-ids <ids>
+                              Optional comma-separated scoped candidate ids for
+                              fixture/test parallel mode.
+  --plan-parallel-candidate-worktrees
+                              Write only the parallel scheduling plan; do not create worktrees.
   --no-commit                  Do not create git commits after completed candidates.
   --json                       Write full machine-readable output only with --output, or print only with --allow-full-json-for-debug.
   --output <path>              Full JSON output path for --json. Stdout stays compact.
@@ -402,6 +416,8 @@ const VALUE_OPTIONS = new Set([
   "next-step-context-cost",
   "no-new-work-percent",
   "output",
+  "parallel-candidate-ids",
+  "parallel-candidate-limit",
   "report-dir",
   "resolution-candidate-ids",
   "run-id",
@@ -416,6 +432,8 @@ const BOOLEAN_OPTIONS = new Set([
   "help",
   "json",
   "no-commit",
+  "parallel-candidate-worktrees",
+  "plan-parallel-candidate-worktrees",
 ]);
 const COMPACT_OUTPUT_ID_LIMIT = 16;
 const COMPACT_OUTPUT_FAMILY_LIMIT = 12;
@@ -2785,6 +2803,43 @@ function writeResumeCard(args) {
   };
 }
 
+function compactParallelForParent(report) {
+  const parallel = report.parallel || null;
+  if (!parallel) {
+    return null;
+  }
+  const reducer = parallel.reducer || null;
+  return {
+    optIn: parallel.optIn === true,
+    mode: parallel.mode || null,
+    limit: parallel.limit ?? null,
+    planPath: parallel.planPath || null,
+    selectedCandidateIds: boundedStrings(parallel.selectedCandidateIds || [], COMPACT_OUTPUT_ID_LIMIT),
+    worktrees: {
+      created: parallel.worktrees?.created || 0,
+      detached: parallel.worktrees?.detached || 0,
+      runOwned: parallel.worktrees?.runOwned || 0,
+    },
+    proposals: {
+      count: Array.isArray(parallel.proposals) ? parallel.proposals.length : 0,
+      ready: Array.isArray(parallel.proposals)
+        ? parallel.proposals.filter((entry) => entry.status === "proposal_ready").length
+        : 0,
+      paths: boundedStrings((parallel.proposals || []).map((entry) => entry.path), COMPACT_OUTPUT_ID_LIMIT),
+    },
+    reducer: reducer
+      ? {
+          status: reducer.status || null,
+          acceptedCandidateIds: boundedStrings((reducer.accepted || []).map((entry) => entry.candidateId), COMPACT_OUTPUT_ID_LIMIT),
+          rejectedCandidateIds: boundedStrings((reducer.rejected || []).map((entry) => entry.candidateId), COMPACT_OUTPUT_ID_LIMIT),
+          blockedCandidateIds: boundedStrings((reducer.blocked || []).map((entry) => entry.candidateId), COMPACT_OUTPUT_ID_LIMIT),
+          commitId: reducer.commitId || null,
+          liveRerun: reducer.liveRerun || null,
+        }
+      : null,
+  };
+}
+
 function compactParentReport(report) {
   const items = Array.isArray(report.items) ? report.items : [];
   const resolutionSummary = summarizeResolutionQueueForParent(report.resolutionQueue);
@@ -2851,6 +2906,7 @@ function compactParentReport(report) {
       predictedContextPercent: report.contextBudget?.predictedContextPercent ?? null,
       lastDecision: report.contextBudget?.lastDecision || null,
     },
+    parallel: compactParallelForParent(report),
     nextAction: inferParentNextAction(report, resolutionSummary, failedCandidateIds),
     compactPaths: compactPathsForParent(report),
   };
@@ -5137,6 +5193,22 @@ export function runFullIntake(options, cwd = process.cwd()) {
       throw new FullIntakeError("context-pressure", report);
     }
     return report;
+  }
+
+  if (parallelCandidateWorktreeModeEnabled(options)) {
+    const parallelReport = runParallelCandidateWorktrees({
+      contextBudget,
+      ledger: initialLedger,
+      ledgerPath,
+      options,
+      runId,
+      runRoot,
+      targetRepo,
+    });
+    if (parallelReport.ok === false) {
+      throw new FullIntakeError(parallelReport.status || "parallel-candidate-worktrees-failed", parallelReport);
+    }
+    return parallelReport;
   }
 
   const hasActiveStrictTransaction = strictOnePhase && activeStrictTransaction(state) !== null;

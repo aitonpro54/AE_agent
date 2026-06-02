@@ -55,6 +55,11 @@ Codex App dev-request handoff for repository work.
   `tool-selection-select-non-null-layers` in the importer-owned detached
   worktree only. No source merge, commit, validation run, live AE/CEP lane, or
   provider call was performed by design.
+- [x] AUX parallel candidate worktrees architecture: added explicit opt-in
+  scheduling for detached run-owned candidate worktrees, stable proposal schema
+  `generic-repo-full-intake.parallel-candidate-proposal.v1`, and a serial
+  parent reducer for structured recipe/registry/smoke merges. Default Full
+  Intaker serial behavior remains unchanged.
 
 ## Current State
 
@@ -77,6 +82,10 @@ application, validation, proof capture, and any live/generated-only acceptance.
 blocked by workspace write policy (`apply_patch` rejected the hidden path and
 PowerShell returned AccessDenied), so this active-plan note is the durable
 handoff substitute for the batch.
+
+AUX parallel architecture work in this thread did not process queued candidates
+from `full-intake-kyletmartinez`. It only touched orchestrator logic, fixture
+smoke coverage, retrieval scoring, this plan, and `.codex/handoff.md`.
 
 ## Next Milestone
 
@@ -132,6 +141,19 @@ reports, and `max-items > 1` out of scope.
   `get_selected_layers` read-back. Null-layer creation/conversion/deletion,
   fuzzy name/type matching, cross-comp/Project panel selection, and exact native
   UI/source semantics require a separate typed-tool contract.
+- 2026-06-02: AUX parallel candidate worktrees are opt-in only. Child candidate
+  worktrees are detached and run-owned under `.codex-runtime/.../<run-id>/`,
+  may emit proposals, and must not own central ledger, registry, plan, handoff,
+  commits, dependency/package changes, Local/Ollama, fallback providers, or live
+  CEP/AE/generated-only reruns. The parent reducer is the only central writer
+  and rejects unplanned paths, forbidden central writes, dependency/package
+  changes, raw JSX copy, stale base heads, duplicate recipe paths, duplicate
+  registry ids, missing proof hashes, and child-required live reruns.
+- 2026-06-02: While running the required solution-library validation, a stale
+  retrieval-ranking failure showed mutating Selection recipes outranking the
+  read-only `layer-selection-get-typed-plan` for a prompt that explicitly said
+  "without changing selection". Added a narrow read-only prompt preference
+  penalty for mutating hints instead of weakening the smoke expectation.
 
 ## Validation
 
@@ -174,6 +196,21 @@ reports, and `max-items > 1` out of scope.
   importer proof/acceptance lane if selected by the parent runner. Handoff file
   creation was blocked by workspace write policy; use the `queue-batch-1-b3f28610bc`
   active-plan notes for continuation.
+- AUX parallel candidate worktrees architecture: `node --check
+  orchestrator/parallel-candidate-worktrees.mjs`, `node --check
+  orchestrator/run-generic-repo-full-intake.mjs`, `node --check
+  scripts/sdk-generic-repo-full-intake-smoke.js`, `node --check
+  mcp-server/solution-library.js`, `node
+  scripts/sdk-generic-repo-full-intake-smoke.js`, `node
+  scripts/sdk-generic-repo-importer-command-smoke.js`, and `node
+  scripts/sdk-generic-repo-queue-supervisor-smoke.js` passed on fixture repos.
+  `node scripts/solution-library-validation-smoke.js`, `node
+  scripts/solution-registry-smoke.js`, `node
+  scripts/solution-retrieval-smoke.js`, and `node
+  scripts/semantic-verification-smoke.js` also passed. No real queue candidate
+  processing, Local/Ollama, fallback provider, dependency/package change,
+  broad/default CEP smoke, live CEP/AE smoke, push, PR, or mutating subagent was
+  run.
 
 ## Handoff
 
