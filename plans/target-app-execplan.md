@@ -43,6 +43,9 @@ Historical milestone detail through 2026-05-31 is archived at
 - [x] Retrieval closeout fix: solution-library tool-backed duplicate guidance
   now requires explicit duplicate/copy/clone intent, and compact key terms keep
   new Selection evidence guards visible in prompt hints.
+- [x] Search safety guard: repository search now has `.rgignore` defaults plus
+  `scripts/safe-rg.js`, a bounded ripgrep wrapper that rejects broad generated
+  roots and caps output before old logs/runtime reports can flood context.
 
 ## Current State
 
@@ -124,6 +127,10 @@ outside the runner out of scope.
 - Detached child imports pass an explicit `detachedAllowed` target contract and
   use shortened child runtime paths, so ordinary importer runs keep their
   existing branch checks and worktree layout.
+- Ordinary repository search must stay on the guarded path: `.rgignore` blocks
+  archival/generated roots for raw `rg`, while `node scripts/safe-rg.js` is the
+  required wrapper for searches that include hidden roots, multiple roots, or
+  any possible log/runtime expansion.
 
 ## Validation
 
@@ -158,6 +165,16 @@ outside the runner out of scope.
   `node scripts/solution-registry-smoke.js`;
   `node scripts/solution-retrieval-smoke.js`;
   `node scripts/sdk-generic-repo-full-intake-smoke.js`.
+- Search safety guard validation passed:
+  `node --check scripts/safe-rg.js`;
+  `node --check scripts/safe-rg-smoke.js`;
+  `node scripts/safe-rg-smoke.js`;
+  `git diff --check`;
+  standard non-live smoke suite:
+  provider contract, solution registry/candidate/promotion/retrieval/library,
+  project intent memory, plan classification/repair, semantic verification,
+  reliability validation, ChatGPT connector, provider API, prompt optimization,
+  bridge-only, and full smoke test.
 - Not run by design: Local/Ollama, fallback providers, broad/default CEP smoke,
   broad real queue, `max-items > 1`, dependency/package changes, full runtime
   reports, push, PR, GitHub automation, raw JSX copy, and source checkout writes

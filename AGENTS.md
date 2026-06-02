@@ -30,6 +30,13 @@ Always update `.codex/handoff.md` according to the milestone handoff format afte
 Avoid broad repository scans unless explicitly requested.
 Use targeted `rg`, `sed`, `head`, `tail`, and file-specific reads.
 For large command outputs, save full logs to a file and summarize only the relevant lines.
+- For repository text search, prefer `node scripts/safe-rg.js ...` when the
+  search touches multiple roots, hidden roots, generated evidence, handoff
+  files, or any path that could expand into logs. Do not pass broad roots such
+  as `.codex`, `.codex-runtime`, `logs`, or `plans/archive` to raw `rg`.
+- `.rgignore` is a repository-level safety layer for normal `rg`; do not bypass
+  it with `--no-ignore` unless the user explicitly asks for a targeted forensic
+  lookup and the output is written to a file or otherwise bounded.
 - Do not read `plans/archive/**` by default. Open archived plan history only for a targeted lookup with a specific reason.
 - Do not read old `.codex-runtime/**`, proof envelopes, batch reports, or generated runtime/proof reports by default. Prefer compact handoff/status files and targeted searches.
 - Keep `plans/target-app-execplan.md` compact: target under 24 KB, hard cap 32 KB. If it grows past the target, archive stale detail before starting new work.
