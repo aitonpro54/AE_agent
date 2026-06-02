@@ -30,6 +30,8 @@ Codex App dev-request handoff for repository work.
 
 ## Progress
 
+- [x] Full intake tool-selection-select-layers-below-label: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-selection-select-layers-below-label); live gate ready, importer batch full-intake-kyletmartinez-e5ce7e11d7-import, commit recorded after candidate commit.
+
 - [x] Historical milestones 1-30: archived/summarized baseline, provider work,
   strict-runner hardening, context-budget tuning, lane prep, and completed
   Full Intaker candidates through properties/keyframes/onion-skinning.
@@ -41,6 +43,11 @@ Codex App dev-request handoff for repository work.
   same strict flow and commit `678a44781a6ba8ba1c1836f5ed9cd9cfb5ebb72e`.
 - [x] Active plan compacted after Milestone 32 because runner-written detail
   pushed the file above the 32 KB hard cap.
+- [x] AUX-021 detached importer child-run batch
+  `queue-batch-1-2c946048a6`: drafted advisory typed-plan import for
+  `tool-selection-select-layers-below-label` in the importer-owned detached
+  worktree only. No source merge, commit, validation run, live AE/CEP lane, or
+  provider call was performed by design.
 
 ## Current State
 
@@ -50,6 +57,11 @@ this thread. Compact ledger after Milestone 32: `completed:62`, `queued:7`,
 `blocked_or_skipped:64`, `recovered_patch_non_live_validated_pending_semantic_review:1`.
 Branch `road-map-2.0` is ahead of `ae-agent/road-map-2.0`; do not push without
 explicit approval.
+
+Detached child-run note: `queue-batch-1-2c946048a6` now contains the
+`select-layers-below-label-typed-plan` advisory recipe, registry entry, and
+solution-library smoke expectations. The parent importer still owns source-merge
+application, validation, proof capture, and any live/generated-only acceptance.
 
 ## Next Milestone
 
@@ -69,6 +81,8 @@ reports, and `max-items > 1` out of scope.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Selection/Select_Layers_Below_Label.jsx` as `tool-selection-select-layers-below-label`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-selection-select-layers-below-label).
+
 - Historical decisions through Milestone 30 are archived or compactly summarized
   above. Continuing guardrails remain: compact status/proof/ledger first,
   bounded strict phases, one writer, no source JSX copy, no Local/Ollama unless
@@ -86,8 +100,18 @@ reports, and `max-items > 1` out of scope.
   narrow generated-only lane or milestone.
 - The thread stopped after Milestone 32 because runner-estimated context reached
   `64%` and the active plan exceeded the 32 KB hard cap before compaction.
+- AUX-021 child-run adapted `Select_Layers_Below_Label` as fail-closed Selection
+  advisory guidance because the source JSX was not present in the detached
+  worktree. The recipe requires current active-comp layer inventory, explicit
+  reviewed `anchorLayerIndex` or typed label evidence, computed below-anchor
+  layer indices, replacement `set_layer_selection`, and `get_selected_layers`
+  read-back. Source-exact label-color scanning, label mutation, fuzzy matching,
+  cross-comp/Project panel selection, selecting layers above the anchor, and
+  native UI side effects require a separate typed-tool contract.
 
 ## Validation
+
+| Full intake tool-selection-select-layers-below-label | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-e5ce7e11d7-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 - Milestones 31-32 compact status/proof/ledger checks passed at each strict
   boundary. Both candidates completed lane proof, importer, controlled merge,
@@ -110,6 +134,12 @@ reports, and `max-items > 1` out of scope.
   changes, push/PR, broad/default CEP smoke, unscoped retry, old longrun, full
   runtime reports, raw JSX copy, source checkout writes outside the runner, and
   `max-items > 1`.
+- AUX-021 child-run `queue-batch-1-2c946048a6`: no validation commands were run
+  by explicit child-run boundary. Planned validation after parent merge/review:
+  `node --check scripts/solution-library-validation-smoke.js`,
+  `git diff --check`, `node scripts/solution-registry-smoke.js`, and
+  `node scripts/solution-library-validation-smoke.js`, plus the normal strict
+  importer proof/acceptance lane if selected by the parent runner.
 
 ## Handoff
 

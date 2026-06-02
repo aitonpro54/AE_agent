@@ -4380,6 +4380,136 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "select-layers-below-label-typed-plan",
+      "title": "Select Layers Below Label Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "selection",
+        "layers",
+        "below-label",
+        "label",
+        "label-anchor",
+        "layer-label",
+        "selected-layers",
+        "set-selection",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Select active-comp layers below a reviewed label anchor by deriving explicit layer indices from current typed layer order and label evidence, using set_layer_selection, and reading selected layers back.",
+        "appliesWhen": [
+          "The user asks to select layers below a label, label marker, or reviewed label-anchor layer in the active composition.",
+          "The active comp layer inventory exposes layer order plus label evidence that can be converted into an anchorLayerIndex and concrete layerIndices before selection mutation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "anchorLayerIndex",
+          "type": "number",
+          "required": true,
+          "description": "Reviewed one-based layer index for the label anchor, derived from explicit user input or current typed layer label evidence."
+        },
+        {
+          "name": "belowLabelLayerIndices",
+          "type": "array",
+          "required": true,
+          "description": "Computed one-based layer indices below the reviewed label anchor in the same active composition."
+        },
+        {
+          "name": "labelEvidence",
+          "type": "array",
+          "required": true,
+          "description": "Current layer inventory fields proving the reviewed anchor's label marker, such as label, labelIndex, labelColor, or equivalent typed bridge evidence."
+        },
+        {
+          "name": "expectedNames",
+          "type": "array",
+          "required": false,
+          "description": "Optional below-label layer names paired with belowLabelLayerIndices for post-selection read-back."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists before selection state is changed.",
+        "The label anchor is derived only from current get_comp_details layer inventory label evidence or explicit reviewed anchorLayerIndex evidence.",
+        "Below-label targets are computed from current active-comp one-based layer order below the reviewed anchor layer.",
+        "The safe adaptation changes only active-comp layer selection state, not layer labels, names, timing, sources, effects, keyframes, masks, project items or render queue items.",
+        "Source-exact label-color scanning, label mutation, fuzzy label/name matching, cross-comp selection, project-panel selection and native UI side effects remain typed-tool gaps unless a separate contract proves them."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/select-layers-below-label-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "set_layer_selection",
+          "get_selected_layers"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and layer inventory, compute belowLabelLayerIndices from a reviewed label anchor and current layer order, set replacement selection, then read selected layers back.",
+        "steps": [
+          "Run get_active_comp before mutation to capture active comp identity.",
+          "Run get_comp_details with includeLayers:true and a sufficient layerLimit before computing the label anchor and below-label targets.",
+          "Identify exactly one anchorLayerIndex from explicit user intent or typed label evidence such as label, labelIndex, labelColor, or equivalent bridge state.",
+          "Compute belowLabelLayerIndices only from layers below the reviewed anchor in the same current active-comp inventory.",
+          "Fail closed when layer inventory is truncated, label evidence is absent, anchor selection is ambiguous, no layers are below the anchor, or the request depends on unsupported UI-only label state.",
+          "Run set_layer_selection with computed belowLabelLayerIndices, optional expectedNames, replacement selection semantics, verifyAfter:true and a stable idempotency key.",
+          "Run get_selected_layers after mutation and compare selected count, selected layer indices and names with the computed below-label layer set."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_comp_details identifies the reviewed anchorLayerIndex, optional anchor name, typed label evidence and every accepted below-label layer index.",
+          "Dry-run evidence lists anchorLayerIndex, label evidence, belowLabelLayerIndices and expected names when available.",
+          "set_layer_selection result reports the computed below-label layerIndices and replacement selection semantics.",
+          "Post-run get_selected_layers shows exactly the expected below-label layer count, selected layer indices and expected names.",
+          "Skipped, empty, truncated or ambiguous label-anchor discovery is reported as a typed-tool gap or no-op decision instead of approximate selection.",
+          "Post-run evidence shows no label-color mutation, layer order change, layer rename, timing/source/effect/keyframe/mask/project item/render queue mutation or cross-comp selection."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-selection-select-layers-below-label generic repository importer as advisory typed-plan coverage for selecting active-comp layers below a reviewed label anchor.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea using existing active-comp inspection, get_comp_details layer inventory, set_layer_selection and get_selected_layers read-back; parent importer owns validation plus any generated-only live acceptance."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-02",
+          "from": "generic-repo-importer-tool-selection-select-layers-below-label",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Select_Layers_Below_Label.jsx into existing typed tools as below-label layer selection through get_comp_details layer order plus explicit reviewed anchorLayerIndex and typed label evidence, computed belowLabelLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. The source JSX was not present in this detached child-run worktree, so source-exact label-color scanning, label mutation, fuzzy matching, cross-comp selection, project-panel selection, selecting layers above the anchor and native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current get_comp_details layer inventory with layer order and typed label evidence, or an explicit reviewed anchorLayerIndex, before computing belowLabelLayerIndices.",
+        "Use replacement selection semantics and select only layers below the reviewed label anchor in the same active comp.",
+        "Do not set or clear layer labels; this recipe changes only active-comp selection state.",
+        "Require get_selected_layers read-back after mutation to prove selected below-label count, layer indices and expected names.",
+        "Do not infer the label anchor from screenshots, previous chat context, fuzzy names, source type, layer comments, guide/disabled/shy/solo/lock state or approximate UI assumptions.",
+        "Require a separate typed-tool contract for source-exact label-color scanning, label mutation, selecting layers above the anchor, cross-comp selection, Project panel selection or exact native UI side effects.",
+        "Do not use this recipe for guide/disabled/type/random/parent-group selection, layer duplication, deletion, renaming, timing edits, marker edits, effect edits, source relinking, keyframe edits, render queue changes, project item selection or broad timeline cleanup."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "center-composition-typed-plan",
       "title": "Center Composition Typed Plan",
       "status": "recipe",
