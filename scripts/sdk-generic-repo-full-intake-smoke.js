@@ -710,8 +710,24 @@ function assertParallelCandidateWorktreesOptInAndPlanning() {
     assert.strictEqual(output.parallel.mode, "parallel_plan_only");
     assert.deepStrictEqual(output.parallel.selectedCandidateIds, ["tool-parallel-plan-only"]);
     assert.strictEqual(output.parallel.worktrees.created, 0);
+    assert(output.proofEnvelopePath.endsWith("parallel-candidates/parallel-proof-envelope.json"));
+    assert.strictEqual(output.proofEnvelopeContractComplete, true);
     const planPath = path.join(fixture.target, output.parallel.planPath);
     assert(fs.existsSync(planPath), "parallel planning artifact should exist");
+    const proofRunner = path.join(repo, "orchestrator", "full-intake-proof.mjs");
+    const proof = spawnSync(process.execPath, [
+      proofRunner,
+      "--target-repo",
+      fixture.target,
+      "--run-id",
+      "pp",
+      "--compact-json"
+    ], { cwd: repo, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    assert.strictEqual(proof.status, 0, proof.stderr || proof.stdout);
+    const proofOutput = JSON.parse(proof.stdout);
+    assert.strictEqual(proofOutput.proofSchema, "generic-repo-full-intake.parallel-candidate-proof.v1");
+    assert.strictEqual(proofOutput.contractComplete, true);
+    assert.strictEqual(proofOutput.parallel.mode, "parallel_plan_only");
     const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
     assert.strictEqual(ledger.entries[0].status, "queued", "planning must not mutate ledger");
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");

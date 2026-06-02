@@ -52,6 +52,14 @@ Historical milestone detail through 2026-05-31 is archived at
   fail-closes missing or unrecognized licenses into reference-only candidates,
   and creates only a plan-only parallel schedule with zero worktrees, zero
   candidate execution, and zero central source merge.
+- [x] Controlled aturtur GitHub auto-intake longrun:
+  `https://github.com/aturtur/after-effects-scripts` produced a bounded
+  `full-intake-aturtur` ledger with 46 JSX entries, all `reference_only`
+  because the source license is missing. No queued candidates, scoped waves,
+  child worktrees, candidate execution, raw JSX copy, or central merge ran.
+- [x] Full Intaker compact proof helper now supports plan-only parallel proof
+  envelopes under `parallel-candidates/parallel-proof-envelope.json`, while
+  standard candidate proof envelopes keep their existing compact behavior.
 
 ## Current State
 
@@ -85,9 +93,20 @@ Selection commits completed in this continuation:
 Branch `road-map-2.0` is ahead of `ae-agent/road-map-2.0`; do not push without
 explicit approval.
 
+`full-intake-aturtur` compact state on 2026-06-02:
+
+- auto-intake status: `auto_intake_plan_ready`
+- source revision: `d3fcb875bfb300327b236e93af85bcae27c0ad8b`
+- license: `missing`, `referenceOnlyDefault=true`, `importAllowed=false`
+- ledger: 46 entries, all `reference_only`, `queued=0`, `nextCandidate=null`
+- parallel plans: selected candidate ids `[]`; worktrees/execution/merge `0`
+- serial reducer decision: no scoped wave may run from this ledger without a
+  separate clean-room typed-tool contract and explicit candidate ids
+
 ## Next Milestone
 
-No queued Full Intaker item remains. Next work should not start a broad queue.
+No queued Full Intaker item remains. The aturtur ledger is reference-only and
+has no safe scoped candidate ids. Next work should not start a broad queue.
 Choose one bounded follow-up:
 
 1. Review Parallel Tool Intake V1 infrastructure before any real broad intake
@@ -100,6 +119,9 @@ Choose one bounded follow-up:
    matching candidates.
 4. Continue with strict `max-items 1`, compact output, and an explicit current
    context percent.
+5. For aturtur only: perform read-only behavior review or create a separate
+   clean-room typed-tool lane from intent, not from copied JSX, after resolving
+   the missing-license/reference-only status.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -147,6 +169,16 @@ outside the runner out of scope.
   candidate execution, central source merge, Local/Ollama, fallback providers,
   live CEP/AE, dependency/package changes, push/PR, and raw JSX copy are all
   disabled.
+- The aturtur source repository is missing a recognized permissive license, so
+  all 46 JSX candidates stay `reference_only`. Parent reducer rejected scoped
+  execution because the parallel plan exposed no explicit safe candidate ids.
+- Subagent audits were read-only only. They confirmed license/reference-only
+  fail-closed behavior, coherent ledger/status buckets, hash consistency, and a
+  plan-only validation boundary; no child edits or child commits occurred.
+- Plan-only parallel proof envelopes are valid Full Intaker proof artifacts.
+  `full-intake-proof.mjs` now falls back from root `proof-envelope.json` to
+  `parallel-candidates/parallel-proof-envelope.json` and reports parallel mode
+  and evidence in compact output.
 
 ## Validation
 
@@ -209,6 +241,30 @@ outside the runner out of scope.
   project intent memory, plan classification/repair, semantic verification,
   reliability validation, ChatGPT connector, provider API, prompt optimization,
   bridge-only, and full smoke test.
+- Controlled aturtur intake validation passed:
+  `node orchestrator/run-generic-repo-auto-intake.mjs --repo https://github.com/aturtur/after-effects-scripts --run-id full-intake-aturtur --context-percent 0 --parallel-candidate-limit 8 --compact-json`;
+  compact artifact audit for inventory/status/proof/handoff/ledger/parallel
+  plan; read-only subagent audits for license, ledger schema/buckets, and
+  validation style; `node orchestrator/run-generic-repo-full-intake.mjs --ledger .codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json --run-id full-intake-aturtur --plan-parallel-candidate-worktrees --parallel-candidate-limit 8 --compact-json --context-percent 5`;
+  compact status and ledger summary. The wave was not run because there were
+  zero queued/selected candidate ids.
+- Parallel proof helper fix validation passed:
+  `node --check orchestrator/full-intake-proof.mjs`;
+  `node --check orchestrator/parallel-candidate-worktrees.mjs`;
+  `node --check scripts/sdk-generic-repo-full-intake-smoke.js`;
+  `node orchestrator/full-intake-proof.mjs --run-id full-intake-aturtur --compact-json`;
+  `node scripts/sdk-generic-repo-full-intake-smoke.js`;
+  `node scripts/sdk-generic-repo-importer-command-smoke.js`;
+  `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`;
+  `node scripts/sdk-generic-repo-auto-intake-smoke.js`;
+  `node scripts/solution-library-validation-smoke.js`;
+  `node scripts/solution-registry-smoke.js`;
+  `node scripts/solution-retrieval-smoke.js`;
+  standard non-live smoke suite: provider contract, solution candidate,
+  promotion, project intent memory, plan classification/repair, semantic
+  verification, reliability validation, ChatGPT connector, provider API,
+  prompt optimization, bridge-only, and full smoke test. `git diff --check`
+  passed with only normal Windows LF-to-CRLF working-copy warnings.
 - Not run by design: Local/Ollama, fallback providers, broad/default CEP smoke,
   broad real queue, `max-items > 1`, dependency/package changes, full runtime
   reports, push, PR, GitHub automation, raw JSX copy, and source checkout writes

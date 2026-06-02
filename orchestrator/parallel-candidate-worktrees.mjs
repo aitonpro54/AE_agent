@@ -1533,6 +1533,7 @@ function writeParallelProof({ candidatePlans, planPath, proposals, reducer, repo
     schema: PARALLEL_PROOF_SCHEMA,
     runId: report.runId,
     mode: report.parallel?.mode || null,
+    contractComplete: reducer ? reducer.ok === true : report.status === "parallel_plan_ready",
     evidence: {
       centralWriterOnly: true,
       childWorktreesDetached: worktrees.every((entry) => entry.detached === true),
