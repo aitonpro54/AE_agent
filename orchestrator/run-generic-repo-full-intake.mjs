@@ -5038,7 +5038,7 @@ function runStrictOnePhase({
   throw new Error(`strict-phase-unhandled:${completedPhase}`);
 }
 
-export function runFullIntake(options, cwd = process.cwd()) {
+export async function runFullIntake(options, cwd = process.cwd()) {
   const runId = safeId(options.runId, "full-intake");
   if (!options.runId) {
     throw new Error("--run-id is required for generic repo full-intake runs");
@@ -5196,7 +5196,7 @@ export function runFullIntake(options, cwd = process.cwd()) {
   }
 
   if (parallelCandidateWorktreeModeEnabled(options)) {
-    const parallelReport = runParallelCandidateWorktrees({
+    const parallelReport = await runParallelCandidateWorktrees({
       contextBudget,
       ledger: initialLedger,
       ledgerPath,
@@ -5747,7 +5747,7 @@ async function main() {
     if (outputMode === "json" && !options.output && options.allowFullJsonForDebug !== true) {
       throw new Error("full-json-stdout-forbidden-use-compact-json-or-json-output-or-allow-full-json-for-debug");
     }
-    const report = runFullIntake(options, REPO_ROOT);
+    const report = await runFullIntake(options, REPO_ROOT);
     printResult(report, outputMode, options, REPO_ROOT);
   } catch (error) {
     if (error instanceof FullIntakeError && error.report && (outputMode === "json" || outputMode === "compact-json")) {

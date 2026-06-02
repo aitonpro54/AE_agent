@@ -848,6 +848,7 @@ function buildImporterManifest({ eligibleItems, ledger, runId, sourceCheckout, t
     targetRepo: {
       path: targetRepo,
       allowedWritePaths: plannedPaths,
+      detachedAllowed: ledger.target.detachedAllowed === true,
       forbiddenWritePaths: [
         ".git/**",
         "node_modules/**",

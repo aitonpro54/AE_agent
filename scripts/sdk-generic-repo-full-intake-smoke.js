@@ -739,6 +739,7 @@ function assertParallelWorktreesAndProposalSchema() {
     assert.strictEqual(output.parallel.worktrees.created, 1);
     assert.strictEqual(output.parallel.worktrees.detached, 1);
     assert.strictEqual(output.parallel.worktrees.runOwned, 1);
+    assert.strictEqual(output.parallel.worktrees.cleaned, 1);
     const proposalPath = path.join(fixture.target, output.parallel.proposals[0].path);
     const proposal = JSON.parse(fs.readFileSync(proposalPath, "utf8"));
     assert.strictEqual(proposal.schema, "generic-repo-full-intake.parallel-candidate-proposal.v1");
@@ -746,8 +747,8 @@ function assertParallelWorktreesAndProposalSchema() {
     assert.strictEqual(proposal.status, "blocked");
     assert.strictEqual(proposal.liveRerunRequired, false);
     assert(proposal.proofSha256, "proposal should include proof hash");
-    assert(proposal.worktreePath.includes(`${path.sep}parallel-candidates${path.sep}worktrees${path.sep}tool-parallel-schema`));
-    assert.strictEqual(sh(proposal.worktreePath, ["git", "branch", "--show-current"]), "");
+    assert(proposal.worktreePath.includes(`${path.sep}codex-pi${path.sep}`));
+    assert.strictEqual(fs.existsSync(proposal.worktreePath), false, "child worktree should be cleaned after proposal persistence");
     const proof = JSON.parse(fs.readFileSync(path.join(fixture.target, output.proofEnvelopePath), "utf8"));
     assert.strictEqual(proof.schema, "generic-repo-full-intake.parallel-candidate-proof.v1");
     assert.strictEqual(proof.evidence.worktreesRunOwned, true);
@@ -913,6 +914,72 @@ function assertParallelReducerSeriallyAppliesIndependentProposals() {
     const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
     assert.strictEqual(ledger.entries[0].status, "completed");
     assert.strictEqual(ledger.entries[1].status, "completed");
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertParallelChildExecutionProducesAcceptedFileProposals() {
+  const fixture = createFixture("pce");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const first = entry({
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "not_required_for_fixture" },
+      implementation: {
+        sliceId: "fixture-parallel-child-alpha",
+        plannedPaths: ["scripts/imported-tools/parallel-child-alpha.js"]
+      },
+      queueRank: 1
+    });
+    const second = timingEntry({
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "not_required_for_fixture" },
+      implementation: {
+        sliceId: "fixture-parallel-child-beta",
+        plannedPaths: ["scripts/imported-tools/parallel-child-beta.js"]
+      },
+      queueRank: 2
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [first, second]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const result = runFullIntakeFixture(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "pce",
+      1,
+      { ...fakeCodexEnv(binDir), FAKE_CODEX_HUGE_STDOUT: "1" },
+      ["--parallel-candidate-worktrees", "--parallel-candidate-limit", "2"]
+    );
+    assert(result.stdout.length < 64 * 1024, `parallel child output should stay compact, got ${result.stdout.length}`);
+    assert(!result.stdout.includes("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH"));
+    const output = parseJson(result);
+    assert.strictEqual(output.status, "parallel_reducer_completed");
+    assert.strictEqual(output.parallel.worktrees.created, 2);
+    assert.strictEqual(output.parallel.worktrees.cleaned, 2);
+    assert.deepStrictEqual(output.parallel.reducer.accepted.map((item) => item.candidateId), [
+      "tool-compositions-add-composition-guide",
+      "tool-layers-extend-all-layers"
+    ]);
+    assert(output.commits.length === 1, "parallel child proposals should commit once through parent reducer");
+    assert(fs.existsSync(path.join(fixture.target, "scripts", "imported-tools", "parallel-child-alpha.js")));
+    assert(fs.existsSync(path.join(fixture.target, "scripts", "imported-tools", "parallel-child-beta.js")));
+    for (const proposalRef of output.parallel.proposals) {
+      const proposal = JSON.parse(fs.readFileSync(path.join(fixture.target, proposalRef.path), "utf8"));
+      assert.strictEqual(proposal.status, "proposal_ready");
+      assert.strictEqual(proposal.importStatus, "imported_non_live_validated");
+      assert.strictEqual(proposal.liveRerunRequired, false);
+      assert(proposal.structuredChanges.fileChangePaths.length === 1, "expected one file snapshot per child proposal");
+      assert.strictEqual(fs.existsSync(proposal.worktreePath), false, "child worktree should be removed after reducer");
+      const proofPath = path.join(fixture.target, proposal.proofPaths[0]);
+      const proof = JSON.parse(fs.readFileSync(proofPath, "utf8"));
+      assert.strictEqual(proof.evidence.queueSupervisorStatus, "imported_non_live_validated");
+      assert.strictEqual(proof.evidence.childProcess.ok, true);
+    }
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    assert(ledger.entries.every((item) => item.status === "completed"));
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);
@@ -2663,6 +2730,7 @@ function main() {
   assertParallelWorktreesAndProposalSchema();
   assertParallelProposalRejectGates();
   assertParallelReducerSeriallyAppliesIndependentProposals();
+  assertParallelChildExecutionProducesAcceptedFileProposals();
   assertParallelReducerRefusesDirtyCentralTree();
   assertParallelContextBudgetStopsBeforeNewWork();
   assertCompletedCandidateAndAutoLane();

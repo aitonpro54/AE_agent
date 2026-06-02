@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   existsSync,
@@ -9,7 +9,12 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
+import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "..");
 
 export const PARALLEL_PLAN_SCHEMA = "generic-repo-full-intake.parallel-candidate-plan.v1";
 export const PARALLEL_PROPOSAL_SCHEMA = "generic-repo-full-intake.parallel-candidate-proposal.v1";
@@ -44,6 +49,9 @@ const SAFE_CLASSIFICATIONS = new Set([
 const NON_TERMINAL_CANDIDATE_STATUSES = new Set(["queued"]);
 const PROPOSAL_TERMINAL_STATUSES = new Set(["proposal_ready", "rejected", "blocked", "failed"]);
 const DEFAULT_PARALLEL_LIMIT = 2;
+const DEFAULT_CHILD_PROCESS_TIMEOUT_MS = 30 * 60 * 1000;
+const PROCESS_TAIL_MAX_CHARS = 4096;
+const TEXT_FILE_MAX_BYTES = 256 * 1024;
 
 export function parallelCandidateWorktreeModeEnabled(options = {}) {
   return options.parallelCandidateWorktrees === true || options.planParallelCandidateWorktrees === true;
@@ -60,6 +68,11 @@ function safeId(value, fallback = "candidate") {
       .replace(/^-+|-+$/g, "")
       .slice(0, 96) || fallback
   );
+}
+
+function shortSafeId(value, maxLength = 40, fallback = "candidate") {
+  const normalized = safeId(value, fallback);
+  return `${normalized.slice(0, maxLength)}-${sha256Text(normalized).slice(0, 8)}`;
 }
 
 function sortedUnique(values) {
@@ -105,6 +118,67 @@ function sha256FileIfExists(filePath) {
     return null;
   }
   return createHash("sha256").update(readFileSync(filePath)).digest("hex");
+}
+
+function boundedTail(value, maxChars = PROCESS_TAIL_MAX_CHARS) {
+  const text = String(value || "");
+  return text.length > maxChars ? text.slice(text.length - maxChars) : text;
+}
+
+function boundedProcessTextStats(value) {
+  const text = String(value || "");
+  const lines = text ? text.split(/\r?\n/) : [];
+  return {
+    bytes: Buffer.byteLength(text, "utf8"),
+    lineCount: text ? lines.length : 0,
+    tail: boundedTail(text),
+    truncated: text.length > PROCESS_TAIL_MAX_CHARS,
+  };
+}
+
+function runProcessBounded(command, args, { cwd, env = process.env, timeoutMs = DEFAULT_CHILD_PROCESS_TIMEOUT_MS } = {}) {
+  return new Promise((resolve) => {
+    const child = spawn(command, args, {
+      cwd,
+      env,
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGTERM");
+    }, timeoutMs);
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString("utf8");
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString("utf8");
+    });
+    child.on("error", (error) => {
+      clearTimeout(timer);
+      resolve({
+        error: error.message,
+        exitCode: null,
+        ok: false,
+        stderr: boundedProcessTextStats(stderr),
+        stdout: boundedProcessTextStats(stdout),
+        timedOut,
+      });
+    });
+    child.on("close", (exitCode) => {
+      clearTimeout(timer);
+      resolve({
+        exitCode,
+        ok: exitCode === 0 && timedOut === false,
+        stderr: boundedProcessTextStats(stderr),
+        stdout: boundedProcessTextStats(stdout),
+        timedOut,
+      });
+    });
+  });
 }
 
 function gitOutput(cwd, args, label) {
@@ -264,6 +338,14 @@ function assertInsidePath(parent, child, label) {
   return resolvedChild;
 }
 
+function parallelWorktreesRoot(targetRepo, runId) {
+  return path.join(os.tmpdir(), "codex-pi", safeId(runId).slice(0, 32), sha256Text(path.resolve(targetRepo)).slice(0, 10), "w");
+}
+
+function candidateWorktreeDirectoryName(candidate) {
+  return shortSafeId(candidate.id, 36);
+}
+
 function isDependencyPath(repoPath) {
   return DEPENDENCY_PATHS.has(normalizeRepoPath(repoPath));
 }
@@ -376,6 +458,10 @@ function structuredSmokeEntries(structuredChanges = {}) {
   return Array.isArray(structuredChanges.smokeEntries) ? structuredChanges.smokeEntries : [];
 }
 
+function structuredFileChanges(structuredChanges = {}) {
+  return Array.isArray(structuredChanges.fileChanges) ? structuredChanges.fileChanges : [];
+}
+
 function structuredChangedPaths(structuredChanges = {}) {
   const paths = [];
   const recipe = structuredRecipeChange(structuredChanges);
@@ -387,6 +473,11 @@ function structuredChangedPaths(structuredChanges = {}) {
   }
   for (const entry of structuredSmokeEntries(structuredChanges)) {
     paths.push(entry.file || "scripts/solution-library-validation-smoke.js");
+  }
+  for (const entry of structuredFileChanges(structuredChanges)) {
+    if (entry?.path) {
+      paths.push(entry.path);
+    }
   }
   return sortedUnique(paths);
 }
@@ -403,6 +494,10 @@ function structuredSmokeEntryIds(structuredChanges = {}) {
     ...(Array.isArray(structuredChanges.smokeEntryIds) ? structuredChanges.smokeEntryIds : []),
     ...structuredSmokeEntries(structuredChanges).map((entry) => entry?.id),
   ]);
+}
+
+function structuredFileChangePaths(structuredChanges = {}) {
+  return sortedUnique(structuredFileChanges(structuredChanges).map((entry) => entry?.path));
 }
 
 function centralLedgerPathFromProposal(proposal, targetRepo) {
@@ -472,13 +567,113 @@ function applyStructuredChangesToWorktree(worktreePath, structuredChanges) {
   }
 }
 
-function proposalProofForCandidate({ candidate, changedPaths, runId, worktreePath }) {
+function readTextFileIfSmall(filePath, label) {
+  if (!existsSync(filePath) || !statSync(filePath).isFile()) {
+    return null;
+  }
+  const size = statSync(filePath).size;
+  if (size > TEXT_FILE_MAX_BYTES) {
+    throw new Error(`${label}-too-large:${size}`);
+  }
+  return readFileSync(filePath, "utf8");
+}
+
+function readJsonIfExists(filePath, label) {
+  if (!existsSync(filePath) || !statSync(filePath).isFile()) {
+    return null;
+  }
+  return readJson(filePath, label);
+}
+
+function registrySolutionsAddedByChild({ targetRepo, worktreePath }) {
+  const repoPath = "registry/solutions.json";
+  const baseRegistry = readJsonIfExists(path.join(targetRepo, repoPath), "parallel-base-solution-registry");
+  const childRegistry = readJsonIfExists(path.join(worktreePath, repoPath), "parallel-child-solution-registry");
+  if (!childRegistry || !Array.isArray(childRegistry.solutions)) {
+    return [];
+  }
+  const baseIds = new Set((Array.isArray(baseRegistry?.solutions) ? baseRegistry.solutions : []).map((entry) => entry?.id).filter(Boolean));
+  return childRegistry.solutions.filter((entry) => entry?.id && !baseIds.has(entry.id));
+}
+
+function smokeEntryAddedByChild({ candidate, targetRepo, worktreePath }) {
+  const repoPath = "scripts/solution-library-validation-smoke.js";
+  const baseText = readTextFileIfSmall(path.join(targetRepo, repoPath), "parallel-base-smoke") || "";
+  const childText = readTextFileIfSmall(path.join(worktreePath, repoPath), "parallel-child-smoke");
+  if (childText === null || childText === baseText) {
+    return null;
+  }
+  if (!childText.startsWith(baseText)) {
+    return null;
+  }
+  const appendText = childText.slice(baseText.length);
+  if (!appendText.trim()) {
+    return null;
+  }
+  return {
+    id: `${safeId(candidate.id)}-child-smoke`,
+    file: repoPath,
+    appendText,
+  };
+}
+
+function fileChangeFromChild({ repoPath, targetRepo, worktreePath }) {
+  const absolute = path.join(worktreePath, ...normalizeRepoPath(repoPath).split("/"));
+  const content = readTextFileIfSmall(absolute, `parallel-child-file:${repoPath}`);
+  if (content === null) {
+    return {
+      path: normalizeRepoPath(repoPath),
+      deleted: true,
+    };
+  }
+  const baseContent = readTextFileIfSmall(path.join(targetRepo, ...normalizeRepoPath(repoPath).split("/")), `parallel-base-file:${repoPath}`);
+  return {
+    path: normalizeRepoPath(repoPath),
+    content,
+    sha256: sha256Text(content),
+    baseSha256: baseContent === null ? null : sha256Text(baseContent),
+  };
+}
+
+function structuredChangesFromChild({ candidate, changedPaths, targetRepo, worktreePath }) {
+  const registrySolutions = changedPaths.includes("registry/solutions.json")
+    ? registrySolutionsAddedByChild({ targetRepo, worktreePath })
+    : [];
+  const smokeEntry = changedPaths.includes("scripts/solution-library-validation-smoke.js")
+    ? smokeEntryAddedByChild({ candidate, targetRepo, worktreePath })
+    : null;
+  const recipePaths = changedPaths.filter((repoPath) => pathStartsWith(repoPath, "recipes/") && repoPath.endsWith(".md"));
+  const recipePath = recipePaths[0] || null;
+  const recipe = recipePath
+    ? {
+        path: recipePath,
+        content: readTextFileIfSmall(path.join(worktreePath, ...recipePath.split("/")), `parallel-child-recipe:${recipePath}`) || "",
+      }
+    : null;
+  const handledPaths = new Set([
+    ...(recipePath ? [recipePath] : []),
+    ...(registrySolutions.length > 0 ? ["registry/solutions.json"] : []),
+    ...(smokeEntry ? ["scripts/solution-library-validation-smoke.js"] : []),
+  ]);
+  const fileChanges = changedPaths
+    .filter((repoPath) => !handledPaths.has(repoPath))
+    .map((repoPath) => fileChangeFromChild({ repoPath, targetRepo, worktreePath }));
+  return {
+    ...(recipe ? { recipe } : {}),
+    ...(registrySolutions.length > 0 ? { registrySolutions } : {}),
+    ...(smokeEntry ? { smokeEntries: [smokeEntry] } : {}),
+    ...(fileChanges.length > 0 ? { fileChanges } : {}),
+  };
+}
+
+function proposalProofForCandidate({ candidate, changedPaths, evidence = {}, runId, worktreePath }) {
   return {
     schema: "generic-repo-full-intake.parallel-candidate-proposal-proof.v1",
     candidateId: candidate.id,
     runId,
     worktreePath,
     changedPaths,
+    evidence,
     generatedAt: new Date().toISOString(),
   };
 }
@@ -555,6 +750,245 @@ function buildProposalFromCandidate({ baseHead, candidate, ledgerPath, runId, ta
   };
 }
 
+function candidateHasStaticParallelProposal(candidate) {
+  return Boolean(candidate.implementation?.parallelProposal);
+}
+
+function candidateHasChildExecutionPlan(candidate) {
+  return Array.isArray(candidate.implementation?.plannedPaths) && candidate.implementation.plannedPaths.length > 0;
+}
+
+function childContextPercent(contextBudget) {
+  const value = contextBudget?.currentContextPercent;
+  return Number.isFinite(value) ? value : null;
+}
+
+function childQueueBatchRunId(runId, candidate) {
+  return safeId(`${safeId(runId).slice(0, 36)}-${sha256Text(`${candidate.id}:parallel-child`).slice(0, 10)}-parallel`).slice(0, 80);
+}
+
+function childQueueReportPath(worktreePath, batchRunId) {
+  return path.join(worktreePath, ".codex-runtime", "sdk", "generic-repo-queue-supervisor", batchRunId, "batch-report.json");
+}
+
+function proposalStatusFromChildBatch(batchReport, changedPaths) {
+  if (batchReport?.ok !== true) {
+    return "failed";
+  }
+  if (batchReport.validation?.nonLiveValidationComplete !== true) {
+    return "failed";
+  }
+  return changedPaths.length > 0 ? "proposal_ready" : "blocked";
+}
+
+function validationResultsFromChild({ batchReport, childProcess }) {
+  const summary = batchReport?.importer?.resultSummary || {};
+  return [
+    {
+      command: "node orchestrator/run-generic-repo-queue-supervisor.mjs --batch --compact-json",
+      status: childProcess.ok ? "passed" : "failed",
+      exitCode: childProcess.exitCode,
+      timedOut: childProcess.timedOut,
+      stdout: childProcess.stdout,
+      stderr: childProcess.stderr,
+    },
+    {
+      command: "generic-repo-tool-importer non-live validation",
+      status: summary.nonLiveValidationComplete === true ? "passed" : "failed",
+      artifactCount: summary.artifactCount || 0,
+      resultSummaryPath: summary.resultSummaryPath || null,
+      validationCommandsRun: summary.validationCommandsRun === true,
+    },
+  ];
+}
+
+async function runChildQueueSupervisor({
+  batchRunId,
+  contextPercent,
+  singleLedgerPath,
+  targetRepo,
+  timeoutMs,
+  worktreePath,
+}) {
+  const scriptPath = path.join(REPO_ROOT, "orchestrator", "run-generic-repo-queue-supervisor.mjs");
+  return runProcessBounded(
+    process.execPath,
+    [
+      scriptPath,
+      "--batch",
+      "--ledger",
+      singleLedgerPath,
+      "--target-repo",
+      worktreePath,
+      "--max-items",
+      "1",
+      "--run-id",
+      batchRunId,
+      "--context-percent",
+      String(contextPercent),
+      "--compact-json",
+    ],
+    {
+      cwd: REPO_ROOT,
+      timeoutMs,
+    },
+  );
+}
+
+async function buildProposalFromChildExecution({
+  baseHead,
+  candidate,
+  contextBudget,
+  ledgerPath,
+  proposalDir,
+  runId,
+  singleLedgerPath,
+  targetRepo,
+  timeoutMs,
+  worktreePath,
+}) {
+  const contextPercent = childContextPercent(contextBudget);
+  if (contextPercent === null) {
+    return buildProposalFromFailure({
+      baseHead,
+      candidate,
+      failureReason: "parallel_child_context_percent_required",
+      ledgerPath,
+      proposalDir,
+      runId,
+      targetRepo,
+      worktreePath,
+    });
+  }
+
+  const batchRunId = childQueueBatchRunId(runId, candidate);
+  const childProcess = await runChildQueueSupervisor({
+    batchRunId,
+    contextPercent,
+    singleLedgerPath,
+    targetRepo,
+    timeoutMs,
+    worktreePath,
+  });
+  const batchReportPath = childQueueReportPath(worktreePath, batchRunId);
+  const batchReport = readJsonIfExists(batchReportPath, `parallel-child-batch-report:${candidate.id}`);
+  const changedPaths = sortedUnique(batchReport?.target?.changedPathsAfter || gitChangedPaths(worktreePath));
+  const structuredChanges = childProcess.ok && batchReport
+    ? structuredChangesFromChild({ candidate, changedPaths, targetRepo, worktreePath })
+    : {};
+  const forbiddenPaths = detectForbiddenPaths(changedPaths, {
+    ledgerPath: normalizeRepoPath(path.relative(targetRepo, ledgerPath)) || normalizeRepoPath(ledgerPath),
+  }, targetRepo);
+  const unplannedPaths = unplannedPathsForCandidate(candidate, changedPaths);
+  const proofPath = path.join(proposalDir, `${safeId(candidate.id)}.proof.json`);
+  const proof = proposalProofForCandidate({
+    candidate,
+    changedPaths,
+    evidence: {
+      batchReportPath: batchReport ? normalizeRepoPath(path.relative(targetRepo, batchReportPath)) : null,
+      batchReportSha256: sha256FileIfExists(batchReportPath),
+      childProcess,
+      importerRunId: batchReport?.importer?.runId || null,
+      importerResultSummaryPath: batchReport?.importer?.resultSummary?.resultSummaryPath || null,
+      queueSupervisorStatus: batchReport?.status || null,
+      singleCandidateLedgerPath: normalizeRepoPath(path.relative(targetRepo, singleLedgerPath)),
+    },
+    runId,
+    worktreePath,
+  });
+  writeJson(proofPath, proof);
+  const status = proposalStatusFromChildBatch(batchReport, changedPaths);
+  const proposal = {
+    schema: PARALLEL_PROPOSAL_SCHEMA,
+    candidateId: candidate.id,
+    baseHead,
+    worktreeHead: gitOutput(worktreePath, ["rev-parse", "HEAD"], "worktree-rev-parse-head"),
+    runId,
+    worktreePath,
+    ledgerPath: normalizeRepoPath(path.relative(targetRepo, ledgerPath)) || normalizeRepoPath(ledgerPath),
+    changedPaths,
+    unplannedPaths,
+    forbiddenPaths,
+    validationCommands: ["node orchestrator/run-generic-repo-queue-supervisor.mjs --batch --compact-json"],
+    validationResults: validationResultsFromChild({ batchReport, childProcess }),
+    importStatus: batchReport?.status || (childProcess.ok ? "child_batch_report_missing" : "child_process_failed"),
+    liveLaneStatus: candidate.liveGate?.required ? "parent_serial_required" : "not_required",
+    liveRerunRequired: candidate.liveGate?.required === true,
+    proofPaths: [normalizeRepoPath(path.relative(targetRepo, proofPath)) || normalizeRepoPath(proofPath)],
+    proofSha256: sha256FileIfExists(proofPath),
+    batchRunId,
+    structuredChanges: {
+      ...structuredChanges,
+      recipePathAdded: structuredRecipeChange(structuredChanges)?.path || null,
+      registrySolutionIds: structuredRegistrySolutionIds(structuredChanges),
+      smokeEntryIds: structuredSmokeEntryIds(structuredChanges),
+      fileChangePaths: structuredFileChangePaths(structuredChanges),
+      childDocsHandoffNotes: [],
+    },
+    status,
+    reason:
+      status === "proposal_ready"
+        ? null
+        : batchReport?.importer?.error || batchReport?.status || (childProcess.timedOut ? "parallel_child_timeout" : "parallel_child_no_changes"),
+    createdAt: new Date().toISOString(),
+  };
+  const proposalPath = path.join(proposalDir, `${safeId(candidate.id)}.json`);
+  writeJson(proposalPath, proposal);
+  return {
+    path: proposalPath,
+    proposal,
+    relativePath: normalizeRepoPath(path.relative(targetRepo, proposalPath)),
+  };
+}
+
+function buildProposalFromFailure({ baseHead, candidate, failureReason, ledgerPath, proposalDir, runId, targetRepo, worktreePath }) {
+  const proofPath = path.join(proposalDir, `${safeId(candidate.id)}.proof.json`);
+  const proof = proposalProofForCandidate({
+    candidate,
+    changedPaths: [],
+    evidence: { failureReason },
+    runId,
+    worktreePath,
+  });
+  writeJson(proofPath, proof);
+  const proposal = {
+    schema: PARALLEL_PROPOSAL_SCHEMA,
+    candidateId: candidate.id,
+    baseHead,
+    worktreeHead: gitOutput(worktreePath, ["rev-parse", "HEAD"], "worktree-rev-parse-head"),
+    runId,
+    worktreePath,
+    ledgerPath: normalizeRepoPath(path.relative(targetRepo, ledgerPath)) || normalizeRepoPath(ledgerPath),
+    changedPaths: [],
+    unplannedPaths: [],
+    forbiddenPaths: [],
+    validationCommands: [],
+    validationResults: [],
+    importStatus: "not_run",
+    liveLaneStatus: candidate.liveGate?.required ? "parent_serial_required" : "not_required",
+    liveRerunRequired: candidate.liveGate?.required === true,
+    proofPaths: [normalizeRepoPath(path.relative(targetRepo, proofPath)) || normalizeRepoPath(proofPath)],
+    proofSha256: sha256FileIfExists(proofPath),
+    batchRunId: `parallel-${safeId(candidate.id)}`,
+    structuredChanges: {
+      childDocsHandoffNotes: [],
+      fileChangePaths: [],
+      registrySolutionIds: [],
+      smokeEntryIds: [],
+    },
+    status: "blocked",
+    reason: failureReason,
+    createdAt: new Date().toISOString(),
+  };
+  const proposalPath = path.join(proposalDir, `${safeId(candidate.id)}.json`);
+  writeJson(proposalPath, proposal);
+  return {
+    path: proposalPath,
+    proposal,
+    relativePath: normalizeRepoPath(path.relative(targetRepo, proposalPath)),
+  };
+}
+
 function removeExistingWorktreeIfSafe({ targetRepo, worktreePath, worktreesRoot }) {
   if (!existsSync(worktreePath)) {
     return;
@@ -571,22 +1005,31 @@ function removeExistingWorktreeIfSafe({ targetRepo, worktreePath, worktreesRoot 
 }
 
 function createDetachedCandidateWorktree({ baseHead, candidate, targetRepo, worktreesRoot }) {
-  const worktreePath = assertInsidePath(worktreesRoot, path.join(worktreesRoot, safeId(candidate.id)), "parallel-worktree");
+  const worktreePath = assertInsidePath(worktreesRoot, path.join(worktreesRoot, candidateWorktreeDirectoryName(candidate)), "parallel-worktree");
   removeExistingWorktreeIfSafe({ targetRepo, worktreePath, worktreesRoot });
   mkdirSync(path.dirname(worktreePath), { recursive: true });
-  const result = spawnSync("git", ["worktree", "add", "--detach", worktreePath, baseHead], {
+  const cloneResult = spawnSync("git", ["-c", "core.longpaths=true", "clone", "--no-hardlinks", "--no-checkout", targetRepo, worktreePath], {
     cwd: targetRepo,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
-  if (result.status !== 0) {
-    throw new Error(`parallel-worktree-add-failed:${candidate.id}: ${result.stderr || result.stdout}`);
+  if (cloneResult.status !== 0) {
+    throw new Error(`parallel-worktree-clone-failed:${candidate.id}: ${cloneResult.stderr || cloneResult.stdout}`);
+  }
+  const checkoutResult = spawnSync("git", ["checkout", "--detach", baseHead], {
+    cwd: worktreePath,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (checkoutResult.status !== 0) {
+    throw new Error(`parallel-worktree-detach-checkout-failed:${candidate.id}: ${checkoutResult.stderr || checkoutResult.stdout}`);
   }
   const branch = gitOutput(worktreePath, ["branch", "--show-current"], "worktree-branch-show-current");
   const head = gitOutput(worktreePath, ["rev-parse", "HEAD"], "worktree-rev-parse-head");
   return {
     detached: branch === "",
     head,
+    kind: "local_clone_detached",
     runOwned: true,
     path: worktreePath,
     relativePath: normalizeRepoPath(path.relative(targetRepo, worktreePath)),
@@ -597,6 +1040,7 @@ function singleCandidateLedger({ baseHead, candidate, ledger, targetRepo, worktr
   const cloned = JSON.parse(JSON.stringify(ledger));
   cloned.target = {
     ...cloned.target,
+    detachedAllowed: true,
     head: baseHead,
     repoPath: worktreePath,
   };
@@ -691,6 +1135,7 @@ function rejection(code, proposal, extra = {}) {
 }
 
 function validateProposalForReduction({
+  acceptedFileChangePaths,
   acceptedRecipePaths,
   acceptedRegistrySolutionIds,
   currentHead,
@@ -751,6 +1196,11 @@ function validateProposalForReduction({
       return rejection("duplicate-registry-solution-id", proposal, { solutionId });
     }
   }
+  for (const filePath of structuredFileChangePaths(proposal.structuredChanges)) {
+    if (acceptedFileChangePaths.has(filePath)) {
+      return rejection("duplicate-file-change-path", proposal, { filePath });
+    }
+  }
   return null;
 }
 
@@ -786,6 +1236,40 @@ function applySmokeEntries(targetRepo, smokeEntries) {
   return touched;
 }
 
+function applyFileChanges(targetRepo, fileChanges) {
+  const touched = [];
+  for (const change of fileChanges) {
+    const relative = normalizeRepoPath(change?.path);
+    if (!relative) {
+      throw new Error("parallel-file-change-path-missing");
+    }
+    if (PARENT_ONLY_WRITE_PATHS.has(relative) || pathStartsWith(relative, ".codex-runtime/")) {
+      throw new Error(`parallel-file-change-parent-owned-path:${relative}`);
+    }
+    if (relative === "registry/solutions.json" || relative === "scripts/solution-library-validation-smoke.js") {
+      throw new Error(`parallel-file-change-shared-path-requires-structured-merge:${relative}`);
+    }
+    if (isDependencyPath(relative) || isRawJsxTargetPath(relative)) {
+      throw new Error(`parallel-file-change-forbidden-path:${relative}`);
+    }
+    const absolute = path.join(targetRepo, ...relative.split("/"));
+    if (change.deleted === true) {
+      if (existsSync(absolute)) {
+        rmSync(absolute, { force: true });
+      }
+      touched.push(relative);
+      continue;
+    }
+    if (typeof change.content !== "string") {
+      throw new Error(`parallel-file-change-content-missing:${relative}`);
+    }
+    mkdirSync(path.dirname(absolute), { recursive: true });
+    writeFileSync(absolute, change.content, "utf8");
+    touched.push(relative);
+  }
+  return touched;
+}
+
 function applyAcceptedProposal(targetRepo, proposal) {
   const touched = [];
   const recipe = structuredRecipeChange(proposal.structuredChanges);
@@ -801,6 +1285,7 @@ function applyAcceptedProposal(targetRepo, proposal) {
     touched.push(registryPath);
   }
   touched.push(...applySmokeEntries(targetRepo, structuredSmokeEntries(proposal.structuredChanges)));
+  touched.push(...applyFileChanges(targetRepo, structuredFileChanges(proposal.structuredChanges)));
   return sortedUnique(touched);
 }
 
@@ -947,7 +1432,7 @@ export function reduceParallelCandidateProposals({
     };
   }
   const currentHead = gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head");
-  const worktreesRoot = path.join(runRoot, "parallel-candidates", "worktrees");
+  const worktreesRoot = parallelWorktreesRoot(targetRepo, runId);
   const existingRecipePaths = new Set(
     existsSync(path.join(targetRepo, "recipes"))
       ? readdirSync(path.join(targetRepo, "recipes"))
@@ -956,6 +1441,7 @@ export function reduceParallelCandidateProposals({
       : [],
   );
   const existingSolutionIds = existingRegistrySolutionIds(targetRepo);
+  const acceptedFileChangePaths = new Set();
   const acceptedRecipePaths = new Set();
   const acceptedRegistrySolutionIds = new Set();
   const accepted = [];
@@ -964,6 +1450,7 @@ export function reduceParallelCandidateProposals({
 
   for (const proposal of proposals) {
     const decision = validateProposalForReduction({
+      acceptedFileChangePaths,
       acceptedRecipePaths,
       acceptedRegistrySolutionIds,
       currentHead,
@@ -988,6 +1475,9 @@ export function reduceParallelCandidateProposals({
     }
     for (const solutionId of structuredRegistrySolutionIds(proposal.structuredChanges)) {
       acceptedRegistrySolutionIds.add(solutionId);
+    }
+    for (const filePath of structuredFileChangePaths(proposal.structuredChanges)) {
+      acceptedFileChangePaths.add(filePath);
     }
     accepted.push({
       batchRunId: proposal.batchRunId,
@@ -1068,7 +1558,7 @@ function writeParallelProof({ candidatePlans, planPath, proposals, reducer, repo
   };
 }
 
-function compactParallelPlan({ baseHead, candidateIds, limit, mode, runId, runRoot, selected, targetRepo }) {
+function compactParallelPlan({ baseHead, candidateIds, limit, mode, runId, selected, targetRepo, worktreesRoot }) {
   return {
     schema: PARALLEL_PLAN_SCHEMA,
     runId,
@@ -1085,7 +1575,7 @@ function compactParallelPlan({ baseHead, candidateIds, limit, mode, runId, runRo
       plannedPaths: candidatePlannedPaths(entry),
       sourcePath: entry.sourcePath,
     })),
-    runOwnedRoot: normalizeRepoPath(path.relative(targetRepo, path.join(runRoot, "parallel-candidates"))),
+    runOwnedRoot: normalizeRepoPath(path.relative(targetRepo, worktreesRoot)),
     safetyPolicy: {
       branchCreationAllowedForChild: false,
       centralLedgerWritesAllowedForChild: false,
@@ -1102,7 +1592,7 @@ function compactParallelPlan({ baseHead, candidateIds, limit, mode, runId, runRo
   };
 }
 
-export function runParallelCandidateWorktrees({
+export async function runParallelCandidateWorktrees({
   contextBudget,
   ledger,
   ledgerPath,
@@ -1112,18 +1602,18 @@ export function runParallelCandidateWorktrees({
   targetRepo,
 }) {
   const limit = parsePositiveInteger(options.parallelCandidateLimit, "parallel-candidate-limit", DEFAULT_PARALLEL_LIMIT);
+  const timeoutMs = parsePositiveInteger(options.commandTimeoutMs, "command-timeout-ms", DEFAULT_CHILD_PROCESS_TIMEOUT_MS);
   const candidateIds = parseCsv(options.parallelCandidateIds);
   const planOnly = options.planParallelCandidateWorktrees === true && options.parallelCandidateWorktrees !== true;
   const mode = planOnly ? "parallel_plan_only" : "parallel_candidate_worktrees";
   const baseHead = gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head");
   const selected = selectParallelCandidates(ledger, { candidateIds, limit });
   const parallelRoot = path.join(runRoot, "parallel-candidates");
-  const worktreesRoot = path.join(parallelRoot, "worktrees");
+  const worktreesRoot = parallelWorktreesRoot(targetRepo, runId);
   const proposalDir = path.join(parallelRoot, "proposals");
-  const ledgerRoot = path.join(parallelRoot, "single-candidate-ledgers");
   mkdirSync(parallelRoot, { recursive: true });
 
-  const plan = compactParallelPlan({ baseHead, candidateIds, limit, mode, runId, runRoot, selected, targetRepo });
+  const plan = compactParallelPlan({ baseHead, candidateIds, limit, mode, runId, selected, targetRepo, worktreesRoot });
   const planPath = path.join(parallelRoot, "parallel-plan.json");
   writeJson(planPath, plan);
 
@@ -1156,6 +1646,7 @@ export function runParallelCandidateWorktrees({
         created: 0,
         detached: 0,
         runOwned: 0,
+        cleaned: 0,
       },
       proposals: [],
       reducer: null,
@@ -1213,35 +1704,93 @@ export function runParallelCandidateWorktrees({
     return report;
   }
 
-  const candidatePlans = [];
-  const proposals = [];
-  for (const candidate of selected) {
+  const candidatePlanTasks = selected.map((candidate) => {
     const worktree = createDetachedCandidateWorktree({ baseHead, candidate, targetRepo, worktreesRoot });
+    const childLedgerRoot = path.join(
+      worktree.path,
+      ".codex-runtime",
+      "sdk",
+      "generic-repo-full-intake",
+      safeId(runId),
+      "parallel-single-candidate-ledgers",
+    );
     const singleLedgerPath = writeSingleCandidateLedger({
       baseHead,
       candidate,
       ledger,
-      ledgerRoot,
+      ledgerRoot: childLedgerRoot,
       targetRepo,
       worktreePath: worktree.path,
     });
-    const proposalResult = buildProposalFromCandidate({
-      baseHead,
-      candidate,
-      ledgerPath,
-      proposalDir,
-      runId,
-      targetRepo,
-      worktreePath: worktree.path,
-    });
-    proposalResult.proposal.proposalPath = proposalResult.relativePath;
-    proposals.push(proposalResult.proposal);
-    candidatePlans.push({
+    const candidatePlan = {
       candidateId: candidate.id,
       singleCandidateLedgerPath: normalizeRepoPath(path.relative(targetRepo, singleLedgerPath)),
       worktree,
-      proposalPath: proposalResult.relativePath,
-    });
+      proposalPath: null,
+    };
+    return (async () => {
+      let proposalResult;
+      try {
+        if (candidateHasStaticParallelProposal(candidate)) {
+          proposalResult = buildProposalFromCandidate({
+            baseHead,
+            candidate,
+            ledgerPath,
+            proposalDir,
+            runId,
+            targetRepo,
+            worktreePath: worktree.path,
+          });
+        } else if (!candidateHasChildExecutionPlan(candidate)) {
+          proposalResult = buildProposalFromFailure({
+            baseHead,
+            candidate,
+            failureReason: "parallel_candidate_child_execution_not_requested",
+            ledgerPath,
+            proposalDir,
+            runId,
+            targetRepo,
+            worktreePath: worktree.path,
+          });
+        } else {
+          proposalResult = await buildProposalFromChildExecution({
+            baseHead,
+            candidate,
+            contextBudget,
+            ledgerPath,
+            proposalDir,
+            runId,
+            singleLedgerPath,
+            targetRepo,
+            timeoutMs,
+            worktreePath: worktree.path,
+          });
+        }
+      } catch (error) {
+        proposalResult = buildProposalFromFailure({
+          baseHead,
+          candidate,
+          failureReason: `parallel_child_exception:${error.message}`,
+          ledgerPath,
+          proposalDir,
+          runId,
+          targetRepo,
+          worktreePath: worktree.path,
+        });
+      }
+      proposalResult.proposal.proposalPath = proposalResult.relativePath;
+      candidatePlan.proposalPath = proposalResult.relativePath;
+      return { candidate, candidatePlan, proposalResult };
+    })();
+  });
+
+  const candidateResults = await Promise.all(candidatePlanTasks);
+  const candidatePlans = [];
+  const proposals = [];
+  for (const { candidate, candidatePlan, proposalResult } of candidateResults) {
+    proposalResult.proposal.proposalPath = proposalResult.relativePath;
+    proposals.push(proposalResult.proposal);
+    candidatePlans.push(candidatePlan);
     report.parallel.proposals.push({
       candidateId: candidate.id,
       path: proposalResult.relativePath,
@@ -1261,6 +1810,7 @@ export function runParallelCandidateWorktrees({
     created: candidatePlans.length,
     detached: candidatePlans.filter((entry) => entry.worktree.detached).length,
     runOwned: candidatePlans.filter((entry) => entry.worktree.runOwned).length,
+    cleaned: 0,
   };
 
   const reducer = reduceParallelCandidateProposals({
@@ -1294,6 +1844,15 @@ export function runParallelCandidateWorktrees({
       item.reason = blocked.reason;
     }
   }
+
+  let cleaned = 0;
+  for (const planEntry of candidatePlans) {
+    removeExistingWorktreeIfSafe({ targetRepo, worktreePath: planEntry.worktree.path, worktreesRoot });
+    if (!existsSync(planEntry.worktree.path)) {
+      cleaned += 1;
+    }
+  }
+  report.parallel.worktrees.cleaned = cleaned;
 
   const proof = writeParallelProof({
     candidatePlans,

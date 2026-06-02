@@ -28,8 +28,10 @@ Historical milestone detail through 2026-05-31 is archived at
 - [x] Historical milestones 1-32: archived/summarized baseline, provider work,
   strict-runner hardening, context-budget tuning, Selection lane prep, and
   completed Selection candidates through disabled/guide layers.
-- [x] AUX parallel candidate worktrees architecture: opt-in detached
-  candidate-worktree proposals plus serial parent reducer; default serial
+- [x] AUX Parallel Tool Intake V1: opt-in parallel lane now runs real non-live
+  child execution in isolated detached local-clone trees, emits compact
+  `generic-repo-full-intake.parallel-candidate-proposal.v1` packets, and lets
+  the parent reducer serially accept only approved root changes; default serial
   Full Intaker behavior unchanged.
 - [x] Full Intaker Selection retry slice completed for
   `full-intake-kyletmartinez`: `select-layers-below-label`,
@@ -79,12 +81,15 @@ explicit approval.
 No queued Full Intaker item remains. Next work should not start a broad queue.
 Choose one bounded follow-up:
 
-1. Review the terminal backlog in compact form and pick one narrow generated-only
+1. Review Parallel Tool Intake V1 infrastructure before any real broad intake
+   longrun; use explicit candidate ids and a bounded
+   `--parallel-candidate-limit` when exercising it.
+2. Review the terminal backlog in compact form and pick one narrow generated-only
    family to unblock, likely `effect-property-generated-only` or
    `layer-timing-generated-only`.
-2. Create the missing typed-tool/proof lane for that family before requeueing any
+3. Create the missing typed-tool/proof lane for that family before requeueing any
    matching candidates.
-3. Continue with strict `max-items 1`, compact output, and an explicit current
+4. Continue with strict `max-items 1`, compact output, and an explicit current
    context percent.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
@@ -108,6 +113,17 @@ outside the runner out of scope.
   selected/layers overlap must not surface `bulk-layer-duplicate-typed-tool`
   unless the prompt explicitly asks to duplicate/copy/clone, while Selection
   evidence terms must survive compact prompt formatting.
+- Parallel Tool Intake V1 keeps live AE/CEP validation, central ledger writes,
+  registry/recipe/library writes, docs, handoff, and commits parent-owned and
+  serial. Child trees may only emit compact proposals/proofs.
+- Child isolation uses short temp local clones under `%TEMP%/codex-pi/...`
+  instead of shared git worktrees in V1, because nested detached Windows
+  worktree paths hit `GIT_DIR` path-length limits during importer child runs.
+  The parent still persists proposal/proof artifacts under the run root before
+  cleanup.
+- Detached child imports pass an explicit `detachedAllowed` target contract and
+  use shortened child runtime paths, so ordinary importer runs keep their
+  existing branch checks and worktree layout.
 
 ## Validation
 
@@ -129,6 +145,19 @@ outside the runner out of scope.
   `node scripts/solution-registry-smoke.js`;
   `node scripts/solution-library-validation-smoke.js`;
   `node scripts/solution-retrieval-smoke.js`.
+- Parallel Tool Intake V1 validation passed:
+  `node --check orchestrator/parallel-candidate-worktrees.mjs`;
+  `node --check orchestrator/run-generic-repo-full-intake.mjs`;
+  `node --check orchestrator/run-generic-repo-queue-supervisor.mjs`;
+  `node --check orchestrator/run-generic-repo-tool-importer.mjs`;
+  `node --check scripts/sdk-generic-repo-full-intake-smoke.js`;
+  `git diff --check`;
+  `node scripts/sdk-generic-repo-importer-command-smoke.js`;
+  `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`;
+  `node scripts/solution-library-validation-smoke.js`;
+  `node scripts/solution-registry-smoke.js`;
+  `node scripts/solution-retrieval-smoke.js`;
+  `node scripts/sdk-generic-repo-full-intake-smoke.js`.
 - Not run by design: Local/Ollama, fallback providers, broad/default CEP smoke,
   broad real queue, `max-items > 1`, dependency/package changes, full runtime
   reports, push, PR, GitHub automation, raw JSX copy, and source checkout writes

@@ -31,6 +31,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..");
 const CONTRACT_PATH = ".codex-audit/sdk-generic-repo-importer/aux-014-generic-repo-importer-contract.json";
 const RUN_ROOT_RELATIVE = ".codex-runtime/sdk/generic-repo-importer";
+const SHORT_RUN_ROOT_RELATIVE = ".codex-runtime/gri";
 const RUNNER_SCHEMA = "generic-repo-tool-importer.command-skeleton.v1";
 const SUPERVISOR_PLAN_SCHEMA = "generic-repo-tool-importer.supervisor-plan.v1";
 const ANALYSIS_SCHEMA = "generic-repo-tool-importer.analysis-fixture.v1";
@@ -488,13 +489,16 @@ function gitCurrentHead(cwd) {
   return runGit(cwd, ["rev-parse", "HEAD"], "target git head");
 }
 
-function gitCurrentBranch(cwd) {
+function gitCurrentBranch(cwd, { allowDetached = false } = {}) {
   const result = spawnSync("git", ["symbolic-ref", "-q", "--short", "HEAD"], {
     cwd,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
   if (result.status !== 0) {
+    if (allowDetached) {
+      return "__detached__";
+    }
     throw new Error("target-repo-branch-detached");
   }
   return result.stdout.trim();
@@ -541,8 +545,8 @@ function assertGitTargetCleanOrOwned(cwd, state) {
   }
 }
 
-function assertRunRootIgnored(targetRepo, runId) {
-  const probe = `${RUN_ROOT_RELATIVE}/${runId}/state.json`;
+function assertRunRootIgnored(targetRepo, runId, runRootBase = RUN_ROOT_RELATIVE) {
+  const probe = `${runRootBase}/${runId}/state.json`;
   const result = spawnSync("git", ["check-ignore", "-q", probe], {
     cwd: targetRepo,
     encoding: "utf8",
@@ -1176,7 +1180,7 @@ function initializeRun({ manifest, normalizedManifest, manifestHash, manifestPat
   const now = new Date().toISOString();
   mkdirSync(runRoot, { recursive: true });
   const targetHead = gitCurrentHead(targetRepo);
-  const targetBranch = gitCurrentBranch(targetRepo);
+  const targetBranch = gitCurrentBranch(targetRepo, { allowDetached: manifest.targetRepo.detachedAllowed === true });
 
   const state = {
     schema: RUNNER_SCHEMA,
@@ -1957,13 +1961,25 @@ function readImplementationPlanningOutputs(runRoot) {
   return { plannedPaths, worktreePlan };
 }
 
+function detachedAllowedRunRoot(runRootRelative) {
+  return normalizeRepoPath(runRootRelative).startsWith(`${SHORT_RUN_ROOT_RELATIVE}/`);
+}
+
+function implementationWorktreeExpectedPrefix(runRootRelative) {
+  return detachedAllowedRunRoot(runRootRelative)
+    ? ".codex-runtime/iw/"
+    : `${normalizeRepoPath(runRootRelative)}/worktrees/`;
+}
+
 function implementationWorktreePathForBatch({ targetRepo, runRootRelative, batch }) {
   const plannedWorktreePath = normalizePlannedPath(batch.plannedWorktreePath || `worktrees/${safeId(batch.id)}`);
-  if (!plannedWorktreePath.startsWith("worktrees/") || plannedWorktreePath === "worktrees/") {
+  if (!detachedAllowedRunRoot(runRootRelative) && (!plannedWorktreePath.startsWith("worktrees/") || plannedWorktreePath === "worktrees/")) {
     throw new Error(`implementation-worktree-path-not-run-owned: ${batch.id}:${plannedWorktreePath}`);
   }
-  const targetRelative = normalizeRepoPath(path.posix.join(normalizeRepoPath(runRootRelative), plannedWorktreePath));
-  const expectedPrefix = `${normalizeRepoPath(runRootRelative)}/worktrees/`;
+  const expectedPrefix = implementationWorktreeExpectedPrefix(runRootRelative);
+  const targetRelative = detachedAllowedRunRoot(runRootRelative)
+    ? normalizeRepoPath(path.posix.join(expectedPrefix, safeId(batch.id).slice(0, 48)))
+    : normalizeRepoPath(path.posix.join(normalizeRepoPath(runRootRelative), plannedWorktreePath));
   if (!targetRelative.startsWith(expectedPrefix)) {
     throw new Error(`implementation-worktree-path-not-run-owned: ${batch.id}:${targetRelative}`);
   }
@@ -1994,6 +2010,22 @@ function assertDetachedCleanWorktree(worktreePath, label) {
   if (status.trim() !== "") {
     throw new Error(`implementation-worktree-dirty: ${label}:${status.trim()}`);
   }
+}
+
+function createDetachedImplementationWorktree({ absolute, label, manifest, targetRepo }) {
+  if (manifest.targetRepo.detachedAllowed === true) {
+    mkdirSync(path.dirname(absolute), { recursive: true });
+    const targetHead = gitCurrentHead(targetRepo);
+    runGit(
+      targetRepo,
+      ["-c", "core.longpaths=true", "clone", "--no-hardlinks", "--no-checkout", targetRepo, absolute],
+      `create implementation clone ${label}`,
+    );
+    runGit(absolute, ["checkout", "--detach", targetHead], `detach implementation clone ${label}`);
+    return "local_clone_detached";
+  }
+  runGit(targetRepo, ["worktree", "add", "--detach", absolute, "HEAD"], `create implementation worktree ${label}`);
+  return "git_worktree_detached";
 }
 
 function validateImplementationWorktreeInputs(manifest, plannedPaths, worktreePlan) {
@@ -2079,7 +2111,12 @@ function buildImplementationWorktreeArtifacts(manifest, manifestHash, targetRepo
       throw new Error(`implementation-worktree-path-exists: ${batch.id}:${targetRelative}`);
     }
 
-    runGit(targetRepo, ["worktree", "add", "--detach", absolute, "HEAD"], `create implementation worktree ${batch.id}`);
+    const implementationTreeKind = createDetachedImplementationWorktree({
+      absolute,
+      label: batch.id,
+      manifest,
+      targetRepo,
+    });
     assertDetachedCleanWorktree(absolute, batch.id);
 
     const childIntentPath = `implementation/child-run-intents/${safeBatchId}.json`;
@@ -2096,6 +2133,7 @@ function buildImplementationWorktreeArtifacts(manifest, manifestHash, targetRepo
       plannedWorktreePath: batch.plannedWorktreePath,
       actualWorktreePath: absolute,
       actualWorktreeRelativePath: targetRelative,
+      implementationTreeKind,
       worktreeCreated: true,
       branchCreated: false,
       childRunCreated: false,
@@ -2115,6 +2153,7 @@ function buildImplementationWorktreeArtifacts(manifest, manifestHash, targetRepo
       promptPath: batch.promptPath,
       actualWorktreePath: absolute,
       actualWorktreeRelativePath: targetRelative,
+      implementationTreeKind,
       childRunIntentPath: childIntentPath,
       batchResultPath,
     });
@@ -2144,6 +2183,7 @@ function buildImplementationWorktreeArtifacts(manifest, manifestHash, targetRepo
       promptPath: batch.promptPath,
       actualWorktreePath: batch.actualWorktreePath,
       actualWorktreeRelativePath: batch.actualWorktreeRelativePath,
+      implementationTreeKind: batch.implementationTreeKind,
       childRunIntentPath: batch.childRunIntentPath,
       batchResultPath: batch.batchResultPath,
       status: "worktree_ready",
@@ -2271,7 +2311,7 @@ function assertRunOwnedChildWorktree({ targetRepo, runRootRelative, batch }) {
   if (!pathStartsWith(worktreePath, targetRepo)) {
     throw new Error(`implementation-child-run-worktree-outside-target: ${batchId}`);
   }
-  const expectedPrefix = `${normalizeRepoPath(runRootRelative)}/worktrees/`;
+  const expectedPrefix = implementationWorktreeExpectedPrefix(runRootRelative);
   const relative = normalizeRepoPath(batch.actualWorktreeRelativePath || path.relative(targetRepo, worktreePath));
   if (!relative.startsWith(expectedPrefix)) {
     throw new Error(`implementation-child-run-worktree-not-run-owned: ${batchId}:${relative}`);
@@ -2938,7 +2978,7 @@ function buildControlledSourceMergeArtifacts({ manifest, manifestHash, targetRep
   assertGitTargetCleanOrOwned(targetRepo, { ownedDirtyPaths: [] });
 
   const targetHeadBefore = gitCurrentHead(targetRepo);
-  const targetBranch = gitCurrentBranch(targetRepo);
+  const targetBranch = gitCurrentBranch(targetRepo, { allowDetached: manifest.targetRepo.detachedAllowed === true });
   if (!state.targetBranch) {
     throw new Error("controlled-merge-target-branch-baseline-missing");
   }
@@ -5199,9 +5239,10 @@ export function runImporter(options, cwd = process.cwd()) {
 
   validateManifest(contract, manifest);
   const targetRepo = resolveTargetRepo(manifest, cwd);
-  const runRootRelative = `${RUN_ROOT_RELATIVE}/${manifest.run.runId}`;
+  const runRootBase = manifest.targetRepo.detachedAllowed === true ? SHORT_RUN_ROOT_RELATIVE : RUN_ROOT_RELATIVE;
+  const runRootRelative = `${runRootBase}/${manifest.run.runId}`;
   const runRoot = resolveInside(targetRepo, runRootRelative, "run root");
-  assertRunRootIgnored(targetRepo, manifest.run.runId);
+  assertRunRootIgnored(targetRepo, manifest.run.runId, runRootBase);
 
   const existingState = loadState(runRoot);
   assertGitTargetCleanOrOwned(targetRepo, existingState);
