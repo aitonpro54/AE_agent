@@ -67,6 +67,12 @@ Historical milestone detail through 2026-05-31 is archived at
   permission, a separate `License` attribution artifact is generated, and
   plan-only parallel scheduling exposes two queued ids without running child
   worktrees or copying raw JSX.
+- [x] Guarded ae-scripting parallel-scoped attempt:
+  explicit ids `tool-changeallnames` and `tool-batchparent` ran through the
+  parent-owned parallel reducer only. Windows child checkout/ledger/smoke
+  blockers were fixed with local fail-closed infrastructure commits, but no
+  candidate was accepted: `tool-changeallnames` timed out in the child writer,
+  and `tool-batchparent` failed closed as missing from the implementation batch.
 
 ## Current State
 
@@ -130,20 +136,26 @@ explicit approval.
   `tool-batchparent`, `tool-changeallnames`; both are queued plan-only ids
 - parent Full Intaker parallel plan:
   `selectedCandidateIds=[tool-batchparent, tool-changeallnames]`,
-  `candidatesExecuted=0`, `childWorktreesCreated=0`,
+  scoped execution attempted with `worktrees.created=2`, `detached=2`,
+  `runOwned=2`, `cleaned=2`; reducer accepted `0`, rejected `0`, blocked `2`,
   `centralSourceMerge=false`
-- compact proof:
-  `mode=parallel_plan_only`, `contractComplete=true`, `changedPathCount=0`,
-  `unplannedPathCount=0`, proof sha
-  `6d707356cce4fdc2355958e9644364f539f8f3ec13ad5e80deaba9187ce5791d`
+- compact proof now reports `mode=parallel_candidate_worktrees`,
+  `contractComplete=true`, `changedPathCount=0`, `unplannedPathCount=0`, proof
+  sha `06d599d93b24abf99f4404fb0d6ac1a14392c61f3b1654ec9e9859a17c8fa559`
+- final proposal status:
+  `tool-changeallnames` failed with
+  `implementation-child-run-timeout: queue-batch-1-9080b5431f`;
+  `tool-batchparent` failed with
+  `implementation-batch-candidate-missing: tool-batchparent`
 - compact status helper reported `running` with `Processes: 0 related`; treat
-  this as stale plan-only state and run a stale-run check before any resume
+  this as stale state after the scoped attempt and run a stale-run check before
+  any resume
 
 ## Next Milestone
 
-`full-intake-ae-scripting-snippets` now has 23 queued plan-only candidates, but
-no candidate has been executed. Next work should stay bounded and avoid broad
-queue processing. Choose one follow-up:
+`full-intake-ae-scripting-snippets` still has 23 queued candidates; the two-id
+parallel-scoped attempt accepted none. Next work should stay bounded and avoid
+broad queue processing. Choose one follow-up:
 
 1. Review Parallel Tool Intake V1 infrastructure before any real broad intake
    longrun; use explicit candidate ids and a bounded
@@ -153,12 +165,10 @@ queue processing. Choose one follow-up:
    `layer-timing-generated-only`.
 3. Create the missing typed-tool/proof lane for that family before requeueing any
    matching candidates.
-4. Continue with strict `max-items 1`, compact output, and an explicit current
-   context percent.
-5. For ae-scripting, run at most one scoped candidate after reviewing the
-   generated `License` attribution artifact and stale status. The safer first
-   scoped id is likely `tool-changeallnames`; `tool-batchparent` is more
-   semantically fragile.
+4. For ae-scripting, retry only `tool-changeallnames` after a narrow child-run
+   timeout/recovery design, or prepare a manual recipe-only proposal review.
+5. Keep `tool-batchparent` blocked until the implementation batch mismatch and
+   parenting semantics are proven; do not accept it from the current proposal.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -226,6 +236,16 @@ outside the runner out of scope.
   `full-intake-proof.mjs` now falls back from root `proof-envelope.json` to
   `parallel-candidates/parallel-proof-envelope.json` and reports parallel mode
   and evidence in compact output.
+- Parallel-scoped ae-scripting runs exposed three infrastructure gaps, all fixed
+  locally without central child writes: Windows long-path checkout for outer
+  child clones, missing auto-intake `safetySignals` objects, and Windows
+  long-path checkout for importer implementation clones. Large shared smoke
+  files now use bounded append-only extraction so proposals do not embed the
+  whole smoke file.
+- `tool-changeallnames` remains unaccepted because the child writer timed out;
+  accepting it now would require a separate recovery/manual proposal slice.
+  `tool-batchparent` remains unaccepted because the child batch could not bind
+  the candidate and parenting semantics are more fragile.
 
 ## Validation
 
@@ -335,6 +355,25 @@ outside the runner out of scope.
   verification, reliability validation, ChatGPT connector, provider API,
   prompt optimization, bridge-only, and full smoke test. `git diff --check`
   passed with only normal Windows LF-to-CRLF working-copy warnings.
+- ae-scripting parallel-scoped attempt validation passed:
+  `node --check orchestrator/parallel-candidate-worktrees.mjs`;
+  `node --check orchestrator/run-generic-repo-auto-intake.mjs`;
+  `node --check orchestrator/run-generic-repo-tool-importer.mjs`;
+  `node --check scripts/sdk-generic-repo-full-intake-smoke.js`;
+  `node --check scripts/sdk-generic-repo-auto-intake-smoke.js`;
+  `node scripts/sdk-generic-repo-full-intake-smoke.js`;
+  `node scripts/sdk-generic-repo-auto-intake-smoke.js`;
+  `node scripts/sdk-generic-repo-importer-command-smoke.js`;
+  `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`;
+  `node scripts/solution-library-validation-smoke.js`;
+  `node scripts/solution-registry-smoke.js`;
+  `node scripts/solution-retrieval-smoke.js`;
+  `node scripts/semantic-verification-smoke.js`;
+  `git diff --check`.
+  Real scoped runs used only explicit ids
+  `tool-changeallnames,tool-batchparent`; final proof sha
+  `06d599d93b24abf99f4404fb0d6ac1a14392c61f3b1654ec9e9859a17c8fa559`.
+  Accepted candidates: `0`; blocked proposals: `2`.
 - Not run by design: Local/Ollama, fallback providers, broad/default CEP smoke,
   broad real queue, `max-items > 1`, dependency/package changes, full runtime
   reports, push, PR, GitHub automation, raw JSX copy, and source checkout writes
