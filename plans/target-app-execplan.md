@@ -30,441 +30,86 @@ Codex App dev-request handoff for repository work.
 
 ## Progress
 
-- [x] Full intake tool-selection-select-guide-layers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-selection-select-guide-layers); live gate ready, importer batch full-intake-kyletmartinez-c4fe4ae12d-import, commit recorded after candidate commit.
-
-- [x] Full intake tool-selection-select-disabled-layers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-selection-select-disabled-layers); live gate ready, importer batch full-intake-kyletmartinez-3679a3de35-import, commit recorded after candidate commit.
-
-- [x] Full intake tool-properties-separate-size-dimensions: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-separate-size-dimensions); live gate ready, importer batch full-intake-kyletmartinez-854882faa1-import, commit recorded after candidate commit.
-
-- [x] Full intake tool-keyframes-set-spacial-in-tanget: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-keyframes-set-spacial-in-tanget); live gate ready, importer batch full-intake-kyletmartinez-7e72e8fd45-import, commit recorded after candidate commit.
-
-- [x] Full intake tool-keyframes-keyframe-current-value-from-expression: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-keyframes-keyframe-current-value-from-expression); live gate ready, importer batch full-intake-kyletmartinez-e96375bafc-import, commit recorded after candidate commit.
-
-- [x] Full intake tool-keyframes-fill-in-keyframes: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-keyframes-fill-in-keyframes); live gate ready, importer batch full-intake-kyletmartinez-cc68b277f1-import, commit recorded after candidate commit.
-
-- [x] Full intake tool-compositions-toggle-onion-skinning: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-compositions-toggle-onion-skinning); live gate ready, importer batch full-intake-kyletmartinez-f67a738f74-import, commit recorded after candidate commit.
-
-- [x] Milestones 1-6: importer child-run guard stabilization (`39b36f5`),
-  compact active-plan reset, camera-controller recovery review, provider
-  self-test guardrail hardening plus installed-panel validation, and Agent
-  Hardcore typed-tool handoff proof all completed with documented validation.
-- [x] Milestones 7-14: bounded Full Intaker tail/retry work drained the old
-  queue tails, scoped blocked live-lane synthesis, triaged unsafe skips, prepared
-  and accepted the Selection lane, and patched the Codex CLI
-  `--reasoning-effort` incompatibility. Historical detail is archived; no
-  Local/Ollama, broad/default CEP smoke, dependency change, push, PR, old
-  longrun, source merge outside runner, or `max-items > 1` was used.
-- [x] Milestone 15: AUX-021 detached importer child-run for
-  `tool-selection-layer-selection-set`. Added an advisory typed-plan recipe and
-  registry/smoke-library metadata for explicit active-comp layer selection mutation
-  through `set_layer_selection`, with `get_comp_details` layer inventory evidence,
-  replacement selection semantics, `get_selected_layers` read-back, and fail-closed
-  boundaries for persistent named selection sets or fuzzy/native UI selection
-  behavior. No source JSX was copied. The parent scoped retry reached
-  `non_live_validation_complete` and stopped before `generated_only_live_rerun`.
-- [x] Milestone 16: Marker family readiness correction. With Selection live rerun
-  and source merge still approval-gated, reviewed only targeted marker readiness:
-  existing recipes/lane cover layer markers, while the four remaining triage Marker
-  unsafe-skip ids require composition-marker typed-tool contracts before retry.
-  Updated the triage counts and moved those four ids out of immediate safe-next.
-- [x] Milestone 17: Selection longrun resumed under the current
-  `run-generic-repo-full-intake` strict phase runner. `tool-selection-layer-selection-set`
-  completed its pending generated-only live rerun and finalization, then the
-  remaining ten Selection ids were scoped/requeued. `tool-selection-select-all-children`
-  completed through import, controlled merge, non-live validation, generated-only
-  live rerun, docs/handoff finalization, and commit. Both imported advisory
-  typed-plan recipes use `set_layer_selection` with typed read-back; no source JSX
-  was copied.
-- [x] Milestone 18: Full Intaker compact longrun continuation. From a clean
-  `cb8187a` baseline, the current strict phase runner advanced three queued
-  candidates with `max-items 1`: `tool-project-rename-selected-layer-source`
-  reached importer and failed closed with missing child summary,
-  `tool-project-rename-source-to-layer-name` reached importer and failed closed
-  with missing child summary, and
-  `tool-keyframes-calculate-frames-to-selected-keyframe` reached live-lane-ready
-  then stopped at the no-new-work context gate. A partial generated recipe from
-  that failed budget stop was removed uncommitted; no source merge, validation
-  pass, live rerun, Local/Ollama, broad/default CEP smoke, dependency change,
-  push/PR, old longrun, or `max-items > 1` was run.
-- [x] Milestone 19: Full Intaker context-budget tolerance bump. Per user
-  direction, the strict full-intake runner's default context thresholds were raised
-  by 20%: soft-stop 50 -> 60, no-new-work 55 -> 66, handoff 60 -> 72, hard-stop
-  70 -> 84. Normal threshold caps were raised from handoff/hard-stop 80/90 to
-  96/100 so explicit longrun overrides can use the wider budget. Context smoke
-  coverage was updated to prove the new default no-new-work stop point.
-- [x] Milestone 20: Full Intaker strict continuation to context handoff.
-  `tool-markers-add-markers-at-selected-keyframes` selected, reached
-  `live_lane_ready`, then failed closed at importer patch conflicts; the partial
-  conflict was cleaned back to a clean tree. The next candidate,
-  `tool-compositions-toggle-onion-skinning`, was selected, then work stopped
-  before the next child-run because it would cross the handoff threshold.
-- [x] Milestone 21: AUX compact child-run context protocol. On branch
-  `codex/AUX-compact-child-run-context`, importer child runs now receive a bounded
-  `child-run-context-pack` instead of expanding the full batch prompt into child
-  stdin. Full-intake strict budget now uses a lightweight resume preflight gate
-  plus compact child/import/live-rerun costs, so a generated-only live rerun at
-  `58%` context can continue as a soft-stop `65%` prediction instead of failing
-  early at a false `68%` no-new-work estimate.
-- [x] Milestone 22: Full Intaker onion-skinning strict continuation.
-  `tool-compositions-toggle-onion-skinning` advanced through
-  `prove_or_register_live_lane`, `run_importer_phase`, `controlled_merge`, and
-  `non_live_validation`. The runner added advisory typed-plan coverage for the
-  existing `toggle_onion_skinning` bridge tool, with generated adjustment layer,
-  `CC Wide Time` effect, comp comment token read-back, and fail-closed
-  boundaries for raw/source-exact semantics, non-generated layer cleanup, global
-  traversal, custom effect graphs, renderer settings, and unrelated
-  layer/property edits. Work stopped before `generated_only_live_rerun` because
-  context budget entered `resume_only_context_budget`.
-- [x] Milestone 23: AUX-021 detached importer child-run for
-  `tool-keyframes-fill-in-keyframes`. Added advisory typed-plan coverage for the
-  existing `fill_in_keyframes` bridge tool, requiring current selected-property
-  or explicit property evidence, one reviewed target property, bounded
-  `startTime`/`endTime`/`sampleEveryFrames`, reviewed `removeRedundant` and
-  `clearExpression` choices, sampled linear keyframe write evidence, and
-  `get_layer_details` read-back for keyframes plus expression state. The child
-  worktree did not contain the source JSX, so no source JSX was copied and
-  exact source semantics, broad expression conversion, multi-property batch
-  baking, interpolation/ease preservation, spatial tangents, unsupported value
-  shapes, arbitrary expression edits, and selection side effects remain
-  fail-closed typed-tool gaps.
-- [x] Milestone 24: Full Intaker strict continuation recovered and completed
-  `tool-keyframes-fill-in-keyframes` through the current strict runner after the
-  bridge was brought online. Commit `477f9e0` completed the candidate; the
-  earlier `blocked_target_dirty` note is stale relative to the completed run.
-- [x] Milestone 25: AUX-021 detached importer child-run for
-  `tool-keyframes-keyframe-current-value-from-expression`. Added advisory
-  recipe/registry/retrieval-smoke metadata for existing
-  `keyframe_current_value_from_expression`: one evidence-backed property,
-  reviewed time/`requireExpression`, keyframe read-back; no source JSX copied.
-- [x] Milestone 26: Full Intaker strict continuation completed
-  `tool-keyframes-keyframe-current-value-from-expression` through live rerun,
-  docs/handoff finalization, and commit `01edf5a`.
-- [x] Milestone 27: Full Intaker strict continuation completed
-  `tool-keyframes-set-spacial-in-tanget` through import, controlled merge,
-  non-live validation, generated-only live rerun, docs/handoff finalization,
-  and candidate commit `972399a`.
-- [x] Milestone 28: Full Intaker context-budget tolerance bump, second pass.
-  Per user direction, the strict runner defaults were raised another 20% from
-  the current values: soft-stop `60 -> 72`, no-new-work `66 -> 80`, handoff
-  `72 -> 86`, hard-stop `84 -> 100`; the normal handoff cap is now `100`.
-- [x] Milestone 29: AUX-021 detached importer child-run for
-  `tool-keyframes-set-spacial-in-tanget`. Added advisory recipe/registry/
-  retrieval-smoke metadata for the existing `set_spatial_in_tangent` bridge
-  tool: one evidence-backed spatial property, reviewed `keyIndex` `2+`,
-  reviewed `factor`, previous/current keyframe value disclosure, computed
-  `inSpatialTangent`, preserved `outSpatialTangent`, and `get_layer_details`
-  read-back. No source JSX was copied. The strict parent transaction later
-  completed under Milestone 27 guardrails.
-- [x] Milestone 30: AUX-021 detached importer child-run for
-  `tool-properties-separate-size-dimensions`. Added advisory recipe/registry/
-  retrieval-smoke metadata for the existing `separate_shape_size_dimensions`
-  bridge tool: one evidence-backed rectangle/ellipse shape Size property,
-  reviewed `xSliderName`/`ySliderName`, generated X/Y slider controls,
-  Size expression read-back through `get_layer_details`, optional
-  `get_effect_details` slider read-back, and fail-closed boundaries for
-  arbitrary property traversal, non-shape Size properties, selected-property
-  guessing, existing expression preservation, expression merging, slider reuse,
-  keyframed size preservation, text/path/mask mutation, selection side effects,
-  and exact source JSX semantics. No source JSX was copied.
-- [x] Milestone 31: AUX-021 detached importer child-run for
-  `tool-selection-select-disabled-layers`. Added advisory recipe/registry/
-  retrieval-smoke metadata for disabled active-comp layer selection through
-  existing typed tools: `get_active_comp`, `get_comp_details` layer inventory,
-  computed `disabledLayerIndices` from `enabled:false` or equivalent typed
-  disabled/video-switch evidence, `set_layer_selection` replacement semantics,
-  and `get_selected_layers` read-back. No source JSX was copied. Disabled-state
-  discovery without typed evidence, enabled-state toggling, shy/solo/locked/
-  hidden-state selection, fuzzy matching, cross-comp or Project panel selection,
-  layer edits, and exact native UI/source semantics remain fail-closed gaps.
-- [x] Milestone 32: AUX-021 detached importer child-run for
-  `tool-selection-select-guide-layers`. Added advisory recipe/registry/
-  retrieval-smoke metadata for guide active-comp layer selection through existing
-  typed tools: `get_active_comp`, `get_comp_details` layer inventory,
-  `set_layer_selection`, and `get_selected_layers` read-back. The recipe selects
-  guide layers only when current inventory exposes `guideLayer:true` or
-  equivalent typed guide-layer evidence. No source JSX was copied; the source
-  JSX was not present in this detached child-run worktree. Native guide records,
-  `guideLayer` flag mutation, generated guide overlay selection by name,
-  guide creation/removal, cross-comp or Project panel selection, layer edits,
-  and exact native UI/source semantics remain fail-closed gaps.
+- [x] Historical milestones 1-30: archived/summarized baseline, provider work,
+  strict-runner hardening, context-budget tuning, lane prep, and completed
+  Full Intaker candidates through properties/keyframes/onion-skinning.
+- [x] Milestone 31: `tool-selection-select-disabled-layers` completed through
+  strict Full Intaker lane proof, importer, controlled merge, non-live
+  validation, generated-only live rerun, docs/handoff finalization, and commit
+  `4fa888bf38471d4430071ec8a4235b2f4740a169`.
+- [x] Milestone 32: `tool-selection-select-guide-layers` completed through the
+  same strict flow and commit `678a44781a6ba8ba1c1836f5ed9cd9cfb5ebb72e`.
+- [x] Active plan compacted after Milestone 32 because runner-written detail
+  pushed the file above the 32 KB hard cap.
 
 ## Current State
 
-`tool-keyframes-set-spacial-in-tanget` is complete in the parent strict runner.
-The current detached AUX-021 child-run added planned advisory files for
-`tool-selection-select-guide-layers` only and did not run validation or commit
-by design. Branch `road-map-2.0` is ahead of `ae-agent/road-map-2.0`; do not
-push without explicit approval.
+`full-intake-kyletmartinez` is clean after completing two Selection candidates in
+this thread. Compact ledger after Milestone 32: `completed:62`, `queued:7`,
+`failed_import:11`, `blocked_live_lane_synthesis_incomplete:9`,
+`blocked_or_skipped:64`, `recovered_patch_non_live_validated_pending_semantic_review:1`.
+Branch `road-map-2.0` is ahead of `ae-agent/road-map-2.0`; do not push without
+explicit approval.
 
 ## Next Milestone
 
-Resume the Full Intaker queue in a fresh thread only. Start with active docs and
-compact status/proof/ledger checks, then let the strict runner select or resume
-the next queued candidate with `max-items 1`, compact output, and an explicit
-conservative `--context-percent`. Stop on any budget, dirty-target, importer,
-live-lane, live-rerun, or approval boundary. Keep Local/Ollama, broad/default
-CEP smoke, dependency changes, push/PR, old longrun flows, source merge outside
-the runner, full runtime reports, and `max-items > 1` out of scope.
+Resume the Full Intaker queue in a fresh thread because runner-estimated context
+after Milestone 32 reached the prepare-handoff zone (`64%`). Start with active
+docs and compact status/proof/ledger checks, then let the strict runner select
+or resume the next queued candidate with `max-items 1`, compact output, and an
+explicit conservative `--context-percent`. Expected remaining queued Selection
+ids: `tool-selection-select-layers-below-label`,
+`tool-selection-select-non-null-layers`, `tool-selection-select-parent-layer`,
+`tool-selection-select-random-layers`, `tool-selection-select-shape-layers`,
+`tool-selection-select-text-layers`, and `tool-selection-select-unparented-layers`.
+Stop on any budget, dirty-target, importer, live-lane, live-rerun, or approval
+boundary. Keep Local/Ollama, broad/default CEP smoke, dependency changes,
+push/PR, old longrun flows, source merge outside the runner, full runtime
+reports, and `max-items > 1` out of scope.
 
 ## Decision Log
 
-- 2026-05-27: Generic full-intake orchestrator processed `Selection/Select_Guide_Layers.jsx` as `tool-selection-select-guide-layers`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-selection-select-guide-layers).
-
-- 2026-05-27: Generic full-intake orchestrator processed `Selection/Select_Disabled_Layers.jsx` as `tool-selection-select-disabled-layers`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-selection-select-disabled-layers).
-
-- 2026-05-27: Generic full-intake orchestrator processed `Properties/Separate_Size_Dimensions.jsx` as `tool-properties-separate-size-dimensions`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-separate-size-dimensions).
-
-- 2026-05-27: Generic full-intake orchestrator processed `Keyframes/Set_Spacial_In_Tanget.jsx` as `tool-keyframes-set-spacial-in-tanget`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-keyframes-set-spacial-in-tanget).
-
-- 2026-05-27: Generic full-intake orchestrator processed `Keyframes/Keyframe_Current_Value_From_Expression.jsx` as `tool-keyframes-keyframe-current-value-from-expression`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-keyframes-keyframe-current-value-from-expression).
-
-- 2026-05-27: Generic full-intake orchestrator processed `Keyframes/Fill_In_Keyframes.jsx` as `tool-keyframes-fill-in-keyframes`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-keyframes-fill-in-keyframes).
-
-- 2026-05-27: Generic full-intake orchestrator processed `Compositions/Toggle_Onion_Skinning.jsx` as `tool-compositions-toggle-onion-skinning`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-compositions-toggle-onion-skinning).
-
-- 2026-05-27: Generic full-intake orchestrator processed `Selection/Select_All_Children.jsx` as `tool-selection-select-all-children`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-selection-select-all-children).
-
-- 2026-05-27: Generic full-intake orchestrator processed `Selection/Layer_Selection_Set.jsx` as `tool-selection-layer-selection-set`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-selection-layer-selection-set).
-
-- Historical decisions through Milestone 20 are archived or summarized above.
-  The continuing rules are: compact handoff/status first, runtime artifacts only
-  by exact path, bounded `max-items 1` strict phases, no source JSX copy, no
-  Local/Ollama unless explicitly requested, and no broad/default CEP smoke,
-  dependency change, push, PR, or source merge outside the runner without
-  approval.
-- AUX-021 adapted `Selection/Layer_Selection_Set.jsx` as advisory typed-plan
-  guidance only. The recipe requires explicit layer indices from current
-  `get_comp_details` evidence, uses `set_layer_selection`, verifies with
-  `get_selected_layers`, and treats persistent named selection sets, fuzzy matching,
-  type/label/random selection, cross-comp selection, and exact native UI side
-  effects as separate typed-tool contracts.
-- Milestone 16 corrected the Marker triage classification: current marker typed
-  tools and existing advisory recipes cover layer-marker workflows, but not
-  composition-marker `markerProperty` add/read/copy semantics. The four remaining
-  Marker unsafe-skip ids should not be retried until a composition-marker contract,
-  generated-only fixture, read-back, and semantic verification lane exist.
-- Milestone 17 treated the user's longrun approval as approval for the current
-  resumable full-intake strict phase runner and generated-only OpenAI CLI live
-  reruns for scoped Selection candidates only. Local/Ollama, broad/default CEP
-  smoke, dependency/package changes, push/PR, unscoped retry, and `max-items > 1`
-  remain out of scope.
-- AUX-021 adapted `Selection/Select_All_Children.jsx` as advisory typed-plan
-  guidance only. The recipe selects direct children of one reviewed parent layer by
-  deriving child `layerIndices` from current `get_comp_details` `parent.index`
-  evidence, then using `set_layer_selection` replacement semantics and
-  `get_selected_layers` read-back. Recursive descendants, fuzzy parent matching,
-  child discovery without typed parent evidence, parenting changes, cross-comp or
-  Project panel selection, and exact native UI/source JSX semantics remain separate
-  typed-tool contracts.
-- Milestone 18 treated child-summary timeouts as terminal failed imports for the
-  current queued candidates, not as approval to continue broad recovery. The
-  context-budget stop for `tool-keyframes-calculate-frames-to-selected-keyframe`
-  was allowed to resolve only the already-started dirty state; the unvalidated
-  generated recipe was removed rather than committed without registry integration,
-  non-live validation, or generated-only live rerun.
-- Milestone 19 interpreted "increase by 20% everywhere" as widening context-budget
-  thresholds/caps, not inflating predicted step costs, because the problem was
-  premature budget stops. The runner still requires explicit context percent for
-  longrun work and still refuses unknown context before new work.
-- Milestone 21 uses an AUX branch/worktree because the main worktree contains an
-  unfinished Full Intaker transaction. The AUX commit was then fast-forwarded
-  into `road-map-2.0`, leaving the candidate recipe/registry state uncommitted.
-- Child-run stdin is now a compact context-pack protocol: full batch prompt stays
-  as a hashed audit artifact, while the child receives bounded planned paths,
-  candidate summaries, hard boundaries, and output contract.
-- The first full-intake context gate is now a resume preflight instead of a
-  duplicate abstract child-run charge. Actual phase gates still enforce their own
-  costs and thresholds before importer, live-lane, live-rerun, docs, and commit.
-- Milestone 22 treated `Compositions/Toggle_Onion_Skinning.jsx` as advisory
-  typed-plan guidance only. Scope was derived from the current runner wrapper,
-  the existing `toggle_onion_skinning` typed-tool contract, semantic
-  verification, and the registered generated-only onion-skinning lane. The
-  recipe uses `toggle_onion_skinning` instead of raw JSX and requires generated
-  layer/effect plus comp comment token read-back.
-- The generated-only live rerun was not started at `currentContextPercent:58`
-  before the AUX compact budget merge because the old estimator predicted `68%`,
-  crossing `noNewWorkPercent:66`.
-- Milestone 23 treated `Keyframes/Fill_In_Keyframes.jsx` as advisory typed-plan
-  guidance only. The detached child worktree did not include the source JSX, so
-  scope was derived from the child-run wrapper, candidate name, existing
-  `fill_in_keyframes` contract, semantic verification, and the registered
-  `fill-in-keyframes-expression-sampling` generated-only lane.
-- `fill_in_keyframes` guidance is limited to one evidence-backed property and a
-  reviewed finite sampling range. Broad expression conversion, batch property
-  baking, exact source UI/selection behavior, unsupported value shapes,
-  interpolation/ease preservation, spatial tangents, arbitrary expression edits,
-  and unrelated layer/property mutations remain separate typed-tool contracts.
-- Milestone 24 treated the failed live rerun as an environmental/connectivity
-  blocker, not approval to retry broadly or start the next candidate. Read-only
-  preflights passed, but the required generated-only OpenAI CLI lane failed with
-  `bridge_offline / bridge_offline` and instructed that the local bridge should
-  be started from Codex and connected before rerun.
-- After the user challenged the bridge start assumption, Codex started the bridge
-  itself using the project daemon on port `3456`. Health confirmed the daemon
-  and CEP panel connection. The subsequent strict runner attempt exposed a
-  separate runner-state blocker: failed-live-rerun transactions are terminal in
-  the ledger, so the next preflight attempted candidate selection and refused
-  the still-dirty recipe as unplanned.
-- Milestone 25 mapped `Keyframes/Keyframe_Current_Value_From_Expression.jsx` to
-  existing `keyframe_current_value_from_expression` advisory guidance only;
-  range baking, batch keyframing, expression edits, interpolation/ease/tangent
-  preservation, selection side effects, and exact source semantics stay
-  separate fail-closed contracts.
-- Milestone 27 stopped before starting a new importer child-run when the strict
-  runner predicted `59% -> 66%` and entered `resume_only_context_budget`; this
-  is a context handoff, not a candidate failure.
-- Milestone 28 interprets the user's second "raise thresholds by 20% everywhere"
-  as widening the existing default gates again, clamped at the absolute context
-  ceiling: `72/80/86/100`, with normal caps `100/100`. Predicted step costs stay
-  unchanged.
-- AUX-021 adapted `Keyframes/Set_Spacial_In_Tanget.jsx` as advisory typed-plan
-  guidance only. Scope was derived from the child-run wrapper, candidate name,
-  existing `set_spatial_in_tangent` contract, semantic verification, and the
-  registered generated-only spatial-in-tangent lane. The recipe uses
-  `set_spatial_in_tangent` with explicit `keyIndex` and `factor`, computes the
-  incoming tangent from `previousValue - currentValue`, preserves the existing
-  out tangent, and treats selected-key discovery, arbitrary tangent vectors,
-  out-tangent editing, first-key requests, path/mask/shape tangents,
-  interpolation/ease preservation, selection side effects, and exact source
-  semantics as separate typed-tool contracts.
-- AUX-021 adapted `Properties/Separate_Size_Dimensions.jsx` as advisory
-  typed-plan guidance only. Scope was derived from the child-run wrapper,
-  candidate name, existing `separate_shape_size_dimensions` contract, semantic
-  verification, and the registered generated-only shape-size-dimension lane.
-  The recipe uses `separate_shape_size_dimensions` for one explicit
-  rectangle/ellipse shape Size property with reviewed X/Y slider names and
-  typed read-back, and treats arbitrary property traversal, non-shape Size
-  properties, selected-property guessing, existing expression preservation,
-  expression merging, slider reuse, keyframed size preservation, text/path/mask
-  mutation, selection side effects, and exact source semantics as separate
-  typed-tool contracts.
-- AUX-021 adapted `Selection/Select_Disabled_Layers.jsx` as advisory typed-plan
-  guidance only. Scope was derived from the child-run wrapper, candidate name,
-  existing active-comp/layer-inventory and `set_layer_selection` typed tools.
-  The recipe selects disabled layers only when current `get_comp_details`
-  evidence exposes `enabled:false` or equivalent disabled/video-switch state,
-  then verifies the replacement selection with `get_selected_layers`. Enabled
-  state toggling, disabled discovery without typed evidence, shy/solo/locked/
-  hidden-state selection, fuzzy matching, cross-comp or Project panel selection,
-  layer edits, and exact source/native UI semantics remain separate typed-tool
-  contracts.
-- AUX-021 adapted `Selection/Select_Guide_Layers.jsx` as advisory typed-plan
-  guidance only. Scope was derived from the child-run wrapper, candidate name,
-  existing active-comp/layer-inventory and `set_layer_selection` typed tools.
-  The recipe selects guide layers only when current `get_comp_details` evidence
-  exposes `guideLayer:true` or equivalent typed guide-layer state, then verifies
-  the replacement selection with `get_selected_layers`. The source JSX was not
-  present in this detached child-run worktree, and no source JSX was copied.
-  Native guide records, `guideLayer` flag mutation, generated guide overlay
-  selection by name, guide creation/removal, fuzzy matching, cross-comp or
-  Project panel selection, layer edits, and exact source/native UI semantics
-  remain separate typed-tool contracts.
+- Historical decisions through Milestone 30 are archived or compactly summarized
+  above. Continuing guardrails remain: compact status/proof/ledger first,
+  bounded strict phases, one writer, no source JSX copy, no Local/Ollama unless
+  explicitly requested, and no broad/default CEP smoke, dependency change,
+  push/PR, or source merge outside the runner without approval.
+- Milestones 31-32 treated disabled-layer and guide-layer Selection scripts as
+  advisory typed-plan guidance only. Both use existing active-comp inventory,
+  `set_layer_selection`, and `get_selected_layers` read-back. Disabled/guide
+  discovery requires typed evidence (`enabled:false` or `guideLayer:true`, or
+  equivalent typed state); state toggling, generated guide creation, fuzzy
+  matching, cross-comp/Project panel selection, layer edits, and exact native
+  UI/source semantics stay fail-closed.
+- The next seven queued candidates remain Selection-family retries. Layer-timing
+  and effect/property terminal families should not be requeued without their own
+  narrow generated-only lane or milestone.
+- The thread stopped after Milestone 32 because runner-estimated context reached
+  `64%` and the active plan exceeded the 32 KB hard cap before compaction.
 
 ## Validation
 
-| Full intake tool-selection-select-guide-layers | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-c4fe4ae12d-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
-
-| Full intake tool-selection-select-disabled-layers | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-3679a3de35-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
-
-| Full intake tool-properties-separate-size-dimensions | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-854882faa1-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
-
-| Full intake tool-keyframes-set-spacial-in-tanget | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-7e72e8fd45-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
-
-- Full intake completed candidates in this compact block:
-  `tool-compositions-toggle-onion-skinning`, `tool-keyframes-fill-in-keyframes`,
-  and `tool-keyframes-keyframe-current-value-from-expression` all passed lane
-  proof, import, non-live validation, generated-only live rerun, docs/handoff,
-  and commit through `full-intake-kyletmartinez`, with no Local/Ollama,
-  fallback provider, dependency change, raw JSX copy, broad CEP smoke, push, PR,
-  or GitHub automation.
-
-Milestones 2-9 targeted validation is archived in
-`plans/archive/target-app-execplan-history-through-2026-05-31.md`. Compact outcome:
-the active baseline reset, provider/CEP validation work, Hardcore handoff proof, and
-bounded Full Intaker queue drain completed with documented guardrails.
-
-The two completed Selection imports in Milestone 17 both passed through the current
-`full-intake-kyletmartinez` strict flow: lane ready, recipe import, non-live
-validation, generated-only live rerun, docs/handoff, and commit, with no
-Local/Ollama, broad/default CEP smoke, dependency change, source checkout write
-outside the runner, push, PR, or `max-items > 1`.
-
-Milestones 10-17 compact validation: scoped blocked-lane resolution failed closed
-without source/live mutation; unsafe-skip triage stayed docs-only; Selection
-typed-tool/lane prep and live acceptance passed after a bridge restart; the
-legacy Codex CLI `--reasoning-effort` bug was patched and smoke-validated;
-`tool-selection-layer-selection-set` and `tool-selection-select-all-children`
-completed through the strict runner with commits `3815db8` and `932cc7d`. No
-Local/Ollama, broad/default CEP smoke, dependency change, push/PR, old longrun,
-raw JSX copy, source merge outside the runner, or `max-items > 1` was used.
-- [x] Milestones 18-25 compact validation: strict runner/status/proof/ledger
-  checks were used at bounded phase boundaries; context stops, failed imports,
-  bridge recovery, and detached AUX child-run work stayed within recorded
-  guardrails. No Local/Ollama, broad/default CEP smoke, dependency change,
-  push/PR, old longrun, full runtime report, source merge outside the runner,
-  or `max-items > 1` was used unless explicitly noted above.
-- [x] Milestone 26 validation status: strict runner completed
-  `tool-keyframes-keyframe-current-value-from-expression`: live lane `ready`,
-  importer batch `full-intake-kyletmartinez-e96375bafc-import`, non-live
-  validation complete, generated-only live rerun `passed`, docs/handoff
-  finalization complete, commit `01edf5a`. Compact proof
-  `e2d99a6f6a6ab980d89e793264c61d3ee8979976adf6bb18900b03a2effa9d25`;
-  ledger after commit was `completed:58`, `queued:11`, `failed_import:11`, no
-  queued `live_lane_needed`.
-- [x] Milestone 27 validation status: compact status/proof/ledger checks passed;
-  `tool-keyframes-set-spacial-in-tanget` completed live lane `ready`, importer
-  batch `full-intake-kyletmartinez-7e72e8fd45-import`, controlled merge,
-  non-live validation, generated-only live rerun `passed`, docs/handoff
-  finalization, and candidate commit `972399a`. Final proof
-  `18d2fa644288607d209fb8f558a11caf288777c10eaa02db15f2efaa6522d40d`;
-  ledger after completion was `completed:59`, `queued:10`,
-  `failed_import:11`, no queued `live_lane_needed`.
-- [x] Milestone 27 final validation hardening: `node --check` passed for
-  `scripts/solution-library-validation-smoke.js` and
-  `scripts/sdk-post-run-contract-extraction-smoke.js`;
-  `npm.cmd run check:rules --silent`, `git diff --check`, the required provider/solution/plan/semantic/
-  reliability/chatgpt/provider-api/prompt/bridge smoke scripts, `smoke-test.js`,
-  and read-only CEP/CDP `inspect` plus `connector-status-smoke` all passed. No
-  Local/Ollama, fallback provider, dependency/package change, broad CEP smoke,
-  push/PR, source checkout write outside the runner, or `max-items > 1` was used.
-- [x] Milestone 28 validation status: `node --check` passed for
-  `orchestrator/run-generic-repo-full-intake.mjs` and
-  `scripts/sdk-generic-repo-full-intake-smoke.js`; targeted
-  `node scripts/sdk-generic-repo-full-intake-smoke.js` passed. No Local/Ollama,
-  broad/default CEP smoke, live AE/CEP mutation, dependency change, push/PR, old
-  longrun, full runtime report, or `max-items > 1` was used.
-- [x] Milestone 29 validation status: validation was not run by design in this
-  detached child-run because the batch explicitly forbade validation runs. The
-  child changed planned recipe/registry/smoke/plan paths only; parent validation
-  and live rerun are now covered by completed Milestone 27.
-- [x] Milestone 30 validation status: validation was not run by design in this
-  detached child-run because the batch explicitly forbade validation runs. The
-  child changed planned recipe/registry/smoke/plan paths only. The planned
-  `.codex/handoff.md` write was blocked by filesystem ACL denial for the
-  sandbox user, so this plan entry records the handoff state; parent importer
-  owns planned-path gates, JSON/script checks, non-live validation, and any
-  generated-only live rerun after controlled merge.
-- [x] Milestone 31 validation status: validation was not run by design in this
-  detached child-run because the batch explicitly forbade validation runs,
-  live AE/CEP/CDP/OpenAI CLI planner lanes, commits, and source merges. The
-  child changed planned recipe/registry/smoke/plan paths only. The planned
-  `.codex/handoff.md` write was blocked by filesystem ACL denial for the
-  sandbox user, so this plan entry records the handoff state. Parent importer
-  owns JSON/script checks, non-live validation, controlled merge, and any
-  generated-only live rerun after this detached worktree is reviewed.
-- [x] Milestone 32 validation status: validation was not run by design in this
-  detached child-run because the batch explicitly forbade validation runs,
-  live AE/CEP/CDP/OpenAI CLI planner lanes, commits, source merges, dependency
-  changes, push, PR, GitHub automation, Local/Ollama, fallback providers, and
-  web search. The child changed planned recipe/registry/smoke/plan paths only.
-  The planned `.codex/handoff.md` write was blocked by filesystem ACL denial
-  for the sandbox user, so this plan entry records the handoff state. Parent
-  importer owns JSON/script checks, non-live validation, controlled merge, and
-  any generated-only live rerun after this detached worktree is reviewed.
-
-Not run by design across this compact block unless explicitly noted: Local/Ollama,
-broad/default CEP smoke, dependency/package changes, push/PR, unscoped retry, old
-longrun, raw JSX copy, source checkout writes outside the runner, and `max-items > 1`.
+- Milestones 31-32 compact status/proof/ledger checks passed at each strict
+  boundary. Both candidates completed lane proof, importer, controlled merge,
+  non-live validation, generated-only live rerun, docs/handoff finalization, and
+  commit through `full-intake-kyletmartinez`.
+- `tool-selection-select-disabled-layers`: batch
+  `full-intake-kyletmartinez-3679a3de35-import`, live rerun `passed`, commit
+  `4fa888bf38471d4430071ec8a4235b2f4740a169`.
+- `tool-selection-select-guide-layers`: batch
+  `full-intake-kyletmartinez-c4fe4ae12d-import`, live rerun `passed`, commit
+  `678a44781a6ba8ba1c1836f5ed9cd9cfb5ebb72e`.
+- Final compact proof after Milestone 32:
+  `candidateId=tool-selection-select-guide-layers`, `status=completed`,
+  `contractComplete=true`, `changedPathCount=4`, `unplannedPathCount=0`.
+- Final compact ledger summary after Milestone 32: entries `154`, completed
+  `62`, queued `7`, failed_import `11`, blocked_live_lane_synthesis_incomplete
+  `9`, blocked_or_skipped `64`, recovered semantic-review item `1`, queued
+  `live_lane_needed:0`.
+- Not run by design: Local/Ollama, fallback providers, dependency/package
+  changes, push/PR, broad/default CEP smoke, unscoped retry, old longrun, full
+  runtime reports, raw JSX copy, source checkout writes outside the runner, and
+  `max-items > 1`.
 
 ## Handoff
 
