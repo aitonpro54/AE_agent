@@ -30,6 +30,8 @@ Codex App dev-request handoff for repository work.
 
 ## Progress
 
+- [x] Full intake tool-selection-select-disabled-layers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-selection-select-disabled-layers); live gate ready, importer batch full-intake-kyletmartinez-3679a3de35-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-properties-separate-size-dimensions: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-separate-size-dimensions); live gate ready, importer batch full-intake-kyletmartinez-854882faa1-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-keyframes-set-spacial-in-tanget: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-keyframes-set-spacial-in-tanget); live gate ready, importer batch full-intake-kyletmartinez-7e72e8fd45-import, commit recorded after candidate commit.
@@ -162,14 +164,24 @@ Codex App dev-request handoff for repository work.
   guessing, existing expression preservation, expression merging, slider reuse,
   keyframed size preservation, text/path/mask mutation, selection side effects,
   and exact source JSX semantics. No source JSX was copied.
+- [x] Milestone 31: AUX-021 detached importer child-run for
+  `tool-selection-select-disabled-layers`. Added advisory recipe/registry/
+  retrieval-smoke metadata for disabled active-comp layer selection through
+  existing typed tools: `get_active_comp`, `get_comp_details` layer inventory,
+  computed `disabledLayerIndices` from `enabled:false` or equivalent typed
+  disabled/video-switch evidence, `set_layer_selection` replacement semantics,
+  and `get_selected_layers` read-back. No source JSX was copied. Disabled-state
+  discovery without typed evidence, enabled-state toggling, shy/solo/locked/
+  hidden-state selection, fuzzy matching, cross-comp or Project panel selection,
+  layer edits, and exact native UI/source semantics remain fail-closed gaps.
 
 ## Current State
 
 `tool-keyframes-set-spacial-in-tanget` is complete in the parent strict runner.
-The candidate commit is `972399a`; validation hardening for the smoke coverage
-was added immediately afterward and should remain a separate local review
-commit. Branch `road-map-2.0` is ahead of `ae-agent/road-map-2.0`; do not push
-without explicit approval.
+The current detached AUX-021 child-run added planned advisory files for
+`tool-selection-select-disabled-layers` only and did not run validation or commit
+by design. Branch `road-map-2.0` is ahead of `ae-agent/road-map-2.0`; do not
+push without explicit approval.
 
 ## Next Milestone
 
@@ -182,6 +194,8 @@ CEP smoke, dependency changes, push/PR, old longrun flows, source merge outside
 the runner, full runtime reports, and `max-items > 1` out of scope.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `Selection/Select_Disabled_Layers.jsx` as `tool-selection-select-disabled-layers`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-selection-select-disabled-layers).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Properties/Separate_Size_Dimensions.jsx` as `tool-properties-separate-size-dimensions`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-separate-size-dimensions).
 
@@ -309,8 +323,20 @@ the runner, full runtime reports, and `max-items > 1` out of scope.
   expression merging, slider reuse, keyframed size preservation, text/path/mask
   mutation, selection side effects, and exact source semantics as separate
   typed-tool contracts.
+- AUX-021 adapted `Selection/Select_Disabled_Layers.jsx` as advisory typed-plan
+  guidance only. Scope was derived from the child-run wrapper, candidate name,
+  existing active-comp/layer-inventory and `set_layer_selection` typed tools.
+  The recipe selects disabled layers only when current `get_comp_details`
+  evidence exposes `enabled:false` or equivalent disabled/video-switch state,
+  then verifies the replacement selection with `get_selected_layers`. Enabled
+  state toggling, disabled discovery without typed evidence, shy/solo/locked/
+  hidden-state selection, fuzzy matching, cross-comp or Project panel selection,
+  layer edits, and exact source/native UI semantics remain separate typed-tool
+  contracts.
 
 ## Validation
+
+| Full intake tool-selection-select-disabled-layers | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-3679a3de35-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-properties-separate-size-dimensions | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-854882faa1-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
@@ -390,6 +416,14 @@ raw JSX copy, source merge outside the runner, or `max-items > 1` was used.
   sandbox user, so this plan entry records the handoff state; parent importer
   owns planned-path gates, JSON/script checks, non-live validation, and any
   generated-only live rerun after controlled merge.
+- [x] Milestone 31 validation status: validation was not run by design in this
+  detached child-run because the batch explicitly forbade validation runs,
+  live AE/CEP/CDP/OpenAI CLI planner lanes, commits, and source merges. The
+  child changed planned recipe/registry/smoke/plan paths only. The planned
+  `.codex/handoff.md` write was blocked by filesystem ACL denial for the
+  sandbox user, so this plan entry records the handoff state. Parent importer
+  owns JSON/script checks, non-live validation, controlled merge, and any
+  generated-only live rerun after this detached worktree is reviewed.
 
 Not run by design across this compact block unless explicitly noted: Local/Ollama,
 broad/default CEP smoke, dependency/package changes, push/PR, unscoped retry, old

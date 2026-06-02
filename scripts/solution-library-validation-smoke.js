@@ -58,6 +58,7 @@ const IMPORTED_ADVISORY_IDS = [
   "layer-selection-get-typed-plan",
   "layer-selection-set-typed-plan",
   "select-all-children-typed-plan",
+  "select-disabled-layers-typed-plan",
   "duplicate-selected-layer-typed-plan",
   "add-assorted-composition-guides-typed-plan",
   "add-background-layer-typed-plan",
@@ -1147,6 +1148,23 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /parent evidence/.test(note)), `${id}: notes must require parent evidence.`);
       assert(solution.notes.some((note) => /direct children only/.test(note)), `${id}: notes must keep recursive descendants out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Select_All_Children/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "select-disabled-layers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "set_layer_selection", "get_selected_layers"],
+        `${id}: imported select-disabled-layers workflow should stay on the narrow typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: select-disabled-layers workflow must be mutating.`);
+      assert(text.includes("disabled"), `${id}: recipe should document disabled-layer discovery.`);
+      assert(text.includes("enabled:false"), `${id}: recipe should require typed disabled-state evidence.`);
+      assert(text.includes("set_layer_selection"), `${id}: recipe should use set_layer_selection.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must inspect layer inventory.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_selection/.test(step)), `${id}: verification must use set_layer_selection.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /disabled/.test(item)), `${id}: expected evidence must mention disabled layers.`);
+      assert(solution.notes.some((note) => /enabled:false/.test(note)), `${id}: notes must require typed disabled-state evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must keep unsupported switch semantics out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /Select_Disabled_Layers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else if (id === "duplicate-selected-layer-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2522,6 +2540,21 @@ function assertActualRetrieval(registry) {
   assert(selectAllChildrenPromptSection.includes("parent evidence"), "prompt section should preserve parent evidence guidance.");
   assert(!/run_extendscript/i.test(selectAllChildrenPromptSection), "select-all-children guidance should not recommend raw ExtendScript.");
 
+  const selectDisabledLayersRetrieval = retrieveSolutionHints("Select all disabled layers in the active composition after reading layer enabled:false state, using set_layer_selection replacement selection and get_selected_layers read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(selectDisabledLayersRetrieval.ok, true);
+  assert(ids(selectDisabledLayersRetrieval).includes("select-disabled-layers-typed-plan"), "select-disabled-layers advisory recipe should surface for disabled-layer selection prompts.");
+  const selectDisabledLayersPromptSection = formatSolutionHintsForPrompt(selectDisabledLayersRetrieval);
+  assert(selectDisabledLayersPromptSection.includes("Select Disabled Layers Typed Plan"), "prompt section should include select-disabled-layers advisory title.");
+  assert(selectDisabledLayersPromptSection.includes("get_comp_details"), "prompt section should require layer inventory evidence for disabled-layer selection.");
+  assert(selectDisabledLayersPromptSection.includes("set_layer_selection"), "prompt section should prefer set_layer_selection for disabled-layer selection mutation.");
+  assert(selectDisabledLayersPromptSection.includes("enabled:false"), "prompt section should preserve typed disabled-state evidence guidance.");
+  assert(selectDisabledLayersPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer read-back after disabled-layer selection.");
+  assert(!/run_extendscript/i.test(selectDisabledLayersPromptSection), "select-disabled-layers guidance should not recommend raw ExtendScript.");
+
   const duplicateSelectedLayerRetrieval = retrieveSolutionHints("Duplicate the selected layer after inspecting the selected layer first, then read back the duplicate layer.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -2952,6 +2985,7 @@ function assertActualRetrieval(registry) {
       layerSelectionGet: ids(layerSelectionGetRetrieval),
       layerSelectionSet: ids(layerSelectionSetRetrieval),
       selectAllChildren: ids(selectAllChildrenRetrieval),
+      selectDisabledLayers: ids(selectDisabledLayersRetrieval),
       duplicateSelectedLayer: ids(duplicateSelectedLayerRetrieval),
       assortedGuides: ids(assortedGuidesRetrieval),
       backgroundLayer: ids(backgroundLayerRetrieval),

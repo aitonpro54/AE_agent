@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-06-01",
+  "updatedAt": "2026-06-02",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -4136,6 +4136,126 @@
         "Require get_selected_layers read-back after mutation to prove selected child count, child indices and expected child names.",
         "Do not infer child layers from names, visual nesting, previous chat context, source order, precomp membership or timeline indentation without typed parent evidence.",
         "Do not use this recipe for parenting changes, layer duplication, deletion, renaming, timing edits, marker edits, effect edits, source relinking, keyframe edits, render queue changes, project item selection or broad timeline cleanup."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "select-disabled-layers-typed-plan",
+      "title": "Select Disabled Layers Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "selection",
+        "layers",
+        "disabled-layers",
+        "enabled-false",
+        "video-switch",
+        "selected-layers",
+        "set-selection",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Select all disabled active-comp layers by deriving explicit layer indices from current typed enabled:false evidence, using set_layer_selection, and reading selected layers back.",
+        "appliesWhen": [
+          "The user asks to select disabled layers, layers with the Video/eye switch off, or layers currently reporting enabled:false.",
+          "The active comp layer inventory exposes disabled/enabled state that can be converted into concrete layerIndices before selection mutation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "disabledLayerIndices",
+          "type": "array",
+          "required": true,
+          "description": "Computed one-based layer indices whose current typed layer inventory evidence reports enabled:false or equivalent disabled/video-switch state."
+        },
+        {
+          "name": "expectedNames",
+          "type": "array",
+          "required": false,
+          "description": "Optional disabled layer names paired with disabledLayerIndices for post-selection read-back."
+        },
+        {
+          "name": "disabledStateEvidence",
+          "type": "array",
+          "required": true,
+          "description": "Current layer inventory fields proving each selected target is disabled before mutation."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists before selection state is changed.",
+        "Disabled layer targets are derived only from current get_comp_details layer inventory enabled:false or equivalent disabled/video-switch evidence.",
+        "The safe adaptation changes only active-comp layer selection state, not layer enabled state, names, timing, sources, effects, keyframes, masks, project items or render queue items.",
+        "Shy/solo/locked/hidden-state selection, enabled-state toggling, fuzzy name matching, cross-comp selection, project-panel selection and exact native UI side effects remain typed-tool gaps unless a separate contract proves them."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/select-disabled-layers-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "set_layer_selection",
+          "get_selected_layers"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and layer inventory, compute disabledLayerIndices from typed disabled-state evidence, set replacement selection, then read selected disabled layers back.",
+        "steps": [
+          "Run get_active_comp before mutation to capture active comp identity.",
+          "Run get_comp_details with includeLayers:true and a sufficient layerLimit before computing disabled targets.",
+          "Compute disabledLayerIndices only from layers whose current typed inventory reports enabled:false or equivalent disabled/video-switch state.",
+          "Fail closed when layer inventory is truncated, disabled/enabled state is absent, no disabled layers are found, or the request depends on unsupported UI-only state.",
+          "Run set_layer_selection with computed disabledLayerIndices, optional expectedNames, replacement selection semantics, verifyAfter:true and a stable idempotency key.",
+          "Run get_selected_layers after mutation and compare selected count, selected layer indices and names with the computed disabled layer set."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_comp_details identifies every accepted disabled layer index, optional expected name and typed disabled-state evidence.",
+          "Dry-run evidence lists disabledLayerIndices, expected names when available and the layer inventory field proving each layer is disabled.",
+          "set_layer_selection result reports the computed disabled layerIndices and replacement selection semantics.",
+          "Post-run get_selected_layers shows exactly the expected disabled layer count, selected layer indices and expected names.",
+          "Skipped, empty, truncated or ambiguous disabled-layer discovery is reported as a typed-tool gap or no-op decision instead of approximate selection.",
+          "Post-run evidence shows no enabled-state toggle, layer order change, layer rename, timing/source/effect/keyframe/mask/project item/render queue mutation or cross-comp selection."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-selection-select-disabled-layers generic repository importer as advisory typed-plan coverage for disabled active-comp layer selection.",
+          "This detached child-run patch adapts only the candidate idea using existing active-comp inspection, get_comp_details layer inventory, set_layer_selection and get_selected_layers read-back; parent importer owns validation plus any generated-only live acceptance."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-02",
+          "from": "generic-repo-importer-tool-selection-select-disabled-layers",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Select_Disabled_Layers.jsx into existing typed tools as disabled layer selection through get_comp_details enabled:false or equivalent disabled/video-switch evidence, computed disabledLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. Disabled-state discovery without typed layer evidence, enabled-state toggling, shy/solo/locked/hidden-state selection, fuzzy matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current get_comp_details layer inventory with enabled:false or equivalent disabled/video-switch evidence before computing disabledLayerIndices.",
+        "Use replacement selection semantics and select disabled layers only; selecting enabled, shy, solo, locked, hidden or label-based layers requires a separate typed-tool contract.",
+        "Do not toggle enabled state or any layer switch; this recipe changes only active-comp selection state.",
+        "Require get_selected_layers read-back after mutation to prove selected disabled count, disabled layer indices and expected names.",
+        "Do not infer disabled layers from names, screenshots, previous chat context, source type, label color, shy/solo/lock state or approximate UI assumptions.",
+        "Do not use this recipe for layer duplication, deletion, renaming, timing edits, marker edits, effect edits, source relinking, keyframe edits, render queue changes, project item selection or broad timeline cleanup."
       ]
     },
     {
