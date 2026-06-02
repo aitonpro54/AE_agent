@@ -1016,7 +1016,15 @@ function createDetachedCandidateWorktree({ baseHead, candidate, targetRepo, work
   if (cloneResult.status !== 0) {
     throw new Error(`parallel-worktree-clone-failed:${candidate.id}: ${cloneResult.stderr || cloneResult.stdout}`);
   }
-  const checkoutResult = spawnSync("git", ["checkout", "--detach", baseHead], {
+  const configResult = spawnSync("git", ["config", "core.longpaths", "true"], {
+    cwd: worktreePath,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (configResult.status !== 0) {
+    throw new Error(`parallel-worktree-longpaths-config-failed:${candidate.id}: ${configResult.stderr || configResult.stdout}`);
+  }
+  const checkoutResult = spawnSync("git", ["-c", "core.longpaths=true", "checkout", "--detach", baseHead], {
     cwd: worktreePath,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],

@@ -184,6 +184,23 @@ function removeFixture(root) {
   fs.rmSync(root, { recursive: true, force: true });
 }
 
+function commitLongCheckoutPath(fixture) {
+  const relativeParts = [
+    ".codex-audit",
+    "sdk-history-archive",
+    "bounded-reliability-and-multifile-proofs",
+    "codex-audit",
+    "sdk-multi-file-planned-operation",
+    "148-sdk-multi-file-planned-operation-contract-regression-fixture.json"
+  ];
+  const absolute = path.join(fixture.target, ...relativeParts);
+  fs.mkdirSync(path.dirname(absolute), { recursive: true });
+  fs.writeFileSync(absolute, '{"fixture":"parallel-longpaths-checkout"}\n', "utf8");
+  sh(fixture.target, ["git", "-c", "core.longpaths=true", "add", relativeParts.join("/")]);
+  sh(fixture.target, ["git", "-c", "core.longpaths=true", "commit", "-m", "fixture long checkout path"]);
+  fixture.head = sh(fixture.target, ["git", "rev-parse", "HEAD"]);
+}
+
 function findFiles(root, predicate) {
   if (!fs.existsSync(root)) {
     return [];
@@ -769,6 +786,38 @@ function assertParallelWorktreesAndProposalSchema() {
     assert.strictEqual(proof.schema, "generic-repo-full-intake.parallel-candidate-proof.v1");
     assert.strictEqual(proof.evidence.worktreesRunOwned, true);
     assert.strictEqual(proof.evidence.childWorktreesDetached, true);
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertParallelWorktreeCheckoutAllowsLongTrackedPaths() {
+  const fixture = createFixture("pwl");
+  try {
+    commitLongCheckoutPath(fixture);
+    const candidate = parallelEntry("tool-parallel-longpaths", 1);
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [candidate]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const output = parseJson(runFullIntakeFixture(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "pwl",
+      1,
+      {},
+      ["--parallel-candidate-worktrees", "--parallel-candidate-limit", "1"]
+    ));
+    assert.strictEqual(output.status, "parallel_proposals_blocked");
+    assert.strictEqual(output.parallel.worktrees.created, 1);
+    assert.strictEqual(output.parallel.worktrees.detached, 1);
+    assert.strictEqual(output.parallel.worktrees.runOwned, 1);
+    assert.strictEqual(output.parallel.worktrees.cleaned, 1);
+    const proposalPath = path.join(fixture.target, output.parallel.proposals[0].path);
+    const proposal = JSON.parse(fs.readFileSync(proposalPath, "utf8"));
+    assert.strictEqual(proposal.candidateId, "tool-parallel-longpaths");
+    assert.strictEqual(proposal.status, "blocked");
+    assert.strictEqual(fs.existsSync(proposal.worktreePath), false, "child worktree should be cleaned after proposal persistence");
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);
@@ -2744,6 +2793,7 @@ function assertResumeFromState() {
 function main() {
   assertParallelCandidateWorktreesOptInAndPlanning();
   assertParallelWorktreesAndProposalSchema();
+  assertParallelWorktreeCheckoutAllowsLongTrackedPaths();
   assertParallelProposalRejectGates();
   assertParallelReducerSeriallyAppliesIndependentProposals();
   assertParallelChildExecutionProducesAcceptedFileProposals();
