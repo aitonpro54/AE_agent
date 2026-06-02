@@ -177,12 +177,14 @@ function autoIntakeFixtureSmoke() {
     assert(ledger.entries.every((entry) => entry.status === "reference_only"), "all missing-license entries should be reference-only status");
     assert(ledger.entries.every((entry) => entry.implementation.rawJsxCopyAllowed === false));
     assert(ledger.entries.every((entry) => entry.implementation.plannedPaths.length === 0));
+    assert(ledger.entries.every((entry) => entry.safetySignals && typeof entry.safetySignals === "object" && !Array.isArray(entry.safetySignals)));
     assert(ledger.entries.every((entry) => entry.failClosed?.rawJsxCopyBlocked === true));
 
     const unsafe = ledger.entries.find((entry) => entry.sourcePath.endsWith("Unsafe_System.jsx"));
     assert(unsafe, "unsafe fixture candidate should be inventoried");
     assert.strictEqual(unsafe.classification, "unsafe_skip_tool_gap");
     assert.strictEqual(unsafe.riskFlags.highRisk, true);
+    assert.strictEqual(unsafe.safetySignals.usesEval, true);
 
     assert.strictEqual(plan.schema, "generic-repo-full-intake.parallel-candidate-plan.v1");
     assert.strictEqual(plan.mode, "auto_intake_parallel_plan_only");
@@ -256,6 +258,7 @@ function autoIntakeCcByAttributionSmoke() {
     assert(ledger.entries.every((entry) => entry.status === "queued"));
     assert(ledger.entries.every((entry) => entry.license.attributionRequired === true));
     assert(ledger.entries.every((entry) => entry.implementation.rawJsxCopyAllowed === false));
+    assert(ledger.entries.every((entry) => entry.safetySignals && typeof entry.safetySignals === "object" && !Array.isArray(entry.safetySignals)));
     assert.strictEqual(proof.assertions.attributionLicensePresent, true);
     assert(licenseText.includes("Detected license: CC-BY-3.0"));
     assert(licenseText.includes("Scripts/By_Author.jsx - Author(s): Ada Lovelace"));

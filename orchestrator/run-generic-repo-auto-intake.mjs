@@ -607,6 +607,16 @@ function suggestedToolsFor(relativePath, riskFlags) {
   return Array.from(tools);
 }
 
+function safetySignalsForRiskFlags(riskFlags) {
+  const signals = {};
+  if (riskFlags.usesFileSystem) signals.usesFileIo = true;
+  if (riskFlags.usesRenderQueue) signals.usesRenderQueue = true;
+  if (riskFlags.usesEval) signals.usesEval = true;
+  if (riskFlags.usesNetwork) signals.usesNetwork = true;
+  if (riskFlags.usesExternalProcess) signals.usesExternalProcess = true;
+  return signals;
+}
+
 function candidateIdFromPath(relativePath) {
   return safeId(`tool-${relativePath}`, "tool-candidate");
 }
@@ -665,6 +675,7 @@ function buildEntries({ inventory, sourceRoot }) {
         },
         referenceOnly,
         riskFlags,
+        safetySignals: safetySignalsForRiskFlags(riskFlags),
         queueRank: rank,
         referenceRank: rank === null && safeClassification && riskFlags.level === "low" ? file.path : null,
         failClosed: referenceOnly
