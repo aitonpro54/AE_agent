@@ -25,6 +25,16 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
+- [x] AUX all-current-queued fail-closed run
+  `full-intake-ae-scripting-all-current-queued-20260603-queued7`:
+  explicit `--parallel-all-queued` selected all 7 current queued candidates
+  (`tool-keyreverse`, `tool-makeclosest16_headless`, `tool-newtrimmednull`,
+  `tool-planeresolve`, `tool-precompselected`, `tool-sortbyposition`,
+  `tool-trimfirsttosecond`). Seven detached run-owned proposal-only child
+  worktrees ran; parent reducer accepted 0, rejected 0, and blocked all 7
+  because no proposal was ready. No central registry/recipe/ledger/source
+  merge, Local/Ollama, fallback provider, CEP/AE smoke or mutation,
+  dependency change, push, PR, or raw JSX copy occurred.
 - [x] AUX accepted-registry validation repair: `newadjust-typed-plan`
   now uses the allowed registry input type `comp` instead of unsupported
   `composition-target`, and the recipe documents matching inputs. No queue
@@ -159,8 +169,10 @@ Architecture update on 2026-06-03:
 
 ## Next Milestone
 
-`full-intake-ae-scripting-all-queued-20260603-205105` is closed for accepted
-validation. The ledger remains `completed=13`, `queued=7`, `failed_import=4`,
+`full-intake-ae-scripting-all-current-queued-20260603-queued7` is closed
+fail-closed with no accepted proposals. Proof sha:
+`a262f8b887f3c8a795ac350dd439a4a73b1353c2e49a35b7a56179acac507e5b`.
+The ledger remains `completed=13`, `queued=7`, `failed_import=4`,
 `blocked_live_lane_required=21`, and `blocked_policy=3`.
 
 Next clean work is a separate targeted recovery/triage slice for one or more
@@ -173,137 +185,34 @@ outside the runner out of scope.
 
 ## Decision Log
 
+- 2026-06-03: Fresh user-approved full-parallel all-current-queued run used
+  explicit `--parallel-all-queued`, limit 7, and `--no-commit`. Child lanes
+  stayed detached proposal-only and parent reduction stayed the only central
+  writer. Since every proposal was blocked/missing-ready, the central ledger
+  stayed unchanged and the seven queued candidates remain separate recovery
+  work.
 - 2026-06-03: `newadjust-typed-plan` uses canonical registry input type
   `comp`; `composition-target` was only an unsupported synonym. The matching
-  recipe now documents `targetComp` and `adjustmentLayerSpec`, with no runtime
+  recipe documents `targetComp` and `adjustmentLayerSpec`, with no runtime
   tool contract change.
-- 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees produce proposals only, while the parent owns ledger, registry, plan, handoff, live rerun, and commits (full-intake-ae-scripting-all-queued-20260603-205105).
-- 2026-06-03: `tool-guitemplate` binding miss was a narrow importer
-  source-shape gap. ScriptUI object method assignments are acceptable analysis
-  candidates only when paired with a ScriptUI container signal; standalone UI
-  handler fragments remain fail-closed.
+- 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees
+  produce proposals only, while the parent owns ledger, registry, plan,
+  handoff, live rerun policy, validation, and commits.
 - 2026-06-03: `--parallel-all-queued` is the explicit queue-wide opt-in. It
-  selects every current parallel-safe `status=queued` candidate, ignores the old
-  first-family default, and conflicts with manual `--parallel-candidate-ids`.
-- 2026-06-03: Fresh scoped `tool-guitemplate` run accepted advisory UI-template
-  dev-handoff coverage only. Source-exact ScriptUI layout, raw JSX, automatic
-  panel edits, live CEP/AE mutation, dependency changes, push, and PR stay
-  outside this recipe.
-- 2026-06-03: AUX scoped acceptances for `debughelper`, `dropnthframe`,
-  `getlayertype`, and `getpropertyparent` kept parallel child worktrees
-  proposal-only; the parent owned ledger, registry, plan, handoff, live rerun,
-  commits, and `nextCandidate` advancement.
-- Selection imports are advisory typed-plan coverage only. They use current
-  active-comp evidence, `set_layer_selection`, and `get_selected_layers`
-  read-back. Source-exact native UI semantics, cross-comp/Project panel
-  selection, fuzzy matching, raw JSX execution, and non-selection mutations
-  remain fail-closed unless a separate typed-tool contract proves them.
-- Random layer selection requires a reviewed deterministic
-  `randomSelectionPolicy` and concrete `randomLayerIndices`; mutation-time
-  nondeterminism and native random UI semantics stay out of scope.
-- Shape/text/unparented selection require typed evidence such as
-  `shapeLayer:true`, `textLayer:true`, or no-parent `parentLayerIndex`/equivalent
-  state before computing concrete layer indices.
-- Retrieval closeout fixed a stale compact-prompt interaction: generic
-  selected/layers overlap must not surface `bulk-layer-duplicate-typed-tool`
-  unless the prompt explicitly asks to duplicate/copy/clone, while Selection
-  evidence terms must survive compact prompt formatting.
-- Parallel Tool Intake V1 keeps live AE/CEP validation, central ledger writes,
-  registry/recipe/library writes, docs, handoff, and commits parent-owned and
-  serial. Child trees may only emit compact proposals/proofs.
-- Child isolation uses short temp local clones under `%TEMP%/codex-pi/...`
-  instead of shared git worktrees in V1, because nested detached Windows
-  worktree paths hit `GIT_DIR` path-length limits during importer child runs.
-  The parent still persists proposal/proof artifacts under the run root before
-  cleanup.
-- Detached child imports pass an explicit `detachedAllowed` target contract and
-  use shortened child runtime paths, so ordinary importer runs keep their
-  existing branch checks and worktree layout.
-- Ordinary repository search must stay on the guarded path: `.rgignore` blocks
-  archival/generated roots for raw `rg`, while `node scripts/safe-rg.js` is the
-  required wrapper for searches that include hidden roots, multiple roots, or
-  any possible log/runtime expansion.
-- Generic Repo Auto Intake V1 is an orchestration shell, not a broad real-repo
-  processing run. Missing, unrecognized, or recognized non-permissive licenses
-  set `referenceOnly:true`; missing/unrecognized-license entries are not
-  `status:"queued"` and expose no `nextCandidate`, so accidental old
-  full-intake execution does not import them.
-- Auto Intake parallel scheduling is plan-only in V1. It selects only bounded
-  low-risk safe/reference candidates and records that child worktrees,
-  candidate execution, central source merge, Local/Ollama, fallback providers,
-  live CEP/AE, dependency/package changes, push/PR, and raw JSX copy are all
-  disabled.
-- The aturtur source repository is missing a recognized permissive license, so
-  all 46 JSX candidates stay `reference_only`. Parent reducer rejected scoped
-  execution because the parallel plan exposed no explicit safe candidate ids.
-- The ae-scripting scripting-snippets README contains a CC-BY 3.0 statement.
-  Auto-intake treats it as recognized attribution-required permission:
-  import may proceed only through typed recipe paths, raw JSX copy remains
-  blocked, and every generated run gets a separate `License` text artifact with
-  per-script attribution entries. If a script exposes author metadata, the
-  entry includes `Author(s)`; otherwise it lists the script path only.
-- Subagent audits were read-only only. They confirmed license/reference-only
-  fail-closed behavior, coherent ledger/status buckets, hash consistency, and a
-  plan-only validation boundary; no child edits or child commits occurred.
-- For ae-scripting, the runRoot auto-intake plan and parent full-intake
-  parallel plan both select `tool-batchparent` and `tool-changeallnames`.
-  This is still plan-only metadata: child execution, worktrees, controlled
-  merge, and live validation remain serial/parent-gated.
-- Plan-only parallel proof envelopes are valid Full Intaker proof artifacts.
-  `full-intake-proof.mjs` now falls back from root `proof-envelope.json` to
-  `parallel-candidates/parallel-proof-envelope.json` and reports parallel mode
-  and evidence in compact output.
-- Parallel-scoped ae-scripting runs exposed three infrastructure gaps, all fixed
-  locally without central child writes: Windows long-path checkout for outer
-  child clones, missing auto-intake `safetySignals` objects, and Windows
-  long-path checkout for importer implementation clones. Large shared smoke
-  files now use bounded append-only extraction so proposals do not embed the
-  whole smoke file.
-- `tool-changeallnames` remains unaccepted because the child writer timed out;
-  accepting it now would require a separate recovery/manual proposal slice.
-  `tool-batchparent` remains unaccepted because the child batch could not bind
-  the candidate and parenting semantics are more fragile.
-- `--resolve-live-lanes-before-parallel` is deliberately narrower than the
-  existing serial resolution queue: it excludes import-failure and stale
-  child-timeout recovery, requires explicit ids, and treats
-  `blocked_live_lane_required` as recoverable only inside that scoped
-  pre-parallel phase.
-- Parallel child worktrees remain proposal-only. Even after pre-resolution,
-  live-gated acceptance still requires parent-owned serial live proof/rerun
-  policy; child worktrees must not run live CEP/AE.
-- ae-scripting read-only `suggestedTools` must not synthesize a production lane.
-  A future family must require explicit mutating typed tools, generated-only
-  fixtures, read-back, semantic verification, cleanup, and a narrow live lane
-  before any real candidate requeue.
-- Existing typed tools are only partial for the 17 unsupported snippets:
-  `create_shape_layer`, `set_expression`, `set_property_keyframes`,
-  `add_effect`, `set_effect_property`, `create_null_layer`,
-  `set_layer_transform`, `set_comp_properties`, and marker tools can support
-  future contracts, but do not cover source-exact nested shape traversal,
-  expression enable/disable scans, comp-marker copy, solid-source resizing,
-  recursive comp upscale, paint brush splitting, random transforms, or manual
-  hard-coded shape duplication.
-- Source Text keyframes are a distinct proof family. `tool-texttokeys` uses
-  `set_property_keyframes` + `get_layer_details`; source-exact traversal and
-  typo/no-call repair remain fail-closed.
-- Legacy JSX assignment functions are valid importer candidates when already
-  ledger-selected; shared smoke child edits are forbidden by default, with
-  explicit structured append-only support for reviewed static proposals.
-- In parallel child proposal mode, queue-supervisor omits parent-owned
-  `scripts/solution-library-validation-smoke.js`, plan, and handoff paths from
-  child allowed write paths; registry remains the structured parent-reduced
-  merge path. Ordinary serial supervisor output keeps the full shared-owner
-  list.
-- `tool-filterinput` stays `failed_import`: source is an `edittext.onChanging`
-  ScriptUI handler fragment depending on an external UI object, not a
-  standalone typed-tool recipe.
-- `tool-getlayertype_compressed` stays `failed_import` as a duplicate compressed
-  alias; the canonical accepted recipe is `tool-getlayertype`.
+  selects every current parallel-safe `status=queued` candidate and conflicts
+  with manual `--parallel-candidate-ids`.
+- Earlier June 2026 AUX intake decisions were compacted to
+  `plans/archive/target-app-execplan-history-2026-06-03-aux.md`.
 
 ## Validation
 
-- AUX accepted-registry validation repair passed: no JS touched, so no
-  touched-file `node --check` was required; `git diff --check`;
+- AUX all-current-queued fail-closed run validation passed: no tracked
+  JavaScript files were touched, so touched-file `node --check` was not
+  required; compact proof was contract-complete with `unplannedPathCount=0`,
+  `centralWriterOnly=true`, detached/run-owned child worktrees, and reducer
+  status `parallel_proposals_blocked`; ledger summary stayed
+  `completed=13`, `queued=7`, `failed_import=4`,
+  `blocked_live_lane_required=21`, `blocked_policy=3`; `git diff --check`;
   `node scripts/solution-library-validation-smoke.js`;
   `node scripts/solution-registry-smoke.js`;
   `node scripts/solution-retrieval-smoke.js`;
@@ -311,105 +220,20 @@ outside the runner out of scope.
   `node scripts/sdk-generic-repo-full-intake-smoke.js`;
   `node scripts/sdk-generic-repo-importer-command-smoke.js`;
   `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`.
-  The first `sdk-generic-repo-full-intake-smoke` attempt hit the command
-  timeout with no assertion failure; rerun with a longer timeout passed.
-| AUX parallel candidate worktrees architecture (full-intake-ae-scripting-all-queued-20260603-205105) | Required to close the real all-current queued parallel reducer with parent-owned central writes. | Accepted 7, blocked 7; central writes stayed parent-owned, live rerun stayed serial, and unplanned paths were rejected. |
-- AUX real scoped parallel reducer acceptances validated:
-  `debughelper4`, `dropnthframe1`, `getlayertype1`, and
-  `getpropertyparent1` each accepted 1/rejected 0; compact proofs completed,
-  central writes stayed serial, and solution smokes passed.
-- AUX fail-closed validation passed for `filterinput1` and
-  `getlayertype-compressed1`: compact proofs completed, source review recorded
-  the non-standalone handler and duplicate compressed alias reasons, and ledger
-  advanced.
-- Historical Selection/retrieval validation remains summarized: strict runner
-  completed through proof/import/merge/non-live/live/docs/commit with
-  `unplannedPathCount=0`; final kyletmartinez ledger was `completed=69`,
-  `queued=0`, and retrieval-fix registry/library/retrieval smokes passed.
-- Parallel Tool Intake V1 validation passed: touched-file node checks,
-  importer/queue-supervisor/full-intake smokes, solution smokes, and
-  `git diff --check`.
-- Search safety guard validation passed: `safe-rg` node checks/smoke,
-  `git diff --check`, and the standard non-live smoke suite.
-- AUX Generic Repo Auto Intake V1 validation passed: touched node checks,
-  auto-intake/importer/supervisor/full-intake/solution smokes, and local fixture
-  proof from inventory to plan-only parallel handoff.
-- Auto Intake closeout also passed the standard non-live smoke suite:
-  provider contract, solution registry/candidate/promotion/retrieval/library,
-  project intent memory, plan classification/repair, semantic verification,
-  reliability validation, ChatGPT connector, provider API, prompt optimization,
-  bridge-only, and full smoke test.
-- Controlled aturtur and ae-scripting intake validation passed through compact
-  auto-intake/full-intake/status/proof/ledger checks. Aturtur stayed
-  reference-only with zero selected ids; ae-scripting reported `CC-BY-3.0`,
-  `queued=23`, selected plan-only ids `tool-batchparent,tool-changeallnames`,
-  and no scoped wave, child worktree, source merge, raw JSX copy, or live
-  validation.
-- CC-BY attribution and parallel proof helper validation passed with touched
-  `node --check`, Full Intake/auto-intake/importer/supervisor/solution smokes,
-  compact proof checks, standard non-live smoke suite, and `git diff --check`
-  with only normal Windows LF/CRLF warnings.
-- ae-scripting parallel-scoped attempt validation passed:
-  `node --check orchestrator/parallel-candidate-worktrees.mjs`;
-  `node --check orchestrator/run-generic-repo-auto-intake.mjs`;
-  `node --check orchestrator/run-generic-repo-tool-importer.mjs`;
-  `node --check scripts/sdk-generic-repo-full-intake-smoke.js`;
-  `node --check scripts/sdk-generic-repo-auto-intake-smoke.js`;
-  `node scripts/sdk-generic-repo-full-intake-smoke.js`;
-  `node scripts/sdk-generic-repo-auto-intake-smoke.js`;
-  `node scripts/sdk-generic-repo-importer-command-smoke.js`;
-  `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`;
-  `node scripts/solution-library-validation-smoke.js`;
-  `node scripts/solution-registry-smoke.js`;
-  `node scripts/solution-retrieval-smoke.js`;
-  `node scripts/semantic-verification-smoke.js`;
-  `git diff --check`.
-  Real scoped runs used only explicit ids
-  `tool-changeallnames,tool-batchparent`; final proof sha
-  `06d599d93b24abf99f4404fb0d6ac1a14392c61f3b1654ec9e9859a17c8fa559`.
-  Accepted candidates: `0`; blocked proposals: `2`.
-- AUX live-lane pre-resolution before parallel-scoped validation passed:
-  touched-file `node --check`; `git diff --check` (normal Windows LF/CRLF
-  warnings only); required Full Intake/auto-intake/importer/supervisor/
-  solution/semantic smokes; standard non-live provider/plan/reliability/
-  connector/prompt/bridge/full smokes; and read-only CEP `inspect` plus
-  `connector-status-smoke`.
-  Configured `npm.cmd run check:rules` was attempted and failed on unrelated
-  `M167 SDK operation envelope core extraction smoke` expecting
-  `run-write-capable-scaffold.mjs` to import `createOperationEnvelopeHelpers`.
-- AUX ae-scripting family design validation: read-only preflight used compact
-  status/proof/ledger only, inspected exactly the 17 named ledger entries and
-  source snippets, confirmed stale `running` state has no related runner
-  processes, and made no code, queue, requeue, child-worktree, live CEP/AE,
-  Local/Ollama, dependency, push, or PR changes.
-- AUX text-to-keys proof/hint/import validation passed: touched-file checks,
-  registry parse/assert, agent scenario/semantic/solution smokes, compact
-  status/ledger summary, generated-only live lane, and `git diff --check`
-  with normal LF/CRLF warnings only.
-- AUX importer/parallel packaging validation passed: touched-file checks,
-  `git diff --check` with normal LF/CRLF warnings,
-  importer/queue-supervisor smokes, and full-intake smoke.
-- AUX parallel child path isolation and `nextCandidate` advancement validation
-  passed: touched-file `node --check`, `git diff --check`, full-intake smoke,
-  queue/importer-supervisor smokes, compact proof, registry parse, and solution
-  registry/library/retrieval smokes.
-- AUX `tool-guitemplate` recovery/acceptance validation passed: old compact
-  proof was blocked, fresh run `full-intake-tool-guitemplate-20260603-194512`
-  completed with accepted `tool-guitemplate`, ledger summary moved to
-  `completed=6`, `queued=14`, `failed_import=4`, post-run tracked status stayed
-  clean, touched JS `node --check`, `git diff --check`,
-  importer/full-intake/queue-supervisor smokes, solution
-  library/registry/retrieval smokes, and semantic verification all passed.
-- AUX all-queued selector validation passed: touched JS `node --check`,
-  `git diff --check`, full-intake/importer/queue-supervisor smokes,
-  solution library/registry/retrieval smokes, semantic verification, and
-  real ae-scripting plan-only run
-  `full-intake-ae-scripting-all-queued-plan-20260603-204848` with
-  `allQueued=true`, `selected=14`, `worktrees=0`.
+  Compact status for the run reports stale `running` with zero related
+  processes, so future work should use compact status before any supervisor
+  action.
+- AUX accepted-registry validation repair passed: no JavaScript files touched;
+  `git diff --check`; solution library/registry/retrieval smokes; semantic
+  verification; generic-repo full-intake/importer/queue-supervisor smokes. The
+  first full-intake smoke attempt timed out with no assertion failure; rerun
+  with a longer timeout passed.
+- Earlier June 2026 AUX validations were compacted to
+  `plans/archive/target-app-execplan-history-2026-06-03-aux.md`.
 - Not run by design: Local/Ollama, fallback providers, broad/default CEP smoke,
-  broad real queue, `max-items > 1`, dependency/package changes, full runtime
-  reports, push, PR, GitHub automation, raw JSX copy, and source checkout writes
-  outside the runner.
+  broad real queue outside explicit all-current-queued approval, dependency
+  changes, full runtime reports, push, PR, GitHub automation, raw JSX copy, and
+  source checkout writes outside the runner.
 
 ## Handoff
 
