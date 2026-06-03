@@ -92,38 +92,25 @@ Historical milestone detail through 2026-05-31 is archived at
 - [x] AUX importer/parallel packaging fixes: importer recognizes legacy
   function assignments; parallel child runs no longer receive parent-owned
   smoke/plan/handoff paths, and shared smoke rewrites fail closed.
+- [x] AUX ae-scripting scoped `tool-guitemplate` attempt: fresh run
+  `full-intake-tool-guitemplate-20260603-184134` created one detached child
+  proposal and failed closed as
+  `implementation-batch-candidate-missing: tool-guitemplate`; no parent
+  acceptance, central merge, ledger count change, live validation, push, or PR.
 
 ## Current State
 
-`full-intake-kyletmartinez` has no queued items after the Selection retry slice.
-Final compact status on 2026-06-02:
-
-- status: `completed`
-- last item: `tool-selection-select-unparented-layers`
-- last candidate commit: `e08b7baebddb6b16d538a0de6a90401f1f7196d5`
-- compact runner counts: `items=79`, `completed=59`, `blocked=20`,
-  `commits=59`
-- compact ledger counts: `entries=154`, `completed=69`,
-  `blocked_live_lane_synthesis_incomplete=9`, `blocked_or_skipped=64`,
-  `failed_import=11`,
-  `recovered_patch_non_live_validated_pending_semantic_review=1`
-- `queued=0`, `Queued live_lane_needed=0`
-
-Selection retry slice commit detail is archived; latest completed selection
-commit remains `e08b7baebddb6b16d538a0de6a90401f1f7196d5`.
+`full-intake-kyletmartinez` completed the Selection retry slice on 2026-06-02:
+last item `tool-selection-select-unparented-layers`, latest selection commit
+`e08b7baebddb6b16d538a0de6a90401f1f7196d5`, compact ledger `completed=69`,
+`failed_import=11`, `queued=0`, and `Queued live_lane_needed=0`.
 
 Branch `road-map-2.0` is ahead of `ae-agent/road-map-2.0`; do not push without
 explicit approval.
 
-`full-intake-aturtur` compact state on 2026-06-02:
-
-- auto-intake status: `auto_intake_plan_ready`
-- source revision: `d3fcb875bfb300327b236e93af85bcae27c0ad8b`
-- license: `missing`, `referenceOnlyDefault=true`, `importAllowed=false`
-- ledger: 46 entries, all `reference_only`, `queued=0`, `nextCandidate=null`
-- parallel plans: selected candidate ids `[]`; worktrees/execution/merge `0`
-- serial reducer decision: no scoped wave may run from this ledger without a
-  separate clean-room typed-tool contract and explicit candidate ids
+`full-intake-aturtur` stayed reference-only on 2026-06-02 because the source
+license is missing: 46 entries, `queued=0`, selected ids `[]`, and no scoped
+wave without a separate clean-room typed-tool contract plus explicit ids.
 
 `full-intake-ae-scripting-snippets` compact state on 2026-06-02:
 
@@ -177,13 +164,20 @@ Architecture update on 2026-06-03:
 - `tool-texttokeys` has generated-only Source Text live proof, passed
   liveGate, and parent-owned typed recipe binding; source-exact traversal,
   typo/no-call repair, text animators, and raw JSX remain fail-closed.
+- `tool-guitemplate` scoped parallel rerun on 2026-06-03 used run id
+  `full-intake-tool-guitemplate-20260603-184134`; reducer status was
+  `parallel_proposals_blocked`, proof sha
+  `d406ea09327cc5eb812f36ef71d0558b6c94ea5412ccbcc45e1b770fea161c51`, and the
+  tracked tree stayed clean after the run.
 
 ## Next Milestone
 
-`full-intake-ae-scripting-snippets` now has `queued=15`, `completed=5`, and
-`failed_import=4`. Next bounded step is scoped `tool-guitemplate` after compact
-status/ledger preflight. Keep `tool-changeallnames` and `tool-batchparent` on
-their separate blockers.
+`full-intake-ae-scripting-snippets` still has `queued=15`, `completed=5`, and
+`failed_import=4` because the blocked `tool-guitemplate` parallel proposal did
+not update the central ledger. Next bounded step is a targeted binding
+diagnostic/recovery for `tool-guitemplate`, or another explicit scoped queued
+id after compact status/ledger preflight. Keep `tool-changeallnames` and
+`tool-batchparent` on their separate blockers.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -191,13 +185,14 @@ outside the runner out of scope.
 
 ## Decision Log
 
-- 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees produce proposals only, while the parent owns ledger, registry, plan, handoff, live rerun, and commits (full-intake-current-repo-max-autonomy-getpropertyparent1).
-- 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees produce proposals only, while the parent owns ledger, registry, plan, handoff, live rerun, and commits (full-intake-current-repo-max-autonomy-getlayertype1).
-- 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees produce proposals only, while the parent owns ledger, registry, plan, handoff, live rerun, and commits (full-intake-current-repo-max-autonomy-dropnthframe1).
-- 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees
-  produce proposals only, while the parent owns ledger, registry, plan,
-  handoff, live rerun, commits, and `nextCandidate` advancement
-  (`full-intake-current-repo-max-autonomy-debughelper4`).
+- 2026-06-03: `tool-guitemplate` should not be blindly repeated in the same
+  scoped parallel lane until the implementation-batch binding miss is
+  understood; run `full-intake-tool-guitemplate-20260603-184134` produced a
+  blocked proposal only.
+- 2026-06-03: AUX scoped acceptances for `debughelper`, `dropnthframe`,
+  `getlayertype`, and `getpropertyparent` kept parallel child worktrees
+  proposal-only; the parent owned ledger, registry, plan, handoff, live rerun,
+  commits, and `nextCandidate` advancement.
 - Selection imports are advisory typed-plan coverage only. They use current
   active-comp evidence, `set_layer_selection`, and `get_selected_layers`
   read-back. Source-exact native UI semantics, cross-comp/Project panel
@@ -386,6 +381,12 @@ outside the runner out of scope.
   passed: touched-file `node --check`, `git diff --check`, full-intake smoke,
   queue/importer-supervisor smokes, compact proof, registry parse, and solution
   registry/library/retrieval smokes.
+- AUX `tool-guitemplate` scoped attempt validation: preflight tracked git status
+  clean; active ledger summary showed `queued=15`, `completed=5`,
+  `failed_import=4`; run output was `parallel_proposals_blocked`; compact proof
+  was `contractComplete=true` with one blocked proposal; post-run tracked git
+  status stayed clean and context budget reported `0 -> 1`. No JS/source files
+  changed, so broad smokes were not run.
 - Not run by design: Local/Ollama, fallback providers, broad/default CEP smoke,
   broad real queue, `max-items > 1`, dependency/package changes, full runtime
   reports, push, PR, GitHub automation, raw JSX copy, and source checkout writes
