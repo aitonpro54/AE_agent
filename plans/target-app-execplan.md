@@ -25,9 +25,9 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
-- [x] AUX ae-scripting parallel candidate acceptances: parent reducer accepted
-  `tool-debughelper` and `tool-dropnthframe`, rejected none, and kept central
-  writes serial.
+- [x] AUX ae-scripting parallel candidate wave: parent reducer accepted
+  `tool-debughelper` and `tool-dropnthframe`; `tool-filterinput` failed closed
+  as a non-standalone ScriptUI handler fragment.
 - [x] Historical milestones 1-32: archived/summarized baseline, provider work,
   strict-runner hardening, context-budget tuning, Selection lane prep, and
   completed Selection candidates through disabled/guide layers.
@@ -180,10 +180,10 @@ Architecture update on 2026-06-03:
 
 ## Next Milestone
 
-`full-intake-ae-scripting-snippets` now has `queued=19`, `completed=3`, and
-`failed_import=2`. Next bounded step is scoped `tool-filterinput` after compact
-status/ledger preflight. Keep `tool-changeallnames` and `tool-batchparent` on
-their separate blockers.
+`full-intake-ae-scripting-snippets` now has `queued=18`, `completed=3`, and
+`failed_import=3`. Next bounded step is scoped
+`tool-getlayertype_compressed` after compact status/ledger preflight. Keep
+`tool-changeallnames` and `tool-batchparent` on their separate blockers.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -297,12 +297,18 @@ outside the runner out of scope.
   child allowed write paths; registry remains the structured parent-reduced
   merge path. Ordinary serial supervisor output keeps the full shared-owner
   list.
+- `tool-filterinput` stays `failed_import`: source is an `edittext.onChanging`
+  ScriptUI handler fragment depending on an external UI object, not a
+  standalone typed-tool recipe.
 
 ## Validation
 
 - AUX real scoped parallel reducer acceptances validated:
   `debughelper4` and `dropnthframe1` each accepted 1/rejected 0, compact proofs
   completed, central writes stayed serial, and solution smokes passed.
+- AUX `filterinput1` fail-closed validation passed: compact proof completed,
+  proposal blocked with `implementation-batch-candidate-missing`, source review
+  confirmed non-standalone ScriptUI handler semantics, and ledger advanced.
 - Historical Selection/retrieval validation remains summarized: strict runner
   completed through proof/import/merge/non-live/live/docs/commit with
   `unplannedPathCount=0`; final kyletmartinez ledger was `completed=69`,
