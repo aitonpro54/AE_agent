@@ -25,9 +25,9 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
-- [x] AUX parallel candidate worktrees architecture (full-intake-current-repo-max-autonomy-dropnthframe1): parent reducer serially handled accepted proposals [tool-dropnthframe] and rejected [none].
-- [x] AUX parallel candidate worktrees architecture: parent reducer accepted
-  `tool-debughelper`, rejected none, and kept central writes serial.
+- [x] AUX ae-scripting parallel candidate acceptances: parent reducer accepted
+  `tool-debughelper` and `tool-dropnthframe`, rejected none, and kept central
+  writes serial.
 - [x] Historical milestones 1-32: archived/summarized baseline, provider work,
   strict-runner hardening, context-budget tuning, Selection lane prep, and
   completed Selection candidates through disabled/guide layers.
@@ -180,8 +180,8 @@ Architecture update on 2026-06-03:
 
 ## Next Milestone
 
-`full-intake-ae-scripting-snippets` now has `queued=20`, `completed=2`, and
-`failed_import=2`. Next bounded step is scoped `tool-dropnthframe` after compact
+`full-intake-ae-scripting-snippets` now has `queued=19`, `completed=3`, and
+`failed_import=2`. Next bounded step is scoped `tool-filterinput` after compact
 status/ledger preflight. Keep `tool-changeallnames` and `tool-batchparent` on
 their separate blockers.
 
@@ -300,25 +300,16 @@ outside the runner out of scope.
 
 ## Validation
 
-| AUX parallel candidate worktrees architecture (full-intake-current-repo-max-autonomy-dropnthframe1) | Required to prove opt-in parallel candidate worktrees plus a serial parent reducer without running the real queue. | Accepted 1, rejected 0; central writes stayed parent-owned, live rerun stayed serial, and unplanned paths were rejected. |
-| AUX parallel candidate worktrees architecture (full-intake-current-repo-max-autonomy-debughelper4) | Required to prove opt-in parallel candidate worktrees plus a serial parent reducer without running the real queue. | Accepted 1, rejected 0; central writes stayed parent-owned, live rerun stayed serial, and unplanned paths were rejected. |
+- AUX real scoped parallel reducer acceptances validated:
+  `debughelper4` and `dropnthframe1` each accepted 1/rejected 0, compact proofs
+  completed, central writes stayed serial, and solution smokes passed.
 - Historical Selection/retrieval validation remains summarized: strict runner
   completed through proof/import/merge/non-live/live/docs/commit with
   `unplannedPathCount=0`; final kyletmartinez ledger was `completed=69`,
   `queued=0`, and retrieval-fix registry/library/retrieval smokes passed.
-- Parallel Tool Intake V1 validation passed:
-  `node --check orchestrator/parallel-candidate-worktrees.mjs`;
-  `node --check orchestrator/run-generic-repo-full-intake.mjs`;
-  `node --check orchestrator/run-generic-repo-queue-supervisor.mjs`;
-  `node --check orchestrator/run-generic-repo-tool-importer.mjs`;
-  `node --check scripts/sdk-generic-repo-full-intake-smoke.js`;
-  `git diff --check`;
-  `node scripts/sdk-generic-repo-importer-command-smoke.js`;
-  `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`;
-  `node scripts/solution-library-validation-smoke.js`;
-  `node scripts/solution-registry-smoke.js`;
-  `node scripts/solution-retrieval-smoke.js`;
-  `node scripts/sdk-generic-repo-full-intake-smoke.js`.
+- Parallel Tool Intake V1 validation passed: touched-file node checks,
+  importer/queue-supervisor/full-intake smokes, solution smokes, and
+  `git diff --check`.
 - Search safety guard validation passed:
   `node --check scripts/safe-rg.js`;
   `node --check scripts/safe-rg-smoke.js`;
@@ -397,7 +388,7 @@ outside the runner out of scope.
 - AUX importer/parallel packaging validation passed: touched-file checks,
   `git diff --check` with normal LF/CRLF warnings,
   importer/queue-supervisor smokes, and full-intake smoke.
-- AUX parallel child path isolation and `tool-debughelper` acceptance validation
+- AUX parallel child path isolation and `nextCandidate` advancement validation
   passed: touched-file `node --check`, `git diff --check`, full-intake smoke,
   queue/importer-supervisor smokes, compact proof, registry parse, and solution
   registry/library/retrieval smokes.
