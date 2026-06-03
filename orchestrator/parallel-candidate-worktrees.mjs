@@ -81,6 +81,15 @@ function sortedUnique(values) {
   return Array.from(new Set((values || []).map(normalizeRepoPath).filter(Boolean))).sort();
 }
 
+function boundedIds(values, limit = 16) {
+  const ids = Array.from(new Set((values || []).map((value) => String(value || "").trim()).filter(Boolean))).sort();
+  return {
+    count: ids.length,
+    ids: ids.slice(0, limit),
+    omitted: Math.max(0, ids.length - limit),
+  };
+}
+
 function readJson(filePath, label) {
   try {
     return JSON.parse(readFileSync(filePath, "utf8"));
@@ -1560,6 +1569,7 @@ export function reduceParallelCandidateProposals({
 
 function writeParallelProof({ candidatePlans, planPath, proposals, reducer, report, runRoot, targetRepo }) {
   const worktrees = candidatePlans.map((entry) => entry.worktree).filter(Boolean);
+  const resolutionQueue = report.resolutionQueue || null;
   const proof = {
     schema: PARALLEL_PROOF_SCHEMA,
     runId: report.runId,
@@ -1577,6 +1587,16 @@ function writeParallelProof({ candidatePlans, planPath, proposals, reducer, repo
       worktreesRunOwned: worktrees.every((entry) => entry.runOwned === true),
     },
     planPath,
+    preResolutionPhase: resolutionQueue
+      ? {
+          parentOwnedSerial: true,
+          processedBeforeParallel: true,
+          requeuedCandidateIds: boundedIds(resolutionQueue.requeuedCandidateIds || []),
+          status: resolutionQueue.status || null,
+          terminalTicketCount: Number(resolutionQueue.terminalTicketCount || 0),
+          ticketCount: Array.isArray(resolutionQueue.tickets) ? resolutionQueue.tickets.length : 0,
+        }
+      : null,
     proposalPaths: proposals.map((entry) => entry.proposalPath).filter(Boolean),
     reducerStatus: reducer?.status || null,
     createdAt: new Date().toISOString(),
@@ -1624,11 +1644,34 @@ function compactParallelPlan({ baseHead, candidateIds, limit, mode, runId, selec
   };
 }
 
+function compactResolutionQueueForParallel(queue) {
+  if (!queue) {
+    return null;
+  }
+  const tickets = Array.isArray(queue.tickets) ? queue.tickets : [];
+  return {
+    schema: queue.schema || "generic-repo-full-intake.resolution-queue.v1",
+    status: queue.status || null,
+    closedCandidateIds: Array.isArray(queue.closedCandidateIds) ? queue.closedCandidateIds.slice().sort() : [],
+    openTicketCount: Number(queue.openTicketCount || 0),
+    requeuedCandidateIds: Array.isArray(queue.requeuedCandidateIds) ? queue.requeuedCandidateIds.slice().sort() : [],
+    terminalTicketCount: Number(queue.terminalTicketCount || 0),
+    tickets: tickets.map((ticket) => ({
+      affectedCandidateIds: Array.isArray(ticket.affectedCandidateIds) ? ticket.affectedCandidateIds.slice().sort() : [],
+      groupId: ticket.groupId || null,
+      path: ticket.path || null,
+      status: ticket.status || null,
+      type: ticket.type || null,
+    })),
+  };
+}
+
 export async function runParallelCandidateWorktrees({
   contextBudget,
   ledger,
   ledgerPath,
   options,
+  preResolutionQueue = null,
   runId,
   runRoot,
   targetRepo,
@@ -1667,6 +1710,7 @@ export async function runParallelCandidateWorktrees({
     items: [],
     blockers: [],
     commits: [],
+    resolutionQueue: compactResolutionQueueForParallel(preResolutionQueue),
     parallel: {
       schema: PARALLEL_PLAN_SCHEMA,
       optIn: true,

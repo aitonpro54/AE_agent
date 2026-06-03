@@ -73,6 +73,12 @@ Historical milestone detail through 2026-05-31 is archived at
   blockers were fixed with local fail-closed infrastructure commits, but no
   candidate was accepted: `tool-changeallnames` timed out in the child writer,
   and `tool-batchparent` failed closed as missing from the implementation batch.
+- [x] AUX live-lane pre-resolution before parallel-scoped:
+  `run-generic-repo-full-intake.mjs` now has scoped opt-in
+  `--resolve-live-lanes-before-parallel`. It requires explicit
+  `--resolution-candidate-ids` and `--parallel-candidate-ids`, runs only
+  parent-owned live-lane resolution before parallel worktrees, rereads the
+  ledger, and records a compact `preResolutionPhase` in the parallel proof.
 
 ## Current State
 
@@ -90,18 +96,8 @@ Final compact status on 2026-06-02:
   `recovered_patch_non_live_validated_pending_semantic_review=1`
 - `queued=0`, `Queued live_lane_needed=0`
 
-Selection commits completed in this continuation:
-
-- `tool-selection-select-parent-layer`:
-  `2e324d5862ef5bf33581c1d4751af7bde3c27347`
-- `tool-selection-select-random-layers`:
-  `bdcf436956da244597a668c5ef8c5a019de14267`
-- `tool-selection-select-shape-layers`:
-  `ec2898e7a93df4ca4e46448aa2fe56a48433e9e3`
-- `tool-selection-select-text-layers`:
-  `b43cc7987c52eb8c52d1c17b7a9d8759b7e2f24b`
-- `tool-selection-select-unparented-layers`:
-  `e08b7baebddb6b16d538a0de6a90401f1f7196d5`
+Selection retry slice commit detail is archived; latest completed selection
+commit remains `e08b7baebddb6b16d538a0de6a90401f1f7196d5`.
 
 Branch `road-map-2.0` is ahead of `ae-agent/road-map-2.0`; do not push without
 explicit approval.
@@ -119,15 +115,10 @@ explicit approval.
 `full-intake-ae-scripting-snippets` compact state on 2026-06-02:
 
 - source: `https://github.com/ae-scripting/scripting-snippets`
-- source revision observed by `git ls-remote`: `17bc59a5a158fc6cb49ecb4161018333f7048675`
-- artifact root:
-  `.codex-runtime/sdk/generic-repo-importer/ae-scripting-scripting-snippets-55904818-intake`
 - license: `recognized_permissive`, `id=CC-BY-3.0`,
   `referenceOnlyDefault=false`, `importAllowed=true`,
   `attributionRequired=true`, evidence `README.md`
-- attribution artifact:
-  `.codex-runtime/sdk/generic-repo-importer/ae-scripting-scripting-snippets-55904818-intake/License`
-- inventory: 49 interesting files, 48 JSX candidates
+- attribution exists
 - ledger/status: 48 entries, `queued=23`, `blocked_live_lane_required=22`,
   `blocked_policy=3`, `reference_only=0`
 - classification buckets: `live_lane_needed=22`,
@@ -151,6 +142,17 @@ explicit approval.
   this as stale state after the scoped attempt and run a stale-run check before
   any resume
 
+Architecture update on 2026-06-03:
+
+- Pre-resolution is available only as an explicit scoped parallel opt-in; normal
+  serial resolution behavior does not broadly pick up `blocked_live_lane_required`.
+- Read-only ae-scripting diagnostic found 22 `blocked_live_lane_required`
+  entries: 0 currently match supported auto-lane families, 17 are unsupported
+  because they only expose read/inspection tools, and 5 are terminal unsafe due
+  to file/render signals.
+- No real ae-scripting queue processing, requeue, child worktree, raw JSX copy,
+  source merge, live CEP/AE mutation, Local/Ollama, push, or PR occurred.
+
 ## Next Milestone
 
 `full-intake-ae-scripting-snippets` still has 23 queued candidates; the two-id
@@ -169,6 +171,10 @@ broad queue processing. Choose one follow-up:
    timeout/recovery design, or prepare a manual recipe-only proposal review.
 5. Keep `tool-batchparent` blocked until the implementation batch mismatch and
    parenting semantics are proven; do not accept it from the current proposal.
+6. Use `--resolve-live-lanes-before-parallel` only with small explicit
+   resolution ids and matching explicit parallel ids. For ae-scripting, first
+   add/verify a typed family that exposes real mutating typed tools; current
+   blocked live-lane entries have no supported family matches.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -246,6 +252,14 @@ outside the runner out of scope.
   accepting it now would require a separate recovery/manual proposal slice.
   `tool-batchparent` remains unaccepted because the child batch could not bind
   the candidate and parenting semantics are more fragile.
+- `--resolve-live-lanes-before-parallel` is deliberately narrower than the
+  existing serial resolution queue: it excludes import-failure and stale
+  child-timeout recovery, requires explicit ids, and treats
+  `blocked_live_lane_required` as recoverable only inside that scoped
+  pre-parallel phase.
+- Parallel child worktrees remain proposal-only. Even after pre-resolution,
+  live-gated acceptance still requires parent-owned serial live proof/rerun
+  policy; child worktrees must not run live CEP/AE.
 
 ## Validation
 
@@ -374,6 +388,15 @@ outside the runner out of scope.
   `tool-changeallnames,tool-batchparent`; final proof sha
   `06d599d93b24abf99f4404fb0d6ac1a14392c61f3b1654ec9e9859a17c8fa559`.
   Accepted candidates: `0`; blocked proposals: `2`.
+- AUX live-lane pre-resolution before parallel-scoped validation passed:
+  touched-file `node --check`; `git diff --check` (normal Windows LF/CRLF
+  warnings only); required Full Intake/auto-intake/importer/supervisor/
+  solution/semantic smokes; standard non-live provider/plan/reliability/
+  connector/prompt/bridge/full smokes; and read-only CEP `inspect` plus
+  `connector-status-smoke`.
+  Configured `npm.cmd run check:rules` was attempted and failed on unrelated
+  `M167 SDK operation envelope core extraction smoke` expecting
+  `run-write-capable-scaffold.mjs` to import `createOperationEnvelopeHelpers`.
 - Not run by design: Local/Ollama, fallback providers, broad/default CEP smoke,
   broad real queue, `max-items > 1`, dependency/package changes, full runtime
   reports, push, PR, GitHub automation, raw JSX copy, and source checkout writes

@@ -380,6 +380,11 @@ Options:
   --resolution-candidate-ids <ids>
                               Optional comma-separated candidate ids for scoped
                               live-lane/import-failure resolution processing.
+  --resolve-live-lanes-before-parallel
+                              In opt-in parallel mode, run scoped parent-owned
+                              live-lane resolution before scheduling child worktrees.
+                              Requires --resolution-candidate-ids and
+                              --parallel-candidate-ids.
   --parallel-candidate-worktrees
                               Opt in to AUX parallel candidate worktrees and a
                               serial parent reducer. Default serial behavior is unchanged.
@@ -434,6 +439,7 @@ const BOOLEAN_OPTIONS = new Set([
   "no-commit",
   "parallel-candidate-worktrees",
   "plan-parallel-candidate-worktrees",
+  "resolve-live-lanes-before-parallel",
 ]);
 const COMPACT_OUTPUT_ID_LIMIT = 16;
 const COMPACT_OUTPUT_FAMILY_LIMIT = 12;
@@ -1824,9 +1830,10 @@ function hasReasonFragment(entry, fragments) {
   return fragments.some((fragment) => text.includes(fragment));
 }
 
-function isRecoverableLiveLaneEntry(entry) {
+function isRecoverableLiveLaneEntry(entry, { includeBlockedLiveLaneRequired = false } = {}) {
   if (!SYNTHESIZABLE_CLASSIFICATIONS.has(entry.classification)) return false;
   if (entry.status === "completed") return false;
+  if (includeBlockedLiveLaneRequired && entry.status === "blocked_live_lane_required") return true;
   if (entry.status === "queued") {
     return entry.classification === "live_lane_needed" &&
       entry.liveGate?.required === true &&
@@ -2040,6 +2047,7 @@ function applyFamilyProofToEntry(entry, ticket, liveReport, template, allocateQu
 
 function processLiveLaneResolutionTickets({
   allowSelfImprovementLaneSynthesis = false,
+  includeBlockedLiveLaneRequired = false,
   ledger,
   ledgerPath,
   registry,
@@ -2054,7 +2062,7 @@ function processLiveLaneResolutionTickets({
     resolutionCandidateIds.size > 0;
   const recoverable = ledger.entries
     .filter((entry) => candidateAllowedByResolutionScope(entry, resolutionCandidateIds))
-    .filter((entry) => isRecoverableLiveLaneEntry(entry) || (
+    .filter((entry) => isRecoverableLiveLaneEntry(entry, { includeBlockedLiveLaneRequired }) || (
       allowScopedUnsafeSkipResolution &&
       isScopedUnsafeSkipToolGapEntry(entry)
     ));
@@ -2403,6 +2411,9 @@ function closeStaleRunningChildTimeoutTickets({ ledger, runId, runRoot, targetRe
 
 function processResolutionTickets({
   allowSelfImprovementLaneSynthesis = false,
+  includeBlockedLiveLaneRequired = false,
+  includeImportFailureTickets = true,
+  includeStaleChildTimeoutTickets = true,
   ledger,
   ledgerPath,
   registry,
@@ -2412,9 +2423,12 @@ function processResolutionTickets({
   targetRepo,
   timeoutMs,
 }) {
-  const closed = closeStaleRunningChildTimeoutTickets({ ledger, runId, runRoot, targetRepo });
+  const closed = includeStaleChildTimeoutTickets
+    ? closeStaleRunningChildTimeoutTickets({ ledger, runId, runRoot, targetRepo })
+    : { closedCandidateIds: [], tickets: [] };
   const live = processLiveLaneResolutionTickets({
     allowSelfImprovementLaneSynthesis,
+    includeBlockedLiveLaneRequired,
     ledger,
     ledgerPath,
     registry,
@@ -2424,7 +2438,9 @@ function processResolutionTickets({
     targetRepo,
     timeoutMs,
   });
-  const imports = processImportFailureResolutionTickets({ ledger, resolutionCandidateIds, runId, runRoot, targetRepo });
+  const imports = includeImportFailureTickets
+    ? processImportFailureResolutionTickets({ ledger, resolutionCandidateIds, runId, runRoot, targetRepo })
+    : { requeuedCandidateIds: [], tickets: [] };
   if (closed.tickets.length > 0 || live.tickets.length > 0 || imports.tickets.length > 0) {
     updateLedgerNextCandidate(ledger, null);
     writeJson(ledgerPath, ledger);
@@ -5196,11 +5212,75 @@ export async function runFullIntake(options, cwd = process.cwd()) {
   }
 
   if (parallelCandidateWorktreeModeEnabled(options)) {
+    let preResolutionQueue = null;
+    if (options.resolveLiveLanesBeforeParallel === true) {
+      const parallelCandidateIds = parseCsvSet(options.parallelCandidateIds);
+      const failPreResolution = (code, extra = {}) => {
+        report.status = code;
+        report.ok = false;
+        report.blockers.push({
+          code,
+          scope: "resolve-live-lanes-before-parallel",
+          ...extra,
+        });
+        state.status = report.status;
+        state = saveState(runRoot, state);
+        writeJson(path.join(runRoot, "run-report.json"), report);
+        throw new FullIntakeError(code, report);
+      };
+      if (!(resolutionCandidateIds instanceof Set) || resolutionCandidateIds.size === 0) {
+        failPreResolution("blocked_parallel_pre_resolution_scope_required", {
+          requiredOption: "--resolution-candidate-ids",
+        });
+      }
+      if (!(parallelCandidateIds instanceof Set) || parallelCandidateIds.size === 0) {
+        failPreResolution("blocked_parallel_candidate_scope_required_after_pre_resolution", {
+          requiredOption: "--parallel-candidate-ids",
+        });
+      }
+      if (maxItems > 1) {
+        failPreResolution("blocked_parallel_pre_resolution_max_items_not_allowed", {
+          maxItems,
+        });
+      }
+      preResolutionQueue = processResolutionTickets({
+        allowSelfImprovementLaneSynthesis: options.allowSelfImprovementLaneSynthesis === true,
+        includeBlockedLiveLaneRequired: true,
+        includeImportFailureTickets: false,
+        includeStaleChildTimeoutTickets: false,
+        ledger: initialLedger,
+        ledgerPath,
+        registry,
+        resolutionCandidateIds,
+        runId,
+        runRoot,
+        targetRepo,
+        timeoutMs,
+      });
+      report.resolutionQueue = {
+        closedCandidateIds: preResolutionQueue.closedCandidateIds || [],
+        openTicketCount: preResolutionQueue.openTicketCount || 0,
+        requeuedCandidateIds: preResolutionQueue.requeuedCandidateIds || [],
+        status: preResolutionQueue.status,
+        terminalTicketCount: preResolutionQueue.terminalTicketCount || 0,
+        tickets: preResolutionQueue.tickets || [],
+      };
+      appendEvent(runRoot, {
+        event: "parallel_pre_resolution_processed",
+        requeuedCandidateIds: report.resolutionQueue.requeuedCandidateIds,
+        resolutionCandidateIds: Array.from(resolutionCandidateIds).sort(),
+        runId,
+        terminalTicketCount: report.resolutionQueue.terminalTicketCount,
+      });
+      initialLedger = readJson(ledgerPath, "queue-ledger");
+      assertRequiredLedgerShape(initialLedger);
+    }
     const parallelReport = await runParallelCandidateWorktrees({
       contextBudget,
       ledger: initialLedger,
       ledgerPath,
       options,
+      preResolutionQueue,
       runId,
       runRoot,
       targetRepo,

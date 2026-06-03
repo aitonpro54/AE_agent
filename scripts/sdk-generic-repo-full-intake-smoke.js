@@ -838,6 +838,285 @@ function assertParallelWorktreeCheckoutAllowsLongTrackedPaths() {
   }
 }
 
+function blockedLiveLaneTimingEntry(overrides = {}) {
+  const base = timingEntry({
+    classification: "live_lane_needed",
+    status: "blocked_live_lane_required",
+    failClosed: {
+      status: "blocked_live_lane_required",
+      reason: "needed_or_reusable_lane_required"
+    },
+    liveGate: { required: true, status: "needed_or_reusable_lane_required" },
+    queueRank: null
+  });
+  return {
+    ...base,
+    ...overrides,
+    implementation: {
+      ...(base.implementation || {}),
+      ...(overrides.implementation || {})
+    }
+  };
+}
+
+function assertParallelWithoutPreResolutionKeepsOldBehavior() {
+  const fixture = createFixture("ppr-old");
+  try {
+    const candidate = blockedLiveLaneTimingEntry({
+      id: "tool-layers-parallel-pre-resolution-old",
+      sourcePath: "Layers/Parallel_Pre_Resolution_Old.jsx",
+      queueRank: 1
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [candidate]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const result = runFullIntakeFixtureCompactPhase(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "fixture-ppr-old",
+      1,
+      {},
+      [
+        "--parallel-candidate-worktrees",
+        "--parallel-candidate-limit",
+        "1",
+        "--parallel-candidate-ids",
+        candidate.id
+      ]
+    );
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    const output = JSON.parse(result.stdout);
+    assertCompactParentOutputIsBounded(result.stdout, output);
+    assert.strictEqual(output.status, "parallel_reducer_no_ready_proposals");
+    assert.strictEqual(output.parallel.selectedCandidateIds.count, 0);
+    assert.strictEqual(output.counts.requeued, 0);
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    assert.strictEqual(ledger.entries[0].status, "blocked_live_lane_required");
+    assert.strictEqual(ledger.entries[0].resolution, undefined);
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertParallelPreResolutionRequiresExplicitResolutionIds() {
+  const fixture = createFixture("ppr-scope");
+  try {
+    const candidate = blockedLiveLaneTimingEntry({
+      id: "tool-layers-parallel-pre-resolution-scope",
+      sourcePath: "Layers/Parallel_Pre_Resolution_Scope.jsx",
+      queueRank: 1
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [candidate]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const result = runFullIntakeFixtureCompactPhase(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "fixture-ppr-scope",
+      1,
+      {},
+      [
+        "--resolve-live-lanes-before-parallel",
+        "--parallel-candidate-worktrees",
+        "--parallel-candidate-limit",
+        "1",
+        "--parallel-candidate-ids",
+        candidate.id
+      ]
+    );
+    assert.notStrictEqual(result.status, 0, result.stderr || result.stdout);
+    const output = JSON.parse(result.stdout);
+    assertCompactParentOutputIsBounded(result.stdout, output);
+    assert.strictEqual(output.status, "blocked_parallel_pre_resolution_scope_required");
+    assert.strictEqual(output.counts.requeued, 0);
+    assert.match(result.stderr, /blocked_parallel_pre_resolution_scope_required/);
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    assert.strictEqual(ledger.entries[0].status, "blocked_live_lane_required");
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertParallelPreResolutionRequeuesBeforeScopedWorktrees() {
+  const fixture = createFixture("ppr-requeue");
+  try {
+    const first = blockedLiveLaneTimingEntry({
+      implementation: {
+        plannedPaths: [],
+        parallelProposal: parallelProposal("recipes/extend-all-layers-typed-plan.md", "parallel-pre-resolution-layer-timing", {
+          liveLaneStatus: "passed",
+          liveRerunRequired: false
+        })
+      },
+      queueRank: 1
+    });
+    const second = blockedLiveLaneTimingEntry({
+      id: "tool-layers-shift-layer-start-time",
+      sourcePath: "Layers/Shift_Layer_Start_Time.jsx",
+      implementation: {
+        sliceId: "fixture-layer-shift-import",
+        plannedPaths: ["scripts/imported-tools/layer-shift.js"]
+      },
+      queueRank: 2
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [first, second]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const result = runFullIntakeFixtureCompactPhase(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "fixture-ppr-requeue",
+      1,
+      {},
+      [
+        "--resolve-live-lanes-before-parallel",
+        "--resolution-candidate-ids",
+        `${first.id},${second.id}`,
+        "--parallel-candidate-worktrees",
+        "--parallel-candidate-limit",
+        "1",
+        "--parallel-candidate-ids",
+        first.id
+      ]
+    );
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    const output = JSON.parse(result.stdout);
+    assertCompactParentOutputIsBounded(result.stdout, output);
+    assert.strictEqual(output.status, "parallel_reducer_completed");
+    assert.deepStrictEqual(output.requeuedCandidateIds.ids.sort(), [
+      "tool-layers-extend-all-layers",
+      "tool-layers-shift-layer-start-time"
+    ]);
+    assert.deepStrictEqual(output.parallel.selectedCandidateIds.ids, ["tool-layers-extend-all-layers"]);
+    assert.strictEqual(output.parallel.worktrees.created, 1);
+    assert.strictEqual(output.parallel.reducer.acceptedCandidateIds.count, 1);
+    const proof = JSON.parse(fs.readFileSync(path.join(fixture.target, output.proofEnvelope.path), "utf8"));
+    assert.strictEqual(proof.preResolutionPhase.parentOwnedSerial, true);
+    assert.strictEqual(proof.preResolutionPhase.processedBeforeParallel, true);
+    assert.strictEqual(proof.preResolutionPhase.requeuedCandidateIds.count, 2);
+    assert.strictEqual(proof.mode, "parallel_candidate_worktrees");
+
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    const completed = ledger.entries.find((item) => item.id === first.id);
+    const queued = ledger.entries.find((item) => item.id === second.id);
+    assert.strictEqual(completed.status, "completed");
+    assert.strictEqual(completed.previousClassification, "live_lane_needed");
+    assert.strictEqual(completed.liveGate.status, "passed");
+    assert.strictEqual(completed.liveGate.synthesisFamily, "layer-timing-generated-only");
+    assert.strictEqual(queued.status, "queued");
+    assert.strictEqual(queued.previousClassification, "live_lane_needed");
+    assert.strictEqual(queued.liveGate.status, "passed");
+    assert.strictEqual(queued.liveGate.synthesisFamily, "layer-timing-generated-only");
+    assert(fs.existsSync(path.join(fixture.target, "recipes", "extend-all-layers-typed-plan.md")));
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertParallelPreResolutionAmbiguousFamilyStaysTerminal() {
+  const fixture = createFixture("ppr-ambiguous");
+  try {
+    const candidate = blockedLiveLaneTimingEntry({
+      id: "tool-layers-parallel-pre-resolution-ambiguous",
+      sourcePath: "Layers/Parallel_Pre_Resolution_Ambiguous.jsx",
+      suggestedTools: [
+        "get_active_comp",
+        "get_selected_layers",
+        "create_shape_layer",
+        "add_effect",
+        "rename_layers",
+        "get_comp_details"
+      ],
+      queueRank: 1
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [candidate]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const result = runFullIntakeFixtureCompactPhase(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "fixture-ppr-ambiguous",
+      1,
+      {},
+      [
+        "--resolve-live-lanes-before-parallel",
+        "--resolution-candidate-ids",
+        candidate.id,
+        "--parallel-candidate-worktrees",
+        "--parallel-candidate-limit",
+        "1",
+        "--parallel-candidate-ids",
+        candidate.id
+      ]
+    );
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    const output = JSON.parse(result.stdout);
+    assertCompactParentOutputIsBounded(result.stdout, output);
+    assert.strictEqual(output.counts.requeued, 0);
+    assert.strictEqual(output.counts.terminalTickets, 1);
+    assert.strictEqual(output.parallel.selectedCandidateIds.count, 0);
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    assert.strictEqual(ledger.entries[0].status, "blocked_live_lane_required");
+    assert.strictEqual(ledger.entries[0].resolution.status, "terminal_unresolved");
+    const ticket = JSON.parse(fs.readFileSync(path.join(fixture.target, ledger.entries[0].resolution.latestTicket), "utf8"));
+    assert.strictEqual(ticket.status, "terminal_unresolved");
+    assert.match(ticket.reason, /candidate_tools_match_multiple_auto_lane_families/);
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertParallelPreResolutionUnsafeSignalStaysTerminal() {
+  const fixture = createFixture("ppr-unsafe");
+  try {
+    const candidate = blockedLiveLaneTimingEntry({
+      id: "tool-layers-parallel-pre-resolution-unsafe",
+      sourcePath: "Layers/Parallel_Pre_Resolution_Unsafe.jsx",
+      safetySignals: { usesFileIo: true },
+      queueRank: 1
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [candidate]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const result = runFullIntakeFixtureCompactPhase(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "fixture-ppr-unsafe",
+      1,
+      {},
+      [
+        "--resolve-live-lanes-before-parallel",
+        "--resolution-candidate-ids",
+        candidate.id,
+        "--parallel-candidate-worktrees",
+        "--parallel-candidate-limit",
+        "1",
+        "--parallel-candidate-ids",
+        candidate.id
+      ]
+    );
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    const output = JSON.parse(result.stdout);
+    assertCompactParentOutputIsBounded(result.stdout, output);
+    assert.strictEqual(output.counts.requeued, 0);
+    assert.strictEqual(output.counts.terminalTickets, 1);
+    assert.strictEqual(output.parallel.selectedCandidateIds.count, 0);
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    assert.strictEqual(ledger.entries[0].status, "blocked_live_lane_required");
+    assert.strictEqual(ledger.entries[0].resolution.status, "terminal_unresolved");
+    const ticket = JSON.parse(fs.readFileSync(path.join(fixture.target, ledger.entries[0].resolution.latestTicket), "utf8"));
+    assert.strictEqual(ticket.status, "terminal_unresolved");
+    assert.match(ticket.reason, /unsafe_safety_signals:usesFileIo/);
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertParallelProposalRejectGates() {
   const fixture = createFixture("prj");
   try {
@@ -2814,6 +3093,11 @@ function main() {
   assertParallelCandidateWorktreesOptInAndPlanning();
   assertParallelWorktreesAndProposalSchema();
   assertParallelWorktreeCheckoutAllowsLongTrackedPaths();
+  assertParallelWithoutPreResolutionKeepsOldBehavior();
+  assertParallelPreResolutionRequiresExplicitResolutionIds();
+  assertParallelPreResolutionRequeuesBeforeScopedWorktrees();
+  assertParallelPreResolutionAmbiguousFamilyStaysTerminal();
+  assertParallelPreResolutionUnsafeSignalStaysTerminal();
   assertParallelProposalRejectGates();
   assertParallelReducerSeriallyAppliesIndependentProposals();
   assertParallelChildExecutionProducesAcceptedFileProposals();
