@@ -783,6 +783,54 @@ function assertParallelCandidateWorktreesOptInAndPlanning() {
   }
 }
 
+function assertParallelAllQueuedPlansEverySchedulableCandidate() {
+  const fixture = createFixture("paq");
+  try {
+    const first = parallelEntry("tool-parallel-all-alpha", 1);
+    const second = parallelEntry("tool-parallel-all-beta", 2);
+    const third = parallelEntry("tool-parallel-all-gamma", 3);
+    const failed = parallelEntry("tool-parallel-all-failed", 4, { status: "failed_import" });
+    const liveLaneNeeded = parallelEntry("tool-parallel-all-live-gap", 5, {
+      classification: "live_lane_needed",
+      liveGate: { required: true, status: "needed_or_reusable_lane_required" },
+      status: "blocked_live_lane_required"
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [first, second, third, failed, liveLaneNeeded]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const output = parseJson(runFullIntakeFixture(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "paq",
+      1,
+      {},
+      [
+        "--plan-parallel-candidate-worktrees",
+        "--parallel-all-queued",
+        "--parallel-candidate-limit",
+        "1"
+      ]
+    ));
+    assert.strictEqual(output.status, "parallel_plan_ready");
+    assert.strictEqual(output.parallel.allQueued, true);
+    assert.strictEqual(output.parallel.limit, 3);
+    assert.deepStrictEqual(output.parallel.selectedCandidateIds, [
+      "tool-parallel-all-alpha",
+      "tool-parallel-all-beta",
+      "tool-parallel-all-gamma"
+    ]);
+    const plan = JSON.parse(fs.readFileSync(path.join(fixture.target, output.parallel.planPath), "utf8"));
+    assert.strictEqual(plan.allQueued, true);
+    assert.strictEqual(plan.limit, 3);
+    assert.strictEqual(plan.requestedLimit, 1);
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    assert.strictEqual(ledger.entries.filter((entry) => entry.status === "queued").length, 3, "planning must not mutate queued entries");
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertParallelWorktreesAndProposalSchema() {
   const fixture = createFixture("pws");
   try {
@@ -3139,6 +3187,7 @@ function assertResumeFromState() {
 
 function main() {
   assertParallelCandidateWorktreesOptInAndPlanning();
+  assertParallelAllQueuedPlansEverySchedulableCandidate();
   assertParallelWorktreesAndProposalSchema();
   assertParallelWorktreeCheckoutAllowsLongTrackedPaths();
   assertParallelWithoutPreResolutionKeepsOldBehavior();

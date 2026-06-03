@@ -25,15 +25,16 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
+- [x] AUX all-queued parallel selector: added explicit `--parallel-all-queued`
+  mode; plan-only proof selected all 14 current ae-scripting queued candidates
+  without manual ids, worktrees, ledger mutation, Local/Ollama, or live smoke.
 - [x] AUX `tool-guitemplate` accepted: fixed narrow ScriptUI object-method
   discovery gap and accepted fresh scoped run
   `full-intake-tool-guitemplate-20260603-194512`.
 - [x] AUX ae-scripting scoped wave: accepted `tool-debughelper`,
   `tool-dropnthframe`, `tool-getlayertype`, and `tool-getpropertyparent`;
   failed closed `tool-filterinput` and `tool-getlayertype_compressed`.
-- [x] Historical milestones 1-32: archived/summarized baseline, provider work,
-  strict-runner hardening, context-budget tuning, Selection lane prep, and
-  completed Selection candidates through disabled/guide layers.
+- [x] Historical milestones 1-32 are archived/summarized.
 - [x] AUX Parallel Tool Intake V1: opt-in parallel lane now runs real non-live
   child execution in isolated detached local-clone trees, emits compact
   `generic-repo-full-intake.parallel-candidate-proposal.v1` packets, and lets
@@ -103,12 +104,8 @@ last item `tool-selection-select-unparented-layers`, latest selection commit
 `e08b7baebddb6b16d538a0de6a90401f1f7196d5`, compact ledger `completed=69`,
 `failed_import=11`, `queued=0`, and `Queued live_lane_needed=0`.
 
-Branch `road-map-2.0` is ahead of `ae-agent/road-map-2.0`; do not push without
-explicit approval.
-
-`full-intake-aturtur` stayed reference-only on 2026-06-02 because the source
-license is missing: 46 entries, `queued=0`, selected ids `[]`, and no scoped
-wave without a separate clean-room typed-tool contract plus explicit ids.
+`full-intake-aturtur` stayed reference-only because the source license is
+missing: 46 entries, `queued=0`, selected ids `[]`.
 
 `full-intake-ae-scripting-snippets` compact state on 2026-06-02:
 
@@ -121,24 +118,8 @@ wave without a separate clean-room typed-tool contract plus explicit ids.
   `blocked_policy=3`, `reference_only=0`
 - classification buckets: `live_lane_needed=22`,
   `existing_typed_tools_recipe_only=23`, `unsafe_skip_tool_gap=3`
-- auto-intake plan-only shortlist:
-  `tool-batchparent`, `tool-changeallnames`; both are queued plan-only ids
-- parent Full Intaker parallel plan:
-  `selectedCandidateIds=[tool-batchparent, tool-changeallnames]`,
-  scoped execution attempted with `worktrees.created=2`, `detached=2`,
-  `runOwned=2`, `cleaned=2`; reducer accepted `0`, rejected `0`, blocked `2`,
-  `centralSourceMerge=false`
-- compact proof now reports `mode=parallel_candidate_worktrees`,
-  `contractComplete=true`, `changedPathCount=0`, `unplannedPathCount=0`, proof
-  sha `06d599d93b24abf99f4404fb0d6ac1a14392c61f3b1654ec9e9859a17c8fa559`
-- final proposal status:
-  `tool-changeallnames` failed with
-  `implementation-child-run-timeout: queue-batch-1-9080b5431f`;
-  `tool-batchparent` failed with
-  `implementation-batch-candidate-missing: tool-batchparent`
-- compact status helper reported `running` with `Processes: 0 related`; treat
-  this as stale state after the scoped attempt and run a stale-run check before
-  any resume
+- previous `tool-batchparent,tool-changeallnames` scoped attempt accepted `0`;
+  `tool-changeallnames` timed out and `tool-batchparent` hit a binding miss.
 
 Architecture update on 2026-06-03:
 
@@ -173,9 +154,10 @@ Architecture update on 2026-06-03:
 ## Next Milestone
 
 `full-intake-ae-scripting-snippets` now has `queued=14`, `completed=6`, and
-`failed_import=4`. Next bounded clean-preflight step is explicit scoped batch
-`tool-makeclosest16_headless,tool-makeclosest16`. Keep `tool-changeallnames`
-and `tool-batchparent` on separate blockers.
+`failed_import=4`. Next clean-preflight step is a real all-current-queued
+parallel run with `--parallel-all-queued`. Keep `tool-changeallnames` and
+`tool-batchparent` on separate blockers unless a later recovery slice targets
+them explicitly.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -187,6 +169,9 @@ outside the runner out of scope.
   source-shape gap. ScriptUI object method assignments are acceptable analysis
   candidates only when paired with a ScriptUI container signal; standalone UI
   handler fragments remain fail-closed.
+- 2026-06-03: `--parallel-all-queued` is the explicit queue-wide opt-in. It
+  selects every current parallel-safe `status=queued` candidate, ignores the old
+  first-family default, and conflicts with manual `--parallel-candidate-ids`.
 - 2026-06-03: Fresh scoped `tool-guitemplate` run accepted advisory UI-template
   dev-handoff coverage only. Source-exact ScriptUI layout, raw JSX, automatic
   panel edits, live CEP/AE mutation, dependency changes, push, and PR stay
@@ -390,6 +375,12 @@ outside the runner out of scope.
   clean, touched JS `node --check`, `git diff --check`,
   importer/full-intake/queue-supervisor smokes, solution
   library/registry/retrieval smokes, and semantic verification all passed.
+- AUX all-queued selector validation passed: touched JS `node --check`,
+  `git diff --check`, full-intake/importer/queue-supervisor smokes,
+  solution library/registry/retrieval smokes, semantic verification, and
+  real ae-scripting plan-only run
+  `full-intake-ae-scripting-all-queued-plan-20260603-204848` with
+  `allQueued=true`, `selected=14`, `worktrees=0`.
 - Not run by design: Local/Ollama, fallback providers, broad/default CEP smoke,
   broad real queue, `max-items > 1`, dependency/package changes, full runtime
   reports, push, PR, GitHub automation, raw JSX copy, and source checkout writes

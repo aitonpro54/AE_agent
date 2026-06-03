@@ -426,7 +426,7 @@ function isParallelSchedulableCandidate(entry) {
   );
 }
 
-export function selectParallelCandidates(ledger, { candidateIds = [], limit = DEFAULT_PARALLEL_LIMIT } = {}) {
+export function selectParallelCandidates(ledger, { allQueued = false, candidateIds = [], limit = DEFAULT_PARALLEL_LIMIT } = {}) {
   requireArray(ledger.entries, "ledger.entries");
   ledger.entries.forEach((entry, index) => validateEntryShape(entry, `ledger.entries[${index}]`));
   const scope = new Set(candidateIds);
@@ -434,6 +434,9 @@ export function selectParallelCandidates(ledger, { candidateIds = [], limit = DE
     .filter(isParallelSchedulableCandidate)
     .filter((entry) => scope.size === 0 || scope.has(entry.id))
     .sort((left, right) => left.queueRank - right.queueRank || left.id.localeCompare(right.id));
+  if (allQueued) {
+    return candidates;
+  }
   if (scope.size > 0) {
     return candidates.slice(0, limit);
   }
@@ -1695,19 +1698,26 @@ export async function runParallelCandidateWorktrees({
   runRoot,
   targetRepo,
 }) {
-  const limit = parsePositiveInteger(options.parallelCandidateLimit, "parallel-candidate-limit", DEFAULT_PARALLEL_LIMIT);
+  const allQueued = options.parallelAllQueued === true;
+  const requestedLimit = parsePositiveInteger(options.parallelCandidateLimit, "parallel-candidate-limit", DEFAULT_PARALLEL_LIMIT);
   const timeoutMs = parsePositiveInteger(options.commandTimeoutMs, "command-timeout-ms", DEFAULT_CHILD_PROCESS_TIMEOUT_MS);
   const candidateIds = parseCsv(options.parallelCandidateIds);
+  if (allQueued && candidateIds.length > 0) {
+    throw new Error("parallel-all-queued-conflicts-with-parallel-candidate-ids");
+  }
   const planOnly = options.planParallelCandidateWorktrees === true && options.parallelCandidateWorktrees !== true;
   const mode = planOnly ? "parallel_plan_only" : "parallel_candidate_worktrees";
   const baseHead = gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head");
-  const selected = selectParallelCandidates(ledger, { candidateIds, limit });
+  const selected = selectParallelCandidates(ledger, { allQueued, candidateIds, limit: requestedLimit });
+  const limit = allQueued ? selected.length : requestedLimit;
   const parallelRoot = path.join(runRoot, "parallel-candidates");
   const worktreesRoot = parallelWorktreesRoot(targetRepo, runId);
   const proposalDir = path.join(parallelRoot, "proposals");
   mkdirSync(parallelRoot, { recursive: true });
 
   const plan = compactParallelPlan({ baseHead, candidateIds, limit, mode, runId, selected, targetRepo, worktreesRoot });
+  plan.allQueued = allQueued;
+  plan.requestedLimit = requestedLimit;
   const planPath = path.join(parallelRoot, "parallel-plan.json");
   writeJson(planPath, plan);
 
@@ -1732,6 +1742,7 @@ export async function runParallelCandidateWorktrees({
     resolutionQueue: compactResolutionQueueForParallel(preResolutionQueue),
     parallel: {
       schema: PARALLEL_PLAN_SCHEMA,
+      allQueued,
       optIn: true,
       mode,
       limit,

@@ -388,6 +388,9 @@ Options:
   --parallel-candidate-worktrees
                               Opt in to AUX parallel candidate worktrees and a
                               serial parent reducer. Default serial behavior is unchanged.
+  --parallel-all-queued       With opt-in parallel mode, schedule all currently
+                              parallel-safe status=queued candidates. This is
+                              mutually exclusive with --parallel-candidate-ids.
   --parallel-candidate-limit <n>
                               Maximum candidates to schedule in opt-in parallel mode.
   --parallel-candidate-ids <ids>
@@ -437,6 +440,7 @@ const BOOLEAN_OPTIONS = new Set([
   "help",
   "json",
   "no-commit",
+  "parallel-all-queued",
   "parallel-candidate-worktrees",
   "plan-parallel-candidate-worktrees",
   "resolve-live-lanes-before-parallel",
@@ -2826,6 +2830,7 @@ function compactParallelForParent(report) {
   }
   const reducer = parallel.reducer || null;
   return {
+    allQueued: parallel.allQueued === true,
     optIn: parallel.optIn === true,
     mode: parallel.mode || null,
     limit: parallel.limit ?? null,
