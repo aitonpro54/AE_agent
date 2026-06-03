@@ -25,6 +25,7 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
+- [x] AUX parallel candidate worktrees architecture (full-intake-tool-guitemplate-20260603-194512): parent reducer serially handled accepted proposals [tool-guitemplate] and rejected [none].
 - [x] AUX ae-scripting scoped wave: accepted `tool-debughelper`,
   `tool-dropnthframe`, `tool-getlayertype`, and `tool-getpropertyparent`;
   failed closed `tool-filterinput` and `tool-getlayertype_compressed`.
@@ -194,6 +195,7 @@ outside the runner out of scope.
 
 ## Decision Log
 
+- 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees produce proposals only, while the parent owns ledger, registry, plan, handoff, live rerun, and commits (full-intake-tool-guitemplate-20260603-194512).
 - 2026-06-03: `tool-guitemplate` should not be blindly repeated in the same
   scoped parallel lane until the implementation-batch binding miss is
   understood; run `full-intake-tool-guitemplate-20260603-184134` produced a
@@ -315,6 +317,7 @@ outside the runner out of scope.
 
 ## Validation
 
+| AUX parallel candidate worktrees architecture (full-intake-tool-guitemplate-20260603-194512) | Required to prove opt-in parallel candidate worktrees plus a serial parent reducer without running the real queue. | Accepted 1, rejected 0; central writes stayed parent-owned, live rerun stayed serial, and unplanned paths were rejected. |
 - AUX real scoped parallel reducer acceptances validated:
   `debughelper4`, `dropnthframe1`, `getlayertype1`, and
   `getpropertyparent1` each accepted 1/rejected 0; compact proofs completed,

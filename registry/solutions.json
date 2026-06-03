@@ -9586,6 +9586,112 @@
         "Label parent groups derived from returned property-path segments as path-derived evidence.",
         "Do not use this recipe for property edits, expression edits, keyframe edits, effect edits, selection changes, broad project scans, raw ExtendScript, or exact source JSX semantics."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "guitemplate-typed-plan",
+      "title": "GUI Template Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "gui",
+        "ui-template",
+        "scriptui",
+        "panel",
+        "dev-request",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool",
+        "read-only"
+      ],
+      "intent": {
+        "summary": "Prepare a safe development handoff for AE Agent panel or ScriptUI scaffold requests without mutating AE projects or copying source JSX.",
+        "appliesWhen": [
+          "The user asks for a GUI template, ScriptUI panel scaffold, AE Agent panel control layout, reusable panel boilerplate, or a development prompt for panel UI work.",
+          "The requested workflow is repository or UI development and should be prepared as a compact Codex App dev-request bundle instead of executed inside AE chat."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "uiRequest",
+          "type": "object",
+          "required": true,
+          "description": "Requested panel, ScriptUI, control, state, persistence, or dev-handoff goal."
+        },
+        {
+          "name": "projectContextScope",
+          "type": "string",
+          "required": false,
+          "description": "Optional read-only AE project context needed to describe the intended panel workflow."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow is advisory and prepares a development handoff only.",
+        "The active AE project, user assets, panel source files, dependencies, branches, commits, pushes, PRs, and live panel state are preserved.",
+        "A separate Codex App development chat owns any actual repository edit, live CEP/AE validation, push, or PR.",
+        "Source-exact ScriptUI layout, event handlers, global object shape, and run behavior are reported as unsupported unless separately reviewed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/guitemplate-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_project_info"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Classify the request as UI development, optionally gather minimal read-only project context, and prepare a compact dev-request bundle without project mutation or source edits.",
+        "steps": [
+          "Classify the request as UI or repository development rather than an AE project mutation.",
+          "Run get_project_info only when current project context is relevant to describing the proposed UI workflow.",
+          "Prepare a compact dev-request bundle naming the UI goal, target files, controls, state and persistence expectations, bridge safety constraints, and verification scope.",
+          "Include a manual Codex App start prompt and state that the development chat, source edit, live smoke, push, and PR are not automatic.",
+          "Fail closed when the request requires source-exact ScriptUI reproduction, raw ExtendScript, direct repository edits from AE chat, live CEP/AE mutation, dependency changes, broad repository scans, or user-asset mutation."
+        ],
+        "expectedEvidence": [
+          "The plan contains no project-changing AE tool and no raw ExtendScript step.",
+          "Any AE context is limited to read-only get_project_info evidence and is optional.",
+          "The dev-request bundle identifies the UI goal, target files, required controls, state or persistence expectations, bridge safety constraints, and validation expectations.",
+          "The response clearly states unsupported source-exact ScriptUI behavior and any needed separate Codex App development step.",
+          "No source JSX, copied UI handler code, repository edit, dependency change, live CEP/AE smoke, push, or PR is claimed."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-guitemplate generic repository importer as advisory UI-template dev-handoff coverage.",
+          "The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, AE Agent dev-request policy, and fail-closed generic ScriptUI template semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-03",
+          "from": "generic-repo-importer-tool-guitemplate",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the GUI template idea behind ae-scripting/scripting-snippets guiTemplate.jsx into advisory dev-request guidance; no source JSX copied. The recipe may use optional read-only get_project_info context, then prepares a compact Codex App development handoff for panel/UI work. Source-exact ScriptUI layout, event handlers, global object behavior, raw ExtendScript, direct repository edits from AE chat, live CEP/AE mutation, dependency changes, push, PR, and automatic Codex App chat creation remain fail-closed. Parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses Agent plan validation when used in planning context.",
+        "Use this recipe only to prepare a UI or repository-development handoff; do not request allowMutations or checkpoint protection for this recipe itself.",
+        "Use get_project_info only when current project context is relevant to the requested UI workflow.",
+        "Do not imply that a Codex App chat, source edit, live smoke, push, or PR has happened automatically.",
+        "Do not use this recipe for source-exact ScriptUI reproduction, automatic file edits, dependency changes, raw ExtendScript, live panel mutation, broad repository scans, user-asset mutation, or exact source JSX semantics."
+      ]
     }
   ]
 }
