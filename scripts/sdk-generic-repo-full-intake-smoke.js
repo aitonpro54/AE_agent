@@ -1289,6 +1289,7 @@ function assertParallelReducerSeriallyAppliesIndependentProposals() {
     const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
     assert.strictEqual(ledger.entries[0].status, "completed");
     assert.strictEqual(ledger.entries[1].status, "completed");
+    assert.strictEqual(ledger.nextCandidate, null, "completed parallel queue should clear stale nextCandidate");
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);

@@ -1414,6 +1414,23 @@ function writeParentHandoffForParallel({ accepted, commitId, rejected, runId, ta
   return normalizeRepoPath(path.relative(targetRepo, handoffPath));
 }
 
+function nextQueuedCandidateRecord(ledger) {
+  const next =
+    ledger.entries
+      .filter((entry) => entry.status === "queued")
+      .filter((entry) => Number.isInteger(entry.queueRank))
+      .sort((left, right) => left.queueRank - right.queueRank || left.id.localeCompare(right.id))[0] || null;
+  return next
+    ? {
+        id: next.id,
+        sourcePath: next.sourcePath,
+        classification: next.classification,
+        suggestedTools: Array.isArray(next.suggestedTools) ? next.suggestedTools.slice() : [],
+        reason: "Next safe queued candidate after parallel parent reducer update.",
+      }
+    : null;
+}
+
 function updateLedgerForReduction({ accepted, commitId, ledger, ledgerPath, rejected, runId }) {
   const now = new Date().toISOString();
   for (const acceptedEntry of accepted) {
@@ -1447,6 +1464,7 @@ function updateLedgerForReduction({ accepted, commitId, ledger, ledgerPath, reje
       createdAt: now,
     };
   }
+  ledger.nextCandidate = nextQueuedCandidateRecord(ledger);
   writeJson(ledgerPath, ledger);
 }
 

@@ -25,7 +25,8 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
-- [x] AUX parallel candidate worktrees architecture (full-intake-current-repo-max-autonomy-debughelper4): parent reducer serially handled accepted proposals [tool-debughelper] and rejected [none].
+- [x] AUX parallel candidate worktrees architecture: parent reducer accepted
+  `tool-debughelper`, rejected none, and kept central writes serial.
 - [x] Historical milestones 1-32: archived/summarized baseline, provider work,
   strict-runner hardening, context-budget tuning, Selection lane prep, and
   completed Selection candidates through disabled/guide layers.
@@ -178,10 +179,10 @@ Architecture update on 2026-06-03:
 
 ## Next Milestone
 
-`full-intake-ae-scripting-snippets` now has `queued=21`, `completed=1`, and
-`failed_import=2`. Next bounded step is scoped `tool-debughelper` after the
-parallel-child parent-owned path isolation fix. Keep `tool-changeallnames` and
-`tool-batchparent` on their separate blockers.
+`full-intake-ae-scripting-snippets` now has `queued=20`, `completed=2`, and
+`failed_import=2`. Next bounded step is scoped `tool-dropnthframe` after compact
+status/ledger preflight. Keep `tool-changeallnames` and `tool-batchparent` on
+their separate blockers.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -189,7 +190,10 @@ outside the runner out of scope.
 
 ## Decision Log
 
-- 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees produce proposals only, while the parent owns ledger, registry, plan, handoff, live rerun, and commits (full-intake-current-repo-max-autonomy-debughelper4).
+- 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees
+  produce proposals only, while the parent owns ledger, registry, plan,
+  handoff, live rerun, commits, and `nextCandidate` advancement
+  (`full-intake-current-repo-max-autonomy-debughelper4`).
 - Selection imports are advisory typed-plan coverage only. They use current
   active-comp evidence, `set_layer_selection`, and `get_selected_layers`
   read-back. Source-exact native UI semantics, cross-comp/Project panel
@@ -390,9 +394,10 @@ outside the runner out of scope.
 - AUX importer/parallel packaging validation passed: touched-file checks,
   `git diff --check` with normal LF/CRLF warnings,
   importer/queue-supervisor smokes, and full-intake smoke.
-- AUX parallel child parent-owned path isolation validation passed:
-  touched-file `node --check`, `git diff --check` with normal LF/CRLF warnings,
-  full-intake smoke, queue-supervisor smoke, and importer-supervisor smoke.
+- AUX parallel child path isolation and `tool-debughelper` acceptance validation
+  passed: touched-file `node --check`, `git diff --check`, full-intake smoke,
+  queue/importer-supervisor smokes, compact proof, registry parse, and solution
+  registry/library/retrieval smokes.
 - Not run by design: Local/Ollama, fallback providers, broad/default CEP smoke,
   broad real queue, `max-items > 1`, dependency/package changes, full runtime
   reports, push, PR, GitHub automation, raw JSX copy, and source checkout writes
