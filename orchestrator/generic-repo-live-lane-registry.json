@@ -323,6 +323,51 @@
       "scope": "generated-only selected/generated property keyframe proof using get_selected_properties, set_property_keyframes, apply_keyframe_ease, get_layer_details, read-back, semantic verification, and cleanup; expression-derived sampling, spatial tangent editing, selected-key discovery without explicit reviewed keyframes, and source-exact keyframe algorithms remain fail-closed"
     },
     {
+      "id": "text-to-keys-generated-only",
+      "requiredTools": [
+        "get_selected_layers",
+        "set_property_keyframes",
+        "get_layer_details"
+      ],
+      "allowedTools": [
+        "get_active_comp",
+        "get_selected_layers",
+        "create_text_layer",
+        "set_property_keyframes",
+        "get_layer_details"
+      ],
+      "candidateIds": [
+        "tool-texttokeys"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-text-to-keys-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "source-text-keyframes",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/semantic-verification.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only Source Text keyframe proof using an explicit generated text layer, set_property_keyframes on ADBE Text Properties.ADBE Text Document, get_layer_details keyframe value read-back, semantic verification, and generated-prefix cleanup; source-exact textToKeys.jsx behavior, selected-layer traversal, typo/no-call source repair, text animator ranges, raw ExtendScript, and real ae-scripting requeue remain fail-closed until candidate tool hints include the mutating/read-back contract and explicit scoped candidate ids are provided"
+    },
+    {
       "id": "selected-keyframe-layer-marker-generated-only",
       "requiredTools": [
         "get_selected_properties",

@@ -11,7 +11,8 @@ const {
   agentDakkshinTypedToolsScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
-  agentScenarioPlans
+  agentScenarioPlans,
+  agentTextToKeysScenarioPlans
 } = require("./agent-scenario-fixtures");
 
 const LOCAL_MUTATING_TOOLS = new Set([
@@ -633,16 +634,20 @@ function fakeMutationResult(step, state) {
       inInterpolation: "linear",
       outInterpolation: "linear"
     }));
+    const property = {
+      matchName: args.propertyPath,
+      propertyPath: propertyPathSegments(args.propertyPath).map((segment) => ({ name: segment, matchName: segment })),
+      numKeys: (args.keyframes || []).length,
+      keyframes
+    };
+    const key = JSON.stringify(property.propertyPath);
+    state.propertyValues = state.propertyValues.filter((item) => JSON.stringify(item.propertyPath) !== key);
+    state.propertyValues.push(property);
     return withVerification({
       comp: { name: compName },
       layer: layerInfo(`Layer ${args.layerIndex}`, { index: args.layerIndex }),
       keyframeCount: (args.keyframes || []).length,
-      property: {
-        matchName: args.propertyPath,
-        propertyPath: propertyPathSegments(args.propertyPath).map((segment) => ({ name: segment, matchName: segment })),
-        numKeys: (args.keyframes || []).length,
-        keyframes
-      }
+      property
     }, compName);
   }
   if (step.tool === "fill_in_keyframes") {
@@ -1946,6 +1951,28 @@ function assertMarkerLifecycleSequencePasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("delete_layer_marker:marker") >= 0 && check.status === "passed"), "delete marker should still pass on final absent read-back.");
 }
 
+function assertSourceTextKeyframesPass() {
+  const [scenario] = agentTextToKeysScenarioPlans("Codex Semantic TTK Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  assert.strictEqual(semantic.status, "passed", `Source Text keyframe semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_property_keyframes:keyframe-values") >= 0 && check.status === "passed"), "Source Text keyframe value read-back should pass.");
+}
+
+function assertSourceTextKeyframeMismatchNeedsReview() {
+  const [scenario] = agentTextToKeysScenarioPlans("Codex Semantic TTK Mismatch");
+  const run = fakeRunForPlan(scenario.plan);
+  const readBack = run.steps.find((step) => step.tool === "get_layer_details");
+  const sourceTextProperty = readBack.result.propertyTree.find((property) => (
+    JSON.stringify(property.propertyPath).indexOf("ADBE Text Document") >= 0
+  ));
+  assert(sourceTextProperty, "Source Text keyframe mismatch fixture needs read-back property.");
+  sourceTextProperty.keyframes[1].value.text = "Wrong";
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "Source Text keyframe read-back mismatch must fail closed.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_property_keyframes:keyframe-values") >= 0 && check.status === "failed"), "mismatched Source Text keyframe values should fail.");
+}
+
 function main() {
   const scenarios = agentScenarioPlans("Codex Semantic Fixture", 0);
   const results = scenarios.map(assertScenarioPasses);
@@ -1978,6 +2005,8 @@ function main() {
   assertUpdateLayerMarkerPasses();
   assertDeleteLayerMarkerPasses();
   assertMarkerLifecycleSequencePasses();
+  assertSourceTextKeyframesPass();
+  assertSourceTextKeyframeMismatchNeedsReview();
 
   console.log(JSON.stringify({
     ok: true,

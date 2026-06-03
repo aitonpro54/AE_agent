@@ -29,7 +29,8 @@ const {
   agentResetWorkAreaScenarioPlans,
   agentRenderQueueScenarioPlans,
   agentSelectedKeyframeMarkerScenarioPlans,
-  agentSelectedPropertyValueScenarioPlans
+  agentSelectedPropertyValueScenarioPlans,
+  agentTextToKeysScenarioPlans
 } = require("./agent-scenario-fixtures");
 
 function fixtureReport() {
@@ -556,6 +557,22 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(keyframes.plan.steps[3].args.keyframes.length, 3);
   assert.deepStrictEqual(keyframes.plan.steps[4].args.keyIndices, [1, 2, 3]);
 
+  const [textToKeys] = agentTextToKeysScenarioPlans("Codex QA AUX-TTK Fixture");
+  assert.strictEqual(textToKeys.id, "generated-source-text-keyframes");
+  assert.strictEqual(textToKeys.expectedReadBack.generatedSourceTextKeyframes, true);
+  assert.deepStrictEqual(textToKeys.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_text_layer",
+    "set_property_keyframes",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(textToKeys.plan.steps[2].args.propertyPath, "ADBE Text Properties.ADBE Text Document");
+  assert.deepStrictEqual(textToKeys.plan.steps[2].args.keyframes.map((keyframe) => keyframe.value.text), [
+    "A",
+    "AE",
+    "AE Agent"
+  ]);
+
   const [selectedKeyframeMarker] = agentSelectedKeyframeMarkerScenarioPlans("Codex QA AUX093 Fixture");
   assert.strictEqual(selectedKeyframeMarker.id, "generated-selected-keyframe-layer-marker");
   assert.strictEqual(selectedKeyframeMarker.expectedReadBack.markerReadBack, true);
@@ -586,7 +603,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert(remainingTails[4].plan.steps.some((step) => step.tool === "set_spatial_in_tangent"));
   assert(remainingTails[5].plan.steps.some((step) => step.tool === "separate_shape_size_dimensions"));
 
-  for (const scenario of [timing, transform, projectItems, effectProperty, expression, compProperties, selectedPropertyValue, layerSwitches, layerSelection, keyframes, selectedKeyframeMarker, ...remainingTails]) {
+  for (const scenario of [timing, transform, projectItems, effectProperty, expression, compProperties, selectedPropertyValue, layerSwitches, layerSelection, keyframes, textToKeys, selectedKeyframeMarker, ...remainingTails]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }

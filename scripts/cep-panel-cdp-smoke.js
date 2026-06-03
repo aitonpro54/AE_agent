@@ -30,6 +30,7 @@ const {
   agentResetWorkAreaScenarioPlans,
   agentSelectedKeyframeMarkerScenarioPlans,
   agentSelectedPropertyValueScenarioPlans,
+  agentTextToKeysScenarioPlans,
   agentScenarioPlans
 } = require("./agent-scenario-fixtures");
 const {
@@ -476,6 +477,24 @@ function openAiCliKeyframeScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_KEYFRAMES_PREFIX || "Codex QA AUX083",
     scenarioFactory: agentKeyframeScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliTextToKeysScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-text-to-keys",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_TEXT_TO_KEYS_PREFIX || "Codex QA AUX-TTK",
+    scenarioFactory: agentTextToKeysScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -5011,6 +5030,41 @@ async function verifyGeneratedCurrentExpressionKeyframeReadBack(scenario, expect
   };
 }
 
+function sourceTextValue(value) {
+  if (value && typeof value === "object" && !Array.isArray(value) && value.text !== undefined) {
+    return String(value.text);
+  }
+  return value === undefined || value === null ? "" : String(value);
+}
+
+async function verifyGeneratedSourceTextKeyframesReadBack(scenario, expected) {
+  const { comp, layer, property } = await readGeneratedLayerProperty(scenario, expected, { propertyDepth: 2, propertyLimit: 100 });
+  const expectedKeyframes = Array.isArray(expected.keyframes) ? expected.keyframes : [];
+  const keyframes = Array.isArray(property.keyframes) ? property.keyframes : [];
+  if (Number(property.numKeys || 0) !== expectedKeyframes.length) {
+    throw new Error(`${scenario.id}: expected ${expectedKeyframes.length} Source Text keyframe(s), got ${property.numKeys || 0}.`);
+  }
+  const observed = [];
+  for (const item of expectedKeyframes) {
+    const keyframe = keyframes.find((candidate) => numbersMatch(item.time, candidate.time, 0.001));
+    if (!keyframe) {
+      throw new Error(`${scenario.id}: Source Text keyframe at ${item.time} was not found by read-back.`);
+    }
+    const expectedText = sourceTextValue(item.value);
+    const observedText = sourceTextValue(keyframe.value);
+    if (observedText !== expectedText) {
+      throw new Error(`${scenario.id}: Source Text keyframe text mismatch at ${item.time}; expected ${expectedText}, got ${observedText}.`);
+    }
+    observed.push({ time: keyframe.time, text: observedText });
+  }
+  return {
+    ok: true,
+    comp: { itemIndex: comp.itemIndex, name: comp.name },
+    layer: { index: layer.index, name: layer.name },
+    keyframes: observed
+  };
+}
+
 async function verifyGeneratedSpatialInTangentReadBack(scenario, expected) {
   const { comp, layer, property } = await readGeneratedLayerProperty(scenario, expected, { propertyDepth: 2, propertyLimit: 100 });
   const keyframes = Array.isArray(property.keyframes) ? property.keyframes : [];
@@ -5520,6 +5574,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedKeyframeEase) {
     return verifyGeneratedKeyframeReadBack(scenario, expected);
+  }
+
+  if (expected.generatedSourceTextKeyframes) {
+    return verifyGeneratedSourceTextKeyframesReadBack(scenario, expected);
   }
 
   if (expected.generatedCameraController) {
@@ -6241,6 +6299,10 @@ async function main() {
   }
   if (command === "agent-keyframes-openai-cli-smoke" || command === "full-ui-agent-keyframes-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliKeyframeScenarioConfig());
+    return;
+  }
+  if (command === "agent-text-to-keys-openai-cli-smoke" || command === "full-ui-agent-text-to-keys-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliTextToKeysScenarioConfig());
     return;
   }
   if (command === "agent-selected-keyframe-marker-openai-cli-smoke" || command === "full-ui-agent-selected-keyframe-marker-openai-cli-smoke") {

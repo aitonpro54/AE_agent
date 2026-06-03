@@ -329,6 +329,8 @@ function addPropertyEvidence(target, value, source) {
     matchName: value.matchName || null,
     propertyPath: Array.isArray(value.propertyPath) ? value.propertyPath : [],
     value: hasOwn(value, "value") ? value.value : undefined,
+    numKeys: numberValue(value.numKeys),
+    keyframes: Array.isArray(value.keyframes) ? value.keyframes : [],
     source: source || "observed property"
   });
 }
@@ -798,6 +800,49 @@ function keyframeAtTime(property, time) {
   const keyframes = Array.isArray(property && property.keyframes) ? property.keyframes : [];
   const target = Number(time);
   return keyframes.find((keyframe) => nearlyEqual(Number(keyframe && keyframe.time), target, 0.001)) || null;
+}
+
+function keyframeValueText(value) {
+  return compactText(stableStringify(value), 120);
+}
+
+function propertyKeyframesMatchRequest(property, args) {
+  const expected = Array.isArray(args.keyframes) ? args.keyframes : [];
+  if (!expected.length) {
+    return {
+      passed: false,
+      observed: "missing requested keyframes"
+    };
+  }
+  const mismatches = [];
+  for (const item of expected) {
+    const observed = keyframeAtTime(property, item && item.time);
+    if (!observed) {
+      mismatches.push(`missing time ${item && item.time}`);
+      continue;
+    }
+    if (!propertyValueMatches(item.value, observed.value, 0.01)) {
+      mismatches.push(`time ${item.time} expected ${keyframeValueText(item.value)} got ${keyframeValueText(observed.value)}`);
+    }
+  }
+  return {
+    passed: mismatches.length === 0,
+    observed: mismatches.length ? mismatches.join("; ") : `${expected.length} requested keyframe value(s) read back`
+  };
+}
+
+function observedPropertyKeyframesEvidence(evidence, args) {
+  for (const property of evidence.properties || []) {
+    if (!propertyPathMatches(property.propertyPath, args.propertyPath)) continue;
+    const match = propertyKeyframesMatchRequest(property, args);
+    if (match.passed) {
+      return {
+        source: property.source || `Read ${propertyPathText(args.propertyPath)} keyframes after set_property_keyframes.`,
+        observed: match.observed
+      };
+    }
+  }
+  return null;
 }
 
 function checkCameraWithController(checks, step, payload) {
@@ -1371,6 +1416,9 @@ function verifyStep(checks, step, evidence) {
   }
 
   if (step.tool === "set_property_keyframes") {
+    const readBackEvidence = observedPropertyKeyframesEvidence(evidence.readBack, args) ||
+      observedPropertyKeyframesEvidence(evidence.allReadBack, args);
+    const valueReadBackRequired = /ADBE Text Document/.test(propertyPathText(args.propertyPath));
     pushCheck(checks, {
       id: `${step.index || "step"}:${step.tool}:keyframes`,
       title: "Keyframe count matches request",
@@ -1379,6 +1427,16 @@ function verifyStep(checks, step, evidence) {
       passed: Number(payload.keyframeCount || 0) === arrayLength(args.keyframes),
       evidence: stepLabel(step)
     });
+    if (readBackEvidence || valueReadBackRequired) {
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool}:keyframe-values`,
+        title: "Keyframe values match post-run read-back",
+        expected: `${propertyPathText(args.propertyPath)} keyframes match requested times and values`,
+        observed: readBackEvidence ? readBackEvidence.observed : "missing or mismatched keyframe read-back",
+        passed: Boolean(readBackEvidence),
+        evidence: readBackEvidence ? readBackEvidence.source : "No post-run property read-back matched set_property_keyframes times and values."
+      });
+    }
     return;
   }
 
@@ -1722,7 +1780,7 @@ function buildSemanticVerification(plan, run) {
       ? stepOrder(mutatingSteps[index + 1], index + 2)
       : null;
     const stepReadBackEvidence = collectReadBackEvidence(steps, currentOrder, nextMutatingOrder);
-    verifyStep(checks, step, { readBack: stepReadBackEvidence, all: allEvidence });
+    verifyStep(checks, step, { readBack: stepReadBackEvidence, all: allEvidence, allReadBack: readBackEvidence });
   }
 
   const failedChecks = checks.filter((check) => check.status === "failed").length;

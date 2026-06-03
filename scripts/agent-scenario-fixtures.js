@@ -1669,6 +1669,54 @@ function agentKeyframeScenarioPlans(runPrefix) {
   }));
 }
 
+function agentTextToKeysScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Text To Keys`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Text`;
+  const propertyPath = "ADBE Text Properties.ADBE Text Document";
+  const keyframes = [
+    { time: 0, value: { text: "A" } },
+    { time: 0.5, value: { text: "AE" } },
+    { time: 1, value: { text: "AE Agent" } }
+  ];
+
+  return [
+    {
+      id: "generated-source-text-keyframes",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_text_layer",
+        "set_property_keyframes",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedSourceTextKeyframes: true,
+        compName,
+        layerName,
+        propertyPath: ["ADBE Text Properties", "ADBE Text Document"],
+        keyframes
+      },
+      plan: {
+        summary: "AUX text-to-keys generated-only live QA for explicit Source Text keyframes.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated source-text keyframe comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 2, frameRate: 24, bgColor: [0.06, 0.07, 0.08], allowDuplicateName: false, openInViewer: true, comment: "generated-only Source Text keyframe validation" } },
+          { title: "Create generated source-text layer", tool: "create_text_layer", args: { compName, name: layerName, text: "A", position: [320, 180], fontSize: 54, fillColor: [0.95, 0.95, 0.86], duration: 2 } },
+          { title: "Set generated Source Text keyframes", tool: "set_property_keyframes", args: { compName, layerIndex: 1, propertyPath, clearExisting: true, keyframes } },
+          { title: "Read generated Source Text keyframes", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeValues: true, includeExpressions: true } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentSelectedKeyframeMarkerScenarioPlans(runPrefix) {
   const base = `${runPrefix} Selected Keyframe Marker`;
   const compName = `${base} Comp`;
@@ -2745,6 +2793,7 @@ module.exports = {
   agentResetWorkAreaScenarioPlans,
   agentSelectedPropertyValueScenarioPlans,
   agentSelectedKeyframeMarkerScenarioPlans,
+  agentTextToKeysScenarioPlans,
   agentScenarioPlans,
   buildAgentPlannerRegressionCorpus,
   exactPlanPrompt,
