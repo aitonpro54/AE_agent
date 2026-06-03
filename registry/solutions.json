@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-06-02",
+  "updatedAt": "2026-06-03",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -9021,6 +9021,122 @@
         "Require get_layer_details read-back for the written inSpatialTangent and preserved outSpatialTangent.",
         "Require a separate typed-tool contract for selected-key discovery without explicit reviewed keyframes, arbitrary tangent vectors, out-tangent editing, non-spatial properties, first-key tangent requests, path/mask/shape tangent workflows, interpolation/ease preservation, selection side effects or exact source semantics.",
         "Do not use this recipe for effect edits, source relinking, render queue changes, selected-layer rename, expression edits, keyframe value/timing edits, shape path tangent edits, static value edits, or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "texttokeys-typed-plan",
+      "title": "Text To Keys Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "text",
+        "source-text",
+        "keyframes",
+        "set_property_keyframes",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Create reviewed Source Text keyframes on concrete text layers with selected-layer evidence, explicit keyframe text values, set_property_keyframes, and get_layer_details read-back.",
+        "appliesWhen": [
+          "The user asks to turn text into progressive Source Text keyframes, type-on text states, or explicit text reveal keyframes.",
+          "Typed Source Text keyframing is acceptable only when current text-layer evidence, timing, and every resulting text value are reviewed before confirmation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedTextLayers",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_layers plus get_layer_details evidence for each concrete TextLayer target."
+        },
+        {
+          "name": "sourceTextKeyframes",
+          "type": "array",
+          "required": true,
+          "description": "Reviewed Source Text keyframes with finite time values and explicit text document values."
+        },
+        {
+          "name": "clearExisting",
+          "type": "boolean",
+          "required": true,
+          "description": "Whether existing Source Text keyframes may be replaced before writing the reviewed sequence."
+        }
+      ],
+      "targetAssumptions": [
+        "Every target is bound from current selected-layer and layer-detail evidence before mutation.",
+        "The workflow writes only ADBE Text Properties.ADBE Text Document keyframes on reviewed text layers.",
+        "The plan displays the source text, keyframe times, text values, and clearExisting behavior before confirmation.",
+        "Layer names, transforms, effects, masks, sources, expressions, render queue items, project items, selection state, comp settings, and unrelated properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/texttokeys-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details",
+          "set_property_keyframes"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and selected text-layer evidence, review explicit Source Text keyframes, run set_property_keyframes, then read Source Text keyframes back with get_layer_details.",
+        "steps": [
+          "Run get_active_comp and get_selected_layers before mutation to capture active comp identity and selected layer targets.",
+          "Run get_layer_details for every accepted target with property values included and require TextLayer/Source Text evidence.",
+          "Require reviewed finite keyframe times, explicit text values, and clearExisting behavior before confirmation.",
+          "Fail closed when selected-layer evidence is empty, targets non-text layers, lacks Source Text property evidence, has ambiguous text/timing, or requires source-exact UI behavior.",
+          "Run set_property_keyframes on ADBE Text Properties.ADBE Text Document for each accepted text layer.",
+          "Run get_layer_details after mutation with includeProperties:true, includeValues:true, and includeExpressions:true.",
+          "Fail closed if text animators, range selectors, broad layer scans, expression-driven text generation, raw ExtendScript, or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the active comp, every accepted text layer, current text value, and Source Text property path.",
+          "Dry-run evidence lists the exact keyframe times and text values to be written.",
+          "set_property_keyframes reports the expected property path and keyframe count.",
+          "Post-run get_layer_details shows the expected Source Text keyframe count and text values on the reviewed layer.",
+          "Skipped targets are reported with explicit typed-tool gap reasons instead of being silently changed.",
+          "Post-run evidence shows no unrelated layer, expression, effect, source, render queue, project item, selection, comp setting, or unrelated property mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Generated-only OpenAI CLI text-to-keys lane passed with create_comp, create_text_layer, set_property_keyframes, get_layer_details, semantic verification, and cleanup.",
+          "Adapted only the idea behind ae-scripting/scripting-snippets textToKeys.jsx into existing typed tools; no source JSX copied."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-03",
+          "from": "generic-repo-importer-tool-texttokeys",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "The ae-scripting textToKeys.jsx candidate was requeued after generated-only Source Text keyframe live proof. The parent-owned import records a typed-only recipe using get_active_comp, get_selected_layers, get_layer_details, and set_property_keyframes; no source JSX copied; raw JSX copy, source-exact traversal, text animators, and typo/no-call behavior remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-layer and text-layer detail evidence before mutating Source Text keyframes; do not infer targets from prior chat context.",
+        "Require explicit keyframe times, text values, and clearExisting behavior before running set_property_keyframes.",
+        "Require get_layer_details read-back for Source Text keyframe count and values.",
+        "Do not use this recipe for text animators, range selectors, expression-driven text generation, broad layer scans, raw ExtendScript, source relinking, render queue changes, or exact source JSX semantics."
       ]
     }
   ]

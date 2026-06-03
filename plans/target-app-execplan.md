@@ -84,9 +84,8 @@ Historical milestone detail through 2026-05-31 is archived at
   generated-only family proposals, and kept all of them fail-closed because the
   ledger exposes read-only suggested tools and the source semantics need new or
   separately proven mutating typed-tool contracts before any requeue.
-- [x] AUX text-to-keys generated-only proof/hints: added scoped registry,
-  Source Text keyframe read-back/semantic smoke, and compact `tool-texttokeys`
-  hints requiring `set_property_keyframes` + `get_layer_details`; no requeue.
+- [x] AUX text-to-keys proof/hints/import: added scoped registry, Source Text
+  read-back/semantic smoke, compact ledger hints, and typed recipe binding.
 - [x] AUX importer/parallel packaging fixes: importer recognizes
   `var/let/const name = function`; non-append shared smoke rewrites fail closed.
 
@@ -171,10 +170,9 @@ Architecture update on 2026-06-03:
   ledger entries; the closest future first lane is generated-only
   `text-to-keys` or expression-controller proof after explicit mutating tool
   hints and read-back semantics are added.
-- `text-to-keys-generated-only` has non-live Source Text keyframe read-back
-  proof. Compact `tool-texttokeys` ledger hints include
-  `get_selected_layers`, `set_property_keyframes`, and `get_layer_details`;
-  status remains `blocked_live_lane_required`, with no requeue/live run.
+- `tool-texttokeys` has generated-only Source Text live proof, passed
+  liveGate, and parent-owned typed recipe binding; source-exact traversal,
+  typo/no-call repair, text animators, and raw JSX remain fail-closed.
 
 ## Next Milestone
 
@@ -281,9 +279,9 @@ outside the runner out of scope.
   expression enable/disable scans, comp-marker copy, solid-source resizing,
   recursive comp upscale, paint brush splitting, random transforms, or manual
   hard-coded shape duplication.
-- Source Text keyframes are a distinct proof family. The `tool-texttokeys`
-  runtime ledger hint now names mutating/read-back tools, but source-exact
-  traversal and typo/no-call repair remain fail-closed until live proof passes.
+- Source Text keyframes are a distinct proof family. `tool-texttokeys` uses
+  `set_property_keyframes` + `get_layer_details`; source-exact traversal and
+  typo/no-call repair remain fail-closed.
 - Legacy JSX assignment functions are valid importer candidates when already
   ledger-selected; shared smoke child edits must be append-only slices.
 
@@ -391,13 +389,10 @@ outside the runner out of scope.
   source snippets, confirmed stale `running` state has no related runner
   processes, and made no code, queue, requeue, child-worktree, live CEP/AE,
   Local/Ollama, dependency, push, or PR changes.
-- AUX text-to-keys proof/hint validation passed: touched-file `node --check`,
-  registry parse/assert, `agent-scenario-report-smoke`,
-  `semantic-verification-smoke`, `solution-library-validation-smoke`, compact
-  status/ledger summary, registry-vs-ledger requiredTools assert, and
-  `git diff --check` with normal LF/CRLF warnings only. Fixture-only
-  `sdk-generic-repo-full-intake-smoke` printed `ok:true` but hit the 120s
-  timeout, so it is not counted as passed; no related runner processes remained.
+- AUX text-to-keys proof/hint/import validation passed: touched-file checks,
+  registry parse/assert, agent scenario/semantic/solution smokes, compact
+  status/ledger summary, generated-only live lane, and `git diff --check`
+  with normal LF/CRLF warnings only.
 - AUX importer/parallel packaging validation passed: touched-file checks,
   `git diff --check` with normal LF/CRLF warnings,
   importer/queue-supervisor smokes, and full-intake smoke.

@@ -44,6 +44,7 @@ const IMPORTED_ADVISORY_IDS = [
   "remove-redundant-keyframes-typed-plan",
   "fill-in-keyframes-typed-plan",
   "keyframe-current-value-from-expression-typed-plan",
+  "texttokeys-typed-plan",
   "set-spacial-in-tanget-typed-plan",
   "round-selected-keyframe-values-typed-plan",
   "apply-maintain-stroke-width-expression-typed-plan",
@@ -279,7 +280,10 @@ function assertImportedAdvisoryQuality(registry) {
     assert(!solution.execution.preferredTools.includes("run_extendscript_file"), `${id}: raw file execution must not be preferred.`);
     assert(solution.execution.recipePath !== "recipes/README.md", `${id}: imported advisory entries should have dedicated recipe files.`);
     assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present for retrieval/audit.`);
-    assert(solution.tags.includes("kyletmartinez-advisory"), `${id}: imported source advisory tag should be present for retrieval/audit.`);
+    assert(
+      solution.tags.includes("kyletmartinez-advisory") || solution.tags.includes("ae-scripting-advisory"),
+      `${id}: imported source advisory tag should be present for retrieval/audit.`
+    );
     assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
 
     const text = recipeText(solution);
@@ -472,6 +476,25 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate typed-tool contract for regex behavior.`);
       assert(solution.notes.some((note) => /project item rename/.test(note)), `${id}: notes must keep project item rename out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Replace_Text_In_Layer_Name/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "texttokeys-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details", "set_property_keyframes"],
+        `${id}: text-to-keys workflow should stay on the Source Text keyframe typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: text-to-keys workflow must be mutating.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("TextLayer"), `${id}: recipe should require text-layer evidence.`);
+      assert(text.includes("ADBE Text Properties.ADBE Text Document"), `${id}: recipe should target Source Text.`);
+      assert(text.includes("set_property_keyframes"), `${id}: recipe should use set_property_keyframes.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer-details read-back.`);
+      assert(!/run_extendscript/i.test(text), `${id}: recipe should not recommend raw ExtendScript.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_property_keyframes/.test(step)), `${id}: verification must write Source Text keyframes.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Source Text keyframe count/.test(item)), `${id}: verification must require Source Text keyframe read-back.`);
+      assert(solution.notes.some((note) => /text animators/.test(note)), `${id}: notes must keep text animator semantics out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /textToKeys\.jsx/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /raw JSX copy/i.test(entry.evidence)), `${id}: promotion evidence should record raw JSX copy is blocked.`);
     } else if (id === "add-simple-loop-expression-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
