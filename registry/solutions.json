@@ -9692,6 +9692,823 @@
         "Do not imply that a Codex App chat, source edit, live smoke, push, or PR has happened automatically.",
         "Do not use this recipe for source-exact ScriptUI reproduction, automatic file edits, dependency changes, raw ExtendScript, live panel mutation, broad repository scans, user-asset mutation, or exact source JSX semantics."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "makeclosest16-typed-plan",
+      "title": "Make Closest 16 Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "position",
+        "transform",
+        "snap",
+        "grid",
+        "nearest-16",
+        "selected-layers",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Move selected or explicit layers by snapping typed transform Position components to the nearest multiple of 16.",
+        "appliesWhen": [
+          "The user asks to make selected layers closest to 16, snap layer positions to a 16-pixel grid, or round layer transform positions to the nearest multiple of 16.",
+          "Layer transform position snapping from typed read-back is acceptable instead of anchor, bounds, world-space, separated-dimension, path, mask, shape-point, or exact source JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetLayers",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Selected or explicitly identified layers whose current transform positions are read before computing nearest-16 snapped positions."
+        },
+        {
+          "name": "gridSize",
+          "type": "number",
+          "required": false,
+          "description": "Grid size for snapping; this imported recipe only supports the reviewed value 16."
+        }
+      ],
+      "targetAssumptions": [
+        "At least one concrete layer target is read from current selected-layer or explicit-layer evidence before mutation.",
+        "The safe adaptation computes nearest multiples of 16 from numeric get_layer_details transform position evidence.",
+        "Target positions are local transform Position values; unsupported parent/world-space conversion or separated-dimension internals fail closed.",
+        "Existing layer names, sources, timing, effects, masks, parenting, expressions, keyframes, layer order, selection state and unrelated transform fields are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/makeclosest16-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details",
+          "set_layer_transform",
+          "get_comp_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read target layer positions, compute nearest-16 snapped positions, set only transform Position for each target, then read back layer positions and comp membership.",
+        "steps": [
+          "Run get_active_comp and get_selected_layers before mutation when the request targets selected layers.",
+          "Run get_layer_details for every target layer before mutation and require numeric position arrays.",
+          "Compute each snapped position component by rounding the cited pre-run component to the nearest multiple of 16, including z only when numeric z evidence is present.",
+          "Run set_layer_transform for each target layer with position equal to its computed snappedPosition and leave other transform fields unchanged.",
+          "Run get_layer_details for every affected layer and get_comp_details after mutation; fail closed if source-exact snapping, anchor/bounds snapping, parent/world-space conversion, separated dimensions, shape/path/mask point snapping, comp-size rounding, expression/keyframe edits, selection changes, or raw JSX is required."
+        ],
+        "expectedEvidence": [
+          "The selected or explicit target layer set contains concrete layer indices from current typed evidence.",
+          "Pre-run get_layer_details shows numeric position values for every target layer.",
+          "Every computed snappedPosition component is the nearest multiple of 16 for the cited pre-run position component.",
+          "Post-run get_layer_details shows every affected target layer position equals its computed snappedPosition.",
+          "Post-run get_comp_details shows no unexpected user-layer deletion, rename, relink, timing change, selection mutation or layer-count change."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-makeclosest16 generic repository importer as advisory typed-plan coverage for nearest-16 layer-position snapping.",
+          "The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, existing typed transform tools, and fail-closed nearest-16 semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-03",
+          "from": "generic-repo-importer-tool-makeclosest16",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the nearest-16 position-snapping idea behind ae-scripting/scripting-snippets makeClosest16.jsx into existing typed tools as selected-layer transform position snapping; no source JSX copied. Anchor-point snapping, bounds-center snapping, source-exact rounding rules, parent/world-space conversion, separated dimensions, shape/path/mask point edits, comp-size rounding, expression edits, keyframe edits, selection changes, and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "This recipe snaps selected or explicit layer transform position values only; it does not snap anchor points, layer bounds, masks, shape vertices, paths, comp dimensions, effects, keyframes, expressions, or rendered pixels.",
+        "Require current get_selected_layers or explicit get_layer_details evidence before mutating layer transform values; do not infer targets from prior chat context.",
+        "Use only the reviewed nearest-16 grid size in this imported recipe; generalized grid snapping requires separate review.",
+        "Do not use this recipe for render queue changes, expression edits, keyframe edits, source relinking, template batch changes, layer cleanup, effect edits, marker edits, selection mutation, broad composition mutation, or raw ExtendScript."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "newadjust-typed-plan",
+      "title": "New Adjust Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "layers",
+        "adjustment-layer",
+        "generated-layer",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Create one reviewed generated adjustment layer in a verified target comp with typed read-back.",
+        "appliesWhen": [
+          "The user asks to add a new adjustment layer, blank adjustment layer, comp-wide adjustment layer, or generated adjustment control layer.",
+          "The requested workflow can be satisfied by creating one generated adjustment layer through typed bridge tools and reading it back."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "composition-target",
+          "required": true,
+          "description": "Active comp or explicit comp target verified by get_active_comp or get_comp_details before mutation."
+        },
+        {
+          "name": "adjustmentLayerSpec",
+          "type": "object",
+          "required": false,
+          "description": "Optional reviewed generated layer name, start time, duration, and coverage policy."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow creates only one generated adjustment layer.",
+        "Target comp dimensions, duration, timing, and current layer count are known before mutation.",
+        "Existing layers, sources, effects, expressions, keyframes, comp settings, render queue items, project items, and selection state are preserved.",
+        "Source-exact newAdjust.jsx stack placement, UI prompts, selection side effects, and raw ExtendScript behavior are unsupported unless separately reviewed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/newadjust-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "create_adjustment_layer",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read target comp evidence, create one generated adjustment layer, then read back the comp and generated layer.",
+        "steps": [
+          "Run get_active_comp or get_comp_details to verify the target comp identity, dimensions, duration, timing, and layer count.",
+          "Review the generated layer name, start time, duration, and unsupported source-exact placement or selection semantics before confirmation.",
+          "Run create_adjustment_layer with a generated-prefix name and target comp timing/dimension evidence.",
+          "Run get_comp_details after mutation to verify the generated layer is present and existing layers were not unexpectedly changed.",
+          "Run get_layer_details for the generated layer to confirm adjustmentLayer:true and expected generated name/timing evidence."
+        ],
+        "expectedEvidence": [
+          "Pre-run comp evidence identifies the target comp and current layer count.",
+          "create_adjustment_layer returns exactly one generated layer in the expected comp.",
+          "Post-run get_comp_details and get_layer_details show the generated layer with adjustmentLayer:true.",
+          "No raw ExtendScript, selection change, source relink, effect edit, property edit, keyframe edit, expression edit, render queue edit, or project-item mutation appears in the plan."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-newadjust generic repository importer as advisory typed-plan coverage for generated adjustment-layer creation.",
+          "The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, existing create_adjustment_layer typed-tool coverage, and fail-closed adjustment-layer semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-03",
+          "from": "generic-repo-importer-tool-newadjust",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the new adjustment-layer idea behind ae-scripting/scripting-snippets newAdjust.jsx into existing typed tools as generated adjustment-layer creation guidance; no source JSX copied. The recipe uses get_active_comp or get_comp_details, create_adjustment_layer, get_comp_details, and get_layer_details, and remains fail-closed for source-exact stack placement, UI prompts, selection side effects, current-time native behavior, raw ExtendScript, existing layer edits, source relinking, and unrelated mutations. Parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses Agent plan validation when used in planning context.",
+        "Use this recipe only for one generated adjustment-layer creation; do not use it for effects, property edits, layer reordering, source relinking, or selection changes.",
+        "Require target comp evidence before creating the layer and post-run comp/layer read-back afterward.",
+        "Use generated-prefix names unless the user explicitly requests and confirms a safe custom generated name.",
+        "Do not use this recipe for source-exact newAdjust.jsx reproduction, raw ExtendScript, current-time-sensitive native behavior, UI prompts, dependency changes, live panel mutation, broad repository scans, or user-asset mutation beyond the confirmed generated layer."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "niceprecomp-typed-plan",
+      "title": "Nice Precomp Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "precompose",
+        "precomp",
+        "selected-layers",
+        "niceprecomp",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Precompose explicitly selected active-comp layers into a reviewed new composition using precompose_layers and typed read-back.",
+        "appliesWhen": [
+          "The user asks to precompose selected layers, make a nice precomp, wrap selected layers in a new comp, or create a precomp from selected active-comp layers.",
+          "Typed precompose adaptation is acceptable only when current selected-layer evidence and an explicit reviewed new precomp name are available instead of native dialog behavior, automatic naming heuristics, Project panel selection discovery, recursive nested-precomp edits, source relinking, or raw JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedLayers",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Current get_selected_layers evidence containing one or more concrete selected active-comp layer indices."
+        },
+        {
+          "name": "newCompName",
+          "type": "string",
+          "required": true,
+          "description": "Reviewed non-empty name for the created precomp."
+        },
+        {
+          "name": "moveAllAttributes",
+          "type": "boolean",
+          "required": false,
+          "description": "Explicit reviewed attribute-transfer choice for precompose_layers; omit only when the bridge default is acceptable and disclosed."
+        }
+      ],
+      "targetAssumptions": [
+        "The active composition is inspected before binding selected layer indices.",
+        "Every precomposed layer comes from current selected-layer evidence or explicit layer indices read before mutation.",
+        "The created precomp name is explicit, reviewed, non-empty, and not inferred solely from source script naming heuristics.",
+        "The workflow changes only the selected-layer precompose operation through precompose_layers.",
+        "Unrelated layers, source items, effects, masks, expressions, keyframes, render queue items, project folders, and selection state are preserved unless a separate typed plan explicitly covers them."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/niceprecomp-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_comp_details",
+          "precompose_layers"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Inspect the active comp and selected layers, run precompose_layers with reviewed layer indices and newCompName, then read back parent and created comp evidence.",
+        "steps": [
+          "Run get_active_comp, get_selected_layers, and get_comp_details before mutation to capture active comp identity, selected layer indices, selected layer names when available, and parent comp layer count.",
+          "Fail closed when selected-layer evidence is empty, layer indices are ambiguous, newCompName is missing or empty, or the request depends on native dialog behavior, automatic naming heuristics, Project panel selected-item discovery, recursive nested-precomp edits, source relinking, or exact source JSX behavior.",
+          "Show the reviewed newCompName, concrete layerIndices, moveAllAttributes choice, and openInViewer:false before confirmation.",
+          "Run one precompose_layers step with the inspected comp target, evidence-backed layerIndices, reviewed newCompName, explicit moveAllAttributes when needed, openInViewer:false, verifyAfter:true, and a stable idempotencyKeyTemplate.",
+          "Run get_comp_details after mutation for the parent comp and the created precomp when its item/name evidence is returned.",
+          "Fail closed instead of using raw script execution when current typed evidence cannot prove the selected-layer targets or created-precomp read-back."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_layers identifies every concrete selected layer target and its active comp context.",
+          "The precompose_layers result reports the created composition identity or enough evidence to read it back by name/item index.",
+          "Post-run parent get_comp_details shows expected precomp replacement without unrelated layer deletion, rename, relink, timing, effect, mask, expression, keyframe, render queue, or project-item mutation.",
+          "Post-run created-precomp read-back confirms the new composition exists and contains the expected precomposed layer content as far as typed evidence exposes it.",
+          "Unsupported native dialog behavior, automatic naming heuristics, Project panel selection discovery, recursive nested-precomp operations, source relinking, and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-niceprecomp generic repository importer as advisory typed-plan coverage for selected-layer precompose workflows.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing precompose_layers typed-tool coverage and leaves parent importer validation plus live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-03",
+          "from": "generic-repo-importer-tool-niceprecomp",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind ae-scripting/scripting-snippets nicePrecomp.jsx into existing typed tools as selected-layer precompose guidance through get_active_comp, get_selected_layers, get_comp_details, precompose_layers, and post-mutation read-back; no source JSX copied. Current typed tools require current selected-layer evidence and reviewed newCompName. Native Pre-compose dialog behavior, automatic naming heuristics, Project panel selection discovery, recursive nested-precomp edits, source relinking, raw ExtendScript, and exact source semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-layer evidence from get_selected_layers before binding layerIndices for precompose_layers.",
+        "Require explicit reviewed newCompName and disclose moveAllAttributes plus openInViewer:false before confirmation.",
+        "Do not infer target layers from layer names, visual order, prior chat context, Project panel state, precomp membership, or unavailable source JSX behavior.",
+        "Require a separate typed-tool contract for native Pre-compose dialog behavior, automatic naming heuristics, Project panel selected-item discovery, recursive nested-precomp operations, source relinking, cleanup routines, or exact source JSX semantics.",
+        "Do not use this recipe for deep precomp/source duplication, nested source-comp property edits, layer deletion, template batch updates, render queue changes, source replacement, or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "random-interpolation-typed-plan",
+      "title": "Random Interpolation Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "keyframes",
+        "interpolation",
+        "random-interpolation",
+        "selected-keyframes",
+        "selected-properties",
+        "apply-keyframe-ease",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Apply a reviewed deterministic distribution of supported interpolation modes to explicit selected keyframes with typed selected-property evidence, apply_keyframe_ease, and layer/property read-back.",
+        "appliesWhen": [
+          "The user asks to randomize keyframe interpolation, apply random hold/linear/ease choices, or vary interpolation across selected keyframes.",
+          "Typed selected-property keyframe interpolation mutation is acceptable only when current selected-property evidence, explicit reviewed selectedKeyframes, and concrete interpolationAssignments are available before confirmation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties evidence containing one or more concrete selected property targets with layerIndex, propertyPath, current value shape, expression state and keyframe/animated state when available."
+        },
+        {
+          "name": "selectedKeyframes",
+          "type": "array",
+          "required": true,
+          "description": "Explicit reviewed selected keyframe evidence for each accepted target, including keyframe indices, times and current values."
+        },
+        {
+          "name": "randomInterpolationPolicy",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed deterministic policy with candidate interpolation modes, stable seed or assignment rule, target keyframe count and unsupported-mode handling."
+        },
+        {
+          "name": "interpolationAssignments",
+          "type": "array",
+          "required": true,
+          "description": "Concrete reviewed keyframe assignments preserving keyframe indices, times and values while naming the supported interpolation mode to apply."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated property is bound from current get_selected_properties evidence before mutation.",
+        "Every accepted target has explicit reviewed selectedKeyframes with concrete keyframe indices, times, values and compatible value shapes.",
+        "Randomness is resolved before confirmation into deterministic interpolationAssignments; mutation-time nondeterminism is not allowed.",
+        "Only interpolation modes supported by apply_keyframe_ease are used, and unsupported source-exact modes are reported as typed-tool gaps.",
+        "The workflow changes only interpolation for explicitly reviewed selected keyframes through apply_keyframe_ease with explicit keyIndices.",
+        "Expressions, keyframe values, key times, unselected keyframes, key creation/removal, spatial tangents, layer names, sources, timing, effects, masks, render queue items, selection state and unselected properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/random-interpolation-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "apply_keyframe_ease",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected property/keyframe evidence, disclose deterministic randomInterpolationPolicy and interpolationAssignments, apply supported interpolation modes through apply_keyframe_ease by explicit keyIndices, then read layer/property keyframes back.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation to capture active comp identity, selected property targets, layerIndex values, propertyPath values, current value shape, expression state and keyframe/animated state when available.",
+          "Require explicit reviewed selectedKeyframes for every accepted property target, including keyframe indices, times, current values and compatible value shapes.",
+          "Fail closed when selected-property evidence is empty, lacks layer/property path targets, lacks exact selected keyframe indices and times, has expression text or enabled expressions, is not keyframed/animated, requires creating/removing keys, or requires source-exact selected-key discovery.",
+          "Resolve randomInterpolationPolicy before confirmation, including candidate interpolation modes, stable seed or deterministic assignment rule, target keyframe count and unsupported-mode handling.",
+          "Show previous selectedKeyframes plus concrete interpolationAssignments for every accepted target before confirmation.",
+          "Run apply_keyframe_ease steps grouped by property and interpolation mode with explicit reviewed keyIndices, evidence-backed layerIndex and exact propertyPath.",
+          "Run get_layer_details for every affected layer with property keyframe read-back.",
+          "Fail closed if mutation-time randomness, unsupported interpolation/ease modes, spatial tangent editing, exact source selection side effects, broad property scans, selection side effects or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties identifies every concrete selected property target, its owning layer, current value shape, expression state and keyframe/animated state when available.",
+          "Dry-run evidence lists previous selectedKeyframes, reviewed randomInterpolationPolicy and interpolationAssignments for every accepted target.",
+          "Each apply_keyframe_ease result reports the expected property path, interpolation mode and only the explicit reviewed keyIndices.",
+          "Post-run get_layer_details shows the selected keyframe times and values are preserved on the expected layer/property path with interpolation evidence when exposed by read-back.",
+          "Skipped targets are reported with explicit typed-tool gap reasons instead of being silently changed.",
+          "Post-run evidence shows no expression, timing, effect, source, render queue, layer name, selection state, project item, key creation/removal, key value, unselected keyframe or unselected property mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-random-interpolation generic repository importer as advisory typed-plan coverage for deterministic selected-keyframe interpolation randomization.",
+          "The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, existing selected-property/keyframe typed tools, and fail-closed interpolation semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-03",
+          "from": "generic-repo-importer-tool-random-interpolation",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the random interpolation idea behind ae-scripting/scripting-snippets Random Interpolation.jsx into existing typed tools as deterministic selected-keyframe interpolation guidance; no source JSX copied. The recipe requires current get_selected_properties evidence, explicit selectedKeyframes with times/values/indices, reviewed randomInterpolationPolicy, visible interpolationAssignments, apply_keyframe_ease with explicit keyIndices, and get_layer_details read-back. Mutation-time randomness, hidden selected-key discovery, arbitrary interpolation/ease curves, spatial tangent edits, keyframe value/time changes, expression edits, broad property scans, raw ExtendScript, selection side effects, and exact source semantics require a separate typed-tool contract. Parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties before mutating keyframe interpolation; do not infer targets from prior chat context.",
+        "Require explicit reviewed selected-keyframe evidence with times, values and key indices before computing interpolationAssignments.",
+        "Do not perform mutation-time randomness; disclose the deterministic policy and assignments before confirmation.",
+        "Use apply_keyframe_ease only with supported interpolation modes and explicit reviewed keyIndices.",
+        "Do not use set_property_keyframes for this recipe unless a separate reviewed plan explicitly needs keyframe value repair.",
+        "Require a separate typed-tool contract for hidden selected-key discovery, arbitrary interpolation/ease curves, spatial tangent editing, keyframe value/time changes, expression edits, broad property scans, selection side effects or exact source semantics.",
+        "Do not use this recipe for effect edits, source relinking, render queue changes, selected-layer rename, expression edits, static property value edits, layer timing changes, or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "selectrandomlayers-typed-plan",
+      "title": "Select Random Layers Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "selection",
+        "layers",
+        "random-layers",
+        "random-selection",
+        "selected-layers",
+        "set-selection",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Select a reviewed random subset of active-comp layers by deriving explicit layer indices from current typed layer inventory and reviewed randomSelectionPolicy, using set_layer_selection, and reading selected layers back.",
+        "appliesWhen": [
+          "The user asks to select random layers in the active composition.",
+          "The active comp layer inventory exposes an eligible layer pool and the request can be converted into concrete randomLayerIndices before selection mutation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "randomLayerIndices",
+          "type": "array",
+          "required": true,
+          "description": "Computed one-based layer indices selected from the current eligible active-comp layer pool before mutation."
+        },
+        {
+          "name": "randomSelectionPolicy",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed deterministic selection policy, such as explicit indices, finite selectionCount, optional seed, and documented sampling rule."
+        },
+        {
+          "name": "eligibleLayerEvidence",
+          "type": "array",
+          "required": true,
+          "description": "Current layer inventory fields proving the eligible layer pool from which randomLayerIndices were sampled."
+        },
+        {
+          "name": "expectedNames",
+          "type": "array",
+          "required": false,
+          "description": "Optional selected layer names paired with randomLayerIndices for post-selection read-back."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists before selection state is changed.",
+        "Random-layer targets are derived only from current get_comp_details layer inventory and a reviewed randomSelectionPolicy before mutation.",
+        "The safe adaptation changes only active-comp layer selection state, not layer names, ordering, timing, sources, effects, keyframes, masks, project items or render queue items.",
+        "Nondeterministic native UI randomness, random seed persistence, weighted/random-by-type selection, cross-comp selection, project-panel selection and exact native UI side effects remain typed-tool gaps unless a separate contract proves them."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/selectrandomlayers-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "set_layer_selection",
+          "get_selected_layers"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and layer inventory, compute randomLayerIndices from a reviewed randomSelectionPolicy and eligible layer pool, set replacement selection, then read selected random layers back.",
+        "steps": [
+          "Run get_active_comp before mutation to capture active comp identity.",
+          "Run get_comp_details with includeLayers:true and a sufficient layerLimit before computing the eligible layer pool and random targets.",
+          "Bind a reviewed randomSelectionPolicy before mutation, such as explicit randomLayerIndices, a finite selectionCount, or a deterministic seed plus documented sampling rule.",
+          "Compute randomLayerIndices only from the current eligible layer pool in the same active composition.",
+          "Fail closed when layer inventory is truncated, the eligible pool is empty, randomSelectionPolicy is absent or ambiguous, randomLayerIndices are outside the current inventory, or the request depends on unsupported nondeterministic UI-only behavior.",
+          "Run set_layer_selection with computed randomLayerIndices, optional expectedNames, replacement selection semantics, verifyAfter:true and a stable idempotency key.",
+          "Run get_selected_layers after mutation and compare selected count, selected layer indices and names with the computed random layer set."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_comp_details identifies the eligible layer pool, optional expected names, reviewed randomSelectionPolicy and every accepted random-layer index.",
+          "Dry-run evidence lists randomSelectionPolicy, randomLayerIndices, expected names when available and the reason the sample is deterministic/reviewable.",
+          "set_layer_selection result reports the computed random layerIndices and replacement selection semantics.",
+          "Post-run get_selected_layers shows exactly the expected random-layer count, selected layer indices and expected names.",
+          "Skipped, empty, truncated, unreviewed or nondeterministic random discovery is reported as a typed-tool gap or no-op decision instead of approximate selection.",
+          "Post-run evidence shows no layer order change, layer rename, timing/source/effect/keyframe/mask/project item/render queue mutation, randomness persistence or cross-comp selection."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-selectrandomlayers generic repository importer as advisory typed-plan coverage for reviewed random active-comp layer selection.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea using existing active-comp inspection, get_comp_details layer inventory, set_layer_selection and get_selected_layers read-back; parent importer owns validation plus any generated-only live acceptance."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-03",
+          "from": "generic-repo-importer-tool-selectrandomlayers",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the random layer-selection idea behind ae-scripting/scripting-snippets selectRandomLayers.jsx into existing typed tools as reviewed random layer selection through get_comp_details eligible layer inventory, reviewed randomSelectionPolicy, computed randomLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. The source JSX was not present in this detached child-run worktree, so nondeterministic native UI randomness, random seed persistence, weighted/random-by-type selection, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "This ae-scripting import intentionally mirrors the already accepted safe random-layer selection pattern while preserving separate source attribution and importer traceability.",
+        "Require current get_comp_details layer inventory and a reviewed randomSelectionPolicy before computing randomLayerIndices.",
+        "Use replacement selection semantics and select only the computed randomLayerIndices in the same active comp.",
+        "Do not run nondeterministic randomness inside the mutation step; selection targets must be concrete layer indices before set_layer_selection.",
+        "Require get_selected_layers read-back after mutation to prove selected random-layer count, layer indices and expected names.",
+        "Do not infer eligible layers from screenshots, previous chat context, fuzzy names, source type, layer comments, guide/disabled/shy/solo/lock state or approximate UI assumptions unless typed inventory exposes and the plan reviews those constraints.",
+        "Require a separate typed-tool contract for source-exact native random selection semantics, random seed persistence, weighted/random-by-type selection, cross-comp selection, Project panel selection or exact native UI side effects.",
+        "Do not use this recipe for guide/disabled/type/label/parent-group selection, layer duplication, deletion, renaming, timing edits, marker edits, effect edits, source relinking, keyframe edits, render queue changes, project item selection or broad timeline cleanup."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "setcolor-typed-plan",
+      "title": "Set Color Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "color",
+        "set-color",
+        "selected-properties",
+        "fill-color",
+        "stroke-color",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Set selected static color property values to an explicit reviewed RGB/RGBA value through typed tools.",
+        "appliesWhen": [
+          "The user asks to set color, set selected color, recolor selected color properties, or apply an explicit RGB/RGBA color to currently selected color property targets.",
+          "Current selected-property evidence identifies concrete layer indices, property paths, current color-like values, and expression/keyframe state before mutation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "colorValue",
+          "type": "array",
+          "required": true,
+          "description": "Explicit reviewed RGB or RGBA numeric color value normalized to the selected property value shape."
+        },
+        {
+          "name": "selectedPropertyTargets",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties evidence with layer indices, exact property paths, current values, and expression/keyframe state."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow mutates only selected static color-like properties identified by current typed evidence.",
+        "Color values are explicit and reviewed before confirmation.",
+        "Layer names, layer labels, sources, effects, masks, timing, render queue items, project items, selection state, and unselected properties are preserved.",
+        "Source-exact setColor.jsx behavior, raw ExtendScript, broad fill/stroke discovery, native color picker behavior, and implicit UI selection side effects are unsupported."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/setcolor-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "set_property_value",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Verify current selected color property targets, set only reviewed static color values, then read back affected layer property details.",
+        "steps": [
+          "Run get_active_comp to bind the active comp.",
+          "Run get_selected_properties with values and expressions included before binding targets.",
+          "Reject empty, expression-driven, animated/keyframed, non-color, incompatible, text/document, path, or unsupported complex properties.",
+          "Normalize the explicit colorValue to the selected property RGB or RGBA value shape and show old/new values before confirmation.",
+          "Run set_property_value once per concrete selected property target with setAtTime:false.",
+          "Run get_layer_details for affected layers and compare returned color values with the normalized colorValue.",
+          "Report skipped selected properties and typed-tool gaps explicitly."
+        ],
+        "expectedEvidence": [
+          "Selected-property evidence lists exact layer indices, property paths, current values, expression state, and keyframe/animation state where available.",
+          "The confirmed plan shows previous color values and normalized target colorValue for each accepted property.",
+          "set_property_value touches only evidence-backed selected color property paths and uses setAtTime:false.",
+          "Post-run get_layer_details read-back shows the expected color values on the expected layers/properties.",
+          "No raw ExtendScript, keyframe, expression, effect, layer label, source, timing, render queue, project item, selection-state, or unselected-property mutation appears in the plan."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-setcolor generic repository importer as advisory selected-color-property mutation coverage.",
+          "The detached child worktree did not contain setColor.jsx, so scope came from the child-run wrapper, candidate name, existing typed property tools, and fail-closed selected-color semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-03",
+          "from": "generic-repo-importer-tool-setcolor",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the set color idea behind ae-scripting/scripting-snippets setColor.jsx into typed selected-property color guidance; no source JSX copied. The recipe uses get_active_comp, get_selected_properties, set_property_value, and get_layer_details, and remains fail-closed for source-exact behavior, raw ExtendScript, broad fill/stroke discovery, native color picker behavior, animated/expression-driven properties, selection changes, and non-color mutations. Parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses Agent plan validation and protected run gates.",
+        "Use this recipe only for explicit selected static color-like property targets with current typed-tool evidence.",
+        "Preserve the current RGB/RGBA value shape unless alpha change is explicitly confirmed.",
+        "Do not use this recipe for layer label colors, color picker UI behavior, broad unselected property discovery, effect creation, keyframe color edits, expression edits, text/document values, path values, raw ExtendScript, or exact source JSX semantics."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "setkeysforpaths-typed-plan",
+      "title": "Set Keys For Paths Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "keyframes",
+        "property-paths",
+        "selected-properties",
+        "set-property-keyframes",
+        "set-keys-for-paths",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Write reviewed keyframe payloads to explicit evidence-backed AE property paths with set_property_keyframes and read-back verification.",
+        "appliesWhen": [
+          "The user asks to set keys for property paths, add keyframes to selected properties, or write a reviewed keyframe sequence to explicit layer/property targets.",
+          "Current typed evidence identifies every target layerIndex and exact propertyPath, and the keyframe payload is reviewed before mutation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "propertyTargets",
+          "type": "object",
+          "required": true,
+          "description": "Current selected-property or explicit layer-detail evidence identifying exact layerIndex and propertyPath targets."
+        },
+        {
+          "name": "keyframesForPaths",
+          "type": "array",
+          "required": true,
+          "description": "Reviewed keyframe entries for each accepted property path, including finite times, explicit values, and clearExisting behavior."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow mutates only evidence-backed property paths through typed keyframe tools.",
+        "Every accepted target has current typed evidence for comp identity, layerIndex, exact propertyPath, value shape, expression state, and existing keyframe state when available.",
+        "Shape or mask path geometry authoring, hidden selected-path traversal, and source-exact property walking are unsupported unless a separate typed-tool contract proves them.",
+        "Expressions, unrelated keyframes, layer names, sources, timing outside reviewed property keyframes, effects, masks, render queue items, project items, selection state and unselected properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/setkeysforpaths-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "get_layer_details",
+          "set_property_keyframes",
+          "apply_keyframe_ease"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read current property-path evidence, review explicit keyframe payloads, write only those payloads with set_property_keyframes, then read the affected layer/property details back.",
+        "steps": [
+          "Run get_active_comp to bind active comp identity, frame rate, duration, current time, selected-layer count, and offline state when applicable.",
+          "Run get_selected_properties with includeValues:true and includeExpressions:true when selected properties are the target source.",
+          "Run get_layer_details only for concrete evidence-backed layers when deeper property-path, value-shape, expression, or keyframe read-back is needed.",
+          "Bind each accepted target from current evidence: comp identity, layerIndex, layer name when available, exact propertyPath, current value shape, expression state, and existing keyframe state.",
+          "Require reviewed keyframesForPaths for every accepted target, including finite times, explicit values, and a reviewed clearExisting choice.",
+          "Disclose previous keyframe/expression state, target property paths, clearExisting, and complete keyframe values before confirmation.",
+          "Run one set_property_keyframes step per accepted property target with the evidence-backed layerIndex, exact propertyPath, reviewed keyframes, and reviewed clearExisting.",
+          "Use apply_keyframe_ease only when explicit reviewed keyIndices and easing settings are present after the keyframe write.",
+          "Run get_layer_details after mutation for every affected layer with enough property detail to verify written keyframes and expression state.",
+          "Fail closed when typed evidence is empty, property path is ambiguous, values do not match the observed shape, expression preservation is unsupported, shape/mask path geometry must be generated, broad batch mutation is requested, raw ExtendScript is required, or the user expects exact source JSX behavior."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies every accepted target's comp, owning layer, exact property path, value shape, expression state, and existing keyframe state when available.",
+          "Dry-run evidence lists each reviewed property path, clearExisting choice, and full keyframe sequence.",
+          "Each set_property_keyframes result reports the expected layer index, property path, clear-existing behavior, and keyframe count.",
+          "Any apply_keyframe_ease step uses explicit reviewed key indices and reports those indices after easing.",
+          "Post-run get_layer_details shows the affected property has the expected keyframe count and values on the reviewed path.",
+          "No raw ExtendScript, hidden property traversal, selected-path side effect, shape/mask path geometry authoring, unrelated expression edit, effect edit, source relink, render queue edit, project-item mutation, selection change, or unselected property mutation appears in the plan."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-setkeysforpaths generic repository importer as advisory typed-plan coverage for explicit property-path keyframe writes.",
+          "The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, existing set_property_keyframes contract, and fail-closed property-path keyframe semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-03",
+          "from": "generic-repo-importer-tool-setkeysforpaths",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the property-path keyframe setting idea behind ae-scripting/scripting-snippets setKeysForPaths.jsx into existing typed tools as reviewed set_property_keyframes guidance; no source JSX copied. The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, existing selected-property/property-detail evidence tools, and fail-closed semantics. The recipe requires current typed evidence, exact layerIndex/propertyPath targets, reviewed keyframe payloads, set_property_keyframes, and get_layer_details read-back. Source-exact selected-path traversal, hidden property walking, path geometry construction, mask/shape path vertex edits, broad selected-property batch mutation, interpolation/ease preservation without explicit indices, spatial tangent preservation, expression-derived sampling, raw ExtendScript, and selection side effects require separate typed-tool contracts; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses Agent plan validation and protected mutation gates.",
+        "Require current selected-property or explicit layer-detail evidence before mutating keyframes; do not infer targets from prior chat context.",
+        "Require exact propertyPath, value-shape compatibility, reviewed keyframe times and values, and reviewed clearExisting behavior before running set_property_keyframes.",
+        "Use clearExisting:true only after a full replacement sequence for that exact property path is reviewed; otherwise preserve existing keys with clearExisting:false.",
+        "Use apply_keyframe_ease only with explicit reviewed keyIndices after the keyframe write.",
+        "Require a separate typed-tool contract for source-exact path traversal, automatic selected-path discovery, mask/shape path geometry authoring, unsupported value shapes, expression-derived sampling, interpolation/ease preservation, spatial tangent preservation, broad batch mutation, selection side effects or exact source semantics."
+      ]
     }
   ]
 }

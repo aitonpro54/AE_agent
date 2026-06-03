@@ -25,6 +25,7 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
+- [x] AUX parallel candidate worktrees architecture (full-intake-ae-scripting-all-queued-20260603-205105): parent reducer serially handled accepted proposals [tool-makeclosest16, tool-newadjust, tool-niceprecomp, tool-random-interpolation, tool-selectrandomlayers, tool-setcolor, tool-setkeysforpaths] and rejected [none].
 - [x] AUX all-queued parallel selector: added explicit `--parallel-all-queued`
   mode; plan-only proof selected all 14 current ae-scripting queued candidates
   without manual ids, worktrees, ledger mutation, Local/Ollama, or live smoke.
@@ -165,6 +166,7 @@ outside the runner out of scope.
 
 ## Decision Log
 
+- 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees produce proposals only, while the parent owns ledger, registry, plan, handoff, live rerun, and commits (full-intake-ae-scripting-all-queued-20260603-205105).
 - 2026-06-03: `tool-guitemplate` binding miss was a narrow importer
   source-shape gap. ScriptUI object method assignments are acceptable analysis
   candidates only when paired with a ScriptUI container signal; standalone UI
@@ -289,6 +291,7 @@ outside the runner out of scope.
 
 ## Validation
 
+| AUX parallel candidate worktrees architecture (full-intake-ae-scripting-all-queued-20260603-205105) | Required to prove opt-in parallel candidate worktrees plus a serial parent reducer without running the real queue. | Accepted 7, rejected 0; central writes stayed parent-owned, live rerun stayed serial, and unplanned paths were rejected. |
 - AUX real scoped parallel reducer acceptances validated:
   `debughelper4`, `dropnthframe1`, `getlayertype1`, and
   `getpropertyparent1` each accepted 1/rejected 0; compact proofs completed,
