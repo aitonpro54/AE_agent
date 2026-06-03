@@ -79,6 +79,11 @@ Historical milestone detail through 2026-05-31 is archived at
   `--resolution-candidate-ids` and `--parallel-candidate-ids`, runs only
   parent-owned live-lane resolution before parallel worktrees, rereads the
   ledger, and records a compact `preResolutionPhase` in the parallel proof.
+- [x] AUX ae-scripting family design slice: inspected only 17 unsupported
+  `blocked_live_lane_required` entries and matching snippets, grouped them into
+  generated-only family proposals, and kept all of them fail-closed because the
+  ledger exposes read-only suggested tools and the source semantics need new or
+  separately proven mutating typed-tool contracts before any requeue.
 
 ## Current State
 
@@ -152,29 +157,27 @@ Architecture update on 2026-06-03:
   to file/render signals.
 - No real ae-scripting queue processing, requeue, child worktree, raw JSX copy,
   source merge, live CEP/AE mutation, Local/Ollama, push, or PR occurred.
+- AUX family design found proposed fail-closed families:
+  `shape-path-generated-only`, `expression-generated-only`,
+  `comp-size-generated-only`, `marker-copy-generated-only`,
+  `text-to-keys-generated-only`, `property-to-null-generated-controller`,
+  `stroke-cap-path-style-generated-only`, plus smaller transform/paint/shape
+  duplication proposals. None is production-ready from the current read-only
+  ledger entries; the closest future first lane is generated-only
+  `text-to-keys` or expression-controller proof after explicit mutating tool
+  hints and read-back semantics are added.
 
 ## Next Milestone
 
 `full-intake-ae-scripting-snippets` still has 23 queued candidates; the two-id
-parallel-scoped attempt accepted none. Next work should stay bounded and avoid
-broad queue processing. Choose one follow-up:
-
-1. Review Parallel Tool Intake V1 infrastructure before any real broad intake
-   longrun; use explicit candidate ids and a bounded
-   `--parallel-candidate-limit` when exercising it.
-2. Review the terminal backlog in compact form and pick one narrow generated-only
-   family to unblock, likely `effect-property-generated-only` or
-   `layer-timing-generated-only`.
-3. Create the missing typed-tool/proof lane for that family before requeueing any
-   matching candidates.
-4. For ae-scripting, retry only `tool-changeallnames` after a narrow child-run
-   timeout/recovery design, or prepare a manual recipe-only proposal review.
-5. Keep `tool-batchparent` blocked until the implementation batch mismatch and
-   parenting semantics are proven; do not accept it from the current proposal.
-6. Use `--resolve-live-lanes-before-parallel` only with small explicit
-   resolution ids and matching explicit parallel ids. For ae-scripting, first
-   add/verify a typed family that exposes real mutating typed tools; current
-   blocked live-lane entries have no supported family matches.
+parallel-scoped attempt accepted none. Next work should stay bounded: pick one
+new generated-only typed family, add its mutating tool hints/read-back/semantic
+smoke first, then requeue only tiny explicit ids through
+`--resolve-live-lanes-before-parallel`. Recommended first proof candidates:
+`text-to-keys-generated-only` only if Source Text keyframe read-back is proven,
+or `expression-controller-generated-only` only after controller/effect/property
+path semantics are made explicit. Keep `tool-changeallnames` and
+`tool-batchparent` on their separate blockers.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -260,6 +263,18 @@ outside the runner out of scope.
 - Parallel child worktrees remain proposal-only. Even after pre-resolution,
   live-gated acceptance still requires parent-owned serial live proof/rerun
   policy; child worktrees must not run live CEP/AE.
+- ae-scripting read-only `suggestedTools` must not synthesize a production lane.
+  A future family must require explicit mutating typed tools, generated-only
+  fixtures, read-back, semantic verification, cleanup, and a narrow live lane
+  before any real candidate requeue.
+- Existing typed tools are only partial for the 17 unsupported snippets:
+  `create_shape_layer`, `set_expression`, `set_property_keyframes`,
+  `add_effect`, `set_effect_property`, `create_null_layer`,
+  `set_layer_transform`, `set_comp_properties`, and marker tools can support
+  future contracts, but do not cover source-exact nested shape traversal,
+  expression enable/disable scans, comp-marker copy, solid-source resizing,
+  recursive comp upscale, paint brush splitting, random transforms, or manual
+  hard-coded shape duplication.
 
 ## Validation
 
@@ -322,53 +337,16 @@ outside the runner out of scope.
   project intent memory, plan classification/repair, semantic verification,
   reliability validation, ChatGPT connector, provider API, prompt optimization,
   bridge-only, and full smoke test.
-- Controlled aturtur intake validation passed:
-  `node orchestrator/run-generic-repo-auto-intake.mjs --repo https://github.com/aturtur/after-effects-scripts --run-id full-intake-aturtur --context-percent 0 --parallel-candidate-limit 8 --compact-json`;
-  compact artifact audit for inventory/status/proof/handoff/ledger/parallel
-  plan; read-only subagent audits for license, ledger schema/buckets, and
-  validation style; `node orchestrator/run-generic-repo-full-intake.mjs --ledger .codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json --run-id full-intake-aturtur --plan-parallel-candidate-worktrees --parallel-candidate-limit 8 --compact-json --context-percent 5`;
-  compact status and ledger summary. The wave was not run because there were
-  zero queued/selected candidate ids.
-- Controlled ae-scripting intake validation passed:
-  `git ls-remote https://github.com/ae-scripting/scripting-snippets HEAD`;
-  `node orchestrator/run-generic-repo-auto-intake.mjs --repo https://github.com/ae-scripting/scripting-snippets --run-id full-intake-ae-scripting-snippets --context-percent 0 --parallel-candidate-limit 2 --compact-json`;
-  `node orchestrator/run-generic-repo-full-intake.mjs --ledger .codex-runtime/sdk/generic-repo-importer/ae-scripting-scripting-snippets-55904818-intake/queue-ledger.json --run-id full-intake-ae-scripting-snippets --plan-parallel-candidate-worktrees --parallel-candidate-limit 2 --compact-json --context-percent 0`;
-  `node orchestrator/full-intake-ledger-summary.mjs --ledger .codex-runtime/sdk/generic-repo-importer/ae-scripting-scripting-snippets-55904818-intake/queue-ledger.json --compact`;
-  `node orchestrator/full-intake-status.mjs --run-id full-intake-ae-scripting-snippets --compact --event-limit 8 --batch-limit 1`;
-  `node orchestrator/full-intake-proof.mjs --run-id full-intake-ae-scripting-snippets --compact-json`;
-  generated `License` artifact review. The refreshed run reports
-  `CC-BY-3.0`, `queued=23`, selected ids
-  `tool-batchparent, tool-changeallnames`, and proof sha
-  `6d707356cce4fdc2355958e9644364f539f8f3ec13ad5e80deaba9187ce5791d`.
-  No scoped wave, child worktree, candidate execution, controlled merge, raw
-  JSX copy, or live validation ran.
-- CC-BY attribution implementation validation passed:
-  `node --check orchestrator/run-generic-repo-auto-intake.mjs`;
-  `node --check scripts/sdk-generic-repo-auto-intake-smoke.js`;
-  `node scripts/sdk-generic-repo-auto-intake-smoke.js`;
-  `node scripts/sdk-generic-repo-full-intake-smoke.js`;
-  `node scripts/sdk-generic-repo-importer-command-smoke.js`;
-  `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`;
-  `node scripts/solution-library-validation-smoke.js`;
-  `node scripts/solution-registry-smoke.js`;
-  `node scripts/solution-retrieval-smoke.js`.
-- Parallel proof helper fix validation passed:
-  `node --check orchestrator/full-intake-proof.mjs`;
-  `node --check orchestrator/parallel-candidate-worktrees.mjs`;
-  `node --check scripts/sdk-generic-repo-full-intake-smoke.js`;
-  `node orchestrator/full-intake-proof.mjs --run-id full-intake-aturtur --compact-json`;
-  `node scripts/sdk-generic-repo-full-intake-smoke.js`;
-  `node scripts/sdk-generic-repo-importer-command-smoke.js`;
-  `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`;
-  `node scripts/sdk-generic-repo-auto-intake-smoke.js`;
-  `node scripts/solution-library-validation-smoke.js`;
-  `node scripts/solution-registry-smoke.js`;
-  `node scripts/solution-retrieval-smoke.js`;
-  standard non-live smoke suite: provider contract, solution candidate,
-  promotion, project intent memory, plan classification/repair, semantic
-  verification, reliability validation, ChatGPT connector, provider API,
-  prompt optimization, bridge-only, and full smoke test. `git diff --check`
-  passed with only normal Windows LF-to-CRLF working-copy warnings.
+- Controlled aturtur and ae-scripting intake validation passed through compact
+  auto-intake/full-intake/status/proof/ledger checks. Aturtur stayed
+  reference-only with zero selected ids; ae-scripting reported `CC-BY-3.0`,
+  `queued=23`, selected plan-only ids `tool-batchparent,tool-changeallnames`,
+  and no scoped wave, child worktree, source merge, raw JSX copy, or live
+  validation.
+- CC-BY attribution and parallel proof helper validation passed with touched
+  `node --check`, Full Intake/auto-intake/importer/supervisor/solution smokes,
+  compact proof checks, standard non-live smoke suite, and `git diff --check`
+  with only normal Windows LF/CRLF warnings.
 - ae-scripting parallel-scoped attempt validation passed:
   `node --check orchestrator/parallel-candidate-worktrees.mjs`;
   `node --check orchestrator/run-generic-repo-auto-intake.mjs`;
@@ -397,6 +375,11 @@ outside the runner out of scope.
   Configured `npm.cmd run check:rules` was attempted and failed on unrelated
   `M167 SDK operation envelope core extraction smoke` expecting
   `run-write-capable-scaffold.mjs` to import `createOperationEnvelopeHelpers`.
+- AUX ae-scripting family design validation: read-only preflight used compact
+  status/proof/ledger only, inspected exactly the 17 named ledger entries and
+  source snippets, confirmed stale `running` state has no related runner
+  processes, and made no code, queue, requeue, child-worktree, live CEP/AE,
+  Local/Ollama, dependency, push, or PR changes.
 - Not run by design: Local/Ollama, fallback providers, broad/default CEP smoke,
   broad real queue, `max-items > 1`, dependency/package changes, full runtime
   reports, push, PR, GitHub automation, raw JSX copy, and source checkout writes
