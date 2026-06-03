@@ -10724,6 +10724,113 @@
         "Do not use raw ExtendScript, script runners, generic property writes, or selection side effects to implement the trim.",
         "A future mutating variant requires a separately accepted layer-timing typed tool, explicit dry-run evidence, confirmation, idempotency, checkpoint/edit-session protection, and post-mutation read-back."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "sortbyposition-typed-plan",
+      "title": "Sort By Position Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "position",
+        "sort",
+        "layer-order",
+        "selected-layers",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool-gap",
+        "read-only"
+      ],
+      "intent": {
+        "summary": "Inspect selected layer positions for a sort-by-position request and fail closed unless a reviewed layer stack reordering typed tool is available.",
+        "appliesWhen": [
+          "The user asks to run sortByPosition, sort selected layers by Position, or reorder selected layers based on transform Position values.",
+          "Current selected-layer position evidence is needed before deciding whether a future layer stack reordering tool could safely apply the request."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedLayers",
+          "type": "layer-selection",
+          "required": true,
+          "description": "At least two selected layers with current typed evidence for layer indices, names, and numeric transform Position values."
+        },
+        {
+          "name": "sortByPositionIntent",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed comparator policy, such as x ascending, y ascending, y then x, or another explicit axis/order rule."
+        }
+      ],
+      "targetAssumptions": [
+        "The active composition and selected layers are inspected before any ordering decision.",
+        "The current safe adaptation is read-only and reports the typed-tool gap for actual layer stack reordering.",
+        "A future mutating variant must reorder only the reviewed selected-layer set and read the same comp/layers back.",
+        "Source-exact comparator behavior, selection side effects, locked or shy layer handling, parent/child stack repair, raw ExtendScript, and native UI state changes remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/sortbyposition-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and selected layer Position values, compute a reviewed ordering proposal, and report the missing mutating layer-reorder tool instead of changing layer order.",
+        "steps": [
+          "Run get_active_comp to bind active comp identity, frame rate, duration, current time, and selected-layer count.",
+          "Run get_selected_layers to bind at least two current selected layers from typed evidence.",
+          "Run get_layer_details for selected layers when detailed transform Position evidence is needed.",
+          "Compute and report the proposed sort order from the reviewed comparator policy and current Position values.",
+          "Fail closed unless a separately accepted layer stack reordering typed tool is available."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies at least two selected layers with concrete layer indices and names.",
+          "Position evidence lists numeric transform Position values for every selected layer in the proposed order.",
+          "The plan reports the reviewed comparator and proposed order but does not mutate layer stack order with current tools.",
+          "No raw ExtendScript, script execution, selection mutation, layer transform mutation, source relink, comp mutation, or render queue mutation appears in the plan."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-sortbyposition generic repository importer as advisory selected-layer position-ordering gap coverage.",
+          "The detached child worktree did not contain sortByPosition.jsx, so scope came from the child-run wrapper, candidate name, existing read-only selected-layer position evidence tools, and fail-closed layer-order semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-03",
+          "from": "generic-repo-importer-tool-sortbyposition",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the selected-layer position sorting intent behind ae-scripting/scripting-snippets sortByPosition.jsx into read-only typed evidence guidance; no source JSX copied. The detached child worktree did not contain the source JSX and no accepted mutating layer stack reordering typed tool was found, so actual layer order mutation remains fail-closed until a reviewed reorder_layers-style contract with comparator evidence, idempotency and read-back exists. Source-exact comparator behavior, selection side effects, locked or shy layer handling, parent/child stack repair, raw ExtendScript, native UI state changes, and exact source semantics require separate typed-tool contracts; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation and must not mutate layer order with current tools.",
+        "Use this recipe to gather current selected-layer Position evidence and produce a targeted typed-tool gap when the user requests sortByPosition behavior.",
+        "Require an explicit comparator policy before computing the proposed order; do not infer source-exact ordering from the candidate name alone.",
+        "Do not use raw ExtendScript, script runners, generic property writes, transform mutations, or selection side effects to implement the reorder.",
+        "A future mutating variant requires a separately accepted layer stack reordering typed tool, explicit dry-run evidence, confirmation, idempotency, checkpoint/edit-session protection, and post-mutation read-back."
+      ]
     }
   ]
 }

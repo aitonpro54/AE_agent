@@ -25,6 +25,7 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
+- [x] AUX parallel candidate worktrees architecture (fi-sortpos-r1-20260603): parent reducer serially handled accepted proposals [tool-sortbyposition] and rejected [none].
 - [x] AUX targeted recovery accepted `tool-trimfirsttosecond` in scoped run
   `fi-trimfirst2-r1-20260603`: parent reducer selected only this named queued
   candidate, accepted a read-only/fail-closed layer-timing advisory recipe, and
@@ -200,6 +201,7 @@ outside the runner out of scope.
 
 ## Decision Log
 
+- 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees produce proposals only, while the parent owns ledger, registry, plan, handoff, live rerun, and commits (fi-sortpos-r1-20260603).
 - 2026-06-03: `tool-trimfirsttosecond` was selected as the single named queued
   candidate for scoped recovery after `tool-makeclosest16_headless`. Parent
   reducer accepted only a read-only/fail-closed advisory recipe because current
@@ -234,6 +236,7 @@ outside the runner out of scope.
 
 ## Validation
 
+| AUX parallel candidate worktrees architecture (fi-sortpos-r1-20260603) | Required to prove opt-in parallel candidate worktrees plus a serial parent reducer without running the real queue. | Accepted 1, rejected 0; central writes stayed parent-owned, live rerun stayed serial, and unplanned paths were rejected. |
 - AUX `tool-trimfirsttosecond` targeted recovery validation passed: compact
   scoped proof for `fi-trimfirst2-r1-20260603` was contract-complete with
   reducer status `parallel_reducer_completed`, accepted
