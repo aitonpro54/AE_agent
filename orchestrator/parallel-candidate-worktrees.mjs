@@ -858,6 +858,7 @@ async function runChildQueueSupervisor({
       batchRunId,
       "--context-percent",
       String(contextPercent),
+      "--parallel-child-proposal",
       "--compact-json",
     ],
     {

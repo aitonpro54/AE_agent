@@ -43,6 +43,9 @@ const SHARED_OWNER_PATHS = Object.freeze([
   "plans/target-app-execplan.md",
   ".codex/handoff.md",
 ]);
+const PARALLEL_CHILD_SHARED_OWNER_PATHS = Object.freeze([
+  "registry/solutions.json",
+]);
 const DEPENDENCY_PATHS = new Set([
   "package.json",
   "package-lock.json",
@@ -102,7 +105,15 @@ or creates PRs.
 `;
 
 const VALUE_OPTIONS = new Set(["context-percent", "ledger", "max-items", "report-dir", "run-id", "target-repo"]);
-const BOOLEAN_OPTIONS = new Set(["batch", "compact-json", "help", "json", "plan-only", "prepare-only"]);
+const BOOLEAN_OPTIONS = new Set([
+  "batch",
+  "compact-json",
+  "help",
+  "json",
+  "parallel-child-proposal",
+  "plan-only",
+  "prepare-only",
+]);
 
 class QueueSupervisorError extends Error {
   constructor(message, report = null) {
@@ -463,8 +474,12 @@ function sortedUnique(values) {
   return Array.from(new Set(values.map(normalizeRepoPath).filter(Boolean))).sort();
 }
 
-function sharedOwnershipRecords() {
-  return SHARED_OWNER_PATHS.map((repoPath) => ({
+function sharedOwnerPathsForOptions(options = {}) {
+  return options.parallelChildProposal === true ? PARALLEL_CHILD_SHARED_OWNER_PATHS : SHARED_OWNER_PATHS;
+}
+
+function sharedOwnershipRecords(options = {}) {
+  return sharedOwnerPathsForOptions(options).map((repoPath) => ({
     owner: "serial-merge/shared-owner",
     path: repoPath,
     reason: "Shared tracked coordination file; never merge in parallel candidate batches.",
@@ -472,7 +487,7 @@ function sharedOwnershipRecords() {
   }));
 }
 
-function phasePlan(entry) {
+function phasePlan(entry, options = {}) {
   return {
     parallelizablePreparation: [
       {
@@ -501,7 +516,7 @@ function phasePlan(entry) {
       {
         name: "controlled_merge",
         parallelizable: false,
-        sharedOwnerPaths: SHARED_OWNER_PATHS,
+        sharedOwnerPaths: sharedOwnerPathsForOptions(options),
       },
       { name: "non_live_validation", parallelizable: false },
       {
@@ -599,9 +614,9 @@ function targetPolicyBlockers(ledger, changedPaths) {
   return policyBlockers;
 }
 
-function buildRunItem(entry, index, ledger) {
+function buildRunItem(entry, index, ledger, options = {}) {
   const liveLane = liveLaneEvidence(entry.liveGate);
-  const uniquePaths = sortedUnique([plannedRecipePath(entry), ...entry.implementation.plannedPaths, ...SHARED_OWNER_PATHS]);
+  const uniquePaths = sortedUnique([plannedRecipePath(entry), ...entry.implementation.plannedPaths, ...sharedOwnerPathsForOptions(options)]);
   return {
     index,
     candidateId: entry.id,
@@ -619,8 +634,8 @@ function buildRunItem(entry, index, ledger) {
     },
     suggestedTools: [...entry.suggestedTools].sort(),
     plannedPaths: uniquePaths,
-    sharedOwnerPaths: sharedOwnershipRecords(),
-    phases: phasePlan(entry),
+    sharedOwnerPaths: sharedOwnershipRecords(options),
+    phases: phasePlan(entry, options),
     executionFlags: {
       childRunsCreated: false,
       controlledMergeApplied: false,
@@ -722,8 +737,8 @@ function selectQueuedRankedCandidatesForBatch(ledger, maxItems) {
   return { selected: candidates.slice(0, maxItems), unrankedSafeCandidates };
 }
 
-function classifyBatchCandidate(entry, index, ledger) {
-  const runItem = buildRunItem(entry, index, ledger);
+function classifyBatchCandidate(entry, index, ledger, options = {}) {
+  const runItem = buildRunItem(entry, index, ledger, options);
   const liveLane = liveLaneEvidence(entry.liveGate);
   const safeClassification = SAFE_CLASSIFICATIONS.has(entry.classification);
   const safetyBlockers = candidateNonLiveSafetyBlockers(entry, ledger);
@@ -1207,7 +1222,7 @@ function runBatch(options, cwd = process.cwd()) {
   const context = contextBlockers(options, { requireKnown: true });
   const changedPathsBefore = gitChangedPaths(targetRepo);
   const selection = selectQueuedRankedCandidatesForBatch(ledger, maxItems);
-  const items = selection.selected.map((entry, index) => classifyBatchCandidate(entry, index + 1, ledger));
+  const items = selection.selected.map((entry, index) => classifyBatchCandidate(entry, index + 1, ledger, options));
   const eligibleItems = items.filter((item) => item.eligibleForImport);
   const policyBlockers = [...context.blockers, ...targetPolicyBlockers(ledger, changedPathsBefore)];
   const prepareOnly = options.prepareOnly === true;
@@ -1401,7 +1416,7 @@ function buildPlan(options, cwd = process.cwd()) {
   const context = contextBlockers(options);
   const changedPaths = gitChangedPaths(targetRepo);
   const selection = selectQueuedSafeCandidates(ledger, maxItems);
-  const runList = selection.selected.map((entry, index) => buildRunItem(entry, index + 1, ledger));
+  const runList = selection.selected.map((entry, index) => buildRunItem(entry, index + 1, ledger, options));
   const candidateSafetyBlockers = selection.selected.flatMap((entry) => candidateBlockers(entry, ledger));
   const policyBlockers = targetPolicyBlockers(ledger, changedPaths);
 

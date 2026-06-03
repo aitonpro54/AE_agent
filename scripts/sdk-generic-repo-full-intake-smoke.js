@@ -279,6 +279,14 @@ function writeFakeCodex(root) {
       '    console.error("missing shared smoke append-only boundary");',
       '    process.exit(16);',
       '  }',
+      '  if (process.env.FAKE_CODEX_ASSERT_NO_SHARED_OWNER_WRITES === "1") {',
+      '    const forbidden = ["scripts/solution-library-validation-smoke.js", "plans/target-app-execplan.md", ".codex/handoff.md"];',
+      '    const leaked = forbidden.filter((item) => contextPack.plannedPaths.includes(item));',
+      '    if (leaked.length > 0) {',
+      '      console.error(`parallel child planned parent-owned paths: ${leaked.join(", ")}`);',
+      '      process.exit(17);',
+      '    }',
+      '  }',
       '  const relative = process.env.FAKE_CODEX_WRITE_PATH || intent.plannedPaths.find((item) => /\\.js$/i.test(item)) || intent.plannedPaths[0];',
       '  if (!relative) {',
       '    console.error("missing planned path");',
@@ -1319,7 +1327,7 @@ function assertParallelChildExecutionProducesAcceptedFileProposals() {
       registryPath,
       "pce",
       1,
-      { ...fakeCodexEnv(binDir), FAKE_CODEX_HUGE_STDOUT: "1" },
+      { ...fakeCodexEnv(binDir), FAKE_CODEX_ASSERT_NO_SHARED_OWNER_WRITES: "1", FAKE_CODEX_HUGE_STDOUT: "1" },
       ["--parallel-candidate-worktrees", "--parallel-candidate-limit", "2"]
     );
     assert(result.stdout.length < 64 * 1024, `parallel child output should stay compact, got ${result.stdout.length}`);

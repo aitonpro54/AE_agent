@@ -87,8 +87,8 @@ Historical milestone detail through 2026-05-31 is archived at
 - [x] AUX text-to-keys proof/hints/import: added scoped registry, Source Text
   read-back/semantic smoke, compact ledger hints, and typed recipe binding.
 - [x] AUX importer/parallel packaging fixes: importer recognizes legacy
-  function assignments; shared smoke is parent-owned by default and rewrites
-  fail closed.
+  function assignments; parallel child runs no longer receive parent-owned
+  smoke/plan/handoff paths, and shared smoke rewrites fail closed.
 
 ## Current State
 
@@ -177,12 +177,10 @@ Architecture update on 2026-06-03:
 
 ## Next Milestone
 
-`full-intake-ae-scripting-snippets` still has 23 queued candidates; the two-id
-parallel-scoped attempt accepted none. Next bounded step requires explicit
-approval for the generated-only OpenAI CLI text-to-keys live lane before any
-scoped requeue. Alternative proof remains `expression-controller-generated-only`
-only after controller/effect/property path semantics are explicit. Keep
-`tool-changeallnames` and `tool-batchparent` on their separate blockers.
+`full-intake-ae-scripting-snippets` now has `queued=21`, `completed=1`, and
+`failed_import=2`. Next bounded step is scoped `tool-debughelper` after the
+parallel-child parent-owned path isolation fix. Keep `tool-changeallnames` and
+`tool-batchparent` on their separate blockers.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -286,27 +284,18 @@ outside the runner out of scope.
 - Legacy JSX assignment functions are valid importer candidates when already
   ledger-selected; shared smoke child edits are forbidden by default, with
   explicit structured append-only support for reviewed static proposals.
+- In parallel child proposal mode, queue-supervisor omits parent-owned
+  `scripts/solution-library-validation-smoke.js`, plan, and handoff paths from
+  child allowed write paths; registry remains the structured parent-reduced
+  merge path. Ordinary serial supervisor output keeps the full shared-owner
+  list.
 
 ## Validation
 
-- For each Selection candidate in the retry slice, the strict runner completed
-  compact status/proof/ledger preflights, lane proof, importer, controlled merge,
-  non-live validation, generated-only live rerun, docs/handoff finalization, and
-  commit with `unplannedPathCount=0`.
-- Final compact proof:
-  `candidateId=tool-selection-select-unparented-layers`, `status=completed`,
-  `contractComplete=true`, `changedPathCount=4`, `unplannedPathCount=0`,
-  proof sha `7054bc5645c26382f6cae189f71227c87b44ad6685c8ab3b6a7334a88d90da99`.
-- Final compact ledger summary: `entries=154`, `completed=69`, `queued=0`,
-  `failed_import=11`, `blocked_live_lane_synthesis_incomplete=9`,
-  `blocked_or_skipped=64`, `Queued live_lane_needed=0`.
-- Additional retrieval-fix validation passed:
-  `git diff --check`;
-  `node --check mcp-server/solution-library.js`;
-  `node --check scripts/solution-library-validation-smoke.js`;
-  `node scripts/solution-registry-smoke.js`;
-  `node scripts/solution-library-validation-smoke.js`;
-  `node scripts/solution-retrieval-smoke.js`.
+- Historical Selection/retrieval validation remains summarized: strict runner
+  completed through proof/import/merge/non-live/live/docs/commit with
+  `unplannedPathCount=0`; final kyletmartinez ledger was `completed=69`,
+  `queued=0`, and retrieval-fix registry/library/retrieval smokes passed.
 - Parallel Tool Intake V1 validation passed:
   `node --check orchestrator/parallel-candidate-worktrees.mjs`;
   `node --check orchestrator/run-generic-repo-full-intake.mjs`;
@@ -398,6 +387,9 @@ outside the runner out of scope.
 - AUX importer/parallel packaging validation passed: touched-file checks,
   `git diff --check` with normal LF/CRLF warnings,
   importer/queue-supervisor smokes, and full-intake smoke.
+- AUX parallel child parent-owned path isolation validation passed:
+  touched-file `node --check`, `git diff --check` with normal LF/CRLF warnings,
+  full-intake smoke, queue-supervisor smoke, and importer-supervisor smoke.
 - Not run by design: Local/Ollama, fallback providers, broad/default CEP smoke,
   broad real queue, `max-items > 1`, dependency/package changes, full runtime
   reports, push, PR, GitHub automation, raw JSX copy, and source checkout writes
