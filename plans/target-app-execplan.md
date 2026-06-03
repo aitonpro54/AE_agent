@@ -25,6 +25,7 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
+- [x] AUX parallel candidate worktrees architecture (full-intake-current-repo-max-autonomy-debughelper4): parent reducer serially handled accepted proposals [tool-debughelper] and rejected [none].
 - [x] Historical milestones 1-32: archived/summarized baseline, provider work,
   strict-runner hardening, context-budget tuning, Selection lane prep, and
   completed Selection candidates through disabled/guide layers.
@@ -188,6 +189,7 @@ outside the runner out of scope.
 
 ## Decision Log
 
+- 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees produce proposals only, while the parent owns ledger, registry, plan, handoff, live rerun, and commits (full-intake-current-repo-max-autonomy-debughelper4).
 - Selection imports are advisory typed-plan coverage only. They use current
   active-comp evidence, `set_layer_selection`, and `get_selected_layers`
   read-back. Source-exact native UI semantics, cross-comp/Project panel
@@ -292,6 +294,7 @@ outside the runner out of scope.
 
 ## Validation
 
+| AUX parallel candidate worktrees architecture (full-intake-current-repo-max-autonomy-debughelper4) | Required to prove opt-in parallel candidate worktrees plus a serial parent reducer without running the real queue. | Accepted 1, rejected 0; central writes stayed parent-owned, live rerun stayed serial, and unplanned paths were rejected. |
 - Historical Selection/retrieval validation remains summarized: strict runner
   completed through proof/import/merge/non-live/live/docs/commit with
   `unplannedPathCount=0`; final kyletmartinez ledger was `completed=69`,

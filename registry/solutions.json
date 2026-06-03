@@ -9138,6 +9138,117 @@
         "Require get_layer_details read-back for Source Text keyframe count and values.",
         "Do not use this recipe for text animators, range selectors, expression-driven text generation, broad layer scans, raw ExtendScript, source relinking, render queue changes, or exact source JSX semantics."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "debughelper-typed-plan",
+      "title": "Debug Helper Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "debug",
+        "diagnostics",
+        "context",
+        "selected-layers",
+        "selected-properties",
+        "property-paths",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool",
+        "read-only"
+      ],
+      "intent": {
+        "summary": "Inspect active-comp, selected-layer, and selected-property debug context with typed read tools only.",
+        "appliesWhen": [
+          "The user asks for a debug helper, selected-layer/property diagnostics, property paths, match names, values, keyframe state, expression state, or compact context for a later plan.",
+          "The requested workflow is inspection-only and can be satisfied from current typed read evidence."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "debugScope",
+          "type": "string",
+          "required": false,
+          "description": "Optional requested read-only scope such as active comp, selected layers, selected properties, expressions, keyframes, or layer details."
+        },
+        {
+          "name": "selectedContext",
+          "type": "object",
+          "required": false,
+          "description": "Current typed evidence returned by get_active_comp, get_selected_layers, get_selected_properties, or get_layer_details."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow is read-only and reports only current typed-tool evidence.",
+        "Layer details are requested only for concrete layers identified by current active-comp or selected-layer/property evidence.",
+        "Unavailable fields are reported as unavailable instead of inferred from hidden AE state.",
+        "Layers, properties, expressions, keyframes, selection state, render queue items, project items, and project files are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/debughelper-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_selected_properties",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp, selected layer, and selected property context with typed read tools only, then report exact returned evidence and typed-tool gaps.",
+        "steps": [
+          "Run get_active_comp to capture active comp identity, current time, duration, frame rate, selected-layer count, and basic layer context.",
+          "Run get_selected_layers when selected layer identity, indices, names, types, timing, parent/source hints, or ordering are requested.",
+          "Run get_selected_properties with includeValues:true and includeExpressions:true when selected property paths, values, keyframe state, or expression state are requested.",
+          "Run get_layer_details only for concrete layers identified by current typed evidence and only when deeper read-back is needed.",
+          "Report unavailable fields explicitly instead of inferring hidden AE state.",
+          "Fail closed when source-exact UI output, hidden property traversal, broad project scans, raw ExtendScript, console logging side effects, persistent debug artifacts, or mutation is required."
+        ],
+        "expectedEvidence": [
+          "The report cites active comp identity or offline/unavailable state from get_active_comp.",
+          "Selected layer diagnostics cite only layer indices, names, types, timing, parent/source hints, or ordering returned by typed tools.",
+          "Selected property diagnostics cite only layerIndex, propertyPath, value shape, keyframe/animated state, expression text, and expression-enabled state returned by typed tools.",
+          "Layer details are limited to current evidence-backed layers.",
+          "No mutating tool, raw ExtendScript, project artifact creation, selection change, property edit, keyframe edit, expression edit, render queue edit, or project-item mutation appears in the plan."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-debughelper generic repository importer as advisory read-only typed diagnostic coverage.",
+          "The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, existing typed read tools, and fail-closed diagnostic semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-03",
+          "from": "generic-repo-importer-tool-debughelper",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the diagnostic idea behind ae-scripting/scripting-snippets debughelper.jsx into existing typed read tools as read-only debug helper guidance; no source JSX copied. The recipe uses get_active_comp, get_selected_layers, get_selected_properties, and optional get_layer_details, and remains fail-closed for source-exact UI output, hidden property traversal, broad project scans, console logging side effects, persistent debug artifacts, raw ExtendScript, and mutations. Parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses Agent plan validation when used in planning context.",
+        "Use this recipe only for read-only diagnostics; do not request allowMutations or checkpoint protection for this recipe itself.",
+        "Require current typed evidence before reporting selected layers or selected properties; do not infer targets from prior chat context.",
+        "Use get_layer_details only for concrete evidence-backed layers and only when deeper read-back is requested.",
+        "Do not use this recipe for expression edits, property edits, keyframe edits, selection changes, marker/text debug writes, source relinking, render queue changes, raw ExtendScript, broad hidden traversal, or exact source JSX semantics."
+      ]
     }
   ]
 }
