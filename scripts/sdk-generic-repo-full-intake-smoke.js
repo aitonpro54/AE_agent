@@ -287,6 +287,10 @@ function writeFakeCodex(root) {
       '    const smokePath = path.join(cwd, "scripts", "solution-library-validation-smoke.js");',
       '    fs.appendFileSync(smokePath, `\\n// fake child smoke append ${relative.replace(/[^a-zA-Z0-9_-]+/g, "-")}\\n`, "utf8");',
       '  }',
+      '  if (process.env.FAKE_CODEX_OVERWRITE_SMOKE === "1") {',
+      '    const smokePath = path.join(cwd, "scripts", "solution-library-validation-smoke.js");',
+      '    fs.writeFileSync(smokePath, `"use strict";\\n// unsafe smoke rewrite ${relative.replace(/[^a-zA-Z0-9_-]+/g, "-")}\\n`, "utf8");',
+      '  }',
       '  if (process.env.FAKE_CODEX_HUGE_STDOUT === "1") {',
       '    console.log("H".repeat(512 * 1024));',
       '    console.error("E".repeat(256 * 1024));',
@@ -1344,6 +1348,39 @@ function assertParallelChildExecutionProducesAcceptedFileProposals() {
     const smokeText = fs.readFileSync(path.join(fixture.target, "scripts", "solution-library-validation-smoke.js"), "utf8");
     assert(smokeText.includes("fake child smoke append scripts-imported-tools-parallel-child-alpha-js"));
     assert(smokeText.includes("fake child smoke append scripts-imported-tools-parallel-child-beta-js"));
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertParallelChildRejectsNonAppendSharedSmokeRewrite() {
+  const fixture = createFixture("pcsr");
+  try {
+    commitLargeSolutionSmoke(fixture);
+    const binDir = writeFakeCodex(fixture.root);
+    const candidate = entry({
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "not_required_for_fixture" },
+      implementation: {
+        sliceId: "fixture-parallel-child-smoke-rewrite",
+        plannedPaths: ["scripts/imported-tools/parallel-child-smoke-rewrite.js"]
+      },
+      queueRank: 1
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [candidate]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const output = parseJson(runFullIntakeFixture(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "pcsr",
+      1,
+      { ...fakeCodexEnv(binDir), FAKE_CODEX_OVERWRITE_SMOKE: "1" },
+      ["--parallel-candidate-worktrees", "--parallel-candidate-limit", "1"]
+    ));
+    assert.strictEqual(output.status, "parallel_proposals_blocked");
+    assert.match(output.parallel.reducer.blocked[0].reason, /parallel-child-smoke-not-append-only/);
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);
@@ -3101,6 +3138,7 @@ function main() {
   assertParallelProposalRejectGates();
   assertParallelReducerSeriallyAppliesIndependentProposals();
   assertParallelChildExecutionProducesAcceptedFileProposals();
+  assertParallelChildRejectsNonAppendSharedSmokeRewrite();
   assertParallelReducerRefusesDirtyCentralTree();
   assertParallelContextBudgetStopsBeforeNewWork();
   assertCompletedCandidateAndAutoLane();

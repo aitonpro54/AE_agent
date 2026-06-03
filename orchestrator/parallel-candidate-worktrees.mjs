@@ -674,6 +674,9 @@ function structuredChangesFromChild({ candidate, changedPaths, targetRepo, workt
   const smokeEntry = changedPaths.includes("scripts/solution-library-validation-smoke.js")
     ? smokeEntryAddedByChild({ candidate, targetRepo, worktreePath })
     : null;
+  if (changedPaths.includes("scripts/solution-library-validation-smoke.js") && !smokeEntry) {
+    throw new Error("parallel-child-smoke-not-append-only:scripts/solution-library-validation-smoke.js");
+  }
   const recipePaths = changedPaths.filter((repoPath) => pathStartsWith(repoPath, "recipes/") && repoPath.endsWith(".md"));
   const recipePath = recipePaths[0] || null;
   const recipe = recipePath
