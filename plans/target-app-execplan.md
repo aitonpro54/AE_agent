@@ -25,7 +25,12 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
-- [x] AUX parallel candidate worktrees architecture (fi-sortpos-r1-20260603): parent reducer serially handled accepted proposals [tool-sortbyposition] and rejected [none].
+- [x] AUX targeted recovery accepted `tool-sortbyposition` in scoped run
+  `fi-sortpos-r1-20260603`: parent reducer selected only this named queued
+  candidate, accepted a read-only/fail-closed selected-layer position ordering
+  advisory recipe, and moved the ae-scripting ledger to `completed=16`,
+  `queued=4`. No `--parallel-all-queued`, raw JSX copy, live CEP/AE mutation,
+  Local/Ollama, fallback provider, dependency change, push, or PR occurred.
 - [x] AUX targeted recovery accepted `tool-trimfirsttosecond` in scoped run
   `fi-trimfirst2-r1-20260603`: parent reducer selected only this named queued
   candidate, accepted a read-only/fail-closed layer-timing advisory recipe, and
@@ -183,16 +188,16 @@ Architecture update on 2026-06-03:
 
 ## Next Milestone
 
-`fi-trimfirst2-r1-20260603` accepted `tool-trimfirsttosecond` after targeted
-scoped recovery. Proof sha:
-`9c0bd384798a7f0930438df92b4122a1e491624681fbfac7469c3c204778db6a`.
-The ledger is now `completed=15`, `queued=5`, `failed_import=4`,
+`fi-sortpos-r1-20260603` accepted `tool-sortbyposition` after targeted scoped
+recovery. Proof sha:
+`f72791ed3164b6889d2660ebbff9cc60485bc0c84180767706203bce8d0e2b7d`.
+The ledger is now `completed=16`, `queued=4`, `failed_import=4`,
 `blocked_live_lane_required=21`, and `blocked_policy=3`.
 
 Next clean work is a separate targeted recovery/triage slice for exactly one
 named queued candidate unless the user explicitly approves a wider scope:
-`tool-keyreverse`, `tool-newtrimmednull`, `tool-planeresolve`,
-`tool-precompselected`, or `tool-sortbyposition`.
+`tool-keyreverse`, `tool-newtrimmednull`, `tool-planeresolve`, or
+`tool-precompselected`.
 Do not rerun `--parallel-all-queued`.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
@@ -201,7 +206,13 @@ outside the runner out of scope.
 
 ## Decision Log
 
-- 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees produce proposals only, while the parent owns ledger, registry, plan, handoff, live rerun, and commits (fi-sortpos-r1-20260603).
+- 2026-06-03: `tool-sortbyposition` was selected as the single named queued
+  candidate after `tool-trimfirsttosecond`. Parent reducer accepted only a
+  read-only/fail-closed selected-layer position ordering recipe because current
+  typed tools can inspect active comp, selected layers, and transform Position
+  values but cannot safely mutate layer stack order; a real sort requires a
+  future narrow `reorder_layers`-style contract with comparator evidence and
+  read-back.
 - 2026-06-03: `tool-trimfirsttosecond` was selected as the single named queued
   candidate for scoped recovery after `tool-makeclosest16_headless`. Parent
   reducer accepted only a read-only/fail-closed advisory recipe because current
@@ -236,7 +247,17 @@ outside the runner out of scope.
 
 ## Validation
 
-| AUX parallel candidate worktrees architecture (fi-sortpos-r1-20260603) | Required to prove opt-in parallel candidate worktrees plus a serial parent reducer without running the real queue. | Accepted 1, rejected 0; central writes stayed parent-owned, live rerun stayed serial, and unplanned paths were rejected. |
+- AUX `tool-sortbyposition` targeted recovery validation passed: compact scoped
+  proof for `fi-sortpos-r1-20260603` was contract-complete with reducer status
+  `parallel_reducer_completed`, accepted `tool-sortbyposition`, proof sha
+  `f72791ed3164b6889d2660ebbff9cc60485bc0c84180767706203bce8d0e2b7d`, and
+  ledger summary moved to `completed=16`, `queued=4`. No JavaScript files were
+  touched, so touched-file `node --check` was not required. Passed:
+  `git diff --check`; solution library/registry/candidate-report/promotion/
+  retrieval smokes; semantic verification; SDK generic repo full-intake,
+  importer-command, and queue-supervisor smokes. Not run by design:
+  Local/Ollama, fallback providers, broad/default CEP smoke, live CEP/AE
+  mutation, dependency changes, push/PR, and raw JSX copy.
 - AUX `tool-trimfirsttosecond` targeted recovery validation passed: compact
   scoped proof for `fi-trimfirst2-r1-20260603` was contract-complete with
   reducer status `parallel_reducer_completed`, accepted
