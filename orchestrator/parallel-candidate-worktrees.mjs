@@ -23,9 +23,6 @@ export const PARALLEL_PROOF_SCHEMA = "generic-repo-full-intake.parallel-candidat
 
 const SHARED_OWNER_PATHS = Object.freeze([
   "registry/solutions.json",
-  "scripts/solution-library-validation-smoke.js",
-  "plans/target-app-execplan.md",
-  ".codex/handoff.md",
 ]);
 const PARENT_ONLY_WRITE_PATHS = new Set([
   "plans/target-app-execplan.md",

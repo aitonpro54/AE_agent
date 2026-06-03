@@ -1222,10 +1222,10 @@ function assertParallelProposalRejectGates() {
     assert.deepStrictEqual(rejectedCodes, [
       "duplicate-recipe-path",
       "duplicate-registry-solution-id",
-      "forbidden-paths",
       "live-rerun-parent-serial-unavailable",
       "missing-proof-hash",
       "stale-base-head",
+      "unplanned-paths",
       "unplanned-paths"
     ].sort());
     const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
@@ -1243,6 +1243,7 @@ function assertParallelReducerSeriallyAppliesIndependentProposals() {
     const first = parallelEntry("tool-parallel-alpha", 1, {
       sourcePath: "Selection/Parallel_Alpha.jsx",
       implementation: {
+        plannedPaths: ["scripts/solution-library-validation-smoke.js"],
         parallelProposal: parallelProposal("recipes/parallel-alpha-typed-plan.md", "parallel-alpha", { smokeEntry: true })
       }
     });
@@ -1318,7 +1319,7 @@ function assertParallelChildExecutionProducesAcceptedFileProposals() {
       registryPath,
       "pce",
       1,
-      { ...fakeCodexEnv(binDir), FAKE_CODEX_APPEND_SMOKE: "1", FAKE_CODEX_HUGE_STDOUT: "1" },
+      { ...fakeCodexEnv(binDir), FAKE_CODEX_HUGE_STDOUT: "1" },
       ["--parallel-candidate-worktrees", "--parallel-candidate-limit", "2"]
     );
     assert(result.stdout.length < 64 * 1024, `parallel child output should stay compact, got ${result.stdout.length}`);
@@ -1340,7 +1341,7 @@ function assertParallelChildExecutionProducesAcceptedFileProposals() {
       assert.strictEqual(proposal.importStatus, "imported_non_live_validated");
       assert.strictEqual(proposal.liveRerunRequired, false);
       assert(proposal.structuredChanges.fileChangePaths.length === 1, "expected one file snapshot per child proposal");
-      assert(proposal.structuredChanges.smokeEntryIds.length === 1, "expected one structured smoke append per child proposal");
+      assert.strictEqual(proposal.structuredChanges.smokeEntryIds.length, 0, "child proposals should leave shared smoke parent-owned");
       assert.strictEqual(fs.existsSync(proposal.worktreePath), false, "child worktree should be removed after reducer");
       const proofPath = path.join(fixture.target, proposal.proofPaths[0]);
       const proof = JSON.parse(fs.readFileSync(proofPath, "utf8"));
@@ -1349,9 +1350,6 @@ function assertParallelChildExecutionProducesAcceptedFileProposals() {
     }
     const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
     assert(ledger.entries.every((item) => item.status === "completed"));
-    const smokeText = fs.readFileSync(path.join(fixture.target, "scripts", "solution-library-validation-smoke.js"), "utf8");
-    assert(smokeText.includes("fake child smoke append scripts-imported-tools-parallel-child-alpha-js"));
-    assert(smokeText.includes("fake child smoke append scripts-imported-tools-parallel-child-beta-js"));
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);
@@ -1384,7 +1382,7 @@ function assertParallelChildRejectsNonAppendSharedSmokeRewrite() {
       ["--parallel-candidate-worktrees", "--parallel-candidate-limit", "1"]
     ));
     assert.strictEqual(output.status, "parallel_proposals_blocked");
-    assert.match(output.parallel.reducer.blocked[0].reason, /parallel-child-smoke-not-append-only/);
+    assert.match(output.parallel.reducer.blocked[0].reason, /solution-library-validation-smoke\.js/);
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);

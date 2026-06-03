@@ -87,7 +87,8 @@ Historical milestone detail through 2026-05-31 is archived at
 - [x] AUX text-to-keys proof/hints/import: added scoped registry, Source Text
   read-back/semantic smoke, compact ledger hints, and typed recipe binding.
 - [x] AUX importer/parallel packaging fixes: importer recognizes legacy
-  function assignments; shared smoke rewrites fail closed and prompt append-only.
+  function assignments; shared smoke is parent-owned by default and rewrites
+  fail closed.
 
 ## Current State
 
@@ -283,8 +284,8 @@ outside the runner out of scope.
   `set_property_keyframes` + `get_layer_details`; source-exact traversal and
   typo/no-call repair remain fail-closed.
 - Legacy JSX assignment functions are valid importer candidates when already
-  ledger-selected; shared smoke child edits must be append-only slices, with
-  prompt/context-pack guidance.
+  ledger-selected; shared smoke child edits are forbidden by default, with
+  explicit structured append-only support for reviewed static proposals.
 
 ## Validation
 
