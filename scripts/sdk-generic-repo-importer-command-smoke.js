@@ -63,6 +63,11 @@ function createTempFixture(name) {
   fs.mkdirSync(target, { recursive: true });
   fs.mkdirSync(source, { recursive: true });
   fs.writeFileSync(path.join(source, "tool.js"), "export function tool() { return true; }\n", "utf8");
+  fs.writeFileSync(
+    path.join(source, "legacyVar.jsx"),
+    "var legacyVar = function(){ return true; }\n",
+    "utf8",
+  );
   fs.mkdirSync(path.join(source, "scripts"), { recursive: true });
   fs.writeFileSync(path.join(source, "scripts", "smoke.js"), "console.log('fixture smoke');\n", "utf8");
   fs.writeFileSync(
@@ -499,6 +504,7 @@ function assertAnalysisArtifacts(output, fixture, runId) {
 
   const toolCandidates = fs.readdirSync(path.join(runRoot, "analysis", "tool-candidates"));
   assert(toolCandidates.some((file) => file.endsWith(".json") && file !== "none.json"));
+  assert(toolCandidates.includes("tool-legacyvar.json"));
   const automationCandidates = fs.readdirSync(path.join(runRoot, "analysis", "automation-candidates"));
   assert(automationCandidates.some((file) => file.endsWith(".json") && file !== "none.json"));
 

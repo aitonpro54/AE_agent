@@ -1490,7 +1490,9 @@ function buildToolCandidates(sourceRoot, inventory) {
       continue;
     }
     const text = readTextIfSmall(path.join(sourceRoot, file.path), file.size);
-    if (!/(?:export\s+function|module\.exports|function\s+\w+|class\s+\w+|run_extendscript|tool)/i.test(text)) {
+    if (
+      !/(?:export\s+function|module\.exports|function\s+\w+|(?:var|let|const)\s+\w+\s*=\s*function\b|class\s+\w+|run_extendscript|tool)/i.test(text)
+    ) {
       continue;
     }
     candidates.push({

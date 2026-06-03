@@ -87,6 +87,8 @@ Historical milestone detail through 2026-05-31 is archived at
 - [x] AUX text-to-keys generated-only proof/hints: added scoped registry,
   Source Text keyframe read-back/semantic smoke, and compact `tool-texttokeys`
   hints requiring `set_property_keyframes` + `get_layer_details`; no requeue.
+- [x] AUX importer legacy JSX discovery fix: importer now recognizes
+  `var/let/const name = function`, unblocking `textToKeys.jsx` analysis.
 
 ## Current State
 
@@ -282,6 +284,8 @@ outside the runner out of scope.
 - Source Text keyframes are a distinct proof family. The `tool-texttokeys`
   runtime ledger hint now names mutating/read-back tools, but source-exact
   traversal and typo/no-call repair remain fail-closed until live proof passes.
+- Legacy JSX assignment functions are valid importer tool candidates when
+  already ledger-selected; raw JSX copy/source-exact semantics remain blocked.
 
 ## Validation
 
@@ -394,6 +398,10 @@ outside the runner out of scope.
   `git diff --check` with normal LF/CRLF warnings only. Fixture-only
   `sdk-generic-repo-full-intake-smoke` printed `ok:true` but hit the 120s
   timeout, so it is not counted as passed; no related runner processes remained.
+- AUX importer legacy JSX discovery validation passed: touched-file checks,
+  `git diff --check` with normal LF/CRLF warnings,
+  `node scripts/sdk-generic-repo-importer-command-smoke.js`, and
+  `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`.
 - Not run by design: Local/Ollama, fallback providers, broad/default CEP smoke,
   broad real queue, `max-items > 1`, dependency/package changes, full runtime
   reports, push, PR, GitHub automation, raw JSX copy, and source checkout writes
