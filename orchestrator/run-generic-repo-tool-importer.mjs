@@ -1488,6 +1488,8 @@ const TOOL_CODE_SHAPE_PATTERN =
 const SCRIPTUI_CONTAINER_PATTERN = /(?:#script\b|\bnew\s+Window\s*\(|\bPanel\b)/i;
 const SCRIPTUI_OBJECT_METHOD_PATTERN =
   /(?:^|[\r\n])\s*[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?\.(?:run|main|buildGUI|buildUI|init|execute)\s*=\s*function\b/i;
+const TOP_LEVEL_AE_EXTENDSCRIPT_PATTERN =
+  /(?:\bapp\.project\b|\bapp\.beginUndoGroup\s*\(|\bapp\.endUndoGroup\s*\(|\bCompItem\b)/i;
 
 function toolCandidateEvidence(text) {
   if (TOOL_CODE_SHAPE_PATTERN.test(text)) {
@@ -1495,6 +1497,9 @@ function toolCandidateEvidence(text) {
   }
   if (SCRIPTUI_CONTAINER_PATTERN.test(text) && SCRIPTUI_OBJECT_METHOD_PATTERN.test(text)) {
     return ["scriptui-object-method-assignment"];
+  }
+  if (TOP_LEVEL_AE_EXTENDSCRIPT_PATTERN.test(text)) {
+    return ["top-level-ae-extendscript"];
   }
   return null;
 }
@@ -1722,6 +1727,18 @@ function expandCandidateIds(candidateIds, candidates) {
   return uniqueValues(candidateIds);
 }
 
+function candidateForRequestedId(candidateById, candidateIdValue) {
+  const direct = candidateById.get(candidateIdValue);
+  if (direct) {
+    return direct;
+  }
+  const hyphenAlias = candidateIdValue.replace(/_/g, "-");
+  if (hyphenAlias !== candidateIdValue) {
+    return candidateById.get(hyphenAlias) || null;
+  }
+  return null;
+}
+
 function buildBatchDefinitions(manifest, batchPlan, candidates) {
   const overrides = Array.isArray(manifest.implementation.plannedPathsPerBatch)
     ? manifest.implementation.plannedPathsPerBatch
@@ -1736,7 +1753,7 @@ function buildBatchDefinitions(manifest, batchPlan, candidates) {
     const id = safeId(sourceBatch.id || `implementation-batch-${index + 1}`, `implementation-batch-${index + 1}`);
     const candidateIds = expandCandidateIds(sourceBatch.candidateIds, candidates);
     for (const candidateIdValue of candidateIds) {
-      if (!candidateById.has(candidateIdValue)) {
+      if (!candidateForRequestedId(candidateById, candidateIdValue)) {
         throw new Error(`implementation-batch-candidate-missing: ${candidateIdValue}`);
       }
     }
@@ -1745,7 +1762,9 @@ function buildBatchDefinitions(manifest, batchPlan, candidates) {
     const plannedPaths =
       sourcePlannedPaths.length > 0
         ? sourcePlannedPaths.map(normalizePlannedPath)
-        : candidateIds.map((candidateIdValue) => defaultPlannedPathForCandidate(candidateById.get(candidateIdValue)));
+        : candidateIds.map((candidateIdValue) =>
+            defaultPlannedPathForCandidate(candidateForRequestedId(candidateById, candidateIdValue)),
+          );
     const normalizedPlannedPaths = uniqueValues(plannedPaths.map(normalizePlannedPath));
     if (normalizedPlannedPaths.length === 0) {
       throw new Error(`batch-without-planned-paths: ${id}`);

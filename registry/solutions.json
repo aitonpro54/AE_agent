@@ -10509,6 +10509,114 @@
         "Use apply_keyframe_ease only with explicit reviewed keyIndices after the keyframe write.",
         "Require a separate typed-tool contract for source-exact path traversal, automatic selected-path discovery, mask/shape path geometry authoring, unsupported value shapes, expression-derived sampling, interpolation/ease preservation, spatial tangent preservation, broad batch mutation, selection side effects or exact source semantics."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "makeclosest16-headless-typed-plan",
+      "title": "Make Closest 16 Headless Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "dimensions",
+        "resize",
+        "width",
+        "height",
+        "nearest-16",
+        "headless",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Resize the verified active composition width and height to reviewed 16-pixel-multiple values.",
+        "appliesWhen": [
+          "The user asks to run makeClosest16_headless, resize the active composition to the closest multiple of 16, or make the current comp dimensions divisible by 16 without opening a UI.",
+          "Composition width/height mutation through typed read-back and set_comp_properties is acceptable instead of raw headless JSX execution or broader resize/crop semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Active or explicit composition whose current width and height are read before computing reviewed nearest-16 target dimensions."
+        },
+        {
+          "name": "nearest16HeadlessPolicy",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed policy: divisible values stay unchanged; remainders below 4 round down; remainders of 4 or greater round up."
+        }
+      ],
+      "targetAssumptions": [
+        "The target composition is read from current active-comp or explicit comp evidence before mutation.",
+        "The safe adaptation computes targetWidth and targetHeight from get_comp_details width/height evidence only.",
+        "Only composition width and height are mutated; unrelated comp properties and all layers are preserved.",
+        "Recursive nested comp resizing, layer/source scaling, crop/reframe decisions, and rendered-pixel preservation remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/makeclosest16-headless-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "set_comp_properties"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read target comp dimensions, compute nearest-16 target width/height, update only changed comp dimensions, then read the same comp back.",
+        "steps": [
+          "Run get_active_comp or bind one explicit comp target before mutation.",
+          "Run get_comp_details for the target comp and record current width, height, pixelAspect, duration, frameRate, bgColor, layer count, work area, and comp item identity.",
+          "Compute targetWidth and targetHeight with the reviewed nearest16HeadlessPolicy; fail closed if dimensions are missing, invalid, unsupported, or would round to non-positive values.",
+          "Run set_comp_properties for the verified comp with only changed width and/or height, verifyAfter:true, and a stable idempotency key.",
+          "Run get_comp_details again for the same comp and fail closed if width/height or any unchanged structural fields do not match expected evidence."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_comp_details shows numeric width and height for the verified target comp.",
+          "Dry-run evidence lists currentWidth, currentHeight, targetWidth, targetHeight, and nearest16HeadlessPolicy.",
+          "The set_comp_properties step updates only width and/or height on the verified target comp.",
+          "Post-run get_comp_details shows dimensions divisible by 16 on the same comp.",
+          "Post-run get_comp_details shows unchanged pixelAspect, duration, frameRate, bgColor, layer count, work area, and comp item identity."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-makeclosest16_headless generic repository importer as advisory typed-plan coverage for active composition width/height nearest-16 resizing.",
+          "Parent review corrected the accepted proposal from layer-position snapping to source-matching composition size semantics; no source JSX was copied."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-03",
+          "from": "generic-repo-importer-tool-makeclosest16_headless",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the active composition width/height nearest-16 resizing idea behind ae-scripting/scripting-snippets makeClosest16_headless.jsx into existing typed tools using get_active_comp, get_comp_details, set_comp_properties, and post-mutation read-back; no source JSX copied. Layer-position snapping, anchor/bounds snapping, recursive nested resizing, layer/source scaling, crop/reframe behavior, rendered-pixel preservation, expression/keyframe edits, broad project scans, raw ExtendScript, and exact source UI behavior require separate typed-tool contracts.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "This recipe changes only the verified composition width and height; it does not move layers, scale sources, crop/reframe content, mutate nested comps, edit expressions/keyframes, or execute native headless JSX.",
+        "Use only the reviewed nearest16HeadlessPolicy in this imported recipe; generalized dimension snapping or alternate rounding thresholds require separate review.",
+        "Do not use this recipe for render queue changes, source relinking, template batch changes, layer cleanup, effect edits, marker edits, selection mutation, broad composition mutation, native headless script execution, or raw ExtendScript."
+      ]
     }
   ]
 }

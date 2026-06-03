@@ -25,6 +25,13 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
+- [x] AUX targeted recovery accepted `tool-makeclosest16_headless` in scoped
+  run `fi-mc16h-r3-20260603`: importer now recognizes top-level AE
+  ExtendScript snippets and resolves underscore ledger ids to hyphen analysis
+  ids without changing the global candidate id format. Parent review corrected
+  the accepted proposal to source-matching active composition width/height
+  resizing through `set_comp_properties`; no raw JSX, live CEP/AE mutation,
+  Local/Ollama, fallback provider, dependency change, push, or PR occurred.
 - [x] AUX all-current-queued fail-closed run
   `full-intake-ae-scripting-all-current-queued-20260603-queued7`:
   explicit `--parallel-all-queued` selected all 7 current queued candidates
@@ -169,15 +176,17 @@ Architecture update on 2026-06-03:
 
 ## Next Milestone
 
-`full-intake-ae-scripting-all-current-queued-20260603-queued7` is closed
-fail-closed with no accepted proposals. Proof sha:
-`a262f8b887f3c8a795ac350dd439a4a73b1353c2e49a35b7a56179acac507e5b`.
-The ledger remains `completed=13`, `queued=7`, `failed_import=4`,
+`fi-mc16h-r3-20260603` accepted `tool-makeclosest16_headless` after targeted
+binding recovery. Proof sha:
+`42a98f1fe0b1070e104af5a39bcbd7b48f45d73a949ecad7ae847773565c28ca`.
+The ledger is now `completed=14`, `queued=6`, `failed_import=4`,
 `blocked_live_lane_required=21`, and `blocked_policy=3`.
 
 Next clean work is a separate targeted recovery/triage slice for one or more
-of the seven blocked queued candidates only when explicitly selected. Do not
-rerun `--parallel-all-queued`.
+of the six remaining queued candidates only when explicitly selected:
+`tool-keyreverse`, `tool-newtrimmednull`, `tool-planeresolve`,
+`tool-precompselected`, `tool-sortbyposition`, and `tool-trimfirsttosecond`.
+Do not rerun `--parallel-all-queued`.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -185,6 +194,13 @@ outside the runner out of scope.
 
 ## Decision Log
 
+- 2026-06-03: `tool-makeclosest16_headless` recovery fixed the concrete
+  `implementation-batch-candidate-missing` causes for this candidate: top-level
+  AE ExtendScript snippets are now analysis candidates, and importer batch
+  binding resolves underscore ledger ids to hyphen analysis ids without
+  changing existing fixture id format. Parent review corrected the accepted
+  child proposal from layer-position snapping to source-matching active comp
+  width/height resizing through `set_comp_properties`.
 - 2026-06-03: Fresh user-approved full-parallel all-current-queued run used
   explicit `--parallel-all-queued`, limit 7, and `--no-commit`. Child lanes
   stayed detached proposal-only and parent reduction stayed the only central
@@ -206,6 +222,19 @@ outside the runner out of scope.
 
 ## Validation
 
+- AUX `tool-makeclosest16_headless` targeted recovery validation passed:
+  touched-file `node --check` for
+  `orchestrator/run-generic-repo-tool-importer.mjs` and
+  `scripts/sdk-generic-repo-importer-command-smoke.js`; compact scoped proof
+  for `fi-mc16h-r3-20260603` was contract-complete with accepted
+  `tool-makeclosest16_headless`; ledger summary moved to `completed=14`,
+  `queued=6`; manual retrieval check surfaced
+  `makeclosest16-headless-typed-plan` first for active comp nearest-16 resize;
+  `git diff --check`; solution library/registry/retrieval smokes; semantic
+  verification; SDK generic repo importer, queue supervisor, and full-intake
+  smokes. Not run by design: Local/Ollama, fallback providers, broad/default
+  CEP smoke, live CEP/AE mutation, dependency changes, push/PR, and raw JSX
+  copy.
 - AUX all-current-queued fail-closed run validation passed: no tracked
   JavaScript files were touched, so touched-file `node --check` was not
   required; compact proof was contract-complete with `unplannedPathCount=0`,

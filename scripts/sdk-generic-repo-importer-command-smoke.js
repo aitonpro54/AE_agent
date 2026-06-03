@@ -84,6 +84,19 @@ function createTempFixture(name) {
     ].join("\n"),
     "utf8",
   );
+  fs.writeFileSync(
+    path.join(source, "topLevelAe.jsx"),
+    [
+      "var activeComp = app.project.activeItem;",
+      "if (activeComp instanceof CompItem) {",
+      '  app.beginUndoGroup("Fixture");',
+      "  activeComp.width = activeComp.width;",
+      "  app.endUndoGroup();",
+      "}",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
   fs.mkdirSync(path.join(source, "scripts"), { recursive: true });
   fs.writeFileSync(path.join(source, "scripts", "smoke.js"), "console.log('fixture smoke');\n", "utf8");
   fs.writeFileSync(
@@ -522,8 +535,11 @@ function assertAnalysisArtifacts(output, fixture, runId) {
   assert(toolCandidates.some((file) => file.endsWith(".json") && file !== "none.json"));
   assert(toolCandidates.includes("tool-legacyvar.json"));
   assert(toolCandidates.includes("tool-guitemplate.json"));
+  assert(toolCandidates.includes("tool-toplevelae.json"));
   const guiTemplateCandidate = readJson(path.join(runRoot, "analysis", "tool-candidates", "tool-guitemplate.json"));
   assert.deepStrictEqual(guiTemplateCandidate.evidence, ["scriptui-object-method-assignment"]);
+  const topLevelAeCandidate = readJson(path.join(runRoot, "analysis", "tool-candidates", "tool-toplevelae.json"));
+  assert.deepStrictEqual(topLevelAeCandidate.evidence, ["top-level-ae-extendscript"]);
   const automationCandidates = fs.readdirSync(path.join(runRoot, "analysis", "automation-candidates"));
   assert(automationCandidates.some((file) => file.endsWith(".json") && file !== "none.json"));
 
