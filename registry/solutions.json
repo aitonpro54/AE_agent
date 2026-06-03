@@ -9364,6 +9364,116 @@
         "Require get_effect_details evidence before setting the Posterize Time frame-rate property.",
         "Do not use this recipe for timeline frame deletion, layer splitting, time remapping, comp frame-rate or duration changes, keyframe shifts, footage interpretation, source replacement, render-output frame dropping, raw ExtendScript, or exact source JSX semantics."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "getlayertype-typed-plan",
+      "title": "Get Layer Type Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "layer-type",
+        "classify-layer",
+        "selected-layers",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool",
+        "read-only"
+      ],
+      "intent": {
+        "summary": "Report selected or explicit layer type evidence from typed read tools only.",
+        "appliesWhen": [
+          "The user asks what type a selected or explicit layer is, or asks to classify layers by text, shape, camera, light, null, adjustment, guide, precomp, footage, solid, or another exposed layer kind.",
+          "The requested workflow is inspection-only and can be satisfied from current active-comp, selected-layer, comp-detail, or layer-detail typed evidence."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "layerTargets",
+          "type": "object",
+          "required": true,
+          "description": "Current selected-layer evidence or explicit comp/layer index evidence identifying the layers to classify."
+        },
+        {
+          "name": "typeEvidenceScope",
+          "type": "string",
+          "required": false,
+          "description": "Optional requested type evidence scope such as selected layers, explicit layer indices, source/precomp hints, switches, or detailed layer-kind fields."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow is read-only and reports only current typed-tool evidence.",
+        "Layer targets are bound from current active-comp, selected-layer, comp-detail, or layer-detail evidence before classification.",
+        "Unavailable layer-kind fields are reported as unavailable instead of inferred from hidden AE state.",
+        "Layers, properties, keyframes, expressions, selection state, sources, render queue items, project items, and project files are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/getlayertype-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_comp_details",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp, selected layer, comp-detail, or layer-detail context with typed read tools only, then report exact returned layer-type evidence and typed-tool gaps.",
+        "steps": [
+          "Run get_active_comp to capture active comp identity and current basic layer context, or use explicit current comp evidence when the target is not active.",
+          "Run get_selected_layers when the request targets selected layers and bind only returned layer indices and names.",
+          "Run get_comp_details when explicit layer indices or names need comp-level layer evidence before classification.",
+          "Run get_layer_details only for concrete layers identified by current typed evidence and only when deeper source, switch, property, effect, or layer-kind fields are needed.",
+          "Classify layers only from returned fields such as type, layerType, matchName, textLayer, shapeLayer, cameraLayer, lightLayer, nullLayer, adjustmentLayer, guideLayer, source/precomp evidence, or equivalent available layer-kind fields.",
+          "Report unavailable fields explicitly instead of inferring hidden AE state.",
+          "Fail closed when source-exact type strings, hidden AE class checks, broad project scans, raw ExtendScript, selection changes, layer conversion, or mutation is required."
+        ],
+        "expectedEvidence": [
+          "The report cites active-comp or explicit comp identity, or offline/unavailable state from typed tools.",
+          "Selected-layer workflows cite selected layer indices and names returned by get_selected_layers.",
+          "Explicit-layer workflows cite comp-detail or layer-detail evidence for each classified layer.",
+          "Every reported type uses only layer-kind, switch, source, or detail fields returned by typed tools.",
+          "No mutating tool, raw ExtendScript, layer conversion, selection change, source relink, property edit, keyframe edit, expression edit, render queue edit, or project-item mutation appears in the plan."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-getlayertype generic repository importer as advisory read-only typed layer-classification coverage.",
+          "The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, existing typed read tools, and fail-closed layer-inspection semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-03",
+          "from": "generic-repo-importer-tool-getlayertype",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the layer-type inspection idea behind ae-scripting/scripting-snippets getLayerType.jsx into existing typed read tools as read-only layer-classification guidance; no source JSX copied. The recipe uses get_active_comp, get_selected_layers, get_comp_details, and optional get_layer_details, and remains fail-closed for source-exact type strings, hidden AE class checks, broad project scans, raw ExtendScript, selection changes, layer conversion, and mutations. Parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses Agent plan validation when used in planning context.",
+        "Use this recipe only for read-only layer type inspection; do not request allowMutations or checkpoint protection for this recipe itself.",
+        "Require current typed evidence before reporting selected or explicit layer type; do not infer targets from prior chat context.",
+        "Use get_layer_details only for concrete evidence-backed layers and only when deeper read-back is requested.",
+        "Do not use this recipe for layer conversion, layer creation, source relinking, effects, properties, keyframes, expressions, selection changes, broad project scans, raw ExtendScript, or exact source JSX semantics."
+      ]
     }
   ]
 }
