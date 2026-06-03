@@ -25,6 +25,7 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
+- [x] AUX parallel candidate worktrees architecture (full-intake-current-repo-max-autonomy-dropnthframe1): parent reducer serially handled accepted proposals [tool-dropnthframe] and rejected [none].
 - [x] AUX parallel candidate worktrees architecture: parent reducer accepted
   `tool-debughelper`, rejected none, and kept central writes serial.
 - [x] Historical milestones 1-32: archived/summarized baseline, provider work,
@@ -190,6 +191,7 @@ outside the runner out of scope.
 
 ## Decision Log
 
+- 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees produce proposals only, while the parent owns ledger, registry, plan, handoff, live rerun, and commits (full-intake-current-repo-max-autonomy-dropnthframe1).
 - 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees
   produce proposals only, while the parent owns ledger, registry, plan,
   handoff, live rerun, commits, and `nextCandidate` advancement
@@ -298,6 +300,7 @@ outside the runner out of scope.
 
 ## Validation
 
+| AUX parallel candidate worktrees architecture (full-intake-current-repo-max-autonomy-dropnthframe1) | Required to prove opt-in parallel candidate worktrees plus a serial parent reducer without running the real queue. | Accepted 1, rejected 0; central writes stayed parent-owned, live rerun stayed serial, and unplanned paths were rejected. |
 | AUX parallel candidate worktrees architecture (full-intake-current-repo-max-autonomy-debughelper4) | Required to prove opt-in parallel candidate worktrees plus a serial parent reducer without running the real queue. | Accepted 1, rejected 0; central writes stayed parent-owned, live rerun stayed serial, and unplanned paths were rejected. |
 - Historical Selection/retrieval validation remains summarized: strict runner
   completed through proof/import/merge/non-live/live/docs/commit with

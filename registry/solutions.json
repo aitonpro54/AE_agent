@@ -9249,6 +9249,121 @@
         "Use get_layer_details only for concrete evidence-backed layers and only when deeper read-back is requested.",
         "Do not use this recipe for expression edits, property edits, keyframe edits, selection changes, marker/text debug writes, source relinking, render queue changes, raw ExtendScript, broad hidden traversal, or exact source JSX semantics."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "dropnthframe-typed-plan",
+      "title": "Drop Nth Frame Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "frames",
+        "drop-frame",
+        "skip-frame",
+        "posterize-time",
+        "adjustment-layer",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Create a reviewed dropped-frame or stepped-motion look with a generated Posterize Time adjustment layer while failing closed on real every-Nth-frame deletion semantics.",
+        "appliesWhen": [
+          "The user asks for a drop-frame, skip-frame, every-Nth-frame, stepped playback, or choppy-motion look.",
+          "A visual Posterize Time adaptation is acceptable and the target comp plus cadence can be reviewed before mutation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "object",
+          "required": true,
+          "description": "Current active comp or explicit comp evidence from get_active_comp or get_comp_details."
+        },
+        {
+          "name": "dropCadence",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed requested cadence, including the accepted Posterize Time frame-rate value or an explicit unsupported exact-deletion gap."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow creates only one generated adjustment layer and one Posterize Time effect.",
+        "The plan uses a reviewed visual adaptation, not source-exact every-Nth-frame timeline deletion.",
+        "Existing layers, keyframes, expressions, sources, comp timing, render queue items, project items, and selection state are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/dropnthframe-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "create_adjustment_layer",
+          "add_effect",
+          "get_effect_details",
+          "set_effect_property",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read target comp evidence, create one generated Posterize Time adjustment layer, set a reviewed frame-rate value when supported, then read back the generated layer/effect and unchanged comp state.",
+        "steps": [
+          "Run get_active_comp or get_comp_details before mutation to capture target comp identity, frame rate, duration, dimensions, and layer count.",
+          "Normalize the requested cadence into a reviewed Posterize Time frame-rate value, or fail closed if the user requires exact every-Nth-frame deletion.",
+          "Run create_adjustment_layer with a generated-prefix name covering the target comp duration.",
+          "Run add_effect with matchName ADBE Posterize Time on the generated adjustment layer.",
+          "Run get_effect_details before set_effect_property and require typed evidence for the frame-rate property.",
+          "Run set_effect_property only for the reviewed Posterize Time frame-rate property and value.",
+          "Run get_comp_details, get_layer_details, and get_effect_details after mutation to verify the generated layer/effect and unchanged existing comp state.",
+          "Fail closed when the request requires timeline frame deletion, irregular cadence sampling, layer splitting, time remapping, comp duration changes, keyframe shifts, render-output frame dropping, raw ExtendScript, or exact source JSX behavior."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the target comp, frame rate, duration, dimensions, and current layer count.",
+          "Dry-run evidence lists the requested cadence, accepted Posterize Time adaptation, and unsupported exact-deletion semantics.",
+          "create_adjustment_layer and get_layer_details identify exactly one generated adjustment layer.",
+          "add_effect and get_effect_details show ADBE Posterize Time on that generated layer.",
+          "set_effect_property and post-run get_effect_details show the reviewed frame-rate property value when one was requested.",
+          "Post-run evidence shows no unrelated layer, keyframe, expression, source, comp timing, render queue, project item, selection, mask, or unrelated effect mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-dropnthframe generic repository importer as advisory typed-plan coverage for a Posterize Time dropped-frame adaptation.",
+          "The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, existing Posterize Time typed tools, and fail-closed dropped-frame semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-03",
+          "from": "generic-repo-importer-tool-dropnthframe",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the dropped-frame idea behind ae-scripting/scripting-snippets dropNthFrame.jsx into existing typed tools as a Posterize Time adjustment-layer recipe; no source JSX copied. The recipe uses get_active_comp or get_comp_details, create_adjustment_layer, add_effect, get_effect_details, set_effect_property, get_layer_details, and post-run comp read-back. Real every-Nth-frame deletion, irregular cadence sampling, time remapping, layer splitting, comp duration changes, keyframe shifts, source replacement, render-output frame dropping, raw ExtendScript, and exact source semantics require a separate typed-tool contract. Parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current target-comp evidence and reviewed cadence before mutating.",
+        "Use this recipe only for a visual Posterize Time dropped-frame adaptation on a generated adjustment layer.",
+        "Do not infer exact every-Nth-frame deletion behavior from the candidate name.",
+        "Require get_effect_details evidence before setting the Posterize Time frame-rate property.",
+        "Do not use this recipe for timeline frame deletion, layer splitting, time remapping, comp frame-rate or duration changes, keyframe shifts, footage interpretation, source replacement, render-output frame dropping, raw ExtendScript, or exact source JSX semantics."
+      ]
     }
   ]
 }
