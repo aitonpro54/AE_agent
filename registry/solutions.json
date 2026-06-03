@@ -9474,6 +9474,118 @@
         "Use get_layer_details only for concrete evidence-backed layers and only when deeper read-back is requested.",
         "Do not use this recipe for layer conversion, layer creation, source relinking, effects, properties, keyframes, expressions, selection changes, broad project scans, raw ExtendScript, or exact source JSX semantics."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "getpropertyparent-typed-plan",
+      "title": "Get Property Parent Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "properties",
+        "property-parent",
+        "property-paths",
+        "selected-properties",
+        "property-hierarchy",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool",
+        "read-only"
+      ],
+      "intent": {
+        "summary": "Report selected property parent-group evidence from typed read tools only.",
+        "appliesWhen": [
+          "The user asks for a selected property's parent, containing property group, property hierarchy context, match-name path, or compact property-path diagnostics.",
+          "The requested workflow is inspection-only and can be satisfied from current active-comp, selected-layer, selected-property, or layer-detail typed evidence."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "propertyTargets",
+          "type": "object",
+          "required": true,
+          "description": "Current selected-property evidence or explicit comp/layer/property path evidence identifying the properties to inspect."
+        },
+        {
+          "name": "parentEvidenceScope",
+          "type": "string",
+          "required": false,
+          "description": "Optional requested parent evidence scope such as selected properties, explicit property paths, match-name paths, or deeper layer-detail property fields."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow is read-only and reports only current typed-tool evidence.",
+        "Property targets are bound from current active-comp, selected-layer, selected-property, or layer-detail evidence before parent inspection.",
+        "Parent property groups are reported only from structured hierarchy fields or from path-derived evidence based on returned property-path segments.",
+        "Layers, properties, keyframes, expressions, selection state, sources, render queue items, project items, and project files are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/getpropertyparent-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_selected_properties",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp, selected layer, selected property, or layer-detail context with typed read tools only, then report exact returned property-parent evidence and typed-tool gaps.",
+        "steps": [
+          "Run get_active_comp to capture active comp identity and selected-layer count.",
+          "Run get_selected_layers when selected layer identity, indices, names, or ordering are relevant to the property context.",
+          "Run get_selected_properties with includeValues:true and includeExpressions:true to capture selected property paths, names, match names, values, keyframe state, expression state, and any exposed hierarchy fields.",
+          "Run get_layer_details only for concrete layers identified by current typed evidence and only when selected-property evidence is insufficient for a specific layer/property path.",
+          "Report each property parent only from returned structured hierarchy fields or from path-derived parent segments clearly labeled as path-derived evidence.",
+          "Report root-level, missing, ambiguous, truncated, or unsupported parent evidence explicitly instead of inferring hidden AE state.",
+          "Fail closed when source-exact parentProperty object output, hidden property traversal, broad project scans, raw ExtendScript, selection changes, or mutation is required."
+        ],
+        "expectedEvidence": [
+          "The report cites active-comp or explicit comp identity, or offline/unavailable state from typed tools.",
+          "Selected-property workflows cite property paths, names, match names, layer indices, values, keyframe state, or expression state returned by get_selected_properties.",
+          "Explicit-property workflows cite current layer-detail evidence for each inspected property.",
+          "Every reported parent group uses only hierarchy fields returned by typed tools or path segments derived from returned property paths.",
+          "No mutating tool, raw ExtendScript, selection change, property edit, keyframe edit, expression edit, effect edit, source relink, render queue edit, or project-item mutation appears in the plan."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-getpropertyparent generic repository importer as advisory read-only typed selected-property parent inspection coverage.",
+          "The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, existing typed read tools, and fail-closed property-inspection semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-03",
+          "from": "generic-repo-importer-tool-getpropertyparent",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the selected-property parent inspection idea behind ae-scripting/scripting-snippets getPropertyParent.jsx into existing typed read tools as read-only property-hierarchy guidance; no source JSX copied. The recipe uses get_active_comp, get_selected_layers, get_selected_properties, and optional get_layer_details, and remains fail-closed for source-exact parentProperty object output, hidden property traversal, broad project scans, raw ExtendScript, selection changes, property edits, expression edits, keyframe edits, and mutations. Parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses Agent plan validation when used in planning context.",
+        "Use this recipe only for read-only selected or explicit property parent inspection; do not request allowMutations or checkpoint protection for this recipe itself.",
+        "Require current typed evidence before reporting property parent groups; do not infer targets from prior chat context.",
+        "Use get_layer_details only for concrete evidence-backed layers and only when deeper read-back is requested.",
+        "Label parent groups derived from returned property-path segments as path-derived evidence.",
+        "Do not use this recipe for property edits, expression edits, keyframe edits, effect edits, selection changes, broad project scans, raw ExtendScript, or exact source JSX semantics."
+      ]
     }
   ]
 }

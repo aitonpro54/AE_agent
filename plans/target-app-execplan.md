@@ -25,6 +25,7 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
+- [x] AUX parallel candidate worktrees architecture (full-intake-current-repo-max-autonomy-getpropertyparent1): parent reducer serially handled accepted proposals [tool-getpropertyparent] and rejected [none].
 - [x] AUX ae-scripting scoped wave: accepted `tool-debughelper`,
   `tool-dropnthframe`, `tool-getlayertype`; failed closed `tool-filterinput`
   and `tool-getlayertype_compressed`.
@@ -191,6 +192,7 @@ outside the runner out of scope.
 
 ## Decision Log
 
+- 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees produce proposals only, while the parent owns ledger, registry, plan, handoff, live rerun, and commits (full-intake-current-repo-max-autonomy-getpropertyparent1).
 - 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees produce proposals only, while the parent owns ledger, registry, plan, handoff, live rerun, and commits (full-intake-current-repo-max-autonomy-getlayertype1).
 - 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees produce proposals only, while the parent owns ledger, registry, plan, handoff, live rerun, and commits (full-intake-current-repo-max-autonomy-dropnthframe1).
 - 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees
@@ -306,6 +308,7 @@ outside the runner out of scope.
 
 ## Validation
 
+| AUX parallel candidate worktrees architecture (full-intake-current-repo-max-autonomy-getpropertyparent1) | Required to prove opt-in parallel candidate worktrees plus a serial parent reducer without running the real queue. | Accepted 1, rejected 0; central writes stayed parent-owned, live rerun stayed serial, and unplanned paths were rejected. |
 - AUX real scoped parallel reducer acceptances validated:
   `debughelper4`, `dropnthframe1`, and `getlayertype1` each accepted
   1/rejected 0, compact proofs completed, central writes stayed serial, and
