@@ -10617,6 +10617,113 @@
         "Use only the reviewed nearest16HeadlessPolicy in this imported recipe; generalized dimension snapping or alternate rounding thresholds require separate review.",
         "Do not use this recipe for render queue changes, source relinking, template batch changes, layer cleanup, effect edits, marker edits, selection mutation, broad composition mutation, native headless script execution, or raw ExtendScript."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "trimfirsttosecond-typed-plan",
+      "title": "Trim First To Second Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "timing",
+        "trim",
+        "selected-layers",
+        "first-to-second",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool-gap",
+        "read-only"
+      ],
+      "intent": {
+        "summary": "Inspect selected layer timing for a trim-first-to-second request and fail closed unless a reviewed layer-timing mutation typed tool is available.",
+        "appliesWhen": [
+          "The user asks to run trimFirstToSecond, trim the first selected layer to the second selected layer, or align one selected layer timing boundary to another selected layer.",
+          "Current selected-layer timing evidence is needed before deciding whether a future mutating layer-trim tool could safely apply the request."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedLayers",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Exactly two selected layers with current typed evidence for layer indices, names, inPoint, outPoint, and startTime."
+        },
+        {
+          "name": "trimFirstToSecondIntent",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed statement of which first-layer timing boundary would be changed to which second-layer timing boundary if a mutating timing tool exists."
+        }
+      ],
+      "targetAssumptions": [
+        "The active composition and selected layers are inspected before any trim decision.",
+        "The current safe adaptation is read-only and reports the typed-tool gap for actual layer timing mutation.",
+        "A future mutating variant must update only the reviewed timing field on the first selected layer and read the same layers back.",
+        "Source-exact selection order, native UI side effects, raw ExtendScript, layer splitting, ripple edits, keyframe shifts, time remapping, stretch changes, and source timing changes remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/trimfirsttosecond-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and selected layer timing, identify the requested trim boundary, and report the missing mutating timing tool instead of executing a trim.",
+        "steps": [
+          "Run get_active_comp to bind active comp identity, frame rate, duration, current time, and selected-layer count.",
+          "Run get_selected_layers to bind exactly two current selected layers from typed evidence.",
+          "Run get_layer_details for those layers when detailed timing evidence is needed.",
+          "Report the reviewed trim-first-to-second intent and the current timing values.",
+          "Fail closed unless a separately accepted layer-timing mutation typed tool is available."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies exactly two selected layers with concrete layer indices and names.",
+          "Timing evidence lists inPoint, outPoint, and startTime for both selected layers.",
+          "The plan reports the intended boundary but does not mutate layer timing with current tools.",
+          "No raw ExtendScript, script execution, layer split, ripple edit, keyframe shift, time-remap edit, source relink, comp duration change, or selection mutation appears in the plan."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-trimfirsttosecond generic repository importer as advisory selected-layer timing-gap coverage.",
+          "The detached child worktree did not contain trimFirstToSecond.jsx, so scope came from the child-run wrapper, candidate name, existing read-only selected-layer timing evidence tools, and fail-closed trim semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-03",
+          "from": "generic-repo-importer-tool-trimfirsttosecond",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the trim-first-to-second timing intent behind ae-scripting/scripting-snippets trimFirstToSecond.jsx into read-only typed evidence guidance; no source JSX copied. The detached child worktree did not contain the source JSX and no accepted mutating layer-timing typed tool was found, so actual inPoint/outPoint/startTime mutation remains fail-closed until a reviewed set_layer_time_range-style contract with idempotency and read-back exists. Source-exact selection order, native UI side effects, raw ExtendScript, layer splitting, ripple edits, keyframe shifts, time remapping, stretch changes, source timing changes, and exact source semantics require separate typed-tool contracts; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation and must not mutate layer timing with current tools.",
+        "Use this recipe to gather current selected-layer timing evidence and produce a targeted typed-tool gap when the user requests trimFirstToSecond behavior.",
+        "Do not infer first/second selection order unless typed evidence makes that order explicit.",
+        "Do not use raw ExtendScript, script runners, generic property writes, or selection side effects to implement the trim.",
+        "A future mutating variant requires a separately accepted layer-timing typed tool, explicit dry-run evidence, confirmation, idempotency, checkpoint/edit-session protection, and post-mutation read-back."
+      ]
     }
   ]
 }

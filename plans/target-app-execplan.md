@@ -25,6 +25,7 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
+- [x] AUX parallel candidate worktrees architecture (fi-trimfirst2-r1-20260603): parent reducer serially handled accepted proposals [tool-trimfirsttosecond] and rejected [none].
 - [x] AUX targeted recovery accepted `tool-makeclosest16_headless` in scoped
   run `fi-mc16h-r3-20260603`: importer now recognizes top-level AE
   ExtendScript snippets and resolves underscore ledger ids to hyphen analysis
@@ -194,6 +195,7 @@ outside the runner out of scope.
 
 ## Decision Log
 
+- 2026-06-03: AUX parallel candidate worktrees stay opt-in; child worktrees produce proposals only, while the parent owns ledger, registry, plan, handoff, live rerun, and commits (fi-trimfirst2-r1-20260603).
 - 2026-06-03: `tool-makeclosest16_headless` recovery fixed the concrete
   `implementation-batch-candidate-missing` causes for this candidate: top-level
   AE ExtendScript snippets are now analysis candidates, and importer batch
@@ -222,6 +224,7 @@ outside the runner out of scope.
 
 ## Validation
 
+| AUX parallel candidate worktrees architecture (fi-trimfirst2-r1-20260603) | Required to prove opt-in parallel candidate worktrees plus a serial parent reducer without running the real queue. | Accepted 1, rejected 0; central writes stayed parent-owned, live rerun stayed serial, and unplanned paths were rejected. |
 - AUX `tool-makeclosest16_headless` targeted recovery validation passed:
   touched-file `node --check` for
   `orchestrator/run-generic-repo-tool-importer.mjs` and
