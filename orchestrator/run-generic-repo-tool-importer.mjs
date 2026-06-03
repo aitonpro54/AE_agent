@@ -1483,6 +1483,22 @@ function defaultPlannedPathForCandidate(candidate) {
   return `scripts/imported-automations/${id}.md`;
 }
 
+const TOOL_CODE_SHAPE_PATTERN =
+  /(?:export\s+function|module\.exports|function\s+\w+|(?:var|let|const)\s+\w+\s*=\s*function\b|class\s+\w+|run_extendscript|tool)/i;
+const SCRIPTUI_CONTAINER_PATTERN = /(?:#script\b|\bnew\s+Window\s*\(|\bPanel\b)/i;
+const SCRIPTUI_OBJECT_METHOD_PATTERN =
+  /(?:^|[\r\n])\s*[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?\.(?:run|main|buildGUI|buildUI|init|execute)\s*=\s*function\b/i;
+
+function toolCandidateEvidence(text) {
+  if (TOOL_CODE_SHAPE_PATTERN.test(text)) {
+    return ["code-shape-heuristic"];
+  }
+  if (SCRIPTUI_CONTAINER_PATTERN.test(text) && SCRIPTUI_OBJECT_METHOD_PATTERN.test(text)) {
+    return ["scriptui-object-method-assignment"];
+  }
+  return null;
+}
+
 function buildToolCandidates(sourceRoot, inventory) {
   const candidates = [];
   for (const file of inventory.files) {
@@ -1490,16 +1506,15 @@ function buildToolCandidates(sourceRoot, inventory) {
       continue;
     }
     const text = readTextIfSmall(path.join(sourceRoot, file.path), file.size);
-    if (
-      !/(?:export\s+function|module\.exports|function\s+\w+|(?:var|let|const)\s+\w+\s*=\s*function\b|class\s+\w+|run_extendscript|tool)/i.test(text)
-    ) {
+    const evidence = toolCandidateEvidence(text);
+    if (!evidence) {
       continue;
     }
     candidates.push({
       schema: "generic-repo-tool-importer.tool-candidate.v1",
       id: candidateId("tool", file.path),
       sourcePath: file.path,
-      evidence: ["code-shape-heuristic"],
+      evidence,
       risk: "review_required",
       readBackRequired: true,
       implementationWorktreeCreated: false,

@@ -97,6 +97,10 @@ Historical milestone detail through 2026-05-31 is archived at
   proposal and failed closed as
   `implementation-batch-candidate-missing: tool-guitemplate`; no parent
   acceptance, central merge, ledger count change, live validation, push, or PR.
+- [x] AUX `tool-guitemplate` binding recovery prep: importer analysis now
+  recognizes ScriptUI object method assignments such as
+  `somescript.run = function` when paired with a ScriptUI container signal, and
+  focused importer/full-intake smokes passed before a fresh scoped rerun.
 
 ## Current State
 
@@ -169,15 +173,20 @@ Architecture update on 2026-06-03:
   `parallel_proposals_blocked`, proof sha
   `d406ea09327cc5eb812f36ef71d0558b6c94ea5412ccbcc45e1b770fea161c51`, and the
   tracked tree stayed clean after the run.
+- `tool-guitemplate` binding diagnostic found a source-shape gap: ledger/source
+  id normalization produced `tool-guitemplate`, but importer discovery skipped
+  `guiTemplate.jsx` because its callable surface is ScriptUI object methods
+  (`somescript.run = function`, `buildGUI`) rather than plain declarations.
 
 ## Next Milestone
 
 `full-intake-ae-scripting-snippets` still has `queued=15`, `completed=5`, and
 `failed_import=4` because the blocked `tool-guitemplate` parallel proposal did
-not update the central ledger. Next bounded step is a targeted binding
-diagnostic/recovery for `tool-guitemplate`, or another explicit scoped queued
-id after compact status/ledger preflight. Keep `tool-changeallnames` and
-`tool-batchparent` on their separate blockers.
+not update the central ledger. Next bounded step is a fresh scoped
+`tool-guitemplate` rerun from the committed ScriptUI binding recovery fix. If it
+still fails closed, the safest next explicit batch is
+`tool-makeclosest16_headless,tool-makeclosest16`. Keep `tool-changeallnames`
+and `tool-batchparent` on their separate blockers.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -189,6 +198,10 @@ outside the runner out of scope.
   scoped parallel lane until the implementation-batch binding miss is
   understood; run `full-intake-tool-guitemplate-20260603-184134` produced a
   blocked proposal only.
+- 2026-06-03: `tool-guitemplate` binding miss is a narrow importer
+  source-shape gap. ScriptUI object method assignments are acceptable analysis
+  candidates only when paired with a ScriptUI container signal; standalone UI
+  handler fragments remain fail-closed.
 - 2026-06-03: AUX scoped acceptances for `debughelper`, `dropnthframe`,
   `getlayertype`, and `getpropertyparent` kept parallel child worktrees
   proposal-only; the parent owned ledger, registry, plan, handoff, live rerun,
@@ -387,6 +400,17 @@ outside the runner out of scope.
   was `contractComplete=true` with one blocked proposal; post-run tracked git
   status stayed clean and context budget reported `0 -> 1`. No JS/source files
   changed, so broad smokes were not run.
+- AUX `tool-guitemplate` binding recovery validation passed:
+  `node --check orchestrator/run-generic-repo-tool-importer.mjs`;
+  `node --check scripts/sdk-generic-repo-importer-command-smoke.js`;
+  `node scripts/sdk-generic-repo-importer-command-smoke.js`;
+  `node scripts/sdk-generic-repo-full-intake-smoke.js`;
+  `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`;
+  `node scripts/solution-library-validation-smoke.js`;
+  `node scripts/solution-registry-smoke.js`;
+  `node scripts/solution-retrieval-smoke.js`;
+  `node scripts/semantic-verification-smoke.js`;
+  `git diff --check` with normal Windows LF/CRLF warnings only.
 - Not run by design: Local/Ollama, fallback providers, broad/default CEP smoke,
   broad real queue, `max-items > 1`, dependency/package changes, full runtime
   reports, push, PR, GitHub automation, raw JSX copy, and source checkout writes
