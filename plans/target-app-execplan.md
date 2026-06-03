@@ -25,10 +25,9 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
-- [x] AUX parallel candidate worktrees architecture (full-intake-current-repo-max-autonomy-getlayertype1): parent reducer serially handled accepted proposals [tool-getlayertype] and rejected [none].
-- [x] AUX ae-scripting parallel candidate wave: parent reducer accepted
-  `tool-debughelper` and `tool-dropnthframe`; `tool-filterinput` failed closed
-  as a non-standalone ScriptUI handler fragment.
+- [x] AUX ae-scripting scoped wave: accepted `tool-debughelper`,
+  `tool-dropnthframe`, `tool-getlayertype`; failed closed `tool-filterinput`
+  and `tool-getlayertype_compressed`.
 - [x] Historical milestones 1-32: archived/summarized baseline, provider work,
   strict-runner hardening, context-budget tuning, Selection lane prep, and
   completed Selection candidates through disabled/guide layers.
@@ -181,10 +180,10 @@ Architecture update on 2026-06-03:
 
 ## Next Milestone
 
-`full-intake-ae-scripting-snippets` now has `queued=18`, `completed=3`, and
-`failed_import=3`. Next bounded step is scoped
-`tool-getlayertype_compressed` after compact status/ledger preflight. Keep
-`tool-changeallnames` and `tool-batchparent` on their separate blockers.
+`full-intake-ae-scripting-snippets` now has `queued=16`, `completed=4`, and
+`failed_import=4`. Next bounded step is scoped `tool-getpropertyparent` after
+compact status/ledger preflight. Keep `tool-changeallnames` and
+`tool-batchparent` on their separate blockers.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -302,16 +301,19 @@ outside the runner out of scope.
 - `tool-filterinput` stays `failed_import`: source is an `edittext.onChanging`
   ScriptUI handler fragment depending on an external UI object, not a
   standalone typed-tool recipe.
+- `tool-getlayertype_compressed` stays `failed_import` as a duplicate compressed
+  alias; the canonical accepted recipe is `tool-getlayertype`.
 
 ## Validation
 
-| AUX parallel candidate worktrees architecture (full-intake-current-repo-max-autonomy-getlayertype1) | Required to prove opt-in parallel candidate worktrees plus a serial parent reducer without running the real queue. | Accepted 1, rejected 0; central writes stayed parent-owned, live rerun stayed serial, and unplanned paths were rejected. |
 - AUX real scoped parallel reducer acceptances validated:
-  `debughelper4` and `dropnthframe1` each accepted 1/rejected 0, compact proofs
-  completed, central writes stayed serial, and solution smokes passed.
-- AUX `filterinput1` fail-closed validation passed: compact proof completed,
-  proposal blocked with `implementation-batch-candidate-missing`, source review
-  confirmed non-standalone ScriptUI handler semantics, and ledger advanced.
+  `debughelper4`, `dropnthframe1`, and `getlayertype1` each accepted
+  1/rejected 0, compact proofs completed, central writes stayed serial, and
+  solution smokes passed.
+- AUX fail-closed validation passed for `filterinput1` and
+  `getlayertype-compressed1`: compact proofs completed, source review recorded
+  the non-standalone handler and duplicate compressed alias reasons, and ledger
+  advanced.
 - Historical Selection/retrieval validation remains summarized: strict runner
   completed through proof/import/merge/non-live/live/docs/commit with
   `unplannedPathCount=0`; final kyletmartinez ledger was `completed=69`,
@@ -319,16 +321,8 @@ outside the runner out of scope.
 - Parallel Tool Intake V1 validation passed: touched-file node checks,
   importer/queue-supervisor/full-intake smokes, solution smokes, and
   `git diff --check`.
-- Search safety guard validation passed:
-  `node --check scripts/safe-rg.js`;
-  `node --check scripts/safe-rg-smoke.js`;
-  `node scripts/safe-rg-smoke.js`;
-  `git diff --check`;
-  standard non-live smoke suite:
-  provider contract, solution registry/candidate/promotion/retrieval/library,
-  project intent memory, plan classification/repair, semantic verification,
-  reliability validation, ChatGPT connector, provider API, prompt optimization,
-  bridge-only, and full smoke test.
+- Search safety guard validation passed: `safe-rg` node checks/smoke,
+  `git diff --check`, and the standard non-live smoke suite.
 - AUX Generic Repo Auto Intake V1 validation passed:
   `node --check orchestrator/run-generic-repo-auto-intake.mjs`;
   `node --check scripts/sdk-generic-repo-auto-intake-smoke.js`;
