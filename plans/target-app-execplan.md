@@ -84,9 +84,9 @@ Historical milestone detail through 2026-05-31 is archived at
   generated-only family proposals, and kept all of them fail-closed because the
   ledger exposes read-only suggested tools and the source semantics need new or
   separately proven mutating typed-tool contracts before any requeue.
-- [x] AUX text-to-keys generated-only proof lane: added scoped
-  `text-to-keys-generated-only` registry, generated Source Text keyframe
-  scenario/read-back/semantic smoke, and no real ae-scripting requeue.
+- [x] AUX text-to-keys generated-only proof/hints: added scoped registry,
+  Source Text keyframe read-back/semantic smoke, and compact `tool-texttokeys`
+  hints requiring `set_property_keyframes` + `get_layer_details`; no requeue.
 
 ## Current State
 
@@ -169,22 +169,19 @@ Architecture update on 2026-06-03:
   ledger entries; the closest future first lane is generated-only
   `text-to-keys` or expression-controller proof after explicit mutating tool
   hints and read-back semantics are added.
-- `text-to-keys-generated-only` now has non-live generated proof coverage for
-  Source Text keyframe value read-back and semantic mismatch detection. It is
-  scoped to `tool-texttokeys` but requires mutating/read-back hints, so the
-  current read-only ledger entry cannot requeue accidentally.
+- `text-to-keys-generated-only` has non-live Source Text keyframe read-back
+  proof. Compact `tool-texttokeys` ledger hints include
+  `get_selected_layers`, `set_property_keyframes`, and `get_layer_details`;
+  status remains `blocked_live_lane_required`, with no requeue/live run.
 
 ## Next Milestone
 
 `full-intake-ae-scripting-snippets` still has 23 queued candidates; the two-id
-parallel-scoped attempt accepted none. Next work should stay bounded: for
-`text-to-keys-generated-only`, either run the generated-only OpenAI CLI live
-lane with explicit approval or inspect/update only compact ledger hints so
-`tool-texttokeys` exposes the new mutating/read-back contract before any
-scoped requeue. Alternative next proof remains
-`expression-controller-generated-only` only after controller/effect/property
-path semantics are explicit. Keep `tool-changeallnames` and
-`tool-batchparent` on their separate blockers.
+parallel-scoped attempt accepted none. Next bounded step requires explicit
+approval for the generated-only OpenAI CLI text-to-keys live lane before any
+scoped requeue. Alternative proof remains `expression-controller-generated-only`
+only after controller/effect/property path semantics are explicit. Keep
+`tool-changeallnames` and `tool-batchparent` on their separate blockers.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -282,9 +279,9 @@ outside the runner out of scope.
   expression enable/disable scans, comp-marker copy, solid-source resizing,
   recursive comp upscale, paint brush splitting, random transforms, or manual
   hard-coded shape duplication.
-- Source Text keyframes are a distinct proof family, not a broad keyframe
-  import. Source-exact `textToKeys.jsx`, selected-layer traversal, and
-  typo/no-call repair remain fail-closed until explicit typed hints exist.
+- Source Text keyframes are a distinct proof family. The `tool-texttokeys`
+  runtime ledger hint now names mutating/read-back tools, but source-exact
+  traversal and typo/no-call repair remain fail-closed until live proof passes.
 
 ## Validation
 
@@ -390,10 +387,11 @@ outside the runner out of scope.
   source snippets, confirmed stale `running` state has no related runner
   processes, and made no code, queue, requeue, child-worktree, live CEP/AE,
   Local/Ollama, dependency, push, or PR changes.
-- AUX text-to-keys generated-only proof validation passed: touched-file
-  `node --check`, registry parse/assert, `agent-scenario-report-smoke`,
-  `semantic-verification-smoke`, `solution-library-validation-smoke`, and
-  `git diff --check` with normal Windows LF/CRLF warnings only. Fixture-only
+- AUX text-to-keys proof/hint validation passed: touched-file `node --check`,
+  registry parse/assert, `agent-scenario-report-smoke`,
+  `semantic-verification-smoke`, `solution-library-validation-smoke`, compact
+  status/ledger summary, registry-vs-ledger requiredTools assert, and
+  `git diff --check` with normal LF/CRLF warnings only. Fixture-only
   `sdk-generic-repo-full-intake-smoke` printed `ok:true` but hit the 120s
   timeout, so it is not counted as passed; no related runner processes remained.
 - Not run by design: Local/Ollama, fallback providers, broad/default CEP smoke,
