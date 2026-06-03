@@ -25,10 +25,9 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
-- [x] AUX parallel candidate worktrees architecture (full-intake-current-repo-max-autonomy-getpropertyparent1): parent reducer serially handled accepted proposals [tool-getpropertyparent] and rejected [none].
 - [x] AUX ae-scripting scoped wave: accepted `tool-debughelper`,
-  `tool-dropnthframe`, `tool-getlayertype`; failed closed `tool-filterinput`
-  and `tool-getlayertype_compressed`.
+  `tool-dropnthframe`, `tool-getlayertype`, and `tool-getpropertyparent`;
+  failed closed `tool-filterinput` and `tool-getlayertype_compressed`.
 - [x] Historical milestones 1-32: archived/summarized baseline, provider work,
   strict-runner hardening, context-budget tuning, Selection lane prep, and
   completed Selection candidates through disabled/guide layers.
@@ -181,10 +180,10 @@ Architecture update on 2026-06-03:
 
 ## Next Milestone
 
-`full-intake-ae-scripting-snippets` now has `queued=16`, `completed=4`, and
-`failed_import=4`. Next bounded step is scoped `tool-getpropertyparent` after
-compact status/ledger preflight. Keep `tool-changeallnames` and
-`tool-batchparent` on their separate blockers.
+`full-intake-ae-scripting-snippets` now has `queued=15`, `completed=5`, and
+`failed_import=4`. Next bounded step is scoped `tool-guitemplate` after compact
+status/ledger preflight. Keep `tool-changeallnames` and `tool-batchparent` on
+their separate blockers.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -308,11 +307,10 @@ outside the runner out of scope.
 
 ## Validation
 
-| AUX parallel candidate worktrees architecture (full-intake-current-repo-max-autonomy-getpropertyparent1) | Required to prove opt-in parallel candidate worktrees plus a serial parent reducer without running the real queue. | Accepted 1, rejected 0; central writes stayed parent-owned, live rerun stayed serial, and unplanned paths were rejected. |
 - AUX real scoped parallel reducer acceptances validated:
-  `debughelper4`, `dropnthframe1`, and `getlayertype1` each accepted
-  1/rejected 0, compact proofs completed, central writes stayed serial, and
-  solution smokes passed.
+  `debughelper4`, `dropnthframe1`, `getlayertype1`, and
+  `getpropertyparent1` each accepted 1/rejected 0; compact proofs completed,
+  central writes stayed serial, and solution smokes passed.
 - AUX fail-closed validation passed for `filterinput1` and
   `getlayertype-compressed1`: compact proofs completed, source review recorded
   the non-standalone handler and duplicate compressed alias reasons, and ledger
@@ -326,19 +324,9 @@ outside the runner out of scope.
   `git diff --check`.
 - Search safety guard validation passed: `safe-rg` node checks/smoke,
   `git diff --check`, and the standard non-live smoke suite.
-- AUX Generic Repo Auto Intake V1 validation passed:
-  `node --check orchestrator/run-generic-repo-auto-intake.mjs`;
-  `node --check scripts/sdk-generic-repo-auto-intake-smoke.js`;
-  `node scripts/sdk-generic-repo-auto-intake-smoke.js`;
-  `node scripts/sdk-generic-repo-importer-command-smoke.js`;
-  `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`;
-  `node scripts/sdk-generic-repo-full-intake-smoke.js`;
-  `node scripts/solution-library-validation-smoke.js`;
-  `node scripts/solution-registry-smoke.js`;
-  `node scripts/solution-retrieval-smoke.js`.
-  The new smoke uses only a local fixture without network and proves
-  fixture -> inventory -> reference-only ledger -> plan-only parallel plan ->
-  compact status/proof/handoff.
+- AUX Generic Repo Auto Intake V1 validation passed: touched node checks,
+  auto-intake/importer/supervisor/full-intake/solution smokes, and local fixture
+  proof from inventory to plan-only parallel handoff.
 - Auto Intake closeout also passed the standard non-live smoke suite:
   provider contract, solution registry/candidate/promotion/retrieval/library,
   project intent memory, plan classification/repair, semantic verification,
