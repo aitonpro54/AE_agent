@@ -1820,6 +1820,7 @@ function buildPromptText(manifest, batch, candidates) {
     "- Do not launch Codex child runs from this prompt.",
     "- Do not use Local/Ollama, fallback providers, web search, live AE/CEP, push, PR, or GitHub automation.",
     "- Do not change package/dependency files unless a later approved manifest explicitly allows that path.",
+    "- If scripts/solution-library-validation-smoke.js is planned, append only the minimal new assertion block; do not rewrite, reformat, replace, or sort the existing shared smoke file.",
     "",
     "Planned paths:",
     ...batch.plannedPaths.map((plannedPath) => `- ${plannedPath}`),
@@ -2427,6 +2428,7 @@ function buildChildRunContextPack({ batch, intent, manifest, promptText }) {
       "no_validation_live_cep_ae_or_openai_cli_planner_runs",
       "no_dependency_or_package_changes",
       "no_local_ollama_fallback_provider_web_search_push_pr_or_github_automation",
+      "solution_library_validation_smoke_append_only_when_planned",
     ],
     outputContract: {
       stdout: "brief_status_only",
