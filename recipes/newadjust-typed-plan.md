@@ -12,6 +12,11 @@ Create one generated adjustment layer in a verified target composition through e
 - The workflow needs only a blank generated adjustment layer and optional naming/timing metadata supported by `create_adjustment_layer`.
 - If the request requires source-exact `newAdjust.jsx` behavior, exact stack insertion semantics, selection changes, current-time trimming, copying effects or switches, UI prompt behavior, or arbitrary raw ExtendScript, fail closed and require a separate typed-tool contract.
 
+## Inputs
+
+- `targetComp` (`comp`, required): active or explicit composition target verified by `get_active_comp` or `get_comp_details` before mutation.
+- `adjustmentLayerSpec` (`object`, optional): reviewed generated layer name, start time, duration, and coverage policy.
+
 ## Plan Pattern
 
 1. Run `get_active_comp` or `get_comp_details` to bind the target composition identity, dimensions, duration, frame rate, current time when available, and current layer count.

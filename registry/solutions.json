@@ -9828,9 +9828,9 @@
       "inputs": [
         {
           "name": "targetComp",
-          "type": "composition-target",
+          "type": "comp",
           "required": true,
-          "description": "Active comp or explicit comp target verified by get_active_comp or get_comp_details before mutation."
+          "description": "Active or explicit comp target verified by get_active_comp or get_comp_details before mutation."
         },
         {
           "name": "adjustmentLayerSpec",
