@@ -76,31 +76,34 @@ Scope: first prove only explicit generated-layer metadata changes:
 `tool-layers-reset-selected-layer-labels`, and
 `tool-layers-set-all-layer-labels-to-none`.
 
-Required typed-tool contract, not yet implemented:
+Implemented prerequisite contract:
 
-- Add a bounded `set_layer_metadata` bridge tool that accepts one explicit comp
-  target plus concrete `layerIndices` and, when available,
+- Added a bounded `set_layer_metadata` bridge tool that accepts one explicit
+  comp target plus concrete `layerIndices` and, when available,
   `expectedLayerNames`.
-- Allow only reviewed fields `comment`, `label`, and `locked` in the first
-  slice. Reject arbitrary layer fields, expressions, effects, timing, source
-  relinking, selection mutation, project item labels, file I/O, render queue
-  work, and raw ExtendScript fallback.
+- The first slice allows only reviewed fields `comment`, `label`, and
+  `locked`. It rejects arbitrary layer fields, expressions, effects, timing,
+  source relinking, selection mutation, project item labels, file I/O, render
+  queue work, and raw ExtendScript fallback.
 - Convert "selected" or "all" wording into explicit layer indices from current
   `get_selected_layers` or `get_comp_details` evidence before mutation; never
   let the tool discover broad targets by itself.
-- Add or confirm `get_layer_details` read-back for `comment`, `label`, and
-  `locked`. Current read-back already exposes `label` and `locked`; layer
-  `comment` still needs explicit read-back before the comment candidate can be
-  proven.
-- Generated-only proof lane should create a generated comp/layers, apply
-  `set_layer_metadata`, read each target back with `get_layer_details`, run
-  semantic verification, then clean up generated assets.
+- `get_layer_details` now exposes layer `comment` alongside existing `label`
+  and `locked` read-back.
+- Generated-only proof lane creates a generated comp/layers, applies
+  `set_layer_metadata`, reads each target back with `get_layer_details`, runs
+  semantic verification, then cleans up generated assets.
 
-Planned lane command, once implemented:
+Proven lane command:
 `node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-metadata-openai-cli-smoke`.
 Provider path must be `openai-cli`; Local/Ollama, fallback providers,
 broad/default CEP smoke, dependency changes, source checkout writes, and raw JSX
 copy remain out of scope.
+
+Proof note 2026-06-04: the lane passed after refreshing the local bridge daemon
+so the panel saw the new tool catalog. Planner acceptance used OpenAI CLI with
+`fallbackCount=0`; dry-run, protected generated-only run, semantic verification,
+and `get_layer_details` read-back for two generated layers all passed.
 
 Deferred from this first slice: `solo`, `blendingMode`, track-matte label
 semantics, label scans, mixed generated/user comps, persistent UI selection

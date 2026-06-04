@@ -879,6 +879,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "add_effect",
   "set_effect_property",
   "set_property_value",
+  "set_layer_metadata",
   "set_comp_properties",
   "set_comp_work_area",
   "set_layer_time_range",
@@ -1913,7 +1914,7 @@ function compactCheckpoint(checkpoint) {
 function inferMutationTarget(toolName, args, payload) {
   const target = { tool: toolName };
   const request = {};
-  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "layerName", "sourceName", "expectedLayerName", "maskIndex", "expectedMaskName", "operation", "maskMode", "targetTime", "time", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "itemType", "sourceItemIndex", "sourceItemName", "sourceCompItemIndex", "sourceCompName", "nameSuffix", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "renderQueueItemIndex", "outputPath"]) {
+  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "layerName", "sourceName", "expectedLayerName", "expectedLayerNames", "comment", "label", "locked", "maskIndex", "expectedMaskName", "operation", "maskMode", "targetTime", "time", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "itemType", "sourceItemIndex", "sourceItemName", "sourceCompItemIndex", "sourceCompName", "nameSuffix", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "renderQueueItemIndex", "outputPath"]) {
     if (hasArg(args || {}, key)) request[key] = args[key];
   }
   if (Object.keys(request).length) target.request = request;
@@ -4112,6 +4113,7 @@ const PLANNING_TOOL_NAMES = [
   "add_effect",
   "set_effect_property",
   "set_property_value",
+  "set_layer_metadata",
   "align_layers_to_time",
   "set_comp_properties",
   "set_comp_work_area",
@@ -6045,6 +6047,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For explicit bulk layer duplication, use duplicate_layers with concrete layerIndices after inspecting the target comp/layers. Pair sourceNames with layerIndices in current AE stack order, or insert get_comp_details before duplication when source-layer order is ambiguous. For selected-layer duplication, inspect with get_selected_layers first and bind layerIndices from {{selectedLayerIndices}}; never use duplicate_layers for deletion, source/precomp relinking, mask/path edits, or audio workflows.",
     "For destructive single-layer deletion, use delete_layer only after inspecting the explicit target comp/layer. Provide compItemIndex or compName, layerIndex, and expectedLayerName, then read back the comp/layer stack to prove the deleted layer is absent; never use selection-only, broad, multi-layer, or name-optional deletion.",
     "For composition settings, use set_comp_properties only for width, height, pixelAspect, duration, frameRate, bgColor, and displayStartTime on one explicit comp, then read back the comp before reporting success. Do not route arbitrary comp fields, layers, effects, masks, or property paths through this tool.",
+    "For explicit generated layer metadata, use set_layer_metadata only with one explicit comp target, concrete layerIndices, and expectedLayerNames when available. It only supports comment, label, and locked, and must be followed by get_layer_details read-back for each target layer.",
     "For explicit layer switches, use set_property_value only with whitelisted layer attributes threeDLayer, collapseTransformation, or motionBlur on inspected layer indices, setAtTime:false, then read back with get_layer_details. Do not use it for parenting, selection changes, timeline switches, or arbitrary layer fields.",
     "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
     "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, set_layer_mask, and fit_layer_to_comp. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Update mode needs one explicit maskIndex; do not delete masks, target multiple masks/layers, run roto, or edit arbitrary mask property trees.",
@@ -8689,6 +8692,46 @@ const tools = [
     }
   },
   {
+    name: "set_layer_metadata",
+    description: "Update only comment, label, and locked on explicit layer indices in one explicit composition, with optional expected layer-name guards and required read-back.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Required when compName is omitted. 1-based project item index for the explicit target composition."
+        },
+        compName: {
+          type: "string",
+          description: "Required when compItemIndex is omitted. Exact generated target composition name."
+        },
+        layerIndices: {
+          type: "array",
+          items: { type: "number" },
+          description: "Required explicit 1-based layer indices. Selection-based or all-layer discovery must happen in earlier read-only steps."
+        },
+        expectedLayerNames: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional expected layer names in the same order as layerIndices; when provided, mismatches fail closed before mutation."
+        },
+        comment: {
+          type: "string",
+          description: "Optional layer comment to set. Maximum 500 characters."
+        },
+        label: {
+          type: "number",
+          description: "Optional AE label index to set. Must be an integer from 0 through 16."
+        },
+        locked: {
+          type: "boolean",
+          description: "Optional locked state to set."
+        }
+      },
+      required: ["layerIndices"]
+    }
+  },
+  {
     name: "align_layers_to_time",
     description: "Move selected or specified layers so their in-points or start times align to a target time. Defaults to selected layers and the active comp current time indicator.",
     inputSchema: {
@@ -9646,6 +9689,7 @@ async function callTool(name, args) {
         };
 
         try { info.label = layer.label; } catch (__labelError) {}
+        try { info.comment = layer.comment || ""; } catch (__commentError) {}
         try { info.hasVideo = !!layer.hasVideo; } catch (__hasVideoError) {}
         try { info.hasAudio = !!layer.hasAudio; } catch (__hasAudioError) {}
         try { info.nullLayer = !!layer.nullLayer; } catch (__nullLayerError) {}
@@ -13005,6 +13049,149 @@ async function callTool(name, args) {
         properties: properties,
         setAtTime: shouldSetAtTime,
         time: targetTime
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_layer_metadata") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required for set_layer_metadata.", true);
+
+    const allowedKeys = new Set([
+      "compItemIndex",
+      "compName",
+      "layerIndices",
+      "expectedLayerNames",
+      "comment",
+      "label",
+      "locked",
+      "autoCheckpoint",
+      "checkpointLabel",
+      "idempotencyKey",
+      "idempotencyScope",
+      "verifyAfter",
+      M100_DIRECT_ESCAPE_HATCH_ARG
+    ]);
+    const unsupportedKeys = Object.keys(args || {}).filter((key) => !allowedKeys.has(key));
+    if (unsupportedKeys.length) return toolResult("Unsupported set_layer_metadata fields: " + unsupportedKeys.join(", "), true);
+
+    let layerIndices;
+    try {
+      layerIndices = requiredExplicitPositiveIntegerList(args, "layerIndices");
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
+
+    let expectedLayerNames = null;
+    if (hasArg(args, "expectedLayerNames")) {
+      expectedLayerNames = args.expectedLayerNames;
+      if (typeof expectedLayerNames === "string" && expectedLayerNames.trim().startsWith("[")) {
+        expectedLayerNames = JSON.parse(expectedLayerNames);
+      }
+      if (!Array.isArray(expectedLayerNames)) return toolResult("expectedLayerNames must be an array when provided.", true);
+      expectedLayerNames = expectedLayerNames.map((value) => String(value));
+      if (expectedLayerNames.length !== layerIndices.length) {
+        return toolResult("expectedLayerNames must have the same length as layerIndices.", true);
+      }
+    }
+
+    const requested = {};
+    const hasCommentUpdate = Object.prototype.hasOwnProperty.call(args || {}, "comment") && args.comment !== undefined && args.comment !== null;
+    if (hasCommentUpdate) {
+      requested.comment = String(args.comment);
+      if (requested.comment.length > 500) return toolResult("comment must be 500 characters or fewer.", true);
+    }
+    if (hasArg(args, "label")) {
+      const label = optionalNumber(args, "label", null);
+      if (!Number.isInteger(label) || label < 0 || label > 16) return toolResult("label must be an integer from 0 through 16.", true);
+      requested.label = label;
+    }
+    if (hasArg(args, "locked")) {
+      requested.locked = optionalBoolean(args, "locked", false);
+    }
+
+    const requestedKeys = Object.keys(requested);
+    if (!requestedKeys.length) return toolResult("At least one approved layer metadata update is required: comment, label, or locked.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layerIndices = ${aeLiteral(layerIndices)};
+      var expectedLayerNames = ${expectedLayerNames ? aeLiteral(expectedLayerNames) : "null"};
+      var requested = ${aeLiteral(requested)};
+      var requestedKeys = ${aeLiteral(requestedKeys)};
+
+      function __codexMetadataFieldMatches(after, field) {
+        if (field === "comment") return String(after.comment || "") === String(requested.comment || "");
+        if (field === "label") return Number(after.label) === Number(requested.label);
+        if (field === "locked") return after.locked === requested.locked;
+        return false;
+      }
+
+      app.beginUndoGroup("Codex Set Layer Metadata");
+      var changed = [];
+      var allMatch = true;
+      for (var __li = 0; __li < layerIndices.length; __li++) {
+        var requestedIndex = layerIndices[__li];
+        var layer = comp.layer(requestedIndex);
+        if (!layer) throw new Error("Layer not found at index " + requestedIndex + ".");
+        if (expectedLayerNames && layer.name !== expectedLayerNames[__li]) {
+          throw new Error("Layer name mismatch at index " + requestedIndex + ". Expected '" + expectedLayerNames[__li] + "' but found '" + layer.name + "'.");
+        }
+
+        var before = __codexLayerInfo(layer);
+        if (before.locked && (requested.comment !== undefined || requested.label !== undefined) && requested.locked !== false) {
+          throw new Error("Layer is locked: " + layer.name + ". Unlock explicitly before setting comment or label.");
+        }
+
+        if (requested.locked === false) layer.locked = false;
+        if (requested.comment !== undefined) layer.comment = String(requested.comment);
+        if (requested.label !== undefined) layer.label = Number(requested.label);
+        if (requested.locked === true) layer.locked = true;
+
+        var after = __codexLayerInfo(layer);
+        var fieldMatches = {};
+        for (var __fieldIndex = 0; __fieldIndex < requestedKeys.length; __fieldIndex++) {
+          var field = requestedKeys[__fieldIndex];
+          fieldMatches[field] = __codexMetadataFieldMatches(after, field);
+          if (!fieldMatches[field]) allMatch = false;
+        }
+        changed.push({
+          layerIndex: requestedIndex,
+          expectedLayerName: expectedLayerNames ? expectedLayerNames[__li] : null,
+          before: before,
+          after: after,
+          fieldMatches: fieldMatches
+        });
+      }
+
+      var layers = [];
+      for (var __changedIndex = 0; __changedIndex < changed.length; __changedIndex++) {
+        layers.push(changed[__changedIndex].after);
+      }
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name
+        },
+        requestedLayerIndices: layerIndices,
+        expectedLayerNames: expectedLayerNames,
+        updatedFields: requestedKeys,
+        updates: requested,
+        changedCount: changed.length,
+        layer: layers.length === 1 ? layers[0] : null,
+        layers: layers,
+        changed: changed,
+        postVerification: {
+          ok: allMatch,
+          requestedCount: layerIndices.length,
+          changedCount: changed.length,
+          updatedFields: requestedKeys
+        }
       };
       app.endUndoGroup();
       return response;

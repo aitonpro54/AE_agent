@@ -19,6 +19,7 @@ const {
   agentEffectPropertyScenarioPlans,
   agentExpressionScenarioPlans,
   agentKeyframeScenarioPlans,
+  agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentLayerSwitchScenarioPlans,
   agentLayerTimingScenarioPlans,
@@ -523,6 +524,24 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(layerSwitches.plan.steps[4].args.propertyPath, "collapseTransformation");
   assert.strictEqual(layerSwitches.plan.steps[6].args.propertyPath, "motionBlur");
 
+  const [layerMetadata] = agentLayerMetadataScenarioPlans("Codex QA AUX-LM Fixture");
+  assert.strictEqual(layerMetadata.id, "generated-layer-metadata");
+  assert.strictEqual(layerMetadata.expectedReadBack.generatedLayerMetadata, true);
+  assert.deepStrictEqual(layerMetadata.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_solid_layer",
+    "create_text_layer",
+    "get_comp_details",
+    "set_layer_metadata",
+    "get_layer_details",
+    "get_layer_details"
+  ]);
+  assert.deepStrictEqual(layerMetadata.plan.steps[4].args.layerIndices, [1, 2]);
+  assert.deepStrictEqual(layerMetadata.plan.steps[4].args.expectedLayerNames, [
+    "Codex QA AUX-LM Fixture Layer Metadata Text",
+    "Codex QA AUX-LM Fixture Layer Metadata Solid"
+  ]);
+
   const [layerSelection] = agentLayerSelectionScenarioPlans("Codex QA AUX101 Fixture");
   assert.strictEqual(layerSelection.id, "generated-layer-selection-set");
   assert.strictEqual(layerSelection.expectedReadBack.generatedLayerSelection, true);
@@ -603,7 +622,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert(remainingTails[4].plan.steps.some((step) => step.tool === "set_spatial_in_tangent"));
   assert(remainingTails[5].plan.steps.some((step) => step.tool === "separate_shape_size_dimensions"));
 
-  for (const scenario of [timing, transform, projectItems, effectProperty, expression, compProperties, selectedPropertyValue, layerSwitches, layerSelection, keyframes, textToKeys, selectedKeyframeMarker, ...remainingTails]) {
+  for (const scenario of [timing, transform, projectItems, effectProperty, expression, compProperties, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, keyframes, textToKeys, selectedKeyframeMarker, ...remainingTails]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }

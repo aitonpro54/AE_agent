@@ -93,6 +93,8 @@ const TOOL_ALIASES = {
   renamelayers: "rename_layers",
   renameprojectitem: "rename_project_items",
   renameprojectitems: "rename_project_items",
+  setlayermetadata: "set_layer_metadata",
+  updatelayermetadata: "set_layer_metadata",
   setlayerproperty: "set_property_value",
   setproperty: "set_property_value",
   setpropertyvalue: "set_property_value",

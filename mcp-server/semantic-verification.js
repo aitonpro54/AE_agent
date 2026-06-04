@@ -21,6 +21,7 @@ const MUTATING_TOOLS = new Set([
   "create_layer_mask",
   "fit_layer_to_comp",
   "set_property_value",
+  "set_layer_metadata",
   "set_property_keyframes",
   "fill_in_keyframes",
   "keyframe_current_value_from_expression",
@@ -193,6 +194,9 @@ function addLayerEvidence(target, value, source) {
   for (const field of ["threeDLayer", "collapseTransformation", "motionBlur"]) {
     if (hasOwn(value, field)) layer[field] = boolValue(value[field]);
   }
+  if (hasOwn(value, "label")) layer.label = numberValue(value.label);
+  if (hasOwn(value, "locked")) layer.locked = boolValue(value.locked);
+  if (hasOwn(value, "comment")) layer.comment = String(value.comment === undefined || value.comment === null ? "" : value.comment);
   target.layers.push(layer);
 }
 
@@ -793,6 +797,72 @@ function checkSetPropertyValue(checks, step, payload, evidence) {
       : "missing or mismatched property value",
     passed: Boolean(resultMatch) && Boolean(readBackEvidence),
     evidence: readBackEvidence || "No post-run layer/property read-back matched set_property_value."
+  });
+}
+
+function layerMetadataFields(args) {
+  const fields = [];
+  if (hasOwn(args, "comment")) fields.push("comment");
+  if (hasOwn(args, "label")) fields.push("label");
+  if (hasOwn(args, "locked")) fields.push("locked");
+  return fields;
+}
+
+function layerMetadataFieldMatches(layer, args, field) {
+  if (!layer || !hasOwn(layer, field)) return false;
+  if (field === "comment") return sameString(layer.comment, args.comment);
+  if (field === "label") return nearlyEqual(layer.label, args.label);
+  if (field === "locked") return boolValue(layer.locked) === boolValue(args.locked);
+  return false;
+}
+
+function layerMatchesMetadataTarget(layer, fields, args, layerIndex, expectedName) {
+  if (!layer || !fields.length) return false;
+  if (!nearlyEqual(layer.index, layerIndex)) return false;
+  if (expectedName && !sameString(layer.name, expectedName)) return false;
+  return fields.every((field) => layerMetadataFieldMatches(layer, args, field));
+}
+
+function observedLayerMetadataEvidence(evidence, args) {
+  const layerIndices = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
+  const expectedNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
+  const fields = layerMetadataFields(args);
+  if (!layerIndices.length || !fields.length || !evidence || !Array.isArray(evidence.layers)) return null;
+
+  const matchedSources = [];
+  for (let index = 0; index < layerIndices.length; index += 1) {
+    const layerIndex = layerIndices[index];
+    const expectedName = expectedNames[index] || "";
+    const match = evidence.layers.find((layer) => layerMatchesMetadataTarget(layer, fields, args, layerIndex, expectedName));
+    if (!match) return null;
+    matchedSources.push(match.source || `layer ${layerIndex}`);
+  }
+  return matchedSources.join("; ");
+}
+
+function checkSetLayerMetadata(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const fields = layerMetadataFields(args);
+  const layerIndices = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
+  const expectedNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
+  const changed = Array.isArray(payload.changed) ? payload.changed : [];
+  const postVerification = payload.postVerification || {};
+  const resultMatches = fields.length > 0 &&
+    layerIndices.length > 0 &&
+    postVerification.ok === true &&
+    Number(payload.changedCount || changed.length || 0) === layerIndices.length &&
+    layerIndices.every((layerIndex, index) => {
+      const after = changed[index] && changed[index].after || {};
+      return layerMatchesMetadataTarget(after, fields, args, layerIndex, expectedNames[index] || "");
+    });
+  const readBackEvidence = observedLayerMetadataEvidence(evidence.readBack, args);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:metadata`,
+    title: "Layer metadata matches explicit request",
+    expected: `${layerIndices.length} layer(s); fields: ${fields.join(", ")}`,
+    observed: resultMatches ? `${payload.changedCount || changed.length} layer(s) updated` : "missing or mismatched metadata result",
+    passed: resultMatches && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_layer_details read-back matched set_layer_metadata."
   });
 }
 
@@ -1412,6 +1482,11 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "set_property_value") {
     checkSetPropertyValue(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_layer_metadata") {
+    checkSetLayerMetadata(checks, step, payload, evidence);
     return;
   }
 

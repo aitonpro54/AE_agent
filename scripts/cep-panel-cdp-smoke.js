@@ -15,6 +15,7 @@ const {
   agentEffectPropertyScenarioPlans,
   agentExpressionScenarioPlans,
   agentKeyframeScenarioPlans,
+  agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentLayerSwitchScenarioPlans,
   agentLayerTimingScenarioPlans,
@@ -441,6 +442,24 @@ function openAiCliLayerSwitchScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_LAYER_SWITCH_PREFIX || "Codex QA AUX096",
     scenarioFactory: agentLayerSwitchScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliLayerMetadataScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-layer-metadata",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_LAYER_METADATA_PREFIX || "Codex QA AUX-LM",
+    scenarioFactory: agentLayerMetadataScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -4793,6 +4812,64 @@ async function verifyGeneratedLayerSwitchReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedLayerMetadataReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const targetLayerIndices = Array.isArray(expected.targetLayerIndices) ? expected.targetLayerIndices : [];
+  const targetLayerNames = Array.isArray(expected.targetLayerNames) ? expected.targetLayerNames : [];
+  const metadata = expected.metadata || {};
+  const verifiedLayers = [];
+
+  for (let index = 0; index < targetLayerIndices.length; index += 1) {
+    const layerIndex = targetLayerIndices[index];
+    const layerName = targetLayerNames[index] || "";
+    const listedLayer = layers.find((layer) => layer.index === layerIndex && (!layerName || layer.name === layerName));
+    if (!listedLayer) {
+      throw new Error(`${scenario.id}: generated metadata layer ${layerIndex} ${layerName} was not found by comp read-back.`);
+    }
+
+    const details = await callBridgeTool("get_layer_details", {
+      compItemIndex: compMatch.itemIndex,
+      layerIndex,
+      includeProperties: false
+    });
+    const layer = details && details.layer ? details.layer : {};
+    if (layerName && layer.name !== layerName) {
+      throw new Error(`${scenario.id}: metadata layer ${layerIndex} name mismatch: ${layer.name}.`);
+    }
+    if (layer.comment !== metadata.comment) {
+      throw new Error(`${scenario.id}: metadata layer ${layerIndex} comment was not read back.`);
+    }
+    if (Number(layer.label) !== Number(metadata.label)) {
+      throw new Error(`${scenario.id}: metadata layer ${layerIndex} label was not read back.`);
+    }
+    if (layer.locked !== metadata.locked) {
+      throw new Error(`${scenario.id}: metadata layer ${layerIndex} locked state was not read back.`);
+    }
+    verifiedLayers.push({
+      index: layer.index,
+      name: layer.name,
+      comment: layer.comment,
+      label: layer.label,
+      locked: layer.locked
+    });
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: compMatch.itemIndex,
+      name: compMatch.name
+    },
+    layers: verifiedLayers
+  };
+}
+
 async function verifyGeneratedLayerSelectionReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const selected = await callBridgeTool("get_selected_layers", {});
@@ -5568,6 +5645,10 @@ async function verifyAgentScenarioReadBack(scenario) {
     return verifyGeneratedLayerSwitchReadBack(scenario, expected);
   }
 
+  if (expected.generatedLayerMetadata) {
+    return verifyGeneratedLayerMetadataReadBack(scenario, expected);
+  }
+
   if (expected.generatedLayerSelection) {
     return verifyGeneratedLayerSelectionReadBack(scenario, expected);
   }
@@ -6291,6 +6372,10 @@ async function main() {
   }
   if (command === "agent-layer-switches-openai-cli-smoke" || command === "full-ui-agent-layer-switches-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliLayerSwitchScenarioConfig());
+    return;
+  }
+  if (command === "agent-layer-metadata-openai-cli-smoke" || command === "full-ui-agent-layer-metadata-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliLayerMetadataScenarioConfig());
     return;
   }
   if (command === "agent-layer-selection-openai-cli-smoke" || command === "full-ui-agent-layer-selection-openai-cli-smoke") {

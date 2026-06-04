@@ -25,6 +25,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "fit_layer_to_comp",
   "set_layer_transform",
   "set_property_value",
+  "set_layer_metadata",
   "set_property_keyframes",
   "fill_in_keyframes",
   "keyframe_current_value_from_expression",
@@ -735,6 +736,62 @@ function agentLayerSelectionScenarioPlans(runPrefix) {
           { title: "Set generated layer selection explicitly", tool: "set_layer_selection", args: { compName, layerIndices: selectedLayerIndices, expectedLayerNames: selectedLayerNames, makeActive: true } },
           { title: "Read generated selected layers", tool: "get_selected_layers", args: {} },
           { title: "Read first selected layer details", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
+function agentLayerMetadataScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Layer Metadata`;
+  const compName = `${base} Comp`;
+  const solidName = `${base} Solid`;
+  const textName = `${base} Text`;
+  const targetLayerIndices = [1, 2];
+  const targetLayerNames = [textName, solidName];
+  const metadata = {
+    comment: "AUX-LM generated layer metadata",
+    label: 9,
+    locked: true
+  };
+
+  return [
+    {
+      id: "generated-layer-metadata",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "create_text_layer",
+        "get_comp_details",
+        "set_layer_metadata",
+        "get_layer_details",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedLayerMetadata: true,
+        compName,
+        targetLayerIndices,
+        targetLayerNames,
+        metadata
+      },
+      plan: {
+        summary: "AUX-LM generated-only live QA for explicit layer comment, label, and locked metadata.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated layer-metadata comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.07, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "AUX-LM generated-only layer metadata validation" } },
+          { title: "Create generated metadata solid", tool: "create_solid_layer", args: { compName, name: solidName, color: [0.22, 0.28, 0.36], width: 320, height: 180, pixelAspect: 1, startTime: 0, duration: 3 } },
+          { title: "Create generated metadata text", tool: "create_text_layer", args: { compName, text: "Metadata", name: textName, position: [360, 180], fontSize: 44, fillColor: [0.95, 0.9, 0.76], startTime: 0, duration: 3 } },
+          { title: "Read generated layer stack before metadata", tool: "get_comp_details", args: { compName, includeLayers: true, layerLimit: 10 } },
+          { title: "Set generated layer metadata explicitly", tool: "set_layer_metadata", args: { compName, layerIndices: targetLayerIndices, expectedLayerNames: targetLayerNames, comment: metadata.comment, label: metadata.label, locked: metadata.locked } },
+          { title: "Read first generated metadata layer", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } },
+          { title: "Read second generated metadata layer", tool: "get_layer_details", args: { compName, layerIndex: 2, includeProperties: false } }
         ]
       }
     }
@@ -2778,6 +2835,7 @@ module.exports = {
   agentEffectPropertyScenarioPlans,
   agentExpressionScenarioPlans,
   agentKeyframeScenarioPlans,
+  agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentLayerSwitchScenarioPlans,
   agentLayerTimingScenarioPlans,

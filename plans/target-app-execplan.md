@@ -25,12 +25,13 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
-- [x] AUX generated-only family planning after ae-scripting queue closeout:
-  selected `layer-comment-label-lock-generated-only` from the safe Layers
-  backlog and documented the fail-closed contract/read-back lane in
-  `plans/full-intake-unsafe-skip-triage.md`. No backlog retry, runner,
-  child/subagent mutation, live CEP/AE mutation, Local/Ollama, fallback
-  provider, dependency change, push/PR, or raw JSX copy occurred.
+- [x] AUX first layer metadata generated-only lane: added bounded
+  `set_layer_metadata` for explicit comp/layer targets, `get_layer_details`
+  layer `comment` read-back, semantic read-back checks, and
+  `full-ui-agent-layer-metadata-openai-cli-smoke`. Live generated-only proof
+  passed with fallbackCount=0 and semantic verification passed for
+  comment/label/locked on two generated layers. No broad backlog retry,
+  Local/Ollama, fallback provider, dependency change, push/PR, or raw JSX copy.
 - [x] AUX terminal closeout for remaining queued `tool-planeresolve` in scoped
   run `fi-planeresolve-r1-20260604`: parent review found an incomplete
   non-standalone math fragment and marked it `failed_import` instead of
@@ -218,11 +219,11 @@ math fragment, not a safe recipe candidate. Proof sha:
 The ae-scripting ledger is now `completed=19`, `queued=0`,
 `failed_import=5`, `blocked_live_lane_required=21`, and `blocked_policy=3`.
 
-Next clean implementation work is the first
-`layer-comment-label-lock-generated-only` slice: add a bounded
-`set_layer_metadata` typed tool plus `get_layer_details` layer-comment
-read-back, then create the generated-only OpenAI CLI proof lane before any
-candidate requeue. Marker/file/render families remain deferred.
+The first `layer-comment-label-lock-generated-only` prerequisite slice is
+implemented and live-proven. Next clean work is a scoped family reclassification
+and at most one matching candidate retry/import using the normal bounded Full
+Intaker path; do not retry the broad backlog. Marker/file/render families remain
+deferred.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -230,6 +231,11 @@ outside the runner out of scope.
 
 ## Decision Log
 
+- 2026-06-04: Implemented `set_layer_metadata` as a narrow mutating contract:
+  one explicit comp target, explicit non-duplicate `layerIndices`, optional
+  same-length `expectedLayerNames`, and only `comment`, `label` 0-16, and
+  `locked`. The tool rejects unknown fields and selection/all-layer discovery;
+  semantic verification requires post-mutation `get_layer_details` read-back.
 - 2026-06-04: Selected `layer-comment-label-lock-generated-only` as the next
   non-file/non-render family lane. Current production tools can read back
   `label`/`locked` via `get_layer_details`, and `set_property_value` remains
@@ -294,15 +300,20 @@ outside the runner out of scope.
 
 ## Validation
 
-- AUX generated-only family planning validation passed: fresh preflight read
-  active docs; `git status --short --untracked-files=no` was clean; compact
-  status/proof for `fi-planeresolve-r1-20260604` showed stale `running` with
-  zero processes and contract-complete proof sha
-  `d8672bc55daf2945699a00d8bbdf9f95ad31a6f8aaceb57c8b193de0b7aa0c83`;
-  ledger summary stayed terminal with `queued=0`; targeted code search found
-  no existing `set_layer_metadata` mutation tool and confirmed
-  `get_layer_details` lacks layer-comment read-back. No JavaScript files were
-  touched.
+- AUX first layer metadata generated-only validation passed: fresh preflight
+  read active docs; compact status/proof for `fi-planeresolve-r1-20260604`
+  stayed contract-complete and the ae-scripting ledger stayed terminal
+  `queued=0`; touched-file `node --check`; `git diff --check`; semantic,
+  report, plan-repair, provider, registry/retrieval/library, reliability,
+  ChatGPT connector, SDK full-intake/importer/supervisor, bridge-only, and
+  standard smoke suites passed. Read-only CEP inspect/connector checks passed.
+  `full-ui-agent-layer-metadata-openai-cli-smoke` first failed closed against
+  a stale bridge catalog, then passed after restarting the local bridge:
+  OpenAI CLI planner accepted the typed plan, `fallbackCount=0`, dry-run and
+  protected run passed, and read-back confirmed comment/label/locked on two
+  generated layers. Not run by design: Local/Ollama, fallback providers,
+  broad/default CEP smoke, broad backlog retry, dependency changes, push/PR,
+  raw JSX copy, archive reads, and full runtime reports.
 - AUX `tool-planeresolve` terminal closeout validation passed: compact proof
   for `fi-planeresolve-r1-20260604` was contract-complete with reducer status
   `parallel_proposals_blocked`, proof sha

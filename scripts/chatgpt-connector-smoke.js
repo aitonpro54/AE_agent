@@ -299,6 +299,7 @@ function assertReadOnlyTools(tools) {
     "add_effect",
     "add_comp_to_render_queue",
     "set_property_value",
+    "set_layer_metadata",
     "set_layer_transform",
     "set_comp_properties",
     "set_comp_work_area",

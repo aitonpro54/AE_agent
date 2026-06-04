@@ -9,6 +9,7 @@ const {
 const {
   AGENT_SCENARIO_MUTATING_TOOLS,
   agentDakkshinTypedToolsScenarioPlans,
+  agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
   agentScenarioPlans,
@@ -18,6 +19,7 @@ const {
 const LOCAL_MUTATING_TOOLS = new Set([
   "delete_layer",
   "set_comp_properties",
+  "set_layer_metadata",
   "set_layer_mask"
 ]);
 
@@ -78,6 +80,9 @@ function layerInfo(name, overrides = {}) {
     inPoint,
     outPoint,
     markerCount: overrides.markerCount || 0,
+    comment: overrides.comment === undefined ? "" : overrides.comment,
+    label: overrides.label === undefined ? 0 : overrides.label,
+    locked: overrides.locked === undefined ? false : overrides.locked,
     transform: overrides.transform || null,
     text: overrides.text ? { text: overrides.text, fontSize: overrides.fontSize || null } : null,
     source: overrides.source || null
@@ -390,6 +395,54 @@ function fakeMutationResult(step, state) {
         layerCountUnchanged: true
       }
     }, compName);
+  }
+  if (step.tool === "set_layer_metadata") {
+    const layerIndices = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
+    const expectedLayerNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
+    const updates = {};
+    for (const field of ["comment", "label", "locked"]) {
+      if (Object.prototype.hasOwnProperty.call(args, field)) updates[field] = args[field];
+    }
+    if (!state.layers.length) {
+      state.layers = layerIndices.map((layerIndex, index) => layerInfo(expectedLayerNames[index] || `Metadata Fixture Layer ${layerIndex}`, { index: layerIndex }));
+    }
+    const changed = layerIndices.map((layerIndex, index) => {
+      let layer = state.layers.find((item) => Number(item.index) === layerIndex);
+      if (!layer) {
+        layer = layerInfo(expectedLayerNames[index] || `Metadata Fixture Layer ${layerIndex}`, { index: layerIndex });
+        state.layers.push(layer);
+        state.layers.sort((left, right) => left.index - right.index);
+      }
+      const before = { ...layer };
+      Object.assign(layer, updates);
+      const after = { ...layer };
+      const fieldMatches = {};
+      for (const field of Object.keys(updates)) fieldMatches[field] = true;
+      return {
+        layerIndex,
+        expectedLayerName: expectedLayerNames[index] || null,
+        before,
+        after,
+        fieldMatches
+      };
+    });
+    return withVerification({
+      comp: { name: compName, numLayers: state.layers.length },
+      requestedLayerIndices: layerIndices,
+      expectedLayerNames,
+      updates,
+      updatedFields: Object.keys(updates),
+      changedCount: changed.length,
+      layer: changed.length === 1 ? changed[0].after : null,
+      layers: changed.map((item) => item.after),
+      changed,
+      postVerification: {
+        ok: true,
+        requestedCount: layerIndices.length,
+        changedCount: changed.length,
+        updatedFields: Object.keys(updates)
+      }
+    }, compName, changed[0] && changed[0].after);
   }
   if (step.tool === "set_layer_mask") {
     const beforeMaskCount = state.masks.length;
@@ -845,12 +898,15 @@ function fakeReadBackResult(step, state) {
     };
   }
   if (step.tool === "get_layer_details") {
+    const layerIndex = step.args && step.args.layerIndex || 1;
+    const layer = state.layers.find((item) => Number(item.index) === Number(layerIndex)) ||
+      layerInfo("Marker Fixture Layer", {
+        index: layerIndex,
+        markerCount: state.layerMarkers.length
+      });
     return {
       comp: { name: step.args && step.args.compName || state.lastCompName || "Fixture Comp" },
-      layer: layerInfo("Marker Fixture Layer", {
-        index: step.args && step.args.layerIndex || 1,
-        markerCount: state.layerMarkers.length
-      }),
+      layer,
       masks: {
         count: state.masks.length,
         returned: state.masks.length,
@@ -1238,6 +1294,14 @@ function assertLayerSelectionPasses() {
   const semantic = buildSemanticVerification(scenario.plan, run);
   assert.strictEqual(semantic.status, "passed", `set_layer_selection semantic verification should pass: ${semantic.summary}`);
   assert(semantic.checks.some((check) => check.id.indexOf("set_layer_selection:selection") >= 0 && check.status === "passed"), "set_layer_selection read-back check should pass.");
+}
+
+function assertLayerMetadataPasses() {
+  const [scenario] = agentLayerMetadataScenarioPlans("Codex Semantic Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  assert.strictEqual(semantic.status, "passed", `set_layer_metadata semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_metadata:metadata") >= 0 && check.status === "passed"), "set_layer_metadata read-back check should pass.");
 }
 
 function assertDeleteLayerPasses() {
@@ -1990,6 +2054,7 @@ function main() {
   assertDuplicateLayersMissingReadBackNeedsReview();
   assertDuplicateLayersPairOrderMismatchNeedsReview();
   assertLayerSelectionPasses();
+  assertLayerMetadataPasses();
   assertDeleteLayerPasses();
   assertDeleteLayerMissingReadBackNeedsReview();
   assertSetCompPropertiesPasses();
