@@ -26,6 +26,18 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- 2026-06-04: Запущен guarded Full Intaker triage-75 longrun с
+  sub-agent/read-only preflight, чистым runtime ledger, scoped lane
+  pre-resolution, parallel candidate worktrees и parent-owned serial
+  acceptance. Создан fresh ignored ledger из текущего checkout
+  `kyletmartinez/after-effects-scripts` плюс legacy candidate metadata,
+  расширена существующая layer metadata proof lane, requeued 4 of 5 layer
+  metadata candidates, completed three candidates:
+  `tool-layers-add-comment-to-selected-layers`,
+  `tool-layers-lock-all-layers`, and `tool-layers-unlock-all-layers`.
+  Current triage ledger state: 75 entries, 14 completed, 60 blocked/skipped,
+  1 queued. Остановка сделана для handoff: runner context estimate 68%,
+  next predicted 75%.
 - [x] Full intake tool-layers-unlock-all-layers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-unlock-all-layers); live gate ready, importer batch full-intake-kyletmartinez-a0fe8c1d95-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-layers-add-comment-to-selected-layers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-add-comment-to-selected-layers); live gate ready, importer batch full-intake-kyletmartinez-1c2d17a709-import, commit recorded after candidate commit.
@@ -80,20 +92,31 @@ old `AE_agent` repository remains the historical source.
 
 ## Next Milestone
 
-Autonomy script/tool queue and parent-managed thread-request contract are
-complete. Current state is `done`: 83 candidates found, 82 accepted, 1 rejected,
-and 0 pending/needs_lane/needs_revalidation/blocked. The next large milestone
-is product-side work outside the autonomy queue: when After Effects and the
-installed panel are available, run the deferred read-only CEP connectivity
-checks and then choose the next AE Agent feature/intake milestone.
-
-After the autonomy pass is no longer the active milestone and After Effects plus
-the installed panel are available, run the deferred read-only CEP connectivity
-checks: `node scripts/cep-panel-cdp-smoke.js inspect` and
-`node scripts/cep-panel-cdp-smoke.js connector-status-smoke`.
+Продолжить в свежем потоке из компактного состояния: Full Intaker runner
+дошел до soft-stop band по контексту (estimate 68%, next predicted 75%).
+Читать только `.codex/handoff.md`, `plans/target-app-execplan.md`, compact
+Full Intaker status/proof и summary triage ledger. Следующий queued candidate:
+`tool-layers-set-all-layer-labels-to-none`. Candidate
+`tool-layers-reset-selected-layer-labels` имеет terminal unresolved lane ticket;
+не ретраить без отдельного scoped fix. Push запрещен.
 
 ## Decision Log
 
+- 2026-06-04: Создан новый ignored clean triage ledger в этом repo вместо
+  копирования old runtime proof trees. Ledger использует fresh GitHub checkout
+  revision `d017a775fd3f474963313b40882650800917aec9`, 75 ids из
+  `plans/full-intake-unsafe-skip-triage.md` и legacy candidate metadata только
+  как compact source evidence.
+- 2026-06-04: Parallel candidate worktrees полезны для speculative proposals,
+  но candidates с generated-only live rerun requirements все еще должны
+  приниматься serially parent reducer. Parallel proposals для
+  `tool-layers-add-comment-to-selected-layers` и
+  `tool-layers-lock-all-layers` были отклонены by design на parent-serial
+  live rerun gate.
+- 2026-06-04: `tool-layers-lock-all-layers` попал в child-timeout recovery и
+  был принят только после parent semantic review плюс `check:rules`,
+  `smoke:solutions` и `git diff --check`; ignored ledger записывает manual
+  semantic acceptance.
 - 2026-05-27: Generic full-intake orchestrator processed `Layers/Unlock_All_Layers.jsx` as `tool-layers-unlock-all-layers`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-unlock-all-layers).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Layers/Add_Comment_To_Selected_Layers.jsx` as `tool-layers-add-comment-to-selected-layers`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-add-comment-to-selected-layers).
@@ -153,6 +176,21 @@ checks: `node scripts/cep-panel-cdp-smoke.js inspect` and
 
 ## Validation
 
+- Full Intaker triage-75 longrun validation passed:
+  `node orchestrator/run-generic-repo-auto-intake.mjs --repo https://github.com/kyletmartinez/after-effects-scripts --run-id full-intake-kyletmartinez --context-percent 20 --candidate-limit 200 --parallel-candidate-limit 2 --compact-json`;
+  JSON parse checks for the registry and triage ledger;
+  `npm.cmd run check:rules`; `npm.cmd run smoke:full-intake`;
+  scoped pre-resolution and parallel plan for five layer metadata candidates;
+  parallel scoped worktrees for
+  `tool-layers-add-comment-to-selected-layers` and
+  `tool-layers-lock-all-layers`; serial parent acceptance for
+  `tool-layers-add-comment-to-selected-layers`;
+  parent semantic-review validation for `tool-layers-lock-all-layers`
+  (`npm.cmd run check:rules`, `npm.cmd run smoke:solutions`,
+  `git diff --check`); and serial parent acceptance for
+  `tool-layers-unlock-all-layers`. Generated-only live reruns passed for
+  accepted candidates. Compact proof for latest unlock had
+  `contractComplete: true`. Push/PR were not run.
 | Full intake tool-layers-unlock-all-layers | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-a0fe8c1d95-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-layers-add-comment-to-selected-layers | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-1c2d17a709-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
