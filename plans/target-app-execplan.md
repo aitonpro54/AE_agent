@@ -31,6 +31,10 @@ old `AE_agent` repository remains the historical source.
 - 2026-06-04: Cleanup review removed stale project-memory history, updated the
   MCP config example to the clean path, and added checks against old absolute
   project paths and the old importer ledger default.
+- 2026-06-04: Review hardening pass made the MCP config example portable,
+  collapsed release notes into a clean v2.0.0 baseline, relaxed provider model
+  smoke contracts, refreshed cleanup-migration tense, and clarified the
+  `generic-repo:*` Full Intaker/importer boundary.
 
 ## Guardrails
 
@@ -44,9 +48,10 @@ old `AE_agent` repository remains the historical source.
 
 ## Next Milestone
 
-After directory replacement, verify the active Codex MCP config and any local
-shortcuts point at `C:\Users\Ant\Documents\Codex\AE_agent`, then run read-only
-CEP connectivity checks.
+When After Effects and the installed panel are available, run read-only CEP
+connectivity checks against the active `AE_agent` repo:
+`node scripts/cep-panel-cdp-smoke.js inspect` and
+`node scripts/cep-panel-cdp-smoke.js connector-status-smoke`.
 
 ## Decision Log
 
@@ -58,6 +63,14 @@ CEP connectivity checks.
   future Full Intaker real runs must pass `--ledger <path>` explicitly.
 - 2026-06-04: Preserved `docs/cleanup-migration.md` as the only intentional
   old-repo pointer.
+- 2026-06-04: `mcp-config.example.json` is a template, not a local install
+  record; checked-in config uses portable `node` and a repo placeholder.
+- 2026-06-04: Provider smoke should validate provider shape, order, auth/setup
+  states, readiness behavior, and env overrides instead of exact
+  future-sensitive default model IDs.
+- 2026-06-04: `generic-repo:*` package scripts remain current AE-specific Full
+  Intaker/importer entrypoints. Generic reusable SDK orchestration belongs in
+  the sibling `codex-sdk-orchestrator-tool` via a separate reviewed migration.
 
 ## Validation
 
@@ -67,6 +80,14 @@ CEP connectivity checks.
 - Cleanup-review validation passed: touched-file `node --check`,
   `npm.cmd run check:rules`, static stale-reference search, `git diff --check`,
   `npm.cmd run smoke:bridge`, and `npm.cmd run smoke:full-intake`.
+- Review-hardening validation passed: touched-file `node --check` for
+  `mcp-server/ai-agents.js`, `scripts/provider-contract-smoke.js`,
+  `scripts/reliability-validation-suite.js`, and
+  `scripts/clean-current-check.js`; `npm.cmd run check:rules`;
+  `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`;
+  `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`;
+  `npm.cmd run smoke:full-intake`; `npm.cmd run smoke:bridge`; and
+  `git diff --check`.
 
 ## Handoff
 

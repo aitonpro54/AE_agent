@@ -13,15 +13,10 @@ const DEFAULT_GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1bet
 const DEFAULT_ANTHROPIC_BASE_URL = "https://api.anthropic.com/v1";
 const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434";
 const OPENAI_MODEL_OPTIONS = [
-  { id: "gpt-5.5", name: "GPT-5.5" },
-  { id: "gpt-5.4", name: "GPT-5.4" },
-  { id: "gpt-5.4-mini", name: "GPT-5.4-Mini" },
-  { id: "gpt-5.3-codex", name: "GPT-5.3-Codex" },
-  { id: "gpt-5.3-codex-spark", name: "GPT-5.3-Codex-Spark" },
-  { id: "gpt-5.2", name: "GPT-5.2" }
+  { id: "gpt-5", name: "GPT-5" }
 ];
-const DEFAULT_OPENAI_MODEL = "gpt-5.5";
-const DEFAULT_CODEX_CLI_MODEL = "gpt-5.5";
+const DEFAULT_OPENAI_MODEL = "gpt-5";
+const DEFAULT_CODEX_CLI_MODEL = "gpt-5";
 const GEMINI_MODEL_OPTIONS = [
   { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
   { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro" }
@@ -35,12 +30,9 @@ const CLAUDE_MODEL_OPTIONS = [
 ];
 const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 const DEFAULT_CLAUDE_MODEL = "claude-sonnet-4-20250514";
-const DEFAULT_OPENROUTER_MODEL = "nvidia/nemotron-3-super-120b-a12b:free";
+const DEFAULT_OPENROUTER_MODEL = "openrouter/free";
 const DEFAULT_OPENROUTER_FREE_MODELS = [
-  DEFAULT_OPENROUTER_MODEL,
-  "openrouter/free",
-  "openai/gpt-oss-120b:free",
-  "google/gemma-4-31b-it:free"
+  DEFAULT_OPENROUTER_MODEL
 ];
 const DEFAULT_TIMEOUT_MS = Number(process.env.AE_AGENT_HTTP_TIMEOUT_MS || 45000);
 const DEFAULT_CODEX_CLI_TIMEOUT_MS = Number(process.env.AE_CODEX_CLI_TIMEOUT_MS || 120000);

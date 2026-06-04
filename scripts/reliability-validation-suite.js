@@ -19,11 +19,11 @@ const GATES = {
 };
 
 const READINESS_TARGETS = [
-  ["openai-api", process.env.AE_AGENT_RELIABILITY_OPENAI_API_MODEL || "gpt-5.5"],
-  ["openai-cli", process.env.AE_AGENT_RELIABILITY_OPENAI_CLI_MODEL || "gpt-5.5"],
-  ["gemini-api", process.env.AE_AGENT_RELIABILITY_GEMINI_MODEL || "gemini-2.5-flash"],
-  ["claude-api", process.env.AE_AGENT_RELIABILITY_CLAUDE_MODEL || "claude-sonnet-4-20250514"],
-  ["openrouter", process.env.AE_AGENT_RELIABILITY_OPENROUTER_MODEL || "openrouter/free", true],
+  ["openai-api", process.env.AE_AGENT_RELIABILITY_OPENAI_API_MODEL || process.env.OPENAI_MODEL || "gpt-5"],
+  ["openai-cli", process.env.AE_AGENT_RELIABILITY_OPENAI_CLI_MODEL || process.env.CODEX_CLI_MODEL || process.env.OPENAI_CLI_MODEL || "gpt-5"],
+  ["gemini-api", process.env.AE_AGENT_RELIABILITY_GEMINI_MODEL || process.env.GEMINI_MODEL || "gemini-2.5-flash"],
+  ["claude-api", process.env.AE_AGENT_RELIABILITY_CLAUDE_MODEL || process.env.CLAUDE_MODEL || process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514"],
+  ["openrouter", process.env.AE_AGENT_RELIABILITY_OPENROUTER_MODEL || process.env.OPENROUTER_MODEL || "openrouter/free", true],
   ["ollama-local", process.env.AE_AGENT_RELIABILITY_OLLAMA_MODEL || process.env.CEP_PANEL_MODEL || "gemma4:latest"]
 ].map(([agentId, model, freeOnly]) => ({ agentId, model, freeOnly: freeOnly === true }));
 

@@ -6,15 +6,6 @@ const os = require("os");
 const path = require("path");
 const { checkAgentReadiness, launchCodexLogin, listAgents } = require("../mcp-server/ai-agents");
 
-const EXPECTED_OPENAI_CLI_MODELS = [
-  "gpt-5.5",
-  "gpt-5.4",
-  "gpt-5.4-mini",
-  "gpt-5.3-codex",
-  "gpt-5.3-codex-spark",
-  "gpt-5.2"
-];
-
 const EXPECTED_PROVIDER_AGENT_ORDER = [
   "openai-api",
   "openai-cli",
@@ -30,15 +21,24 @@ const MANAGED_ENV = [
   "OPENAI_CLI_MODEL",
   "CODEX_CLI_MODELS",
   "OPENAI_CLI_MODELS",
+  "OPENAI_MODEL",
+  "OPENAI_MODELS",
   "OPENAI_API_KEY",
   "OPENAI_KEY",
+  "GEMINI_MODEL",
+  "GEMINI_MODELS",
   "GEMINI_API_KEY",
   "GOOGLE_API_KEY",
+  "CLAUDE_MODEL",
+  "ANTHROPIC_MODEL",
+  "CLAUDE_MODELS",
+  "ANTHROPIC_MODELS",
   "ANTHROPIC_API_KEY",
   "CLAUDE_API_KEY",
   "OPENROUTER_API_KEY",
   "OPENROUTER_KEY",
   "OPENROUTER_MODEL",
+  "OPENROUTER_FREE_MODEL",
   "OPENROUTER_MODELS"
 ];
 
@@ -103,6 +103,36 @@ function findAgent(agents, id) {
   return agent;
 }
 
+function assertNonEmptyString(value, label) {
+  assert.strictEqual(typeof value, "string", `${label} should be a string`);
+  assert(value.trim(), `${label} should not be empty`);
+}
+
+function assertModelOptionsShape(agent, label) {
+  assert(Array.isArray(agent.modelOptions), `${label} should expose modelOptions`);
+  assert(agent.modelOptions.length > 0, `${label} should expose at least one model option`);
+  assert(Array.isArray(agent.models), `${label} should expose models`);
+  const optionIds = agent.modelOptions.map((item, index) => {
+    assert(item && typeof item === "object", `${label} model option ${index} should be an object`);
+    assertNonEmptyString(item.id, `${label} model option ${index}.id`);
+    assertNonEmptyString(item.name || item.id, `${label} model option ${index}.name`);
+    return item.id;
+  });
+  assert.deepStrictEqual(agent.models, optionIds, `${label} models should mirror modelOptions ids`);
+  assert.strictEqual(new Set(optionIds).size, optionIds.length, `${label} model ids should be unique`);
+  assert(agent.models.includes(agent.model), `${label} selected model should be in models`);
+}
+
+function assertModelsShape(agent, label) {
+  assert(Array.isArray(agent.models), `${label} should expose models`);
+  assert(agent.models.length > 0, `${label} should expose at least one model`);
+  for (const [index, model] of agent.models.entries()) {
+    assertNonEmptyString(model, `${label} model ${index}`);
+  }
+  assert.strictEqual(new Set(agent.models).size, agent.models.length, `${label} model ids should be unique`);
+  assert(agent.models.includes(agent.model), `${label} selected model should be in models`);
+}
+
 async function main() {
   const saved = saveEnv();
   try {
@@ -112,15 +142,24 @@ async function main() {
     setEnv("OPENAI_CLI_MODEL", null);
     setEnv("CODEX_CLI_MODELS", null);
     setEnv("OPENAI_CLI_MODELS", null);
+    setEnv("OPENAI_MODEL", null);
+    setEnv("OPENAI_MODELS", null);
     setEnv("OPENAI_API_KEY", "");
     setEnv("OPENAI_KEY", "");
+    setEnv("GEMINI_MODEL", null);
+    setEnv("GEMINI_MODELS", null);
     setEnv("GEMINI_API_KEY", "");
     setEnv("GOOGLE_API_KEY", "");
+    setEnv("CLAUDE_MODEL", null);
+    setEnv("ANTHROPIC_MODEL", null);
+    setEnv("CLAUDE_MODELS", null);
+    setEnv("ANTHROPIC_MODELS", null);
     setEnv("ANTHROPIC_API_KEY", "");
     setEnv("CLAUDE_API_KEY", "");
     setEnv("OPENROUTER_API_KEY", "");
     setEnv("OPENROUTER_KEY", "");
     setEnv("OPENROUTER_MODEL", null);
+    setEnv("OPENROUTER_FREE_MODEL", null);
     setEnv("OPENROUTER_MODELS", null);
 
     const listed = await listAgents({});
@@ -144,6 +183,7 @@ async function main() {
     assert.strictEqual(openAiApi.canSaveKey, true);
     assert.strictEqual(openAiApi.setupAction, "save_api_key");
     assert.strictEqual(openAiApi.configured, false);
+    assertModelOptionsShape(openAiApi, "OpenAI API");
 
     assert.strictEqual(openAiCli.providerGroup, "openai");
     assert.strictEqual(openAiCli.authMode, "cli");
@@ -159,11 +199,9 @@ async function main() {
     assert(openAiCli.codexStatus.versionCheck, "OpenAI CLI status should include version diagnostics");
     assert.deepStrictEqual(openAiCli.codexStatus.versionCheck.args, ["--version"]);
     assert.strictEqual(openAiCli.codexStatus.loginStatusCheck, null);
-
-    const cliModelIds = openAiCli.modelOptions.map((item) => item.id);
-    assert.deepStrictEqual(cliModelIds, EXPECTED_OPENAI_CLI_MODELS);
-    assert(!cliModelIds.includes("Codex Auto Review"));
-    assert(!cliModelIds.includes("codex-auto-review"));
+    assertModelOptionsShape(openAiCli, "OpenAI CLI");
+    assert(!openAiCli.models.includes("Codex Auto Review"));
+    assert(!openAiCli.models.includes("codex-auto-review"));
 
     assert.strictEqual(geminiApi.providerGroup, "gemini");
     assert.strictEqual(geminiApi.authMode, "api");
@@ -172,7 +210,7 @@ async function main() {
     assert.strictEqual(geminiApi.canSaveKey, true);
     assert.strictEqual(geminiApi.setupAction, "save_api_key");
     assert.strictEqual(geminiApi.configured, false);
-    assert(geminiApi.modelOptions.some((item) => item.id === "gemini-2.5-flash"));
+    assertModelOptionsShape(geminiApi, "Gemini API");
 
     assert.strictEqual(claudeApi.providerGroup, "claude");
     assert.strictEqual(claudeApi.authMode, "api");
@@ -181,7 +219,7 @@ async function main() {
     assert.strictEqual(claudeApi.canSaveKey, true);
     assert.strictEqual(claudeApi.setupAction, "save_api_key");
     assert.strictEqual(claudeApi.configured, false);
-    assert(claudeApi.modelOptions.some((item) => item.id === "claude-sonnet-4-20250514"));
+    assertModelOptionsShape(claudeApi, "Claude API");
 
     assert.strictEqual(openRouter.providerGroup, "openrouter");
     assert.strictEqual(openRouter.authMode, "api");
@@ -191,11 +229,43 @@ async function main() {
     assert.strictEqual(openRouter.canSaveKey, true);
     assert.strictEqual(openRouter.setupAction, "save_api_key");
     assert.strictEqual(openRouter.configured, false);
-    assert(openRouter.models.some((item) => item.indexOf(":free") >= 0 || item === "openrouter/free"));
+    assertModelsShape(openRouter, "OpenRouter");
+
+    setEnv("CODEX_CLI_MODEL", "codex-smoke-selected");
+    setEnv("CODEX_CLI_MODELS", "codex-smoke-a,codex-smoke-selected");
+    setEnv("OPENAI_MODEL", "openai-smoke-selected");
+    setEnv("OPENAI_MODELS", "openai-smoke-a,openai-smoke-selected");
+    setEnv("GEMINI_MODEL", "gemini-smoke-selected");
+    setEnv("GEMINI_MODELS", "gemini-smoke-a,gemini-smoke-selected");
+    setEnv("CLAUDE_MODEL", "claude-smoke-selected");
+    setEnv("CLAUDE_MODELS", "claude-smoke-a,claude-smoke-selected");
+    setEnv("OPENROUTER_MODEL", "openrouter-smoke-selected");
+    setEnv("OPENROUTER_MODELS", "openrouter-smoke-a,openrouter-smoke-selected");
+    const overrideListed = await listAgents({});
+    assert.deepStrictEqual(findAgent(overrideListed.agents, "openai-cli").models, ["codex-smoke-a", "codex-smoke-selected"]);
+    assert.strictEqual(findAgent(overrideListed.agents, "openai-cli").model, "codex-smoke-selected");
+    assert.deepStrictEqual(findAgent(overrideListed.agents, "openai-api").models, ["openai-smoke-a", "openai-smoke-selected"]);
+    assert.strictEqual(findAgent(overrideListed.agents, "openai-api").model, "openai-smoke-selected");
+    assert.deepStrictEqual(findAgent(overrideListed.agents, "gemini-api").models, ["gemini-smoke-a", "gemini-smoke-selected"]);
+    assert.strictEqual(findAgent(overrideListed.agents, "gemini-api").model, "gemini-smoke-selected");
+    assert.deepStrictEqual(findAgent(overrideListed.agents, "claude-api").models, ["claude-smoke-a", "claude-smoke-selected"]);
+    assert.strictEqual(findAgent(overrideListed.agents, "claude-api").model, "claude-smoke-selected");
+    assert.deepStrictEqual(findAgent(overrideListed.agents, "openrouter").models, ["openrouter-smoke-a", "openrouter-smoke-selected"]);
+    assert.strictEqual(findAgent(overrideListed.agents, "openrouter").model, "openrouter-smoke-selected");
+    setEnv("CODEX_CLI_MODEL", null);
+    setEnv("CODEX_CLI_MODELS", null);
+    setEnv("OPENAI_MODEL", null);
+    setEnv("OPENAI_MODELS", null);
+    setEnv("GEMINI_MODEL", null);
+    setEnv("GEMINI_MODELS", null);
+    setEnv("CLAUDE_MODEL", null);
+    setEnv("CLAUDE_MODELS", null);
+    setEnv("OPENROUTER_MODEL", null);
+    setEnv("OPENROUTER_MODELS", null);
 
     const readiness = await checkAgentReadiness({
       agentId: "openai-cli",
-      model: "gpt-5.5"
+      model: openAiCli.model
     });
     assert.strictEqual(readiness.canChat, false);
     assert.strictEqual(readiness.configured, false);
@@ -227,7 +297,7 @@ async function main() {
 
       const fakeReadiness = await checkAgentReadiness({
         agentId: "openai-cli",
-        model: "gpt-5.5"
+        model: fakeCli.model
       });
       assert.strictEqual(fakeReadiness.canChat, false);
       assert.strictEqual(fakeReadiness.configured, false);
@@ -237,9 +307,11 @@ async function main() {
 
     let fakeLoggedIn = null;
     await withFakeNodeCodex(0, "Logged in from fake Codex", async () => {
+      const fakeListed = await listAgents({});
+      const fakeCli = findAgent(fakeListed.agents, "openai-cli");
       const fakeReadiness = await checkAgentReadiness({
         agentId: "openai-cli",
-        model: "gpt-5.5"
+        model: fakeCli.model
       });
       assert.strictEqual(fakeReadiness.configured, true);
       assert.strictEqual(fakeReadiness.reachable, true);
@@ -276,7 +348,7 @@ async function main() {
           authMode: openAiCli.authMode,
           setupAction: openAiCli.setupAction,
           requiresApiKey: openAiCli.requiresApiKey,
-          models: cliModelIds,
+          modelCount: openAiCli.models.length,
           missingCliError: readiness.error,
           setupLaunchBlocked: missingCliSetupError.status.status,
           missingCliVersionCheck: openAiCli.codexStatus.versionCheck.status,

@@ -10,12 +10,16 @@ const oldPlanRoot = ["plans", "archive"].join("/");
 const oldPlanHistory = ["target-app-execplan", "history"].join("-");
 const stagingRootChild = `${["C:", "Users", "Ant", "Documents", "Codex", "AE_agent_clean"].join("\\")}\\`;
 const stagingRootChildEscaped = `${["C:", "Users", "Ant", "Documents", "Codex", "AE_agent_clean"].join("\\\\")}\\\\`;
+const userRuntimeCache = `${["C:", "Users", "Ant", ".cache", "codex-runtimes"].join("\\")}\\`;
+const userRuntimeCacheEscaped = `${["C:", "Users", "Ant", ".cache", "codex-runtimes"].join("\\\\")}\\\\`;
 const oldImporterLedger = ["kyletmartinez-after-effects-scripts-intake", "queue-ledger.json"].join("/");
 
 const scannedRoots = [
   "package.json",
+  "mcp-config.example.json",
   "AGENTS.md",
   "README.md",
+  "RELEASES.md",
   "docs",
   "mcp-server",
   "orchestrator",
@@ -56,6 +60,8 @@ function assertNoOldReferences() {
         oldPlanHistory,
         stagingRootChild,
         stagingRootChildEscaped,
+        userRuntimeCache,
+        userRuntimeCacheEscaped,
         oldImporterLedger,
       ]) {
         if (text.includes(forbidden)) {

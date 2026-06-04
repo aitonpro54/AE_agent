@@ -5,6 +5,9 @@ for current Full Intaker/importer work.
 
 ## Current Commands
 
+These `generic-repo:*` commands are intentionally retained as the current
+AE-specific Full Intaker/importer surface:
+
 - `npm run generic-repo:auto-intake`
 - `npm run generic-repo:full-intake`
 - `npm run generic-repo:tool-importer`
@@ -21,6 +24,8 @@ for current Full Intaker/importer work.
 - Generic reusable SDK orchestration should move toward the sibling
   `codex-sdk-orchestrator-tool`; this repo keeps AE Agent-specific policy and
   bounded importer behavior.
+- Do not remove `generic-repo:*` scripts unless the AE-specific intake surface
+  has an equivalent reviewed replacement.
 - Runtime artifacts stay in ignored local runtime directories.
 - Live CEP/After Effects mutation, external-provider planner validation,
   dependency changes, push, and PR remain separate approval-gated work.

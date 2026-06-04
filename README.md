@@ -110,18 +110,18 @@ Optional AI agent variables:
 
 ```powershell
 $env:OPENAI_API_KEY="sk-..."
-$env:OPENAI_MODEL="gpt-5.5"
+$env:OPENAI_MODEL="gpt-5"
 
-$env:CODEX_CLI_MODEL="gpt-5.5"
+$env:CODEX_CLI_MODEL="gpt-5"
 
 $env:GEMINI_API_KEY="..."
 $env:GEMINI_MODEL="gemini-2.5-flash"
 
 $env:ANTHROPIC_API_KEY="..."
-$env:CLAUDE_MODEL="claude-sonnet-4-20250514"
+$env:CLAUDE_MODEL="<anthropic-model-id>"
 
 $env:OPENROUTER_API_KEY="sk-or-..."
-$env:OPENROUTER_MODEL="nvidia/nemotron-3-super-120b-a12b:free"
+$env:OPENROUTER_MODEL="openrouter/free"
 
 $env:OLLAMA_BASE_URL="http://127.0.0.1:11434"
 $env:OLLAMA_MODEL="gemma4:latest"
@@ -135,7 +135,7 @@ OpenAI has two separate paths. `openai-api` uses `OPENAI_API_KEY` and normal Ope
 
 `gemini-api` uses `GEMINI_API_KEY` with Google's Gemini `generateContent` REST endpoint. `claude-api` uses `ANTHROPIC_API_KEY` with Anthropic's Messages API. These are provider API billing paths, not ChatGPT subscription access.
 
-`OPENROUTER_MODEL` can be any OpenRouter model id, a `:free` variant, or the `openrouter/free` router. The default is `nvidia/nemotron-3-super-120b-a12b:free`, chosen from OpenRouter's May 2026 top free model list for agentic/coding workflows. Local Ollama defaults to `gemma4:latest`, uses `/api/chat`, and lists installed models from `/api/tags`. Ollama Cloud and custom providers use OpenAI-compatible `/chat/completions` and `/models` endpoints.
+`OPENROUTER_MODEL` can be any OpenRouter model id, a `:free` variant, or the `openrouter/free` router. Local Ollama defaults to `gemma4:latest`, uses `/api/chat`, and lists installed models from `/api/tags`. Ollama Cloud and custom providers use OpenAI-compatible `/chat/completions` and `/models` endpoints.
 
 You can also paste OpenAI API, Gemini, Claude, OpenRouter, or Ollama Cloud keys directly into the After Effects panel under the provider API mode and click `Save`. The bridge stores keys locally in `.codex\agent-secrets.json`; that folder is ignored by git. For isolated validation, set `AE_AGENT_SECRETS_FILE` to point the bridge at a temporary secrets file.
 
@@ -251,7 +251,7 @@ For a stdio MCP client, point it at:
 }
 ```
 
-There is also a ready local example in `mcp-config.example.json`.
+There is also a safe template in `mcp-config.example.json`. Copy it into your MCP client config, replace `<AE_AGENT_REPO>` with the absolute path to this repository, and keep `"command": "node"` when Node is available on `PATH`. If your client cannot resolve `node`, use your own local Node executable path in the private client config, not in the checked-in example.
 
 ## ChatGPT connector
 
@@ -419,7 +419,7 @@ $env:MCP_CALL_ARGS_JSON='{"agentId":"gemini-api","model":"gemini-2.5-flash"}'
 node .\scripts\mcp-call-tool.js check_ai_agent_readiness
 Remove-Item Env:MCP_CALL_ARGS_JSON
 
-$env:MCP_CALL_ARGS_JSON='{"agentId":"claude-api","model":"claude-sonnet-4-20250514"}'
+$env:MCP_CALL_ARGS_JSON='{"agentId":"claude-api","model":"<anthropic-model-id>"}'
 node .\scripts\mcp-call-tool.js check_ai_agent_readiness
 Remove-Item Env:MCP_CALL_ARGS_JSON
 
@@ -427,11 +427,11 @@ $env:MCP_CALL_ARGS_JSON='{"agentId":"ollama-local","model":"llama3.2"}'
 node .\scripts\mcp-call-tool.js check_ai_agent_readiness
 Remove-Item Env:MCP_CALL_ARGS_JSON
 
-$env:MCP_CALL_ARGS_JSON='{"agentId":"openrouter","model":"nvidia/nemotron-3-super-120b-a12b:free","prompt":"Suggest three title animation ideas."}'
+$env:MCP_CALL_ARGS_JSON='{"agentId":"openrouter","model":"openrouter/free","prompt":"Suggest three title animation ideas."}'
 node .\scripts\mcp-call-tool.js chat_with_ai_agent
 Remove-Item Env:MCP_CALL_ARGS_JSON
 
-$env:MCP_CALL_ARGS_JSON='{"agentId":"openrouter","model":"nvidia/nemotron-3-super-120b-a12b:free","prompt":"Create a safe plan for adding a title layer to the active comp."}'
+$env:MCP_CALL_ARGS_JSON='{"agentId":"openrouter","model":"openrouter/free","prompt":"Create a safe plan for adding a title layer to the active comp."}'
 node .\scripts\mcp-call-tool.js plan_with_ai_agent
 Remove-Item Env:MCP_CALL_ARGS_JSON
 
@@ -485,12 +485,6 @@ Remove-Item Env:MCP_CALL_ARGS_JSON
 Set `AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT=1` only when you intentionally want the daemon to execute script files from outside this project folder.
 
 When a script file fails inside After Effects, the tool returns the file path, duration, reported line, and nearby line context when After Effects provides a line number.
-
-In the Codex desktop runtime, this Node executable worked during initial validation:
-
-```text
-C:\Users\Ant\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe
-```
 
 ## Local AE ping
 
