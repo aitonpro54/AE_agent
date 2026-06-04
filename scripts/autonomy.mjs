@@ -318,6 +318,7 @@ function usage() {
     "  npm run autonomy -- revalidate --batch-size 5",
     "  npm run autonomy -- revalidate --include-blocked --batch-size 5",
     "  npm run autonomy -- handoff",
+    "  npm run autonomy -- thread-request",
     "  npm run autonomy -- run-once --batch-size 5",
     "  npm run autonomy -- supervise --dry-run",
     "",
@@ -1571,6 +1572,62 @@ function updateHandoff(options) {
   };
 }
 
+function buildThreadRequest(options) {
+  initAutonomy(options);
+  const repoRoot = options.repoRoot;
+  const state = readState(repoRoot);
+  validateStateContract(repoRoot);
+  const promptPath = repoPath(repoRoot, state.next.exact_next_prompt_path);
+  const prompt = readText(promptPath, "exact-next-prompt");
+  const counts = reportCounts(state);
+  const request = {
+    schema: "codex-autonomy.thread-request.v1",
+    created_at: nowIso(),
+    status: state.status,
+    repo_root: repoRoot,
+    prompt_path: state.next.exact_next_prompt_path,
+    title: `AE Agent autonomy continuation (${state.status})`,
+    target: {
+      kind: "codex-app-project-thread",
+      environment: "local",
+      repo_root: repoRoot,
+    },
+    context_contract: {
+      source: "compact-file-state",
+      required_reads: [
+        ".codex-autonomy/state.json",
+        ".codex-autonomy/handoff.md",
+        ".codex-autonomy/reports/summary.md",
+        ".codex-autonomy/exact_next_prompt.md",
+      ],
+      counts,
+    },
+    safety: {
+      parent_managed: true,
+      app_tool: "codex_app.create_thread",
+      created_by_script: false,
+      notes: "The autonomy CLI prepares this request but does not call Codex app tools itself.",
+    },
+    prompt,
+  };
+  const requestPath = autonomyPath(repoRoot, "thread_request.json");
+  writeJson(requestPath, request);
+  appendLedger(repoRoot, {
+    iteration: state.iteration,
+    event: "thread_request",
+    status: "created",
+    summary: "Prepared parent-managed Codex app thread request.",
+    evidence: [normalizeRepoPath(path.join(AUTONOMY_DIR, "thread_request.json"))],
+  });
+  return {
+    schema: request.schema,
+    status: request.status,
+    thread_request_path: ".codex-autonomy/thread_request.json",
+    app_tool: request.safety.app_tool,
+    parent_managed: true,
+  };
+}
+
 function validateStateContract(repoRoot) {
   const state = readState(repoRoot);
   if (state.schema_version !== STATE_SCHEMA_VERSION) throw new Error("state.schema_version-invalid");
@@ -1754,6 +1811,7 @@ function main() {
     "lane:create": createLanes,
     revalidate: revalidateBatch,
     handoff: updateHandoff,
+    "thread-request": buildThreadRequest,
     "run-once": runOnce,
     supervise,
   };

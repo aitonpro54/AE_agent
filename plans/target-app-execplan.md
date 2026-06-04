@@ -49,6 +49,10 @@ old `AE_agent` repository remains the historical source.
   mock/read-only/static fixture lanes and targeted blocked revalidation.
   Autonomy state is now done: 82 accepted, 1 rejected, 0 blocked, and
   0 pending/needs_lane/needs_revalidation.
+- 2026-06-04: Added a parent-managed Codex app thread request contract for
+  visible UI-thread continuation. The CLI now writes
+  `.codex-autonomy/thread_request.json` with the compact prompt, required
+  reads, counts, target metadata, and app-tool safety envelope.
 
 ## Guardrails
 
@@ -62,12 +66,12 @@ old `AE_agent` repository remains the historical source.
 
 ## Next Milestone
 
-Autonomy script/tool queue is complete. Current state is `done`: 83 candidates
-found, 82 accepted, 1 rejected, and 0 pending/needs_lane/needs_revalidation/
-blocked. The next large milestone is to harden the continuation mechanism for
-real long-running work: keep the CLI `codex exec` supervisor path, and add a
-parent-managed Codex app thread handoff contract for visible UI-thread
-continuation when the parent agent explicitly creates app threads.
+Autonomy script/tool queue and parent-managed thread-request contract are
+complete. Current state is `done`: 83 candidates found, 82 accepted, 1 rejected,
+and 0 pending/needs_lane/needs_revalidation/blocked. The next large milestone
+is product-side work outside the autonomy queue: when After Effects and the
+installed panel are available, run the deferred read-only CEP connectivity
+checks and then choose the next AE Agent feature/intake milestone.
 
 After the autonomy pass is no longer the active milestone and After Effects plus
 the installed panel are available, run the deferred read-only CEP connectivity
@@ -114,6 +118,9 @@ checks: `node scripts/cep-panel-cdp-smoke.js inspect` and
   explicit `external_risk_coverage` using a `mock`, `dry-run`,
   `read-only-fixture`, or `static-fixture` strategy. Generated static lanes
   alone remain insufficient for network/credential/live-runtime risk.
+- 2026-06-04: The CLI may prepare `.codex-autonomy/thread_request.json`, but it
+  does not directly call Codex app tools. Visible UI-thread creation remains a
+  parent-managed action using the app's `codex_app.create_thread` capability.
 
 ## Validation
 
@@ -155,6 +162,10 @@ checks: `node scripts/cep-panel-cdp-smoke.js inspect` and
   `npm.cmd run check:rules`; and `git diff --check` (Windows line-ending
   normalization warnings only). Result: autonomy state `done`, accepted 82,
   rejected 1, blocked 0.
+- Parent-managed thread request validation passed: `node --check
+  scripts/autonomy.mjs`; `node --check scripts/autonomy-layer-smoke.js`;
+  `npm.cmd run smoke:autonomy`; and
+  `npm.cmd run autonomy -- thread-request`.
 
 ## Handoff
 

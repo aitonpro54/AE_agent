@@ -12,6 +12,8 @@
 - External-risk blockers resolved with explicit safe `mock`,
   `read-only-fixture`, and `static-fixture` lanes; generated static lanes alone
   remain insufficient for network/credential/live-runtime risk.
+- Parent-managed visible thread continuation request is available at
+  `.codex-autonomy/thread_request.json`.
 
 ## Какие скрипты приняты
 
@@ -83,6 +85,7 @@ _нет_
 
 - `npm.cmd run autonomy -- revalidate --include-blocked --batch-size 4`
 - `npm.cmd run autonomy -- handoff`
+- `npm.cmd run autonomy -- thread-request`
 - `node --check scripts/sdk-generic-repo-full-intake-smoke.js`
 - `node --check scripts/semantic-verification-smoke.js`
 - `node --check scripts/solution-promotion-smoke.js`

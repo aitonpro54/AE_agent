@@ -85,6 +85,22 @@ function assertSuperviseDryRunDoesNotRunCodex(root) {
   assert(result.prompt_preview.includes(".codex-autonomy/state.json"));
 }
 
+function assertThreadRequestIsParentManaged(root) {
+  const result = run(root, ["thread-request"]);
+  assert.strictEqual(result.schema, "codex-autonomy.thread-request.v1");
+  assert.strictEqual(result.parent_managed, true);
+  assert.strictEqual(result.app_tool, "codex_app.create_thread");
+  const request = readJson(path.join(root, ".codex-autonomy", "thread_request.json"));
+  assert.strictEqual(request.schema, "codex-autonomy.thread-request.v1");
+  assert.strictEqual(request.safety.created_by_script, false);
+  assert.strictEqual(request.safety.parent_managed, true);
+  assert(request.prompt.includes(".codex-autonomy/state.json"));
+  assert.deepStrictEqual(request.context_contract.required_reads.slice(0, 2), [
+    ".codex-autonomy/state.json",
+    ".codex-autonomy/handoff.md"
+  ]);
+}
+
 function assertTerminalStatusesStopLoop(root) {
   const statePath = path.join(root, ".codex-autonomy", "state.json");
   for (const status of ["done", "blocked", "needs_human"]) {
@@ -157,6 +173,7 @@ function main() {
   run(root, ["rank"]);
   assertRunOnceUpdatesStateAndHandoff(root);
   assertSuperviseDryRunDoesNotRunCodex(root);
+  assertThreadRequestIsParentManaged(root);
   assertTerminalStatusesStopLoop(root);
   assertBlockedExternalRiskUsesExplicitSafeLane();
   console.log("Autonomy layer smoke: pass");

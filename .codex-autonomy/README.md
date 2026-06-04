@@ -15,6 +15,8 @@ scripts/tools без переноса старого chat context. Источн�
 - `lanes/` - generated validation lanes.
 - `handoff.md` - человекочитаемый summary.
 - `exact_next_prompt.md` - единственный prompt для нового thread/run.
+- `thread_request.json` - parent-managed request для создания видимого Codex
+  app thread, когда parent agent явно вызывает Codex app tools.
 - `reports/` - summary, accepted/rejected lists и validation matrix.
 
 Runtime выводы `runs/` и `logs/` локальные и ignored.
@@ -50,6 +52,12 @@ Supervisor dry-run, без реального запуска Codex:
 npm run autonomy -- supervise --dry-run
 ```
 
+Подготовить parent-managed request для видимого Codex app thread:
+
+```powershell
+npm run autonomy -- thread-request
+```
+
 Supervisor с Codex CLI backend:
 
 ```powershell
@@ -64,6 +72,9 @@ codex exec --sandbox workspace-write -
 
 `resume` не используется по умолчанию. Опасный
 `--dangerously-bypass-approvals-and-sandbox` не добавляется.
+
+Видимые Codex app threads создаются не из Node CLI, а parent agent'ом через
+Codex app tool по данным из `.codex-autonomy/thread_request.json`.
 
 ## Reports
 
