@@ -8,11 +8,15 @@ const repo = path.resolve(__dirname, "..");
 const auditLiteral = [".codex", "audit"].join("-");
 const oldPlanRoot = ["plans", "archive"].join("/");
 const oldPlanHistory = ["target-app-execplan", "history"].join("-");
+const oldSourceRootChild = `${["C:", "Users", "Ant", "Documents", "Codex", "AE_agent"].join("\\")}\\`;
+const oldSourceRootChildEscaped = `${["C:", "Users", "Ant", "Documents", "Codex", "AE_agent"].join("\\\\")}\\\\`;
+const oldImporterLedger = ["kyletmartinez-after-effects-scripts-intake", "queue-ledger.json"].join("/");
 
 const scannedRoots = [
   "package.json",
   "AGENTS.md",
   "README.md",
+  "docs",
   "mcp-server",
   "orchestrator",
   "scripts",
@@ -46,7 +50,14 @@ function assertNoOldReferences() {
     for (const relativePath of walk(root)) {
       if (allowedReferenceFiles.has(path.normalize(relativePath))) continue;
       const text = readText(relativePath);
-      for (const forbidden of [auditLiteral, oldPlanRoot, oldPlanHistory]) {
+      for (const forbidden of [
+        auditLiteral,
+        oldPlanRoot,
+        oldPlanHistory,
+        oldSourceRootChild,
+        oldSourceRootChildEscaped,
+        oldImporterLedger,
+      ]) {
         if (text.includes(forbidden)) {
           violations.push(`${relativePath}: ${forbidden}`);
         }

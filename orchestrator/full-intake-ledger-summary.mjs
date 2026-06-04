@@ -4,8 +4,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const DEFAULT_LEDGER_PATH =
-  ".codex-runtime/sdk/generic-repo-importer/kyletmartinez-after-effects-scripts-intake/queue-ledger.json";
 const SCHEMA = "generic-repo-full-intake.ledger-summary.v1";
 const DEFAULT_ID_LIMIT = 16;
 const DEFAULT_FAMILY_LIMIT = 16;
@@ -17,8 +15,7 @@ function usage() {
     "Usage: node orchestrator/full-intake-ledger-summary.mjs [options]",
     "",
     "Options:",
-    "  --ledger <path>          Durable generic repository importer ledger.",
-    `                           Defaults to ${DEFAULT_LEDGER_PATH}`,
+    "  --ledger <path>          Required durable generic repository importer ledger.",
     "  --target-repo <path>     Repository root for relative paths. Defaults to current directory.",
     "  --id-limit <n>           Max ids per compact group. Defaults to 16.",
     "  --family-limit <n>       Max family rows. Defaults to 16.",
@@ -42,7 +39,7 @@ function parseArgs(argv) {
   const options = {
     familyLimit: DEFAULT_FAMILY_LIMIT,
     idLimit: DEFAULT_ID_LIMIT,
-    ledger: DEFAULT_LEDGER_PATH,
+    ledger: "",
     output: "compact",
     reasonLimit: DEFAULT_REASON_LIMIT,
     targetRepo: process.cwd(),
@@ -155,6 +152,9 @@ function reasonFor(entry) {
 
 function summarizeLedger(options) {
   const targetRepo = path.resolve(options.targetRepo || process.cwd());
+  if (!options.ledger) {
+    throw new Error("ledger-required");
+  }
   const ledgerPath = path.resolve(targetRepo, options.ledger);
   if (!existsSync(ledgerPath)) {
     throw new Error(`ledger-not-found:${ledgerPath}`);

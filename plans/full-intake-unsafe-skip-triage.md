@@ -1,7 +1,9 @@
 # Full Intaker Unsafe Skip Triage
 
 Date: 2026-05-31
-Source ledger: `.codex-runtime/sdk/generic-repo-importer/kyletmartinez-after-effects-scripts-intake/queue-ledger.json`
+Clean baseline note: this is retained as the current unsafe-skip backlog
+summary. The generated runtime ledger that originally produced it was not
+copied into this repository.
 
 ## Summary
 

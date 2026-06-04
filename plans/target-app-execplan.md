@@ -17,9 +17,19 @@ old `AE_agent` repository remains the historical source.
   API, CEP UI semantics, provider contracts, or recipe semantics.
 - Current Full Intaker/importer tooling remains available for AE-specific tool
   intake and validation.
+- Full Intaker/importer real-run commands now require explicit current ledger
+  paths instead of defaulting to generated runtime ledgers from the old
+  workspace.
 - Generic SDK write/governance history was not copied. Future generic SDK work
   should happen in the sibling `codex-sdk-orchestrator-tool` or a separate
   reviewed migration.
+
+## Progress
+
+- 2026-06-04: Clean baseline created and validated in `AE_agent_clean`.
+- 2026-06-04: Cleanup review removed stale project-memory history, updated the
+  MCP config example to the clean path, and added checks against old absolute
+  project paths and the old importer ledger default.
 
 ## Guardrails
 
@@ -33,9 +43,10 @@ old `AE_agent` repository remains the historical source.
 
 ## Next Milestone
 
-After this migration commit, the next product milestone can resume from the old
-handoff context if needed, but it should record only compact current evidence in
-this clean repo.
+Before replacing the old directory, prepare a manual archive/rename plan that
+preserves the old repo and its git history. After the user accepts that plan,
+the active Codex MCP config and any local shortcuts can be pointed at the clean
+repo path or at the final renamed directory.
 
 ## Decision Log
 
@@ -43,12 +54,19 @@ this clean repo.
   rewriting the old repo history.
 - 2026-06-04: Kept AE Agent product and current AE-specific Full
   Intaker/importer tools; excluded old audit packet history and plan archives.
+- 2026-06-04: Removed default dependencies on the old generated importer ledger;
+  future Full Intaker real runs must pass `--ledger <path>` explicitly.
+- 2026-06-04: Preserved `docs/cleanup-migration.md` as the only intentional
+  old-repo pointer.
 
 ## Validation
 
 - Required for the migration milestone: static no-old-reference checks,
   touched-file syntax checks, `git diff --check`, `npm run check:rules`,
   product smoke scripts, and retained Full Intaker/importer smoke scripts.
+- Cleanup-review validation passed: touched-file `node --check`,
+  `npm.cmd run check:rules`, static stale-reference search, `git diff --check`,
+  `npm.cmd run smoke:bridge`, and `npm.cmd run smoke:full-intake`.
 
 ## Handoff
 

@@ -1776,7 +1776,7 @@ async function main() {
     },
     runResult: {
       ok: false,
-      error: "Provider token Bearer smoke-secret-token and path C:\\Users\\Ant\\Documents\\Codex\\AE_agent\\private.aep must be redacted."
+      error: "Provider token Bearer smoke-secret-token and path C:\\Users\\Ant\\Documents\\Codex\\AE_agent_clean\\private.aep must be redacted."
     },
     openCodexApp: false
   });
@@ -2179,7 +2179,7 @@ async function main() {
     throw new Error("Dev request smoke should not launch Codex App when openCodexApp is false");
   }
   if (
-    /sk-smoke-secret|smoke-secret-token|C:\\Users\\Ant\\Documents\\Codex\\AE_agent/.test(devRequestText + devEvidenceText + devStartPromptText + devCandidateText)
+    /sk-smoke-secret|smoke-secret-token|C:\\Users\\Ant\\Documents\\Codex\\AE_agent_clean/.test(devRequestText + devEvidenceText + devStartPromptText + devCandidateText)
   ) {
     throw new Error("Dev request bundle leaked a secret or absolute project path");
   }

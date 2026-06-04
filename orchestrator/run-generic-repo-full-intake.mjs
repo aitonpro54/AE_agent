@@ -34,8 +34,6 @@ const RESOLUTION_TICKET_SCHEMA = "generic-repo-full-intake.resolution-ticket.v1"
 const RECOVERY_VALIDATION_SCHEMA = "generic-repo-full-intake.recovery-validation.v1";
 const CHILD_TIMEOUT_RECOVERY_SCHEMA = "generic-repo-full-intake.child-timeout-recovery.v1";
 const AUXILIARY_ID = "AUX-043";
-const DEFAULT_LEDGER_PATH =
-  ".codex-runtime/sdk/generic-repo-importer/kyletmartinez-after-effects-scripts-intake/queue-ledger.json";
 const DEFAULT_RUN_ROOT_RELATIVE = ".codex-runtime/sdk/generic-repo-full-intake";
 const DEFAULT_LIVE_LANE_REGISTRY = "orchestrator/generic-repo-live-lane-registry.json";
 const DEFAULT_COMMAND_TIMEOUT_MS = 10 * 60 * 1000;
@@ -359,8 +357,7 @@ Usage:
   node orchestrator/run-generic-repo-full-intake.mjs --ledger <path> --run-id <id> --max-items <n> --json
 
 Options:
-  --ledger <path>              Durable generic repository importer ledger.
-                              Defaults to ${DEFAULT_LEDGER_PATH}
+  --ledger <path>              Required durable generic repository importer ledger.
   --run-id <id>                Stable run id. Required for resumable runs.
   --max-items <n>              Number of queued ranked candidates to consider. Default 1.
   --target-repo <path>         Optional target repo override. Defaults to ledger.target.repoPath.
@@ -5064,13 +5061,16 @@ export async function runFullIntake(options, cwd = process.cwd()) {
   if (!options.runId) {
     throw new Error("--run-id is required for generic repo full-intake runs");
   }
+  if (!options.ledger) {
+    throw new Error("--ledger is required for generic repo full-intake runs");
+  }
   const maxItems = parsePositiveInteger(options.maxItems, "max-items", 1);
   if (maxItems > 1 && options.allowBatchMode !== true) {
     throw new Error("max-items-greater-than-1-requires-allow-batch-mode");
   }
   const timeoutMs = parsePositiveInteger(options.commandTimeoutMs, "command-timeout-ms", DEFAULT_COMMAND_TIMEOUT_MS);
   const contextBudget = contextBudgetFromOptions(options);
-  const ledgerPath = resolveOptionalPath(cwd, options.ledger, DEFAULT_LEDGER_PATH);
+  const ledgerPath = resolveOptionalPath(cwd, options.ledger, null);
   if (!existsSync(ledgerPath) || !statSync(ledgerPath).isFile()) {
     throw new Error(`ledger-missing: ${ledgerPath}`);
   }

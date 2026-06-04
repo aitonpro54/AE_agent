@@ -27,8 +27,6 @@ const PROOF_ENVELOPE_SCHEMA = "generic-repo-queue-supervisor.proof-envelope.v1";
 const PARENT_OUTPUT_SCHEMA = "generic-repo-queue-supervisor.parent-compact-output.v1";
 const AUXILIARY_ID = "AUX-031";
 const BATCH_AUXILIARY_ID = "AUX-038";
-const DEFAULT_LEDGER_PATH =
-  ".codex-runtime/sdk/generic-repo-importer/kyletmartinez-after-effects-scripts-intake/queue-ledger.json";
 const BATCH_ROOT_RELATIVE = ".codex-runtime/sdk/generic-repo-queue-supervisor";
 const IMPORTER_RESULT_SUMMARY_MAX_BYTES = 64 * 1024;
 const PROOF_ENVELOPE_MAX_BYTES = 32 * 1024;
@@ -75,8 +73,7 @@ Usage:
   node orchestrator/run-generic-repo-queue-supervisor.mjs --batch --ledger <path> --max-items <n> --compact-json
 
 Options:
-  --ledger <path>        Durable generic repository importer ledger.
-                        Defaults to ${DEFAULT_LEDGER_PATH}
+  --ledger <path>        Required durable generic repository importer ledger.
   --target-repo <path>   Optional target repo override. Defaults to ledger.target.repoPath.
   --max-items <n>        Number of queued safe ranked candidates to plan. Default 3.
   --run-id <id>          Optional stable batch runtime id.
@@ -320,7 +317,10 @@ function resolveInside(root, candidate, label) {
 }
 
 function resolveLedgerPath(cwd, value) {
-  const candidate = value || DEFAULT_LEDGER_PATH;
+  if (!value) {
+    throw new Error("--ledger is required for queue supervisor runs");
+  }
+  const candidate = value;
   return path.isAbsolute(candidate) ? candidate : path.resolve(cwd, candidate);
 }
 
