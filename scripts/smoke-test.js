@@ -12,6 +12,10 @@ const port = String(3457 + Math.floor(Math.random() * 1000));
 const token = "smoke-test-token";
 const repoRoot = path.join(__dirname, "..");
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function smokeArtifactDir() {
   const dir = path.join(repoRoot, "logs", "hardcore-sessions", "smoke-" + port);
   fs.mkdirSync(dir, { recursive: true });
@@ -1749,6 +1753,7 @@ async function main() {
     requestId: "smoke-raw-extendscript-gate",
     plan: rawExtendscriptPlan
   });
+  const fakePrivateProjectPath = path.join(repoRoot, "private.aep");
   const devRequest = await requestJsonWithOptions({
     hostname: "127.0.0.1",
     port,
@@ -1776,7 +1781,7 @@ async function main() {
     },
     runResult: {
       ok: false,
-      error: "Provider token Bearer smoke-secret-token and path C:\\Users\\Ant\\Documents\\Codex\\AE_agent_clean\\private.aep must be redacted."
+      error: `Provider token Bearer smoke-secret-token and path ${fakePrivateProjectPath} must be redacted.`
     },
     openCodexApp: false
   });
@@ -2179,7 +2184,9 @@ async function main() {
     throw new Error("Dev request smoke should not launch Codex App when openCodexApp is false");
   }
   if (
-    /sk-smoke-secret|smoke-secret-token|C:\\Users\\Ant\\Documents\\Codex\\AE_agent_clean/.test(devRequestText + devEvidenceText + devStartPromptText + devCandidateText)
+    new RegExp(`sk-smoke-secret|smoke-secret-token|${escapeRegExp(fakePrivateProjectPath)}`).test(
+      devRequestText + devEvidenceText + devStartPromptText + devCandidateText
+    )
   ) {
     throw new Error("Dev request bundle leaked a secret or absolute project path");
   }

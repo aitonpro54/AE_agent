@@ -8,8 +8,8 @@ const repo = path.resolve(__dirname, "..");
 const auditLiteral = [".codex", "audit"].join("-");
 const oldPlanRoot = ["plans", "archive"].join("/");
 const oldPlanHistory = ["target-app-execplan", "history"].join("-");
-const oldSourceRootChild = `${["C:", "Users", "Ant", "Documents", "Codex", "AE_agent"].join("\\")}\\`;
-const oldSourceRootChildEscaped = `${["C:", "Users", "Ant", "Documents", "Codex", "AE_agent"].join("\\\\")}\\\\`;
+const stagingRootChild = `${["C:", "Users", "Ant", "Documents", "Codex", "AE_agent_clean"].join("\\")}\\`;
+const stagingRootChildEscaped = `${["C:", "Users", "Ant", "Documents", "Codex", "AE_agent_clean"].join("\\\\")}\\\\`;
 const oldImporterLedger = ["kyletmartinez-after-effects-scripts-intake", "queue-ledger.json"].join("/");
 
 const scannedRoots = [
@@ -54,8 +54,8 @@ function assertNoOldReferences() {
         auditLiteral,
         oldPlanRoot,
         oldPlanHistory,
-        oldSourceRootChild,
-        oldSourceRootChildEscaped,
+        stagingRootChild,
+        stagingRootChildEscaped,
         oldImporterLedger,
       ]) {
         if (text.includes(forbidden)) {

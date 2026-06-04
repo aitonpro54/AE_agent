@@ -26,7 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
-- 2026-06-04: Clean baseline created and validated in `AE_agent_clean`.
+- 2026-06-04: Clean baseline created, validated, and prepared to become the
+  active `AE_agent` repo.
 - 2026-06-04: Cleanup review removed stale project-memory history, updated the
   MCP config example to the clean path, and added checks against old absolute
   project paths and the old importer ledger default.
@@ -43,10 +44,9 @@ old `AE_agent` repository remains the historical source.
 
 ## Next Milestone
 
-Before replacing the old directory, prepare a manual archive/rename plan that
-preserves the old repo and its git history. After the user accepts that plan,
-the active Codex MCP config and any local shortcuts can be pointed at the clean
-repo path or at the final renamed directory.
+After directory replacement, verify the active Codex MCP config and any local
+shortcuts point at `C:\Users\Ant\Documents\Codex\AE_agent`, then run read-only
+CEP connectivity checks.
 
 ## Decision Log
 

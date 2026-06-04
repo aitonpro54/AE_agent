@@ -4,10 +4,11 @@
 
 ## Current Workspace
 
-- Active project root: `C:\Users\Ant\Documents\Codex\AE_agent_clean`.
+- Active project root: `C:\Users\Ant\Documents\Codex\AE_agent`.
 - Repository status: clean standalone baseline repo on `main`.
-- Historical source: the old AE Agent workspace remains outside this repo and
-  should be used only for targeted historical lookup.
+- Historical source: after replacement, the previous AE Agent workspace is kept
+  as the dated legacy directory outside this repo and should be used only for
+  targeted historical lookup.
 
 ## Product Goal
 
@@ -55,7 +56,7 @@ Codex -> stdio MCP adapter -> local bridge daemon -> CEP panel -> After Effects
 ## Next Useful Work
 
 1. Keep product work in this clean repo after user acceptance.
-2. Before replacing the old directory, make a manual archive/rename plan that
-   preserves the old repo and its git history.
+2. Keep the dated legacy directory until the clean baseline has been accepted
+   and used for normal work.
 3. Resume product milestones from compact current docs and handoffs, not from
    old generated proof archives.
