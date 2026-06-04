@@ -3897,6 +3897,101 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "alert-selected-layer-index-typed-plan",
+      "title": "Alert Selected Layer Index Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "selection",
+        "layers",
+        "selected-layers",
+        "layer-index",
+        "alert",
+        "utility",
+        "read-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Report the first selected layer index from typed selected-layer evidence without using UI alert behavior or mutating the project.",
+        "appliesWhen": [
+          "The user asks to alert, show, report, or read the selected layer index.",
+          "The requested result is the first selected layer index in the active composition."
+        ]
+      },
+      "inputs": [],
+      "targetAssumptions": [
+        "An active composition exists before selected-layer index state is reported.",
+        "Current layer selection is read from typed get_selected_layers evidence, not inferred from previous chat context, screenshots, visible layer names, or unavailable source-script state.",
+        "The first selected layer is the first record returned by get_selected_layers.",
+        "Empty selection is a valid read-only result and must not trigger raw script execution, guessed fallback selection, or selection mutation.",
+        "UI alert modal behavior, native try/catch timing, and exact source JSX semantics remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/alert-selected-layer-index-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and selected-layer state, then confirm the first selected layer index comes from typed evidence.",
+        "steps": [
+          "Run get_active_comp before reporting to capture active comp identity.",
+          "Run get_selected_layers and use the returned layer order as the complete selected layer snapshot.",
+          "Report selected layer count and the first selected layerIndex exactly from the first selected-layer evidence record.",
+          "Run get_layer_details only for the same concrete first selected layerIndex when more detail is needed.",
+          "Fail closed instead of using UI alert behavior, raw ExtendScript, guessed layer choice, or selection mutation when selection evidence is empty or unavailable."
+        ],
+        "expectedEvidence": [
+          "Alert-selected-layer-index plans include get_selected_layers evidence before the first selected layer index is reported.",
+          "The selected layer count equals the number of selected layer records returned by get_selected_layers.",
+          "The reported first selected layerIndex and name match the first selected-layer evidence record or optional get_layer_details read-back for the same index.",
+          "The response reports empty selection or unavailable evidence without mutating layer selection state or executing raw scripts."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-utilities-alert-selected-layer-index generic repository importer as advisory read-only selected-layer-index utility coverage.",
+          "Parent-owned recovery added the product files after the detached child run completed with no changes due a Windows sandbox command-launch failure."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-05",
+          "from": "generic-repo-importer-tool-utilities-alert-selected-layer-index",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the selected-layer-index reporting intent behind Utilities/Alert_Selected_Layer_Index.jsx into read-only typed selected-layer evidence guidance; no source JSX copied. The recipe requires get_active_comp and get_selected_layers evidence before reporting the first selected layerIndex, optionally get_layer_details for that same index, and fail-closed handling for empty selection, UI alert behavior, raw ExtendScript, selection mutation, layer mutation, timing edits, render queue changes, source relinking, and exact source semantics. Parent reducer recovered the planned files after the importer child run produced no changes because its detached worktree command sandbox failed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution uses normal Agent plan validation and read-only typed tools.",
+        "Report through the Agent response, not through a UI alert or ScriptUI behavior.",
+        "Do not infer selected layers from prior chat context, screenshots, visible layer names, source names, or unavailable source-script state.",
+        "Do not use this recipe for changing selection, selecting fallback layers, layer mutation, source relinking, render queue items, or broad timeline cleanup."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "layer-selection-set-typed-plan",
       "title": "Layer Selection Set Typed Plan",
       "status": "recipe",

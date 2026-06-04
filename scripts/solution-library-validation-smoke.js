@@ -57,6 +57,7 @@ const IMPORTED_ADVISORY_IDS = [
   "get-selected-layer-duration-typed-plan",
   "calculate-distance-between-layers-typed-plan",
   "layer-selection-get-typed-plan",
+  "alert-selected-layer-index-typed-plan",
   "layer-selection-set-typed-plan",
   "select-all-children-typed-plan",
   "select-disabled-layers-typed-plan",
@@ -1196,6 +1197,26 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /selection state/.test(note)), `${id}: notes must reject selection-state mutation.`);
       assert(solution.notes.some((note) => /changing selection/.test(note)), `${id}: notes must keep selection mutation out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Layer_Selection_Get/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "alert-selected-layer-index-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details"],
+        `${id}: imported alert-selected-layer-index workflow should stay on the narrow read-only typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: selected-layer index alert adaptation must stay read-only.`);
+      assert.strictEqual(solution.requiredSafetyGates.allowMutations, false, `${id}: selected-layer index reporting must not allow mutations.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("first selected layer index"), `${id}: recipe should document first selected layer index semantics.`);
+      assert(text.includes("Do not reproduce ScriptUI"), `${id}: recipe should reject UI alert reproduction.`);
+      assert(text.includes("Do not infer selected layers"), `${id}: recipe should reject inferred layer selection.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should use optional same-index layer detail read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_active_comp/.test(step)), `${id}: verification must capture active comp evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /first selected layerIndex/.test(step)), `${id}: verification must report the first selected layer index.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /first selected layerIndex/.test(item)), `${id}: verification must require first selected layer index evidence.`);
+      assert(solution.notes.some((note) => /UI alert/.test(note)), `${id}: notes must keep UI alert behavior out of scope.`);
+      assert(solution.notes.some((note) => /changing selection/.test(note)), `${id}: notes must keep selection mutation out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /Alert_Selected_Layer_Index/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else if (id === "layer-selection-set-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2754,6 +2775,20 @@ function assertActualRetrieval(registry) {
   assert(layerSelectionGetPromptSection.includes("get_layer_details"), "prompt section should preserve optional layer-detail read-back guidance.");
   assert(layerSelectionGetPromptSection.includes("selected layer count"), "prompt section should preserve selected layer count guidance.");
   assert(!/run_extendscript/i.test(layerSelectionGetPromptSection), "layer-selection get guidance should not recommend raw ExtendScript.");
+
+  const alertSelectedLayerIndexRetrieval = retrieveSolutionHints("Alert the selected layer index by reporting the first selected layer index from current selected layer evidence without changing selection.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(alertSelectedLayerIndexRetrieval.ok, true);
+  assert(ids(alertSelectedLayerIndexRetrieval).includes("alert-selected-layer-index-typed-plan"), "alert-selected-layer-index advisory recipe should surface for selected layer index alert prompts.");
+  const alertSelectedLayerIndexPromptSection = formatSolutionHintsForPrompt(alertSelectedLayerIndexRetrieval);
+  assert(alertSelectedLayerIndexPromptSection.includes("Alert Selected Layer Index Typed Plan"), "prompt section should include alert-selected-layer-index advisory title.");
+  assert(alertSelectedLayerIndexPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for index reporting.");
+  assert(alertSelectedLayerIndexPromptSection.includes("first selected layer"), "prompt section should preserve first selected layer guidance.");
+  assert(alertSelectedLayerIndexPromptSection.includes("get_layer_details"), "prompt section should preserve optional same-index layer detail read-back guidance.");
+  assert(!/run_extendscript/i.test(alertSelectedLayerIndexPromptSection), "alert-selected-layer-index guidance should not recommend raw ExtendScript.");
 
   const layerSelectionSetRetrieval = retrieveSolutionHints("Set the current layer selection to explicit layer indexes 2 and 4 after reading the layer inventory, using replacement selection and selected-layer read-back.", {
     registry,
