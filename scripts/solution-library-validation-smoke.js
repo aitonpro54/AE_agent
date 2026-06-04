@@ -93,7 +93,8 @@ const IMPORTED_ADVISORY_IDS = [
   "add-labeled-items-to-render-queue-typed-plan",
   "add-selected-compositions-to-render-queue-typed-plan",
   "replace-text-in-project-item-name-typed-plan",
-  "rename-selected-project-items-typed-plan"
+  "rename-selected-project-items-typed-plan",
+  "add-comment-to-selected-layers-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -370,6 +371,20 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Markers_At_Selected_Keyframes/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "add-comment-to-selected-layers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details"],
+        `${id}: imported layer-comment workflow should stay read-only until a narrow comment writer exists.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: current layer-comment adaptation must remain read-only.`);
+      assert(text.includes("Layer.comment"), `${id}: recipe should preserve layer comment semantics.`);
+      assert(text.includes("typed-tool gap"), `${id}: recipe should report the missing layer-comment writer.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /layerCommentIntent/.test(step)), `${id}: verification must disclose reviewed comment intent.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Layer\.comment typed-tool gap/.test(item)), `${id}: verification must require Layer.comment gap evidence.`);
+      assert(solution.notes.some((note) => /add_layer_marker/.test(note)), `${id}: notes must forbid substituting marker comments.`);
+      assert(solution.promotionHistory.some((entry) => /Add_Comment_To_Selected_Layers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else if (id === "append-to-layer-name-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,

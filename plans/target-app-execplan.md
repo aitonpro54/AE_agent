@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-layers-add-comment-to-selected-layers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-add-comment-to-selected-layers); live gate ready, importer batch full-intake-kyletmartinez-1c2d17a709-import, commit recorded after candidate commit.
+
 - 2026-06-04: Clean baseline created, validated, and prepared to become the
   active `AE_agent` repo.
 - 2026-06-04: Cleanup review removed stale project-memory history, updated the
@@ -53,6 +55,11 @@ old `AE_agent` repository remains the historical source.
   visible UI-thread continuation. The CLI now writes
   `.codex-autonomy/thread_request.json` with the compact prompt, required
   reads, counts, target metadata, and app-tool safety envelope.
+- 2026-06-04: AUX-021 child batch
+  `tool-layers-add-comment-to-selected-layers` imported the selected-layer
+  `Layer.comment` request as a read-only generic-importer advisory recipe and
+  registry entry. Actual comment mutation remains fail-closed until a reviewed
+  typed writer/read-back contract exists.
 
 ## Guardrails
 
@@ -79,6 +86,8 @@ checks: `node scripts/cep-panel-cdp-smoke.js inspect` and
 `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `Layers/Add_Comment_To_Selected_Layers.jsx` as `tool-layers-add-comment-to-selected-layers`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-add-comment-to-selected-layers).
 
 - 2026-06-04: Created clean-project baseline in a new repository rather than
   rewriting the old repo history.
@@ -121,8 +130,15 @@ checks: `node scripts/cep-panel-cdp-smoke.js inspect` and
 - 2026-06-04: The CLI may prepare `.codex-autonomy/thread_request.json`, but it
   does not directly call Codex app tools. Visible UI-thread creation remains a
   parent-managed action using the app's `codex_app.create_thread` capability.
+- 2026-06-04: No accepted typed tool currently writes `Layer.comment` on
+  selected layers. The imported add-comment workflow must use
+  `get_active_comp`, `get_selected_layers`, and optional `get_layer_details`
+  for evidence, then report a typed-tool gap rather than substituting marker
+  comments, layer renames, labels, expressions, or property edits.
 
 ## Validation
+
+| Full intake tool-layers-add-comment-to-selected-layers | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-1c2d17a709-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 - Required for the migration milestone: static no-old-reference checks,
   touched-file syntax checks, `git diff --check`, `npm run check:rules`,
@@ -166,6 +182,12 @@ checks: `node scripts/cep-panel-cdp-smoke.js inspect` and
   scripts/autonomy.mjs`; `node --check scripts/autonomy-layer-smoke.js`;
   `npm.cmd run smoke:autonomy`; and
   `npm.cmd run autonomy -- thread-request`.
+- AUX-021 child batch
+  `tool-layers-add-comment-to-selected-layers`: validation intentionally not
+  run in the detached child worktree because the child-run intent forbids
+  validation runs. Parent importer owns registry validation,
+  solution-library validation, semantic verification, and any future live
+  acceptance lane.
 
 ## Handoff
 

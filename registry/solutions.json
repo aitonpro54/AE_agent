@@ -11196,6 +11196,113 @@
         "Do not infer target layers or the new precomp name from unavailable source-script behavior, project panel state, layer names, visual order, or prior chat context.",
         "Do not use raw ExtendScript, script runners, generic property writes, selection side effects, source relinking, recursive nested precomp mutation, cleanup routines, render queue changes, or exact native dialog behavior to implement this recipe."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "add-comment-to-selected-layers-typed-plan",
+      "title": "Add Comment To Selected Layers Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "comments",
+        "layer-comment",
+        "selected-layers",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool-gap",
+        "read-only"
+      ],
+      "intent": {
+        "summary": "Inspect selected active-comp layers for a Layer.comment request and fail closed unless a reviewed layer-comment writer typed tool is available.",
+        "appliesWhen": [
+          "The user asks to run Add_Comment_To_Selected_Layers or add comments to selected layers.",
+          "Current active-comp and selected-layer evidence is needed before deciding whether a future layer-comment typed tool can safely apply the request."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedLayers",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Selected layers with current typed evidence for layer indices and names."
+        },
+        {
+          "name": "layerCommentIntent",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed exact Layer.comment text, target selected layer indices, and skipped-target reasons for a future mutating tool."
+        }
+      ],
+      "targetAssumptions": [
+        "The active composition and selected layers are inspected before any layer-comment decision.",
+        "The requested comment text targets Layer.comment metadata rather than marker comments, names, labels, expressions, or properties.",
+        "The current safe adaptation is read-only and reports the typed-tool gap for setting Layer.comment on selected layers.",
+        "A future mutating variant must write only the reviewed comment text to explicit selected layer indices and read back the same layer comment field.",
+        "Source-exact prompt dialog behavior, native undo behavior, selection side effects, hidden selection ordering, raw JSX, and exact source semantics remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/add-comment-to-selected-layers-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and selected layer evidence, disclose the reviewed Layer.comment intent, and report the missing mutating layer-comment writer instead of changing layers.",
+        "steps": [
+          "Run get_active_comp to bind active comp identity, duration, frame rate, layer count, and selected-layer count.",
+          "Run get_selected_layers to bind current selected layers with concrete layer indices and names.",
+          "Run get_layer_details for selected layers when layer metadata or existing comment evidence is available through typed read-back.",
+          "Build and disclose reviewed layerCommentIntent with the exact Layer.comment text, target selected layer indices, and skipped-target reasons.",
+          "Fail closed unless a separately accepted typed tool for setting and reading back Layer.comment is available."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the active comp and selected layers with concrete layer indices and names.",
+          "The reviewed layerCommentIntent records the exact Layer.comment text and target selected layer indices.",
+          "The plan reports the Layer.comment typed-tool gap and does not create marker comments, rename layers, change labels, edit expressions, change properties, relink sources, alter timing, update render queue items, or mutate the composition.",
+          "Unsupported prompt dialog behavior, native selection side effects, hidden selection ordering, and exact source-script semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-layers-add-comment-to-selected-layers generic repository importer as advisory selected-layer Layer.comment typed-tool-gap coverage.",
+          "The detached child worktree did not contain Layers/Add_Comment_To_Selected_Layers.jsx, so scope came from the child-run wrapper, candidate name, existing read-only selected-layer evidence tools, and fail-closed layer-comment semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-04",
+          "from": "generic-repo-importer-tool-layers-add-comment-to-selected-layers",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the selected-layer Layer.comment intent behind Layers/Add_Comment_To_Selected_Layers.jsx into read-only typed evidence guidance; no source JSX copied. No accepted typed writer for Layer.comment was found in the child-batch tool catalog, so actual comment mutation remains fail-closed until a reviewed set_layer_comment-style contract with selected-layer evidence, explicit comment text, idempotency, confirmation, checkpoint/edit-session protection, and read-back exists. Marker comments, layer renames, labels, expressions, properties, prompt-dialog behavior, native undo behavior, selection side effects, hidden selection ordering, raw JSX, and exact source semantics require separate typed-tool contracts; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation and must not change layer comments with current tools.",
+        "Use this recipe to gather current selected-layer evidence and produce a targeted typed-tool gap when the user requests Add_Comment_To_Selected_Layers behavior.",
+        "Do not substitute add_layer_marker marker comments, layer renames, labels, effects, expressions, properties, source relinks, timing changes, or render queue changes for Layer.comment.",
+        "Do not infer target layers or comment text from screenshots, prior chat context, layer names, visual order, source names, or unavailable source-script state.",
+        "A future mutating variant requires a separately accepted Layer.comment writer/read-back typed tool, explicit dry-run evidence, confirmation, idempotency, checkpoint/edit-session protection, and post-mutation read-back."
+      ]
     }
   ]
 }
