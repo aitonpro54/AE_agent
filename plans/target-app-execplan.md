@@ -25,6 +25,12 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
+- [x] AUX scoped layer metadata import review: only `tool-nullstoone` was
+  reclassified/proved against `layer-comment-label-lock-generated-only`, then
+  rejected by parent semantic review: source summary showed `MasterNull`,
+  `threeDLayer=true`, `label=10`, and Position/Scale semantics beyond the
+  child `label:1` recipe. Generated edits were removed; ae-scripting ledger is
+  terminal with `queued=0`, `blocked_live_lane_required=21`.
 - [x] AUX first layer metadata generated-only lane: added bounded
   `set_layer_metadata` for explicit comp/layer targets, `get_layer_details`
   layer `comment` read-back, semantic read-back checks, and
@@ -83,7 +89,9 @@ Historical milestone detail through 2026-05-31 is archived at
   `composition-target`, and the recipe documents matching inputs. No queue
   rerun, blocked-candidate processing, Local/Ollama, CEP smoke, dependency
   change, push, PR, or raw JSX copy occurred.
-- [x] AUX parallel candidate worktrees architecture (full-intake-ae-scripting-all-queued-20260603-205105): parent reducer serially handled accepted proposals [tool-makeclosest16, tool-newadjust, tool-niceprecomp, tool-random-interpolation, tool-selectrandomlayers, tool-setcolor, tool-setkeysforpaths] and blocked proposals [tool-keyreverse, tool-makeclosest16_headless, tool-newtrimmednull, tool-planeresolve, tool-precompselected, tool-sortbyposition, tool-trimfirsttosecond].
+- [x] AUX parallel candidate worktrees architecture:
+  `full-intake-ae-scripting-all-queued-20260603-205105` proved parent-owned
+  serial reduction for accepted and blocked proposal sets.
 - [x] AUX all-queued parallel selector: added explicit `--parallel-all-queued`
   mode; plan-only proof selected all 14 current ae-scripting queued candidates
   without manual ids, worktrees, ledger mutation, Local/Ollama, or live smoke.
@@ -112,12 +120,9 @@ Historical milestone detail through 2026-05-31 is archived at
 - [x] Search safety guard: repository search now has `.rgignore` defaults plus
   `scripts/safe-rg.js`, a bounded ripgrep wrapper that rejects broad generated
   roots and caps output before old logs/runtime reports can flood context.
-- [x] AUX Generic Repo Auto Intake V1: added a top-level
-  `run-generic-repo-auto-intake` shell that accepts a local fixture or GitHub
-  URL, writes ignored bounded inventory/ledger/status/proof/handoff artifacts,
-  fail-closes missing or unrecognized licenses into reference-only candidates,
-  and creates only a plan-only parallel schedule with zero worktrees, zero
-  candidate execution, and zero central source merge.
+- [x] AUX Generic Repo Auto Intake V1: bounded auto-intake now writes ignored
+  inventory/ledger/status/proof/handoff artifacts and plan-only schedules, with
+  missing/unrecognized licenses fail-closed as reference-only.
 - [x] Controlled aturtur GitHub auto-intake longrun:
   `https://github.com/aturtur/after-effects-scripts` produced a bounded
   `full-intake-aturtur` ledger with 46 JSX entries, all `reference_only`
@@ -231,6 +236,11 @@ outside the runner out of scope.
 
 ## Decision Log
 
+- 2026-06-04: `tool-nullstoone` is not a safe
+  `layer-comment-label-lock-generated-only` import despite using layer label
+  metadata. Source needs `MasterNull`, 3D, label `10`, and
+  Position/Scale behavior; future retry needs a broader generated-only null
+  controller/transform lane.
 - 2026-06-04: Implemented `set_layer_metadata` as a narrow mutating contract:
   one explicit comp target, explicit non-duplicate `layerIndices`, optional
   same-length `expectedLayerNames`, and only `comment`, `label` 0-16, and
@@ -300,6 +310,13 @@ outside the runner out of scope.
 
 ## Validation
 
+- AUX scoped `tool-nullstoone` review validation: compact preflight and
+  ledger/proof/status checks passed; registry JSON, `git diff --check`,
+  solution-library validation, and SDK intake/importer/supervisor smokes
+  passed. Only `tool-nullstoone` was requeued/selected; importer non-live
+  passed, then parent semantic review rejected and removed generated
+  edits. Not run: Local/Ollama, fallback providers,
+  broad/default CEP smoke, dependency changes, push/PR, raw JSX copy.
 - AUX first layer metadata generated-only validation passed: fresh preflight
   read active docs; compact status/proof for `fi-planeresolve-r1-20260604`
   stayed contract-complete and the ae-scripting ledger stayed terminal
@@ -345,23 +362,9 @@ outside the runner out of scope.
   `tool-trimfirsttosecond`, and `tool-makeclosest16_headless` were compacted
   here to preserve active-plan size; their commit history and compact proof
   envelopes remain the authoritative detail.
-- AUX all-current-queued fail-closed run validation passed: no tracked
-  JavaScript files were touched, so touched-file `node --check` was not
-  required; compact proof was contract-complete with `unplannedPathCount=0`,
-  `centralWriterOnly=true`, detached/run-owned child worktrees, and reducer
-  status `parallel_proposals_blocked`; ledger summary stayed
-  `completed=13`, `queued=7`, `failed_import=4`,
-  `blocked_live_lane_required=21`, `blocked_policy=3`; `git diff --check`;
-  `node scripts/solution-library-validation-smoke.js`;
-  `node scripts/solution-registry-smoke.js`;
-  `node scripts/solution-retrieval-smoke.js`;
-  `node scripts/semantic-verification-smoke.js`;
-  `node scripts/sdk-generic-repo-full-intake-smoke.js`;
-  `node scripts/sdk-generic-repo-importer-command-smoke.js`;
-  `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`.
-  Compact status for the run reports stale `running` with zero related
-  processes, so future work should use compact status before any supervisor
-  action.
+- AUX all-current-queued fail-closed validation is compacted: proof stayed
+  contract-complete, reducer blocked all proposals without central merge, and
+  relevant library/registry/retrieval/semantic/SDK smokes passed.
 - AUX accepted-registry validation repair passed: no JavaScript files touched;
   `git diff --check`; solution library/registry/retrieval smokes; semantic
   verification; generic-repo full-intake/importer/queue-supervisor smokes. The
