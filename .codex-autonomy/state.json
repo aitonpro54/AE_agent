@@ -1,0 +1,178 @@
+{
+  "schema": "codex-autonomy.state.v1",
+  "schema_version": "1",
+  "status": "continue",
+  "objective": "Итеративно инвентаризировать, ранжировать, валидировать и отбирать scripts/tools в репозитории через компактный файловый state/handoff contract.",
+  "repo_root": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent",
+  "created_at": "2026-06-04T13:33:50.822Z",
+  "updated_at": "2026-06-04T13:39:30.858Z",
+  "iteration": 1,
+  "max_iterations": 50,
+  "script_inventory": {
+    "total": 83,
+    "pending": [
+      "package.json#scripts/smoke:full-intake",
+      "package.json#scripts/smoke:planning",
+      "package.json#scripts/smoke:provider-api",
+      "package.json#scripts/smoke:provider-contract",
+      "package.json#scripts/smoke:solutions",
+      "scripts/provider-contract-smoke.js",
+      "scripts/sdk-generic-repo-full-intake-smoke.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/solution-promotion-smoke.js",
+      "scripts/agent-scenario-report.js",
+      "scripts/reliability-validation-suite-smoke.js",
+      "scripts/safe-rg.js",
+      "scripts/solution-retrieval-smoke.js",
+      "orchestrator/run-generic-repo-auto-intake.mjs",
+      "orchestrator/run-generic-repo-importer-supervisor.mjs",
+      "orchestrator/run-generic-repo-queue-supervisor.mjs",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/autonomy-layer-smoke.js",
+      "scripts/bridge-only-smoke-test.js",
+      "scripts/chatgpt-connector-smoke.js",
+      "scripts/clean-current-check.js",
+      "scripts/manual-typed-tool-regression-smoke.js",
+      "scripts/plan-classification-smoke.js",
+      "scripts/plan-repair-smoke.js",
+      "scripts/prompt-optimization-smoke.js",
+      "scripts/provider-api-smoke.js",
+      "scripts/sdk-generic-repo-importer-command-smoke.js",
+      "scripts/sdk-generic-repo-queue-supervisor-smoke.js",
+      "scripts/smoke-test.js",
+      "scripts/solution-candidate-report-smoke.js",
+      "scripts/solution-candidate-report.js",
+      "scripts/solution-promotion-helper.js",
+      "scripts/solution-registry-smoke.js",
+      "mcp-server/server.js",
+      "orchestrator/core/post-run-contract.mjs",
+      "orchestrator/core/runtime-store.mjs",
+      "orchestrator/full-intake-diagnose.mjs",
+      "orchestrator/full-intake-ledger-summary.mjs",
+      "orchestrator/full-intake-proof.mjs",
+      "orchestrator/full-intake-status.mjs",
+      "orchestrator/parallel-candidate-worktrees.mjs",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+      "package.json#scripts/autonomy",
+      "package.json#scripts/full-intake:diagnose",
+      "package.json#scripts/full-intake:proof",
+      "package.json#scripts/full-intake:status",
+      "package.json#scripts/generic-repo:auto-intake",
+      "package.json#scripts/generic-repo:full-intake",
+      "package.json#scripts/generic-repo:importer-supervisor",
+      "package.json#scripts/generic-repo:queue-supervisor",
+      "package.json#scripts/generic-repo:tool-importer",
+      "scripts/agent-qa-audit.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "scripts/project-intent-memory-smoke.js",
+      "scripts/reliability-validation-suite.js",
+      "scripts/solution-library-validation-smoke.js",
+      "cep-panel/lib/CSInterface.js",
+      "mcp-server/m100-protocol.js",
+      "mcp-server/plan-risk-classifier.js",
+      "mcp-server/raw-fallback-candidate.js",
+      "mcp-server/semantic-verification.js",
+      "orchestrator/bounded-process-result.cjs",
+      "orchestrator/core/failure-diagnostics.mjs",
+      "orchestrator/core/git-snapshot.mjs",
+      "orchestrator/core/operation-envelope.mjs",
+      "orchestrator/core/path-policy.mjs",
+      "orchestrator/parent-proof-contract.mjs",
+      "scripts/safe-rg-smoke.js",
+      "orchestrator/run-generic-repo-tool-importer.mjs",
+      "chatgpt-connector/server.js",
+      "mcp-server/ai-agents.js",
+      "mcp-server/bridge-daemon.js",
+      "mcp-server/mcp-adapter.js",
+      "mcp-server/solution-library.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/autonomy.mjs",
+      "cep-panel/panel.js",
+      "chatgpt-connector/jsx-lab.js",
+      "mcp-server/plan-repair.js",
+      "mcp-server/project-intent-memory.js"
+    ],
+    "in_progress": [],
+    "accepted": [
+      "package.json#scripts/check:rules",
+      "package.json#scripts/smoke:autonomy",
+      "package.json#scripts/smoke:bridge"
+    ],
+    "rejected": [],
+    "needs_lane": [],
+    "needs_revalidation": [],
+    "blocked": []
+  },
+  "current_batch": [],
+  "lanes": {
+    "existing": [],
+    "created": [],
+    "missing": []
+  },
+  "validation": {
+    "commands": [],
+    "last_run_status": "passed",
+    "last_run_summary": "accepted=3, rejected=0, needs_lane=0, needs_revalidation=0, blocked=0",
+    "failed_items": []
+  },
+  "ranking_policy": {
+    "criteria": [
+      {
+        "name": "detectability",
+        "weight": 1,
+        "description": "Назначение понятно по имени, help/main/signals."
+      },
+      {
+        "name": "runnable",
+        "weight": 1,
+        "description": "Есть entrypoint, package script, shebang или dry-run/help."
+      },
+      {
+        "name": "testability",
+        "weight": 1,
+        "description": "Есть smoke/test/validation lane или понятный fixture path."
+      },
+      {
+        "name": "safety",
+        "weight": 2,
+        "description": "Нет destructive/network/credential side effects без dry-run/mock."
+      },
+      {
+        "name": "relevance",
+        "weight": 1,
+        "description": "Кандидат относится к текущему AE Agent workflow."
+      },
+      {
+        "name": "maintainability",
+        "weight": 1,
+        "description": "Размер, зависимости и структура позволяют сопровождение."
+      },
+      {
+        "name": "evidence",
+        "weight": 1,
+        "description": "Есть результаты validation или lane evidence."
+      }
+    ]
+  },
+  "safety": {
+    "do_not_touch": [
+      ".git/",
+      ".codex/",
+      ".codex-runtime/",
+      "node_modules/",
+      "dist/",
+      "build/",
+      "target/",
+      ".env",
+      "*.pem",
+      "*.key",
+      "credentials*",
+      "secrets*"
+    ],
+    "requires_human_approval": []
+  },
+  "next": {
+    "next_step": "Run `npm run autonomy -- run-once --batch-size 5`.",
+    "exact_next_prompt_path": ".codex-autonomy/exact_next_prompt.md"
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Codex autonomy state/handoff contract",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status",
+    "objective",
+    "repo_root",
+    "updated_at",
+    "script_inventory",
+    "next"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1"
+    },
+    "status": {
+      "enum": [
+        "continue",
+        "done",
+        "blocked",
+        "needs_human"
+      ]
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "repo_root": {
+      "type": "string",
+      "minLength": 1
+    },
+    "updated_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "script_inventory": {
+      "type": "object",
+      "required": [
+        "total",
+        "pending",
+        "accepted",
+        "rejected",
+        "needs_lane",
+        "needs_revalidation"
+      ],
+      "properties": {
+        "total": {
+          "type": "number"
+        },
+        "pending": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "accepted": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rejected": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "needs_lane": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "needs_revalidation": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "next": {
+      "type": "object",
+      "required": [
+        "next_step",
+        "exact_next_prompt_path"
+      ],
+      "properties": {
+        "next_step": {
+          "type": "string"
+        },
+        "exact_next_prompt_path": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

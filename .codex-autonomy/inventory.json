@@ -1,0 +1,2124 @@
+{
+  "schema": "codex-autonomy.inventory.v1",
+  "updated_at": "2026-06-04T13:39:18.846Z",
+  "total": 83,
+  "candidates": [
+    {
+      "id": "cep-panel/lib/CSInterface.js",
+      "path": "cep-panel/lib/CSInterface.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 439,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": true,
+        "network": false,
+        "reasons": [
+          "live-runtime-signal"
+        ]
+      }
+    },
+    {
+      "id": "cep-panel/panel.js",
+      "path": "cep-panel/panel.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 154903,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "chatgpt-connector/jsx-lab.js",
+      "path": "chatgpt-connector/jsx-lab.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 28823,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "chatgpt-connector/server.js",
+      "path": "chatgpt-connector/server.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 40685,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": true,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "mcp-server/ai-agents.js",
+      "path": "mcp-server/ai-agents.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 67690,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "mcp-server/bridge-daemon.js",
+      "path": "mcp-server/bridge-daemon.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 648205,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": true,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "destructive-signal",
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "mcp-server/m100-protocol.js",
+      "path": "mcp-server/m100-protocol.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 13914,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "mcp-server/mcp-adapter.js",
+      "path": "mcp-server/mcp-adapter.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 7592,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": true,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal"
+        ]
+      }
+    },
+    {
+      "id": "mcp-server/plan-repair.js",
+      "path": "mcp-server/plan-repair.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 43092,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "mcp-server/plan-risk-classifier.js",
+      "path": "mcp-server/plan-risk-classifier.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 13617,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "mcp-server/project-intent-memory.js",
+      "path": "mcp-server/project-intent-memory.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 20564,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "mcp-server/raw-fallback-candidate.js",
+      "path": "mcp-server/raw-fallback-candidate.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 10712,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "mcp-server/semantic-verification.js",
+      "path": "mcp-server/semantic-verification.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 82745,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "mcp-server/server.js",
+      "path": "mcp-server/server.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 263,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": true,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "mcp-server/solution-library.js",
+      "path": "mcp-server/solution-library.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 18271,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "orchestrator/bounded-process-result.cjs",
+      "path": "orchestrator/bounded-process-result.cjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".cjs",
+      "size_bytes": 5184,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "orchestrator/core/failure-diagnostics.mjs",
+      "path": "orchestrator/core/failure-diagnostics.mjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".mjs",
+      "size_bytes": 4983,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "orchestrator/core/git-snapshot.mjs",
+      "path": "orchestrator/core/git-snapshot.mjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".mjs",
+      "size_bytes": 3739,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "orchestrator/core/operation-envelope.mjs",
+      "path": "orchestrator/core/operation-envelope.mjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".mjs",
+      "size_bytes": 8546,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "orchestrator/core/path-policy.mjs",
+      "path": "orchestrator/core/path-policy.mjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".mjs",
+      "size_bytes": 3804,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "orchestrator/core/post-run-contract.mjs",
+      "path": "orchestrator/core/post-run-contract.mjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".mjs",
+      "size_bytes": 13482,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "orchestrator/core/runtime-store.mjs",
+      "path": "orchestrator/core/runtime-store.mjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".mjs",
+      "size_bytes": 9921,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "orchestrator/full-intake-diagnose.mjs",
+      "path": "orchestrator/full-intake-diagnose.mjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".mjs",
+      "size_bytes": 6120,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": true,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "orchestrator/full-intake-ledger-summary.mjs",
+      "path": "orchestrator/full-intake-ledger-summary.mjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".mjs",
+      "size_bytes": 10417,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": true,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "orchestrator/full-intake-proof.mjs",
+      "path": "orchestrator/full-intake-proof.mjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".mjs",
+      "size_bytes": 7964,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": true,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "orchestrator/full-intake-status.mjs",
+      "path": "orchestrator/full-intake-status.mjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".mjs",
+      "size_bytes": 20582,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": true,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "orchestrator/parallel-candidate-worktrees.mjs",
+      "path": "orchestrator/parallel-candidate-worktrees.mjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".mjs",
+      "size_bytes": 74777,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "orchestrator/parent-proof-contract.mjs",
+      "path": "orchestrator/parent-proof-contract.mjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".mjs",
+      "size_bytes": 4546,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "orchestrator/run-generic-repo-auto-intake.mjs",
+      "path": "orchestrator/run-generic-repo-auto-intake.mjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".mjs",
+      "size_bytes": 40470,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": true,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "orchestrator/run-generic-repo-full-intake.mjs",
+      "path": "orchestrator/run-generic-repo-full-intake.mjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".mjs",
+      "size_bytes": 226536,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": true,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": false,
+        "reasons": [
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "orchestrator/run-generic-repo-importer-supervisor.mjs",
+      "path": "orchestrator/run-generic-repo-importer-supervisor.mjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".mjs",
+      "size_bytes": 41173,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": true,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": false,
+        "reasons": [
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "orchestrator/run-generic-repo-queue-supervisor.mjs",
+      "path": "orchestrator/run-generic-repo-queue-supervisor.mjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".mjs",
+      "size_bytes": 59500,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": true,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "orchestrator/run-generic-repo-tool-importer.mjs",
+      "path": "orchestrator/run-generic-repo-tool-importer.mjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".mjs",
+      "size_bytes": 203494,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": true,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "package.json#scripts/autonomy",
+      "path": "package.json",
+      "type": "package-script",
+      "language": "package-script",
+      "command": "node scripts/autonomy.mjs",
+      "size_bytes": 25,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "package.json#scripts/check:rules",
+      "path": "package.json",
+      "type": "package-script",
+      "language": "package-script",
+      "command": "node scripts/clean-current-check.js",
+      "size_bytes": 35,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "package.json#scripts/full-intake:diagnose",
+      "path": "package.json",
+      "type": "package-script",
+      "language": "package-script",
+      "command": "node orchestrator/full-intake-diagnose.mjs",
+      "size_bytes": 42,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "package.json#scripts/full-intake:proof",
+      "path": "package.json",
+      "type": "package-script",
+      "language": "package-script",
+      "command": "node orchestrator/full-intake-proof.mjs",
+      "size_bytes": 39,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "package.json#scripts/full-intake:status",
+      "path": "package.json",
+      "type": "package-script",
+      "language": "package-script",
+      "command": "node orchestrator/full-intake-status.mjs",
+      "size_bytes": 40,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "package.json#scripts/generic-repo:auto-intake",
+      "path": "package.json",
+      "type": "package-script",
+      "language": "package-script",
+      "command": "node orchestrator/run-generic-repo-auto-intake.mjs",
+      "size_bytes": 50,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "package.json#scripts/generic-repo:full-intake",
+      "path": "package.json",
+      "type": "package-script",
+      "language": "package-script",
+      "command": "node orchestrator/run-generic-repo-full-intake.mjs",
+      "size_bytes": 50,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "package.json#scripts/generic-repo:importer-supervisor",
+      "path": "package.json",
+      "type": "package-script",
+      "language": "package-script",
+      "command": "node orchestrator/run-generic-repo-importer-supervisor.mjs",
+      "size_bytes": 58,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "package.json#scripts/generic-repo:queue-supervisor",
+      "path": "package.json",
+      "type": "package-script",
+      "language": "package-script",
+      "command": "node orchestrator/run-generic-repo-queue-supervisor.mjs",
+      "size_bytes": 55,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "package.json#scripts/generic-repo:tool-importer",
+      "path": "package.json",
+      "type": "package-script",
+      "language": "package-script",
+      "command": "node orchestrator/run-generic-repo-tool-importer.mjs",
+      "size_bytes": 52,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "package.json#scripts/smoke:autonomy",
+      "path": "package.json",
+      "type": "package-script",
+      "language": "package-script",
+      "command": "node scripts/autonomy-layer-smoke.js",
+      "size_bytes": 36,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "package.json#scripts/smoke:bridge",
+      "path": "package.json",
+      "type": "package-script",
+      "language": "package-script",
+      "command": "node scripts/chatgpt-connector-smoke.js && node scripts/provider-api-smoke.js && node scripts/prompt-optimization-smoke.js && node scripts/bridge-only-smoke-test.js && node scripts/smoke-test.js",
+      "size_bytes": 194,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "package.json#scripts/smoke:full-intake",
+      "path": "package.json",
+      "type": "package-script",
+      "language": "package-script",
+      "command": "node scripts/sdk-generic-repo-full-intake-smoke.js && node scripts/sdk-generic-repo-importer-command-smoke.js && node scripts/sdk-generic-repo-queue-supervisor-smoke.js",
+      "size_bytes": 168,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "package.json#scripts/smoke:planning",
+      "path": "package.json",
+      "type": "package-script",
+      "language": "package-script",
+      "command": "node scripts/project-intent-memory-smoke.js && node scripts/plan-classification-smoke.js && node scripts/plan-repair-smoke.js && node scripts/semantic-verification-smoke.js",
+      "size_bytes": 172,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "package.json#scripts/smoke:provider-api",
+      "path": "package.json",
+      "type": "package-script",
+      "language": "package-script",
+      "command": "node scripts/provider-api-smoke.js",
+      "size_bytes": 34,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "package.json#scripts/smoke:provider-contract",
+      "path": "package.json",
+      "type": "package-script",
+      "language": "package-script",
+      "command": "node scripts/provider-contract-smoke.js",
+      "size_bytes": 39,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "package.json#scripts/smoke:solutions",
+      "path": "package.json",
+      "type": "package-script",
+      "language": "package-script",
+      "command": "node scripts/solution-registry-smoke.js && node scripts/solution-candidate-report-smoke.js && node scripts/solution-promotion-smoke.js && node scripts/solution-retrieval-smoke.js && node scripts/solution-library-validation-smoke.js",
+      "size_bytes": 231,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "scripts/agent-qa-audit.js",
+      "path": "scripts/agent-qa-audit.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 16124,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "scripts/agent-scenario-fixtures.js",
+      "path": "scripts/agent-scenario-fixtures.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 114244,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/agent-scenario-report-smoke.js",
+      "path": "scripts/agent-scenario-report-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 31527,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/agent-scenario-report.js",
+      "path": "scripts/agent-scenario-report.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 8987,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/autonomy-layer-smoke.js",
+      "path": "scripts/autonomy-layer-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 4318,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/autonomy.mjs",
+      "path": "scripts/autonomy.mjs",
+      "type": "file",
+      "language": "node",
+      "extension": ".mjs",
+      "size_bytes": 61234,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": true,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": true,
+        "reasons": [
+          "network-signal",
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/bridge-only-smoke-test.js",
+      "path": "scripts/bridge-only-smoke-test.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 1760,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/cep-panel-cdp-smoke.js",
+      "path": "scripts/cep-panel-cdp-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 262055,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/chatgpt-connector-smoke.js",
+      "path": "scripts/chatgpt-connector-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 30465,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": true,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "destructive-signal",
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/clean-current-check.js",
+      "path": "scripts/clean-current-check.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 3839,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "scripts/manual-typed-tool-regression-smoke.js",
+      "path": "scripts/manual-typed-tool-regression-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 23753,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/plan-classification-smoke.js",
+      "path": "scripts/plan-classification-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 8914,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/plan-repair-smoke.js",
+      "path": "scripts/plan-repair-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 34053,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/project-intent-memory-smoke.js",
+      "path": "scripts/project-intent-memory-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 9040,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": false,
+        "network": true,
+        "reasons": [
+          "destructive-signal",
+          "network-signal",
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/prompt-optimization-smoke.js",
+      "path": "scripts/prompt-optimization-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 18986,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "destructive-signal",
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/provider-api-smoke.js",
+      "path": "scripts/provider-api-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 17195,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/provider-contract-smoke.js",
+      "path": "scripts/provider-contract-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 15988,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "destructive-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/reliability-validation-suite-smoke.js",
+      "path": "scripts/reliability-validation-suite-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 4785,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/reliability-validation-suite.js",
+      "path": "scripts/reliability-validation-suite.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 23894,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": true,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/safe-rg-smoke.js",
+      "path": "scripts/safe-rg-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 3081,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": true,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "destructive-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/safe-rg.js",
+      "path": "scripts/safe-rg.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 3993,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      }
+    },
+    {
+      "id": "scripts/sdk-generic-repo-full-intake-smoke.js",
+      "path": "scripts/sdk-generic-repo-full-intake-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 139683,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": true,
+        "network": false,
+        "reasons": [
+          "destructive-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/sdk-generic-repo-importer-command-smoke.js",
+      "path": "scripts/sdk-generic-repo-importer-command-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 109562,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "destructive-signal",
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/sdk-generic-repo-queue-supervisor-smoke.js",
+      "path": "scripts/sdk-generic-repo-queue-supervisor-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 27537,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "destructive-signal",
+          "network-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/semantic-verification-smoke.js",
+      "path": "scripts/semantic-verification-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 83950,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/smoke-test.js",
+      "path": "scripts/smoke-test.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 90602,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "destructive-signal",
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/solution-candidate-report-smoke.js",
+      "path": "scripts/solution-candidate-report-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 6613,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/solution-candidate-report.js",
+      "path": "scripts/solution-candidate-report.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 23005,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/solution-library-validation-smoke.js",
+      "path": "scripts/solution-library-validation-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 377611,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/solution-promotion-helper.js",
+      "path": "scripts/solution-promotion-helper.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 21433,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": false
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/solution-promotion-smoke.js",
+      "path": "scripts/solution-promotion-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 10447,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "destructive-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/solution-registry-smoke.js",
+      "path": "scripts/solution-registry-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 24308,
+      "signals": {
+        "has_help": false,
+        "has_main": true,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": true,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "destructive-signal",
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      }
+    },
+    {
+      "id": "scripts/solution-retrieval-smoke.js",
+      "path": "scripts/solution-retrieval-smoke.js",
+      "type": "file",
+      "language": "node",
+      "extension": ".js",
+      "size_bytes": 11241,
+      "signals": {
+        "has_help": false,
+        "has_main": false,
+        "has_shebang": false,
+        "oversized": false,
+        "smoke_or_test": true
+      },
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      }
+    }
+  ],
+  "ignored": {
+    "directories": [
+      ".cache",
+      ".codex",
+      ".codex-autonomy",
+      ".codex-runtime",
+      ".git",
+      ".hg",
+      ".next",
+      ".svn",
+      ".turbo",
+      ".venv",
+      ".vite",
+      "__pycache__",
+      "backups",
+      "build",
+      "cache",
+      "coverage",
+      "dist",
+      "logs",
+      "node_modules",
+      "out",
+      "target",
+      "tmp",
+      "venv"
+    ],
+    "secret_file_patterns": [
+      "^\\.env(?:\\.|$)",
+      "\\.pem$",
+      "\\.key$",
+      "credential",
+      "secret",
+      "token"
+    ]
+  }
+}

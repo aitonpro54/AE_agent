@@ -10,6 +10,8 @@
     "smoke:planning": "node scripts/project-intent-memory-smoke.js && node scripts/plan-classification-smoke.js && node scripts/plan-repair-smoke.js && node scripts/semantic-verification-smoke.js",
     "smoke:bridge": "node scripts/chatgpt-connector-smoke.js && node scripts/provider-api-smoke.js && node scripts/prompt-optimization-smoke.js && node scripts/bridge-only-smoke-test.js && node scripts/smoke-test.js",
     "smoke:full-intake": "node scripts/sdk-generic-repo-full-intake-smoke.js && node scripts/sdk-generic-repo-importer-command-smoke.js && node scripts/sdk-generic-repo-queue-supervisor-smoke.js",
+    "smoke:autonomy": "node scripts/autonomy-layer-smoke.js",
+    "autonomy": "node scripts/autonomy.mjs",
     "full-intake:status": "node orchestrator/full-intake-status.mjs",
     "full-intake:diagnose": "node orchestrator/full-intake-diagnose.mjs",
     "full-intake:proof": "node orchestrator/full-intake-proof.mjs",

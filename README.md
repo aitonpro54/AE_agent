@@ -280,6 +280,19 @@ Offline validation:
 node .\scripts\chatgpt-connector-smoke.js
 ```
 
+## Autonomy layer
+
+Large bounded script/tool intake can run through the deterministic file-backed
+autonomy layer in `.codex-autonomy/`. Use:
+
+```powershell
+npm run autonomy -- run-once --batch-size 5
+npm run autonomy -- supervise --dry-run
+```
+
+See `.codex-autonomy/README.md` for the state/handoff contract, reports, and
+supervisor limits.
+
 ## Smoke test
 
 This test verifies the MCP server and HTTP bridge without After Effects:

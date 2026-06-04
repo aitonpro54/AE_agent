@@ -35,6 +35,10 @@ old `AE_agent` repository remains the historical source.
   collapsed release notes into a clean v2.0.0 baseline, relaxed provider model
   smoke contracts, refreshed cleanup-migration tense, and clarified the
   `generic-repo:*` Full Intaker/importer boundary.
+- 2026-06-04: Added a file-backed Codex Autonomy layer for bounded
+  script/tool inventory, ranking, validation lanes, revalidation, reports,
+  handoff generation, exact-next-prompt continuation, and Codex CLI supervisor
+  dry-run/new-run support.
 
 ## Guardrails
 
@@ -48,9 +52,14 @@ old `AE_agent` repository remains the historical source.
 
 ## Next Milestone
 
-When After Effects and the installed panel are available, run read-only CEP
-connectivity checks against the active `AE_agent` repo:
-`node scripts/cep-panel-cdp-smoke.js inspect` and
+Continue the autonomy pass from `.codex-autonomy/exact_next_prompt.md`.
+Current state is `continue`: 83 candidates found, 3 accepted, 80 pending. Run
+one bounded step with `npm run autonomy -- run-once --batch-size 5`, then
+refresh `.codex-autonomy/handoff.md` and this plan if another milestone closes.
+
+After the autonomy pass is no longer the active milestone and After Effects plus
+the installed panel are available, run the deferred read-only CEP connectivity
+checks: `node scripts/cep-panel-cdp-smoke.js inspect` and
 `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`.
 
 ## Decision Log
@@ -71,6 +80,17 @@ connectivity checks against the active `AE_agent` repo:
 - 2026-06-04: `generic-repo:*` package scripts remain current AE-specific Full
   Intaker/importer entrypoints. Generic reusable SDK orchestration belongs in
   the sibling `codex-sdk-orchestrator-tool` via a separate reviewed migration.
+- 2026-06-04: The new autonomy layer is intentionally separate from the
+  AE-specific Full Intaker/importer surface. `.codex-autonomy/` owns the
+  compact state/handoff contract, while runtime `runs/` and `logs/` stay
+  ignored and local.
+- 2026-06-04: Autonomy continuation uses a deterministic CLI backend
+  (`codex exec --sandbox workspace-write -`) and does not use GUI/browser,
+  resume, Local/Ollama, fallback providers, broad live smoke, push, or PR by
+  default.
+- 2026-06-04: Generated validation lanes are minimal static lanes by default;
+  they do not execute arbitrary candidate behavior or mask network,
+  credential, live-runtime, or destructive risk.
 
 ## Validation
 
@@ -88,6 +108,12 @@ connectivity checks against the active `AE_agent` repo:
   `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`;
   `npm.cmd run smoke:full-intake`; `npm.cmd run smoke:bridge`; and
   `git diff --check`.
+- Autonomy-layer validation passed: `node --check scripts\autonomy.mjs`;
+  `node --check scripts\autonomy-layer-smoke.js`;
+  `npm.cmd run check:rules`; `npm.cmd run smoke:autonomy`;
+  `npm.cmd run autonomy -- run-once --batch-size 3`;
+  `npm.cmd run autonomy -- supervise --dry-run`; and `git diff --check`
+  (Windows line-ending normalization warnings only).
 
 ## Handoff
 
