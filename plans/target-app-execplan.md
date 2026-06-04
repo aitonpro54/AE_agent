@@ -25,6 +25,11 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
+- [x] AUX terminal closeout for remaining queued `tool-planeresolve` in scoped
+  run `fi-planeresolve-r1-20260604`: parent review found an incomplete
+  non-standalone math fragment and marked it `failed_import` instead of
+  inventing semantics; ae-scripting is now `completed=19`, `queued=0`,
+  `failed_import=5`, `blocked_live_lane_required=21`, `blocked_policy=3`.
 - [x] AUX remaining-four all-current queued recovery
   `fi-remaining4-allqueued-subagents-20260604`: explicit scoped ids processed
   `tool-keyreverse`, `tool-newtrimmednull`, `tool-planeresolve`, and
@@ -200,16 +205,16 @@ Architecture update on 2026-06-03:
 
 ## Next Milestone
 
-`fi-remaining4-allqueued-subagents-20260604` completed the user-approved
-remaining-four proposal-only recovery after `fi-sortpos-r1-20260603`.
-Proof sha:
-`2869a907c1e821679113ee0cf6f153af3a1b6f903cbc9d148691f45b179a8398`.
-The ae-scripting ledger is now `completed=19`, `queued=1`,
-`failed_import=4`, `blocked_live_lane_required=21`, and `blocked_policy=3`.
+`fi-planeresolve-r1-20260604` closed the last queued ae-scripting candidate as
+terminal `failed_import`: `planeResolve.jsx` is an incomplete non-standalone
+math fragment, not a safe recipe candidate. Proof sha:
+`d8672bc55daf2945699a00d8bbdf9f95ad31a6f8aaceb57c8b193de0b7aa0c83`.
+The ae-scripting ledger is now `completed=19`, `queued=0`,
+`failed_import=5`, `blocked_live_lane_required=21`, and `blocked_policy=3`.
 
-Next clean work is a targeted recovery/triage slice for the only remaining
-queued candidate: `tool-planeresolve`, which failed this run as
-`implementation-batch-candidate-missing`.
+Next clean work is a separate generated-only backlog family lane. Prefer
+non-file/non-render comp/layer utilities with narrow typed contracts and
+read-back proof; marker/file/render families remain deferred.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -217,6 +222,14 @@ outside the runner out of scope.
 
 ## Decision Log
 
+- 2026-06-04: `tool-planeresolve` was marked `failed_import` because its source
+  has unfinished point assignments and only a partial intersection calculation.
+  Creating a
+  `planeresolve-typed-plan` would have required inventing product semantics or
+  copying raw JSX, so parent reducer chose terminal fail-closed ledger closeout.
+  AE/panel connectivity was available (`panelConnected=true`, `ping_ae`
+  returned AE 26.2x49), but live mutation was not relevant to this importer
+  binding/source-completeness failure.
 - 2026-06-04: User-approved remaining-four recovery used explicit scoped ids
   instead of a broad selector. Child worktrees and multi-agent reviewers stayed
   proposal-only/read-only; parent owned central writes, safety review,
@@ -267,6 +280,16 @@ outside the runner out of scope.
 
 ## Validation
 
+- AUX `tool-planeresolve` terminal closeout validation passed: compact proof
+  for `fi-planeresolve-r1-20260604` was contract-complete with reducer status
+  `parallel_proposals_blocked`, proof sha
+  `d8672bc55daf2945699a00d8bbdf9f95ad31a6f8aaceb57c8b193de0b7aa0c83`;
+  source review found no standalone AE tool semantics; bridge read-only check
+  passed with `panelConnected=true` and AE `26.2x49`; ledger summary moved to
+  `completed=19`, `queued=0`, `failed_import=5`. No registry/recipe solution
+  was added. Full relevant non-live smoke suite passed, plus read-only CEP
+  inspect/connector checks; no live mutation, dependency change, push/PR, or
+  raw JSX copy.
 - AUX remaining-four recovery validation passed: compact proof for
   `fi-remaining4-allqueued-subagents-20260604` was contract-complete with
   reducer status `parallel_reducer_completed`, accepted
