@@ -368,6 +368,54 @@
       "scope": "generated-only Source Text keyframe proof using an explicit generated text layer, set_property_keyframes on ADBE Text Properties.ADBE Text Document, get_layer_details keyframe value read-back, semantic verification, and generated-prefix cleanup; source-exact textToKeys.jsx behavior, selected-layer traversal, typo/no-call source repair, text animator ranges, raw ExtendScript, and real ae-scripting requeue remain fail-closed until candidate tool hints include the mutating/read-back contract and explicit scoped candidate ids are provided"
     },
     {
+      "id": "layer-comment-label-lock-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_layer_details"
+      ],
+      "allowedTools": [
+        "create_null_layer",
+        "get_active_comp",
+        "get_comp_details",
+        "get_layer_details",
+        "rename_layers",
+        "set_layer_metadata",
+        "set_property_value"
+      ],
+      "candidateIds": [
+        "tool-nullstoone"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-metadata-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "layer-comment-label-lock",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only explicit layer metadata proof using set_layer_metadata for comment, label, and locked, plus get_layer_details read-back and semantic verification; scoped ae-scripting retry is limited to tool-nullstoone because importBoujouTracking has file I/O and prop2null has expression/controller semantics"
+    },
+    {
       "id": "selected-keyframe-layer-marker-generated-only",
       "requiredTools": [
         "get_selected_properties",
