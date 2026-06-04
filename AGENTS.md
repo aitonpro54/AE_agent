@@ -19,6 +19,15 @@ is described in `specs/target-app.md`; the active execution plan is
   touched, validation, decisions, risks, commit id, and exact next prompt.
 - Keep `plans/target-app-execplan.md` compact and current.
 
+## Context meter calibration
+
+- A user-reported Codex UI context percentage is authoritative.
+- Do not treat internal goal/tool token counters as the UI context meter.
+- If an internal token-derived estimate is the only available signal, add a 20
+  percentage-point tolerance before making a handoff decision.
+- Do not stop new work for context pressure when the user reports the UI context
+  meter is below 70%, unless there is another concrete blocker.
+
 ## Engineering rules
 
 - Reuse existing components and design tokens.
