@@ -94,7 +94,8 @@ const IMPORTED_ADVISORY_IDS = [
   "add-selected-compositions-to-render-queue-typed-plan",
   "replace-text-in-project-item-name-typed-plan",
   "rename-selected-project-items-typed-plan",
-  "add-comment-to-selected-layers-typed-plan"
+  "add-comment-to-selected-layers-typed-plan",
+  "unlock-all-layers-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -385,6 +386,20 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /Layer\.comment typed-tool gap/.test(item)), `${id}: verification must require Layer.comment gap evidence.`);
       assert(solution.notes.some((note) => /add_layer_marker/.test(note)), `${id}: notes must forbid substituting marker comments.`);
       assert(solution.promotionHistory.some((entry) => /Add_Comment_To_Selected_Layers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "unlock-all-layers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "list_layers", "get_layer_details"],
+        `${id}: imported unlock-all workflow should stay read-only until a narrow lock-state writer exists.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: current unlock-all adaptation must remain read-only.`);
+      assert(text.includes("Layer.locked"), `${id}: recipe should preserve layer lock semantics.`);
+      assert(text.includes("typed-tool gap"), `${id}: recipe should report the missing layer-lock writer.`);
+      assert(text.includes("list_layers"), `${id}: recipe should require active-comp layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /unlockAllLayersIntent/.test(step)), `${id}: verification must disclose reviewed unlock intent.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Layer\.locked typed-tool gap/.test(item)), `${id}: verification must require Layer.locked gap evidence.`);
+      assert(solution.notes.some((note) => /selection/.test(note)), `${id}: notes must forbid substituting selection side effects.`);
+      assert(solution.promotionHistory.some((entry) => /Unlock_All_Layers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else if (id === "append-to-layer-name-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,

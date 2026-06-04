@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-layers-unlock-all-layers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-unlock-all-layers); live gate ready, importer batch full-intake-kyletmartinez-a0fe8c1d95-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-layers-add-comment-to-selected-layers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-add-comment-to-selected-layers); live gate ready, importer batch full-intake-kyletmartinez-1c2d17a709-import, commit recorded after candidate commit.
 
 - 2026-06-04: Clean baseline created, validated, and prepared to become the
@@ -60,6 +62,11 @@ old `AE_agent` repository remains the historical source.
   `Layer.comment` request as a read-only generic-importer advisory recipe and
   registry entry. Actual comment mutation remains fail-closed until a reviewed
   typed writer/read-back contract exists.
+- 2026-06-04: AUX-021 child batch
+  `tool-layers-unlock-all-layers` imported the active-comp `Layer.locked`
+  unlock-all request as a read-only generic-importer advisory recipe and
+  registry entry. Actual lock mutation remains fail-closed until a reviewed
+  typed writer/read-back contract exists.
 
 ## Guardrails
 
@@ -86,6 +93,8 @@ checks: `node scripts/cep-panel-cdp-smoke.js inspect` and
 `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `Layers/Unlock_All_Layers.jsx` as `tool-layers-unlock-all-layers`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-unlock-all-layers).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Layers/Add_Comment_To_Selected_Layers.jsx` as `tool-layers-add-comment-to-selected-layers`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-add-comment-to-selected-layers).
 
@@ -135,8 +144,16 @@ checks: `node scripts/cep-panel-cdp-smoke.js inspect` and
   `get_active_comp`, `get_selected_layers`, and optional `get_layer_details`
   for evidence, then report a typed-tool gap rather than substituting marker
   comments, layer renames, labels, expressions, or property edits.
+- 2026-06-04: No accepted typed tool currently writes `Layer.locked` across
+  active-comp layers. The imported unlock-all workflow must use
+  `get_active_comp`, `list_layers`, and optional `get_layer_details` for
+  evidence, then report a typed-tool gap rather than substituting selection
+  changes, layer renames, switches, expressions, properties, or script
+  execution.
 
 ## Validation
+
+| Full intake tool-layers-unlock-all-layers | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-a0fe8c1d95-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-layers-add-comment-to-selected-layers | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-1c2d17a709-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
@@ -188,6 +205,10 @@ checks: `node scripts/cep-panel-cdp-smoke.js inspect` and
   validation runs. Parent importer owns registry validation,
   solution-library validation, semantic verification, and any future live
   acceptance lane.
+- AUX-021 child batch `tool-layers-unlock-all-layers`: validation intentionally
+  not run in the detached child worktree because the child-run intent forbids
+  validation runs. Parent importer owns registry validation, solution-library
+  validation, semantic verification, and any future live acceptance lane.
 
 ## Handoff
 

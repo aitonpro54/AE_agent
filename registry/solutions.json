@@ -11303,6 +11303,113 @@
         "Do not infer target layers or comment text from screenshots, prior chat context, layer names, visual order, source names, or unavailable source-script state.",
         "A future mutating variant requires a separately accepted Layer.comment writer/read-back typed tool, explicit dry-run evidence, confirmation, idempotency, checkpoint/edit-session protection, and post-mutation read-back."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "unlock-all-layers-typed-plan",
+      "title": "Unlock All Layers Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "layer-lock",
+        "unlock",
+        "active-comp",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool-gap",
+        "read-only"
+      ],
+      "intent": {
+        "summary": "Inspect active-comp layers for an Unlock_All_Layers request and fail closed unless a reviewed layer-lock writer typed tool is available.",
+        "appliesWhen": [
+          "The user asks to run Unlock_All_Layers or unlock all layers in the active composition.",
+          "Current active-comp layer evidence is needed before deciding whether a future layer-lock typed tool can safely apply the request."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "activeComp",
+          "type": "composition",
+          "required": true,
+          "description": "Active composition evidence including comp identity, layer count, and timing metadata."
+        },
+        {
+          "name": "unlockAllLayersIntent",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed active-comp layer-unlock intent, target layer indices, known lock state when available, and skipped-target reasons for a future mutating tool."
+        }
+      ],
+      "targetAssumptions": [
+        "The active composition and current layer list are inspected before any layer-lock decision.",
+        "The request targets Layer.locked state rather than selection, names, labels, switches, expressions, properties, timing, or render queue state.",
+        "The current safe adaptation is read-only and reports the typed-tool gap for setting Layer.locked:false on all active-comp layers.",
+        "A future mutating variant must write only reviewed lock-state changes to explicit active-comp layer indices and read back the same layer lock field.",
+        "Source-exact native undo behavior, selection side effects, hidden layer ordering, raw JSX, and exact source semantics remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/unlock-all-layers-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "list_layers",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and layer evidence, disclose the reviewed unlock-all intent, and report the missing mutating layer-lock writer instead of changing layers.",
+        "steps": [
+          "Run get_active_comp to bind active comp identity, duration, frame rate, layer count, and selected-layer count.",
+          "Run list_layers to bind current active-comp layers with concrete layer indices and names.",
+          "Run get_layer_details for layers when layer lock state or related metadata is available through typed read-back.",
+          "Build and disclose reviewed unlockAllLayersIntent with the active comp identity, total layer count, target layer indices, known lock state when available, and skipped-target reasons.",
+          "Fail closed unless a separately accepted typed tool for setting and reading back Layer.locked is available."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the active comp and total active-comp layer count.",
+          "The reviewed unlockAllLayersIntent records all target layer indices and known lock state when typed read-back exposes it.",
+          "The plan reports the Layer.locked typed-tool gap and does not select layers, rename layers, change labels, edit switches, edit expressions, change properties, relink sources, alter timing, update render queue items, or mutate the composition.",
+          "Unsupported native selection side effects, hidden layer ordering, and exact source-script semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-layers-unlock-all-layers generic repository importer as advisory active-comp Layer.locked typed-tool-gap coverage.",
+          "The detached child worktree did not contain Layers/Unlock_All_Layers.jsx, so scope came from the child-run wrapper, candidate name, existing read-only active-comp layer evidence tools, and fail-closed layer-lock semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-04",
+          "from": "generic-repo-importer-tool-layers-unlock-all-layers",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the active-comp Layer.locked unlock intent behind Layers/Unlock_All_Layers.jsx into read-only typed evidence guidance; no source JSX copied. No accepted typed writer for Layer.locked was found in the child-batch tool catalog, so actual unlock mutation remains fail-closed until a reviewed set_layer_locked-style contract with active-comp layer evidence, explicit target count, idempotency, confirmation, checkpoint/edit-session protection, and read-back exists. Selection side effects, layer renames, labels, switches, expressions, properties, native undo behavior, hidden layer ordering, raw JSX, and exact source semantics require separate typed-tool contracts; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation and must not change layer lock state with current tools.",
+        "Use this recipe to gather current active-comp layer evidence and produce a targeted typed-tool gap when the user requests Unlock_All_Layers behavior.",
+        "Do not substitute selection changes, layer renames, labels, guide/shy/solo switches, effects, expressions, properties, source relinks, timing changes, or render queue changes for Layer.locked.",
+        "Do not infer target layers or lock state from screenshots, prior chat context, layer names, visual order, source names, or unavailable source-script state.",
+        "A future mutating variant requires a separately accepted Layer.locked writer/read-back typed tool, explicit dry-run evidence, confirmation, idempotency, checkpoint/edit-session protection, and post-mutation read-back."
+      ]
     }
   ]
 }
