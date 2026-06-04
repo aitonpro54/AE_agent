@@ -383,6 +383,11 @@
         "set_property_value"
       ],
       "candidateIds": [
+        "tool-layers-add-comment-to-selected-layers",
+        "tool-layers-lock-all-layers",
+        "tool-layers-reset-selected-layer-labels",
+        "tool-layers-set-all-layer-labels-to-none",
+        "tool-layers-unlock-all-layers",
         "tool-nullstoone"
       ],
       "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-metadata-openai-cli-smoke",
