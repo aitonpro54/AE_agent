@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-06-03",
+  "updatedAt": "2026-06-04",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -10830,6 +10830,371 @@
         "Require an explicit comparator policy before computing the proposed order; do not infer source-exact ordering from the candidate name alone.",
         "Do not use raw ExtendScript, script runners, generic property writes, transform mutations, or selection side effects to implement the reorder.",
         "A future mutating variant requires a separately accepted layer stack reordering typed tool, explicit dry-run evidence, confirmation, idempotency, checkpoint/edit-session protection, and post-mutation read-back."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "keyreverse-typed-plan",
+      "title": "Keyreverse Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "keyframes",
+        "selected-keyframes",
+        "selected-properties",
+        "keyreverse",
+        "set-property-keyframes",
+        "apply-keyframe-ease",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Reverse an explicit selected-keyframe value sequence at the same selected keyframe times with typed selected-property evidence, set_property_keyframes, optional apply_keyframe_ease, and layer/property read-back; source-exact playhead-copy behavior stays fail-closed.",
+        "appliesWhen": [
+          "The user asks to run keyReverse, reverse selected keys, reverse selected keyframes, reverse a selected animation segment, or reverse selected keyframe values, and accepts the narrower reverseValueOrderAtSameTimes typed adaptation.",
+          "Typed selected-property keyframe mutation is acceptable only when current selected-property evidence and explicit reviewed selectedKeyframes identify exact layer/property targets, selected keyframe times, selected keyframe values, value shape, expression state, and the bounded keyReverseMode."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties evidence containing concrete selected property targets with layerIndex, propertyPath, value shape, expression state and keyframe/animated state when available."
+        },
+        {
+          "name": "selectedKeyframes",
+          "type": "array",
+          "required": true,
+          "description": "Explicit reviewed selected keyframe evidence for each accepted target, including keyframe indices, times and values."
+        },
+        {
+          "name": "keyReverseMode",
+          "type": "string",
+          "required": false,
+          "description": "Reviewed reverse mode. The supported mode is reverseValueOrderAtSameTimes."
+        },
+        {
+          "name": "reversedKeyframes",
+          "type": "array",
+          "required": false,
+          "description": "Computed reviewed keyframes to set, preserving selected keyframe times and assigning values from the selected sequence in reverse order."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated property is bound from current get_selected_properties evidence before mutation.",
+        "Every accepted target has explicit reviewed selectedKeyframes with concrete key indices, times, values and compatible value shapes.",
+        "The supported keyReverseMode is reverseValueOrderAtSameTimes: preserve selected keyframe times and reverse the selected keyframe value order.",
+        "Source-exact behavior that adds reversed keyframe copies starting at the current comp time remains fail-closed until a separate typed contract proves selected-key discovery, insertion timing, ease/tangent transfer, and read-back.",
+        "The plan displays previous selectedKeyframes, keyReverseMode and computed reversedKeyframes before confirmation.",
+        "The workflow changes only explicitly reviewed selected keyframe values through set_property_keyframes with clearExisting:false.",
+        "Expressions, keyframe times, unselected keyframes, key removal, interpolation details, spatial tangents, layer names, sources, timing, effects, masks, render queue items, selection state and unselected properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/keyreverse-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "set_property_keyframes",
+          "apply_keyframe_ease",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected property/keyframe evidence, compute reversedKeyframes from explicit selectedKeyframes, set those values with set_property_keyframes clearExisting:false, optionally apply reviewed easing by explicit keyIndices, then read layer/property keyframes back.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation to capture active comp identity, selected property targets, layerIndex values, propertyPath values, current value shape, expression state and keyframe/animated state when available.",
+          "Require explicit reviewed selectedKeyframes for every accepted property target, including keyframe indices, times, values and compatible value shapes.",
+          "Fail closed when selected-property evidence is empty, lacks layer/property path targets, lacks exact selected keyframe times and values, has enabled expressions, has unsupported value shapes, requires adding reversed copies at the current comp time, requires changing key times, requires deleting keys, or requires source-exact selected-key discovery.",
+          "Resolve keyReverseMode to reverseValueOrderAtSameTimes only when selectedKeyframes can be reversed without changing key times or value shapes.",
+          "Show previous selectedKeyframes, keyReverseMode and computed reversedKeyframes for every accepted target before confirmation.",
+          "Run one set_property_keyframes step per accepted selected property target with the computed reversedKeyframes, clearExisting:false, the evidence-backed layerIndex and exact propertyPath.",
+          "Run apply_keyframe_ease only when the plan has explicit reviewed keyIndices plus requested ease/interpolation settings after the keyframe values are set.",
+          "Run get_layer_details for every affected layer with property keyframe read-back.",
+          "Fail closed if selected-key discovery without explicit reviewed keyframes, playhead-copy key insertion, key-time mirroring, key deletion, full property timeline replacement, spatial tangent editing, exact interpolation/ease preservation, expression-derived sampling, broad property scans, selection side effects or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties identifies every concrete selected property target, its owning layer, current value shape, expression state and keyframe/animated state when available.",
+          "Dry-run evidence lists previous selectedKeyframes, keyReverseMode and computed reversedKeyframes for every accepted target.",
+          "Each set_property_keyframes result reports the expected property path, clearExisting:false and expected reversedKeyframes count.",
+          "Any apply_keyframe_ease result reports only the explicit reviewed keyIndices.",
+          "Post-run get_layer_details shows the selected keyframe times now carry the computed reversed values on the expected layer/property path.",
+          "Skipped targets are reported with explicit typed-tool gap reasons instead of being silently changed.",
+          "Post-run evidence shows no expression, timing, effect, source, render queue, layer name, selection state, project item, playhead-copy key insertion, key removal, key-time mutation, unselected keyframe or unselected property mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-keyreverse generic repository importer as advisory typed-plan coverage for explicit selected-property keyframe reverse workflows.",
+          "The detached child worktree did not contain keyReverse.jsx, so scope came from the child-run wrapper, candidate name, existing typed keyframe tools, and fail-closed selected-keyframe semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-04",
+          "from": "generic-repo-importer-tool-keyreverse",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the selected-keyframe reverse intent behind ae-scripting/scripting-snippets keyReverse.jsx into existing typed tools as selected-property set_property_keyframes guidance for reversing explicit reviewed selectedKeyframes into computed reversedKeyframes at the same selected times; no source JSX copied. Parent review confirmed the source creates reversed key copies starting at current comp time and attempts temporal/spatial ease and tangent transfer, which this recipe does not claim. Current typed tools require current get_selected_properties evidence, explicit selectedKeyframes with times/values/indices, previous/reversedKeyframes disclosure, set_property_keyframes with clearExisting:false and get_layer_details read-back; optional apply_keyframe_ease requires explicit keyIndices. Selected-key discovery without explicit reviewed keyframes, playhead-copy key insertion, key-time mirroring, key deletion, full property timeline replacement, spatial tangent editing, exact interpolation/ease preservation, expression-derived sampling, broad property scans, selection side effects and exact source JSX semantics require separate typed-tool contracts; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties before mutating keyframes; do not infer targets from prior chat context.",
+        "Require explicit reviewed selected-keyframe evidence with times, values and key indices before computing reversedKeyframes.",
+        "Apply this recipe only when reverseValueOrderAtSameTimes can be applied without changing key times or value shape.",
+        "Use set_property_keyframes with clearExisting:false so unselected existing keys are preserved.",
+        "Use apply_keyframe_ease only with explicit reviewed keyIndices; do not rely on default selected-key behavior.",
+        "Require a separate typed-tool contract for native selected-key discovery, playhead-copy key insertion, key-time mirroring, key deletion, full property timeline replacement, spatial tangent editing, exact interpolation/ease preservation, expression-derived sampling, broad property scans, selection side effects or exact source JSX semantics.",
+        "Do not use this recipe for expression edits, static property value edits without keyframes, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "newtrimmednull-typed-plan",
+      "title": "New Trimmed Null Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "null-layer",
+        "timing",
+        "trim",
+        "selected-layers",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool-gap",
+        "read-only"
+      ],
+      "intent": {
+        "summary": "Inspect top selected layer timing and label for a new-trimmed-null request and fail closed unless reviewed null-layer creation, ordering, timing, label, and parenting typed tools are available.",
+        "appliesWhen": [
+          "The user asks to run newTrimmedNull, create a new trimmed null, or create a null layer whose in/out timing should be derived from the highest/top selected layer.",
+          "Current active-comp and selected-layer timing evidence is needed before deciding whether a future generated-null typed tool could safely apply the request."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedLayers",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Selected layers with current typed evidence for layer indices, names, inPoint, outPoint, startTime, label, and parent state."
+        },
+        {
+          "name": "newTrimmedNullIntent",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed statement of the generated null name, top-selected-layer timing/label source, and selected-layer parenting a future mutating tool would create."
+        }
+      ],
+      "targetAssumptions": [
+        "The active composition and selected layers are inspected before any generated null or trim decision.",
+        "The top selected layer is identified only from explicit layer index evidence; hidden AE selection ordering is not inferred.",
+        "The current safe adaptation is read-only and reports the typed-tool gap for generated null-layer creation, top-layer timing/label assignment, layer ordering, and selected-layer parenting.",
+        "A future mutating variant must create only one reviewed generated null layer, apply only the reviewed top-layer timing/label values, parent only the reviewed selected layers, and read the same comp/layers back.",
+        "Source-exact null-layer creation, selection or parenting side effects, native UI ordering, raw ExtendScript, native undo behavior, and exact source semantics remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/newtrimmednull-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and selected layer timing/label evidence, identify the top selected layer, compute the proposed generated-null spec, and report missing mutating null-layer/timing/label/parenting tools instead of creating a layer.",
+        "steps": [
+          "Run get_active_comp to bind active comp identity, frame rate, duration, current time, and selected-layer count.",
+          "Run get_selected_layers to bind current selected layers from typed evidence.",
+          "Identify the top selected layer by explicit layer index evidence only.",
+          "Run get_layer_details for those layers when detailed timing, label, parent, or layer-state evidence is needed.",
+          "Compute and report the proposed new-trimmed-null spec from the top selected layer's startTime, inPoint, outPoint, and label evidence, plus reviewed selected-layer parenting.",
+          "Fail closed unless separately accepted generated null-layer creation, layer ordering, layer timing/label assignment, and selected-layer parenting typed tools are available."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the active comp and selected layers with concrete layer indices and names.",
+          "Timing evidence lists inPoint, outPoint, startTime, label, and parent state for every selected layer used in the proposed generated-null review.",
+          "The plan reports the proposed generated null timing/label/parenting spec but does not create, trim, label, move, or parent a layer with current tools.",
+          "No raw ExtendScript, script execution, layer creation, layer timing/label mutation, layer ordering, parenting, selection mutation, source relink, comp mutation, or render queue mutation appears in the plan."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-newtrimmednull generic repository importer as advisory selected-layer timing and generated-null typed-tool-gap coverage.",
+          "The detached child worktree did not contain newTrimmedNull.jsx, so scope came from the child-run wrapper, candidate name, existing read-only selected-layer timing evidence tools, and fail-closed generated-null semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-04",
+          "from": "generic-repo-importer-tool-newtrimmednull",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the high-level new-trimmed-null intent behind newTrimmedNull.jsx into read-only typed evidence guidance; no source JSX copied. Parent review confirmed the source creates one null before the top selected layer, copies that layer's startTime, inPoint, outPoint, and label, then parents selected layers to the new null. No accepted generated null-layer creation, top-layer timing/label assignment, ordering, or parenting typed tool was found, so actual null creation and trimming remain fail-closed until a reviewed create_null_layer/set_layer_time_range/set_layer_parent-style contract with idempotency and read-back exists. Source-exact null-layer creation, layer order, selection or parenting side effects, raw ExtendScript, native undo behavior, and exact source semantics require separate typed-tool contracts; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation and must not create or trim layers with current tools.",
+        "Use this recipe to gather current selected-layer timing evidence and produce a targeted typed-tool gap when the user requests newTrimmedNull behavior.",
+        "Do not infer selected-layer timing or generated null timing from screenshots, prior chat context, layer names, source names, or candidate-name assumptions when typed evidence is ambiguous.",
+        "Do not use raw ExtendScript, script runners, generic property writes, selection side effects, layer ordering side effects, parenting side effects, or shape/solid stand-ins to implement native null-layer creation.",
+        "A future mutating variant requires separately accepted generated null-layer, layer-timing/label, ordering, and parenting typed tools, explicit dry-run evidence, confirmation, idempotency, checkpoint/edit-session protection, and post-mutation read-back."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "precompselected-typed-plan",
+      "title": "Precomp Selected Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "precompose",
+        "precomp",
+        "selected-layers",
+        "precompselected",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Precompose verified selected active-comp layers into separate reviewed compositions using one typed precompose_layers step per selected layer and read-back evidence.",
+        "appliesWhen": [
+          "The user asks to run precompSelected, precompose selected layers into separate comps, or create reviewed per-layer precomps from the current selected active-comp layers.",
+          "A typed-tool adaptation through get_active_comp, get_selected_layers, get_comp_details, and precompose_layers is acceptable instead of raw JSX or native dialog behavior."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedLayers",
+          "type": "layer-selection",
+          "required": true,
+          "description": "One or more selected active-comp layers with concrete layer indices and names when available."
+        },
+        {
+          "name": "newCompName",
+          "type": "string",
+          "required": true,
+          "description": "Reviewed non-empty name for one created precomp when a single selected layer is being processed."
+        },
+        {
+          "name": "perLayerPrecomposeSpecs",
+          "type": "array",
+          "required": true,
+          "description": "Reviewed per-layer precompose specs, each with one evidence-backed layerIndex, a reviewed newCompName, collision policy, and moveAllAttributes setting."
+        },
+        {
+          "name": "precomposeOptions",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed options for each precompose call including moveAllAttributes and openInViewer:false."
+        }
+      ],
+      "targetAssumptions": [
+        "The active composition and selected layers are inspected before the precompose mutation.",
+        "Each precompose_layers call receives exactly one reviewed selected layer when approximating the source batch behavior.",
+        "Each created precomp name is explicit, collision checked, and reviewed before confirmation.",
+        "Shape/Text moveAllAttributes behavior must be backed by current layer type evidence or fail closed.",
+        "Exact source JSX behavior, native dialog semantics, automatic naming, Project panel parent-folder movement, project-panel selected-item discovery, recursive nested precomp traversal, source relinking, cleanup, render queue changes, and selection side effects remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/precompselected-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_comp_details",
+          "precompose_layers"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Inspect active comp and selected layers, run one guarded precompose_layers mutation per accepted selected layer, then read back the parent comp and created precomps.",
+        "steps": [
+          "Run get_active_comp to bind active comp identity, current time, dimensions, duration, frame rate, and selected-layer count.",
+          "Run get_selected_layers to bind concrete selected layer indices, names, and layer types when available.",
+          "Run get_comp_details for the active comp before mutation to capture parent comp identity and layer count.",
+          "Build reviewed perLayerPrecomposeSpecs with one concrete layerIndex per entry, a reviewed newCompName, collision policy, and explicit moveAllAttributes setting.",
+          "Fail closed when layer type evidence is insufficient for source-like Shape/Text moveAllAttributes handling.",
+          "Run one precompose_layers call per accepted selected layer with a single evidence-backed layerIndex, reviewed newCompName, explicit moveAllAttributes, openInViewer:false, verifyAfter:true, and a stable idempotency key.",
+          "Run get_comp_details after each mutation for the parent comp and created precomp when returned evidence permits."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the active comp, selected layer indices, selected layer names/types when available, and parent comp layer count.",
+          "Dry-run evidence shows every reviewed per-layer newCompName, concrete single layerIndex, moveAllAttributes choice, collision handling, and skipped target reasons if any.",
+          "Each precompose_layers call reports created precomp evidence or enough identity/name evidence to read it back.",
+          "Post-run parent comp read-back shows the accepted selected layers were replaced by the expected precomp layers without unrelated mutations.",
+          "Unsupported native dialog behavior, automatic naming, Project panel parent-folder movement, recursive nested-precomp operations, project-panel selection discovery, selection side effects, and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-precompselected generic repository importer as advisory selected-layer precompose coverage.",
+          "The detached child worktree did not contain precompSelected.jsx, so scope came from the child-run wrapper, candidate name, existing precompose_layers typed-tool coverage, and fail-closed selected-layer precompose semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-04",
+          "from": "generic-repo-importer-tool-precompselected",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the selected-layer precompose intent behind ae-scripting/scripting-snippets precompSelected.jsx into existing typed tools using get_active_comp, get_selected_layers, get_comp_details, one precompose_layers call per accepted selected layer, and post-mutation read-back; no source JSX copied. Parent review confirmed the source batch-precomposes selected layers into separate comps. Exact source JSX behavior, native dialog semantics, automatic naming, Project panel parent-folder movement, project-panel selected-item discovery, recursive nested-precomp traversal, source relinking, cleanup, render queue changes, selection side effects, and raw ExtendScript require separate typed-tool contracts; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Use this recipe only for reviewed selected active-comp layer precompose operations with explicit selected-layer evidence and reviewed per-layer new precomp names.",
+        "Do not infer target layers or the new precomp name from unavailable source-script behavior, project panel state, layer names, visual order, or prior chat context.",
+        "Do not use raw ExtendScript, script runners, generic property writes, selection side effects, source relinking, recursive nested precomp mutation, cleanup routines, render queue changes, or exact native dialog behavior to implement this recipe."
       ]
     }
   ]

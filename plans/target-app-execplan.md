@@ -25,6 +25,18 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
+- [x] AUX remaining-four all-current queued recovery
+  `fi-remaining4-allqueued-subagents-20260604`: explicit scoped ids processed
+  `tool-keyreverse`, `tool-newtrimmednull`, `tool-planeresolve`, and
+  `tool-precompselected` through four detached proposal-only child worktrees
+  plus read-only subagent reviews. Parent reducer accepted
+  `tool-keyreverse`, `tool-newtrimmednull`, and `tool-precompselected`;
+  `tool-planeresolve` had no ready proposal
+  (`implementation-batch-candidate-missing`) and remains the only queued
+  candidate. Parent review corrected accepted recipe semantics for playhead-copy
+  key reversal, top-selected-layer trimmed-null behavior, and per-layer batch
+  precompose. No raw JSX copy, live CEP/AE mutation, Local/Ollama, fallback
+  provider, dependency change, push, or PR occurred.
 - [x] AUX targeted recovery accepted `tool-sortbyposition` in scoped run
   `fi-sortpos-r1-20260603`: parent reducer selected only this named queued
   candidate, accepted a read-only/fail-closed selected-layer position ordering
@@ -188,17 +200,16 @@ Architecture update on 2026-06-03:
 
 ## Next Milestone
 
-`fi-sortpos-r1-20260603` accepted `tool-sortbyposition` after targeted scoped
-recovery. Proof sha:
-`f72791ed3164b6889d2660ebbff9cc60485bc0c84180767706203bce8d0e2b7d`.
-The ledger is now `completed=16`, `queued=4`, `failed_import=4`,
-`blocked_live_lane_required=21`, and `blocked_policy=3`.
+`fi-remaining4-allqueued-subagents-20260604` completed the user-approved
+remaining-four proposal-only recovery after `fi-sortpos-r1-20260603`.
+Proof sha:
+`2869a907c1e821679113ee0cf6f153af3a1b6f903cbc9d148691f45b179a8398`.
+The ae-scripting ledger is now `completed=19`, `queued=1`,
+`failed_import=4`, `blocked_live_lane_required=21`, and `blocked_policy=3`.
 
-Next clean work is a separate targeted recovery/triage slice for exactly one
-named queued candidate unless the user explicitly approves a wider scope:
-`tool-keyreverse`, `tool-newtrimmednull`, `tool-planeresolve`, or
-`tool-precompselected`.
-Do not rerun `--parallel-all-queued`.
+Next clean work is a targeted recovery/triage slice for the only remaining
+queued candidate: `tool-planeresolve`, which failed this run as
+`implementation-batch-candidate-missing`.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -206,6 +217,15 @@ outside the runner out of scope.
 
 ## Decision Log
 
+- 2026-06-04: User-approved remaining-four recovery used explicit scoped ids
+  instead of a broad selector. Child worktrees and multi-agent reviewers stayed
+  proposal-only/read-only; parent owned central writes, safety review,
+  validation, docs, handoff, and commits. Parent review narrowed
+  `keyreverse-typed-plan` to same-time selected-key value reversal rather than
+  source-exact playhead-copy insertion, kept `newtrimmednull-typed-plan`
+  read-only/fail-closed around top-selected-layer timing/label/parenting gaps,
+  and required `precompselected-typed-plan` to model source-like batch behavior
+  as one reviewed `precompose_layers` step per selected layer.
 - 2026-06-03: `tool-sortbyposition` was selected as the single named queued
   candidate after `tool-trimfirsttosecond`. Parent reducer accepted only a
   read-only/fail-closed selected-layer position ordering recipe because current
@@ -247,6 +267,23 @@ outside the runner out of scope.
 
 ## Validation
 
+- AUX remaining-four recovery validation passed: compact proof for
+  `fi-remaining4-allqueued-subagents-20260604` was contract-complete with
+  reducer status `parallel_reducer_completed`, accepted
+  `tool-keyreverse`, `tool-newtrimmednull`, and `tool-precompselected`, blocked
+  `tool-planeresolve`, proof sha
+  `2869a907c1e821679113ee0cf6f153af3a1b6f903cbc9d148691f45b179a8398`, and
+  ledger summary moved to `completed=19`, `queued=1`. Passed: registry JSON
+  parse; accepted recipe raw JSX/mutation safety inspection; `git diff
+  --check`; provider contract, solution registry/candidate-report/promotion/
+  retrieval/library validations; project intent memory; plan classification
+  and repair; semantic verification; reliability validation suite; ChatGPT
+  connector, provider API, prompt optimization, bridge-only, standard smoke;
+  SDK generic repo full-intake/importer-command/queue-supervisor smokes. No
+  JavaScript files were touched, so touched-file `node --check` was not
+  required. Not run by design: Local/Ollama planner work, fallback providers,
+  broad/default CEP smoke, live CEP/AE mutation, dependency changes, push/PR,
+  raw JSX copy, archive reads, and full runtime report reads.
 - AUX `tool-sortbyposition` targeted recovery validation passed: compact scoped
   proof for `fi-sortpos-r1-20260603` was contract-complete with reducer status
   `parallel_reducer_completed`, accepted `tool-sortbyposition`, proof sha
