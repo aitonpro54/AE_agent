@@ -1,6 +1,6 @@
 {
   "schema": "codex-autonomy.validation-results.v1",
-  "updated_at": "2026-06-04T13:34:48.047Z",
+  "updated_at": "2026-06-04T13:45:11.629Z",
   "results": {
     "package.json#scripts/check:rules": {
       "id": "package.json#scripts/check:rules",
@@ -70,10 +70,125 @@
       "commands": [],
       "started_at": "2026-06-04T13:34:48.045Z",
       "completed_at": "2026-06-04T13:34:48.045Z"
+    },
+    "package.json#scripts/smoke:full-intake": {
+      "id": "package.json#scripts/smoke:full-intake",
+      "path": "package.json",
+      "type": "package-script",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "package.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "package-script:static-reviewed",
+        "package.json"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:45:11.628Z",
+      "completed_at": "2026-06-04T13:45:11.628Z"
+    },
+    "package.json#scripts/smoke:planning": {
+      "id": "package.json#scripts/smoke:planning",
+      "path": "package.json",
+      "type": "package-script",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "package.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "package-script:static-reviewed",
+        "package.json"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:45:11.628Z",
+      "completed_at": "2026-06-04T13:45:11.628Z"
+    },
+    "package.json#scripts/smoke:provider-api": {
+      "id": "package.json#scripts/smoke:provider-api",
+      "path": "package.json",
+      "type": "package-script",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "package.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "package-script:static-reviewed",
+        "package.json"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:45:11.628Z",
+      "completed_at": "2026-06-04T13:45:11.628Z"
+    },
+    "package.json#scripts/smoke:provider-contract": {
+      "id": "package.json#scripts/smoke:provider-contract",
+      "path": "package.json",
+      "type": "package-script",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "package.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "package-script:static-reviewed",
+        "package.json"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:45:11.628Z",
+      "completed_at": "2026-06-04T13:45:11.628Z"
+    },
+    "package.json#scripts/smoke:solutions": {
+      "id": "package.json#scripts/smoke:solutions",
+      "path": "package.json",
+      "type": "package-script",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "package.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "package-script:static-reviewed",
+        "package.json"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:45:11.628Z",
+      "completed_at": "2026-06-04T13:45:11.628Z"
     }
   },
   "summary": {
-    "accepted": 3,
+    "accepted": 8,
     "rejected": 0,
     "needs_lane": 0,
     "needs_revalidation": 0,

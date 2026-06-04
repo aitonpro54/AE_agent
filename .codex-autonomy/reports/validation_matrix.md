@@ -2,11 +2,6 @@
 
 | Script | Status | Lane | Summary |
 | --- | --- | --- | --- |
-| `package.json#scripts/smoke:full-intake` | pending | `` |  |
-| `package.json#scripts/smoke:planning` | pending | `` |  |
-| `package.json#scripts/smoke:provider-api` | pending | `` |  |
-| `package.json#scripts/smoke:provider-contract` | pending | `` |  |
-| `package.json#scripts/smoke:solutions` | pending | `` |  |
 | `scripts/provider-contract-smoke.js` | pending | `` |  |
 | `scripts/sdk-generic-repo-full-intake-smoke.js` | pending | `` |  |
 | `scripts/semantic-verification-smoke.js` | pending | `` |  |
@@ -85,3 +80,8 @@
 | `package.json#scripts/check:rules` | accepted | `package.json` | Accepted: static checks passed and an existing validation lane is present. |
 | `package.json#scripts/smoke:autonomy` | accepted | `package.json` | Accepted: static checks passed and an existing validation lane is present. |
 | `package.json#scripts/smoke:bridge` | accepted | `package.json` | Accepted: static checks passed and an existing validation lane is present. |
+| `package.json#scripts/smoke:full-intake` | accepted | `package.json` | Accepted: static checks passed and an existing validation lane is present. |
+| `package.json#scripts/smoke:planning` | accepted | `package.json` | Accepted: static checks passed and an existing validation lane is present. |
+| `package.json#scripts/smoke:provider-api` | accepted | `package.json` | Accepted: static checks passed and an existing validation lane is present. |
+| `package.json#scripts/smoke:provider-contract` | accepted | `package.json` | Accepted: static checks passed and an existing validation lane is present. |
+| `package.json#scripts/smoke:solutions` | accepted | `package.json` | Accepted: static checks passed and an existing validation lane is present. |

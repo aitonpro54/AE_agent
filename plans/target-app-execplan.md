@@ -39,6 +39,9 @@ old `AE_agent` repository remains the historical source.
   script/tool inventory, ranking, validation lanes, revalidation, reports,
   handoff generation, exact-next-prompt continuation, and Codex CLI supervisor
   dry-run/new-run support.
+- 2026-06-04: Ran autonomy iteration 2 as one bounded batch. Five package
+  smoke scripts were accepted by existing static lanes; autonomy state is now
+  8 accepted, 75 pending, and 0 rejected/needs_lane/needs_revalidation/blocked.
 
 ## Guardrails
 
@@ -53,9 +56,10 @@ old `AE_agent` repository remains the historical source.
 ## Next Milestone
 
 Continue the autonomy pass from `.codex-autonomy/exact_next_prompt.md`.
-Current state is `continue`: 83 candidates found, 3 accepted, 80 pending. Run
+Current state is `continue`: 83 candidates found, 8 accepted, 75 pending. Run
 one bounded step with `npm run autonomy -- run-once --batch-size 5`, then
-refresh `.codex-autonomy/handoff.md` and this plan if another milestone closes.
+refresh `.codex-autonomy/handoff.md`, `.codex-autonomy/exact_next_prompt.md`,
+`plans/target-app-execplan.md`, and `.codex/handoff.md`.
 
 After the autonomy pass is no longer the active milestone and After Effects plus
 the installed panel are available, run the deferred read-only CEP connectivity
@@ -91,6 +95,9 @@ checks: `node scripts/cep-panel-cdp-smoke.js inspect` and
 - 2026-06-04: Generated validation lanes are minimal static lanes by default;
   they do not execute arbitrary candidate behavior or mask network,
   credential, live-runtime, or destructive risk.
+- 2026-06-04: On this Windows PowerShell setup, `npm.ps1` can be blocked by
+  execution policy. Use `npm.cmd` for npm scripts in this repo instead of
+  changing machine policy.
 
 ## Validation
 
@@ -114,6 +121,11 @@ checks: `node scripts/cep-panel-cdp-smoke.js inspect` and
   `npm.cmd run autonomy -- run-once --batch-size 3`;
   `npm.cmd run autonomy -- supervise --dry-run`; and `git diff --check`
   (Windows line-ending normalization warnings only).
+- Autonomy iteration 2 bounded step passed: `npm.cmd run autonomy -- run-once
+  --batch-size 5`. The requested `npm run ...` form was attempted first, but
+  PowerShell blocked `npm.ps1` before the npm script started; no execution
+  policy was changed. Follow-up checks passed: `npm.cmd run check:rules` and
+  `git diff --check` (Windows line-ending normalization warnings only).
 
 ## Handoff
 

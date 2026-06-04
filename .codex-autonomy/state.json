@@ -5,17 +5,12 @@
   "objective": "Итеративно инвентаризировать, ранжировать, валидировать и отбирать scripts/tools в репозитории через компактный файловый state/handoff contract.",
   "repo_root": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent",
   "created_at": "2026-06-04T13:33:50.822Z",
-  "updated_at": "2026-06-04T13:39:30.858Z",
-  "iteration": 1,
+  "updated_at": "2026-06-04T13:45:11.633Z",
+  "iteration": 2,
   "max_iterations": 50,
   "script_inventory": {
     "total": 83,
     "pending": [
-      "package.json#scripts/smoke:full-intake",
-      "package.json#scripts/smoke:planning",
-      "package.json#scripts/smoke:provider-api",
-      "package.json#scripts/smoke:provider-contract",
-      "package.json#scripts/smoke:solutions",
       "scripts/provider-contract-smoke.js",
       "scripts/sdk-generic-repo-full-intake-smoke.js",
       "scripts/semantic-verification-smoke.js",
@@ -96,14 +91,25 @@
     "accepted": [
       "package.json#scripts/check:rules",
       "package.json#scripts/smoke:autonomy",
-      "package.json#scripts/smoke:bridge"
+      "package.json#scripts/smoke:bridge",
+      "package.json#scripts/smoke:full-intake",
+      "package.json#scripts/smoke:planning",
+      "package.json#scripts/smoke:provider-api",
+      "package.json#scripts/smoke:provider-contract",
+      "package.json#scripts/smoke:solutions"
     ],
     "rejected": [],
     "needs_lane": [],
     "needs_revalidation": [],
     "blocked": []
   },
-  "current_batch": [],
+  "current_batch": [
+    "package.json#scripts/smoke:full-intake",
+    "package.json#scripts/smoke:planning",
+    "package.json#scripts/smoke:provider-api",
+    "package.json#scripts/smoke:provider-contract",
+    "package.json#scripts/smoke:solutions"
+  ],
   "lanes": {
     "existing": [],
     "created": [],
@@ -112,7 +118,7 @@
   "validation": {
     "commands": [],
     "last_run_status": "passed",
-    "last_run_summary": "accepted=3, rejected=0, needs_lane=0, needs_revalidation=0, blocked=0",
+    "last_run_summary": "accepted=5, rejected=0, needs_lane=0, needs_revalidation=0, blocked=0",
     "failed_items": []
   },
   "ranking_policy": {

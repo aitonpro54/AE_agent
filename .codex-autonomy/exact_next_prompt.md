@@ -13,10 +13,10 @@
 
 Текущее состояние:
 - status: continue
-- iteration: 1/50
+- iteration: 2/50
 - total: 83
-- pending: 80
-- accepted: 3
+- pending: 75
+- accepted: 8
 - rejected: 0
 - needs_lane: 0
 - needs_revalidation: 0
@@ -28,4 +28,10 @@
 npm run autonomy -- run-once --batch-size 5
 ```
 
-После шага обнови `.codex-autonomy/handoff.md` и `.codex-autonomy/exact_next_prompt.md`. Не используй GUI/browser/computer-use для продолжения; supervisor должен идти через CLI/SDK/App Server-compatible backend.
+Если PowerShell заблокирует `npm.ps1`, используй эквивалентный
+`npm.cmd run autonomy -- run-once --batch-size 5`, не меняя execution policy.
+
+После шага обнови `.codex-autonomy/handoff.md`,
+`.codex-autonomy/exact_next_prompt.md`, `plans/target-app-execplan.md` и
+`.codex/handoff.md`. Не используй GUI/browser/computer-use для продолжения;
+supervisor должен идти через CLI/SDK/App Server-compatible backend.

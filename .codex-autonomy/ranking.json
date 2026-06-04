@@ -1,6 +1,6 @@
 {
   "schema": "codex-autonomy.ranking.v1",
-  "updated_at": "2026-06-04T13:39:24.976Z",
+  "updated_at": "2026-06-04T13:45:11.623Z",
   "policy": [
     {
       "name": "detectability",
