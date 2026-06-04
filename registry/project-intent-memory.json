@@ -1,0 +1,164 @@
+{
+  "schema": "ae-project-intent-memory.v1",
+  "entrySchema": "ae-project-intent-memory-entry.v1",
+  "updatedAt": "2026-05-19",
+  "policy": {
+    "plannerUse": "advisory-memory-enabled",
+    "maxPromptChars": 1800,
+    "maxRetrievedEntries": 4,
+    "storageRule": "Local reviewed project intent only; no secrets, raw transcripts, public or tunnel URLs, broad project dumps, or user absolute paths.",
+    "updateRule": "Use explicit reviewed updates only. Memory hints are advisory and never bypass AE read tools, plan validation, mutation gates, checkpoints, idempotency, or read-back verification.",
+    "blockedContent": [
+      "provider secrets",
+      "raw transcripts",
+      "public or tunnel URLs",
+      "broad project dumps",
+      "user absolute paths"
+    ]
+  },
+  "entries": [
+    {
+      "schema": "ae-project-intent-memory-entry.v1",
+      "id": "generated-asset-prefixes",
+      "status": "active",
+      "category": "generated-prefix",
+      "title": "Generated Asset Prefixes",
+      "summary": "Use clear generated prefixes such as Codex Test, Codex QA, or AE Agent Generated for temporary validation assets so cleanup can target only generated items.",
+      "tags": [
+        "generated-assets",
+        "cleanup",
+        "qa",
+        "temporary",
+        "idempotency"
+      ],
+      "appliesWhen": [
+        "Creating temporary comps, layers, folders, or render queue items for validation.",
+        "Planning cleanup or idempotency for generated objects."
+      ],
+      "priority": 9,
+      "confidence": "high",
+      "source": {
+        "kind": "milestone",
+        "date": "2026-05-15",
+        "reviewed": true
+      },
+      "notes": [
+        "Never apply generated-prefix cleanup to user-named assets."
+      ]
+    },
+    {
+      "schema": "ae-project-intent-memory-entry.v1",
+      "id": "protect-user-project-assets",
+      "status": "active",
+      "category": "protected-assets",
+      "title": "Protect User Project Assets",
+      "summary": "Treat non-generated comps, footage, folders, render queue items, and selected layers as user assets; inspect first and prefer narrow selected-target operations.",
+      "tags": [
+        "safety",
+        "protected-assets",
+        "readback",
+        "selection",
+        "checkpoint"
+      ],
+      "appliesWhen": [
+        "The request would rename, move, replace, delete, retime, or batch-edit existing project assets.",
+        "A prompt is broad or does not clearly name generated objects."
+      ],
+      "priority": 10,
+      "confidence": "high",
+      "source": {
+        "kind": "milestone",
+        "date": "2026-05-15",
+        "reviewed": true
+      },
+      "notes": [
+        "Verify targets with read tools before any mutation."
+      ]
+    },
+    {
+      "schema": "ae-project-intent-memory-entry.v1",
+      "id": "batch-naming-conventions",
+      "status": "active",
+      "category": "naming-convention",
+      "title": "Batch Naming Conventions",
+      "summary": "For broad naming work, read current names and use exact prefix, suffix, or find-replace rules; avoid guessing user naming conventions from project-wide dumps.",
+      "tags": [
+        "naming",
+        "rename",
+        "batch",
+        "project-items",
+        "layers"
+      ],
+      "appliesWhen": [
+        "The user asks for layer, comp, or project-item renaming.",
+        "The requested naming pattern is underspecified or affects many existing objects."
+      ],
+      "priority": 7,
+      "confidence": "medium",
+      "source": {
+        "kind": "milestone",
+        "date": "2026-05-15",
+        "reviewed": true
+      },
+      "notes": [
+        "Prefer explicit selected targets for rename operations."
+      ]
+    },
+    {
+      "schema": "ae-project-intent-memory-entry.v1",
+      "id": "deep-duplicate-fileless-source-fallback",
+      "status": "active",
+      "category": "workflow-hint",
+      "title": "Deep Duplicate Fileless Source Fallback",
+      "summary": "When deep-duplicating precomp sources, generated solids or placeholders may have no file; reuse or reconstruct them with explicit warnings instead of failing the whole run.",
+      "tags": [
+        "precomp",
+        "source",
+        "fileless-footage",
+        "hardcore",
+        "readback"
+      ],
+      "appliesWhen": [
+        "A selected precomp contains adjustment layers, generated solids, placeholders, or missing footage sources."
+      ],
+      "priority": 8,
+      "confidence": "high",
+      "source": {
+        "kind": "agent-hardcore-session",
+        "date": "2026-05-18",
+        "reviewed": true
+      },
+      "notes": [
+        "Memory is advisory only and never bypasses typed read tools or mutation gates."
+      ]
+    },
+    {
+      "schema": "ae-project-intent-memory-entry.v1",
+      "id": "agent-hardcore-autopilot-loop",
+      "status": "active",
+      "category": "workflow-hint",
+      "title": "Agent Hardcore Autopilot Loop",
+      "summary": "Agent Hardcore should plan, dry-run, execute protected mutations, read back results, and retry from compact failure evidence before stopping.",
+      "tags": [
+        "hardcore",
+        "autopilot",
+        "repair-loop",
+        "readback",
+        "checkpoint"
+      ],
+      "appliesWhen": [
+        "The user selects Agent Hardcore for an AE workflow and expects autonomous execution."
+      ],
+      "priority": 7,
+      "confidence": "medium",
+      "source": {
+        "kind": "agent-hardcore-session",
+        "date": "2026-05-19",
+        "reviewed": true
+      },
+      "notes": [
+        "Memory is advisory only and never bypasses typed read tools or mutation gates."
+      ]
+    }
+  ]
+}

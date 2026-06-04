@@ -1,0 +1,202 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>AE Agent 2.0.0</title>
+    <script>
+      (function () {
+        var search = String(window.location.search || "");
+        function queryValue(name) {
+          var pattern = new RegExp("[?&]" + name + "=([^&]+)");
+          var match = search.match(pattern);
+          return match ? decodeURIComponent(match[1].replace(/\+/g, " ")) : "";
+        }
+        window.__aeAgentAssetVersion = queryValue("assets") || queryValue("reload") || "2.0.0";
+      })();
+    </script>
+    <script>
+      document.write('<link rel="stylesheet" href="./style.css?v=' + encodeURIComponent(window.__aeAgentAssetVersion) + '" />');
+    </script>
+  </head>
+  <body>
+    <main id="appShell" class="app-shell">
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-title">
+          <button id="collapseSidebarButton" class="icon-button" title="Collapse provider panel" aria-expanded="true">&lt;</button>
+        </div>
+
+        <section class="bridge-section">
+          <div class="connection-row">
+            <span id="status">Starting...</span>
+            <span id="badge">offline</span>
+          </div>
+          <div class="bridge-fields">
+            <label>
+              Bridge URL
+              <input id="bridgeUrl" value="http://127.0.0.1:3456" />
+            </label>
+            <label>
+              Token
+              <input id="bridgeToken" type="password" />
+            </label>
+          </div>
+          <div class="actions">
+            <div class="action-group">
+              <button id="connectButton">Connect</button>
+              <button id="disconnectButton">Disconnect</button>
+            </div>
+            <div class="action-group">
+              <button id="diagnosticsButton" aria-expanded="false">Log</button>
+              <button id="reloadButton">Reload</button>
+            </div>
+          </div>
+          <p id="bridgeHelp" class="bridge-help">Waiting for the local bridge.</p>
+        </section>
+
+        <section class="connector-section">
+          <div class="connector-header">
+            <h2>ChatGPT Connector</h2>
+            <button id="connectorStatusButton">Refresh</button>
+          </div>
+          <div id="connectorStatusList" class="connector-status-list" aria-live="polite"></div>
+          <button id="connectorEmergencyDisableButton">Disable writes</button>
+        </section>
+
+        <section class="provider-section">
+          <h2>AI Provider</h2>
+          <div id="providerTabs" class="provider-tabs">
+            <button class="provider-tab" data-provider-group="gemini">Gemini</button>
+            <button class="provider-tab active" data-provider-group="openai">OpenAI</button>
+            <button class="provider-tab" data-provider-group="claude">Claude</button>
+            <button class="provider-tab" data-provider-group="openrouter">OpenRouter</button>
+            <button class="provider-tab" data-provider-group="local">Local</button>
+          </div>
+
+          <select id="agentSelect" class="hidden-control" aria-hidden="true">
+            <option value="">Loading...</option>
+          </select>
+
+          <div id="authModeTabs" class="segmented">
+            <button data-auth-mode="api">API</button>
+            <button data-auth-mode="cli" class="active">CLI</button>
+          </div>
+
+          <div id="agentSetupCard" class="setup-card">
+            <strong id="agentSetupTitle">ChatGPT via Codex CLI</strong>
+            <span id="agentSetupText">Run codex login, choose ChatGPT sign-in, then use CLI models here. No OpenAI API key is used.</span>
+            <button id="agentSetupActionButton" class="setup-action-button">Sign in with ChatGPT</button>
+          </div>
+
+          <div id="localServiceCard" class="local-card">
+            <h3>Local AI Service</h3>
+            <p>Runs with <strong>Ollama</strong> on port 11434. No API key needed.</p>
+            <button id="detectLocalButton">Detect Ollama</button>
+            <span id="localStatus">Not checked</span>
+          </div>
+
+          <div id="agentApiKeyRow" class="api-key-row">
+            <input id="agentApiKey" type="password" autocomplete="off" placeholder="Enter API key" />
+            <button id="saveAgentKeyButton">Save</button>
+          </div>
+
+          <label id="freeModelsRow" class="checkbox-row">
+            <input id="freeModelsOnly" type="checkbox" />
+            Free models only
+          </label>
+
+          <label>
+            Model
+            <select id="agentModel"></select>
+            <datalist id="agentModelList"></datalist>
+          </label>
+
+          <div id="agentDetails">
+            <span>Provider: -</span>
+            <span>Model: -</span>
+            <span>Models: -</span>
+            <span>Status: not loaded</span>
+          </div>
+
+          <div id="providerSelfTestCard" class="self-test-card">
+            <div class="self-test-header">
+              <strong>Provider self-test</strong>
+              <button id="providerSelfTestButton">Test</button>
+            </div>
+            <div id="providerSelfTestList" class="self-test-list" aria-live="polite"></div>
+          </div>
+
+          <div class="actions">
+            <div class="action-group">
+              <button id="refreshAgentsButton">Refresh</button>
+              <button id="checkAgentButton">Check model</button>
+            </div>
+            <span id="agentStatus">Not loaded</span>
+          </div>
+        </section>
+
+        <section class="history-section">
+          <h2>Chat History</h2>
+          <select id="chatHistorySelect">
+            <option>Current conversation</option>
+          </select>
+          <div class="history-actions">
+            <button id="newChatButton">+ New Chat</button>
+            <button id="clearChatButton">Clear Chat</button>
+          </div>
+        </section>
+      </aside>
+
+      <section class="chat-pane">
+        <div id="chatTranscript"></div>
+
+        <div class="composer">
+          <select id="chatMode" class="hidden-control" aria-hidden="true">
+            <option value="chat">Chat</option>
+            <option value="plan">Agent</option>
+            <option value="hardcore">Agent Hardcore</option>
+          </select>
+          <div id="chatModeTabs" class="mode-toggle">
+            <button data-chat-mode="chat">Chat</button>
+            <button data-chat-mode="plan" class="active">Agent</button>
+            <button data-chat-mode="hardcore">Agent Hardcore</button>
+          </div>
+          <label class="prompt-toggle">
+            <input id="promptOptimization" type="checkbox" />
+            <span>Prompt Optimization</span>
+            <em>Off</em>
+          </label>
+          <div class="workflow-row">
+            <select id="workflowPresetSelect" aria-label="Agent workflow preset">
+              <option value="">Workflow preset...</option>
+            </select>
+            <button id="applyWorkflowPresetButton">Insert</button>
+          </div>
+          <div class="prompt-row">
+            <textarea id="chatPrompt" rows="4" placeholder="Describe what to create or do in After Effects..."></textarea>
+            <button id="sendChatButton" title="Send">&gt;</button>
+          </div>
+          <div class="plan-actions">
+            <span id="planRunStatus" class="plan-run-status">No plan ready</span>
+            <button id="recoverLastPlanButton" class="recover-plan-button">Подхватить последний план из чата</button>
+            <button id="dryRunPlanButton">Dry run / Проверить</button>
+            <button id="runPlanButton">Выполнить план</button>
+            <button id="prepareDevRequestButton" class="dev-request-button">Prepare typed tool request</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="activity-pane">
+        <h2>Activity</h2>
+        <pre id="log"></pre>
+      </section>
+    </main>
+
+    <script>
+      document.write('<script src="./lib/CSInterface.js?v=' + encodeURIComponent(window.__aeAgentAssetVersion) + '"><\/script>');
+      document.write('<script src="./panel.js?v=' + encodeURIComponent(window.__aeAgentAssetVersion) + '"><\/script>');
+    </script>
+  </body>
+</html>

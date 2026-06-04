@@ -1,0 +1,9 @@
+# Repository search safety defaults.
+#
+# These paths contain archival or generated evidence that can be enormous.
+# Use compact status/proof scripts or exact files instead of broad ripgrep.
+plans/archive/**
+.codex/sdk/logs/**
+.codex-runtime/**
+logs/**
+node_modules/**

@@ -1,0 +1,22 @@
+{
+  "name": "ae-agent-clean",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "check:rules": "node scripts/clean-current-check.js",
+    "smoke:provider-contract": "node scripts/provider-contract-smoke.js",
+    "smoke:provider-api": "node scripts/provider-api-smoke.js",
+    "smoke:solutions": "node scripts/solution-registry-smoke.js && node scripts/solution-candidate-report-smoke.js && node scripts/solution-promotion-smoke.js && node scripts/solution-retrieval-smoke.js && node scripts/solution-library-validation-smoke.js",
+    "smoke:planning": "node scripts/project-intent-memory-smoke.js && node scripts/plan-classification-smoke.js && node scripts/plan-repair-smoke.js && node scripts/semantic-verification-smoke.js",
+    "smoke:bridge": "node scripts/chatgpt-connector-smoke.js && node scripts/provider-api-smoke.js && node scripts/prompt-optimization-smoke.js && node scripts/bridge-only-smoke-test.js && node scripts/smoke-test.js",
+    "smoke:full-intake": "node scripts/sdk-generic-repo-full-intake-smoke.js && node scripts/sdk-generic-repo-importer-command-smoke.js && node scripts/sdk-generic-repo-queue-supervisor-smoke.js",
+    "full-intake:status": "node orchestrator/full-intake-status.mjs",
+    "full-intake:diagnose": "node orchestrator/full-intake-diagnose.mjs",
+    "full-intake:proof": "node orchestrator/full-intake-proof.mjs",
+    "generic-repo:auto-intake": "node orchestrator/run-generic-repo-auto-intake.mjs",
+    "generic-repo:full-intake": "node orchestrator/run-generic-repo-full-intake.mjs",
+    "generic-repo:tool-importer": "node orchestrator/run-generic-repo-tool-importer.mjs",
+    "generic-repo:importer-supervisor": "node orchestrator/run-generic-repo-importer-supervisor.mjs",
+    "generic-repo:queue-supervisor": "node orchestrator/run-generic-repo-queue-supervisor.mjs"
+  }
+}

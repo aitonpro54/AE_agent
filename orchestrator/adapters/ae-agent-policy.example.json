@@ -1,0 +1,25 @@
+{
+  "schema": "ae-agent-clean-adapter-policy.example.v1",
+  "adapter": "ae-agent-clean",
+  "status": "example",
+  "allowedRuntimeRoots": [
+    ".codex-runtime/sdk",
+    "logs"
+  ],
+  "productRoots": [
+    "cep-panel/**",
+    "chatgpt-connector/**",
+    "mcp-server/**",
+    "recipes/**",
+    "registry/**",
+    "scripts/**",
+    "orchestrator/**"
+  ],
+  "blockedWithoutFreshApproval": [
+    "live CEP/After Effects mutation",
+    "external-provider planner validation",
+    "dependency change",
+    "push",
+    "pull request"
+  ]
+}

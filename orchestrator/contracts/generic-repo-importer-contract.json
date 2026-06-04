@@ -1,0 +1,361 @@
+{
+  "schema": "sdk-generic-repo-importer.contract.v1",
+  "auxiliaryId": "AUX-014",
+  "title": "Generic repository tool importer control-plane contract",
+  "createdAt": "2026-05-26",
+  "purpose": "Define the first fail-closed control-plane shape for a generic, resumable, one-command importer that can intake an arbitrary external repository with tools or automation logic and stage safe AE Agent integration work through Codex CLI only.",
+  "scope": {
+    "kind": "internal-tooling",
+    "notProductMilestone": true,
+    "genericRepositoryOnly": true,
+    "namedRepoSpecific": false,
+    "runtimeBehaviorChanged": false,
+    "runnerImplemented": false,
+    "liveCepAeRun": false,
+    "externalProviderPlannerRun": false,
+    "localOllamaUsed": false,
+    "dependencyChanged": false,
+    "pushOrPrCreated": false
+  },
+  "manifestSchema": {
+    "schema": "generic-repo-tool-importer.manifest.v1",
+    "fileName": "importer.manifest.json",
+    "requiredTopLevelFields": [
+      "schema",
+      "run",
+      "sourceRepo",
+      "targetRepo",
+      "intake",
+      "analysis",
+      "implementation",
+      "merge",
+      "validation",
+      "liveAcceptance",
+      "approvals",
+      "safety"
+    ],
+    "run": {
+      "requiredFields": [
+        "runId",
+        "createdAt",
+        "requestedGoal",
+        "codexCliOnly",
+        "resumable",
+        "resumeFromState",
+        "defaultModel",
+        "webSearch"
+      ],
+      "constraints": {
+        "codexCliOnly": true,
+        "resumable": true,
+        "webSearch": "disabled",
+        "localOllama": false
+      }
+    },
+    "sourceRepo": {
+      "requiredFields": [
+        "inputKind",
+        "location",
+        "revision",
+        "allowedReadRoots",
+        "deniedReadRoots"
+      ],
+      "inputKinds": [
+        "local-path",
+        "git-url",
+        "archive"
+      ],
+      "normalization": "Copy or checkout source material into the ignored run intake area before analysis; never write inside the source repository."
+    },
+    "targetRepo": {
+      "requiredFields": [
+        "path",
+        "allowedWritePaths",
+        "forbiddenWritePaths",
+        "branchPolicy",
+        "pushPolicy"
+      ],
+      "defaultPath": "C:/Users/Ant/Documents/Codex/AE_agent",
+      "branchPolicy": "do-not-create-branch-by-default",
+      "pushPolicy": "manual-user-approval-required"
+    },
+    "intake": {
+      "requiredFields": [
+        "fingerprintFiles",
+        "inventoryRules",
+        "licensePolicy",
+        "secretPolicy",
+        "sizeLimits"
+      ],
+      "failClosedIf": [
+        "source path missing",
+        "source repository too large for configured limits",
+        "license cannot be classified",
+        "secrets or credential material appear in proposed import artifacts"
+      ]
+    },
+    "analysis": {
+      "requiredFields": [
+        "toolDiscovery",
+        "automationDiscovery",
+        "contractExtraction",
+        "riskClassification",
+        "readBackRequirements",
+        "batching"
+      ],
+      "parallelizable": true,
+      "outputs": [
+        "analysis/repo-fingerprint.json",
+        "analysis/tool-candidates/*.json",
+        "analysis/automation-candidates/*.json",
+        "analysis/risk-map.json",
+        "analysis/read-back-requirements.json",
+        "analysis/batch-plan.json"
+      ]
+    },
+    "implementation": {
+      "requiredFields": [
+        "batchWorktrees",
+        "plannedPathsPerBatch",
+        "codexCliInvocation",
+        "reviewerPolicy",
+        "artifactPolicy"
+      ],
+      "parallelizable": true,
+      "worktreeMode": "isolated-per-tool-or-batch",
+      "codexCliInvocation": {
+        "engine": "codex-cli",
+        "sandbox": "workspace-write",
+        "approvalPolicy": "never",
+        "webSearch": "disabled",
+        "localOllama": false
+      }
+    },
+    "merge": {
+      "requiredFields": [
+        "supervisor",
+        "mergePlan",
+        "diffPolicy",
+        "conflictPolicy",
+        "plannedPathGate"
+      ],
+      "parallelizable": false,
+      "supervisor": "single controlled merge supervisor",
+      "failClosedIf": [
+        "batch changed unplanned path",
+        "batch introduced package or dependency change without manifest allowance",
+        "merge conflict touches shared bridge/catalog/semantic files without supervisor-owned resolution",
+        "git diff includes source repository writes"
+      ]
+    },
+    "validation": {
+      "requiredFields": [
+        "nonLiveCommands",
+        "nodeCheckTouchedJs",
+        "gitDiffCheck",
+        "semanticVerification",
+        "reportPath"
+      ],
+      "nonLiveOnlyBeforeLiveQueue": true,
+      "defaultCommands": [
+        "node --check <touched-js-files>",
+        "git diff --check",
+        "node scripts/provider-contract-smoke.js",
+        "node scripts/solution-registry-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/smoke-test.js"
+      ],
+      "reportPath": "validation/non-live-report.json"
+    },
+    "liveAcceptance": {
+      "requiredFields": [
+        "queue",
+        "lock",
+        "mode",
+        "providerPath",
+        "flow",
+        "generatedOnlyPolicy",
+        "readBackPolicy",
+        "semanticVerification"
+      ],
+      "queue": "serial-live-ae-cep-acceptance-queue",
+      "lock": "locks/live-ae-cep.lock",
+      "mode": "generated-only-openai-cli-when-available",
+      "providerPath": "OpenAI CLI through Codex CLI only",
+      "flow": [
+        "m100_proposal",
+        "dry_run",
+        "confirmed_run",
+        "read_back",
+        "semantic_verification"
+      ],
+      "parallelizable": false,
+      "failClosedIf": [
+        "M100 proposal missing",
+        "dry run missing or mismatched",
+        "confirmed run lacks matching proposal id",
+        "read-back missing for mutation",
+        "semantic verification not passed",
+        "generated-prefix cleanup cannot prove no leftovers",
+        "Local/Ollama or fallback provider appears in evidence"
+      ]
+    },
+    "approvals": {
+      "manualUserApprovalRequiredFor": [
+        "push",
+        "pull_request"
+      ],
+      "automaticSafetyGatesFor": [
+        "external repository intake",
+        "parallel analysis",
+        "parallel implementation worktrees",
+        "dependency change rejection",
+        "controlled merge",
+        "non-live validation",
+        "generated-only live queue gating"
+      ]
+    },
+    "safety": {
+      "requiredFields": [
+        "forbiddenActions",
+        "forbiddenPaths",
+        "stopGates",
+        "auditEvidence"
+      ],
+      "forbiddenActions": [
+        "use_local_ollama",
+        "use_external_provider_fallback",
+        "write_source_repository",
+        "push_without_manual_user_approval",
+        "create_pr_without_manual_user_approval",
+        "run_live_cep_ae_without_serial_lock",
+        "run_mutating_live_without_m100_flow",
+        "merge_unvalidated_batch",
+        "change_dependencies_without_manifest_allowance",
+        "continue_after_context_hard_handoff"
+      ]
+    }
+  },
+  "runStateLayout": {
+    "schema": "generic-repo-tool-importer.run-state-layout.v1",
+    "root": ".codex-runtime/sdk/generic-repo-importer/<run-id>/",
+    "trackedArtifactsRoot": "docs/current-state/generic-repo-importer/",
+    "files": [
+      "state.json",
+      "events.jsonl",
+      "manifest.original.json",
+      "manifest.normalized.json",
+      "supervisor-plan.json",
+      "intake/source-fingerprint.json",
+      "intake/source-inventory.json",
+      "intake/license-and-secret-review.json",
+      "analysis/tool-candidates/*.json",
+      "analysis/automation-candidates/*.json",
+      "analysis/risk-map.json",
+      "analysis/read-back-requirements.json",
+      "analysis/batch-plan.json",
+      "batches/<batch-id>/prompt.md",
+      "batches/<batch-id>/planned-paths.json",
+      "batches/<batch-id>/result.json",
+      "worktrees/<batch-id>/",
+      "merge/supervisor-merge-plan.json",
+      "merge/accepted-batches.json",
+      "merge/rejected-batches.json",
+      "validation/non-live-report.json",
+      "live-queue/queue.json",
+      "live-queue/<item-id>/m100-proposal.json",
+      "live-queue/<item-id>/dry-run.json",
+      "live-queue/<item-id>/confirmed-run.json",
+      "live-queue/<item-id>/read-back.json",
+      "live-queue/<item-id>/semantic-verification.json",
+      "locks/live-ae-cep.lock",
+      "final-report.json"
+    ],
+    "stateMachine": [
+      "initialized",
+      "intake_running",
+      "intake_complete",
+      "analysis_running",
+      "analysis_complete",
+      "implementation_planned",
+      "implementation_running",
+      "implementation_complete",
+      "merge_running",
+      "merge_complete",
+      "non_live_validation_running",
+      "non_live_validation_passed",
+      "live_queue_ready",
+      "live_queue_running",
+      "completed",
+      "stopped"
+    ],
+    "resumeRules": [
+      "Each phase must write a durable phase result before the next phase starts.",
+      "On resume, the orchestrator reads state.json, validates the manifest hash, verifies the target repository path, and continues only from the last complete phase.",
+      "A dirty target tree stops the run unless the dirty paths exactly match the current run's planned paths and state records the owning phase.",
+      "Live queue resume requires a free live AE/CEP lock and matching proposal, dry-run, confirmed-run, read-back, and semantic verification evidence for any completed live item."
+    ],
+    "concurrency": {
+      "intake": 1,
+      "analysisWorkers": "manifest.analysis.batching.maxParallelAnalysisWorkers",
+      "implementationWorktrees": "manifest.analysis.batching.maxParallelImplementationBatches",
+      "mergeSupervisors": 1,
+      "nonLiveValidation": 1,
+      "liveAcceptance": 1
+    }
+  },
+  "automaticSafetyGates": [
+    "manifest-schema-valid",
+    "manifest-hash-bound",
+    "target-repo-clean-or-owned-dirty",
+    "source-repo-read-only",
+    "path-allowlist-enforced",
+    "forbidden-paths-enforced",
+    "no-local-ollama",
+    "codex-cli-only",
+    "no-web-search",
+    "no-unapproved-dependencies",
+    "parallel-worktree-isolation",
+    "controlled-merge-supervisor",
+    "non-live-validation-before-live",
+    "serial-live-ae-cep-lock",
+    "m100-proposal-dry-run-confirmed-run-read-back-semantic-verification",
+    "context-pressure-stop",
+    "push-pr-manual-user-approval-only"
+  ],
+  "machineCheck": {
+    "requiredSchema": "sdk-generic-repo-importer.contract.v1",
+    "requiredAuxiliaryId": "AUX-014",
+    "requiredManifestSchema": "generic-repo-tool-importer.manifest.v1",
+    "requiredRunStateRoot": ".codex-runtime/sdk/generic-repo-importer/<run-id>/",
+    "requiredPlanArtifactPath": "orchestrator/contracts/generic-repo-importer-supervisor-plan.json",
+    "requiredSmokeScript": "scripts/sdk-generic-repo-importer-contract-smoke.js",
+    "requiredLiveFlow": [
+      "m100_proposal",
+      "dry_run",
+      "confirmed_run",
+      "read_back",
+      "semantic_verification"
+    ],
+    "requiredFalseScopeClaims": [
+      "namedRepoSpecific",
+      "runtimeBehaviorChanged",
+      "runnerImplemented",
+      "liveCepAeRun",
+      "externalProviderPlannerRun",
+      "localOllamaUsed",
+      "dependencyChanged",
+      "pushOrPrCreated"
+    ],
+    "requiredAutomaticSafetyGates": [
+      "manifest-schema-valid",
+      "source-repo-read-only",
+      "parallel-worktree-isolation",
+      "controlled-merge-supervisor",
+      "non-live-validation-before-live",
+      "serial-live-ae-cep-lock",
+      "m100-proposal-dry-run-confirmed-run-read-back-semantic-verification",
+      "push-pr-manual-user-approval-only"
+    ]
+  }
+}

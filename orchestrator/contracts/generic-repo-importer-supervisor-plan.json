@@ -1,0 +1,173 @@
+{
+  "schema": "sdk-generic-repo-importer.supervisor-plan.v1",
+  "auxiliaryId": "AUX-014",
+  "title": "Generic repository tool importer supervisor plan artifact",
+  "createdAt": "2026-05-26",
+  "sourceContract": "orchestrator/contracts/generic-repo-importer-contract.json",
+  "planOnly": true,
+  "childRunsCreated": false,
+  "sdkThreadCreated": false,
+  "runtimeStateWritten": false,
+  "worktreesCreated": false,
+  "liveCepAeRun": false,
+  "localOllamaUsed": false,
+  "productionBehaviorChanged": false,
+  "dependencyChanged": false,
+  "pushOrPrCreated": false,
+  "currentMilestone": {
+    "label": "AUX-014",
+    "goal": "Freeze the generic importer manifest schema, run-state layout, supervisor plan artifact, and smoke coverage before implementing any runner behavior.",
+    "status": "completed-by-local-control-plane-artifacts",
+    "plannedPaths": [
+      "orchestrator/contracts/generic-repo-importer-contract.json",
+      "orchestrator/contracts/generic-repo-importer-supervisor-plan.json",
+      "scripts/sdk-generic-repo-importer-contract-smoke.js",
+      "plans/target-app-execplan.md",
+      ".codex/handoff.md"
+    ],
+    "validationCommands": [
+      "node --check scripts/sdk-generic-repo-importer-contract-smoke.js",
+      "node scripts/sdk-generic-repo-importer-contract-smoke.js",
+      "npm.cmd run check:rules",
+      "git diff --check"
+    ]
+  },
+  "nextAuxMilestones": [
+    {
+      "label": "AUX-015",
+      "id": "aux-015-generic-importer-command-skeleton",
+      "goal": "Add a no-live, no-worktree one-command skeleton that accepts a manifest, creates the ignored run root, normalizes manifest hashes, writes state.json/events.jsonl/supervisor-plan.json, and exits before analysis.",
+      "runner": "codex-cli-only",
+      "parallelism": "none",
+      "livePolicy": "none",
+      "manualUserApprovalRequired": false,
+      "stopGates": [
+        "manifest-schema-invalid",
+        "target-repo-dirty-unowned",
+        "source-repo-write-attempt",
+        "local-ollama-selected",
+        "dependency-change-requested",
+        "context-pressure"
+      ]
+    },
+    {
+      "label": "AUX-016",
+      "id": "aux-016-generic-importer-analysis-fixtures",
+      "goal": "Implement fixture-backed parallel analysis planning over copied source inventory, tool candidates, automation candidates, risk classes, and read-back requirements without implementation worktrees.",
+      "runner": "codex-cli-only",
+      "parallelism": "analysis-only",
+      "livePolicy": "none",
+      "manualUserApprovalRequired": false,
+      "stopGates": [
+        "analysis-output-missing",
+        "candidate-contract-invalid",
+        "unsafe-source-secret-detected",
+        "named-repository-assumption-detected",
+        "local-ollama-selected"
+      ]
+    },
+    {
+      "label": "AUX-017",
+      "id": "aux-017-generic-importer-worktree-batch-planner",
+      "goal": "Plan isolated implementation worktrees and batch prompts from analysis artifacts, still without launching writers or merging changes.",
+      "runner": "codex-cli-only",
+      "parallelism": "planned-worktrees-only",
+      "livePolicy": "none",
+      "manualUserApprovalRequired": false,
+      "stopGates": [
+        "batch-without-planned-paths",
+        "shared-file-batch-conflict-without-merge-owner",
+        "forbidden-target-path",
+        "dependency-change-requested-without-manifest-allowance"
+      ]
+    },
+    {
+      "label": "AUX-018",
+      "id": "aux-018-generic-importer-controlled-merge-supervisor",
+      "goal": "Add the controlled merge supervisor over fixture or tiny generated batches, enforcing planned paths, conflict policy, non-live validation, and fail-closed reports.",
+      "runner": "codex-cli-only",
+      "parallelism": "implementation-batches-then-serial-merge",
+      "livePolicy": "none",
+      "manualUserApprovalRequired": false,
+      "stopGates": [
+        "unplanned-path-change",
+        "merge-conflict-unowned",
+        "non-live-validation-failed",
+        "dirty-tree-after-rejected-batch"
+      ]
+    },
+    {
+      "label": "AUX-019",
+      "id": "aux-019-generic-importer-live-queue-design-smoke",
+      "goal": "Add non-mutating fixtures for the serial live AE/CEP queue evidence model: M100 proposal, dry run, confirmed run, read-back, semantic verification, cleanup proof, and lock handling.",
+      "runner": "codex-cli-only",
+      "parallelism": "none-for-live",
+      "livePolicy": "fixture-only",
+      "manualUserApprovalRequired": false,
+      "stopGates": [
+        "live-lock-missing",
+        "m100-proposal-missing",
+        "dry-run-mismatch",
+        "confirmed-run-without-proposal",
+        "read-back-missing",
+        "semantic-verification-not-passed"
+      ]
+    }
+  ],
+  "approvalPolicy": {
+    "manualUserApprovalRequiredFor": [
+      "push",
+      "pull_request"
+    ],
+    "automaticSafetyGatesCover": [
+      "repo intake",
+      "parallel analysis",
+      "parallel implementation worktree planning",
+      "controlled merge",
+      "non-live validation",
+      "serial generated-only live acceptance"
+    ],
+    "exactSupervisorApprovalTextNeededForInternalRuns": false,
+    "reason": "The requested importer target is a one-command internal tool with fail-closed gates. The existing roadmap supervisor may still require exact approval when it is used as the executor, but the importer contract itself reserves manual user approval only for push and PR."
+  },
+  "forbiddenBoundaries": {
+    "useLocalOllama": false,
+    "useExternalProviderFallback": false,
+    "writeSourceRepository": false,
+    "runLiveCepAeInAUX014": false,
+    "createBranchOrWorktreeInAUX014": false,
+    "changeDependencies": false,
+    "changeProductRuntime": false,
+    "push": false,
+    "pullRequest": false
+  },
+  "machineCheck": {
+    "requiredSchema": "sdk-generic-repo-importer.supervisor-plan.v1",
+    "requiredAuxiliaryId": "AUX-014",
+    "requiredSourceContract": "orchestrator/contracts/generic-repo-importer-contract.json",
+    "requiredCurrentValidationCommands": [
+      "node --check scripts/sdk-generic-repo-importer-contract-smoke.js",
+      "node scripts/sdk-generic-repo-importer-contract-smoke.js",
+      "npm.cmd run check:rules",
+      "git diff --check"
+    ],
+    "requiredNextLabels": [
+      "AUX-015",
+      "AUX-016",
+      "AUX-017",
+      "AUX-018",
+      "AUX-019"
+    ],
+    "requiredFalseFlags": [
+      "childRunsCreated",
+      "sdkThreadCreated",
+      "runtimeStateWritten",
+      "worktreesCreated",
+      "liveCepAeRun",
+      "localOllamaUsed",
+      "productionBehaviorChanged",
+      "dependencyChanged",
+      "pushOrPrCreated"
+    ]
+  }
+}
