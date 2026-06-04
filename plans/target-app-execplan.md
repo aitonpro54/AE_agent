@@ -26,18 +26,19 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-layers-set-all-layer-labels-to-none: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-set-all-layer-labels-to-none); live gate ready, importer batch full-intake-kyletmartinez-11ee5a3609-import, commit recorded after candidate commit.
+
 - 2026-06-04: Запущен guarded Full Intaker triage-75 longrun с
   sub-agent/read-only preflight, чистым runtime ledger, scoped lane
   pre-resolution, parallel candidate worktrees и parent-owned serial
   acceptance. Создан fresh ignored ledger из текущего checkout
   `kyletmartinez/after-effects-scripts` плюс legacy candidate metadata,
   расширена существующая layer metadata proof lane, requeued 4 of 5 layer
-  metadata candidates, completed three candidates:
+  metadata candidates, completed four candidates:
   `tool-layers-add-comment-to-selected-layers`,
-  `tool-layers-lock-all-layers`, and `tool-layers-unlock-all-layers`.
-  Current triage ledger state: 75 entries, 14 completed, 60 blocked/skipped,
-  1 queued. Остановка сделана для handoff: runner context estimate 68%,
-  next predicted 75%.
+  `tool-layers-lock-all-layers`, `tool-layers-unlock-all-layers`, and
+  `tool-layers-set-all-layer-labels-to-none`. Current triage ledger state:
+  75 entries, 15 completed, 60 blocked/skipped, 0 queued, terminal total 75.
 - [x] Full intake tool-layers-unlock-all-layers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-unlock-all-layers); live gate ready, importer batch full-intake-kyletmartinez-a0fe8c1d95-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-layers-add-comment-to-selected-layers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-add-comment-to-selected-layers); live gate ready, importer batch full-intake-kyletmartinez-1c2d17a709-import, commit recorded after candidate commit.
@@ -79,6 +80,11 @@ old `AE_agent` repository remains the historical source.
   unlock-all request as a read-only generic-importer advisory recipe and
   registry entry. Actual lock mutation remains fail-closed until a reviewed
   typed writer/read-back contract exists.
+- 2026-06-04: AUX-021 child batch
+  `tool-layers-set-all-layer-labels-to-none` imported the active-comp
+  `Layer.label` set-all-labels-to-None request as a read-only
+  generic-importer advisory recipe and registry entry. Actual label mutation
+  remains fail-closed until a reviewed typed writer/read-back contract exists.
 
 ## Guardrails
 
@@ -92,15 +98,16 @@ old `AE_agent` repository remains the historical source.
 
 ## Next Milestone
 
-Продолжить в свежем потоке из компактного состояния: Full Intaker runner
-дошел до soft-stop band по контексту (estimate 68%, next predicted 75%).
-Читать только `.codex/handoff.md`, `plans/target-app-execplan.md`, compact
-Full Intaker status/proof и summary triage ledger. Следующий queued candidate:
-`tool-layers-set-all-layer-labels-to-none`. Candidate
-`tool-layers-reset-selected-layer-labels` имеет terminal unresolved lane ticket;
-не ретраить без отдельного scoped fix. Push запрещен.
+Triage-75 layer metadata queue is exhausted for this bounded slice. Continue
+only from compact state (`.codex/handoff.md`, this plan, compact Full Intaker
+status/proof, and summary triage ledger). Do not run another real queue item
+without a new scoped milestone. Candidate `tool-layers-reset-selected-layer-labels`
+still has a terminal unresolved lane ticket; do not retry it without a separate
+scoped fix. Push remains forbidden unless separately requested.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `Layers/Set_All_Layer_Labels_To_None.jsx` as `tool-layers-set-all-layer-labels-to-none`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-set-all-layer-labels-to-none).
 
 - 2026-06-04: Создан новый ignored clean triage ledger в этом repo вместо
   копирования old runtime proof trees. Ledger использует fresh GitHub checkout
@@ -173,8 +180,29 @@ Full Intaker status/proof и summary triage ledger. Следующий queued ca
   evidence, then report a typed-tool gap rather than substituting selection
   changes, layer renames, switches, expressions, properties, or script
   execution.
+- 2026-06-04: No accepted typed tool currently writes `Layer.label` across
+  active-comp layers. The imported set-all-layer-labels-to-none workflow must
+  use `get_active_comp`, `list_layers`, and optional `get_layer_details` for
+  evidence, then report a typed-tool gap rather than substituting selection
+  changes, layer renames, switches, properties, or script execution.
+- 2026-06-04: Registry input schema uses `comp` for composition evidence.
+  Post-validation normalized the imported advisory `activeComp` inputs for
+  `unlock-all-layers-typed-plan` and
+  `set-all-layer-labels-to-none-typed-plan` from `composition` to `comp`.
 
 ## Validation
+
+| Full intake tool-layers-set-all-layer-labels-to-none | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-11ee5a3609-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+
+- Post-acceptance validation for
+  `tool-layers-set-all-layer-labels-to-none` passed:
+  `node --check scripts/solution-library-validation-smoke.js`,
+  `git diff --check`, `npm.cmd run check:rules`,
+  `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake`.
+  `smoke:solutions` initially exposed a registry schema mismatch where imported
+  advisory active-comp inputs used `composition` instead of the accepted `comp`
+  input type; the registry entries were normalized and the smoke passed on
+  rerun.
 
 - Full Intaker triage-75 longrun validation passed:
   `node orchestrator/run-generic-repo-auto-intake.mjs --repo https://github.com/kyletmartinez/after-effects-scripts --run-id full-intake-kyletmartinez --context-percent 20 --candidate-limit 200 --parallel-candidate-limit 2 --compact-json`;
@@ -247,6 +275,12 @@ Full Intaker status/proof и summary triage ledger. Следующий queued ca
   not run in the detached child worktree because the child-run intent forbids
   validation runs. Parent importer owns registry validation, solution-library
   validation, semantic verification, and any future live acceptance lane.
+- AUX-021 child batch `tool-layers-set-all-layer-labels-to-none`: validation
+  intentionally not run in the detached child worktree because the child-run
+  intent forbids validation runs. Parent importer owns registry validation,
+  solution-library validation, semantic verification, and any future live
+  acceptance lane. A local JSON parse sanity check of `registry/solutions.json`
+  returned `json-ok`.
 
 ## Handoff
 

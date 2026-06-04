@@ -11329,7 +11329,7 @@
       "inputs": [
         {
           "name": "activeComp",
-          "type": "composition",
+          "type": "comp",
           "required": true,
           "description": "Active composition evidence including comp identity, layer count, and timing metadata."
         },
@@ -11409,6 +11409,113 @@
         "Do not substitute selection changes, layer renames, labels, guide/shy/solo switches, effects, expressions, properties, source relinks, timing changes, or render queue changes for Layer.locked.",
         "Do not infer target layers or lock state from screenshots, prior chat context, layer names, visual order, source names, or unavailable source-script state.",
         "A future mutating variant requires a separately accepted Layer.locked writer/read-back typed tool, explicit dry-run evidence, confirmation, idempotency, checkpoint/edit-session protection, and post-mutation read-back."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "set-all-layer-labels-to-none-typed-plan",
+      "title": "Set All Layer Labels To None Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "layer-label",
+        "labels",
+        "active-comp",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool-gap",
+        "read-only"
+      ],
+      "intent": {
+        "summary": "Inspect active-comp layers for a Set_All_Layer_Labels_To_None request and fail closed unless a reviewed layer-label writer typed tool is available.",
+        "appliesWhen": [
+          "The user asks to run Set_All_Layer_Labels_To_None or set every active-comp layer label to None.",
+          "Current active-comp layer evidence is needed before deciding whether a future layer-label typed tool can safely apply the request."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "activeComp",
+          "type": "comp",
+          "required": true,
+          "description": "Active composition evidence including comp identity, layer count, and timing metadata."
+        },
+        {
+          "name": "setAllLayerLabelsToNoneIntent",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed active-comp layer-label intent, target layer indices, known label state when available, and skipped-target reasons for a future mutating tool."
+        }
+      ],
+      "targetAssumptions": [
+        "The active composition and current layer list are inspected before any layer-label decision.",
+        "The request targets Layer.label state rather than selection, names, switches, expressions, properties, timing, or render queue state.",
+        "The current safe adaptation is read-only and reports the typed-tool gap for setting Layer.label to None on all active-comp layers.",
+        "A future mutating variant must write only reviewed label-state changes to explicit active-comp layer indices and read back the same layer label field.",
+        "Source-exact native undo behavior, selection side effects, hidden layer ordering, raw JSX, and exact source semantics remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/set-all-layer-labels-to-none-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "list_layers",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp and layer evidence, disclose the reviewed set-all-labels intent, and report the missing mutating layer-label writer instead of changing layers.",
+        "steps": [
+          "Run get_active_comp to bind active comp identity, duration, frame rate, layer count, and selected-layer count.",
+          "Run list_layers to bind current active-comp layers with concrete layer indices and names.",
+          "Run get_layer_details for layers when layer label state or related metadata is available through typed read-back.",
+          "Build and disclose reviewed setAllLayerLabelsToNoneIntent with the active comp identity, total layer count, target layer indices, known label state when available, and skipped-target reasons.",
+          "Fail closed unless a separately accepted typed tool for setting and reading back Layer.label is available."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the active comp and total active-comp layer count.",
+          "The reviewed setAllLayerLabelsToNoneIntent records all target layer indices and known label state when typed read-back exposes it.",
+          "The plan reports the Layer.label typed-tool gap and does not select layers, rename layers, change switches, edit expressions, change properties, relink sources, alter timing, update render queue items, or mutate the composition.",
+          "Unsupported native selection side effects, hidden layer ordering, and exact source-script semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-layers-set-all-layer-labels-to-none generic repository importer as advisory active-comp Layer.label typed-tool-gap coverage.",
+          "The detached child worktree did not contain Layers/Set_All_Layer_Labels_To_None.jsx, so scope came from the child-run wrapper, candidate name, existing read-only active-comp layer evidence tools, and fail-closed layer-label semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-04",
+          "from": "generic-repo-importer-tool-layers-set-all-layer-labels-to-none",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the active-comp Layer.label None intent behind Layers/Set_All_Layer_Labels_To_None.jsx into read-only typed evidence guidance; no source JSX copied. No accepted typed writer for Layer.label was found in the child-batch tool catalog, so actual label mutation remains fail-closed until a reviewed set_layer_label-style contract with active-comp layer evidence, explicit target count, idempotency, confirmation, checkpoint/edit-session protection, and read-back exists. Selection side effects, layer renames, switches, expressions, properties, native undo behavior, hidden layer ordering, raw JSX, and exact source semantics require separate typed-tool contracts; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation and must not change layer label state with current tools.",
+        "Use this recipe to gather current active-comp layer evidence and produce a targeted typed-tool gap when the user requests Set_All_Layer_Labels_To_None behavior.",
+        "Do not substitute selection changes, layer renames, guide/shy/solo switches, effects, expressions, properties, source relinks, timing changes, or render queue changes for Layer.label.",
+        "Do not infer target layers or label state from screenshots, prior chat context, layer names, visual order, source names, or unavailable source-script state.",
+        "A future mutating variant requires a separately accepted Layer.label writer/read-back typed tool, explicit dry-run evidence, confirmation, checkpoint/edit-session protection, and post-mutation read-back."
       ]
     }
   ]
