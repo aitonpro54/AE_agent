@@ -8,3 +8,46 @@
 - `package.json#scripts/smoke:provider-api` - Accepted: static checks passed and an existing validation lane is present.
 - `package.json#scripts/smoke:provider-contract` - Accepted: static checks passed and an existing validation lane is present.
 - `package.json#scripts/smoke:solutions` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/provider-contract-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/sdk-generic-repo-full-intake-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/semantic-verification-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/solution-promotion-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/agent-scenario-report.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/reliability-validation-suite-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/safe-rg.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/solution-retrieval-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/agent-scenario-report-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/autonomy-layer-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/chatgpt-connector-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/manual-typed-tool-regression-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/plan-classification-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/plan-repair-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/prompt-optimization-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/sdk-generic-repo-importer-command-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/sdk-generic-repo-queue-supervisor-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/smoke-test.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/solution-candidate-report-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/solution-candidate-report.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/solution-registry-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/cep-panel-cdp-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/project-intent-memory-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/reliability-validation-suite.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/solution-library-validation-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `orchestrator/run-generic-repo-auto-intake.mjs` - Accepted: generated static validation lane passed.
+- `orchestrator/run-generic-repo-importer-supervisor.mjs` - Accepted: generated static validation lane passed.
+- `orchestrator/run-generic-repo-queue-supervisor.mjs` - Accepted: generated static validation lane passed.
+- `scripts/clean-current-check.js` - Accepted: generated static validation lane passed.
+- `scripts/solution-promotion-helper.js` - Accepted: generated static validation lane passed.
+- `mcp-server/server.js` - Accepted: generated static validation lane passed.
+- `orchestrator/core/post-run-contract.mjs` - Accepted: generated static validation lane passed.
+- `orchestrator/core/runtime-store.mjs` - Accepted: generated static validation lane passed.
+- `orchestrator/full-intake-diagnose.mjs` - Accepted: generated static validation lane passed.
+- `orchestrator/full-intake-ledger-summary.mjs` - Accepted: generated static validation lane passed.
+- `orchestrator/full-intake-proof.mjs` - Accepted: generated static validation lane passed.
+- `orchestrator/full-intake-status.mjs` - Accepted: generated static validation lane passed.
+- `orchestrator/parallel-candidate-worktrees.mjs` - Accepted: generated static validation lane passed.
+- `orchestrator/run-generic-repo-full-intake.mjs` - Accepted: generated static validation lane passed.
+- `package.json#scripts/autonomy` - Accepted: generated static validation lane passed.
+- `package.json#scripts/full-intake:diagnose` - Accepted: generated static validation lane passed.
+- `package.json#scripts/full-intake:proof` - Accepted: generated static validation lane passed.
+- `...и еще 28` - нет validation result

@@ -42,6 +42,9 @@ old `AE_agent` repository remains the historical source.
 - 2026-06-04: Ran autonomy iteration 2 as one bounded batch. Five package
   smoke scripts were accepted by existing static lanes; autonomy state is now
   8 accepted, 75 pending, and 0 rejected/needs_lane/needs_revalidation/blocked.
+- 2026-06-04: Ran one full remaining autonomy batch with batch size 75.
+  Pending queue is exhausted: 78 accepted, 1 rejected, 4 blocked, and 0
+  pending/needs_lane/needs_revalidation.
 
 ## Guardrails
 
@@ -55,11 +58,11 @@ old `AE_agent` repository remains the historical source.
 
 ## Next Milestone
 
-Continue the autonomy pass from `.codex-autonomy/exact_next_prompt.md`.
-Current state is `continue`: 83 candidates found, 8 accepted, 75 pending. Run
-one bounded step with `npm run autonomy -- run-once --batch-size 5`, then
-refresh `.codex-autonomy/handoff.md`, `.codex-autonomy/exact_next_prompt.md`,
-`plans/target-app-execplan.md`, and `.codex/handoff.md`.
+Resolve the autonomy blocked set from `.codex-autonomy/exact_next_prompt.md`.
+Current state is `blocked`: 83 candidates found, 78 accepted, 1 rejected,
+4 blocked, and 0 pending. Do not run another `run-once` until the blocked
+items have explicit safe mock/dry-run/read-only fixture lanes or are left
+blocked/rejected with a recorded reason.
 
 After the autonomy pass is no longer the active milestone and After Effects plus
 the installed panel are available, run the deferred read-only CEP connectivity
@@ -98,6 +101,10 @@ checks: `node scripts/cep-panel-cdp-smoke.js inspect` and
 - 2026-06-04: On this Windows PowerShell setup, `npm.ps1` can be blocked by
   execution policy. Use `npm.cmd` for npm scripts in this repo instead of
   changing machine policy.
+- 2026-06-04: The local autonomy supervisor creates fresh `codex exec` CLI
+  runs from `exact_next_prompt.md`; it does not itself create visible Codex app
+  UI threads. App-thread creation remains parent-managed through Codex app
+  tools when explicitly needed.
 
 ## Validation
 
@@ -126,6 +133,9 @@ checks: `node scripts/cep-panel-cdp-smoke.js inspect` and
   PowerShell blocked `npm.ps1` before the npm script started; no execution
   policy was changed. Follow-up checks passed: `npm.cmd run check:rules` and
   `git diff --check` (Windows line-ending normalization warnings only).
+- Autonomy iteration 3 full remaining batch passed as a bounded static pass:
+  `npm.cmd run autonomy -- run-once --batch-size 75`. It did not run live CEP/AE
+  or real supervise loop. Result: pending 0, accepted 78, rejected 1, blocked 4.
 
 ## Handoff
 

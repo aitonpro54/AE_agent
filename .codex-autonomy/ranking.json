@@ -1,6 +1,6 @@
 {
   "schema": "codex-autonomy.ranking.v1",
-  "updated_at": "2026-06-04T13:45:11.623Z",
+  "updated_at": "2026-06-04T13:59:19.451Z",
   "policy": [
     {
       "name": "detectability",
@@ -146,7 +146,7 @@
       "id": "package.json#scripts/smoke:full-intake",
       "path": "package.json",
       "type": "package-script",
-      "total_score": 33,
+      "total_score": 35,
       "scores": {
         "detectability": 4,
         "runnable": 4,
@@ -154,7 +154,7 @@
         "safety": 5,
         "relevance": 4,
         "maintainability": 4,
-        "evidence": 3
+        "evidence": 5
       },
       "safety": {
         "credentials": false,
@@ -173,14 +173,14 @@
       "reasons": [
         "existing-lane:package-script",
         "safety:no-obvious-risk",
-        "validation:not-run"
+        "validation:accepted"
       ]
     },
     {
       "id": "package.json#scripts/smoke:planning",
       "path": "package.json",
       "type": "package-script",
-      "total_score": 33,
+      "total_score": 35,
       "scores": {
         "detectability": 4,
         "runnable": 4,
@@ -188,7 +188,7 @@
         "safety": 5,
         "relevance": 4,
         "maintainability": 4,
-        "evidence": 3
+        "evidence": 5
       },
       "safety": {
         "credentials": false,
@@ -207,14 +207,14 @@
       "reasons": [
         "existing-lane:package-script",
         "safety:no-obvious-risk",
-        "validation:not-run"
+        "validation:accepted"
       ]
     },
     {
       "id": "package.json#scripts/smoke:provider-api",
       "path": "package.json",
       "type": "package-script",
-      "total_score": 33,
+      "total_score": 35,
       "scores": {
         "detectability": 4,
         "runnable": 4,
@@ -222,7 +222,7 @@
         "safety": 5,
         "relevance": 4,
         "maintainability": 4,
-        "evidence": 3
+        "evidence": 5
       },
       "safety": {
         "credentials": false,
@@ -241,14 +241,14 @@
       "reasons": [
         "existing-lane:package-script",
         "safety:no-obvious-risk",
-        "validation:not-run"
+        "validation:accepted"
       ]
     },
     {
       "id": "package.json#scripts/smoke:provider-contract",
       "path": "package.json",
       "type": "package-script",
-      "total_score": 33,
+      "total_score": 35,
       "scores": {
         "detectability": 4,
         "runnable": 4,
@@ -256,7 +256,7 @@
         "safety": 5,
         "relevance": 4,
         "maintainability": 4,
-        "evidence": 3
+        "evidence": 5
       },
       "safety": {
         "credentials": false,
@@ -275,14 +275,14 @@
       "reasons": [
         "existing-lane:package-script",
         "safety:no-obvious-risk",
-        "validation:not-run"
+        "validation:accepted"
       ]
     },
     {
       "id": "package.json#scripts/smoke:solutions",
       "path": "package.json",
       "type": "package-script",
-      "total_score": 33,
+      "total_score": 35,
       "scores": {
         "detectability": 4,
         "runnable": 4,
@@ -290,7 +290,7 @@
         "safety": 5,
         "relevance": 4,
         "maintainability": 4,
-        "evidence": 3
+        "evidence": 5
       },
       "safety": {
         "credentials": false,
@@ -309,7 +309,7 @@
       "reasons": [
         "existing-lane:package-script",
         "safety:no-obvious-risk",
-        "validation:not-run"
+        "validation:accepted"
       ]
     },
     {

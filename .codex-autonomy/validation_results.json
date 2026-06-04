@@ -1,6 +1,6 @@
 {
   "schema": "codex-autonomy.validation-results.v1",
-  "updated_at": "2026-06-04T13:45:11.629Z",
+  "updated_at": "2026-06-04T13:59:25.012Z",
   "results": {
     "package.json#scripts/check:rules": {
       "id": "package.json#scripts/check:rules",
@@ -185,13 +185,2034 @@
       "commands": [],
       "started_at": "2026-06-04T13:45:11.628Z",
       "completed_at": "2026-06-04T13:45:11.628Z"
+    },
+    "scripts/provider-contract-smoke.js": {
+      "id": "scripts/provider-contract-smoke.js",
+      "path": "scripts/provider-contract-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/provider-contract-smoke.js",
+      "safety": {
+        "credentials": false,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "destructive-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/provider-contract-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/provider-contract-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:19.457Z",
+      "completed_at": "2026-06-04T13:59:19.509Z"
+    },
+    "scripts/sdk-generic-repo-full-intake-smoke.js": {
+      "id": "scripts/sdk-generic-repo-full-intake-smoke.js",
+      "path": "scripts/sdk-generic-repo-full-intake-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/sdk-generic-repo-full-intake-smoke.js",
+      "safety": {
+        "credentials": false,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": true,
+        "network": false,
+        "reasons": [
+          "destructive-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/sdk-generic-repo-full-intake-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/sdk-generic-repo-full-intake-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:19.509Z",
+      "completed_at": "2026-06-04T13:59:19.558Z"
+    },
+    "scripts/semantic-verification-smoke.js": {
+      "id": "scripts/semantic-verification-smoke.js",
+      "path": "scripts/semantic-verification-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/semantic-verification-smoke.js",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/semantic-verification-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/semantic-verification-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:19.558Z",
+      "completed_at": "2026-06-04T13:59:19.605Z"
+    },
+    "scripts/solution-promotion-smoke.js": {
+      "id": "scripts/solution-promotion-smoke.js",
+      "path": "scripts/solution-promotion-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/solution-promotion-smoke.js",
+      "safety": {
+        "credentials": false,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "destructive-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/solution-promotion-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/solution-promotion-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:19.605Z",
+      "completed_at": "2026-06-04T13:59:19.656Z"
+    },
+    "scripts/agent-scenario-report.js": {
+      "id": "scripts/agent-scenario-report.js",
+      "path": "scripts/agent-scenario-report.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/agent-scenario-report-smoke.js",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/agent-scenario-report-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/agent-scenario-report.js"
+      ],
+      "started_at": "2026-06-04T13:59:19.656Z",
+      "completed_at": "2026-06-04T13:59:19.716Z"
+    },
+    "scripts/reliability-validation-suite-smoke.js": {
+      "id": "scripts/reliability-validation-suite-smoke.js",
+      "path": "scripts/reliability-validation-suite-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/reliability-validation-suite-smoke.js",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/reliability-validation-suite-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/reliability-validation-suite-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:19.716Z",
+      "completed_at": "2026-06-04T13:59:19.780Z"
+    },
+    "scripts/safe-rg.js": {
+      "id": "scripts/safe-rg.js",
+      "path": "scripts/safe-rg.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/safe-rg-smoke.js",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/safe-rg-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/safe-rg.js"
+      ],
+      "started_at": "2026-06-04T13:59:19.780Z",
+      "completed_at": "2026-06-04T13:59:19.831Z"
+    },
+    "scripts/solution-retrieval-smoke.js": {
+      "id": "scripts/solution-retrieval-smoke.js",
+      "path": "scripts/solution-retrieval-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/solution-retrieval-smoke.js",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/solution-retrieval-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/solution-retrieval-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:19.831Z",
+      "completed_at": "2026-06-04T13:59:19.913Z"
+    },
+    "orchestrator/run-generic-repo-auto-intake.mjs": {
+      "id": "orchestrator/run-generic-repo-auto-intake.mjs",
+      "path": "orchestrator/run-generic-repo-auto-intake.mjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/orchestrator-run-generic-repo-auto-intake.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/orchestrator-run-generic-repo-auto-intake.json"
+      ],
+      "commands": [
+        "node --check orchestrator/run-generic-repo-auto-intake.mjs"
+      ],
+      "started_at": "2026-06-04T13:59:22.975Z",
+      "completed_at": "2026-06-04T13:59:23.031Z"
+    },
+    "orchestrator/run-generic-repo-importer-supervisor.mjs": {
+      "id": "orchestrator/run-generic-repo-importer-supervisor.mjs",
+      "path": "orchestrator/run-generic-repo-importer-supervisor.mjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/orchestrator-run-generic-repo-importer-supervisor.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": false,
+        "reasons": [
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/orchestrator-run-generic-repo-importer-supervisor.json"
+      ],
+      "commands": [
+        "node --check orchestrator/run-generic-repo-importer-supervisor.mjs"
+      ],
+      "started_at": "2026-06-04T13:59:23.031Z",
+      "completed_at": "2026-06-04T13:59:23.098Z"
+    },
+    "orchestrator/run-generic-repo-queue-supervisor.mjs": {
+      "id": "orchestrator/run-generic-repo-queue-supervisor.mjs",
+      "path": "orchestrator/run-generic-repo-queue-supervisor.mjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/orchestrator-run-generic-repo-queue-supervisor.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/orchestrator-run-generic-repo-queue-supervisor.json"
+      ],
+      "commands": [
+        "node --check orchestrator/run-generic-repo-queue-supervisor.mjs"
+      ],
+      "started_at": "2026-06-04T13:59:23.098Z",
+      "completed_at": "2026-06-04T13:59:23.153Z"
+    },
+    "scripts/agent-scenario-report-smoke.js": {
+      "id": "scripts/agent-scenario-report-smoke.js",
+      "path": "scripts/agent-scenario-report-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/agent-scenario-report-smoke.js",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/agent-scenario-report-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/agent-scenario-report-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:20.078Z",
+      "completed_at": "2026-06-04T13:59:20.124Z"
+    },
+    "scripts/autonomy-layer-smoke.js": {
+      "id": "scripts/autonomy-layer-smoke.js",
+      "path": "scripts/autonomy-layer-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/autonomy-layer-smoke.js",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/autonomy-layer-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/autonomy-layer-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:20.124Z",
+      "completed_at": "2026-06-04T13:59:20.173Z"
+    },
+    "scripts/bridge-only-smoke-test.js": {
+      "id": "scripts/bridge-only-smoke-test.js",
+      "path": "scripts/bridge-only-smoke-test.js",
+      "type": "file",
+      "status": "blocked",
+      "summary": "Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane.",
+      "lane": ".codex-autonomy/lanes/scripts-bridge-only-smoke-test.json",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal"
+        ]
+      },
+      "evidence": [
+        "network-signal",
+        "credential-signal",
+        "live-runtime-signal"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:59:23.153Z",
+      "completed_at": "2026-06-04T13:59:23.154Z"
+    },
+    "scripts/chatgpt-connector-smoke.js": {
+      "id": "scripts/chatgpt-connector-smoke.js",
+      "path": "scripts/chatgpt-connector-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/chatgpt-connector-smoke.js",
+      "safety": {
+        "credentials": true,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "destructive-signal",
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/chatgpt-connector-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/chatgpt-connector-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:20.173Z",
+      "completed_at": "2026-06-04T13:59:20.228Z"
+    },
+    "scripts/clean-current-check.js": {
+      "id": "scripts/clean-current-check.js",
+      "path": "scripts/clean-current-check.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/scripts-clean-current-check.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/scripts-clean-current-check.json"
+      ],
+      "commands": [
+        "node --check scripts/clean-current-check.js"
+      ],
+      "started_at": "2026-06-04T13:59:23.154Z",
+      "completed_at": "2026-06-04T13:59:23.214Z"
+    },
+    "scripts/manual-typed-tool-regression-smoke.js": {
+      "id": "scripts/manual-typed-tool-regression-smoke.js",
+      "path": "scripts/manual-typed-tool-regression-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/manual-typed-tool-regression-smoke.js",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/manual-typed-tool-regression-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/manual-typed-tool-regression-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:20.276Z",
+      "completed_at": "2026-06-04T13:59:20.336Z"
+    },
+    "scripts/plan-classification-smoke.js": {
+      "id": "scripts/plan-classification-smoke.js",
+      "path": "scripts/plan-classification-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/plan-classification-smoke.js",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/plan-classification-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/plan-classification-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:20.336Z",
+      "completed_at": "2026-06-04T13:59:20.389Z"
+    },
+    "scripts/plan-repair-smoke.js": {
+      "id": "scripts/plan-repair-smoke.js",
+      "path": "scripts/plan-repair-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/plan-repair-smoke.js",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/plan-repair-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/plan-repair-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:20.389Z",
+      "completed_at": "2026-06-04T13:59:20.446Z"
+    },
+    "scripts/prompt-optimization-smoke.js": {
+      "id": "scripts/prompt-optimization-smoke.js",
+      "path": "scripts/prompt-optimization-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/prompt-optimization-smoke.js",
+      "safety": {
+        "credentials": true,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "destructive-signal",
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/prompt-optimization-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/prompt-optimization-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:20.446Z",
+      "completed_at": "2026-06-04T13:59:20.502Z"
+    },
+    "scripts/provider-api-smoke.js": {
+      "id": "scripts/provider-api-smoke.js",
+      "path": "scripts/provider-api-smoke.js",
+      "type": "file",
+      "status": "blocked",
+      "summary": "Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane.",
+      "lane": ".codex-autonomy/lanes/scripts-provider-api-smoke.json",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal"
+        ]
+      },
+      "evidence": [
+        "network-signal",
+        "credential-signal",
+        "live-runtime-signal"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:59:23.214Z",
+      "completed_at": "2026-06-04T13:59:23.214Z"
+    },
+    "scripts/sdk-generic-repo-importer-command-smoke.js": {
+      "id": "scripts/sdk-generic-repo-importer-command-smoke.js",
+      "path": "scripts/sdk-generic-repo-importer-command-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/sdk-generic-repo-importer-command-smoke.js",
+      "safety": {
+        "credentials": true,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "destructive-signal",
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/sdk-generic-repo-importer-command-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/sdk-generic-repo-importer-command-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:20.502Z",
+      "completed_at": "2026-06-04T13:59:20.558Z"
+    },
+    "scripts/sdk-generic-repo-queue-supervisor-smoke.js": {
+      "id": "scripts/sdk-generic-repo-queue-supervisor-smoke.js",
+      "path": "scripts/sdk-generic-repo-queue-supervisor-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/sdk-generic-repo-queue-supervisor-smoke.js",
+      "safety": {
+        "credentials": false,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "destructive-signal",
+          "network-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/sdk-generic-repo-queue-supervisor-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/sdk-generic-repo-queue-supervisor-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:20.558Z",
+      "completed_at": "2026-06-04T13:59:20.618Z"
+    },
+    "scripts/smoke-test.js": {
+      "id": "scripts/smoke-test.js",
+      "path": "scripts/smoke-test.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/smoke-test.js",
+      "safety": {
+        "credentials": true,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "destructive-signal",
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/smoke-test.js"
+      ],
+      "commands": [
+        "node --check scripts/smoke-test.js"
+      ],
+      "started_at": "2026-06-04T13:59:20.618Z",
+      "completed_at": "2026-06-04T13:59:20.688Z"
+    },
+    "scripts/solution-candidate-report-smoke.js": {
+      "id": "scripts/solution-candidate-report-smoke.js",
+      "path": "scripts/solution-candidate-report-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/solution-candidate-report-smoke.js",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/solution-candidate-report-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/solution-candidate-report-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:20.688Z",
+      "completed_at": "2026-06-04T13:59:20.744Z"
+    },
+    "scripts/solution-candidate-report.js": {
+      "id": "scripts/solution-candidate-report.js",
+      "path": "scripts/solution-candidate-report.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/solution-candidate-report-smoke.js",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/solution-candidate-report-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/solution-candidate-report.js"
+      ],
+      "started_at": "2026-06-04T13:59:20.744Z",
+      "completed_at": "2026-06-04T13:59:20.803Z"
+    },
+    "scripts/solution-promotion-helper.js": {
+      "id": "scripts/solution-promotion-helper.js",
+      "path": "scripts/solution-promotion-helper.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/scripts-solution-promotion-helper.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/scripts-solution-promotion-helper.json"
+      ],
+      "commands": [
+        "node --check scripts/solution-promotion-helper.js"
+      ],
+      "started_at": "2026-06-04T13:59:23.214Z",
+      "completed_at": "2026-06-04T13:59:23.267Z"
+    },
+    "scripts/solution-registry-smoke.js": {
+      "id": "scripts/solution-registry-smoke.js",
+      "path": "scripts/solution-registry-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/solution-registry-smoke.js",
+      "safety": {
+        "credentials": true,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "destructive-signal",
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/solution-registry-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/solution-registry-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:20.856Z",
+      "completed_at": "2026-06-04T13:59:20.903Z"
+    },
+    "mcp-server/server.js": {
+      "id": "mcp-server/server.js",
+      "path": "mcp-server/server.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/mcp-server-server.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/mcp-server-server.json"
+      ],
+      "commands": [
+        "node --check mcp-server/server.js"
+      ],
+      "started_at": "2026-06-04T13:59:23.267Z",
+      "completed_at": "2026-06-04T13:59:23.316Z"
+    },
+    "orchestrator/core/post-run-contract.mjs": {
+      "id": "orchestrator/core/post-run-contract.mjs",
+      "path": "orchestrator/core/post-run-contract.mjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/orchestrator-core-post-run-contract.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/orchestrator-core-post-run-contract.json"
+      ],
+      "commands": [
+        "node --check orchestrator/core/post-run-contract.mjs"
+      ],
+      "started_at": "2026-06-04T13:59:23.316Z",
+      "completed_at": "2026-06-04T13:59:23.372Z"
+    },
+    "orchestrator/core/runtime-store.mjs": {
+      "id": "orchestrator/core/runtime-store.mjs",
+      "path": "orchestrator/core/runtime-store.mjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/orchestrator-core-runtime-store.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/orchestrator-core-runtime-store.json"
+      ],
+      "commands": [
+        "node --check orchestrator/core/runtime-store.mjs"
+      ],
+      "started_at": "2026-06-04T13:59:23.372Z",
+      "completed_at": "2026-06-04T13:59:23.436Z"
+    },
+    "orchestrator/full-intake-diagnose.mjs": {
+      "id": "orchestrator/full-intake-diagnose.mjs",
+      "path": "orchestrator/full-intake-diagnose.mjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/orchestrator-full-intake-diagnose.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/orchestrator-full-intake-diagnose.json"
+      ],
+      "commands": [
+        "node --check orchestrator/full-intake-diagnose.mjs"
+      ],
+      "started_at": "2026-06-04T13:59:23.436Z",
+      "completed_at": "2026-06-04T13:59:23.488Z"
+    },
+    "orchestrator/full-intake-ledger-summary.mjs": {
+      "id": "orchestrator/full-intake-ledger-summary.mjs",
+      "path": "orchestrator/full-intake-ledger-summary.mjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/orchestrator-full-intake-ledger-summary.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/orchestrator-full-intake-ledger-summary.json"
+      ],
+      "commands": [
+        "node --check orchestrator/full-intake-ledger-summary.mjs"
+      ],
+      "started_at": "2026-06-04T13:59:23.488Z",
+      "completed_at": "2026-06-04T13:59:23.540Z"
+    },
+    "orchestrator/full-intake-proof.mjs": {
+      "id": "orchestrator/full-intake-proof.mjs",
+      "path": "orchestrator/full-intake-proof.mjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/orchestrator-full-intake-proof.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/orchestrator-full-intake-proof.json"
+      ],
+      "commands": [
+        "node --check orchestrator/full-intake-proof.mjs"
+      ],
+      "started_at": "2026-06-04T13:59:23.540Z",
+      "completed_at": "2026-06-04T13:59:23.601Z"
+    },
+    "orchestrator/full-intake-status.mjs": {
+      "id": "orchestrator/full-intake-status.mjs",
+      "path": "orchestrator/full-intake-status.mjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/orchestrator-full-intake-status.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/orchestrator-full-intake-status.json"
+      ],
+      "commands": [
+        "node --check orchestrator/full-intake-status.mjs"
+      ],
+      "started_at": "2026-06-04T13:59:23.601Z",
+      "completed_at": "2026-06-04T13:59:23.661Z"
+    },
+    "orchestrator/parallel-candidate-worktrees.mjs": {
+      "id": "orchestrator/parallel-candidate-worktrees.mjs",
+      "path": "orchestrator/parallel-candidate-worktrees.mjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/orchestrator-parallel-candidate-worktrees.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/orchestrator-parallel-candidate-worktrees.json"
+      ],
+      "commands": [
+        "node --check orchestrator/parallel-candidate-worktrees.mjs"
+      ],
+      "started_at": "2026-06-04T13:59:23.661Z",
+      "completed_at": "2026-06-04T13:59:23.731Z"
+    },
+    "orchestrator/run-generic-repo-full-intake.mjs": {
+      "id": "orchestrator/run-generic-repo-full-intake.mjs",
+      "path": "orchestrator/run-generic-repo-full-intake.mjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/orchestrator-run-generic-repo-full-intake.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": false,
+        "reasons": [
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/orchestrator-run-generic-repo-full-intake.json"
+      ],
+      "commands": [
+        "node --check orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "started_at": "2026-06-04T13:59:23.731Z",
+      "completed_at": "2026-06-04T13:59:23.798Z"
+    },
+    "package.json#scripts/autonomy": {
+      "id": "package.json#scripts/autonomy",
+      "path": "package.json",
+      "type": "package-script",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/package.json-scripts-autonomy.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "package-script:static-reviewed",
+        ".codex-autonomy/lanes/package.json-scripts-autonomy.json"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:59:23.798Z",
+      "completed_at": "2026-06-04T13:59:23.799Z"
+    },
+    "package.json#scripts/full-intake:diagnose": {
+      "id": "package.json#scripts/full-intake:diagnose",
+      "path": "package.json",
+      "type": "package-script",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/package.json-scripts-full-intake-diagnose.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "package-script:static-reviewed",
+        ".codex-autonomy/lanes/package.json-scripts-full-intake-diagnose.json"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:59:23.799Z",
+      "completed_at": "2026-06-04T13:59:23.799Z"
+    },
+    "package.json#scripts/full-intake:proof": {
+      "id": "package.json#scripts/full-intake:proof",
+      "path": "package.json",
+      "type": "package-script",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/package.json-scripts-full-intake-proof.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "package-script:static-reviewed",
+        ".codex-autonomy/lanes/package.json-scripts-full-intake-proof.json"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:59:23.799Z",
+      "completed_at": "2026-06-04T13:59:23.799Z"
+    },
+    "package.json#scripts/full-intake:status": {
+      "id": "package.json#scripts/full-intake:status",
+      "path": "package.json",
+      "type": "package-script",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/package.json-scripts-full-intake-status.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "package-script:static-reviewed",
+        ".codex-autonomy/lanes/package.json-scripts-full-intake-status.json"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:59:23.799Z",
+      "completed_at": "2026-06-04T13:59:23.800Z"
+    },
+    "package.json#scripts/generic-repo:auto-intake": {
+      "id": "package.json#scripts/generic-repo:auto-intake",
+      "path": "package.json",
+      "type": "package-script",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/package.json-scripts-generic-repo-auto-intake.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "package-script:static-reviewed",
+        ".codex-autonomy/lanes/package.json-scripts-generic-repo-auto-intake.json"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:59:23.800Z",
+      "completed_at": "2026-06-04T13:59:23.800Z"
+    },
+    "package.json#scripts/generic-repo:full-intake": {
+      "id": "package.json#scripts/generic-repo:full-intake",
+      "path": "package.json",
+      "type": "package-script",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/package.json-scripts-generic-repo-full-intake.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "package-script:static-reviewed",
+        ".codex-autonomy/lanes/package.json-scripts-generic-repo-full-intake.json"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:59:23.800Z",
+      "completed_at": "2026-06-04T13:59:23.801Z"
+    },
+    "package.json#scripts/generic-repo:importer-supervisor": {
+      "id": "package.json#scripts/generic-repo:importer-supervisor",
+      "path": "package.json",
+      "type": "package-script",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/package.json-scripts-generic-repo-importer-supervisor.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "package-script:static-reviewed",
+        ".codex-autonomy/lanes/package.json-scripts-generic-repo-importer-supervisor.json"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:59:23.801Z",
+      "completed_at": "2026-06-04T13:59:23.801Z"
+    },
+    "package.json#scripts/generic-repo:queue-supervisor": {
+      "id": "package.json#scripts/generic-repo:queue-supervisor",
+      "path": "package.json",
+      "type": "package-script",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/package.json-scripts-generic-repo-queue-supervisor.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "package-script:static-reviewed",
+        ".codex-autonomy/lanes/package.json-scripts-generic-repo-queue-supervisor.json"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:59:23.801Z",
+      "completed_at": "2026-06-04T13:59:23.801Z"
+    },
+    "package.json#scripts/generic-repo:tool-importer": {
+      "id": "package.json#scripts/generic-repo:tool-importer",
+      "path": "package.json",
+      "type": "package-script",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/package.json-scripts-generic-repo-tool-importer.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "package-script:static-reviewed",
+        ".codex-autonomy/lanes/package.json-scripts-generic-repo-tool-importer.json"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:59:23.801Z",
+      "completed_at": "2026-06-04T13:59:23.802Z"
+    },
+    "scripts/agent-qa-audit.js": {
+      "id": "scripts/agent-qa-audit.js",
+      "path": "scripts/agent-qa-audit.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/scripts-agent-qa-audit.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/scripts-agent-qa-audit.json"
+      ],
+      "commands": [
+        "node --check scripts/agent-qa-audit.js"
+      ],
+      "started_at": "2026-06-04T13:59:23.802Z",
+      "completed_at": "2026-06-04T13:59:23.863Z"
+    },
+    "scripts/cep-panel-cdp-smoke.js": {
+      "id": "scripts/cep-panel-cdp-smoke.js",
+      "path": "scripts/cep-panel-cdp-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/cep-panel-cdp-smoke.js",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/cep-panel-cdp-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/cep-panel-cdp-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:21.457Z",
+      "completed_at": "2026-06-04T13:59:21.516Z"
+    },
+    "scripts/project-intent-memory-smoke.js": {
+      "id": "scripts/project-intent-memory-smoke.js",
+      "path": "scripts/project-intent-memory-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/project-intent-memory-smoke.js",
+      "safety": {
+        "credentials": true,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": false,
+        "network": true,
+        "reasons": [
+          "destructive-signal",
+          "network-signal",
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/project-intent-memory-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/project-intent-memory-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:21.516Z",
+      "completed_at": "2026-06-04T13:59:21.572Z"
+    },
+    "scripts/reliability-validation-suite.js": {
+      "id": "scripts/reliability-validation-suite.js",
+      "path": "scripts/reliability-validation-suite.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/reliability-validation-suite.js",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/reliability-validation-suite.js"
+      ],
+      "commands": [
+        "node --check scripts/reliability-validation-suite.js"
+      ],
+      "started_at": "2026-06-04T13:59:21.572Z",
+      "completed_at": "2026-06-04T13:59:21.631Z"
+    },
+    "scripts/solution-library-validation-smoke.js": {
+      "id": "scripts/solution-library-validation-smoke.js",
+      "path": "scripts/solution-library-validation-smoke.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: static checks passed and an existing validation lane is present.",
+      "lane": "scripts/solution-library-validation-smoke.js",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        "scripts/solution-library-validation-smoke.js"
+      ],
+      "commands": [
+        "node --check scripts/solution-library-validation-smoke.js"
+      ],
+      "started_at": "2026-06-04T13:59:21.631Z",
+      "completed_at": "2026-06-04T13:59:21.692Z"
+    },
+    "cep-panel/lib/CSInterface.js": {
+      "id": "cep-panel/lib/CSInterface.js",
+      "path": "cep-panel/lib/CSInterface.js",
+      "type": "file",
+      "status": "blocked",
+      "summary": "Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane.",
+      "lane": ".codex-autonomy/lanes/cep-panel-lib-csinterface.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": true,
+        "network": false,
+        "reasons": [
+          "live-runtime-signal"
+        ]
+      },
+      "evidence": [
+        "live-runtime-signal"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:59:23.863Z",
+      "completed_at": "2026-06-04T13:59:23.863Z"
+    },
+    "mcp-server/m100-protocol.js": {
+      "id": "mcp-server/m100-protocol.js",
+      "path": "mcp-server/m100-protocol.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/mcp-server-m100-protocol.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/mcp-server-m100-protocol.json"
+      ],
+      "commands": [
+        "node --check mcp-server/m100-protocol.js"
+      ],
+      "started_at": "2026-06-04T13:59:23.863Z",
+      "completed_at": "2026-06-04T13:59:23.918Z"
+    },
+    "mcp-server/plan-risk-classifier.js": {
+      "id": "mcp-server/plan-risk-classifier.js",
+      "path": "mcp-server/plan-risk-classifier.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/mcp-server-plan-risk-classifier.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/mcp-server-plan-risk-classifier.json"
+      ],
+      "commands": [
+        "node --check mcp-server/plan-risk-classifier.js"
+      ],
+      "started_at": "2026-06-04T13:59:23.918Z",
+      "completed_at": "2026-06-04T13:59:23.971Z"
+    },
+    "mcp-server/raw-fallback-candidate.js": {
+      "id": "mcp-server/raw-fallback-candidate.js",
+      "path": "mcp-server/raw-fallback-candidate.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/mcp-server-raw-fallback-candidate.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/mcp-server-raw-fallback-candidate.json"
+      ],
+      "commands": [
+        "node --check mcp-server/raw-fallback-candidate.js"
+      ],
+      "started_at": "2026-06-04T13:59:23.971Z",
+      "completed_at": "2026-06-04T13:59:24.021Z"
+    },
+    "mcp-server/semantic-verification.js": {
+      "id": "mcp-server/semantic-verification.js",
+      "path": "mcp-server/semantic-verification.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/mcp-server-semantic-verification.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/mcp-server-semantic-verification.json"
+      ],
+      "commands": [
+        "node --check mcp-server/semantic-verification.js"
+      ],
+      "started_at": "2026-06-04T13:59:24.021Z",
+      "completed_at": "2026-06-04T13:59:24.078Z"
+    },
+    "orchestrator/bounded-process-result.cjs": {
+      "id": "orchestrator/bounded-process-result.cjs",
+      "path": "orchestrator/bounded-process-result.cjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/orchestrator-bounded-process-result.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/orchestrator-bounded-process-result.json"
+      ],
+      "commands": [
+        "node --check orchestrator/bounded-process-result.cjs"
+      ],
+      "started_at": "2026-06-04T13:59:24.078Z",
+      "completed_at": "2026-06-04T13:59:24.130Z"
+    },
+    "orchestrator/core/failure-diagnostics.mjs": {
+      "id": "orchestrator/core/failure-diagnostics.mjs",
+      "path": "orchestrator/core/failure-diagnostics.mjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/orchestrator-core-failure-diagnostics.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/orchestrator-core-failure-diagnostics.json"
+      ],
+      "commands": [
+        "node --check orchestrator/core/failure-diagnostics.mjs"
+      ],
+      "started_at": "2026-06-04T13:59:24.130Z",
+      "completed_at": "2026-06-04T13:59:24.178Z"
+    },
+    "orchestrator/core/git-snapshot.mjs": {
+      "id": "orchestrator/core/git-snapshot.mjs",
+      "path": "orchestrator/core/git-snapshot.mjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/orchestrator-core-git-snapshot.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/orchestrator-core-git-snapshot.json"
+      ],
+      "commands": [
+        "node --check orchestrator/core/git-snapshot.mjs"
+      ],
+      "started_at": "2026-06-04T13:59:24.178Z",
+      "completed_at": "2026-06-04T13:59:24.234Z"
+    },
+    "orchestrator/core/operation-envelope.mjs": {
+      "id": "orchestrator/core/operation-envelope.mjs",
+      "path": "orchestrator/core/operation-envelope.mjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/orchestrator-core-operation-envelope.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/orchestrator-core-operation-envelope.json"
+      ],
+      "commands": [
+        "node --check orchestrator/core/operation-envelope.mjs"
+      ],
+      "started_at": "2026-06-04T13:59:24.234Z",
+      "completed_at": "2026-06-04T13:59:24.286Z"
+    },
+    "orchestrator/core/path-policy.mjs": {
+      "id": "orchestrator/core/path-policy.mjs",
+      "path": "orchestrator/core/path-policy.mjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/orchestrator-core-path-policy.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/orchestrator-core-path-policy.json"
+      ],
+      "commands": [
+        "node --check orchestrator/core/path-policy.mjs"
+      ],
+      "started_at": "2026-06-04T13:59:24.286Z",
+      "completed_at": "2026-06-04T13:59:24.333Z"
+    },
+    "orchestrator/parent-proof-contract.mjs": {
+      "id": "orchestrator/parent-proof-contract.mjs",
+      "path": "orchestrator/parent-proof-contract.mjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/orchestrator-parent-proof-contract.json",
+      "safety": {
+        "credentials": false,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": []
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/orchestrator-parent-proof-contract.json"
+      ],
+      "commands": [
+        "node --check orchestrator/parent-proof-contract.mjs"
+      ],
+      "started_at": "2026-06-04T13:59:24.334Z",
+      "completed_at": "2026-06-04T13:59:24.386Z"
+    },
+    "scripts/safe-rg-smoke.js": {
+      "id": "scripts/safe-rg-smoke.js",
+      "path": "scripts/safe-rg-smoke.js",
+      "type": "file",
+      "status": "rejected",
+      "summary": "Rejected: destructive signal without a safe dry-run/mock signal.",
+      "lane": "scripts/safe-rg-smoke.js",
+      "safety": {
+        "credentials": false,
+        "destructive": true,
+        "dry_run_signal": false,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "destructive-signal"
+        ]
+      },
+      "evidence": [
+        "safety:destructive-without-dry-run"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:59:22.244Z",
+      "completed_at": "2026-06-04T13:59:22.244Z"
+    },
+    "orchestrator/run-generic-repo-tool-importer.mjs": {
+      "id": "orchestrator/run-generic-repo-tool-importer.mjs",
+      "path": "orchestrator/run-generic-repo-tool-importer.mjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/orchestrator-run-generic-repo-tool-importer.json",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/orchestrator-run-generic-repo-tool-importer.json"
+      ],
+      "commands": [
+        "node --check orchestrator/run-generic-repo-tool-importer.mjs"
+      ],
+      "started_at": "2026-06-04T13:59:24.386Z",
+      "completed_at": "2026-06-04T13:59:24.444Z"
+    },
+    "chatgpt-connector/server.js": {
+      "id": "chatgpt-connector/server.js",
+      "path": "chatgpt-connector/server.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/chatgpt-connector-server.json",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/chatgpt-connector-server.json"
+      ],
+      "commands": [
+        "node --check chatgpt-connector/server.js"
+      ],
+      "started_at": "2026-06-04T13:59:24.444Z",
+      "completed_at": "2026-06-04T13:59:24.495Z"
+    },
+    "mcp-server/ai-agents.js": {
+      "id": "mcp-server/ai-agents.js",
+      "path": "mcp-server/ai-agents.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/mcp-server-ai-agents.json",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/mcp-server-ai-agents.json"
+      ],
+      "commands": [
+        "node --check mcp-server/ai-agents.js"
+      ],
+      "started_at": "2026-06-04T13:59:24.495Z",
+      "completed_at": "2026-06-04T13:59:24.553Z"
+    },
+    "mcp-server/bridge-daemon.js": {
+      "id": "mcp-server/bridge-daemon.js",
+      "path": "mcp-server/bridge-daemon.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/mcp-server-bridge-daemon.json",
+      "safety": {
+        "credentials": true,
+        "destructive": true,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "destructive-signal",
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/mcp-server-bridge-daemon.json"
+      ],
+      "commands": [
+        "node --check mcp-server/bridge-daemon.js"
+      ],
+      "started_at": "2026-06-04T13:59:24.553Z",
+      "completed_at": "2026-06-04T13:59:24.613Z"
+    },
+    "mcp-server/mcp-adapter.js": {
+      "id": "mcp-server/mcp-adapter.js",
+      "path": "mcp-server/mcp-adapter.js",
+      "type": "file",
+      "status": "blocked",
+      "summary": "Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane.",
+      "lane": ".codex-autonomy/lanes/mcp-server-mcp-adapter.json",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": false,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal"
+        ]
+      },
+      "evidence": [
+        "network-signal",
+        "credential-signal",
+        "live-runtime-signal"
+      ],
+      "commands": [],
+      "started_at": "2026-06-04T13:59:24.613Z",
+      "completed_at": "2026-06-04T13:59:24.614Z"
+    },
+    "mcp-server/solution-library.js": {
+      "id": "mcp-server/solution-library.js",
+      "path": "mcp-server/solution-library.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/mcp-server-solution-library.json",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/mcp-server-solution-library.json"
+      ],
+      "commands": [
+        "node --check mcp-server/solution-library.js"
+      ],
+      "started_at": "2026-06-04T13:59:24.614Z",
+      "completed_at": "2026-06-04T13:59:24.669Z"
+    },
+    "scripts/agent-scenario-fixtures.js": {
+      "id": "scripts/agent-scenario-fixtures.js",
+      "path": "scripts/agent-scenario-fixtures.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/scripts-agent-scenario-fixtures.json",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/scripts-agent-scenario-fixtures.json"
+      ],
+      "commands": [
+        "node --check scripts/agent-scenario-fixtures.js"
+      ],
+      "started_at": "2026-06-04T13:59:24.669Z",
+      "completed_at": "2026-06-04T13:59:24.724Z"
+    },
+    "scripts/autonomy.mjs": {
+      "id": "scripts/autonomy.mjs",
+      "path": "scripts/autonomy.mjs",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/scripts-autonomy.json",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": true,
+        "reasons": [
+          "network-signal",
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/scripts-autonomy.json"
+      ],
+      "commands": [
+        "node --check scripts/autonomy.mjs"
+      ],
+      "started_at": "2026-06-04T13:59:24.724Z",
+      "completed_at": "2026-06-04T13:59:24.779Z"
+    },
+    "cep-panel/panel.js": {
+      "id": "cep-panel/panel.js",
+      "path": "cep-panel/panel.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/cep-panel-panel.json",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": true,
+        "network": true,
+        "reasons": [
+          "network-signal",
+          "credential-signal",
+          "live-runtime-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/cep-panel-panel.json"
+      ],
+      "commands": [
+        "node --check cep-panel/panel.js"
+      ],
+      "started_at": "2026-06-04T13:59:24.779Z",
+      "completed_at": "2026-06-04T13:59:24.836Z"
+    },
+    "chatgpt-connector/jsx-lab.js": {
+      "id": "chatgpt-connector/jsx-lab.js",
+      "path": "chatgpt-connector/jsx-lab.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/chatgpt-connector-jsx-lab.json",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/chatgpt-connector-jsx-lab.json"
+      ],
+      "commands": [
+        "node --check chatgpt-connector/jsx-lab.js"
+      ],
+      "started_at": "2026-06-04T13:59:24.836Z",
+      "completed_at": "2026-06-04T13:59:24.904Z"
+    },
+    "mcp-server/plan-repair.js": {
+      "id": "mcp-server/plan-repair.js",
+      "path": "mcp-server/plan-repair.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/mcp-server-plan-repair.json",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/mcp-server-plan-repair.json"
+      ],
+      "commands": [
+        "node --check mcp-server/plan-repair.js"
+      ],
+      "started_at": "2026-06-04T13:59:24.904Z",
+      "completed_at": "2026-06-04T13:59:24.957Z"
+    },
+    "mcp-server/project-intent-memory.js": {
+      "id": "mcp-server/project-intent-memory.js",
+      "path": "mcp-server/project-intent-memory.js",
+      "type": "file",
+      "status": "accepted",
+      "summary": "Accepted: generated static validation lane passed.",
+      "lane": ".codex-autonomy/lanes/mcp-server-project-intent-memory.json",
+      "safety": {
+        "credentials": true,
+        "destructive": false,
+        "dry_run_signal": true,
+        "live": false,
+        "network": false,
+        "reasons": [
+          "credential-signal",
+          "dry-run-signal"
+        ]
+      },
+      "evidence": [
+        "node-check:passed",
+        ".codex-autonomy/lanes/mcp-server-project-intent-memory.json"
+      ],
+      "commands": [
+        "node --check mcp-server/project-intent-memory.js"
+      ],
+      "started_at": "2026-06-04T13:59:24.957Z",
+      "completed_at": "2026-06-04T13:59:25.010Z"
     }
   },
   "summary": {
-    "accepted": 8,
-    "rejected": 0,
+    "accepted": 78,
+    "rejected": 1,
     "needs_lane": 0,
     "needs_revalidation": 0,
-    "blocked": 0
+    "blocked": 4
   }
 }

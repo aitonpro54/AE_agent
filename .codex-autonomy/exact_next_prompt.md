@@ -12,26 +12,32 @@
 - `.codex-autonomy/reports/summary.md`
 
 Текущее состояние:
-- status: continue
-- iteration: 2/50
+- status: blocked
+- iteration: 3/50
 - total: 83
-- pending: 75
-- accepted: 8
-- rejected: 0
+- pending: 0
+- accepted: 78
+- rejected: 1
 - needs_lane: 0
 - needs_revalidation: 0
-- blocked: 0
+- blocked: 4
 
 Следующий bounded шаг:
 
 ```powershell
-npm run autonomy -- run-once --batch-size 5
+npm.cmd run autonomy -- handoff
 ```
 
-Если PowerShell заблокирует `npm.ps1`, используй эквивалентный
-`npm.cmd run autonomy -- run-once --batch-size 5`, не меняя execution policy.
+Очередь pending исчерпана. Не запускай новый `run-once`, пока не принято
+решение по blocked items:
 
-После шага обнови `.codex-autonomy/handoff.md`,
-`.codex-autonomy/exact_next_prompt.md`, `plans/target-app-execplan.md` и
-`.codex/handoff.md`. Не используй GUI/browser/computer-use для продолжения;
-supervisor должен идти через CLI/SDK/App Server-compatible backend.
+- `scripts/bridge-only-smoke-test.js`
+- `scripts/provider-api-smoke.js`
+- `cep-panel/lib/CSInterface.js`
+- `mcp-server/mcp-adapter.js`
+
+Следующий содержательный шаг: прочитать compact reports и подготовить
+минимальные безопасные mock/dry-run/read-only fixture lanes для этих 4
+блокеров либо оставить их blocked/rejected с обоснованием. Не запускай real
+supervise loop, live CEP/AE, mutating validation, dependency changes, push или
+PR без отдельного явного разрешения.

@@ -6,9 +6,9 @@
 
 ## Что уже сделано
 
-- Iteration: 2/50
-- Status: continue
-- Last validation: passed - accepted=5, rejected=0, needs_lane=0, needs_revalidation=0, blocked=0
+- Iteration: 3/50
+- Status: blocked
+- Last validation: partial - accepted=45, rejected=0, needs_lane=0, needs_revalidation=0, blocked=4
 
 ## Какие скрипты приняты
 
@@ -20,10 +20,53 @@
 - `package.json#scripts/smoke:provider-api` - Accepted: static checks passed and an existing validation lane is present.
 - `package.json#scripts/smoke:provider-contract` - Accepted: static checks passed and an existing validation lane is present.
 - `package.json#scripts/smoke:solutions` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/provider-contract-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/sdk-generic-repo-full-intake-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/semantic-verification-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/solution-promotion-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/agent-scenario-report.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/reliability-validation-suite-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/safe-rg.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/solution-retrieval-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/agent-scenario-report-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/autonomy-layer-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/chatgpt-connector-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/manual-typed-tool-regression-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/plan-classification-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/plan-repair-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/prompt-optimization-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/sdk-generic-repo-importer-command-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/sdk-generic-repo-queue-supervisor-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/smoke-test.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/solution-candidate-report-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/solution-candidate-report.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/solution-registry-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/cep-panel-cdp-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/project-intent-memory-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/reliability-validation-suite.js` - Accepted: static checks passed and an existing validation lane is present.
+- `scripts/solution-library-validation-smoke.js` - Accepted: static checks passed and an existing validation lane is present.
+- `orchestrator/run-generic-repo-auto-intake.mjs` - Accepted: generated static validation lane passed.
+- `orchestrator/run-generic-repo-importer-supervisor.mjs` - Accepted: generated static validation lane passed.
+- `orchestrator/run-generic-repo-queue-supervisor.mjs` - Accepted: generated static validation lane passed.
+- `scripts/clean-current-check.js` - Accepted: generated static validation lane passed.
+- `scripts/solution-promotion-helper.js` - Accepted: generated static validation lane passed.
+- `mcp-server/server.js` - Accepted: generated static validation lane passed.
+- `orchestrator/core/post-run-contract.mjs` - Accepted: generated static validation lane passed.
+- `orchestrator/core/runtime-store.mjs` - Accepted: generated static validation lane passed.
+- `orchestrator/full-intake-diagnose.mjs` - Accepted: generated static validation lane passed.
+- `orchestrator/full-intake-ledger-summary.mjs` - Accepted: generated static validation lane passed.
+- `orchestrator/full-intake-proof.mjs` - Accepted: generated static validation lane passed.
+- `orchestrator/full-intake-status.mjs` - Accepted: generated static validation lane passed.
+- `orchestrator/parallel-candidate-worktrees.mjs` - Accepted: generated static validation lane passed.
+- `orchestrator/run-generic-repo-full-intake.mjs` - Accepted: generated static validation lane passed.
+- `package.json#scripts/autonomy` - Accepted: generated static validation lane passed.
+- `package.json#scripts/full-intake:diagnose` - Accepted: generated static validation lane passed.
+- `package.json#scripts/full-intake:proof` - Accepted: generated static validation lane passed.
+- `...и еще 28` - нет validation result
 
 ## Какие отклонены и почему
 
-_нет_
+- `scripts/safe-rg-smoke.js` - Rejected: destructive signal without a safe dry-run/mock signal.
 
 ## Какие требуют lane
 
@@ -35,23 +78,46 @@ _нет_
 
 ## Какие команды запускались
 
-- `npm run autonomy -- run-once --batch-size 5` - не дошёл до npm script:
-  Windows PowerShell заблокировал локальную обёртку `npm.ps1`.
-- `npm.cmd run autonomy -- run-once --batch-size 5` - passed; iteration 2
-  приняла 5 package-script smoke lanes.
-- `npm.cmd run check:rules` - passed.
-- `git diff --check` - passed with Windows line-ending normalization warnings
-  only.
+- `npm.cmd run autonomy -- run-once --batch-size 75`
+- `node --check scripts/provider-contract-smoke.js`
+- `node --check scripts/sdk-generic-repo-full-intake-smoke.js`
+- `node --check scripts/semantic-verification-smoke.js`
+- `node --check scripts/solution-promotion-smoke.js`
+- `node --check scripts/agent-scenario-report.js`
+- `node --check scripts/reliability-validation-suite-smoke.js`
+- `node --check scripts/safe-rg.js`
+- `node --check scripts/solution-retrieval-smoke.js`
+- `node --check orchestrator/run-generic-repo-auto-intake.mjs`
+- `node --check orchestrator/run-generic-repo-importer-supervisor.mjs`
+- `node --check orchestrator/run-generic-repo-queue-supervisor.mjs`
+- `node --check scripts/agent-scenario-report-smoke.js`
+- `node --check scripts/autonomy-layer-smoke.js`
+- `node --check scripts/chatgpt-connector-smoke.js`
+- `node --check scripts/clean-current-check.js`
+- `node --check scripts/manual-typed-tool-regression-smoke.js`
+- `node --check scripts/plan-classification-smoke.js`
+- `node --check scripts/plan-repair-smoke.js`
+- `node --check scripts/prompt-optimization-smoke.js`
+- `node --check scripts/sdk-generic-repo-importer-command-smoke.js`
+- `node --check scripts/sdk-generic-repo-queue-supervisor-smoke.js`
+- `node --check scripts/smoke-test.js`
+- `node --check scripts/solution-candidate-report-smoke.js`
+- `node --check scripts/solution-candidate-report.js`
+- `node --check scripts/solution-promotion-helper.js`
+- `...и еще 36`
 
 ## Последние ошибки
 
-- Ошибок автономного скрипта нет. Единственная проблема была до запуска
-  скрипта: PowerShell execution policy заблокировала `npm.ps1`; системные
-  настройки не менялись.
+- `scripts/bridge-only-smoke-test.js` - Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane.
+- `scripts/provider-api-smoke.js` - Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane.
+- `cep-panel/lib/CSInterface.js` - Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane.
+- `mcp-server/mcp-adapter.js` - Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane.
 
 ## Следующий конкретный шаг
 
-Run `npm run autonomy -- run-once --batch-size 5`.
+Autonomy queue is exhausted with status blocked. Inspect the 4 blocked items
+and decide whether to add explicit safe mock/dry-run/read-only fixture lanes or
+leave them blocked/rejected.
 
 ## Exact next prompt
 
