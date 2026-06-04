@@ -221,6 +221,49 @@
       "scope": "generated-only explicit composition version-token proof using rename_project_items findReplace on generated comps plus find_project_items/get_comp_details read-back; arbitrary version parsing, recursive/global traversal, source relinking, onion skinning, camera/controller parenting, and raw JSX semantics remain fail-closed"
     },
     {
+      "id": "composition-work-area-transfer-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "set_comp_work_area"
+      ],
+      "allowedTools": [
+        "get_active_comp",
+        "get_comp_details",
+        "set_comp_work_area"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSettings"
+      ],
+      "candidateIds": [
+        "tool-compositions-transfer-composition-work-area"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-comp-properties-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "composition-work-area-transfer",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only composition work-area transfer proof using get_comp_details source/target evidence, set_comp_work_area, target read-back, semantic verification, and cleanup; persistent app.settings clipboard, Alt-key branching, marker-derived work areas, current-time inference, layer retiming, duration changes, and raw JSX semantics remain fail-closed"
+    },
+    {
       "id": "render-queue-generated-only",
       "requiredTools": [
         "add_comp_to_render_queue",

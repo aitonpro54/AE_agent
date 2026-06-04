@@ -757,6 +757,126 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "transfer-composition-work-area-typed-plan",
+      "title": "Transfer Composition Work Area Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "comp",
+        "work-area",
+        "workAreaStart",
+        "workAreaDuration",
+        "transfer",
+        "copy",
+        "paste",
+        "settings",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Transfer reviewed workAreaStart and workAreaDuration values from one composition to another through typed read-back and a narrow work-area mutation.",
+        "appliesWhen": [
+          "The user asks to copy, paste, transfer, or apply a composition work area from one composition to another.",
+          "A safe typed adaptation is acceptable instead of persistent app.settings clipboard behavior or Alt-key branching."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "sourceComp",
+          "type": "comp",
+          "required": true,
+          "description": "Composition whose current workAreaStart and workAreaDuration are read before mutation."
+        },
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Composition whose work area will be set after source and target evidence are reviewed."
+        },
+        {
+          "name": "copiedWorkArea",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed start and duration values copied from source get_comp_details evidence."
+        }
+      ],
+      "targetAssumptions": [
+        "Source and target composition identities are read from current typed evidence before mutation.",
+        "The copied work area comes from source get_comp_details workAreaStart and workAreaDuration evidence.",
+        "The workflow changes only the verified target composition workAreaStart and workAreaDuration fields through set_comp_work_area.",
+        "The copied range is checked against the target composition duration and frameRate before mutation.",
+        "Persistent app.settings clipboard behavior, ScriptUI Alt-key branching, hidden cross-session state, marker-derived work areas, current-time inference, layer retiming, duration changes and exact source JSX behavior remain typed-tool gaps."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/transfer-composition-work-area-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "set_comp_work_area"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read source and target composition details, set only the target work area to the copied source range, then read the target back.",
+        "steps": [
+          "Run get_active_comp only when the current active composition is used as source or target; otherwise bind explicit comp item/name evidence.",
+          "Run get_comp_details for the source composition before mutation and record workAreaStart, workAreaDuration, duration, frameRate, width, height, bgColor and layer count.",
+          "Run get_comp_details for the target composition before mutation and record duration, frameRate, current workAreaStart, current workAreaDuration, width, height, bgColor and layer count.",
+          "Normalize the copied source workAreaStart and workAreaDuration to finite seconds values and fail closed when the range is outside the target comp duration, missing, ambiguous, marker-derived, current-time-derived, or off-frame where frame precision matters.",
+          "Run set_comp_work_area once against the verified target composition with only copied start, copied duration, verifyAfter and idempotency evidence.",
+          "Run get_comp_details after mutation and compare target workAreaStart and workAreaDuration plus unchanged duration, frameRate, width, height, bgColor and layer count.",
+          "When source and target differ, read the source composition again or preserve pre-run evidence showing it was not intentionally mutated."
+        ],
+        "expectedEvidence": [
+          "Pre-run source get_comp_details shows the copied workAreaStart and copied workAreaDuration.",
+          "Pre-run target get_comp_details shows the target duration and frameRate used for bounds review.",
+          "Dry-run evidence lists the copied workAreaStart, copied workAreaDuration, target bounds check, and the decision not to reproduce app.settings clipboard or Alt-key branching.",
+          "The set_comp_work_area step updates only the work area on the verified target composition.",
+          "Post-run get_comp_details shows the copied workAreaStart and copied workAreaDuration on the same target comp with unchanged width, height, duration, frameRate, bgColor and layer count.",
+          "The plan reports persistent settings clipboard, Alt-key paste branching, marker-derived work areas, current-time inference, layer retiming, duration changes and exact source JSX semantics as unsupported by current typed tools."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-compositions-transfer-composition-work-area generic repository importer as advisory typed-plan coverage for work-area transfer between explicit compositions.",
+          "Existing generated-only comp work-area proof covers set_comp_work_area with get_comp_details read-back; persistent settings clipboard and keyboard-state semantics remain fail-closed."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-05",
+          "from": "generic-repo-importer-tool-compositions-transfer-composition-work-area",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the work-area transfer intent behind Compositions/Transfer_Composition_Work_Area.jsx into existing typed tools as source get_comp_details evidence plus target set_comp_work_area and get_comp_details read-back; no source JSX copied. Persistent app.settings storage, Alt-key copy/paste branching, hidden cross-session clipboard state, marker-derived work areas, current-time inference, layer retiming, duration changes, native undo semantics and exact source JSX behavior require separate typed-tool contracts; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "This recipe copies workAreaStart and workAreaDuration from typed source evidence and mutates only the verified target composition work area.",
+        "Do not use this recipe for persistent app.settings clipboard storage, Alt-key keyboard branching, cross-session state, marker-derived work-area inference, current-time inference, layer retiming, duration changes, source relinking, render queue items, project item changes, or raw ExtendScript.",
+        "Require a separate typed-tool contract for composition marker reads before adapting Set_Work_Area_To_Markers semantics."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "add-markers-to-selected-layers-typed-plan",
       "title": "Add Markers To Selected Layers Typed Plan",
       "status": "recipe",

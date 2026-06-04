@@ -26,6 +26,12 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake compositions work-area slice: parent reducer completed
+  proposal-only review for `tool-compositions-set-work-area-to-markers` and
+  `tool-compositions-transfer-composition-work-area`, prepared a scoped
+  `composition-work-area-transfer-generated-only` lane and advisory typed-plan
+  files for transfer, and recorded the external OpenAI CLI auth blocker. No
+  candidate was marked completed in this milestone.
 - [x] Full intake tool-utilities-alert-selected-layer-index: completed by reusable generic full-intake orchestrator plus parent-owned recovery (full-intake:full-intake-kyletmartinez:tool-utilities-alert-selected-layer-index); live gate not_required, importer batch full-intake-kyletmartinez-9eb1db003f-import, recovered recipe/registry/test files after the detached child run produced no changes due a Windows sandbox launch failure.
 - [x] Full intake tool-utilities-milliseconds-to-frames: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-utilities-milliseconds-to-frames); live gate not_required, importer batch full-intake-kyletmartinez-9262ba748d-import, commit recorded after candidate commit.
 
@@ -108,18 +114,42 @@ old `AE_agent` repository remains the historical source.
 
 ## Next Milestone
 
-Triage-75 utilities generated-only slice is exhausted: `tool-utilities-alert-selected-layer-index`
-is completed, `tool-utilities-milliseconds-to-frames` was already completed, and
-`tool-utilities-frame-navigator` has a recorded terminal CTI setter typed-tool
-gap. Continue only from compact state (`.codex/handoff.md`, this plan, compact
-Full Intaker status/proof, and summary triage ledger). Pick one remaining
-scoped family; do not run broad queue. Candidate
+Current stop condition: `tool-compositions-transfer-composition-work-area` has a
+prepared scoped typed-plan/lane, but generated-only OpenAI CLI proof failed
+because `openai-cli/gpt-5.5` is not authenticated in this environment. Human
+action required: run `codex login` and sign in with ChatGPT before retrying the
+scoped lane. After login, continue only from compact state (`.codex/handoff.md`,
+this plan, compact Full Intaker status/proof, and summary triage ledger), keep
+the target repo clean, and rerun only
+`tool-compositions-transfer-composition-work-area` with `--max-items 1` and
+`--resolution-candidate-ids`.
+
+Do not retry `tool-compositions-set-work-area-to-markers` until a narrow
+composition-marker read contract exists for ordered `comp.markerProperty`
+`keyTime(1/2)` evidence plus generated-only read-back. Candidate
 `tool-layers-reset-selected-layer-labels` still has a terminal unresolved lane
 ticket; do not retry it without a separate scoped fix. Push remains forbidden
 unless separately requested.
 
 ## Decision Log
 
+- 2026-06-05: Parent reducer reviewed the `compositions-work-area-generated-only`
+  family. `tool-compositions-set-work-area-to-markers` remains terminal
+  unresolved because the source derives work area from composition marker
+  `keyTime(1/2)` and current typed coverage only reads layer markers, not
+  ordered composition marker times. Unblock requires a narrow composition-marker
+  read typed contract with generated comp marker fixtures and `get_comp_details`
+  work-area read-back.
+- 2026-06-05: Parent reducer accepted
+  `tool-compositions-transfer-composition-work-area` only as a scoped advisory
+  typed-plan/lane candidate: source `get_comp_details` work-area evidence,
+  target `set_comp_work_area`, and target `get_comp_details` read-back.
+  Persistent `app.settings` clipboard, `Alt` key branching, cross-session state,
+  marker-derived ranges, current-time inference, layer retiming, duration
+  changes and exact source JSX semantics remain fail-closed. Scoped Full Intaker
+  resolution created the lane and non-live checks passed, but live generated-only
+  proof failed because OpenAI CLI is not logged in; candidate was not marked
+  completed.
 - 2026-06-05: Generic full-intake orchestrator processed `Utilities/Alert_Selected_Layer_Index.jsx` as `tool-utilities-alert-selected-layer-index`, keeping shared merge/validation/live/doc/commit gates serial. The detached child run was environment-blocked (`CreateProcessWithLogonW failed: 1326`) and produced no changed paths, so the parent reducer recovered the planned read-only recipe, registry entry, intake note, and solution-library smoke assertions before amending the milestone commit. No raw JSX was copied.
 - 2026-06-05: Parent reducer reviewed `Utilities/Frame_Navigator.jsx` as `tool-utilities-frame-navigator` and kept it terminal unresolved. The source mutates `comp.time` for CTI jumps; current typed tools can read comp time and can align layers, set work area, or set whitelisted comp properties, but no reviewed typed setter exists for only active/current composition time. Unblock requires a narrow `set_comp_current_time`/`set_comp_time` contract with generated fixture, bounds policy, `get_comp_details.time` read-back, semantic verification, and no raw ExtendScript fallback.
 - 2026-05-27: Generic full-intake orchestrator processed `Utilities/Milliseconds_To_Frames.jsx` as `tool-utilities-milliseconds-to-frames`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-utilities-milliseconds-to-frames).
@@ -213,6 +243,7 @@ unless separately requested.
 
 ## Validation
 
+| Full intake compositions work-area transfer lane-prep | Required to review the scoped compositions work-area family, add only a bounded transfer typed-plan/lane path, and let Full Intaker decide whether the candidate can requeue. | Passed: `node --check scripts/solution-library-validation-smoke.js`, JSON parse for `registry/solutions.json`, JSON parse for `orchestrator/generic-repo-live-lane-registry.json`, `npm.cmd run smoke:solutions`, `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` (Windows line-ending warnings only). Scoped Full Intaker command for `tool-compositions-transfer-composition-work-area` ran with `--max-items 1`, `--resolution-candidate-ids`, and `--allow-self-improvement-lane-synthesis`; non-live lane checks and read-only CEP preflight passed, but live proof failed on OpenAI CLI auth (`Run codex login and sign in with ChatGPT before using OpenAI CLI`). No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad/default CEP smoke, push, PR, or GitHub automation was performed. |
 | Full intake tool-utilities-alert-selected-layer-index | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `not_required`, batch `full-intake-kyletmartinez-9eb1db003f-import`, live rerun `not_required`. Parent recovery added `recipes/alert-selected-layer-index-typed-plan.md`, `recipes/generic-repo-intake/tool-utilities-alert-selected-layer-index.md`, registry coverage, and `scripts/solution-library-validation-smoke.js` assertions after the child worktree produced no changes. Validation passed: `node --check scripts/solution-library-validation-smoke.js`, JSON parse for `registry/solutions.json`, `npm.cmd run smoke:solutions`, `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` (line-ending warnings only). No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 | Full intake tool-utilities-milliseconds-to-frames | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `not_required`, batch `full-intake-kyletmartinez-9262ba748d-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 

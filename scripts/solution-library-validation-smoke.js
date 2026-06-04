@@ -79,6 +79,7 @@ const IMPORTED_ADVISORY_IDS = [
   "enable-motion-blur-typed-plan",
   "toggle-onion-skinning-typed-plan",
   "increment-composition-versions-typed-plan",
+  "transfer-composition-work-area-typed-plan",
   "change-nested-composition-duration-typed-plan",
   "change-nested-composition-duration-with-timecode-typed-plan",
   "change-nested-composition-start-frame-typed-plan",
@@ -327,6 +328,27 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /workAreaStart/.test(item)), `${id}: verification must require workAreaStart evidence.`);
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /workAreaDuration/.test(item)), `${id}: verification must require workAreaDuration evidence.`);
       assert(solution.promotionHistory.some((entry) => /AUX-021/.test(entry.evidence)), `${id}: promotion evidence should mention AUX-021.`);
+    } else if (id === "transfer-composition-work-area-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "set_comp_work_area"],
+        `${id}: imported work-area transfer workflow should stay on the narrow comp work-area typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: composition work-area transfer must be mutating.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require source and target comp details.`);
+      assert(text.includes("set_comp_work_area"), `${id}: recipe should use the comp work-area typed tool.`);
+      assert(text.includes("app.settings"), `${id}: recipe should fail closed for persistent settings clipboard semantics.`);
+      assert(text.includes("altKey") || text.includes("Alt"), `${id}: recipe should fail closed for Alt-key branching.`);
+      assert(text.includes("marker-derived"), `${id}: recipe should reject marker-derived work-area inference.`);
+      assert(solution.verificationRecipe.steps.some((step) => /source composition/.test(step) && /get_comp_details/.test(step)), `${id}: verification must read source comp details before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /target composition/.test(step) && /get_comp_details/.test(step)), `${id}: verification must read target comp details before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_comp_work_area/.test(step)), `${id}: verification must include target work-area mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /copied workAreaStart/.test(item)), `${id}: verification must require copied workAreaStart evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /copied workAreaDuration/.test(item)), `${id}: verification must require copied workAreaDuration evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /app.settings clipboard/.test(item)), `${id}: verification must document settings clipboard as unsupported.`);
+      assert(solution.notes.some((note) => /composition marker reads/.test(note)), `${id}: notes must keep marker-derived Set_Work_Area_To_Markers semantics separate.`);
+      assert(solution.promotionHistory.some((entry) => /Transfer_Composition_Work_Area/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "add-markers-to-selected-layers-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2238,6 +2260,20 @@ function assertActualRetrieval(registry) {
   assert(resetWorkAreaPromptSection.includes("set_comp_work_area"), "prompt section should prefer set_comp_work_area for work-area reset.");
   assert(resetWorkAreaPromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
   assert(!/run_extendscript/i.test(resetWorkAreaPromptSection), "reset work-area guidance should not recommend raw ExtendScript.");
+
+  const transferWorkAreaRetrieval = retrieveSolutionHints("Transfer the composition work area from the source comp to the target comp, copying workAreaStart and workAreaDuration, then read back the target comp.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(transferWorkAreaRetrieval.ok, true);
+  assert(ids(transferWorkAreaRetrieval).includes("transfer-composition-work-area-typed-plan"), "transfer work-area advisory recipe should surface for composition work-area transfer prompts.");
+  const transferWorkAreaPromptSection = formatSolutionHintsForPrompt(transferWorkAreaRetrieval);
+  assert(transferWorkAreaPromptSection.includes("Transfer Composition Work Area Typed Plan"), "prompt section should include transfer work-area advisory title.");
+  assert(transferWorkAreaPromptSection.includes("set_comp_work_area"), "prompt section should prefer set_comp_work_area for work-area transfer.");
+  assert(transferWorkAreaPromptSection.includes("get_comp_details"), "prompt section should require source and target comp details read-back.");
+  assert(/persistent app/.test(transferWorkAreaPromptSection), "prompt section should preserve settings clipboard warning.");
+  assert(!/run_extendscript/i.test(transferWorkAreaPromptSection), "transfer work-area guidance should not recommend raw ExtendScript.");
 
   const addMarkersRetrieval = retrieveSolutionHints("Add a marker with a comment to all selected layers.", {
     registry,
