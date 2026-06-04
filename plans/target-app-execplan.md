@@ -45,6 +45,10 @@ old `AE_agent` repository remains the historical source.
 - 2026-06-04: Ran one full remaining autonomy batch with batch size 75.
   Pending queue is exhausted: 78 accepted, 1 rejected, 4 blocked, and 0
   pending/needs_lane/needs_revalidation.
+- 2026-06-04: Resolved the 4 autonomy blocked items with explicit safe
+  mock/read-only/static fixture lanes and targeted blocked revalidation.
+  Autonomy state is now done: 82 accepted, 1 rejected, 0 blocked, and
+  0 pending/needs_lane/needs_revalidation.
 
 ## Guardrails
 
@@ -58,11 +62,12 @@ old `AE_agent` repository remains the historical source.
 
 ## Next Milestone
 
-Resolve the autonomy blocked set from `.codex-autonomy/exact_next_prompt.md`.
-Current state is `blocked`: 83 candidates found, 78 accepted, 1 rejected,
-4 blocked, and 0 pending. Do not run another `run-once` until the blocked
-items have explicit safe mock/dry-run/read-only fixture lanes or are left
-blocked/rejected with a recorded reason.
+Autonomy script/tool queue is complete. Current state is `done`: 83 candidates
+found, 82 accepted, 1 rejected, and 0 pending/needs_lane/needs_revalidation/
+blocked. The next large milestone is to harden the continuation mechanism for
+real long-running work: keep the CLI `codex exec` supervisor path, and add a
+parent-managed Codex app thread handoff contract for visible UI-thread
+continuation when the parent agent explicitly creates app threads.
 
 After the autonomy pass is no longer the active milestone and After Effects plus
 the installed panel are available, run the deferred read-only CEP connectivity
@@ -105,6 +110,10 @@ checks: `node scripts/cep-panel-cdp-smoke.js inspect` and
   runs from `exact_next_prompt.md`; it does not itself create visible Codex app
   UI threads. App-thread creation remains parent-managed through Codex app
   tools when explicitly needed.
+- 2026-06-04: External runtime risk candidates may leave `blocked` only with
+  explicit `external_risk_coverage` using a `mock`, `dry-run`,
+  `read-only-fixture`, or `static-fixture` strategy. Generated static lanes
+  alone remain insufficient for network/credential/live-runtime risk.
 
 ## Validation
 
@@ -136,6 +145,16 @@ checks: `node scripts/cep-panel-cdp-smoke.js inspect` and
 - Autonomy iteration 3 full remaining batch passed as a bounded static pass:
   `npm.cmd run autonomy -- run-once --batch-size 75`. It did not run live CEP/AE
   or real supervise loop. Result: pending 0, accepted 78, rejected 1, blocked 4.
+- Autonomy blocked resolution passed: `node --check scripts/autonomy.mjs`;
+  `node --check scripts/autonomy-layer-smoke.js`;
+  `npm.cmd run autonomy -- revalidate --include-blocked --batch-size 4`;
+  `npm.cmd run autonomy -- handoff`; `npm.cmd run smoke:autonomy`;
+  `npm.cmd run autonomy -- supervise --dry-run`;
+  `npm.cmd run autonomy -- supervise --max-iterations 3
+  --max-consecutive-failures 1 --max-wall-time-minutes 5`;
+  `npm.cmd run check:rules`; and `git diff --check` (Windows line-ending
+  normalization warnings only). Result: autonomy state `done`, accepted 82,
+  rejected 1, blocked 0.
 
 ## Handoff
 

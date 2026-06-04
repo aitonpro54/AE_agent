@@ -1,6 +1,6 @@
 {
   "schema": "codex-autonomy.validation-results.v1",
-  "updated_at": "2026-06-04T13:59:25.012Z",
+  "updated_at": "2026-06-04T14:12:43.947Z",
   "results": {
     "package.json#scripts/check:rules": {
       "id": "package.json#scripts/check:rules",
@@ -546,8 +546,8 @@
       "id": "scripts/bridge-only-smoke-test.js",
       "path": "scripts/bridge-only-smoke-test.js",
       "type": "file",
-      "status": "blocked",
-      "summary": "Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane.",
+      "status": "accepted",
+      "summary": "Accepted: explicit safe external-risk validation lane passed.",
       "lane": ".codex-autonomy/lanes/scripts-bridge-only-smoke-test.json",
       "safety": {
         "credentials": true,
@@ -562,13 +562,18 @@
         ]
       },
       "evidence": [
-        "network-signal",
-        "credential-signal",
-        "live-runtime-signal"
+        "external-risk-lane:read-only-fixture",
+        "external-risk-evidence:candidate behavior is not executed",
+        "external-risk-evidence:lane performs Node syntax validation only",
+        "external-risk-evidence:daemon spawn and localhost health request are not invoked",
+        "node-check:passed",
+        ".codex-autonomy/lanes/scripts-bridge-only-smoke-test.json"
       ],
-      "commands": [],
-      "started_at": "2026-06-04T13:59:23.153Z",
-      "completed_at": "2026-06-04T13:59:23.154Z"
+      "commands": [
+        "node --check scripts/bridge-only-smoke-test.js"
+      ],
+      "started_at": "2026-06-04T14:12:43.667Z",
+      "completed_at": "2026-06-04T14:12:43.735Z"
     },
     "scripts/chatgpt-connector-smoke.js": {
       "id": "scripts/chatgpt-connector-smoke.js",
@@ -748,8 +753,8 @@
       "id": "scripts/provider-api-smoke.js",
       "path": "scripts/provider-api-smoke.js",
       "type": "file",
-      "status": "blocked",
-      "summary": "Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane.",
+      "status": "accepted",
+      "summary": "Accepted: explicit safe external-risk validation lane passed.",
       "lane": ".codex-autonomy/lanes/scripts-provider-api-smoke.json",
       "safety": {
         "credentials": true,
@@ -764,13 +769,18 @@
         ]
       },
       "evidence": [
-        "network-signal",
-        "credential-signal",
-        "live-runtime-signal"
+        "external-risk-lane:mock",
+        "external-risk-evidence:candidate behavior is not executed",
+        "external-risk-evidence:lane performs Node syntax validation only",
+        "external-risk-evidence:fixture HTTP providers in the candidate are not started",
+        "node-check:passed",
+        ".codex-autonomy/lanes/scripts-provider-api-smoke.json"
       ],
-      "commands": [],
-      "started_at": "2026-06-04T13:59:23.214Z",
-      "completed_at": "2026-06-04T13:59:23.214Z"
+      "commands": [
+        "node --check scripts/provider-api-smoke.js"
+      ],
+      "started_at": "2026-06-04T14:12:43.735Z",
+      "completed_at": "2026-06-04T14:12:43.796Z"
     },
     "scripts/sdk-generic-repo-importer-command-smoke.js": {
       "id": "scripts/sdk-generic-repo-importer-command-smoke.js",
@@ -1558,8 +1568,8 @@
       "id": "cep-panel/lib/CSInterface.js",
       "path": "cep-panel/lib/CSInterface.js",
       "type": "file",
-      "status": "blocked",
-      "summary": "Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane.",
+      "status": "accepted",
+      "summary": "Accepted: explicit safe external-risk validation lane passed.",
       "lane": ".codex-autonomy/lanes/cep-panel-lib-csinterface.json",
       "safety": {
         "credentials": false,
@@ -1572,11 +1582,18 @@
         ]
       },
       "evidence": [
-        "live-runtime-signal"
+        "external-risk-lane:static-fixture",
+        "external-risk-evidence:candidate behavior is not executed",
+        "external-risk-evidence:lane performs Node syntax validation only",
+        "external-risk-evidence:Adobe CEP window bindings are not invoked",
+        "node-check:passed",
+        ".codex-autonomy/lanes/cep-panel-lib-csinterface.json"
       ],
-      "commands": [],
-      "started_at": "2026-06-04T13:59:23.863Z",
-      "completed_at": "2026-06-04T13:59:23.863Z"
+      "commands": [
+        "node --check cep-panel/lib/CSInterface.js"
+      ],
+      "started_at": "2026-06-04T14:12:43.796Z",
+      "completed_at": "2026-06-04T14:12:43.879Z"
     },
     "mcp-server/m100-protocol.js": {
       "id": "mcp-server/m100-protocol.js",
@@ -1983,8 +2000,8 @@
       "id": "mcp-server/mcp-adapter.js",
       "path": "mcp-server/mcp-adapter.js",
       "type": "file",
-      "status": "blocked",
-      "summary": "Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane.",
+      "status": "accepted",
+      "summary": "Accepted: explicit safe external-risk validation lane passed.",
       "lane": ".codex-autonomy/lanes/mcp-server-mcp-adapter.json",
       "safety": {
         "credentials": true,
@@ -1999,13 +2016,18 @@
         ]
       },
       "evidence": [
-        "network-signal",
-        "credential-signal",
-        "live-runtime-signal"
+        "external-risk-lane:read-only-fixture",
+        "external-risk-evidence:candidate behavior is not executed",
+        "external-risk-evidence:lane performs Node syntax validation only",
+        "external-risk-evidence:daemon auto-start, stdio loop, and localhost calls are not invoked",
+        "node-check:passed",
+        ".codex-autonomy/lanes/mcp-server-mcp-adapter.json"
       ],
-      "commands": [],
-      "started_at": "2026-06-04T13:59:24.613Z",
-      "completed_at": "2026-06-04T13:59:24.614Z"
+      "commands": [
+        "node --check mcp-server/mcp-adapter.js"
+      ],
+      "started_at": "2026-06-04T14:12:43.879Z",
+      "completed_at": "2026-06-04T14:12:43.945Z"
     },
     "mcp-server/solution-library.js": {
       "id": "mcp-server/solution-library.js",
@@ -2209,10 +2231,10 @@
     }
   },
   "summary": {
-    "accepted": 78,
+    "accepted": 82,
     "rejected": 1,
     "needs_lane": 0,
     "needs_revalidation": 0,
-    "blocked": 4
+    "blocked": 0
   }
 }

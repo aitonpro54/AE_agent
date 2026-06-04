@@ -7,8 +7,11 @@
 ## Что уже сделано
 
 - Iteration: 3/50
-- Status: blocked
-- Last validation: partial - accepted=45, rejected=0, needs_lane=0, needs_revalidation=0, blocked=4
+- Status: done
+- Last validation: passed - accepted=4, rejected=0, needs_lane=0, needs_revalidation=0, blocked=0
+- External-risk blockers resolved with explicit safe `mock`,
+  `read-only-fixture`, and `static-fixture` lanes; generated static lanes alone
+  remain insufficient for network/credential/live-runtime risk.
 
 ## Какие скрипты приняты
 
@@ -62,7 +65,7 @@
 - `package.json#scripts/autonomy` - Accepted: generated static validation lane passed.
 - `package.json#scripts/full-intake:diagnose` - Accepted: generated static validation lane passed.
 - `package.json#scripts/full-intake:proof` - Accepted: generated static validation lane passed.
-- `...и еще 28` - нет validation result
+- `...и еще 32` - нет validation result
 
 ## Какие отклонены и почему
 
@@ -78,8 +81,8 @@ _нет_
 
 ## Какие команды запускались
 
-- `npm.cmd run autonomy -- run-once --batch-size 75`
-- `node --check scripts/provider-contract-smoke.js`
+- `npm.cmd run autonomy -- revalidate --include-blocked --batch-size 4`
+- `npm.cmd run autonomy -- handoff`
 - `node --check scripts/sdk-generic-repo-full-intake-smoke.js`
 - `node --check scripts/semantic-verification-smoke.js`
 - `node --check scripts/solution-promotion-smoke.js`
@@ -104,20 +107,16 @@ _нет_
 - `node --check scripts/solution-candidate-report-smoke.js`
 - `node --check scripts/solution-candidate-report.js`
 - `node --check scripts/solution-promotion-helper.js`
-- `...и еще 36`
+- `node --check scripts/solution-registry-smoke.js`
+- `...и еще 39`
 
 ## Последние ошибки
 
-- `scripts/bridge-only-smoke-test.js` - Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane.
-- `scripts/provider-api-smoke.js` - Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane.
-- `cep-panel/lib/CSInterface.js` - Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane.
-- `mcp-server/mcp-adapter.js` - Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane.
+_нет_
 
 ## Следующий конкретный шаг
 
-Autonomy queue is exhausted with status blocked. Inspect the 4 blocked items
-and decide whether to add explicit safe mock/dry-run/read-only fixture lanes or
-leave them blocked/rejected.
+Autonomy loop stopped with status done; inspect reports before continuing.
 
 ## Exact next prompt
 

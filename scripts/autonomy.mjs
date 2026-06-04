@@ -32,6 +32,7 @@ const MAX_PROMPT_PREVIEW_CHARS = 1800;
 const VALID_STATE_STATUSES = new Set(["continue", "done", "blocked", "needs_human"]);
 const VALID_LAST_RUN_STATUSES = new Set(["not_run", "passed", "failed", "partial"]);
 const SCRIPT_STATUSES = ["pending", "in_progress", "accepted", "rejected", "needs_lane", "needs_revalidation", "blocked"];
+const SAFE_EXTERNAL_RISK_STRATEGIES = new Set(["mock", "dry-run", "read-only-fixture", "static-fixture"]);
 
 const CANDIDATE_EXTENSIONS = new Set([
   ".bat",
@@ -234,6 +235,7 @@ function parseOptions(argv) {
     codexTimeoutMs: DEFAULT_CODEX_TIMEOUT_MS,
     command,
     dryRun: false,
+    includeBlocked: false,
     json: false,
     maxConsecutiveFailures: DEFAULT_MAX_CONSECUTIVE_FAILURES,
     maxIterations: null,
@@ -254,7 +256,7 @@ function parseOptions(argv) {
     "run-id",
     "sandbox",
   ]);
-  const booleanOptions = new Set(["dry-run", "help", "json", "run-existing-lanes"]);
+  const booleanOptions = new Set(["dry-run", "help", "include-blocked", "json", "run-existing-lanes"]);
 
   for (let index = 0; index < optionArgs.length; index += 1) {
     const raw = optionArgs[index];
@@ -314,6 +316,7 @@ function usage() {
     "  npm run autonomy -- validate --batch-size 5",
     "  npm run autonomy -- lane create --batch-size 5",
     "  npm run autonomy -- revalidate --batch-size 5",
+    "  npm run autonomy -- revalidate --include-blocked --batch-size 5",
     "  npm run autonomy -- handoff",
     "  npm run autonomy -- run-once --batch-size 5",
     "  npm run autonomy -- supervise --dry-run",
@@ -321,6 +324,7 @@ function usage() {
     "Options:",
     "  --repo <path>                    Repository root. Defaults to cwd.",
     "  --batch-size <n>                Bounded item count. Default 5.",
+    "  --include-blocked              For revalidate, include blocked items with explicit safe lanes.",
     "  --run-existing-lanes           Opt in to running detected local JS smoke lanes.",
     "  --dry-run                      For supervise, print command and prompt only.",
     "  --max-iterations <n>           Supervisor loop limit.",
@@ -985,6 +989,31 @@ function findGeneratedLane(repoRoot, candidate) {
   };
 }
 
+function hasExternalRuntimeRisk(candidate) {
+  return Boolean(candidate?.safety?.credentials || candidate?.safety?.network || candidate?.safety?.live);
+}
+
+function laneCoversExternalRuntimeRisk(lane) {
+  const coverage = lane?.external_risk_coverage || lane?.safety?.external_risk_coverage;
+  if (!coverage || coverage.approved !== true) return false;
+  if (!SAFE_EXTERNAL_RISK_STRATEGIES.has(String(coverage.strategy || ""))) return false;
+  if (!Array.isArray(coverage.evidence) || coverage.evidence.length === 0) return false;
+
+  const safety = lane.safety || {};
+  if (safety.uses_network || safety.requires_secrets || safety.writes_source_files) return false;
+  if (safety.executes_candidate_behavior && coverage.strategy !== "dry-run") return false;
+  return true;
+}
+
+function laneExternalRuntimeRiskEvidence(lane) {
+  const coverage = lane?.external_risk_coverage || lane?.safety?.external_risk_coverage;
+  if (!coverage) return [];
+  return [
+    `external-risk-lane:${coverage.strategy || "unknown"}`,
+    ...(coverage.evidence || []).map((item) => `external-risk-evidence:${item}`),
+  ];
+}
+
 function validateCandidate(repoRoot, candidate, options = {}) {
   const startedAt = nowIso();
   const commands = [];
@@ -1009,17 +1038,23 @@ function validateCandidate(repoRoot, candidate, options = {}) {
     };
   }
 
+  const hasExternalRisk = hasExternalRuntimeRisk(candidate);
+  const safeExternalRiskLane = hasExternalRisk && laneCoversExternalRuntimeRisk(lane);
+
   if (candidate.safety?.destructive && !candidate.safety?.dry_run_signal) {
     status = "rejected";
     summary = "Rejected: destructive signal without a safe dry-run/mock signal.";
     evidence.push("safety:destructive-without-dry-run");
-  } else if ((candidate.safety?.credentials || candidate.safety?.network || candidate.safety?.live) && !candidate.safety?.dry_run_signal) {
+  } else if (hasExternalRisk && !candidate.safety?.dry_run_signal && !safeExternalRiskLane) {
     status = options.generatedLane ? "blocked" : "needs_lane";
     summary = options.generatedLane
       ? "Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane."
       : "Needs lane: external credential/network/live signal requires a mock, dry-run, or read-only fixture lane.";
     evidence.push(...(candidate.safety?.reasons || []));
   } else {
+    if (safeExternalRiskLane) {
+      evidence.push(...laneExternalRuntimeRiskEvidence(lane));
+    }
     if (["node"].includes(candidate.language)) {
       const check = runNodeCheck(repoRoot, candidate.path);
       commands.push(check.command);
@@ -1044,9 +1079,11 @@ function validateCandidate(repoRoot, candidate, options = {}) {
           summary = laneRun.ok ? "Accepted: static check and existing smoke lane passed." : "Needs revalidation: existing smoke lane failed.";
         } else {
           status = "accepted";
-          summary = options.generatedLane
-            ? "Accepted: generated static validation lane passed."
-            : "Accepted: static checks passed and an existing validation lane is present.";
+          summary = safeExternalRiskLane
+            ? "Accepted: explicit safe external-risk validation lane passed."
+            : options.generatedLane
+              ? "Accepted: generated static validation lane passed."
+              : "Accepted: static checks passed and an existing validation lane is present.";
           evidence.push(lane.repo_path || lane.path || lane.command || `lane:${lane.kind}`);
         }
       } else {
@@ -1264,7 +1301,8 @@ function revalidateBatch(options) {
   const inventory = loadInventoryOrBuild(options);
   const map = candidateMap(inventory);
   const state = readState(repoRoot);
-  const batch = (state.script_inventory.needs_revalidation || []).slice(0, options.batchSize);
+  const source = options.includeBlocked ? state.script_inventory.blocked || [] : state.script_inventory.needs_revalidation || [];
+  const batch = source.slice(0, options.batchSize);
   state.current_batch = batch;
   for (const id of batch) addStatus(state, id, "in_progress");
   writeState(repoRoot, state);

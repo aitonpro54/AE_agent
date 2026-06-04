@@ -1,11 +1,11 @@
 {
   "schema": "codex-autonomy.state.v1",
   "schema_version": "1",
-  "status": "blocked",
+  "status": "done",
   "objective": "Итеративно инвентаризировать, ранжировать, валидировать и отбирать scripts/tools в репозитории через компактный файловый state/handoff contract.",
   "repo_root": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent",
   "created_at": "2026-06-04T13:33:50.822Z",
-  "updated_at": "2026-06-04T13:59:25.030Z",
+  "updated_at": "2026-06-04T14:12:51.297Z",
   "iteration": 3,
   "max_iterations": 50,
   "script_inventory": {
@@ -90,70 +90,24 @@
       "cep-panel/panel.js",
       "chatgpt-connector/jsx-lab.js",
       "mcp-server/plan-repair.js",
-      "mcp-server/project-intent-memory.js"
+      "mcp-server/project-intent-memory.js",
+      "scripts/bridge-only-smoke-test.js",
+      "scripts/provider-api-smoke.js",
+      "cep-panel/lib/CSInterface.js",
+      "mcp-server/mcp-adapter.js"
     ],
     "rejected": [
       "scripts/safe-rg-smoke.js"
     ],
     "needs_lane": [],
     "needs_revalidation": [],
-    "blocked": [
-      "scripts/bridge-only-smoke-test.js",
-      "scripts/provider-api-smoke.js",
-      "cep-panel/lib/CSInterface.js",
-      "mcp-server/mcp-adapter.js"
-    ]
+    "blocked": []
   },
   "current_batch": [
-    "orchestrator/run-generic-repo-auto-intake.mjs",
-    "orchestrator/run-generic-repo-importer-supervisor.mjs",
-    "orchestrator/run-generic-repo-queue-supervisor.mjs",
     "scripts/bridge-only-smoke-test.js",
-    "scripts/clean-current-check.js",
     "scripts/provider-api-smoke.js",
-    "scripts/solution-promotion-helper.js",
-    "mcp-server/server.js",
-    "orchestrator/core/post-run-contract.mjs",
-    "orchestrator/core/runtime-store.mjs",
-    "orchestrator/full-intake-diagnose.mjs",
-    "orchestrator/full-intake-ledger-summary.mjs",
-    "orchestrator/full-intake-proof.mjs",
-    "orchestrator/full-intake-status.mjs",
-    "orchestrator/parallel-candidate-worktrees.mjs",
-    "orchestrator/run-generic-repo-full-intake.mjs",
-    "package.json#scripts/autonomy",
-    "package.json#scripts/full-intake:diagnose",
-    "package.json#scripts/full-intake:proof",
-    "package.json#scripts/full-intake:status",
-    "package.json#scripts/generic-repo:auto-intake",
-    "package.json#scripts/generic-repo:full-intake",
-    "package.json#scripts/generic-repo:importer-supervisor",
-    "package.json#scripts/generic-repo:queue-supervisor",
-    "package.json#scripts/generic-repo:tool-importer",
-    "scripts/agent-qa-audit.js",
     "cep-panel/lib/CSInterface.js",
-    "mcp-server/m100-protocol.js",
-    "mcp-server/plan-risk-classifier.js",
-    "mcp-server/raw-fallback-candidate.js",
-    "mcp-server/semantic-verification.js",
-    "orchestrator/bounded-process-result.cjs",
-    "orchestrator/core/failure-diagnostics.mjs",
-    "orchestrator/core/git-snapshot.mjs",
-    "orchestrator/core/operation-envelope.mjs",
-    "orchestrator/core/path-policy.mjs",
-    "orchestrator/parent-proof-contract.mjs",
-    "orchestrator/run-generic-repo-tool-importer.mjs",
-    "chatgpt-connector/server.js",
-    "mcp-server/ai-agents.js",
-    "mcp-server/bridge-daemon.js",
-    "mcp-server/mcp-adapter.js",
-    "mcp-server/solution-library.js",
-    "scripts/agent-scenario-fixtures.js",
-    "scripts/autonomy.mjs",
-    "cep-panel/panel.js",
-    "chatgpt-connector/jsx-lab.js",
-    "mcp-server/plan-repair.js",
-    "mcp-server/project-intent-memory.js"
+    "mcp-server/mcp-adapter.js"
   ],
   "lanes": {
     "existing": [],
@@ -212,7 +166,6 @@
   },
   "validation": {
     "commands": [
-      "node --check scripts/provider-contract-smoke.js",
       "node --check scripts/sdk-generic-repo-full-intake-smoke.js",
       "node --check scripts/semantic-verification-smoke.js",
       "node --check scripts/solution-promotion-smoke.js",
@@ -308,16 +261,15 @@
       "node --check cep-panel/panel.js",
       "node --check chatgpt-connector/jsx-lab.js",
       "node --check mcp-server/plan-repair.js",
-      "node --check mcp-server/project-intent-memory.js"
+      "node --check mcp-server/project-intent-memory.js",
+      "node --check scripts/bridge-only-smoke-test.js",
+      "node --check scripts/provider-api-smoke.js",
+      "node --check cep-panel/lib/CSInterface.js",
+      "node --check mcp-server/mcp-adapter.js"
     ],
-    "last_run_status": "partial",
-    "last_run_summary": "accepted=45, rejected=0, needs_lane=0, needs_revalidation=0, blocked=4",
-    "failed_items": [
-      "scripts/bridge-only-smoke-test.js",
-      "scripts/provider-api-smoke.js",
-      "cep-panel/lib/CSInterface.js",
-      "mcp-server/mcp-adapter.js"
-    ]
+    "last_run_status": "passed",
+    "last_run_summary": "accepted=4, rejected=0, needs_lane=0, needs_revalidation=0, blocked=0",
+    "failed_items": []
   },
   "ranking_policy": {
     "criteria": [
@@ -376,7 +328,7 @@
     "requires_human_approval": []
   },
   "next": {
-    "next_step": "Autonomy loop stopped with status blocked; inspect reports before continuing.",
+    "next_step": "Autonomy loop stopped with status done; inspect reports before continuing.",
     "exact_next_prompt_path": ".codex-autonomy/exact_next_prompt.md"
   }
 }

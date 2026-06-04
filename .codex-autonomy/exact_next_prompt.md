@@ -12,15 +12,15 @@
 - `.codex-autonomy/reports/summary.md`
 
 Текущее состояние:
-- status: blocked
+- status: done
 - iteration: 3/50
 - total: 83
 - pending: 0
-- accepted: 78
+- accepted: 82
 - rejected: 1
 - needs_lane: 0
 - needs_revalidation: 0
-- blocked: 4
+- blocked: 0
 
 Следующий bounded шаг:
 
@@ -28,16 +28,10 @@
 npm.cmd run autonomy -- handoff
 ```
 
-Очередь pending исчерпана. Не запускай новый `run-once`, пока не принято
-решение по blocked items:
+Autonomy scripts/tools queue is complete. Do not run another `run-once` unless
+new candidates are added or the inventory changes.
 
-- `scripts/bridge-only-smoke-test.js`
-- `scripts/provider-api-smoke.js`
-- `cep-panel/lib/CSInterface.js`
-- `mcp-server/mcp-adapter.js`
-
-Следующий содержательный шаг: прочитать compact reports и подготовить
-минимальные безопасные mock/dry-run/read-only fixture lanes для этих 4
-блокеров либо оставить их blocked/rejected с обоснованием. Не запускай real
-supervise loop, live CEP/AE, mutating validation, dependency changes, push или
-PR без отдельного явного разрешения.
+Следующий большой milestone: добавить parent-managed Codex app thread handoff
+contract для видимого UI-thread continuation поверх существующего CLI
+`codex exec` supervisor path. Не запускай live CEP/AE, mutating validation,
+dependency changes, push или PR без отдельного явного разрешения.

@@ -80,8 +80,8 @@
 | `chatgpt-connector/jsx-lab.js` | accepted | `.codex-autonomy/lanes/chatgpt-connector-jsx-lab.json` | Accepted: generated static validation lane passed. |
 | `mcp-server/plan-repair.js` | accepted | `.codex-autonomy/lanes/mcp-server-plan-repair.json` | Accepted: generated static validation lane passed. |
 | `mcp-server/project-intent-memory.js` | accepted | `.codex-autonomy/lanes/mcp-server-project-intent-memory.json` | Accepted: generated static validation lane passed. |
+| `scripts/bridge-only-smoke-test.js` | accepted | `.codex-autonomy/lanes/scripts-bridge-only-smoke-test.json` | Accepted: explicit safe external-risk validation lane passed. |
+| `scripts/provider-api-smoke.js` | accepted | `.codex-autonomy/lanes/scripts-provider-api-smoke.json` | Accepted: explicit safe external-risk validation lane passed. |
+| `cep-panel/lib/CSInterface.js` | accepted | `.codex-autonomy/lanes/cep-panel-lib-csinterface.json` | Accepted: explicit safe external-risk validation lane passed. |
+| `mcp-server/mcp-adapter.js` | accepted | `.codex-autonomy/lanes/mcp-server-mcp-adapter.json` | Accepted: explicit safe external-risk validation lane passed. |
 | `scripts/safe-rg-smoke.js` | rejected | `scripts/safe-rg-smoke.js` | Rejected: destructive signal without a safe dry-run/mock signal. |
-| `scripts/bridge-only-smoke-test.js` | blocked | `.codex-autonomy/lanes/scripts-bridge-only-smoke-test.json` | Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane. |
-| `scripts/provider-api-smoke.js` | blocked | `.codex-autonomy/lanes/scripts-provider-api-smoke.json` | Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane. |
-| `cep-panel/lib/CSInterface.js` | blocked | `.codex-autonomy/lanes/cep-panel-lib-csinterface.json` | Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane. |
-| `mcp-server/mcp-adapter.js` | blocked | `.codex-autonomy/lanes/mcp-server-mcp-adapter.json` | Blocked: external credential/network/live signal still lacks a mock, dry-run, or explicit read-only fixture lane. |

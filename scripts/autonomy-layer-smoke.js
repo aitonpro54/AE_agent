@@ -98,6 +98,59 @@ function assertTerminalStatusesStopLoop(root) {
   }
 }
 
+function assertBlockedExternalRiskUsesExplicitSafeLane() {
+  const root = createFixture("external-risk");
+  writeFile(
+    path.join(root, "scripts", "live-risk.js"),
+    [
+      "\"use strict\";",
+      "",
+      "const endpoint = \"http://127.0.0.1:1/health\";",
+      "const token = process.env.AE_AGENT_API_KEY;",
+      "",
+      "function main() {",
+      "  return { endpoint, hasToken: Boolean(token) };",
+      "}",
+      "",
+      "module.exports = { main };",
+      "",
+    ].join("\n"),
+  );
+
+  run(root, ["init"]);
+  run(root, ["rank"]);
+  run(root, ["run-once", "--batch-size", "5"]);
+
+  const statePath = path.join(root, ".codex-autonomy", "state.json");
+  let state = readJson(statePath);
+  assert(state.script_inventory.blocked.includes("scripts/live-risk.js"), "external risk candidate should block without explicit safe lane");
+
+  const lanePath = path.join(root, ".codex-autonomy", "lanes", "scripts-live-risk.json");
+  const lane = readJson(lanePath);
+  lane.type = "explicit-safe-validation-lane";
+  lane.description = "Read-only fixture lane for external-risk static revalidation.";
+  lane.external_risk_coverage = {
+    approved: true,
+    strategy: "read-only-fixture",
+    evidence: [
+      "candidate behavior is not executed",
+      "lane performs syntax-only validation",
+      "no network or credential access is required"
+    ]
+  };
+  fs.writeFileSync(lanePath, `${JSON.stringify(lane, null, 2)}\n`, "utf8");
+
+  const result = run(root, ["revalidate", "--include-blocked", "--batch-size", "1"]);
+  assert.strictEqual(result.schema, "codex-autonomy.revalidate.v1");
+  assert.strictEqual(result.results[0].status, "accepted");
+
+  run(root, ["handoff"]);
+  state = readJson(statePath);
+  assert(state.script_inventory.accepted.includes("scripts/live-risk.js"), "explicit safe lane should accept external risk candidate");
+  assert(!state.script_inventory.blocked.includes("scripts/live-risk.js"), "external risk candidate should leave blocked");
+  assert.strictEqual(state.status, "done");
+}
+
 function main() {
   const root = createFixture("layer");
   assertInventoryIgnoreRules(root);
@@ -105,6 +158,7 @@ function main() {
   assertRunOnceUpdatesStateAndHandoff(root);
   assertSuperviseDryRunDoesNotRunCodex(root);
   assertTerminalStatusesStopLoop(root);
+  assertBlockedExternalRiskUsesExplicitSafeLane();
   console.log("Autonomy layer smoke: pass");
 }
 

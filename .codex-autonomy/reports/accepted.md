@@ -50,4 +50,4 @@
 - `package.json#scripts/autonomy` - Accepted: generated static validation lane passed.
 - `package.json#scripts/full-intake:diagnose` - Accepted: generated static validation lane passed.
 - `package.json#scripts/full-intake:proof` - Accepted: generated static validation lane passed.
-- `...и еще 28` - нет validation result
+- `...и еще 32` - нет validation result

@@ -1,15 +1,15 @@
 # Autonomy Summary
 
-Updated: 2026-06-04T13:59:25.030Z
+Updated: 2026-06-04T14:12:51.297Z
 
 ## Counts
 
 - total: 83
-- accepted: 78
+- accepted: 82
 - rejected: 1
 - needs_lane: 0
 - needs_revalidation: 0
-- blocked: 4
+- blocked: 0
 - pending: 0
 
 ## Top Accepted Tools
@@ -63,4 +63,4 @@ Updated: 2026-06-04T13:59:25.030Z
 - pending: 0
 - needs_lane: 0
 - needs_revalidation: 0
-- blocked: 4
+- blocked: 0
