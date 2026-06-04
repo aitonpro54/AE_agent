@@ -25,6 +25,12 @@ Historical milestone detail through 2026-05-31 is archived at
 
 ## Progress
 
+- [x] AUX generated-only family planning after ae-scripting queue closeout:
+  selected `layer-comment-label-lock-generated-only` from the safe Layers
+  backlog and documented the fail-closed contract/read-back lane in
+  `plans/full-intake-unsafe-skip-triage.md`. No backlog retry, runner,
+  child/subagent mutation, live CEP/AE mutation, Local/Ollama, fallback
+  provider, dependency change, push/PR, or raw JSX copy occurred.
 - [x] AUX terminal closeout for remaining queued `tool-planeresolve` in scoped
   run `fi-planeresolve-r1-20260604`: parent review found an incomplete
   non-standalone math fragment and marked it `failed_import` instead of
@@ -212,9 +218,11 @@ math fragment, not a safe recipe candidate. Proof sha:
 The ae-scripting ledger is now `completed=19`, `queued=0`,
 `failed_import=5`, `blocked_live_lane_required=21`, and `blocked_policy=3`.
 
-Next clean work is a separate generated-only backlog family lane. Prefer
-non-file/non-render comp/layer utilities with narrow typed contracts and
-read-back proof; marker/file/render families remain deferred.
+Next clean implementation work is the first
+`layer-comment-label-lock-generated-only` slice: add a bounded
+`set_layer_metadata` typed tool plus `get_layer_details` layer-comment
+read-back, then create the generated-only OpenAI CLI proof lane before any
+candidate requeue. Marker/file/render families remain deferred.
 
 Keep Local/Ollama, fallback providers, broad/default CEP smoke, dependency
 changes, push/PR, full runtime reports, raw JSX copy, and source checkout writes
@@ -222,6 +230,12 @@ outside the runner out of scope.
 
 ## Decision Log
 
+- 2026-06-04: Selected `layer-comment-label-lock-generated-only` as the next
+  non-file/non-render family lane. Current production tools can read back
+  `label`/`locked` via `get_layer_details`, and `set_property_value` remains
+  intentionally limited to `threeDLayer`, `collapseTransformation`, and
+  `motionBlur`; therefore layer comment/label/lock changes need a new narrow
+  `set_layer_metadata` contract plus comment read-back before any retry.
 - 2026-06-04: `tool-planeresolve` was marked `failed_import` because its source
   has unfinished point assignments and only a partial intersection calculation.
   Creating a
@@ -280,6 +294,15 @@ outside the runner out of scope.
 
 ## Validation
 
+- AUX generated-only family planning validation passed: fresh preflight read
+  active docs; `git status --short --untracked-files=no` was clean; compact
+  status/proof for `fi-planeresolve-r1-20260604` showed stale `running` with
+  zero processes and contract-complete proof sha
+  `d8672bc55daf2945699a00d8bbdf9f95ad31a6f8aaceb57c8b193de0b7aa0c83`;
+  ledger summary stayed terminal with `queued=0`; targeted code search found
+  no existing `set_layer_metadata` mutation tool and confirmed
+  `get_layer_details` lacks layer-comment read-back. No JavaScript files were
+  touched.
 - AUX `tool-planeresolve` terminal closeout validation passed: compact proof
   for `fi-planeresolve-r1-20260604` was contract-complete with reducer status
   `parallel_proposals_blocked`, proof sha
@@ -307,42 +330,10 @@ outside the runner out of scope.
   required. Not run by design: Local/Ollama planner work, fallback providers,
   broad/default CEP smoke, live CEP/AE mutation, dependency changes, push/PR,
   raw JSX copy, archive reads, and full runtime report reads.
-- AUX `tool-sortbyposition` targeted recovery validation passed: compact scoped
-  proof for `fi-sortpos-r1-20260603` was contract-complete with reducer status
-  `parallel_reducer_completed`, accepted `tool-sortbyposition`, proof sha
-  `f72791ed3164b6889d2660ebbff9cc60485bc0c84180767706203bce8d0e2b7d`, and
-  ledger summary moved to `completed=16`, `queued=4`. No JavaScript files were
-  touched, so touched-file `node --check` was not required. Passed:
-  `git diff --check`; solution library/registry/candidate-report/promotion/
-  retrieval smokes; semantic verification; SDK generic repo full-intake,
-  importer-command, and queue-supervisor smokes. Not run by design:
-  Local/Ollama, fallback providers, broad/default CEP smoke, live CEP/AE
-  mutation, dependency changes, push/PR, and raw JSX copy.
-- AUX `tool-trimfirsttosecond` targeted recovery validation passed: compact
-  scoped proof for `fi-trimfirst2-r1-20260603` was contract-complete with
-  reducer status `parallel_reducer_completed`, accepted
-  `tool-trimfirsttosecond`, proof sha
-  `9c0bd384798a7f0930438df92b4122a1e491624681fbfac7469c3c204778db6a`, and
-  ledger summary moved to `completed=15`, `queued=5`. No JavaScript files were
-  touched, so touched-file `node --check` was not required. Passed:
-  `git diff --check`; solution library/registry/candidate-report/promotion/
-  retrieval smokes; semantic verification; SDK generic repo full-intake,
-  importer-command, and queue-supervisor smokes. Not run by design:
-  Local/Ollama, fallback providers, broad/default CEP smoke, live CEP/AE
-  mutation, dependency changes, push/PR, and raw JSX copy.
-- AUX `tool-makeclosest16_headless` targeted recovery validation passed:
-  touched-file `node --check` for
-  `orchestrator/run-generic-repo-tool-importer.mjs` and
-  `scripts/sdk-generic-repo-importer-command-smoke.js`; compact scoped proof
-  for `fi-mc16h-r3-20260603` was contract-complete with accepted
-  `tool-makeclosest16_headless`; ledger summary moved to `completed=14`,
-  `queued=6`; manual retrieval check surfaced
-  `makeclosest16-headless-typed-plan` first for active comp nearest-16 resize;
-  `git diff --check`; solution library/registry/retrieval smokes; semantic
-  verification; SDK generic repo importer, queue supervisor, and full-intake
-  smokes. Not run by design: Local/Ollama, fallback providers, broad/default
-  CEP smoke, live CEP/AE mutation, dependency changes, push/PR, and raw JSX
-  copy.
+- Earlier targeted recovery validations for `tool-sortbyposition`,
+  `tool-trimfirsttosecond`, and `tool-makeclosest16_headless` were compacted
+  here to preserve active-plan size; their commit history and compact proof
+  envelopes remain the authoritative detail.
 - AUX all-current-queued fail-closed run validation passed: no tracked
   JavaScript files were touched, so touched-file `node --check` was not
   required; compact proof was contract-complete with `unplannedPathCount=0`,

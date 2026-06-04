@@ -65,6 +65,47 @@ Second proposed lane: use a remaining safe family that already has typed-tool
 coverage, or first add a composition-marker typed-tool contract before retrying
 marker-transfer/out-point/work-area candidates.
 
+## Selected Slice 2026-06-04: Layer Comment/Label/Lock
+
+Planning id: `layer-comment-label-lock-generated-only`.
+
+Scope: first prove only explicit generated-layer metadata changes:
+`comment`, `label`, and `locked`. Candidate fit:
+`tool-layers-add-comment-to-selected-layers`,
+`tool-layers-lock-all-layers`, `tool-layers-unlock-all-layers`,
+`tool-layers-reset-selected-layer-labels`, and
+`tool-layers-set-all-layer-labels-to-none`.
+
+Required typed-tool contract, not yet implemented:
+
+- Add a bounded `set_layer_metadata` bridge tool that accepts one explicit comp
+  target plus concrete `layerIndices` and, when available,
+  `expectedLayerNames`.
+- Allow only reviewed fields `comment`, `label`, and `locked` in the first
+  slice. Reject arbitrary layer fields, expressions, effects, timing, source
+  relinking, selection mutation, project item labels, file I/O, render queue
+  work, and raw ExtendScript fallback.
+- Convert "selected" or "all" wording into explicit layer indices from current
+  `get_selected_layers` or `get_comp_details` evidence before mutation; never
+  let the tool discover broad targets by itself.
+- Add or confirm `get_layer_details` read-back for `comment`, `label`, and
+  `locked`. Current read-back already exposes `label` and `locked`; layer
+  `comment` still needs explicit read-back before the comment candidate can be
+  proven.
+- Generated-only proof lane should create a generated comp/layers, apply
+  `set_layer_metadata`, read each target back with `get_layer_details`, run
+  semantic verification, then clean up generated assets.
+
+Planned lane command, once implemented:
+`node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-metadata-openai-cli-smoke`.
+Provider path must be `openai-cli`; Local/Ollama, fallback providers,
+broad/default CEP smoke, dependency changes, source checkout writes, and raw JSX
+copy remain out of scope.
+
+Deferred from this first slice: `solo`, `blendingMode`, track-matte label
+semantics, label scans, mixed generated/user comps, persistent UI selection
+side effects, and exact source JSX behavior.
+
 ## Needs New Typed-Tool Contract
 
 These look valuable, but they should not be retried until the project has a narrow
