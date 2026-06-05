@@ -32,6 +32,7 @@ const {
   agentResetWorkAreaScenarioPlans,
   agentSelectedKeyframeMarkerScenarioPlans,
   agentSelectedPropertyValueScenarioPlans,
+  agentStickEffectExpressionScenarioPlans,
   agentTextToKeysScenarioPlans,
   agentScenarioPlans
 } = require("./agent-scenario-fixtures");
@@ -407,6 +408,24 @@ function openAiCliParentOpacityExpressionScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_PARENT_OPACITY_PREFIX || "Codex QA AUX105",
     scenarioFactory: agentParentOpacityExpressionScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliStickEffectExpressionScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-stick-effect-expression",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_STICK_EFFECT_PREFIX || "Codex QA AUX106",
+    scenarioFactory: agentStickEffectExpressionScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -5110,6 +5129,69 @@ async function verifyGeneratedParentOpacityExpressionReadBack(scenario, expected
   };
 }
 
+async function verifyGeneratedStickEffectExpressionReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const effectDetails = await callBridgeTool("get_effect_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: 1,
+    effectName: expected.effectName,
+    includeProperties: true,
+    propertyDepth: 1,
+    propertyLimit: 20,
+    includeValues: true,
+    includeExpressions: true
+  });
+  if (!effectDetails || !effectDetails.effect) {
+    throw new Error(`${scenario.id}: generated stick-effect effect ${expected.effectName} was not found by read-back.`);
+  }
+  if (expected.effectMatchName && effectDetails.effect.matchName !== expected.effectMatchName) {
+    throw new Error(`${scenario.id}: stick-effect matchName mismatch; expected ${expected.effectMatchName}, got ${effectDetails.effect.matchName}.`);
+  }
+  const effectProperty = findPropertyInTree(effectDetails.properties || [], expected.propertyPath);
+  if (!effectProperty) {
+    throw new Error(`${scenario.id}: generated stick-effect property was not found by effect read-back.`);
+  }
+  if (effectProperty.expression !== expected.expression) {
+    throw new Error(`${scenario.id}: stick-effect expression mismatch; expected ${expected.expression}, got ${effectProperty.expression || "empty"}.`);
+  }
+  if (effectProperty.expressionEnabled !== true) {
+    throw new Error(`${scenario.id}: stick-effect expression was not enabled by effect read-back.`);
+  }
+  if (effectProperty.expressionError) {
+    throw new Error(`${scenario.id}: stick-effect expression reported an error: ${effectProperty.expressionError}.`);
+  }
+
+  const layerDetails = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: 1,
+    includeProperties: true,
+    propertyDepth: 3,
+    propertyLimit: 120,
+    includeValues: true,
+    includeExpressions: true
+  });
+  const layer = layerDetails && layerDetails.layer ? layerDetails.layer : {};
+  if (layer.name !== expected.layerName) {
+    throw new Error(`${scenario.id}: generated stick-effect layer ${expected.layerName} was not found by read-back.`);
+  }
+  const layerProperty = findPropertyInTree(layerDetails.propertyTree || [], expected.propertyPath);
+  if (!layerProperty || layerProperty.expression !== expected.expression) {
+    throw new Error(`${scenario.id}: generated stick-effect expression was not found by layer read-back.`);
+  }
+
+  return {
+    ok: true,
+    comp: { itemIndex: compMatch.itemIndex, name: compMatch.name },
+    layer: { index: layer.index, name: layer.name },
+    effect: { name: effectDetails.effect.name, matchName: effectDetails.effect.matchName },
+    property: {
+      path: expected.propertyPath,
+      expression: effectProperty.expression,
+      expressionEnabled: effectProperty.expressionEnabled === true
+    }
+  };
+}
+
 async function verifyGeneratedOnionSkinningReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const comp = await callBridgeTool("get_comp_details", {
@@ -5737,6 +5819,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedParentOpacityExpression) {
     return verifyGeneratedParentOpacityExpressionReadBack(scenario, expected);
+  }
+
+  if (expected.generatedStickEffectExpression) {
+    return verifyGeneratedStickEffectExpressionReadBack(scenario, expected);
   }
 
   if (expected.generatedOnionSkinning) {
@@ -6438,6 +6524,10 @@ async function main() {
   }
   if (command === "agent-parent-opacity-expression-openai-cli-smoke" || command === "full-ui-agent-parent-opacity-expression-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliParentOpacityExpressionScenarioConfig());
+    return;
+  }
+  if (command === "agent-stick-effect-expression-openai-cli-smoke" || command === "full-ui-agent-stick-effect-expression-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliStickEffectExpressionScenarioConfig());
     return;
   }
   if (command === "agent-comp-properties-openai-cli-smoke" || command === "full-ui-agent-comp-properties-openai-cli-smoke") {

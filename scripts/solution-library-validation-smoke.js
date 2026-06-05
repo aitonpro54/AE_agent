@@ -33,6 +33,7 @@ const IMPORTED_ADVISORY_IDS = [
   "add-simple-loop-expression-typed-plan",
   "append-to-expression-typed-plan",
   "update-expressions-typed-plan",
+  "stick-effect-to-layer-typed-plan",
   "round-selected-property-values-typed-plan",
   "set-new-color-typed-plan",
   "swap-selected-property-dimensions-typed-plan",
@@ -653,6 +654,31 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Update_Expressions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "stick-effect-to-layer-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "get_effect_details", "set_expression", "get_layer_details"],
+        `${id}: stick-effect workflow should stay on the narrow selected/effect property expression typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: stick-effect workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should support selected-property evidence.`);
+      assert(text.includes("get_effect_details"), `${id}: recipe should support explicit generated effect-property evidence.`);
+      assert(text.includes("2D spatial"), `${id}: recipe should require 2D spatial target evidence.`);
+      assert(text.includes("toComp(anchorPoint + value);"), `${id}: recipe should preserve the reviewed expression.`);
+      assert(text.includes("set_expression"), `${id}: recipe should use the expression typed tool.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require expression read-back through layer details.`);
+      assert(text.includes("Do not infer effect properties"), `${id}: recipe should reject approximate effect discovery.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence when available.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_effect_details/.test(step)), `${id}: verification must capture explicit effect-property evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /toComp\(anchorPoint \+ value\);/.test(step)), `${id}: verification must include the final stick expression.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_expression/.test(step)), `${id}: verification must include set_expression.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /2D spatial/.test(item)), `${id}: verification must require 2D spatial evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionEnabled:true/.test(item)), `${id}: verification must require expression enabled evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionError/.test(item)), `${id}: verification must require expression error evidence.`);
+      assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Stick_Effect_To_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "round-selected-property-values-typed-plan") {
       assert.deepStrictEqual(
@@ -2422,6 +2448,22 @@ function assertActualRetrieval(registry) {
   assert(updateExpressionsPromptSection.includes("set_expression"), "prompt section should prefer set_expression for expression update workflows.");
   assert(updateExpressionsPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
   assert(!/run_extendscript/i.test(updateExpressionsPromptSection), "update-expressions guidance should not recommend raw ExtendScript.");
+
+  const stickEffectRetrieval = retrieveSolutionHints("Stick selected 2D spatial effect position properties to the layer by applying toComp(anchorPoint + value); with typed evidence and read back expression details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(stickEffectRetrieval.ok, true);
+  assert(ids(stickEffectRetrieval).includes("stick-effect-to-layer-typed-plan"), "stick-effect advisory recipe should surface for selected spatial effect expression prompts.");
+  const stickEffectPromptSection = formatSolutionHintsForPrompt(stickEffectRetrieval);
+  assert(stickEffectPromptSection.includes("Stick Effect To Layer Typed Plan"), "prompt section should include stick-effect advisory title.");
+  assert(stickEffectPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for stick-effect workflows.");
+  assert(stickEffectPromptSection.includes("get_effect_details"), "prompt section should include effect-property evidence for generated/reviewed targets.");
+  assert(stickEffectPromptSection.includes("toComp(anchorPoint + value);"), "prompt section should preserve the reviewed stick expression.");
+  assert(stickEffectPromptSection.includes("set_expression"), "prompt section should prefer set_expression for stick-effect workflows.");
+  assert(stickEffectPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
+  assert(!/run_extendscript/i.test(stickEffectPromptSection), "stick-effect guidance should not recommend raw ExtendScript.");
 
   const roundSelectedPropertyValuesRetrieval = retrieveSolutionHints("Round the selected numeric property values to whole numbers after inspecting selected property values, then set the roundedValue with set_property_value and read back the property values.", {
     registry,

@@ -32,6 +32,7 @@ const {
   agentRenderQueueScenarioPlans,
   agentSelectedKeyframeMarkerScenarioPlans,
   agentSelectedPropertyValueScenarioPlans,
+  agentStickEffectExpressionScenarioPlans,
   agentTextToKeysScenarioPlans
 } = require("./agent-scenario-fixtures");
 
@@ -495,6 +496,22 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   ]);
   assert.strictEqual(parentOpacity.plan.steps[3].args.propertyPath, "ADBE Transform Group.ADBE Opacity");
   assert.strictEqual(parentOpacity.plan.steps[3].resultBindings.layerIndex, "{{steps.2.cameraLayer.index}}");
+
+  const [stickEffect] = agentStickEffectExpressionScenarioPlans("Codex QA AUX106 Fixture");
+  assert.strictEqual(stickEffect.id, "generated-stick-effect-expression");
+  assert.strictEqual(stickEffect.expectedReadBack.generatedStickEffectExpression, true);
+  assert.deepStrictEqual(stickEffect.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "add_effect",
+    "get_effect_details",
+    "set_expression",
+    "get_layer_details",
+    "get_effect_details"
+  ]);
+  assert.strictEqual(stickEffect.plan.steps[4].args.expression, "toComp(anchorPoint + value);");
+  assert.strictEqual(stickEffect.plan.steps[4].args.propertyPath[1].matchName, "ADBE Ramp");
+  assert.strictEqual(stickEffect.plan.steps[4].args.propertyPath[2].matchName, "ADBE Ramp-0001");
 
   const [compProperties] = agentCompPropertiesScenarioPlans("Codex QA AUX061 Fixture");
   assert.strictEqual(compProperties.id, "generated-comp-properties-work-area");

@@ -185,6 +185,9 @@
       "tags": [
         "effects",
         "effect",
+        "add-effect",
+        "blur",
+        "inspect-effect-properties",
         "matchname",
         "selected-layers",
         "dakkshin-advisory",
@@ -7566,6 +7569,115 @@
         "Do not silently update expression syntax or initialize empty expressions as part of this update workflow.",
         "Require a separate typed-tool contract for expression creation from scratch, automatic syntax repair, expression controllers, keyframe generation, broad property scans, selection side effects or exact source JSX semantics.",
         "Do not use this recipe for expression clearing, expression deletion, keyframe edits, layer timing changes, effect edits, source relinking, render queue changes, selected-layer rename or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "stick-effect-to-layer-typed-plan",
+      "title": "Stick Effect To Layer Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "expressions",
+        "selected-properties",
+        "2d-spatial",
+        "stick-effect",
+        "effect-expression",
+        "set-expression",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Apply the reviewed toComp(anchorPoint + value); expression to explicit 2D spatial effect property targets using typed evidence and expression read-back.",
+        "appliesWhen": [
+          "The user asks to make selected effect position properties stick to their owning layer.",
+          "Typed adaptation is acceptable only when current selected-property evidence or explicit generated effect-property evidence identifies concrete 2D spatial expression-capable targets instead of relying on source-exact selectedProperties traversal, broad effect scans, automatic expression overwrite, or raw JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "propertyTargets",
+          "type": "object",
+          "required": true,
+          "description": "Current typed evidence for one or more explicit targets with comp identity, layerIndex, exact propertyPath, effect identity when relevant, canSetExpression:true, propertyValueType, and current expression state."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated property is bound from current get_selected_properties evidence or explicit generated get_effect_details evidence before mutation.",
+        "Every target is reviewed as a 2D spatial property that can receive expressions.",
+        "The final expression is exactly toComp(anchorPoint + value); and is shown in the dry-run plan before confirmation.",
+        "Existing non-empty expressions are not overwritten unless prior expression evidence and explicit replacement acknowledgement are present in the plan.",
+        "The workflow changes only expression text/enabled state on explicit property targets.",
+        "Layer transforms, property values, keyframes, effect order, layer names, sources, timing, masks, render queue items, project items, selection state and unreviewed properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/stick-effect-to-layer-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "get_effect_details",
+          "set_expression",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read explicit 2D spatial effect/property evidence, set the reviewed stick-to-layer expression, then read expression state back from the layer and effect property.",
+        "steps": [
+          "Run get_active_comp before mutation to capture active comp identity.",
+          "Run get_selected_properties with includeValues:true and includeExpressions:true, or get_effect_details for an explicit generated effect target when selection setup is outside the typed lane.",
+          "Fail closed when target evidence is empty, lacks layer/property path ownership, is not 2D spatial, is not expression-capable, or has an existing non-empty expression without explicit replacement acknowledgement.",
+          "Show previous expression state and the exact toComp(anchorPoint + value); final expression for every target before confirmation.",
+          "Run one set_expression step per explicit property target with enabled:true and the evidence-backed layerIndex plus exact propertyPath.",
+          "Run get_layer_details and get_effect_details after mutation to confirm exact expression text, expressionEnabled:true, and no expressionError.",
+          "Fail closed if source-exact comp.selectedProperties traversal, automatic effect discovery, non-2D-spatial targets, controller setup, keyframe edits, selection side effects, or raw ExtendScript is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies every concrete target, owning layer, exact propertyPath, effect identity when relevant, canSetExpression:true, and 2D spatial property evidence.",
+          "Each set_expression result reports the exact toComp(anchorPoint + value); expression, expressionEnabled:true, and no expressionError.",
+          "Post-run get_layer_details or get_effect_details shows the expected expression on the expected property path.",
+          "Post-run evidence shows no keyframe, property value, effect-order, layer transform, source, timing, mask, render queue, project item, selection, unreviewed property, or unrelated expression mutation.",
+          "Unsupported selectedProperties traversal, broad effect discovery, non-2D-spatial properties, existing-expression overwrite without review, controller setup, and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-layers-stick-effect-to-layer as advisory typed-plan coverage for explicit 2D spatial effect/property expression workflows.",
+          "Generated-only proof uses existing typed tools and a generated effect target; parent importer owns live acceptance and scoped retry evidence."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-05",
+          "from": "generic-repo-importer-tool-layers-stick-effect-to-layer",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Stick_Effect_To_Layer.jsx into existing typed tools as explicit 2D spatial property set_expression guidance for applying toComp(anchorPoint + value); with get_selected_properties or generated get_effect_details evidence and get_layer_details/get_effect_details read-back; no source JSX copied. Source-exact comp.selectedProperties traversal, automatic effect discovery, non-2D-spatial targets, existing-expression overwrite without review, controller setup, selection side effects and raw ExtendScript require a separate typed-tool contract or fail closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence or explicit generated effect-property evidence before mutating expression text; do not infer targets from prior chat context.",
+        "Apply only the reviewed expression toComp(anchorPoint + value); to explicit 2D spatial expression-capable targets.",
+        "Do not overwrite existing non-empty expressions unless prior expression evidence is surfaced and explicit replacement acknowledgement is present.",
+        "Require a separate typed-tool contract for source-exact selectedProperties traversal, automatic effect discovery, non-2D-spatial targets, expression controllers, broad scans, selection side effects or exact source JSX semantics.",
+        "Do not use this recipe for expression clearing, keyframe edits, property value edits, layer transform edits, effect order changes, source relinking, render queue changes, selected-layer rename or broad composition mutation."
       ]
     },
     {

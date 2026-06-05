@@ -1569,6 +1569,63 @@ function agentParentOpacityExpressionScenarioPlans(runPrefix) {
   }));
 }
 
+function agentStickEffectExpressionScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Stick Effect`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Shape`;
+  const effectName = `${base} Ramp`;
+  const propertyPath = [
+    { matchName: "ADBE Effect Parade" },
+    { matchName: "ADBE Ramp", name: effectName },
+    { matchName: "ADBE Ramp-0001" }
+  ];
+  const expression = "toComp(anchorPoint + value);";
+
+  return [
+    {
+      id: "generated-stick-effect-expression",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "add_effect",
+        "get_effect_details",
+        "set_expression",
+        "get_layer_details",
+        "get_effect_details"
+      ],
+      expectedReadBack: {
+        generatedStickEffectExpression: true,
+        compName,
+        layerName,
+        effectName,
+        effectMatchName: "ADBE Ramp",
+        propertyPath,
+        expression
+      },
+      plan: {
+        summary: "Generated-only live QA for the stick-effect expression on an explicit effect 2D spatial property.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated stick-effect comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.06, 0.07, 0.09], allowDuplicateName: false, openInViewer: true, comment: "Generated-only stick-effect expression validation" } },
+          { title: "Create generated stick-effect shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [220, 140], position: [320, 180], fillColor: [0.18, 0.5, 0.9], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Add generated Ramp effect", tool: "add_effect", args: { compName, layerIndex: 1, effect: "ADBE Ramp", name: effectName } },
+          { title: "Inspect generated Ramp effect before expression", tool: "get_effect_details", args: { compName, layerIndex: 1, effectName, includeProperties: true, propertyDepth: 1, propertyLimit: 20, includeValues: true, includeExpressions: true } },
+          { title: "Set generated stick-effect expression", tool: "set_expression", args: { compName, layerIndex: 1, propertyPath, expression, enabled: true } },
+          { title: "Read generated stick-effect layer expression", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: true, propertyDepth: 3, propertyLimit: 120, includeValues: true, includeExpressions: true } },
+          { title: "Read generated stick-effect effect expression", tool: "get_effect_details", args: { compName, layerIndex: 1, effectName, includeProperties: true, propertyDepth: 1, propertyLimit: 20, includeValues: true, includeExpressions: true } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentCompPropertiesScenarioPlans(runPrefix) {
   const base = `${runPrefix} Comp Properties`;
   const compName = `${base} Comp`;
@@ -2900,6 +2957,7 @@ module.exports = {
   agentResetWorkAreaScenarioPlans,
   agentSelectedPropertyValueScenarioPlans,
   agentSelectedKeyframeMarkerScenarioPlans,
+  agentStickEffectExpressionScenarioPlans,
   agentTextToKeysScenarioPlans,
   agentScenarioPlans,
   buildAgentPlannerRegressionCorpus,
