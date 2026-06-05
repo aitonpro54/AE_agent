@@ -26,6 +26,20 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker Layers approval/file/third-party-risk slice
+  re-audit: последние четыре Layers candidates теперь имеют свежий scoped
+  terminal review из reopened run:
+  `tool-layers-convert-srt-to-text-layers`,
+  `tool-layers-create-text-layers-from-file`,
+  `tool-layers-match-layers-to-newton-layers`, and
+  `tool-layers-rename-puppet-pins-for-duik`. Proposal-only explorers и parent
+  reducer подтвердили, что source-exact поведение остается закрытым:
+  file picker/File IO для двух text-layer candidates, Newton-specific
+  parenting/keyframe semantics и DuIK puppet-pin property rename writer gap.
+  Scoped retries создали fresh terminal tickets; stable parent-reducer runtime
+  tickets и ledger annotations записаны. No candidate was marked completed in
+  this slice. Remaining reopened backlog: 31 blocked/skipped entries still
+  need scoped review or completion.
 - [x] Reopened Full Intaker Layers effect/rig/puppet/file-risk slice re-audit:
   four more Layers candidates now have fresh scoped terminal review from the
   reopened run: `tool-layers-replace-grid-rig-control`,
@@ -200,16 +214,13 @@ old `AE_agent` repository remains the historical source.
 Continue the reopened Full Intaker objective. Do not accept
 `completed_no_candidates` or `terminal total=75` as success by itself.
 
-Current compact backlog map after the reopened Layers effect/rig/puppet/file-risk
-slice: 35 blocked/skipped entries still need scoped review or completion.
-Remaining families are Layers 4, Lottie 2, Markers 4, Project 14, and
-Properties 11. The next safest scoped family is the remaining Layers
-approval/file/third-party-risk slice:
-`tool-layers-convert-srt-to-text-layers`,
-`tool-layers-create-text-layers-from-file`,
-`tool-layers-match-layers-to-newton-layers`, and
-`tool-layers-rename-puppet-pins-for-duik`. Use proposal-only workers where
-useful, but central ledger/docs/handoff writes remain parent-owned.
+Current compact backlog map after the reopened Layers approval/file/third-party
+risk slice: 31 blocked/skipped entries still need scoped review or completion.
+Remaining families are Lottie 2, Markers 4, Project 14, and Properties 11. The
+next safest scoped family is the small Lottie slice:
+`tool-lottie-convert-drop-shadows-for-lottie` and
+`tool-lottie-prepare-layer-out-points-for-lottie`. Use proposal-only workers
+where useful, but central ledger/docs/handoff writes remain parent-owned.
 
 Push/PR remain forbidden. Do not run broad/default CEP smoke, Local/Ollama,
 fallback providers, dependency changes, raw JSX copy, source-checkout writes, or
@@ -217,6 +228,23 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-05: Parent reducer completed the reopened Layers
+  approval/file/third-party-risk slice. `tool-layers-convert-srt-to-text-layers`
+  remains terminal because source opens a local SRT file picker, reads file
+  content through AE File IO, parses SRT timing, and creates timed text layers;
+  a safer reviewed-content adaptation is plausible but needs an explicit
+  generated-only SRT content-input policy and proof lane before completion.
+  `tool-layers-create-text-layers-from-file` remains terminal for the same
+  file picker/File IO class plus missing source license evidence and recorded
+  hyphen/underscore id mismatch. `tool-layers-match-layers-to-newton-layers`
+  remains terminal because the source depends on Newton/Illustrator naming,
+  position keyframe copy, and layer parent assignment, while current tools lack
+  a reviewed `set_layer_parent`/parent read-back contract.
+  `tool-layers-rename-puppet-pins-for-duik` remains terminal because source
+  renames selected puppet-pin properties from Alt-key branching, while current
+  tools lack a selected property name writer and puppet-pin rename read-back
+  contract. Stable parent-reducer runtime tickets and ledger annotations record
+  unblock conditions for all four candidates.
 - 2026-06-05: Parent reducer completed the reopened Layers
   effect/rig/puppet/file-risk slice. `tool-layers-replace-grid-rig-control`
   remains terminal because source replaces the selected Grid Rig Control layer
@@ -445,6 +473,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened Layers approval/file/third-party-risk slice re-audit | Required to give `tool-layers-convert-srt-to-text-layers`, `tool-layers-create-text-layers-from-file`, `tool-layers-match-layers-to-newton-layers`, and `tool-layers-rename-puppet-pins-for-duik` fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers reviewed all four candidates without edits/commits. Parent reducer reviewed source behavior, exact triage and importer ledger ids, duplicate recipe/registry/live-lane ids, raw JSX/dependency/source-checkout risks, source license/file IO/third-party assumptions, scoped Full Intaker tickets, and child commit/branch absence. Scoped commands were run serially with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids <candidate>`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; all four produced terminal tickets with no requeue/open tickets. Stable candidate-specific runtime tickets and ledger annotations were written. Compact status/proof/ledger-summary were rerun; compact ledger map now shows Layers 21/21 fresh parentReducer and remaining fresh-review backlog 31. Closeout validation passed: `git diff --check` (line-ending warning only), `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake`. |
 | Reopened Layers effect/rig/puppet/file-risk slice re-audit | Required to give `tool-layers-replace-grid-rig-control`, `tool-layers-reset-layer-names`, `tool-layers-toggle-puppet-pins-as-guide-layers`, and `tool-layers-toggle-specific-effects` fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers reviewed all four candidates without edits/commits. Parent reducer reviewed source behavior, current typed-tool surface, duplicate recipe/registry/live-lane ids, raw JSX/dependency/source-checkout risks, stale proposal state, scoped Full Intaker tickets, and child commit/branch absence. Scoped commands were run serially with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids <candidate>`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; all four produced terminal tickets with no requeue/open tickets. Stable candidate-specific runtime tickets and ledger annotations were written. Compact status/proof/ledger-summary were rerun; remaining fresh-review backlog is 35. Closeout validation passed: `git diff --check` (line-ending warning only), `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake`. |
 | Reopened Layers stick-effect expression lane/retry | Required to give `tool-layers-stick-effect-to-layer` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: parent reducer reviewed source behavior, duplicate recipe/registry/lane ids, raw JSX/dependency/source-checkout risks, and created only a generated-only typed-plan/lane adaptation. Scoped Full Intaker was run with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids tool-layers-stick-effect-to-layer`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`. First run was blocked by dirty target tree from parent-authored lane prep; after a clean temporary commit and later amend, scoped retries produced a stable terminal ticket. The final ticket reason is `blocked_live_proof_failed`: lane non-live validation passed (`node --check` for touched JS, `node scripts/agent-scenario-report-smoke.js`, `node scripts/solution-library-validation-smoke.js`), read-only CEP/CDP preflight passed (`inspect`, `connector-status-smoke`), but generated-only live proof failed because the CEP panel reported `openai-cli/gpt-5.5 is not ready`. Runtime ledger annotation now records the blocker and unblock condition. |
 | Reopened Layers parenting/matte slice re-audit | Required to give the next four Layers parenting/matte blocked/skipped entries fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers reviewed all four candidates without edits/commits. Parent reducer added the candidate-scoped `selected-layer-parent-opacity-expression-generated-only` lane and generated-only smoke fixture for parent-opacity expression proof. Scoped commands were run serially with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids <candidate>`, and `--allow-self-improvement-lane-synthesis` for all four candidates. Parent-opacity lane non-live checks passed and read-only CEP preflight passed, but live proof failed on panel OpenAI CLI readiness (`openai-cli/gpt-5.5 is not ready; Run codex login and sign in with ChatGPT`). The other three candidates remained terminal typed-tool gaps. Stable candidate-specific runtime tickets and ledger annotations were written. Compact status/proof/ledger-summary were rerun; remaining fresh-review backlog is 40. Closeout validation passed: touched JS `node --check`, JSON parse for the live-lane registry, `node scripts/agent-scenario-report-smoke.js`, `git diff --check` (line-ending warnings only), `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake`. |
