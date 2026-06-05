@@ -26,6 +26,20 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker Properties Essential Graphics single-candidate
+  re-audit: `tool-properties-add-properties-to-essential-graphics` now has
+  fresh scoped parentReducer review from the reopened run. Parent reducer
+  accepted only this candidate in the serial step. Scoped retry ran with
+  `--context-percent 20`, `--max-items 1`, exact canonical candidate id,
+  `--allow-self-improvement-lane-synthesis`, `--no-commit`, and
+  `--compact-json`; it produced terminal ticket
+  `live-lane-family-0e4f08dad3367dcc`, no open tickets, and no requeue. No
+  candidate was marked completed: source-exact behavior calls
+  `canAddToMotionGraphicsTemplate` and `addToMotionGraphicsTemplateAs` on
+  `comp.selectedProperties`, while current typed tools cannot add/read Motion
+  Graphics Template entries. Stable candidate-specific runtime ticket and
+  ledger annotation were written. Remaining reopened backlog without fresh
+  parentReducer evidence: 10 Properties entries.
 - [x] Reopened Full Intaker Project set-proxies single-candidate re-audit:
   `tool-project-set-proxies-from-folder` now has fresh scoped parentReducer
   review from the reopened run. Parent reducer accepted only this candidate in
@@ -341,16 +355,16 @@ old `AE_agent` repository remains the historical source.
 Continue the reopened Full Intaker objective. Do not accept
 `completed_no_candidates` or `terminal total=75` as success by itself.
 
-Current compact backlog map after the reopened Project set-proxies
-single-candidate re-audit: 11 blocked/skipped entries still need scoped review
-or completion. Remaining family is Properties 11. Continue Properties next with
-the narrowest scoped family, starting from
-`tool-properties-add-properties-to-essential-graphics` unless a compact backlog
-map identifies a safer first slice. Keep file IO, `saveFrameToPng`, render
-execution, proxy mutation, reveal/shell, cleanup/deletion, selected-property
-mutation, puppet/path mutation, Essential Graphics writes, and user-asset
-mutation approval-gated unless a scoped generated-only/read-only lane is
-explicitly safe.
+Current compact backlog map after the reopened Properties Essential Graphics
+single-candidate re-audit: 10 blocked/skipped Properties entries still need
+scoped review or completion. Continue Properties with the narrowest scoped
+family. Likely next candidates are `tool-properties-expose-essential-properties`
+for the remaining Essential Graphics/essential-properties gap, or a smaller
+shape/path slice after source/typed-tool evidence review. Keep file IO,
+`saveFrameToPng`, render execution, proxy mutation, reveal/shell,
+cleanup/deletion, selected-property mutation, puppet/path mutation, Essential
+Graphics writes, and user-asset mutation approval-gated unless a scoped
+generated-only/read-only lane is explicitly safe.
 
 Push/PR remain forbidden. Do not run broad/default CEP smoke, Local/Ollama,
 fallback providers, dependency changes, raw JSX copy, source-checkout writes, or
@@ -358,6 +372,22 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-06: Parent reducer completed the reopened Properties
+  `tool-properties-add-properties-to-essential-graphics` single-candidate
+  review. Source reads `app.project.activeItem`, iterates
+  `comp.selectedProperties`, tests each property with
+  `canAddToMotionGraphicsTemplate(comp)`, derives the controller name from
+  native expression-control effect names or the property name, and calls
+  `addToMotionGraphicsTemplateAs(comp, name)`. Existing selected-property
+  typed lanes can read selected properties and mutate explicit values,
+  keyframes, or expressions, but they cannot add to the Motion Graphics
+  Template, check eligibility, or read back Essential Graphics controller
+  membership. The candidate remains terminal until an approved generated-only
+  Essential Graphics typed contract exists with explicit property binding,
+  eligibility/read-back evidence, reviewed naming policy, semantic
+  verification, cleanup/checkpoint policy, and no raw JSX fallback. No raw JSX,
+  dependency/package change, source-checkout write, user-asset mutation, broad
+  queue run, broad CEP smoke, push, or PR was performed.
 - 2026-06-06: Parent reducer completed the reopened Project
   `tool-project-set-proxies-from-folder` single-candidate review. Source opens
   `Folder.selectDialog`, reads files in the selected folder, maps each file
@@ -728,6 +758,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened Properties Essential Graphics single-candidate re-audit | Required to give `tool-properties-add-properties-to-essential-graphics` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: parent reducer accepted only this candidate in the serial step, verified baton active, clean tracked worktree, canonical ledger id, source SHA, duplicate recipe/registry/live-lane evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 10, all Properties. Closeout validation passed: compact status/proof/ledger-summary, `git diff --check`, `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake`. No JS files were touched, so `node --check` was not required. |
 | Reopened Project set-proxies single-candidate re-audit | Required to give `tool-project-set-proxies-from-folder` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only Project sidecar reviewed the candidate without edits/commits. Parent reducer accepted only `set-proxies-from-folder` in this serial step, verified baton active, clean tracked worktree, canonical ledger id, source SHA, duplicate recipe/registry/live-lane evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 11, all Properties. Closeout validation is recorded in the current handoff. |
 | Reopened Project reveal single-candidate re-audit | Required to give `tool-project-reveal-project-file` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only Project sidecar reviewed the candidate without edits/commits. Parent reducer accepted only `reveal-project-file` in this serial step, verified baton active, clean tracked worktree, canonical ledger id, source SHA, duplicate recipe/registry/live-lane evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue. Stable parent-reducer ticket and ledger annotation were written because the scoped family id was reused from a prior run. Compact ledger map now shows remaining fresh-review backlog 12. Closeout validation is recorded in the current handoff. |
 | Reopened Project proxy-removal single-candidate re-audit | Required to give `tool-project-remove-all-proxies` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only Project sidecars reviewed `tool-project-remove-all-proxies`, `tool-project-reveal-project-file`, and `tool-project-set-proxies-from-folder` without edits/commits. Parent reducer accepted only `remove-all-proxies` in this serial step, verified baton active, clean tracked worktree, canonical ledger id, source SHA, duplicate recipe/registry/live-lane evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 13. Closeout validation is recorded in the current handoff. |
