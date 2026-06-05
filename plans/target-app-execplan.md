@@ -26,6 +26,20 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker Project file-export single-candidate re-audit:
+  `tool-project-export-text-to-file` now has fresh scoped parentReducer review
+  from the reopened run. `codex.cmd login status` confirms ChatGPT auth, the
+  old transfer work-area ledger `liveGate.status` was corrected from stale
+  auth-blocked to CEP preflight unavailable, and scoped retry for
+  `tool-project-export-text-to-file` ran with `--context-percent 20`,
+  `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`,
+  `--no-commit`, and `--compact-json`. No candidate was marked completed:
+  source-exact behavior writes selected-layer text to `~/Desktop/export.txt`,
+  while the current approved typed surface can only read text-layer evidence and
+  has no generated-only file export writer or file policy. Stable
+  candidate-specific runtime ticket and ledger annotation were written.
+  Remaining reopened backlog without fresh parentReducer evidence: 15 entries,
+  Project 4 and Properties 11.
 - [x] Reopened Full Intaker Project render/cleanup first wave:
   `tool-project-add-folder-to-render-queue`,
   `tool-project-clean-render-queue`,
@@ -268,17 +282,15 @@ old `AE_agent` repository remains the historical source.
 Continue the reopened Full Intaker objective. Do not accept
 `completed_no_candidates` or `terminal total=75` as success by itself.
 
-Current compact backlog map after the reopened Project render/cleanup first
-wave: 16 blocked/skipped entries still need scoped review or completion.
-Remaining families are Project 5 and Properties 11. Continue Project 5 next:
-`tool-project-export-text-to-file`,
-`tool-project-manually-render-png-sequence`,
-`tool-project-remove-all-proxies`,
-`tool-project-reveal-project-file`, and
-`tool-project-set-proxies-from-folder`. Keep file IO, render execution,
-proxy mutation, reveal/shell, cleanup/deletion, and user-asset mutation
-approval-gated unless a scoped generated-only/read-only lane is explicitly
-safe.
+Current compact backlog map after the reopened Project file-export
+single-candidate re-audit: 15 blocked/skipped entries still need scoped review
+or completion. Remaining families are Project 4 and Properties 11. Continue
+Project next with `tool-project-manually-render-png-sequence`, then
+`tool-project-remove-all-proxies`, `tool-project-reveal-project-file`, and
+`tool-project-set-proxies-from-folder`. Keep file IO, `saveFrameToPng`, render
+execution, proxy mutation, reveal/shell, cleanup/deletion, and user-asset
+mutation approval-gated unless a scoped generated-only/read-only lane is
+explicitly safe.
 
 Push/PR remain forbidden. Do not run broad/default CEP smoke, Local/Ollama,
 fallback providers, dependency changes, raw JSX copy, source-checkout writes, or
@@ -286,6 +298,16 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-06: Parent reducer completed the reopened Project
+  `tool-project-export-text-to-file` single-candidate review. Source reads the
+  active comp selected layers, extracts `Source Text` for text layers, and
+  writes a Desktop `export.txt` via ExtendScript `File`. A read-only adaptation
+  can inspect selected text-layer evidence, but source-equivalent file export
+  remains terminal until an approved generated-only file export/write contract
+  exists with allowlisted scratch output root, dry-run/confirmation, overwrite
+  policy, post-write read-back/hash verification, and cleanup/rollback. No raw
+  JSX, dependency/package change, source-checkout write, user-asset mutation,
+  broad queue run, broad CEP smoke, push, or PR was performed.
 - 2026-06-06: Parent reducer completed the reopened Project render/cleanup
   first wave. `tool-project-add-folder-to-render-queue` has a feasible safe
   adaptation only for explicit generated Project folders: bind the folder with
@@ -592,6 +614,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened Project file-export single-candidate re-audit | Required to give `tool-project-export-text-to-file` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: parent reducer verified baton active, clean tracked worktree, matching source SHA, no duplicate recipe path/registry id, no raw JSX/dependency/package/source-checkout writes, no child commit/branch, and scoped Full Intaker ticket `live-lane-family-3c126e831e13c3c7`. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 15. Closeout validation is recorded in the current handoff. |
 | Reopened Project render/cleanup first wave | Required to give `tool-project-add-folder-to-render-queue`, `tool-project-clean-render-queue`, `tool-project-clean-selected-folder`, and `tool-project-clean-up-overlord-folder` fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers reviewed three candidates without edits/commits; the `clean-selected-folder` explorer timed out and was closed after parent reducer had source/typed-tool evidence. Parent reducer created the generated-only Project-folder render queue recipe/registry/lane for `add-folder-to-render-queue`, reran the scoped candidate, and recorded live proof blocker `openai-cli/gpt-5.5 is not ready` after non-live validation and read-only CEP preflight passed. The three cleanup candidates remained terminal on missing safe cleanup/delete/filesystem contracts. Stable candidate-specific runtime tickets and ledger annotations were written. Compact ledger map now shows remaining fresh-review backlog 16. Closeout validation is recorded in the current handoff. |
 | Reopened Project metadata-like slice re-audit | Required to give `tool-project-add-selection-to-new-folder`, `tool-project-reset-imported-item-names`, `tool-project-set-all-item-labels-to-none`, `tool-project-toggle-preserve-nested-frame-rate`, and `tool-project-toggle-timecode-and-start-frames` fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers reviewed four candidates without edits/commits; parent reducer reviewed the fifth locally plus exact source checkout files, duplicate recipe/registry/live-lane ids, typed-tool surface, raw JSX/dependency/source-checkout risks, and child commit/branch absence. Scoped commands were run serially with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids <candidate>`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; all five produced terminal tickets with no requeue/open tickets. Stable candidate-specific runtime tickets and ledger annotations were written. Compact ledger map now shows remaining fresh-review backlog 20. Closeout validation is recorded in the current handoff. |
 | Reopened Markers slice re-audit | Required to give `tool-markers-add-markers-at-out-points`, `tool-markers-add-markers-at-work-area`, `tool-markers-copy-composition-markers-to-layer`, and `tool-markers-copy-layer-markers-to-composition` fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers reviewed all four candidates without edits/commits. Parent reducer reviewed source behavior, exact ledger/source paths, duplicate recipe/registry/live-lane ids, existing layer-marker recipes, typed-tool surface, raw JSX/dependency/source-checkout risks, and child commit/branch absence. Scoped commands were run serially with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids <candidate>`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; all four produced terminal tickets with no requeue/open tickets. Stable candidate-specific runtime tickets and ledger annotations were written. Compact ledger map now shows remaining fresh-review backlog 25. Closeout validation passed: JSON parse for ledger/tickets; further closeout checks are recorded in the current handoff. |
