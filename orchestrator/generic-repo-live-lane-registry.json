@@ -464,6 +464,50 @@
       "scope": "generated-only explicit layer metadata proof using set_layer_metadata for comment, label, and locked, plus get_layer_details read-back and semantic verification; scoped ae-scripting retry is limited to tool-nullstoone because importBoujouTracking has file I/O and prop2null has expression/controller semantics"
     },
     {
+      "id": "selected-layer-parent-opacity-expression-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_selected_layers",
+        "get_layer_details",
+        "set_expression"
+      ],
+      "allowedTools": [
+        "get_active_comp",
+        "get_selected_layers",
+        "get_layer_details",
+        "set_expression"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "expressionMutation"
+      ],
+      "candidateIds": [
+        "tool-layers-parent-opacity"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-parent-opacity-expression-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "selected-layer-parent-opacity-expression",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only parent-opacity expression proof using current selected-layer evidence, parent read-back, set_expression on Transform > Opacity, expression read-back, semantic verification, and cleanup; arbitrary layer parenting, unparented-layer mutation, expression deletion, broad property scans, selection persistence, and raw JSX/source semantics remain fail-closed"
+    },
+    {
       "id": "selected-keyframe-layer-marker-generated-only",
       "requiredTools": [
         "get_selected_properties",

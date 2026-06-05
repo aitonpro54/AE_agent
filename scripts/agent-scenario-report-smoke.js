@@ -26,6 +26,7 @@ const {
   agentLayerTransformScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
+  agentParentOpacityExpressionScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentResetWorkAreaScenarioPlans,
   agentRenderQueueScenarioPlans,
@@ -481,6 +482,19 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
     "get_layer_details"
   ]);
   assert.strictEqual(expression.plan.steps[3].args.propertyPath, "ADBE Transform Group.ADBE Position");
+
+  const [parentOpacity] = agentParentOpacityExpressionScenarioPlans("Codex QA AUX105 Fixture");
+  assert.strictEqual(parentOpacity.id, "generated-parent-opacity-expression");
+  assert.strictEqual(parentOpacity.expectedReadBack.generatedParentOpacityExpression, true);
+  assert.deepStrictEqual(parentOpacity.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_camera_with_controller",
+    "get_layer_details",
+    "set_expression",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(parentOpacity.plan.steps[3].args.propertyPath, "ADBE Transform Group.ADBE Opacity");
+  assert.strictEqual(parentOpacity.plan.steps[3].resultBindings.layerIndex, "{{steps.2.cameraLayer.index}}");
 
   const [compProperties] = agentCompPropertiesScenarioPlans("Codex QA AUX061 Fixture");
   assert.strictEqual(compProperties.id, "generated-comp-properties-work-area");

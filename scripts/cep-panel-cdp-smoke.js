@@ -24,6 +24,7 @@ const {
   agentMaskSafetyScenarioPlans,
   agentMarkerLifecycleScenarioPlans,
   agentNewToolsScenarioPlans,
+  agentParentOpacityExpressionScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
@@ -388,6 +389,24 @@ function openAiCliExpressionScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_EXPRESSION_PREFIX || "Codex QA AUX061",
     scenarioFactory: agentExpressionScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliParentOpacityExpressionScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-parent-opacity-expression",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_PARENT_OPACITY_PREFIX || "Codex QA AUX105",
+    scenarioFactory: agentParentOpacityExpressionScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -5040,6 +5059,57 @@ async function verifyGeneratedCameraControllerReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedParentOpacityExpressionReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const child = layers.find((layer) => layer.name === expected.cameraName);
+  const controller = layers.find((layer) => layer.name === expected.controllerName);
+  if (!child || !controller) {
+    throw new Error(`${scenario.id}: generated parent-opacity child/controller layers were not found by read-back.`);
+  }
+  const details = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: child.index,
+    includeProperties: true,
+    propertyDepth: 2,
+    propertyLimit: 80,
+    includeValues: true,
+    includeExpressions: true
+  });
+  const parent = details.layer && details.layer.parent ? details.layer.parent : {};
+  if (parent.name !== expected.controllerName) {
+    throw new Error(`${scenario.id}: parent-opacity parent mismatch; expected ${expected.controllerName}, got ${parent.name || "none"}.`);
+  }
+  const property = findPropertyInTree(details.propertyTree || [], expected.propertyPath);
+  if (!property) {
+    throw new Error(`${scenario.id}: parent-opacity property was not found by read-back.`);
+  }
+  if (property.expression !== expected.expression) {
+    throw new Error(`${scenario.id}: parent-opacity expression mismatch; expected ${expected.expression}, got ${property.expression || "empty"}.`);
+  }
+  if (property.expressionEnabled !== true) {
+    throw new Error(`${scenario.id}: parent-opacity expression was not enabled by read-back.`);
+  }
+  if (property.expressionError) {
+    throw new Error(`${scenario.id}: parent-opacity expression reported an error: ${property.expressionError}.`);
+  }
+  return {
+    ok: true,
+    comp: { itemIndex: compMatch.itemIndex, name: compMatch.name },
+    child: { index: child.index, name: child.name, parent: parent.name },
+    property: {
+      path: expected.propertyPath,
+      expression: property.expression,
+      expressionEnabled: property.expressionEnabled === true
+    }
+  };
+}
+
 async function verifyGeneratedOnionSkinningReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const comp = await callBridgeTool("get_comp_details", {
@@ -5663,6 +5733,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedCameraController) {
     return verifyGeneratedCameraControllerReadBack(scenario, expected);
+  }
+
+  if (expected.generatedParentOpacityExpression) {
+    return verifyGeneratedParentOpacityExpressionReadBack(scenario, expected);
   }
 
   if (expected.generatedOnionSkinning) {
@@ -6360,6 +6434,10 @@ async function main() {
   }
   if (command === "agent-expression-openai-cli-smoke" || command === "full-ui-agent-expression-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliExpressionScenarioConfig());
+    return;
+  }
+  if (command === "agent-parent-opacity-expression-openai-cli-smoke" || command === "full-ui-agent-parent-opacity-expression-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliParentOpacityExpressionScenarioConfig());
     return;
   }
   if (command === "agent-comp-properties-openai-cli-smoke" || command === "full-ui-agent-comp-properties-openai-cli-smoke") {
