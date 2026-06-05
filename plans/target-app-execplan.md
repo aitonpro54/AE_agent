@@ -26,6 +26,20 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker Project set-proxies single-candidate re-audit:
+  `tool-project-set-proxies-from-folder` now has fresh scoped parentReducer
+  review from the reopened run. Parent reducer accepted only this candidate in
+  the serial step. Scoped retry ran with `--context-percent 20`, `--max-items
+  1`, exact canonical candidate id, `--allow-self-improvement-lane-synthesis`,
+  `--no-commit`, and `--compact-json`; it produced terminal ticket
+  `live-lane-family-d77293c17fb99933`, no open tickets, and no requeue. No
+  candidate was marked completed: source-exact behavior opens
+  `Folder.selectDialog`, reads files from the selected folder, matches file
+  stems to `CompItem.name`, and calls `comp.setProxy(File)`, while current
+  typed tools have no proxy set/read-back contract or generated proxy file
+  sandbox. Stable candidate-specific runtime ticket and ledger annotation were
+  written. Project family is now fully fresh-reviewed; remaining reopened
+  backlog without fresh parentReducer evidence: 11 Properties entries.
 - [x] Reopened Full Intaker Project reveal single-candidate re-audit:
   `tool-project-reveal-project-file` now has fresh scoped parentReducer review
   from the reopened run. Parent reducer accepted only this candidate in the
@@ -327,13 +341,16 @@ old `AE_agent` repository remains the historical source.
 Continue the reopened Full Intaker objective. Do not accept
 `completed_no_candidates` or `terminal total=75` as success by itself.
 
-Current compact backlog map after the reopened Project reveal
-single-candidate re-audit: 12 blocked/skipped entries still need scoped review
-or completion. Remaining families are Project 1 and Properties 11. Continue
-Project next with `tool-project-set-proxies-from-folder`. Keep file IO,
-`saveFrameToPng`, render execution, proxy mutation, reveal/shell,
-cleanup/deletion, and user-asset mutation approval-gated unless a scoped
-generated-only/read-only lane is explicitly safe.
+Current compact backlog map after the reopened Project set-proxies
+single-candidate re-audit: 11 blocked/skipped entries still need scoped review
+or completion. Remaining family is Properties 11. Continue Properties next with
+the narrowest scoped family, starting from
+`tool-properties-add-properties-to-essential-graphics` unless a compact backlog
+map identifies a safer first slice. Keep file IO, `saveFrameToPng`, render
+execution, proxy mutation, reveal/shell, cleanup/deletion, selected-property
+mutation, puppet/path mutation, Essential Graphics writes, and user-asset
+mutation approval-gated unless a scoped generated-only/read-only lane is
+explicitly safe.
 
 Push/PR remain forbidden. Do not run broad/default CEP smoke, Local/Ollama,
 fallback providers, dependency changes, raw JSX copy, source-checkout writes, or
@@ -341,6 +358,20 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-06: Parent reducer completed the reopened Project
+  `tool-project-set-proxies-from-folder` single-candidate review. Source opens
+  `Folder.selectDialog`, reads files in the selected folder, maps each file
+  display-name stem to `fsName`, iterates all project items, and calls
+  `CompItem.setProxy(File)` for matching comps. Existing project-item and
+  render-queue tools do not expose `useProxy`/proxy source read-back or
+  proxy set/clear mutation, and `replace_layer_source` is not equivalent to
+  Project/CompItem proxy assignment. The candidate remains terminal until an
+  approved generated-only project item proxy contract exists with sandboxed
+  generated proxy files, explicit generated comp targets, proxy set/read-back
+  operations, dry-run/checkpoint and cleanup/rollback policy, semantic
+  verification for name-to-proxy matching, and no raw JSX fallback. No raw JSX,
+  dependency/package change, source-checkout write, user-asset mutation, broad
+  queue run, broad CEP smoke, push, or PR was performed.
 - 2026-06-06: Parent reducer completed the reopened Project
   `tool-project-reveal-project-file` single-candidate review. Source accesses
   `app.project.file.parent` and calls `Folder.execute()` to reveal/open the
@@ -697,6 +728,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened Project set-proxies single-candidate re-audit | Required to give `tool-project-set-proxies-from-folder` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only Project sidecar reviewed the candidate without edits/commits. Parent reducer accepted only `set-proxies-from-folder` in this serial step, verified baton active, clean tracked worktree, canonical ledger id, source SHA, duplicate recipe/registry/live-lane evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 11, all Properties. Closeout validation is recorded in the current handoff. |
 | Reopened Project reveal single-candidate re-audit | Required to give `tool-project-reveal-project-file` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only Project sidecar reviewed the candidate without edits/commits. Parent reducer accepted only `reveal-project-file` in this serial step, verified baton active, clean tracked worktree, canonical ledger id, source SHA, duplicate recipe/registry/live-lane evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue. Stable parent-reducer ticket and ledger annotation were written because the scoped family id was reused from a prior run. Compact ledger map now shows remaining fresh-review backlog 12. Closeout validation is recorded in the current handoff. |
 | Reopened Project proxy-removal single-candidate re-audit | Required to give `tool-project-remove-all-proxies` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only Project sidecars reviewed `tool-project-remove-all-proxies`, `tool-project-reveal-project-file`, and `tool-project-set-proxies-from-folder` without edits/commits. Parent reducer accepted only `remove-all-proxies` in this serial step, verified baton active, clean tracked worktree, canonical ledger id, source SHA, duplicate recipe/registry/live-lane evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 13. Closeout validation is recorded in the current handoff. |
 | Reopened Project PNG sequence single-candidate re-audit | Required to give `tool-project-manually-render-png-sequence` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only Project sidecars reviewed all remaining Project 4 candidates without edits/commits. Parent reducer accepted only the PNG sequence candidate in this serial step, verified baton active, clean tracked worktree, canonical ledger id, source SHA, duplicate recipe/registry/live-lane evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 14. Closeout validation is recorded in the current handoff. |
