@@ -26,6 +26,20 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker Project reveal single-candidate re-audit:
+  `tool-project-reveal-project-file` now has fresh scoped parentReducer review
+  from the reopened run. Parent reducer accepted only this candidate in the
+  serial step. Scoped retry ran with `--context-percent 20`, `--max-items 1`,
+  exact canonical candidate id, `--allow-self-improvement-lane-synthesis`,
+  `--no-commit`, and `--compact-json`; it produced terminal ticket
+  `live-lane-family-551e17bd389140b6`, no open tickets, and no requeue. No
+  candidate was marked completed: source-exact behavior calls
+  `app.project.file.parent.execute()` to open Finder/Explorer, while
+  `get_project_info` only provides read-only path evidence and is not an
+  equivalent reveal/open-folder lane. Stable candidate-specific runtime ticket
+  and ledger annotation were written because the generic live-lane family id can
+  be reused across scoped retries. Remaining reopened backlog without fresh
+  parentReducer evidence: 12 entries, Project 1 and Properties 11.
 - [x] Reopened Full Intaker Project proxy-removal single-candidate re-audit:
   `tool-project-remove-all-proxies` now has fresh scoped parentReducer review
   from the reopened run. Proposal-only Project sidecars reviewed the remaining
@@ -313,14 +327,13 @@ old `AE_agent` repository remains the historical source.
 Continue the reopened Full Intaker objective. Do not accept
 `completed_no_candidates` or `terminal total=75` as success by itself.
 
-Current compact backlog map after the reopened Project proxy-removal
-single-candidate re-audit: 13 blocked/skipped entries still need scoped review
-or completion. Remaining families are Project 2 and Properties 11. Continue
-Project next with `tool-project-reveal-project-file`, then
-`tool-project-set-proxies-from-folder`. Keep file IO, `saveFrameToPng`, render
-execution, proxy mutation, reveal/shell, cleanup/deletion, and user-asset
-mutation approval-gated unless a scoped generated-only/read-only lane is
-explicitly safe.
+Current compact backlog map after the reopened Project reveal
+single-candidate re-audit: 12 blocked/skipped entries still need scoped review
+or completion. Remaining families are Project 1 and Properties 11. Continue
+Project next with `tool-project-set-proxies-from-folder`. Keep file IO,
+`saveFrameToPng`, render execution, proxy mutation, reveal/shell,
+cleanup/deletion, and user-asset mutation approval-gated unless a scoped
+generated-only/read-only lane is explicitly safe.
 
 Push/PR remain forbidden. Do not run broad/default CEP smoke, Local/Ollama,
 fallback providers, dependency changes, raw JSX copy, source-checkout writes, or
@@ -328,6 +341,19 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-06: Parent reducer completed the reopened Project
+  `tool-project-reveal-project-file` single-candidate review. Source accesses
+  `app.project.file.parent` and calls `Folder.execute()` to reveal/open the
+  saved project file location in Finder or Explorer, with alert fallback on
+  failure. Existing `get_project_info` can report the project file path but is
+  read-only and not equivalent to source-exact OS reveal behavior. The
+  candidate remains terminal until an approved reveal/open-folder typed contract
+  exists with saved generated project fixture or explicit safe project file
+  policy, dry-run/read-back mode, shell launch disabled by default, explicit
+  reveal/shell approval, OS-specific behavior handling, semantic verification,
+  and no raw JSX fallback. No raw JSX, dependency/package change,
+  source-checkout write, user-asset mutation, broad queue run, broad CEP smoke,
+  push, or PR was performed.
 - 2026-06-06: Parent reducer completed the reopened Project
   `tool-project-remove-all-proxies` single-candidate review. Source iterates
   all `app.project` items, checks `CompItem.useProxy`, and calls
@@ -671,6 +697,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened Project reveal single-candidate re-audit | Required to give `tool-project-reveal-project-file` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only Project sidecar reviewed the candidate without edits/commits. Parent reducer accepted only `reveal-project-file` in this serial step, verified baton active, clean tracked worktree, canonical ledger id, source SHA, duplicate recipe/registry/live-lane evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue. Stable parent-reducer ticket and ledger annotation were written because the scoped family id was reused from a prior run. Compact ledger map now shows remaining fresh-review backlog 12. Closeout validation is recorded in the current handoff. |
 | Reopened Project proxy-removal single-candidate re-audit | Required to give `tool-project-remove-all-proxies` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only Project sidecars reviewed `tool-project-remove-all-proxies`, `tool-project-reveal-project-file`, and `tool-project-set-proxies-from-folder` without edits/commits. Parent reducer accepted only `remove-all-proxies` in this serial step, verified baton active, clean tracked worktree, canonical ledger id, source SHA, duplicate recipe/registry/live-lane evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 13. Closeout validation is recorded in the current handoff. |
 | Reopened Project PNG sequence single-candidate re-audit | Required to give `tool-project-manually-render-png-sequence` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only Project sidecars reviewed all remaining Project 4 candidates without edits/commits. Parent reducer accepted only the PNG sequence candidate in this serial step, verified baton active, clean tracked worktree, canonical ledger id, source SHA, duplicate recipe/registry/live-lane evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 14. Closeout validation is recorded in the current handoff. |
 | Reopened Project file-export single-candidate re-audit | Required to give `tool-project-export-text-to-file` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: parent reducer verified baton active, clean tracked worktree, matching source SHA, no duplicate recipe path/registry id, no raw JSX/dependency/package/source-checkout writes, no child commit/branch, and scoped Full Intaker ticket `live-lane-family-3c126e831e13c3c7`. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 15. Closeout validation is recorded in the current handoff. |
