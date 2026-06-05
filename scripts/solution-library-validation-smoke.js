@@ -96,7 +96,8 @@ const IMPORTED_ADVISORY_IDS = [
   "rename-selected-project-items-typed-plan",
   "add-comment-to-selected-layers-typed-plan",
   "unlock-all-layers-typed-plan",
-  "set-all-layer-labels-to-none-typed-plan"
+  "set-all-layer-labels-to-none-typed-plan",
+  "milliseconds-to-frames-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -415,6 +416,19 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /Layer\.label typed-tool gap/.test(item)), `${id}: verification must require Layer.label gap evidence.`);
       assert(solution.notes.some((note) => /selection/.test(note)), `${id}: notes must forbid substituting selection side effects.`);
       assert(solution.promotionHistory.some((entry) => /Set_All_Layer_Labels_To_None/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "milliseconds-to-frames-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp"],
+        `${id}: imported milliseconds-to-frames workflow should stay read-only and use active comp only for frame-rate evidence.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: current milliseconds-to-frames adaptation must remain read-only.`);
+      assert(text.includes("exactFrames = milliseconds * frameRate / 1000"), `${id}: recipe should preserve the conversion formula.`);
+      assert(text.includes("roundingMode"), `${id}: recipe should require an explicit rounding policy.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_active_comp/.test(step)), `${id}: verification must mention optional active-comp frame-rate evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /reportedFrames/.test(item)), `${id}: verification must require reported frame evidence.`);
+      assert(solution.notes.some((note) => /Do not infer frame rate/.test(note)), `${id}: notes must forbid guessed frame rates.`);
+      assert(solution.promotionHistory.some((entry) => /Milliseconds_To_Frames/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else if (id === "append-to-layer-name-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,

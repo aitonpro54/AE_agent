@@ -11517,6 +11517,114 @@
         "Do not infer target layers or label state from screenshots, prior chat context, layer names, visual order, source names, or unavailable source-script state.",
         "A future mutating variant requires a separately accepted Layer.label writer/read-back typed tool, explicit dry-run evidence, confirmation, checkpoint/edit-session protection, and post-mutation read-back."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "milliseconds-to-frames-typed-plan",
+      "title": "Milliseconds To Frames Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "time",
+        "frames",
+        "milliseconds",
+        "frame-rate",
+        "utility",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "read-only"
+      ],
+      "intent": {
+        "summary": "Convert reviewed milliseconds into frame units with an explicit frame rate and rounding policy without mutating the project.",
+        "appliesWhen": [
+          "The user asks to convert milliseconds to frames, ms to frames, or a millisecond duration to a frame count.",
+          "The frame rate is explicitly provided or can be read from the active composition before the calculation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "milliseconds",
+          "type": "number",
+          "required": true,
+          "description": "Finite millisecond duration or reviewed signed offset to convert."
+        },
+        {
+          "name": "frameRate",
+          "type": "number",
+          "required": true,
+          "description": "Finite positive frames-per-second value, provided by the user or read from active comp evidence."
+        },
+        {
+          "name": "roundingMode",
+          "type": "string",
+          "required": true,
+          "description": "Reviewed output policy: exact, round, floor, or ceil."
+        }
+      ],
+      "targetAssumptions": [
+        "The request is a read-only arithmetic utility and does not require modifying layers, keyframes, comps, render queue items, project items, or files.",
+        "The conversion formula is exactFrames = milliseconds * frameRate / 1000.",
+        "A current active comp may provide frameRate evidence, but screenshots, prior chat context, UI defaults, render settings, and unavailable source-script state are not sufficient.",
+        "Drop-frame timecode, feet+frames, frame numbering offsets, comp start-frame offsets, display-start-time offsets, retiming, and exact source UI semantics remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/milliseconds-to-frames-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Confirm finite milliseconds, finite positive frameRate, explicit roundingMode, and the arithmetic result without project mutation.",
+        "steps": [
+          "Bind reviewed milliseconds and frameRate values, using get_active_comp only when active-comp frame rate evidence is requested.",
+          "Compute exactFrames = milliseconds * frameRate / 1000.",
+          "Apply the reviewed roundingMode to produce reportedFrames.",
+          "Report unsupported drop-frame timecode, offsets, retiming, mutation, and exact source UI semantics as typed-tool gaps."
+        ],
+        "expectedEvidence": [
+          "The calculation evidence lists milliseconds, frameRate, roundingMode, exactFrames, and reportedFrames.",
+          "If frameRate came from After Effects, get_active_comp evidence identifies the active comp and frame rate.",
+          "Layers, properties, keyframes, expressions, comp settings, render queue items, project items, selection state, and project files are preserved.",
+          "Unsupported drop-frame timecode, offsets, retiming, mutation, and exact source UI semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-utilities-milliseconds-to-frames generic repository importer as advisory read-only utility coverage.",
+          "The detached child worktree did not contain Utilities/Milliseconds_To_Frames.jsx, so scope came from the child-run wrapper, candidate name, read-only active-comp frame-rate evidence, and fail-closed arithmetic semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-04",
+          "from": "generic-repo-importer-tool-utilities-milliseconds-to-frames",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the milliseconds-to-frames calculation intent behind Utilities/Milliseconds_To_Frames.jsx into read-only typed utility guidance; no source JSX copied. The recipe requires finite milliseconds, finite positive frameRate, explicit roundingMode, formula disclosure, and optional get_active_comp evidence when deriving frameRate from the active comp. Drop-frame timecode, feet+frames, frame numbering offsets, comp start-frame offsets, display-start-time offsets, keyframe edits, layer timing edits, comp frame-rate mutation, render queue changes, raw JSX, and exact source UI semantics require separate typed-tool contracts; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation and must not mutate project state for this utility conversion.",
+        "Use get_active_comp only when the user asks to use the active comp frame rate; otherwise require an explicit frameRate input.",
+        "Do not infer frame rate from screenshots, prior chat context, UI defaults, render settings, footage interpretation, or unavailable source-script state.",
+        "Do not use this recipe for timecode parsing, frame-to-time conversion, retiming, marker placement, keyframe generation, layer trimming, work-area changes, comp frame-rate edits, or raw ExtendScript."
+      ]
     }
   ]
 }

@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-utilities-milliseconds-to-frames: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-utilities-milliseconds-to-frames); live gate not_required, importer batch full-intake-kyletmartinez-9262ba748d-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-layers-set-all-layer-labels-to-none: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-set-all-layer-labels-to-none); live gate ready, importer batch full-intake-kyletmartinez-11ee5a3609-import, commit recorded after candidate commit.
 
 - 2026-06-04: Запущен guarded Full Intaker triage-75 longrun с
@@ -85,6 +87,13 @@ old `AE_agent` repository remains the historical source.
   `Layer.label` set-all-labels-to-None request as a read-only
   generic-importer advisory recipe and registry entry. Actual label mutation
   remains fail-closed until a reviewed typed writer/read-back contract exists.
+- 2026-06-04: AUX-021 child batch
+  `tool-utilities-milliseconds-to-frames` imported the
+  `Utilities/Milliseconds_To_Frames.jsx` request as a read-only
+  milliseconds-to-frames utility recipe and registry entry. The safe adaptation
+  requires finite milliseconds, finite positive frame rate, explicit rounding
+  policy, and optional active-comp frame-rate evidence; project mutation and
+  exact source UI semantics remain fail-closed.
 
 ## Guardrails
 
@@ -106,6 +115,8 @@ still has a terminal unresolved lane ticket; do not retry it without a separate
 scoped fix. Push remains forbidden unless separately requested.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `Utilities/Milliseconds_To_Frames.jsx` as `tool-utilities-milliseconds-to-frames`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-utilities-milliseconds-to-frames).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Layers/Set_All_Layer_Labels_To_None.jsx` as `tool-layers-set-all-layer-labels-to-none`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-set-all-layer-labels-to-none).
 
@@ -189,8 +200,14 @@ scoped fix. Push remains forbidden unless separately requested.
   Post-validation normalized the imported advisory `activeComp` inputs for
   `unlock-all-layers-typed-plan` and
   `set-all-layer-labels-to-none-typed-plan` from `composition` to `comp`.
+- 2026-06-04: `tool-utilities-milliseconds-to-frames` is represented as a
+  read-only arithmetic utility, not an AE mutator. `get_active_comp` is
+  advisory only when the user asks to derive frame rate from the active
+  composition; otherwise frame rate must be explicit.
 
 ## Validation
+
+| Full intake tool-utilities-milliseconds-to-frames | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `not_required`, batch `full-intake-kyletmartinez-9262ba748d-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-layers-set-all-layer-labels-to-none | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-11ee5a3609-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
@@ -281,6 +298,11 @@ scoped fix. Push remains forbidden unless separately requested.
   solution-library validation, semantic verification, and any future live
   acceptance lane. A local JSON parse sanity check of `registry/solutions.json`
   returned `json-ok`.
+- AUX-021 child batch `tool-utilities-milliseconds-to-frames`: validation
+  intentionally not run in the detached child worktree because the child-run
+  intent forbids validation runs. Parent importer owns registry validation,
+  solution-library validation, semantic verification, and any future live
+  acceptance lane.
 
 ## Handoff
 
