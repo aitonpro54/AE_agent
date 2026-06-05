@@ -26,6 +26,12 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intaker backlog final compact audit: scoped retry for
+  `tool-compositions-transfer-composition-work-area` with `--max-items 1`,
+  `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, and
+  conservative CLI `--context-percent 20` found no open resolution tickets and
+  no runnable candidates. Compact ledger summary confirms all 75 triage entries
+  are terminal: 17 completed and 58 blocked/skipped, with 0 queued and 0 failed.
 - [x] Full intake compositions work-area slice: parent reducer completed
   proposal-only review for `tool-compositions-set-work-area-to-markers` and
   `tool-compositions-transfer-composition-work-area`, prepared a scoped
@@ -114,25 +120,32 @@ old `AE_agent` repository remains the historical source.
 
 ## Next Milestone
 
-Current stop condition: `tool-compositions-transfer-composition-work-area` has a
-prepared scoped typed-plan/lane, but generated-only OpenAI CLI proof failed
-because `openai-cli/gpt-5.5` is not authenticated in this environment. Human
-action required: run `codex login` and sign in with ChatGPT before retrying the
-scoped lane. After login, continue only from compact state (`.codex/handoff.md`,
-this plan, compact Full Intaker status/proof, and summary triage ledger), keep
-the target repo clean, and rerun only
-`tool-compositions-transfer-composition-work-area` with `--max-items 1` and
-`--resolution-candidate-ids`.
+No remaining Full Intaker backlog milestone is currently defined for
+`full-intake-kyletmartinez`: compact status is `completed_no_candidates`, compact
+ledger summary reports all 75 entries terminal, and the scoped transfer retry
+has no open ticket to process. Future intake work should start only from a new
+reviewed typed-tool contract or an explicitly reopened terminal ticket.
 
 Do not retry `tool-compositions-set-work-area-to-markers` until a narrow
 composition-marker read contract exists for ordered `comp.markerProperty`
-`keyTime(1/2)` evidence plus generated-only read-back. Candidate
+`keyTime(1/2)` evidence plus generated-only read-back. Do not retry
+`tool-compositions-transfer-composition-work-area` unless its terminal ticket is
+explicitly reopened after a successful OpenAI CLI auth review. Candidate
 `tool-layers-reset-selected-layer-labels` still has a terminal unresolved lane
 ticket; do not retry it without a separate scoped fix. Push remains forbidden
 unless separately requested.
 
 ## Decision Log
 
+- 2026-06-05: Final compact Full Intaker audit for `full-intake-kyletmartinez`
+  ran only the scoped transfer candidate retry after confirming clean HEAD
+  `91d812f3e96dd7bedd6d292587e8bbd97d39d579`. The first retry stopped at
+  `resume_only_context_budget` because Codex CLI has no UI context meter; the
+  second retry used conservative `--context-percent 20` and returned
+  `completed_no_candidates` with one terminal resolution ticket and no open
+  tickets. Parent reducer accepted this as queue exhaustion evidence rather
+  than broad-running the queue: compact ledger totals are 75 terminal entries,
+  17 completed, 58 blocked/skipped, 0 queued, and 0 failed.
 - 2026-06-05: Parent reducer reviewed the `compositions-work-area-generated-only`
   family. `tool-compositions-set-work-area-to-markers` remains terminal
   unresolved because the source derives work area from composition marker
@@ -243,6 +256,7 @@ unless separately requested.
 
 ## Validation
 
+| Full Intaker backlog final compact audit | Required to prove the remaining queue is exhausted without a broad queue run, while respecting scoped `max-items 1` retry rules and terminal-ticket handling. | Passed: `git rev-parse HEAD` confirmed `91d812f3e96dd7bedd6d292587e8bbd97d39d579`; `git status --short` was clean before the audit; scoped retry without context percent stopped as `resume_only_context_budget`; scoped retry with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids tool-compositions-transfer-composition-work-area`, and `--allow-self-improvement-lane-synthesis` returned `completed_no_candidates`; compact status returned `completed_no_candidates`; compact proof returned status `completed_no_candidates` with `changedPathCount: 0` and `unplannedPathCount: 0`; ledger summary returned entries=75, completed=17, blocked/skipped=58, queued=0, failed=0, terminal total=75. No broad queue, Local/Ollama, fallback provider, live mutation, dependency/package change, broad/default CEP smoke, push, PR, or GitHub automation was performed. |
 | Full intake compositions work-area transfer lane-prep | Required to review the scoped compositions work-area family, add only a bounded transfer typed-plan/lane path, and let Full Intaker decide whether the candidate can requeue. | Passed: `node --check scripts/solution-library-validation-smoke.js`, JSON parse for `registry/solutions.json`, JSON parse for `orchestrator/generic-repo-live-lane-registry.json`, `npm.cmd run smoke:solutions`, `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` (Windows line-ending warnings only). Scoped Full Intaker command for `tool-compositions-transfer-composition-work-area` ran with `--max-items 1`, `--resolution-candidate-ids`, and `--allow-self-improvement-lane-synthesis`; non-live lane checks and read-only CEP preflight passed, but live proof failed on OpenAI CLI auth (`Run codex login and sign in with ChatGPT before using OpenAI CLI`). No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad/default CEP smoke, push, PR, or GitHub automation was performed. |
 | Full intake tool-utilities-alert-selected-layer-index | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `not_required`, batch `full-intake-kyletmartinez-9eb1db003f-import`, live rerun `not_required`. Parent recovery added `recipes/alert-selected-layer-index-typed-plan.md`, `recipes/generic-repo-intake/tool-utilities-alert-selected-layer-index.md`, registry coverage, and `scripts/solution-library-validation-smoke.js` assertions after the child worktree produced no changes. Validation passed: `node --check scripts/solution-library-validation-smoke.js`, JSON parse for `registry/solutions.json`, `npm.cmd run smoke:solutions`, `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` (line-ending warnings only). No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 | Full intake tool-utilities-milliseconds-to-frames | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `not_required`, batch `full-intake-kyletmartinez-9262ba748d-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
