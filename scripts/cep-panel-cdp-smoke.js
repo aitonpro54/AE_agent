@@ -4631,10 +4631,12 @@ async function verifyGeneratedRenderQueueReadBack(scenario, expected) {
     throw new Error(`${scenario.id}: generated render queue item for ${expected.compName} was not found by read-back.`);
   }
   const outputPath = renderQueueOutputPath(item);
-  const normalizedOutput = outputPath.replace(/\\/g, "/");
-  const normalizedExpected = String(expected.outputPath || "").replace(/\\/g, "/");
-  if (!normalizedOutput.endsWith(normalizedExpected)) {
-    throw new Error(`${scenario.id}: generated render queue output mismatch; expected suffix ${normalizedExpected}, got ${outputPath || "empty output path"}.`);
+  if (expected.outputPath) {
+    const normalizedOutput = outputPath.replace(/\\/g, "/");
+    const normalizedExpected = String(expected.outputPath || "").replace(/\\/g, "/");
+    if (!normalizedOutput.endsWith(normalizedExpected)) {
+      throw new Error(`${scenario.id}: generated render queue output mismatch; expected suffix ${normalizedExpected}, got ${outputPath || "empty output path"}.`);
+    }
   }
   return {
     ok: true,

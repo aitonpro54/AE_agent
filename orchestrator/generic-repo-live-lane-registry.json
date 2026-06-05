@@ -309,7 +309,6 @@
       "id": "render-queue-generated-only",
       "requiredTools": [
         "add_comp_to_render_queue",
-        "set_render_queue_output",
         "get_render_queue_status"
       ],
       "allowedTools": [
@@ -318,14 +317,21 @@
         "create_test_comp",
         "get_project_info",
         "get_render_queue_status",
-        "set_render_queue_output"
+        "set_render_queue_output",
+        "create_project_folder",
+        "move_project_items_to_folder",
+        "find_project_items",
+        "list_project_folder_items",
+        "get_comp_details"
       ],
       "allowedUnsafeSignals": [
-        "usesRenderQueue"
+        "usesRenderQueue",
+        "usesFileIo"
       ],
       "candidateIds": [
         "tool-project-add-labeled-items-to-render-queue",
-        "tool-project-add-selected-compositions-to-render-queue"
+        "tool-project-add-selected-compositions-to-render-queue",
+        "tool-project-add-folder-to-render-queue"
       ],
       "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-render-queue-openai-cli-smoke",
       "providerPath": "openai-cli",
@@ -341,7 +347,11 @@
         "scripts/agent-scenario-fixtures.js",
         "scripts/agent-scenario-report-smoke.js",
         "scripts/cep-panel-cdp-smoke.js",
-        "scripts/sdk-generic-repo-full-intake-smoke.js"
+        "scripts/sdk-generic-repo-full-intake-smoke.js",
+        "recipes/add-folder-to-render-queue-typed-plan.md",
+        "recipes/generic-repo-intake/tool-project-add-folder-to-render-queue.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js"
       ],
       "nonLiveValidationCommands": [
         "node --check orchestrator/run-generic-repo-full-intake.mjs",
@@ -351,10 +361,11 @@
         "node --check scripts/sdk-generic-repo-full-intake-smoke.js",
         "node scripts/agent-scenario-report-smoke.js",
         "node scripts/semantic-verification-smoke.js",
-        "node scripts/sdk-generic-repo-full-intake-smoke.js"
+        "node scripts/sdk-generic-repo-full-intake-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
       ],
       "reclassifiedClassification": "existing_typed_tools_recipe_only",
-      "scope": "generated-only render queue setup proof using add_comp_to_render_queue, set_render_queue_output, get_render_queue_status, semantic verification, and generated-prefix cleanup; no render start, non-generated comps, arbitrary output templates, user render queue mutation, or raw JSX/source semantics are covered"
+      "scope": "generated-only render queue setup proof using explicit generated Project folder content read-back, add_comp_to_render_queue, get_render_queue_status, semantic verification, and generated-prefix cleanup; no render start, output file generation, non-generated comps, Project panel selection, filesystem folder traversal, user render queue cleanup, or raw JSX/source semantics are covered"
     },
     {
       "id": "selected-property-keyframe-generated-only",

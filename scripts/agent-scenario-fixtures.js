@@ -210,34 +210,37 @@ function agentScenarioPlans(runPrefix, renderQueueBaselineTotal) {
 
 function agentRenderQueueScenarioPlans(runPrefix, renderQueueBaselineTotal) {
   const renderBase = `${runPrefix} Render Queue`;
+  const folderName = `${renderBase} Folder`;
   const renderIndex = Number(renderQueueBaselineTotal || 0) + 1;
-  const renderOutput = `logs/${safeOutputName(renderBase)}.mp4`;
-  const renderOutputUpdated = `logs/${safeOutputName(renderBase)}-updated.mp4`;
 
   return [
     {
       id: "generated-render-queue-setup",
       cleanupPrefix: renderBase,
       expectedTools: [
-        "create_test_comp",
+        "create_project_folder",
+        "create_comp",
+        "move_project_items_to_folder",
+        "list_project_folder_items",
         "add_comp_to_render_queue",
-        "set_render_queue_output",
         "get_render_queue_status"
       ],
       expectedReadBack: {
         generatedRenderQueue: true,
+        folderName,
         compName: renderBase,
-        renderQueueItemIndex: renderIndex,
-        outputPath: renderOutputUpdated
+        renderQueueItemIndex: renderIndex
       },
       plan: {
-        summary: "AUX-098 generated-only live QA for render queue setup without starting a render.",
+        summary: "AUX-098 generated-only live QA for explicit Project folder to render queue setup without starting a render.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated render queue comp", tool: "create_test_comp", args: { name: renderBase, width: 640, height: 360, duration: 2, frameRate: 24, openInViewer: false } },
-          { title: "Add generated comp to render queue", tool: "add_comp_to_render_queue", args: { compName: renderBase, outputPath: renderOutput } },
-          { title: "Update generated render queue output", tool: "set_render_queue_output", args: { renderQueueItemIndex: renderIndex, outputPath: renderOutputUpdated } },
+          { title: "Create generated render queue folder", tool: "create_project_folder", args: { name: folderName, allowExisting: false } },
+          { title: "Create generated render queue comp", tool: "create_comp", args: { name: renderBase, width: 640, height: 360, pixelAspect: 1, duration: 2, frameRate: 24, bgColor: [0.08, 0.1, 0.12], allowDuplicateName: false, openInViewer: false, comment: "AUX-098 generated-only render queue validation" } },
+          { title: "Move generated comp into generated render queue folder", tool: "move_project_items_to_folder", args: { targetFolderName: folderName }, resultBindings: { itemIndices: "{{steps.2.itemIndex}}" } },
+          { title: "List generated render queue folder contents", tool: "list_project_folder_items", args: { folderName, recursive: true, type: "comp", limit: 10 } },
+          { title: "Add generated folder comp to render queue", tool: "add_comp_to_render_queue", args: { compName: renderBase } },
           { title: "Read generated render queue status", tool: "get_render_queue_status", args: { limit: renderIndex + 3 } }
         ]
       }

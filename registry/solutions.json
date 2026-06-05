@@ -6347,6 +6347,122 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "add-folder-to-render-queue-typed-plan",
+      "title": "Add Folder To Render Queue Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "project",
+        "project-item",
+        "project-folder",
+        "composition",
+        "generated-composition",
+        "render-queue",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Add generated composition project items from one explicit generated Project folder to the render queue using list_project_folder_items, add_comp_to_render_queue, optional set_render_queue_output, and render queue read-back.",
+        "appliesWhen": [
+          "The user asks to add a Project folder to the render queue or queue generated comps from a folder.",
+          "The source selected-folder intent can be safely adapted to one explicit generated Project folder; current typed tools do not expose Project panel selected folder state."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetFolder",
+          "type": "project-folder-or-root",
+          "required": true,
+          "description": "Concrete generated Project folder name or 1-based folder item index proven by current typed project evidence before mutation."
+        },
+        {
+          "name": "outputSettings",
+          "type": "object",
+          "required": false,
+          "description": "Optional reviewed renderSettingsTemplate, outputModuleTemplate, and/or outputPath for new render queue items."
+        }
+      ],
+      "targetAssumptions": [
+        "The folder target is an explicit generated Project folder bound by current find_project_items or list_project_folder_items evidence before mutation.",
+        "Every queued item is an explicit generated composition project item proven with list_project_folder_items and get_comp_details evidence before mutation.",
+        "The workflow changes only the render queue by adding accepted generated comps and optional reviewed output settings; it does not start rendering.",
+        "Current typed tools support folder listing and render queue insertion/read-back but do not expose Project panel selected folder state.",
+        "True Project panel selected-folder discovery, filesystem folder traversal, non-generated user assets, render start, queue cleanup/reordering, save/saveAs and exact source JSX behavior remain typed-tool gaps."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/add-folder-to-render-queue-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_project_info",
+          "find_project_items",
+          "list_project_folder_items",
+          "get_comp_details",
+          "add_comp_to_render_queue",
+          "set_render_queue_output",
+          "get_render_queue_status"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read one explicit generated Project folder, list generated composition contents, add those comps to the render queue, optionally set reviewed output settings, then read back render queue status.",
+        "steps": [
+          "Run get_project_info and get_render_queue_status before mutation to capture project state and render queue baseline.",
+          "Resolve the explicit generated folder with find_project_items when needed, then run list_project_folder_items with recursive true and type comp.",
+          "Run get_comp_details for every accepted generated composition and record current name, item identity and unchanged structural fields.",
+          "Require concrete folder identity, concrete target comp identities, baseline render queue count, skipped target disclosure and reviewed output settings before confirmation.",
+          "Run add_comp_to_render_queue once per accepted generated comp; when needed, run set_render_queue_output with concrete new renderQueueItemIndex values.",
+          "Run get_render_queue_status after mutation; fail closed if Project panel selected-folder discovery, filesystem folder traversal, non-generated comps, render start, queue cleanup/reordering, save/saveAs or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies one explicit generated Project folder and every concrete generated composition target.",
+          "Dry-run evidence lists accepted comps, skipped targets, baseline render queue count, expected new queue items, optional output settings and Project-panel folder selection limitation.",
+          "add_comp_to_render_queue returns renderQueueItem evidence for every accepted generated comp.",
+          "set_render_queue_output reports reviewed output path/template settings for each adjusted queue item when output settings are requested.",
+          "Post-run get_render_queue_status shows new render queue items for the accepted generated comps and the expected item count increase.",
+          "Post-run evidence shows no render start, comp/layer/source mutation, Project panel selection dependency, filesystem traversal, queue deletion/reordering, save/saveAs, source relink or non-generated user-asset mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-project-add-folder-to-render-queue reopened Full Intaker review as advisory typed-plan coverage for explicit generated Project folder to render queue setup.",
+          "The generated-only render queue lane now includes Project folder creation, explicit item movement, folder content read-back, render queue add, and status read-back without render start or output file generation."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-tool-project-add-folder-to-render-queue",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Project/Add_Folder_To_Render_Queue.jsx into existing typed tools as explicit generated Project folder traversal through list_project_folder_items, generated comp verification with get_comp_details, render queue insertion with add_comp_to_render_queue, optional set_render_queue_output, and get_render_queue_status read-back; no source JSX copied. Current typed tools do not expose Project panel selected-folder state, so true selected-folder discovery, filesystem folder traversal, non-generated user-asset queueing, render start, queue cleanup/reordering, save/saveAs and exact source JSX semantics require a separate typed-tool contract.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Use this recipe for explicit generated Project folders and generated composition contents only; do not mutate non-generated user assets or broad project inventory.",
+        "Current typed tools do not expose Project panel selected-folder state; require a separate typed-tool contract for true selected-folder discovery or source-exact behavior.",
+        "Require current list_project_folder_items, get_comp_details and get_render_queue_status evidence before adding comps to the render queue; do not infer targets from prior chat context.",
+        "Do not start renders, save the project, delete/reorder render queue items, queue footage/non-generated comps, traverse filesystem folders, or perform source relinking/replacement.",
+        "Do not use this recipe for render execution, render queue cleanup, Project panel selection reads, non-generated assets, arbitrary output templating, user-asset cleanup, filesystem folder traversal or raw script execution."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "replace-text-in-project-item-name-typed-plan",
       "title": "Replace Text In Project Item Name Typed Plan",
       "status": "recipe",

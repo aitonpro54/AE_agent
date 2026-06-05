@@ -26,6 +26,23 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker Project render/cleanup first wave:
+  `tool-project-add-folder-to-render-queue`,
+  `tool-project-clean-render-queue`,
+  `tool-project-clean-selected-folder`, and
+  `tool-project-clean-up-overlord-folder` now have fresh scoped
+  parentReducer review from the reopened run. Parent reducer added the narrow
+  generated-only `add-folder-to-render-queue-typed-plan`, registry coverage,
+  retrieval/smoke assertions, and render-queue self-improvement lane coverage
+  for explicit generated Project folder contents. Scoped retry for
+  `add-folder-to-render-queue` passed non-live validation and read-only
+  CEP/CDP preflight, then remained terminal because the CEP panel reports
+  `openai-cli/gpt-5.5 is not ready`. The three cleanup candidates remain
+  terminal: current typed tools do not safely delete render queue items,
+  generated project items/folders, or external Overlord filesystem assets.
+  Stable candidate-specific runtime tickets and ledger annotations were
+  written. Remaining reopened backlog without fresh parentReducer evidence:
+  16 entries, Project 5 and Properties 11.
 - [x] Reopened Full Intaker Project metadata-like slice re-audit: five Project
   candidates now have fresh scoped parentReducer review from the reopened run:
   `tool-project-add-selection-to-new-folder`,
@@ -251,13 +268,17 @@ old `AE_agent` repository remains the historical source.
 Continue the reopened Full Intaker objective. Do not accept
 `completed_no_candidates` or `terminal total=75` as success by itself.
 
-Current compact backlog map after the reopened Project metadata-like slice: 20
-blocked/skipped entries still need scoped review or completion. Remaining
-families are Project 9 and Properties 11. Continue Project 9 next, starting
-with any narrow render-queue setup candidates that can use generated-only
-comps and explicit render-queue read-back; keep file IO, render execution,
-proxy, reveal, cleanup/deletion, and user-asset mutation approval-gated unless
-a scoped generated-only/read-only lane is explicitly safe.
+Current compact backlog map after the reopened Project render/cleanup first
+wave: 16 blocked/skipped entries still need scoped review or completion.
+Remaining families are Project 5 and Properties 11. Continue Project 5 next:
+`tool-project-export-text-to-file`,
+`tool-project-manually-render-png-sequence`,
+`tool-project-remove-all-proxies`,
+`tool-project-reveal-project-file`, and
+`tool-project-set-proxies-from-folder`. Keep file IO, render execution,
+proxy mutation, reveal/shell, cleanup/deletion, and user-asset mutation
+approval-gated unless a scoped generated-only/read-only lane is explicitly
+safe.
 
 Push/PR remain forbidden. Do not run broad/default CEP smoke, Local/Ollama,
 fallback providers, dependency changes, raw JSX copy, source-checkout writes, or
@@ -265,6 +286,22 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-06: Parent reducer completed the reopened Project render/cleanup
+  first wave. `tool-project-add-folder-to-render-queue` has a feasible safe
+  adaptation only for explicit generated Project folders: bind the folder with
+  typed project evidence, list recursive generated comp contents with
+  `list_project_folder_items`, add concrete generated comps with
+  `add_comp_to_render_queue`, and read back `get_render_queue_status` without
+  render start or output file generation. The lane was created and passed
+  non-live/read-only CEP preflight, but live proof failed because the CEP panel
+  OpenAI CLI agent reports `openai-cli/gpt-5.5 is not ready`.
+  `tool-project-clean-render-queue` remains terminal until a production typed
+  generated-prefix render queue delete/cleanup contract exists.
+  `tool-project-clean-selected-folder` remains terminal until a generated-only
+  project item/folder delete contract can prove `usedIn` safety and preserve
+  non-generated assets. `tool-project-clean-up-overlord-folder` remains
+  terminal until explicit approval and a generated-only filesystem cleanup
+  sandbox exist for Overlord-style external file copy/delete behavior.
 - 2026-06-06: Parent reducer completed the reopened Project metadata-like
   slice. `tool-project-add-selection-to-new-folder` remains terminal because
   exact source behavior depends on Project panel selection; current typed tools
@@ -555,6 +592,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened Project render/cleanup first wave | Required to give `tool-project-add-folder-to-render-queue`, `tool-project-clean-render-queue`, `tool-project-clean-selected-folder`, and `tool-project-clean-up-overlord-folder` fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers reviewed three candidates without edits/commits; the `clean-selected-folder` explorer timed out and was closed after parent reducer had source/typed-tool evidence. Parent reducer created the generated-only Project-folder render queue recipe/registry/lane for `add-folder-to-render-queue`, reran the scoped candidate, and recorded live proof blocker `openai-cli/gpt-5.5 is not ready` after non-live validation and read-only CEP preflight passed. The three cleanup candidates remained terminal on missing safe cleanup/delete/filesystem contracts. Stable candidate-specific runtime tickets and ledger annotations were written. Compact ledger map now shows remaining fresh-review backlog 16. Closeout validation is recorded in the current handoff. |
 | Reopened Project metadata-like slice re-audit | Required to give `tool-project-add-selection-to-new-folder`, `tool-project-reset-imported-item-names`, `tool-project-set-all-item-labels-to-none`, `tool-project-toggle-preserve-nested-frame-rate`, and `tool-project-toggle-timecode-and-start-frames` fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers reviewed four candidates without edits/commits; parent reducer reviewed the fifth locally plus exact source checkout files, duplicate recipe/registry/live-lane ids, typed-tool surface, raw JSX/dependency/source-checkout risks, and child commit/branch absence. Scoped commands were run serially with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids <candidate>`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; all five produced terminal tickets with no requeue/open tickets. Stable candidate-specific runtime tickets and ledger annotations were written. Compact ledger map now shows remaining fresh-review backlog 20. Closeout validation is recorded in the current handoff. |
 | Reopened Markers slice re-audit | Required to give `tool-markers-add-markers-at-out-points`, `tool-markers-add-markers-at-work-area`, `tool-markers-copy-composition-markers-to-layer`, and `tool-markers-copy-layer-markers-to-composition` fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers reviewed all four candidates without edits/commits. Parent reducer reviewed source behavior, exact ledger/source paths, duplicate recipe/registry/live-lane ids, existing layer-marker recipes, typed-tool surface, raw JSX/dependency/source-checkout risks, and child commit/branch absence. Scoped commands were run serially with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids <candidate>`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; all four produced terminal tickets with no requeue/open tickets. Stable candidate-specific runtime tickets and ledger annotations were written. Compact ledger map now shows remaining fresh-review backlog 25. Closeout validation passed: JSON parse for ledger/tickets; further closeout checks are recorded in the current handoff. |
 | Reopened Lottie slice re-audit | Required to give `tool-lottie-convert-drop-shadows-for-lottie` and `tool-lottie-prepare-layer-out-points-for-lottie` fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers reviewed both candidates without edits/commits. Parent reducer reviewed source behavior, exact duplicate recipe/registry/live-lane ids, raw JSX/dependency/source-checkout risks, child commit/branch absence, scoped Full Intaker tickets, and typed-tool feasibility. A generated-only Lottie out-point typed-plan, intake note, registry entry, solution-library smoke coverage, and self-improvement lane family were added for `prepare-layer-out-points`; scoped retry with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, and `--no-commit` produced terminal ticket `live-lane-family-0a52d04ca65522a4` because the CEP panel OpenAI CLI agent reports `openai-cli/gpt-5.5` not ready after non-live validation and read-only CEP preflight passed. `convert-drop-shadows` scoped retry produced terminal ticket `live-lane-family-1f1a91089164b3f7`; stable parent-reducer tickets and ledger annotations were written. Compact ledger map now shows remaining fresh-review backlog 29. Closeout validation passed: touched JS `node --check`, JSON parse for registry/lane/ledger, `node scripts/solution-library-validation-smoke.js`, `npm.cmd run smoke:solutions`, `npm.cmd run check:rules`, `git diff --check` (line-ending warnings only), and `npm.cmd run smoke:full-intake`. |

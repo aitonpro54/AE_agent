@@ -449,13 +449,16 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(renderQueue.id, "generated-render-queue-setup");
   assert.strictEqual(renderQueue.expectedReadBack.generatedRenderQueue, true);
   assert.deepStrictEqual(renderQueue.plan.steps.map((step) => step.tool), [
-    "create_test_comp",
+    "create_project_folder",
+    "create_comp",
+    "move_project_items_to_folder",
+    "list_project_folder_items",
     "add_comp_to_render_queue",
-    "set_render_queue_output",
     "get_render_queue_status"
   ]);
-  assert.strictEqual(renderQueue.plan.steps[2].args.renderQueueItemIndex, 3);
-  assert.strictEqual(renderQueue.plan.steps[3].args.limit, 6);
+  assert.strictEqual(renderQueue.plan.steps[2].resultBindings.itemIndices, "{{steps.2.itemIndex}}");
+  assert.strictEqual(renderQueue.plan.steps[3].args.recursive, true);
+  assert.strictEqual(renderQueue.plan.steps[5].args.limit, 6);
 
   const [effectProperty] = agentEffectPropertyScenarioPlans("Codex QA AUX050 Fixture");
   assert.strictEqual(effectProperty.id, "generated-effect-property");

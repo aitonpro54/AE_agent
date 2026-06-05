@@ -2065,6 +2065,31 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.promotionHistory.some((entry) => /Add_Selected_Compositions_To_Render_Queue/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /AUX-098/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "add-folder-to-render-queue-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "find_project_items", "list_project_folder_items", "get_comp_details", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"],
+        `${id}: folder render queue workflow should stay on the narrow generated-folder render queue typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: render queue workflow must be mutating.`);
+      assert(text.includes("generated Project folder"), `${id}: recipe should limit scope to generated Project folders.`);
+      assert(text.includes("list_project_folder_items"), `${id}: recipe should require folder content read-back.`);
+      assert(text.includes("get_render_queue_status"), `${id}: recipe should require render queue baseline/read-back.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp details read-back.`);
+      assert(text.includes("add_comp_to_render_queue"), `${id}: recipe should use the render queue add typed tool.`);
+      assert(text.includes("Project panel selected-folder"), `${id}: recipe should fail closed for Project panel selected-folder reads.`);
+      assert(text.includes("filesystem folder traversal"), `${id}: recipe should fail closed for filesystem folder traversal.`);
+      assert(text.includes("no render start"), `${id}: recipe should reject render execution.`);
+      assert(solution.verificationRecipe.steps.some((step) => /list_project_folder_items/.test(step)), `${id}: verification must include folder listing evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_render_queue_status/.test(step)), `${id}: verification must include render queue status.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must include comp details read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_comp_to_render_queue/.test(step)), `${id}: verification must include render queue add.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expected item count increase/.test(item)), `${id}: verification must require queue count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /no render start/.test(item)), `${id}: verification must prove no render started.`);
+      assert(solution.notes.some((note) => /Project panel selected-folder/.test(note)), `${id}: notes must reject selected-folder claims.`);
+      assert(solution.notes.some((note) => /filesystem folder traversal/.test(note)), `${id}: notes must reject filesystem traversal.`);
+      assert(solution.promotionHistory.some((entry) => /Add_Folder_To_Render_Queue/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "replace-text-in-project-item-name-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -3425,6 +3450,22 @@ function assertActualRetrieval(registry) {
   assert(addSelectedCompositionsRenderQueuePromptSection.includes("generated composition"), "prompt section should preserve generated composition scope.");
   assert(addSelectedCompositionsRenderQueuePromptSection.includes("Project panel selection"), "prompt section should preserve Project-panel selection warning.");
   assert(!/run_extendscript/i.test(addSelectedCompositionsRenderQueuePromptSection), "selected-compositions render queue guidance should not recommend raw ExtendScript.");
+
+  const addFolderRenderQueueRetrieval = retrieveSolutionHints("Add the generated Project folder contents to the render queue after listing the generated folder comps, using add_comp_to_render_queue and get_render_queue_status read-back without starting a render.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(addFolderRenderQueueRetrieval.ok, true);
+  assert(ids(addFolderRenderQueueRetrieval).includes("add-folder-to-render-queue-typed-plan"), "add folder render queue advisory recipe should surface for folder render queue prompts.");
+  const addFolderRenderQueuePromptSection = formatSolutionHintsForPrompt(addFolderRenderQueueRetrieval);
+  assert(addFolderRenderQueuePromptSection.includes("Add Folder To Render Queue Typed Plan"), "prompt section should include folder render queue advisory title.");
+  assert(addFolderRenderQueuePromptSection.includes("list_project_folder_items"), "prompt section should require folder listing evidence.");
+  assert(addFolderRenderQueuePromptSection.includes("add_comp_to_render_queue"), "prompt section should prefer add_comp_to_render_queue for render queue setup.");
+  assert(addFolderRenderQueuePromptSection.includes("get_render_queue_status"), "prompt section should require render queue read-back.");
+  assert(addFolderRenderQueuePromptSection.includes("generated Project folder"), "prompt section should preserve generated folder scope.");
+  assert(addFolderRenderQueuePromptSection.includes("Project panel selection"), "prompt section should preserve Project-panel selection warning.");
+  assert(!/run_extendscript/i.test(addFolderRenderQueuePromptSection), "folder render queue guidance should not recommend raw ExtendScript.");
 
   const renameSelectedProjectItemsRetrieval = retrieveSolutionHints("Rename selected project items to the exact text Review Plate after reading the current project snapshot, binding explicit itemIndices, using rename_project_items, and reading back project inventory.", {
     registry,
