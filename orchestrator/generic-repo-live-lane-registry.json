@@ -618,6 +618,61 @@
       "scope": "generated-only stick-effect expression proof using an explicit generated Ramp effect property, get_effect_details evidence, set_expression with toComp(anchorPoint + value);, get_layer_details/get_effect_details read-back, semantic verification, and cleanup; source-exact comp.selectedProperties traversal, automatic effect discovery, non-2D-spatial targets, existing-expression overwrite without review, selection persistence, and raw JSX semantics remain fail-closed"
     },
     {
+      "id": "estimate-path-length-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_selected_properties"
+      ],
+      "allowedTools": [
+        "add_effect",
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_effect_details",
+        "get_layer_details",
+        "get_selected_properties",
+        "set_effect_property",
+        "set_expression"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "expressionMutation",
+        "propertyTraversal"
+      ],
+      "candidateIds": [
+        "tool-properties-estimate-path-length"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-estimate-path-length-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "estimate-path-length",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_effect_details",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/estimate-path-length-typed-plan.md",
+        "recipes/generic-repo-intake/tool-properties-estimate-path-length.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only estimate-path-length proof using an explicit generated rectangle path, generated Path Samples and Path Length Slider Control effects, set_effect_property sample count, set_expression path-sampling expression, get_layer_details/get_effect_details read-back, semantic verification, and cleanup; source-exact comp.selectedProperties traversal, arbitrary path geometry, mask paths, keyframed paths, existing slider reuse, selection persistence, file output, and raw JSX semantics remain fail-closed"
+    },
+    {
       "id": "selected-keyframe-layer-marker-generated-only",
       "requiredTools": [
         "get_selected_properties",

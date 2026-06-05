@@ -34,6 +34,7 @@ const IMPORTED_ADVISORY_IDS = [
   "append-to-expression-typed-plan",
   "update-expressions-typed-plan",
   "stick-effect-to-layer-typed-plan",
+  "estimate-path-length-typed-plan",
   "round-selected-property-values-typed-plan",
   "set-new-color-typed-plan",
   "swap-selected-property-dimensions-typed-plan",
@@ -681,6 +682,34 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Stick_Effect_To_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "estimate-path-length-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "create_shape_layer", "add_effect", "get_effect_details", "set_effect_property", "set_expression", "get_layer_details"],
+        `${id}: estimate-path-length workflow should stay on the narrow generated shape/effect expression typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: estimate-path-length workflow must be mutating.`);
+      assert(text.includes("generated shape layer"), `${id}: recipe should require generated shape-layer evidence.`);
+      assert(text.includes("Path Samples"), `${id}: recipe should mention the Path Samples slider.`);
+      assert(text.includes("Path Length"), `${id}: recipe should mention the Path Length slider.`);
+      assert(text.includes("add_effect"), `${id}: recipe should use add_effect for slider controls.`);
+      assert(text.includes("set_effect_property"), `${id}: recipe should use set_effect_property for sample count.`);
+      assert(text.includes("set_expression"), `${id}: recipe should use set_expression for the Path Length slider.`);
+      assert(text.includes("pointOnPath"), `${id}: recipe should preserve the path-sampling expression scope.`);
+      assert(text.includes("get_effect_details"), `${id}: recipe should require effect read-back.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer read-back.`);
+      assert(text.includes("Do not infer selected paths"), `${id}: recipe should reject inferred selected-path traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_effect/.test(step)), `${id}: verification must include add_effect.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_effect_property/.test(step)), `${id}: verification must include set_effect_property.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_expression/.test(step)), `${id}: verification must include set_expression.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_effect_details/.test(step)), `${id}: verification must read generated slider effects.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Path Samples/.test(item)), `${id}: verification must require Path Samples evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Path Length/.test(item)), `${id}: verification must require Path Length evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionEnabled:true/.test(item)), `${id}: verification must require enabled expression evidence.`);
+      assert(solution.notes.some((note) => /generated-layer/.test(note)), `${id}: notes must require generated-layer evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Estimate_Path_Length/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "round-selected-property-values-typed-plan") {
       assert.deepStrictEqual(
@@ -2512,6 +2541,25 @@ function assertActualRetrieval(registry) {
   assert(stickEffectPromptSection.includes("set_expression"), "prompt section should prefer set_expression for stick-effect workflows.");
   assert(stickEffectPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
   assert(!/run_extendscript/i.test(stickEffectPromptSection), "stick-effect guidance should not recommend raw ExtendScript.");
+
+  const estimatePathLengthRetrieval = retrieveSolutionHints("Estimate a generated rectangle path length by adding Path Samples and Path Length Slider Control effects, set Path Samples to 100, apply a pointOnPath expression to Path Length, and read back both slider effects.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(estimatePathLengthRetrieval.ok, true);
+  assert(ids(estimatePathLengthRetrieval).includes("estimate-path-length-typed-plan"), "estimate-path-length advisory recipe should surface for generated path length slider prompts.");
+  const estimatePathLengthPromptSection = formatSolutionHintsForPrompt(estimatePathLengthRetrieval);
+  assert(estimatePathLengthPromptSection.includes("Estimate Path Length Typed Plan"), "prompt section should include estimate-path-length advisory title.");
+  assert(estimatePathLengthPromptSection.includes("generated"), "prompt section should preserve generated-only scope.");
+  assert(estimatePathLengthPromptSection.includes("Path Samples"), "prompt section should preserve Path Samples slider guidance.");
+  assert(estimatePathLengthPromptSection.includes("Path Length"), "prompt section should preserve Path Length slider guidance.");
+  assert(estimatePathLengthPromptSection.includes("add_effect"), "prompt section should prefer add_effect for slider controls.");
+  assert(estimatePathLengthPromptSection.includes("set_effect_property"), "prompt section should prefer set_effect_property for sample count.");
+  assert(estimatePathLengthPromptSection.includes("set_expression"), "prompt section should prefer set_expression for the Path Length slider.");
+  assert(estimatePathLengthPromptSection.includes("get_effect_details"), "prompt section should require effect read-back.");
+  assert(estimatePathLengthPromptSection.includes("get_layer_details"), "prompt section should require layer read-back.");
+  assert(!/run_extendscript/i.test(estimatePathLengthPromptSection), "estimate-path-length guidance should not recommend raw ExtendScript.");
 
   const roundSelectedPropertyValuesRetrieval = retrieveSolutionHints("Round the selected numeric property values to whole numbers after inspecting selected property values, then set the roundedValue with set_property_value and read back the property values.", {
     registry,

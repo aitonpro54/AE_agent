@@ -13,6 +13,7 @@ const {
   agentDakkshinTypedToolsScenarioPlans,
   agentDuplicateLayersScenarioPlans,
   agentEffectPropertyScenarioPlans,
+  agentEstimatePathLengthScenarioPlans,
   agentExpressionScenarioPlans,
   agentKeyframeScenarioPlans,
   agentLayerMetadataScenarioPlans,
@@ -426,6 +427,24 @@ function openAiCliStickEffectExpressionScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_STICK_EFFECT_PREFIX || "Codex QA AUX106",
     scenarioFactory: agentStickEffectExpressionScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliEstimatePathLengthScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-estimate-path-length",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_ESTIMATE_PATH_LENGTH_PREFIX || "Codex QA AUX-EPL",
+    scenarioFactory: agentEstimatePathLengthScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -6530,6 +6549,10 @@ async function main() {
   }
   if (command === "agent-stick-effect-expression-openai-cli-smoke" || command === "full-ui-agent-stick-effect-expression-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliStickEffectExpressionScenarioConfig());
+    return;
+  }
+  if (command === "agent-estimate-path-length-openai-cli-smoke" || command === "full-ui-agent-estimate-path-length-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliEstimatePathLengthScenarioConfig());
     return;
   }
   if (command === "agent-comp-properties-openai-cli-smoke" || command === "full-ui-agent-comp-properties-openai-cli-smoke") {

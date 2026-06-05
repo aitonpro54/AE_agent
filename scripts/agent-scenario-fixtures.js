@@ -1629,6 +1629,82 @@ function agentStickEffectExpressionScenarioPlans(runPrefix) {
   }));
 }
 
+function agentEstimatePathLengthScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Estimate Path Length`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Shape`;
+  const samplesEffectName = "Path Samples";
+  const lengthEffectName = "Path Length";
+  const pathExpression = [
+    'var pathProperty = thisLayer.content("Rectangle").content("Path 1").path;',
+    'var samples = Math.max(1, Math.floor(effect("Path Samples")("Slider").value));',
+    "var totalLength = 0;",
+    "var previousPoint = pathProperty.pointOnPath(0);",
+    "for (var i = 1; i <= samples; i++) {",
+    "  var currentPoint = pathProperty.pointOnPath(i / samples);",
+    "  totalLength += length(currentPoint - previousPoint);",
+    "  previousPoint = currentPoint;",
+    "}",
+    "Math.ceil(totalLength);"
+  ].join("\n");
+  const lengthSliderPropertyPath = [
+    { matchName: "ADBE Effect Parade" },
+    { matchName: "ADBE Slider Control", name: lengthEffectName },
+    { matchName: "ADBE Slider Control-0001" }
+  ];
+
+  return [
+    {
+      id: "generated-estimate-path-length",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "add_effect",
+        "get_effect_details",
+        "set_effect_property",
+        "add_effect",
+        "get_effect_details",
+        "set_expression",
+        "get_layer_details",
+        "get_effect_details"
+      ],
+      expectedReadBack: {
+        generatedEstimatePathLength: true,
+        compName,
+        layerName,
+        samplesEffectName,
+        lengthEffectName,
+        samplesValue: 100,
+        propertyPath: lengthSliderPropertyPath,
+        expression: pathExpression
+      },
+      plan: {
+        summary: "Generated-only live QA for estimating a rectangle path length with generated slider controls.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated path-length comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.05, 0.06, 0.08], allowDuplicateName: false, openInViewer: true, comment: "Generated-only estimate path length validation" } },
+          { title: "Create generated path-length shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [240, 120], position: [320, 180], fillColor: [0.18, 0.58, 0.86], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Add generated Path Samples slider", tool: "add_effect", args: { compName, layerIndex: 1, effect: "ADBE Slider Control", name: samplesEffectName } },
+          { title: "Read generated Path Samples slider", tool: "get_effect_details", args: { compName, layerIndex: 1, effectName: samplesEffectName, includeProperties: true, propertyDepth: 1, propertyLimit: 20, includeValues: true, includeExpressions: true } },
+          { title: "Set generated Path Samples value", tool: "set_effect_property", args: { compName, layerIndex: 1, effectName: samplesEffectName, propertyIndex: 1, value: 100 } },
+          { title: "Add generated Path Length slider", tool: "add_effect", args: { compName, layerIndex: 1, effect: "ADBE Slider Control", name: lengthEffectName } },
+          { title: "Read generated Path Length slider", tool: "get_effect_details", args: { compName, layerIndex: 1, effectName: lengthEffectName, includeProperties: true, propertyDepth: 1, propertyLimit: 20, includeValues: true, includeExpressions: true } },
+          { title: "Set generated Path Length expression", tool: "set_expression", args: { compName, layerIndex: 1, propertyPath: lengthSliderPropertyPath, expression: pathExpression, enabled: true } },
+          { title: "Read generated path-length layer", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: true, propertyDepth: 4, propertyLimit: 180, includeValues: true, includeExpressions: true } },
+          { title: "Read generated Path Length expression", tool: "get_effect_details", args: { compName, layerIndex: 1, effectName: lengthEffectName, includeProperties: true, propertyDepth: 1, propertyLimit: 20, includeValues: true, includeExpressions: true } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentCompPropertiesScenarioPlans(runPrefix) {
   const base = `${runPrefix} Comp Properties`;
   const compName = `${base} Comp`;
@@ -2942,6 +3018,7 @@ module.exports = {
   agentDakkshinTypedToolsScenarioPlans,
   agentEffectPropertyScenarioPlans,
   agentExpressionScenarioPlans,
+  agentEstimatePathLengthScenarioPlans,
   agentKeyframeScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,

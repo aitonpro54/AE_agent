@@ -17,6 +17,7 @@ const {
   agentCompositionGuideScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
   agentEffectPropertyScenarioPlans,
+  agentEstimatePathLengthScenarioPlans,
   agentExpressionScenarioPlans,
   agentKeyframeScenarioPlans,
   agentLayerMetadataScenarioPlans,
@@ -516,6 +517,25 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(stickEffect.plan.steps[4].args.propertyPath[1].matchName, "ADBE Ramp");
   assert.strictEqual(stickEffect.plan.steps[4].args.propertyPath[2].matchName, "ADBE Ramp-0001");
 
+  const [estimatePathLength] = agentEstimatePathLengthScenarioPlans("Codex QA AUX-EPL Fixture");
+  assert.strictEqual(estimatePathLength.id, "generated-estimate-path-length");
+  assert.strictEqual(estimatePathLength.expectedReadBack.generatedEstimatePathLength, true);
+  assert.deepStrictEqual(estimatePathLength.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "add_effect",
+    "get_effect_details",
+    "set_effect_property",
+    "add_effect",
+    "get_effect_details",
+    "set_expression",
+    "get_layer_details",
+    "get_effect_details"
+  ]);
+  assert.strictEqual(estimatePathLength.plan.steps[4].args.value, 100);
+  assert(estimatePathLength.plan.steps[7].args.expression.includes("pointOnPath"));
+  assert.strictEqual(estimatePathLength.plan.steps[7].args.propertyPath[1].name, "Path Length");
+
   const [compProperties] = agentCompPropertiesScenarioPlans("Codex QA AUX061 Fixture");
   assert.strictEqual(compProperties.id, "generated-comp-properties-work-area");
   assert.strictEqual(compProperties.expectedReadBack.generatedCompPropertiesWorkArea, true);
@@ -656,7 +676,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert(remainingTails[4].plan.steps.some((step) => step.tool === "set_spatial_in_tangent"));
   assert(remainingTails[5].plan.steps.some((step) => step.tool === "separate_shape_size_dimensions"));
 
-  for (const scenario of [timing, transform, projectItems, effectProperty, expression, compProperties, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, keyframes, textToKeys, selectedKeyframeMarker, ...remainingTails]) {
+  for (const scenario of [timing, transform, projectItems, effectProperty, expression, parentOpacity, stickEffect, estimatePathLength, compProperties, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, keyframes, textToKeys, selectedKeyframeMarker, ...remainingTails]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }

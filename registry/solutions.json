@@ -7908,6 +7908,124 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "estimate-path-length-typed-plan",
+      "title": "Estimate Path Length Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "properties",
+        "shape-layers",
+        "shape-path",
+        "expressions",
+        "slider-controls",
+        "effect-expression",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Add generated Path Samples and Path Length Slider Control effects to an explicit generated shape layer and drive Path Length with a reviewed path-sampling expression.",
+        "appliesWhen": [
+          "The user asks to estimate or expose a generated rectangle or ellipse shape path length through slider controls.",
+          "Typed adaptation is acceptable only when current generated-layer or explicit typed evidence identifies one stable generated shape path and the plan can add/read generated Slider Control effects plus expression state instead of relying on source-exact selectedProperties traversal or raw JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "pathTarget",
+          "type": "object",
+          "required": true,
+          "description": "Current generated-layer or explicit typed evidence containing comp identity, layerIndex, layer name, known generated rectangle or ellipse path target, and the intended Path Samples and Path Length slider names."
+        },
+        {
+          "name": "sampleCount",
+          "type": "number",
+          "required": false,
+          "description": "Reviewed sample count for the Path Samples slider. Defaults only to 100 when acceptable for a new generated slider control."
+        }
+      ],
+      "targetAssumptions": [
+        "The mutated layer is generated or explicitly reviewed and can receive Slider Control effects.",
+        "The path reference in the expression is generated from a known rectangle or ellipse path target, not inferred from arbitrary selectedProperties traversal.",
+        "The workflow adds generated Path Samples and Path Length Slider Control effects and mutates only the Path Samples slider value plus the Path Length slider expression.",
+        "The final expression samples pointOnPath from the reviewed generated path and reads only effect(\"Path Samples\")(\"Slider\").",
+        "Vector path geometry, mask paths, vertices, tangents, keyframes, layer transforms, layer names, sources, timing, render queue items, project items, selection state and unreviewed properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/estimate-path-length-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "create_shape_layer",
+          "add_effect",
+          "get_effect_details",
+          "set_effect_property",
+          "set_expression",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Create or bind one generated shape layer, add Path Samples and Path Length Slider Control effects, set the sample count and Path Length expression, then read both slider controls and expression state back.",
+        "steps": [
+          "Run get_active_comp or create a generated comp before mutation to capture target comp identity.",
+          "Create or bind one generated rectangle or ellipse shape layer with a stable path target and no existing Path Samples or Path Length effects.",
+          "Run add_effect with ADBE Slider Control for Path Samples, then run get_effect_details for effect read-back.",
+          "Run set_effect_property on the Path Samples slider value with the reviewed sampleCount, defaulting to 100 only when acceptable.",
+          "Run add_effect with ADBE Slider Control for Path Length, then run get_effect_details for effect read-back.",
+          "Run set_expression on the Path Length slider property with the exact generated path-sampling expression.",
+          "Run get_layer_details and get_effect_details after mutation to confirm both slider controls, sample count, expression text, expressionEnabled:true, and no expressionError.",
+          "Fail closed if source-exact comp.selectedProperties traversal, arbitrary path geometry, mask paths, keyframed paths, existing slider reuse, expression merging, selection side effects, file output, or raw ExtendScript is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies the generated comp, layer, path target, Path Samples slider name, Path Length slider name, and sampleCount.",
+          "add_effect/get_effect_details evidence shows generated Path Samples and Path Length Slider Control effects on the expected layer.",
+          "set_effect_property result and read-back show the expected Path Samples value.",
+          "set_expression result and post-run get_layer_details/get_effect_details show the exact path-sampling expression, expressionEnabled:true, and no expressionError.",
+          "Post-run evidence shows no vector path geometry, mask path, keyframe, layer transform, layer name, source, timing, render queue, project item, selection, unreviewed property, or unrelated effect mutation.",
+          "Unsupported selectedProperties traversal, arbitrary path geometry, mask paths, keyframed paths, existing slider reuse, expression merging, file output, and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-properties-estimate-path-length as generated-only advisory typed-plan coverage for path-length slider expression workflows.",
+          "Generated-only proof uses existing typed tools and a generated shape target; parent importer owns live acceptance and scoped retry evidence."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-tool-properties-estimate-path-length",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Properties/Estimate_Path_Length.jsx into existing typed tools as generated-only Slider Control and set_expression guidance for one explicit generated rectangle/ellipse path target; no source JSX copied. Current typed tools require generated layer/path evidence, add_effect/get_effect_details for Path Samples and Path Length, set_effect_property for reviewed sample count, set_expression for the generated path-sampling expression, and get_layer_details/get_effect_details read-back. Source-exact comp.selectedProperties traversal, arbitrary path geometry, mask paths, keyframed paths, existing slider reuse, expression merging, selection side effects, file output, and raw ExtendScript require a separate typed-tool contract or fail closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require generated-layer or explicit typed evidence before adding Path Samples and Path Length slider controls; do not infer targets from prior chat context.",
+        "Apply this recipe only to one explicit generated rectangle or ellipse shape path target with reviewed slider names and sampleCount.",
+        "Use add_effect, set_effect_property, set_expression, get_layer_details, and get_effect_details for mutation and read-back.",
+        "Require a separate typed-tool contract for source-exact selectedProperties traversal, arbitrary path geometry, mask paths, keyframed paths, existing slider reuse, expression merging, selection side effects, file output, or exact source JSX semantics.",
+        "Do not use this recipe for vector path edits, mask edits, keyframe edits, layer transform edits, layer timing changes, effect cleanup, source relinking, render queue changes, selected-layer rename, file export, or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "round-selected-property-values-typed-plan",
       "title": "Round Selected Property Values Typed Plan",
       "status": "recipe",
