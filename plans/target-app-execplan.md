@@ -26,6 +26,17 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker Layers effect/rig/puppet/file-risk slice re-audit:
+  four more Layers candidates now have fresh scoped terminal review from the
+  reopened run: `tool-layers-replace-grid-rig-control`,
+  `tool-layers-reset-layer-names`,
+  `tool-layers-toggle-puppet-pins-as-guide-layers`, and
+  `tool-layers-toggle-specific-effects`. Proposal-only explorers and parent
+  reducer found no safe generated-only lane in the current typed-tool surface.
+  Parent reducer wrote stable candidate-specific runtime tickets and ledger
+  annotations with unblock conditions. No candidate was marked completed in
+  this slice. Remaining reopened backlog: 35 blocked/skipped entries still
+  need scoped review or completion.
 - [x] Reopened Full Intaker Layers stick-effect expression lane/retry:
   `tool-layers-stick-effect-to-layer` now has fresh scoped review from the
   reopened run. Parent reducer added the narrow
@@ -189,15 +200,16 @@ old `AE_agent` repository remains the historical source.
 Continue the reopened Full Intaker objective. Do not accept
 `completed_no_candidates` or `terminal total=75` as success by itself.
 
-Current compact backlog map after the reopened stick-effect expression lane:
-39 blocked/skipped entries still need scoped review or completion. Remaining
-families are Layers 8, Lottie 2, Markers 4, Project 14, and Properties 11. The
-next safest scoped family remains the Layers effect/rig/puppet/file-risk slice,
-continuing with `tool-layers-replace-grid-rig-control`,
-`tool-layers-reset-layer-names`,
-`tool-layers-toggle-puppet-pins-as-guide-layers`, and then
-`tool-layers-toggle-specific-effects`. Use proposal-only workers where useful,
-but central ledger/docs/handoff writes remain parent-owned.
+Current compact backlog map after the reopened Layers effect/rig/puppet/file-risk
+slice: 35 blocked/skipped entries still need scoped review or completion.
+Remaining families are Layers 4, Lottie 2, Markers 4, Project 14, and
+Properties 11. The next safest scoped family is the remaining Layers
+approval/file/third-party-risk slice:
+`tool-layers-convert-srt-to-text-layers`,
+`tool-layers-create-text-layers-from-file`,
+`tool-layers-match-layers-to-newton-layers`, and
+`tool-layers-rename-puppet-pins-for-duik`. Use proposal-only workers where
+useful, but central ledger/docs/handoff writes remain parent-owned.
 
 Push/PR remain forbidden. Do not run broad/default CEP smoke, Local/Ollama,
 fallback providers, dependency changes, raw JSX copy, source-checkout writes, or
@@ -205,6 +217,24 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-05: Parent reducer completed the reopened Layers
+  effect/rig/puppet/file-risk slice. `tool-layers-replace-grid-rig-control`
+  remains terminal because source replaces the selected Grid Rig Control layer
+  with a shape layer, copies `enabled`/`guideLayer`/label/name, adds two Slider
+  Control effects, and deletes the old layer, while current typed tools lack
+  `guideLayer`/`enabled` writers and a reviewed replacement contract.
+  `tool-layers-reset-layer-names` remains terminal because source sets every
+  active-comp layer name to `""`; current rename contracts require explicit
+  non-empty exact names and semantic verification does not prove bulk empty-name
+  reset behavior. `tool-layers-toggle-puppet-pins-as-guide-layers` remains
+  terminal because source scans all project comps for third-party DuIK pin
+  effects and sets native `guideLayer` from Alt-key state, while current tools
+  only read `guideLayer` and have no puppet-pin/guide writer contract.
+  `tool-layers-toggle-specific-effects` remains terminal because source toggles
+  `effect.enabled` project-wide for specific matchNames, while current effect
+  tools can search/add/read/set properties but cannot set an effect enabled
+  flag. Stable parent-reducer runtime tickets and ledger annotations record
+  unblock conditions for all four candidates.
 - 2026-06-05: Parent reducer accepted `tool-layers-stick-effect-to-layer` only
   as a narrow generated-only typed-plan/lane adaptation. The source sets
   `toComp(anchorPoint + value);` on selected 2D spatial properties; current
@@ -415,6 +445,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened Layers effect/rig/puppet/file-risk slice re-audit | Required to give `tool-layers-replace-grid-rig-control`, `tool-layers-reset-layer-names`, `tool-layers-toggle-puppet-pins-as-guide-layers`, and `tool-layers-toggle-specific-effects` fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers reviewed all four candidates without edits/commits. Parent reducer reviewed source behavior, current typed-tool surface, duplicate recipe/registry/live-lane ids, raw JSX/dependency/source-checkout risks, stale proposal state, scoped Full Intaker tickets, and child commit/branch absence. Scoped commands were run serially with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids <candidate>`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; all four produced terminal tickets with no requeue/open tickets. Stable candidate-specific runtime tickets and ledger annotations were written. Compact status/proof/ledger-summary were rerun; remaining fresh-review backlog is 35. Closeout validation passed: `git diff --check` (line-ending warning only), `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake`. |
 | Reopened Layers stick-effect expression lane/retry | Required to give `tool-layers-stick-effect-to-layer` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: parent reducer reviewed source behavior, duplicate recipe/registry/lane ids, raw JSX/dependency/source-checkout risks, and created only a generated-only typed-plan/lane adaptation. Scoped Full Intaker was run with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids tool-layers-stick-effect-to-layer`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`. First run was blocked by dirty target tree from parent-authored lane prep; after a clean temporary commit and later amend, scoped retries produced a stable terminal ticket. The final ticket reason is `blocked_live_proof_failed`: lane non-live validation passed (`node --check` for touched JS, `node scripts/agent-scenario-report-smoke.js`, `node scripts/solution-library-validation-smoke.js`), read-only CEP/CDP preflight passed (`inspect`, `connector-status-smoke`), but generated-only live proof failed because the CEP panel reported `openai-cli/gpt-5.5 is not ready`. Runtime ledger annotation now records the blocker and unblock condition. |
 | Reopened Layers parenting/matte slice re-audit | Required to give the next four Layers parenting/matte blocked/skipped entries fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers reviewed all four candidates without edits/commits. Parent reducer added the candidate-scoped `selected-layer-parent-opacity-expression-generated-only` lane and generated-only smoke fixture for parent-opacity expression proof. Scoped commands were run serially with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids <candidate>`, and `--allow-self-improvement-lane-synthesis` for all four candidates. Parent-opacity lane non-live checks passed and read-only CEP preflight passed, but live proof failed on panel OpenAI CLI readiness (`openai-cli/gpt-5.5 is not ready; Run codex login and sign in with ChatGPT`). The other three candidates remained terminal typed-tool gaps. Stable candidate-specific runtime tickets and ledger annotations were written. Compact status/proof/ledger-summary were rerun; remaining fresh-review backlog is 40. Closeout validation passed: touched JS `node --check`, JSON parse for the live-lane registry, `node scripts/agent-scenario-report-smoke.js`, `git diff --check` (line-ending warnings only), `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake`. |
 | Reopened second Layers slice re-audit | Required to give the next four Layers blocked/skipped entries fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers returned for `tool-layers-add-3d-break`, `tool-layers-connect-two-layers-with-a-line`, and `tool-layers-create-shapes-from-text`; the `tool-layers-add-fill-with-color-cycle` explorer timed out and was closed after parent reducer had source/typed-tool evidence. Parent reducer reviewed source behavior, typed-tool surface, registry/live-lane evidence, duplicate ids, raw JSX/dependency/source-checkout risks, and scoped Full Intaker tickets. Scoped commands were run serially with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids <candidate>`, and `--allow-self-improvement-lane-synthesis` for all four candidates. Outcomes were terminal with stable parent-reducer tickets and fresh unblock conditions; no candidate was marked completed. Compact status/proof/ledger-summary were rerun. Closeout validation passed: `git diff --check` (line-ending warning only), `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake`. |
