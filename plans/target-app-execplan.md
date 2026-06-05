@@ -26,6 +26,16 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker Markers slice re-audit: четыре marker candidates
+  теперь имеют свежий scoped parentReducer review из reopened run.
+  Proposal-only explorers и parent reducer подтвердили, что source-exact
+  поведение всех четырех зависит от `comp.markerProperty`; текущая typed-tool
+  surface покрывает только layer markers (`add/update/delete_layer_marker` и
+  `get_layer_details` read-back). Scoped retries с `--max-items 1` остались
+  terminal без requeue/open tickets; parent reducer записал stable
+  candidate-specific runtime tickets и ledger annotations. No candidate was
+  marked completed in this slice. Remaining reopened backlog without fresh
+  parentReducer evidence: 25 entries, Project 14 and Properties 11.
 - [x] Reopened Full Intaker Lottie slice re-audit: оба Lottie candidates теперь
   имеют свежий scoped parentReducer review из reopened run.
   `tool-lottie-prepare-layer-out-points-for-lottie` получил узкую
@@ -226,17 +236,13 @@ old `AE_agent` repository remains the historical source.
 Continue the reopened Full Intaker objective. Do not accept
 `completed_no_candidates` or `terminal total=75` as success by itself.
 
-Current compact backlog map after the reopened Lottie slice: 29 blocked/skipped
-entries still need scoped review or completion. Remaining families are Markers
-4, Project 14, and Properties 11. The next scoped family is Markers 4:
-`tool-markers-add-markers-at-out-points`,
-`tool-markers-add-markers-at-work-area`,
-`tool-markers-copy-composition-markers-to-layer`, and
-`tool-markers-copy-layer-markers-to-composition`. First verify current layer
-marker and composition marker typed contracts; do not create a broad marker
-lane if composition marker read/write/copy semantics are missing. Use
-proposal-only workers where useful, but central ledger/docs/handoff writes
-remain parent-owned.
+Current compact backlog map after the reopened Markers slice: 25
+blocked/skipped entries still need scoped review or completion. Remaining
+families are Project 14 and Properties 11. The next scoped family is Project
+14; start with generated-only/project-item metadata candidates before
+approval-gated render queue, file IO, proxy, reveal, cleanup, or user-asset
+mutation candidates. Use proposal-only workers where useful, but central
+ledger/docs/handoff writes remain parent-owned.
 
 Push/PR remain forbidden. Do not run broad/default CEP smoke, Local/Ollama,
 fallback providers, dependency changes, raw JSX copy, source-checkout writes, or
@@ -244,6 +250,19 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-06: Parent reducer completed the reopened Markers slice.
+  `tool-markers-add-markers-at-out-points` and
+  `tool-markers-add-markers-at-work-area` remain terminal because source writes
+  composition markers through `comp.markerProperty`, while current marker tools
+  only write/read layer markers. `tool-markers-copy-composition-markers-to-layer`
+  and `tool-markers-copy-layer-markers-to-composition` also remain terminal:
+  copy semantics require composition-marker read/write plus marker label
+  evidence that current typed tools do not provide. Existing layer-marker
+  recipes/lane were explicitly reviewed and are not reused for composition
+  markers. Stable parent-reducer runtime tickets and ledger annotations record
+  the unblock condition: add a narrow generated-only composition-marker
+  typed-tool contract with read-back, marker label coverage where needed,
+  semantic verification, and cleanup; then rerun scoped candidates.
 - 2026-06-06: Parent reducer completed the reopened Lottie slice.
   `tool-lottie-prepare-layer-out-points-for-lottie` has a feasible safe
   adaptation only for explicit generated composition/layer timing: read comp
@@ -504,6 +523,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened Markers slice re-audit | Required to give `tool-markers-add-markers-at-out-points`, `tool-markers-add-markers-at-work-area`, `tool-markers-copy-composition-markers-to-layer`, and `tool-markers-copy-layer-markers-to-composition` fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers reviewed all four candidates without edits/commits. Parent reducer reviewed source behavior, exact ledger/source paths, duplicate recipe/registry/live-lane ids, existing layer-marker recipes, typed-tool surface, raw JSX/dependency/source-checkout risks, and child commit/branch absence. Scoped commands were run serially with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids <candidate>`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; all four produced terminal tickets with no requeue/open tickets. Stable candidate-specific runtime tickets and ledger annotations were written. Compact ledger map now shows remaining fresh-review backlog 25. Closeout validation passed: JSON parse for ledger/tickets; further closeout checks are recorded in the current handoff. |
 | Reopened Lottie slice re-audit | Required to give `tool-lottie-convert-drop-shadows-for-lottie` and `tool-lottie-prepare-layer-out-points-for-lottie` fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers reviewed both candidates without edits/commits. Parent reducer reviewed source behavior, exact duplicate recipe/registry/live-lane ids, raw JSX/dependency/source-checkout risks, child commit/branch absence, scoped Full Intaker tickets, and typed-tool feasibility. A generated-only Lottie out-point typed-plan, intake note, registry entry, solution-library smoke coverage, and self-improvement lane family were added for `prepare-layer-out-points`; scoped retry with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, and `--no-commit` produced terminal ticket `live-lane-family-0a52d04ca65522a4` because the CEP panel OpenAI CLI agent reports `openai-cli/gpt-5.5` not ready after non-live validation and read-only CEP preflight passed. `convert-drop-shadows` scoped retry produced terminal ticket `live-lane-family-1f1a91089164b3f7`; stable parent-reducer tickets and ledger annotations were written. Compact ledger map now shows remaining fresh-review backlog 29. Closeout validation passed: touched JS `node --check`, JSON parse for registry/lane/ledger, `node scripts/solution-library-validation-smoke.js`, `npm.cmd run smoke:solutions`, `npm.cmd run check:rules`, `git diff --check` (line-ending warnings only), and `npm.cmd run smoke:full-intake`. |
 | Reopened Layers approval/file/third-party-risk slice re-audit | Required to give `tool-layers-convert-srt-to-text-layers`, `tool-layers-create-text-layers-from-file`, `tool-layers-match-layers-to-newton-layers`, and `tool-layers-rename-puppet-pins-for-duik` fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers reviewed all four candidates without edits/commits. Parent reducer reviewed source behavior, exact triage and importer ledger ids, duplicate recipe/registry/live-lane ids, raw JSX/dependency/source-checkout risks, source license/file IO/third-party assumptions, scoped Full Intaker tickets, and child commit/branch absence. Scoped commands were run serially with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids <candidate>`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; all four produced terminal tickets with no requeue/open tickets. Stable candidate-specific runtime tickets and ledger annotations were written. Compact status/proof/ledger-summary were rerun; compact ledger map now shows Layers 21/21 fresh parentReducer and remaining fresh-review backlog 31. Closeout validation passed: `git diff --check` (line-ending warning only), `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake`. |
 | Reopened Layers effect/rig/puppet/file-risk slice re-audit | Required to give `tool-layers-replace-grid-rig-control`, `tool-layers-reset-layer-names`, `tool-layers-toggle-puppet-pins-as-guide-layers`, and `tool-layers-toggle-specific-effects` fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers reviewed all four candidates without edits/commits. Parent reducer reviewed source behavior, current typed-tool surface, duplicate recipe/registry/live-lane ids, raw JSX/dependency/source-checkout risks, stale proposal state, scoped Full Intaker tickets, and child commit/branch absence. Scoped commands were run serially with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids <candidate>`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; all four produced terminal tickets with no requeue/open tickets. Stable candidate-specific runtime tickets and ledger annotations were written. Compact status/proof/ledger-summary were rerun; remaining fresh-review backlog is 35. Closeout validation passed: `git diff --check` (line-ending warning only), `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake`. |
