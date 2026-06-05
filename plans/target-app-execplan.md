@@ -26,6 +26,16 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker second Layers slice re-audit: four more layer
+  candidates now have fresh scoped terminal review from the reopened run:
+  `tool-layers-add-3d-break`,
+  `tool-layers-add-fill-with-color-cycle`,
+  `tool-layers-connect-two-layers-with-a-line`, and
+  `tool-layers-create-shapes-from-text`. Parent reducer wrote stable
+  candidate-specific runtime tickets and ledger annotations with unblock
+  conditions. No candidate was marked completed in this slice. Remaining
+  reopened backlog: 45 blocked/skipped entries still need scoped review or
+  completion.
 - [x] Reopened Full Intaker first Layers slice re-audit: four layer candidates
   now have fresh scoped terminal review from the reopened run:
   `tool-layers-reset-selected-layer-labels`,
@@ -157,14 +167,11 @@ Continue the reopened Full Intaker objective. Do not accept
 `completed_no_candidates` or `terminal total=75` as success by itself.
 
 Current compact backlog map after the reopened compositions review and first
-Layers slice: 49 blocked/skipped entries still need scoped review or completion.
-Remaining families are Layers 17, Lottie 2, Markers 4, Project 14, Properties
-11, and Utilities 1. The next safest scoped family is the next layer typed-tool
-gap slice: `tool-layers-add-3d-break`,
-`tool-layers-add-fill-with-color-cycle`,
-`tool-layers-connect-two-layers-with-a-line`, and
-`tool-layers-create-shapes-from-text`. Use proposal-only workers where useful,
-but central ledger/docs/handoff writes remain parent-owned.
+two Layers slices: 45 blocked/skipped entries still need scoped review or
+completion. Remaining families are Layers 13, Lottie 2, Markers 4, Project 14,
+Properties 11, and Utilities 1. The next safest scoped family is the next
+Layers typed-tool gap slice from the remaining backlog. Use proposal-only
+workers where useful, but central ledger/docs/handoff writes remain parent-owned.
 
 Push/PR remain forbidden. Do not run broad/default CEP smoke, Local/Ollama,
 fallback providers, dependency changes, raw JSX copy, source-checkout writes, or
@@ -172,6 +179,22 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-05: Parent reducer completed the second reopened Layers slice.
+  `tool-layers-add-3d-break` remains terminal because source creates an
+  adjustment solid and uses `moveBefore` stack placement above the selected/top
+  layer, while current `create_adjustment_layer` has no reviewed insert-before
+  or layer-reorder read-back contract. `tool-layers-add-fill-with-color-cycle`
+  remains terminal because source persists color-cycle state through
+  `app.settings/app.preferences`; current effect tools can set explicit Fill
+  values but do not prove persistent cross-run settings semantics.
+  `tool-layers-connect-two-layers-with-a-line` remains terminal because source
+  creates an open stroked vector path with dynamic anchor-point expressions,
+  locked connector state, and stack/selection side effects; current shape tools
+  only cover primitive rectangle/ellipse creation. `tool-layers-create-shapes-from-text`
+  remains terminal because source uses localized AE menu-command text-to-shape
+  conversion and selection side effects; current `create_shape_layer` cannot
+  substitute glyph outline conversion. Parent reducer recorded stable
+  candidate-specific runtime tickets and unblock conditions.
 - 2026-06-05: Reopened the prior `GOAL_COMPLETE` conclusion for
   `full-intake-kyletmartinez` because terminal total 75 does not satisfy the new
   objective. Required preflight read active instructions, handoff, active plan,
@@ -337,6 +360,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened second Layers slice re-audit | Required to give the next four Layers blocked/skipped entries fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers returned for `tool-layers-add-3d-break`, `tool-layers-connect-two-layers-with-a-line`, and `tool-layers-create-shapes-from-text`; the `tool-layers-add-fill-with-color-cycle` explorer timed out and was closed after parent reducer had source/typed-tool evidence. Parent reducer reviewed source behavior, typed-tool surface, registry/live-lane evidence, duplicate ids, raw JSX/dependency/source-checkout risks, and scoped Full Intaker tickets. Scoped commands were run serially with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids <candidate>`, and `--allow-self-improvement-lane-synthesis` for all four candidates. Outcomes were terminal with stable parent-reducer tickets and fresh unblock conditions; no candidate was marked completed. Compact status/proof/ledger-summary were rerun. Closeout validation passed: `git diff --check` (line-ending warning only), `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake`. |
 | Reopened transfer work-area auth-aware retry | Required to replace the stale OpenAI CLI auth blocker with current evidence before continuing the remaining 58 blocked/skipped entries. | Passed/terminal: `codex.cmd login status` returned `Logged in using ChatGPT`; `git status --short` was clean before central writes; `node orchestrator/run-generic-repo-full-intake.mjs --ledger .codex-runtime/sdk/generic-repo-importer/kyletmartinez-after-effects-scripts-742f32d4-intake/queue-ledger.triage-75.json --run-id full-intake-kyletmartinez --context-percent 20 --max-items 1 --resolution-candidate-ids tool-compositions-transfer-composition-work-area --allow-self-improvement-lane-synthesis --compact-json` returned `completed_no_candidates` with one terminal ticket; live-lane report shows non-live checks passed but read-only CEP preflight failed at `node scripts/cep-panel-cdp-smoke.js inspect` with `connect ECONNREFUSED 127.0.0.1:8870`; compact status/proof/ledger-summary were rerun. Closeout validation passed: `git diff --check` (line-ending warning only), `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake` (rerun with longer timeout after the first 120s attempt timed out). No broad queue, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source-checkout write, broad/default CEP smoke, live user-asset mutation, push, PR, or GitHub automation was performed. |
 | Reopened compositions family re-audit | Required to give every composition-family blocked/skipped entry a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only explorers reviewed `tool-compositions-set-work-area-to-markers`, `tool-compositions-force-composition-panel-refresh`, `tool-compositions-rename-composition-to-file-name`, and `tool-compositions-save-frame-as-png` without edits/commits. Parent reducer also reviewed source behavior, registry/recipe/live-lane evidence, duplicate ids, raw JSX/dependency/source-checkout risks, and scoped Full Intaker tickets. Scoped commands were run with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids <candidate>`, and `--allow-self-improvement-lane-synthesis` for set-work-area-to-markers, force-composition-panel-refresh, rename-composition-to-file-name, and save-frame-as-png. Outcomes were terminal with fresh unblock conditions; no candidate was marked completed. Compact status/proof/ledger-summary were rerun. Closeout validation passed: `git diff --check` (line-ending warning only), `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake`. |
 | Reopened first Layers slice re-audit | Required to give the first remaining generated-only Layers slice fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers returned for `tool-layers-reset-selected-layer-labels` and `tool-layers-hard-solo-layers`; sidecar workers for track-matte labels and difference blend mode were closed after timeout because parent reducer already had source/typed-tool evidence. Parent reducer reviewed source behavior, typed-tool surface, registry/live-lane evidence, duplicate ids, raw JSX/dependency/source-checkout risks, and scoped Full Intaker tickets. Scoped commands were run serially with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids <candidate>`, and `--allow-self-improvement-lane-synthesis` for reset-selected-layer-labels, hard-solo-layers, set-all-track-matte-labels, and toggle-difference-blend-mode. Outcomes were terminal with stable parent-reducer tickets and fresh unblock conditions; no candidate was marked completed. Compact status/proof/ledger-summary were rerun. Closeout validation passed: `git diff --check` (line-ending warning only), `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake`. |
