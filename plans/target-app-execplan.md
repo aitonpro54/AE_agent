@@ -26,6 +26,22 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker Project PNG sequence single-candidate re-audit:
+  `tool-project-manually-render-png-sequence` now has fresh scoped
+  parentReducer review from the reopened run. Proposal-only Project sidecars
+  reviewed the remaining Project 4 candidates; parent reducer accepted only the
+  PNG sequence candidate in this serial step. Scoped retry ran with
+  `--context-percent 20`, `--max-items 1`, exact canonical candidate id,
+  `--allow-self-improvement-lane-synthesis`, `--no-commit`, and
+  `--compact-json`; it produced terminal ticket
+  `live-lane-family-551e17bd389140b6`, no open tickets, and no requeue. No
+  candidate was marked completed: source-exact behavior depends on
+  `Folder.selectDialog`, generated folder creation, `comp.time` mutation, and
+  undocumented `comp.saveFrameToPng` file output, while current approved lanes
+  cover render-queue setup only and explicitly exclude render execution/output
+  generation. Stable candidate-specific runtime ticket and ledger annotation
+  were written. Remaining reopened backlog without fresh parentReducer
+  evidence: 14 entries, Project 3 and Properties 11.
 - [x] Reopened Full Intaker Project file-export single-candidate re-audit:
   `tool-project-export-text-to-file` now has fresh scoped parentReducer review
   from the reopened run. `codex.cmd login status` confirms ChatGPT auth, the
@@ -282,15 +298,14 @@ old `AE_agent` repository remains the historical source.
 Continue the reopened Full Intaker objective. Do not accept
 `completed_no_candidates` or `terminal total=75` as success by itself.
 
-Current compact backlog map after the reopened Project file-export
-single-candidate re-audit: 15 blocked/skipped entries still need scoped review
-or completion. Remaining families are Project 4 and Properties 11. Continue
-Project next with `tool-project-manually-render-png-sequence`, then
-`tool-project-remove-all-proxies`, `tool-project-reveal-project-file`, and
-`tool-project-set-proxies-from-folder`. Keep file IO, `saveFrameToPng`, render
-execution, proxy mutation, reveal/shell, cleanup/deletion, and user-asset
-mutation approval-gated unless a scoped generated-only/read-only lane is
-explicitly safe.
+Current compact backlog map after the reopened Project PNG sequence
+single-candidate re-audit: 14 blocked/skipped entries still need scoped review
+or completion. Remaining families are Project 3 and Properties 11. Continue
+Project next with `tool-project-remove-all-proxies`,
+`tool-project-reveal-project-file`, and `tool-project-set-proxies-from-folder`.
+Keep file IO, `saveFrameToPng`, render execution, proxy mutation, reveal/shell,
+cleanup/deletion, and user-asset mutation approval-gated unless a scoped
+generated-only/read-only lane is explicitly safe.
 
 Push/PR remain forbidden. Do not run broad/default CEP smoke, Local/Ollama,
 fallback providers, dependency changes, raw JSX copy, source-checkout writes, or
@@ -298,6 +313,20 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-06: Parent reducer completed the reopened Project
+  `tool-project-manually-render-png-sequence` single-candidate review. Source
+  opens `Folder.selectDialog`, creates an output folder under the selected
+  destination, mutates `comp.time` across the active comp work area, and writes
+  numbered PNG files through undocumented `comp.saveFrameToPng`. Existing
+  render-queue generated-only recipes and lane are not equivalent because they
+  add generated comps to the queue without render start, output file generation,
+  filesystem traversal, or `saveFrameToPng`. The candidate remains terminal
+  until an approved generated-only PNG sequence/file-output contract exists with
+  sandboxed output root, bounded frame/work-area policy, comp-time
+  restore/read-back, file list/count/name or hash verification,
+  cleanup/rollback, and an explicit decision on the undocumented API risk. No
+  raw JSX, dependency/package change, source-checkout write, user-asset
+  mutation, broad queue run, broad CEP smoke, push, or PR was performed.
 - 2026-06-06: Parent reducer completed the reopened Project
   `tool-project-export-text-to-file` single-candidate review. Source reads the
   active comp selected layers, extracts `Source Text` for text layers, and
@@ -614,6 +643,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened Project PNG sequence single-candidate re-audit | Required to give `tool-project-manually-render-png-sequence` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only Project sidecars reviewed all remaining Project 4 candidates without edits/commits. Parent reducer accepted only the PNG sequence candidate in this serial step, verified baton active, clean tracked worktree, canonical ledger id, source SHA, duplicate recipe/registry/live-lane evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 14. Closeout validation is recorded in the current handoff. |
 | Reopened Project file-export single-candidate re-audit | Required to give `tool-project-export-text-to-file` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: parent reducer verified baton active, clean tracked worktree, matching source SHA, no duplicate recipe path/registry id, no raw JSX/dependency/package/source-checkout writes, no child commit/branch, and scoped Full Intaker ticket `live-lane-family-3c126e831e13c3c7`. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 15. Closeout validation is recorded in the current handoff. |
 | Reopened Project render/cleanup first wave | Required to give `tool-project-add-folder-to-render-queue`, `tool-project-clean-render-queue`, `tool-project-clean-selected-folder`, and `tool-project-clean-up-overlord-folder` fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers reviewed three candidates without edits/commits; the `clean-selected-folder` explorer timed out and was closed after parent reducer had source/typed-tool evidence. Parent reducer created the generated-only Project-folder render queue recipe/registry/lane for `add-folder-to-render-queue`, reran the scoped candidate, and recorded live proof blocker `openai-cli/gpt-5.5 is not ready` after non-live validation and read-only CEP preflight passed. The three cleanup candidates remained terminal on missing safe cleanup/delete/filesystem contracts. Stable candidate-specific runtime tickets and ledger annotations were written. Compact ledger map now shows remaining fresh-review backlog 16. Closeout validation is recorded in the current handoff. |
 | Reopened Project metadata-like slice re-audit | Required to give `tool-project-add-selection-to-new-folder`, `tool-project-reset-imported-item-names`, `tool-project-set-all-item-labels-to-none`, `tool-project-toggle-preserve-nested-frame-rate`, and `tool-project-toggle-timecode-and-start-frames` fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decision, and unblock conditions. | Passed/terminal: proposal-only explorers reviewed four candidates without edits/commits; parent reducer reviewed the fifth locally plus exact source checkout files, duplicate recipe/registry/live-lane ids, typed-tool surface, raw JSX/dependency/source-checkout risks, and child commit/branch absence. Scoped commands were run serially with `--context-percent 20`, `--max-items 1`, `--resolution-candidate-ids <candidate>`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; all five produced terminal tickets with no requeue/open tickets. Stable candidate-specific runtime tickets and ledger annotations were written. Compact ledger map now shows remaining fresh-review backlog 20. Closeout validation is recorded in the current handoff. |
