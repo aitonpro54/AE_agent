@@ -264,6 +264,48 @@
       "scope": "generated-only composition work-area transfer proof using get_comp_details source/target evidence, set_comp_work_area, target read-back, semantic verification, and cleanup; persistent app.settings clipboard, Alt-key branching, marker-derived work areas, current-time inference, layer retiming, duration changes, and raw JSX semantics remain fail-closed"
     },
     {
+      "id": "lottie-layer-out-point-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_comp_details",
+        "set_layer_time_range"
+      ],
+      "allowedTools": [
+        "get_active_comp",
+        "get_comp_details",
+        "get_layer_details",
+        "set_layer_time_range"
+      ],
+      "allowedUnsafeSignals": [
+        "thirdPartyAssumption"
+      ],
+      "candidateIds": [
+        "tool-lottie-prepare-layer-out-points-for-lottie"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-timing-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "lottie-layer-out-point",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/prepare-layer-out-points-for-lottie-typed-plan.md",
+        "recipes/generic-repo-intake/tool-lottie-prepare-layer-out-points-for-lottie.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only Lottie layer out-point proof using explicit generated comp/layer timing evidence, set_layer_time_range to duration plus one frameDuration, and get_comp_details/get_layer_details read-back; source-exact all-project traversal, user comp mutation, exporter hidden state, and raw JSX semantics remain fail-closed"
+    },
+    {
       "id": "render-queue-generated-only",
       "requiredTools": [
         "add_comp_to_render_queue",

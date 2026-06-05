@@ -1756,6 +1756,116 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "prepare-layer-out-points-for-lottie-typed-plan",
+      "title": "Prepare Layer Out Points For Lottie Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "lottie",
+        "layers",
+        "layer-timing",
+        "outPoint",
+        "frameDuration",
+        "generated-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Extend reviewed generated layer out points one frame past a generated composition end for Lottie export compatibility.",
+        "appliesWhen": [
+          "The user asks to prepare generated composition layers for Lottie export by extending layers that end exactly at the composition duration.",
+          "A safe typed adaptation is acceptable instead of source-exact all-project composition traversal."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Generated composition inspected with get_comp_details before timing mutation."
+        },
+        {
+          "name": "layerTimingTargets",
+          "type": "array",
+          "required": true,
+          "description": "Reviewed layer indexes whose current outPoint equals the composition duration."
+        }
+      ],
+      "targetAssumptions": [
+        "The target composition is generated or explicitly approved for mutation before timing changes.",
+        "The plan reads comp duration, frameRate, and layer outPoint evidence before mutation.",
+        "Only layers whose current outPoint equals the comp duration within tolerance are extended.",
+        "The workflow changes only reviewed layer outPoint values through set_layer_time_range.",
+        "All-project CompItem traversal, user composition mutation, exporter hidden state and exact source JSX semantics remain typed-tool gaps."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/prepare-layer-out-points-for-lottie-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "set_layer_time_range",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read generated comp timing, set explicit target layer out points to duration plus one frame, then read the same targets back.",
+        "steps": [
+          "Run get_active_comp only when the active comp is the explicit generated target.",
+          "Run get_comp_details for the target composition and record duration, frameRate, frameDuration, layer names, indexes, inPoint and outPoint values.",
+          "Build an explicit reviewed layerIndices list only from layers whose current outPoint equals the comp duration within tolerance.",
+          "Run set_layer_time_range for the reviewed layer indices with outPoint equal to duration plus one frameDuration.",
+          "Run get_comp_details and optional get_layer_details after mutation to confirm each target layer outPoint changed and non-target layer timing stayed unchanged.",
+          "Fail closed when the request needs source-exact all-project traversal, user comp mutation, exporter hidden state, or raw ExtendScript."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_comp_details shows the target generated comp duration, frameRate, layer indexes, layer names, and current outPoint values.",
+          "The mutating set_layer_time_range step targets only explicit reviewed layer indexes.",
+          "Post-run get_comp_details or get_layer_details shows every changed target outPoint equals duration + frameDuration.",
+          "Post-run evidence shows unchanged comp duration and unchanged timing for non-target layers.",
+          "The plan reports all-project CompItem traversal and exact source JSX behavior as unsupported by this typed-plan adaptation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-lottie-prepare-layer-out-points-for-lottie as advisory typed-plan coverage for explicit generated layer timing changes.",
+          "Generated-only proof reuses the existing layer timing lane based on set_layer_time_range and timing read-back."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-tool-lottie-prepare-layer-out-points-for-lottie",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the timing intent behind kyletmartinez/after-effects-scripts Lottie/Prepare_Layer_Out_Points_For_Lottie.jsx into existing typed tools as explicit generated comp/layer outPoint guidance using get_comp_details, set_layer_time_range, and get_layer_details read-back; no source JSX copied. Source-exact all-project CompItem traversal, user comp mutation, exporter hidden state, native undo semantics and raw ExtendScript require a separate generated-prefix traversal contract or fail closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Use only current typed evidence to choose generated target layers; do not infer layer targets from prior chat context.",
+        "Do not scan every project composition or mutate user comps under this recipe.",
+        "Do not use this recipe for changing comp duration, inPoint/startTime, layer source relinking, marker edits, effects, expressions, keyframes, render queue items, project folder changes, files, proxies, cleanup, or raw ExtendScript."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "duplicate-selected-layer-typed-plan",
       "title": "Duplicate Selected Layer Typed Plan",
       "status": "recipe",

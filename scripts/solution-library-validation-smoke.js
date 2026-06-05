@@ -56,6 +56,7 @@ const IMPORTED_ADVISORY_IDS = [
   "find-all-expressions-typed-plan",
   "fix-fresh-pickwhip-expression-typed-plan",
   "get-selected-layer-duration-typed-plan",
+  "prepare-layer-out-points-for-lottie-typed-plan",
   "calculate-distance-between-layers-typed-plan",
   "layer-selection-get-typed-plan",
   "alert-selected-layer-index-typed-plan",
@@ -139,6 +140,7 @@ const AVAILABLE_TOOLS = [
   "set_layer_transform",
   "set_comp_properties",
   "set_comp_work_area",
+  "set_layer_time_range",
   "add_comp_to_render_queue",
   "set_render_queue_output",
   "add_layer_marker",
@@ -1204,6 +1206,27 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /primary selected layer/.test(note)), `${id}: notes must reject primary-selection guessing.`);
       assert(solution.notes.some((note) => /changing layer duration/.test(note)), `${id}: notes must keep timing mutation out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Get_Selected_Layer_Duration/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "prepare-layer-out-points-for-lottie-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "set_layer_time_range", "get_layer_details"],
+        `${id}: imported Lottie out-point workflow should stay on the narrow layer timing typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: Lottie out-point workflow must be mutating.`);
+      assert.strictEqual(solution.requiredSafetyGates.allowMutations, true, `${id}: Lottie out-point workflow must require mutation gates.`);
+      assert.strictEqual(solution.requiredSafetyGates.postMutationReadBack, true, `${id}: Lottie out-point workflow must require read-back.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp timing evidence.`);
+      assert(text.includes("set_layer_time_range"), `${id}: recipe should use the layer timing typed tool.`);
+      assert(text.includes("duration + frameDuration"), `${id}: recipe should compute one-frame extension from comp timing evidence.`);
+      assert(text.includes("Do not scan all project items"), `${id}: recipe should fail closed for source-global traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must capture comp details before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_time_range/.test(step)), `${id}: verification must include set_layer_time_range.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include optional layer details read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /duration \+ frameDuration/.test(item)), `${id}: verification must require duration plus frameDuration evidence.`);
+      assert(solution.notes.some((note) => /Do not scan every project composition/.test(note)), `${id}: notes must reject all-project traversal.`);
+      assert(solution.notes.some((note) => /raw ExtendScript/.test(note)), `${id}: notes must reject raw ExtendScript.`);
+      assert(solution.promotionHistory.some((entry) => /Prepare_Layer_Out_Points_For_Lottie/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "calculate-distance-between-layers-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2825,6 +2848,21 @@ function assertActualRetrieval(registry) {
   assert(selectedLayerDurationPromptSection.includes("get_layer_details"), "prompt section should prefer get_layer_details for selected-layer duration read-back.");
   assert(selectedLayerDurationPromptSection.includes("outPoint"), "prompt section should preserve timing-field duration guidance.");
   assert(!/run_extendscript/i.test(selectedLayerDurationPromptSection), "selected-layer duration guidance should not recommend raw ExtendScript.");
+
+  const prepareLottieOutPointsRetrieval = retrieveSolutionHints("Prepare generated Lottie layers by extending layer outPoints one frame past the composition duration after inspecting timing.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(prepareLottieOutPointsRetrieval.ok, true);
+  assert(ids(prepareLottieOutPointsRetrieval).includes("prepare-layer-out-points-for-lottie-typed-plan"), "Lottie out-point advisory recipe should surface for generated Lottie timing prompts.");
+  const prepareLottieOutPointsPromptSection = formatSolutionHintsForPrompt(prepareLottieOutPointsRetrieval);
+  assert(prepareLottieOutPointsPromptSection.includes("Prepare Layer Out Points For Lottie Typed Plan"), "prompt section should include Lottie out-point advisory title.");
+  assert(prepareLottieOutPointsPromptSection.includes("get_comp_details"), "prompt section should require comp timing evidence for Lottie out-point workflows.");
+  assert(prepareLottieOutPointsPromptSection.includes("set_layer_time_range"), "prompt section should prefer set_layer_time_range for Lottie out-point mutation.");
+  assert(prepareLottieOutPointsPromptSection.includes("duration plus one frame"), "prompt section should preserve one-frame extension guidance.");
+  assert(prepareLottieOutPointsPromptSection.includes("source-exact"), "prompt section should preserve source-exact traversal blocker.");
+  assert(!/run_extendscript/i.test(prepareLottieOutPointsPromptSection), "Lottie out-point guidance should not recommend raw ExtendScript.");
 
   const layerDistanceRetrieval = retrieveSolutionHints("Calculate the distance between the two selected layers from their position values without moving anything.", {
     registry,
