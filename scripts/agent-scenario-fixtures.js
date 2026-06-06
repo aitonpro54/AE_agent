@@ -2695,6 +2695,68 @@ function agentCompositionMarkerWorkAreaScenarioPlans(runPrefix) {
   }));
 }
 
+function agentCompositionLayerMarkerCopyScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Composition Layer Marker Copy`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Solid`;
+  const compToLayerMarker = {
+    time: 0.75,
+    comment: "Comp Marker Copy",
+    duration: 0.1
+  };
+  const layerToCompMarker = {
+    time: 1.5,
+    comment: "Layer Marker Copy",
+    duration: 0.2
+  };
+
+  return [
+    {
+      id: "generated-composition-layer-marker-copy",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "add_comp_marker",
+        "get_comp_details",
+        "add_layer_marker",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        compositionLayerMarkerCopyReadBack: true,
+        compName,
+        layerName,
+        compToLayerMarker,
+        layerToCompMarker,
+        compositionMarkerCount: 2,
+        layerMarkerCount: 2
+      },
+      plan: {
+        summary: "Generated-only live QA for copying composition markers to layer markers and layer markers to composition markers.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated marker copy comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 4, frameRate: 24, bgColor: [0.07, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "generated-only composition/layer marker copy validation" } },
+          { title: "Create generated marker copy layer", tool: "create_solid_layer", args: { compName, name: layerName, color: [0.18, 0.42, 0.78], width: 320, height: 180, startTime: 0, duration: 4 } },
+          { title: "Seed generated composition marker", tool: "add_comp_marker", args: { compName, time: compToLayerMarker.time, comment: compToLayerMarker.comment, duration: compToLayerMarker.duration, expectedMarkerCountBefore: 0 } },
+          { title: "Read generated composition marker evidence", tool: "get_comp_details", args: { compName, includeLayers: true, includeMarkers: true, markerLimit: 10 } },
+          { title: "Copy reviewed composition marker to layer marker", tool: "add_layer_marker", args: { compName, layerIndex: 1, time: compToLayerMarker.time, comment: compToLayerMarker.comment, duration: compToLayerMarker.duration } },
+          { title: "Read copied layer marker evidence", tool: "get_layer_details", args: { compName, layerIndex: 1 } },
+          { title: "Seed generated layer marker for reverse copy", tool: "add_layer_marker", args: { compName, layerIndex: 1, time: layerToCompMarker.time, comment: layerToCompMarker.comment, duration: layerToCompMarker.duration } },
+          { title: "Read source layer marker evidence", tool: "get_layer_details", args: { compName, layerIndex: 1 } },
+          { title: "Copy reviewed layer marker to composition marker", tool: "add_comp_marker", args: { compName, time: layerToCompMarker.time, comment: layerToCompMarker.comment, duration: layerToCompMarker.duration, expectedMarkerCountBefore: 1 } },
+          { title: "Read copied composition marker evidence", tool: "get_comp_details", args: { compName, includeLayers: false, includeMarkers: true, markerLimit: 10 } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentRemainingTailContractsScenarioPlans(runPrefix) {
   const base = `${runPrefix} Remaining Tail Contracts`;
   const cameraBase = `${base} Camera Controller`;
@@ -3693,6 +3755,7 @@ module.exports = {
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
   agentCompositionVersionScenarioPlans,
+  agentCompositionLayerMarkerCopyScenarioPlans,
   agentCompositionMarkerReadScenarioPlans,
   agentCompositionMarkerWorkAreaScenarioPlans,
   agentCompPropertiesScenarioPlans,

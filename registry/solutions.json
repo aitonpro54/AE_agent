@@ -1105,6 +1105,238 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "copy-composition-markers-to-layer-typed-plan",
+      "title": "Copy Composition Markers To Layer Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "marker",
+        "markers",
+        "composition-marker",
+        "layer-marker",
+        "copy",
+        "timeline",
+        "generated-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Copy reviewed composition marker evidence to one explicit layer as layer markers using typed tools.",
+        "appliesWhen": [
+          "The user asks to copy composition markers onto a layer.",
+          "A safe typed adaptation is acceptable instead of source-exact active-comp or selected-layer traversal."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Active or explicit composition verified by get_active_comp or get_comp_details before marker evidence is used."
+        },
+        {
+          "name": "targetLayer",
+          "type": "object",
+          "required": true,
+          "description": "One explicit generated or approved layer index from current typed layer evidence."
+        },
+        {
+          "name": "markerCopyPlan",
+          "type": "array",
+          "required": true,
+          "description": "Reviewed composition marker key/time/comment/duration evidence and the destination layer."
+        }
+      ],
+      "targetAssumptions": [
+        "Composition marker evidence is read from get_comp_details with includeMarkers:true and ordered by comp.markerProperty.keyTime.",
+        "The destination is one explicit generated or approved layer from current get_comp_details/get_layer_details evidence.",
+        "The workflow creates corresponding layer markers through add_layer_marker and verifies with get_layer_details.",
+        "It does not mutate composition markers, update/delete markers, analyze audio, change layer timing, touch render queue items, write files, or run raw JSX."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/copy-composition-markers-to-layer-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "add_layer_marker",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read composition markers, add corresponding markers to one explicit layer, then read that layer back.",
+        "steps": [
+          "Run get_active_comp only when the active composition is the intended target; otherwise bind explicit comp item/name evidence.",
+          "Run get_comp_details with includeLayers:true, includeMarkers:true, and a bounded markerLimit for the target composition.",
+          "Build markerCopyPlan from markers.items, preserving each source keyIndex, time, comment, optional duration, and destination layer.",
+          "Run add_layer_marker once for each reviewed composition marker against the explicit target layer.",
+          "Run get_layer_details for the target layer after mutation and compare marker comment, time, and optional duration.",
+          "Fail closed when the request requires selected-layer inference, marker update/delete, composition marker mutation, audio analysis, file I/O, render queue work, or raw ExtendScript."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_comp_details includeMarkers:true returns composition markers ordered by comp.markerProperty.keyTime.",
+          "Dry-run evidence lists markerCopyPlan for every copied marker and the reviewed destination layer.",
+          "Each add_layer_marker result reports the copied marker on the expected layer.",
+          "Post-run get_layer_details shows every copied marker comment, time, and duration on the reviewed layer.",
+          "The plan reports source-exact UI traversal, selected-layer ambiguity, marker update/delete, composition marker mutation, audio-derived markers, file I/O, render queue work, and raw JSX as unsupported."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Added as a narrow Full Intaker support contract for composition-marker-to-layer-marker copy after composition marker read-back became available."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-tool-markers-copy-composition-markers-to-layer",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the marker-copy intent behind Markers/Copy_Composition_Markers_To_Layer.jsx into typed tools as get_comp_details includeMarkers:true evidence, explicit generated or approved layer targeting, add_layer_marker writes, and get_layer_details read-back; no source JSX copied. Source-exact active-comp traversal, selected-layer traversal, native undo semantics, marker update/delete, audio-derived markers, layer timing changes, file I/O, render queue work, and raw JSX remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Use only current get_comp_details/get_layer_details evidence for destination layer binding; do not infer marker or layer targets from prior chat context.",
+        "Do not use this recipe for copying layer markers back to a composition, marker update/delete, audio-derived markers, work-area changes, layer timing changes, file I/O, render queue work, or raw ExtendScript."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "copy-layer-markers-to-composition-typed-plan",
+      "title": "Copy Layer Markers To Composition Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "marker",
+        "markers",
+        "composition-marker",
+        "layer-marker",
+        "copy",
+        "timeline",
+        "generated-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Copy reviewed layer marker evidence from one explicit layer to composition markers using typed tools.",
+        "appliesWhen": [
+          "The user asks to copy layer markers onto the composition timeline.",
+          "A safe typed adaptation is acceptable instead of source-exact active-comp or selected-layer traversal."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Active or explicit composition verified by get_active_comp or get_comp_details before composition marker mutation."
+        },
+        {
+          "name": "sourceLayer",
+          "type": "object",
+          "required": true,
+          "description": "One explicit generated or approved source layer verified by get_layer_details before marker evidence is used."
+        },
+        {
+          "name": "markerCopyPlan",
+          "type": "array",
+          "required": true,
+          "description": "Reviewed layer marker key/time/comment/duration evidence and the destination composition."
+        }
+      ],
+      "targetAssumptions": [
+        "Layer marker evidence is read from get_layer_details for one explicit generated or approved source layer.",
+        "Existing composition marker count is read from get_comp_details with includeMarkers:true before add_comp_marker steps.",
+        "The workflow creates corresponding composition markers through add_comp_marker and verifies with get_comp_details includeMarkers:true.",
+        "It does not mutate layer markers, update/delete markers, analyze audio, change work area or layer timing, touch render queue items, write files, or run raw JSX."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/copy-layer-markers-to-composition-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_layer_details",
+          "get_comp_details",
+          "add_comp_marker"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read layer markers from one explicit layer, add corresponding composition markers, then read the composition markers back.",
+        "steps": [
+          "Run get_active_comp only when the active composition is the intended target; otherwise bind explicit comp item/name evidence.",
+          "Run get_layer_details for one explicit generated or approved source layer and require layer marker read-back evidence.",
+          "Run get_comp_details with includeMarkers:true before mutation to record marker count and comp.markerProperty.keyTime ordering.",
+          "Build markerCopyPlan from layer marker evidence, preserving each source keyIndex, time, comment, optional duration, and destination composition.",
+          "Run add_comp_marker once for each reviewed layer marker with expectedMarkerCountBefore when available.",
+          "Run get_comp_details with includeMarkers:true after mutation and compare marker comment, time, and optional duration.",
+          "Fail closed when the request requires selected-layer inference, marker update/delete, layer marker mutation, audio analysis, work-area mutation, file I/O, render queue work, or raw ExtendScript."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_layer_details returns marker evidence for one reviewed layer.",
+          "Pre-run get_comp_details includeMarkers:true records current composition marker count and comp.markerProperty.keyTime ordering.",
+          "Dry-run evidence lists markerCopyPlan for every copied marker and the reviewed destination composition.",
+          "Each add_comp_marker result reports marker-count increment evidence and the copied composition marker.",
+          "Post-run get_comp_details includeMarkers:true shows every copied marker comment, time, and duration on the reviewed composition.",
+          "The plan reports source-exact UI traversal, selected-layer ambiguity, marker update/delete, layer marker mutation, audio-derived markers, work-area mutation, file I/O, render queue work, and raw JSX as unsupported."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Added as a narrow Full Intaker support contract for layer-marker-to-composition-marker copy after composition marker write/read-back became available."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-tool-markers-copy-layer-markers-to-composition",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the marker-copy intent behind Markers/Copy_Layer_Markers_To_Composition.jsx into typed tools as get_layer_details marker evidence, get_comp_details includeMarkers:true count/order evidence, add_comp_marker writes, and composition marker read-back; no source JSX copied. Source-exact active-comp traversal, selected-layer traversal, native undo semantics, marker update/delete, audio-derived markers, work-area mutation, layer timing changes, file I/O, render queue work, and raw JSX remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Use only current get_layer_details/get_comp_details evidence for source layer and destination composition binding; do not infer marker targets from prior chat context.",
+        "Do not use this recipe for copying composition markers to a layer, marker update/delete, audio-derived markers, work-area changes, layer timing changes, file I/O, render queue work, or raw ExtendScript."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "add-markers-to-selected-layers-typed-plan",
       "title": "Add Markers To Selected Layers Typed Plan",
       "status": "recipe",

@@ -13,6 +13,7 @@ const {
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
   agentCompositionVersionScenarioPlans,
+  agentCompositionLayerMarkerCopyScenarioPlans,
   agentCompositionMarkerReadScenarioPlans,
   agentCompositionMarkerWorkAreaScenarioPlans,
   agentCompPropertiesScenarioPlans,
@@ -776,6 +777,26 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(compositionMarkerWorkArea.plan.steps[2].args.expectedMarkerCountBefore, 1);
   assert.strictEqual(compositionMarkerWorkArea.plan.steps[4].args.start, 0.75);
   assert.strictEqual(compositionMarkerWorkArea.plan.steps[4].args.duration, 1.5);
+
+  const [compositionLayerMarkerCopy] = agentCompositionLayerMarkerCopyScenarioPlans("Codex QA AUX-CMLMC Fixture");
+  assert.strictEqual(compositionLayerMarkerCopy.id, "generated-composition-layer-marker-copy");
+  assert.strictEqual(compositionLayerMarkerCopy.expectedReadBack.compositionLayerMarkerCopyReadBack, true);
+  assert.deepStrictEqual(compositionLayerMarkerCopy.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_solid_layer",
+    "add_comp_marker",
+    "get_comp_details",
+    "add_layer_marker",
+    "get_layer_details",
+    "add_layer_marker",
+    "get_layer_details",
+    "add_comp_marker",
+    "get_comp_details"
+  ]);
+  assert.strictEqual(compositionLayerMarkerCopy.plan.steps[2].args.expectedMarkerCountBefore, 0);
+  assert.strictEqual(compositionLayerMarkerCopy.plan.steps[4].args.comment, "Comp Marker Copy");
+  assert.strictEqual(compositionLayerMarkerCopy.plan.steps[8].args.expectedMarkerCountBefore, 1);
+  assert.strictEqual(compositionLayerMarkerCopy.plan.steps[9].args.includeMarkers, true);
 
   const [pathGeometry] = agentPathGeometryScenarioPlans("Codex QA AUX-PATH Fixture");
   assert.strictEqual(pathGeometry.id, "generated-shape-mask-path-geometry");

@@ -9,6 +9,7 @@ const {
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
   agentCompositionVersionScenarioPlans,
+  agentCompositionLayerMarkerCopyScenarioPlans,
   agentCompositionMarkerReadScenarioPlans,
   agentCompositionMarkerWorkAreaScenarioPlans,
   agentCompPropertiesScenarioPlans,
@@ -799,6 +800,24 @@ function openAiCliCompositionMarkerWorkAreaScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_COMPOSITION_MARKER_WORK_AREA_PREFIX || "Codex QA AUX-CMWA",
     scenarioFactory: agentCompositionMarkerWorkAreaScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliCompositionLayerMarkerCopyScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-composition-layer-marker-copy",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_COMPOSITION_LAYER_MARKER_COPY_PREFIX || "Codex QA AUX-CMLMC",
+    scenarioFactory: agentCompositionLayerMarkerCopyScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -7066,6 +7085,10 @@ async function main() {
   }
   if (command === "agent-composition-marker-work-area-openai-cli-smoke" || command === "full-ui-agent-composition-marker-work-area-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliCompositionMarkerWorkAreaScenarioConfig());
+    return;
+  }
+  if (command === "agent-composition-layer-marker-copy-openai-cli-smoke" || command === "full-ui-agent-composition-layer-marker-copy-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliCompositionLayerMarkerCopyScenarioConfig());
     return;
   }
   if (command === "agent-remaining-tail-contracts-openai-cli-smoke" || command === "full-ui-agent-remaining-tail-contracts-openai-cli-smoke") {

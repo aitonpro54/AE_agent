@@ -26,6 +26,21 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker composition/layer marker copy contract slice:
+  `tool-markers-copy-composition-markers-to-layer` and
+  `tool-markers-copy-layer-markers-to-composition` now have parent-owned
+  non-live generated-only typed-plan/lane coverage without scoped retry or
+  live CEP/AE proof. Added advisory recipes and intake notes for copying
+  reviewed `get_comp_details(includeMarkers:true)` composition marker evidence
+  to one explicit layer via `add_layer_marker`/`get_layer_details`, and for
+  copying reviewed `get_layer_details` layer marker evidence to composition
+  markers via `add_comp_marker`/`get_comp_details(includeMarkers:true)`.
+  Added registry retrieval assertions, generated-only scenario/report fixtures,
+  future CEP command wiring, and `composition-layer-marker-copy-generated-only`
+  Full Intaker family metadata. Source-exact active-comp/selected-layer
+  traversal, marker update/delete, audio-derived markers, work-area mutation,
+  layer timing changes, file I/O, render queue work, raw JSX, candidate
+  completion, and user-asset mutation remain fail-closed.
 - [x] Reopened Full Intaker Essential Graphics / Essential Properties contract
   slice: `tool-properties-add-properties-to-essential-graphics` and
   `tool-properties-expose-essential-properties` now have a parent-owned
@@ -709,6 +724,16 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-06: Parent reducer accepted only a non-live generated-only
+  composition/layer marker copy adaptation for
+  `tool-markers-copy-composition-markers-to-layer` and
+  `tool-markers-copy-layer-markers-to-composition`. The safe path copies only
+  reviewed marker evidence between `get_comp_details(includeMarkers:true)` and
+  `get_layer_details` using explicit `add_layer_marker`/`add_comp_marker`
+  steps plus read-back. This does not claim source-exact active-comp or
+  selected-layer traversal, marker update/delete, audio-derived markers,
+  work-area mutation, layer timing changes, file I/O, render queue work, raw
+  JSX, user-asset mutation, live proof, or candidate completion.
 - 2026-06-06: Essential Graphics / Essential Properties reopened slice is
   contract-ready only. `get_layer_essential_properties` and
   `get_essential_graphics_controllers` are read-only and may be exposed through
@@ -1303,6 +1328,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened composition/layer marker copy contract slice | Required to give `tool-markers-copy-composition-markers-to-layer` and `tool-markers-copy-layer-markers-to-composition` generated-only typed-plan/lane coverage without approving source-exact active-comp/selected-layer traversal, marker lifecycle edits, audio-derived markers, file I/O, render queue work, raw JSX, or live CEP/AE proof. | Passed/contract-ready: parent-owned implementation added `copy-composition-markers-to-layer-typed-plan`, `copy-layer-markers-to-composition-typed-plan`, generic intake notes, registry retrieval assertions, generated-only scenario/report fixture, CEP command wiring, and `composition-layer-marker-copy-generated-only` Full Intaker family metadata. Validation passed: touched-file `node --check`; JSON parse for registry/live-lane; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `node scripts/sdk-generic-repo-full-intake-smoke.js`; `node scripts/sdk-generic-repo-importer-command-smoke.js`; `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`; and `npm.cmd run smoke:full-intake` on rerun with a longer timeout after the parallel 240s attempt timed out. No scoped retry, live proof, candidate completion, broad queue, Local/Ollama, fallback provider, dependency/package change, push, or PR was run. |
 | Reopened Essential Graphics / Essential Properties contract slice | Required to give `tool-properties-add-properties-to-essential-graphics` and `tool-properties-expose-essential-properties` a generated-only typed contract/lane without approving selectedProperties traversal, broad Essential Properties writes, MOGRT export, user-template mutation, or live CEP/AE proof. | Passed/contract-ready: parent-owned implementation added `get_layer_essential_properties`, `get_essential_graphics_controllers`, `add_property_to_essential_graphics`, plan-repair aliases, semantic verification, recipe/intake notes, registry retrieval, scenario/report fixture, CEP command wiring, ChatGPT connector read-only coverage, and `essential-graphics-generated-only` Full Intaker family metadata. Validation passed: touched-file `node --check`; JSON parse for registry/live-lane; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `node scripts/chatgpt-connector-smoke.js`; `node scripts/smoke-test.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake` on rerun with a longer timeout after the parallel 180s attempt timed out; and `git diff --check` with line-ending warnings only. No scoped retry, live proof, candidate completion, broad queue, Local/Ollama, fallback provider, dependency/package change, push, or PR was run. |
 | Reopened shape/mask path geometry contract slice | Required to unblock future safe review for shape/mask path geometry candidates without copying raw JSX or running live mutation. | Passed/contract-ready: parent-owned implementation added `get_path_geometry`/`set_path_geometry`, connector read-only schema, plan repair aliases, semantic verification, generated-only scenario/report fixture, CEP command wiring for future proof, and queue smoke coverage. No candidate was marked completed. Validation passed: touched-file `node --check`; `node scripts/semantic-verification-smoke.js`; `node scripts/smoke-test.js`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/chatgpt-connector-smoke.js`; compact status/proof/ledger-summary; `git diff --check` with line-ending warnings only; `npm.cmd run check:rules`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; and `npm.cmd run smoke:full-intake`. No broad queue, live CEP proof, mutating live AE validation, Local/Ollama, fallback provider, dependency/package change, push, or PR was run. |
 | Reopened Puppet pin type contract slice | Required to give `tool-properties-toggle-puppet-pin-types` a generated-only typed contract/lane without approving live CEP/AE mutation or source-exact selected pin traversal. | Passed/contract-ready: parent-owned implementation added `set_puppet_pin_type`, plan-repair aliases, semantic verification, recipe/intake note, registry retrieval, scenario/report fixture, CEP command wiring, ChatGPT connector read-only guard coverage, and `puppet-pin-type-generated-only` Full Intaker family metadata. The contract accepts only explicit `ADBE FreePin3 PosPin Type` property paths under `ADBE FreePin3 PosPin Atom` evidence and enum values `1`/`position` or `4`/`advanced`; missing generated pin atom evidence remains fail-closed. Validation passed: touched-file `node --check`; JSON parse for registry/live-lane; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `node scripts/chatgpt-connector-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake`; compact status/proof/ledger-summary; and `git diff --check` with line-ending warnings only. No scoped retry, live proof, candidate completion, broad queue, Local/Ollama, fallback provider, dependency/package change, push, or PR was run. |

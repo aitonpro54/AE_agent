@@ -92,6 +92,8 @@ const IMPORTED_ADVISORY_IDS = [
   "transfer-composition-work-area-typed-plan",
   "read-composition-markers-typed-plan",
   "set-work-area-to-markers-typed-plan",
+  "copy-composition-markers-to-layer-typed-plan",
+  "copy-layer-markers-to-composition-typed-plan",
   "change-nested-composition-duration-typed-plan",
   "change-nested-composition-duration-with-timecode-typed-plan",
   "change-nested-composition-start-frame-typed-plan",
@@ -409,6 +411,48 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /marker-derived workAreaDuration/.test(item)), `${id}: verification must require marker-derived duration evidence.`);
       assert(solution.notes.some((note) => /layer marker/.test(note)), `${id}: notes must forbid layer marker substitution.`);
       assert(solution.promotionHistory.some((entry) => /Set_Work_Area_To_Markers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "copy-composition-markers-to-layer-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "add_layer_marker", "get_layer_details"],
+        `${id}: composition-to-layer marker copy should stay on comp marker read plus layer marker write/read-back.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: composition-to-layer marker copy must be mutating.`);
+      assert(text.includes("includeMarkers:true"), `${id}: recipe should require composition marker read evidence.`);
+      assert(text.includes("markerCopyPlan"), `${id}: recipe should disclose the reviewed marker copy plan.`);
+      assert(text.includes("add_layer_marker"), `${id}: recipe should use add_layer_marker for destination layer markers.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer marker read-back.`);
+      assert(text.includes("composition marker mutation"), `${id}: recipe should forbid mutating composition markers in this direction.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step) && /includeMarkers:true/.test(step)), `${id}: verification must read composition marker evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /markerCopyPlan/.test(step)), `${id}: verification must include markerCopyPlan.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_layer_marker/.test(step)), `${id}: verification must include add_layer_marker.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer markers back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /comp\.markerProperty\.keyTime/.test(item)), `${id}: verification must preserve composition marker ordering.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /destination layer/.test(item)), `${id}: verification must require destination layer evidence.`);
+      assert(solution.notes.some((note) => /Copy_Layer_Markers_To_Composition/.test(note) || /copying layer markers back/.test(note)), `${id}: notes must keep reverse copy direction separate.`);
+      assert(solution.promotionHistory.some((entry) => /Copy_Composition_Markers_To_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "copy-layer-markers-to-composition-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_layer_details", "get_comp_details", "add_comp_marker"],
+        `${id}: layer-to-composition marker copy should stay on layer marker read plus comp marker write/read-back.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: layer-to-composition marker copy must be mutating.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require source layer marker evidence.`);
+      assert(text.includes("includeMarkers:true"), `${id}: recipe should require composition marker read-back.`);
+      assert(text.includes("markerCopyPlan"), `${id}: recipe should disclose the reviewed marker copy plan.`);
+      assert(text.includes("add_comp_marker"), `${id}: recipe should use add_comp_marker for destination composition markers.`);
+      assert(text.includes("layer marker mutation"), `${id}: recipe should forbid mutating layer markers in this direction.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer marker evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step) && /includeMarkers:true/.test(step)), `${id}: verification must read composition marker evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /markerCopyPlan/.test(step)), `${id}: verification must include markerCopyPlan.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_comp_marker/.test(step)), `${id}: verification must include add_comp_marker.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /marker-count increment/.test(item)), `${id}: verification must require add_comp_marker count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /destination composition/.test(item)), `${id}: verification must require destination composition evidence.`);
+      assert(solution.notes.some((note) => /Copy_Composition_Markers_To_Layer/.test(note) || /copying composition markers to a layer/.test(note)), `${id}: notes must keep reverse copy direction separate.`);
+      assert(solution.promotionHistory.some((entry) => /Copy_Layer_Markers_To_Composition/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "add-markers-to-selected-layers-typed-plan") {
       assert.deepStrictEqual(
@@ -2661,6 +2705,36 @@ function assertActualRetrieval(registry) {
   assert(markerWorkAreaPromptSection.includes("add_comp_marker"), "marker-derived work-area guidance should mention generated marker setup for proof.");
   assert(markerWorkAreaPromptSection.includes("set_comp_work_area"), "marker-derived work-area guidance should use set_comp_work_area.");
   assert(!/run_extendscript/i.test(markerWorkAreaPromptSection), "marker-derived work-area guidance should not recommend raw ExtendScript.");
+
+  const copyCompositionMarkersToLayerRetrieval = retrieveSolutionHints("Copy composition markers from comp.markerProperty to one reviewed layer as layer markers, then read back the layer markers.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(copyCompositionMarkersToLayerRetrieval.ok, true);
+  assert(ids(copyCompositionMarkersToLayerRetrieval).includes("copy-composition-markers-to-layer-typed-plan"), "composition-to-layer marker copy recipe should surface for marker copy prompts.");
+  const copyCompositionMarkersToLayerPromptSection = formatSolutionHintsForPrompt(copyCompositionMarkersToLayerRetrieval);
+  assert(copyCompositionMarkersToLayerPromptSection.includes("Copy Composition Markers To Layer Typed Plan"), "prompt section should include composition-to-layer copy title.");
+  assert(copyCompositionMarkersToLayerPromptSection.includes("includeMarkers"), "composition-to-layer copy guidance should require composition marker evidence.");
+  assert(copyCompositionMarkersToLayerPromptSection.includes("add_layer_marker"), "composition-to-layer copy guidance should use add_layer_marker.");
+  assert(copyCompositionMarkersToLayerPromptSection.includes("get_layer_details"), "composition-to-layer copy guidance should require layer marker read-back.");
+  assert(copyCompositionMarkersToLayerPromptSection.includes("markerCopyPlan"), "composition-to-layer copy guidance should expose markerCopyPlan.");
+  assert(!/run_extendscript/i.test(copyCompositionMarkersToLayerPromptSection), "composition-to-layer marker copy guidance should not recommend raw ExtendScript.");
+
+  const copyLayerMarkersToCompositionRetrieval = retrieveSolutionHints("Copy layer markers from one reviewed source layer to composition markers with add_comp_marker and get_comp_details includeMarkers read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(copyLayerMarkersToCompositionRetrieval.ok, true);
+  assert(ids(copyLayerMarkersToCompositionRetrieval).includes("copy-layer-markers-to-composition-typed-plan"), "layer-to-composition marker copy recipe should surface for reverse marker copy prompts.");
+  const copyLayerMarkersToCompositionPromptSection = formatSolutionHintsForPrompt(copyLayerMarkersToCompositionRetrieval);
+  assert(copyLayerMarkersToCompositionPromptSection.includes("Copy Layer Markers To Composition Typed Plan"), "prompt section should include layer-to-composition copy title.");
+  assert(copyLayerMarkersToCompositionPromptSection.includes("get_layer_details"), "layer-to-composition copy guidance should require layer marker evidence.");
+  assert(copyLayerMarkersToCompositionPromptSection.includes("add_comp_marker"), "layer-to-composition copy guidance should use add_comp_marker.");
+  assert(copyLayerMarkersToCompositionPromptSection.includes("includeMarkers"), "layer-to-composition copy guidance should require composition marker read-back.");
+  assert(copyLayerMarkersToCompositionPromptSection.includes("markerCopyPlan"), "layer-to-composition copy guidance should expose markerCopyPlan.");
+  assert(!/run_extendscript/i.test(copyLayerMarkersToCompositionPromptSection), "layer-to-composition marker copy guidance should not recommend raw ExtendScript.");
 
   const addMarkersRetrieval = retrieveSolutionHints("Add a marker with a comment to all selected layers.", {
     registry,
