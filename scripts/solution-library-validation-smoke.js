@@ -89,6 +89,7 @@ const IMPORTED_ADVISORY_IDS = [
   "increment-composition-versions-typed-plan",
   "transfer-composition-work-area-typed-plan",
   "read-composition-markers-typed-plan",
+  "set-work-area-to-markers-typed-plan",
   "change-nested-composition-duration-typed-plan",
   "change-nested-composition-duration-with-timecode-typed-plan",
   "change-nested-composition-start-frame-typed-plan",
@@ -157,6 +158,7 @@ const AVAILABLE_TOOLS = [
   "set_comp_properties",
   "set_comp_work_area",
   "set_layer_time_range",
+  "add_comp_marker",
   "add_comp_to_render_queue",
   "set_render_queue_output",
   "add_layer_marker",
@@ -383,6 +385,25 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /orderedBy/.test(item) && /comp\.markerProperty\.keyTime/.test(item)), `${id}: verification must require orderedBy evidence.`);
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /add_layer_marker/.test(item)), `${id}: verification must reject layer marker substitution.`);
       assert(solution.notes.some((note) => /set_comp_work_area/.test(note)), `${id}: notes must keep marker-derived work-area mutation separate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "set-work-area-to-markers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "add_comp_marker", "set_comp_work_area"],
+        `${id}: marker-derived work-area workflow should stay on composition marker read/setup plus work-area mutation tools.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: marker-derived work-area workflow must be mutating.`);
+      assert(text.includes("includeMarkers:true"), `${id}: recipe should require composition marker read evidence.`);
+      assert(text.includes("add_comp_marker"), `${id}: recipe should document generated marker setup.`);
+      assert(text.includes("set_comp_work_area"), `${id}: recipe should set only the comp work area.`);
+      assert(text.includes("at least two"), `${id}: recipe should require at least two marker times.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_comp_marker/.test(step)), `${id}: verification must include generated marker setup.`);
+      assert(solution.verificationRecipe.steps.some((step) => /includeMarkers:true/.test(step)), `${id}: verification must include composition marker read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_comp_work_area/.test(step)), `${id}: verification must include work-area mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /marker-derived workAreaStart/.test(item)), `${id}: verification must require marker-derived start evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /marker-derived workAreaDuration/.test(item)), `${id}: verification must require marker-derived duration evidence.`);
+      assert(solution.notes.some((note) => /layer marker/.test(note)), `${id}: notes must forbid layer marker substitution.`);
+      assert(solution.promotionHistory.some((entry) => /Set_Work_Area_To_Markers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "add-markers-to-selected-layers-typed-plan") {
       assert.deepStrictEqual(
@@ -2580,6 +2601,21 @@ function assertActualRetrieval(registry) {
   assert(compositionMarkersPromptSection.includes("comp.markerProperty") && compositionMarkersPromptSection.includes("keyTime"), "prompt section should preserve comp marker ordering guidance.");
   assert(compositionMarkersPromptSection.includes("Preferred tools: get_active_comp, get_comp_details"), "composition marker read guidance should prefer only read-only comp tools.");
   assert(!/run_extendscript/i.test(compositionMarkersPromptSection), "composition marker read guidance should not recommend raw ExtendScript.");
+
+  const markerWorkAreaRetrieval = retrieveSolutionHints("Set the active composition work area to the first two composition markers from comp.markerProperty, then read back workAreaStart and workAreaDuration.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(markerWorkAreaRetrieval.ok, true);
+  assert(ids(markerWorkAreaRetrieval).includes("set-work-area-to-markers-typed-plan"), "marker-derived work-area recipe should surface for Set Work Area To Markers prompts.");
+  const markerWorkAreaPromptSection = formatSolutionHintsForPrompt(markerWorkAreaRetrieval);
+  assert(markerWorkAreaPromptSection.includes("Set Work Area To Markers Typed Plan"), "prompt section should include marker-derived work-area title.");
+  assert(/composition marker/i.test(markerWorkAreaPromptSection), "marker-derived work-area guidance should require composition marker reads.");
+  assert(markerWorkAreaPromptSection.includes("get_comp_details"), "marker-derived work-area guidance should use get_comp_details for marker reads.");
+  assert(markerWorkAreaPromptSection.includes("add_comp_marker"), "marker-derived work-area guidance should mention generated marker setup for proof.");
+  assert(markerWorkAreaPromptSection.includes("set_comp_work_area"), "marker-derived work-area guidance should use set_comp_work_area.");
+  assert(!/run_extendscript/i.test(markerWorkAreaPromptSection), "marker-derived work-area guidance should not recommend raw ExtendScript.");
 
   const addMarkersRetrieval = retrieveSolutionHints("Add a marker with a comment to all selected layers.", {
     registry,

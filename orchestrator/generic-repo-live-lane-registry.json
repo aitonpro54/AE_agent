@@ -1534,6 +1534,68 @@
       ],
       "reclassifiedClassification": "existing_typed_tools_recipe_only",
       "scope": "read-only composition marker contract using get_comp_details includeMarkers:true and markers.items ordered by comp.markerProperty.keyTime; nonempty generated marker setup, marker creation/update/delete, layer marker substitution, marker-derived work-area mutation, and raw JSX source semantics remain fail-closed"
+    },
+    {
+      "id": "composition-marker-work-area-generated-only",
+      "requiredTools": [
+        "get_comp_details",
+        "add_comp_marker",
+        "set_comp_work_area"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "get_active_comp",
+        "get_comp_details",
+        "add_comp_marker",
+        "set_comp_work_area"
+      ],
+      "candidateIds": [
+        "tool-compositions-set-work-area-to-markers"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-composition-marker-work-area-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "composition-marker-work-area",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/set-work-area-to-markers-typed-plan.md",
+        "recipes/generic-repo-intake/tool-compositions-set-work-area-to-markers.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/solution-promotion-helper.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/chatgpt-connector-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/solution-promotion-helper.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/chatgpt-connector-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js",
+        "node scripts/chatgpt-connector-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only composition marker work-area proof using one explicit generated comp, add_comp_marker setup for two reviewed comp.markerProperty marker times, get_comp_details includeMarkers:true read-back, set_comp_work_area with marker-derived start/duration, final get_comp_details work-area and marker read-back, semantic verification, and cleanup; source-exact active-comp UI traversal, marker creation/update/delete on user assets, layer marker substitution, audio-derived markers, persistent settings, render queue work, file I/O, and raw JSX semantics remain fail-closed"
     }
   ]
 }

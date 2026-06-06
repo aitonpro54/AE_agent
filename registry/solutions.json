@@ -986,6 +986,125 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "set-work-area-to-markers-typed-plan",
+      "title": "Set Work Area To Markers Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "comp",
+        "marker",
+        "markers",
+        "composition-marker",
+        "markerProperty",
+        "work-area",
+        "workAreaStart",
+        "workAreaDuration",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Set a composition work area from reviewed composition marker times using composition marker read-back and a narrow work-area mutation.",
+        "appliesWhen": [
+          "The user asks to set a composition work area to the first two composition markers or a reviewed composition-marker span.",
+          "A safe typed adaptation is acceptable instead of source-exact active-comp UI traversal or raw ExtendScript."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Active or explicit composition verified by get_active_comp or get_comp_details before marker evidence is used."
+        },
+        {
+          "name": "compositionMarkers",
+          "type": "object",
+          "required": true,
+          "description": "At least two reviewed composition markers from get_comp_details includeMarkers:true evidence."
+        },
+        {
+          "name": "markerDerivedWorkArea",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed workAreaStart and workAreaDuration derived from two explicit composition marker times."
+        }
+      ],
+      "targetAssumptions": [
+        "Composition marker evidence is read from get_comp_details with includeMarkers:true and ordered by comp.markerProperty.keyTime.",
+        "Generated-only proof setup may use add_comp_marker only on generated compositions with expected marker-count guards.",
+        "The workflow changes only workAreaStart and workAreaDuration through set_comp_work_area.",
+        "The derived work-area start and duration are finite, non-negative, positive in duration, and inside target composition bounds.",
+        "Layer marker substitution, marker update/delete, audio-derived markers, current-time inference, selected-layer inference, file I/O, render queue work, and raw JSX remain typed-tool gaps."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/set-work-area-to-markers-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "add_comp_marker",
+          "set_comp_work_area"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Create generated composition markers when proving the lane, read marker bounds, set only the composition work area, then read back markers and work-area fields.",
+        "steps": [
+          "Run get_active_comp only when the active composition is the target; otherwise bind explicit comp item/name evidence.",
+          "For generated-only proof setup, run add_comp_marker for two reviewed composition marker times with expectedMarkerCountBefore guards.",
+          "Run get_comp_details with includeLayers:false, includeMarkers:true, and a bounded markerLimit for the target composition.",
+          "Require at least two markers ordered by comp.markerProperty.keyTime and derive marker-derived workAreaStart from the earlier marker time.",
+          "Derive marker-derived workAreaDuration from the later marker time minus the earlier marker time and check it against target composition duration.",
+          "Run set_comp_work_area once against the verified composition with only the derived start, derived duration, verifyAfter, and idempotency evidence.",
+          "Run get_comp_details after mutation with includeMarkers:true and compare workAreaStart, workAreaDuration, marker evidence, composition identity, duration, frameRate, width, height, bgColor, and layer count."
+        ],
+        "expectedEvidence": [
+          "Generated-only add_comp_marker results show the reviewed composition marker times and marker-count increments.",
+          "Pre-run get_comp_details includeMarkers:true returns at least two composition markers ordered by comp.markerProperty.keyTime.",
+          "Dry-run evidence lists marker-derived workAreaStart, marker-derived workAreaDuration, target duration bounds, and the decision not to substitute layer markers or raw JSX.",
+          "The set_comp_work_area step updates only the work area on the verified composition.",
+          "Post-run get_comp_details shows marker-derived workAreaStart and marker-derived workAreaDuration on the same composition with unchanged duration, frameRate, width, height, bgColor, layer count, and marker evidence.",
+          "The plan reports layer marker substitution, marker update/delete on user assets, audio-derived markers, source-exact selected comp traversal, file I/O, render queue work, and raw JSX semantics as unsupported."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Added as a narrow Full Intaker support contract for marker-derived composition work-area mutation after composition marker read-back became available."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-tool-compositions-set-work-area-to-markers",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the marker-derived work-area intent behind Compositions/Set_Work_Area_To_Markers.jsx into typed tools as get_comp_details includeMarkers:true evidence, generated-only add_comp_marker setup for proof, set_comp_work_area mutation, and get_comp_details read-back; no source JSX copied. Source-exact active-comp UI traversal, marker creation/update/delete on user assets, layer marker substitution, audio-derived markers, native undo semantics, file I/O, render queue work, and raw JSX remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Use add_comp_marker only for explicit generated-only marker setup or other reviewed composition marker creation tasks; do not use it to mutate user markers as a workaround.",
+        "Do not substitute layer marker comments, layer names, current time, selected layers, persistent settings, render queue changes, file writes, or raw script execution for composition marker evidence."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "add-markers-to-selected-layers-typed-plan",
       "title": "Add Markers To Selected Layers Typed Plan",
       "status": "recipe",

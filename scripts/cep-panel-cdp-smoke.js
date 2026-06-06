@@ -10,6 +10,7 @@ const {
   agentBackgroundLayerScenarioPlans,
   agentCompositionVersionScenarioPlans,
   agentCompositionMarkerReadScenarioPlans,
+  agentCompositionMarkerWorkAreaScenarioPlans,
   agentCompPropertiesScenarioPlans,
   agentCompCurrentTimeScenarioPlans,
   agentCompositionGuideScenarioPlans,
@@ -764,6 +765,24 @@ function openAiCliCompositionMarkerReadScenarioConfig() {
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: false,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliCompositionMarkerWorkAreaScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-composition-marker-work-area",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_COMPOSITION_MARKER_WORK_AREA_PREFIX || "Codex QA AUX-CMWA",
+    scenarioFactory: agentCompositionMarkerWorkAreaScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
     disallowProviderFallbacks: true
   };
 }
@@ -7020,6 +7039,10 @@ async function main() {
   }
   if (command === "agent-composition-marker-read-openai-cli-smoke" || command === "full-ui-agent-composition-marker-read-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliCompositionMarkerReadScenarioConfig());
+    return;
+  }
+  if (command === "agent-composition-marker-work-area-openai-cli-smoke" || command === "full-ui-agent-composition-marker-work-area-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliCompositionMarkerWorkAreaScenarioConfig());
     return;
   }
   if (command === "agent-remaining-tail-contracts-openai-cli-smoke" || command === "full-ui-agent-remaining-tail-contracts-openai-cli-smoke") {

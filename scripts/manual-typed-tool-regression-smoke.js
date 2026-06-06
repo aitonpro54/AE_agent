@@ -15,6 +15,7 @@ const FAILURE_IDS = {
 };
 
 const MUTATING_TOOLS = new Set([
+  "add_comp_marker",
   "add_layer_marker",
   "create_camera_layer",
   "create_comp",

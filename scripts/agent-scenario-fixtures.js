@@ -46,6 +46,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "set_layer_mask",
   "set_path_geometry",
   "export_path_points",
+  "add_comp_marker",
   "add_layer_marker",
   "update_layer_marker",
   "delete_layer_marker",
@@ -2584,6 +2585,62 @@ function agentCompositionMarkerReadScenarioPlans(runPrefix) {
   }));
 }
 
+function agentCompositionMarkerWorkAreaScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Composition Marker Work Area`;
+  const compName = `${base} Comp`;
+  const startMarker = {
+    time: 0.75,
+    comment: "Work Area Start",
+    duration: 0
+  };
+  const endMarker = {
+    time: 2.25,
+    comment: "Work Area End",
+    duration: 0
+  };
+  const workArea = {
+    start: startMarker.time,
+    duration: endMarker.time - startMarker.time
+  };
+
+  return [
+    {
+      id: "generated-composition-marker-work-area",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "add_comp_marker",
+        "get_comp_details",
+        "set_comp_work_area"
+      ],
+      expectedReadBack: {
+        compositionMarkerWorkAreaReadBack: true,
+        compName,
+        markerCount: 2,
+        workArea
+      },
+      plan: {
+        summary: "Generated-only live QA for marker-derived composition work-area mutation.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated marker work-area comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 4, frameRate: 24, bgColor: [0.07, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "generated-only composition marker work-area validation" } },
+          { title: "Add generated composition marker for work-area start", tool: "add_comp_marker", args: { compName, time: startMarker.time, comment: startMarker.comment, duration: startMarker.duration, expectedMarkerCountBefore: 0 } },
+          { title: "Add generated composition marker for work-area end", tool: "add_comp_marker", args: { compName, time: endMarker.time, comment: endMarker.comment, duration: endMarker.duration, expectedMarkerCountBefore: 1 } },
+          { title: "Read generated composition marker bounds", tool: "get_comp_details", args: { compName, includeLayers: false, includeMarkers: true, markerLimit: 10 } },
+          { title: "Set generated comp work area from reviewed marker bounds", tool: "set_comp_work_area", args: { compName, start: workArea.start, duration: workArea.duration, verifyAfter: true } },
+          { title: "Read generated marker-derived work area", tool: "get_comp_details", args: { compName, includeLayers: false, includeMarkers: true, markerLimit: 10 } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentRemainingTailContractsScenarioPlans(runPrefix) {
   const base = `${runPrefix} Remaining Tail Contracts`;
   const cameraBase = `${base} Camera Controller`;
@@ -3583,6 +3640,7 @@ module.exports = {
   agentBackgroundLayerScenarioPlans,
   agentCompositionVersionScenarioPlans,
   agentCompositionMarkerReadScenarioPlans,
+  agentCompositionMarkerWorkAreaScenarioPlans,
   agentCompPropertiesScenarioPlans,
   agentCompCurrentTimeScenarioPlans,
   agentCompositionGuideScenarioPlans,

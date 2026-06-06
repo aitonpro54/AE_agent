@@ -14,6 +14,7 @@ const {
   agentBackgroundLayerScenarioPlans,
   agentCompositionVersionScenarioPlans,
   agentCompositionMarkerReadScenarioPlans,
+  agentCompositionMarkerWorkAreaScenarioPlans,
   agentCompPropertiesScenarioPlans,
   agentCompCurrentTimeScenarioPlans,
   agentCompositionGuideScenarioPlans,
@@ -758,6 +759,22 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   ]);
   assert.strictEqual(compositionMarkerRead.plan.steps[1].args.includeMarkers, true);
   assert.strictEqual(compositionMarkerRead.plan.steps[1].args.markerLimit, 10);
+
+  const [compositionMarkerWorkArea] = agentCompositionMarkerWorkAreaScenarioPlans("Codex QA AUX-CMWA Fixture");
+  assert.strictEqual(compositionMarkerWorkArea.id, "generated-composition-marker-work-area");
+  assert.strictEqual(compositionMarkerWorkArea.expectedReadBack.compositionMarkerWorkAreaReadBack, true);
+  assert.deepStrictEqual(compositionMarkerWorkArea.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "add_comp_marker",
+    "add_comp_marker",
+    "get_comp_details",
+    "set_comp_work_area",
+    "get_comp_details"
+  ]);
+  assert.strictEqual(compositionMarkerWorkArea.plan.steps[1].args.expectedMarkerCountBefore, 0);
+  assert.strictEqual(compositionMarkerWorkArea.plan.steps[2].args.expectedMarkerCountBefore, 1);
+  assert.strictEqual(compositionMarkerWorkArea.plan.steps[4].args.start, 0.75);
+  assert.strictEqual(compositionMarkerWorkArea.plan.steps[4].args.duration, 1.5);
 
   const [pathGeometry] = agentPathGeometryScenarioPlans("Codex QA AUX-PATH Fixture");
   assert.strictEqual(pathGeometry.id, "generated-shape-mask-path-geometry");

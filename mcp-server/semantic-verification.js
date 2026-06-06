@@ -35,6 +35,7 @@ const MUTATING_TOOLS = new Set([
   "set_expression",
   "clear_expression",
   "separate_shape_size_dimensions",
+  "add_comp_marker",
   "duplicate_layer",
   "duplicate_layers",
   "set_layer_selection",
@@ -2053,6 +2054,24 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "set_layer_mask") {
     checkSetLayerMask(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "add_comp_marker") {
+    const marker = payload.marker || {};
+    const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+    const readBackEvidence = observedMarkerEvidence(evidence.readBack, args);
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:marker`,
+      title: "Composition marker comment and timing match request",
+      expected: expectedMarkerText(args),
+      observed: markerText(marker),
+      passed: markerMatchesArgs(marker, args) &&
+        postVerification.ok === true &&
+        postVerification.markerCountIncremented === true &&
+        Boolean(readBackEvidence),
+      evidence: readBackEvidence || "No matching composition marker read-back after mutation."
+    });
     return;
   }
 

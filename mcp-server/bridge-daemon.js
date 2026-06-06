@@ -914,6 +914,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "align_layers_to_time",
   "set_layer_transform",
   "apply_transform_expression",
+  "add_comp_marker",
   "add_layer_marker",
   "update_layer_marker",
   "delete_layer_marker",
@@ -1589,7 +1590,7 @@ function hasArg(args, name) {
 }
 
 function hasRequiredPlanArg(toolName, args, name) {
-  if (toolName === "add_layer_marker" && name === "comment") {
+  if ((toolName === "add_layer_marker" || toolName === "add_comp_marker") && name === "comment") {
     return Object.prototype.hasOwnProperty.call(args, name) && args[name] !== undefined && args[name] !== null;
   }
   return hasArg(args, name);
@@ -4352,6 +4353,7 @@ const PLANNING_TOOL_NAMES = [
   "get_render_queue_status",
   "set_layer_transform",
   "apply_transform_expression",
+  "add_comp_marker",
   "add_layer_marker",
   "update_layer_marker",
   "delete_layer_marker",
@@ -6254,7 +6256,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For requests to align selected layers, clips, or precomps to the current time indicator, use align_layers_to_time with no layerIndices and omit targetTime so it uses the active comp CTI.",
     "For current time indicator or playhead navigation, use set_comp_current_time only on one explicit comp target with finite seconds or a reviewed frame/frameRate conversion, then read back get_comp_details.time. Do not substitute work-area, layer timing, keyframes, markers, or raw ExtendScript.",
     "For timeline trims, work areas, sequencing, splitting, and offsets, use set_comp_work_area, set_layer_time_range, stagger_layers, or split_layers_at_time.",
-    "For composition marker inspection, use get_comp_details with includeMarkers=true and compare markers.items in comp.markerProperty.keyTime order; do not substitute layer marker tools for composition markers.",
+    "For composition marker inspection, use get_comp_details with includeMarkers=true and compare markers.items in comp.markerProperty.keyTime order; for generated composition marker setup, use add_comp_marker with an explicit comp target, reviewed time/comment, and post-mutation get_comp_details includeMarkers read-back; do not substitute layer marker tools for composition markers.",
     "For precomp/source workflows, use precompose_layers, replace_layer_source, deep_duplicate_precomp_sources, rename_layers, and rename_project_items before considering raw ExtendScript.",
     "For explicit single-layer duplication, use duplicate_layer after inspecting the target comp/layer and pairing layerIndex with the sourceName in current AE stack order. AE inserts newly created and duplicated layers at layer index 1; do not assume creation order equals layer-index order.",
     "For explicit layer selection changes, use set_layer_selection only with concrete layerIndices from current get_comp_details/list_layers/get_layer_details evidence and expectedLayerNames when possible; do not use raw ExtendScript to select layers.",
@@ -9712,6 +9714,41 @@ const tools = [
         }
       },
       required: ["layerIndex", "property", "expression"]
+    }
+  },
+  {
+    name: "add_comp_marker",
+    description: "Add one composition marker to an explicit composition and return comp.markerProperty read-back.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Provide compItemIndex or compName; this tool does not default to the active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided. Provide compName or compItemIndex; this tool does not default to the active comp."
+        },
+        time: {
+          type: "number",
+          description: "Marker time in seconds. Must be explicit and within the target composition duration."
+        },
+        comment: {
+          type: "string",
+          description: "Marker comment. Use an explicit empty string only when blank marker semantics are intended."
+        },
+        duration: {
+          type: "number",
+          description: "Optional non-negative marker duration in seconds."
+        },
+        expectedMarkerCountBefore: {
+          type: "number",
+          description: "Optional marker-count guard from prior get_comp_details includeMarkers evidence."
+        },
+        ...MUTATION_CHECKPOINT_SCHEMA_PROPERTIES
+      },
+      required: ["time", "comment"]
     }
   },
   {
@@ -16319,6 +16356,94 @@ async function callTool(name, args) {
         expression: prop.expression,
         expressionEnabled: prop.expressionEnabled,
         expressionError: prop.expressionError || ""
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "add_comp_marker") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const time = optionalNumber(args, "time", null);
+    const hasExplicitComment = Object.prototype.hasOwnProperty.call(args, "comment") && args.comment !== undefined && args.comment !== null;
+    const comment = hasExplicitComment ? String(args.comment) : "";
+    const duration = optionalNumber(args, "duration", null);
+    const expectedMarkerCountBefore = optionalNumber(args, "expectedMarkerCountBefore", null);
+
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required for add_comp_marker.", true);
+    if (time === null) return toolResult("time is required.", true);
+    if (!hasExplicitComment) return toolResult("comment is required.", true);
+    if (time < 0) return toolResult("time must be 0 or greater.", true);
+    if (duration !== null && duration < 0) return toolResult("duration must be 0 or greater.", true);
+    if (expectedMarkerCountBefore !== null && (!Number.isInteger(expectedMarkerCountBefore) || expectedMarkerCountBefore < 0)) {
+      return toolResult("expectedMarkerCountBefore must be a non-negative integer.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var markerTime = ${time};
+      var markerComment = ${aeLiteral(comment)};
+      var markerDuration = ${duration === null ? "null" : duration};
+      var expectedMarkerCountBefore = ${expectedMarkerCountBefore === null ? "null" : expectedMarkerCountBefore};
+      if (markerTime > comp.duration) throw new Error("time is outside the composition duration.");
+      if (markerDuration !== null && markerTime + markerDuration > comp.duration) throw new Error("marker duration extends outside the composition duration.");
+      var markerProp = comp.markerProperty;
+      if (!markerProp) throw new Error("Composition markers are unavailable.");
+      var beforeMarkers = __codexCompMarkers(comp, 100);
+      if (expectedMarkerCountBefore !== null && beforeMarkers.count !== expectedMarkerCountBefore) {
+        throw new Error("expectedMarkerCountBefore does not match current composition marker count.");
+      }
+      for (var __existingCompMarker = 1; __existingCompMarker <= markerProp.numKeys; __existingCompMarker++) {
+        if (Math.abs(markerProp.keyTime(__existingCompMarker) - markerTime) <= 0.001) {
+          throw new Error("A composition marker already exists at the requested time.");
+        }
+      }
+
+      app.beginUndoGroup("Codex Add Composition Marker");
+      var markerValue = new MarkerValue(markerComment);
+      if (markerDuration !== null) markerValue.duration = markerDuration;
+      markerProp.setValueAtTime(markerTime, markerValue);
+      var markerInfo = null;
+      try {
+        var markerKeyIndex = markerProp.nearestKeyIndex(markerTime);
+        if (markerKeyIndex > 0 && Math.abs(markerProp.keyTime(markerKeyIndex) - markerTime) < 0.001) {
+          markerInfo = __codexMarkerInfo(markerProp, markerKeyIndex);
+        }
+      } catch (__markerReadBackError) {}
+      if (!markerInfo) {
+        markerInfo = {
+          keyIndex: null,
+          time: markerTime,
+          comment: markerComment,
+          duration: markerDuration || 0
+        };
+      }
+      var afterMarkers = __codexCompMarkers(comp, 100);
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          duration: comp.duration,
+          frameRate: comp.frameRate,
+          workAreaStart: comp.workAreaStart,
+          workAreaDuration: comp.workAreaDuration
+        },
+        marker: markerInfo,
+        markersBefore: beforeMarkers,
+        markers: afterMarkers,
+        postVerification: {
+          ok: markerInfo !== null && afterMarkers.count === beforeMarkers.count + 1,
+          markerCountBefore: beforeMarkers.count,
+          markerCountAfter: afterMarkers.count,
+          expectedMarkerCountAfter: beforeMarkers.count + 1,
+          markerCountIncremented: afterMarkers.count === beforeMarkers.count + 1,
+          timeMatches: Math.abs((markerInfo.time || 0) - markerTime) <= 0.001,
+          commentMatches: markerInfo.comment === markerComment,
+          durationMatches: markerDuration === null || Math.abs((markerInfo.duration || 0) - markerDuration) <= 0.001
+        }
       };
       app.endUndoGroup();
       return response;

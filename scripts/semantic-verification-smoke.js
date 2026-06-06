@@ -26,7 +26,8 @@ const LOCAL_MUTATING_TOOLS = new Set([
   "set_path_geometry",
   "export_path_points",
   "set_puppet_pin_type",
-  "set_comp_current_time"
+  "set_comp_current_time",
+  "add_comp_marker"
 ]);
 
 function clone(value) {
@@ -607,6 +608,44 @@ function fakeMutationResult(step, state) {
       }
     }, compName);
   }
+  if (step.tool === "add_comp_marker") {
+    const marker = {
+      keyIndex: state.compMarkers.length + 1,
+      time: args.time,
+      comment: args.comment,
+      duration: args.duration || 0
+    };
+    const beforeCount = state.compMarkers.length;
+    state.compMarkers.push(marker);
+    return withVerification({
+      comp: { name: compName, duration: state.compProperties.duration, frameRate: state.compProperties.frameRate },
+      marker,
+      markersBefore: {
+        count: beforeCount,
+        returned: beforeCount,
+        truncated: false,
+        orderedBy: "comp.markerProperty.keyTime",
+        items: state.compMarkers.slice(0, beforeCount)
+      },
+      markers: {
+        count: state.compMarkers.length,
+        returned: state.compMarkers.length,
+        truncated: false,
+        orderedBy: "comp.markerProperty.keyTime",
+        items: state.compMarkers.slice()
+      },
+      postVerification: {
+        ok: true,
+        markerCountBefore: beforeCount,
+        markerCountAfter: state.compMarkers.length,
+        expectedMarkerCountAfter: beforeCount + 1,
+        markerCountIncremented: true,
+        timeMatches: true,
+        commentMatches: true,
+        durationMatches: true
+      }
+    }, compName);
+  }
   if (step.tool === "add_layer_marker") {
     const marker = {
       keyIndex: state.layerMarkers.length + 1,
@@ -1098,7 +1137,14 @@ function fakeReadBackResult(step, state) {
         time: state.compProperties.time
       },
       layerCount: layers.length,
-      layers
+      layers,
+      markers: {
+        count: state.compMarkers.length,
+        returned: state.compMarkers.length,
+        truncated: false,
+        orderedBy: "comp.markerProperty.keyTime",
+        items: state.compMarkers.slice()
+      }
     };
   }
   return { ok: true };
@@ -1116,6 +1162,7 @@ function fakeRunForPlan(plan) {
     propertyValues: [],
     renderQueueItems: [],
     layerMarkers: [],
+    compMarkers: [],
     masks: [],
     compProperties: {
       width: 1280,
@@ -2283,6 +2330,39 @@ function assertAddLayerMarkerPasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("add_layer_marker:marker") >= 0), "add layer marker check should be reported.");
 }
 
+function assertAddCompMarkerPasses() {
+  const plan = {
+    summary: "Add one explicit composition marker to a generated composition and inspect comp marker read-back.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Add composition marker",
+        tool: "add_comp_marker",
+        args: {
+          compName: "Comp Marker Fixture",
+          time: 1.25,
+          comment: "Comp Marker Fixture Start",
+          duration: 0
+        }
+      },
+      {
+        title: "Read composition markers",
+        tool: "get_comp_details",
+        args: {
+          compName: "Comp Marker Fixture",
+          includeLayers: false,
+          includeMarkers: true
+        }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `add comp marker semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("add_comp_marker:marker") >= 0 && check.status === "passed"), "add comp marker check should pass.");
+}
+
 function assertSetPropertyValuePasses() {
   const plan = {
     summary: "Set one explicit generated layer property value and inspect property read-back.",
@@ -2662,6 +2742,7 @@ function main() {
   assertSetPropertyValuePasses();
   assertSetLayerSwitchValuePasses();
   assertRemainingTailContractToolsPass();
+  assertAddCompMarkerPasses();
   assertAddLayerMarkerPasses();
   assertUpdateLayerMarkerPasses();
   assertDeleteLayerMarkerPasses();

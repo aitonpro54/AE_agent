@@ -801,6 +801,41 @@ async function main() {
       deletedLayerNameAbsentAtOriginalIndex: true
     }
   }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "add_comp_marker", {
+    compName: "Smoke Comp",
+    time: 1.1,
+    comment: "Smoke Comp Marker",
+    duration: 0,
+    expectedMarkerCountBefore: 0,
+    verifyAfter: false
+  }, ["Codex Add Composition Marker", "comp.markerProperty", "MarkerValue", "__codexCompMarkers"], {
+    comp: { itemIndex: 1, name: "Smoke Comp", duration: 4, frameRate: 24, workAreaStart: 0, workAreaDuration: 4 },
+    marker: { keyIndex: 1, time: 1.1, comment: "Smoke Comp Marker", duration: 0 },
+    markersBefore: {
+      count: 0,
+      returned: 0,
+      truncated: false,
+      orderedBy: "comp.markerProperty.keyTime",
+      items: []
+    },
+    markers: {
+      count: 1,
+      returned: 1,
+      truncated: false,
+      orderedBy: "comp.markerProperty.keyTime",
+      items: [{ keyIndex: 1, time: 1.1, comment: "Smoke Comp Marker", duration: 0 }]
+    },
+    postVerification: {
+      ok: true,
+      markerCountBefore: 0,
+      markerCountAfter: 1,
+      expectedMarkerCountAfter: 1,
+      markerCountIncremented: true,
+      timeMatches: true,
+      commentMatches: true,
+      durationMatches: true
+    }
+  }));
   queuedToolResponses.push(await callQueuedDevTool(port, token, "add_layer_marker", {
     compName: "Smoke Comp",
     layerIndex: 1,
@@ -1926,7 +1961,7 @@ async function main() {
   if (alignLayers.status !== 200 || !alignLayers.body.ok || alignLayers.body.result.changedCount !== 2) {
     throw new Error("Expected align_layers_to_time to align multiple layer timings");
   }
-  if (queuedToolResponses.length !== 33 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
+  if (queuedToolResponses.length !== 34 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
     throw new Error("Expected all new typed tool queue smokes to pass");
   }
   const deepDuplicateQueuedPayload = deepDuplicateQueuedResponse.response.body.result || {};
@@ -2265,7 +2300,7 @@ async function main() {
   }
 
   const toolNames = lines[1].result.tools.map((tool) => tool.name);
-  for (const expectedTool of ["get_ai_agent_log", "get_project_intent_memory", "update_project_intent_memory", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "run_agent_hardcore_session", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint", "list_project_folder_items", "create_comp", "create_project_folder", "move_project_items_to_folder", "set_layer_metadata", "set_project_item_metadata", "set_comp_properties", "set_comp_work_area", "set_layer_time_range", "stagger_layers", "split_layers_at_time", "precompose_layers", "replace_layer_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer", "create_camera_layer", "create_layer_mask", "set_layer_mask", "duplicate_layer", "duplicate_layers", "set_layer_selection", "delete_layer", "add_layer_marker", "update_layer_marker", "delete_layer_marker", "create_shape_layer", "fit_layer_to_comp", "set_property_keyframes", "apply_keyframe_ease", "set_expression", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"]) {
+  for (const expectedTool of ["get_ai_agent_log", "get_project_intent_memory", "update_project_intent_memory", "list_ai_agents", "check_ai_agent_readiness", "chat_with_ai_agent", "plan_with_ai_agent", "validate_ai_agent_plan", "run_ai_agent_plan", "run_agent_hardcore_session", "start_edit_session", "get_edit_session_status", "finish_edit_session", "list_edit_sessions", "checkpoint_project", "list_project_checkpoints", "get_project_checkpoint_details", "delete_project_checkpoint", "restore_project_checkpoint", "list_project_folder_items", "create_comp", "create_project_folder", "move_project_items_to_folder", "set_layer_metadata", "set_project_item_metadata", "set_comp_properties", "set_comp_work_area", "set_layer_time_range", "stagger_layers", "split_layers_at_time", "precompose_layers", "replace_layer_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer", "create_camera_layer", "create_layer_mask", "set_layer_mask", "duplicate_layer", "duplicate_layers", "set_layer_selection", "delete_layer", "add_comp_marker", "add_layer_marker", "update_layer_marker", "delete_layer_marker", "create_shape_layer", "fit_layer_to_comp", "set_property_keyframes", "apply_keyframe_ease", "set_expression", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"]) {
     if (!toolNames.includes(expectedTool)) {
       throw new Error("Missing expected tool: " + expectedTool);
     }
@@ -2316,6 +2351,10 @@ async function main() {
   const addLayerMarkerTool = lines[1].result.tools.find((tool) => tool.name === "add_layer_marker");
   if (!addLayerMarkerTool || !addLayerMarkerTool.inputSchema.properties.autoCheckpoint || !addLayerMarkerTool.inputSchema.properties.checkpointLabel || !addLayerMarkerTool.inputSchema.properties.idempotencyKey || !addLayerMarkerTool.inputSchema.properties.verifyAfter || !addLayerMarkerTool.inputSchema.properties.layerIndex || !addLayerMarkerTool.inputSchema.properties.comment) {
     throw new Error("add_layer_marker is missing safety schema fields");
+  }
+  const addCompMarkerTool = lines[1].result.tools.find((tool) => tool.name === "add_comp_marker");
+  if (!addCompMarkerTool || !addCompMarkerTool.inputSchema.properties.autoCheckpoint || !addCompMarkerTool.inputSchema.properties.checkpointLabel || !addCompMarkerTool.inputSchema.properties.idempotencyKey || !addCompMarkerTool.inputSchema.properties.verifyAfter || !addCompMarkerTool.inputSchema.properties.compName || !addCompMarkerTool.inputSchema.properties.time || !addCompMarkerTool.inputSchema.properties.comment || !addCompMarkerTool.inputSchema.properties.expectedMarkerCountBefore) {
+    throw new Error("add_comp_marker is missing safety schema fields");
   }
   const updateLayerMarkerTool = lines[1].result.tools.find((tool) => tool.name === "update_layer_marker");
   if (!updateLayerMarkerTool || !updateLayerMarkerTool.inputSchema.properties.autoCheckpoint || !updateLayerMarkerTool.inputSchema.properties.checkpointLabel || !updateLayerMarkerTool.inputSchema.properties.idempotencyKey || !updateLayerMarkerTool.inputSchema.properties.verifyAfter || !updateLayerMarkerTool.inputSchema.properties.layerIndex || !updateLayerMarkerTool.inputSchema.properties.markerIndex || !updateLayerMarkerTool.inputSchema.properties.targetTime) {

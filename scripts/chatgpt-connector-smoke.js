@@ -290,6 +290,7 @@ function assertReadOnlyTools(tools) {
     "duplicate_layer",
     "duplicate_layers",
     "delete_layer",
+    "add_comp_marker",
     "add_layer_marker",
     "update_layer_marker",
     "delete_layer_marker",
