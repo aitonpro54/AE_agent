@@ -112,6 +112,7 @@ const IMPORTED_ADVISORY_IDS = [
   "merge-imported-selected-items-typed-plan",
   "add-labeled-items-to-render-queue-typed-plan",
   "add-selected-compositions-to-render-queue-typed-plan",
+  "project-file-render-proxy-safety-policy",
   "replace-text-in-project-item-name-typed-plan",
   "rename-selected-project-items-typed-plan",
   "set-project-item-labels-to-none-typed-plan",
@@ -2482,6 +2483,29 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /filesystem folder traversal/.test(note)), `${id}: notes must reject filesystem traversal.`);
       assert(solution.promotionHistory.some((entry) => /Add_Folder_To_Render_Queue/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "project-file-render-proxy-safety-policy") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "get_project_snapshot", "find_project_items", "list_project_folder_items", "get_render_queue_status"],
+        `${id}: policy workflow should stay on read-only project and render queue inspection tools.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: safety policy must force high-risk mutation gates for matched requests.`);
+      assert.strictEqual(solution.execution.riskLevel, "high", `${id}: policy should classify approval-gated risk.`);
+      assert(text.includes("render start"), `${id}: policy should explicitly classify render start risk.`);
+      assert(text.includes("render queue cleanup"), `${id}: policy should classify render queue cleanup.`);
+      assert(text.includes("proxy removal"), `${id}: policy should classify proxy removal.`);
+      assert(text.includes("proxy relinking"), `${id}: policy should classify proxy relinking.`);
+      assert(text.includes("user file"), `${id}: policy should classify user-file risk.`);
+      assert(text.includes("Desktop"), `${id}: policy should reject Desktop/arbitrary user paths.`);
+      assert(text.includes("sha256"), `${id}: policy should require generated file hash read-back for future contracts.`);
+      assert(text.includes("generated/temp assets"), `${id}: policy should require generated/temp proof first.`);
+      assert(solution.verificationRecipe.steps.some((step) => /risk classification/.test(step)), `${id}: verification must require risk classification.`);
+      assert(solution.verificationRecipe.steps.some((step) => /typed-tool gap/.test(step)), `${id}: verification must require typed-tool gap reporting.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /does not mutate/.test(item)), `${id}: verification must prove read-only inspection does not mutate.`);
+      assert(solution.notes.some((note) => /approval-gated/.test(note)), `${id}: notes must preserve approval-gated status.`);
+      assert(solution.notes.some((note) => /separate narrow typed-tool contract/.test(note)), `${id}: notes must require a separate contract.`);
+      assert(solution.promotionHistory.some((entry) => /project\/file\/render\/proxy\/user-file/.test(entry.evidence)), `${id}: promotion evidence should mention the family.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "replace-text-in-project-item-name-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -4123,6 +4147,21 @@ function assertActualRetrieval(registry) {
   assert(addFolderRenderQueuePromptSection.includes("generated Project folder"), "prompt section should preserve generated folder scope.");
   assert(addFolderRenderQueuePromptSection.includes("Project panel selection"), "prompt section should preserve Project-panel selection warning.");
   assert(!/run_extendscript/i.test(addFolderRenderQueuePromptSection), "folder render queue guidance should not recommend raw ExtendScript.");
+
+  const projectFilePolicyRetrieval = retrieveSolutionHints("Clean the render queue, remove all proxies, set proxies from a folder, reveal the project file, export text to a user file, or render a PNG sequence.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(projectFilePolicyRetrieval.ok, true);
+  assert(ids(projectFilePolicyRetrieval).includes("project-file-render-proxy-safety-policy"), "project/file/render/proxy safety policy should surface for approval-gated file and render prompts.");
+  const projectFilePolicyPromptSection = formatSolutionHintsForPrompt(projectFilePolicyRetrieval);
+  assert(projectFilePolicyPromptSection.includes("Project File Render Proxy Safety Policy"), "prompt section should include project/file safety policy title.");
+  assert(projectFilePolicyPromptSection.includes("approval-gated"), "prompt section should preserve approval-gated classification.");
+  assert(projectFilePolicyPromptSection.includes("get_project_snapshot"), "prompt section should prefer read-only project snapshot evidence.");
+  assert(projectFilePolicyPromptSection.includes("get_render_queue_status"), "prompt section should prefer read-only render queue evidence.");
+  assert(projectFilePolicyPromptSection.includes("typed-tool gap"), "prompt section should require typed-tool gap reporting.");
+  assert(!/run_extendscript/i.test(projectFilePolicyPromptSection), "project/file safety policy should not recommend raw ExtendScript.");
 
   const renameSelectedProjectItemsRetrieval = retrieveSolutionHints("Rename selected project items to the exact text Review Plate after reading the current project snapshot, binding explicit itemIndices, using rename_project_items, and reading back project inventory.", {
     registry,

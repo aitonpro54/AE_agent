@@ -14234,6 +14234,118 @@
         "Use set_layer_blending_mode only with blendingMode:\"difference\" or explicitly reviewed normal restoration, explicit layer indices, expectedLayerNames, and expectedCurrentBlendingModes when available.",
         "Do not use this recipe for source-exact Alt-key branching, track matte edits, label/comment/lock/enabled edits, opacity/expression substitutions, timing/source edits, render queue edits, file I/O, previous-state restoration, or raw script execution."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "project-file-render-proxy-safety-policy",
+      "title": "Project File Render Proxy Safety Policy",
+      "status": "recipe",
+      "tags": [
+        "project",
+        "project-item",
+        "file-output",
+        "file-input",
+        "render-queue",
+        "render",
+        "proxy",
+        "cleanup",
+        "user-file",
+        "approval-gated",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Classify approval-gated project/file/render/proxy/user-file requests and report typed-tool gaps unless a narrow generated-only recipe fits.",
+        "appliesWhen": [
+          "The user asks to clean render queues or folders, start renders, export or import user files, reveal project files, remove proxies, or set proxies from folders.",
+          "The request cannot be narrowed to an existing generated-only typed plan such as render queue setup without render start or generated export with hash read-back."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "riskClassification",
+          "type": "object",
+          "required": true,
+          "description": "A classification of render start, cleanup, proxy, project save/reveal, user file input/output, arbitrary path, and third-party folder assumptions before mutation planning."
+        },
+        {
+          "name": "readOnlyProjectEvidence",
+          "type": "object",
+          "required": false,
+          "description": "Optional get_project_info, get_project_snapshot, find_project_items, list_project_folder_items, or get_render_queue_status evidence used only to classify scope."
+        }
+      ],
+      "targetAssumptions": [
+        "This recipe is a high-risk policy guard: classification can use read-only evidence, but any matched mutation requires the full mutation gate set.",
+        "Existing narrow generated-only recipes remain separate and must not be widened to user files, render execution, proxy relinking, project save/reveal, folder cleanup, or arbitrary output paths.",
+        "Unsupported requests report a typed-tool gap with the future generated fixture, explicit approval, checkpoint or rollback path, and typed read-back needed to unblock the family.",
+        "Project items, render queue items, proxies, project files, filesystem folders, comps, layers, sources, and selection state are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "high",
+        "recipePath": "recipes/project-file-render-proxy-safety-policy.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_project_info",
+          "get_project_snapshot",
+          "find_project_items",
+          "list_project_folder_items",
+          "get_render_queue_status"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Classify approval-gated project/file/render/proxy/user-file risk with read-only project/render evidence, then either select an existing narrow generated-only recipe or report a typed-tool gap.",
+        "steps": [
+          "Record risk classification before planning mutation: render start, render queue cleanup, proxy removal/relinking, user file input/output, project save/reveal, arbitrary path, cleanup/delete, or third-party folder assumption.",
+          "Use get_project_info, get_project_snapshot, find_project_items, list_project_folder_items, and get_render_queue_status only as read-only classification evidence.",
+          "Select an existing narrow generated-only recipe only when the request exactly matches its scope and does not require approval-gated file/render/proxy/cleanup behavior.",
+          "Report a typed-tool gap when the request needs approval-gated mutation, including generated fixture, explicit approval, checkpoint/rollback, and typed read-back unblock conditions.",
+          "Fail closed if the plan starts renders, deletes render queue items, cleans folders, removes/relinks proxies, imports user files, writes arbitrary output paths, reveals project files, saves the project, or uses raw script execution."
+        ],
+        "expectedEvidence": [
+          "Planner output includes the risk classification and the matching narrow recipe or typed-tool gap.",
+          "Read-only project/render evidence, when used, does not mutate Project items, render queue items, proxies, files, folders, comps, layers, sources, or selection state.",
+          "Unsupported requests identify the missing contract and future unblock condition instead of using raw script execution or shell/OS actions.",
+          "The plan preserves Project items, render queue items, proxy state, project files, filesystem folders, comps, layers, sources, and selection state."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for project/file/render/proxy/user-file approval-gated backlog review.",
+          "No scoped retry, generated-only mutating live CEP proof, project/file/proxy/render mutation, or candidate completion was run in this milestone."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-project-file-render-proxy-user-file-policy",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Parent-owned non-live policy for the project/file/render/proxy/user-file approval-gated backlog family. It records fail-closed classification for render starts, render queue cleanup, save-frame or PNG-sequence export, text/SRT user file input/output, project-file reveal, proxy removal/relinking, generated/user folder cleanup, and third-party folder assumptions. No source JSX copied. Existing narrow recipes for generated render queue setup, generated path export, and explicit project item labels remain separate; future unsafe operations require a separate narrow typed-tool contract, generated fixture, explicit approval, checkpoint/rollback, and typed read-back.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "approval-gated policy guard only; it does not authorize mutation or candidate completion.",
+        "Use this policy to report typed-tool gaps for project/file/render/proxy/user-file requests that cannot fit an existing narrow generated-only recipe.",
+        "Require a separate narrow typed-tool contract before render start, render queue cleanup, proxy mutation, project-file reveal, project save/saveAs, user file input/output, folder cleanup, or arbitrary path output.",
+        "Do not widen generated-only render queue setup, generated path export, or project item label recipes to cover user assets, broad cleanup, render execution, proxies, OS actions, or raw script execution."
+      ]
     }
   ]
 }

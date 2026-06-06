@@ -26,6 +26,28 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker project/file/render/proxy/user-file safety
+  policy slice: added `project-file-render-proxy-safety-policy` as a
+  high-risk advisory typed-plan guard for approval-gated requests such as
+  render start, render queue cleanup, save-frame/PNG-sequence export, text or
+  SRT user-file input/output, project-file reveal, proxy removal/relinking,
+  generated/user folder cleanup, and third-party folder assumptions. The policy
+  uses only read-only project/render queue evidence for classification, keeps
+  existing narrow generated-only recipes separate, and requires a future narrow
+  typed-tool contract, generated fixture, explicit approval,
+  checkpoint/rollback, and typed read-back before any unsafe mutation. Added
+  registry retrieval and solution-library validation coverage. No scoped retry,
+  generated-only mutating live CEP proof, candidate completion, broad queue
+  processing, Local/Ollama, fallback provider, dependency change, push, PR, raw
+  JSX copy, project/file/proxy/render mutation, or launcher/autoloop edit was
+  run. Validation passed: touched-file `node --check`, JSON parse for
+  `registry/solutions.json`, `node scripts/solution-registry-smoke.js`, `node
+  scripts/solution-library-validation-smoke.js`, `node
+  scripts/solution-retrieval-smoke.js`, `node
+  scripts/semantic-verification-smoke.js`, `node
+  scripts/sdk-generic-repo-full-intake-smoke.js`, `npm.cmd run check:rules`,
+  `npm.cmd run smoke:solutions`, `npm.cmd run smoke:full-intake`, and `git
+  diff --check` with line-ending warnings only.
 - [x] Reopened Full Intaker layer Difference blending-mode contract slice:
   `tool-layers-toggle-difference-blend-mode` now has parent-owned non-live
   generated-only typed-plan/lane coverage without scoped retry or live CEP/AE
