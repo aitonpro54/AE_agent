@@ -26,6 +26,24 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker Properties DuIK pin-size single-candidate
+  re-audit: `tool-properties-increase-all-pin-sizes` теперь имеет fresh scoped
+  parentReducer review из reopened run. Proposal-only sidecars и parent
+  reducer проверили source behavior, текущую typed-tool surface, duplicate
+  recipe/registry/live-lane ids, raw JSX/dependency/source-checkout risks,
+  child commit/branch absence, и scoped Full Intaker ticket. Scoped retry with
+  `--context-percent 20`, `--max-items 1`, exact candidate id,
+  `--allow-self-improvement-lane-synthesis`, `--no-commit`, and
+  `--compact-json` produced terminal ticket
+  `live-lane-family-0cc6343584eaed77`, no open tickets, and no requeue. No
+  candidate was marked completed: source-exact behavior prompts for a size
+  percentage, scans every project comp/layer effect for third-party
+  `Pseudo/Duik pin02`, and writes effect property 2, while current typed tools
+  do not provide a generated-only DuIK pin fixture, exact pin-size property
+  identity, or project-wide third-party effect semantic read-back. Stable
+  candidate-specific runtime ticket and ledger annotation were written.
+  Remaining reopened backlog without fresh parentReducer evidence: 6
+  Properties entries.
 - [x] Reopened Full Intaker Properties flip-path single-candidate re-audit:
   `tool-properties-flip-path` теперь имеет fresh scoped parentReducer review из
   reopened run. Proposal-only sidecars и parent reducer проверили source
@@ -405,17 +423,17 @@ old `AE_agent` repository remains the historical source.
 Continue the reopened Full Intaker objective. Do not accept
 `completed_no_candidates` or `terminal total=75` as success by itself.
 
-Current compact backlog map after the reopened Properties flip-path
-single-candidate re-audit: 7 blocked/skipped Properties entries still need
+Current compact backlog map after the reopened Properties DuIK pin-size
+single-candidate re-audit: 6 blocked/skipped Properties entries still need
 scoped review or completion. Continue Properties with the narrowest scoped
 family. The next listed candidate is
-`tool-properties-increase-all-pin-sizes`; review it as a third-party DuIK pin
-project/layer-property mutation candidate, not as covered by the path geometry
-or path-length lanes. Keep file IO, `saveFrameToPng`, render execution, proxy
-mutation, reveal/shell, cleanup/deletion, selected-property rename/value
-mutation, puppet/path geometry mutation, Essential Graphics writes, and
-user-asset mutation approval-gated unless a scoped generated-only/read-only lane
-is explicitly safe.
+`tool-properties-move-parametric-anchor-point`; review it as selected-property
+and parametric shape/property mutation, not as covered by the DuIK pin-size,
+path geometry, or path-length lanes. Keep file IO, `saveFrameToPng`, render
+execution, proxy mutation, reveal/shell, cleanup/deletion, selected-property
+rename/value/path mutation, puppet/path geometry mutation, Essential Graphics
+writes, third-party DuIK behavior, and user-asset mutation approval-gated unless
+a scoped generated-only/read-only lane is explicitly safe.
 
 Push/PR remain forbidden. Do not run broad/default CEP smoke, Local/Ollama,
 fallback providers, dependency changes, raw JSX copy, source-checkout writes, or
@@ -423,6 +441,20 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-06: Parent reducer completed reopened Properties
+  `tool-properties-increase-all-pin-sizes` single-candidate re-audit. Source
+  prompts for a size percentage, traverses every `CompItem` in `app.project`,
+  scans each layer `ADBE Effect Parade`, matches third-party
+  `Pseudo/Duik pin02`, and writes effect property 2. Existing typed tools can
+  inspect and set explicit effect properties through
+  `list_effects`/`get_effect_details`/`set_effect_property`, but there is no
+  generated DuIK pin fixture or mock, exact pin-size property identity proof,
+  project-wide safe traversal contract, or semantic read-back for DuIK pin-size
+  behavior. Scoped retry produced terminal ticket
+  `live-lane-family-0cc6343584eaed77`; parent reducer kept the candidate
+  terminal with unblock condition requiring a generated-only
+  `duik_pin_size` typed contract and proof lane that fails closed when DuIK
+  pseudo-effect evidence is unavailable.
 - 2026-06-06: Parent reducer completed reopened Properties
   `tool-properties-flip-path` single-candidate re-audit. Source uses a ScriptUI
   horizontal/vertical direction dialog, iterates active comp
@@ -856,6 +888,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened Properties DuIK pin-size single-candidate re-audit | Required to give `tool-properties-increase-all-pin-sizes` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecars reviewed source behavior, current typed surface, duplicate recipe/registry/live-lane ids, third-party DuIK risks, and runtime ticket state without edits/commits. Parent reducer accepted only this candidate in the serial step, verified baton active, clean tracked worktree, canonical ledger id, source behavior, duplicate evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue, and no completed candidate. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 6, all Properties. Closeout validation passed: JSON parse for ledger/tickets and fresh backlog map. Full closeout command results are recorded in the current handoff. |
 | Reopened Properties flip-path single-candidate re-audit | Required to give `tool-properties-flip-path` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecars reviewed source behavior, duplicate recipe/registry/live-lane ids, current typed surface, and runtime ticket state without edits/commits. Parent reducer accepted only this candidate in the serial step, verified baton active, clean tracked worktree, canonical ledger id, source behavior, duplicate evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue, and no completed candidate. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 7, all Properties. Closeout validation passed: JSON parse for ledger/ticket, compact status/proof/ledger-summary, `git diff --check` (line-ending warning only), `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake` on rerun with a longer timeout after the first 180s attempt timed out. No JS files were touched, so `node --check` was not required. |
 | Reopened Properties path-length lane/retry | Required to give `tool-properties-estimate-path-length` a fresh scoped attempt, existing-lane search, lane creation feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecars reviewed source behavior, current typed surface, duplicate recipe/registry/lane ids, and runtime ledger/ticket state without edits/commits. Parent reducer added `recipes/estimate-path-length-typed-plan.md`, `recipes/generic-repo-intake/tool-properties-estimate-path-length.md`, registry coverage, scenario/report smoke coverage, CEP smoke command, and `estimate-path-length-generated-only` self-improvement lane. Scoped retry used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it matched the new lane, passed non-live validation and read-only CEP preflight, then produced terminal ticket `live-lane-family-503da75d9d2829c2` because the CEP panel reported `openai-cli/gpt-5.5 is not ready`. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows 50/58 blocked/skipped entries fresh-reviewed and 8 Properties entries remaining. Closeout validation passed: touched JS `node --check`, JSON parse for registry/lane, `node scripts/agent-scenario-report-smoke.js`, `node scripts/solution-library-validation-smoke.js`, compact status/proof/ledger-summary, `git diff --check` (line-ending warnings only), `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake`. |
 | Reopened Properties Essential Properties single-candidate re-audit | Required to give `tool-properties-expose-essential-properties` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecars reviewed source behavior and Essential Graphics/Essential Properties typed feasibility without edits/commits. Parent reducer accepted only this candidate in the serial step, verified baton active, clean tracked worktree, source behavior, duplicate recipe/registry/live-lane evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned terminal ticket `live-lane-family-503da75d9d2829c2`, no open tickets, no requeue, and no completed candidate. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 9, all Properties. Closeout validation passed: JSON parse for ledger/ticket, compact status/proof/ledger-summary, `git diff --check` (line-ending warning only), `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake`. No JS files were touched, so `node --check` was not required. |
