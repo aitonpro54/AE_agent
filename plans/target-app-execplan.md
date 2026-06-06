@@ -26,6 +26,24 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker Properties selected-property rename single-candidate
+  re-audit: `tool-properties-rename-selected-properties` теперь имеет fresh
+  scoped parentReducer review из reopened run. Proposal-only sidecar и parent
+  reducer проверили source behavior, текущую typed-tool surface, duplicate
+  recipe/registry/live-lane ids, raw JSX/dependency/source-checkout risks,
+  child commit/branch absence, и scoped Full Intaker ticket. Scoped retry with
+  `--context-percent 20`, `--max-items 1`, exact candidate id,
+  `--allow-self-improvement-lane-synthesis`, `--no-commit`, and
+  `--compact-json` produced terminal ticket
+  `live-lane-family-0e4f08dad3367dcc`, no open tickets, no requeue, and no
+  completed candidate. No lane was created: source-exact behavior prompts for a
+  base name, reads `comp.selectedProperties`, and writes each selected
+  `PropertyBase.name`, while current typed tools can read selected property
+  names and mutate values/keyframes/expressions but cannot safely rename
+  property display names on generated targets with read-back. Stable
+  candidate-specific runtime ticket and ledger annotation were written.
+  Remaining reopened backlog without fresh parentReducer evidence: 3
+  Properties entries.
 - [x] Reopened Full Intaker Properties disabled-stroke single-candidate
   re-audit: `tool-properties-remove-disabled-strokes` теперь имеет fresh scoped
   parentReducer review из reopened run. Proposal-only sidecar и parent reducer
@@ -459,17 +477,20 @@ old `AE_agent` repository remains the historical source.
 Continue the reopened Full Intaker objective. Do not accept
 `completed_no_candidates` or `terminal total=75` as success by itself.
 
-Current compact backlog map after the reopened Properties disabled-stroke
-re-audit: 4 blocked/skipped Properties entries still need scoped review or
-completion. Continue Properties with the narrowest scoped family. The next
-listed candidate is `tool-properties-rename-selected-properties`; review it as
-selected-property rename/property traversal mutation, not as covered by
+Current compact backlog map after the reopened Properties selected-property
+rename re-audit: 3 blocked/skipped Properties entries still need scoped review
+or completion: `tool-properties-toggle-puppet-on-transparent`,
+`tool-properties-toggle-puppet-pin-types`, and
+`tool-properties-export-path-points`. Continue Properties with the narrowest
+scoped family. The next listed candidate is
+`tool-properties-toggle-puppet-on-transparent`; review it as Puppet effect
+property mutation/global traversal risk, not as covered by generic effect,
 selected-property value, expression, keyframe, path-length, parametric-anchor,
-or disabled-stroke lanes. Keep file IO, `saveFrameToPng`, render execution,
-proxy mutation, reveal/shell, cleanup/deletion, selected-property arbitrary
-value/path mutation, puppet/path geometry mutation, Essential Graphics writes,
-third-party DuIK behavior, and user-asset mutation approval-gated unless a
-scoped generated-only/read-only lane is explicitly safe.
+or selected-property rename lanes. Keep file IO, `saveFrameToPng`, render
+execution, proxy mutation, reveal/shell, cleanup/deletion, selected-property
+arbitrary value/name/path mutation, puppet/path geometry mutation, Essential
+Graphics writes, third-party DuIK behavior, and user-asset mutation
+approval-gated unless a scoped generated-only/read-only lane is explicitly safe.
 
 Push/PR remain forbidden. Do not run broad/default CEP smoke, Local/Ollama,
 fallback providers, dependency changes, raw JSX copy, source-checkout writes, or
@@ -477,6 +498,18 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-06: Parent reducer completed reopened Properties
+  `tool-properties-rename-selected-properties` single-candidate re-audit.
+  Source prompts for a base name, reads `comp.selectedProperties`, and writes
+  each selected `PropertyBase.name` with a 1-based suffix. Parent rejected lane
+  creation because current typed tools can read selected property names and
+  mutate values/keyframes/expressions/effect properties, but no approved typed
+  contract can rename property display names on explicit generated targets and
+  read the names back. The candidate remains terminal with unblock condition:
+  add a generated-only `set_property_name` or `rename_properties` typed
+  contract with explicit comp/layer/property targets, expected current name and
+  matchName/propertyIndex guards, reviewed numbering policy, generated-target
+  guard, read-back, checkpoint/edit-session protection, and no raw JSX fallback.
 - 2026-06-06: Parent reducer completed reopened Properties
   `tool-properties-remove-disabled-strokes` single-candidate re-audit. Source
   reads the active comp selection, recursively traverses selected layer property
@@ -952,6 +985,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened Properties selected-property rename single-candidate re-audit | Required to give `tool-properties-rename-selected-properties` a fresh scoped attempt, existing-lane search, lane creation feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecar reviewed source behavior, current typed surface, duplicate recipe/registry/live-lane ids, and runtime ticket state without edits/commits. Parent reducer accepted no lane, verified baton active, clean tracked worktree, canonical ledger id, source behavior, duplicate evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue, and no completed candidate. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows 55/58 blocked/skipped entries fresh-reviewed and 3 Properties entries remaining. Closeout validation is recorded in the current handoff. |
 | Reopened Properties disabled-stroke single-candidate re-audit | Required to give `tool-properties-remove-disabled-strokes` a fresh scoped attempt, existing-lane search, lane creation feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecar reviewed source behavior, current typed surface, duplicate recipe/registry/live-lane ids, and runtime ticket state without edits/commits. Parent reducer accepted no lane, verified baton active, clean tracked worktree, canonical ledger id, source behavior, duplicate evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue, and no completed candidate. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 4, all Properties. Closeout validation is recorded in the current handoff. |
 | Reopened Properties parametric anchor lane/retry | Required to give `tool-properties-move-parametric-anchor-point` a fresh scoped attempt, existing-lane search, lane creation feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecars reviewed source behavior, current typed surface, duplicate recipe/registry/live-lane ids, and runtime ledger/ticket state without central edits. Parent reducer accepted only a generated-only typed adaptation, verified baton active, clean tracked worktree before retry, source behavior, duplicate evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Parent added `recipes/move-parametric-anchor-point-typed-plan.md`, `recipes/generic-repo-intake/tool-properties-move-parametric-anchor-point.md`, registry coverage, focused scenario/report smoke coverage, CEP smoke command, and `parametric-anchor-expression-generated-only` self-improvement lane. Scoped retry used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; after parent-owned ledger annotation it matched the new lane, passed non-live validation and read-only CEP preflight, then produced terminal ticket `live-lane-family-c0373f4857f554cc` because the CEP panel reported `openai-cli/gpt-5.5 is not ready`. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows 53/58 blocked/skipped entries fresh-reviewed and 5 Properties entries remaining. Closeout validation is recorded in the current handoff. |
 | Reopened Properties DuIK pin-size single-candidate re-audit | Required to give `tool-properties-increase-all-pin-sizes` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecars reviewed source behavior, current typed surface, duplicate recipe/registry/live-lane ids, third-party DuIK risks, and runtime ticket state without edits/commits. Parent reducer accepted only this candidate in the serial step, verified baton active, clean tracked worktree, canonical ledger id, source behavior, duplicate evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue, and no completed candidate. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 6, all Properties. Closeout validation passed: JSON parse for ledger/tickets and fresh backlog map. Full closeout command results are recorded in the current handoff. |
