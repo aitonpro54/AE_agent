@@ -12981,6 +12981,119 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "set-project-item-labels-to-none-typed-plan",
+      "title": "Set Project Item Labels To None Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "project",
+        "project-item",
+        "label",
+        "metadata",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "generated-only"
+      ],
+      "intent": {
+        "summary": "Set AE Project item labels to none for explicit generated project items using set_project_item_metadata and project-item read-back.",
+        "appliesWhen": [
+          "The user asks to set project item labels to none or clear labels in the Project panel.",
+          "Every target project item can be bound to concrete itemIndices from current typed evidence."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "itemIndices",
+          "type": "project-item-selection",
+          "required": true,
+          "description": "Concrete project item indices read from get_project_snapshot, find_project_items, or list_project_folder_items before mutation."
+        },
+        {
+          "name": "expectedItemNames",
+          "type": "array",
+          "required": false,
+          "description": "Optional same-evidence item-name guards matching itemIndices order."
+        },
+        {
+          "name": "label",
+          "type": "number",
+          "required": true,
+          "description": "Must be 0 for this recipe."
+        }
+      ],
+      "targetAssumptions": [
+        "Only explicit project items from current typed evidence are mutated.",
+        "Setting AE Project item label index to 0 is an acceptable safe adaptation for label-to-none behavior.",
+        "Current typed tools do not expose Project panel selected items or AE preference/default label lookup by item type.",
+        "Item names, sources, types, folders, comp contents, layer source references, render queue items, project files, and unlisted project items are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/set-project-item-labels-to-none-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_project_info",
+          "get_project_snapshot",
+          "find_project_items",
+          "list_project_folder_items",
+          "set_project_item_metadata"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read target project items, set only label:0 through set_project_item_metadata, then read labels back.",
+        "steps": [
+          "Run get_project_info and get_project_snapshot, find_project_items, or list_project_folder_items to enumerate reviewed target project items.",
+          "Bind concrete itemIndices from current evidence and include expectedItemNames when available.",
+          "Run set_project_item_metadata with label:0 only.",
+          "Run find_project_items, get_project_snapshot, or list_project_folder_items after mutation to confirm every target label is 0.",
+          "Fail closed for Project panel selection reads, item rename/move/delete, label defaults by type, proxy state, render queue work, filesystem operations, and raw ExtendScript."
+        ],
+        "expectedEvidence": [
+          "Current project-item evidence identifies every target itemIndex before mutation.",
+          "set_project_item_metadata returns changedCount for the accepted target count and postVerification.ok:true.",
+          "Post-run project-item read-back shows every accepted target with label:0.",
+          "Post-run evidence shows no unexpected project item deletion, rename, movement, source replacement, layer relink, folder cleanup, render queue mutation, project file write, or filesystem I/O."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-project-set-all-item-labels-to-none as generated-only typed-plan coverage for explicit project item labels.",
+          "No generated-only mutating live CEP proof was run in this milestone."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-tool-project-set-all-item-labels-to-none",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the project item label-to-none intent into a new narrow set_project_item_metadata typed contract for explicit itemIndices and label:0 read-back. No source JSX copied. Project panel selection reads, item type default label lookup, item rename/move/delete, filesystem operations, render queue work, proxy state, and raw ExtendScript remain fail-closed; live candidate completion remains generated-only proof/readiness-gated.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Use set_project_item_metadata only after current project-item inspection evidence binds concrete itemIndices.",
+        "This recipe supports label:0 only; other project-item metadata fields require separate reviewed contract expansion.",
+        "Do not use this recipe for Project panel selection reads, label defaults by type, filesystem operations, render queue work, proxy state, item movement, item rename, or item deletion.",
+        "Do not infer Project panel selection or all-project scope from prior chat context.",
+        "Candidate completion remains generated-only live-proof/readiness-gated."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "milliseconds-to-frames-typed-plan",
       "title": "Milliseconds To Frames Typed Plan",
       "status": "recipe",

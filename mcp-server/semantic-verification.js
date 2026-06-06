@@ -26,6 +26,7 @@ const MUTATING_TOOLS = new Set([
   "fit_layer_to_comp",
   "set_property_value",
   "set_layer_metadata",
+  "set_project_item_metadata",
   "set_property_keyframes",
   "fill_in_keyframes",
   "keyframe_current_value_from_expression",
@@ -283,6 +284,7 @@ function createEvidenceStore(readBackSteps) {
     masks: [],
     markers: [],
     markerSignatures: new Set(),
+    projectItems: [],
     properties: []
   };
 }
@@ -350,6 +352,24 @@ function addPropertyEvidence(target, value, source) {
   });
 }
 
+function addProjectItemEvidence(target, value, source) {
+  if (!isPlainObject(value)) return;
+  const itemIndex = numberValue(value.itemIndex);
+  if (itemIndex === null) return;
+  const hasProjectItemShape = hasOwn(value, "type") || hasOwn(value, "typeName") || hasOwn(value, "label") || hasOwn(value, "folderPath");
+  if (!hasProjectItemShape) return;
+  target.projectItems.push({
+    itemIndex,
+    name: typeof value.name === "string" ? value.name : "",
+    type: value.type || null,
+    typeName: value.typeName || null,
+    label: hasOwn(value, "label") ? numberValue(value.label) : null,
+    comment: hasOwn(value, "comment") ? String(value.comment || "") : "",
+    folderPath: typeof value.folderPath === "string" ? value.folderPath : "",
+    source: source || "observed project item"
+  });
+}
+
 function markerSignature(marker) {
   if (!marker) return "";
   const comment = compactText(marker.comment, 180);
@@ -410,9 +430,17 @@ function collectPayloadEvidence(payload, evidence, source, depth = 0) {
   addCompEvidence(evidence, payload, source);
   addMaskEvidence(evidence, payload, source);
   addPropertyEvidence(evidence, payload, source);
+  addProjectItemEvidence(evidence, payload, source);
   if (isPlainObject(payload.property)) addPropertyEvidence(evidence, payload.property, source);
   if (Array.isArray(payload.properties)) {
     for (const property of payload.properties) addPropertyEvidence(evidence, property, source);
+  }
+  if (isPlainObject(payload.item)) addProjectItemEvidence(evidence, payload.item, source);
+  if (Array.isArray(payload.items)) {
+    for (const item of payload.items) addProjectItemEvidence(evidence, item, source);
+  }
+  if (Array.isArray(payload.matches)) {
+    for (const item of payload.matches) addProjectItemEvidence(evidence, item, source);
   }
   if (typeof payload.before === "string") addName(evidence, payload.before, source);
   if (typeof payload.after === "string") addName(evidence, payload.after, source);
@@ -966,6 +994,90 @@ function checkSetLayerMetadata(checks, step, payload, evidence) {
     observed: resultMatches ? `${payload.changedCount || changed.length} layer(s) updated` : "missing or mismatched metadata result",
     passed: resultMatches && Boolean(readBackEvidence),
     evidence: readBackEvidence || "No post-run get_layer_details read-back matched set_layer_metadata."
+  });
+}
+
+function projectItemMetadataFields(args, payload) {
+  const fields = [];
+  if (hasOwn(args, "label") || hasOwn(payload && payload.updates, "label")) fields.push("label");
+  return fields;
+}
+
+function projectItemMetadataArgs(args, payload) {
+  const updates = isPlainObject(payload && payload.updates) ? payload.updates : {};
+  return {
+    ...updates,
+    ...args
+  };
+}
+
+function projectItemIndicesFromArgsOrPayload(args, payload) {
+  if (Array.isArray(args.itemIndices)) return args.itemIndices.map(Number);
+  if (Array.isArray(payload.requestedItemIndices)) return payload.requestedItemIndices.map(Number);
+  return [];
+}
+
+function projectItemNamesFromArgsOrPayload(args, payload) {
+  if (Array.isArray(args.expectedItemNames)) return args.expectedItemNames.map(String);
+  if (Array.isArray(payload.expectedItemNames)) return payload.expectedItemNames.map(String);
+  return [];
+}
+
+function projectItemMetadataFieldMatches(item, args, field) {
+  if (!item || !hasOwn(item, field)) return false;
+  if (field === "label") return nearlyEqual(item.label, args.label);
+  return false;
+}
+
+function projectItemMatchesMetadataTarget(item, fields, args, itemIndex, expectedName) {
+  if (!item || !fields.length) return false;
+  if (!nearlyEqual(item.itemIndex, itemIndex)) return false;
+  if (expectedName && !sameString(item.name, expectedName)) return false;
+  return fields.every((field) => projectItemMetadataFieldMatches(item, args, field));
+}
+
+function observedProjectItemMetadataEvidence(evidence, args, payload) {
+  const itemIndices = projectItemIndicesFromArgsOrPayload(args, payload);
+  const expectedNames = projectItemNamesFromArgsOrPayload(args, payload);
+  const fields = projectItemMetadataFields(args, payload);
+  const normalizedArgs = projectItemMetadataArgs(args, payload);
+  if (!itemIndices.length || !fields.length || !evidence || !Array.isArray(evidence.projectItems)) return null;
+
+  const matchedSources = [];
+  for (let index = 0; index < itemIndices.length; index += 1) {
+    const itemIndex = itemIndices[index];
+    const expectedName = expectedNames[index] || "";
+    const match = evidence.projectItems.find((item) => projectItemMatchesMetadataTarget(item, fields, normalizedArgs, itemIndex, expectedName));
+    if (!match) return null;
+    matchedSources.push(match.source || `project item ${itemIndex}`);
+  }
+  return matchedSources.join("; ");
+}
+
+function checkSetProjectItemMetadata(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const normalizedArgs = projectItemMetadataArgs(args, payload);
+  const fields = projectItemMetadataFields(args, payload);
+  const itemIndices = projectItemIndicesFromArgsOrPayload(args, payload);
+  const expectedNames = projectItemNamesFromArgsOrPayload(args, payload);
+  const changed = Array.isArray(payload.changed) ? payload.changed : [];
+  const postVerification = payload.postVerification || {};
+  const resultMatches = fields.length > 0 &&
+    itemIndices.length > 0 &&
+    postVerification.ok === true &&
+    Number(payload.changedCount || changed.length || 0) === itemIndices.length &&
+    itemIndices.every((itemIndex, index) => {
+      const after = changed[index] && changed[index].after || {};
+      return projectItemMatchesMetadataTarget(after, fields, normalizedArgs, itemIndex, expectedNames[index] || "");
+    });
+  const readBackEvidence = observedProjectItemMetadataEvidence(evidence.readBack, args, payload);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:metadata`,
+    title: "Project item metadata matches explicit request",
+    expected: `${itemIndices.length} project item(s); fields: ${fields.join(", ")}`,
+    observed: resultMatches ? `${payload.changedCount || changed.length} project item(s) updated` : "missing or mismatched project item metadata result",
+    passed: resultMatches && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run project-item read-back matched set_project_item_metadata."
   });
 }
 
@@ -1773,6 +1885,11 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "set_layer_metadata") {
     checkSetLayerMetadata(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_project_item_metadata") {
+    checkSetProjectItemMetadata(checks, step, payload, evidence);
     return;
   }
 

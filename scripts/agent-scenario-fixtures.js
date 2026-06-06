@@ -26,6 +26,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "set_layer_transform",
   "set_property_value",
   "set_layer_metadata",
+  "set_project_item_metadata",
   "set_property_keyframes",
   "fill_in_keyframes",
   "keyframe_current_value_from_expression",
@@ -1373,6 +1374,57 @@ function agentProjectItemsScenarioPlans(runPrefix) {
           { title: "Find generated project items after rename", tool: "find_project_items", args: { query: base, limit: 20, caseSensitive: true } },
           { title: "List generated project-items folder contents", tool: "list_project_folder_items", args: { folderName, recursive: false, type: "comp", limit: 10 } },
           { title: "Read generated project-items main comp", tool: "get_comp_details", args: { compName: mainCompName, includeLayers: true, layerLimit: 10 } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
+function agentProjectItemMetadataScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Project Item Labels`;
+  const firstCompName = `${base} Alpha`;
+  const secondCompName = `${base} Beta`;
+  const label = 0;
+
+  return [
+    {
+      id: "generated-project-item-metadata-label",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_comp",
+        "find_project_items",
+        "set_project_item_metadata",
+        "find_project_items"
+      ],
+      expectedReadBack: {
+        generatedProjectItemMetadata: true,
+        itemNames: [firstCompName, secondCompName],
+        label
+      },
+      plan: {
+        summary: "Generated-only live QA for explicit project item label metadata on generated composition items.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create first generated project-item label comp", tool: "create_comp", args: { name: firstCompName, width: 320, height: 180, pixelAspect: 1, duration: 2, frameRate: 24, bgColor: [0.07, 0.1, 0.12], allowDuplicateName: false, openInViewer: false, comment: "generated-only project item label validation" } },
+          { title: "Create second generated project-item label comp", tool: "create_comp", args: { name: secondCompName, width: 320, height: 180, pixelAspect: 1, duration: 2, frameRate: 24, bgColor: [0.1, 0.07, 0.12], allowDuplicateName: false, openInViewer: false, comment: "generated-only project item label validation" } },
+          { title: "Find generated project items before label update", tool: "find_project_items", args: { query: base, type: "comp", limit: 10, caseSensitive: true } },
+          {
+            title: "Set generated project item labels to none",
+            tool: "set_project_item_metadata",
+            args: {
+              itemIndices: "{{steps.3.result}}",
+              expectedItemNames: [firstCompName, secondCompName],
+              label
+            }
+          },
+          { title: "Read generated project item labels after update", tool: "find_project_items", args: { query: base, type: "comp", limit: 10, caseSensitive: true } }
         ]
       }
     }
@@ -3556,6 +3608,7 @@ module.exports = {
   agentPuppetPinTypeScenarioPlans,
   agentPuppetOnTransparentScenarioPlans,
   agentParentOpacityExpressionScenarioPlans,
+  agentProjectItemMetadataScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
   agentRemainingTailContractsScenarioPlans,

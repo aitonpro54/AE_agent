@@ -887,6 +887,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "set_puppet_pin_type",
   "set_property_value",
   "set_layer_metadata",
+  "set_project_item_metadata",
   "set_comp_current_time",
   "set_comp_properties",
   "set_comp_work_area",
@@ -2002,7 +2003,7 @@ function compactCheckpoint(checkpoint) {
 function inferMutationTarget(toolName, args, payload) {
   const target = { tool: toolName };
   const request = {};
-  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "layerName", "sourceName", "expectedLayerName", "expectedLayerNames", "comment", "label", "locked", "maskIndex", "expectedMaskName", "operation", "maskMode", "targetTime", "time", "frame", "frameRate", "expectedCurrentTime", "clampToDuration", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "itemType", "sourceItemIndex", "sourceItemName", "sourceCompItemIndex", "sourceCompName", "nameSuffix", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "renderQueueItemIndex", "outputPath", "outputFileName"]) {
+  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "layerName", "sourceName", "expectedLayerName", "expectedLayerNames", "comment", "label", "locked", "maskIndex", "expectedMaskName", "operation", "maskMode", "targetTime", "time", "frame", "frameRate", "expectedCurrentTime", "clampToDuration", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "expectedItemNames", "itemType", "sourceItemIndex", "sourceItemName", "sourceCompItemIndex", "sourceCompName", "nameSuffix", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "renderQueueItemIndex", "outputPath", "outputFileName"]) {
     if (hasArg(args || {}, key)) request[key] = args[key];
   }
   if (Object.keys(request).length) target.request = request;
@@ -4300,6 +4301,7 @@ const PLANNING_TOOL_NAMES = [
   "create_comp",
   "create_project_folder",
   "move_project_items_to_folder",
+  "set_project_item_metadata",
   "create_text_layer",
   "import_footage",
   "create_solid_layer",
@@ -6260,6 +6262,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For destructive single-layer deletion, use delete_layer only after inspecting the explicit target comp/layer. Provide compItemIndex or compName, layerIndex, and expectedLayerName, then read back the comp/layer stack to prove the deleted layer is absent; never use selection-only, broad, multi-layer, or name-optional deletion.",
     "For composition settings, use set_comp_properties only for width, height, pixelAspect, duration, frameRate, bgColor, and displayStartTime on one explicit comp, then read back the comp before reporting success. Do not route arbitrary comp fields, layers, effects, masks, or property paths through this tool.",
     "For explicit generated layer metadata, use set_layer_metadata only with one explicit comp target, concrete layerIndices, and expectedLayerNames when available. It only supports comment, label, and locked, and must be followed by get_layer_details read-back for each target layer.",
+    "For explicit generated project item labels, use set_project_item_metadata only with concrete itemIndices from current get_project_snapshot/find_project_items/list_project_folder_items evidence and expectedItemNames when available. It only supports label and must be followed by project-item read-back.",
     "For explicit layer switches, use set_property_value only with whitelisted layer attributes threeDLayer, collapseTransformation, or motionBlur on inspected layer indices, setAtTime:false, then read back with get_layer_details. Do not use it for parenting, selection changes, timeline switches, or arbitrary layer fields.",
     "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
     "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, set_layer_mask, get_path_geometry, set_path_geometry, export_path_points, and fit_layer_to_comp. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Use set_path_geometry only for one explicit Shape or Mask path property with reviewed vertices, inTangents, outTangents, closed state, and optional bounded keyframes, then read back with get_path_geometry. Use export_path_points only after get_path_geometry evidence and only for generated export files; never write Desktop or arbitrary user paths. Do not delete masks, target multiple masks/layers, run roto, or traverse arbitrary property trees.",
@@ -7852,6 +7855,30 @@ const tools = [
           description: "Maximum number of items to return. Defaults to 200, maximum 2000."
         }
       }
+    }
+  },
+  {
+    name: "set_project_item_metadata",
+    description: "Update only the AE label index on explicit project item indices with optional expected item-name guards and required read-back.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        itemIndices: {
+          type: ["number", "array"],
+          description: "Explicit 1-based project item index or indexes from current project-item evidence."
+        },
+        expectedItemNames: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional item-name guards matching itemIndices order."
+        },
+        label: {
+          type: "number",
+          description: "AE project item label index to set. Must be an integer from 0 through 16."
+        },
+        ...MUTATION_CHECKPOINT_SCHEMA_PROPERTIES
+      },
+      required: ["itemIndices", "label"]
     }
   },
   {
@@ -10019,12 +10046,16 @@ async function callTool(name, args) {
 
       function __codexItemReference(item) {
         if (!item) return null;
-        return {
+        var info = {
           itemIndex: __codexProjectIndexForItem(item),
           name: item.name || "",
           type: __codexItemType(item),
           typeName: item.typeName || null
         };
+        try { info.label = item.label; } catch (__itemLabelError) {}
+        try { info.comment = item.comment || ""; } catch (__itemCommentError) {}
+        try { info.folderPath = __codexFolderPath(item); } catch (__itemFolderPathError) {}
+        return info;
       }
 
       function __codexMarkerInfo(markerProp, keyIndex) {
@@ -10991,8 +11022,10 @@ async function callTool(name, args) {
           type: type,
           typeName: item.typeName || null,
           folderPath: __codexFolderPath(item),
+          label: null,
           comment: item.comment || ""
         };
+        try { info.label = item.label; } catch (__itemLabelError) {}
 
         if (item instanceof CompItem) {
           info.width = item.width;
@@ -11297,6 +11330,103 @@ async function callTool(name, args) {
           skippedCount: skipped.length,
           moved: moved,
           skipped: skipped
+        };
+      } finally {
+        app.endUndoGroup();
+      }
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_project_item_metadata") {
+    const allowedKeys = new Set([
+      "itemIndices",
+      "expectedItemNames",
+      "label",
+      "autoCheckpoint",
+      "checkpointLabel",
+      "idempotencyKey",
+      "idempotencyScope",
+      "verifyAfter",
+      M100_DIRECT_ESCAPE_HATCH_ARG
+    ]);
+    const unsupportedKeys = Object.keys(args || {}).filter((key) => !allowedKeys.has(key));
+    if (unsupportedKeys.length) return toolResult("Unsupported set_project_item_metadata fields: " + unsupportedKeys.join(", "), true);
+
+    let itemIndices;
+    try {
+      itemIndices = requiredExplicitPositiveIntegerList(args, "itemIndices");
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
+
+    let expectedItemNames = null;
+    if (hasArg(args, "expectedItemNames")) {
+      expectedItemNames = args.expectedItemNames;
+      if (typeof expectedItemNames === "string" && expectedItemNames.trim().startsWith("[")) {
+        expectedItemNames = JSON.parse(expectedItemNames);
+      }
+      if (!Array.isArray(expectedItemNames)) return toolResult("expectedItemNames must be an array when provided.", true);
+      expectedItemNames = expectedItemNames.map((value) => String(value));
+      if (expectedItemNames.length !== itemIndices.length) {
+        return toolResult("expectedItemNames must have the same length as itemIndices.", true);
+      }
+    }
+
+    const label = optionalNumber(args, "label", null);
+    if (!Number.isInteger(label) || label < 0 || label > 16) return toolResult("label must be an integer from 0 through 16.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var itemIndices = ${aeLiteral(itemIndices)};
+      var expectedItemNames = ${expectedItemNames ? aeLiteral(expectedItemNames) : "null"};
+      var label = ${label};
+
+      app.beginUndoGroup("Codex Set Project Item Metadata");
+      try {
+        var changed = [];
+        var allMatch = true;
+        for (var __pi = 0; __pi < itemIndices.length; __pi++) {
+          var requestedIndex = itemIndices[__pi];
+          var item = app.project.item(requestedIndex);
+          if (!item) throw new Error("Project item not found at index " + requestedIndex + ".");
+          if (expectedItemNames && item.name !== expectedItemNames[__pi]) {
+            throw new Error("Project item name mismatch at index " + requestedIndex + ". Expected '" + expectedItemNames[__pi] + "' but found '" + item.name + "'.");
+          }
+
+          var before = __codexItemReference(item);
+          item.label = Number(label);
+          var after = __codexItemReference(item);
+          var fieldMatches = { label: Number(after.label) === Number(label) };
+          if (!fieldMatches.label) allMatch = false;
+          changed.push({
+            itemIndex: requestedIndex,
+            expectedItemName: expectedItemNames ? expectedItemNames[__pi] : null,
+            before: before,
+            after: after,
+            fieldMatches: fieldMatches
+          });
+        }
+
+        var items = [];
+        for (var __changedIndex = 0; __changedIndex < changed.length; __changedIndex++) {
+          items.push(changed[__changedIndex].after);
+        }
+        return {
+          requestedItemIndices: itemIndices,
+          expectedItemNames: expectedItemNames,
+          updatedFields: ["label"],
+          updates: { label: label },
+          changedCount: changed.length,
+          item: items.length === 1 ? items[0] : null,
+          items: items,
+          changed: changed,
+          postVerification: {
+            ok: allMatch,
+            requestedCount: itemIndices.length,
+            changedCount: changed.length,
+            updatedFields: ["label"]
+          }
         };
       } finally {
         app.endUndoGroup();

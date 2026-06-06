@@ -105,6 +105,7 @@ const IMPORTED_ADVISORY_IDS = [
   "add-selected-compositions-to-render-queue-typed-plan",
   "replace-text-in-project-item-name-typed-plan",
   "rename-selected-project-items-typed-plan",
+  "set-project-item-labels-to-none-typed-plan",
   "add-comment-to-selected-layers-typed-plan",
   "unlock-all-layers-typed-plan",
   "set-all-layer-labels-to-none-typed-plan",
@@ -161,6 +162,7 @@ const AVAILABLE_TOOLS = [
   "add_layer_marker",
   "rename_layers",
   "rename_project_items",
+  "set_project_item_metadata",
   "get_layer_details",
   "duplicate_layers",
   "deep_duplicate_precomp_sources",
@@ -2335,6 +2337,27 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Rename_Selected_Project_Items/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "set-project-item-labels-to-none-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "get_project_snapshot", "find_project_items", "list_project_folder_items", "set_project_item_metadata"],
+        `${id}: project-item label workflow should stay on the narrow project-item metadata typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: project-item label workflow must be mutating.`);
+      assert(text.includes("label:0"), `${id}: recipe should require label:0.`);
+      assert(text.includes("set_project_item_metadata"), `${id}: recipe should use the project item metadata typed tool.`);
+      assert(text.includes("expectedItemNames"), `${id}: recipe should support item-name guards.`);
+      assert(text.includes("Project panel selection"), `${id}: recipe should fail closed for Project panel selection reads.`);
+      assert(text.includes("label defaults by type"), `${id}: recipe should fail closed for item-type label defaults.`);
+      assert(text.includes("filesystem operations"), `${id}: recipe should fail closed for filesystem operations.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_project_snapshot/.test(step)), `${id}: verification must allow project snapshot evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /find_project_items/.test(step)), `${id}: verification must include project item read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_project_item_metadata/.test(step)), `${id}: verification must include project item metadata mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /postVerification\.ok:true/.test(item)), `${id}: verification must require postVerification evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /label:0/.test(item)), `${id}: verification must require label read-back evidence.`);
+      assert(solution.notes.some((note) => /label:0 only/.test(note)), `${id}: notes must keep scope label-only.`);
+      assert(solution.promotionHistory.some((entry) => /tool-project-set-all-item-labels-to-none/.test(entry.from)), `${id}: promotion history should mention source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /No source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "find-specific-effect-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -3790,6 +3813,21 @@ function assertActualRetrieval(registry) {
   assert(renameSelectedProjectItemsPromptSection.includes("rename_project_items"), "prompt section should prefer rename_project_items for project item rename workflows.");
   assert(renameSelectedProjectItemsPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning.");
   assert(!/run_extendscript/i.test(renameSelectedProjectItemsPromptSection), "selected project-item rename guidance should not recommend raw ExtendScript.");
+
+  const setProjectItemLabelsRetrieval = retrieveSolutionHints("Set generated project item labels to none after reading the current project snapshot, binding explicit itemIndices, using set_project_item_metadata label 0, and reading labels back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(setProjectItemLabelsRetrieval.ok, true);
+  assert(ids(setProjectItemLabelsRetrieval).includes("set-project-item-labels-to-none-typed-plan"), "project item label advisory recipe should surface for project item label prompts.");
+  const setProjectItemLabelsPromptSection = formatSolutionHintsForPrompt(setProjectItemLabelsRetrieval);
+  assert(setProjectItemLabelsPromptSection.includes("Set Project Item Labels To None Typed Plan"), "prompt section should include project-item label advisory title.");
+  assert(setProjectItemLabelsPromptSection.includes("set_project_item_metadata"), "prompt section should prefer set_project_item_metadata for project item labels.");
+  assert(setProjectItemLabelsPromptSection.includes("label:0"), "prompt section should preserve label:0 policy.");
+  assert(setProjectItemLabelsPromptSection.includes("find_project_items"), "prompt section should preserve item search evidence for project item label workflows.");
+  assert(setProjectItemLabelsPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning.");
+  assert(!/run_extendscript/i.test(setProjectItemLabelsPromptSection), "project item label guidance should not recommend raw ExtendScript.");
 
   const replaceProjectItemNameRetrieval = retrieveSolutionHints("Replace Alpha with Beta in project item names after reading the current project snapshot, binding explicit itemIndices, using rename_project_items mode findReplace, and reading back project inventory. Use literal text replacement, not regex.", {
     registry,

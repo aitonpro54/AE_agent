@@ -36,6 +36,7 @@ const {
   agentRenameFindReplaceScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
   agentParentOpacityExpressionScenarioPlans,
+  agentProjectItemMetadataScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentResetWorkAreaScenarioPlans,
   agentRenderQueueScenarioPlans,
@@ -439,6 +440,19 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert(projectItems.plan.steps.some((step) => step.tool === "replace_layer_source"));
   assert(projectItems.plan.steps.some((step) => step.tool === "rename_project_items"));
   assert.strictEqual(projectItems.plan.steps[6].resultBindings.itemIndices, "{{steps.6.renamed.0.itemIndex}}");
+
+  const [projectItemMetadata] = agentProjectItemMetadataScenarioPlans("Codex QA AUX-PI-META Fixture");
+  assert.strictEqual(projectItemMetadata.id, "generated-project-item-metadata-label");
+  assert.strictEqual(projectItemMetadata.expectedReadBack.generatedProjectItemMetadata, true);
+  assert.deepStrictEqual(projectItemMetadata.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_comp",
+    "find_project_items",
+    "set_project_item_metadata",
+    "find_project_items"
+  ]);
+  assert.strictEqual(projectItemMetadata.plan.steps[3].args.itemIndices, "{{steps.3.result}}");
+  assert.strictEqual(projectItemMetadata.plan.steps[3].args.label, 0);
 
   const [compositionVersion] = agentCompositionVersionScenarioPlans("Codex QA AUX097 Fixture");
   assert.strictEqual(compositionVersion.id, "generated-composition-version-token");

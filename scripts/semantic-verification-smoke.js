@@ -11,6 +11,7 @@ const {
   agentDakkshinTypedToolsScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
+  agentProjectItemMetadataScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
   agentScenarioPlans,
   agentTextToKeysScenarioPlans
@@ -20,6 +21,7 @@ const LOCAL_MUTATING_TOOLS = new Set([
   "delete_layer",
   "set_comp_properties",
   "set_layer_metadata",
+  "set_project_item_metadata",
   "set_layer_mask",
   "set_path_geometry",
   "export_path_points",
@@ -447,6 +449,62 @@ function fakeMutationResult(step, state) {
         updatedFields: Object.keys(updates)
       }
     }, compName, changed[0] && changed[0].after);
+  }
+  if (step.tool === "set_project_item_metadata") {
+    const expectedItemNames = Array.isArray(args.expectedItemNames) ? args.expectedItemNames.map(String) : [];
+    let itemIndices = Array.isArray(args.itemIndices) ? args.itemIndices.map(Number).filter((value) => Number.isFinite(value) && value > 0) : [];
+    if (!itemIndices.length && expectedItemNames.length) {
+      itemIndices = expectedItemNames.map((expectedName) => {
+        let item = state.projectItems.find((candidate) => candidate.name === expectedName);
+        if (!item) {
+          item = { itemIndex: state.nextItemIndex++, name: expectedName, type: "comp", label: 9 };
+          state.projectItems.push(item);
+        }
+        return item.itemIndex;
+      });
+    }
+    if (!itemIndices.length) {
+      itemIndices = state.projectItems.map((item) => item.itemIndex);
+    }
+    const label = Number.isFinite(Number(args.label)) ? Number(args.label) : 0;
+    const changed = itemIndices.map((itemIndex, index) => {
+      let item = state.projectItems.find((candidate) => Number(candidate.itemIndex) === Number(itemIndex));
+      if (!item) {
+        item = {
+          itemIndex,
+          name: expectedItemNames[index] || `Project Item ${itemIndex}`,
+          type: "comp",
+          label: 9
+        };
+        state.projectItems.push(item);
+      }
+      const before = { ...item };
+      item.label = label;
+      const after = { ...item };
+      return {
+        itemIndex,
+        expectedItemName: expectedItemNames[index] || null,
+        before,
+        after,
+        fieldMatches: { label: true }
+      };
+    });
+    return withVerification({
+      requestedItemIndices: itemIndices,
+      expectedItemNames,
+      updates: { label },
+      updatedFields: ["label"],
+      changedCount: changed.length,
+      item: changed.length === 1 ? changed[0].after : null,
+      items: changed.map((item) => item.after),
+      changed,
+      postVerification: {
+        ok: true,
+        requestedCount: itemIndices.length,
+        changedCount: changed.length,
+        updatedFields: ["label"]
+      }
+    }, expectedItemNames[0] || compName);
   }
   if (step.tool === "set_puppet_pin_type") {
     const rawPinType = args.pinType === "advanced" ? 4 : args.pinType === "position" ? 1 : Number(args.pinType || 4);
@@ -1396,6 +1454,26 @@ function assertLayerMetadataPasses() {
   const semantic = buildSemanticVerification(scenario.plan, run);
   assert.strictEqual(semantic.status, "passed", `set_layer_metadata semantic verification should pass: ${semantic.summary}`);
   assert(semantic.checks.some((check) => check.id.indexOf("set_layer_metadata:metadata") >= 0 && check.status === "passed"), "set_layer_metadata read-back check should pass.");
+}
+
+function assertProjectItemMetadataPasses() {
+  const [scenario] = agentProjectItemMetadataScenarioPlans("Codex Semantic Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  assert.strictEqual(semantic.status, "passed", `set_project_item_metadata semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_project_item_metadata:metadata") >= 0 && check.status === "passed"), "set_project_item_metadata read-back check should pass.");
+}
+
+function assertProjectItemMetadataMissingReadBackNeedsReview() {
+  const [scenario] = agentProjectItemMetadataScenarioPlans("Codex Semantic Fixture Missing Readback");
+  const plan = {
+    ...scenario.plan,
+    steps: scenario.plan.steps.filter((step) => step.tool !== "find_project_items" || /before/.test(step.title))
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "set_project_item_metadata must require post-run project-item read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_project_item_metadata:metadata") >= 0 && check.status === "failed"), "set_project_item_metadata missing read-back should fail.");
 }
 
 function assertDeleteLayerPasses() {
@@ -2565,6 +2643,8 @@ function main() {
   assertDuplicateLayersPairOrderMismatchNeedsReview();
   assertLayerSelectionPasses();
   assertLayerMetadataPasses();
+  assertProjectItemMetadataPasses();
+  assertProjectItemMetadataMissingReadBackNeedsReview();
   assertDeleteLayerPasses();
   assertDeleteLayerMissingReadBackNeedsReview();
   assertSetCompPropertiesPasses();
