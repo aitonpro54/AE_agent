@@ -26,6 +26,26 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker Properties Puppet On Transparent lane/retry:
+  `tool-properties-toggle-puppet-on-transparent` теперь имеет fresh scoped
+  parentReducer review из reopened run. Proposal-only sidecar и parent reducer
+  проверили source behavior, текущую typed-tool surface, duplicate
+  recipe/registry/live-lane ids, raw JSX/dependency/source-checkout risks,
+  child commit/branch absence, и scoped Full Intaker tickets. Parent reducer
+  added only the narrow generated-only
+  `toggle-puppet-on-transparent-typed-plan`, generic intake note, registry
+  coverage, focused scenario/report/solution smoke coverage, CEP command,
+  exact-candidate unsafe-skip synthesis gate, and
+  `puppet-on-transparent-effect-property-generated-only` self-improvement lane.
+  Scoped retry with `--context-percent 20`, `--max-items 1`, exact candidate id,
+  `--allow-self-improvement-lane-synthesis`, `--no-commit`, and
+  `--compact-json` matched the new family, passed non-live validation and
+  read-only CEP preflight, then produced terminal ticket
+  `live-lane-family-puppet-on-transparent-effect-property-generated-only`
+  because the CEP panel reported `openai-cli/gpt-5.5 is not ready`. No
+  candidate was marked completed. Stable candidate-specific runtime ticket and
+  ledger annotation were written. Remaining reopened backlog without fresh
+  parentReducer evidence: 2 Properties entries.
 - [x] Reopened Full Intaker Properties selected-property rename single-candidate
   re-audit: `tool-properties-rename-selected-properties` теперь имеет fresh
   scoped parentReducer review из reopened run. Proposal-only sidecar и parent
@@ -477,20 +497,20 @@ old `AE_agent` repository remains the historical source.
 Continue the reopened Full Intaker objective. Do not accept
 `completed_no_candidates` or `terminal total=75` as success by itself.
 
-Current compact backlog map after the reopened Properties selected-property
-rename re-audit: 3 blocked/skipped Properties entries still need scoped review
-or completion: `tool-properties-toggle-puppet-on-transparent`,
-`tool-properties-toggle-puppet-pin-types`, and
+Current compact backlog map after the reopened Properties Puppet On Transparent
+lane/retry: 2 blocked/skipped Properties entries still need scoped review or
+completion: `tool-properties-toggle-puppet-pin-types` and
 `tool-properties-export-path-points`. Continue Properties with the narrowest
 scoped family. The next listed candidate is
-`tool-properties-toggle-puppet-on-transparent`; review it as Puppet effect
-property mutation/global traversal risk, not as covered by generic effect,
-selected-property value, expression, keyframe, path-length, parametric-anchor,
-or selected-property rename lanes. Keep file IO, `saveFrameToPng`, render
-execution, proxy mutation, reveal/shell, cleanup/deletion, selected-property
-arbitrary value/name/path mutation, puppet/path geometry mutation, Essential
-Graphics writes, third-party DuIK behavior, and user-asset mutation
-approval-gated unless a scoped generated-only/read-only lane is explicitly safe.
+`tool-properties-toggle-puppet-pin-types`; review it as Puppet pin atom enum
+mutation, not as covered by generic effect property, selected-property value,
+expression, keyframe, path-length, parametric-anchor, selected-property rename,
+or Puppet On Transparent lanes. Keep file IO/Desktop writes, `saveFrameToPng`,
+render execution, proxy mutation, reveal/shell, cleanup/deletion,
+selected-property arbitrary name/value/path mutation, shape/mask path geometry
+mutation, puppet pin atom mutation, Essential Graphics writes, third-party DuIK
+behavior, and user-asset mutation approval-gated unless a scoped
+generated-only/read-only lane is explicitly safe.
 
 Push/PR remain forbidden. Do not run broad/default CEP smoke, Local/Ollama,
 fallback providers, dependency changes, raw JSX copy, source-checkout writes, or
@@ -498,6 +518,20 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-06: Parent reducer completed reopened Properties
+  `tool-properties-toggle-puppet-on-transparent` lane/retry. Source traverses
+  every project comp/layer effect, finds `ADBE FreePin3`, and writes
+  `ADBE FreePin3 On Transparent` to true or false depending on Alt-key state.
+  Parent accepted only a generated-only typed adaptation that creates or binds
+  one explicit generated layer/effect target, uses `add_effect` for
+  `ADBE FreePin3`, reads `ADBE FreePin3 On Transparent` with
+  `get_effect_details`, sets a reviewed boolean with `set_effect_property`, and
+  reads it back. Source-exact all-project traversal, Alt-key branching, user
+  Puppet effects, puppet pin atom mutation, third-party DuIK behavior, and raw
+  JSX semantics remain fail-closed. Scoped retry matched
+  `puppet-on-transparent-effect-property-generated-only`, passed non-live
+  validation and read-only CEP preflight, then remained terminal because the CEP
+  panel reported `openai-cli/gpt-5.5 is not ready`.
 - 2026-06-06: Parent reducer completed reopened Properties
   `tool-properties-rename-selected-properties` single-candidate re-audit.
   Source prompts for a base name, reads `comp.selectedProperties`, and writes
@@ -985,6 +1019,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened Properties Puppet On Transparent lane/retry | Required to give `tool-properties-toggle-puppet-on-transparent` a fresh scoped attempt, existing-lane search, lane creation feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecar reviewed source behavior, current typed surface, duplicate recipe/registry/live-lane ids, and runtime state without edits/commits. Parent reducer accepted only a generated-only effect-property adaptation, verified baton active, clean tracked worktree before guarded retry, source behavior, duplicate evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Parent added `recipes/toggle-puppet-on-transparent-typed-plan.md`, `recipes/generic-repo-intake/tool-properties-toggle-puppet-on-transparent.md`, registry coverage, scenario/report smoke coverage, CEP smoke command, exact-candidate unsafe-skip synthesis gate, and `puppet-on-transparent-effect-property-generated-only` self-improvement lane. Scoped retry used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it matched the new lane, passed non-live validation and read-only CEP preflight, then produced terminal ticket `live-lane-family-puppet-on-transparent-effect-property-generated-only` because the CEP panel reported `openai-cli/gpt-5.5 is not ready`. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows 56/58 blocked/skipped entries fresh-reviewed and 2 Properties entries remaining. Closeout validation is recorded in the current handoff. |
 | Reopened Properties selected-property rename single-candidate re-audit | Required to give `tool-properties-rename-selected-properties` a fresh scoped attempt, existing-lane search, lane creation feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecar reviewed source behavior, current typed surface, duplicate recipe/registry/live-lane ids, and runtime ticket state without edits/commits. Parent reducer accepted no lane, verified baton active, clean tracked worktree, canonical ledger id, source behavior, duplicate evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue, and no completed candidate. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows 55/58 blocked/skipped entries fresh-reviewed and 3 Properties entries remaining. Closeout validation is recorded in the current handoff. |
 | Reopened Properties disabled-stroke single-candidate re-audit | Required to give `tool-properties-remove-disabled-strokes` a fresh scoped attempt, existing-lane search, lane creation feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecar reviewed source behavior, current typed surface, duplicate recipe/registry/live-lane ids, and runtime ticket state without edits/commits. Parent reducer accepted no lane, verified baton active, clean tracked worktree, canonical ledger id, source behavior, duplicate evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue, and no completed candidate. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 4, all Properties. Closeout validation is recorded in the current handoff. |
 | Reopened Properties parametric anchor lane/retry | Required to give `tool-properties-move-parametric-anchor-point` a fresh scoped attempt, existing-lane search, lane creation feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecars reviewed source behavior, current typed surface, duplicate recipe/registry/live-lane ids, and runtime ledger/ticket state without central edits. Parent reducer accepted only a generated-only typed adaptation, verified baton active, clean tracked worktree before retry, source behavior, duplicate evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Parent added `recipes/move-parametric-anchor-point-typed-plan.md`, `recipes/generic-repo-intake/tool-properties-move-parametric-anchor-point.md`, registry coverage, focused scenario/report smoke coverage, CEP smoke command, and `parametric-anchor-expression-generated-only` self-improvement lane. Scoped retry used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; after parent-owned ledger annotation it matched the new lane, passed non-live validation and read-only CEP preflight, then produced terminal ticket `live-lane-family-c0373f4857f554cc` because the CEP panel reported `openai-cli/gpt-5.5 is not ready`. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows 53/58 blocked/skipped entries fresh-reviewed and 5 Properties entries remaining. Closeout validation is recorded in the current handoff. |

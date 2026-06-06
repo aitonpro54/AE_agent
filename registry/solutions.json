@@ -8026,6 +8026,116 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "toggle-puppet-on-transparent-typed-plan",
+      "title": "Toggle Puppet On Transparent Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "properties",
+        "effects",
+        "puppet",
+        "effect-property",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Set the Puppet ADBE FreePin3 On Transparent boolean property on one explicit generated Puppet effect and read it back.",
+        "appliesWhen": [
+          "The user asks to set Puppet On Transparent for a generated or explicitly reviewed Puppet effect target.",
+          "Typed adaptation is acceptable only when current generated-layer/effect evidence identifies one ADBE FreePin3 effect and the plan can set/read ADBE FreePin3 On Transparent instead of relying on source-exact all-project traversal or raw JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "puppetEffectTarget",
+          "type": "object",
+          "required": true,
+          "description": "Current generated-layer or explicit typed evidence containing comp identity, layerIndex, generated Puppet effect name, effect matchName ADBE FreePin3, and the target property matchName ADBE FreePin3 On Transparent."
+        },
+        {
+          "name": "onTransparent",
+          "type": "boolean",
+          "required": true,
+          "description": "Reviewed boolean value for ADBE FreePin3 On Transparent. This replaces the source Alt-key branch and must be explicit."
+        }
+      ],
+      "targetAssumptions": [
+        "The mutated layer is generated or explicitly reviewed and can receive the ADBE FreePin3 effect.",
+        "The target property is addressed by propertyMatchName ADBE FreePin3 On Transparent on the reviewed effect.",
+        "The workflow mutates only the generated Puppet On Transparent boolean property on one explicit effect target.",
+        "Project-wide traversal, user Puppet effects, puppet pin atoms, DuIK effects, expressions, keyframes, layer transforms, sources, timing, render queue items, project items, selection state, and unrelated effects are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/toggle-puppet-on-transparent-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "create_shape_layer",
+          "add_effect",
+          "get_effect_details",
+          "set_effect_property"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Create or bind one generated layer, add/read one generated ADBE FreePin3 effect, set ADBE FreePin3 On Transparent to the reviewed boolean value, then read the property back.",
+        "steps": [
+          "Run get_active_comp or create a generated comp before mutation to capture target comp identity.",
+          "Create or bind one generated layer that can receive the ADBE FreePin3 effect.",
+          "Run add_effect with ADBE FreePin3 for the generated Puppet effect, then run get_effect_details with includeProperties:true and includeValues:true.",
+          "Confirm get_effect_details evidence contains effect matchName ADBE FreePin3 and property matchName ADBE FreePin3 On Transparent.",
+          "Run set_effect_property with propertyMatchName ADBE FreePin3 On Transparent, the reviewed boolean value, and setAtTime:false.",
+          "Run get_effect_details after mutation to confirm the same effect/property identity and requested boolean value.",
+          "Fail closed if AE cannot add/read ADBE FreePin3 on the generated target, if the property is absent or ambiguous, or if source-exact all-project traversal, Alt-key branching, user Puppet effects, puppet pin atom mutation, third-party DuIK behavior, or raw ExtendScript is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies the generated comp, layer, Puppet effect name, ADBE FreePin3 matchName, and ADBE FreePin3 On Transparent property.",
+          "add_effect/get_effect_details evidence shows generated ADBE FreePin3 effect on the expected layer.",
+          "set_effect_property result and read-back show propertyMatchName ADBE FreePin3 On Transparent and the reviewed boolean value.",
+          "Post-run evidence shows no project-wide traversal, user Puppet effect mutation, puppet pin atom edits, DuIK effects, expression/keyframe edits, layer transform edits, source/timing/render queue/project item/selection mutation, or unrelated effect/property mutation.",
+          "Unsupported source-exact all-project traversal, Alt-key branching, user Puppet effects, puppet pin atom mutation, third-party DuIK behavior, and raw ExtendScript are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-properties-toggle-puppet-on-transparent as generated-only advisory typed-plan coverage for one Puppet On Transparent effect property target.",
+          "Generated-only proof uses existing typed tools and a generated effect target; parent importer owns live acceptance and scoped retry evidence."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-tool-properties-toggle-puppet-on-transparent",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the effect-property idea behind kyletmartinez/after-effects-scripts Properties/Toggle_Puppet_On_Transparent.jsx into existing typed tools as generated-only ADBE FreePin3 On Transparent guidance for one explicit generated effect target; no source JSX copied. Current typed tools require generated layer/effect evidence, add_effect/get_effect_details for ADBE FreePin3, set_effect_property with propertyMatchName ADBE FreePin3 On Transparent for a reviewed boolean value, and get_effect_details read-back. Source-exact all-project traversal, Alt-key branching, user Puppet effects, puppet pin atom mutation, third-party DuIK behavior, selection side effects, and raw ExtendScript require a separate typed-tool contract or fail closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require generated Puppet effect evidence before setting ADBE FreePin3 On Transparent; do not infer targets from project traversal or prior chat context.",
+        "Use add_effect, get_effect_details, and set_effect_property for mutation and read-back on one explicit generated effect target.",
+        "Require a separate typed-tool contract for source-exact all-project traversal, Alt-key branching, user Puppet effects, puppet pin atom mutation, third-party DuIK behavior, or exact source JSX semantics.",
+        "Do not use this recipe for puppet pin atom edits, DuIK effects, expression edits, keyframe edits, layer transform edits, layer timing changes, effect cleanup, source relinking, render queue changes, file export, selected-property rename/path mutation, or broad composition/project mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "round-selected-property-values-typed-plan",
       "title": "Round Selected Property Values Typed Plan",
       "status": "recipe",

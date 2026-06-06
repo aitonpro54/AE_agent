@@ -1474,6 +1474,56 @@ function agentEffectPropertyScenarioPlans(runPrefix) {
   }));
 }
 
+function agentPuppetOnTransparentScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Puppet On Transparent`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Shape`;
+  const effectName = `${base} Puppet`;
+  const propertyMatchName = "ADBE FreePin3 On Transparent";
+
+  return [
+    {
+      id: "generated-puppet-on-transparent",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "add_effect",
+        "get_effect_details",
+        "set_effect_property",
+        "get_effect_details"
+      ],
+      expectedReadBack: {
+        generatedEffectProperty: true,
+        compName,
+        layerName,
+        effectName,
+        effectMatchName: "ADBE FreePin3",
+        propertyMatchName,
+        value: true
+      },
+      plan: {
+        summary: "Generated-only live QA for setting Puppet On Transparent on one generated Puppet effect.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated Puppet property comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.07, 0.07, 0.09], allowDuplicateName: false, openInViewer: true, comment: "Generated-only Puppet On Transparent validation" } },
+          { title: "Create generated Puppet property shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [260, 150], position: [320, 180], fillColor: [0.28, 0.48, 0.9], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Add generated Puppet effect", tool: "add_effect", args: { compName, layerIndex: 1, effect: "ADBE FreePin3", name: effectName } },
+          { title: "Read generated Puppet On Transparent property", tool: "get_effect_details", args: { compName, layerIndex: 1, effectName, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeValues: true } },
+          { title: "Set generated Puppet On Transparent", tool: "set_effect_property", args: { compName, layerIndex: 1, effectName, propertyMatchName, value: true, setAtTime: false } },
+          { title: "Read generated Puppet On Transparent after set", tool: "get_effect_details", args: { compName, layerIndex: 1, effectName, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeValues: true } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentExpressionScenarioPlans(runPrefix) {
   const base = `${runPrefix} Expression`;
   const compName = `${base} Comp`;
@@ -3114,6 +3164,7 @@ module.exports = {
   agentMarkerLifecycleScenarioPlans,
   agentNewToolsScenarioPlans,
   agentParametricAnchorExpressionScenarioPlans,
+  agentPuppetOnTransparentScenarioPlans,
   agentParentOpacityExpressionScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentRenameFindReplaceScenarioPlans,

@@ -20,6 +20,7 @@ const {
   agentEstimatePathLengthScenarioPlans,
   agentExpressionScenarioPlans,
   agentParametricAnchorExpressionScenarioPlans,
+  agentPuppetOnTransparentScenarioPlans,
   agentKeyframeScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
@@ -555,6 +556,22 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert(estimatePathLength.plan.steps[7].args.expression.includes("pointOnPath"));
   assert.strictEqual(estimatePathLength.plan.steps[7].args.propertyPath[1].name, "Path Length");
 
+  const [puppetOnTransparent] = agentPuppetOnTransparentScenarioPlans("Codex QA AUX-PUPPET Fixture");
+  assert.strictEqual(puppetOnTransparent.id, "generated-puppet-on-transparent");
+  assert.strictEqual(puppetOnTransparent.expectedReadBack.generatedEffectProperty, true);
+  assert.strictEqual(puppetOnTransparent.expectedReadBack.effectMatchName, "ADBE FreePin3");
+  assert.strictEqual(puppetOnTransparent.expectedReadBack.propertyMatchName, "ADBE FreePin3 On Transparent");
+  assert.deepStrictEqual(puppetOnTransparent.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "add_effect",
+    "get_effect_details",
+    "set_effect_property",
+    "get_effect_details"
+  ]);
+  assert.strictEqual(puppetOnTransparent.plan.steps[4].args.propertyMatchName, "ADBE FreePin3 On Transparent");
+  assert.strictEqual(puppetOnTransparent.plan.steps[4].args.value, true);
+
   const [compProperties] = agentCompPropertiesScenarioPlans("Codex QA AUX061 Fixture");
   assert.strictEqual(compProperties.id, "generated-comp-properties-work-area");
   assert.strictEqual(compProperties.expectedReadBack.generatedCompPropertiesWorkArea, true);
@@ -695,7 +712,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert(remainingTails[4].plan.steps.some((step) => step.tool === "set_spatial_in_tangent"));
   assert(remainingTails[5].plan.steps.some((step) => step.tool === "separate_shape_size_dimensions"));
 
-  for (const scenario of [timing, transform, projectItems, effectProperty, expression, parentOpacity, stickEffect, estimatePathLength, compProperties, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, keyframes, textToKeys, selectedKeyframeMarker, ...remainingTails]) {
+  for (const scenario of [timing, transform, projectItems, effectProperty, expression, parentOpacity, stickEffect, estimatePathLength, puppetOnTransparent, compProperties, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, keyframes, textToKeys, selectedKeyframeMarker, ...remainingTails]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }

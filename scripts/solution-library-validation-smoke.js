@@ -35,6 +35,7 @@ const IMPORTED_ADVISORY_IDS = [
   "update-expressions-typed-plan",
   "stick-effect-to-layer-typed-plan",
   "estimate-path-length-typed-plan",
+  "toggle-puppet-on-transparent-typed-plan",
   "round-selected-property-values-typed-plan",
   "set-new-color-typed-plan",
   "swap-selected-property-dimensions-typed-plan",
@@ -711,6 +712,28 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /generated-layer/.test(note)), `${id}: notes must require generated-layer evidence.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Estimate_Path_Length/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "toggle-puppet-on-transparent-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "create_shape_layer", "add_effect", "get_effect_details", "set_effect_property"],
+        `${id}: Puppet On Transparent workflow should stay on the narrow generated effect-property typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: Puppet On Transparent workflow must be mutating.`);
+      assert(text.includes("ADBE FreePin3"), `${id}: recipe should require the Puppet effect matchName.`);
+      assert(text.includes("ADBE FreePin3 On Transparent"), `${id}: recipe should require the exact Puppet On Transparent property.`);
+      assert(text.includes("propertyMatchName"), `${id}: recipe should use propertyMatchName targeting.`);
+      assert(text.includes("set_effect_property"), `${id}: recipe should use set_effect_property.`);
+      assert(text.includes("get_effect_details"), `${id}: recipe should require effect read-back.`);
+      assert(text.includes("Do not infer Puppet effects"), `${id}: recipe should reject inferred project traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_effect/.test(step)), `${id}: verification must include add_effect.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_effect_property/.test(step)), `${id}: verification must include set_effect_property.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_effect_details/.test(step)), `${id}: verification must include get_effect_details.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /ADBE FreePin3/.test(item)), `${id}: verification must require Puppet effect evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /ADBE FreePin3 On Transparent/.test(item)), `${id}: verification must require On Transparent evidence.`);
+      assert(solution.notes.some((note) => /generated Puppet effect/.test(note)), `${id}: notes must require generated Puppet effect evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Toggle_Puppet_On_Transparent/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "round-selected-property-values-typed-plan") {
       assert.deepStrictEqual(
@@ -2588,6 +2611,22 @@ function assertActualRetrieval(registry) {
   assert(estimatePathLengthPromptSection.includes("get_effect_details"), "prompt section should require effect read-back.");
   assert(estimatePathLengthPromptSection.includes("get_layer_details"), "prompt section should require layer read-back.");
   assert(!/run_extendscript/i.test(estimatePathLengthPromptSection), "estimate-path-length guidance should not recommend raw ExtendScript.");
+
+  const puppetOnTransparentRetrieval = retrieveSolutionHints("Set Puppet On Transparent on a generated ADBE FreePin3 effect by reading ADBE FreePin3 On Transparent, set_effect_property true with propertyMatchName, and read back the boolean property.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(puppetOnTransparentRetrieval.ok, true);
+  assert(ids(puppetOnTransparentRetrieval).includes("toggle-puppet-on-transparent-typed-plan"), "Puppet On Transparent advisory recipe should surface for generated Puppet property prompts.");
+  const puppetOnTransparentPromptSection = formatSolutionHintsForPrompt(puppetOnTransparentRetrieval);
+  assert(puppetOnTransparentPromptSection.includes("Toggle Puppet On Transparent Typed Plan"), "prompt section should include Puppet On Transparent advisory title.");
+  assert(puppetOnTransparentPromptSection.includes("generated"), "prompt section should preserve generated-only scope.");
+  assert(puppetOnTransparentPromptSection.includes("ADBE FreePin3"), "prompt section should preserve Puppet matchName guidance.");
+  assert(puppetOnTransparentPromptSection.includes("ADBE FreePin3 On Transparent"), "prompt section should preserve exact property guidance.");
+  assert(puppetOnTransparentPromptSection.includes("set_effect_property"), "prompt section should prefer set_effect_property.");
+  assert(puppetOnTransparentPromptSection.includes("get_effect_details"), "prompt section should require effect read-back.");
+  assert(!/run_extendscript/i.test(puppetOnTransparentPromptSection), "Puppet On Transparent guidance should not recommend raw ExtendScript.");
 
   const roundSelectedPropertyValuesRetrieval = retrieveSolutionHints("Round the selected numeric property values to whole numbers after inspecting selected property values, then set the roundedValue with set_property_value and read back the property values.", {
     registry,

@@ -295,6 +295,47 @@ const AUTO_LANE_FAMILIES = Object.freeze([
       "generated-only effect property family proof using add_effect, get_effect_details, set_effect_property, and read-back; expression-rig semantics and locale-specific property assumptions remain explicit recipe constraints",
   },
   {
+    id: "puppet-on-transparent-effect-property-generated-only",
+    requiredTools: ["add_effect", "get_effect_details", "set_effect_property"],
+    allowedTools: [
+      "add_effect",
+      "get_active_comp",
+      "get_effect_details",
+      "get_layer_details",
+      "get_selected_properties",
+      "set_effect_property",
+    ],
+    allowedUnsafeSignals: ["propertyTraversal"],
+    candidateIds: ["tool-properties-toggle-puppet-on-transparent"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-puppet-on-transparent-openai-cli-smoke",
+    proofLane: "puppet-on-transparent-effect-property",
+    readBackTools: ["get_effect_details", "get_layer_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "recipes/toggle-puppet-on-transparent-typed-plan.md",
+      "recipes/generic-repo-intake/tool-properties-toggle-puppet-on-transparent.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "existing_typed_tools_recipe_only",
+    scope:
+      "generated-only Puppet On Transparent proof using an explicit generated ADBE FreePin3 effect, get_effect_details evidence for ADBE FreePin3 On Transparent, set_effect_property with a reviewed boolean value, and get_effect_details/get_layer_details read-back; source-exact all-project traversal, Alt-key branching, user Puppet effects, puppet pin atom mutation, third-party DuIK behavior, selection persistence, and raw JSX semantics remain fail-closed",
+  },
+  {
     id: "selected-property-expression-generated-only",
     requiredTools: ["get_selected_properties", "set_expression", "clear_expression"],
     allowedTools: [
@@ -1074,6 +1115,15 @@ function familyAppliesToCandidate(family, candidate) {
   return family.candidateIds.includes(candidate.id);
 }
 
+function familyExplicitlyScopesCandidate(family, candidate) {
+  return Array.isArray(family.candidateIds) && family.candidateIds.includes(candidate.id);
+}
+
+function familyAllowsUnsafeSignals(family, unsafeSignals) {
+  const allowedSignals = new Set(Array.isArray(family.allowedUnsafeSignals) ? family.allowedUnsafeSignals : []);
+  return unsafeSignals.every((signal) => allowedSignals.has(signal));
+}
+
 function failClosedSynthesisReport({ candidate, reason, runId, status, tools, extra = {} }) {
   return {
     schema: "generic-repo-full-intake.auto-live-lane-synthesis.v1",
@@ -1102,25 +1152,6 @@ function failClosedSynthesisReport({ candidate, reason, runId, status, tools, ex
 function synthesizeLiveLaneTemplate(candidate, runId) {
   const tools = candidateTools(candidate);
   const unsafeSignals = unsafeSynthesisSignals(candidate);
-  if (!SYNTHESIZABLE_CLASSIFICATIONS.has(candidate.classification)) {
-    return failClosedSynthesisReport({
-      candidate,
-      reason: `classification_not_allowed:${candidate.classification}`,
-      runId,
-      status: "blocked_live_lane_synthesis_unsafe",
-      tools,
-    });
-  }
-  if (unsafeSignals.length > 0) {
-    return failClosedSynthesisReport({
-      candidate,
-      extra: { unsafeSignals },
-      reason: `unsafe_safety_signals:${unsafeSignals.join(",")}`,
-      runId,
-      status: "blocked_live_lane_synthesis_unsafe",
-      tools,
-    });
-  }
   if (tools.length === 0) {
     return failClosedSynthesisReport({
       candidate,
@@ -1131,9 +1162,37 @@ function synthesizeLiveLaneTemplate(candidate, runId) {
     });
   }
 
-  const requirementMatches = AUTO_LANE_FAMILIES
-    .filter((family) => familyAppliesToCandidate(family, candidate))
-    .filter((family) => familyRequirementMatches(family, tools));
+  const explicitCandidateMatches = AUTO_LANE_FAMILIES
+    .filter((family) => familyExplicitlyScopesCandidate(family, candidate))
+    .filter((family) => familyRequirementMatches(family, tools))
+    .filter((family) => familyAllowsAllTools(family, tools))
+    .filter((family) => familyAllowsUnsafeSignals(family, unsafeSignals));
+  const hasExplicitUnsafeCandidateMatch = explicitCandidateMatches.length > 0;
+
+  if (!SYNTHESIZABLE_CLASSIFICATIONS.has(candidate.classification) && !hasExplicitUnsafeCandidateMatch) {
+    return failClosedSynthesisReport({
+      candidate,
+      reason: `classification_not_allowed:${candidate.classification}`,
+      runId,
+      status: "blocked_live_lane_synthesis_unsafe",
+      tools,
+    });
+  }
+  if (unsafeSignals.length > 0 && !hasExplicitUnsafeCandidateMatch) {
+    return failClosedSynthesisReport({
+      candidate,
+      extra: { unsafeSignals },
+      reason: `unsafe_safety_signals:${unsafeSignals.join(",")}`,
+      runId,
+      status: "blocked_live_lane_synthesis_unsafe",
+      tools,
+    });
+  }
+  const requirementMatches = hasExplicitUnsafeCandidateMatch
+    ? explicitCandidateMatches
+    : AUTO_LANE_FAMILIES
+      .filter((family) => familyAppliesToCandidate(family, candidate))
+      .filter((family) => familyRequirementMatches(family, tools));
   const exactMatches = requirementMatches.filter((family) => familyAllowsAllTools(family, tools));
   if (exactMatches.length > 1) {
     return failClosedSynthesisReport({

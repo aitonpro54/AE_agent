@@ -16,6 +16,7 @@ const {
   agentEstimatePathLengthScenarioPlans,
   agentExpressionScenarioPlans,
   agentParametricAnchorExpressionScenarioPlans,
+  agentPuppetOnTransparentScenarioPlans,
   agentKeyframeScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
@@ -464,6 +465,24 @@ function openAiCliEstimatePathLengthScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_ESTIMATE_PATH_LENGTH_PREFIX || "Codex QA AUX-EPL",
     scenarioFactory: agentEstimatePathLengthScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliPuppetOnTransparentScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-puppet-on-transparent",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_PUPPET_ON_TRANSPARENT_PREFIX || "Codex QA AUX-PUPPET",
+    scenarioFactory: agentPuppetOnTransparentScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -4687,14 +4706,37 @@ async function verifyGeneratedRenderQueueReadBack(scenario, expected) {
   };
 }
 
-function effectPropertyValueMatches(properties, propertyIndex, expectedValue) {
-  const property = (properties || []).find((item) => Number(item.index) === Number(propertyIndex));
+function effectPropertyValuePreview(value) {
+  if (value && Object.prototype.hasOwnProperty.call(value, "value")) return value.value;
+  return value;
+}
+
+function effectPropertyMatchesExpected(property, expected) {
   if (!property) return false;
-  const expected = numberPreviewArray(expectedValue);
-  const actual = numberPreviewArray(property.value);
-  const compareLength = Math.min(expected.length, actual.length);
-  return compareLength >= 3 &&
-    expected.slice(0, compareLength).every((value, index) => numbersMatch(value, actual[index], 0.02));
+  if (Array.isArray(expected.color)) {
+    const expectedColor = numberPreviewArray(expected.color);
+    const actualColor = numberPreviewArray(property.value);
+    const compareLength = Math.min(expectedColor.length, actualColor.length);
+    return compareLength >= 3 &&
+      expectedColor.slice(0, compareLength).every((value, index) => numbersMatch(value, actualColor[index], 0.02));
+  }
+  if (Object.prototype.hasOwnProperty.call(expected, "value")) {
+    const actualValue = effectPropertyValuePreview(property.value);
+    if (typeof expected.value === "boolean") return actualValue === expected.value;
+    if (typeof expected.value === "number") return numbersMatch(expected.value, actualValue, 0.001);
+    return String(actualValue) === String(expected.value);
+  }
+  return false;
+}
+
+function effectPropertyValueMatches(properties, expected) {
+  const property = (properties || []).find((item) => {
+    if (expected.propertyMatchName && item.matchName === expected.propertyMatchName) return true;
+    if (expected.propertyName && item.name === expected.propertyName) return true;
+    return expected.propertyIndex && Number(item.index) === Number(expected.propertyIndex);
+  });
+  if (!property) return false;
+  return effectPropertyMatchesExpected(property, expected);
 }
 
 async function verifyGeneratedEffectPropertyReadBack(scenario, expected) {
@@ -4713,7 +4755,7 @@ async function verifyGeneratedEffectPropertyReadBack(scenario, expected) {
   if (expected.effectMatchName && details.effect.matchName !== expected.effectMatchName) {
     throw new Error(`${scenario.id}: generated effect matchName mismatch; expected ${expected.effectMatchName}, got ${details.effect.matchName}.`);
   }
-  if (!effectPropertyValueMatches(details.properties, expected.propertyIndex, expected.color)) {
+  if (!effectPropertyValueMatches(details.properties, expected)) {
     throw new Error(`${scenario.id}: generated effect property value was not found by read-back.`);
   }
   return {
@@ -6622,6 +6664,10 @@ async function main() {
   }
   if (command === "agent-estimate-path-length-openai-cli-smoke" || command === "full-ui-agent-estimate-path-length-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliEstimatePathLengthScenarioConfig());
+    return;
+  }
+  if (command === "agent-puppet-on-transparent-openai-cli-smoke" || command === "full-ui-agent-puppet-on-transparent-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliPuppetOnTransparentScenarioConfig());
     return;
   }
   if (command === "agent-comp-properties-openai-cli-smoke" || command === "full-ui-agent-comp-properties-openai-cli-smoke") {
