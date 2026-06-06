@@ -26,6 +26,21 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker final completion audit:
+  performed exactly one compact completion audit of the reopened screen-task
+  families using active docs, targeted plan/handoff evidence, clean git status,
+  and compact runtime state only. The audit did not run scoped retry, broad
+  queue processing, generated-only mutating live CEP/AE proof, broad/default
+  CEP smoke, Local/Ollama, fallback providers, dependency changes, push, PR,
+  raw JSX copy, user-asset mutation, or launcher/autoloop edits. Compact
+  runtime remains terminal: status `completed_no_candidates`, proof
+  `completed_no_candidates` with changedPathCount 0 and unplannedPathCount 0,
+  and ledger summary 75 entries, 17 completed, 58 blocked/skipped, 0 queued,
+  0 failed, terminal total 75. The seven reopened screen-task families now
+  have recorded contract, policy, or readiness evidence for the non-live
+  autonomous scope; the only remaining useful step is generated-only mutating
+  live CEP/AE proof, which requires explicit human approval plus panel-side
+  OpenAI CLI readiness.
 - [x] Reopened Full Intaker CEP/panel live proof readiness audit:
   ran only the approved read-only CEP/CDP checks, `node
   scripts/cep-panel-cdp-smoke.js inspect` and `node
@@ -811,28 +826,26 @@ old `AE_agent` repository remains the historical source.
 
 ## Next Milestone
 
-The reopened screen-task objective is active again. The latest completed
-reviewable block is shape/mask path geometry contract readiness; do not treat it
-as completing `tool-properties-flip-path` or `tool-properties-export-path-points`
-until candidate-specific recipes/lane policy and any required generated-only
-proof are accepted. Do not use `completed_no_candidates` or `terminal total=75`
-alone as success evidence; every future acceptance still needs scoped family
-mapping, parent reducer review, validation, plan/handoff updates, and a
-reviewable commit.
+No further autonomous reopened screen-task queue work is available from the
+current compact audit. The ledger is fully terminal and the recorded family
+evidence covers the non-live autonomous scope. Do not continue by running a
+scoped retry, broad queue processing, broad/default CEP smoke, Local/Ollama,
+fallback providers, dependency changes, raw JSX copy, source-checkout writes,
+push/PR, or live user-asset mutation.
 
-Keep file IO/Desktop writes, `saveFrameToPng`, render execution, proxy
-mutation, reveal/shell, cleanup/deletion, selected-property arbitrary
-name/value/path mutation, shape/mask path geometry mutation, puppet pin atom
-mutation, Essential Graphics writes, third-party DuIK behavior, and user-asset
-mutation approval-gated unless a scoped generated-only/read-only lane is
-explicitly safe.
-
-Push/PR remain forbidden. Do not run broad/default CEP smoke, Local/Ollama,
-fallback providers, dependency changes, raw JSX copy, source-checkout writes, or
-live user-asset mutation.
+The next useful step is generated-only mutating live CEP/AE proof for the
+prepared lanes. That requires explicit human approval, a generated fixture,
+checkpoint/rollback/cleanup policy, typed read-back, and panel-side OpenAI CLI
+readiness. Until those gates are satisfied, stop with
+`HUMAN_REQUIRED: explicit approval required for generated-only mutating live CEP proof`.
 
 ## Decision Log
 
+- 2026-06-06: Final completion audit accepted the terminal ledger only after
+  mapping the reopened screen-task families to existing recorded contract,
+  policy, and readiness evidence. It did not mark live proof complete. The only
+  useful remaining step is generated-only mutating live CEP/AE proof, which is
+  blocked on explicit human approval and panel-side OpenAI CLI readiness.
 - 2026-06-06: Parent reducer treated CEP/panel live proof readiness as a
   read-only audit, not a candidate retry or live proof attempt. Current local
   CEP/CDP connectivity is available and connector smoke passes, but the panel's
@@ -1485,6 +1498,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened screen-task final completion audit | Required to close the reopened family audit without broad queue processing or live mutation. | Passed/human-gated: compact preflight read active docs, `git status --short`, compact status/proof/ledger-summary, `.codex/handoff.md`, and `.codex/active-thread.json`; targeted plan/handoff evidence search covered CEP/panel readiness, shape/mask path geometry, Puppet pin type, Essential Graphics/Essential Properties, project/file/render/proxy/user-file policy, composition marker read/add/copy/work-area contracts, and third-party semantics policy. Compact status is `completed_no_candidates`; compact proof is `completed_no_candidates` with changedPathCount 0 and unplannedPathCount 0; ledger summary is entries=75, completed=17, blocked/skipped=58, queued=0, failed=0, terminal total=75. No scoped retry, broad queue processing, generated-only mutating live CEP/AE proof, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, user-asset mutation, push, PR, or launcher/autoloop edit was run. Closeout validation passed: JSON parse for `.codex/active-thread.json`, `npm.cmd run check:rules`, and `git diff --check` with Windows line-ending warnings only. |
 | Reopened CEP/panel live proof readiness audit | Required to replace stale live-proof readiness evidence with current read-only CEP/CDP state before considering any generated-only mutating live proof. | Passed/readiness-blocked: compact preflight read active docs, `git status --short`, compact status/proof/ledger-summary; `node scripts/cep-panel-cdp-smoke.js inspect` reached `AE Agent 2.0.0` and reported bridge `Connected`; `node scripts/cep-panel-cdp-smoke.js connector-status-smoke` returned `ok:true`. Provider readiness remains blocked inside the panel because selected `openai-cli` reports `Needs setup` and last error `Run codex login and sign in with ChatGPT before using OpenAI CLI.` No scoped retry, generated-only mutating live CEP/AE proof, candidate completion, broad/default CEP smoke, broad queue, Local/Ollama use, fallback provider, dependency/package change, push, PR, raw JSX copy, user-asset mutation, or launcher/autoloop edit was run. |
 | Reopened third-party semantics safety policy slice | Required to give DuIK/Newton-like backlog requests planner-facing fail-closed guidance without approving third-party plugin behavior, parent/keyframe/property mutation, raw JSX, or live CEP/AE proof. | Passed/policy-ready: parent-owned implementation added `recipes/third-party-semantics-safety-policy.md`, registry coverage, and solution-library retrieval assertions for Newton/Illustrator layer matching, parent assignment, position keyframe copy, DuIK puppet-pin rename, and DuIK pin-size prompts. Validation passed: touched-file `node --check`; JSON parse for `registry/solutions.json`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/sdk-generic-repo-full-intake-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with line-ending warnings only. No scoped retry, live proof, candidate completion, broad queue, Local/Ollama, fallback provider, dependency/package change, push, PR, raw JSX copy, source-checkout write, third-party plugin mutation, parent/keyframe/property mutation, or launcher/autoloop edit was run. |
 | Reopened layer Difference blending-mode contract slice | Required to give `tool-layers-toggle-difference-blend-mode` generated-only typed-plan/lane coverage without approving source-exact Alt-key branching, toggle restoration, broad selected-layer traversal, non-generated user assets, raw JSX, or live CEP/AE proof. | Passed/contract-ready: parent-owned implementation added `set_layer_blending_mode`, normalized `blendingModeName` layer read-back, semantic verification evidence, plan-repair aliases, `difference-blend-mode-typed-plan`, generic intake note, registry retrieval assertions, generated-only scenario/report fixture, CEP command wiring, ChatGPT connector/tool-catalog coverage, and `layer-blending-mode-difference-generated-only` Full Intaker family metadata. Validation passed: touched-file `node --check`; JSON parse for registry/live-lane; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `node scripts/chatgpt-connector-smoke.js`; `node scripts/smoke-test.js`; `node scripts/sdk-generic-repo-full-intake-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake`; compact status/proof/ledger-summary; and `git diff --check` with line-ending warnings only. No scoped retry, live proof, candidate completion, broad queue, Local/Ollama, fallback provider, dependency/package change, push, or PR was run. |
