@@ -9,6 +9,7 @@ const {
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
   agentCompositionVersionScenarioPlans,
+  agentCompositionMarkerAddScenarioPlans,
   agentCompositionLayerMarkerCopyScenarioPlans,
   agentCompositionMarkerReadScenarioPlans,
   agentCompositionMarkerWorkAreaScenarioPlans,
@@ -818,6 +819,24 @@ function openAiCliCompositionLayerMarkerCopyScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_COMPOSITION_LAYER_MARKER_COPY_PREFIX || "Codex QA AUX-CMLMC",
     scenarioFactory: agentCompositionLayerMarkerCopyScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliCompositionMarkerAddScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-composition-marker-add",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_COMPOSITION_MARKER_ADD_PREFIX || "Codex QA AUX-CMA",
+    scenarioFactory: agentCompositionMarkerAddScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -6011,6 +6030,20 @@ async function verifyCompositionMarkerReadBack(scenario, expected) {
       throw new Error(`${scenario.id}: composition markers were not returned in nondecreasing keyTime order.`);
     }
   }
+  if (Array.isArray(expected.markers)) {
+    for (const expectedMarker of expected.markers) {
+      const marker = items.find((item) => (
+        item.comment === expectedMarker.comment &&
+        Math.abs(Number(item.time) - Number(expectedMarker.time)) <= 0.001
+      ));
+      if (!marker) {
+        throw new Error(`${scenario.id}: expected composition marker ${expectedMarker.comment} at ${expectedMarker.time} was not found by read-back.`);
+      }
+      if (typeof expectedMarker.duration === "number" && Math.abs(Number(marker.duration) - expectedMarker.duration) > 0.001) {
+        throw new Error(`${scenario.id}: expected composition marker duration ${expectedMarker.duration}, got ${marker.duration}.`);
+      }
+    }
+  }
 
   return {
     ok: true,
@@ -6021,7 +6054,8 @@ async function verifyCompositionMarkerReadBack(scenario, expected) {
     markers: {
       count: markers.count || 0,
       returned: markers.returned || 0,
-      orderedBy: markers.orderedBy || null
+      orderedBy: markers.orderedBy || null,
+      matched: Array.isArray(expected.markers) ? expected.markers.length : null
     }
   };
 }
@@ -7089,6 +7123,10 @@ async function main() {
   }
   if (command === "agent-composition-layer-marker-copy-openai-cli-smoke" || command === "full-ui-agent-composition-layer-marker-copy-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliCompositionLayerMarkerCopyScenarioConfig());
+    return;
+  }
+  if (command === "agent-composition-marker-add-openai-cli-smoke" || command === "full-ui-agent-composition-marker-add-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliCompositionMarkerAddScenarioConfig());
     return;
   }
   if (command === "agent-remaining-tail-contracts-openai-cli-smoke" || command === "full-ui-agent-remaining-tail-contracts-openai-cli-smoke") {

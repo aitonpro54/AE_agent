@@ -2757,6 +2757,72 @@ function agentCompositionLayerMarkerCopyScenarioPlans(runPrefix) {
   }));
 }
 
+function agentCompositionMarkerAddScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Composition Marker Add`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Out Point Solid`;
+  const outPointMarker = {
+    time: 3,
+    comment: "Layer Out Point",
+    duration: 0
+  };
+  const workAreaStartMarker = {
+    time: 0,
+    comment: "Work Area Start",
+    duration: 0
+  };
+  const workAreaEndMarker = {
+    time: 4,
+    comment: "Work Area End",
+    duration: 0
+  };
+
+  return [
+    {
+      id: "generated-composition-marker-add",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "get_comp_details",
+        "add_comp_marker"
+      ],
+      expectedReadBack: {
+        compositionMarkerReadBack: true,
+        compositionMarkerAddReadBack: true,
+        compName,
+        layerName,
+        markerCount: 3,
+        orderedBy: "comp.markerProperty.keyTime",
+        markers: [
+          workAreaStartMarker,
+          outPointMarker,
+          workAreaEndMarker
+        ]
+      },
+      plan: {
+        summary: "Generated-only live QA for adding composition markers at layer out points and work-area boundaries.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated composition marker add comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 4, frameRate: 24, bgColor: [0.07, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "generated-only composition marker add validation" } },
+          { title: "Create generated layer with reviewed out point", tool: "create_solid_layer", args: { compName, name: layerName, color: [0.25, 0.36, 0.78], width: 320, height: 180, startTime: 0.5, duration: 2.5 } },
+          { title: "Read generated layer out-point and work-area evidence", tool: "get_comp_details", args: { compName, includeLayers: true, includeMarkers: true, markerLimit: 10 } },
+          { title: "Add composition marker at reviewed work-area start", tool: "add_comp_marker", args: { compName, time: workAreaStartMarker.time, comment: workAreaStartMarker.comment, duration: workAreaStartMarker.duration, expectedMarkerCountBefore: 0 } },
+          { title: "Add composition marker at reviewed layer out point", tool: "add_comp_marker", args: { compName, time: outPointMarker.time, comment: outPointMarker.comment, duration: outPointMarker.duration, expectedMarkerCountBefore: 1 } },
+          { title: "Add composition marker at reviewed work-area end", tool: "add_comp_marker", args: { compName, time: workAreaEndMarker.time, comment: workAreaEndMarker.comment, duration: workAreaEndMarker.duration, expectedMarkerCountBefore: 2 } },
+          { title: "Read generated composition marker add evidence", tool: "get_comp_details", args: { compName, includeLayers: true, includeMarkers: true, markerLimit: 10 } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentRemainingTailContractsScenarioPlans(runPrefix) {
   const base = `${runPrefix} Remaining Tail Contracts`;
   const cameraBase = `${base} Camera Controller`;
@@ -3755,6 +3821,7 @@ module.exports = {
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
   agentCompositionVersionScenarioPlans,
+  agentCompositionMarkerAddScenarioPlans,
   agentCompositionLayerMarkerCopyScenarioPlans,
   agentCompositionMarkerReadScenarioPlans,
   agentCompositionMarkerWorkAreaScenarioPlans,

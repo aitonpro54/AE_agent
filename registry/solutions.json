@@ -1291,7 +1291,7 @@
         "postMutationReadBack": true
       },
       "verificationRecipe": {
-        "summary": "Read layer markers from one explicit layer, add corresponding composition markers, then read the composition markers back.",
+        "summary": "Use get_comp_details includeMarkers:true read-back after reading one explicit layer and adding corresponding composition markers.",
         "steps": [
           "Run get_active_comp only when the active composition is the intended target; otherwise bind explicit comp item/name evidence.",
           "Run get_layer_details for one explicit generated or approved source layer and require layer marker read-back evidence.",
@@ -1333,6 +1333,237 @@
         "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
         "Use only current get_layer_details/get_comp_details evidence for source layer and destination composition binding; do not infer marker targets from prior chat context.",
         "Do not use this recipe for copying composition markers to a layer, marker update/delete, audio-derived markers, work-area changes, layer timing changes, file I/O, render queue work, or raw ExtendScript."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "add-composition-markers-at-out-points-typed-plan",
+      "title": "Add Composition Markers At Out Points Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "marker",
+        "markers",
+        "composition-marker",
+        "outPoint",
+        "layer-out-point",
+        "generated-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Add composition markers at reviewed layer outPoint times using get_comp_details evidence, add_comp_marker, and includeMarkers read-back.",
+        "appliesWhen": [
+          "The user asks to add composition markers at every layer out point.",
+          "A safe typed adaptation is acceptable instead of source-exact active-comp traversal or raw ExtendScript."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Active or explicit composition verified by get_active_comp or get_comp_details before marker creation."
+        },
+        {
+          "name": "layerOutPoints",
+          "type": "array",
+          "required": true,
+          "description": "Current get_comp_details includeLayers:true layer evidence with finite outPoint times for accepted layers."
+        },
+        {
+          "name": "markerTargets",
+          "type": "array",
+          "required": true,
+          "description": "Reviewed composition marker targets derived from explicit layer outPoint evidence."
+        }
+      ],
+      "targetAssumptions": [
+        "Layer out-point evidence is read from get_comp_details with includeLayers:true before mutation.",
+        "Current composition marker count/order is read from get_comp_details with includeMarkers:true before add_comp_marker steps.",
+        "Each accepted marker target has a finite reviewed outPoint time inside the composition duration plus a present marker comment.",
+        "The workflow creates only composition markers through add_comp_marker and verifies with get_comp_details includeMarkers:true.",
+        "It does not mutate layer markers, update/delete markers, infer hidden selection state, analyze audio, change work area or layer timing, touch render queue items, write files, or run raw JSX."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/add-composition-markers-at-out-points-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "add_comp_marker"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Use includeMarkers:true read-back after reading layer outPoint evidence and adding reviewed composition markers.",
+        "steps": [
+          "Run get_active_comp only when the active composition is the intended target; otherwise bind explicit comp item/name evidence.",
+          "Run get_comp_details with includeLayers:true, includeMarkers:true, and a bounded markerLimit for the target composition.",
+          "Build markerTargets from current layer outPoint evidence, preserving source layer index, layer name when available, reviewed outPoint time, comment, optional duration, and destination composition.",
+          "Run add_comp_marker once for each reviewed markerTargets entry with expectedMarkerCountBefore when available.",
+          "Run get_comp_details with includeMarkers:true after mutation and compare marker comment, time, and optional duration.",
+          "Fail closed when the request requires hidden selected-layer traversal, marker update/delete, layer marker substitution, audio analysis, work-area mutation, file I/O, render queue work, or raw ExtendScript."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_comp_details includeLayers:true returns finite outPoint evidence for every accepted source layer.",
+          "Pre-run get_comp_details includeMarkers:true records current composition marker count and comp.markerProperty.keyTime ordering.",
+          "Dry-run evidence lists markerTargets for every reviewed out-point marker and the reviewed destination composition.",
+          "Each add_comp_marker result reports marker-count increment evidence and the created composition marker.",
+          "Post-run get_comp_details includeMarkers:true shows every requested marker comment, time, and duration on the reviewed composition.",
+          "The plan reports source-exact UI traversal, selected-layer ambiguity, marker update/delete, layer marker substitution, audio-derived markers, work-area mutation, file I/O, render queue work, and raw JSX as unsupported."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Added as a narrow Full Intaker support contract for composition markers at layer out points after composition marker write/read-back became available."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-tool-markers-add-markers-at-out-points",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the composition-marker-at-layer-out-points intent behind Markers/Add_Markers_At_Out_Points.jsx into typed tools as get_comp_details includeLayers:true layer outPoint evidence, add_comp_marker writes, and get_comp_details includeMarkers:true read-back; no source JSX copied. Source-exact active-comp traversal, native undo semantics, hidden layer traversal, marker update/delete, layer marker substitution, audio-derived markers, work-area mutation, layer timing changes, file I/O, render queue work, and raw JSX remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Use only current get_comp_details evidence for layer outPoint and composition marker count binding; do not infer marker targets from prior chat context.",
+        "Do not use this recipe for work-area boundary marker creation, marker update/delete, audio-derived markers, layer marker mutation, work-area changes, layer timing changes, file I/O, render queue work, or raw ExtendScript."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "add-composition-markers-at-work-area-typed-plan",
+      "title": "Add Composition Markers At Work Area Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "marker",
+        "markers",
+        "composition-marker",
+        "work-area",
+        "workAreaStart",
+        "workAreaDuration",
+        "generated-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Add composition markers at reviewed workAreaStart and workAreaStart plus workAreaDuration using get_comp_details and add_comp_marker.",
+        "appliesWhen": [
+          "The user asks to add markers to the beginning and end of a composition work area.",
+          "A safe typed adaptation is acceptable instead of source-exact active-comp traversal or raw ExtendScript."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Active or explicit composition verified by get_active_comp or get_comp_details before marker creation."
+        },
+        {
+          "name": "workArea",
+          "type": "object",
+          "required": true,
+          "description": "Current workAreaStart, workAreaDuration, composition duration, and frameRate evidence from get_comp_details."
+        },
+        {
+          "name": "markerTargets",
+          "type": "array",
+          "required": true,
+          "description": "Reviewed composition marker targets for workAreaStart and workAreaStart plus workAreaDuration."
+        }
+      ],
+      "targetAssumptions": [
+        "Work-area evidence is read from get_comp_details before mutation.",
+        "Current composition marker count/order is read from get_comp_details with includeMarkers:true before add_comp_marker steps.",
+        "The work area has finite non-negative start, finite positive duration, and an end marker time inside the composition duration.",
+        "The workflow creates only composition markers through add_comp_marker and verifies with get_comp_details includeMarkers:true.",
+        "It does not change workAreaStart or workAreaDuration, mutate layer markers, update/delete markers, infer current-time or selection state, analyze audio, touch render queue items, write files, or run raw JSX."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/add-composition-markers-at-work-area-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "add_comp_marker"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Use workAreaStart/workAreaDuration evidence and includeMarkers:true read-back for reviewed composition marker creation.",
+        "steps": [
+          "Run get_active_comp only when the active composition is the intended target; otherwise bind explicit comp item/name evidence.",
+          "Run get_comp_details with includeLayers:false, includeMarkers:true, and a bounded markerLimit to capture current work-area fields and marker count.",
+          "Derive markerTargets from workAreaStart and workAreaStart + workAreaDuration, preserving reviewed comments, optional durations, and destination composition.",
+          "Run add_comp_marker for the reviewed work-area start marker and end marker with expectedMarkerCountBefore when available.",
+          "Run get_comp_details with includeMarkers:true after mutation and compare marker comment, time, optional duration, workAreaStart, workAreaDuration, and composition identity.",
+          "Fail closed when the request requires marker update/delete, layer marker substitution, audio analysis, current-time inference, work-area mutation, file I/O, render queue work, or raw ExtendScript."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_comp_details returns work-area start and end evidence from workAreaStart and workAreaDuration.",
+          "Pre-run get_comp_details includeMarkers:true records current composition marker count and comp.markerProperty.keyTime ordering.",
+          "Dry-run evidence lists markerTargets for the reviewed work-area start and end marker times and the reviewed destination composition.",
+          "Each add_comp_marker result reports marker-count increment evidence and the created composition marker.",
+          "Post-run get_comp_details includeMarkers:true shows both requested marker comments and times on the reviewed composition.",
+          "The plan reports source-exact UI traversal, marker update/delete, layer marker substitution, audio-derived markers, current-time inference, work-area mutation, file I/O, render queue work, and raw JSX as unsupported."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Added as a narrow Full Intaker support contract for composition markers at work-area boundaries after composition marker write/read-back became available."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-tool-markers-add-markers-at-work-area",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the composition-marker-at-work-area-boundaries intent behind Markers/Add_Markers_At_Work_Area.jsx into typed tools as get_comp_details workAreaStart/workAreaDuration evidence, add_comp_marker writes, and get_comp_details includeMarkers:true read-back; no source JSX copied. Source-exact active-comp traversal, native undo semantics, hidden UI state, marker update/delete, layer marker substitution, audio-derived markers, current-time inference, work-area mutation, layer timing changes, file I/O, render queue work, and raw JSX remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Use only current get_comp_details evidence for workAreaStart, workAreaDuration, and composition marker count binding; do not infer marker targets from prior chat context.",
+        "Do not use this recipe for out-point marker creation, marker update/delete, audio-derived markers, layer marker mutation, work-area mutation, layer timing changes, file I/O, render queue work, or raw ExtendScript."
       ]
     },
     {
