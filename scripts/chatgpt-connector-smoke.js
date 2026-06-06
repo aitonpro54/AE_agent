@@ -328,6 +328,12 @@ function assertReadOnlyTools(tools) {
     assert(names.includes(expectedBridgeTool), `Expected read-only bridge tool ${expectedBridgeTool}`);
   }
 
+  const compDetailsTool = tools.find((tool) => tool.name === "get_comp_details");
+  assert(compDetailsTool, "Expected get_comp_details connector tool.");
+  assert(compDetailsTool.inputSchema.properties.compName, "Expected get_comp_details compName schema.");
+  assert(compDetailsTool.inputSchema.properties.includeMarkers, "Expected get_comp_details includeMarkers schema.");
+  assert(compDetailsTool.inputSchema.properties.markerLimit, "Expected get_comp_details markerLimit schema.");
+
   for (const forbidden of banned) {
     assert(!names.includes(forbidden), `Forbidden write/raw/provider tool exposed: ${forbidden}`);
   }

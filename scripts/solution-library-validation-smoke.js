@@ -85,6 +85,7 @@ const IMPORTED_ADVISORY_IDS = [
   "toggle-onion-skinning-typed-plan",
   "increment-composition-versions-typed-plan",
   "transfer-composition-work-area-typed-plan",
+  "read-composition-markers-typed-plan",
   "change-nested-composition-duration-typed-plan",
   "change-nested-composition-duration-with-timecode-typed-plan",
   "change-nested-composition-start-frame-typed-plan",
@@ -354,6 +355,21 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /app.settings clipboard/.test(item)), `${id}: verification must document settings clipboard as unsupported.`);
       assert(solution.notes.some((note) => /composition marker reads/.test(note)), `${id}: notes must keep marker-derived Set_Work_Area_To_Markers semantics separate.`);
       assert(solution.promotionHistory.some((entry) => /Transfer_Composition_Work_Area/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "read-composition-markers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details"],
+        `${id}: composition marker reads should stay on the narrow read-only comp details sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: composition marker inspection must stay read-only.`);
+      assert(text.includes("includeMarkers:true"), `${id}: recipe should require includeMarkers:true.`);
+      assert(text.includes("comp.markerProperty.keyTime"), `${id}: recipe should document marker keyTime ordering.`);
+      assert(text.includes("Layer marker tools") || text.includes("layer marker tools"), `${id}: recipe should forbid layer marker substitution.`);
+      assert(solution.verificationRecipe.steps.some((step) => /includeMarkers:true/.test(step)), `${id}: verification must include marker read arg.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /orderedBy/.test(item) && /comp\.markerProperty\.keyTime/.test(item)), `${id}: verification must require orderedBy evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /add_layer_marker/.test(item)), `${id}: verification must reject layer marker substitution.`);
+      assert(solution.notes.some((note) => /set_comp_work_area/.test(note)), `${id}: notes must keep marker-derived work-area mutation separate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "add-markers-to-selected-layers-typed-plan") {
       assert.deepStrictEqual(
@@ -2428,6 +2444,21 @@ function assertActualRetrieval(registry) {
   assert(transferWorkAreaPromptSection.includes("get_comp_details"), "prompt section should require source and target comp details read-back.");
   assert(/persistent app/.test(transferWorkAreaPromptSection), "prompt section should preserve settings clipboard warning.");
   assert(!/run_extendscript/i.test(transferWorkAreaPromptSection), "transfer work-area guidance should not recommend raw ExtendScript.");
+
+  const compositionMarkersRetrieval = retrieveSolutionHints("Read composition markers from comp.markerProperty in keyTime order using get_comp_details includeMarkers true.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(compositionMarkersRetrieval.ok, true);
+  assert(ids(compositionMarkersRetrieval).includes("read-composition-markers-typed-plan"), "composition marker read recipe should surface for comp marker prompts.");
+  const compositionMarkersPromptSection = formatSolutionHintsForPrompt(compositionMarkersRetrieval);
+  assert(compositionMarkersPromptSection.includes("Read Composition Markers Typed Plan"), "prompt section should include composition marker read title.");
+  assert(compositionMarkersPromptSection.includes("get_comp_details"), "prompt section should use get_comp_details for comp marker reads.");
+  assert(compositionMarkersPromptSection.includes("includeMarkers"), "prompt section should mention includeMarkers guidance.");
+  assert(compositionMarkersPromptSection.includes("comp.markerProperty") && compositionMarkersPromptSection.includes("keyTime"), "prompt section should preserve comp marker ordering guidance.");
+  assert(compositionMarkersPromptSection.includes("Preferred tools: get_active_comp, get_comp_details"), "composition marker read guidance should prefer only read-only comp tools.");
+  assert(!/run_extendscript/i.test(compositionMarkersPromptSection), "composition marker read guidance should not recommend raw ExtendScript.");
 
   const addMarkersRetrieval = retrieveSolutionHints("Add a marker with a comment to all selected layers.", {
     registry,

@@ -6041,6 +6041,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "When a creation tool can set a property directly, include that property in the creation tool args instead of adding a later step that needs an unknown layerIndex.",
     "For requests to align selected layers, clips, or precomps to the current time indicator, use align_layers_to_time with no layerIndices and omit targetTime so it uses the active comp CTI.",
     "For timeline trims, work areas, sequencing, splitting, and offsets, use set_comp_work_area, set_layer_time_range, stagger_layers, or split_layers_at_time.",
+    "For composition marker inspection, use get_comp_details with includeMarkers=true and compare markers.items in comp.markerProperty.keyTime order; do not substitute layer marker tools for composition markers.",
     "For precomp/source workflows, use precompose_layers, replace_layer_source, deep_duplicate_precomp_sources, rename_layers, and rename_project_items before considering raw ExtendScript.",
     "For explicit single-layer duplication, use duplicate_layer after inspecting the target comp/layer and pairing layerIndex with the sourceName in current AE stack order. AE inserts newly created and duplicated layers at layer index 1; do not assume creation order equals layer-index order.",
     "For explicit layer selection changes, use set_layer_selection only with concrete layerIndices from current get_comp_details/list_layers/get_layer_details evidence and expectedLayerNames when possible; do not use raw ExtendScript to select layers.",
@@ -7788,6 +7789,10 @@ const tools = [
           type: "number",
           description: "Optional 1-based project item index for the composition. Defaults to active comp."
         },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
         includeLayers: {
           type: "boolean",
           description: "Whether to include layer summaries. Defaults to true."
@@ -7795,6 +7800,14 @@ const tools = [
         layerLimit: {
           type: "number",
           description: "Maximum number of layers to include. Defaults to 200, maximum 1000."
+        },
+        includeMarkers: {
+          type: "boolean",
+          description: "Whether to include composition marker read-back from comp.markerProperty. Defaults to false."
+        },
+        markerLimit: {
+          type: "number",
+          description: "Maximum number of composition markers to include. Defaults to 50, maximum 1000."
         }
       }
     }
@@ -9673,6 +9686,29 @@ async function callTool(name, args) {
         return summary;
       }
 
+      function __codexCompMarkers(comp, limit) {
+        var summary = {
+          count: 0,
+          returned: 0,
+          truncated: false,
+          orderedBy: "comp.markerProperty.keyTime",
+          items: []
+        };
+        try {
+          var markerProp = comp.markerProperty;
+          if (!markerProp) return summary;
+          summary.count = markerProp.numKeys;
+          var effectiveLimit = limit === undefined || limit === null ? 50 : limit;
+          var max = Math.max(0, Math.min(summary.count, effectiveLimit));
+          for (var __cmk = 1; __cmk <= max; __cmk++) {
+            summary.items.push(__codexMarkerInfo(markerProp, __cmk));
+          }
+          summary.returned = summary.items.length;
+          summary.truncated = summary.count > summary.returned;
+        } catch (__compMarkersError) {}
+        return summary;
+      }
+
       function __codexLayerInfo(layer) {
         var info = {
           index: layer.index,
@@ -10919,12 +10955,16 @@ async function callTool(name, args) {
     const compName = optionalString(args, "compName", "");
     const includeLayers = optionalBoolean(args, "includeLayers", true);
     const layerLimit = Math.max(1, Math.min(1000, Math.floor(optionalNumber(args, "layerLimit", 200))));
+    const includeMarkers = optionalBoolean(args, "includeMarkers", false);
+    const markerLimit = Math.max(0, Math.min(1000, Math.floor(optionalNumber(args, "markerLimit", 50))));
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
       var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
       var includeLayers = ${includeLayers ? "true" : "false"};
+      var includeMarkers = ${includeMarkers ? "true" : "false"};
       var layerLimit = ${layerLimit};
+      var markerLimit = ${markerLimit};
       var selectedLayerIndices = [];
       for (var s = 0; s < comp.selectedLayers.length; s++) {
         selectedLayerIndices.push(comp.selectedLayers[s].index);
@@ -10955,6 +10995,7 @@ async function callTool(name, args) {
         selectedLayerIndices: selectedLayerIndices,
         layersReturned: layers.length,
         layersTruncated: includeLayers && comp.numLayers > layers.length,
+        markers: includeMarkers ? __codexCompMarkers(comp, markerLimit) : null,
         layers: layers
       };
     `);

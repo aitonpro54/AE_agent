@@ -2148,6 +2148,42 @@ function agentSelectedKeyframeMarkerScenarioPlans(runPrefix) {
   }));
 }
 
+function agentCompositionMarkerReadScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Composition Marker Read`;
+  const compName = `${base} Comp`;
+
+  return [
+    {
+      id: "generated-composition-marker-read",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "get_comp_details"
+      ],
+      expectedReadBack: {
+        compositionMarkerReadBack: true,
+        compName,
+        markerCount: 0,
+        orderedBy: "comp.markerProperty.keyTime"
+      },
+      plan: {
+        summary: "Generated-only live QA for read-only composition marker inspection.",
+        risk: "low",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated composition marker read comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.07, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "generated-only composition marker read validation" } },
+          { title: "Read generated composition markers", tool: "get_comp_details", args: { compName, includeLayers: false, includeMarkers: true, markerLimit: 10 } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentRemainingTailContractsScenarioPlans(runPrefix) {
   const base = `${runPrefix} Remaining Tail Contracts`;
   const cameraBase = `${base} Camera Controller`;
@@ -3146,6 +3182,7 @@ module.exports = {
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
   agentCompositionVersionScenarioPlans,
+  agentCompositionMarkerReadScenarioPlans,
   agentCompPropertiesScenarioPlans,
   agentCompositionGuideScenarioPlans,
   agentDuplicateLayersScenarioPlans,

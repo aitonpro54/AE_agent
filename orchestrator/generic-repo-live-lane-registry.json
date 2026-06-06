@@ -1181,6 +1181,46 @@
       ],
       "reclassifiedClassification": "existing_typed_tools_recipe_only",
       "scope": "generated-only shape size dimension-separation proof using separate_shape_size_dimensions against an explicit generated rectangle/ellipse size property plus read-back for X Size/Y Size sliders and size expression; arbitrary property traversal and non-shape properties remain fail-closed"
+    },
+    {
+      "id": "composition-marker-read-generated-only",
+      "requiredTools": [
+        "get_comp_details"
+      ],
+      "allowedTools": [
+        "get_active_comp",
+        "get_comp_details"
+      ],
+      "candidateIds": [
+        "tool-compositions-set-work-area-to-markers",
+        "tool-markers-copy-composition-markers-to-layer",
+        "tool-markers-copy-layer-markers-to-composition"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-composition-marker-read-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "composition-marker-read",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details"
+      ],
+      "semanticVerification": false,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "chatgpt-connector/server.js",
+        "registry/solutions.json",
+        "recipes/read-composition-markers-typed-plan.md",
+        "scripts/solution-library-validation-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check chatgpt-connector/server.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node scripts/solution-library-validation-smoke.js",
+        "node scripts/solution-registry-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "read-only composition marker contract using get_comp_details includeMarkers:true and markers.items ordered by comp.markerProperty.keyTime; nonempty generated marker setup, marker creation/update/delete, layer marker substitution, marker-derived work-area mutation, and raw JSX source semantics remain fail-closed"
     }
   ]
 }

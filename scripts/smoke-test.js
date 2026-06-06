@@ -2209,6 +2209,10 @@ async function main() {
       throw new Error("Missing expected tool: " + expectedTool);
     }
   }
+  const compDetailsTool = lines[1].result.tools.find((tool) => tool.name === "get_comp_details");
+  if (!compDetailsTool || !compDetailsTool.inputSchema.properties.compName || !compDetailsTool.inputSchema.properties.includeMarkers || !compDetailsTool.inputSchema.properties.markerLimit) {
+    throw new Error("get_comp_details is missing composition marker read schema fields");
+  }
   const createTextTool = lines[1].result.tools.find((tool) => tool.name === "create_text_layer");
   if (!createTextTool.inputSchema.properties.autoCheckpoint || !createTextTool.inputSchema.properties.checkpointLabel || !createTextTool.inputSchema.properties.idempotencyKey || !createTextTool.inputSchema.properties.verifyAfter) {
     throw new Error("create_text_layer is missing safety schema fields");

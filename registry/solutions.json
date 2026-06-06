@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-06-04",
+  "updatedAt": "2026-06-06",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -876,6 +876,112 @@
         "This recipe copies workAreaStart and workAreaDuration from typed source evidence and mutates only the verified target composition work area.",
         "Do not use this recipe for persistent app.settings clipboard storage, Alt-key keyboard branching, cross-session state, marker-derived work-area inference, current-time inference, layer retiming, duration changes, source relinking, render queue items, project item changes, or raw ExtendScript.",
         "Require a separate typed-tool contract for composition marker reads before adapting Set_Work_Area_To_Markers semantics."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "read-composition-markers-typed-plan",
+      "title": "Read Composition Markers Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "comp",
+        "marker",
+        "markers",
+        "composition-marker",
+        "markerProperty",
+        "keyTime",
+        "read-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Read composition-level markers from comp.markerProperty in keyTime order through get_comp_details includeMarkers evidence.",
+        "appliesWhen": [
+          "The user asks to inspect, list, summarize, or reason from composition markers.",
+          "A later workflow needs explicit composition marker time/comment/duration evidence before any separate work-area or timing mutation is considered."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Active or explicit composition verified by get_active_comp or get_comp_details before marker evidence is used."
+        },
+        {
+          "name": "markerLimit",
+          "type": "number",
+          "required": false,
+          "description": "Bounded maximum number of composition markers to return. Defaults to the get_comp_details markerLimit."
+        }
+      ],
+      "targetAssumptions": [
+        "Composition marker evidence is read from get_comp_details with includeMarkers:true.",
+        "Returned markers.items are ordered by comp.markerProperty.keyTime and preserve keyIndex, time, comment, and duration when available.",
+        "The workflow is read-only and does not create, update, delete, or move markers.",
+        "Layer marker tools are not equivalent to composition marker reads.",
+        "Marker-derived work-area mutation remains a separate reviewed plan using explicit marker bounds plus set_comp_work_area."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/read-composition-markers-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Read the explicit composition with includeMarkers:true and verify ordered composition marker evidence without mutation.",
+        "steps": [
+          "Run get_active_comp only when the active composition is the target; otherwise bind explicit comp item/name evidence.",
+          "Run get_comp_details with includeLayers:false, includeMarkers:true, and a bounded markerLimit for the target composition.",
+          "Compare markers.orderedBy to comp.markerProperty.keyTime and treat markers.items as the only accepted composition marker evidence.",
+          "Report markers.count, markers.returned, markers.truncated, and each returned marker keyIndex, time, comment, and duration.",
+          "Fail closed when the request requires composition marker creation/update/delete, layer marker substitution, audio analysis, marker-derived work-area mutation, or raw script execution."
+        ],
+        "expectedEvidence": [
+          "get_comp_details includeMarkers:true returns a markers object for the verified target composition.",
+          "markers.orderedBy is comp.markerProperty.keyTime.",
+          "markers.items preserve keyIndex, time, comment, and duration values for every returned marker.",
+          "The plan does not use add_layer_marker, update_layer_marker, delete_layer_marker, set_comp_work_area, or raw script execution as part of read-only marker inspection."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Added as a narrow Full Intaker support contract for composition marker read-back before retrying marker-derived composition candidates."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-composition-marker-terminal-review",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the composition marker read requirement behind kyletmartinez/after-effects-scripts marker-derived composition workflows into get_comp_details includeMarkers:true evidence ordered by comp.markerProperty.keyTime; no source JSX copied. Marker creation/update/delete, layer marker substitution, audio-derived markers, marker-derived work-area mutation and exact source JSX semantics require separate typed-tool contracts and parent-owned validation.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation and typed read tools.",
+        "Do not substitute add_layer_marker, update_layer_marker, delete_layer_marker, layer marker comments, layer names, effects, expressions, properties, source relinks, timing changes, render queue changes, or raw script execution for composition marker reads.",
+        "Use set_comp_work_area only in a separate reviewed mutating plan after explicit composition marker bounds are available and mutation gates are satisfied."
       ]
     },
     {

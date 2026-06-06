@@ -8,6 +8,7 @@ const {
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
   agentCompositionVersionScenarioPlans,
+  agentCompositionMarkerReadScenarioPlans,
   agentCompPropertiesScenarioPlans,
   agentCompositionGuideScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
@@ -630,6 +631,24 @@ function openAiCliSelectedKeyframeMarkerScenarioConfig() {
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliCompositionMarkerReadScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-composition-marker-read",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_COMPOSITION_MARKER_READ_PREFIX || "Codex QA AUX-CMR",
+    scenarioFactory: agentCompositionMarkerReadScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: false,
     disallowProviderFallbacks: true
   };
 }
@@ -5799,6 +5818,42 @@ async function verifyMarkerReadBack(scenario, expected) {
   };
 }
 
+async function verifyCompositionMarkerReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: false,
+    includeMarkers: true,
+    markerLimit: 10
+  });
+  const markers = comp.markers || {};
+  const items = Array.isArray(markers.items) ? markers.items : [];
+  if (markers.orderedBy !== expected.orderedBy) {
+    throw new Error(`${scenario.id}: expected markers orderedBy ${expected.orderedBy}, got ${markers.orderedBy}.`);
+  }
+  if (typeof expected.markerCount === "number" && Number(markers.count || 0) !== expected.markerCount) {
+    throw new Error(`${scenario.id}: expected ${expected.markerCount} composition markers, got ${markers.count}.`);
+  }
+  for (let index = 1; index < items.length; index += 1) {
+    if (Number(items[index].time) < Number(items[index - 1].time)) {
+      throw new Error(`${scenario.id}: composition markers were not returned in nondecreasing keyTime order.`);
+    }
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name
+    },
+    markers: {
+      count: markers.count || 0,
+      returned: markers.returned || 0,
+      orderedBy: markers.orderedBy || null
+    }
+  };
+}
+
 async function verifyCameraReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const comp = await callBridgeTool("get_comp_details", {
@@ -5851,6 +5906,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.markerReadBack) {
     return verifyMarkerReadBack(scenario, expected);
+  }
+
+  if (expected.compositionMarkerReadBack) {
+    return verifyCompositionMarkerReadBack(scenario, expected);
   }
 
   if (expected.cameraReadBack) {
@@ -6700,6 +6759,10 @@ async function main() {
   }
   if (command === "agent-selected-keyframe-marker-openai-cli-smoke" || command === "full-ui-agent-selected-keyframe-marker-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliSelectedKeyframeMarkerScenarioConfig());
+    return;
+  }
+  if (command === "agent-composition-marker-read-openai-cli-smoke" || command === "full-ui-agent-composition-marker-read-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliCompositionMarkerReadScenarioConfig());
     return;
   }
   if (command === "agent-remaining-tail-contracts-openai-cli-smoke" || command === "full-ui-agent-remaining-tail-contracts-openai-cli-smoke") {

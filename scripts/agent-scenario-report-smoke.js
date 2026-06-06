@@ -13,6 +13,7 @@ const {
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
   agentCompositionVersionScenarioPlans,
+  agentCompositionMarkerReadScenarioPlans,
   agentCompPropertiesScenarioPlans,
   agentCompositionGuideScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
@@ -696,6 +697,16 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(selectedKeyframeMarker.plan.steps[4].args.time, 1);
   assert.strictEqual(selectedKeyframeMarker.plan.steps[4].args.comment, "");
 
+  const [compositionMarkerRead] = agentCompositionMarkerReadScenarioPlans("Codex QA AUX-CMR Fixture");
+  assert.strictEqual(compositionMarkerRead.id, "generated-composition-marker-read");
+  assert.strictEqual(compositionMarkerRead.expectedReadBack.compositionMarkerReadBack, true);
+  assert.deepStrictEqual(compositionMarkerRead.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "get_comp_details"
+  ]);
+  assert.strictEqual(compositionMarkerRead.plan.steps[1].args.includeMarkers, true);
+  assert.strictEqual(compositionMarkerRead.plan.steps[1].args.markerLimit, 10);
+
   const remainingTails = agentRemainingTailContractsScenarioPlans("Codex QA AUX099 Fixture");
   assert.deepStrictEqual(remainingTails.map((scenario) => scenario.id), [
     "generated-camera-controller-rig",
@@ -712,7 +723,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert(remainingTails[4].plan.steps.some((step) => step.tool === "set_spatial_in_tangent"));
   assert(remainingTails[5].plan.steps.some((step) => step.tool === "separate_shape_size_dimensions"));
 
-  for (const scenario of [timing, transform, projectItems, effectProperty, expression, parentOpacity, stickEffect, estimatePathLength, puppetOnTransparent, compProperties, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, keyframes, textToKeys, selectedKeyframeMarker, ...remainingTails]) {
+  for (const scenario of [timing, transform, projectItems, effectProperty, expression, parentOpacity, stickEffect, estimatePathLength, puppetOnTransparent, compProperties, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, keyframes, textToKeys, selectedKeyframeMarker, compositionMarkerRead, ...remainingTails]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }

@@ -75,8 +75,11 @@ const READ_ONLY_BRIDGE_TOOLS = [
     description: "Return detailed information for a composition, optionally including its layers.",
     inputSchema: objectSchema({
       compItemIndex: numberField("Optional 1-based project item index for the composition. Defaults to active comp."),
+      compName: stringField("Optional exact composition name to target when compItemIndex is not provided."),
       includeLayers: booleanField("Whether to include layer summaries. Defaults to true."),
-      layerLimit: numberField("Maximum number of layers to include. Defaults to 200, maximum 1000.")
+      layerLimit: numberField("Maximum number of layers to include. Defaults to 200, maximum 1000."),
+      includeMarkers: booleanField("Whether to include composition marker read-back from comp.markerProperty. Defaults to false."),
+      markerLimit: numberField("Maximum number of composition markers to include. Defaults to 50, maximum 1000.")
     })
   },
   {

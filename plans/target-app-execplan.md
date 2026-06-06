@@ -26,6 +26,31 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker composition-marker read contract slice:
+  added `get_comp_details` composition marker read-back via
+  `includeMarkers:true` and `markerLimit`, returning `markers.items` ordered by
+  `comp.markerProperty.keyTime` with key index, time, comment, and duration
+  evidence. The read-only schema is mirrored through the ChatGPT connector, the
+  Agent planning prompt now forbids substituting layer marker tools for
+  composition markers, and `read-composition-markers-typed-plan` documents the
+  advisory recipe. Added a reusable
+  `composition-marker-read-generated-only` Full Intaker family plus targeted
+  scenario/report/CEP command wiring. This milestone intentionally does not
+  mark marker-derived work-area candidates completed: nonempty generated
+  composition marker setup/write, marker-derived work-area mutation, layer
+  marker copy semantics, and live CEP proof remain separate gates. Validation
+  passed: touched-file `node --check`, JSON parse for solution/lane registries,
+  `node scripts/agent-scenario-report-smoke.js`,
+  `node scripts/solution-library-validation-smoke.js`,
+  `node scripts/solution-registry-smoke.js`,
+  `node scripts/solution-retrieval-smoke.js`,
+  `node scripts/chatgpt-connector-smoke.js`,
+  `node scripts/semantic-verification-smoke.js`, the three SDK generic repo
+  smokes, `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`,
+  `npm.cmd run smoke:full-intake`, `npm.cmd run smoke:bridge`,
+  `npm.cmd run smoke:provider-contract`, `npm.cmd run smoke:provider-api`,
+  `npm.cmd run smoke:planning`, and `git diff --check` with line-ending
+  warnings only.
 - [x] Full Intaker runtime cleanup after reopened backlog closeout: added a
   guarded local cleanup command and applied it to the latest
   `full-intake-kyletmartinez` runtime. The cleanup removed 6 registered
