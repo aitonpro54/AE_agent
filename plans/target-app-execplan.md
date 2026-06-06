@@ -26,6 +26,17 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intaker runtime cleanup after reopened backlog closeout: added a
+  guarded local cleanup command and applied it to the latest
+  `full-intake-kyletmartinez` runtime. The cleanup removed 6 registered
+  runtime worktrees, 6 importer batch directories, 11 stale
+  `cli-autoloop/last-message*.txt` files, and 2 small full-intake temp
+  directories, reducing `.codex-runtime` from 44.99 MB / 3733 files to
+  6.07 MB / 862 files. Preserved evidence includes the triage ledger/source
+  checkout, compact state/proof envelope, run report/resume card/events,
+  resolution tickets, candidates, and self-improvement reports. No queue
+  processing, provider calls, live CEP/AE validation, dependency changes,
+  push, or PR were run.
 - [x] Reopened Full Intaker final Properties terminal-review slice:
   `tool-properties-toggle-puppet-pin-types` and
   `tool-properties-export-path-points` now have fresh scoped parentReducer
@@ -511,12 +522,13 @@ old `AE_agent` repository remains the historical source.
 
 ## Next Milestone
 
-The reopened Full Intaker objective is in completion-audit state. Do not use
-`completed_no_candidates` or `terminal total=75` alone as success evidence, but
-the current compact backlog map shows all 58 blocked/skipped entries have fresh
-parentReducer evidence and no entry remains without fresh terminal review. The
-remaining terminal blockers are explicit approval/contract gaps, especially
-CEP panel readiness for generated-only live proofs, generated Puppet pin atom
+The reopened Full Intaker objective is closed and the latest runtime has been
+cleaned down to the retained evidence set. Do not use `completed_no_candidates`
+or `terminal total=75` alone as success evidence in future reviews; the compact
+backlog map from closeout showed all 58 blocked/skipped entries had fresh
+parentReducer evidence and no entry remained without fresh terminal review. The
+remaining terminal blockers are explicit approval/contract gaps, especially CEP
+panel readiness for generated-only live proofs, generated Puppet pin atom
 read/write/read-back, exact shape-path vertex export/read-back, and generated
 file-output policy.
 
@@ -533,6 +545,15 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-06: Added `npm run full-intake:cleanup` backed by
+  `scripts/full-intake-runtime-cleanup.js` for guarded local cleanup of ignored
+  Full Intaker runtime leftovers. Dry-run remains the default; destructive
+  cleanup requires `--apply`, asserts targets stay under `.codex-runtime`, and
+  removes registered runtime worktrees through `git worktree remove` before
+  pruning importer batch directories. The cleanup preserves the triage ledger,
+  source checkout, compact proof/state/run evidence, resolution tickets,
+  candidates, self-improvement reports, and handoff files by default. This is a
+  local runtime maintenance command, not a queue-processing or provider lane.
 - 2026-06-06: Parent reducer completed the final reopened Properties
   terminal-review slice. `tool-properties-toggle-puppet-pin-types` remains
   terminal because source toggles selected `ADBE FreePin3 PosPin Atom` child
@@ -1047,6 +1068,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Full Intaker runtime cleanup | Required to remove ignored local runtime leftovers from the latest `full-intake-kyletmartinez` run while preserving review evidence. | Passed: pre-cleanup compact status/proof/ledger-summary showed `completed_no_candidates`, proof hash `f7179a05e8ff4bf656099e17bb1ed2b3eb4deab21651cd2640a090b089712639`, entries=75, completed=17, blocked/skipped=58, queued=0, failed=0. `node --check scripts/full-intake-runtime-cleanup.js` and `npm.cmd run full-intake:cleanup -- --help` passed. Dry-run selected 6 runtime worktrees, 6 importer batch dirs, 11 cli-autoloop files, and 2 full-intake temp dirs; apply reduced `.codex-runtime` from 44.99 MB / 3733 files to 6.07 MB / 862 files. Post-cleanup dry-run reported 0 remaining actions, `git worktree list --porcelain` reported only the main worktree, and compact status/proof/ledger-summary still read. `git diff --check` passed with line-ending normalization warnings only; `npm.cmd run check:rules` passed; `npm.cmd run smoke:full-intake` passed on rerun with a longer timeout after the first 180s attempt timed out. `.codex/handoff.md` was updated locally after repository write access was restored. No broad queue, provider calls, Local/Ollama, fallback providers, live CEP/AE validation, dependency changes, raw JSX copy, source-checkout writes, PR, or GitHub PR automation were run. |
 | Reopened final Properties terminal-review slice | Required to give `tool-properties-toggle-puppet-pin-types` and `tool-properties-export-path-points` fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decisions, and unblock conditions. | Passed/terminal: proposal-only sidecars reviewed both candidates without edits/commits. Parent reducer verified baton active, clean tracked worktree before scoped retries, source behavior, duplicate recipe/registry/live-lane ids, raw JSX/dependency/package/source-checkout risks, child commit/branch absence, and scoped Full Intaker tickets. Scoped retries used `--context-percent 20`, `--max-items 1`, exact candidate ids, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; both returned terminal tickets with no open tickets, no requeue, and no completed candidate. Ledger annotations now show 58/58 blocked/skipped entries with parentReducer evidence and no entry without fresh review. Closeout validation is recorded in the current handoff. |
 | Reopened Properties Puppet On Transparent lane/retry | Required to give `tool-properties-toggle-puppet-on-transparent` a fresh scoped attempt, existing-lane search, lane creation feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecar reviewed source behavior, current typed surface, duplicate recipe/registry/live-lane ids, and runtime state without edits/commits. Parent reducer accepted only a generated-only effect-property adaptation, verified baton active, clean tracked worktree before guarded retry, source behavior, duplicate evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Parent added `recipes/toggle-puppet-on-transparent-typed-plan.md`, `recipes/generic-repo-intake/tool-properties-toggle-puppet-on-transparent.md`, registry coverage, scenario/report smoke coverage, CEP smoke command, exact-candidate unsafe-skip synthesis gate, and `puppet-on-transparent-effect-property-generated-only` self-improvement lane. Scoped retry used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it matched the new lane, passed non-live validation and read-only CEP preflight, then produced terminal ticket `live-lane-family-puppet-on-transparent-effect-property-generated-only` because the CEP panel reported `openai-cli/gpt-5.5 is not ready`. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows 56/58 blocked/skipped entries fresh-reviewed and 2 Properties entries remaining. Closeout validation is recorded in the current handoff. |
 | Reopened Properties selected-property rename single-candidate re-audit | Required to give `tool-properties-rename-selected-properties` a fresh scoped attempt, existing-lane search, lane creation feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecar reviewed source behavior, current typed surface, duplicate recipe/registry/live-lane ids, and runtime ticket state without edits/commits. Parent reducer accepted no lane, verified baton active, clean tracked worktree, canonical ledger id, source behavior, duplicate evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue, and no completed candidate. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows 55/58 blocked/skipped entries fresh-reviewed and 3 Properties entries remaining. Closeout validation is recorded in the current handoff. |
