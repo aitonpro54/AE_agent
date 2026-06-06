@@ -32,6 +32,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "keyframe_current_value_from_expression",
   "set_effect_property",
   "set_puppet_pin_type",
+  "add_property_to_essential_graphics",
   "apply_keyframe_ease",
   "set_spatial_in_tangent",
   "set_expression",
@@ -2190,6 +2191,59 @@ function agentExportPathPointsScenarioPlans(runPrefix) {
   }));
 }
 
+function agentEssentialGraphicsScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Essential Graphics`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Shape`;
+  const controllerName = `${base} Opacity`;
+  const propertyPath = [
+    { matchName: "ADBE Transform Group" },
+    { matchName: "ADBE Opacity", name: "Opacity" }
+  ];
+
+  return [
+    {
+      id: "generated-essential-graphics-controller",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "get_layer_details",
+        "get_essential_graphics_controllers",
+        "add_property_to_essential_graphics",
+        "get_essential_graphics_controllers",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedEssentialGraphicsController: true,
+        compName,
+        layerName,
+        controllerName,
+        propertyMatchName: "ADBE Opacity"
+      },
+      plan: {
+        summary: "Generated-only live QA for adding one explicit generated layer property to Essential Graphics with controller read-back.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated Essential Graphics comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.05, 0.06, 0.08], allowDuplicateName: false, openInViewer: true, comment: "Generated-only Essential Graphics validation" } },
+          { title: "Create generated Essential Graphics shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [260, 150], position: [320, 180], fillColor: [0.18, 0.46, 0.78], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Read generated layer before Essential Graphics add", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: true, propertyDepth: 2, propertyLimit: 80 } },
+          { title: "Read Essential Graphics controllers before add", tool: "get_essential_graphics_controllers", args: { compName } },
+          { title: "Add generated opacity property to Essential Graphics", tool: "add_property_to_essential_graphics", args: { compName, layerIndex: 1, expectedLayerName: layerName, propertyPath, expectedPropertyMatchName: "ADBE Opacity", controllerName, expectedControllerCountBefore: 0 } },
+          { title: "Read Essential Graphics controllers after add", tool: "get_essential_graphics_controllers", args: { compName } },
+          { title: "Read generated layer after Essential Graphics add", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: true, propertyDepth: 2, propertyLimit: 80 } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentCompPropertiesScenarioPlans(runPrefix) {
   const base = `${runPrefix} Comp Properties`;
   const compName = `${base} Comp`;
@@ -3647,6 +3701,7 @@ module.exports = {
   agentDuplicateLayersScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
   agentEffectPropertyScenarioPlans,
+  agentEssentialGraphicsScenarioPlans,
   agentExpressionScenarioPlans,
   agentEstimatePathLengthScenarioPlans,
   agentExportPathPointsScenarioPlans,

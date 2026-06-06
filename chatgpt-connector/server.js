@@ -98,6 +98,28 @@ const READ_ONLY_BRIDGE_TOOLS = [
     }, ["layerIndex"])
   },
   {
+    name: "get_layer_essential_properties",
+    title: "Get layer essential properties",
+    description: "Read Essential Properties exposed on one explicit precomp layer, including source evidence and expression state.",
+    inputSchema: objectSchema({
+      compItemIndex: numberField("Optional 1-based project item index for the target composition. Defaults to active comp."),
+      compName: stringField("Optional exact composition name to target when compItemIndex is not provided."),
+      layerIndex: numberField("1-based layer index in the target composition."),
+      includeValues: booleanField("Whether to include compact value previews. Defaults to true."),
+      includeExpressions: booleanField("Whether to include expression text and expression state. Defaults to true."),
+      propertyLimit: numberField("Maximum Essential Properties to return. Defaults to 80, maximum 200.")
+    }, ["layerIndex"])
+  },
+  {
+    name: "get_essential_graphics_controllers",
+    title: "Get Essential Graphics controllers",
+    description: "Read the Essential Graphics / Motion Graphics Template controller list for one explicit composition.",
+    inputSchema: objectSchema({
+      compItemIndex: numberField("Optional 1-based project item index for the target composition. Defaults to active comp."),
+      compName: stringField("Optional exact composition name to target when compItemIndex is not provided.")
+    })
+  },
+  {
     name: "get_path_geometry",
     title: "Get path geometry",
     description: "Read one explicit Shape or Mask path geometry from one layer, including vertices, inTangents, outTangents, closed state, and optional keyframes.",

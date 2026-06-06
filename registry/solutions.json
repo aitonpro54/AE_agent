@@ -8471,6 +8471,235 @@
     },
     {
       "schema": "ae-solution.v1",
+      "status": "recipe",
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Prepared as non-live generated-only typed contract coverage; live proof remains approval-gated."
+        ]
+      },
+      "id": "add-properties-to-essential-graphics-typed-plan",
+      "title": "Add Properties To Essential Graphics Typed Plan",
+      "tags": [
+        "essential-graphics",
+        "motion-graphics-template",
+        "controller",
+        "propertyPath",
+        "generated-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Add one reviewed generated layer property to Essential Graphics through a narrow controller typed tool and post-run controller read-back.",
+        "appliesWhen": [
+          "The user asks to add or expose a generated layer property in Essential Graphics or the Motion Graphics Template controller list.",
+          "The target comp, generated layer, propertyPath and controllerName can be reviewed before mutation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Explicit generated composition inspected before mutation."
+        },
+        {
+          "name": "targetLayer",
+          "type": "object",
+          "required": true,
+          "description": "Explicit generated layer index/name whose property is added."
+        },
+        {
+          "name": "propertyPath",
+          "type": "array",
+          "required": true,
+          "description": "Reviewed property path for the generated layer property, such as Transform Opacity."
+        },
+        {
+          "name": "controllerName",
+          "type": "string",
+          "required": true,
+          "description": "Reviewed Essential Graphics controller name to create."
+        }
+      ],
+      "targetAssumptions": [
+        "The property already exists on the generated layer and can be resolved by explicit propertyPath.",
+        "The controller list is read before and after mutation with get_essential_graphics_controllers.",
+        "The workflow adds one controller only and does not rename, delete, reorder, or export MOGRT templates."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/add-properties-to-essential-graphics-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_layer_details",
+          "get_essential_graphics_controllers",
+          "add_property_to_essential_graphics"
+        ]
+      },
+      "verificationRecipe": {
+        "summary": "Read controllers before and after the add, and require the named controller plus count increment evidence.",
+        "steps": [
+          "Run get_layer_details on the generated layer and confirm the intended property path is explicit.",
+          "Run get_essential_graphics_controllers before mutation and record controllerCount.",
+          "Run add_property_to_essential_graphics once with the reviewed propertyPath, controllerName and expected property identity.",
+          "Run get_essential_graphics_controllers after mutation and confirm controllerName appears and controllerCount incremented."
+        ],
+        "expectedEvidence": [
+          "Generated layer identity matches the target layer.",
+          "add_property_to_essential_graphics returns postVerification.ok:true.",
+          "Post-run controller read-back includes controllerName.",
+          "controllerCount increased by one from the pre-read value."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-kyletmartinez/tool-properties-add-properties-to-essential-graphics",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted Add_Properties_To_Essential_Graphics as generated-only typed-tool contract with add_property_to_essential_graphics and get_essential_graphics_controllers; no source JSX copied.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "generated layer evidence is required before mutation; selected-property inference is not enough.",
+        "MOGRT export, controller rename/delete/reorder, user-template mutation, and broad selectedProperties traversal remain out of scope.",
+        "This is a separate typed-tool contract; exact source ScriptUI semantics remain fail-closed."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "status": "recipe",
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Prepared as non-live generated-only typed contract coverage; live proof remains approval-gated."
+        ]
+      },
+      "id": "expose-essential-properties-typed-plan",
+      "title": "Expose Essential Properties Typed Plan",
+      "tags": [
+        "essential-properties",
+        "essential-graphics",
+        "precomp-layer",
+        "layer-essentialProperty",
+        "expression",
+        "generated-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Inspect generated precomp layer Essential Properties and mutate only one reviewed explicit Essential Property expression path.",
+        "appliesWhen": [
+          "The user asks to expose or edit Essential Properties on a generated precomp layer.",
+          "The Essential Property appears in get_layer_essential_properties evidence and an explicit expression path is reviewed."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Explicit composition containing the generated precomp layer."
+        },
+        {
+          "name": "precompLayer",
+          "type": "object",
+          "required": true,
+          "description": "Generated precomp layer inspected before mutation."
+        },
+        {
+          "name": "propertyPath",
+          "type": "array",
+          "required": true,
+          "description": "Reviewed Essential Property path from get_layer_essential_properties."
+        },
+        {
+          "name": "expression",
+          "type": "string",
+          "required": true,
+          "description": "Reviewed expression text to apply to the explicit Essential Property path."
+        }
+      ],
+      "targetAssumptions": [
+        "The target is a generated nested comp/precomp layer, not a user template layer.",
+        "Essential Properties are read with get_layer_essential_properties before and after mutation.",
+        "The expression is applied with set_expression only when the explicit property path supports expressions."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/expose-essential-properties-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_layer_details",
+          "get_layer_essential_properties",
+          "set_expression"
+        ]
+      },
+      "verificationRecipe": {
+        "summary": "Read layer.essentialProperty before and after set_expression, requiring explicit property identity and expression read-back.",
+        "steps": [
+          "Run get_layer_details on the generated precomp layer before mutation.",
+          "Run get_layer_essential_properties includeValues:true and bind a reviewed propertyPath from essentialProperties evidence.",
+          "Run set_expression on exactly that propertyPath with reviewed expression text.",
+          "Run get_layer_essential_properties again and confirm the same property has expressionEnabled:true and no expression error."
+        ],
+        "expectedEvidence": [
+          "Generated nested comp/layer identity is explicit.",
+          "essentialProperties read-back includes the target propertyPath.",
+          "set_expression targets only the reviewed Essential Property path.",
+          "Post-run read-back shows expressionEnabled:true and empty expression error."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-kyletmartinez/tool-properties-expose-essential-properties",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted Expose_Essential_Properties as generated-only typed-tool contract with get_layer_essential_properties and explicit set_expression path; no source JSX copied.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "generated nested comp evidence is required before any Essential Property mutation.",
+        "Broad layer.essentialProperty writes, selected-property inference, user precomp template mutation, MOGRT export, and controller side effects remain out of scope.",
+        "This is a separate typed-tool contract; exact source ScriptUI semantics remain fail-closed."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "toggle-puppet-on-transparent-typed-plan",
       "title": "Toggle Puppet On Transparent Typed Plan",
       "status": "recipe",

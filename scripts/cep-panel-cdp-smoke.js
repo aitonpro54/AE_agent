@@ -17,6 +17,7 @@ const {
   agentDakkshinTypedToolsScenarioPlans,
   agentDuplicateLayersScenarioPlans,
   agentEffectPropertyScenarioPlans,
+  agentEssentialGraphicsScenarioPlans,
   agentEstimatePathLengthScenarioPlans,
   agentExportPathPointsScenarioPlans,
   agentExpressionScenarioPlans,
@@ -546,6 +547,24 @@ function openAiCliExportPathPointsScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_EXPORT_PATH_POINTS_PREFIX || "Codex QA AUX-EXPORT",
     scenarioFactory: agentExportPathPointsScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliEssentialGraphicsScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-essential-graphics",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_ESSENTIAL_GRAPHICS_PREFIX || "Codex QA AUX-EG",
+    scenarioFactory: agentEssentialGraphicsScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -6991,6 +7010,10 @@ async function main() {
   }
   if (command === "agent-export-path-points-openai-cli-smoke" || command === "full-ui-agent-export-path-points-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliExportPathPointsScenarioConfig());
+    return;
+  }
+  if (command === "agent-essential-graphics-openai-cli-smoke" || command === "full-ui-agent-essential-graphics-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliEssentialGraphicsScenarioConfig());
     return;
   }
   if (command === "agent-puppet-on-transparent-openai-cli-smoke" || command === "full-ui-agent-puppet-on-transparent-openai-cli-smoke") {

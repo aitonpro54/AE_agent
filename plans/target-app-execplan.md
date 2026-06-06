@@ -26,6 +26,21 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker Essential Graphics / Essential Properties contract
+  slice: `tool-properties-add-properties-to-essential-graphics` and
+  `tool-properties-expose-essential-properties` now have a parent-owned
+  non-live generated-only typed contract and lane metadata without scoped retry
+  or live CEP/AE proof. Added read-only `get_layer_essential_properties` and
+  `get_essential_graphics_controllers`, plus mutating
+  `add_property_to_essential_graphics` for one explicit generated layer
+  `propertyPath` and reviewed `controllerName`. Added recipe/intake notes,
+  registry retrieval, plan-repair aliases, semantic verification,
+  scenario/report/CEP command wiring, ChatGPT connector read-only coverage, and
+  `essential-graphics-generated-only` Full Intaker family metadata.
+  Source-exact selectedProperties traversal, broad `layer.essentialProperty`
+  writes, MOGRT export, user-template mutation, controller management,
+  arbitrary property guessing, raw JSX, and candidate completion remain
+  fail-closed.
 - [x] Reopened Full Intaker shape/mask path geometry contract slice:
   added read-only `get_path_geometry` and mutating `set_path_geometry` typed
   tools for explicit shape and mask path targets, covering `vertices`,
@@ -694,6 +709,13 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-06: Essential Graphics / Essential Properties reopened slice is
+  contract-ready only. `get_layer_essential_properties` and
+  `get_essential_graphics_controllers` are read-only and may be exposed through
+  the ChatGPT connector; `add_property_to_essential_graphics` is mutating and
+  remains normal plan-validation/mutation-permission/checkpoint/read-back
+  gated. Generated-only live proof and candidate completion still require
+  explicit approval/readiness.
 - 2026-06-06: Shape/mask path geometry now has explicit typed contracts:
   `get_path_geometry` reads shape or mask path geometry and optional keyframes;
   `set_path_geometry` writes either one geometry or bounded keyframed geometry
@@ -1281,6 +1303,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened Essential Graphics / Essential Properties contract slice | Required to give `tool-properties-add-properties-to-essential-graphics` and `tool-properties-expose-essential-properties` a generated-only typed contract/lane without approving selectedProperties traversal, broad Essential Properties writes, MOGRT export, user-template mutation, or live CEP/AE proof. | Passed/contract-ready: parent-owned implementation added `get_layer_essential_properties`, `get_essential_graphics_controllers`, `add_property_to_essential_graphics`, plan-repair aliases, semantic verification, recipe/intake notes, registry retrieval, scenario/report fixture, CEP command wiring, ChatGPT connector read-only coverage, and `essential-graphics-generated-only` Full Intaker family metadata. Validation passed: touched-file `node --check`; JSON parse for registry/live-lane; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `node scripts/chatgpt-connector-smoke.js`; `node scripts/smoke-test.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake` on rerun with a longer timeout after the parallel 180s attempt timed out; and `git diff --check` with line-ending warnings only. No scoped retry, live proof, candidate completion, broad queue, Local/Ollama, fallback provider, dependency/package change, push, or PR was run. |
 | Reopened shape/mask path geometry contract slice | Required to unblock future safe review for shape/mask path geometry candidates without copying raw JSX or running live mutation. | Passed/contract-ready: parent-owned implementation added `get_path_geometry`/`set_path_geometry`, connector read-only schema, plan repair aliases, semantic verification, generated-only scenario/report fixture, CEP command wiring for future proof, and queue smoke coverage. No candidate was marked completed. Validation passed: touched-file `node --check`; `node scripts/semantic-verification-smoke.js`; `node scripts/smoke-test.js`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/chatgpt-connector-smoke.js`; compact status/proof/ledger-summary; `git diff --check` with line-ending warnings only; `npm.cmd run check:rules`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; and `npm.cmd run smoke:full-intake`. No broad queue, live CEP proof, mutating live AE validation, Local/Ollama, fallback provider, dependency/package change, push, or PR was run. |
 | Reopened Puppet pin type contract slice | Required to give `tool-properties-toggle-puppet-pin-types` a generated-only typed contract/lane without approving live CEP/AE mutation or source-exact selected pin traversal. | Passed/contract-ready: parent-owned implementation added `set_puppet_pin_type`, plan-repair aliases, semantic verification, recipe/intake note, registry retrieval, scenario/report fixture, CEP command wiring, ChatGPT connector read-only guard coverage, and `puppet-pin-type-generated-only` Full Intaker family metadata. The contract accepts only explicit `ADBE FreePin3 PosPin Type` property paths under `ADBE FreePin3 PosPin Atom` evidence and enum values `1`/`position` or `4`/`advanced`; missing generated pin atom evidence remains fail-closed. Validation passed: touched-file `node --check`; JSON parse for registry/live-lane; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `node scripts/chatgpt-connector-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake`; compact status/proof/ledger-summary; and `git diff --check` with line-ending warnings only. No scoped retry, live proof, candidate completion, broad queue, Local/Ollama, fallback provider, dependency/package change, push, or PR was run. |
 | Reopened export-path-points file-output policy slice | Required to give `tool-properties-export-path-points` a generated-only file-output contract now that path geometry read-back exists, without approving Desktop/user-path writes or live mutation. | Passed/policy-ready: parent-owned implementation added `export_path_points`, generated export root policy, sha256/content read-back, semantic verification, recipe/intake note, registry retrieval, scenario/report fixture, CEP command wiring, exact-candidate lane metadata, and plan-repair aliases. Live-capable scoped retry was not run because generated-only mutating live CEP proof was not approved and the runner has no non-live-only scoped retry flag. Validation passed: touched-file `node --check`; JSON parse for registry/live-lane/ledger; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `node scripts/chatgpt-connector-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake`; and `git diff --check` with line-ending warnings only. No candidate was marked completed; live proof remains approval/readiness-gated. |

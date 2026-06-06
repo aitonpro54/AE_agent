@@ -301,6 +301,7 @@ function assertReadOnlyTools(tools) {
     "add_comp_to_render_queue",
     "set_property_value",
     "set_puppet_pin_type",
+    "add_property_to_essential_graphics",
     "set_layer_metadata",
     "set_project_item_metadata",
     "set_layer_transform",
@@ -337,6 +338,12 @@ function assertReadOnlyTools(tools) {
   assert(compDetailsTool.inputSchema.properties.compName, "Expected get_comp_details compName schema.");
   assert(compDetailsTool.inputSchema.properties.includeMarkers, "Expected get_comp_details includeMarkers schema.");
   assert(compDetailsTool.inputSchema.properties.markerLimit, "Expected get_comp_details markerLimit schema.");
+  const essentialPropertiesTool = tools.find((tool) => tool.name === "get_layer_essential_properties");
+  assert(essentialPropertiesTool, "Expected get_layer_essential_properties connector tool.");
+  assert(essentialPropertiesTool.inputSchema.properties.layerIndex, "Expected get_layer_essential_properties layerIndex schema.");
+  const essentialControllersTool = tools.find((tool) => tool.name === "get_essential_graphics_controllers");
+  assert(essentialControllersTool, "Expected get_essential_graphics_controllers connector tool.");
+  assert(essentialControllersTool.inputSchema.properties.compName, "Expected get_essential_graphics_controllers compName schema.");
 
   for (const forbidden of banned) {
     assert(!names.includes(forbidden), `Forbidden write/raw/provider tool exposed: ${forbidden}`);

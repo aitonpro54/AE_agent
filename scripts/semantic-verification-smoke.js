@@ -26,6 +26,7 @@ const LOCAL_MUTATING_TOOLS = new Set([
   "set_path_geometry",
   "export_path_points",
   "set_puppet_pin_type",
+  "add_property_to_essential_graphics",
   "set_comp_current_time",
   "add_comp_marker"
 ]);
@@ -541,6 +542,51 @@ function fakeMutationResult(step, state) {
       pinTypeAfter: pinType,
       allowedPinTypes: [1, 4],
       propertyPath
+    }, compName, layer);
+  }
+  if (step.tool === "add_property_to_essential_graphics") {
+    const propertyPath = args.propertyPath || [
+      { matchName: "ADBE Transform Group" },
+      { matchName: "ADBE Opacity", name: "Opacity" }
+    ];
+    const controllerName = String(args.controllerName || "Essential Graphics Fixture Opacity");
+    const layer = layerInfo(args.expectedLayerName || "Essential Graphics Fixture Layer", { index: args.layerIndex || 1 });
+    const property = fakePropertyInfo(propertyPath, 100);
+    if (args.expectedPropertyName) property.name = args.expectedPropertyName;
+    if (args.expectedPropertyMatchName) property.matchName = args.expectedPropertyMatchName;
+    state.propertyValues.push(property);
+    const beforeControllers = {
+      count: state.essentialGraphicsControllers.length,
+      controllers: state.essentialGraphicsControllers.slice()
+    };
+    const controller = {
+      index: beforeControllers.count + 1,
+      name: controllerName,
+      propertyName: property.name,
+      propertyMatchName: property.matchName
+    };
+    state.essentialGraphicsControllers.push(controller);
+    const afterControllers = {
+      count: state.essentialGraphicsControllers.length,
+      controllers: state.essentialGraphicsControllers.slice()
+    };
+    return withVerification({
+      comp: { name: compName, numLayers: state.layers.length || 1 },
+      layer,
+      property,
+      controllerName,
+      added: true,
+      beforeControllers,
+      afterControllers,
+      controller,
+      postVerification: {
+        ok: true,
+        controllerCountBefore: beforeControllers.count,
+        controllerCountAfter: afterControllers.count,
+        controllerCountIncremented: true,
+        controllerNamePresent: true,
+        canAddBefore: true
+      }
     }, compName, layer);
   }
   if (step.tool === "set_layer_mask") {
@@ -1121,6 +1167,38 @@ function fakeReadBackResult(step, state) {
       properties: state.propertyValues.slice()
     };
   }
+  if (step.tool === "get_layer_essential_properties") {
+    const layerIndex = step.args && step.args.layerIndex || 1;
+    const layer = state.layers.find((item) => Number(item.index) === Number(layerIndex)) ||
+      layerInfo("Essential Graphics Fixture Layer", { index: layerIndex });
+    const properties = state.propertyValues.slice();
+    return {
+      comp: {
+        name: step.args && step.args.compName || state.lastCompName || "Fixture Comp",
+        numLayers: state.layers.length || 1
+      },
+      layer,
+      essentialProperties: {
+        available: true,
+        count: properties.length,
+        returned: properties.length,
+        truncated: false,
+        properties
+      }
+    };
+  }
+  if (step.tool === "get_essential_graphics_controllers") {
+    const controllers = state.essentialGraphicsControllers.slice();
+    return {
+      comp: {
+        name: step.args && step.args.compName || state.lastCompName || "Fixture Comp",
+        numLayers: state.layers.length || 1
+      },
+      motionGraphicsTemplateName: step.args && step.args.compName || state.lastCompName || "Fixture Comp",
+      controllerCount: controllers.length,
+      controllers
+    };
+  }
   if (step.tool === "get_comp_details" || step.tool === "list_layers") {
     const layers = state.layers.slice();
     return {
@@ -1164,6 +1242,7 @@ function fakeRunForPlan(plan) {
     layerMarkers: [],
     compMarkers: [],
     masks: [],
+    essentialGraphicsControllers: [],
     compProperties: {
       width: 1280,
       height: 720,
@@ -2622,6 +2701,65 @@ function assertMarkerLifecycleSequencePasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("delete_layer_marker:marker") >= 0 && check.status === "passed"), "delete marker should still pass on final absent read-back.");
 }
 
+function essentialGraphicsControllerPlan(includePostReadBack = true) {
+  const compName = "Essential Graphics Fixture";
+  const layerIndex = 1;
+  const controllerName = "Source Opacity";
+  const propertyPath = [
+    { matchName: "ADBE Transform Group" },
+    { matchName: "ADBE Opacity", name: "Opacity" }
+  ];
+  const steps = [
+    {
+      title: "Read generated Essential Graphics controllers before mutation",
+      tool: "get_essential_graphics_controllers",
+      args: { compName }
+    },
+    {
+      title: "Add generated opacity to Essential Graphics",
+      tool: "add_property_to_essential_graphics",
+      args: {
+        compName,
+        layerIndex,
+        expectedLayerName: "Essential Graphics Fixture Layer",
+        propertyPath,
+        expectedPropertyMatchName: "ADBE Opacity",
+        controllerName,
+        expectedControllerCountBefore: 0
+      }
+    }
+  ];
+  if (includePostReadBack) {
+    steps.push({
+      title: "Read generated Essential Graphics controllers after mutation",
+      tool: "get_essential_graphics_controllers",
+      args: { compName }
+    });
+  }
+  return {
+    summary: "Add one generated property to Essential Graphics and read controller evidence.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps
+  };
+}
+
+function assertAddPropertyToEssentialGraphicsPasses() {
+  const plan = essentialGraphicsControllerPlan(true);
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `add_property_to_essential_graphics semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("add_property_to_essential_graphics:controller") >= 0 && check.status === "passed"), "add_property_to_essential_graphics read-back check should pass.");
+}
+
+function assertAddPropertyToEssentialGraphicsMissingReadBackNeedsReview() {
+  const plan = essentialGraphicsControllerPlan(false);
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "add_property_to_essential_graphics must require post-run get_essential_graphics_controllers read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("add_property_to_essential_graphics:controller") >= 0 && check.status === "failed"), "add_property_to_essential_graphics missing post-read-back should fail.");
+}
+
 function puppetPinTypePlan(includeReadBack = true) {
   const propertyPath = [
     { matchName: "ADBE Effect Parade" },
@@ -2747,6 +2885,8 @@ function main() {
   assertUpdateLayerMarkerPasses();
   assertDeleteLayerMarkerPasses();
   assertMarkerLifecycleSequencePasses();
+  assertAddPropertyToEssentialGraphicsPasses();
+  assertAddPropertyToEssentialGraphicsMissingReadBackNeedsReview();
   assertSetPuppetPinTypePasses();
   assertSetPuppetPinTypeMissingReadBackNeedsReview();
   assertSourceTextKeyframesPass();

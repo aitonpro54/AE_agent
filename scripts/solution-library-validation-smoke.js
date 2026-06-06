@@ -37,6 +37,8 @@ const IMPORTED_ADVISORY_IDS = [
   "estimate-path-length-typed-plan",
   "flip-path-typed-plan",
   "export-path-points-typed-plan",
+  "add-properties-to-essential-graphics-typed-plan",
+  "expose-essential-properties-typed-plan",
   "toggle-puppet-on-transparent-typed-plan",
   "toggle-puppet-pin-types-typed-plan",
   "round-selected-property-values-typed-plan",
@@ -140,6 +142,9 @@ const AVAILABLE_TOOLS = [
   "get_effect_details",
   "set_effect_property",
   "set_puppet_pin_type",
+  "get_layer_essential_properties",
+  "get_essential_graphics_controllers",
+  "add_property_to_essential_graphics",
   "set_layer_mask",
   "get_path_geometry",
   "set_path_geometry",
@@ -828,6 +833,46 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /export_path_points/.test(note)), `${id}: notes must require generated file export.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Export_Path_Points/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "add-properties-to-essential-graphics-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_layer_details", "get_essential_graphics_controllers", "add_property_to_essential_graphics"],
+        `${id}: Essential Graphics add workflow should stay on the narrow generated controller typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: Essential Graphics controller add workflow must be mutating.`);
+      assert(text.includes("get_essential_graphics_controllers"), `${id}: recipe should require controller read-back.`);
+      assert(text.includes("add_property_to_essential_graphics"), `${id}: recipe should use the narrow Essential Graphics add typed tool.`);
+      assert(text.includes("propertyPath"), `${id}: recipe should require an explicit propertyPath.`);
+      assert(text.includes("controllerName"), `${id}: recipe should require a reviewed controllerName.`);
+      assert(text.includes("Do not infer selected properties"), `${id}: recipe should reject selected-property traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_essential_graphics_controllers/.test(step)), `${id}: verification must include controller read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_property_to_essential_graphics/.test(step)), `${id}: verification must include add_property_to_essential_graphics.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /controllerCount/.test(item)), `${id}: verification must require controller count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /controllerName/.test(item)), `${id}: verification must require controller name evidence.`);
+      assert(solution.notes.some((note) => /generated layer/.test(note)), `${id}: notes must require generated-layer evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Add_Properties_To_Essential_Graphics/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "expose-essential-properties-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_layer_details", "get_layer_essential_properties", "set_expression"],
+        `${id}: Essential Properties expose workflow should stay on explicit layer essential-property evidence plus set_expression.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: Essential Properties expression exposure workflow must be mutating.`);
+      assert(text.includes("get_layer_essential_properties"), `${id}: recipe should require Essential Properties read-back.`);
+      assert(text.includes("layer.essentialProperty"), `${id}: recipe should document layer.essentialProperty scope.`);
+      assert(text.includes("set_expression"), `${id}: recipe should use set_expression only on explicit property paths.`);
+      assert(text.includes("propertyPath"), `${id}: recipe should require explicit propertyPath evidence.`);
+      assert(text.includes("Do not infer Essential Properties"), `${id}: recipe should reject inferred EP traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_essential_properties/.test(step)), `${id}: verification must include Essential Properties read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_expression/.test(step)), `${id}: verification must include set_expression.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /essentialProperties/.test(item)), `${id}: verification must require essentialProperties evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionEnabled:true/.test(item)), `${id}: verification must require enabled expression evidence.`);
+      assert(solution.notes.some((note) => /generated nested comp/.test(note)), `${id}: notes must require generated nested comp evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Expose_Essential_Properties/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "toggle-puppet-on-transparent-typed-plan") {
       assert.deepStrictEqual(
@@ -2831,6 +2876,34 @@ function assertActualRetrieval(registry) {
   assert(exportPathPointsPromptSection.includes("Desktop"), "prompt section should reject Desktop writes.");
   assert(exportPathPointsPromptSection.includes("sha256"), "prompt section should require hash evidence.");
   assert(!/run_extendscript/i.test(exportPathPointsPromptSection), "export-path-points guidance should not recommend raw ExtendScript.");
+
+  const essentialGraphicsRetrieval = retrieveSolutionHints("Add a generated layer opacity property to Essential Graphics after reading motion graphics template controllers, using add_property_to_essential_graphics with an explicit propertyPath and reading controllers back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(essentialGraphicsRetrieval.ok, true);
+  assert(ids(essentialGraphicsRetrieval).includes("add-properties-to-essential-graphics-typed-plan"), "Essential Graphics advisory recipe should surface for generated controller add prompts.");
+  const essentialGraphicsPromptSection = formatSolutionHintsForPrompt(essentialGraphicsRetrieval);
+  assert(essentialGraphicsPromptSection.includes("Add Properties To Essential Graphics Typed Plan"), "prompt section should include Essential Graphics advisory title.");
+  assert(essentialGraphicsPromptSection.includes("get_essential_graphics_controllers"), "prompt section should require controller read-back.");
+  assert(essentialGraphicsPromptSection.includes("add_property_to_essential_graphics"), "prompt section should prefer the narrow Essential Graphics add tool.");
+  assert(essentialGraphicsPromptSection.includes("propertyPath"), "prompt section should preserve explicit propertyPath guidance.");
+  assert(!/run_extendscript/i.test(essentialGraphicsPromptSection), "Essential Graphics guidance should not recommend raw ExtendScript.");
+
+  const essentialPropertiesRetrieval = retrieveSolutionHints("Expose a generated precomp layer Essential Property by reading layer.essentialProperty with get_layer_essential_properties, setting an expression on an explicit Essential Property path, and reading it back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(essentialPropertiesRetrieval.ok, true);
+  assert(ids(essentialPropertiesRetrieval).includes("expose-essential-properties-typed-plan"), "Essential Properties advisory recipe should surface for generated Essential Property prompts.");
+  const essentialPropertiesPromptSection = formatSolutionHintsForPrompt(essentialPropertiesRetrieval);
+  assert(essentialPropertiesPromptSection.includes("Expose Essential Properties Typed Plan"), "prompt section should include Essential Properties advisory title.");
+  assert(essentialPropertiesPromptSection.includes("get_layer_essential_properties"), "prompt section should require Essential Properties read-back.");
+  assert(essentialPropertiesPromptSection.includes("set_expression"), "prompt section should preserve explicit set_expression guidance.");
+  assert(essentialPropertiesPromptSection.includes("propertyPath"), "prompt section should preserve explicit propertyPath guidance.");
+  assert(!/run_extendscript/i.test(essentialPropertiesPromptSection), "Essential Properties guidance should not recommend raw ExtendScript.");
 
   const puppetOnTransparentRetrieval = retrieveSolutionHints("Set Puppet On Transparent on a generated ADBE FreePin3 effect by reading ADBE FreePin3 On Transparent, set_effect_property true with propertyMatchName, and read back the boolean property.", {
     registry,

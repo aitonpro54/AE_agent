@@ -20,6 +20,7 @@ const {
   agentCompositionGuideScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
   agentEffectPropertyScenarioPlans,
+  agentEssentialGraphicsScenarioPlans,
   agentEstimatePathLengthScenarioPlans,
   agentExportPathPointsScenarioPlans,
   agentExpressionScenarioPlans,
@@ -825,6 +826,23 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(exportPathPoints.plan.steps[5].args.outputFileName.endsWith(".txt"), true);
   assert.deepStrictEqual(exportPathPoints.plan.steps[5].args.vertices, exportPathPoints.expectedReadBack.geometry.vertices);
   assert.strictEqual(exportPathPoints.plan.steps[6].args.includeKeyframes, true);
+
+  const [essentialGraphics] = agentEssentialGraphicsScenarioPlans("Codex QA AUX-EG Fixture");
+  assert.strictEqual(essentialGraphics.id, "generated-essential-graphics-controller");
+  assert.strictEqual(essentialGraphics.expectedReadBack.generatedEssentialGraphicsController, true);
+  assert.strictEqual(essentialGraphics.expectedReadBack.propertyMatchName, "ADBE Opacity");
+  assert.deepStrictEqual(essentialGraphics.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "get_layer_details",
+    "get_essential_graphics_controllers",
+    "add_property_to_essential_graphics",
+    "get_essential_graphics_controllers",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(essentialGraphics.plan.steps[4].args.expectedPropertyMatchName, "ADBE Opacity");
+  assert.strictEqual(essentialGraphics.plan.steps[4].args.expectedControllerCountBefore, 0);
+  assert.strictEqual(essentialGraphics.plan.steps[5].tool, "get_essential_graphics_controllers");
 
   const remainingTails = agentRemainingTailContractsScenarioPlans("Codex QA AUX099 Fixture");
   assert.deepStrictEqual(remainingTails.map((scenario) => scenario.id), [

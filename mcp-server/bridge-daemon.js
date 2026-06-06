@@ -885,6 +885,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "add_effect",
   "set_effect_property",
   "set_puppet_pin_type",
+  "add_property_to_essential_graphics",
   "set_property_value",
   "set_layer_metadata",
   "set_project_item_metadata",
@@ -4289,6 +4290,8 @@ const PLANNING_TOOL_NAMES = [
   "list_layers",
   "get_comp_details",
   "get_layer_details",
+  "get_layer_essential_properties",
+  "get_essential_graphics_controllers",
   "get_path_geometry",
   "get_selected_layers",
   "get_selected_properties",
@@ -4324,6 +4327,7 @@ const PLANNING_TOOL_NAMES = [
   "add_effect",
   "set_effect_property",
   "set_puppet_pin_type",
+  "add_property_to_essential_graphics",
   "set_property_value",
   "set_layer_metadata",
   "align_layers_to_time",
@@ -6269,6 +6273,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
     "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, set_layer_mask, get_path_geometry, set_path_geometry, export_path_points, and fit_layer_to_comp. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Use set_path_geometry only for one explicit Shape or Mask path property with reviewed vertices, inTangents, outTangents, closed state, and optional bounded keyframes, then read back with get_path_geometry. Use export_path_points only after get_path_geometry evidence and only for generated export files; never write Desktop or arbitrary user paths. Do not delete masks, target multiple masks/layers, run roto, or traverse arbitrary property trees.",
     "For Puppet pin type changes, use set_puppet_pin_type only after get_effect_details shows one explicit ADBE FreePin3 effect, an ADBE FreePin3 PosPin Atom ancestor, and an ADBE FreePin3 PosPin Type propertyPath. Only pinType 1/position and 4/advanced are allowed; do not create or infer Puppet pins, scan the project, or mutate user Puppet effects without generated or explicitly reviewed evidence.",
+    "For Essential Graphics, first inspect the explicit layer/property with get_layer_details or get_layer_essential_properties and inspect existing controllers with get_essential_graphics_controllers. Use add_property_to_essential_graphics only for one explicit propertyPath, one reviewed controllerName, and post-run get_essential_graphics_controllers read-back; do not traverse selectedProperties, export MOGRTs, mutate user template membership, or edit Essential Properties unless separate evidence and confirmation are present.",
     "For camera controller rigs, use create_camera_with_controller instead of raw ExtendScript or ad hoc parenting; read back both camera.parent and controller 3D/separated-position state with get_layer_details.",
     "For onion skinning, use toggle_onion_skinning and read back the generated adjustment layer plus CC Wide Time effect; do not use broad property traversal.",
     "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, fill_in_keyframes, keyframe_current_value_from_expression, set_spatial_in_tangent, set_expression, and clear_expression. Use separate_shape_size_dimensions for generated rectangle/ellipse size slider separation.",
@@ -8096,6 +8101,57 @@ const tools = [
     }
   },
   {
+    name: "get_layer_essential_properties",
+    description: "Read Essential Properties exposed on one explicit precomp layer, including property identity, source evidence, values, and expression state.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based layer index in the target composition."
+        },
+        includeValues: {
+          type: "boolean",
+          description: "Whether to include compact value previews. Defaults to true."
+        },
+        includeExpressions: {
+          type: "boolean",
+          description: "Whether to include expression text and expression state. Defaults to true."
+        },
+        propertyLimit: {
+          type: "number",
+          description: "Maximum Essential Properties to return. Defaults to 80, maximum 200."
+        }
+      },
+      required: ["layerIndex"]
+    }
+  },
+  {
+    name: "get_essential_graphics_controllers",
+    description: "Read the Essential Graphics / Motion Graphics Template controller list for one explicit composition.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        }
+      }
+    }
+  },
+  {
     name: "get_path_geometry",
     description: "Read one explicit Shape or Mask path geometry from one layer, including vertices, inTangents, outTangents, closed state, and optional keyframes.",
     inputSchema: {
@@ -9012,6 +9068,54 @@ const tools = [
         }
       },
       required: ["layerIndex", "pinTypePropertyPath", "pinType"]
+    }
+  },
+  {
+    name: "add_property_to_essential_graphics",
+    description: "Add one explicit layer property to a composition's Essential Graphics controller list with reviewed naming and controller read-back.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Required when compName is omitted. 1-based project item index for the composition whose Essential Graphics panel is updated."
+        },
+        compName: {
+          type: "string",
+          description: "Required when compItemIndex is omitted. Exact generated or explicitly reviewed target composition name."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based layer index containing the property to add."
+        },
+        expectedLayerName: {
+          type: "string",
+          description: "Optional exact layer-name guard from current typed evidence."
+        },
+        propertyPath: {
+          type: ["array", "string"],
+          description: "Exact property path from current get_layer_details/get_selected_properties evidence. String values may be JSON-encoded arrays.",
+          items: {}
+        },
+        expectedPropertyName: {
+          type: "string",
+          description: "Optional display-name guard for the resolved property."
+        },
+        expectedPropertyMatchName: {
+          type: "string",
+          description: "Optional matchName guard for the resolved property."
+        },
+        controllerName: {
+          type: "string",
+          description: "Reviewed Essential Graphics controller name to create. 1-80 characters."
+        },
+        expectedControllerCountBefore: {
+          type: "number",
+          description: "Optional controller-count guard from get_essential_graphics_controllers evidence."
+        },
+        ...MUTATION_CHECKPOINT_SCHEMA_PROPERTIES
+      },
+      required: ["layerIndex", "propertyPath", "controllerName"]
     }
   },
   {
@@ -11801,6 +11905,141 @@ async function callTool(name, args) {
     return toolResult(result.result);
   }
 
+  if (name === "get_layer_essential_properties") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const includeValues = optionalBoolean(args, "includeValues", true);
+    const includeExpressions = optionalBoolean(args, "includeExpressions", true);
+    const propertyLimit = Math.max(1, Math.min(200, Math.floor(optionalNumber(args, "propertyLimit", 80))));
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+
+      function __codexEssentialSourceInfo(source) {
+        if (!source) return null;
+        try {
+          if (source instanceof Property) {
+            return {
+              kind: "property",
+              name: source.name || "",
+              matchName: source.matchName || null,
+              propertyIndex: source.propertyIndex || null,
+              propertyPath: __codexPropertyPath(source),
+              canSetExpression: !!source.canSetExpression,
+              propertyValueType: source.propertyValueType || null,
+              unitsText: source.unitsText || ""
+            };
+          }
+        } catch (__sourcePropertyError) {}
+        try {
+          if (source instanceof AVLayer || source instanceof TextLayer || source instanceof ShapeLayer) {
+            return {
+              kind: "layer",
+              layer: __codexLayerInfo(source)
+            };
+          }
+        } catch (__sourceLayerError) {}
+        try {
+          return {
+            kind: "unknown",
+            name: source.name || "",
+            matchName: source.matchName || null
+          };
+        } catch (__unknownSourceError) {
+          return {
+            kind: "unknown"
+          };
+        }
+      }
+
+      function __codexEssentialPropertyInfo(prop, layer, includeValue, includeExpression) {
+        var info = __codexPropertyInfo(prop, layer, includeValue, includeExpression);
+        try { info.unitsText = prop.unitsText || ""; } catch (__unitsTextError) {}
+        try { info.essentialPropertySource = __codexEssentialSourceInfo(prop.essentialPropertySource); } catch (__essentialSourceError) { info.essentialPropertySource = null; }
+        return info;
+      }
+
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      var includeValues = ${includeValues ? "true" : "false"};
+      var includeExpressions = ${includeExpressions ? "true" : "false"};
+      var propertyLimit = ${propertyLimit};
+      var group = null;
+      try { group = layer.essentialProperty; } catch (__essentialGroupError) {}
+      var properties = [];
+      var count = 0;
+      if (group) {
+        try { count = group.numProperties || 0; } catch (__essentialCountError) { count = 0; }
+        for (var __ep = 1; __ep <= count && properties.length < propertyLimit; __ep++) {
+          var prop = null;
+          try { prop = group.property(__ep); } catch (__essentialPropertyError) {}
+          if (prop) properties.push(__codexEssentialPropertyInfo(prop, layer, includeValues, includeExpressions));
+        }
+      }
+      return {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          numLayers: comp.numLayers
+        },
+        layer: __codexLayerInfo(layer),
+        essentialProperties: {
+          available: !!group,
+          count: count,
+          returned: properties.length,
+          truncated: count > properties.length,
+          properties: properties
+        }
+      };
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "get_essential_graphics_controllers") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+
+      function __codexEssentialGraphicsControllers(comp) {
+        var controllers = [];
+        var count = 0;
+        try { count = comp.motionGraphicsTemplateControllerCount || 0; } catch (__countError) { count = 0; }
+        for (var __eg = 1; __eg <= count; __eg++) {
+          var controllerName = "";
+          try { controllerName = comp.getMotionGraphicsTemplateControllerName(__eg) || ""; } catch (__nameError) {}
+          controllers.push({
+            index: __eg,
+            name: controllerName
+          });
+        }
+        return {
+          count: count,
+          controllers: controllers
+        };
+      }
+
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var controllers = __codexEssentialGraphicsControllers(comp);
+      var templateName = "";
+      try { templateName = comp.motionGraphicsTemplateName || ""; } catch (__templateNameError) {}
+      return {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          numLayers: comp.numLayers
+        },
+        motionGraphicsTemplateName: templateName,
+        controllerCount: controllers.count,
+        controllers: controllers.controllers
+      };
+    `);
+    return toolResult(result.result);
+  }
+
   if (name === "get_path_geometry") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
@@ -13841,6 +14080,135 @@ async function callTool(name, args) {
       };
       app.endUndoGroup();
       return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "add_property_to_essential_graphics") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const expectedLayerName = optionalString(args, "expectedLayerName", "");
+    const expectedPropertyName = optionalString(args, "expectedPropertyName", "");
+    const expectedPropertyMatchName = optionalString(args, "expectedPropertyMatchName", "");
+    const expectedControllerCountBefore = optionalNumber(args, "expectedControllerCountBefore", null);
+    const controllerName = optionalString(args, "controllerName", "").trim();
+
+    let propertyPath = null;
+    if (Array.isArray(args.propertyPath)) {
+      propertyPath = args.propertyPath;
+    } else if (typeof args.propertyPath === "string" && args.propertyPath.trim().startsWith("[")) {
+      propertyPath = JSON.parse(args.propertyPath);
+    } else if (hasArg(args, "propertyPath")) {
+      return toolResult("propertyPath must be an array, or a JSON-encoded array string.", true);
+    }
+
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required.", true);
+    if (!propertyPath || !propertyPath.length) return toolResult("propertyPath is required.", true);
+    if (!controllerName) return toolResult("controllerName is required.", true);
+    if (controllerName.length > 80) return toolResult("controllerName must be 80 characters or fewer.", true);
+    if (expectedControllerCountBefore !== null && (!Number.isInteger(expectedControllerCountBefore) || expectedControllerCountBefore < 0)) {
+      return toolResult("expectedControllerCountBefore must be a non-negative integer.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+
+      function __codexEssentialGraphicsControllers(comp) {
+        var controllers = [];
+        var count = 0;
+        try { count = comp.motionGraphicsTemplateControllerCount || 0; } catch (__countError) { count = 0; }
+        for (var __eg = 1; __eg <= count; __eg++) {
+          var controllerName = "";
+          try { controllerName = comp.getMotionGraphicsTemplateControllerName(__eg) || ""; } catch (__nameError) {}
+          controllers.push({
+            index: __eg,
+            name: controllerName
+          });
+        }
+        return {
+          count: count,
+          controllers: controllers
+        };
+      }
+
+      function __codexFindController(controllers, name, startIndex) {
+        for (var __fc = 0; __fc < controllers.length; __fc++) {
+          var controller = controllers[__fc];
+          if (controller.index < startIndex) continue;
+          if (controller.name === name) return controller;
+        }
+        return null;
+      }
+
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      var expectedLayerName = ${aeLiteral(expectedLayerName)};
+      if (expectedLayerName && layer.name !== expectedLayerName) {
+        throw new Error("Layer name mismatch. Expected " + expectedLayerName + " but found " + layer.name + ".");
+      }
+
+      var propertyPath = ${aeLiteral(propertyPath)};
+      var prop = __codexResolveProperty(layer, propertyPath);
+      var expectedPropertyName = ${aeLiteral(expectedPropertyName)};
+      var expectedPropertyMatchName = ${aeLiteral(expectedPropertyMatchName)};
+      if (expectedPropertyName && prop.name !== expectedPropertyName) {
+        throw new Error("Property name mismatch. Expected " + expectedPropertyName + " but found " + prop.name + ".");
+      }
+      if (expectedPropertyMatchName && prop.matchName !== expectedPropertyMatchName) {
+        throw new Error("Property matchName mismatch. Expected " + expectedPropertyMatchName + " but found " + prop.matchName + ".");
+      }
+      if (typeof prop.canAddToMotionGraphicsTemplate !== "function") {
+        throw new Error("Resolved property does not support canAddToMotionGraphicsTemplate.");
+      }
+      if (typeof prop.addToMotionGraphicsTemplateAs !== "function") {
+        throw new Error("Resolved property does not support addToMotionGraphicsTemplateAs.");
+      }
+
+      var beforeControllers = __codexEssentialGraphicsControllers(comp);
+      var expectedCount = ${expectedControllerCountBefore === null ? "null" : expectedControllerCountBefore};
+      if (expectedCount !== null && beforeControllers.count !== expectedCount) {
+        throw new Error("Essential Graphics controller count mismatch. Expected " + expectedCount + " but found " + beforeControllers.count + ".");
+      }
+
+      var canAdd = false;
+      try { canAdd = prop.canAddToMotionGraphicsTemplate(comp) === true; } catch (__canAddError) { throw new Error("canAddToMotionGraphicsTemplate failed: " + __canAddError.message); }
+      if (!canAdd) {
+        throw new Error("Property cannot be added to the Essential Graphics panel for this composition.");
+      }
+
+      var requestedControllerName = ${aeLiteral(controllerName)};
+      app.beginUndoGroup("Codex Add Property To Essential Graphics");
+      try {
+        var added = prop.addToMotionGraphicsTemplateAs(comp, requestedControllerName) === true;
+        var afterControllers = __codexEssentialGraphicsControllers(comp);
+        var newController = __codexFindController(afterControllers.controllers, requestedControllerName, beforeControllers.count + 1);
+        var existingController = newController || __codexFindController(afterControllers.controllers, requestedControllerName, 1);
+        return {
+          comp: {
+            itemIndex: __codexProjectIndexForItem(comp),
+            name: comp.name,
+            numLayers: comp.numLayers
+          },
+          layer: __codexLayerInfo(layer),
+          property: __codexPropertyInfo(prop, layer, true, true),
+          controllerName: requestedControllerName,
+          added: added,
+          beforeControllers: beforeControllers,
+          afterControllers: afterControllers,
+          controller: existingController,
+          postVerification: {
+            ok: added === true && !!existingController && afterControllers.count === beforeControllers.count + 1,
+            controllerCountIncremented: afterControllers.count === beforeControllers.count + 1,
+            controllerNamePresent: !!existingController,
+            canAddBefore: canAdd
+          }
+        };
+      } finally {
+        app.endUndoGroup();
+      }
     `);
     return toolResult(result.result);
   }

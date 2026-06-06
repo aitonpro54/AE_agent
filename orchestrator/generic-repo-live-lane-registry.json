@@ -1376,6 +1376,84 @@
       "scope": "generated-only Export Path Points proof using one explicit generated mask path, get_path_geometry read-back for vertices/inTangents/outTangents/closed state, export_path_points safe generated .txt file output with sha256/content read-back, final get_path_geometry/get_layer_details read-back, semantic verification, and generated artifact cleanup; source-exact Desktop points.txt writes, comp.selectedProperties traversal, arbitrary outputPath/user paths, expression-driven or truncated paths, multi-target batches, file overwrite outside generated exports, path mutation, and raw JSX semantics remain fail-closed"
     },
     {
+      "id": "essential-graphics-generated-only",
+      "requiredTools": [
+        "get_essential_graphics_controllers",
+        "add_property_to_essential_graphics"
+      ],
+      "allowedTools": [
+        "add_effect",
+        "add_property_to_essential_graphics",
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_effect_details",
+        "get_essential_graphics_controllers",
+        "get_layer_details",
+        "get_layer_essential_properties",
+        "get_selected_properties",
+        "set_effect_property",
+        "set_expression"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "propertyTraversal",
+        "expressionMutation"
+      ],
+      "candidateIds": [
+        "tool-properties-add-properties-to-essential-graphics",
+        "tool-properties-expose-essential-properties"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-essential-graphics-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "essential-graphics",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_essential_graphics_controllers",
+        "get_layer_essential_properties",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/add-properties-to-essential-graphics-typed-plan.md",
+        "recipes/expose-essential-properties-typed-plan.md",
+        "recipes/generic-repo-intake/tool-properties-add-properties-to-essential-graphics.md",
+        "recipes/generic-repo-intake/tool-properties-expose-essential-properties.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/solution-promotion-helper.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/chatgpt-connector-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/solution-promotion-helper.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/chatgpt-connector-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js",
+        "node scripts/chatgpt-connector-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only Essential Graphics / Essential Properties proof using one explicit generated layer, get_essential_graphics_controllers and get_layer_essential_properties read-back, add_property_to_essential_graphics for one reviewed propertyPath/controllerName, semantic verification, and cleanup; source-exact selectedProperties traversal, broad layer.essentialProperty writes, MOGRT export, user-template mutation, controller rename/delete/reorder semantics, arbitrary property guessing, raw JSX semantics, and missing generated controller evidence remain fail-closed"
+    },
+    {
       "id": "comp-current-time-generated-only",
       "requiredTools": [
         "get_comp_details",

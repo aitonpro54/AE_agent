@@ -23,6 +23,7 @@ const MUTATING_TOOLS = new Set([
   "set_path_geometry",
   "export_path_points",
   "set_puppet_pin_type",
+  "add_property_to_essential_graphics",
   "fit_layer_to_comp",
   "set_property_value",
   "set_layer_metadata",
@@ -68,6 +69,8 @@ const READ_BACK_TOOLS = new Set([
   "get_comp_details",
   "get_layer_details",
   "get_effect_details",
+  "get_layer_essential_properties",
+  "get_essential_graphics_controllers",
   "get_path_geometry",
   "get_render_queue_status"
 ]);
@@ -286,7 +289,8 @@ function createEvidenceStore(readBackSteps) {
     markers: [],
     markerSignatures: new Set(),
     projectItems: [],
-    properties: []
+    properties: [],
+    essentialGraphicsControllers: []
   };
 }
 
@@ -371,6 +375,18 @@ function addProjectItemEvidence(target, value, source) {
   });
 }
 
+function addEssentialGraphicsControllerEvidence(target, value, source) {
+  if (!isPlainObject(value)) return;
+  const index = numberValue(value.index);
+  const name = compactText(value.name, 160);
+  if (index === null || index < 1 || !name) return;
+  target.essentialGraphicsControllers.push({
+    index,
+    name,
+    source: source || "observed Essential Graphics controller"
+  });
+}
+
 function markerSignature(marker) {
   if (!marker) return "";
   const comment = compactText(marker.comment, 180);
@@ -435,6 +451,10 @@ function collectPayloadEvidence(payload, evidence, source, depth = 0) {
   if (isPlainObject(payload.property)) addPropertyEvidence(evidence, payload.property, source);
   if (Array.isArray(payload.properties)) {
     for (const property of payload.properties) addPropertyEvidence(evidence, property, source);
+  }
+  if (isPlainObject(payload.controller)) addEssentialGraphicsControllerEvidence(evidence, payload.controller, source);
+  if (Array.isArray(payload.controllers)) {
+    for (const controller of payload.controllers) addEssentialGraphicsControllerEvidence(evidence, controller, source);
   }
   if (isPlainObject(payload.item)) addProjectItemEvidence(evidence, payload.item, source);
   if (Array.isArray(payload.items)) {
@@ -1131,6 +1151,40 @@ function checkSetPuppetPinType(checks, step, payload, evidence) {
       : "missing ADBE FreePin3/PosPin Atom/PosPin Type identity",
     passed: identityMatches && valueMatches && Boolean(readBackEvidence),
     evidence: readBackEvidence || "No post-run get_effect_details read-back matched set_puppet_pin_type."
+  });
+}
+
+function observedEssentialGraphicsControllerEvidence(evidence, controllerName) {
+  if (!evidence || !Array.isArray(evidence.essentialGraphicsControllers) || !controllerName) return null;
+  const match = evidence.essentialGraphicsControllers.find((controller) => sameString(controller.name, controllerName));
+  return match ? match.source || `Read Essential Graphics controller ${controllerName}.` : null;
+}
+
+function checkAddPropertyToEssentialGraphics(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const controllerName = String(args.controllerName || payload.controllerName || "").trim();
+  const property = payload.property || {};
+  const postVerification = payload.postVerification || {};
+  const expectedMatchName = String(args.expectedPropertyMatchName || "");
+  const expectedPropertyName = String(args.expectedPropertyName || "");
+  const propertyIdentityMatches = (!expectedMatchName || property.matchName === expectedMatchName) &&
+    (!expectedPropertyName || property.name === expectedPropertyName);
+  const readBackEvidence = observedEssentialGraphicsControllerEvidence(evidence.readBack, controllerName);
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:controller`,
+    title: "Essential Graphics controller was added and read back",
+    expected: controllerName || "reviewed controller name",
+    observed: payload.controller && payload.controller.name
+      ? `${payload.controller.name}; count ${payload.beforeControllers && payload.beforeControllers.count} -> ${payload.afterControllers && payload.afterControllers.count}`
+      : "missing Essential Graphics controller result",
+    passed: Boolean(controllerName) &&
+      payload.added === true &&
+      postVerification.ok === true &&
+      postVerification.controllerCountIncremented === true &&
+      propertyIdentityMatches &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_essential_graphics_controllers read-back matched add_property_to_essential_graphics."
   });
 }
 
@@ -1896,6 +1950,11 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "set_puppet_pin_type") {
     checkSetPuppetPinType(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "add_property_to_essential_graphics") {
+    checkAddPropertyToEssentialGraphics(checks, step, payload, evidence);
     return;
   }
 
