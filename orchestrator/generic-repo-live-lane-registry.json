@@ -673,6 +673,58 @@
       "scope": "generated-only estimate-path-length proof using an explicit generated rectangle path, generated Path Samples and Path Length Slider Control effects, set_effect_property sample count, set_expression path-sampling expression, get_layer_details/get_effect_details read-back, semantic verification, and cleanup; source-exact comp.selectedProperties traversal, arbitrary path geometry, mask paths, keyframed paths, existing slider reuse, selection persistence, file output, and raw JSX semantics remain fail-closed"
     },
     {
+      "id": "parametric-anchor-expression-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_layer_details",
+        "set_expression"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_selected_properties",
+        "get_layer_details",
+        "set_expression"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "expressionMutation",
+        "propertyTraversal"
+      ],
+      "candidateIds": [
+        "tool-properties-move-parametric-anchor-point"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-parametric-anchor-expression-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "parametric-anchor-expression",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/move-parametric-anchor-point-typed-plan.md",
+        "recipes/generic-repo-intake/tool-properties-move-parametric-anchor-point.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only parametric rectangle/ellipse Position expression proof using explicit generated shape layers, get_layer_details property evidence, set_expression with a reviewed anchor-position expression, expression read-back, semantic verification, and cleanup; source-exact ScriptUI chooser, silent comp.selectedProperties traversal, existing-expression overwrite without review, layer Transform Anchor Point edits, shape path edits, selection persistence, and raw JSX semantics remain fail-closed"
+    },
+    {
       "id": "selected-keyframe-layer-marker-generated-only",
       "requiredTools": [
         "get_selected_properties",

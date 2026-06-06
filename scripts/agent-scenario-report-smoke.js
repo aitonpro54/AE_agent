@@ -19,6 +19,7 @@ const {
   agentEffectPropertyScenarioPlans,
   agentEstimatePathLengthScenarioPlans,
   agentExpressionScenarioPlans,
+  agentParametricAnchorExpressionScenarioPlans,
   agentKeyframeScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
@@ -487,6 +488,24 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
     "get_layer_details"
   ]);
   assert.strictEqual(expression.plan.steps[3].args.propertyPath, "ADBE Transform Group.ADBE Position");
+
+  const [parametricAnchor] = agentParametricAnchorExpressionScenarioPlans("Codex QA AUX-MPAP Fixture");
+  assert.strictEqual(parametricAnchor.id, "generated-parametric-anchor-expression");
+  assert.strictEqual(parametricAnchor.expectedReadBack.generatedParametricAnchorExpression, true);
+  assert.deepStrictEqual(parametricAnchor.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "create_shape_layer",
+    "get_layer_details",
+    "get_layer_details",
+    "set_expression",
+    "set_expression",
+    "get_layer_details",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(parametricAnchor.plan.steps[5].args.propertyPath[4], "ADBE Vector Rect Position");
+  assert.strictEqual(parametricAnchor.plan.steps[6].args.propertyPath[4], "ADBE Vector Ellipse Position");
+  assert(parametricAnchor.plan.steps[5].args.expression.includes("thisProperty.propertyGroup(1).size[0] / -2"));
 
   const [parentOpacity] = agentParentOpacityExpressionScenarioPlans("Codex QA AUX105 Fixture");
   assert.strictEqual(parentOpacity.id, "generated-parent-opacity-expression");

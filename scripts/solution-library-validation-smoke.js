@@ -39,6 +39,7 @@ const IMPORTED_ADVISORY_IDS = [
   "set-new-color-typed-plan",
   "swap-selected-property-dimensions-typed-plan",
   "separate-size-dimensions-typed-plan",
+  "move-parametric-anchor-point-typed-plan",
   "invert-selected-keyframes-typed-plan",
   "make-hold-keyframes-typed-plan",
   "multiply-selected-keyframes-typed-plan",
@@ -824,6 +825,33 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate_shape_size_dimensions/.test(note)), `${id}: notes must require separate_shape_size_dimensions.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Separate_Size_Dimensions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "move-parametric-anchor-point-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "get_layer_details", "set_expression"],
+        `${id}: imported parametric anchor workflow should stay on the narrow selected/generated shape Position expression typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: parametric anchor workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property or explicit generated evidence.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require generated/property read-back evidence.`);
+      assert(text.includes("ADBE Vector Rect Position"), `${id}: recipe should limit support to rectangle Position properties.`);
+      assert(text.includes("ADBE Vector Ellipse Position"), `${id}: recipe should limit support to ellipse Position properties.`);
+      assert(text.includes("anchorPositionKey"), `${id}: recipe should disclose reviewed anchor-position key.`);
+      assert(text.includes("thisProperty.propertyGroup(1).size"), `${id}: recipe should preserve parametric size expression semantics.`);
+      assert(text.includes("set_expression"), `${id}: recipe should use the expression typed tool.`);
+      assert(text.includes("existing expressions"), `${id}: recipe should guard existing expressions.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence when using UI selection.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer-property read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /anchorPositionKey/.test(step)), `${id}: verification must include reviewed anchorPositionKey.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_expression/.test(step)), `${id}: verification must include set_expression.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /ADBE Vector Rect Position/.test(item) || /ADBE Vector Ellipse Position/.test(item)), `${id}: verification must require parametric Position matchName evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expression/.test(item)), `${id}: verification must require expression evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Skipped targets/.test(item)), `${id}: verification must require skipped-target gap evidence.`);
+      assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
+      assert(solution.notes.some((note) => /set_expression/.test(note)), `${id}: notes must require set_expression.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Move_Parametric_Anchor_Point/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "invert-selected-keyframes-typed-plan") {
       assert.deepStrictEqual(
@@ -2630,6 +2658,23 @@ function assertActualRetrieval(registry) {
   assert(separateSizeDimensionsPromptSection.includes("get_layer_details"), "prompt section should require Size expression read-back.");
   assert(separateSizeDimensionsPromptSection.includes("get_effect_details"), "prompt section should require slider effect read-back.");
   assert(!/run_extendscript/i.test(separateSizeDimensionsPromptSection), "separate-size-dimensions guidance should not recommend raw ExtendScript.");
+
+  const moveParametricAnchorRetrieval = retrieveSolutionHints("Move the parametric rectangle anchor point to the top-right by applying a reviewed expression to the selected ADBE Vector Rect Position or ADBE Vector Ellipse Position property, then read back expression details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(moveParametricAnchorRetrieval.ok, true);
+  assert(ids(moveParametricAnchorRetrieval).includes("move-parametric-anchor-point-typed-plan"), "move-parametric-anchor-point advisory recipe should surface for parametric shape Position expression prompts.");
+  const moveParametricAnchorPromptSection = formatSolutionHintsForPrompt(moveParametricAnchorRetrieval);
+  assert(moveParametricAnchorPromptSection.includes("Move Parametric Anchor Point Typed Plan"), "prompt section should include move-parametric-anchor-point advisory title.");
+  assert(moveParametricAnchorPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for parametric shape Position workflows.");
+  assert(moveParametricAnchorPromptSection.includes("ADBE Vector Rect Position"), "prompt section should preserve rectangle Position scope.");
+  assert(moveParametricAnchorPromptSection.includes("ADBE Vector Ellipse Positi"), "prompt section should preserve ellipse Position scope.");
+  assert(moveParametricAnchorPromptSection.includes("anchorPositionKey"), "prompt section should preserve reviewed anchor-position key guidance.");
+  assert(moveParametricAnchorPromptSection.includes("set_expression"), "prompt section should prefer set_expression for parametric shape Position workflows.");
+  assert(moveParametricAnchorPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
+  assert(!/run_extendscript/i.test(moveParametricAnchorPromptSection), "move-parametric-anchor-point guidance should not recommend raw ExtendScript.");
 
   const invertSelectedKeyframesRetrieval = retrieveSolutionHints("Invert selected keyframes on the selected property after inspecting selectedKeyframes, compute invertedKeyframes with reverseValueOrderAtSameTimes, set_property_keyframes with clearExisting:false, optionally apply_keyframe_ease with explicit keyIndices, and read back keyframes.", {
     registry,

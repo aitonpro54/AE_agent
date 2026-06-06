@@ -8488,6 +8488,120 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "move-parametric-anchor-point-typed-plan",
+      "title": "Move Parametric Anchor Point Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "properties",
+        "shape-layers",
+        "shape-position",
+        "selected-properties",
+        "expressions",
+        "parametric-anchor",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Set a reviewed anchor-position expression on explicit ADBE Vector Rect Position or ADBE Vector Ellipse Position properties with set_expression and expression read-back.",
+        "appliesWhen": [
+          "The user asks to pin a parametric rectangle or ellipse shape to a side or corner while its Size changes.",
+          "Typed parametric shape Position mutation is acceptable only when current selected-property or explicit generated evidence identifies each rectangle or ellipse Position property, exact layer/property target, expression-capable state, no unreviewed existing expression overwrite, and a reviewed anchorPositionKey."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedProperties",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_properties or equivalent explicit generated get_layer_details evidence containing concrete ADBE Vector Rect Position or ADBE Vector Ellipse Position targets with layerIndex, propertyPath, matchName, expression state and keyframe/animated state when available."
+        },
+        {
+          "name": "anchorPositionKey",
+          "type": "string",
+          "required": true,
+          "description": "Reviewed key from top-left, top, top-right, left, center, right, bottom-left, bottom, or bottom-right."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated Position property is bound from current selected-property or explicit generated typed evidence before mutation.",
+        "Every accepted target is ADBE Vector Rect Position or ADBE Vector Ellipse Position on a shape layer and can receive expressions.",
+        "The plan displays the previous expression state, exact propertyPath, anchorPositionKey and final expression before confirmation.",
+        "The final expression reads thisProperty.propertyGroup(1).size and returns the reviewed [x, y] offset for the selected side or corner.",
+        "Existing expressions, keyframes, shape paths, Size values, layer transforms, layer names, sources, timing, masks, effects, render queue items, project items, selection state and unrelated properties are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/move-parametric-anchor-point-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "get_layer_details",
+          "set_expression"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read explicit rectangle or ellipse shape Position targets, set the reviewed anchor-position expression, then read expression state back from get_layer_details.",
+        "steps": [
+          "Run get_active_comp and get_selected_properties before mutation when the target comes from current UI selection, or use explicit generated get_layer_details evidence for generated-only workflows.",
+          "Fail closed when evidence is empty or ambiguous, the target is not ADBE Vector Rect Position or ADBE Vector Ellipse Position, the layer is locked, the property cannot receive expressions, an unrelated existing expression would be overwritten without review, or keyframed/animated behavior must be preserved.",
+          "Resolve anchorPositionKey from the bounded nine-position set and show the final expression before confirmation.",
+          "Run one set_expression step per accepted target with the inspected comp target, evidence-backed layerIndex, exact propertyPath, final expression, enabled:true and verifyAfter:true.",
+          "Run get_layer_details for every affected layer with property/expression read-back.",
+          "Fail closed if modal ScriptUI behavior, silent selected-property no-op semantics, arbitrary selectedProperties traversal, layer Transform Anchor Point mutation, shape path edits, existing expression merge/preservation, selection persistence, or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_selected_properties or equivalent generated get_layer_details evidence identifies each concrete ADBE Vector Rect Position or ADBE Vector Ellipse Position property target, its owning layer, exact propertyPath, matchName, expression-capable state, and prior expression/keyframe state when available.",
+          "The dry-run plan shows anchorPositionKey, previous expression state, exact propertyPath, and final expression for each target.",
+          "Each set_expression result reports the expected expression text, expressionEnabled:true and no expressionError.",
+          "Post-run get_layer_details shows the expression on the expected layer/property path.",
+          "Skipped targets are reported with explicit typed-tool gap reasons instead of being silently changed.",
+          "Post-run evidence shows no unrelated keyframe, transform, shape path, Size value, effect, source, render queue, layer name, selection state, project item or unselected property mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-properties-move-parametric-anchor-point as advisory typed-plan coverage for parametric rectangle/ellipse Position expression workflows.",
+          "The source JSX was inspected only for behavior; this recipe adapts the operation into existing get_selected_properties/get_layer_details/set_expression typed-tool guidance and leaves source-exact ScriptUI/selectedProperties semantics fail-closed."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-tool-properties-move-parametric-anchor-point",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the behavior behind kyletmartinez/after-effects-scripts Properties/Move_Parametric_Anchor_Point.jsx into typed guidance for explicit ADBE Vector Rect Position and ADBE Vector Ellipse Position expression mutation; no source JSX copied. Current typed tools require current selected-property or generated get_layer_details evidence, reviewed anchorPositionKey, final expression disclosure, set_expression mutation, and get_layer_details read-back; modal ScriptUI choice, silent selectedProperties batch traversal, unreviewed existing-expression overwrite, keyframed/animated preservation, shape path edits, layer Transform Anchor Point mutation, selection persistence and exact source JSX semantics remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-property evidence from get_selected_properties or equivalent generated get_layer_details evidence before mutating a parametric shape Position property.",
+        "Apply this recipe only to ADBE Vector Rect Position or ADBE Vector Ellipse Position on explicit shape layers.",
+        "Require anchorPositionKey, previous expression state, exact propertyPath and final expression disclosure before confirmation.",
+        "Use set_expression for mutation and get_layer_details for expression read-back.",
+        "Do not overwrite unrelated existing expressions, preserve keyframed/animated Position behavior, infer selected properties from prior chat context, mutate layer Transform Anchor Point, edit shape paths, or change selection state as part of this workflow.",
+        "Require a separate typed-tool contract for modal ScriptUI behavior, silent selected-property no-op semantics, arbitrary selectedProperties traversal, expression merge/preservation, keyframed/animated behavior preservation, layer Transform Anchor Point mutation, shape path edits, selection persistence or exact source JSX semantics."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "invert-selected-keyframes-typed-plan",
       "title": "Invert Selected Keyframes Typed Plan",
       "status": "recipe",

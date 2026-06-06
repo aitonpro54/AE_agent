@@ -26,6 +26,25 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker Properties parametric anchor lane/retry:
+  `tool-properties-move-parametric-anchor-point` теперь имеет fresh scoped
+  parentReducer review из reopened run. Proposal-only sidecars и parent
+  reducer проверили source behavior, текущую typed-tool surface, duplicate
+  recipe/registry/live-lane ids, raw JSX/dependency/source-checkout risks,
+  child commit/branch absence, и scoped Full Intaker ticket. Parent reducer
+  added only the narrow generated-only
+  `move-parametric-anchor-point-typed-plan`, generic intake note, registry
+  coverage, focused scenario/report/solution smoke coverage, CEP command, and
+  `parametric-anchor-expression-generated-only` self-improvement lane. Scoped
+  retry with `--context-percent 20`, `--max-items 1`, exact candidate id,
+  `--allow-self-improvement-lane-synthesis`, `--no-commit`, and
+  `--compact-json` matched the new family, passed non-live validation and
+  read-only CEP preflight, then produced terminal ticket
+  `live-lane-family-c0373f4857f554cc` because the CEP panel reported
+  `openai-cli/gpt-5.5 is not ready`. No candidate was marked completed. Stable
+  candidate-specific runtime ticket and ledger annotation were written.
+  Remaining reopened backlog without fresh parentReducer evidence: 5
+  Properties entries.
 - [x] Reopened Full Intaker Properties DuIK pin-size single-candidate
   re-audit: `tool-properties-increase-all-pin-sizes` теперь имеет fresh scoped
   parentReducer review из reopened run. Proposal-only sidecars и parent
@@ -423,17 +442,17 @@ old `AE_agent` repository remains the historical source.
 Continue the reopened Full Intaker objective. Do not accept
 `completed_no_candidates` or `terminal total=75` as success by itself.
 
-Current compact backlog map after the reopened Properties DuIK pin-size
-single-candidate re-audit: 6 blocked/skipped Properties entries still need
-scoped review or completion. Continue Properties with the narrowest scoped
-family. The next listed candidate is
-`tool-properties-move-parametric-anchor-point`; review it as selected-property
-and parametric shape/property mutation, not as covered by the DuIK pin-size,
-path geometry, or path-length lanes. Keep file IO, `saveFrameToPng`, render
-execution, proxy mutation, reveal/shell, cleanup/deletion, selected-property
-rename/value/path mutation, puppet/path geometry mutation, Essential Graphics
-writes, third-party DuIK behavior, and user-asset mutation approval-gated unless
-a scoped generated-only/read-only lane is explicitly safe.
+Current compact backlog map after the reopened Properties parametric anchor
+lane/retry: 5 blocked/skipped Properties entries still need scoped review or
+completion. Continue Properties with the narrowest scoped family. The next
+listed candidate is `tool-properties-remove-disabled-strokes`; review it as
+shape-layer stroke/property traversal and disabled-state mutation, not as
+covered by the parametric anchor, DuIK pin-size, path geometry, or path-length
+lanes. Keep file IO, `saveFrameToPng`, render execution, proxy mutation,
+reveal/shell, cleanup/deletion, selected-property rename/value/path mutation,
+puppet/path geometry mutation, Essential Graphics writes, third-party DuIK
+behavior, and user-asset mutation approval-gated unless a scoped
+generated-only/read-only lane is explicitly safe.
 
 Push/PR remain forbidden. Do not run broad/default CEP smoke, Local/Ollama,
 fallback providers, dependency changes, raw JSX copy, source-checkout writes, or
@@ -441,6 +460,22 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-06: Parent reducer completed reopened Properties
+  `tool-properties-move-parametric-anchor-point` lane/retry. Source opens a
+  ScriptUI 3x3 chooser, reads `comp.selectedProperties`, and overwrites
+  expressions on selected `ADBE Vector Rect Position` or
+  `ADBE Vector Ellipse Position` properties. Parent accepted only a
+  generated-only typed adaptation that creates explicit generated rectangle and
+  ellipse shape layers, reads exact nested Position property paths with
+  `get_layer_details`, sets a reviewed anchor-position expression through
+  `set_expression`, and reads expression state back. Source-exact ScriptUI
+  behavior, silent selectedProperties traversal, unreviewed existing-expression
+  overwrite, keyframed/animated preservation, layer Transform Anchor Point
+  mutation, shape path edits, selection persistence, and raw JSX semantics
+  remain fail-closed. Scoped retry matched
+  `parametric-anchor-expression-generated-only`, passed non-live validation and
+  read-only CEP preflight, then remained terminal because the CEP panel reported
+  `openai-cli/gpt-5.5 is not ready`.
 - 2026-06-06: Parent reducer completed reopened Properties
   `tool-properties-increase-all-pin-sizes` single-candidate re-audit. Source
   prompts for a size percentage, traverses every `CompItem` in `app.project`,
@@ -888,6 +923,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened Properties parametric anchor lane/retry | Required to give `tool-properties-move-parametric-anchor-point` a fresh scoped attempt, existing-lane search, lane creation feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecars reviewed source behavior, current typed surface, duplicate recipe/registry/live-lane ids, and runtime ledger/ticket state without central edits. Parent reducer accepted only a generated-only typed adaptation, verified baton active, clean tracked worktree before retry, source behavior, duplicate evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Parent added `recipes/move-parametric-anchor-point-typed-plan.md`, `recipes/generic-repo-intake/tool-properties-move-parametric-anchor-point.md`, registry coverage, focused scenario/report smoke coverage, CEP smoke command, and `parametric-anchor-expression-generated-only` self-improvement lane. Scoped retry used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; after parent-owned ledger annotation it matched the new lane, passed non-live validation and read-only CEP preflight, then produced terminal ticket `live-lane-family-c0373f4857f554cc` because the CEP panel reported `openai-cli/gpt-5.5 is not ready`. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows 53/58 blocked/skipped entries fresh-reviewed and 5 Properties entries remaining. Closeout validation is recorded in the current handoff. |
 | Reopened Properties DuIK pin-size single-candidate re-audit | Required to give `tool-properties-increase-all-pin-sizes` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecars reviewed source behavior, current typed surface, duplicate recipe/registry/live-lane ids, third-party DuIK risks, and runtime ticket state without edits/commits. Parent reducer accepted only this candidate in the serial step, verified baton active, clean tracked worktree, canonical ledger id, source behavior, duplicate evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue, and no completed candidate. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 6, all Properties. Closeout validation passed: JSON parse for ledger/tickets and fresh backlog map. Full closeout command results are recorded in the current handoff. |
 | Reopened Properties flip-path single-candidate re-audit | Required to give `tool-properties-flip-path` a fresh scoped attempt, existing-lane search, lane feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecars reviewed source behavior, duplicate recipe/registry/live-lane ids, current typed surface, and runtime ticket state without edits/commits. Parent reducer accepted only this candidate in the serial step, verified baton active, clean tracked worktree, canonical ledger id, source behavior, duplicate evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Scoped command used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it returned one terminal ticket, no open tickets, no requeue, and no completed candidate. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows remaining fresh-review backlog 7, all Properties. Closeout validation passed: JSON parse for ledger/ticket, compact status/proof/ledger-summary, `git diff --check` (line-ending warning only), `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake` on rerun with a longer timeout after the first 180s attempt timed out. No JS files were touched, so `node --check` was not required. |
 | Reopened Properties path-length lane/retry | Required to give `tool-properties-estimate-path-length` a fresh scoped attempt, existing-lane search, lane creation feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecars reviewed source behavior, current typed surface, duplicate recipe/registry/lane ids, and runtime ledger/ticket state without edits/commits. Parent reducer added `recipes/estimate-path-length-typed-plan.md`, `recipes/generic-repo-intake/tool-properties-estimate-path-length.md`, registry coverage, scenario/report smoke coverage, CEP smoke command, and `estimate-path-length-generated-only` self-improvement lane. Scoped retry used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it matched the new lane, passed non-live validation and read-only CEP preflight, then produced terminal ticket `live-lane-family-503da75d9d2829c2` because the CEP panel reported `openai-cli/gpt-5.5 is not ready`. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows 50/58 blocked/skipped entries fresh-reviewed and 8 Properties entries remaining. Closeout validation passed: touched JS `node --check`, JSON parse for registry/lane, `node scripts/agent-scenario-report-smoke.js`, `node scripts/solution-library-validation-smoke.js`, compact status/proof/ledger-summary, `git diff --check` (line-ending warnings only), `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake`. |

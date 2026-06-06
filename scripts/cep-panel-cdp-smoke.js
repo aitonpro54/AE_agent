@@ -15,6 +15,7 @@ const {
   agentEffectPropertyScenarioPlans,
   agentEstimatePathLengthScenarioPlans,
   agentExpressionScenarioPlans,
+  agentParametricAnchorExpressionScenarioPlans,
   agentKeyframeScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
@@ -391,6 +392,24 @@ function openAiCliExpressionScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_EXPRESSION_PREFIX || "Codex QA AUX061",
     scenarioFactory: agentExpressionScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliParametricAnchorExpressionScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-parametric-anchor-expression",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_PARAMETRIC_ANCHOR_PREFIX || "Codex QA AUX-MPAP",
+    scenarioFactory: agentParametricAnchorExpressionScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -4780,6 +4799,48 @@ async function verifyGeneratedExpressionReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedParametricAnchorExpressionReadBack(scenario, expected) {
+  const targets = Array.isArray(expected.targets) ? expected.targets : [];
+  const verifiedTargets = [];
+  for (const target of targets) {
+    const { comp, layer, property } = await readGeneratedLayerProperty(scenario, {
+      compName: expected.compName,
+      layerName: target.layerName,
+      propertyPath: target.propertyPath
+    }, { propertyDepth: 4, propertyLimit: 160 });
+    if (target.matchName && property.matchName !== target.matchName) {
+      throw new Error(`${scenario.id}: parametric anchor matchName mismatch for ${target.layerName}; expected ${target.matchName}, got ${property.matchName || "empty"}.`);
+    }
+    if (property.expression !== expected.expression) {
+      throw new Error(`${scenario.id}: parametric anchor expression mismatch for ${target.layerName}; expected ${expected.expression}, got ${property.expression || "empty"}.`);
+    }
+    if (property.expressionEnabled !== true) {
+      throw new Error(`${scenario.id}: parametric anchor expression was not enabled for ${target.layerName}.`);
+    }
+    if (property.expressionError) {
+      throw new Error(`${scenario.id}: parametric anchor expression reported an error for ${target.layerName}: ${property.expressionError}.`);
+    }
+    verifiedTargets.push({
+      comp: { itemIndex: comp.itemIndex, name: comp.name },
+      layer: { index: layer.index, name: layer.name },
+      property: {
+        path: target.propertyPath,
+        matchName: property.matchName,
+        expressionEnabled: property.expressionEnabled === true
+      }
+    });
+  }
+  if (verifiedTargets.length !== targets.length || verifiedTargets.length === 0) {
+    throw new Error(`${scenario.id}: no parametric anchor expression targets were verified.`);
+  }
+  return {
+    ok: true,
+    anchorPositionKey: expected.anchorPositionKey,
+    expression: expected.expression,
+    targets: verifiedTargets
+  };
+}
+
 async function verifyGeneratedSelectedPropertyValueReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const selected = await callBridgeTool("get_selected_properties", {
@@ -5810,6 +5871,10 @@ async function verifyAgentScenarioReadBack(scenario) {
     return verifyGeneratedExpressionReadBack(scenario, expected);
   }
 
+  if (expected.generatedParametricAnchorExpression) {
+    return verifyGeneratedParametricAnchorExpressionReadBack(scenario, expected);
+  }
+
   if (expected.generatedSelectedPropertyValue) {
     return verifyGeneratedSelectedPropertyValueReadBack(scenario, expected);
   }
@@ -6541,6 +6606,10 @@ async function main() {
   }
   if (command === "agent-expression-openai-cli-smoke" || command === "full-ui-agent-expression-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliExpressionScenarioConfig());
+    return;
+  }
+  if (command === "agent-parametric-anchor-expression-openai-cli-smoke" || command === "full-ui-agent-parametric-anchor-expression-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliParametricAnchorExpressionScenarioConfig());
     return;
   }
   if (command === "agent-parent-opacity-expression-openai-cli-smoke" || command === "full-ui-agent-parent-opacity-expression-openai-cli-smoke") {

@@ -1524,6 +1524,90 @@ function agentExpressionScenarioPlans(runPrefix) {
   }));
 }
 
+function agentParametricAnchorExpressionScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Parametric Anchor`;
+  const compName = `${base} Comp`;
+  const rectangleLayerName = `${base} Rectangle`;
+  const ellipseLayerName = `${base} Ellipse`;
+  const rectanglePositionPath = [
+    "ADBE Root Vectors Group",
+    "Rectangle",
+    "ADBE Vectors Group",
+    "ADBE Vector Shape - Rect",
+    "ADBE Vector Rect Position"
+  ];
+  const ellipsePositionPath = [
+    "ADBE Root Vectors Group",
+    "Ellipse",
+    "ADBE Vectors Group",
+    "ADBE Vector Shape - Ellipse",
+    "ADBE Vector Ellipse Position"
+  ];
+  const anchorPositionKey = "top-right";
+  const expression = [
+    "var x = thisProperty.propertyGroup(1).size[0] / -2;",
+    "var y = thisProperty.propertyGroup(1).size[1] / 2;",
+    "[x, y];"
+  ].join("\n");
+
+  return [
+    {
+      id: "generated-parametric-anchor-expression",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "create_shape_layer",
+        "get_layer_details",
+        "get_layer_details",
+        "set_expression",
+        "set_expression",
+        "get_layer_details",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedParametricAnchorExpression: true,
+        compName,
+        anchorPositionKey,
+        expression,
+        targets: [
+          {
+            layerName: rectangleLayerName,
+            propertyPath: rectanglePositionPath,
+            matchName: "ADBE Vector Rect Position"
+          },
+          {
+            layerName: ellipseLayerName,
+            propertyPath: ellipsePositionPath,
+            matchName: "ADBE Vector Ellipse Position"
+          }
+        ]
+      },
+      plan: {
+        summary: "Generated-only live QA for parametric rectangle and ellipse anchor-position expressions.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated parametric anchor comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.07, 0.07, 0.09], allowDuplicateName: false, openInViewer: true, comment: "generated-only parametric anchor expression validation" } },
+          { title: "Create generated rectangle target", tool: "create_shape_layer", args: { compName, name: rectangleLayerName, shape: "rectangle", size: [240, 120], position: [240, 180], fillColor: [0.2, 0.56, 0.82], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Create generated ellipse target", tool: "create_shape_layer", args: { compName, name: ellipseLayerName, shape: "ellipse", size: [160, 120], position: [420, 180], fillColor: [0.82, 0.46, 0.2], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Read generated rectangle position evidence", tool: "get_layer_details", args: { compName, includeProperties: true, propertyDepth: 4, propertyLimit: 160, includeValues: true, includeExpressions: true }, resultBindings: { layerIndex: "{{steps.2.layer.index}}" } },
+          { title: "Read generated ellipse position evidence", tool: "get_layer_details", args: { compName, includeProperties: true, propertyDepth: 4, propertyLimit: 160, includeValues: true, includeExpressions: true }, resultBindings: { layerIndex: "{{steps.3.layer.index}}" } },
+          { title: "Set generated rectangle anchor expression", tool: "set_expression", args: { compName, propertyPath: rectanglePositionPath, expression, enabled: true }, resultBindings: { layerIndex: "{{steps.2.layer.index}}" } },
+          { title: "Set generated ellipse anchor expression", tool: "set_expression", args: { compName, propertyPath: ellipsePositionPath, expression, enabled: true }, resultBindings: { layerIndex: "{{steps.3.layer.index}}" } },
+          { title: "Read generated rectangle anchor expression", tool: "get_layer_details", args: { compName, includeProperties: true, propertyDepth: 4, propertyLimit: 160, includeValues: true, includeExpressions: true }, resultBindings: { layerIndex: "{{steps.2.layer.index}}" } },
+          { title: "Read generated ellipse anchor expression", tool: "get_layer_details", args: { compName, includeProperties: true, propertyDepth: 4, propertyLimit: 160, includeValues: true, includeExpressions: true }, resultBindings: { layerIndex: "{{steps.3.layer.index}}" } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentParentOpacityExpressionScenarioPlans(runPrefix) {
   const base = `${runPrefix} Parent Opacity`;
   const compName = `${base} Comp`;
@@ -3029,6 +3113,7 @@ module.exports = {
   agentMaskSafetyScenarioPlans,
   agentMarkerLifecycleScenarioPlans,
   agentNewToolsScenarioPlans,
+  agentParametricAnchorExpressionScenarioPlans,
   agentParentOpacityExpressionScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
