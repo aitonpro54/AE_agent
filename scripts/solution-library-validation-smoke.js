@@ -35,6 +35,7 @@ const IMPORTED_ADVISORY_IDS = [
   "update-expressions-typed-plan",
   "stick-effect-to-layer-typed-plan",
   "estimate-path-length-typed-plan",
+  "flip-path-typed-plan",
   "toggle-puppet-on-transparent-typed-plan",
   "round-selected-property-values-typed-plan",
   "set-new-color-typed-plan",
@@ -122,6 +123,7 @@ const AVAILABLE_TOOLS = [
   "get_comp_details",
   "get_render_queue_status",
   "create_comp",
+  "create_solid_layer",
   "create_shape_layer",
   "create_adjustment_layer",
   "create_camera_layer",
@@ -132,6 +134,9 @@ const AVAILABLE_TOOLS = [
   "add_effect",
   "get_effect_details",
   "set_effect_property",
+  "set_layer_mask",
+  "get_path_geometry",
+  "set_path_geometry",
   "align_layers_to_time",
   "set_property_keyframes",
   "fill_in_keyframes",
@@ -728,6 +733,32 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /generated-layer/.test(note)), `${id}: notes must require generated-layer evidence.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Estimate_Path_Length/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "flip-path-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_path_geometry", "set_path_geometry"],
+        `${id}: flip-path workflow should stay on the narrow path geometry typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: flip-path workflow must be mutating.`);
+      assert(text.includes("get_path_geometry"), `${id}: recipe should require path geometry read-back.`);
+      assert(text.includes("set_path_geometry"), `${id}: recipe should use the path geometry setter.`);
+      assert(text.includes("vertices"), `${id}: recipe should preserve vertices.`);
+      assert(text.includes("inTangents"), `${id}: recipe should preserve inTangents.`);
+      assert(text.includes("outTangents"), `${id}: recipe should preserve outTangents.`);
+      assert(text.includes("closed"), `${id}: recipe should preserve closed state.`);
+      assert(text.includes("bounding-box center"), `${id}: recipe should document bounding-box center flip math.`);
+      assert(text.includes("Do not infer selected paths"), `${id}: recipe should reject inferred selected-path traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_path_geometry/.test(step)), `${id}: verification must include get_path_geometry.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_path_geometry/.test(step)), `${id}: verification must include set_path_geometry.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /vertices/.test(item)), `${id}: verification must require vertex evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /inTangents/.test(item)), `${id}: verification must require inTangents evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /outTangents/.test(item)), `${id}: verification must require outTangents evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /keyframe/.test(item)), `${id}: verification must require keyframe evidence.`);
+      assert(solution.notes.some((note) => /get_path_geometry/.test(note)), `${id}: notes must require path geometry read evidence.`);
+      assert(solution.notes.some((note) => /set_path_geometry/.test(note)), `${id}: notes must require path geometry mutation.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Flip_Path/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "toggle-puppet-on-transparent-typed-plan") {
       assert.deepStrictEqual(
@@ -2642,6 +2673,22 @@ function assertActualRetrieval(registry) {
   assert(estimatePathLengthPromptSection.includes("get_effect_details"), "prompt section should require effect read-back.");
   assert(estimatePathLengthPromptSection.includes("get_layer_details"), "prompt section should require layer read-back.");
   assert(!/run_extendscript/i.test(estimatePathLengthPromptSection), "estimate-path-length guidance should not recommend raw ExtendScript.");
+
+  const flipPathRetrieval = retrieveSolutionHints("Flip a generated mask path horizontally after reading vertices, inTangents, outTangents, closed state, and keyframes with get_path_geometry, then write flipped geometry with set_path_geometry and read it back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(flipPathRetrieval.ok, true);
+  assert(ids(flipPathRetrieval).includes("flip-path-typed-plan"), "flip-path advisory recipe should surface for generated path flip prompts.");
+  const flipPathPromptSection = formatSolutionHintsForPrompt(flipPathRetrieval);
+  assert(flipPathPromptSection.includes("Flip Path Typed Plan"), "prompt section should include flip-path advisory title.");
+  assert(flipPathPromptSection.includes("generated"), "prompt section should preserve generated-only scope.");
+  assert(flipPathPromptSection.includes("get_path_geometry"), "prompt section should require path geometry read-back.");
+  assert(flipPathPromptSection.includes("set_path_geometry"), "prompt section should prefer set_path_geometry for path flips.");
+  assert(flipPathPromptSection.includes("vertices"), "prompt section should preserve vertex guidance.");
+  assert(flipPathPromptSection.includes("tangents"), "prompt section should preserve tangent guidance.");
+  assert(!/run_extendscript/i.test(flipPathPromptSection), "flip-path guidance should not recommend raw ExtendScript.");
 
   const puppetOnTransparentRetrieval = retrieveSolutionHints("Set Puppet On Transparent on a generated ADBE FreePin3 effect by reading ADBE FreePin3 On Transparent, set_effect_property true with propertyMatchName, and read back the boolean property.", {
     registry,

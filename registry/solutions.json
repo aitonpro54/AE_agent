@@ -8132,6 +8132,116 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "flip-path-typed-plan",
+      "title": "Flip Path Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "properties",
+        "shape-layers",
+        "shape-path",
+        "mask-path",
+        "path-geometry",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Flip one explicit generated shape or mask path horizontally or vertically by reading full path geometry, writing reviewed flipped geometry, and reading it back.",
+        "appliesWhen": [
+          "The user asks to flip a generated or explicitly reviewed Shape or Mask path.",
+          "Typed adaptation is acceptable only when current get_path_geometry evidence identifies one explicit path target with vertices, inTangents, outTangents, closed state, expression-disabled state, and keyframes when animated."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "pathTarget",
+          "type": "object",
+          "required": true,
+          "description": "Current get_path_geometry evidence containing comp identity, layerIndex, targetKind, exact shape propertyPath or mask index/name, vertices, inTangents, outTangents, closed state, expression state, and keyframes when present."
+        },
+        {
+          "name": "flipDirection",
+          "type": "string",
+          "required": true,
+          "description": "Reviewed direction: horizontal or vertical."
+        }
+      ],
+      "targetAssumptions": [
+        "The mutated path is generated or explicitly reviewed and bound by current get_path_geometry evidence before mutation.",
+        "The workflow mutates one explicit Shape or Mask path target only.",
+        "The plan computes flipped vertices and tangents around the inspected bounding-box center, preserves closed state, and preserves keyframe times.",
+        "Expression-driven paths, arbitrary selectedProperties traversal, unreviewed user paths, file output, Essential Graphics, Puppet pins, third-party effects, layer transforms, sources, timing, render queue items, project items, and selection state are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/flip-path-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_path_geometry",
+          "set_path_geometry"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read one explicit shape or mask path, compute reviewed flipped vertices and tangents, write with set_path_geometry, then read the same target back with get_path_geometry.",
+        "steps": [
+          "Run get_active_comp or create a generated comp before mutation to capture target comp identity.",
+          "Run get_path_geometry with includeKeyframes:true when keyframes may be present and capture target identity, expression state, vertices, inTangents, outTangents, closed state, and keyframes.",
+          "Fail closed when geometry is missing, tangents do not match vertices, expression state is enabled, keyframe evidence is truncated, target identity is ambiguous, or flipDirection is not horizontal or vertical.",
+          "Compute flippedGeometry around the inspected bounding-box center, negating tangent X values for horizontal flips or tangent Y values for vertical flips, while preserving closed state and keyframe times.",
+          "Run set_path_geometry once for the explicit target with reviewed flipped geometry or bounded flipped keyframes.",
+          "Run get_path_geometry again for the same target and compare vertices, inTangents, outTangents, closed state, and keyframe times with flippedGeometry.",
+          "Fail closed if source-exact ScriptUI behavior, broad comp.selectedProperties traversal, arbitrary user paths, expression-driven paths, file output, or raw ExtendScript is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_path_geometry identifies the exact comp, layer, target kind, mask index/name or shape propertyPath, expression-disabled state, vertices, inTangents, outTangents, closed state, and keyframe count.",
+          "Dry-run evidence shows flipDirection, bounding-box center, and final flippedGeometry for every static value or keyframe.",
+          "set_path_geometry result reports the expected target identity and post-verification read-back.",
+          "Post-run get_path_geometry shows expected flipped vertices, inTangents, outTangents, preserved closed state, and preserved keyframe times.",
+          "Unsupported selectedProperties traversal, ScriptUI dialog semantics, expression-driven paths, unreviewed user paths, file output, and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-properties-flip-path as generated-only advisory typed-plan coverage for one explicit shape or mask path geometry flip.",
+          "Generated-only proof uses the parent-approved path geometry typed tools; parent importer owns live acceptance and scoped retry evidence."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-tool-properties-flip-path",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Properties/Flip_Path.jsx into existing typed tools as generated-only get_path_geometry and set_path_geometry guidance for one explicit shape or mask path target; no source JSX copied. Current typed tools require full path geometry read-back, reviewed horizontal or vertical flip math over vertices plus inTangents/outTangents, expression-disabled state, closed-state preservation, bounded keyframe preservation, set_path_geometry mutation, and get_path_geometry read-back. Source-exact ScriptUI direction UI, broad comp.selectedProperties traversal, arbitrary user paths, expression-driven paths, file output, and raw ExtendScript require a separate typed-tool contract or fail closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current get_path_geometry evidence before mutating a path target; do not infer selected paths from prior chat context.",
+        "Apply this recipe only to one explicit generated or reviewed Shape or Mask path target.",
+        "Use get_path_geometry for pre/post read-back and set_path_geometry for the reviewed path geometry mutation.",
+        "Require a separate typed-tool contract for source-exact ScriptUI direction selection, broad selectedProperties traversal, expression-driven paths, arbitrary user paths, multi-target batches, file output, or exact source JSX semantics.",
+        "Do not use this recipe for path export, mask deletion, layer transform edits, source relinking, timing edits, render queue changes, Essential Graphics, Puppet pin atoms, third-party effects, selected-property rename, file export, or broad composition/project mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "toggle-puppet-on-transparent-typed-plan",
       "title": "Toggle Puppet On Transparent Typed Plan",
       "status": "recipe",

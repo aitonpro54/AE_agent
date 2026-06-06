@@ -16,6 +16,7 @@ const {
   agentEffectPropertyScenarioPlans,
   agentEstimatePathLengthScenarioPlans,
   agentExpressionScenarioPlans,
+  agentFlipPathGeometryScenarioPlans,
   agentParametricAnchorExpressionScenarioPlans,
   agentPuppetOnTransparentScenarioPlans,
   agentKeyframeScenarioPlans,
@@ -485,6 +486,24 @@ function openAiCliPathGeometryScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_PATH_GEOMETRY_PREFIX || "Codex QA AUX-PATH",
     scenarioFactory: agentPathGeometryScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliFlipPathGeometryScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-flip-path",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_FLIP_PATH_PREFIX || "Codex QA AUX-FLIP",
+    scenarioFactory: agentFlipPathGeometryScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -6809,6 +6828,10 @@ async function main() {
   }
   if (command === "agent-path-geometry-openai-cli-smoke" || command === "full-ui-agent-path-geometry-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliPathGeometryScenarioConfig());
+    return;
+  }
+  if (command === "agent-flip-path-openai-cli-smoke" || command === "full-ui-agent-flip-path-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliFlipPathGeometryScenarioConfig());
     return;
   }
   if (command === "agent-puppet-on-transparent-openai-cli-smoke" || command === "full-ui-agent-puppet-on-transparent-openai-cli-smoke") {

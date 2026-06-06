@@ -44,6 +44,24 @@ old `AE_agent` repository remains the historical source.
   smoke:provider-contract`, `npm.cmd run smoke:provider-api`, `npm.cmd run
   smoke:solutions`, `npm.cmd run smoke:planning`, `npm.cmd run smoke:bridge`,
   and `npm.cmd run smoke:full-intake`.
+- [x] Reopened Full Intaker flip-path lane/retry:
+  `tool-properties-flip-path` now has a candidate-specific generated-only
+  typed-plan/lane using the existing `get_path_geometry` and
+  `set_path_geometry` contract. Parent reducer added
+  `flip-path-typed-plan`, generic intake note, registry coverage, focused
+  scenario/report/solution smoke coverage, CEP command wiring, hardcoded
+  exact-candidate synthesis support, and
+  `shape-mask-path-flip-generated-only` lane metadata. Scoped retry with
+  `--context-percent 30`, `--max-items 1`, exact candidate id,
+  `--allow-self-improvement-lane-synthesis`, `--no-commit`, and
+  `--compact-json` matched the new family, passed non-live validation plus
+  read-only CEP preflight, then produced terminal ticket
+  `live-lane-family-shape-mask-path-flip-generated-only` because the CEP panel
+  reported `openai-cli/gpt-5.5 is not ready`. No candidate was marked
+  completed and no mutating live proof was run. Source-exact ScriptUI
+  selectedProperties traversal, arbitrary user paths, expression-driven paths,
+  shape Bezier creation gaps beyond generated mask proof, file output/export,
+  and raw JSX remain fail-closed.
 - [x] Reopened Full Intaker composition-marker read contract slice:
   added `get_comp_details` composition marker read-back via
   `includeMarkers:true` and `markerLimit`, returning `markers.items` ordered by
@@ -595,6 +613,15 @@ live user-asset mutation.
   only. Candidate completion remains fail-closed until source-specific
   flip/export semantics, file-output policy, and live-readiness gates are
   separately reviewed.
+- 2026-06-06: Parent reducer accepted only a generated-only
+  `tool-properties-flip-path` adaptation. The safe lane reads one explicit
+  generated/reviewed shape or mask path with `get_path_geometry`, computes a
+  reviewed horizontal/vertical flip over vertices plus in/out tangents around
+  the bounding-box center, writes through `set_path_geometry`, and requires
+  `get_path_geometry`/`get_layer_details` read-back. The lane is terminal until
+  panel-side `openai-cli/gpt-5.5` readiness is fixed. This does not unblock
+  `tool-properties-export-path-points`, which still needs an approved
+  file-output/export policy.
 - 2026-06-06: Added `npm run full-intake:cleanup` backed by
   `scripts/full-intake-runtime-cleanup.js` for guarded local cleanup of ignored
   Full Intaker runtime leftovers. Dry-run remains the default; destructive

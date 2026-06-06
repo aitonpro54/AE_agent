@@ -1905,6 +1905,101 @@ function agentPathGeometryScenarioPlans(runPrefix) {
   }));
 }
 
+function pathGeometryBounds(geometry) {
+  const vertices = Array.isArray(geometry && geometry.vertices) ? geometry.vertices : [];
+  const xs = vertices.map((point) => Number(point[0]));
+  const ys = vertices.map((point) => Number(point[1]));
+  return {
+    centerX: (Math.min(...xs) + Math.max(...xs)) / 2,
+    centerY: (Math.min(...ys) + Math.max(...ys)) / 2
+  };
+}
+
+function flipPathGeometry(geometry, direction) {
+  const bounds = pathGeometryBounds(geometry);
+  const horizontal = direction === "horizontal";
+  return {
+    closed: geometry.closed,
+    vertices: geometry.vertices.map((point) => horizontal
+      ? [bounds.centerX - (point[0] - bounds.centerX), point[1]]
+      : [point[0], bounds.centerY - (point[1] - bounds.centerY)]),
+    inTangents: geometry.inTangents.map((point) => horizontal ? [-point[0], point[1]] : [point[0], -point[1]]),
+    outTangents: geometry.outTangents.map((point) => horizontal ? [-point[0], point[1]] : [point[0], -point[1]])
+  };
+}
+
+function agentFlipPathGeometryScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Flip Path`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Solid`;
+  const maskName = `${base} Mask`;
+  const flipDirection = "horizontal";
+  const firstGeometry = {
+    closed: true,
+    vertices: [[80, 70], [360, 70], [330, 210], [100, 230]],
+    inTangents: [[0, 0], [-18, 0], [0, -20], [16, 0]],
+    outTangents: [[18, 0], [0, 18], [-16, 0], [0, -20]]
+  };
+  const secondGeometry = {
+    closed: true,
+    vertices: [[120, 90], [430, 95], [385, 250], [90, 230]],
+    inTangents: [[0, 0], [-22, 0], [0, -22], [22, 0]],
+    outTangents: [[22, 0], [0, 22], [-22, 0], [0, -22]]
+  };
+  const keyframes = [
+    { time: 0, geometry: firstGeometry },
+    { time: 1, geometry: secondGeometry }
+  ];
+  const flippedKeyframes = keyframes.map((keyframe) => ({
+    time: keyframe.time,
+    geometry: flipPathGeometry(keyframe.geometry, flipDirection)
+  }));
+
+  return [
+    {
+      id: "generated-flip-path-geometry",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "set_layer_mask",
+        "set_path_geometry",
+        "get_path_geometry",
+        "set_path_geometry",
+        "get_path_geometry",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedPathGeometry: true,
+        compName,
+        layerName,
+        maskName,
+        keyframes: flippedKeyframes
+      },
+      plan: {
+        summary: "Generated-only live QA for horizontal Flip Path semantics using explicit keyframed mask vertices, tangents, closed state, and read-back.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated flip-path comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.04, 0.06, 0.08], allowDuplicateName: false, openInViewer: true, comment: "Generated-only flip path validation" } },
+          { title: "Create generated flip-path solid", tool: "create_solid_layer", args: { compName, name: layerName, color: [0.18, 0.38, 0.74], width: 520, height: 300, duration: 3 } },
+          { title: "Create generated flip target mask", tool: "set_layer_mask", args: { compName, layerIndex: 1, operation: "create", name: maskName, vertices: firstGeometry.vertices, maskMode: "add", inverted: false } },
+          { title: "Seed generated keyframed path geometry before flip", tool: "set_path_geometry", args: { compName, layerIndex: 1, targetKind: "mask", maskIndex: 1, expectedMaskName: maskName, keyframes, clearExisting: true } },
+          { title: "Read generated path geometry before flip", tool: "get_path_geometry", args: { compName, layerIndex: 1, targetKind: "mask", maskIndex: 1, expectedMaskName: maskName, includeKeyframes: true, keyframeLimit: 10 } },
+          { title: "Set generated horizontally flipped path geometry", tool: "set_path_geometry", args: { compName, layerIndex: 1, targetKind: "mask", maskIndex: 1, expectedMaskName: maskName, keyframes: flippedKeyframes, clearExisting: true } },
+          { title: "Read generated flipped path geometry", tool: "get_path_geometry", args: { compName, layerIndex: 1, targetKind: "mask", maskIndex: 1, expectedMaskName: maskName, includeKeyframes: true, keyframeLimit: 10 } },
+          { title: "Read generated layer after flip path", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentCompPropertiesScenarioPlans(runPrefix) {
   const base = `${runPrefix} Comp Properties`;
   const compName = `${base} Comp`;
@@ -3256,6 +3351,7 @@ module.exports = {
   agentEffectPropertyScenarioPlans,
   agentExpressionScenarioPlans,
   agentEstimatePathLengthScenarioPlans,
+  agentFlipPathGeometryScenarioPlans,
   agentKeyframeScenarioPlans,
   agentPathGeometryScenarioPlans,
   agentLayerMetadataScenarioPlans,
