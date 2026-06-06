@@ -9,6 +9,7 @@ const {
 const {
   AGENT_SCENARIO_MUTATING_TOOLS,
   agentDakkshinTypedToolsScenarioPlans,
+  agentLayerBlendingModeScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
@@ -22,6 +23,7 @@ const LOCAL_MUTATING_TOOLS = new Set([
   "delete_layer",
   "set_comp_properties",
   "set_layer_metadata",
+  "set_layer_blending_mode",
   "set_project_item_metadata",
   "set_layer_mask",
   "set_path_geometry",
@@ -92,6 +94,7 @@ function layerInfo(name, overrides = {}) {
     comment: overrides.comment === undefined ? "" : overrides.comment,
     label: overrides.label === undefined ? 0 : overrides.label,
     locked: overrides.locked === undefined ? false : overrides.locked,
+    blendingModeName: overrides.blendingModeName || "normal",
     transform: overrides.transform || null,
     text: overrides.text ? { text: overrides.text, fontSize: overrides.fontSize || null } : null,
     source: overrides.source || null
@@ -450,6 +453,49 @@ function fakeMutationResult(step, state) {
         requestedCount: layerIndices.length,
         changedCount: changed.length,
         updatedFields: Object.keys(updates)
+      }
+    }, compName, changed[0] && changed[0].after);
+  }
+  if (step.tool === "set_layer_blending_mode") {
+    const layerIndices = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
+    const expectedLayerNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
+    const blendingModeName = String(args.blendingMode || "difference").toLowerCase();
+    if (!state.layers.length) {
+      state.layers = layerIndices.map((layerIndex, index) => layerInfo(expectedLayerNames[index] || `Blending Fixture Layer ${layerIndex}`, { index: layerIndex }));
+    }
+    const changed = layerIndices.map((layerIndex, index) => {
+      let layer = state.layers.find((item) => Number(item.index) === layerIndex);
+      if (!layer) {
+        layer = layerInfo(expectedLayerNames[index] || `Blending Fixture Layer ${layerIndex}`, { index: layerIndex });
+        state.layers.push(layer);
+        state.layers.sort((left, right) => left.index - right.index);
+      }
+      const before = { ...layer };
+      layer.blendingModeName = blendingModeName;
+      const after = { ...layer };
+      return {
+        layerIndex,
+        expectedLayerName: expectedLayerNames[index] || null,
+        requestedBlendingMode: blendingModeName,
+        before,
+        after,
+        fieldMatches: { blendingMode: true }
+      };
+    });
+    return withVerification({
+      comp: { name: compName, numLayers: state.layers.length },
+      requestedLayerIndices: layerIndices,
+      expectedLayerNames,
+      requestedBlendingMode: blendingModeName,
+      changedCount: changed.length,
+      layer: changed.length === 1 ? changed[0].after : null,
+      layers: changed.map((item) => item.after),
+      changed,
+      postVerification: {
+        ok: true,
+        requestedCount: layerIndices.length,
+        changedCount: changed.length,
+        requestedBlendingMode: blendingModeName
       }
     }, compName, changed[0] && changed[0].after);
   }
@@ -1591,6 +1637,14 @@ function assertLayerEnabledHardSoloPasses() {
   const metadataChecks = semantic.checks.filter((check) => check.id.indexOf("set_layer_metadata:metadata") >= 0);
   assert(metadataChecks.length >= 2, "hard-solo fixture should verify selected and unselected layer enabled metadata.");
   assert(metadataChecks.every((check) => check.status === "passed"), "hard-solo layer enabled read-back checks should pass.");
+}
+
+function assertLayerBlendingModePasses() {
+  const [scenario] = agentLayerBlendingModeScenarioPlans("Codex Semantic Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  assert.strictEqual(semantic.status, "passed", `layer blending mode semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_blending_mode:blending-mode") >= 0 && check.status === "passed"), "set_layer_blending_mode read-back check should pass.");
 }
 
 function assertProjectItemMetadataPasses() {
@@ -2873,6 +2927,7 @@ function main() {
   assertLayerSelectionPasses();
   assertLayerMetadataPasses();
   assertLayerEnabledHardSoloPasses();
+  assertLayerBlendingModePasses();
   assertProjectItemMetadataPasses();
   assertProjectItemMetadataMissingReadBackNeedsReview();
   assertDeleteLayerPasses();

@@ -32,6 +32,7 @@ const {
   agentPuppetOnTransparentScenarioPlans,
   agentKeyframeScenarioPlans,
   agentPathGeometryScenarioPlans,
+  agentLayerBlendingModeScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
@@ -708,6 +709,23 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.deepStrictEqual(layerEnabledHardSolo.plan.steps[6].args.layerIndices, [1]);
   assert.deepStrictEqual(layerEnabledHardSolo.plan.steps[8].args.layerIndices, [2]);
   assert.strictEqual(layerEnabledHardSolo.plan.steps[8].args.enabled, false);
+
+  const [layerBlendingMode] = agentLayerBlendingModeScenarioPlans("Codex QA AUX-LB Fixture");
+  assert.strictEqual(layerBlendingMode.id, "generated-layer-difference-blend-mode");
+  assert.strictEqual(layerBlendingMode.expectedReadBack.generatedLayerDifferenceBlendMode, true);
+  assert.deepStrictEqual(layerBlendingMode.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_solid_layer",
+    "create_text_layer",
+    "get_comp_details",
+    "set_layer_selection",
+    "get_selected_layers",
+    "set_layer_blending_mode",
+    "get_layer_details",
+    "get_layer_details"
+  ]);
+  assert.deepStrictEqual(layerBlendingMode.plan.steps[6].args.layerIndices, [1, 2]);
+  assert.strictEqual(layerBlendingMode.plan.steps[6].args.blendingMode, "difference");
 
   const [layerSelection] = agentLayerSelectionScenarioPlans("Codex QA AUX101 Fixture");
   assert.strictEqual(layerSelection.id, "generated-layer-selection-set");

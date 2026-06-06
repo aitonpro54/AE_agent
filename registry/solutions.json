@@ -14123,6 +14123,117 @@
         "Use set_layer_metadata only with enabled:true or enabled:false, explicit layer indices, and expectedLayerNames when available.",
         "Do not use this recipe for native solo switches, layer label/comment/lock edits, blend mode changes, opacity/expression substitutions, timing/source edits, render queue edits, previous-enabled-state restoration, or raw script execution."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "difference-blend-mode-typed-plan",
+      "title": "Difference Blend Mode Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "selection",
+        "blending-mode",
+        "difference",
+        "generated-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Set selected generated layers to Difference blending mode using set_layer_blending_mode and layer read-back.",
+        "appliesWhen": [
+          "The user asks to set selected layers to Difference blending mode in one active composition.",
+          "Typed adaptation is acceptable only when current selected-layer evidence and complete layer inventory evidence identify explicit generated or reviewed targets."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedLayerEvidence",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Current get_selected_layers evidence with concrete selected layer indices, names, and target composition identity."
+        },
+        {
+          "name": "layerInventory",
+          "type": "object",
+          "required": true,
+          "description": "Current get_comp_details includeLayers:true evidence for the same composition, including every explicit layer index, name, and blendingModeName when available."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow targets exactly one inspected composition.",
+        "Selected targets are derived only from current typed evidence for the same composition.",
+        "The workflow changes only Layer.blendingMode through set_layer_blending_mode.",
+        "The reviewed target mode is blendingMode:\"difference\".",
+        "Alt-key branching, toggle restoration, other blend mode enums, track mattes, labels, comments, locks, enabled state, expressions, effects, timing, sources, project items, render queue items, selection persistence, file I/O, and raw JSX semantics are preserved or reported out of scope."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/difference-blend-mode-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_comp_details",
+          "set_layer_blending_mode",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected layers and complete layer inventory, set explicit Layer.blendingMode Difference, then read every affected layer back.",
+        "steps": [
+          "Run get_active_comp before mutation to bind target composition identity.",
+          "Run get_selected_layers to capture selected layer indices and names.",
+          "Run get_comp_details with includeLayers:true for the same comp to capture complete layer inventory and current blendingModeName state.",
+          "Build reviewed target list from that evidence only.",
+          "Run set_layer_blending_mode with blendingMode:\"difference\", explicit layerIndices, expectedLayerNames when available, and optional expectedCurrentBlendingModes guards.",
+          "Run get_layer_details or get_comp_details after mutation to confirm blendingModeName:\"difference\" for every target layer.",
+          "Fail closed if source-exact Alt-key branching, toggle restoration, selection discovery without typed evidence, multi-comp scope, non-generated user assets, other blend mode enums, or raw ExtendScript is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies the target comp, selected layers, complete layer inventory, and explicit target list.",
+          "Each set_layer_blending_mode result reports only Layer.blendingMode updates for concrete layer indices and expected-name/current-mode guards.",
+          "Post-run get_layer_details or get_comp_details shows target layers with blendingModeName:\"difference\".",
+          "Post-run evidence shows no layer creation/deletion, order change, track matte edit, enabled/comment/label/lock edit, expression/property/effect edit, timing/source edit, project item edit, render queue mutation, file I/O, or raw script execution.",
+          "Unsupported Alt-key branching, toggle-back behavior, broad selected-layer traversal, restoration semantics, other blend modes, non-generated asset mutation, and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-layers-toggle-difference-blend-mode as generated-only advisory typed-plan coverage for explicit Layer.blendingMode Difference workflows.",
+          "Generated-only proof uses set_layer_blending_mode plus layer read-back; parent importer owns live acceptance and scoped retry evidence."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-tool-layers-toggle-difference-blend-mode",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Toggle_Difference_Blend_Mode.jsx into typed tools as explicit generated selected-layer Layer.blendingMode guidance through set_layer_blending_mode and get_layer_details read-back; no source JSX copied. Current typed tools require get_selected_layers and get_comp_details evidence, expected layer-name guards, optional expectedCurrentBlendingModes guards, generated or explicitly reviewed targets, checkpoint/edit-session protection, and post-mutation read-back. Source-exact Alt-key branching, toggle-back/restoration behavior, broad selected-layer traversal, other blend modes, non-generated user assets, selection persistence and raw ExtendScript require a separate typed-tool contract or fail closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-layer and complete layer inventory evidence before mutating Layer.blendingMode; do not infer targets from prior chat context.",
+        "Use set_layer_blending_mode only with blendingMode:\"difference\" or explicitly reviewed normal restoration, explicit layer indices, expectedLayerNames, and expectedCurrentBlendingModes when available.",
+        "Do not use this recipe for source-exact Alt-key branching, track matte edits, label/comment/lock/enabled edits, opacity/expression substitutions, timing/source edits, render queue edits, file I/O, previous-state restoration, or raw script execution."
+      ]
     }
   ]
 }

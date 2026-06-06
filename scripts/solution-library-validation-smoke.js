@@ -70,6 +70,7 @@ const IMPORTED_ADVISORY_IDS = [
   "alert-selected-layer-index-typed-plan",
   "layer-selection-set-typed-plan",
   "hard-solo-layers-typed-plan",
+  "difference-blend-mode-typed-plan",
   "select-all-children-typed-plan",
   "select-disabled-layers-typed-plan",
   "select-guide-layers-typed-plan",
@@ -131,6 +132,7 @@ const AVAILABLE_TOOLS = [
   "get_selected_properties",
   "set_layer_selection",
   "set_layer_metadata",
+  "set_layer_blending_mode",
   "set_property_value",
   "list_layers",
   "get_comp_details",
@@ -1678,6 +1680,25 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /selected-layer/.test(note)), `${id}: notes must require selected-layer evidence.`);
       assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must keep raw script execution out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Hard_Solo_Layers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "difference-blend-mode-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_comp_details", "set_layer_blending_mode", "get_layer_details"],
+        `${id}: difference blend workflow should stay on the narrow selected Layer.blendingMode typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: difference blend workflow must be mutating.`);
+      assert(text.includes("blendingMode:\"difference\""), `${id}: recipe should preserve Difference blending mode.`);
+      assert(text.includes("expectedCurrentBlendingModes"), `${id}: recipe should document current-mode guards.`);
+      assert(text.includes("set_layer_blending_mode"), `${id}: recipe should use the layer blending mode typed writer.`);
+      assert(text.includes("Alt-key"), `${id}: recipe should fail closed for source-exact Alt-key branching.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must capture complete layer inventory evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_blending_mode/.test(step)), `${id}: verification must include set_layer_blending_mode.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /blendingModeName.*difference/.test(item)), `${id}: verification must require Difference read-back.`);
+      assert(solution.notes.some((note) => /selected-layer/.test(note)), `${id}: notes must require selected-layer evidence.`);
+      assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must keep raw script execution out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /Toggle_Difference_Blend_Mode/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "select-all-children-typed-plan") {
       assert.deepStrictEqual(
@@ -3566,6 +3587,20 @@ function assertActualRetrieval(registry) {
   assert(hardSoloPromptSection.includes("set_layer_metadata"), "prompt section should prefer set_layer_metadata for Layer.enabled mutation.");
   assert(hardSoloPromptSection.includes("enabled:false"), "prompt section should preserve disabled unselected-layer guidance.");
   assert(!/run_extendscript/i.test(hardSoloPromptSection), "hard-solo guidance should not recommend raw ExtendScript.");
+
+  const differenceBlendModeRetrieval = retrieveSolutionHints("Set the selected generated layers to Difference blending mode after reading selected layers and complete layer inventory, using explicit layer indices and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(differenceBlendModeRetrieval.ok, true);
+  assert(ids(differenceBlendModeRetrieval).includes("difference-blend-mode-typed-plan"), "difference blend advisory recipe should surface for selected layer blending mode prompts.");
+  const differenceBlendModePromptSection = formatSolutionHintsForPrompt(differenceBlendModeRetrieval);
+  assert(differenceBlendModePromptSection.includes("Difference Blend Mode Typed Plan"), "prompt section should include difference blend advisory title.");
+  assert(differenceBlendModePromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for blend mode.");
+  assert(differenceBlendModePromptSection.includes("set_layer_blending_mode"), "prompt section should prefer set_layer_blending_mode for Layer.blendingMode mutation.");
+  assert(differenceBlendModePromptSection.includes("Layer.blendingMode Difference"), "prompt section should preserve Difference mode guidance.");
+  assert(!/run_extendscript/i.test(differenceBlendModePromptSection), "difference blend guidance should not recommend raw ExtendScript.");
 
   const selectAllChildrenRetrieval = retrieveSolutionHints("Select all direct child layers of the currently selected parent layer after reading layer parent evidence, then read back the selected child layer count and names.", {
     registry,

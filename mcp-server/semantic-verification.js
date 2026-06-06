@@ -27,6 +27,7 @@ const MUTATING_TOOLS = new Set([
   "fit_layer_to_comp",
   "set_property_value",
   "set_layer_metadata",
+  "set_layer_blending_mode",
   "set_project_item_metadata",
   "set_property_keyframes",
   "fill_in_keyframes",
@@ -208,6 +209,8 @@ function addLayerEvidence(target, value, source) {
   if (hasOwn(value, "label")) layer.label = numberValue(value.label);
   if (hasOwn(value, "locked")) layer.locked = boolValue(value.locked);
   if (hasOwn(value, "comment")) layer.comment = String(value.comment === undefined || value.comment === null ? "" : value.comment);
+  if (hasOwn(value, "blendingModeName")) layer.blendingModeName = normalizedBlendingModeName(value.blendingModeName);
+  if (hasOwn(value, "blendingMode")) layer.blendingMode = normalizedBlendingModeName(value.blendingMode);
   target.layers.push(layer);
 }
 
@@ -1017,6 +1020,65 @@ function checkSetLayerMetadata(checks, step, payload, evidence) {
     observed: resultMatches ? `${payload.changedCount || changed.length} layer(s) updated` : "missing or mismatched metadata result",
     passed: resultMatches && Boolean(readBackEvidence),
     evidence: readBackEvidence || "No post-run get_layer_details read-back matched set_layer_metadata."
+  });
+}
+
+function normalizedBlendingModeName(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function layerBlendingModeName(layer) {
+  if (!layer) return "";
+  if (hasOwn(layer, "blendingModeName")) return normalizedBlendingModeName(layer.blendingModeName);
+  return normalizedBlendingModeName(layer.blendingMode);
+}
+
+function layerMatchesBlendingModeTarget(layer, args, layerIndex, expectedName) {
+  if (!layer) return false;
+  if (!nearlyEqual(layer.index, layerIndex)) return false;
+  if (expectedName && !sameString(layer.name, expectedName)) return false;
+  return layerBlendingModeName(layer) === normalizedBlendingModeName(args.blendingMode || args.requestedBlendingMode);
+}
+
+function observedLayerBlendingModeEvidence(evidence, args) {
+  const layerIndices = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
+  const expectedNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
+  if (!layerIndices.length || !args.blendingMode || !evidence || !Array.isArray(evidence.layers)) return null;
+
+  const matchedSources = [];
+  for (let index = 0; index < layerIndices.length; index += 1) {
+    const layerIndex = layerIndices[index];
+    const expectedName = expectedNames[index] || "";
+    const match = evidence.layers.find((layer) => layerMatchesBlendingModeTarget(layer, args, layerIndex, expectedName));
+    if (!match) return null;
+    matchedSources.push(match.source || `layer ${layerIndex}`);
+  }
+  return matchedSources.join("; ");
+}
+
+function checkSetLayerBlendingMode(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const layerIndices = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
+  const expectedNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
+  const changed = Array.isArray(payload.changed) ? payload.changed : [];
+  const postVerification = payload.postVerification || {};
+  const targetMode = normalizedBlendingModeName(args.blendingMode || payload.requestedBlendingMode);
+  const resultMatches = targetMode &&
+    layerIndices.length > 0 &&
+    postVerification.ok === true &&
+    Number(payload.changedCount || changed.length || 0) === layerIndices.length &&
+    layerIndices.every((layerIndex, index) => {
+      const after = changed[index] && changed[index].after || {};
+      return layerMatchesBlendingModeTarget(after, { ...args, blendingMode: targetMode }, layerIndex, expectedNames[index] || "");
+    });
+  const readBackEvidence = observedLayerBlendingModeEvidence(evidence.readBack, { ...args, blendingMode: targetMode });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:blending-mode`,
+    title: "Layer blending mode matches explicit request",
+    expected: `${layerIndices.length} layer(s); blendingMode: ${targetMode || "missing"}`,
+    observed: resultMatches ? `${payload.changedCount || changed.length} layer(s) updated` : "missing or mismatched blending mode result",
+    passed: Boolean(resultMatches) && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_layer_details read-back matched set_layer_blending_mode."
   });
 }
 
@@ -1942,6 +2004,11 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "set_layer_metadata") {
     checkSetLayerMetadata(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_layer_blending_mode") {
+    checkSetLayerBlendingMode(checks, step, payload, evidence);
     return;
   }
 

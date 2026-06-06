@@ -29,6 +29,7 @@ const {
   agentPuppetOnTransparentScenarioPlans,
   agentKeyframeScenarioPlans,
   agentPathGeometryScenarioPlans,
+  agentLayerBlendingModeScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
@@ -712,6 +713,24 @@ function openAiCliLayerEnabledHardSoloScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_LAYER_ENABLED_PREFIX || "Codex QA AUX-LE",
     scenarioFactory: agentLayerEnabledHardSoloScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliLayerDifferenceBlendModeScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-layer-difference-blend-mode",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_LAYER_BLEND_PREFIX || "Codex QA AUX-LB",
+    scenarioFactory: agentLayerBlendingModeScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -7172,6 +7191,10 @@ async function main() {
   }
   if (command === "agent-layer-enabled-hard-solo-openai-cli-smoke" || command === "full-ui-agent-layer-enabled-hard-solo-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliLayerEnabledHardSoloScenarioConfig());
+    return;
+  }
+  if (command === "agent-layer-difference-blend-mode-openai-cli-smoke" || command === "full-ui-agent-layer-difference-blend-mode-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliLayerDifferenceBlendModeScenarioConfig());
     return;
   }
   if (command === "agent-layer-selection-openai-cli-smoke" || command === "full-ui-agent-layer-selection-openai-cli-smoke") {

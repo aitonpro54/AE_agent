@@ -26,6 +26,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "set_layer_transform",
   "set_property_value",
   "set_layer_metadata",
+  "set_layer_blending_mode",
   "set_project_item_metadata",
   "set_property_keyframes",
   "fill_in_keyframes",
@@ -862,6 +863,61 @@ function agentLayerEnabledHardSoloScenarioPlans(runPrefix) {
           { title: "Read first selected hard-solo layer", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } },
           { title: "Disable unselected generated hard-solo layer", tool: "set_layer_metadata", args: { compName, layerIndices: disabledLayerIndices, expectedLayerNames: disabledLayerNames, enabled: false } },
           { title: "Read disabled hard-solo layer", tool: "get_layer_details", args: { compName, layerIndex: 2, includeProperties: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
+function agentLayerBlendingModeScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Layer Difference Blend Mode`;
+  const compName = `${base} Comp`;
+  const solidName = `${base} Solid`;
+  const textName = `${base} Text`;
+  const targetLayerIndices = [1, 2];
+  const targetLayerNames = [textName, solidName];
+
+  return [
+    {
+      id: "generated-layer-difference-blend-mode",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "create_text_layer",
+        "get_comp_details",
+        "set_layer_selection",
+        "get_selected_layers",
+        "set_layer_blending_mode",
+        "get_layer_details",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedLayerDifferenceBlendMode: true,
+        compName,
+        targetLayerIndices,
+        targetLayerNames,
+        blendingMode: "difference"
+      },
+      plan: {
+        summary: "Generated-only live QA for selected layer Difference blending mode using explicit layer targets.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated difference blend comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.06, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "Generated-only layer difference blending mode validation" } },
+          { title: "Create generated lower blend solid", tool: "create_solid_layer", args: { compName, name: solidName, color: [0.12, 0.55, 0.72], width: 360, height: 220, pixelAspect: 1, startTime: 0, duration: 3 } },
+          { title: "Create generated upper blend text", tool: "create_text_layer", args: { compName, text: "Difference", name: textName, position: [340, 180], fontSize: 46, fillColor: [0.94, 0.82, 0.22], startTime: 0, duration: 3 } },
+          { title: "Read generated blend layer inventory", tool: "get_comp_details", args: { compName, includeLayers: true, layerLimit: 10 } },
+          { title: "Select generated difference blend targets explicitly", tool: "set_layer_selection", args: { compName, layerIndices: targetLayerIndices, expectedLayerNames: targetLayerNames, makeActive: true } },
+          { title: "Read generated selected layers for blend mode", tool: "get_selected_layers", args: {} },
+          { title: "Set generated selected layers to Difference blending", tool: "set_layer_blending_mode", args: { compName, layerIndices: targetLayerIndices, expectedLayerNames: targetLayerNames, expectedCurrentBlendingModes: ["normal", "normal"], blendingMode: "difference" } },
+          { title: "Read first difference blend layer", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } },
+          { title: "Read second difference blend layer", tool: "get_layer_details", args: { compName, layerIndex: 2, includeProperties: false } }
         ]
       }
     }
@@ -3898,6 +3954,7 @@ module.exports = {
   agentFlipPathGeometryScenarioPlans,
   agentKeyframeScenarioPlans,
   agentPathGeometryScenarioPlans,
+  agentLayerBlendingModeScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,

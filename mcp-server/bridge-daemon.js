@@ -888,6 +888,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "add_property_to_essential_graphics",
   "set_property_value",
   "set_layer_metadata",
+  "set_layer_blending_mode",
   "set_project_item_metadata",
   "set_comp_current_time",
   "set_comp_properties",
@@ -4330,6 +4331,7 @@ const PLANNING_TOOL_NAMES = [
   "add_property_to_essential_graphics",
   "set_property_value",
   "set_layer_metadata",
+  "set_layer_blending_mode",
   "align_layers_to_time",
   "set_comp_current_time",
   "set_comp_properties",
@@ -6268,6 +6270,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For destructive single-layer deletion, use delete_layer only after inspecting the explicit target comp/layer. Provide compItemIndex or compName, layerIndex, and expectedLayerName, then read back the comp/layer stack to prove the deleted layer is absent; never use selection-only, broad, multi-layer, or name-optional deletion.",
     "For composition settings, use set_comp_properties only for width, height, pixelAspect, duration, frameRate, bgColor, and displayStartTime on one explicit comp, then read back the comp before reporting success. Do not route arbitrary comp fields, layers, effects, masks, or property paths through this tool.",
     "For explicit generated layer metadata, use set_layer_metadata only with one explicit comp target, concrete layerIndices, and expectedLayerNames when available. It only supports comment, label, locked, and enabled, and must be followed by get_layer_details read-back for each target layer.",
+    "For explicit generated layer blending mode changes, use set_layer_blending_mode only with one explicit comp target, concrete layerIndices, expectedLayerNames when available, and reviewed blendingMode normal or difference. Follow with get_layer_details read-back for each target layer; do not infer targets from selection without typed evidence.",
     "For explicit generated project item labels, use set_project_item_metadata only with concrete itemIndices from current get_project_snapshot/find_project_items/list_project_folder_items evidence and expectedItemNames when available. It only supports label and must be followed by project-item read-back.",
     "For explicit layer switches, use set_property_value only with whitelisted layer attributes threeDLayer, collapseTransformation, or motionBlur on inspected layer indices, setAtTime:false, then read back with get_layer_details. Do not use it for parenting, selection changes, timeline switches, or arbitrary layer fields.",
     "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
@@ -9201,6 +9204,44 @@ const tools = [
     }
   },
   {
+    name: "set_layer_blending_mode",
+    description: "Set only the reviewed normal or difference blending mode on explicit layer indices in one explicit composition, with optional expected layer-name and current-mode guards plus required read-back.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Required when compName is omitted. 1-based project item index for the explicit target composition."
+        },
+        compName: {
+          type: "string",
+          description: "Required when compItemIndex is omitted. Exact generated target composition name."
+        },
+        layerIndices: {
+          type: "array",
+          items: { type: "number" },
+          description: "Required explicit 1-based layer indices. Selection-based discovery must happen in earlier read-only steps."
+        },
+        expectedLayerNames: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional expected layer names in the same order as layerIndices; mismatches fail closed before mutation."
+        },
+        expectedCurrentBlendingModes: {
+          type: "array",
+          items: { type: "string", enum: ["normal", "difference"] },
+          description: "Optional expected current blending modes in the same order as layerIndices; mismatches fail closed before mutation."
+        },
+        blendingMode: {
+          type: "string",
+          enum: ["normal", "difference"],
+          description: "Reviewed target blending mode. Only normal and difference are supported by this generated-only contract."
+        }
+      },
+      required: ["layerIndices", "blendingMode"]
+    }
+  },
+  {
     name: "align_layers_to_time",
     description: "Move selected or specified layers so their in-points or start times align to a target time. Defaults to selected layers and the active comp current time indicator.",
     inputSchema: {
@@ -10270,6 +10311,19 @@ async function callTool(name, args) {
         return summary;
       }
 
+      function __codexBlendingModeName(value) {
+        try { if (value === BlendingMode.NORMAL) return "normal"; } catch (__blendNormalNameError) {}
+        try { if (value === BlendingMode.DIFFERENCE) return "difference"; } catch (__blendDifferenceNameError) {}
+        return String(value);
+      }
+
+      function __codexBlendingModeValue(name) {
+        var normalized = String(name || "").toLowerCase();
+        if (normalized === "normal") return BlendingMode.NORMAL;
+        if (normalized === "difference") return BlendingMode.DIFFERENCE;
+        throw new Error("Unsupported blendingMode '" + name + "'. Allowed values: normal, difference.");
+      }
+
       function __codexLayerInfo(layer) {
         var info = {
           index: layer.index,
@@ -10295,7 +10349,10 @@ async function callTool(name, args) {
         try { info.threeDLayer = !!layer.threeDLayer; } catch (__threeDError) {}
         try { info.collapseTransformation = !!layer.collapseTransformation; } catch (__collapseError) {}
         try { info.motionBlur = !!layer.motionBlur; } catch (__motionBlurError) {}
-        try { info.blendingMode = layer.blendingMode; } catch (__blendError) {}
+        try {
+          info.blendingMode = layer.blendingMode;
+          info.blendingModeName = __codexBlendingModeName(layer.blendingMode);
+        } catch (__blendError) {}
         try { info.markerCount = __codexLayerMarkers(layer, 0).count; } catch (__markerCountError) {}
         try { info.parent = layer.parent ? __codexLayerInfo(layer.parent) : null; } catch (__parentError) {}
         try { info.source = layer.source ? __codexItemReference(layer.source) : null; } catch (__sourceError) {}
@@ -14454,6 +14511,140 @@ async function callTool(name, args) {
           requestedCount: layerIndices.length,
           changedCount: changed.length,
           updatedFields: requestedKeys
+        }
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_layer_blending_mode") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required for set_layer_blending_mode.", true);
+
+    const allowedKeys = new Set([
+      "compItemIndex",
+      "compName",
+      "layerIndices",
+      "expectedLayerNames",
+      "expectedCurrentBlendingModes",
+      "blendingMode",
+      "autoCheckpoint",
+      "checkpointLabel",
+      "idempotencyKey",
+      "idempotencyScope",
+      "verifyAfter",
+      M100_DIRECT_ESCAPE_HATCH_ARG
+    ]);
+    const unsupportedKeys = Object.keys(args || {}).filter((key) => !allowedKeys.has(key));
+    if (unsupportedKeys.length) return toolResult("Unsupported set_layer_blending_mode fields: " + unsupportedKeys.join(", "), true);
+
+    let layerIndices;
+    try {
+      layerIndices = requiredExplicitPositiveIntegerList(args, "layerIndices");
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
+
+    let expectedLayerNames = null;
+    if (hasArg(args, "expectedLayerNames")) {
+      expectedLayerNames = args.expectedLayerNames;
+      if (typeof expectedLayerNames === "string" && expectedLayerNames.trim().startsWith("[")) {
+        expectedLayerNames = JSON.parse(expectedLayerNames);
+      }
+      if (!Array.isArray(expectedLayerNames)) return toolResult("expectedLayerNames must be an array when provided.", true);
+      expectedLayerNames = expectedLayerNames.map((value) => String(value));
+      if (expectedLayerNames.length !== layerIndices.length) {
+        return toolResult("expectedLayerNames must have the same length as layerIndices.", true);
+      }
+    }
+
+    let expectedCurrentBlendingModes = null;
+    if (hasArg(args, "expectedCurrentBlendingModes")) {
+      expectedCurrentBlendingModes = args.expectedCurrentBlendingModes;
+      if (typeof expectedCurrentBlendingModes === "string" && expectedCurrentBlendingModes.trim().startsWith("[")) {
+        expectedCurrentBlendingModes = JSON.parse(expectedCurrentBlendingModes);
+      }
+      if (!Array.isArray(expectedCurrentBlendingModes)) return toolResult("expectedCurrentBlendingModes must be an array when provided.", true);
+      expectedCurrentBlendingModes = expectedCurrentBlendingModes.map((value) => String(value).trim().toLowerCase());
+      if (expectedCurrentBlendingModes.length !== layerIndices.length) {
+        return toolResult("expectedCurrentBlendingModes must have the same length as layerIndices.", true);
+      }
+      const invalidExpectedModes = expectedCurrentBlendingModes.filter((value) => !["normal", "difference"].includes(value));
+      if (invalidExpectedModes.length) return toolResult("expectedCurrentBlendingModes only supports normal or difference.", true);
+    }
+
+    const blendingMode = optionalString(args, "blendingMode", "").trim().toLowerCase();
+    if (!["normal", "difference"].includes(blendingMode)) return toolResult("blendingMode must be normal or difference.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layerIndices = ${aeLiteral(layerIndices)};
+      var expectedLayerNames = ${expectedLayerNames ? aeLiteral(expectedLayerNames) : "null"};
+      var expectedCurrentBlendingModes = ${expectedCurrentBlendingModes ? aeLiteral(expectedCurrentBlendingModes) : "null"};
+      var targetModeName = ${aeLiteral(blendingMode)};
+      var targetMode = __codexBlendingModeValue(targetModeName);
+
+      app.beginUndoGroup("Codex Set Layer Blending Mode");
+      var changed = [];
+      var allMatch = true;
+      for (var __li = 0; __li < layerIndices.length; __li++) {
+        var requestedIndex = layerIndices[__li];
+        var layer = comp.layer(requestedIndex);
+        if (!layer) throw new Error("Layer not found at index " + requestedIndex + ".");
+        if (expectedLayerNames && layer.name !== expectedLayerNames[__li]) {
+          throw new Error("Layer name mismatch at index " + requestedIndex + ". Expected '" + expectedLayerNames[__li] + "' but found '" + layer.name + "'.");
+        }
+
+        var before = __codexLayerInfo(layer);
+        var beforeModeName = before.blendingModeName || __codexBlendingModeName(layer.blendingMode);
+        if (expectedCurrentBlendingModes && beforeModeName !== expectedCurrentBlendingModes[__li]) {
+          throw new Error("Layer blending mode mismatch at index " + requestedIndex + ". Expected '" + expectedCurrentBlendingModes[__li] + "' but found '" + beforeModeName + "'.");
+        }
+        if (before.locked) throw new Error("Layer is locked: " + layer.name + ". Unlock explicitly before setting blending mode.");
+
+        layer.blendingMode = targetMode;
+        var after = __codexLayerInfo(layer);
+        var fieldMatches = {
+          blendingMode: after.blendingModeName === targetModeName
+        };
+        if (!fieldMatches.blendingMode) allMatch = false;
+        changed.push({
+          layerIndex: requestedIndex,
+          expectedLayerName: expectedLayerNames ? expectedLayerNames[__li] : null,
+          expectedCurrentBlendingMode: expectedCurrentBlendingModes ? expectedCurrentBlendingModes[__li] : null,
+          requestedBlendingMode: targetModeName,
+          before: before,
+          after: after,
+          fieldMatches: fieldMatches
+        });
+      }
+
+      var layers = [];
+      for (var __changedIndex = 0; __changedIndex < changed.length; __changedIndex++) {
+        layers.push(changed[__changedIndex].after);
+      }
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name
+        },
+        requestedLayerIndices: layerIndices,
+        expectedLayerNames: expectedLayerNames,
+        expectedCurrentBlendingModes: expectedCurrentBlendingModes,
+        requestedBlendingMode: targetModeName,
+        changedCount: changed.length,
+        layer: layers.length === 1 ? layers[0] : null,
+        layers: layers,
+        changed: changed,
+        postVerification: {
+          ok: allMatch,
+          requestedCount: layerIndices.length,
+          changedCount: changed.length,
+          requestedBlendingMode: targetModeName
         }
       };
       app.endUndoGroup();
