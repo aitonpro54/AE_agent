@@ -6,6 +6,7 @@ logs/*.png
 logs/agent-run-reports/
 logs/reliability-validation/
 logs/dev-requests/
+logs/generated-exports/
 logs/hardcore-sessions/
 logs/solution-candidates/
 pro-review-bundles/

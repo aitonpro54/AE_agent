@@ -1,6 +1,7 @@
 "use strict";
 
 const childProcess = require("child_process");
+const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const { writeAgentRunReport } = require("./agent-scenario-report");
@@ -15,6 +16,7 @@ const {
   agentDuplicateLayersScenarioPlans,
   agentEffectPropertyScenarioPlans,
   agentEstimatePathLengthScenarioPlans,
+  agentExportPathPointsScenarioPlans,
   agentExpressionScenarioPlans,
   agentFlipPathGeometryScenarioPlans,
   agentParametricAnchorExpressionScenarioPlans,
@@ -504,6 +506,24 @@ function openAiCliFlipPathGeometryScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_FLIP_PATH_PREFIX || "Codex QA AUX-FLIP",
     scenarioFactory: agentFlipPathGeometryScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliExportPathPointsScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-export-path-points",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_EXPORT_PATH_POINTS_PREFIX || "Codex QA AUX-EXPORT",
+    scenarioFactory: agentExportPathPointsScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -5951,6 +5971,57 @@ async function verifyGeneratedPathGeometryReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedPathPointsExportReadBack(scenario, expected) {
+  const generatedExportDir = process.env.AE_AGENT_GENERATED_EXPORT_DIR
+    ? path.resolve(process.env.AE_AGENT_GENERATED_EXPORT_DIR)
+    : path.join(__dirname, "..", "logs", "generated-exports");
+  const outputPath = path.join(generatedExportDir, expected.outputFileName);
+  if (!fs.existsSync(outputPath)) {
+    throw new Error(`${scenario.id}: generated path-points export file was not found: ${outputPath}`);
+  }
+  const content = fs.readFileSync(outputPath, "utf8");
+  if (content !== expected.expectedContent) {
+    throw new Error(`${scenario.id}: generated path-points export content mismatch.`);
+  }
+
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layer = (Array.isArray(comp.layers) ? comp.layers : []).find((item) => item.name === expected.layerName);
+  if (!layer || !layer.index) {
+    throw new Error(`${scenario.id}: generated export path layer ${expected.layerName} was not found by read-back.`);
+  }
+
+  const pathDetails = await callBridgeTool("get_path_geometry", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: layer.index,
+    targetKind: "mask",
+    maskIndex: 1,
+    expectedMaskName: expected.maskName,
+    includeKeyframes: true,
+    keyframeLimit: 10
+  });
+  if (!pathDetails || !pathDetails.pathGeometry || !shapeGeometryMatches(expected.geometry, pathDetails.pathGeometry.geometry)) {
+    throw new Error(`${scenario.id}: generated path geometry changed or did not read back after export.`);
+  }
+
+  try {
+    fs.unlinkSync(outputPath);
+  } catch (_error) {}
+
+  return {
+    ok: true,
+    comp: { itemIndex: compMatch.itemIndex, name: compMatch.name },
+    layer: { index: layer.index, name: layer.name },
+    outputFileName: expected.outputFileName,
+    bytes: Buffer.byteLength(content, "utf8"),
+    removedGeneratedExport: !fs.existsSync(outputPath)
+  };
+}
+
 async function verifyCameraReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const comp = await callBridgeTool("get_comp_details", {
@@ -6011,6 +6082,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedPathGeometry) {
     return verifyGeneratedPathGeometryReadBack(scenario, expected);
+  }
+
+  if (expected.generatedPathPointsExport) {
+    return verifyGeneratedPathPointsExportReadBack(scenario, expected);
   }
 
   if (expected.cameraReadBack) {
@@ -6832,6 +6907,10 @@ async function main() {
   }
   if (command === "agent-flip-path-openai-cli-smoke" || command === "full-ui-agent-flip-path-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliFlipPathGeometryScenarioConfig());
+    return;
+  }
+  if (command === "agent-export-path-points-openai-cli-smoke" || command === "full-ui-agent-export-path-points-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliExportPathPointsScenarioConfig());
     return;
   }
   if (command === "agent-puppet-on-transparent-openai-cli-smoke" || command === "full-ui-agent-puppet-on-transparent-openai-cli-smoke") {

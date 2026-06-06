@@ -20,6 +20,7 @@ const MUTATING_TOOLS = new Set([
   "create_shape_layer",
   "create_layer_mask",
   "set_path_geometry",
+  "export_path_points",
   "fit_layer_to_comp",
   "set_property_value",
   "set_layer_metadata",
@@ -1453,6 +1454,77 @@ function checkSetPathGeometry(checks, step, payload, evidence) {
   });
 }
 
+function exportPathPointsVertices(args) {
+  if (Array.isArray(args.vertices)) return args.vertices;
+  if (isPlainObject(args.geometry) && Array.isArray(args.geometry.vertices)) return args.geometry.vertices;
+  return [];
+}
+
+function roundExportCoordinate(value, decimalPlaces) {
+  return Number(Number(value).toFixed(decimalPlaces));
+}
+
+function expectedExportPathPoints(args) {
+  const decimalPlaces = Math.max(0, Math.min(4, Math.floor(numberValue(hasOwn(args, "decimalPlaces") ? args.decimalPlaces : 2) || 0)));
+  const rotate = hasOwn(args, "rotateFirstPointToEnd") ? args.rotateFirstPointToEnd !== false : true;
+  const points = exportPathPointsVertices(args)
+    .filter((point) => Array.isArray(point) && point.length >= 2)
+    .map((point) => [
+      roundExportCoordinate(point[0], decimalPlaces),
+      roundExportCoordinate(point[1], decimalPlaces)
+    ]);
+  if (rotate && points.length > 1) points.push(points.shift());
+  return points;
+}
+
+function pathPointsMatch(expected, observed) {
+  return Array.isArray(expected) &&
+    Array.isArray(observed) &&
+    expected.length === observed.length &&
+    expected.every((point, index) => (
+      Array.isArray(point) &&
+      Array.isArray(observed[index]) &&
+      nearlyEqual(point[0], observed[index][0]) &&
+      nearlyEqual(point[1], observed[index][1])
+    ));
+}
+
+function checkExportPathPoints(checks, step, payload) {
+  const args = step.args || {};
+  const file = isPlainObject(payload.file) ? payload.file : {};
+  const expectedFileName = args.outputFileName || "points.txt";
+  const expectedPoints = expectedExportPathPoints(args);
+  const observedPoints = Array.isArray(payload.points) ? payload.points : [];
+  const hashOk = typeof file.sha256 === "string" && /^[a-f0-9]{64}$/i.test(file.sha256);
+  const contentPreview = String(payload.contentPreview || "");
+  const variableName = args.variableName || "points";
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:file`,
+    title: "Generated path-points export file was written and read back",
+    expected: expectedFileName,
+    observed: `${file.outputFileName || "missing"}; bytes=${file.byteLength || 0}; sha256=${hashOk}`,
+    passed: file.outputFileName === expectedFileName && Number(file.byteLength || 0) > 0 && hashOk,
+    evidence: file.outputPath || "No generated export file evidence."
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:points`,
+    title: "Exported points match rounded and rotated vertices",
+    expected: stableStringify(expectedPoints),
+    observed: stableStringify(observedPoints),
+    passed: expectedPoints.length > 0 && pathPointsMatch(expectedPoints, observedPoints),
+    evidence: stepLabel(step)
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:content`,
+    title: "Export content uses the reviewed variable payload format",
+    expected: `var ${variableName} = ...;`,
+    observed: contentPreview,
+    passed: contentPreview.startsWith(`var ${variableName} = [`) && contentPreview.endsWith(";"),
+    evidence: stepLabel(step)
+  });
+}
+
 function exactRenamesMatch(items, args) {
   if (!items.length) return false;
   for (let index = 0; index < items.length; index += 1) {
@@ -1755,6 +1827,11 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "set_path_geometry") {
     checkSetPathGeometry(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "export_path_points") {
+    checkExportPathPoints(checks, step, payload);
     return;
   }
 

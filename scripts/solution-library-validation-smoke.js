@@ -36,6 +36,7 @@ const IMPORTED_ADVISORY_IDS = [
   "stick-effect-to-layer-typed-plan",
   "estimate-path-length-typed-plan",
   "flip-path-typed-plan",
+  "export-path-points-typed-plan",
   "toggle-puppet-on-transparent-typed-plan",
   "round-selected-property-values-typed-plan",
   "set-new-color-typed-plan",
@@ -137,6 +138,7 @@ const AVAILABLE_TOOLS = [
   "set_layer_mask",
   "get_path_geometry",
   "set_path_geometry",
+  "export_path_points",
   "align_layers_to_time",
   "set_property_keyframes",
   "fill_in_keyframes",
@@ -759,6 +761,30 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /set_path_geometry/.test(note)), `${id}: notes must require path geometry mutation.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Flip_Path/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "export-path-points-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_path_geometry", "export_path_points"],
+        `${id}: export-path-points workflow should stay on the narrow path read plus generated file export typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: export-path-points workflow must be a file-output side effect.`);
+      assert.strictEqual(solution.requiredSafetyGates.checkpointOrEditSession, true, `${id}: file-output recipe should preserve the normal mutating gate invariant.`);
+      assert(text.includes("get_path_geometry"), `${id}: recipe should require path geometry read-back.`);
+      assert(text.includes("export_path_points"), `${id}: recipe should use the generated export typed tool.`);
+      assert(text.includes("logs/generated-exports"), `${id}: recipe should document the generated export root.`);
+      assert(text.includes("Desktop"), `${id}: recipe should explicitly reject Desktop writes.`);
+      assert(text.includes("sha256"), `${id}: recipe should require hash read-back.`);
+      assert(text.includes("var points"), `${id}: recipe should preserve the reviewed source payload shape.`);
+      assert(text.includes("Do not infer selected paths"), `${id}: recipe should reject inferred selected-path traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_path_geometry/.test(step)), `${id}: verification must include get_path_geometry.`);
+      assert(solution.verificationRecipe.steps.some((step) => /export_path_points/.test(step)), `${id}: verification must include export_path_points.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /sha256/.test(item)), `${id}: verification must require sha256 evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /unchanged vertices/.test(item) || /unchanged/.test(item)), `${id}: verification must prove geometry was not mutated.`);
+      assert(solution.notes.some((note) => /get_path_geometry/.test(note)), `${id}: notes must require path geometry read evidence.`);
+      assert(solution.notes.some((note) => /export_path_points/.test(note)), `${id}: notes must require generated file export.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Export_Path_Points/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "toggle-puppet-on-transparent-typed-plan") {
       assert.deepStrictEqual(
@@ -2689,6 +2715,22 @@ function assertActualRetrieval(registry) {
   assert(flipPathPromptSection.includes("vertices"), "prompt section should preserve vertex guidance.");
   assert(flipPathPromptSection.includes("tangents"), "prompt section should preserve tangent guidance.");
   assert(!/run_extendscript/i.test(flipPathPromptSection), "flip-path guidance should not recommend raw ExtendScript.");
+
+  const exportPathPointsRetrieval = retrieveSolutionHints("Export points for a generated mask path after reading vertices with get_path_geometry, round them to two decimals, rotate the first point to the end, write var points to a safe generated txt file, and read the path geometry back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(exportPathPointsRetrieval.ok, true);
+  assert(ids(exportPathPointsRetrieval).includes("export-path-points-typed-plan"), "export-path-points advisory recipe should surface for generated path point export prompts.");
+  const exportPathPointsPromptSection = formatSolutionHintsForPrompt(exportPathPointsRetrieval);
+  assert(exportPathPointsPromptSection.includes("Export Path Points Typed Plan"), "prompt section should include export-path-points advisory title.");
+  assert(exportPathPointsPromptSection.includes("get_path_geometry"), "prompt section should require path geometry read-back.");
+  assert(exportPathPointsPromptSection.includes("export_path_points"), "prompt section should prefer export_path_points for generated file output.");
+  assert(exportPathPointsPromptSection.includes("logs/generated-exports"), "prompt section should mention generated export root.");
+  assert(exportPathPointsPromptSection.includes("Desktop"), "prompt section should reject Desktop writes.");
+  assert(exportPathPointsPromptSection.includes("sha256"), "prompt section should require hash evidence.");
+  assert(!/run_extendscript/i.test(exportPathPointsPromptSection), "export-path-points guidance should not recommend raw ExtendScript.");
 
   const puppetOnTransparentRetrieval = retrieveSolutionHints("Set Puppet On Transparent on a generated ADBE FreePin3 effect by reading ADBE FreePin3 On Transparent, set_effect_property true with propertyMatchName, and read back the boolean property.", {
     registry,

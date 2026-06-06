@@ -67,6 +67,8 @@ const TOOL_ALIASES = {
   setlayerpathgeometry: "set_path_geometry",
   setshapepathgeometry: "set_path_geometry",
   setmaskpathgeometry: "set_path_geometry",
+  exportpathpoints: "export_path_points",
+  exportpathpointstofile: "export_path_points",
   fitlayer: "fit_layer_to_comp",
   fittocomp: "fit_layer_to_comp",
   fitlayertocomp: "fit_layer_to_comp",

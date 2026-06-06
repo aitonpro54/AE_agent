@@ -41,6 +41,9 @@ const IDEMPOTENCY_LOG_FILE = path.join(LOG_DIR, "idempotency-results.jsonl");
 const DEV_REQUESTS_DIR = process.env.AE_AGENT_DEV_REQUEST_DIR
   ? path.resolve(process.env.AE_AGENT_DEV_REQUEST_DIR)
   : path.join(LOG_DIR, "dev-requests");
+const GENERATED_EXPORT_DIR = process.env.AE_AGENT_GENERATED_EXPORT_DIR
+  ? path.resolve(process.env.AE_AGENT_GENERATED_EXPORT_DIR)
+  : path.join(LOG_DIR, "generated-exports");
 const HARDCORE_SESSIONS_DIR = process.env.AE_AGENT_HARDCORE_SESSION_DIR
   ? path.resolve(process.env.AE_AGENT_HARDCORE_SESSION_DIR)
   : path.join(LOG_DIR, "hardcore-sessions");
@@ -805,6 +808,7 @@ function getBridgeStatus() {
     logFile: LOG_FILE,
     aiChatLogFile: AI_CHAT_LOG_FILE,
     idempotencyLogFile: IDEMPOTENCY_LOG_FILE,
+    generatedExportDir: GENERATED_EXPORT_DIR,
     hardcoreSessionDir: HARDCORE_SESSIONS_DIR,
     agentSecretsFile: AGENT_SECRETS_FILE,
     backupDir: BACKUP_DIR,
@@ -870,6 +874,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "create_layer_mask",
   "set_layer_mask",
   "set_path_geometry",
+  "export_path_points",
   "add_project_item_to_comp",
   "duplicate_layer",
   "duplicate_layers",
@@ -1983,7 +1988,7 @@ function compactCheckpoint(checkpoint) {
 function inferMutationTarget(toolName, args, payload) {
   const target = { tool: toolName };
   const request = {};
-  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "layerName", "sourceName", "expectedLayerName", "expectedLayerNames", "comment", "label", "locked", "maskIndex", "expectedMaskName", "operation", "maskMode", "targetTime", "time", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "itemType", "sourceItemIndex", "sourceItemName", "sourceCompItemIndex", "sourceCompName", "nameSuffix", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "renderQueueItemIndex", "outputPath"]) {
+  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "layerName", "sourceName", "expectedLayerName", "expectedLayerNames", "comment", "label", "locked", "maskIndex", "expectedMaskName", "operation", "maskMode", "targetTime", "time", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "itemType", "sourceItemIndex", "sourceItemName", "sourceCompItemIndex", "sourceCompName", "nameSuffix", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "renderQueueItemIndex", "outputPath", "outputFileName"]) {
     if (hasArg(args || {}, key)) request[key] = args[key];
   }
   if (Object.keys(request).length) target.request = request;
@@ -2011,6 +2016,7 @@ function inferMutationTarget(toolName, args, payload) {
     if (payload.duplicatedItems) target.duplicatedItems = payload.duplicatedItems;
     if (payload.renderQueueItem) target.renderQueueItem = payload.renderQueueItem;
     if (payload.renderQueueItems) target.renderQueueItems = payload.renderQueueItems;
+    if (payload.file) target.file = payload.file;
     if (payload.renamed) target.renamed = payload.renamed;
     if (payload.split) target.split = payload.split;
     if (payload.namePrefix) target.namePrefix = payload.namePrefix;
@@ -2256,6 +2262,28 @@ function inferVerificationTarget(toolName, args, payload) {
 }
 
 async function verifyMutationResult(toolName, args, payload) {
+  if (toolName === "export_path_points") {
+    const file = payload && typeof payload === "object" && !Array.isArray(payload) ? payload.file || {} : {};
+    const hashOk = typeof file.sha256 === "string" && /^[a-f0-9]{64}$/i.test(file.sha256);
+    const byteLength = Number(file.byteLength || 0);
+    return {
+      ok: hashOk && byteLength > 0,
+      checkedAt: new Date().toISOString(),
+      target: {
+        tool: toolName,
+        outputFileName: file.outputFileName || args && args.outputFileName || null,
+        outputPath: file.outputPath || null
+      },
+      file: {
+        byteLength,
+        sha256: file.sha256 || null,
+        existsAfter: file.existsAfter === true,
+        deletedAfterReadBack: file.deletedAfterReadBack === true
+      },
+      warnings: hashOk && byteLength > 0 ? [] : ["Generated export file read-back did not include a valid sha256 and byteLength."]
+    };
+  }
+
   const target = inferVerificationTarget(toolName, args || {}, payload);
   const response = await runExtendScriptBody(`
       var target = ${aeLiteral(target)};
@@ -2477,6 +2505,101 @@ function resolveOutputFilePath(filePath) {
     throw new Error("outputPath is required.");
   }
   return path.resolve(PROJECT_ROOT, requestedPath);
+}
+
+function resolveGeneratedExportFile(outputFileName) {
+  const requestedName = optionalString({ outputFileName }, "outputFileName", "points.txt") || "points.txt";
+  if (path.isAbsolute(requestedName) || requestedName.includes("/") || requestedName.includes("\\")) {
+    throw new Error("outputFileName must be a simple generated .txt filename, not a path.");
+  }
+  if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}\.txt$/i.test(requestedName)) {
+    throw new Error("outputFileName must be 1-96 safe characters ending in .txt.");
+  }
+
+  const resolvedPath = path.resolve(GENERATED_EXPORT_DIR, requestedName);
+  if (!isPathInside(GENERATED_EXPORT_DIR, resolvedPath)) {
+    throw new Error("outputFileName must resolve inside the generated export folder.");
+  }
+  return { outputFileName: requestedName, resolvedPath };
+}
+
+function pathPointsGeometryFromArgs(args) {
+  if (hasArg(args || {}, "vertices")) return requiredPointArray(args, "vertices", 1, 80);
+  if (hasArg(args || {}, "geometry")) return optionalPathGeometry(args, "geometry", null).vertices;
+  throw new Error("vertices or geometry is required.");
+}
+
+function roundedCoordinate(value, decimalPlaces) {
+  return Number(Number(value).toFixed(decimalPlaces));
+}
+
+function buildPathPointsExport(vertices, options) {
+  const decimalPlaces = Math.max(0, Math.min(4, Math.floor(Number(options.decimalPlaces))));
+  const points = vertices.map((point) => [
+    roundedCoordinate(point[0], decimalPlaces),
+    roundedCoordinate(point[1], decimalPlaces)
+  ]);
+  if (options.rotateFirstPointToEnd && points.length > 1) {
+    points.push(points.shift());
+  }
+  const variableName = optionalString(options, "variableName", "points") || "points";
+  if (!/^[A-Za-z_$][A-Za-z0-9_$]{0,63}$/.test(variableName)) {
+    throw new Error("variableName must be a valid JavaScript identifier up to 64 characters.");
+  }
+  return {
+    variableName,
+    points,
+    content: `var ${variableName} = ${JSON.stringify(points)};`
+  };
+}
+
+function exportPathPointsFile(args) {
+  const vertices = pathPointsGeometryFromArgs(args || {});
+  const coordinateLimit = 1000000;
+  if (vertices.some((point) => Math.abs(point[0]) > coordinateLimit || Math.abs(point[1]) > coordinateLimit)) {
+    throw new Error("vertices values must be between -1000000 and 1000000.");
+  }
+
+  const decimalPlaces = Math.max(0, Math.min(4, Math.floor(optionalNumber(args || {}, "decimalPlaces", 2))));
+  const rotateFirstPointToEnd = optionalBoolean(args || {}, "rotateFirstPointToEnd", true);
+  const deleteAfterReadBack = optionalBoolean(args || {}, "deleteAfterReadBack", false);
+  const { outputFileName, resolvedPath } = resolveGeneratedExportFile(optionalString(args || {}, "outputFileName", "points.txt"));
+  const exportData = buildPathPointsExport(vertices, {
+    decimalPlaces,
+    rotateFirstPointToEnd,
+    variableName: optionalString(args || {}, "variableName", "points")
+  });
+
+  fs.mkdirSync(path.dirname(resolvedPath), { recursive: true });
+  fs.writeFileSync(resolvedPath, exportData.content, "utf8");
+  const readBack = fs.readFileSync(resolvedPath, "utf8");
+  const sha256 = crypto.createHash("sha256").update(readBack).digest("hex");
+  let existsAfter = true;
+  if (deleteAfterReadBack) {
+    fs.unlinkSync(resolvedPath);
+    existsAfter = fs.existsSync(resolvedPath);
+  }
+
+  return {
+    outputFileName,
+    outputPath: resolvedPath,
+    generatedExportDir: GENERATED_EXPORT_DIR,
+    decimalPlaces,
+    rotateFirstPointToEnd,
+    variableName: exportData.variableName,
+    sourceVertexCount: vertices.length,
+    pointCount: exportData.points.length,
+    points: exportData.points,
+    contentPreview: readBack.slice(0, 500),
+    file: {
+      outputFileName,
+      outputPath: resolvedPath,
+      byteLength: Buffer.byteLength(readBack, "utf8"),
+      sha256,
+      existsAfter,
+      deletedAfterReadBack: deleteAfterReadBack
+    }
+  };
 }
 
 function normalizePropertyPathArg(args, name) {
@@ -6122,7 +6245,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For explicit generated layer metadata, use set_layer_metadata only with one explicit comp target, concrete layerIndices, and expectedLayerNames when available. It only supports comment, label, and locked, and must be followed by get_layer_details read-back for each target layer.",
     "For explicit layer switches, use set_property_value only with whitelisted layer attributes threeDLayer, collapseTransformation, or motionBlur on inspected layer indices, setAtTime:false, then read back with get_layer_details. Do not use it for parenting, selection changes, timeline switches, or arbitrary layer fields.",
     "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
-    "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, set_layer_mask, get_path_geometry, set_path_geometry, and fit_layer_to_comp. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Use set_path_geometry only for one explicit Shape or Mask path property with reviewed vertices, inTangents, outTangents, closed state, and optional bounded keyframes, then read back with get_path_geometry; do not delete masks, target multiple masks/layers, run roto, or traverse arbitrary property trees.",
+    "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, set_layer_mask, get_path_geometry, set_path_geometry, export_path_points, and fit_layer_to_comp. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Use set_path_geometry only for one explicit Shape or Mask path property with reviewed vertices, inTangents, outTangents, closed state, and optional bounded keyframes, then read back with get_path_geometry. Use export_path_points only after get_path_geometry evidence and only for generated export files; never write Desktop or arbitrary user paths. Do not delete masks, target multiple masks/layers, run roto, or traverse arbitrary property trees.",
     "For camera controller rigs, use create_camera_with_controller instead of raw ExtendScript or ad hoc parenting; read back both camera.parent and controller 3D/separated-position state with get_layer_details.",
     "For onion skinning, use toggle_onion_skinning and read back the generated adjustment layer plus CC Wide Time effect; do not use broad property traversal.",
     "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, fill_in_keyframes, keyframe_current_value_from_expression, set_spatial_in_tangent, set_expression, and clear_expression. Use separate_shape_size_dimensions for generated rectangle/ellipse size slider separation.",
@@ -7943,6 +8066,44 @@ const tools = [
         keyframeLimit: { type: "number", description: "Maximum keyframes to include. Defaults to 80, maximum 80." }
       },
       required: ["layerIndex", "targetKind"]
+    }
+  },
+  {
+    name: "export_path_points",
+    description: "Write rounded path vertices from explicit get_path_geometry evidence to a generated local text export under logs/generated-exports. This tool never writes Desktop or arbitrary user paths.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        vertices: {
+          type: "array",
+          description: "Vertices from current get_path_geometry evidence as [x, y] points. Required unless geometry is provided.",
+          items: { type: "array", items: { type: "number" } }
+        },
+        geometry: {
+          type: "object",
+          description: "Optional get_path_geometry geometry object with vertices, inTangents, outTangents, and closed. Used only for geometry.vertices."
+        },
+        outputFileName: {
+          type: "string",
+          description: "Optional generated .txt filename. Must be a simple filename, not a path. Defaults to points.txt."
+        },
+        decimalPlaces: {
+          type: "number",
+          description: "Coordinate rounding precision from 0 through 4. Defaults to 2."
+        },
+        rotateFirstPointToEnd: {
+          type: "boolean",
+          description: "Whether to move the first point to the end after rounding. Defaults to true."
+        },
+        variableName: {
+          type: "string",
+          description: "JavaScript variable name for the text payload. Defaults to points."
+        },
+        deleteAfterReadBack: {
+          type: "boolean",
+          description: "When true, write and read/hash the generated file, then delete it for generated proof cleanup. Defaults to false."
+        }
+      }
     }
   },
   {
@@ -11479,6 +11640,14 @@ async function callTool(name, args) {
       };
     `);
     return toolResult(result.result);
+  }
+
+  if (name === "export_path_points") {
+    try {
+      return toolResult(exportPathPointsFile(args || {}));
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
   }
 
   if (name === "get_active_comp") {

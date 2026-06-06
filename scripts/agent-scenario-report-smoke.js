@@ -19,6 +19,7 @@ const {
   agentDakkshinTypedToolsScenarioPlans,
   agentEffectPropertyScenarioPlans,
   agentEstimatePathLengthScenarioPlans,
+  agentExportPathPointsScenarioPlans,
   agentExpressionScenarioPlans,
   agentFlipPathGeometryScenarioPlans,
   agentParametricAnchorExpressionScenarioPlans,
@@ -741,6 +742,23 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(flipPathGeometry.plan.steps[5].args.targetKind, "mask");
   assert.strictEqual(flipPathGeometry.plan.steps[5].args.keyframes.length, 2);
   assert.strictEqual(flipPathGeometry.plan.steps[6].args.includeKeyframes, true);
+
+  const [exportPathPoints] = agentExportPathPointsScenarioPlans("Codex QA AUX-EXPORT Fixture");
+  assert.strictEqual(exportPathPoints.id, "generated-export-path-points");
+  assert.strictEqual(exportPathPoints.expectedReadBack.generatedPathPointsExport, true);
+  assert.deepStrictEqual(exportPathPoints.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_solid_layer",
+    "set_layer_mask",
+    "set_path_geometry",
+    "get_path_geometry",
+    "export_path_points",
+    "get_path_geometry",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(exportPathPoints.plan.steps[5].args.outputFileName.endsWith(".txt"), true);
+  assert.deepStrictEqual(exportPathPoints.plan.steps[5].args.vertices, exportPathPoints.expectedReadBack.geometry.vertices);
+  assert.strictEqual(exportPathPoints.plan.steps[6].args.includeKeyframes, true);
 
   const remainingTails = agentRemainingTailContractsScenarioPlans("Codex QA AUX099 Fixture");
   assert.deepStrictEqual(remainingTails.map((scenario) => scenario.id), [

@@ -54,7 +54,7 @@
         "explicitConfirmation": false,
         "allowMutations": false,
         "idempotency": false,
-        "checkpointOrEditSession": false,
+        "checkpointOrEditSession": true,
         "postMutationReadBack": false
       },
       "verificationRecipe": {
@@ -8238,6 +8238,116 @@
         "Use get_path_geometry for pre/post read-back and set_path_geometry for the reviewed path geometry mutation.",
         "Require a separate typed-tool contract for source-exact ScriptUI direction selection, broad selectedProperties traversal, expression-driven paths, arbitrary user paths, multi-target batches, file output, or exact source JSX semantics.",
         "Do not use this recipe for path export, mask deletion, layer transform edits, source relinking, timing edits, render queue changes, Essential Graphics, Puppet pin atoms, third-party effects, selected-property rename, file export, or broad composition/project mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "export-path-points-typed-plan",
+      "title": "Export Path Points Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "properties",
+        "shape-layers",
+        "shape-path",
+        "mask-path",
+        "path-geometry",
+        "file-output",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Export path vertices to logs/generated-exports with sha256 read-back, not Desktop.",
+        "appliesWhen": [
+          "The user asks to export points for a generated or explicitly reviewed Shape or Mask path.",
+          "Typed adaptation is acceptable only when current get_path_geometry evidence identifies one explicit path target and the export can write to the bridge generated export folder instead of Desktop or arbitrary user paths."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "pathTarget",
+          "type": "object",
+          "required": true,
+          "description": "Current get_path_geometry evidence containing comp identity, layerIndex, targetKind, exact shape propertyPath or mask index/name, vertices, inTangents, outTangents, closed state, expression state, and truncation state."
+        },
+        {
+          "name": "outputFileName",
+          "type": "string",
+          "required": false,
+          "description": "Simple generated .txt filename. Paths, Desktop writes, and user-selected locations are rejected."
+        }
+      ],
+      "targetAssumptions": [
+        "The exported path is generated or explicitly reviewed and bound by current get_path_geometry evidence before export.",
+        "The workflow exports one explicit Shape or Mask path target only.",
+        "The plan rounds vertices to two decimal places, rotates the first point to the end, and writes var points = ...; using export_path_points.",
+        "Expression-driven paths, truncated geometry, arbitrary selectedProperties traversal, unreviewed user paths, Desktop writes, arbitrary outputPath values, raw ExtendScript, path mutation, layer transforms, sources, timing, render queue items, project items, and selection state are preserved or rejected."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/export-path-points-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_path_geometry",
+          "export_path_points"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read one explicit shape or mask path, export rounded/rotated vertices with export_path_points to logs/generated-exports with sha256, then read the same target back with get_path_geometry.",
+        "steps": [
+          "Run get_active_comp or create a generated comp before export to capture target comp identity.",
+          "Run get_path_geometry and capture target identity, expression state, vertices, inTangents, outTangents, closed state, keyframe/truncation state, and geometry.",
+          "Fail closed when geometry is missing or truncated, expression state is enabled, target identity is ambiguous, or the requested output is Desktop/user path/arbitrary outputPath.",
+          "Run export_path_points with reviewed vertices, decimalPlaces:2, rotateFirstPointToEnd:true, and a simple generated outputFileName.",
+          "Run get_path_geometry again for the same target and compare vertices, inTangents, outTangents, and closed state with the pre-export geometry.",
+          "Fail closed if source-exact selectedProperties traversal, Desktop writes, arbitrary user paths, path mutation, or raw ExtendScript is required."
+        ],
+        "expectedEvidence": [
+          "Pre-export get_path_geometry identifies the exact comp, layer, target kind, mask index/name or shape propertyPath, expression-disabled state, vertices, inTangents, outTangents, closed state, and non-truncated geometry.",
+          "export_path_points result reports generated outputPath, outputFileName, byteLength, sha256, contentPreview, exported points, and cleanup state.",
+          "The exported content matches var points = <rounded and first-point-rotated vertices>;.",
+          "Post-export get_path_geometry shows unchanged vertices, inTangents, outTangents, and closed state.",
+          "Unsupported selectedProperties traversal, Desktop/user paths, arbitrary outputPath, expression-driven paths, file overwrite outside generated exports, and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-properties-export-path-points as generated-only advisory typed-plan coverage for one explicit path geometry export.",
+          "Generated-only proof uses get_path_geometry plus the parent-approved export_path_points file-output policy; parent importer owns live acceptance and scoped retry evidence."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-tool-properties-export-path-points",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Properties/Export_Path_Points.jsx into existing typed tools as generated-only get_path_geometry plus export_path_points guidance for one explicit shape or mask path target; no source JSX copied. Current typed tools require path geometry read-back, reviewed vertices, safe generated .txt output under logs/generated-exports or AE_AGENT_GENERATED_EXPORT_DIR, sha256/content read-back, optional cleanup, and post-export get_path_geometry verification. Source-exact comp.selectedProperties traversal, Desktop points.txt writes, arbitrary user paths, expression-driven or truncated paths, path mutation, and raw ExtendScript require a separate typed-tool contract or fail closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, idempotency, and read-back verification.",
+        "Require current get_path_geometry evidence before exporting path points; do not infer selected paths from prior chat context.",
+        "Use export_path_points only with reviewed vertices from one explicit generated or reviewed Shape or Mask path target.",
+        "Require a post-export get_path_geometry read-back to prove path geometry was not mutated by the export.",
+        "Require a separate typed-tool contract for source-exact selectedProperties traversal, Desktop writes, arbitrary outputPath values, user file prompts, expression-driven paths, truncated geometry, multi-target batches, or exact source JSX semantics.",
+        "Do not use this recipe for path edits, mask deletion, layer transform edits, source relinking, timing edits, render queue changes, Essential Graphics, Puppet pin atoms, third-party effects, selected-property rename, or broad composition/project mutation."
       ]
     },
     {

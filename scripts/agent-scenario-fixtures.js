@@ -42,6 +42,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "set_comp_properties",
   "set_layer_mask",
   "set_path_geometry",
+  "export_path_points",
   "add_layer_marker",
   "update_layer_marker",
   "delete_layer_marker",
@@ -2000,6 +2001,82 @@ function agentFlipPathGeometryScenarioPlans(runPrefix) {
   }));
 }
 
+function roundPathPointForExport(point) {
+  return [
+    Number(Number(point[0]).toFixed(2)),
+    Number(Number(point[1]).toFixed(2))
+  ];
+}
+
+function exportedPathPoints(vertices) {
+  const points = vertices.map(roundPathPointForExport);
+  if (points.length > 1) points.push(points.shift());
+  return points;
+}
+
+function agentExportPathPointsScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Export Path Points`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Solid`;
+  const maskName = `${base} Mask`;
+  const outputFileName = `${safeOutputName(base)}-points.txt`;
+  const geometry = {
+    closed: true,
+    vertices: [[10.123, 20.987], [220.555, 35.444], [190, 170], [45.333, 135.666]],
+    inTangents: [[0, 0], [-12, 0], [0, -14], [14, 0]],
+    outTangents: [[12, 0], [0, 14], [-14, 0], [0, -12]]
+  };
+  const points = exportedPathPoints(geometry.vertices);
+  const expectedContent = `var points = ${JSON.stringify(points)};`;
+
+  return [
+    {
+      id: "generated-export-path-points",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "set_layer_mask",
+        "set_path_geometry",
+        "get_path_geometry",
+        "export_path_points",
+        "get_path_geometry",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedPathPointsExport: true,
+        compName,
+        layerName,
+        maskName,
+        outputFileName,
+        expectedContent,
+        points,
+        geometry
+      },
+      plan: {
+        summary: "Generated-only live QA for Export Path Points semantics using explicit mask path vertices and safe generated file output.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated export path comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.05, 0.06, 0.07], allowDuplicateName: false, openInViewer: true, comment: "Generated-only export path points validation" } },
+          { title: "Create generated export path solid", tool: "create_solid_layer", args: { compName, name: layerName, color: [0.28, 0.42, 0.2], width: 520, height: 300, duration: 3 } },
+          { title: "Create generated export target mask", tool: "set_layer_mask", args: { compName, layerIndex: 1, operation: "create", name: maskName, vertices: geometry.vertices, maskMode: "add", inverted: false } },
+          { title: "Seed generated export path geometry", tool: "set_path_geometry", args: { compName, layerIndex: 1, targetKind: "mask", maskIndex: 1, expectedMaskName: maskName, geometry } },
+          { title: "Read generated path geometry before export", tool: "get_path_geometry", args: { compName, layerIndex: 1, targetKind: "mask", maskIndex: 1, expectedMaskName: maskName, includeKeyframes: true, keyframeLimit: 10 } },
+          { title: "Export generated path points to safe file", tool: "export_path_points", args: { vertices: geometry.vertices, outputFileName, decimalPlaces: 2, rotateFirstPointToEnd: true } },
+          { title: "Read generated path geometry after export", tool: "get_path_geometry", args: { compName, layerIndex: 1, targetKind: "mask", maskIndex: 1, expectedMaskName: maskName, includeKeyframes: true, keyframeLimit: 10 } },
+          { title: "Read generated layer after export path points", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentCompPropertiesScenarioPlans(runPrefix) {
   const base = `${runPrefix} Comp Properties`;
   const compName = `${base} Comp`;
@@ -3351,6 +3428,7 @@ module.exports = {
   agentEffectPropertyScenarioPlans,
   agentExpressionScenarioPlans,
   agentEstimatePathLengthScenarioPlans,
+  agentExportPathPointsScenarioPlans,
   agentFlipPathGeometryScenarioPlans,
   agentKeyframeScenarioPlans,
   agentPathGeometryScenarioPlans,

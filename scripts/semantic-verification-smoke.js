@@ -21,7 +21,8 @@ const LOCAL_MUTATING_TOOLS = new Set([
   "set_comp_properties",
   "set_layer_metadata",
   "set_layer_mask",
-  "set_path_geometry"
+  "set_path_geometry",
+  "export_path_points"
 ]);
 
 function clone(value) {
@@ -1643,6 +1644,161 @@ function assertSetPathGeometryMissingReadBackNeedsReview() {
   assert(semantic.checks.some((check) => check.id.indexOf("set_path_geometry:geometry") >= 0 && check.status === "failed"), "set_path_geometry missing read-back should fail.");
 }
 
+function assertExportPathPointsPasses() {
+  const geometry = shapePathFixtureGeometry();
+  const propertyPath = shapePathFixturePropertyPath();
+  const vertices = [[10.123, 20.987], [30.555, 40.444], [50, 60]];
+  const exportedPoints = [[30.55, 40.44], [50, 60], [10.12, 20.99]];
+  const plan = {
+    summary: "Export generated path points from get_path_geometry evidence.",
+    risk: "medium",
+    requiresCheckpoint: false,
+    steps: [
+      {
+        title: "Read generated shape path",
+        tool: "get_path_geometry",
+        args: {
+          compName: "Path Fixture",
+          layerIndex: 1,
+          targetKind: "shape",
+          propertyPath
+        }
+      },
+      {
+        title: "Export generated path points",
+        tool: "export_path_points",
+        args: {
+          vertices,
+          outputFileName: "semantic-path-points.txt",
+          decimalPlaces: 2,
+          rotateFirstPointToEnd: true
+        }
+      },
+      {
+        title: "Read generated shape path after export",
+        tool: "get_path_geometry",
+        args: {
+          compName: "Path Fixture",
+          layerIndex: 1,
+          targetKind: "shape",
+          propertyPath
+        }
+      }
+    ]
+  };
+  const run = {
+    ok: true,
+    dryRun: false,
+    steps: [
+      {
+        index: 1,
+        title: plan.steps[0].title,
+        tool: "get_path_geometry",
+        status: "completed",
+        args: plan.steps[0].args,
+        result: {
+          comp: { name: "Path Fixture" },
+          layer: layerInfo("Shape Path Layer"),
+          targetKind: "shape",
+          property: pathGeometryProperty(geometry, propertyPath),
+          pathGeometry: pathGeometryProperty(geometry, propertyPath)
+        }
+      },
+      {
+        index: 2,
+        title: plan.steps[1].title,
+        tool: "export_path_points",
+        status: "completed",
+        args: plan.steps[1].args,
+        result: {
+          outputFileName: "semantic-path-points.txt",
+          outputPath: "logs/generated-exports/semantic-path-points.txt",
+          pointCount: 3,
+          points: exportedPoints,
+          contentPreview: `var points = ${JSON.stringify(exportedPoints)};`,
+          file: {
+            outputFileName: "semantic-path-points.txt",
+            outputPath: "logs/generated-exports/semantic-path-points.txt",
+            byteLength: 49,
+            sha256: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            existsAfter: true
+          },
+          verification: { ok: true }
+        }
+      },
+      {
+        index: 3,
+        title: plan.steps[2].title,
+        tool: "get_path_geometry",
+        status: "completed",
+        args: plan.steps[2].args,
+        result: {
+          comp: { name: "Path Fixture" },
+          layer: layerInfo("Shape Path Layer"),
+          targetKind: "shape",
+          property: pathGeometryProperty(geometry, propertyPath),
+          pathGeometry: pathGeometryProperty(geometry, propertyPath)
+        }
+      }
+    ]
+  };
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `export_path_points semantic verification should pass with post-export read-back: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("export_path_points:file") >= 0 && check.status === "passed"), "export_path_points file read-back check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("export_path_points:points") >= 0 && check.status === "passed"), "export_path_points point transform check should pass.");
+}
+
+function assertExportPathPointsMissingReadBackNeedsReview() {
+  const vertices = [[10.123, 20.987], [30.555, 40.444], [50, 60]];
+  const exportedPoints = [[30.55, 40.44], [50, 60], [10.12, 20.99]];
+  const plan = {
+    summary: "Export generated path points without post-export read-back.",
+    risk: "medium",
+    requiresCheckpoint: false,
+    steps: [
+      {
+        title: "Export generated path points",
+        tool: "export_path_points",
+        args: {
+          vertices,
+          outputFileName: "semantic-path-points.txt"
+        }
+      }
+    ]
+  };
+  const run = {
+    ok: true,
+    dryRun: false,
+    steps: [
+      {
+        index: 1,
+        title: plan.steps[0].title,
+        tool: "export_path_points",
+        status: "completed",
+        args: plan.steps[0].args,
+        result: {
+          outputFileName: "semantic-path-points.txt",
+          outputPath: "logs/generated-exports/semantic-path-points.txt",
+          pointCount: 3,
+          points: exportedPoints,
+          contentPreview: `var points = ${JSON.stringify(exportedPoints)};`,
+          file: {
+            outputFileName: "semantic-path-points.txt",
+            outputPath: "logs/generated-exports/semantic-path-points.txt",
+            byteLength: 49,
+            sha256: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            existsAfter: true
+          },
+          verification: { ok: true }
+        }
+      }
+    ]
+  };
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "export_path_points must still require an explicit post-export read-back step.");
+  assert(semantic.checks.some((check) => check.id.indexOf("export_path_points:file") >= 0 && check.status === "passed"), "export_path_points per-step file check should pass.");
+}
+
 function assertDakkshinFixtureMutationScopedReadBackPasses() {
   const [scenario] = agentDakkshinTypedToolsScenarioPlans("Semantic Fixture");
   const run = fakeRunForPlan(scenario.plan);
@@ -2222,6 +2378,8 @@ function main() {
   assertSetLayerMaskMissingReadBackNeedsReview();
   assertSetPathGeometryPasses();
   assertSetPathGeometryMissingReadBackNeedsReview();
+  assertExportPathPointsPasses();
+  assertExportPathPointsMissingReadBackNeedsReview();
   assertDakkshinFixtureMutationScopedReadBackPasses();
   assertDakkshinLiveAeEvidenceShapePasses();
   assertSetPropertyValuePasses();
