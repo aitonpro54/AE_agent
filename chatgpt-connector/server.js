@@ -98,6 +98,23 @@ const READ_ONLY_BRIDGE_TOOLS = [
     }, ["layerIndex"])
   },
   {
+    name: "get_path_geometry",
+    title: "Get path geometry",
+    description: "Read one explicit Shape or Mask path geometry from one layer, including vertices, inTangents, outTangents, closed state, and optional keyframes.",
+    inputSchema: objectSchema({
+      compItemIndex: numberField("Optional 1-based project item index for the target composition. Defaults to active comp."),
+      compName: stringField("Optional exact composition name to target when compItemIndex is not provided."),
+      layerIndex: numberField("Required 1-based layer index in the target composition."),
+      targetKind: stringField("Path target kind: shape or mask."),
+      propertyPath: stringField("Required for targetKind=shape. Exact property path to an ADBE Vector Shape path property."),
+      maskIndex: numberField("Required for targetKind=mask. 1-based mask index in the layer mask group."),
+      expectedLayerName: stringField("Optional exact layer name guard."),
+      expectedMaskName: stringField("Optional exact mask name guard for targetKind=mask."),
+      includeKeyframes: booleanField("Whether to include up to keyframeLimit Shape keyframes. Defaults to true."),
+      keyframeLimit: numberField("Maximum keyframes to include. Defaults to 80, maximum 80.")
+    }, ["layerIndex", "targetKind"])
+  },
+  {
     name: "list_effect_presets",
     title: "List effect presets",
     description: "Return curated After Effects effect matchName presets and automation hints.",

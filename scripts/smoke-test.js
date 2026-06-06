@@ -655,6 +655,67 @@ async function main() {
       expansionMatches: true
     }
   }));
+  const smokePathGeometry = {
+    closed: true,
+    vertices: [[100, 80], [500, 80], [500, 260], [100, 260]],
+    inTangents: [[0, 0], [-20, 0], [0, -20], [20, 0]],
+    outTangents: [[20, 0], [0, 20], [-20, 0], [0, -20]]
+  };
+  const smokePathPropertyPath = [
+    "ADBE Root Vectors Group",
+    "ADBE Vector Group",
+    "ADBE Vectors Group",
+    "ADBE Vector Shape"
+  ];
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "get_path_geometry", {
+    compName: "Smoke Comp",
+    layerIndex: 1,
+    targetKind: "shape",
+    propertyPath: smokePathPropertyPath,
+    includeKeyframes: true
+  }, ["__codexPathGeometryInfo", "ADBE Vector Shape"], {
+    comp: { itemIndex: 1, name: "Smoke Comp" },
+    layer: { index: 1, name: "Smoke Shape" },
+    targetKind: "shape",
+    property: {
+      name: "Path",
+      matchName: "ADBE Vector Shape",
+      propertyPath: smokePathPropertyPath.map((segment) => ({ name: segment, matchName: segment })),
+      geometry: { kind: "Shape", vertexCount: 4, ...smokePathGeometry },
+      numKeys: 0,
+      keyframes: []
+    }
+  }));
+  queuedToolResponses.push(await callQueuedDevTool(port, token, "set_path_geometry", {
+    compName: "Smoke Comp",
+    layerIndex: 1,
+    targetKind: "shape",
+    propertyPath: smokePathPropertyPath,
+    geometry: smokePathGeometry,
+    verifyAfter: false
+  }, ["Codex Set Path Geometry", "__codexBuildShapeFromGeometry", "ADBE Vector Shape"], {
+    comp: { itemIndex: 1, name: "Smoke Comp" },
+    layer: { index: 1, name: "Smoke Shape" },
+    targetKind: "shape",
+    property: {
+      name: "Path",
+      matchName: "ADBE Vector Shape",
+      propertyPath: smokePathPropertyPath.map((segment) => ({ name: segment, matchName: segment })),
+      geometry: { kind: "Shape", vertexCount: 4, ...smokePathGeometry },
+      numKeys: 0,
+      keyframes: []
+    },
+    postVerification: {
+      ok: true,
+      targetKind: "shape",
+      propertyMatchName: "ADBE Vector Shape",
+      geometryMatches: true,
+      keyframesMatch: true,
+      requestedKeyframeCount: 0,
+      afterKeyframeCount: 0,
+      clearExisting: false
+    }
+  }));
   queuedToolResponses.push(await callQueuedDevTool(port, token, "duplicate_layer", {
     compName: "Smoke Comp",
     layerIndex: 1,
@@ -1865,7 +1926,7 @@ async function main() {
   if (alignLayers.status !== 200 || !alignLayers.body.ok || alignLayers.body.result.changedCount !== 2) {
     throw new Error("Expected align_layers_to_time to align multiple layer timings");
   }
-  if (queuedToolResponses.length !== 31 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
+  if (queuedToolResponses.length !== 33 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
     throw new Error("Expected all new typed tool queue smokes to pass");
   }
   const deepDuplicateQueuedPayload = deepDuplicateQueuedResponse.response.body.result || {};

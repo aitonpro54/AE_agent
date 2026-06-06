@@ -26,6 +26,24 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker shape/mask path geometry contract slice:
+  added read-only `get_path_geometry` and mutating `set_path_geometry` typed
+  tools for explicit shape and mask path targets, covering `vertices`,
+  `inTangents`, `outTangents`, `closed`, keyframed path values, and
+  post-mutation read-back verification. The ChatGPT connector exposes only the
+  read-only tool. Plan repair aliases, semantic verification, queue smoke,
+  generated-only scenario/report fixtures, and future CEP command routing were
+  updated. This milestone does not mark `tool-properties-flip-path` or
+  `tool-properties-export-path-points` completed: source-exact flip/export
+  recipes, file-output policy, and generated-only live proof remain separate
+  gates. Validation passed: touched-file `node --check`, `node
+  scripts/semantic-verification-smoke.js`, `node scripts/smoke-test.js`, `node
+  scripts/agent-scenario-report-smoke.js`, `node
+  scripts/chatgpt-connector-smoke.js`, compact status/proof/ledger-summary,
+  `git diff --check`, `npm.cmd run check:rules`, `npm.cmd run
+  smoke:provider-contract`, `npm.cmd run smoke:provider-api`, `npm.cmd run
+  smoke:solutions`, `npm.cmd run smoke:planning`, `npm.cmd run smoke:bridge`,
+  and `npm.cmd run smoke:full-intake`.
 - [x] Reopened Full Intaker composition-marker read contract slice:
   added `get_comp_details` composition marker read-back via
   `includeMarkers:true` and `markerLimit`, returning `markers.items` ordered by
@@ -547,15 +565,14 @@ old `AE_agent` repository remains the historical source.
 
 ## Next Milestone
 
-The reopened Full Intaker objective is closed and the latest runtime has been
-cleaned down to the retained evidence set. Do not use `completed_no_candidates`
-or `terminal total=75` alone as success evidence in future reviews; the compact
-backlog map from closeout showed all 58 blocked/skipped entries had fresh
-parentReducer evidence and no entry remained without fresh terminal review. The
-remaining terminal blockers are explicit approval/contract gaps, especially CEP
-panel readiness for generated-only live proofs, generated Puppet pin atom
-read/write/read-back, exact shape-path vertex export/read-back, and generated
-file-output policy.
+The reopened screen-task objective is active again. The latest completed
+reviewable block is shape/mask path geometry contract readiness; do not treat it
+as completing `tool-properties-flip-path` or `tool-properties-export-path-points`
+until candidate-specific recipes/lane policy and any required generated-only
+proof are accepted. Do not use `completed_no_candidates` or `terminal total=75`
+alone as success evidence; every future acceptance still needs scoped family
+mapping, parent reducer review, validation, plan/handoff updates, and a
+reviewable commit.
 
 Keep file IO/Desktop writes, `saveFrameToPng`, render execution, proxy
 mutation, reveal/shell, cleanup/deletion, selected-property arbitrary
@@ -570,6 +587,14 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-06: Shape/mask path geometry now has explicit typed contracts:
+  `get_path_geometry` reads shape or mask path geometry and optional keyframes;
+  `set_path_geometry` writes either one geometry or bounded keyframed geometry
+  with undo-group cleanup, expression-enabled refusal, expected layer/mask
+  guards, and post-verification. The connector exposes read-only path geometry
+  only. Candidate completion remains fail-closed until source-specific
+  flip/export semantics, file-output policy, and live-readiness gates are
+  separately reviewed.
 - 2026-06-06: Added `npm run full-intake:cleanup` backed by
   `scripts/full-intake-runtime-cleanup.js` for guarded local cleanup of ignored
   Full Intaker runtime leftovers. Dry-run remains the default; destructive
@@ -1093,6 +1118,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened shape/mask path geometry contract slice | Required to unblock future safe review for shape/mask path geometry candidates without copying raw JSX or running live mutation. | Passed/contract-ready: parent-owned implementation added `get_path_geometry`/`set_path_geometry`, connector read-only schema, plan repair aliases, semantic verification, generated-only scenario/report fixture, CEP command wiring for future proof, and queue smoke coverage. No candidate was marked completed. Validation passed: touched-file `node --check`; `node scripts/semantic-verification-smoke.js`; `node scripts/smoke-test.js`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/chatgpt-connector-smoke.js`; compact status/proof/ledger-summary; `git diff --check` with line-ending warnings only; `npm.cmd run check:rules`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; and `npm.cmd run smoke:full-intake`. No broad queue, live CEP proof, mutating live AE validation, Local/Ollama, fallback provider, dependency/package change, push, or PR was run. |
 | Full Intaker runtime cleanup | Required to remove ignored local runtime leftovers from the latest `full-intake-kyletmartinez` run while preserving review evidence. | Passed: pre-cleanup compact status/proof/ledger-summary showed `completed_no_candidates`, proof hash `f7179a05e8ff4bf656099e17bb1ed2b3eb4deab21651cd2640a090b089712639`, entries=75, completed=17, blocked/skipped=58, queued=0, failed=0. `node --check scripts/full-intake-runtime-cleanup.js` and `npm.cmd run full-intake:cleanup -- --help` passed. Dry-run selected 6 runtime worktrees, 6 importer batch dirs, 11 cli-autoloop files, and 2 full-intake temp dirs; apply reduced `.codex-runtime` from 44.99 MB / 3733 files to 6.07 MB / 862 files. Post-cleanup dry-run reported 0 remaining actions, `git worktree list --porcelain` reported only the main worktree, and compact status/proof/ledger-summary still read. `git diff --check` passed with line-ending normalization warnings only; `npm.cmd run check:rules` passed; `npm.cmd run smoke:full-intake` passed on rerun with a longer timeout after the first 180s attempt timed out. `.codex/handoff.md` was updated locally after repository write access was restored. No broad queue, provider calls, Local/Ollama, fallback providers, live CEP/AE validation, dependency changes, raw JSX copy, source-checkout writes, PR, or GitHub PR automation were run. |
 | Reopened final Properties terminal-review slice | Required to give `tool-properties-toggle-puppet-pin-types` and `tool-properties-export-path-points` fresh scoped attempts, existing-lane search, lane feasibility review, parent reducer decisions, and unblock conditions. | Passed/terminal: proposal-only sidecars reviewed both candidates without edits/commits. Parent reducer verified baton active, clean tracked worktree before scoped retries, source behavior, duplicate recipe/registry/live-lane ids, raw JSX/dependency/package/source-checkout risks, child commit/branch absence, and scoped Full Intaker tickets. Scoped retries used `--context-percent 20`, `--max-items 1`, exact candidate ids, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; both returned terminal tickets with no open tickets, no requeue, and no completed candidate. Ledger annotations now show 58/58 blocked/skipped entries with parentReducer evidence and no entry without fresh review. Closeout validation is recorded in the current handoff. |
 | Reopened Properties Puppet On Transparent lane/retry | Required to give `tool-properties-toggle-puppet-on-transparent` a fresh scoped attempt, existing-lane search, lane creation feasibility review, parent reducer decision, and unblock condition. | Passed/terminal: proposal-only sidecar reviewed source behavior, current typed surface, duplicate recipe/registry/live-lane ids, and runtime state without edits/commits. Parent reducer accepted only a generated-only effect-property adaptation, verified baton active, clean tracked worktree before guarded retry, source behavior, duplicate evidence, raw JSX/dependency/package/source-checkout risks, and child commit/branch absence. Parent added `recipes/toggle-puppet-on-transparent-typed-plan.md`, `recipes/generic-repo-intake/tool-properties-toggle-puppet-on-transparent.md`, registry coverage, scenario/report smoke coverage, CEP smoke command, exact-candidate unsafe-skip synthesis gate, and `puppet-on-transparent-effect-property-generated-only` self-improvement lane. Scoped retry used `--context-percent 20`, `--max-items 1`, exact candidate id, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; it matched the new lane, passed non-live validation and read-only CEP preflight, then produced terminal ticket `live-lane-family-puppet-on-transparent-effect-property-generated-only` because the CEP panel reported `openai-cli/gpt-5.5 is not ready`. Stable parent-reducer ticket and ledger annotation were written. Compact ledger map now shows 56/58 blocked/skipped entries fresh-reviewed and 2 Properties entries remaining. Closeout validation is recorded in the current handoff. |

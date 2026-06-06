@@ -19,6 +19,7 @@ const MUTATING_TOOLS = new Set([
   "update_text_layer",
   "create_shape_layer",
   "create_layer_mask",
+  "set_path_geometry",
   "fit_layer_to_comp",
   "set_property_value",
   "set_layer_metadata",
@@ -61,6 +62,7 @@ const READ_BACK_TOOLS = new Set([
   "list_layers",
   "get_comp_details",
   "get_layer_details",
+  "get_path_geometry",
   "get_render_queue_status"
 ]);
 
@@ -230,7 +232,10 @@ function addMaskEvidence(target, value, source) {
     maskMode: value.maskMode === undefined || value.maskMode === null ? "" : String(value.maskMode),
     inverted: value.inverted === true,
     shape: {
-      vertices: Array.isArray(shape.vertices) ? shape.vertices : []
+      closed: shape.closed === true,
+      vertices: Array.isArray(shape.vertices) ? shape.vertices : [],
+      inTangents: Array.isArray(shape.inTangents) ? shape.inTangents : [],
+      outTangents: Array.isArray(shape.outTangents) ? shape.outTangents : []
     },
     opacity: numberValue(value.opacity),
     feather: numberArrayValue(value.feather),
@@ -333,6 +338,7 @@ function addPropertyEvidence(target, value, source) {
     matchName: value.matchName || null,
     propertyPath: Array.isArray(value.propertyPath) ? value.propertyPath : [],
     value: hasOwn(value, "value") ? value.value : undefined,
+    geometry: shapeGeometryFromValue(value.geometry || value.value),
     numKeys: numberValue(value.numKeys),
     keyframes: Array.isArray(value.keyframes) ? value.keyframes : [],
     source: source || "observed property"
@@ -571,6 +577,70 @@ function numberArrayMatches(observed, expected) {
   return expectedNumbers.every((value, index) => nearlyEqual(value, observedNumbers[index]));
 }
 
+function pointListsMatch(observed, expected) {
+  if (!Array.isArray(expected)) return true;
+  if (!Array.isArray(observed) || observed.length !== expected.length) return false;
+  return expected.every((point, index) => (
+    Array.isArray(point) &&
+    Array.isArray(observed[index]) &&
+    nearlyEqual(point[0], observed[index][0]) &&
+    nearlyEqual(point[1], observed[index][1])
+  ));
+}
+
+function shapeGeometryFromValue(value) {
+  const raw = isPlainObject(value) && isPlainObject(value.value) && value.value.kind === "Shape"
+    ? value.value
+    : value;
+  if (!isPlainObject(raw)) return null;
+  if (!Array.isArray(raw.vertices)) return null;
+  return {
+    closed: raw.closed === true,
+    vertexCount: numberValue(raw.vertexCount) || raw.vertices.length,
+    vertices: raw.vertices,
+    inTangents: Array.isArray(raw.inTangents) ? raw.inTangents : [],
+    outTangents: Array.isArray(raw.outTangents) ? raw.outTangents : []
+  };
+}
+
+function expectedPathGeometry(args) {
+  const geometry = isPlainObject(args.geometry) ? args.geometry : args;
+  if (!isPlainObject(geometry) || !Array.isArray(geometry.vertices)) return null;
+  return {
+    closed: geometry.closed === true,
+    vertices: geometry.vertices,
+    inTangents: Array.isArray(geometry.inTangents) ? geometry.inTangents : [],
+    outTangents: Array.isArray(geometry.outTangents) ? geometry.outTangents : []
+  };
+}
+
+function pathGeometryMatches(observed, expected) {
+  const actual = shapeGeometryFromValue(observed);
+  if (!actual || !expected) return false;
+  return actual.closed === expected.closed &&
+    actual.vertexCount === expected.vertices.length &&
+    pointListsMatch(actual.vertices, expected.vertices) &&
+    pointListsMatch(actual.inTangents, expected.inTangents) &&
+    pointListsMatch(actual.outTangents, expected.outTangents);
+}
+
+function expectedPathGeometryKeyframes(args) {
+  if (!Array.isArray(args.keyframes)) return [];
+  return args.keyframes.map((item) => ({
+    time: numberValue(item && item.time),
+    geometry: expectedPathGeometry(item && (item.geometry || item))
+  })).filter((item) => item.time !== null && item.geometry);
+}
+
+function pathGeometryKeyframesMatch(observedKeyframes, expectedKeyframes) {
+  if (!expectedKeyframes.length) return true;
+  if (!Array.isArray(observedKeyframes) || observedKeyframes.length < expectedKeyframes.length) return false;
+  return expectedKeyframes.every((expected) => observedKeyframes.some((observed) => (
+    nearlyEqual(observed && observed.time, expected.time) &&
+    pathGeometryMatches(observed && (observed.geometry || observed.value), expected.geometry)
+  )));
+}
+
 function maskMatchesArgs(mask, args) {
   if (!mask) return false;
   if (hasOwn(args, "maskIndex") && !nearlyEqual(mask.propertyIndex, args.maskIndex)) return false;
@@ -593,6 +663,34 @@ function observedMaskEvidence(evidence, args, payloadMask) {
     if (index !== null && mask.propertyIndex !== null && !nearlyEqual(mask.propertyIndex, index)) continue;
     if (name && mask.name && mask.name !== name) continue;
     if (maskMatchesArgs(mask, args)) return mask.source || "observed mask";
+  }
+  return null;
+}
+
+function observedPathGeometryEvidence(evidence, args, payloadPath) {
+  if (!evidence) return null;
+  const expectedGeometry = expectedPathGeometry(args);
+  const expectedKeyframes = expectedPathGeometryKeyframes(args);
+  const payloadPropertyPath = payloadPath && Array.isArray(payloadPath.propertyPath) ? payloadPath.propertyPath : null;
+
+  for (const property of evidence.properties || []) {
+    const pathMatches = Array.isArray(args.propertyPath)
+      ? propertyPathMatches(property.propertyPath, args.propertyPath)
+      : payloadPropertyPath
+        ? propertyPathMatches(property.propertyPath, payloadPropertyPath)
+        : true;
+    if (!pathMatches) continue;
+    if (expectedGeometry && !pathGeometryMatches(property.geometry || property.value, expectedGeometry)) continue;
+    if (!pathGeometryKeyframesMatch(property.keyframes, expectedKeyframes)) continue;
+    return property.source || "observed path geometry property";
+  }
+
+  if (String(args.targetKind || "") === "mask" && expectedGeometry) {
+    for (const mask of evidence.masks || []) {
+      if (hasOwn(args, "maskIndex") && !nearlyEqual(mask.propertyIndex, args.maskIndex)) continue;
+      if (hasOwn(args, "expectedMaskName") && args.expectedMaskName && !sameString(mask.name, args.expectedMaskName)) continue;
+      if (pathGeometryMatches(mask.shape, expectedGeometry)) return mask.source || "observed mask path geometry";
+    }
   }
   return null;
 }
@@ -1333,6 +1431,28 @@ function checkSetLayerMask(checks, step, payload, evidence) {
   });
 }
 
+function checkSetPathGeometry(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const pathGeometry = payload.pathGeometry || payload.property || {};
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const readBackEvidence = observedPathGeometryEvidence(evidence.readBack, args, pathGeometry);
+  const requestedKeyframes = expectedPathGeometryKeyframes(args);
+  const expected = requestedKeyframes.length
+    ? `${requestedKeyframes.length} path geometry keyframe(s)`
+    : `${expectedPathGeometry(args) && expectedPathGeometry(args).vertices.length || 0} path vertices`;
+  const observed = pathGeometry && pathGeometry.geometry
+    ? `${pathGeometry.geometry.vertexCount || pathGeometry.geometry.vertices && pathGeometry.geometry.vertices.length || 0} vertices`
+    : `${postVerification.afterKeyframeCount || 0} keyframe(s)`;
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:geometry`,
+    title: "Path geometry matches read-back",
+    expected,
+    observed,
+    passed: postVerification.ok === true && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run path geometry read-back matched set_path_geometry."
+  });
+}
+
 function exactRenamesMatch(items, args) {
   if (!items.length) return false;
   for (let index = 0; index < items.length; index += 1) {
@@ -1630,6 +1750,11 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "set_comp_properties") {
     checkSetCompProperties(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_path_geometry") {
+    checkSetPathGeometry(checks, step, payload, evidence);
     return;
   }
 

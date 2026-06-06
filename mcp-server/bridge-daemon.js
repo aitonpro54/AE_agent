@@ -869,6 +869,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "toggle_onion_skinning",
   "create_layer_mask",
   "set_layer_mask",
+  "set_path_geometry",
   "add_project_item_to_comp",
   "duplicate_layer",
   "duplicate_layers",
@@ -1713,9 +1714,7 @@ function optionalNumberArray(args, name, fallback, minLength, maxLength) {
   return values;
 }
 
-function requiredPointArray(args, name, minLength, maxLength) {
-  if (!hasArg(args, name)) throw new Error(`${name} is required.`);
-  let raw = args[name];
+function parsePointArrayValue(raw, name, minLength, maxLength) {
   if (typeof raw === "string") raw = JSON.parse(raw);
   if (!Array.isArray(raw)) throw new Error(`${name} must be an array of [x, y] points.`);
   if (minLength && raw.length < minLength) throw new Error(`${name} must include at least ${minLength} points.`);
@@ -1730,6 +1729,76 @@ function requiredPointArray(args, name, minLength, maxLength) {
       throw new Error(`${name}[${index}] must contain finite coordinates.`);
     }
     return [x, y];
+  });
+}
+
+function requiredPointArray(args, name, minLength, maxLength) {
+  if (!hasArg(args, name)) throw new Error(`${name} is required.`);
+  return parsePointArrayValue(args[name], name, minLength, maxLength);
+}
+
+function parsePathGeometryValue(value, name, minVertices, maxVertices) {
+  const raw = typeof value === "string" ? JSON.parse(value) : value;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error(`${name} must be an object with vertices, inTangents, outTangents, and closed.`);
+  }
+
+  const vertices = parsePointArrayValue(raw.vertices, `${name}.vertices`, minVertices, maxVertices);
+  const inTangents = parsePointArrayValue(raw.inTangents, `${name}.inTangents`, vertices.length, vertices.length);
+  const outTangents = parsePointArrayValue(raw.outTangents, `${name}.outTangents`, vertices.length, vertices.length);
+  if (typeof raw.closed !== "boolean") throw new Error(`${name}.closed must be a boolean.`);
+  if (raw.closed && vertices.length < 3) throw new Error(`${name}.vertices must include at least 3 points when closed is true.`);
+
+  const coordinateLimit = 1000000;
+  const allPoints = vertices.concat(inTangents, outTangents);
+  if (allPoints.some((point) => Math.abs(point[0]) > coordinateLimit || Math.abs(point[1]) > coordinateLimit)) {
+    throw new Error(`${name} coordinates must be between -1000000 and 1000000.`);
+  }
+
+  return {
+    vertices,
+    inTangents,
+    outTangents,
+    closed: raw.closed
+  };
+}
+
+function optionalPathGeometry(args, name, fallback) {
+  if (!hasArg(args, name)) return fallback;
+  return parsePathGeometryValue(args[name], name, 2, 80);
+}
+
+function pathGeometryFromTopLevelArgs(args) {
+  if (!hasArg(args || {}, "vertices") && !hasArg(args || {}, "inTangents") && !hasArg(args || {}, "outTangents") && !hasArg(args || {}, "closed")) {
+    return null;
+  }
+  return parsePathGeometryValue({
+    vertices: args.vertices,
+    inTangents: args.inTangents,
+    outTangents: args.outTangents,
+    closed: args.closed
+  }, "geometry", 2, 80);
+}
+
+function requiredPathGeometryKeyframes(args, name) {
+  const raw = args ? args[name] : null;
+  const items = Array.isArray(raw)
+    ? raw
+    : typeof raw === "string" && raw.trim().startsWith("[")
+      ? JSON.parse(raw)
+      : null;
+  if (!Array.isArray(items) || !items.length) throw new Error(`${name} must be a non-empty array.`);
+  if (items.length > 80) throw new Error(`${name} must include no more than 80 keyframes.`);
+  return items.map((item, index) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`${name}[${index}] must be an object.`);
+    }
+    const time = Number(item.time);
+    if (!Number.isFinite(time) || time < 0) throw new Error(`${name}[${index}].time must be a non-negative finite number.`);
+    return {
+      time,
+      geometry: parsePathGeometryValue(item.geometry || item, `${name}[${index}]`, 2, 80)
+    };
   });
 }
 
@@ -4081,6 +4150,7 @@ const PLANNING_TOOL_NAMES = [
   "list_layers",
   "get_comp_details",
   "get_layer_details",
+  "get_path_geometry",
   "get_selected_layers",
   "get_selected_properties",
   "find_project_items",
@@ -4103,6 +4173,7 @@ const PLANNING_TOOL_NAMES = [
   "toggle_onion_skinning",
   "create_layer_mask",
   "set_layer_mask",
+  "set_path_geometry",
   "add_project_item_to_comp",
   "duplicate_layer",
   "duplicate_layers",
@@ -6051,7 +6122,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For explicit generated layer metadata, use set_layer_metadata only with one explicit comp target, concrete layerIndices, and expectedLayerNames when available. It only supports comment, label, and locked, and must be followed by get_layer_details read-back for each target layer.",
     "For explicit layer switches, use set_property_value only with whitelisted layer attributes threeDLayer, collapseTransformation, or motionBlur on inspected layer indices, setAtTime:false, then read back with get_layer_details. Do not use it for parenting, selection changes, timeline switches, or arbitrary layer fields.",
     "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
-    "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, set_layer_mask, and fit_layer_to_comp. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Update mode needs one explicit maskIndex; do not delete masks, target multiple masks/layers, run roto, or edit arbitrary mask property trees.",
+    "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, set_layer_mask, get_path_geometry, set_path_geometry, and fit_layer_to_comp. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Use set_path_geometry only for one explicit Shape or Mask path property with reviewed vertices, inTangents, outTangents, closed state, and optional bounded keyframes, then read back with get_path_geometry; do not delete masks, target multiple masks/layers, run roto, or traverse arbitrary property trees.",
     "For camera controller rigs, use create_camera_with_controller instead of raw ExtendScript or ad hoc parenting; read back both camera.parent and controller 3D/separated-position state with get_layer_details.",
     "For onion skinning, use toggle_onion_skinning and read back the generated adjustment layer plus CC Wide Time effect; do not use broad property traversal.",
     "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, fill_in_keyframes, keyframe_current_value_from_expression, set_spatial_in_tangent, set_expression, and clear_expression. Use separate_shape_size_dimensions for generated rectangle/ellipse size slider separation.",
@@ -7855,6 +7926,26 @@ const tools = [
     }
   },
   {
+    name: "get_path_geometry",
+    description: "Read one explicit Shape or Mask path geometry from one layer, including vertices, inTangents, outTangents, closed state, and optional keyframes.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndex: { type: "number", description: "Required 1-based layer index in the target composition." },
+        targetKind: { type: "string", enum: ["shape", "mask"], description: "Path target kind. Shape requires propertyPath; mask requires maskIndex." },
+        propertyPath: { type: ["array", "string"], description: "Required for targetKind=shape. Exact property path to an ADBE Vector Shape path property.", items: {} },
+        maskIndex: { type: "number", description: "Required for targetKind=mask. 1-based mask index in the layer mask group." },
+        expectedLayerName: { type: "string", description: "Optional exact layer name guard." },
+        expectedMaskName: { type: "string", description: "Optional exact mask name guard for targetKind=mask." },
+        includeKeyframes: { type: "boolean", description: "Whether to include up to keyframeLimit Shape keyframes. Defaults to true." },
+        keyframeLimit: { type: "number", description: "Maximum keyframes to include. Defaults to 80, maximum 80." }
+      },
+      required: ["layerIndex", "targetKind"]
+    }
+  },
+  {
     name: "list_effect_presets",
     description: "Return curated After Effects effect matchName presets and automation hints.",
     inputSchema: {
@@ -9039,6 +9130,31 @@ const tools = [
     }
   },
   {
+    name: "set_path_geometry",
+    description: "Set one explicit Shape or Mask path geometry on one layer using reviewed vertices, inTangents, outTangents, closed state, or a bounded keyframe list, then return immediate read-back.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Required when compName is not provided. 1-based project item index for the explicit target composition." },
+        compName: { type: "string", description: "Required when compItemIndex is not provided. Exact composition name for the explicit target composition." },
+        layerIndex: { type: "number", description: "Required 1-based layer index in the target composition." },
+        targetKind: { type: "string", enum: ["shape", "mask"], description: "Path target kind. Shape requires propertyPath; mask requires maskIndex." },
+        propertyPath: { type: ["array", "string"], description: "Required for targetKind=shape. Exact property path to an ADBE Vector Shape path property.", items: {} },
+        maskIndex: { type: "number", description: "Required for targetKind=mask. 1-based mask index in the layer mask group." },
+        expectedLayerName: { type: "string", description: "Optional exact layer name guard." },
+        expectedMaskName: { type: "string", description: "Optional exact mask name guard for targetKind=mask." },
+        geometry: { type: "object", description: "Optional geometry object with vertices, inTangents, outTangents, and closed. Required unless keyframes are provided." },
+        vertices: { type: "array", description: "Top-level vertices alternative to geometry.vertices.", items: { type: "array", items: { type: "number" } } },
+        inTangents: { type: "array", description: "Top-level inTangents alternative to geometry.inTangents.", items: { type: "array", items: { type: "number" } } },
+        outTangents: { type: "array", description: "Top-level outTangents alternative to geometry.outTangents.", items: { type: "array", items: { type: "number" } } },
+        closed: { type: "boolean", description: "Top-level closed state alternative to geometry.closed." },
+        keyframes: { type: "array", description: "Optional bounded Shape keyframes; each item needs time plus vertices, inTangents, outTangents, and closed, or a geometry object.", items: { type: "object" } },
+        clearExisting: { type: "boolean", description: "When keyframes are provided, remove existing keys before writing the reviewed sequence. Defaults to false." }
+      },
+      required: ["layerIndex", "targetKind"]
+    }
+  },
+  {
     name: "fit_layer_to_comp",
     description: "Scale selected or specified layers to contain, cover, or stretch to the comp frame.",
     inputSchema: {
@@ -9853,12 +9969,42 @@ async function callTool(name, args) {
         return info;
       }
 
+      function __codexPointList(points, limit) {
+        var list = [];
+        if (!points) return list;
+        for (var __pl = 0; __pl < points.length && __pl < limit; __pl++) {
+          var point = points[__pl];
+          list.push([point[0], point[1]]);
+        }
+        return list;
+      }
+
+      function __codexShapeGeometryData(value, limit) {
+        try {
+          if (!value || value.vertices === undefined || value.inTangents === undefined || value.outTangents === undefined) return null;
+          var maxPoints = limit || 80;
+          return {
+            kind: "Shape",
+            closed: value.closed === true,
+            vertexCount: value.vertices ? value.vertices.length : 0,
+            vertices: __codexPointList(value.vertices, maxPoints),
+            inTangents: __codexPointList(value.inTangents, maxPoints),
+            outTangents: __codexPointList(value.outTangents, maxPoints),
+            truncated: value.vertices && value.vertices.length > maxPoints
+          };
+        } catch (__shapeGeometryError) {
+          return null;
+        }
+      }
+
       function __codexValuePreview(prop) {
         var value = prop.value;
         if (value === null || value === undefined) return { kind: "null", value: null };
         if (typeof value === "number" || typeof value === "boolean" || typeof value === "string") {
           return { kind: typeof value, value: value };
         }
+        var shapeGeometry = __codexShapeGeometryData(value, 80);
+        if (shapeGeometry) return shapeGeometry;
         if (value instanceof Array) {
           var items = [];
           for (var __v = 0; __v < value.length && __v < 20; __v++) {
@@ -9888,6 +10034,8 @@ async function callTool(name, args) {
       function __codexValueData(value) {
         if (value === null || value === undefined) return null;
         if (typeof value === "number" || typeof value === "boolean" || typeof value === "string") return value;
+        var shapeGeometry = __codexShapeGeometryData(value, 80);
+        if (shapeGeometry) return shapeGeometry;
         if (value instanceof Array) {
           var items = [];
           for (var __vd = 0; __vd < value.length && __vd < 20; __vd++) items.push(value[__vd]);
@@ -11212,6 +11360,122 @@ async function callTool(name, args) {
         markers: markers,
         propertyTree: propertyTree,
         propertyTreeTruncated: propertyState.count >= propertyState.max
+      };
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "get_path_geometry") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const targetKind = optionalString(args, "targetKind", "").toLowerCase();
+    const expectedLayerName = optionalString(args, "expectedLayerName", "");
+    const expectedMaskName = optionalString(args, "expectedMaskName", "");
+    const includeKeyframes = optionalBoolean(args, "includeKeyframes", true);
+    const keyframeLimit = Math.max(1, Math.min(80, Math.floor(optionalNumber(args, "keyframeLimit", 80))));
+    let propertyPath = null;
+    let maskIndex = null;
+
+    if (!["shape", "mask"].includes(targetKind)) return toolResult("targetKind must be shape or mask.", true);
+    if (targetKind === "shape") {
+      try {
+        propertyPath = normalizePropertyPathArg(args, "propertyPath");
+      } catch (error) {
+        return toolResult(error.message || String(error), true);
+      }
+    } else {
+      maskIndex = optionalPositiveInteger(args, "maskIndex");
+      if (maskIndex === null) return toolResult("maskIndex is required for targetKind=mask.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      var targetKind = ${aeLiteral(targetKind)};
+      var propertyPath = ${propertyPath ? aeLiteral(propertyPath) : "null"};
+      var requestedMaskIndex = ${maskIndex === null ? "null" : maskIndex};
+      var expectedLayerName = ${aeLiteral(expectedLayerName)};
+      var expectedMaskName = ${aeLiteral(expectedMaskName)};
+      var includeKeyframes = ${includeKeyframes ? "true" : "false"};
+      var keyframeLimit = ${keyframeLimit};
+
+      function __codexFindChildProperty(group, matchName, fallbackName) {
+        if (!group) return null;
+        try {
+          var direct = group.property(matchName);
+          if (direct) return direct;
+        } catch (__directPropertyError) {}
+        if (fallbackName) {
+          try {
+            var fallback = group.property(fallbackName);
+            if (fallback) return fallback;
+          } catch (__fallbackPropertyError) {}
+        }
+        try {
+          for (var __cp = 1; __cp <= group.numProperties; __cp++) {
+            var child = group.property(__cp);
+            if (child && (child.matchName === matchName || child.name === fallbackName)) return child;
+          }
+        } catch (__childPropertyError) {}
+        return null;
+      }
+
+      function __codexPathGeometryInfo(prop, owningLayer, includeKeys, limit) {
+        var info = __codexPropertyInfo(prop, owningLayer, false, false);
+        info.geometry = __codexShapeGeometryData(prop.value, 80);
+        if (includeKeys) {
+          info.keyframes = [];
+          var keyCount = 0;
+          try { keyCount = prop.numKeys || 0; } catch (__numKeysError) {}
+          var maxKeys = Math.min(keyCount, limit);
+          for (var __keyIndex = 1; __keyIndex <= maxKeys; __keyIndex++) {
+            info.keyframes.push({
+              index: __keyIndex,
+              time: prop.keyTime(__keyIndex),
+              geometry: __codexShapeGeometryData(prop.keyValue(__keyIndex), 80)
+            });
+          }
+          info.keyframesTruncated = keyCount > maxKeys;
+        }
+        return info;
+      }
+
+      function __codexResolvePathTarget() {
+        if (expectedLayerName && layer.name !== expectedLayerName) {
+          throw new Error("Layer name mismatch. Expected '" + expectedLayerName + "' but found '" + layer.name + "'.");
+        }
+        if (targetKind === "shape") {
+          var shapeProp = __codexResolveProperty(layer, propertyPath);
+          if (!shapeProp || shapeProp.matchName !== "ADBE Vector Shape") {
+            throw new Error("propertyPath must resolve to an ADBE Vector Shape path property.");
+          }
+          return { property: shapeProp, mask: null };
+        }
+        var maskGroup = layer.property("ADBE Mask Parade");
+        if (!maskGroup) throw new Error("Layer does not support masks.");
+        if (requestedMaskIndex < 1 || requestedMaskIndex > maskGroup.numProperties) throw new Error("maskIndex is outside the layer mask range.");
+        var mask = maskGroup.property(requestedMaskIndex);
+        if (!mask) throw new Error("Mask not found at maskIndex " + requestedMaskIndex + ".");
+        if (expectedMaskName && mask.name !== expectedMaskName) {
+          throw new Error("Mask name mismatch. Expected '" + expectedMaskName + "' but found '" + mask.name + "'.");
+        }
+        var maskShapeProp = __codexFindChildProperty(mask, "ADBE Mask Shape", "Mask Path");
+        if (!maskShapeProp) throw new Error("Mask shape property was not found.");
+        return { property: maskShapeProp, mask: mask };
+      }
+
+      var target = __codexResolvePathTarget();
+      var pathGeometry = __codexPathGeometryInfo(target.property, layer, includeKeyframes, keyframeLimit);
+      return {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        layer: __codexLayerInfo(layer),
+        targetKind: targetKind,
+        mask: target.mask ? { propertyIndex: target.mask.propertyIndex, name: target.mask.name, matchName: target.mask.matchName } : null,
+        property: pathGeometry,
+        pathGeometry: pathGeometry
       };
     `);
     return toolResult(result.result);
@@ -14418,6 +14682,225 @@ async function callTool(name, args) {
         postVerification: postVerification
       };
       app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_path_geometry") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const targetKind = optionalString(args, "targetKind", "").toLowerCase();
+    const expectedLayerName = optionalString(args, "expectedLayerName", "");
+    const expectedMaskName = optionalString(args, "expectedMaskName", "");
+    const clearExisting = optionalBoolean(args, "clearExisting", false);
+    let propertyPath = null;
+    let maskIndex = null;
+    let geometry = null;
+    let keyframes = null;
+
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required for set_path_geometry.", true);
+    if (!["shape", "mask"].includes(targetKind)) return toolResult("targetKind must be shape or mask.", true);
+    if (targetKind === "shape") {
+      try {
+        propertyPath = normalizePropertyPathArg(args, "propertyPath");
+      } catch (error) {
+        return toolResult(error.message || String(error), true);
+      }
+    } else {
+      maskIndex = optionalPositiveInteger(args, "maskIndex");
+      if (maskIndex === null) return toolResult("maskIndex is required for targetKind=mask.", true);
+    }
+
+    try {
+      geometry = optionalPathGeometry(args, "geometry", null) || pathGeometryFromTopLevelArgs(args);
+      if (hasArg(args, "keyframes")) keyframes = requiredPathGeometryKeyframes(args, "keyframes");
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
+    if (geometry && keyframes) return toolResult("Provide either geometry or keyframes, not both.", true);
+    if (!geometry && !keyframes) return toolResult("geometry or keyframes are required for set_path_geometry.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      var targetKind = ${aeLiteral(targetKind)};
+      var propertyPath = ${propertyPath ? aeLiteral(propertyPath) : "null"};
+      var requestedMaskIndex = ${maskIndex === null ? "null" : maskIndex};
+      var expectedLayerName = ${aeLiteral(expectedLayerName)};
+      var expectedMaskName = ${aeLiteral(expectedMaskName)};
+      var requestedGeometry = ${geometry ? aeLiteral(geometry) : "null"};
+      var requestedKeyframes = ${keyframes ? aeLiteral(keyframes) : "null"};
+      var clearExisting = ${clearExisting ? "true" : "false"};
+
+      function __codexFindChildProperty(group, matchName, fallbackName) {
+        if (!group) return null;
+        try {
+          var direct = group.property(matchName);
+          if (direct) return direct;
+        } catch (__directPropertyError) {}
+        if (fallbackName) {
+          try {
+            var fallback = group.property(fallbackName);
+            if (fallback) return fallback;
+          } catch (__fallbackPropertyError) {}
+        }
+        try {
+          for (var __cp = 1; __cp <= group.numProperties; __cp++) {
+            var child = group.property(__cp);
+            if (child && (child.matchName === matchName || child.name === fallbackName)) return child;
+          }
+        } catch (__childPropertyError) {}
+        return null;
+      }
+
+      function __codexBuildShapeFromGeometry(data) {
+        var shape = new Shape();
+        shape.vertices = data.vertices;
+        shape.inTangents = data.inTangents;
+        shape.outTangents = data.outTangents;
+        shape.closed = data.closed === true;
+        return shape;
+      }
+
+      function __codexPathGeometryInfo(prop, owningLayer, includeKeys, limit) {
+        var info = __codexPropertyInfo(prop, owningLayer, false, false);
+        info.geometry = __codexShapeGeometryData(prop.value, 80);
+        if (includeKeys) {
+          info.keyframes = [];
+          var keyCount = 0;
+          try { keyCount = prop.numKeys || 0; } catch (__numKeysError) {}
+          var maxKeys = Math.min(keyCount, limit);
+          for (var __keyIndex = 1; __keyIndex <= maxKeys; __keyIndex++) {
+            info.keyframes.push({
+              index: __keyIndex,
+              time: prop.keyTime(__keyIndex),
+              geometry: __codexShapeGeometryData(prop.keyValue(__keyIndex), 80)
+            });
+          }
+          info.keyframesTruncated = keyCount > maxKeys;
+        }
+        return info;
+      }
+
+      function __codexNear(a, b) {
+        return Math.abs(Number(a) - Number(b)) <= 0.0001;
+      }
+
+      function __codexPointListMatches(actual, expected) {
+        if (!actual || !expected || actual.length !== expected.length) return false;
+        for (var __pm = 0; __pm < expected.length; __pm++) {
+          if (!actual[__pm] || !expected[__pm] || actual[__pm].length < 2 || expected[__pm].length < 2) return false;
+          if (!__codexNear(actual[__pm][0], expected[__pm][0]) || !__codexNear(actual[__pm][1], expected[__pm][1])) return false;
+        }
+        return true;
+      }
+
+      function __codexGeometryMatches(actual, expected) {
+        if (!actual || !expected) return false;
+        return actual.closed === expected.closed &&
+          actual.vertexCount === expected.vertices.length &&
+          __codexPointListMatches(actual.vertices, expected.vertices) &&
+          __codexPointListMatches(actual.inTangents, expected.inTangents) &&
+          __codexPointListMatches(actual.outTangents, expected.outTangents);
+      }
+
+      function __codexKeyframesMatch(prop, expectedKeyframes) {
+        if (!expectedKeyframes) return true;
+        if (!prop || prop.numKeys < expectedKeyframes.length) return false;
+        for (var __ek = 0; __ek < expectedKeyframes.length; __ek++) {
+          var expected = expectedKeyframes[__ek];
+          var matched = false;
+          for (var __pk = 1; __pk <= prop.numKeys && !matched; __pk++) {
+            if (__codexNear(prop.keyTime(__pk), expected.time)) {
+              matched = __codexGeometryMatches(__codexShapeGeometryData(prop.keyValue(__pk), 80), expected.geometry);
+            }
+          }
+          if (!matched) return false;
+        }
+        return true;
+      }
+
+      function __codexResolvePathTarget() {
+        if (expectedLayerName && layer.name !== expectedLayerName) {
+          throw new Error("Layer name mismatch. Expected '" + expectedLayerName + "' but found '" + layer.name + "'.");
+        }
+        if (targetKind === "shape") {
+          var shapeProp = __codexResolveProperty(layer, propertyPath);
+          if (!shapeProp || shapeProp.matchName !== "ADBE Vector Shape") {
+            throw new Error("propertyPath must resolve to an ADBE Vector Shape path property.");
+          }
+          return { property: shapeProp, mask: null };
+        }
+        var maskGroup = layer.property("ADBE Mask Parade");
+        if (!maskGroup) throw new Error("Layer does not support masks.");
+        if (requestedMaskIndex < 1 || requestedMaskIndex > maskGroup.numProperties) throw new Error("maskIndex is outside the layer mask range.");
+        var mask = maskGroup.property(requestedMaskIndex);
+        if (!mask) throw new Error("Mask not found at maskIndex " + requestedMaskIndex + ".");
+        if (expectedMaskName && mask.name !== expectedMaskName) {
+          throw new Error("Mask name mismatch. Expected '" + expectedMaskName + "' but found '" + mask.name + "'.");
+        }
+        var maskShapeProp = __codexFindChildProperty(mask, "ADBE Mask Shape", "Mask Path");
+        if (!maskShapeProp) throw new Error("Mask shape property was not found.");
+        return { property: maskShapeProp, mask: mask };
+      }
+
+      var target = __codexResolvePathTarget();
+      var prop = target.property;
+      try {
+        if (prop.expressionEnabled === true) throw new Error("Path geometry property has an enabled expression; clear or review the expression before geometry mutation.");
+      } catch (__expressionProbeError) {
+        if (String(__expressionProbeError).indexOf("enabled expression") >= 0) throw __expressionProbeError;
+      }
+      var before = __codexPathGeometryInfo(prop, layer, true, 80);
+
+      var response = null;
+      app.beginUndoGroup("Codex Set Path Geometry");
+      try {
+        if (requestedKeyframes) {
+          if (clearExisting) {
+            for (var __removeKey = prop.numKeys; __removeKey >= 1; __removeKey--) prop.removeKey(__removeKey);
+          }
+          for (var __kf = 0; __kf < requestedKeyframes.length; __kf++) {
+            if (requestedKeyframes[__kf].time > comp.duration) {
+              throw new Error("keyframes[" + __kf + "].time exceeds comp duration.");
+            }
+            prop.setValueAtTime(requestedKeyframes[__kf].time, __codexBuildShapeFromGeometry(requestedKeyframes[__kf].geometry));
+          }
+        } else {
+          prop.setValue(__codexBuildShapeFromGeometry(requestedGeometry));
+        }
+        var after = __codexPathGeometryInfo(prop, layer, true, 80);
+        var geometryMatches = requestedGeometry ? __codexGeometryMatches(after.geometry, requestedGeometry) : true;
+        var keyframesMatch = requestedKeyframes ? __codexKeyframesMatch(prop, requestedKeyframes) : true;
+        var postVerification = {
+          ok: geometryMatches && keyframesMatch,
+          targetKind: targetKind,
+          propertyMatchName: prop.matchName || null,
+          geometryMatches: geometryMatches,
+          keyframesMatch: keyframesMatch,
+          requestedKeyframeCount: requestedKeyframes ? requestedKeyframes.length : 0,
+          afterKeyframeCount: after.numKeys || 0,
+          clearExisting: clearExisting
+        };
+        response = {
+          comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+          layer: __codexLayerInfo(layer),
+          targetKind: targetKind,
+          mask: target.mask ? { propertyIndex: target.mask.propertyIndex, name: target.mask.name, matchName: target.mask.matchName } : null,
+          before: before,
+          property: after,
+          pathGeometry: after,
+          geometry: after.geometry,
+          postVerification: postVerification
+        };
+      } finally {
+        app.endUndoGroup();
+      }
       return response;
     `);
     return toolResult(result.result);

@@ -20,7 +20,8 @@ const LOCAL_MUTATING_TOOLS = new Set([
   "delete_layer",
   "set_comp_properties",
   "set_layer_metadata",
-  "set_layer_mask"
+  "set_layer_mask",
+  "set_path_geometry"
 ]);
 
 function clone(value) {
@@ -1484,6 +1485,164 @@ function assertSetLayerMaskMissingReadBackNeedsReview() {
   assert(semantic.checks.some((check) => check.id.indexOf("set_layer_mask:mask") >= 0 && check.status === "failed"), "set_layer_mask missing read-back should fail.");
 }
 
+function shapePathFixtureGeometry() {
+  return {
+    closed: true,
+    vertices: [[10, 10], [110, 10], [110, 90], [10, 90]],
+    inTangents: [[0, 0], [-8, 0], [0, -8], [8, 0]],
+    outTangents: [[8, 0], [0, 8], [-8, 0], [0, -8]]
+  };
+}
+
+function shapePathFixturePropertyPath() {
+  return [
+    "ADBE Root Vectors Group",
+    "ADBE Vector Group",
+    "ADBE Vectors Group",
+    "ADBE Vector Shape"
+  ];
+}
+
+function pathGeometryProperty(geometry, propertyPath = shapePathFixturePropertyPath()) {
+  return {
+    name: "Path",
+    matchName: "ADBE Vector Shape",
+    propertyPath: propertyPath.map((segment) => ({ name: segment, matchName: segment })),
+    geometry: { kind: "Shape", vertexCount: geometry.vertices.length, ...clone(geometry) },
+    numKeys: 0,
+    keyframes: []
+  };
+}
+
+function assertSetPathGeometryPasses() {
+  const geometry = shapePathFixtureGeometry();
+  const propertyPath = shapePathFixturePropertyPath();
+  const plan = {
+    summary: "Set one generated shape path geometry and read it back.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Set generated shape path",
+        tool: "set_path_geometry",
+        args: {
+          compName: "Path Fixture",
+          layerIndex: 1,
+          targetKind: "shape",
+          propertyPath,
+          geometry
+        }
+      },
+      {
+        title: "Read generated shape path",
+        tool: "get_path_geometry",
+        args: {
+          compName: "Path Fixture",
+          layerIndex: 1,
+          targetKind: "shape",
+          propertyPath
+        }
+      }
+    ]
+  };
+  const run = {
+    ok: true,
+    dryRun: false,
+    steps: [
+      {
+        index: 1,
+        title: plan.steps[0].title,
+        tool: "set_path_geometry",
+        status: "completed",
+        args: plan.steps[0].args,
+        result: {
+          comp: { name: "Path Fixture" },
+          layer: layerInfo("Shape Path Layer"),
+          targetKind: "shape",
+          property: pathGeometryProperty(geometry, propertyPath),
+          pathGeometry: pathGeometryProperty(geometry, propertyPath),
+          postVerification: {
+            ok: true,
+            geometryMatches: true,
+            keyframesMatch: true,
+            requestedKeyframeCount: 0,
+            afterKeyframeCount: 0
+          },
+          verification: { ok: true }
+        }
+      },
+      {
+        index: 2,
+        title: plan.steps[1].title,
+        tool: "get_path_geometry",
+        status: "completed",
+        args: plan.steps[1].args,
+        result: {
+          comp: { name: "Path Fixture" },
+          layer: layerInfo("Shape Path Layer"),
+          targetKind: "shape",
+          property: pathGeometryProperty(geometry, propertyPath),
+          pathGeometry: pathGeometryProperty(geometry, propertyPath)
+        }
+      }
+    ]
+  };
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `set_path_geometry semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_path_geometry:geometry") >= 0 && check.status === "passed"), "set_path_geometry read-back check should pass.");
+}
+
+function assertSetPathGeometryMissingReadBackNeedsReview() {
+  const geometry = shapePathFixtureGeometry();
+  const propertyPath = shapePathFixturePropertyPath();
+  const plan = {
+    summary: "Set one generated shape path geometry without read-back.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Set generated shape path",
+        tool: "set_path_geometry",
+        args: {
+          compName: "Path Fixture",
+          layerIndex: 1,
+          targetKind: "shape",
+          propertyPath,
+          geometry
+        }
+      }
+    ]
+  };
+  const run = {
+    dryRun: false,
+    steps: [
+      {
+        index: 1,
+        title: plan.steps[0].title,
+        tool: "set_path_geometry",
+        status: "completed",
+        args: plan.steps[0].args,
+        result: {
+          comp: { name: "Path Fixture" },
+          layer: layerInfo("Shape Path Layer"),
+          targetKind: "shape",
+          property: pathGeometryProperty(geometry, propertyPath),
+          pathGeometry: pathGeometryProperty(geometry, propertyPath),
+          postVerification: {
+            ok: true,
+            geometryMatches: true,
+            keyframesMatch: true
+          },
+          verification: { ok: true }
+        }
+      }
+    ]
+  };
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "set_path_geometry must fail closed without post-run read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_path_geometry:geometry") >= 0 && check.status === "failed"), "set_path_geometry missing read-back should fail.");
+}
+
 function assertDakkshinFixtureMutationScopedReadBackPasses() {
   const [scenario] = agentDakkshinTypedToolsScenarioPlans("Semantic Fixture");
   const run = fakeRunForPlan(scenario.plan);
@@ -2061,6 +2220,8 @@ function main() {
   assertSetCompPropertiesReadBackMismatchNeedsReview();
   assertSetLayerMaskCreateUpdatePasses();
   assertSetLayerMaskMissingReadBackNeedsReview();
+  assertSetPathGeometryPasses();
+  assertSetPathGeometryMissingReadBackNeedsReview();
   assertDakkshinFixtureMutationScopedReadBackPasses();
   assertDakkshinLiveAeEvidenceShapePasses();
   assertSetPropertyValuePasses();

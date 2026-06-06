@@ -19,6 +19,7 @@ const {
   agentParametricAnchorExpressionScenarioPlans,
   agentPuppetOnTransparentScenarioPlans,
   agentKeyframeScenarioPlans,
+  agentPathGeometryScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentLayerSwitchScenarioPlans,
@@ -466,6 +467,24 @@ function openAiCliEstimatePathLengthScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_ESTIMATE_PATH_LENGTH_PREFIX || "Codex QA AUX-EPL",
     scenarioFactory: agentEstimatePathLengthScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliPathGeometryScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-path-geometry",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_PATH_GEOMETRY_PREFIX || "Codex QA AUX-PATH",
+    scenarioFactory: agentPathGeometryScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -5854,6 +5873,65 @@ async function verifyCompositionMarkerReadBack(scenario, expected) {
   };
 }
 
+function shapeGeometryMatches(expected, observed) {
+  return Boolean(expected) &&
+    Boolean(observed) &&
+    observed.closed === expected.closed &&
+    pointsMatch(expected.vertices, observed.vertices) &&
+    pointsMatch(expected.inTangents, observed.inTangents) &&
+    pointsMatch(expected.outTangents, observed.outTangents);
+}
+
+function pathGeometryKeyframesMatch(expectedKeyframes, observedKeyframes) {
+  if (!Array.isArray(expectedKeyframes) || !Array.isArray(observedKeyframes)) return false;
+  if (observedKeyframes.length < expectedKeyframes.length) return false;
+  return expectedKeyframes.every((expected) => {
+    const observed = observedKeyframes.find((candidate) => numbersMatch(expected.time, candidate.time, 0.001));
+    return Boolean(observed) && shapeGeometryMatches(expected.geometry, observed.geometry);
+  });
+}
+
+async function verifyGeneratedPathGeometryReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layer = (Array.isArray(comp.layers) ? comp.layers : []).find((item) => item.name === expected.layerName);
+  if (!layer || !layer.index) {
+    throw new Error(`${scenario.id}: generated path-geometry layer ${expected.layerName} was not found by read-back.`);
+  }
+
+  const pathDetails = await callBridgeTool("get_path_geometry", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: layer.index,
+    targetKind: "mask",
+    maskIndex: 1,
+    expectedMaskName: expected.maskName,
+    includeKeyframes: true,
+    keyframeLimit: 10
+  });
+  if (!pathDetails || !pathDetails.pathGeometry) {
+    throw new Error(`${scenario.id}: get_path_geometry did not return path geometry read-back.`);
+  }
+  if (!pathDetails.mask || pathDetails.mask.name !== expected.maskName) {
+    throw new Error(`${scenario.id}: generated path-geometry mask name mismatch.`);
+  }
+  const keyframes = Array.isArray(pathDetails.pathGeometry.keyframes) ? pathDetails.pathGeometry.keyframes : [];
+  if (!pathGeometryKeyframesMatch(expected.keyframes, keyframes)) {
+    throw new Error(`${scenario.id}: generated path-geometry keyframe geometry read-back mismatch.`);
+  }
+
+  return {
+    ok: true,
+    comp: { itemIndex: compMatch.itemIndex, name: compMatch.name },
+    layer: { index: layer.index, name: layer.name },
+    mask: { name: pathDetails.mask.name },
+    keyframes: keyframes.map((item) => ({ index: item.index, time: item.time }))
+  };
+}
+
 async function verifyCameraReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const comp = await callBridgeTool("get_comp_details", {
@@ -5910,6 +5988,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.compositionMarkerReadBack) {
     return verifyCompositionMarkerReadBack(scenario, expected);
+  }
+
+  if (expected.generatedPathGeometry) {
+    return verifyGeneratedPathGeometryReadBack(scenario, expected);
   }
 
   if (expected.cameraReadBack) {
@@ -6723,6 +6805,10 @@ async function main() {
   }
   if (command === "agent-estimate-path-length-openai-cli-smoke" || command === "full-ui-agent-estimate-path-length-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliEstimatePathLengthScenarioConfig());
+    return;
+  }
+  if (command === "agent-path-geometry-openai-cli-smoke" || command === "full-ui-agent-path-geometry-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliPathGeometryScenarioConfig());
     return;
   }
   if (command === "agent-puppet-on-transparent-openai-cli-smoke" || command === "full-ui-agent-puppet-on-transparent-openai-cli-smoke") {

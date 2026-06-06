@@ -41,6 +41,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "delete_layer",
   "set_comp_properties",
   "set_layer_mask",
+  "set_path_geometry",
   "add_layer_marker",
   "update_layer_marker",
   "delete_layer_marker",
@@ -1839,6 +1840,71 @@ function agentEstimatePathLengthScenarioPlans(runPrefix) {
   }));
 }
 
+function agentPathGeometryScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Path Geometry`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Solid`;
+  const maskName = `${base} Mask`;
+  const firstGeometry = {
+    closed: true,
+    vertices: [[80, 70], [360, 70], [360, 210], [80, 210]],
+    inTangents: [[0, 0], [-18, 0], [0, -18], [18, 0]],
+    outTangents: [[18, 0], [0, 18], [-18, 0], [0, -18]]
+  };
+  const secondGeometry = {
+    closed: true,
+    vertices: [[120, 90], [430, 90], [380, 250], [90, 230]],
+    inTangents: [[0, 0], [-22, 0], [0, -22], [22, 0]],
+    outTangents: [[22, 0], [0, 22], [-22, 0], [0, -22]]
+  };
+  const keyframes = [
+    { time: 0, geometry: firstGeometry },
+    { time: 1, geometry: secondGeometry }
+  ];
+
+  return [
+    {
+      id: "generated-shape-mask-path-geometry",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "set_layer_mask",
+        "get_layer_details",
+        "set_path_geometry",
+        "get_path_geometry",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedPathGeometry: true,
+        compName,
+        layerName,
+        maskName,
+        keyframes
+      },
+      plan: {
+        summary: "Generated-only live QA for keyframed Mask path geometry using explicit vertices, inTangents, outTangents, and closed state.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated path-geometry comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.04, 0.06, 0.08], allowDuplicateName: false, openInViewer: true, comment: "Generated-only path geometry validation" } },
+          { title: "Create generated path-geometry solid", tool: "create_solid_layer", args: { compName, name: layerName, color: [0.12, 0.36, 0.72], width: 520, height: 300, duration: 3 } },
+          { title: "Create generated target mask", tool: "set_layer_mask", args: { compName, layerIndex: 1, operation: "create", name: maskName, vertices: firstGeometry.vertices, maskMode: "add", inverted: false } },
+          { title: "Read generated target mask before geometry keys", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } },
+          { title: "Set generated keyframed mask path geometry", tool: "set_path_geometry", args: { compName, layerIndex: 1, targetKind: "mask", maskIndex: 1, expectedMaskName: maskName, keyframes, clearExisting: true } },
+          { title: "Read generated keyframed path geometry", tool: "get_path_geometry", args: { compName, layerIndex: 1, targetKind: "mask", maskIndex: 1, expectedMaskName: maskName, includeKeyframes: true, keyframeLimit: 10 } },
+          { title: "Read generated layer after path geometry", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentCompPropertiesScenarioPlans(runPrefix) {
   const base = `${runPrefix} Comp Properties`;
   const compName = `${base} Comp`;
@@ -3191,6 +3257,7 @@ module.exports = {
   agentExpressionScenarioPlans,
   agentEstimatePathLengthScenarioPlans,
   agentKeyframeScenarioPlans,
+  agentPathGeometryScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentLayerSwitchScenarioPlans,
