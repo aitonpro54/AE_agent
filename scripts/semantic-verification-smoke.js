@@ -22,7 +22,8 @@ const LOCAL_MUTATING_TOOLS = new Set([
   "set_layer_metadata",
   "set_layer_mask",
   "set_path_geometry",
-  "export_path_points"
+  "export_path_points",
+  "set_puppet_pin_type"
 ]);
 
 function clone(value) {
@@ -445,6 +446,42 @@ function fakeMutationResult(step, state) {
         updatedFields: Object.keys(updates)
       }
     }, compName, changed[0] && changed[0].after);
+  }
+  if (step.tool === "set_puppet_pin_type") {
+    const rawPinType = args.pinType === "advanced" ? 4 : args.pinType === "position" ? 1 : Number(args.pinType || 4);
+    const pinType = rawPinType === 1 ? 1 : 4;
+    const propertyPath = args.pinTypePropertyPath || [
+      { matchName: "ADBE Effect Parade" },
+      { matchName: "ADBE FreePin3", name: args.effectName || "Puppet" },
+      { matchName: "ADBE FreePin3 PosPin Atom", name: args.expectedPinName || "Puppet Pin 1" },
+      { matchName: "ADBE FreePin3 PosPin Type", name: "Type" }
+    ];
+    const layer = layerInfo("Puppet Pin Fixture Shape", { index: args.layerIndex || 1 });
+    const effect = {
+      name: args.effectName || "Puppet",
+      matchName: "ADBE FreePin3",
+      propertyPath: propertyPath.slice(0, 2)
+    };
+    const pinAtom = {
+      name: args.expectedPinName || "Puppet Pin 1",
+      matchName: "ADBE FreePin3 PosPin Atom",
+      propertyPath: propertyPath.slice(0, propertyPath.length - 1)
+    };
+    const property = fakePropertyInfo(propertyPath, pinType);
+    property.matchName = "ADBE FreePin3 PosPin Type";
+    state.propertyValues.push(property);
+    return withVerification({
+      comp: { name: compName },
+      layer,
+      effect,
+      pinAtom,
+      property,
+      pinTypeBefore: args.expectedCurrentPinType === undefined ? 1 : Number(args.expectedCurrentPinType),
+      pinType,
+      pinTypeAfter: pinType,
+      allowedPinTypes: [1, 4],
+      propertyPath
+    }, compName, layer);
   }
   if (step.tool === "set_layer_mask") {
     const beforeMaskCount = state.masks.length;
@@ -932,6 +969,21 @@ function fakeReadBackResult(step, state) {
         numLayers: state.layers.length
       },
       selectedLayers
+    };
+  }
+  if (step.tool === "get_effect_details") {
+    return {
+      comp: {
+        name: step.args && step.args.compName || state.lastCompName || "Fixture Comp"
+      },
+      layer: layerInfo("Effect Fixture Layer", { index: step.args && step.args.layerIndex || 1 }),
+      effect: {
+        name: step.args && step.args.effectName || "Puppet",
+        matchName: step.args && step.args.effectMatchName || "ADBE FreePin3"
+      },
+      propertiesReturned: state.propertyValues.length,
+      propertiesTruncated: false,
+      properties: state.propertyValues.slice()
     };
   }
   if (step.tool === "get_comp_details" || step.tool === "list_layers") {
@@ -2330,6 +2382,67 @@ function assertMarkerLifecycleSequencePasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("delete_layer_marker:marker") >= 0 && check.status === "passed"), "delete marker should still pass on final absent read-back.");
 }
 
+function puppetPinTypePlan(includeReadBack = true) {
+  const propertyPath = [
+    { matchName: "ADBE Effect Parade" },
+    { matchName: "ADBE FreePin3", name: "Puppet" },
+    { matchName: "ADBE FreePin3 PosPin Atom", name: "Puppet Pin 1" },
+    { matchName: "ADBE FreePin3 PosPin Type", name: "Type" }
+  ];
+  const steps = [
+    {
+      title: "Set generated Puppet Pin 1 to Advanced",
+      tool: "set_puppet_pin_type",
+      args: {
+        compName: "Puppet Pin Type Fixture",
+        layerIndex: 1,
+        effectName: "Puppet",
+        pinTypePropertyPath: propertyPath,
+        expectedPinName: "Puppet Pin 1",
+        expectedCurrentPinType: 1,
+        pinType: 4
+      }
+    }
+  ];
+  if (includeReadBack) {
+    steps.push({
+      title: "Read generated Puppet Pin 1 type after mutation",
+      tool: "get_effect_details",
+      args: {
+        compName: "Puppet Pin Type Fixture",
+        layerIndex: 1,
+        effectName: "Puppet",
+        includeProperties: true,
+        includeValues: true,
+        propertyDepth: 5,
+        propertyLimit: 160
+      }
+    });
+  }
+  return {
+    summary: "Puppet pin type semantic fixture",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps
+  };
+}
+
+function assertSetPuppetPinTypePasses() {
+  const plan = puppetPinTypePlan(true);
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `set_puppet_pin_type semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_puppet_pin_type:pin-type") >= 0 && check.status === "passed"), "set_puppet_pin_type read-back check should pass.");
+}
+
+function assertSetPuppetPinTypeMissingReadBackNeedsReview() {
+  const plan = puppetPinTypePlan(false);
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "set_puppet_pin_type must require post-run get_effect_details read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_puppet_pin_type:pin-type") >= 0 && check.status === "failed"), "set_puppet_pin_type missing read-back should fail.");
+}
+
 function assertSourceTextKeyframesPass() {
   const [scenario] = agentTextToKeysScenarioPlans("Codex Semantic TTK Fixture");
   const run = fakeRunForPlan(scenario.plan);
@@ -2389,6 +2502,8 @@ function main() {
   assertUpdateLayerMarkerPasses();
   assertDeleteLayerMarkerPasses();
   assertMarkerLifecycleSequencePasses();
+  assertSetPuppetPinTypePasses();
+  assertSetPuppetPinTypeMissingReadBackNeedsReview();
   assertSourceTextKeyframesPass();
   assertSourceTextKeyframeMismatchNeedsReview();
 

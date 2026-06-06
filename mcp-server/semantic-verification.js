@@ -21,6 +21,7 @@ const MUTATING_TOOLS = new Set([
   "create_layer_mask",
   "set_path_geometry",
   "export_path_points",
+  "set_puppet_pin_type",
   "fit_layer_to_comp",
   "set_property_value",
   "set_layer_metadata",
@@ -63,6 +64,7 @@ const READ_BACK_TOOLS = new Set([
   "list_layers",
   "get_comp_details",
   "get_layer_details",
+  "get_effect_details",
   "get_path_geometry",
   "get_render_queue_status"
 ]);
@@ -965,6 +967,58 @@ function checkSetLayerMetadata(checks, step, payload, evidence) {
   });
 }
 
+function normalizePuppetPinTypeEvidence(value) {
+  const number = numberValue(value);
+  if (number === 1 || number === 4) return number;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "position") return 1;
+    if (normalized === "advanced") return 4;
+  }
+  return null;
+}
+
+function observedPuppetPinTypeEvidence(evidence, args) {
+  if (!evidence || !Array.isArray(evidence.properties)) return null;
+  const expected = normalizePuppetPinTypeEvidence(args.pinType);
+  if (expected === null) return null;
+  for (const property of evidence.properties) {
+    if (property.matchName !== "ADBE FreePin3 PosPin Type") continue;
+    if (Array.isArray(args.pinTypePropertyPath) && !propertyPathMatches(property.propertyPath, args.pinTypePropertyPath)) continue;
+    if (propertyValueMatches(expected, property.value, 0.001)) {
+      return property.source || `Read ADBE FreePin3 PosPin Type after set_puppet_pin_type.`;
+    }
+  }
+  return null;
+}
+
+function checkSetPuppetPinType(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const expected = normalizePuppetPinTypeEvidence(args.pinType);
+  const property = payload.property || {};
+  const effect = payload.effect || {};
+  const pinAtom = payload.pinAtom || {};
+  const valueMatches = expected !== null && (
+    propertyValueMatches(expected, property.value, 0.001) ||
+    nearlyEqual(payload.pinTypeAfter, expected)
+  );
+  const identityMatches = effect.matchName === "ADBE FreePin3" &&
+    pinAtom.matchName === "ADBE FreePin3 PosPin Atom" &&
+    property.matchName === "ADBE FreePin3 PosPin Type";
+  const readBackEvidence = observedPuppetPinTypeEvidence(evidence.readBack, args);
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:pin-type`,
+    title: "Puppet pin type matches explicit enum request",
+    expected: `ADBE FreePin3 PosPin Type = ${expected === null ? "invalid" : expected}`,
+    observed: identityMatches
+      ? `${property.matchName || "missing"} = ${compactText(stableStringify(property.value), 80)}`
+      : "missing ADBE FreePin3/PosPin Atom/PosPin Type identity",
+    passed: identityMatches && valueMatches && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_effect_details read-back matched set_puppet_pin_type."
+  });
+}
+
 function keyframeAtTime(property, time) {
   const keyframes = Array.isArray(property && property.keyframes) ? property.keyframes : [];
   const target = Number(time);
@@ -1679,6 +1733,11 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "set_layer_metadata") {
     checkSetLayerMetadata(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_puppet_pin_type") {
+    checkSetPuppetPinType(checks, step, payload, evidence);
     return;
   }
 

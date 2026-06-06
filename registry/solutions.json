@@ -8462,6 +8462,125 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "toggle-puppet-pin-types-typed-plan",
+      "title": "Toggle Puppet Pin Types Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "properties",
+        "effects",
+        "puppet",
+        "puppet-pin",
+        "effect-property",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Set one explicit ADBE FreePin3 PosPin Type property under one generated or explicitly reviewed Puppet pin atom and read it back.",
+        "appliesWhen": [
+          "The user asks to set or toggle a Puppet pin type on a generated or explicitly reviewed Puppet effect target.",
+          "Typed adaptation is acceptable only when current get_effect_details evidence identifies one ADBE FreePin3 effect, one ADBE FreePin3 PosPin Atom ancestor, and the exact ADBE FreePin3 PosPin Type property path."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "puppetPinTarget",
+          "type": "object",
+          "required": true,
+          "description": "Current get_effect_details evidence containing comp identity, layerIndex, ADBE FreePin3 effect identity, ADBE FreePin3 PosPin Atom ancestor, and ADBE FreePin3 PosPin Type propertyPath."
+        },
+        {
+          "name": "pinType",
+          "type": "enum",
+          "required": true,
+          "description": "Reviewed enum value for the Puppet pin type: 1/position or 4/advanced.",
+          "options": [
+            "1",
+            "4",
+            "position",
+            "advanced"
+          ]
+        }
+      ],
+      "targetAssumptions": [
+        "The mutated layer is generated or explicitly reviewed and can receive or already contains an ADBE FreePin3 effect.",
+        "The target property is addressed by pinTypePropertyPath from current get_effect_details evidence and resolves to ADBE FreePin3 PosPin Type under an ADBE FreePin3 PosPin Atom ancestor.",
+        "The workflow mutates only one reviewed Puppet pin atom type enum through set_puppet_pin_type.",
+        "Automatic Puppet pin creation, selected-property traversal, project-wide scans, user Puppet effects, DuIK effects, expressions, keyframes, layer transforms, sources, timing, render queue items, project items, selection state, file output, and unrelated effects are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/toggle-puppet-pin-types-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "create_shape_layer",
+          "add_effect",
+          "get_effect_details",
+          "set_puppet_pin_type"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Create or bind one generated Puppet-capable layer, read one explicit Puppet pin atom type, set it to a reviewed enum value with set_puppet_pin_type, then read the property back.",
+        "steps": [
+          "Run get_active_comp or create a generated comp before mutation to capture target comp identity.",
+          "Create or bind one generated layer that can receive the ADBE FreePin3 effect.",
+          "Run add_effect with ADBE FreePin3 only for generated targets; otherwise require existing explicit get_effect_details evidence.",
+          "Run get_effect_details with includeProperties:true, includeValues:true, propertyDepth:5, and a bounded propertyLimit.",
+          "Confirm get_effect_details evidence contains effect matchName ADBE FreePin3, an ADBE FreePin3 PosPin Atom ancestor, and property matchName ADBE FreePin3 PosPin Type.",
+          "Run set_puppet_pin_type with the reviewed pinType 1/position or pinType 4/advanced value and optional expectedPinName/expectedCurrentPinType guards.",
+          "Run get_effect_details after mutation to confirm the same pin atom/property identity and requested enum value.",
+          "Fail closed if AE cannot provide a generated Puppet pin atom through typed evidence, if the property is absent or ambiguous, or if source-exact selected pin traversal, automatic pin creation, user Puppet effects, project-wide scans, DuIK behavior, or raw ExtendScript is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies the generated comp, layer, ADBE FreePin3 effect, ADBE FreePin3 PosPin Atom ancestor, and ADBE FreePin3 PosPin Type property path.",
+          "set_puppet_pin_type result shows effect matchName ADBE FreePin3, pin atom matchName ADBE FreePin3 PosPin Atom, property matchName ADBE FreePin3 PosPin Type, allowedPinTypes [1,4], and the reviewed pinType value.",
+          "Post-run get_effect_details evidence shows the same pin atom/property path with the requested pinType 1 or pinType 4 value.",
+          "Post-run evidence shows no selected-property traversal, user Puppet effect mutation, automatic pin creation, DuIK effect mutation, expression/keyframe edits, layer transform edits, source/timing/render queue/project item/selection mutation, file output, or unrelated effect/property mutation.",
+          "Unsupported source-exact selected Puppet pin traversal, automatic pin creation, user Puppet effects, project-wide scans, DuIK behavior, and raw ExtendScript are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-properties-toggle-puppet-pin-types as generated-only advisory typed-plan coverage for one Puppet pin atom type target.",
+          "Generated-only proof uses a narrow set_puppet_pin_type contract and current get_effect_details evidence; parent importer owns live acceptance and scoped retry evidence.",
+          "This recipe does not claim to create Puppet pin atoms. Missing generated Puppet pin atom evidence remains a terminal proof-lane blocker."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-tool-properties-toggle-puppet-pin-types",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the Puppet pin type idea behind kyletmartinez/after-effects-scripts Properties/Toggle_Puppet_Pin_Types.jsx into a new narrow set_puppet_pin_type typed contract for one explicit ADBE FreePin3 PosPin Type property under ADBE FreePin3 PosPin Atom evidence; no source JSX copied. Current typed tools require get_effect_details evidence, reviewed pinType enum 1/position or 4/advanced, set_puppet_pin_type mutation, and get_effect_details read-back. Source-exact selected Puppet pin traversal, automatic pin creation, user Puppet effects, project-wide scans, DuIK behavior, selection side effects, and raw ExtendScript require a separate typed-tool contract or fail closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require generated Puppet pin atom evidence before setting ADBE FreePin3 PosPin Type; do not infer targets from selected properties, project traversal, or prior chat context.",
+        "Use get_effect_details and set_puppet_pin_type for mutation and read-back on one explicit generated Puppet pin atom target.",
+        "Require a separate typed-tool contract for source-exact selected-property traversal, automatic Puppet pin creation, user Puppet effects, project-wide scans, Alt-key branching, third-party DuIK behavior, or exact source JSX semantics.",
+        "Do not use this recipe for Puppet On Transparent, DuIK effects, expression edits, keyframe edits, layer transform edits, layer timing changes, effect cleanup, source relinking, render queue changes, file export, selected-property rename/path mutation, or broad composition/project mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "round-selected-property-values-typed-plan",
       "title": "Round Selected Property Values Typed Plan",
       "status": "recipe",

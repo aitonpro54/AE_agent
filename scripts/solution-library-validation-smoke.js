@@ -38,6 +38,7 @@ const IMPORTED_ADVISORY_IDS = [
   "flip-path-typed-plan",
   "export-path-points-typed-plan",
   "toggle-puppet-on-transparent-typed-plan",
+  "toggle-puppet-pin-types-typed-plan",
   "round-selected-property-values-typed-plan",
   "set-new-color-typed-plan",
   "swap-selected-property-dimensions-typed-plan",
@@ -135,6 +136,7 @@ const AVAILABLE_TOOLS = [
   "add_effect",
   "get_effect_details",
   "set_effect_property",
+  "set_puppet_pin_type",
   "set_layer_mask",
   "get_path_geometry",
   "set_path_geometry",
@@ -807,6 +809,27 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /generated Puppet effect/.test(note)), `${id}: notes must require generated Puppet effect evidence.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Toggle_Puppet_On_Transparent/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "toggle-puppet-pin-types-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "create_shape_layer", "add_effect", "get_effect_details", "set_puppet_pin_type"],
+        `${id}: Puppet pin type workflow should stay on the narrow generated Puppet pin typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: Puppet pin type workflow must be mutating.`);
+      assert(text.includes("ADBE FreePin3"), `${id}: recipe should require the Puppet effect matchName.`);
+      assert(text.includes("ADBE FreePin3 PosPin Atom"), `${id}: recipe should require the Puppet pin atom ancestor.`);
+      assert(text.includes("ADBE FreePin3 PosPin Type"), `${id}: recipe should require the exact Puppet pin type property.`);
+      assert(text.includes("set_puppet_pin_type"), `${id}: recipe should use the narrow pin type typed tool.`);
+      assert(text.includes("pinType 1") && text.includes("pinType 4"), `${id}: recipe should limit pinType enum values.`);
+      assert(text.includes("Do not infer Puppet pins"), `${id}: recipe should reject inferred pin traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_effect_details/.test(step)), `${id}: verification must include get_effect_details.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_puppet_pin_type/.test(step)), `${id}: verification must include set_puppet_pin_type.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /ADBE FreePin3 PosPin Atom/.test(item)), `${id}: verification must require pin atom evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /ADBE FreePin3 PosPin Type/.test(item)), `${id}: verification must require pin type evidence.`);
+      assert(solution.notes.some((note) => /generated Puppet pin atom/.test(note)), `${id}: notes must require generated Puppet pin atom evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Toggle_Puppet_Pin_Types/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "round-selected-property-values-typed-plan") {
       assert.deepStrictEqual(
@@ -2747,6 +2770,22 @@ function assertActualRetrieval(registry) {
   assert(puppetOnTransparentPromptSection.includes("set_effect_property"), "prompt section should prefer set_effect_property.");
   assert(puppetOnTransparentPromptSection.includes("get_effect_details"), "prompt section should require effect read-back.");
   assert(!/run_extendscript/i.test(puppetOnTransparentPromptSection), "Puppet On Transparent guidance should not recommend raw ExtendScript.");
+
+  const puppetPinTypeRetrieval = retrieveSolutionHints("Toggle a generated Puppet Pin 1 type from Position to Advanced after get_effect_details shows ADBE FreePin3 PosPin Atom and ADBE FreePin3 PosPin Type, then read back the pinType.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(puppetPinTypeRetrieval.ok, true);
+  assert(ids(puppetPinTypeRetrieval).includes("toggle-puppet-pin-types-typed-plan"), "Puppet pin type advisory recipe should surface for generated Puppet pin type prompts.");
+  const puppetPinTypePromptSection = formatSolutionHintsForPrompt(puppetPinTypeRetrieval);
+  assert(puppetPinTypePromptSection.includes("Toggle Puppet Pin Types Typed Plan"), "prompt section should include Puppet pin type advisory title.");
+  assert(puppetPinTypePromptSection.includes("generated"), "prompt section should preserve generated-only scope.");
+  assert(/Puppet pin atom/i.test(puppetPinTypePromptSection), "prompt section should preserve Puppet pin atom guidance.");
+  assert(puppetPinTypePromptSection.includes("ADBE FreePin3 PosPin Type"), "prompt section should preserve exact pin type guidance.");
+  assert(puppetPinTypePromptSection.includes("set_puppet_pin_type"), "prompt section should prefer set_puppet_pin_type.");
+  assert(puppetPinTypePromptSection.includes("get_effect_details"), "prompt section should require effect read-back.");
+  assert(!/run_extendscript/i.test(puppetPinTypePromptSection), "Puppet pin type guidance should not recommend raw ExtendScript.");
 
   const roundSelectedPropertyValuesRetrieval = retrieveSolutionHints("Round the selected numeric property values to whole numbers after inspecting selected property values, then set the roundedValue with set_property_value and read back the property values.", {
     registry,

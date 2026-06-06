@@ -23,6 +23,7 @@ const {
   agentExpressionScenarioPlans,
   agentFlipPathGeometryScenarioPlans,
   agentParametricAnchorExpressionScenarioPlans,
+  agentPuppetPinTypeScenarioPlans,
   agentPuppetOnTransparentScenarioPlans,
   agentKeyframeScenarioPlans,
   agentPathGeometryScenarioPlans,
@@ -576,6 +577,24 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(puppetOnTransparent.plan.steps[4].args.propertyMatchName, "ADBE FreePin3 On Transparent");
   assert.strictEqual(puppetOnTransparent.plan.steps[4].args.value, true);
 
+  const [puppetPinType] = agentPuppetPinTypeScenarioPlans("Codex QA AUX-PUPPET-PIN Fixture");
+  assert.strictEqual(puppetPinType.id, "generated-puppet-pin-type");
+  assert.strictEqual(puppetPinType.expectedReadBack.generatedPuppetPinType, true);
+  assert.strictEqual(puppetPinType.expectedReadBack.effectMatchName, "ADBE FreePin3");
+  assert.strictEqual(puppetPinType.expectedReadBack.pinAtomMatchName, "ADBE FreePin3 PosPin Atom");
+  assert.strictEqual(puppetPinType.expectedReadBack.propertyMatchName, "ADBE FreePin3 PosPin Type");
+  assert.deepStrictEqual(puppetPinType.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "add_effect",
+    "get_effect_details",
+    "set_puppet_pin_type",
+    "get_effect_details"
+  ]);
+  assert.strictEqual(puppetPinType.plan.steps[4].args.pinType, 4);
+  assert(puppetPinType.plan.steps[4].args.pinTypePropertyPath.some((segment) => segment.matchName === "ADBE FreePin3 PosPin Atom"));
+  assert(puppetPinType.plan.steps[4].args.pinTypePropertyPath.some((segment) => segment.matchName === "ADBE FreePin3 PosPin Type"));
+
   const [compProperties] = agentCompPropertiesScenarioPlans("Codex QA AUX061 Fixture");
   assert.strictEqual(compProperties.id, "generated-comp-properties-work-area");
   assert.strictEqual(compProperties.expectedReadBack.generatedCompPropertiesWorkArea, true);
@@ -776,7 +795,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert(remainingTails[4].plan.steps.some((step) => step.tool === "set_spatial_in_tangent"));
   assert(remainingTails[5].plan.steps.some((step) => step.tool === "separate_shape_size_dimensions"));
 
-  for (const scenario of [timing, transform, projectItems, effectProperty, expression, parentOpacity, stickEffect, estimatePathLength, pathGeometry, flipPathGeometry, puppetOnTransparent, compProperties, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, keyframes, textToKeys, selectedKeyframeMarker, compositionMarkerRead, ...remainingTails]) {
+  for (const scenario of [timing, transform, projectItems, effectProperty, expression, parentOpacity, stickEffect, estimatePathLength, pathGeometry, flipPathGeometry, puppetOnTransparent, puppetPinType, compProperties, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, keyframes, textToKeys, selectedKeyframeMarker, compositionMarkerRead, ...remainingTails]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }

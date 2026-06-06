@@ -884,6 +884,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "deep_duplicate_precomp_sources",
   "add_effect",
   "set_effect_property",
+  "set_puppet_pin_type",
   "set_property_value",
   "set_layer_metadata",
   "set_comp_properties",
@@ -1687,6 +1688,18 @@ function optionalBoolean(args, name, fallback) {
     if (["false", "0", "no", "off"].includes(normalized)) return false;
   }
   throw new Error(`${name} must be a boolean.`);
+}
+
+function normalizePuppetPinType(value, fieldName = "pinType") {
+  if (typeof value === "number") {
+    if (value === 1 || value === 4) return value;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "1" || normalized === "position") return 1;
+    if (normalized === "4" || normalized === "advanced") return 4;
+  }
+  throw new Error(`${fieldName} must be 1/position or 4/advanced.`);
 }
 
 function parseArrayArg(value, name) {
@@ -4306,6 +4319,7 @@ const PLANNING_TOOL_NAMES = [
   "deep_duplicate_precomp_sources",
   "add_effect",
   "set_effect_property",
+  "set_puppet_pin_type",
   "set_property_value",
   "set_layer_metadata",
   "align_layers_to_time",
@@ -6246,6 +6260,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For explicit layer switches, use set_property_value only with whitelisted layer attributes threeDLayer, collapseTransformation, or motionBlur on inspected layer indices, setAtTime:false, then read back with get_layer_details. Do not use it for parenting, selection changes, timeline switches, or arbitrary layer fields.",
     "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
     "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, set_layer_mask, get_path_geometry, set_path_geometry, export_path_points, and fit_layer_to_comp. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Use set_path_geometry only for one explicit Shape or Mask path property with reviewed vertices, inTangents, outTangents, closed state, and optional bounded keyframes, then read back with get_path_geometry. Use export_path_points only after get_path_geometry evidence and only for generated export files; never write Desktop or arbitrary user paths. Do not delete masks, target multiple masks/layers, run roto, or traverse arbitrary property trees.",
+    "For Puppet pin type changes, use set_puppet_pin_type only after get_effect_details shows one explicit ADBE FreePin3 effect, an ADBE FreePin3 PosPin Atom ancestor, and an ADBE FreePin3 PosPin Type propertyPath. Only pinType 1/position and 4/advanced are allowed; do not create or infer Puppet pins, scan the project, or mutate user Puppet effects without generated or explicitly reviewed evidence.",
     "For camera controller rigs, use create_camera_with_controller instead of raw ExtendScript or ad hoc parenting; read back both camera.parent and controller 3D/separated-position state with get_layer_details.",
     "For onion skinning, use toggle_onion_skinning and read back the generated adjustment layer plus CC Wide Time effect; do not use broad property traversal.",
     "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, fill_in_keyframes, keyframe_current_value_from_expression, set_spatial_in_tangent, set_expression, and clear_expression. Use separate_shape_size_dimensions for generated rectangle/ellipse size slider separation.",
@@ -8916,6 +8931,55 @@ const tools = [
         }
       },
       required: ["layerIndex", "value"]
+    }
+  },
+  {
+    name: "set_puppet_pin_type",
+    description: "Set one explicit ADBE FreePin3 puppet pin type property to Position or Advanced after get_effect_details evidence.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based layer index in the target composition."
+        },
+        effectIndex: {
+          type: "number",
+          description: "Optional 1-based effect index in the layer effects group."
+        },
+        effectName: {
+          type: "string",
+          description: "Optional exact Puppet effect instance name."
+        },
+        effectMatchName: {
+          type: "string",
+          description: "Optional effect matchName. If provided it must be ADBE FreePin3."
+        },
+        pinTypePropertyPath: {
+          type: "array",
+          description: "Property path from current get_effect_details evidence to the ADBE FreePin3 PosPin Type property. It may be layer-relative or effect-relative and must include or resolve under an ADBE FreePin3 PosPin Atom ancestor.",
+          items: {}
+        },
+        expectedPinName: {
+          type: "string",
+          description: "Optional Puppet pin atom display name expected from get_effect_details evidence, such as Puppet Pin 1."
+        },
+        expectedCurrentPinType: {
+          description: "Optional current pin type expected before mutation. Accepts 1/position or 4/advanced."
+        },
+        pinType: {
+          description: "Requested pin type: 1 or position, or 4 or advanced."
+        }
+      },
+      required: ["layerIndex", "pinTypePropertyPath", "pinType"]
     }
   },
   {
@@ -13427,6 +13491,142 @@ async function callTool(name, args) {
         property: __codexPropertyInfo(prop, layer, true, true),
         setAtTime: shouldSetAtTime,
         time: targetTime
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_puppet_pin_type") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const effectIndex = optionalPositiveInteger(args, "effectIndex");
+    const effectName = optionalString(args, "effectName", "");
+    const effectMatchName = optionalString(args, "effectMatchName", "");
+    const expectedPinName = optionalString(args, "expectedPinName", "");
+    const pinType = normalizePuppetPinType(args.pinType, "pinType");
+    const expectedCurrentPinType = hasArg(args, "expectedCurrentPinType")
+      ? normalizePuppetPinType(args.expectedCurrentPinType, "expectedCurrentPinType")
+      : null;
+
+    let pinTypePropertyPath = null;
+    if (Array.isArray(args.pinTypePropertyPath)) {
+      pinTypePropertyPath = args.pinTypePropertyPath;
+    } else if (typeof args.pinTypePropertyPath === "string" && args.pinTypePropertyPath.trim().startsWith("[")) {
+      pinTypePropertyPath = JSON.parse(args.pinTypePropertyPath);
+    } else if (hasArg(args, "pinTypePropertyPath")) {
+      return toolResult("pinTypePropertyPath must be an array, or a JSON-encoded array string.", true);
+    }
+
+    if (!effectIndex && !effectName && !effectMatchName) {
+      return toolResult("Provide effectIndex, effectName, or effectMatchName.", true);
+    }
+    if (effectMatchName && effectMatchName !== "ADBE FreePin3") {
+      return toolResult("set_puppet_pin_type only supports effectMatchName ADBE FreePin3.", true);
+    }
+    if (!pinTypePropertyPath || !pinTypePropertyPath.length) {
+      return toolResult("pinTypePropertyPath is required.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+
+      function __codexTryResolveProperty(root, propertyPath) {
+        try {
+          return __codexResolveProperty(root, propertyPath);
+        } catch (__resolveError) {
+          return null;
+        }
+      }
+
+      function __codexPropertyAncestor(prop, expectedMatchName, stopAt) {
+        var current = prop;
+        var guard = 0;
+        while (current && guard < 50) {
+          if (current.matchName === expectedMatchName) return current;
+          if (stopAt && current === stopAt) break;
+          try {
+            current = current.parentProperty;
+          } catch (__parentError) {
+            current = null;
+          }
+          guard++;
+        }
+        return null;
+      }
+
+      function __codexResolvePuppetPinTypeProperty(layer, effect, propertyPath) {
+        var prop = __codexTryResolveProperty(layer, propertyPath);
+        if (prop) return prop;
+
+        prop = __codexTryResolveProperty(effect, propertyPath);
+        if (prop) return prop;
+
+        if (propertyPath instanceof Array) {
+          for (var __offset = 0; __offset < propertyPath.length; __offset++) {
+            var suffix = [];
+            for (var __segment = __offset; __segment < propertyPath.length; __segment++) {
+              suffix.push(propertyPath[__segment]);
+            }
+            prop = __codexTryResolveProperty(effect, suffix);
+            if (prop) return prop;
+          }
+        }
+
+        throw new Error("Could not resolve pinTypePropertyPath against the layer or ADBE FreePin3 effect.");
+      }
+
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+
+      var effect = __codexResolveEffect(layer, ${effectIndex === null ? "null" : effectIndex}, ${aeLiteral(effectName)}, ${aeLiteral(effectMatchName || "ADBE FreePin3")});
+      if (effect.matchName !== "ADBE FreePin3") {
+        throw new Error("set_puppet_pin_type only supports ADBE FreePin3 effects.");
+      }
+
+      var propertyPath = ${aeLiteral(pinTypePropertyPath)};
+      var prop = __codexResolvePuppetPinTypeProperty(layer, effect, propertyPath);
+      if (prop.matchName !== "ADBE FreePin3 PosPin Type") {
+        throw new Error("pinTypePropertyPath must resolve to ADBE FreePin3 PosPin Type.");
+      }
+
+      var pinAtom = __codexPropertyAncestor(prop, "ADBE FreePin3 PosPin Atom", effect);
+      if (!pinAtom) {
+        throw new Error("ADBE FreePin3 PosPin Type must be under an ADBE FreePin3 PosPin Atom ancestor.");
+      }
+      var expectedPinName = ${aeLiteral(expectedPinName)};
+      if (expectedPinName && pinAtom.name !== expectedPinName) {
+        throw new Error("Puppet pin atom name mismatch. Expected " + expectedPinName + " but found " + pinAtom.name + ".");
+      }
+
+      var requestedPinType = ${pinType};
+      var expectedCurrentPinType = ${expectedCurrentPinType === null ? "null" : expectedCurrentPinType};
+      var beforeValue = Number(prop.value);
+      if (expectedCurrentPinType !== null && beforeValue !== expectedCurrentPinType) {
+        throw new Error("Puppet pin type current value mismatch. Expected " + expectedCurrentPinType + " but found " + beforeValue + ".");
+      }
+
+      app.beginUndoGroup("Codex Set Puppet Pin Type");
+      prop.setValue(requestedPinType);
+      var afterValue = Number(prop.value);
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name
+        },
+        layer: __codexLayerInfo(layer),
+        effect: __codexPropertyInfo(effect, layer, false, true),
+        pinAtom: __codexPropertyInfo(pinAtom, layer, false, true),
+        property: __codexPropertyInfo(prop, layer, true, true),
+        pinTypeBefore: beforeValue,
+        pinType: requestedPinType,
+        pinTypeAfter: afterValue,
+        allowedPinTypes: [1, 4],
+        propertyPath: __codexPropertyPath(prop)
       };
       app.endUndoGroup();
       return response;
