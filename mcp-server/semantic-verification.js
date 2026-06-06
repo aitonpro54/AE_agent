@@ -202,7 +202,7 @@ function addLayerEvidence(target, value, source) {
     id: value.id === undefined || value.id === null ? null : String(value.id),
     source: source || "observed layer"
   };
-  for (const field of ["threeDLayer", "collapseTransformation", "motionBlur"]) {
+  for (const field of ["threeDLayer", "collapseTransformation", "motionBlur", "enabled"]) {
     if (hasOwn(value, field)) layer[field] = boolValue(value[field]);
   }
   if (hasOwn(value, "label")) layer.label = numberValue(value.label);
@@ -957,6 +957,7 @@ function layerMetadataFields(args) {
   if (hasOwn(args, "comment")) fields.push("comment");
   if (hasOwn(args, "label")) fields.push("label");
   if (hasOwn(args, "locked")) fields.push("locked");
+  if (hasOwn(args, "enabled")) fields.push("enabled");
   return fields;
 }
 
@@ -965,6 +966,7 @@ function layerMetadataFieldMatches(layer, args, field) {
   if (field === "comment") return sameString(layer.comment, args.comment);
   if (field === "label") return nearlyEqual(layer.label, args.label);
   if (field === "locked") return boolValue(layer.locked) === boolValue(args.locked);
+  if (field === "enabled") return boolValue(layer.enabled) === boolValue(args.enabled);
   return false;
 }
 

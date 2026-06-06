@@ -69,6 +69,7 @@ const IMPORTED_ADVISORY_IDS = [
   "layer-selection-get-typed-plan",
   "alert-selected-layer-index-typed-plan",
   "layer-selection-set-typed-plan",
+  "hard-solo-layers-typed-plan",
   "select-all-children-typed-plan",
   "select-disabled-layers-typed-plan",
   "select-guide-layers-typed-plan",
@@ -129,6 +130,7 @@ const AVAILABLE_TOOLS = [
   "get_selected_layers",
   "get_selected_properties",
   "set_layer_selection",
+  "set_layer_metadata",
   "set_property_value",
   "list_layers",
   "get_comp_details",
@@ -1654,6 +1656,29 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /get_comp_details/.test(note)), `${id}: notes must require layer inventory evidence.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must keep unsupported selection semantics out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Layer_Selection_Set/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "hard-solo-layers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_comp_details", "set_layer_metadata", "get_layer_details"],
+        `${id}: hard-solo workflow should stay on the narrow selected/unselected Layer.enabled typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: hard-solo workflow must be mutating.`);
+      assert(text.includes("enabled:true"), `${id}: recipe should preserve selected layer enabled state.`);
+      assert(text.includes("enabled:false"), `${id}: recipe should disable unselected layers.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require complete layer inventory evidence.`);
+      assert(text.includes("set_layer_metadata"), `${id}: recipe should use the layer metadata typed writer.`);
+      assert(text.includes("Do not infer selection"), `${id}: recipe should reject inferred selection.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must capture complete layer inventory evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /enabled:true/.test(step)), `${id}: verification must include selected enabled:true targets.`);
+      assert(solution.verificationRecipe.steps.some((step) => /enabled:false/.test(step)), `${id}: verification must include unselected enabled:false targets.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /enabled:true/.test(item)), `${id}: verification must require selected enabled read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /enabled:false/.test(item)), `${id}: verification must require disabled read-back.`);
+      assert(solution.notes.some((note) => /selected-layer/.test(note)), `${id}: notes must require selected-layer evidence.`);
+      assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must keep raw script execution out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /Hard_Solo_Layers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "select-all-children-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -3527,6 +3552,20 @@ function assertActualRetrieval(registry) {
   assert(layerSelectionSetPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer read-back after selection mutation.");
   assert(layerSelectionSetPromptSection.includes("replacement selection"), "prompt section should preserve replacement selection guidance.");
   assert(!/run_extendscript/i.test(layerSelectionSetPromptSection), "layer-selection set guidance should not recommend raw ExtendScript.");
+
+  const hardSoloRetrieval = retrieveSolutionHints("Hard solo the currently selected layers by keeping selected layers enabled and disabling every unselected layer after reading selected layers and complete layer inventory.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(hardSoloRetrieval.ok, true);
+  assert(ids(hardSoloRetrieval).includes("hard-solo-layers-typed-plan"), "hard-solo advisory recipe should surface for selected layer enabled-state prompts.");
+  const hardSoloPromptSection = formatSolutionHintsForPrompt(hardSoloRetrieval);
+  assert(hardSoloPromptSection.includes("Hard Solo Layers Typed Plan"), "prompt section should include hard-solo advisory title.");
+  assert(hardSoloPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for hard solo.");
+  assert(hardSoloPromptSection.includes("set_layer_metadata"), "prompt section should prefer set_layer_metadata for Layer.enabled mutation.");
+  assert(hardSoloPromptSection.includes("enabled:false"), "prompt section should preserve disabled unselected-layer guidance.");
+  assert(!/run_extendscript/i.test(hardSoloPromptSection), "hard-solo guidance should not recommend raw ExtendScript.");
 
   const selectAllChildrenRetrieval = retrieveSolutionHints("Select all direct child layers of the currently selected parent layer after reading layer parent evidence, then read back the selected child layer count and names.", {
     registry,

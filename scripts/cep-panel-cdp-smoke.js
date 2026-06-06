@@ -29,6 +29,7 @@ const {
   agentPuppetOnTransparentScenarioPlans,
   agentKeyframeScenarioPlans,
   agentPathGeometryScenarioPlans,
+  agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentLayerSwitchScenarioPlans,
@@ -693,6 +694,24 @@ function openAiCliLayerMetadataScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_LAYER_METADATA_PREFIX || "Codex QA AUX-LM",
     scenarioFactory: agentLayerMetadataScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliLayerEnabledHardSoloScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-layer-enabled-hard-solo",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_LAYER_ENABLED_PREFIX || "Codex QA AUX-LE",
+    scenarioFactory: agentLayerEnabledHardSoloScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -5242,6 +5261,56 @@ async function verifyGeneratedLayerMetadataReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedLayerEnabledHardSoloReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const selectedLayerIndices = Array.isArray(expected.selectedLayerIndices) ? expected.selectedLayerIndices.map(Number) : [];
+  const selectedLayerNames = Array.isArray(expected.selectedLayerNames) ? expected.selectedLayerNames.map(String) : [];
+  const disabledLayerIndices = Array.isArray(expected.disabledLayerIndices) ? expected.disabledLayerIndices.map(Number) : [];
+  const disabledLayerNames = Array.isArray(expected.disabledLayerNames) ? expected.disabledLayerNames.map(String) : [];
+  const checks = [
+    ...selectedLayerIndices.map((layerIndex, index) => ({
+      layerIndex,
+      layerName: selectedLayerNames[index] || "",
+      expectedEnabled: true
+    })),
+    ...disabledLayerIndices.map((layerIndex, index) => ({
+      layerIndex,
+      layerName: disabledLayerNames[index] || "",
+      expectedEnabled: false
+    }))
+  ];
+  const verifiedLayers = [];
+
+  for (const check of checks) {
+    const details = await callBridgeTool("get_layer_details", {
+      compItemIndex: compMatch.itemIndex,
+      layerIndex: check.layerIndex,
+      includeProperties: false
+    });
+    const layer = details && details.layer ? details.layer : {};
+    if (check.layerName && layer.name !== check.layerName) {
+      throw new Error(`${scenario.id}: hard-solo layer ${check.layerIndex} name mismatch: ${layer.name}.`);
+    }
+    if (layer.enabled !== check.expectedEnabled) {
+      throw new Error(`${scenario.id}: hard-solo layer ${check.layerIndex} enabled mismatch; expected ${check.expectedEnabled}, got ${layer.enabled}.`);
+    }
+    verifiedLayers.push({
+      index: layer.index,
+      name: layer.name,
+      enabled: layer.enabled
+    });
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: compMatch.itemIndex,
+      name: compMatch.name
+    },
+    layers: verifiedLayers
+  };
+}
+
 async function verifyGeneratedLayerSelectionReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const selected = await callBridgeTool("get_selected_layers", {});
@@ -6312,6 +6381,10 @@ async function verifyAgentScenarioReadBack(scenario) {
     return verifyGeneratedLayerMetadataReadBack(scenario, expected);
   }
 
+  if (expected.generatedLayerEnabledHardSolo) {
+    return verifyGeneratedLayerEnabledHardSoloReadBack(scenario, expected);
+  }
+
   if (expected.generatedLayerSelection) {
     return verifyGeneratedLayerSelectionReadBack(scenario, expected);
   }
@@ -7095,6 +7168,10 @@ async function main() {
   }
   if (command === "agent-layer-metadata-openai-cli-smoke" || command === "full-ui-agent-layer-metadata-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliLayerMetadataScenarioConfig());
+    return;
+  }
+  if (command === "agent-layer-enabled-hard-solo-openai-cli-smoke" || command === "full-ui-agent-layer-enabled-hard-solo-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliLayerEnabledHardSoloScenarioConfig());
     return;
   }
   if (command === "agent-layer-selection-openai-cli-smoke" || command === "full-ui-agent-layer-selection-openai-cli-smoke") {

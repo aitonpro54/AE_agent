@@ -6267,7 +6267,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For explicit bulk layer duplication, use duplicate_layers with concrete layerIndices after inspecting the target comp/layers. Pair sourceNames with layerIndices in current AE stack order, or insert get_comp_details before duplication when source-layer order is ambiguous. For selected-layer duplication, inspect with get_selected_layers first and bind layerIndices from {{selectedLayerIndices}}; never use duplicate_layers for deletion, source/precomp relinking, mask/path edits, or audio workflows.",
     "For destructive single-layer deletion, use delete_layer only after inspecting the explicit target comp/layer. Provide compItemIndex or compName, layerIndex, and expectedLayerName, then read back the comp/layer stack to prove the deleted layer is absent; never use selection-only, broad, multi-layer, or name-optional deletion.",
     "For composition settings, use set_comp_properties only for width, height, pixelAspect, duration, frameRate, bgColor, and displayStartTime on one explicit comp, then read back the comp before reporting success. Do not route arbitrary comp fields, layers, effects, masks, or property paths through this tool.",
-    "For explicit generated layer metadata, use set_layer_metadata only with one explicit comp target, concrete layerIndices, and expectedLayerNames when available. It only supports comment, label, and locked, and must be followed by get_layer_details read-back for each target layer.",
+    "For explicit generated layer metadata, use set_layer_metadata only with one explicit comp target, concrete layerIndices, and expectedLayerNames when available. It only supports comment, label, locked, and enabled, and must be followed by get_layer_details read-back for each target layer.",
     "For explicit generated project item labels, use set_project_item_metadata only with concrete itemIndices from current get_project_snapshot/find_project_items/list_project_folder_items evidence and expectedItemNames when available. It only supports label and must be followed by project-item read-back.",
     "For explicit layer switches, use set_property_value only with whitelisted layer attributes threeDLayer, collapseTransformation, or motionBlur on inspected layer indices, setAtTime:false, then read back with get_layer_details. Do not use it for parenting, selection changes, timeline switches, or arbitrary layer fields.",
     "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
@@ -9158,7 +9158,7 @@ const tools = [
   },
   {
     name: "set_layer_metadata",
-    description: "Update only comment, label, and locked on explicit layer indices in one explicit composition, with optional expected layer-name guards and required read-back.",
+    description: "Update only comment, label, locked, and enabled on explicit layer indices in one explicit composition, with optional expected layer-name guards and required read-back.",
     inputSchema: {
       type: "object",
       properties: {
@@ -9191,6 +9191,10 @@ const tools = [
         locked: {
           type: "boolean",
           description: "Optional locked state to set."
+        },
+        enabled: {
+          type: "boolean",
+          description: "Optional layer visibility/enabled state to set."
         }
       },
       required: ["layerIndices"]
@@ -14322,6 +14326,7 @@ async function callTool(name, args) {
       "comment",
       "label",
       "locked",
+      "enabled",
       "autoCheckpoint",
       "checkpointLabel",
       "idempotencyKey",
@@ -14366,9 +14371,12 @@ async function callTool(name, args) {
     if (hasArg(args, "locked")) {
       requested.locked = optionalBoolean(args, "locked", false);
     }
+    if (hasArg(args, "enabled")) {
+      requested.enabled = optionalBoolean(args, "enabled", true);
+    }
 
     const requestedKeys = Object.keys(requested);
-    if (!requestedKeys.length) return toolResult("At least one approved layer metadata update is required: comment, label, or locked.", true);
+    if (!requestedKeys.length) return toolResult("At least one approved layer metadata update is required: comment, label, locked, or enabled.", true);
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
@@ -14382,6 +14390,7 @@ async function callTool(name, args) {
         if (field === "comment") return String(after.comment || "") === String(requested.comment || "");
         if (field === "label") return Number(after.label) === Number(requested.label);
         if (field === "locked") return after.locked === requested.locked;
+        if (field === "enabled") return after.enabled === requested.enabled;
         return false;
       }
 
@@ -14397,13 +14406,14 @@ async function callTool(name, args) {
         }
 
         var before = __codexLayerInfo(layer);
-        if (before.locked && (requested.comment !== undefined || requested.label !== undefined) && requested.locked !== false) {
-          throw new Error("Layer is locked: " + layer.name + ". Unlock explicitly before setting comment or label.");
+        if (before.locked && (requested.comment !== undefined || requested.label !== undefined || requested.enabled !== undefined) && requested.locked !== false) {
+          throw new Error("Layer is locked: " + layer.name + ". Unlock explicitly before setting comment, label, or enabled.");
         }
 
         if (requested.locked === false) layer.locked = false;
         if (requested.comment !== undefined) layer.comment = String(requested.comment);
         if (requested.label !== undefined) layer.label = Number(requested.label);
+        if (requested.enabled !== undefined) layer.enabled = requested.enabled;
         if (requested.locked === true) layer.locked = true;
 
         var after = __codexLayerInfo(layer);

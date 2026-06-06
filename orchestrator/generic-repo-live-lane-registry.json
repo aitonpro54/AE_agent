@@ -517,6 +517,71 @@
       "scope": "generated-only explicit layer metadata proof using set_layer_metadata for comment, label, and locked, plus get_layer_details read-back and semantic verification; scoped ae-scripting retry is limited to tool-nullstoone because importBoujouTracking has file I/O and prop2null has expression/controller semantics"
     },
     {
+      "id": "layer-enabled-hard-solo-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_selected_layers",
+        "get_comp_details",
+        "set_layer_metadata",
+        "get_layer_details"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_solid_layer",
+        "create_shape_layer",
+        "create_text_layer",
+        "get_active_comp",
+        "get_selected_layers",
+        "get_comp_details",
+        "get_layer_details",
+        "set_layer_selection",
+        "set_layer_metadata"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "layerVisibilityMutation"
+      ],
+      "candidateIds": [
+        "tool-layers-hard-solo-layers"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-enabled-hard-solo-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "layer-enabled-hard-solo",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_selected_layers",
+        "get_layer_details",
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/hard-solo-layers-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-hard-solo-layers.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract",
+      "scope": "generated-only hard-solo proof using explicit selected-layer evidence, complete generated layer inventory, set_layer_metadata enabled:true for selected targets, set_layer_metadata enabled:false for reviewed non-selected targets, get_layer_details/get_comp_details read-back, semantic verification, and cleanup; source-exact layer.selected traversal, native solo switches, previous-enabled-state restoration, non-generated user assets, multi-comp scope, selection persistence, raw JSX, labels/comments/locks/blend modes/timing/source changes, and render queue work remain fail-closed"
+    },
+    {
       "id": "selected-layer-parent-opacity-expression-generated-only",
       "requiredTools": [
         "get_active_comp",

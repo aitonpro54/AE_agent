@@ -9,6 +9,7 @@ const {
 const {
   AGENT_SCENARIO_MUTATING_TOOLS,
   agentDakkshinTypedToolsScenarioPlans,
+  agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentProjectItemMetadataScenarioPlans,
@@ -408,7 +409,7 @@ function fakeMutationResult(step, state) {
     const layerIndices = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
     const expectedLayerNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
     const updates = {};
-    for (const field of ["comment", "label", "locked"]) {
+    for (const field of ["comment", "label", "locked", "enabled"]) {
       if (Object.prototype.hasOwnProperty.call(args, field)) updates[field] = args[field];
     }
     if (!state.layers.length) {
@@ -1580,6 +1581,16 @@ function assertLayerMetadataPasses() {
   const semantic = buildSemanticVerification(scenario.plan, run);
   assert.strictEqual(semantic.status, "passed", `set_layer_metadata semantic verification should pass: ${semantic.summary}`);
   assert(semantic.checks.some((check) => check.id.indexOf("set_layer_metadata:metadata") >= 0 && check.status === "passed"), "set_layer_metadata read-back check should pass.");
+}
+
+function assertLayerEnabledHardSoloPasses() {
+  const [scenario] = agentLayerEnabledHardSoloScenarioPlans("Codex Semantic Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  assert.strictEqual(semantic.status, "passed", `layer enabled hard-solo semantic verification should pass: ${semantic.summary}`);
+  const metadataChecks = semantic.checks.filter((check) => check.id.indexOf("set_layer_metadata:metadata") >= 0);
+  assert(metadataChecks.length >= 2, "hard-solo fixture should verify selected and unselected layer enabled metadata.");
+  assert(metadataChecks.every((check) => check.status === "passed"), "hard-solo layer enabled read-back checks should pass.");
 }
 
 function assertProjectItemMetadataPasses() {
@@ -2861,6 +2872,7 @@ function main() {
   assertDuplicateLayersPairOrderMismatchNeedsReview();
   assertLayerSelectionPasses();
   assertLayerMetadataPasses();
+  assertLayerEnabledHardSoloPasses();
   assertProjectItemMetadataPasses();
   assertProjectItemMetadataMissingReadBackNeedsReview();
   assertDeleteLayerPasses();

@@ -32,6 +32,7 @@ const {
   agentPuppetOnTransparentScenarioPlans,
   agentKeyframeScenarioPlans,
   agentPathGeometryScenarioPlans,
+  agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentLayerSwitchScenarioPlans,
@@ -688,6 +689,25 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
     "Codex QA AUX-LM Fixture Layer Metadata Text",
     "Codex QA AUX-LM Fixture Layer Metadata Solid"
   ]);
+
+  const [layerEnabledHardSolo] = agentLayerEnabledHardSoloScenarioPlans("Codex QA AUX-LE Fixture");
+  assert.strictEqual(layerEnabledHardSolo.id, "generated-layer-enabled-hard-solo");
+  assert.strictEqual(layerEnabledHardSolo.expectedReadBack.generatedLayerEnabledHardSolo, true);
+  assert.deepStrictEqual(layerEnabledHardSolo.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_solid_layer",
+    "create_text_layer",
+    "get_comp_details",
+    "set_layer_selection",
+    "get_selected_layers",
+    "set_layer_metadata",
+    "get_layer_details",
+    "set_layer_metadata",
+    "get_layer_details"
+  ]);
+  assert.deepStrictEqual(layerEnabledHardSolo.plan.steps[6].args.layerIndices, [1]);
+  assert.deepStrictEqual(layerEnabledHardSolo.plan.steps[8].args.layerIndices, [2]);
+  assert.strictEqual(layerEnabledHardSolo.plan.steps[8].args.enabled, false);
 
   const [layerSelection] = agentLayerSelectionScenarioPlans("Codex QA AUX101 Fixture");
   assert.strictEqual(layerSelection.id, "generated-layer-selection-set");

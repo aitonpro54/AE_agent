@@ -813,6 +813,66 @@ function agentLayerMetadataScenarioPlans(runPrefix) {
   }));
 }
 
+function agentLayerEnabledHardSoloScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Layer Enabled Hard Solo`;
+  const compName = `${base} Comp`;
+  const solidName = `${base} Solid`;
+  const textName = `${base} Text`;
+  const selectedLayerIndices = [1];
+  const selectedLayerNames = [textName];
+  const disabledLayerIndices = [2];
+  const disabledLayerNames = [solidName];
+
+  return [
+    {
+      id: "generated-layer-enabled-hard-solo",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "create_text_layer",
+        "get_comp_details",
+        "set_layer_selection",
+        "get_selected_layers",
+        "set_layer_metadata",
+        "get_layer_details",
+        "set_layer_metadata",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedLayerEnabledHardSolo: true,
+        compName,
+        selectedLayerIndices,
+        selectedLayerNames,
+        disabledLayerIndices,
+        disabledLayerNames
+      },
+      plan: {
+        summary: "Generated-only live QA for hard-solo layer enabled state using explicit layer targets.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated hard-solo comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.08, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "Generated-only layer enabled hard-solo validation" } },
+          { title: "Create generated hard-solo solid", tool: "create_solid_layer", args: { compName, name: solidName, color: [0.2, 0.25, 0.34], width: 320, height: 180, pixelAspect: 1, startTime: 0, duration: 3 } },
+          { title: "Create generated hard-solo text", tool: "create_text_layer", args: { compName, text: "Hard Solo", name: textName, position: [360, 180], fontSize: 42, fillColor: [0.92, 0.9, 0.78], startTime: 0, duration: 3 } },
+          { title: "Read generated layer inventory before hard solo", tool: "get_comp_details", args: { compName, includeLayers: true, layerLimit: 10 } },
+          { title: "Select generated hard-solo layers explicitly", tool: "set_layer_selection", args: { compName, layerIndices: selectedLayerIndices, expectedLayerNames: selectedLayerNames, makeActive: true } },
+          { title: "Read generated selected layers for hard solo", tool: "get_selected_layers", args: {} },
+          { title: "Keep selected generated layers enabled", tool: "set_layer_metadata", args: { compName, layerIndices: selectedLayerIndices, expectedLayerNames: selectedLayerNames, enabled: true } },
+          { title: "Read first selected hard-solo layer", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } },
+          { title: "Disable unselected generated hard-solo layer", tool: "set_layer_metadata", args: { compName, layerIndices: disabledLayerIndices, expectedLayerNames: disabledLayerNames, enabled: false } },
+          { title: "Read disabled hard-solo layer", tool: "get_layer_details", args: { compName, layerIndex: 2, includeProperties: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentDakkshinTypedToolsScenarioPlans(runPrefix) {
   const base = `${runPrefix} Dakkshin Typed Tools`;
   const compName = `${base} Comp`;
@@ -3838,6 +3898,7 @@ module.exports = {
   agentFlipPathGeometryScenarioPlans,
   agentKeyframeScenarioPlans,
   agentPathGeometryScenarioPlans,
+  agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentLayerSwitchScenarioPlans,
