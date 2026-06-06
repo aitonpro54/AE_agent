@@ -26,6 +26,30 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened Full Intaker third-party semantics safety policy slice:
+  added `third-party-semantics-safety-policy` as a high-risk advisory
+  typed-plan guard for DuIK/Newton-like backlog requests such as Newton or
+  Illustrator-derived layer matching, position keyframe copy, parent
+  assignment, DuIK puppet-pin property rename, DuIK pin-size/guide behavior,
+  project-wide third-party effect scans, selected-property traversal, and
+  Alt-key branching. The policy uses only read-only comp/layer/property/effect
+  evidence for classification, keeps existing narrow generated-only Puppet,
+  layer metadata, selection, expression, and blend-mode recipes separate, and
+  requires a future narrow typed-tool contract, generated or mock third-party
+  fixture, explicit approval, checkpoint/rollback, cleanup policy, and typed
+  read-back before unsafe mutation. Added registry retrieval and
+  solution-library validation coverage. No scoped retry, generated-only
+  mutating live CEP proof, candidate completion, broad queue processing,
+  Local/Ollama, fallback provider, dependency change, push, PR, raw JSX copy,
+  parent/keyframe/property/plugin mutation, or launcher/autoloop edit was run.
+  Validation passed: touched-file `node --check`, JSON parse for
+  `registry/solutions.json`, `node scripts/solution-registry-smoke.js`, `node
+  scripts/solution-library-validation-smoke.js`, `node
+  scripts/solution-retrieval-smoke.js`, `node
+  scripts/semantic-verification-smoke.js`, `node
+  scripts/sdk-generic-repo-full-intake-smoke.js`, `npm.cmd run check:rules`,
+  `npm.cmd run smoke:solutions`, `npm.cmd run smoke:full-intake`, and `git
+  diff --check` with line-ending warnings only.
 - [x] Reopened Full Intaker project/file/render/proxy/user-file safety
   policy slice: added `project-file-render-proxy-safety-policy` as a
   high-risk advisory typed-plan guard for approval-gated requests such as
@@ -794,6 +818,16 @@ live user-asset mutation.
 
 ## Decision Log
 
+- 2026-06-06: Parent reducer treated DuIK/Newton-like third-party semantics as
+  a non-live policy slice, not candidate completion. Safe autonomous coverage is
+  limited to read-only classification with `get_active_comp`,
+  `get_selected_layers`, `get_selected_properties`, `list_layers`,
+  `get_comp_details`, `get_layer_details`, `list_effects`, and
+  `get_effect_details`; future parent assignment, position keyframe copy, DuIK
+  puppet-pin rename, DuIK pin-size/guide mutation, third-party effect mutation,
+  project-wide traversal, selected-property traversal, and Alt-key branching
+  require separate narrow typed-tool contracts plus generated/mock fixture,
+  approval, checkpoint/rollback, cleanup policy, and typed read-back.
 - 2026-06-06: Parent reducer accepted only a non-live generated-only
   `tool-layers-toggle-difference-blend-mode` adaptation. The safe path reads
   selected-layer evidence and complete layer inventory, then uses
@@ -1429,6 +1463,7 @@ live user-asset mutation.
 
 ## Validation
 
+| Reopened third-party semantics safety policy slice | Required to give DuIK/Newton-like backlog requests planner-facing fail-closed guidance without approving third-party plugin behavior, parent/keyframe/property mutation, raw JSX, or live CEP/AE proof. | Passed/policy-ready: parent-owned implementation added `recipes/third-party-semantics-safety-policy.md`, registry coverage, and solution-library retrieval assertions for Newton/Illustrator layer matching, parent assignment, position keyframe copy, DuIK puppet-pin rename, and DuIK pin-size prompts. Validation passed: touched-file `node --check`; JSON parse for `registry/solutions.json`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/sdk-generic-repo-full-intake-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with line-ending warnings only. No scoped retry, live proof, candidate completion, broad queue, Local/Ollama, fallback provider, dependency/package change, push, PR, raw JSX copy, source-checkout write, third-party plugin mutation, parent/keyframe/property mutation, or launcher/autoloop edit was run. |
 | Reopened layer Difference blending-mode contract slice | Required to give `tool-layers-toggle-difference-blend-mode` generated-only typed-plan/lane coverage without approving source-exact Alt-key branching, toggle restoration, broad selected-layer traversal, non-generated user assets, raw JSX, or live CEP/AE proof. | Passed/contract-ready: parent-owned implementation added `set_layer_blending_mode`, normalized `blendingModeName` layer read-back, semantic verification evidence, plan-repair aliases, `difference-blend-mode-typed-plan`, generic intake note, registry retrieval assertions, generated-only scenario/report fixture, CEP command wiring, ChatGPT connector/tool-catalog coverage, and `layer-blending-mode-difference-generated-only` Full Intaker family metadata. Validation passed: touched-file `node --check`; JSON parse for registry/live-lane; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `node scripts/chatgpt-connector-smoke.js`; `node scripts/smoke-test.js`; `node scripts/sdk-generic-repo-full-intake-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake`; compact status/proof/ledger-summary; and `git diff --check` with line-ending warnings only. No scoped retry, live proof, candidate completion, broad queue, Local/Ollama, fallback provider, dependency/package change, push, or PR was run. |
 | Reopened layer-enabled hard-solo contract slice | Required to give `tool-layers-hard-solo-layers` generated-only typed-plan/lane coverage without approving source-exact selected-layer traversal, native solo switches, previous-enabled-state restoration, non-generated user assets, raw JSX, or live CEP/AE proof. | Passed/contract-ready: parent-owned implementation extended `set_layer_metadata` with explicit `enabled` support and semantic read-back, added `hard-solo-layers-typed-plan`, generic intake note, registry retrieval assertions, generated-only scenario/report fixture, CEP command wiring, and `layer-enabled-hard-solo-generated-only` Full Intaker family metadata. Validation passed: touched-file `node --check`; JSON parse for registry/live-lane; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `node scripts/chatgpt-connector-smoke.js`; `node scripts/smoke-test.js`; `node scripts/sdk-generic-repo-full-intake-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; and `npm.cmd run smoke:full-intake`. No scoped retry, live proof, candidate completion, broad queue, Local/Ollama, fallback provider, dependency/package change, push, or PR was run. |
 | Reopened composition marker add contract slice | Required to give `tool-markers-add-markers-at-out-points` and `tool-markers-add-markers-at-work-area` generated-only typed-plan/lane coverage without approving source-exact active-comp traversal, hidden layer traversal, marker lifecycle edits, audio-derived markers, work-area mutation, layer timing changes, file I/O, render queue work, raw JSX, or live CEP/AE proof. | Passed/contract-ready: parent-owned implementation added `add-composition-markers-at-out-points-typed-plan`, `add-composition-markers-at-work-area-typed-plan`, generic intake notes, registry retrieval assertions, generated-only scenario/report fixture, CEP command wiring, stronger composition marker read-back checks, and `composition-marker-add-generated-only` Full Intaker family metadata. Validation passed: touched-file `node --check`; JSON parse for registry/live-lane; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js` after tightening compact summary tokens; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `node scripts/sdk-generic-repo-full-intake-smoke.js`; `npm.cmd run smoke:full-intake`; compact status/proof/ledger-summary; and `git diff --check` with line-ending warnings only. No scoped retry, live proof, candidate completion, broad queue, Local/Ollama, fallback provider, dependency/package change, push, or PR was run. |

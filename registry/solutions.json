@@ -14237,6 +14237,121 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "third-party-semantics-safety-policy",
+      "title": "Third Party Semantics Safety Policy",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "properties",
+        "effects",
+        "third-party",
+        "duik",
+        "newton",
+        "puppet",
+        "parenting",
+        "keyframes",
+        "approval-gated",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Classify DuIK/Newton third-party semantics as approval-gated typed-tool gaps unless a narrow generated-only recipe fits.",
+        "appliesWhen": [
+          "The user asks to match layers to Newton or Illustrator-derived names, copy Newton position keyframes, assign layer parents from third-party naming, rename DuIK puppet pins, or change DuIK pin-size/guide behavior.",
+          "The request cannot be narrowed to an existing generated-only typed plan such as explicit Puppet pin property updates, layer metadata, selection, expression, or blend-mode updates."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "riskClassification",
+          "type": "object",
+          "required": true,
+          "description": "A classification of DuIK, Newton, Illustrator naming, third-party pseudo effects, project-wide traversal, parent assignment, keyframe copy, property rename, effect enabled/guide behavior, and Alt-key branching before mutation planning."
+        },
+        {
+          "name": "readOnlyThirdPartyEvidence",
+          "type": "object",
+          "required": false,
+          "description": "Optional get_active_comp, get_selected_layers, get_selected_properties, list_layers, get_comp_details, get_layer_details, list_effects, or get_effect_details evidence used only to classify scope."
+        }
+      ],
+      "targetAssumptions": [
+        "This recipe is a high-risk policy guard: classification can use read-only evidence, but any matched mutation requires the full mutation gate set.",
+        "Existing narrow generated-only Puppet, layer metadata, selection, expression, and blend-mode recipes remain separate and must not be widened to DuIK/Newton semantics.",
+        "Unsupported requests report a typed-tool gap with the future generated or mock third-party fixture, explicit approval, checkpoint or rollback path, cleanup policy, and typed read-back needed to unblock the family.",
+        "Layers, parents, keyframes, effects, properties, sources, Project items, render queue items, files, and selection state are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "high",
+        "recipePath": "recipes/third-party-semantics-safety-policy.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_selected_properties",
+          "list_layers",
+          "get_comp_details",
+          "get_layer_details",
+          "list_effects",
+          "get_effect_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Classify DuIK/Newton-like third-party semantics risk with read-only comp/layer/property/effect evidence, then either select an existing narrow generated-only recipe or report a typed-tool gap.",
+        "steps": [
+          "Record third-party semantics risk classification before planning mutation: DuIK, Newton, Illustrator-derived names, third-party pseudo effects, project-wide traversal, selected-property traversal, parent assignment, position keyframe copy, property rename, effect enabled/guide behavior, or Alt-key branching.",
+          "Use get_active_comp, get_selected_layers, get_selected_properties, list_layers, get_comp_details, get_layer_details, list_effects, and get_effect_details only as read-only classification evidence.",
+          "Select an existing narrow generated-only recipe only when the request exactly matches its scope and does not require third-party plugin semantics.",
+          "Report a typed-tool gap when the request needs DuIK/Newton-like mutation, including generated or mock third-party fixture, explicit approval, checkpoint/rollback, cleanup policy, and typed read-back unblock conditions.",
+          "Fail closed if the plan scans all project comps, mutates user plugin effects, copies keyframes, assigns parents, renames properties, toggles effect enabled/guide state, infers third-party naming, or uses raw script execution."
+        ],
+        "expectedEvidence": [
+          "Planner output includes the third-party semantics risk classification and the matching narrow recipe or typed-tool gap.",
+          "Read-only comp/layer/property/effect evidence, when used, does not mutate layers, parents, keyframes, effects, properties, sources, Project items, render queue items, files, or selection state.",
+          "Unsupported requests identify the missing contract and future unblock condition instead of using raw script execution or inferred third-party naming.",
+          "The plan preserves layers, parents, keyframes, effects, properties, sources, Project items, render queue items, files, and selection state."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for DuIK/Newton-like third-party semantics backlog review.",
+          "No scoped retry, generated-only mutating live CEP proof, third-party plugin mutation, parent/keyframe/property mutation, or candidate completion was run in this milestone."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-third-party-semantics-policy",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Parent-owned non-live policy for the DuIK/Newton-like third-party semantics backlog family. It records fail-closed classification for Newton/Illustrator naming, layer parent assignment, position keyframe copy, DuIK puppet-pin property rename, DuIK pin-size/guide behavior, project-wide third-party effect scans, selected-property traversal, and Alt-key branching. No source JSX copied. Existing narrow generated-only Puppet, layer metadata, selection, expression, and blend-mode recipes remain separate; future unsafe operations require a separate narrow typed-tool contract, generated or mock third-party fixture, explicit approval, checkpoint/rollback, cleanup policy, and typed read-back.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "approval-gated policy guard only; it does not authorize mutation or candidate completion.",
+        "Use this policy to report typed-tool gaps for DuIK/Newton-like third-party semantics requests that cannot fit an existing narrow generated-only recipe.",
+        "Require a separate narrow typed-tool contract before parent assignment, position keyframe copy, DuIK puppet-pin rename, DuIK pin-size/guide mutation, third-party effect mutation, project-wide traversal, selected-property traversal, or Alt-key branching.",
+        "Do not widen generated-only Puppet, layer metadata, selection, expression, or blend-mode recipes to cover user plugin effects, inferred third-party naming, broad traversal, parent/keyframe/property mutation, or raw script execution."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "project-file-render-proxy-safety-policy",
       "title": "Project File Render Proxy Safety Policy",
       "status": "recipe",

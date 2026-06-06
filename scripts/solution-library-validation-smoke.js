@@ -112,6 +112,7 @@ const IMPORTED_ADVISORY_IDS = [
   "merge-imported-selected-items-typed-plan",
   "add-labeled-items-to-render-queue-typed-plan",
   "add-selected-compositions-to-render-queue-typed-plan",
+  "third-party-semantics-safety-policy",
   "project-file-render-proxy-safety-policy",
   "replace-text-in-project-item-name-typed-plan",
   "rename-selected-project-items-typed-plan",
@@ -2483,6 +2484,29 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /filesystem folder traversal/.test(note)), `${id}: notes must reject filesystem traversal.`);
       assert(solution.promotionHistory.some((entry) => /Add_Folder_To_Render_Queue/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "third-party-semantics-safety-policy") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_selected_properties", "list_layers", "get_comp_details", "get_layer_details", "list_effects", "get_effect_details"],
+        `${id}: policy workflow should stay on read-only comp, layer, property, and effect inspection tools.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: safety policy must force high-risk mutation gates for matched requests.`);
+      assert.strictEqual(solution.execution.riskLevel, "high", `${id}: policy should classify third-party semantics risk.`);
+      assert(text.includes("DuIK"), `${id}: policy should explicitly classify DuIK risk.`);
+      assert(text.includes("Newton"), `${id}: policy should explicitly classify Newton risk.`);
+      assert(text.includes("Illustrator-derived names"), `${id}: policy should classify Illustrator/Newton naming assumptions.`);
+      assert(text.includes("parent assignment"), `${id}: policy should classify parent assignment risk.`);
+      assert(text.includes("position keyframe copy"), `${id}: policy should classify keyframe-copy risk.`);
+      assert(text.includes("property rename"), `${id}: policy should classify property rename risk.`);
+      assert(text.includes("generated or mock third-party fixture"), `${id}: policy should require generated/mock third-party proof first.`);
+      assert(text.includes("typed read-back"), `${id}: policy should require future typed read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /third-party semantics risk classification/.test(step)), `${id}: verification must require third-party risk classification.`);
+      assert(solution.verificationRecipe.steps.some((step) => /typed-tool gap/.test(step)), `${id}: verification must require typed-tool gap reporting.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /does not mutate/.test(item)), `${id}: verification must prove read-only inspection does not mutate.`);
+      assert(solution.notes.some((note) => /approval-gated/.test(note)), `${id}: notes must preserve approval-gated status.`);
+      assert(solution.notes.some((note) => /separate narrow typed-tool contract/.test(note)), `${id}: notes must require a separate contract.`);
+      assert(solution.promotionHistory.some((entry) => /DuIK\/Newton-like/.test(entry.evidence)), `${id}: promotion evidence should mention the family.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "project-file-render-proxy-safety-policy") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -4162,6 +4186,21 @@ function assertActualRetrieval(registry) {
   assert(projectFilePolicyPromptSection.includes("get_render_queue_status"), "prompt section should prefer read-only render queue evidence.");
   assert(projectFilePolicyPromptSection.includes("typed-tool gap"), "prompt section should require typed-tool gap reporting.");
   assert(!/run_extendscript/i.test(projectFilePolicyPromptSection), "project/file safety policy should not recommend raw ExtendScript.");
+
+  const thirdPartyPolicyRetrieval = retrieveSolutionHints("Match layers to Newton layers, assign parents from Illustrator names, copy Newton position keyframes, rename puppet pins for DuIK, or change DuIK pin sizes.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(thirdPartyPolicyRetrieval.ok, true);
+  assert(ids(thirdPartyPolicyRetrieval).includes("third-party-semantics-safety-policy"), "third-party semantics safety policy should surface for DuIK/Newton prompts.");
+  const thirdPartyPolicyPromptSection = formatSolutionHintsForPrompt(thirdPartyPolicyRetrieval);
+  assert(thirdPartyPolicyPromptSection.includes("Third Party Semantics Safety Policy"), "prompt section should include third-party safety policy title.");
+  assert(thirdPartyPolicyPromptSection.includes("approval-gated"), "prompt section should preserve approval-gated classification.");
+  assert(thirdPartyPolicyPromptSection.includes("get_effect_details"), "prompt section should prefer read-only effect evidence.");
+  assert(thirdPartyPolicyPromptSection.includes("get_layer_details"), "prompt section should prefer read-only layer evidence.");
+  assert(thirdPartyPolicyPromptSection.includes("typed-tool gap"), "prompt section should require typed-tool gap reporting.");
+  assert(!/run_extendscript/i.test(thirdPartyPolicyPromptSection), "third-party semantics safety policy should not recommend raw ExtendScript.");
 
   const renameSelectedProjectItemsRetrieval = retrieveSolutionHints("Rename selected project items to the exact text Review Plate after reading the current project snapshot, binding explicit itemIndices, using rename_project_items, and reading back project inventory.", {
     registry,
