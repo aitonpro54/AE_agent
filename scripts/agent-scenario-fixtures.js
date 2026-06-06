@@ -40,6 +40,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "duplicate_layers",
   "set_layer_selection",
   "delete_layer",
+  "set_comp_current_time",
   "set_comp_properties",
   "set_layer_mask",
   "set_path_geometry",
@@ -2187,6 +2188,56 @@ function agentCompPropertiesScenarioPlans(runPrefix) {
   }));
 }
 
+function agentCompCurrentTimeScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Comp Current Time`;
+  const compName = `${base} Comp`;
+  const firstTargetTime = 1.25;
+  const frameTarget = 42;
+  const frameRate = 24;
+  const frameTargetTime = frameTarget / frameRate;
+
+  return [
+    {
+      id: "generated-comp-current-time",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "get_comp_details",
+        "set_comp_current_time",
+        "get_comp_details",
+        "set_comp_current_time",
+        "get_comp_details"
+      ],
+      expectedReadBack: {
+        generatedCompCurrentTime: true,
+        compName,
+        firstTargetTime,
+        frameTarget,
+        frameRate,
+        frameTargetTime
+      },
+      plan: {
+        summary: "Generated-only live QA for setting one explicit composition current time indicator.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated CTI comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 4, frameRate, bgColor: [0.06, 0.07, 0.09], allowDuplicateName: false, openInViewer: true, comment: "Generated-only comp current time validation" } },
+          { title: "Read generated CTI comp before move", tool: "get_comp_details", args: { compName, includeLayers: false } },
+          { title: "Set generated comp CTI by seconds", tool: "set_comp_current_time", args: { compName, time: firstTargetTime, expectedCurrentTime: 0, openInViewer: true } },
+          { title: "Read generated CTI after seconds move", tool: "get_comp_details", args: { compName, includeLayers: false } },
+          { title: "Set generated comp CTI by frame", tool: "set_comp_current_time", args: { compName, frame: frameTarget, frameRate, expectedCurrentTime: firstTargetTime, openInViewer: true } },
+          { title: "Read generated CTI after frame move", tool: "get_comp_details", args: { compName, includeLayers: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentSelectedPropertyValueScenarioPlans(runPrefix) {
   const base = `${runPrefix} Selected Property Value`;
   const compName = `${base} Comp`;
@@ -3481,6 +3532,7 @@ module.exports = {
   agentCompositionVersionScenarioPlans,
   agentCompositionMarkerReadScenarioPlans,
   agentCompPropertiesScenarioPlans,
+  agentCompCurrentTimeScenarioPlans,
   agentCompositionGuideScenarioPlans,
   agentDuplicateLayersScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,

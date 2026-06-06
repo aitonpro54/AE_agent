@@ -887,6 +887,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "set_puppet_pin_type",
   "set_property_value",
   "set_layer_metadata",
+  "set_comp_current_time",
   "set_comp_properties",
   "set_comp_work_area",
   "set_layer_time_range",
@@ -2001,7 +2002,7 @@ function compactCheckpoint(checkpoint) {
 function inferMutationTarget(toolName, args, payload) {
   const target = { tool: toolName };
   const request = {};
-  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "layerName", "sourceName", "expectedLayerName", "expectedLayerNames", "comment", "label", "locked", "maskIndex", "expectedMaskName", "operation", "maskMode", "targetTime", "time", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "itemType", "sourceItemIndex", "sourceItemName", "sourceCompItemIndex", "sourceCompName", "nameSuffix", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "renderQueueItemIndex", "outputPath", "outputFileName"]) {
+  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "layerName", "sourceName", "expectedLayerName", "expectedLayerNames", "comment", "label", "locked", "maskIndex", "expectedMaskName", "operation", "maskMode", "targetTime", "time", "frame", "frameRate", "expectedCurrentTime", "clampToDuration", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "itemType", "sourceItemIndex", "sourceItemName", "sourceCompItemIndex", "sourceCompName", "nameSuffix", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "renderQueueItemIndex", "outputPath", "outputFileName"]) {
     if (hasArg(args || {}, key)) request[key] = args[key];
   }
   if (Object.keys(request).length) target.request = request;
@@ -4323,6 +4324,7 @@ const PLANNING_TOOL_NAMES = [
   "set_property_value",
   "set_layer_metadata",
   "align_layers_to_time",
+  "set_comp_current_time",
   "set_comp_properties",
   "set_comp_work_area",
   "set_layer_time_range",
@@ -6248,6 +6250,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "You do not need to add a checkpoint_project step for every mutation because the plan runner can create a protected edit session, but set requiresCheckpoint=true for broad, destructive, or multi-step project changes.",
     "When a creation tool can set a property directly, include that property in the creation tool args instead of adding a later step that needs an unknown layerIndex.",
     "For requests to align selected layers, clips, or precomps to the current time indicator, use align_layers_to_time with no layerIndices and omit targetTime so it uses the active comp CTI.",
+    "For current time indicator or playhead navigation, use set_comp_current_time only on one explicit comp target with finite seconds or a reviewed frame/frameRate conversion, then read back get_comp_details.time. Do not substitute work-area, layer timing, keyframes, markers, or raw ExtendScript.",
     "For timeline trims, work areas, sequencing, splitting, and offsets, use set_comp_work_area, set_layer_time_range, stagger_layers, or split_layers_at_time.",
     "For composition marker inspection, use get_comp_details with includeMarkers=true and compare markers.items in comp.markerProperty.keyTime order; do not substitute layer marker tools for composition markers.",
     "For precomp/source workflows, use precompose_layers, replace_layer_source, deep_duplicate_precomp_sources, rename_layers, and rename_project_items before considering raw ExtendScript.",
@@ -9086,6 +9089,47 @@ const tools = [
           type: "string",
           enum: ["inPoint", "startTime"],
           description: "Whether to align each layer's visible inPoint or raw startTime. Defaults to inPoint, matching the AE '[' shortcut behavior."
+        }
+      }
+    }
+  },
+  {
+    name: "set_comp_current_time",
+    description: "Set the current time indicator for one explicit composition, with bounded seconds or reviewed frame-derived target and read-back verification.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Required when compName is omitted. 1-based project item index for the target composition."
+        },
+        compName: {
+          type: "string",
+          description: "Required when compItemIndex is omitted. Exact target composition name."
+        },
+        time: {
+          type: "number",
+          description: "Target current time in seconds. Provide exactly one of time or frame."
+        },
+        frame: {
+          type: "number",
+          description: "Zero-based integer frame to convert to seconds. Provide exactly one of time or frame."
+        },
+        frameRate: {
+          type: "number",
+          description: "Optional positive frame rate for frame conversion. Defaults to the target comp frameRate."
+        },
+        expectedCurrentTime: {
+          type: "number",
+          description: "Optional guard for the current comp time before mutation; mismatches fail closed."
+        },
+        clampToDuration: {
+          type: "boolean",
+          description: "Whether to clamp out-of-range time to [0, duration]. Defaults to false, which fails closed."
+        },
+        openInViewer: {
+          type: "boolean",
+          description: "Whether to open the target comp in the viewer before setting time. Defaults to false."
         }
       }
     }
@@ -13949,6 +13993,125 @@ async function callTool(name, args) {
       };
       app.endUndoGroup();
       return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_comp_current_time") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const hasTime = hasArg(args, "time");
+    const hasFrame = hasArg(args, "frame");
+    const time = hasTime ? optionalNumber(args, "time", null) : null;
+    const frame = hasFrame ? optionalNumber(args, "frame", null) : null;
+    const frameRate = hasArg(args, "frameRate") ? optionalNumber(args, "frameRate", null) : null;
+    const expectedCurrentTime = hasArg(args, "expectedCurrentTime") ? optionalNumber(args, "expectedCurrentTime", null) : null;
+    const clampToDuration = optionalBoolean(args, "clampToDuration", false);
+    const openInViewer = optionalBoolean(args, "openInViewer", false);
+
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required.", true);
+    if (hasTime === hasFrame) return toolResult("Provide exactly one of time or frame.", true);
+    if (hasTime && (time === null || !Number.isFinite(time))) return toolResult("time must be a finite number of seconds.", true);
+    if (hasFrame && (frame === null || !Number.isFinite(frame) || !Number.isInteger(frame) || frame < 0)) {
+      return toolResult("frame must be a finite zero-based integer.", true);
+    }
+    if (frameRate !== null && (!Number.isFinite(frameRate) || frameRate <= 0)) return toolResult("frameRate must be greater than 0.", true);
+    if (expectedCurrentTime !== null && !Number.isFinite(expectedCurrentTime)) return toolResult("expectedCurrentTime must be finite when provided.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var requestedTime = ${hasTime ? time : "null"};
+      var requestedFrame = ${hasFrame ? frame : "null"};
+      var explicitFrameRate = ${frameRate === null ? "null" : frameRate};
+      var expectedCurrentTime = ${expectedCurrentTime === null ? "null" : expectedCurrentTime};
+      var clampToDuration = ${clampToDuration ? "true" : "false"};
+      var openInViewer = ${openInViewer ? "true" : "false"};
+
+      function __codexFiniteNumber(value) {
+        return typeof value === "number" && isFinite(value);
+      }
+
+      function __codexCompTimeSnapshot(targetComp) {
+        return {
+          itemIndex: __codexProjectIndexForItem(targetComp),
+          name: targetComp.name,
+          time: targetComp.time,
+          duration: targetComp.duration,
+          frameRate: targetComp.frameRate,
+          displayStartTime: targetComp.displayStartTime,
+          workAreaStart: targetComp.workAreaStart,
+          workAreaDuration: targetComp.workAreaDuration,
+          width: targetComp.width,
+          height: targetComp.height,
+          numLayers: targetComp.numLayers
+        };
+      }
+
+      var frameRateUsed = null;
+      if (requestedFrame !== null) {
+        frameRateUsed = explicitFrameRate !== null ? explicitFrameRate : comp.frameRate;
+        if (!__codexFiniteNumber(frameRateUsed) || frameRateUsed <= 0) throw new Error("frameRate must be greater than 0 for frame-derived current time.");
+        requestedTime = requestedFrame / frameRateUsed;
+      }
+      if (!__codexFiniteNumber(requestedTime)) throw new Error("Target current time must be finite.");
+
+      var before = __codexCompTimeSnapshot(comp);
+      if (expectedCurrentTime !== null && Math.abs(before.time - expectedCurrentTime) > 0.001) {
+        throw new Error("Current time guard mismatch. Expected " + expectedCurrentTime + " but found " + before.time + ".");
+      }
+
+      var targetTime = requestedTime;
+      var clamped = false;
+      if (targetTime < 0 || targetTime > comp.duration) {
+        if (!clampToDuration) throw new Error("Target current time must be between 0 and composition duration.");
+        targetTime = Math.max(0, Math.min(comp.duration, targetTime));
+        clamped = true;
+      }
+
+      app.beginUndoGroup("Codex Set Comp Current Time");
+      try {
+        if (openInViewer && comp.openInViewer) comp.openInViewer();
+        comp.time = targetTime;
+      } finally {
+        app.endUndoGroup();
+      }
+
+      var after = __codexCompTimeSnapshot(comp);
+      var timeMatches = Math.abs(after.time - targetTime) <= 0.001;
+      return {
+        comp: {
+          itemIndex: after.itemIndex,
+          name: after.name,
+          time: after.time,
+          duration: after.duration,
+          frameRate: after.frameRate
+        },
+        requested: {
+          time: requestedTime,
+          frame: requestedFrame,
+          frameRate: frameRateUsed,
+          clampToDuration: clampToDuration
+        },
+        targetTime: targetTime,
+        clamped: clamped,
+        before: before,
+        after: after,
+        postVerification: {
+          ok: timeMatches,
+          timeMatches: timeMatches,
+          withinBounds: targetTime >= 0 && targetTime <= after.duration,
+          compIdentityMatches: before.itemIndex === after.itemIndex && before.name === after.name,
+          structuralFieldsUnchanged:
+            before.duration === after.duration &&
+            before.frameRate === after.frameRate &&
+            before.width === after.width &&
+            before.height === after.height &&
+            before.numLayers === after.numLayers &&
+            before.workAreaStart === after.workAreaStart &&
+            before.workAreaDuration === after.workAreaDuration
+        }
+      };
     `);
     return toolResult(result.result);
   }

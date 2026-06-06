@@ -12860,6 +12860,127 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "frame-navigator-typed-plan",
+      "title": "Frame Navigator Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "time",
+        "cti",
+        "playhead",
+        "current-time",
+        "composition",
+        "utility",
+        "generic-importer",
+        "ae-scripting-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Move one explicit composition current time indicator to a reviewed seconds or frame-derived target with comp time read-back.",
+        "appliesWhen": [
+          "The user asks to move the CTI, playhead, current time, or frame navigator to a specific time or frame.",
+          "The target composition can be bound from get_active_comp or get_comp_details evidence before mutation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "compTarget",
+          "type": "comp",
+          "required": true,
+          "description": "Explicit composition target from current get_active_comp or get_comp_details evidence."
+        },
+        {
+          "name": "targetTime",
+          "type": "number",
+          "required": false,
+          "description": "Finite target current time in seconds. Mutually exclusive with targetFrame."
+        },
+        {
+          "name": "targetFrame",
+          "type": "number",
+          "required": false,
+          "description": "Reviewed zero-based frame target, converted with a finite positive frameRate."
+        },
+        {
+          "name": "frameRate",
+          "type": "number",
+          "required": false,
+          "description": "Finite positive frame rate for targetFrame conversion, usually from inspected comp evidence."
+        }
+      ],
+      "targetAssumptions": [
+        "The request changes only the composition current time indicator and does not require editing layers, keyframes, markers, work area, render queue, project items, or files.",
+        "The target comp is explicit; screenshots, prior chat context, visual focus, project item names, and broad project scans are not sufficient target evidence.",
+        "Frame targets are zero-based from composition start unless a separate reviewed timecode/display-start policy exists.",
+        "Out-of-range targets fail closed by default; clamping is allowed only when explicitly reviewed and disclosed.",
+        "Source-exact ScriptUI controls, display-start/timecode offsets, selected-comp ambiguity, raw ExtendScript, and exact source semantics remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/frame-navigator-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "set_comp_current_time"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Bind explicit comp evidence, set current time with the narrow typed tool, and verify get_comp_details.time read-back without unrelated timeline edits.",
+        "steps": [
+          "Run get_active_comp or get_comp_details to bind target comp identity, current time, duration, frame rate, display start time, and layer count.",
+          "Convert targetFrame only with reviewed frameRate evidence, or use the reviewed finite seconds target directly.",
+          "Run set_comp_current_time with compItemIndex or compName and exactly one of time or frame.",
+          "Run get_comp_details for the same comp after mutation.",
+          "Verify get_comp_details.time equals the requested or explicitly clamped target and structural comp fields stayed unchanged."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the target comp, duration, frameRate, and current time.",
+          "set_comp_current_time reports before.time, after.time, requested target, bounds policy, and structural unchanged evidence.",
+          "Post-run get_comp_details.time matches the requested or clamped target.",
+          "Duration, frameRate, dimensions, work area, and layer count remain unchanged.",
+          "Unsupported layer timing, work-area, marker, keyframe, timecode-offset, source-exact UI, and raw ExtendScript semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-utilities-frame-navigator Full Intaker parent reducer as generated-only CTI typed-tool contract preparation.",
+          "The preserved ledger/plan evidence says Utilities/Frame_Navigator.jsx mutates comp.time. The source checkout file was not present after runtime cleanup, so no raw JSX was copied."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-06",
+          "from": "generic-repo-importer-tool-utilities-frame-navigator",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the comp.time CTI navigation intent behind Utilities/Frame_Navigator.jsx into a narrow set_comp_current_time typed contract with explicit comp target, finite seconds or frame-derived target, bounds fail-closed/clamp policy, get_comp_details.time read-back, and semantic verification; no source JSX copied. Source-exact ScriptUI controls, display-start/timecode offsets, selected-comp ambiguity, layer timing, work-area edits, markers, keyframes, raw ExtendScript, and broad project scans remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Use set_comp_current_time only after explicit comp evidence and only for CTI/playhead navigation.",
+        "Do not substitute set_comp_work_area, align_layers_to_time, set_layer_time_range, marker tools, keyframe tools, or raw ExtendScript.",
+        "Use get_comp_details after mutation and require time read-back on the same comp.",
+        "Frame targets are zero-based from comp start unless a separate timecode/display-start policy is accepted.",
+        "Candidate completion remains generated-only live-proof/readiness-gated."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "milliseconds-to-frames-typed-plan",
       "title": "Milliseconds To Frames Typed Plan",
       "status": "recipe",

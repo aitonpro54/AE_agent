@@ -23,7 +23,8 @@ const LOCAL_MUTATING_TOOLS = new Set([
   "set_layer_mask",
   "set_path_geometry",
   "export_path_points",
-  "set_puppet_pin_type"
+  "set_puppet_pin_type",
+  "set_comp_current_time"
 ]);
 
 function clone(value) {
@@ -649,6 +650,43 @@ function fakeMutationResult(step, state) {
       workAreaDuration: args.duration
     }, compName);
   }
+  if (step.tool === "set_comp_current_time") {
+    const frameRate = args.frameRate || state.compProperties.frameRate;
+    const targetTime = args.time === undefined ? Number(args.frame || 0) / frameRate : args.time;
+    const before = {
+      name: compName,
+      time: state.compProperties.time,
+      duration: state.compProperties.duration,
+      frameRate: state.compProperties.frameRate,
+      width: state.compProperties.width,
+      height: state.compProperties.height,
+      numLayers: state.layers.length,
+      workAreaStart: 0,
+      workAreaDuration: state.compProperties.duration
+    };
+    state.compProperties.time = targetTime;
+    const after = { ...before, time: targetTime };
+    return withVerification({
+      comp: { name: compName, time: targetTime, duration: state.compProperties.duration, frameRate: state.compProperties.frameRate },
+      requested: {
+        time: targetTime,
+        frame: args.frame === undefined ? null : args.frame,
+        frameRate: args.frame === undefined ? null : frameRate,
+        clampToDuration: args.clampToDuration === true
+      },
+      targetTime,
+      clamped: false,
+      before,
+      after,
+      postVerification: {
+        ok: true,
+        timeMatches: true,
+        withinBounds: true,
+        compIdentityMatches: true,
+        structuralFieldsUnchanged: true
+      }
+    }, compName);
+  }
   if (step.tool === "set_layer_time_range") {
     const changed = (args.layerIndices || [1]).map((index) => ({
       after: layerInfo(`Layer ${index}`, {
@@ -998,7 +1036,8 @@ function fakeReadBackResult(step, state) {
         duration: state.compProperties.duration,
         frameRate: state.compProperties.frameRate,
         bgColor: state.compProperties.bgColor,
-        displayStartTime: state.compProperties.displayStartTime
+        displayStartTime: state.compProperties.displayStartTime,
+        time: state.compProperties.time
       },
       layerCount: layers.length,
       layers
@@ -1027,7 +1066,8 @@ function fakeRunForPlan(plan) {
       duration: 4,
       frameRate: 24,
       bgColor: [0, 0, 0],
-      displayStartTime: 0
+      displayStartTime: 0,
+      time: 0
     }
   };
   const steps = (plan.steps || []).map((step, index) => {
@@ -1462,6 +1502,48 @@ function assertSetCompPropertiesReadBackMismatchNeedsReview() {
   const semantic = buildSemanticVerification(plan, run);
   assert.strictEqual(semantic.status, "needs_review", "set_comp_properties must fail closed on mismatched read-back.");
   assert(semantic.checks.some((check) => check.id.indexOf("set_comp_properties:width") >= 0 && check.status === "failed"), "set_comp_properties mismatched read-back should fail.");
+}
+
+function compCurrentTimePlan(includeReadBack = true) {
+  const steps = [
+    {
+      title: "Move generated comp CTI",
+      tool: "set_comp_current_time",
+      args: {
+        compName: "Comp Current Time Fixture",
+        time: 1.25,
+        expectedCurrentTime: 0
+      }
+    }
+  ];
+  if (includeReadBack) {
+    steps.push({
+      title: "Read generated comp CTI",
+      tool: "get_comp_details",
+      args: { compName: "Comp Current Time Fixture", includeLayers: false }
+    });
+  }
+  return {
+    summary: "Set one generated composition current time and inspect it.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps
+  };
+}
+
+function assertSetCompCurrentTimePasses() {
+  const run = fakeRunForPlan(compCurrentTimePlan(true));
+  const semantic = buildSemanticVerification(compCurrentTimePlan(true), run);
+  assert.strictEqual(semantic.status, "passed", `set_comp_current_time semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_comp_current_time:time") >= 0 && check.status === "passed"), "set_comp_current_time read-back check should pass.");
+}
+
+function assertSetCompCurrentTimeMissingReadBackNeedsReview() {
+  const plan = compCurrentTimePlan(false);
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "set_comp_current_time must require post-run get_comp_details read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_comp_current_time:time") >= 0 && check.status === "failed"), "set_comp_current_time missing read-back should fail.");
 }
 
 function assertSetLayerMaskCreateUpdatePasses() {
@@ -2487,6 +2569,8 @@ function main() {
   assertDeleteLayerMissingReadBackNeedsReview();
   assertSetCompPropertiesPasses();
   assertSetCompPropertiesReadBackMismatchNeedsReview();
+  assertSetCompCurrentTimePasses();
+  assertSetCompCurrentTimeMissingReadBackNeedsReview();
   assertSetLayerMaskCreateUpdatePasses();
   assertSetLayerMaskMissingReadBackNeedsReview();
   assertSetPathGeometryPasses();

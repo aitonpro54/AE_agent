@@ -108,6 +108,7 @@ const IMPORTED_ADVISORY_IDS = [
   "add-comment-to-selected-layers-typed-plan",
   "unlock-all-layers-typed-plan",
   "set-all-layer-labels-to-none-typed-plan",
+  "frame-navigator-typed-plan",
   "milliseconds-to-frames-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
@@ -151,6 +152,7 @@ const AVAILABLE_TOOLS = [
   "clear_expression",
   "separate_shape_size_dimensions",
   "set_layer_transform",
+  "set_comp_current_time",
   "set_comp_properties",
   "set_comp_work_area",
   "set_layer_time_range",
@@ -470,6 +472,22 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /Layer\.label typed-tool gap/.test(item)), `${id}: verification must require Layer.label gap evidence.`);
       assert(solution.notes.some((note) => /selection/.test(note)), `${id}: notes must forbid substituting selection side effects.`);
       assert(solution.promotionHistory.some((entry) => /Set_All_Layer_Labels_To_None/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "frame-navigator-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "set_comp_current_time"],
+        `${id}: frame navigator workflow should stay on explicit comp time tools.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: CTI navigation changes composition current time.`);
+      assert(text.includes("set_comp_current_time"), `${id}: recipe should use the narrow CTI setter.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp time read-back.`);
+      assert(text.includes("Do not substitute"), `${id}: recipe should reject unrelated timing substitutions.`);
+      assert(solution.requiredSafetyGates.postMutationReadBack === true, `${id}: CTI recipe must require post-mutation read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_comp_current_time/.test(step)), `${id}: verification must include set_comp_current_time.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /get_comp_details\.time/.test(item)), `${id}: verification must require get_comp_details.time evidence.`);
+      assert(solution.notes.some((note) => /raw ExtendScript/.test(note)), `${id}: notes must forbid raw ExtendScript fallback.`);
+      assert(solution.promotionHistory.some((entry) => /Frame_Navigator/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "milliseconds-to-frames-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,

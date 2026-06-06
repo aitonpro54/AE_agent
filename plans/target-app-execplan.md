@@ -94,6 +94,31 @@ old `AE_agent` repository remains the historical source.
   `puppet-pin-type-generated-only` Full Intaker family metadata. No scoped
   retry, live CEP proof, candidate completion, broad queue processing, Local/
   Ollama, fallback provider, dependency change, push, or PR was run.
+- [x] Reopened Full Intaker Frame Navigator CTI contract slice:
+  `tool-utilities-frame-navigator` now has a parent-owned non-live typed
+  contract and lane metadata without running live CEP/AE proof. Added
+  `set_comp_current_time`, scoped to one explicit composition target from
+  `get_active_comp`/`get_comp_details` evidence. The tool accepts exactly one
+  finite seconds target or zero-based frame target, supports optional
+  `expectedCurrentTime`, fails closed outside `[0, duration]` unless an
+  explicit clamp policy is reviewed, and returns before/after time plus
+  structural unchanged evidence. Added recipe/intake note, registry coverage,
+  semantic verification, scenario/report/CEP command wiring, plan-repair
+  aliases, ChatGPT connector read-only guard coverage, and
+  `comp-current-time-generated-only` Full Intaker family metadata. No scoped
+  retry, live CEP proof, candidate completion, broad queue processing, Local/
+  Ollama, fallback provider, dependency change, push, or PR was run.
+  Validation passed: touched-file `node --check`, JSON parse for solution/lane
+  registries, `node scripts/agent-scenario-report-smoke.js`, `node
+  scripts/semantic-verification-smoke.js`, `node
+  scripts/solution-library-validation-smoke.js`, `node
+  scripts/solution-registry-smoke.js`, `node scripts/solution-retrieval-smoke.js`,
+  `node scripts/chatgpt-connector-smoke.js`, `npm.cmd run check:rules`,
+  `npm.cmd run smoke:provider-contract`, `npm.cmd run smoke:provider-api`,
+  `npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`, `npm.cmd run
+  smoke:bridge`, `npm.cmd run smoke:full-intake`, `node
+  scripts/sdk-generic-repo-full-intake-smoke.js`, and `git diff --check` with
+  line-ending warnings only.
 - [x] Reopened Full Intaker composition-marker read contract slice:
   added `get_comp_details` composition marker read-back via
   `includeMarkers:true` and `markerLimit`, returning `markers.items` ordered by
@@ -671,6 +696,15 @@ live user-asset mutation.
   selected-property traversal; missing generated Puppet pin atom evidence,
   user Puppet effects, project-wide scans, DuIK behavior, raw JSX, and live
   proof without explicit approval remain fail-closed.
+- 2026-06-06: Parent reducer accepted only a non-live generated-only Frame
+  Navigator CTI contract for `tool-utilities-frame-navigator`. The bridge now
+  has `set_comp_current_time` for one explicit comp target, exactly one finite
+  seconds or zero-based frame target, optional current-time guard, fail-closed
+  bounds by default, optional reviewed clamping, and `get_comp_details.time`
+  read-back semantics. This does not claim source-exact ScriptUI controls,
+  display-start/timecode offset handling, selected-comp ambiguity, layer
+  timing, work-area edits, markers, keyframes, raw JSX, broad project scans, or
+  live proof without explicit approval.
 - 2026-06-06: Added `npm run full-intake:cleanup` backed by
   `scripts/full-intake-runtime-cleanup.js` for guarded local cleanup of ignored
   Full Intaker runtime leftovers. Dry-run remains the default; destructive

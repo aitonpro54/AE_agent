@@ -11,6 +11,7 @@ const MUTATING_TOOLS = new Set([
   "create_camera_with_controller",
   "toggle_onion_skinning",
   "add_project_item_to_comp",
+  "set_comp_current_time",
   "set_comp_work_area",
   "set_layer_time_range",
   "stagger_layers",
@@ -207,7 +208,7 @@ function addLayerEvidence(target, value, source) {
 
 function addCompEvidence(target, value, source) {
   if (!isPlainObject(value)) return;
-  const hasCompField = ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "numLayers", "layerCount"].some((key) => hasOwn(value, key));
+  const hasCompField = ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "time", "numLayers", "layerCount"].some((key) => hasOwn(value, key));
   if (!hasCompField) return;
   target.comps.push({
     name: compactText(value.name, 160),
@@ -219,6 +220,7 @@ function addCompEvidence(target, value, source) {
     frameRate: numberValue(value.frameRate),
     bgColor: numberArrayValue(value.bgColor),
     displayStartTime: numberValue(value.displayStartTime),
+    time: numberValue(value.time),
     numLayers: numberValue(hasOwn(value, "numLayers") ? value.numLayers : value.layerCount),
     source: source || "observed comp"
   });
@@ -1463,6 +1465,39 @@ function checkSetCompProperties(checks, step, payload, evidence) {
   });
 }
 
+function expectedCompCurrentTime(args, payload) {
+  if (hasOwn(args, "time")) return numberValue(args.time);
+  if (hasOwn(args, "frame")) {
+    const frame = numberValue(args.frame);
+    const frameRate = numberValue(args.frameRate) ||
+      numberValue(payload && payload.requested && payload.requested.frameRate) ||
+      numberValue(payload && payload.after && payload.after.frameRate);
+    if (frame !== null && frameRate !== null && frameRate > 0) return frame / frameRate;
+  }
+  return numberValue(payload && (hasOwn(payload, "targetTime") ? payload.targetTime : payload.after && payload.after.time));
+}
+
+function checkSetCompCurrentTime(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const expected = expectedCompCurrentTime(args, payload);
+  const after = payload.after || payload.comp || {};
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const readBackEvidence = expected === null ? null : observedCompFieldEvidence(evidence.readBack, "time", expected);
+  const afterMatches = expected !== null && compFieldMatches(after, "time", expected);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:time`,
+    title: "Composition current time matches requested CTI target",
+    expected: expected === null ? "finite target time" : expected,
+    observed: hasOwn(after, "time") ? after.time : "missing after time",
+    passed: afterMatches &&
+      postVerification.ok === true &&
+      postVerification.compIdentityMatches === true &&
+      postVerification.structuralFieldsUnchanged === true &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_comp_details read-back matched set_comp_current_time."
+  });
+}
+
 function checkSetLayerMask(checks, step, payload, evidence) {
   const args = step.args || {};
   const mask = payload.afterMask || payload.mask || {};
@@ -1641,6 +1676,11 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "toggle_onion_skinning") {
     checkToggleOnionSkinning(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "set_comp_current_time") {
+    checkSetCompCurrentTime(checks, step, payload, evidence);
     return;
   }
 

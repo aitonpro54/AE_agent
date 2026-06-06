@@ -302,6 +302,7 @@ function assertReadOnlyTools(tools) {
     "set_puppet_pin_type",
     "set_layer_metadata",
     "set_layer_transform",
+    "set_comp_current_time",
     "set_comp_properties",
     "set_comp_work_area",
     "set_layer_time_range",
