@@ -97,6 +97,42 @@ async function withFakeNodeCodex(loginExitCode, loginText, callback) {
   }
 }
 
+async function withFakeCmdCodex(loginExitCode, loginText, callback) {
+  const oldCodexCliPath = Object.prototype.hasOwnProperty.call(process.env, "CODEX_CLI_PATH")
+    ? process.env.CODEX_CLI_PATH
+    : undefined;
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ae-agent-fake-codex-cmd-"));
+  const shimScriptPath = path.join(tempDir, "codex-shim.js");
+  const shimCmdPath = path.join(tempDir, "codex.cmd");
+  const shimScript = [
+    "const args = process.argv.slice(2);",
+    "if (args[0] === \"--version\") {",
+    "  console.log(\"codex-cli fake-cmd\");",
+    "  process.exit(0);",
+    "}",
+    "if (args[0] === \"login\" && args[1] === \"status\") {",
+    `  console.log(${JSON.stringify(loginText)});`,
+    `  process.exit(${Number(loginExitCode) || 0});`,
+    "}",
+    "console.error(\"Unsupported fake Codex command: \" + args.join(\" \"));",
+    "process.exit(2);"
+  ].join("\n");
+  const shimCmd = [
+    "@echo off",
+    `"${process.execPath}" "%~dp0codex-shim.js" %*`
+  ].join("\r\n");
+  fs.writeFileSync(shimScriptPath, shimScript, "utf8");
+  fs.writeFileSync(shimCmdPath, shimCmd, "utf8");
+
+  try {
+    setEnv("CODEX_CLI_PATH", shimCmdPath);
+    return await callback(shimCmdPath);
+  } finally {
+    setEnv("CODEX_CLI_PATH", oldCodexCliPath);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
 function findAgent(agents, id) {
   const agent = agents.find((item) => item.id === id);
   assert(agent, `Missing agent ${id}`);
@@ -323,6 +359,26 @@ async function main() {
       fakeLoggedIn = fakeReadiness.agent.codexStatus;
     });
 
+    let fakeCmdLoggedIn = null;
+    if (process.platform === "win32") {
+      await withFakeCmdCodex(0, "Logged in from fake cmd Codex", async (shimCmdPath) => {
+        const fakeListed = await listAgents({});
+        const fakeCli = findAgent(fakeListed.agents, "openai-cli");
+        const fakeReadiness = await checkAgentReadiness({
+          agentId: "openai-cli",
+          model: fakeCli.model
+        });
+        assert.strictEqual(fakeCli.codexStatus.command, shimCmdPath);
+        assert.strictEqual(fakeCli.codexStatus.versionCheck.invokedCommand, "cmd.exe");
+        assert.strictEqual(fakeCli.codexStatus.loginStatusCheck.invokedCommand, "cmd.exe");
+        assert.strictEqual(fakeReadiness.configured, true);
+        assert.strictEqual(fakeReadiness.canChat, true);
+        assert.strictEqual(fakeReadiness.status, "ready");
+        assert.match(fakeReadiness.agent.codexStatus.loginStatusCheck.output, /Logged in from fake cmd Codex/);
+        fakeCmdLoggedIn = fakeReadiness.agent.codexStatus;
+      });
+    }
+
     let unsupportedSetupError = null;
     try {
       launchCodexLogin({
@@ -353,7 +409,8 @@ async function main() {
           setupLaunchBlocked: missingCliSetupError.status.status,
           missingCliVersionCheck: openAiCli.codexStatus.versionCheck.status,
           fakeNotLoggedInLoginCheck: fakeNotLoggedIn.loginStatusCheck.status,
-          fakeLoggedInLoginCheck: fakeLoggedIn.loginStatusCheck.status
+          fakeLoggedInLoginCheck: fakeLoggedIn.loginStatusCheck.status,
+          fakeCmdLoggedInLoginCheck: fakeCmdLoggedIn ? fakeCmdLoggedIn.loginStatusCheck.status : "not_applicable"
         },
         geminiApi: {
           authMode: geminiApi.authMode,

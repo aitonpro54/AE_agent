@@ -26,6 +26,21 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Max-scope live proof readiness repair:
+  explicit max-scope approval replaced the previous live-proof approval blocker,
+  so the run attempted provider repair before any mutating proof wave. The
+  bridge now supports Windows `codex.cmd`/`.bat` shims for Codex CLI status and
+  chat execution, prefers `codex.cmd` before the stale local `codex.exe`, and
+  exposes ChatGPT-compatible Codex CLI model options with `gpt-5.5` as the CLI
+  default. The CEP OpenAI CLI smoke now fails on transcript `ERROR` instead of
+  accepting the user prompt text as proof. Readiness passed for
+  `openai-cli/gpt-5.5` after daemon restart with `CODEX_CLI_PATH` pointing to
+  `C:\Users\Ant\AppData\Roaming\npm\codex.cmd`. The first clean provider chat
+  proof then failed with a fresh external usage-limit blocker: Codex reported
+  usage exhausted and suggested retry after June 11, 2026 at 12:38 PM. No
+  generated-only mutating CEP/AE proof, candidate completion, broad queue,
+  Local/Ollama proof adaptation, fallback provider proof, push, PR, GitHub
+  automation, launcher edit, or user-asset mutation was run.
 - [x] Reopened Full Intaker final completion audit:
   performed exactly one compact completion audit of the reopened screen-task
   families using active docs, targeted plan/handoff evidence, clean git status,
@@ -826,21 +841,25 @@ old `AE_agent` repository remains the historical source.
 
 ## Next Milestone
 
-No further autonomous reopened screen-task queue work is available from the
-current compact audit. The ledger is fully terminal and the recorded family
-evidence covers the non-live autonomous scope. Do not continue by running a
-scoped retry, broad queue processing, broad/default CEP smoke, Local/Ollama,
-fallback providers, dependency changes, raw JSX copy, source-checkout writes,
-push/PR, or live user-asset mutation.
-
 The next useful step is generated-only mutating live CEP/AE proof for the
-prepared lanes. That requires explicit human approval, a generated fixture,
-checkpoint/rollback/cleanup policy, typed read-back, and panel-side OpenAI CLI
-readiness. Until those gates are satisfied, stop with
-`HUMAN_REQUIRED: explicit approval required for generated-only mutating live CEP proof`.
+prepared lanes after the external Codex usage limit clears. OpenAI CLI login and
+model readiness are repaired for `openai-cli/gpt-5.5`, but `openai-cli-smoke`
+now correctly fails on the current usage-limit error instead of false-passing.
+Do not start a new proof wave until Codex usage is available again; then begin
+with the narrow `full-ui-agent-layer-metadata-openai-cli-smoke` wave before
+broader path/export/render/Essential Graphics/third-party families.
 
 ## Decision Log
 
+- 2026-06-08: Max-scope approval was treated as sufficient to attempt live
+  readiness repair, but not as permission to accept a weak provider proof. The
+  old `openai-cli` setup blocker was repaired by teaching the bridge to execute
+  Windows `codex.cmd`/`.bat` shims through `cmd.exe` and by preferring the
+  working npm `codex.cmd` over the stale local `codex.exe`. `gpt-5.5` is now
+  the OpenAI CLI default because direct `codex exec` showed `gpt-5` is rejected
+  for the ChatGPT-backed Codex account while `gpt-5.5` works. The current
+  remaining blocker is external usage exhaustion, not approval, AE, CEP, or
+  typed-tool readiness.
 - 2026-06-06: Final completion audit accepted the terminal ledger only after
   mapping the reopened screen-task families to existing recorded contract,
   policy, and readiness evidence. It did not mark live proof complete. The only
@@ -1498,6 +1517,7 @@ readiness. Until those gates are satisfied, stop with
 
 ## Validation
 
+| Max-scope OpenAI CLI readiness repair | Required before any generated-only mutating live proof wave because stale bridge CLI detection selected a broken local `codex.exe` and the old CEP smoke could false-pass on a transcript containing only the user prompt. | Passed/externally blocked: compact preflight read active docs and compact status/proof/ledger-summary; `codex.cmd login status` returned `Logged in using ChatGPT`; direct bridge readiness initially failed on `C:\Users\Ant\AppData\Local\OpenAI\Codex\bin\codex.exe` due `~\.codex\config.toml` `service_tier = default`; parent repaired the bridge to support Windows `codex.cmd`/`.bat` shims and to prefer `codex.cmd`; direct `codex exec` proved `gpt-5.5`, `gpt-5.4`, and `gpt-5.4-mini` can answer while `gpt-5` is rejected for the ChatGPT-backed account; bridge readiness then passed for `openai-cli/gpt-5.5`. Validation passed: touched JS `node --check`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run check:rules`; `git diff --check` with line-ending warnings only; read-only CEP `inspect`; `connector-status-smoke`; and `openai-cli-setup-smoke`. `node scripts/cep-panel-cdp-smoke.js openai-cli-smoke` now fails correctly with external usage-limit evidence: Codex usage is exhausted and the CLI suggests retry after June 11, 2026 at 12:38 PM. No generated-only mutating CEP/AE proof, candidate completion, broad queue, Local/Ollama proof adaptation, fallback-provider proof, push, PR, GitHub automation, launcher edit, or user-asset mutation was run. |
 | Reopened screen-task final completion audit | Required to close the reopened family audit without broad queue processing or live mutation. | Passed/human-gated: compact preflight read active docs, `git status --short`, compact status/proof/ledger-summary, `.codex/handoff.md`, and `.codex/active-thread.json`; targeted plan/handoff evidence search covered CEP/panel readiness, shape/mask path geometry, Puppet pin type, Essential Graphics/Essential Properties, project/file/render/proxy/user-file policy, composition marker read/add/copy/work-area contracts, and third-party semantics policy. Compact status is `completed_no_candidates`; compact proof is `completed_no_candidates` with changedPathCount 0 and unplannedPathCount 0; ledger summary is entries=75, completed=17, blocked/skipped=58, queued=0, failed=0, terminal total=75. No scoped retry, broad queue processing, generated-only mutating live CEP/AE proof, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, user-asset mutation, push, PR, or launcher/autoloop edit was run. Closeout validation passed: JSON parse for `.codex/active-thread.json`, `npm.cmd run check:rules`, and `git diff --check` with Windows line-ending warnings only. |
 | Reopened CEP/panel live proof readiness audit | Required to replace stale live-proof readiness evidence with current read-only CEP/CDP state before considering any generated-only mutating live proof. | Passed/readiness-blocked: compact preflight read active docs, `git status --short`, compact status/proof/ledger-summary; `node scripts/cep-panel-cdp-smoke.js inspect` reached `AE Agent 2.0.0` and reported bridge `Connected`; `node scripts/cep-panel-cdp-smoke.js connector-status-smoke` returned `ok:true`. Provider readiness remains blocked inside the panel because selected `openai-cli` reports `Needs setup` and last error `Run codex login and sign in with ChatGPT before using OpenAI CLI.` No scoped retry, generated-only mutating live CEP/AE proof, candidate completion, broad/default CEP smoke, broad queue, Local/Ollama use, fallback provider, dependency/package change, push, PR, raw JSX copy, user-asset mutation, or launcher/autoloop edit was run. |
 | Reopened third-party semantics safety policy slice | Required to give DuIK/Newton-like backlog requests planner-facing fail-closed guidance without approving third-party plugin behavior, parent/keyframe/property mutation, raw JSX, or live CEP/AE proof. | Passed/policy-ready: parent-owned implementation added `recipes/third-party-semantics-safety-policy.md`, registry coverage, and solution-library retrieval assertions for Newton/Illustrator layer matching, parent assignment, position keyframe copy, DuIK puppet-pin rename, and DuIK pin-size prompts. Validation passed: touched-file `node --check`; JSON parse for `registry/solutions.json`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/sdk-generic-repo-full-intake-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with line-ending warnings only. No scoped retry, live proof, candidate completion, broad queue, Local/Ollama, fallback provider, dependency/package change, push, PR, raw JSX copy, source-checkout write, third-party plugin mutation, parent/keyframe/property mutation, or launcher/autoloop edit was run. |

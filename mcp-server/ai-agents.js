@@ -13,10 +13,13 @@ const DEFAULT_GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1bet
 const DEFAULT_ANTHROPIC_BASE_URL = "https://api.anthropic.com/v1";
 const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434";
 const OPENAI_MODEL_OPTIONS = [
+  { id: "gpt-5.5", name: "GPT-5.5" },
+  { id: "gpt-5.4", name: "GPT-5.4" },
+  { id: "gpt-5.4-mini", name: "GPT-5.4 Mini" },
   { id: "gpt-5", name: "GPT-5" }
 ];
 const DEFAULT_OPENAI_MODEL = "gpt-5";
-const DEFAULT_CODEX_CLI_MODEL = "gpt-5";
+const DEFAULT_CODEX_CLI_MODEL = "gpt-5.5";
 const GEMINI_MODEL_OPTIONS = [
   { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
   { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro" }
@@ -150,6 +153,7 @@ function codexCommandCandidates() {
 
   const candidates = ["codex"];
   if (process.platform === "win32") {
+    candidates.push("codex.cmd");
     const localAppData = defaultLocalAppData();
     if (localAppData) {
       candidates.push(path.join(localAppData, "OpenAI", "Codex", "bin", "codex.exe"));
@@ -158,11 +162,38 @@ function codexCommandCandidates() {
   return uniqueStrings(candidates);
 }
 
+function isWindowsCommandShim(command) {
+  return process.platform === "win32" && /\.(?:cmd|bat)$/i.test(String(command || ""));
+}
+
+function windowsCommandShimInvocation(command, args) {
+  const commandLine = [quoteWindowsCmdArg(command), ...(args || []).map(quoteWindowsCmdArg)].join(" ");
+  return {
+    command: "cmd.exe",
+    args: [
+      "/d",
+      "/s",
+      "/c",
+      `"${commandLine}"`
+    ],
+    windowsVerbatimArguments: true
+  };
+}
+
+function commandInvocation(command, args) {
+  if (isWindowsCommandShim(command)) {
+    return windowsCommandShimInvocation(command, args);
+  }
+  return { command, args: args || [] };
+}
+
 function syncCommand(command, args, timeoutMs) {
+  const invocation = commandInvocation(command, args);
   try {
-    return spawnSync(command, args, {
+    return spawnSync(invocation.command, invocation.args, {
       encoding: "utf8",
       timeout: timeoutMs || 3500,
+      windowsVerbatimArguments: Boolean(invocation.windowsVerbatimArguments),
       windowsHide: true
     });
   } catch (error) {
@@ -180,9 +211,12 @@ function commandLooksMissing(result) {
 
 function commandCheckDetails(command, args, result, maxOutput) {
   const error = result && result.error ? result.error : null;
+  const invocation = commandInvocation(command, args);
   return {
     command,
     args: Array.isArray(args) ? args.slice() : [],
+    invokedCommand: invocation.command,
+    invokedArgs: Array.isArray(invocation.args) ? invocation.args.slice() : [],
     status: typeof (result && result.status) === "number" ? result.status : null,
     signal: result && result.signal ? result.signal : null,
     errorCode: error && error.code ? String(error.code) : null,
@@ -1502,15 +1536,17 @@ function runCodexCli(agent, model, messages, options) {
   const timeoutMs = options && options.timeoutMs ? options.timeoutMs : DEFAULT_CODEX_CLI_TIMEOUT_MS;
 
   return new Promise((resolve, reject) => {
+    const invocation = commandInvocation(command, args);
     const logPaths = codexCliLogPaths();
     const stdoutLog = fs.createWriteStream(logPaths.stdoutPath, { encoding: "utf8" });
     const stderrLog = fs.createWriteStream(logPaths.stderrPath, { encoding: "utf8" });
     const stdoutTail = createTailAccumulator(CODEX_CLI_TAIL_LINES);
     const stderrTail = createTailAccumulator(CODEX_CLI_TAIL_LINES);
     const parser = createCodexJsonlParser();
-    const child = spawn(command, args, {
+    const child = spawn(invocation.command, invocation.args, {
       cwd: process.cwd(),
       env: process.env,
+      windowsVerbatimArguments: Boolean(invocation.windowsVerbatimArguments),
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"]
     });

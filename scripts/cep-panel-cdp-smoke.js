@@ -3795,6 +3795,12 @@ async function openAiCliSmoke() {
       state.sendDisabled === false &&
       state.transcript.indexOf("AE Agent CLI OK") >= 0
     ), OPENAI_CLI_WAIT_MS);
+    if (
+      replied.transcript.indexOf("ERROR") >= 0 ||
+      replied.transcript.indexOf("ASSISTANT") < 0
+    ) {
+      throw new Error(`OpenAI CLI chat did not produce a clean assistant reply.\n${replied.transcript.slice(-3000)}`);
+    }
 
     console.log(JSON.stringify({
       ok: true,
