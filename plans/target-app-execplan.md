@@ -69,6 +69,47 @@ old `AE_agent` repository remains the historical source.
   Windows line-ending warnings only. No push, PR, GitHub automation, launcher
   edit, dependency change, Local/Ollama substitution, fallback provider, raw JSX
   product copy, broad queue processing, or user-asset mutation was run.
+- [x] Max-scope composition marker live proof wave:
+  продолжена generated-only proof campaign from commit `ca8db7c` after the
+  EG/Puppet milestone. Dirty scope was limited to
+  `mcp-server/semantic-verification.js`, `scripts/cep-panel-cdp-smoke.js`, and
+  `scripts/semantic-verification-smoke.js`. The wave proved prepared
+  composition marker read/add/copy/work-area lanes through the live CEP panel
+  with OpenAI CLI `gpt-5.5`, panel-plan acceptance, protected edit-session
+  runs, semantic verification, typed read-back, cleanup, and render queue 0.
+  `full-ui-agent-composition-marker-read-openai-cli-smoke` passed with typed
+  `get_comp_details` marker read-back and cleanup. Artifact:
+  `logs/agent-run-reports/2026-06-12T11-18-33.910Z-openai-cli-gpt-5.5-composition-marker-read-Codex-QA-AUX-CMR-63086681.json`.
+  The first work-area attempts exposed a semantic verifier false negative: two
+  sequential `add_comp_marker` mutations followed by one shared
+  `get_comp_details` read-back proved both markers, but the verifier only
+  accepted read-back between the current mutation and the next mutation. The
+  fix keeps typed read-back mandatory and allows additive composition markers
+  to use the shared all-read-back evidence; regression smoke now covers this
+  sequence. Work-area proof then passed with 4 semantic checks, two marker
+  read-back summaries, `workAreaStart=0.75`, `workAreaDuration=1.5`, cleanup,
+  and render queue 0. Artifact:
+  `logs/agent-run-reports/2026-06-12T11-34-11.549Z-openai-cli-gpt-5.5-composition-marker-work-area-Codex-QA-AUX-CMWA-64007898.json`.
+  `full-ui-agent-composition-layer-marker-copy-openai-cli-smoke` passed with 6
+  semantic checks, four read-back summaries, composition marker count 2, layer
+  marker count 2, cleanup removed 2 generated items, and render queue 0.
+  Artifact:
+  `logs/agent-run-reports/2026-06-12T11-35-40.560Z-openai-cli-gpt-5.5-composition-layer-marker-copy-Codex-QA-AUX-CMLMC-64087878.json`.
+  `full-ui-agent-composition-marker-add-openai-cli-smoke` passed with 5
+  semantic checks, read-back proving 3 generated composition markers and layer
+  out point 3, cleanup removed 2 generated items, and render queue 0. Artifact:
+  `logs/agent-run-reports/2026-06-12T11-37-19.428Z-openai-cli-gpt-5.5-composition-marker-add-Codex-QA-AUX-CMA-64149249.json`.
+  Read-only audit after the earlier failed work-area prefix found
+  `projectItemLeftovers=0`, `renderQueueLeftovers=0`, and no active edit
+  session. Validation passed: touched-file `node --check`, `node
+  scripts\agent-scenario-report-smoke.js`, `node
+  scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`,
+  `npm.cmd run check:rules`, `git diff --check` with Windows line-ending
+  warnings only, read-only `inspect`, compact status/proof/ledger-summary, and
+  the focused marker live proof commands. No push, PR, GitHub automation,
+  launcher edit, dependency change, Local/Ollama substitution, fallback
+  provider, raw JSX product copy, broad queue processing, or user-asset
+  mutation was run.
 - [x] Max-scope shape/path geometry live proof wave:
   продолжена generated-only proof campaign после compact preflight и свежей
   проверки `inspect`/`openai-cli-smoke`. Foundational
@@ -975,16 +1016,30 @@ old `AE_agent` repository remains the historical source.
 
 ## Next Milestone
 
-The next useful step is generated-only mutating live CEP/AE proof for the
-prepared lanes after the external Codex usage limit clears. OpenAI CLI login and
-model readiness are repaired for `openai-cli/gpt-5.5`, but `openai-cli-smoke`
-now correctly fails on the current usage-limit error instead of false-passing.
-Do not start a new proof wave until Codex usage is available again; then begin
-with the narrow `full-ui-agent-layer-metadata-openai-cli-smoke` wave before
-broader path/export/render/Essential Graphics/third-party families.
+Continue the max-scope generated-only live proof campaign from the latest
+reviewable commit. Start the next wave with compact preflight, fresh
+`inspect`/provider readiness, and a narrow prepared lane family that has typed
+target selection, semantic verification, protected edit-session checkpoints,
+typed read-back, cleanup evidence, and explicit unsupported source-exact
+semantics. Useful remaining families include project/file/render/proxy and
+user-file lanes, third-party semantics lanes, and remaining tail
+`full-ui-agent-*openai-cli-smoke` commands. Do not rerun the completed
+layer/path/EG/Puppet/composition-marker waves unless needed for a regression
+check.
 
 ## Decision Log
 
+- 2026-06-12: Composition marker live proof treats a later shared typed
+  `get_comp_details` read-back as valid evidence for earlier additive
+  `add_comp_marker` mutations when the marker still matches comment/time/duration.
+  This does not relax typed read-back to payload-only evidence; it prevents a
+  false negative for sequential marker adds followed by one generated comp
+  marker read-back.
+- 2026-06-12: `set_comp_work_area` semantic proof now accepts explicit
+  work-area fields from the mutating result or post-run `get_comp_details`
+  evidence, and fails closed when neither exists. This keeps marker-derived
+  work-area lanes tied to typed comp read-back without requiring duplicate
+  read-back after every adjacent additive marker mutation.
 - 2026-06-12: Essential Graphics live proof required an explicit harness
   verifier for `generatedEssentialGraphicsController`; falling through to the
   legacy camera/folder verifier is not acceptable proof. The verifier now checks
@@ -1683,6 +1738,7 @@ broader path/export/render/Essential Graphics/third-party families.
 
 ## Validation
 
+| Max-scope composition marker live proof wave | Required to prove the next generated-only composition marker read/add/copy/work-area families after EG/Puppet while preserving typed marker/work-area read-back and cleanup requirements. | Passed: `full-ui-agent-composition-marker-read-openai-cli-smoke`, repaired semantic verification for sequential additive `add_comp_marker` mutations with shared typed `get_comp_details` evidence, `full-ui-agent-composition-marker-work-area-openai-cli-smoke`, `full-ui-agent-composition-layer-marker-copy-openai-cli-smoke`, and `full-ui-agent-composition-marker-add-openai-cli-smoke`; artifacts `...composition-marker-read-Codex-QA-AUX-CMR-63086681.json`, `...composition-marker-work-area-Codex-QA-AUX-CMWA-64007898.json`, `...composition-layer-marker-copy-Codex-QA-AUX-CMLMC-64087878.json`, and `...composition-marker-add-Codex-QA-AUX-CMA-64149249.json`; cleanup removed generated items, render queue stayed 0, and read-only audit for the earlier failed work-area prefix found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false. Validation passed: `node --check` for touched JS, `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, `git diff --check`, read-only `inspect`, and compact status/proof/ledger-summary. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope Essential Graphics / Puppet live proof wave | Required to prove the next generated-only Essential Graphics and Puppet property families after path proof, while keeping missing Puppet pin atom evidence fail-closed. | Passed/blocked: dirty-state preflight, initial `inspect` failed on closed CDP port `8870`, ignored helper opened installed AE Agent panel, fresh `inspect` and `openai-cli-smoke` passed, repaired Essential Graphics harness verifier, `full-ui-agent-essential-graphics-openai-cli-smoke` passed with typed controller/source-property read-back, repaired recursive Puppet effect-property read-back, `full-ui-agent-puppet-on-transparent-openai-cli-smoke` passed with typed `ADBE FreePin3 On Transparent` read-back, `full-ui-agent-puppet-pin-type-openai-cli-smoke` failed closed on unresolved generated `ADBE FreePin3 PosPin Atom` / `ADBE FreePin3 PosPin Type`, read-only cleanup audit found no failed-prefix project items, render queue 0, and no active edit session; `node --check scripts\cep-panel-cdp-smoke.js`, `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, compact status/proof/ledger-summary, and `git diff --check` passed with Windows line-ending warnings only. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope shape/path geometry live proof wave | Required to prove the next generated-only shape/mask path family after layer-state proof, including keyframed path geometry, horizontal flip semantics, and safe generated file export. | Passed: compact preflight, clean baton restore, `inspect`, `openai-cli-smoke`, `full-ui-agent-path-geometry-openai-cli-smoke`, repaired fixture read-back gap, `full-ui-agent-flip-path-openai-cli-smoke`, repaired `export_path_points` planning catalog and Windows Codex CLI discovery, `full-ui-agent-export-path-points-openai-cli-smoke`, touched JS `node --check`, `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `node scripts\solution-library-validation-smoke.js`, `npm.cmd run smoke:provider-contract`, `npm.cmd run smoke:provider-api`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only post-wave `inspect`, and `git diff --check` with Windows line-ending warnings only. Live proof artifacts: `...path-geometry-Codex-QA-AUX-PATH-52214682.json`, `...flip-path-Codex-QA-AUX-FLIP-52508990.json`, and `...export-path-points-Codex-QA-AUX-EXPORT-52859654.json`. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX copy, user-asset mutation, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope OpenAI CLI readiness repair | Required before any generated-only mutating live proof wave because stale bridge CLI detection selected a broken local `codex.exe` and the old CEP smoke could false-pass on a transcript containing only the user prompt. | Passed/externally blocked: compact preflight read active docs and compact status/proof/ledger-summary; `codex.cmd login status` returned `Logged in using ChatGPT`; direct bridge readiness initially failed on `C:\Users\Ant\AppData\Local\OpenAI\Codex\bin\codex.exe` due `~\.codex\config.toml` `service_tier = default`; parent repaired the bridge to support Windows `codex.cmd`/`.bat` shims and to prefer `codex.cmd`; direct `codex exec` proved `gpt-5.5`, `gpt-5.4`, and `gpt-5.4-mini` can answer while `gpt-5` is rejected for the ChatGPT-backed account; bridge readiness then passed for `openai-cli/gpt-5.5`. Validation passed: touched JS `node --check`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run check:rules`; `git diff --check` with line-ending warnings only; read-only CEP `inspect`; `connector-status-smoke`; and `openai-cli-setup-smoke`. `node scripts/cep-panel-cdp-smoke.js openai-cli-smoke` now fails correctly with external usage-limit evidence: Codex usage is exhausted and the CLI suggests retry after June 11, 2026 at 12:38 PM. No generated-only mutating CEP/AE proof, candidate completion, broad queue, Local/Ollama proof adaptation, fallback-provider proof, push, PR, GitHub automation, launcher edit, or user-asset mutation was run. |

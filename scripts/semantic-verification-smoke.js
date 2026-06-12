@@ -834,8 +834,19 @@ function fakeMutationResult(step, state) {
     }, compName, layer);
   }
   if (step.tool === "set_comp_work_area") {
+    const before = {
+      workAreaStart: state.compProperties.workAreaStart,
+      workAreaDuration: state.compProperties.workAreaDuration
+    };
+    state.compProperties.workAreaStart = args.start;
+    state.compProperties.workAreaDuration = args.duration;
     return withVerification({
       comp: { name: compName },
+      before,
+      after: {
+        workAreaStart: state.compProperties.workAreaStart,
+        workAreaDuration: state.compProperties.workAreaDuration
+      },
       workAreaStart: args.start,
       workAreaDuration: args.duration
     }, compName);
@@ -1259,7 +1270,9 @@ function fakeReadBackResult(step, state) {
         frameRate: state.compProperties.frameRate,
         bgColor: state.compProperties.bgColor,
         displayStartTime: state.compProperties.displayStartTime,
-        time: state.compProperties.time
+        time: state.compProperties.time,
+        workAreaStart: state.compProperties.workAreaStart,
+        workAreaDuration: state.compProperties.workAreaDuration
       },
       layerCount: layers.length,
       layers,
@@ -1298,7 +1311,9 @@ function fakeRunForPlan(plan) {
       frameRate: 24,
       bgColor: [0, 0, 0],
       displayStartTime: 0,
-      time: 0
+      time: 0,
+      workAreaStart: 0,
+      workAreaDuration: 4
     }
   };
   const steps = (plan.steps || []).map((step, index) => {
@@ -1771,6 +1786,57 @@ function assertSetCompPropertiesReadBackMismatchNeedsReview() {
   const semantic = buildSemanticVerification(plan, run);
   assert.strictEqual(semantic.status, "needs_review", "set_comp_properties must fail closed on mismatched read-back.");
   assert(semantic.checks.some((check) => check.id.indexOf("set_comp_properties:width") >= 0 && check.status === "failed"), "set_comp_properties mismatched read-back should fail.");
+}
+
+function compWorkAreaPlan(includeReadBack = true) {
+  const steps = [
+    {
+      title: "Set generated comp work area",
+      tool: "set_comp_work_area",
+      args: {
+        compName: "Comp Work Area Fixture",
+        start: 0.75,
+        duration: 1.5
+      }
+    }
+  ];
+  if (includeReadBack) {
+    steps.push({
+      title: "Read generated comp work area",
+      tool: "get_comp_details",
+      args: { compName: "Comp Work Area Fixture", includeLayers: false }
+    });
+  }
+  return {
+    summary: "Set one generated composition work area and inspect it.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps
+  };
+}
+
+function assertSetCompWorkAreaReadBackFallbackPasses() {
+  const plan = compWorkAreaPlan(true);
+  const run = fakeRunForPlan(plan);
+  delete run.steps[0].result.workAreaStart;
+  delete run.steps[0].result.workAreaDuration;
+  delete run.steps[0].result.after;
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `set_comp_work_area read-back fallback should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_comp_work_area:workAreaStart") >= 0 && check.status === "passed"), "workAreaStart read-back fallback should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_comp_work_area:workAreaDuration") >= 0 && check.status === "passed"), "workAreaDuration read-back fallback should pass.");
+}
+
+function assertSetCompWorkAreaMissingReadBackNeedsReview() {
+  const plan = compWorkAreaPlan(false);
+  const run = fakeRunForPlan(plan);
+  delete run.steps[0].result.workAreaStart;
+  delete run.steps[0].result.workAreaDuration;
+  delete run.steps[0].result.after;
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "set_comp_work_area must require post-run get_comp_details read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_comp_work_area:workAreaStart") >= 0 && check.status === "failed"), "missing workAreaStart read-back should fail.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_comp_work_area:workAreaDuration") >= 0 && check.status === "failed"), "missing workAreaDuration read-back should fail.");
 }
 
 function compCurrentTimePlan(includeReadBack = true) {
@@ -2507,6 +2573,51 @@ function assertAddCompMarkerPasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("add_comp_marker:marker") >= 0 && check.status === "passed"), "add comp marker check should pass.");
 }
 
+function assertSequentialAddCompMarkersPassWithSharedReadBack() {
+  const plan = {
+    summary: "Add two generated composition markers and inspect both in one read-back.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Add composition start marker",
+        tool: "add_comp_marker",
+        args: {
+          compName: "Comp Marker Fixture",
+          time: 0.75,
+          comment: "Work Area Start",
+          duration: 0
+        }
+      },
+      {
+        title: "Add composition end marker",
+        tool: "add_comp_marker",
+        args: {
+          compName: "Comp Marker Fixture",
+          time: 2.25,
+          comment: "Work Area End",
+          duration: 0
+        }
+      },
+      {
+        title: "Read composition markers",
+        tool: "get_comp_details",
+        args: {
+          compName: "Comp Marker Fixture",
+          includeLayers: false,
+          includeMarkers: true
+        }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  const markerChecks = semantic.checks.filter((check) => check.id.indexOf("add_comp_marker:marker") >= 0);
+  assert.strictEqual(semantic.status, "passed", `sequential add comp markers should pass with shared read-back: ${semantic.summary}`);
+  assert.strictEqual(markerChecks.length, 2, "two add comp marker checks should be reported.");
+  assert(markerChecks.every((check) => check.status === "passed"), "both add comp marker checks should pass.");
+}
+
 function assertSetPropertyValuePasses() {
   const plan = {
     summary: "Set one explicit generated layer property value and inspect property read-back.",
@@ -2934,6 +3045,8 @@ function main() {
   assertDeleteLayerMissingReadBackNeedsReview();
   assertSetCompPropertiesPasses();
   assertSetCompPropertiesReadBackMismatchNeedsReview();
+  assertSetCompWorkAreaReadBackFallbackPasses();
+  assertSetCompWorkAreaMissingReadBackNeedsReview();
   assertSetCompCurrentTimePasses();
   assertSetCompCurrentTimeMissingReadBackNeedsReview();
   assertSetLayerMaskCreateUpdatePasses();
@@ -2948,6 +3061,7 @@ function main() {
   assertSetLayerSwitchValuePasses();
   assertRemainingTailContractToolsPass();
   assertAddCompMarkerPasses();
+  assertSequentialAddCompMarkersPassWithSharedReadBack();
   assertAddLayerMarkerPasses();
   assertUpdateLayerMarkerPasses();
   assertDeleteLayerMarkerPasses();

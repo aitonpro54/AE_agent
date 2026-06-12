@@ -6225,17 +6225,16 @@ async function verifyMarkerReadBack(scenario, expected) {
   };
 }
 
-async function verifyCompositionMarkerReadBack(scenario, expected) {
-  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
-  const comp = await callBridgeTool("get_comp_details", {
-    compItemIndex: compMatch.itemIndex,
-    includeLayers: false,
-    includeMarkers: true,
-    markerLimit: 10
-  });
-  const markers = comp.markers || {};
+function findMarkerByCommentTime(items, expectedMarker) {
+  return (items || []).find((item) => (
+    item.comment === expectedMarker.comment &&
+    Math.abs(Number(item.time) - Number(expectedMarker.time)) <= 0.001
+  ));
+}
+
+function verifyCompositionMarkerCollection(scenario, markers, expected) {
   const items = Array.isArray(markers.items) ? markers.items : [];
-  if (markers.orderedBy !== expected.orderedBy) {
+  if (expected.orderedBy && markers.orderedBy !== expected.orderedBy) {
     throw new Error(`${scenario.id}: expected markers orderedBy ${expected.orderedBy}, got ${markers.orderedBy}.`);
   }
   if (typeof expected.markerCount === "number" && Number(markers.count || 0) !== expected.markerCount) {
@@ -6248,10 +6247,7 @@ async function verifyCompositionMarkerReadBack(scenario, expected) {
   }
   if (Array.isArray(expected.markers)) {
     for (const expectedMarker of expected.markers) {
-      const marker = items.find((item) => (
-        item.comment === expectedMarker.comment &&
-        Math.abs(Number(item.time) - Number(expectedMarker.time)) <= 0.001
-      ));
+      const marker = findMarkerByCommentTime(items, expectedMarker);
       if (!marker) {
         throw new Error(`${scenario.id}: expected composition marker ${expectedMarker.comment} at ${expectedMarker.time} was not found by read-back.`);
       }
@@ -6260,6 +6256,19 @@ async function verifyCompositionMarkerReadBack(scenario, expected) {
       }
     }
   }
+  return items;
+}
+
+async function verifyCompositionMarkerReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: false,
+    includeMarkers: true,
+    markerLimit: 10
+  });
+  const markers = comp.markers || {};
+  verifyCompositionMarkerCollection(scenario, markers, expected);
 
   return {
     ok: true,
@@ -6271,6 +6280,137 @@ async function verifyCompositionMarkerReadBack(scenario, expected) {
       count: markers.count || 0,
       returned: markers.returned || 0,
       orderedBy: markers.orderedBy || null,
+      matched: Array.isArray(expected.markers) ? expected.markers.length : null
+    }
+  };
+}
+
+async function verifyCompositionMarkerWorkAreaReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: false,
+    includeMarkers: true,
+    markerLimit: 10
+  });
+  const markers = comp.markers || {};
+  verifyCompositionMarkerCollection(scenario, markers, {
+    markerCount: expected.markerCount
+  });
+  const workArea = expected.workArea || {};
+  if (typeof workArea.start === "number" && !numbersMatch(workArea.start, comp.workAreaStart, 0.001)) {
+    throw new Error(`${scenario.id}: expected workAreaStart ${workArea.start}, got ${comp.workAreaStart}.`);
+  }
+  if (typeof workArea.duration === "number" && !numbersMatch(workArea.duration, comp.workAreaDuration, 0.001)) {
+    throw new Error(`${scenario.id}: expected workAreaDuration ${workArea.duration}, got ${comp.workAreaDuration}.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      workAreaStart: comp.workAreaStart,
+      workAreaDuration: comp.workAreaDuration
+    },
+    markers: {
+      count: markers.count || 0,
+      returned: markers.returned || 0
+    }
+  };
+}
+
+async function verifyCompositionLayerMarkerCopyReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    includeMarkers: true,
+    markerLimit: 10,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const layer = layers.find((item) => item.name === expected.layerName);
+  if (!layer || !layer.index) {
+    throw new Error(`${scenario.id}: generated marker copy layer ${expected.layerName} was not found by read-back.`);
+  }
+  const compMarkers = comp.markers || {};
+  verifyCompositionMarkerCollection(scenario, compMarkers, {
+    markerCount: expected.compositionMarkerCount,
+    markers: [expected.compToLayerMarker, expected.layerToCompMarker].filter(Boolean)
+  });
+
+  const layerDetails = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: layer.index,
+    includeProperties: false
+  });
+  const layerMarkers = layerDetails.markers || {};
+  const layerItems = Array.isArray(layerMarkers.items) ? layerMarkers.items : [];
+  if (typeof expected.layerMarkerCount === "number" && Number(layerMarkers.count || 0) !== expected.layerMarkerCount) {
+    throw new Error(`${scenario.id}: expected ${expected.layerMarkerCount} layer markers, got ${layerMarkers.count}.`);
+  }
+  for (const expectedMarker of [expected.compToLayerMarker, expected.layerToCompMarker].filter(Boolean)) {
+    const marker = findMarkerByCommentTime(layerItems, expectedMarker);
+    if (!marker) {
+      throw new Error(`${scenario.id}: expected layer marker ${expectedMarker.comment} at ${expectedMarker.time} was not found by read-back.`);
+    }
+    if (typeof expectedMarker.duration === "number" && Math.abs(Number(marker.duration) - expectedMarker.duration) > 0.001) {
+      throw new Error(`${scenario.id}: expected layer marker duration ${expectedMarker.duration}, got ${marker.duration}.`);
+    }
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name
+    },
+    layer: {
+      index: layer.index,
+      name: layer.name
+    },
+    compositionMarkers: {
+      count: compMarkers.count || 0,
+      returned: compMarkers.returned || 0
+    },
+    layerMarkers: {
+      count: layerMarkers.count || 0,
+      returned: layerMarkers.returned || 0
+    }
+  };
+}
+
+async function verifyCompositionMarkerAddReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    includeMarkers: true,
+    markerLimit: 10,
+    layerLimit: 20
+  });
+  const layer = (Array.isArray(comp.layers) ? comp.layers : []).find((item) => item.name === expected.layerName);
+  if (!layer || !layer.index) {
+    throw new Error(`${scenario.id}: generated marker source layer ${expected.layerName} was not found by read-back.`);
+  }
+  const markers = comp.markers || {};
+  verifyCompositionMarkerCollection(scenario, markers, expected);
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name
+    },
+    layer: {
+      index: layer.index,
+      name: layer.name,
+      outPoint: layer.outPoint
+    },
+    markers: {
+      count: markers.count || 0,
+      returned: markers.returned || 0,
       matched: Array.isArray(expected.markers) ? expected.markers.length : null
     }
   };
@@ -6438,6 +6578,18 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.markerReadBack) {
     return verifyMarkerReadBack(scenario, expected);
+  }
+
+  if (expected.compositionMarkerWorkAreaReadBack) {
+    return verifyCompositionMarkerWorkAreaReadBack(scenario, expected);
+  }
+
+  if (expected.compositionLayerMarkerCopyReadBack) {
+    return verifyCompositionLayerMarkerCopyReadBack(scenario, expected);
+  }
+
+  if (expected.compositionMarkerAddReadBack) {
+    return verifyCompositionMarkerAddReadBack(scenario, expected);
   }
 
   if (expected.compositionMarkerReadBack) {
@@ -6825,7 +6977,10 @@ async function runAgentScenario(send, scenario, config) {
     scenarioConfig.requireSemanticVerificationPassed &&
     (!run.planRunSemanticVerification || run.planRunSemanticVerification.status !== "passed")
   ) {
-    throw new Error(`${scenario.id}: semantic verification was not passed for ${scenarioConfig.label}.\n${run.transcript.slice(-3000)}`);
+    const semanticDetails = run.planRunSemanticVerification
+      ? JSON.stringify(run.planRunSemanticVerification, null, 2).slice(0, 4000)
+      : "missing";
+    throw new Error(`${scenario.id}: semantic verification was not passed for ${scenarioConfig.label}.\nSemantic: ${semanticDetails}\n${run.transcript.slice(-3000)}`);
   }
   const outcomePassed = run.transcript.indexOf("Outcome verification: passed") >= 0;
   const allowedNeedsReviewWithReadBack = Boolean(

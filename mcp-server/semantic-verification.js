@@ -216,7 +216,7 @@ function addLayerEvidence(target, value, source) {
 
 function addCompEvidence(target, value, source) {
   if (!isPlainObject(value)) return;
-  const hasCompField = ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "time", "numLayers", "layerCount"].some((key) => hasOwn(value, key));
+  const hasCompField = ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "time", "workAreaStart", "workAreaDuration", "numLayers", "layerCount"].some((key) => hasOwn(value, key));
   if (!hasCompField) return;
   target.comps.push({
     name: compactText(value.name, 160),
@@ -229,6 +229,8 @@ function addCompEvidence(target, value, source) {
     bgColor: numberArrayValue(value.bgColor),
     displayStartTime: numberValue(value.displayStartTime),
     time: numberValue(value.time),
+    workAreaStart: numberValue(value.workAreaStart),
+    workAreaDuration: numberValue(value.workAreaDuration),
     numLayers: numberValue(hasOwn(value, "numLayers") ? value.numLayers : value.layerCount),
     source: source || "observed comp"
   });
@@ -802,6 +804,11 @@ function observedMarkerEvidence(evidence, args) {
   return null;
 }
 
+function observedMarkerReadBackEvidence(evidence, args) {
+  return observedMarkerEvidence(evidence.readBack, args) ||
+    observedMarkerEvidence(evidence.allReadBack, args);
+}
+
 function markerText(marker) {
   if (!marker) return "missing";
   const parts = [`comment: ${marker.comment || ""}`];
@@ -864,6 +871,35 @@ function checkNumberFields(checks, step, fields, payload, title) {
     passed: mismatches.length === 0,
     evidence: mismatches.length ? mismatches.join("; ") : stepLabel(step)
   });
+}
+
+function workAreaPayloadValue(payload, field) {
+  if (hasOwn(payload, field)) return payload[field];
+  if (payload && hasOwn(payload.after, field)) return payload.after[field];
+  if (payload && hasOwn(payload.comp, field)) return payload.comp[field];
+  return null;
+}
+
+function checkSetCompWorkArea(checks, step, payload, evidence) {
+  const fields = [
+    { arg: "start", label: "workAreaStart" },
+    { arg: "duration", label: "workAreaDuration" }
+  ];
+  for (const field of fields) {
+    if (!hasOwn(step.args, field.arg)) continue;
+    const expected = step.args[field.arg];
+    const payloadValue = workAreaPayloadValue(payload, field.label);
+    const payloadMatches = nearlyEqual(payloadValue, expected);
+    const readBackEvidence = observedCompFieldEvidence(evidence.readBack, field.label, expected);
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:${field.label}`,
+      title: `Comp ${field.label} matches request`,
+      expected,
+      observed: payloadValue === null ? (readBackEvidence ? "matched read-back" : "missing") : payloadValue,
+      passed: payloadMatches || Boolean(readBackEvidence),
+      evidence: payloadMatches ? stepLabel(step) : (readBackEvidence || `No post-run comp read-back matched ${field.label}.`)
+    });
+  }
 }
 
 function checkNumberArrayField(checks, step, arg, observedValue, evidence, title) {
@@ -1916,10 +1952,7 @@ function verifyStep(checks, step, evidence) {
   }
 
   if (step.tool === "set_comp_work_area") {
-    checkNumberFields(checks, step, [
-      { arg: "start", label: "workAreaStart", read: (value) => value && value.workAreaStart },
-      { arg: "duration", label: "workAreaDuration", read: (value) => value && value.workAreaDuration }
-    ], payload, "Comp work area matches request");
+    checkSetCompWorkArea(checks, step, payload, evidence);
     return;
   }
 
@@ -2188,7 +2221,7 @@ function verifyStep(checks, step, evidence) {
   if (step.tool === "add_comp_marker") {
     const marker = payload.marker || {};
     const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
-    const readBackEvidence = observedMarkerEvidence(evidence.readBack, args);
+    const readBackEvidence = observedMarkerReadBackEvidence(evidence, args);
     pushCheck(checks, {
       id: `${step.index || "step"}:${step.tool}:marker`,
       title: "Composition marker comment and timing match request",
