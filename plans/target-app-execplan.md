@@ -26,6 +26,35 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Max-scope text-to-keys live proof wave:
+  continued the generated-only live proof campaign from commit `6b7fb65`
+  after compact preflight confirmed clean tracked status, no related
+  full-intake processes, terminal ledger/proof state, live panel `Connected`,
+  and `openai-cli/gpt-5.5` readiness. The prior panel-local 5h timer value
+  was treated as stale/advisory per user override. The selected prepared
+  family was `text-to-keys-generated-only`, using one explicit generated
+  comp/text layer, typed `set_property_keyframes` on
+  `ADBE Text Properties.ADBE Text Document`, typed `get_layer_details`
+  read-back, semantic verification, protected edit-session checkpoint,
+  cleanup, and render queue audit. `full-ui-agent-text-to-keys-openai-cli-smoke`
+  passed with panel plan accepted, `fallbackCount=0`, 4 planned steps, 3
+  mutating steps, dry-run ok, protected run checkpoint/edit session
+  `ai-plan-7f60a3d4`, semantic verification passed with 4 checks, final typed
+  read-back proving Source Text keyframes at `0`, `0.5`, and `1` seconds with
+  text values `A`, `AE`, and `AE Agent`, cleanup removed 1 generated comp, and
+  render queue stayed 0. Artifact:
+  `logs/agent-run-reports/2026-06-12T12-54-31.290Z-openai-cli-gpt-5.5-text-to-keys-Codex-QA-AUX-TTK-68834838.json`.
+  Post-run read-only audit found `projectItemLeftovers=0`,
+  `renderQueueLeftovers=0`, and `activeEditSession=false`; `needsReview:true`
+  is only from checkpoint/edit-session records. Validation passed:
+  `node scripts\agent-scenario-report-smoke.js`,
+  `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`,
+  `npm.cmd run check:rules`, read-only `inspect`, read-only
+  `agent-scenario-audit`, compact status/proof/ledger-summary, and
+  `git diff --check` with Windows line-ending warnings only. No candidate
+  completion, broad queue, Local/Ollama, fallback provider, dependency change,
+  raw JSX product copy, user-asset mutation, push, PR, GitHub automation, or
+  launcher edit was run.
 - [x] Max-scope selected-property keyframe live proof wave:
   continued the generated-only live proof campaign from commit `754ad30` after
   compact preflight confirmed clean tracked status, no related full-intake
@@ -1153,15 +1182,22 @@ reviewable commit. Start the next wave with compact preflight, fresh
 prepared lane family that has typed target selection, semantic verification,
 protected edit-session checkpoints, typed read-back, cleanup evidence, and
 explicit unsupported source-exact semantics. Useful remaining families include
-render-queue setup, selected-property keyframe/tail lanes, remaining
-project/file/proxy and user-file lanes, third-party semantics lanes, and remaining tail
-`full-ui-agent-*openai-cli-smoke` commands. Do not rerun the completed
+selected-keyframe marker, fill-in/current-expression keyframe tails,
+render-queue setup, remaining project/file/proxy and user-file lanes,
+third-party semantics lanes, and remaining tail `full-ui-agent-*openai-cli-smoke`
+commands. Do not rerun the completed
 layer/path/EG/Puppet/composition-marker/project-item-metadata/comp-current-time/
-selected-property-value/selected-property-keyframe waves unless needed for a
-regression check.
+selected-property-value/selected-property-keyframe/text-to-keys waves unless
+needed for a regression check.
 
 ## Decision Log
 
+- 2026-06-12: Text-to-keys live proof is valid only for explicit generated
+  Source Text targets with typed `set_property_keyframes` and
+  `get_layer_details` keyframe read-back. It does not approve source-exact
+  selected text-layer traversal, broad selected-property batching, expression
+  preservation, source text style interpolation semantics, text animator
+  semantics, file/import behavior, or raw JSX fallback.
 - 2026-06-12: Selected-property keyframe live proof is valid only for explicit
   generated layer/property targets with typed `set_property_keyframes`,
   `apply_keyframe_ease`, and `get_layer_details` keyframe read-back. It does
@@ -1893,6 +1929,7 @@ regression check.
 
 ## Validation
 
+| Max-scope text-to-keys live proof wave | Required to prove the next generated-only Source Text keyframe family after selected-property keyframes while preserving explicit generated comp/layer target selection, protected edit-session checkpoints, dry-run gating, semantic verification, final `get_layer_details` keyframe text read-back, cleanup, and render queue audit. | Passed: `full-ui-agent-text-to-keys-openai-cli-smoke` passed with `fallbackCount=0`, panel plan accepted for `create_comp`, `create_text_layer`, `set_property_keyframes`, and `get_layer_details`, dry-run ok, protected edit-session checkpoint `ai-plan-7f60a3d4`, semantic checks `2:create_text_layer:name`, `2:create_text_layer:text`, `3:set_property_keyframes:keyframes`, and `3:set_property_keyframes:keyframe-values`, final typed read-back proving generated Source Text keyframes at `0`, `0.5`, and `1` seconds with values `A`, `AE`, and `AE Agent`, cleanup removed 1 generated comp, render queue stayed 0, and artifact `...text-to-keys-Codex-QA-AUX-TTK-68834838.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and `git diff --check` with Windows line-ending warnings only. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope selected-property keyframe live proof wave | Required to prove the next generated-only selected-property/keyframe family after selected-property value while preserving explicit generated layer/property target selection, protected edit-session checkpoints, dry-run gating, semantic verification, final `get_layer_details` keyframe/ease read-back, cleanup, and render queue audit. | Passed: `full-ui-agent-keyframes-openai-cli-smoke` passed with `fallbackCount=0`, dry-run ok, protected edit-session checkpoint `ai-plan-95ee8239`, semantic checks `2:create_shape_layer:name`, `2:create_shape_layer:shape`, `4:set_property_keyframes:keyframes`, `4:set_property_keyframes:keyframe-values`, and `5:apply_keyframe_ease:ease`, final typed read-back proving generated shape `ADBE Transform Group/ADBE Opacity` had 3 keyframes with bezier interpolation/eased key indices 1-3, cleanup removed 1 generated comp, render queue stayed 0, and artifact `...keyframes-Codex-QA-AUX083-68360278.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and `git diff --check` with Windows line-ending warnings only. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope selected-property value live proof wave | Required to prove the next generated-only selected-property/value family after comp current-time while preserving explicit generated layer/property target selection, protected edit-session checkpoints, semantic verification, final `get_layer_details` property-value read-back, cleanup, and render queue audit. | Passed: `full-ui-agent-selected-property-value-openai-cli-smoke` passed with `fallbackCount=0`, dry-run ok, protected edit-session checkpoint, semantic checks `2:create_shape_layer:name`, `2:create_shape_layer:shape`, and `4:set_property_value:value`, final typed read-back proving generated shape `ADBE Transform Group/ADBE Opacity=42`, cleanup removed 1 generated comp, render queue stayed 0, and artifact `...selected-property-value-Codex-QA-AUX072-66643548.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and `git diff --check` with Windows line-ending warnings only. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope comp current-time live proof wave | Required to prove the next generated-only Frame Navigator / CTI family after project-item metadata while preserving explicit generated comp target, protected edit-session checkpoints, semantic verification, final `get_comp_details.time` read-back, cleanup, and render queue audit. | Passed: initial `full-ui-agent-comp-current-time-openai-cli-smoke` failed closed on a smoke-harness final read-back gap (`generatedCompCurrentTime` fell through to folder/camera verification); read-only audit for `Codex QA AUX-CTI` found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false; added the dedicated final verifier; rerun `full-ui-agent-comp-current-time-openai-cli-smoke` passed with `fallbackCount=0`, protected edit-session checkpoint, semantic checks `3:set_comp_current_time:time` and `5:set_comp_current_time:time`, typed read-back proving final `time:1.75` for frame `42` at `24fps`, cleanup removed 1 generated comp, render queue stayed 0, and artifact `...comp-current-time-Codex-QA-AUX-CTI-66155277.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false. Validation passed: `node --check scripts\cep-panel-cdp-smoke.js`, `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, compact status/proof/ledger-summary, and `git diff --check` with Windows line-ending warnings only. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, push, PR, GitHub automation, or launcher edit was run. |
