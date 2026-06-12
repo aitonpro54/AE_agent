@@ -26,6 +26,43 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Max-scope comp current-time live proof wave:
+  continued the generated-only live proof campaign from commit `2ec1e94` after
+  compact preflight confirmed clean tracked status, no related full-intake
+  processes, terminal ledger/proof state, live panel `Connected`, and
+  `openai-cli/gpt-5.5` readiness. The selected prepared family was
+  `comp-current-time-generated-only` for `tool-utilities-frame-navigator`,
+  using one explicit generated comp, `set_comp_current_time` by seconds and by
+  reviewed frame/frameRate conversion, `get_comp_details.time` typed read-back,
+  semantic verification, protected edit-session checkpoints, cleanup, and
+  render queue audit. The first
+  `full-ui-agent-comp-current-time-openai-cli-smoke` attempt failed closed in
+  the smoke harness because `generatedCompCurrentTime` had no dedicated final
+  read-back verifier and fell through to the legacy folder/camera verifier.
+  Read-only audit for prefix `Codex QA AUX-CTI` found
+  `projectItemLeftovers=0`, `renderQueueLeftovers=0`, and
+  `activeEditSession=false`. Added a narrow comp-current-time final verifier
+  that exact-name reads the generated comp and checks final
+  `get_comp_details.time=1.75` for frame `42` at `24fps`. Rerun
+  `full-ui-agent-comp-current-time-openai-cli-smoke` passed with panel plan
+  accepted, `fallbackCount=0`, dry-run ok, protected run, semantic
+  verification passed (`3:set_comp_current_time:time` and
+  `5:set_comp_current_time:time`), final typed read-back proving
+  `time:1.75`, cleanup removed 1 generated comp, and render queue stayed 0.
+  Artifact:
+  `logs/agent-run-reports/2026-06-12T12-09-55.762Z-openai-cli-gpt-5.5-comp-current-time-Codex-QA-AUX-CTI-66155277.json`.
+  Post-run audit for prefix `Codex QA AUX-CTI 66155277` found
+  `projectItemLeftovers=0`, `renderQueueLeftovers=0`, and no active edit
+  session. Validation passed: `node --check scripts\cep-panel-cdp-smoke.js`,
+  `node scripts\agent-scenario-report-smoke.js`,
+  `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`,
+  `npm.cmd run check:rules`, read-only `inspect`, compact
+  status/proof/ledger-summary, and `git diff --check` with Windows line-ending
+  warnings only. The panel 5h task window reached `99.4% used`, so this
+  launcher stops after one reviewable lane and hands off instead of starting
+  another live wave. No candidate completion, broad queue, Local/Ollama,
+  fallback provider, dependency change, raw JSX product copy, user-asset
+  mutation, push, PR, GitHub automation, or launcher edit was run.
 - [x] Max-scope project item metadata live proof wave:
   continued the generated-only live proof campaign from commit `e964627` after
   compact preflight confirmed clean tracked status, no related full-intake
@@ -1052,17 +1089,24 @@ old `AE_agent` repository remains the historical source.
 
 Continue the max-scope generated-only live proof campaign from the latest
 reviewable commit. Start the next wave with compact preflight, fresh
-`inspect`/provider readiness, and a narrow prepared lane family that has typed
-target selection, semantic verification, protected edit-session checkpoints,
-typed read-back, cleanup evidence, and explicit unsupported source-exact
-semantics. Useful remaining families include render-queue setup, remaining
-project/file/proxy and user-file lanes, third-party semantics lanes, and
-remaining tail `full-ui-agent-*openai-cli-smoke` commands. Do not rerun the
-completed layer/path/EG/Puppet/composition-marker/project-item-metadata waves
-unless needed for a regression check.
+`inspect`/provider readiness and panel task-window budget, and a narrow
+prepared lane family that has typed target selection, semantic verification,
+protected edit-session checkpoints, typed read-back, cleanup evidence, and
+explicit unsupported source-exact semantics. Useful remaining families include
+selected-property/value, render-queue setup, remaining project/file/proxy and
+user-file lanes, third-party semantics lanes, and remaining tail
+`full-ui-agent-*openai-cli-smoke` commands. Do not rerun the completed
+layer/path/EG/Puppet/composition-marker/project-item-metadata/comp-current-time
+waves unless needed for a regression check.
 
 ## Decision Log
 
+- 2026-06-12: Comp current-time live proof requires an explicit final read-back
+  verifier for `generatedCompCurrentTime`; falling through to the legacy
+  folder/camera verifier is a harness gap, not valid CTI proof. The verifier
+  now exact-name reads the generated comp and checks final
+  `get_comp_details.time` after the seconds and frame-derived
+  `set_comp_current_time` mutations have passed semantic verification.
 - 2026-06-12: Project item metadata live proof requires an explicit final
   read-back verifier for `generatedProjectItemMetadata`; falling through to the
   legacy folder/comp verifier is a harness gap, not valid project-item metadata
@@ -1777,6 +1821,7 @@ unless needed for a regression check.
 
 ## Validation
 
+| Max-scope comp current-time live proof wave | Required to prove the next generated-only Frame Navigator / CTI family after project-item metadata while preserving explicit generated comp target, protected edit-session checkpoints, semantic verification, final `get_comp_details.time` read-back, cleanup, and render queue audit. | Passed: initial `full-ui-agent-comp-current-time-openai-cli-smoke` failed closed on a smoke-harness final read-back gap (`generatedCompCurrentTime` fell through to folder/camera verification); read-only audit for `Codex QA AUX-CTI` found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false; added the dedicated final verifier; rerun `full-ui-agent-comp-current-time-openai-cli-smoke` passed with `fallbackCount=0`, protected edit-session checkpoint, semantic checks `3:set_comp_current_time:time` and `5:set_comp_current_time:time`, typed read-back proving final `time:1.75` for frame `42` at `24fps`, cleanup removed 1 generated comp, render queue stayed 0, and artifact `...comp-current-time-Codex-QA-AUX-CTI-66155277.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false. Validation passed: `node --check scripts\cep-panel-cdp-smoke.js`, `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, compact status/proof/ledger-summary, and `git diff --check` with Windows line-ending warnings only. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope project item metadata live proof wave | Required to prove the next generated-only Project item metadata family after composition markers while preserving explicit generated targets, project-item label read-back, semantic verification, cleanup, and no render/proxy/user-file mutation. | Passed: initial `full-ui-agent-project-item-metadata-openai-cli-smoke` failed closed on a smoke-harness final read-back gap (`generatedProjectItemMetadata` fell through to folder/comp verification with `expected.compName` undefined); read-only audit for `Codex QA AUX-PI-META` found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false; added the dedicated final verifier; rerun `full-ui-agent-project-item-metadata-openai-cli-smoke` passed with `fallbackCount=0`, protected edit-session checkpoint, semantic check `4:set_project_item_metadata:metadata`, typed read-back proving two generated comp project items with `label:0`, cleanup removed 2 generated items, render queue stayed 0, and artifact `...project-item-metadata-Codex-QA-AUX-PI-META-65487224.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false. Validation passed: `node --check scripts\cep-panel-cdp-smoke.js`, `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, `git diff --check` with Windows line-ending warnings only, read-only `inspect`, and compact status/proof/ledger-summary. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope composition marker live proof wave | Required to prove the next generated-only composition marker read/add/copy/work-area families after EG/Puppet while preserving typed marker/work-area read-back and cleanup requirements. | Passed: `full-ui-agent-composition-marker-read-openai-cli-smoke`, repaired semantic verification for sequential additive `add_comp_marker` mutations with shared typed `get_comp_details` evidence, `full-ui-agent-composition-marker-work-area-openai-cli-smoke`, `full-ui-agent-composition-layer-marker-copy-openai-cli-smoke`, and `full-ui-agent-composition-marker-add-openai-cli-smoke`; artifacts `...composition-marker-read-Codex-QA-AUX-CMR-63086681.json`, `...composition-marker-work-area-Codex-QA-AUX-CMWA-64007898.json`, `...composition-layer-marker-copy-Codex-QA-AUX-CMLMC-64087878.json`, and `...composition-marker-add-Codex-QA-AUX-CMA-64149249.json`; cleanup removed generated items, render queue stayed 0, and read-only audit for the earlier failed work-area prefix found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false. Validation passed: `node --check` for touched JS, `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, `git diff --check`, read-only `inspect`, and compact status/proof/ledger-summary. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope Essential Graphics / Puppet live proof wave | Required to prove the next generated-only Essential Graphics and Puppet property families after path proof, while keeping missing Puppet pin atom evidence fail-closed. | Passed/blocked: dirty-state preflight, initial `inspect` failed on closed CDP port `8870`, ignored helper opened installed AE Agent panel, fresh `inspect` and `openai-cli-smoke` passed, repaired Essential Graphics harness verifier, `full-ui-agent-essential-graphics-openai-cli-smoke` passed with typed controller/source-property read-back, repaired recursive Puppet effect-property read-back, `full-ui-agent-puppet-on-transparent-openai-cli-smoke` passed with typed `ADBE FreePin3 On Transparent` read-back, `full-ui-agent-puppet-pin-type-openai-cli-smoke` failed closed on unresolved generated `ADBE FreePin3 PosPin Atom` / `ADBE FreePin3 PosPin Type`, read-only cleanup audit found no failed-prefix project items, render queue 0, and no active edit session; `node --check scripts\cep-panel-cdp-smoke.js`, `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, compact status/proof/ledger-summary, and `git diff --check` passed with Windows line-ending warnings only. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, push, PR, GitHub automation, or launcher edit was run. |

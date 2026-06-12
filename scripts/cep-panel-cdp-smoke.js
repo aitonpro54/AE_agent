@@ -5955,6 +5955,54 @@ async function verifyGeneratedCompPropertiesReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedCompCurrentTimeReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: false
+  });
+  const frameRate = typeof expected.frameRate === "number" ? expected.frameRate : comp.frameRate;
+  const finalTime = typeof expected.frameTargetTime === "number"
+    ? expected.frameTargetTime
+    : Number(expected.frameTarget) / Number(frameRate);
+
+  if (!Number.isFinite(Number(comp.time))) {
+    throw new Error(`${scenario.id}: generated comp current time was not returned by get_comp_details.`);
+  }
+  if (typeof expected.frameRate === "number" && !numbersMatch(expected.frameRate, comp.frameRate, 0.001)) {
+    throw new Error(`${scenario.id}: generated comp frameRate mismatch; expected ${expected.frameRate}, got ${comp.frameRate}.`);
+  }
+  if (!Number.isFinite(finalTime)) {
+    throw new Error(`${scenario.id}: expected generated comp final time is not finite.`);
+  }
+  if (!numbersMatch(finalTime, comp.time, 0.001)) {
+    throw new Error(`${scenario.id}: generated comp current time mismatch; expected ${finalTime}, got ${comp.time}.`);
+  }
+  if (typeof expected.firstTargetTime === "number" && finalTime <= expected.firstTargetTime) {
+    throw new Error(`${scenario.id}: generated comp frame-derived final time did not advance past first target time.`);
+  }
+  if (typeof comp.duration === "number" && comp.time > comp.duration + 0.001) {
+    throw new Error(`${scenario.id}: generated comp current time exceeded duration; time ${comp.time}, duration ${comp.duration}.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      duration: comp.duration,
+      frameRate: comp.frameRate,
+      time: comp.time
+    },
+    currentTime: {
+      firstTargetTime: expected.firstTargetTime,
+      frameTarget: expected.frameTarget,
+      frameRate,
+      finalTime
+    }
+  };
+}
+
 async function verifyAssortedCompositionGuidesReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const comp = await callBridgeTool("get_comp_details", {
@@ -6776,6 +6824,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedCompPropertiesWorkArea) {
     return verifyGeneratedCompPropertiesReadBack(scenario, expected);
+  }
+
+  if (expected.generatedCompCurrentTime) {
+    return verifyGeneratedCompCurrentTimeReadBack(scenario, expected);
   }
 
   if (expected.markerLifecycle) {
