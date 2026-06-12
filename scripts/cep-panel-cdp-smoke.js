@@ -5336,6 +5336,46 @@ async function verifyGeneratedLayerEnabledHardSoloReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedLayerDifferenceBlendModeReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const targetLayerIndices = Array.isArray(expected.targetLayerIndices) ? expected.targetLayerIndices.map(Number) : [];
+  const targetLayerNames = Array.isArray(expected.targetLayerNames) ? expected.targetLayerNames.map(String) : [];
+  const expectedMode = String(expected.blendingMode || "difference").toLowerCase();
+  const verifiedLayers = [];
+
+  for (let index = 0; index < targetLayerIndices.length; index += 1) {
+    const layerIndex = targetLayerIndices[index];
+    const layerName = targetLayerNames[index] || "";
+    const details = await callBridgeTool("get_layer_details", {
+      compItemIndex: compMatch.itemIndex,
+      layerIndex,
+      includeProperties: false
+    });
+    const layer = details && details.layer ? details.layer : {};
+    if (layerName && layer.name !== layerName) {
+      throw new Error(`${scenario.id}: difference blend layer ${layerIndex} name mismatch: ${layer.name}.`);
+    }
+    const observedMode = String(layer.blendingModeName || "").toLowerCase();
+    if (observedMode !== expectedMode) {
+      throw new Error(`${scenario.id}: difference blend layer ${layerIndex} mode mismatch; expected ${expectedMode}, got ${observedMode || "missing"}.`);
+    }
+    verifiedLayers.push({
+      index: layer.index,
+      name: layer.name,
+      blendingModeName: layer.blendingModeName
+    });
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: compMatch.itemIndex,
+      name: compMatch.name
+    },
+    layers: verifiedLayers
+  };
+}
+
 async function verifyGeneratedLayerSelectionReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const selected = await callBridgeTool("get_selected_layers", {});
@@ -6408,6 +6448,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedLayerEnabledHardSolo) {
     return verifyGeneratedLayerEnabledHardSoloReadBack(scenario, expected);
+  }
+
+  if (expected.generatedLayerDifferenceBlendMode) {
+    return verifyGeneratedLayerDifferenceBlendModeReadBack(scenario, expected);
   }
 
   if (expected.generatedLayerSelection) {

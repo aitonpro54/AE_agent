@@ -26,6 +26,35 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Max-scope layer enabled/blend-mode live proof wave:
+  after the first layer-metadata live proof, the next low-risk generated-only
+  wave covered prepared layer state lanes with shared OpenAI CLI/panel setup.
+  `full-ui-agent-layer-enabled-hard-solo-openai-cli-smoke` passed with
+  panel plan accepted, `fallbackCount=0`, dry-run ok, protected run through
+  edit session/checkpoint, semantic verification 7/7 passed, typed read-back
+  proving generated layer 1 `enabled:true` and layer 2 `enabled:false`, cleanup
+  removed 2 generated items, and render queue remained 0. Artifact:
+  `logs/agent-run-reports/2026-06-12T07-23-11.066Z-openai-cli-gpt-5.5-layer-enabled-hard-solo-Codex-QA-AUX-LE-48937227.json`.
+  The first `full-ui-agent-layer-difference-blend-mode-openai-cli-smoke`
+  attempt found a harness verifier gap after cleanup: the scenario declared
+  `generatedLayerDifferenceBlendMode`, but `verifyAgentScenarioReadBack` had no
+  branch and fell into the old camera/folder verifier. Added the missing
+  explicit read-back verifier for `blendingModeName:"difference"` on the
+  reviewed layer indices and expected layer names, then reran the lane.
+  The rerun passed with panel plan accepted, `fallbackCount=0`, dry-run ok,
+  protected run through edit session/checkpoint, semantic verification 6/6
+  passed, typed read-back proving both generated target layers had
+  `blendingModeName:"difference"`, cleanup removed 2 generated items, and render
+  queue remained 0. Artifact:
+  `logs/agent-run-reports/2026-06-12T07-32-01.174Z-openai-cli-gpt-5.5-layer-difference-blend-mode-Codex-QA-AUX-LB-49463187.json`.
+  Validation passed: `node --check scripts\cep-panel-cdp-smoke.js`, `node
+  scripts\agent-scenario-report-smoke.js`, `node
+  scripts\semantic-verification-smoke.js`, `npm.cmd run check:rules`,
+  `git diff --check` with Windows line-ending warnings only, read-only
+  `inspect`, compact ledger summary, and both live proof lanes. No push, PR,
+  GitHub automation, launcher edit, dependency change, Local/Ollama
+  substitution, fallback provider, raw JSX copy, broad queue processing, or
+  user-asset mutation was run.
 - [x] Max-scope OpenAI CLI stdin repair and first generated-only live proof
   wave: после восстановления ChatGPT/Codex usage свежий
   `openai-cli-smoke` прошел через панель на `openai-cli/gpt-5.5`. Первая
