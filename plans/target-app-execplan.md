@@ -26,6 +26,44 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Max-scope assorted composition guides live proof wave:
+  continued the generated-only live proof campaign from commit `286359c`
+  after compact preflight confirmed clean tracked status, no related Full
+  Intake processes, terminal ledger/proof state, and baton handoff for
+  `max-scope-assorted-composition-guides-live-proof`. Read-only `inspect`
+  confirmed live panel `Connected`, provider/model `openai-cli/gpt-5.5`, and
+  provider status `ready`; the panel-local 5h timer was treated as
+  stale/advisory per user override. The selected prepared family was an
+  explicit generated comp guide-overlay fixture using typed `create_comp`,
+  `create_shape_layer`, `add_effect`, `get_comp_details`, and
+  `get_layer_details`, with no duplicate ids, no user asset target, no render
+  queue mutation, and no raw JSX fallback.
+  `full-ui-agent-assorted-composition-guides-openai-cli-smoke` passed with
+  `ok:true`, provider `openai-cli`, model `gpt-5.5`, panel plan count 1,
+  accepted count 1, `fallbackCount=0`, expected step count 9, expected
+  mutating count 7, dry-run ok, protected run ok, semantic verification passed
+  with 10 checks and 2 read-back summaries, and final typed read-back passed.
+  The final read-back proved generated comp
+  `Codex QA AUX039 72914689 Assorted Guides Comp` was 800x450 with five
+  generated guide shape layers for edge frame, center vertical,
+  center horizontal, action safe frame, and title safe frame; the title safe
+  layer had the generated `ADBE Fill` effect. Cleanup removed 1 generated
+  project item, final cleanup removed 0, render queue stayed 0, and artifact:
+  `logs/agent-run-reports/2026-06-12T14-02-49.202Z-openai-cli-gpt-5.5-assorted-composition-guides-Codex-QA-AUX039-72914689.json`.
+  Post-run read-only audit found `projectItemLeftovers=0`,
+  `renderQueueLeftovers=0`, `activeEditSession=false`, and `toolErrors=0`;
+  `needsReview:true` is only from checkpoint/edit-session records. Validation
+  passed: `node scripts\agent-scenario-report-smoke.js`,
+  `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`,
+  `npm.cmd run check:rules`, read-only `inspect`, read-only
+  `agent-scenario-audit`, compact status/proof/ledger-summary, and final
+  `git diff --check`. No candidate completion, broad queue, Local/Ollama,
+  fallback provider, dependency change, raw JSX product copy, user-asset
+  mutation, render execution, push, PR, GitHub automation, or launcher edit was
+  run. This proof does not approve source-exact native guide creation,
+  user-comp guide overlays, arbitrary aspect-safe/grid calculations beyond the
+  generated fixture, broad active-comp traversal, effect-stack generalization,
+  file/render/proxy behavior, or raw JSX fallback.
 - [x] Max-scope rename/find-replace live proof wave:
   continued the generated-only live proof campaign from commit `146aa6a`
   after compact preflight confirmed clean tracked status, no related Full
@@ -1379,16 +1417,27 @@ reviewable commit. Start the next wave with compact preflight, fresh
 prepared lane family that has typed target selection, semantic verification,
 protected edit-session checkpoints, typed read-back, cleanup evidence, and
 explicit unsupported source-exact semantics. Useful remaining families include
-rename/find-replace, remaining project/file/proxy and user-file lanes,
-third-party semantics lanes, and any still-unproven
-`full-ui-agent-*openai-cli-smoke` commands. Do not rerun the completed
-layer/path/EG/Puppet/composition-marker/project-item-metadata/comp-current-time/
+composition-guide, background-layer, layer-timing, layer-transform,
+project-items, composition-version, effect-property/expression lanes, remaining
+project/file/proxy and user-file lanes, third-party semantics lanes, and any
+still-unproven `full-ui-agent-*openai-cli-smoke` commands. Do not rerun the
+completed layer/path/EG/Puppet/composition-marker/project-item-metadata/comp-current-time/
 selected-property-value/selected-property-keyframe/text-to-keys/
 selected-keyframe-marker/remaining-tail/render-queue/comp-properties/
-reset-work-area waves unless needed for a regression check.
+reset-work-area/rename-find-replace/assorted-composition-guides waves unless
+needed for a regression check.
 
 ## Decision Log
 
+- 2026-06-12: Assorted composition guides live proof is valid only for an
+  explicit generated comp target with generated guide overlay shape layers,
+  typed `create_shape_layer`, typed `add_effect`, and final
+  `get_comp_details`/`get_layer_details` read-back, protected edit-session
+  checkpointing, dry-run gating, semantic verification, cleanup, and render
+  queue baseline/after audit. It does not approve source-exact native AE guide
+  creation, user comp mutation, broad active-comp traversal, arbitrary
+  action/title-safe math beyond the generated fixture, effect-stack
+  generalization, file/render/proxy behavior, or raw JSX fallback.
 - 2026-06-12: Reset-work-area live proof is valid only for explicit generated
   comp targets with typed `set_comp_work_area` and before/after
   `get_comp_details` read-back, protected edit-session checkpointing, dry-run
@@ -2169,6 +2218,7 @@ reset-work-area waves unless needed for a regression check.
 
 ## Validation
 
+| Max-scope assorted composition guides live proof wave | Required to prove generated-only guide overlay composition setup after rename/find-replace while preserving explicit generated comp target selection, typed inputs/outputs, no duplicate ids, protected edit-session checkpoints, dry-run gating, before/after typed read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact semantics. | Passed: `full-ui-agent-assorted-composition-guides-openai-cli-smoke` passed with `ok:true`, provider `openai-cli`, model `gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 9, expected mutating count 7, dry-run ok, protected run ok, semantic verification passed with 10 checks and 2 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_shape_layer`, `add_effect`, `get_comp_details`, and `get_layer_details`. Read-back showed generated comp `Codex QA AUX039 72914689 Assorted Guides Comp` at 800x450 with five generated guide layers and generated `ADBE Fill` effect on the title safe layer; cleanup removed 1 generated project item, final cleanup removed 0, render queue stayed 0, and artifact `...assorted-composition-guides-Codex-QA-AUX039-72914689.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and final `git diff --check`. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope reset-work-area live proof wave | Required to prove generated-only work-area reset after comp properties/work-area while preserving explicit generated comp target selection, typed inputs/outputs, no duplicate ids, protected edit-session checkpoints, dry-run gating, before/after typed `get_comp_details` read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact semantics. | Passed: `full-ui-agent-reset-work-area-openai-cli-smoke` passed with `ok:true`, provider `openai-cli`, model `gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, dry-run ok, protected run ok, semantic verification passed with 5 checks and 2 read-back summaries, and final typed `get_comp_details` read-back passed. Expected typed tools covered `create_test_comp`, `set_comp_work_area`, and `get_comp_details`. Protected checkpoint/edit session was `ai-plan-bbe86876`; read-back showed generated comp `Codex QA AUX026 72108776 Reset Work Area Comp` with duration 5, short work area 1/2, and final workAreaStart 0 / workAreaDuration 5; cleanup removed 1 generated comp, final cleanup removed 0, render queue stayed 0, and artifact `...reset-work-area-Codex-QA-AUX026-72108776.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and final `git diff --check`. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope comp properties/work-area live proof wave | Required to prove generated-only comp property and work-area mutation after render queue setup while preserving explicit generated comp target selection, typed inputs/outputs, no duplicate ids, protected edit-session checkpoints, dry-run gating, before/after typed `get_comp_details` read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact semantics. | Passed: `full-ui-agent-comp-properties-openai-cli-smoke` passed with `ok:true`, provider `openai-cli`, model `gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, rejected count 0, dry-run ok, protected run ok, semantic verification passed with 10 checks and 2 read-back summaries, and final typed `get_comp_details` read-back passed. Expected typed tools covered `create_comp`, `set_comp_properties`, `set_comp_work_area`, and `get_comp_details`. Protected checkpoint/edit session was `ai-plan-57c663a7`; read-back showed generated comp `Codex QA AUX061 71627028 Comp Properties Comp` with width 720, height 405, duration 6, frameRate 30, displayStartTime 1, workAreaStart 1.2, and workAreaDuration 3.5; cleanup removed 1 generated comp, final cleanup removed 0, render queue stayed 0, and artifact `...comp-properties-Codex-QA-AUX061-71627028.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and final `git diff --check`. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope render queue setup live proof wave | Required to prove generated-only render queue setup after remaining-tail contracts while preserving explicit generated Project folder/comp targets, typed inputs/outputs, no duplicate ids, protected edit-session checkpoints, dry-run gating, semantic verification, final typed render queue read-back, cleanup/rollback evidence, render queue baseline/after audit, no render execution, no user output file writes, and explicit unsupported source-exact render/export semantics. | Passed: `full-ui-agent-render-queue-openai-cli-smoke` passed with `ok:true`, provider `openai-cli`, model `gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, rejected count 0, dry-run ok, protected run ok, semantic verification passed, and final typed render queue read-back passed. Expected typed tools covered `create_project_folder`, `create_comp`, `move_project_items_to_folder`, `list_project_folder_items`, `add_comp_to_render_queue`, and `get_render_queue_status`. Protected checkpoint/edit session was `ai-plan-45ff206c`; read-back showed one render queue item for `Codex QA AUX098 70910747 Render Queue` with empty `outputPath`; cleanup removed 2 generated project items and 1 render queue item, final cleanup removed 0, render queue returned to baseline 0, and artifact `...render-queue-Codex-QA-AUX098-70910747.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, toolErrors=0, and renderQueueTotal=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and final `git diff --check`. No render execution, user output file write, candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, push, PR, GitHub automation, or launcher edit was run. |
