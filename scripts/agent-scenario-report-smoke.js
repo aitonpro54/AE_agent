@@ -425,6 +425,15 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
     "get_layer_details",
     "get_layer_details"
   ]);
+  assert.deepStrictEqual(timing.expectedReadBack.layerExpectations.map((layer) => ({
+    layerIndex: layer.layerIndex,
+    startTime: layer.startTime,
+    inPoint: layer.inPoint,
+    outPoint: layer.outPoint
+  })), [
+    { layerIndex: 1, startTime: 0, inPoint: 0.5, outPoint: 3 },
+    { layerIndex: 2, startTime: 2.75, inPoint: 3.25, outPoint: 5.75 }
+  ]);
   assert(!timing.plan.steps.some((step) => step.tool === "run_extendscript"));
 
   const [transform] = agentLayerTransformScenarioPlans("Codex QA AUX050 Fixture");

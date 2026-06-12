@@ -1374,8 +1374,8 @@ function agentLayerTimingScenarioPlans(runPrefix) {
         generatedLayerTiming: true,
         compName,
         layerExpectations: [
-          { name: layerAName, layerIndex: 1, startTime: 0.5, inPoint: 0.5, outPoint: 3 },
-          { name: layerBName, layerIndex: 2, startTime: 0.75, inPoint: 0.75, outPoint: 3.25 }
+          { name: layerBName, layerIndex: 1, startTime: 0, inPoint: 0.5, outPoint: 3 },
+          { name: layerAName, layerIndex: 2, startTime: 2.75, inPoint: 3.25, outPoint: 5.75 }
         ]
       },
       plan: {
