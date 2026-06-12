@@ -26,6 +26,37 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Max-scope expression live proof wave:
+  продолжил generated-only live proof campaign from commit `d65345d` after
+  compact preflight confirmed clean tracked status, no related Full Intake
+  writer process, terminal ledger/proof state, and baton handoff for
+  `max-scope-expression-live-proof`. Read-only `inspect` confirmed live panel
+  `Connected`, provider/model `openai-cli/gpt-5.5`, and provider status
+  `ready`; the panel-local 5h timer was treated as stale/advisory per user
+  override. `full-ui-agent-expression-openai-cli-smoke` passed with provider
+  `openai-cli`, model `gpt-5.5`, panel plan count 1, accepted count 1,
+  `fallbackCount=0`, expected step count 7, expected mutating count 4,
+  dry-run ok, protected run ok with checkpoint/edit session
+  `ai-plan-ba3e3efc`, semantic verification passed with 4 checks,
+  4 mutation verifications, and 3 read-back summaries, and final typed
+  read-back passed for generated Position expression set/clear on explicit
+  property path `ADBE Transform Group.ADBE Position`. Expected typed tools
+  covered `create_comp`, `create_shape_layer`, `get_selected_properties`,
+  `set_expression`, `get_layer_details`, and `clear_expression`. Cleanup
+  removed 1 generated project item, final cleanup removed 0, render queue
+  stayed 0, and artifact:
+  `logs/agent-run-reports/2026-06-12T15-12-55.937Z-openai-cli-gpt-5.5-expression-Codex-QA-AUX061-77128028.json`.
+  Post-run read-only audit found `projectItemLeftovers=0`,
+  `renderQueueLeftovers=0`, `activeEditSession=false`, and `toolErrors=0`;
+  `needsReview:true` is only from checkpoint/edit-session records. Validation
+  passed: `node scripts\agent-scenario-report-smoke.js`,
+  `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`,
+  `npm.cmd run check:rules`, read-only `inspect`, read-only
+  `agent-scenario-audit`, compact status/proof/ledger-summary, and
+  `git diff --check` with Windows line-ending warnings only. No candidate
+  completion, broad queue, Local/Ollama, fallback provider, dependency change,
+  raw JSX product copy, user-asset mutation, render execution, push, PR,
+  GitHub automation, or launcher edit was run.
 - [x] Max-scope effect property live proof wave:
   продолжил generated-only live proof campaign from commit `66b6f01` after
   compact preflight confirmed clean tracked status, no related Full Intake
@@ -1673,19 +1704,29 @@ reviewable commit. Start the next wave with compact preflight, fresh
 prepared lane family that has typed target selection, semantic verification,
 protected edit-session checkpoints, typed read-back, cleanup evidence, and
 explicit unsupported source-exact semantics. Useful remaining families include
-layer-timing, layer-transform, project-items, composition-version,
-effect-property/expression lanes, remaining project/file/proxy and user-file
-lanes, third-party semantics lanes, and any still-unproven
+expression-adjacent parametric/parent/stick lanes, path geometry, remaining
+project/file/proxy and user-file lanes, third-party semantics lanes, and any
+still-unproven
 `full-ui-agent-*openai-cli-smoke` commands. Do not rerun the completed
 layer/path/EG/Puppet/composition-marker/project-item-metadata/comp-current-time/
 selected-property-value/selected-property-keyframe/text-to-keys/
 selected-keyframe-marker/remaining-tail/render-queue/comp-properties/
 reset-work-area/rename-find-replace/assorted-composition-guides/composition-guide/
-background-layer/layer-transform/project-items waves unless needed for a
-regression check.
+background-layer/layer-transform/project-items/composition-version/
+effect-property/expression waves unless needed for a regression check.
 
 ## Decision Log
 
+- 2026-06-12: Expression live proof is valid only for an explicit generated
+  comp/layer/property target using typed `set_expression`,
+  `clear_expression`, `get_selected_properties`, and `get_layer_details`
+  against generated Position property path `ADBE Transform Group.ADBE Position`,
+  with protected edit-session checkpointing, dry-run gating, semantic
+  verification, cleanup, and render queue baseline/after audit. It does not
+  approve source-exact expression-rig semantics, arbitrary selected-property
+  expression mutation, user expression mutation, expression safety analysis
+  beyond typed set/clear/read-back, file/proxy behavior, render execution,
+  broad active-project cleanup, or raw JSX fallback.
 - 2026-06-12: Effect property live proof is valid only for an explicit
   generated comp/layer/effect target using typed `add_effect`,
   `get_effect_details`, and `set_effect_property` against generated `ADBE Fill`
@@ -2544,6 +2585,7 @@ regression check.
 
 ## Validation
 
+| Max-scope expression live proof wave | Required to prove generated-only expression set/clear after effect property while preserving explicit generated comp/layer/property target selection, typed inputs/outputs, no duplicate ids, protected edit-session checkpoints, dry-run gating, before/after typed read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact expression semantics. | Passed: `full-ui-agent-expression-openai-cli-smoke` passed with provider `openai-cli`, model `gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 7, expected mutating count 4, dry-run ok, protected run ok with checkpoint/edit session `ai-plan-ba3e3efc`, semantic verification passed with 4 checks, 4 mutation verifications, and 3 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_shape_layer`, `get_selected_properties`, `set_expression`, `get_layer_details`, and `clear_expression`. Read-back showed generated comp `Codex QA AUX061 77128028 Expression Comp`, generated layer `Codex QA AUX061 77128028 Expression Shape`, Position property path `ADBE Transform Group.ADBE Position`, set expression `value + [Math.sin(time * 2) * 4, 0]`, and cleared expression state. Cleanup removed 1 generated project item, final cleanup removed 0, render queue stayed 0, and artifact `...expression-Codex-QA-AUX061-77128028.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and `git diff --check` with Windows line-ending warnings only. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope effect property live proof wave | Required to prove generated-only effect property mutation after composition version while preserving explicit generated comp/layer/effect/property target selection, typed inputs/outputs, no duplicate ids, protected edit-session checkpoints, dry-run gating, before/after typed read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact effect/property semantics. | Passed after repairing the final smoke verifier to match `get_effect_details.propertyIndex` instead of nonexistent `index`: the first `full-ui-agent-effect-property-openai-cli-smoke` run failed closed only at final read-back while bridge logs showed typed `set_effect_property` correctly set generated `ADBE Fill` Color property index 3 to `[0.95,0.18,0.22,1]`; rerun passed with provider `openai-cli`, model `gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 6, expected mutating count 4, dry-run ok, protected run ok with checkpoint/edit session `ai-plan-82c7223e`, semantic verification passed with 2 checks, 4 mutation verifications, and 2 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_shape_layer`, `add_effect`, `get_effect_details`, and `set_effect_property`. Cleanup removed 1 generated project item, final cleanup removed 0, render queue stayed 0, and artifact `...effect-property-Codex-QA-AUX050-76630466.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: `node --check scripts\cep-panel-cdp-smoke.js`, `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and `git diff --check` with Windows line-ending warnings only. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope composition version live proof wave | Required to prove generated-only composition version-token rename after project items while preserving explicit generated comp/version target selection, typed inputs/outputs, no duplicate ids, protected edit-session checkpoints, dry-run gating, before/after typed read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact version semantics. | Passed: `full-ui-agent-composition-version-openai-cli-smoke` passed with provider `openai-cli`, model `gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 5, expected mutating count 3, dry-run ok, protected run ok with checkpoint/edit session `ai-plan-2d273bba`, semantic verification passed with 1 check, 3 mutation verifications, and 2 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `rename_project_items`, `find_project_items`, and `get_comp_details`. Read-back showed generated comps `Codex QA AUX097 75970139 Composition Version Main v002` and `Codex QA AUX097 75970139 Composition Version Secondary v002` after generated-only `v001` to `v002` rename; cleanup removed 2 generated project items, final cleanup removed 0, render queue stayed 0, and artifact `...composition-version-Codex-QA-AUX097-75970139.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and `git diff --check`. No touched JavaScript files required `node --check`. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope project items live proof wave | Required to prove generated-only project item rename/folder/move and source replacement after layer transform while preserving explicit generated project item/folder target selection, typed inputs/outputs, no duplicate ids, protected edit-session checkpoints, dry-run gating, before/after typed read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact project-item semantics. | Passed: `full-ui-agent-project-items-openai-cli-smoke` passed with provider `openai-cli`, model `gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 10, expected mutating count 7, dry-run ok, protected run ok, semantic verification passed with 4 checks, 7 mutation verifications, and 2 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_solid_layer`, `create_project_folder`, `move_project_items_to_folder`, `replace_layer_source`, `rename_project_items`, `find_project_items`, `list_project_folder_items`, and `get_comp_details`. Read-back showed generated folder `Codex QA AUX050 75461354 Project Items Folder` contained `Codex QA AUX050 75461354 Project Items Replacement Renamed`; generated main comp `Codex QA AUX050 75461354 Project Items Main` had layer source replacement read back as the renamed comp; cleanup removed 4 generated project items, final cleanup removed 0, render queue stayed 0, and artifact `...project-items-Codex-QA-AUX050-75461354.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and `git diff --check` with Windows line-ending warnings only. No touched JavaScript files required `node --check`. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
