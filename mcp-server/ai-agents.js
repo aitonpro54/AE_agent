@@ -1527,7 +1527,7 @@ function runCodexCli(agent, model, messages, options) {
     model,
     "--cd",
     process.cwd(),
-    prompt
+    "-"
   ];
   const reasoningEffort = normalizeReasoningEffort(options && options.reasoningEffort);
   if (reasoningEffort) {
@@ -1548,7 +1548,7 @@ function runCodexCli(agent, model, messages, options) {
       env: process.env,
       windowsVerbatimArguments: Boolean(invocation.windowsVerbatimArguments),
       windowsHide: true,
-      stdio: ["ignore", "pipe", "pipe"]
+      stdio: ["pipe", "pipe", "pipe"]
     });
     let finished = false;
     function boundedSummary() {
@@ -1583,6 +1583,16 @@ function runCodexCli(agent, model, messages, options) {
       stderrLog.write(chunk);
       stderrTail.push(chunk);
     });
+    child.stdin.on("error", (error) => {
+      if (finished || error.code === "EPIPE") return;
+      finished = true;
+      clearTimeout(timer);
+      stdoutLog.end();
+      stderrLog.end();
+      error.codexCli = boundedSummary();
+      reject(error);
+    });
+    child.stdin.end(prompt, "utf8");
     child.on("error", (error) => {
       if (finished) return;
       finished = true;

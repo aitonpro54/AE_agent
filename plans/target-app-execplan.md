@@ -26,6 +26,33 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Max-scope OpenAI CLI stdin repair and first generated-only live proof
+  wave: после восстановления ChatGPT/Codex usage свежий
+  `openai-cli-smoke` прошел через панель на `openai-cli/gpt-5.5`. Первая
+  `full-ui-agent-layer-metadata-openai-cli-smoke` попытка выявила новый
+  Windows blocker: большой Agent plan fixture передавался в `codex.cmd exec`
+  как argv и падал на лимите командной строки до AE-мутаторов. Bridge provider
+  layer теперь передает Codex CLI prompt через stdin (`codex exec ... -`) и
+  сохраняет Windows `cmd.exe` shim path; `provider-contract-smoke` покрывает
+  fake `codex.cmd exec` с длинным stdin prompt. Daemon был перезапущен с
+  `CODEX_CLI_PATH=C:\Users\Ant\AppData\Roaming\npm\codex.cmd`, provider smoke
+  повторно прошел, затем `full-ui-agent-layer-metadata-openai-cli-smoke`
+  прошел как первая narrow generated-only mutating proof wave:
+  panel plan accepted, `fallbackCount=0`, dry-run ok, protected project-change
+  run через edit session/checkpoint, semantic verification 5/5 passed,
+  typed read-back подтвердил `comment`, `label:9`, `locked:true` на двух
+  generated layers, cleanup removed 2 generated items, render queue остался 0.
+  Artifact:
+  `logs/agent-run-reports/2026-06-12T07-19-18.465Z-openai-cli-gpt-5.5-layer-metadata-Codex-QA-AUX-LM-48712617.json`.
+  Compact full-intake status/proof/ledger остались terminal: 75 entries,
+  17 completed, 58 blocked/skipped, 0 queued, 0 failed. Validation passed:
+  touched-file `node --check`, `git diff --check` with Windows line-ending
+  warnings only, `npm.cmd run check:rules`, `npm.cmd run smoke:provider-contract`,
+  `npm.cmd run smoke:provider-api`, `npm.cmd run smoke:bridge`, read-only
+  `inspect`, `openai-cli-smoke`, and the live layer-metadata proof wave. No
+  push, PR, GitHub automation, launcher edit, dependency change, Local/Ollama
+  substitution, fallback provider, raw JSX copy, broad queue processing, or
+  user-asset mutation was run.
 - [x] Max-scope live proof readiness repair:
   explicit max-scope approval replaced the previous live-proof approval blocker,
   so the run attempted provider repair before any mutating proof wave. The
