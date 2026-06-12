@@ -41,6 +41,7 @@ const MUTATING_TOOLS = new Set([
   "duplicate_layer",
   "duplicate_layers",
   "set_layer_selection",
+  "set_layer_parent",
   "delete_layer",
   "set_comp_properties",
   "set_layer_mask",
@@ -211,6 +212,17 @@ function addLayerEvidence(target, value, source) {
   if (hasOwn(value, "comment")) layer.comment = String(value.comment === undefined || value.comment === null ? "" : value.comment);
   if (hasOwn(value, "blendingModeName")) layer.blendingModeName = normalizedBlendingModeName(value.blendingModeName);
   if (hasOwn(value, "blendingMode")) layer.blendingMode = normalizedBlendingModeName(value.blendingMode);
+  if (hasOwn(value, "parent")) {
+    if (isPlainObject(value.parent)) {
+      layer.parentIndex = numberValue(value.parent.index);
+      layer.parentName = compactText(value.parent.name, 160);
+      layer.parentId = value.parent.id === undefined || value.parent.id === null ? null : String(value.parent.id);
+    } else {
+      layer.parentIndex = null;
+      layer.parentName = "";
+      layer.parentId = null;
+    }
+  }
   target.layers.push(layer);
 }
 
@@ -1115,6 +1127,57 @@ function checkSetLayerBlendingMode(checks, step, payload, evidence) {
     observed: resultMatches ? `${payload.changedCount || changed.length} layer(s) updated` : "missing or mismatched blending mode result",
     passed: Boolean(resultMatches) && Boolean(readBackEvidence),
     evidence: readBackEvidence || "No post-run get_layer_details read-back matched set_layer_blending_mode."
+  });
+}
+
+function layerMatchesParentTarget(layer, args, layerIndex, expectedLayerName, parentLayerIndex, expectedParentName) {
+  if (!layer) return false;
+  const observedParentIndex = hasOwn(layer, "parentIndex")
+    ? layer.parentIndex
+    : (isPlainObject(layer.parent) ? layer.parent.index : null);
+  const observedParentName = hasOwn(layer, "parentName")
+    ? layer.parentName
+    : (isPlainObject(layer.parent) ? layer.parent.name : "");
+  if (!nearlyEqual(layer.index, layerIndex)) return false;
+  if (expectedLayerName && !sameString(layer.name, expectedLayerName)) return false;
+  if (!nearlyEqual(observedParentIndex, parentLayerIndex)) return false;
+  if (expectedParentName && !sameString(observedParentName, expectedParentName)) return false;
+  return true;
+}
+
+function observedLayerParentEvidence(evidence, args) {
+  const layerIndex = numberValue(args.layerIndex);
+  const parentLayerIndex = numberValue(args.parentLayerIndex);
+  const expectedLayerName = compactText(args.expectedLayerName, 160);
+  const expectedParentName = compactText(args.expectedParentName, 160);
+  if (layerIndex === null || parentLayerIndex === null || !evidence || !Array.isArray(evidence.layers)) return null;
+  for (const layer of evidence.layers) {
+    if (layerMatchesParentTarget(layer, args, layerIndex, expectedLayerName, parentLayerIndex, expectedParentName)) {
+      return layer.source || `layer ${layerIndex} parent ${parentLayerIndex}`;
+    }
+  }
+  return null;
+}
+
+function checkSetLayerParent(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const layerIndex = numberValue(args.layerIndex);
+  const parentLayerIndex = numberValue(args.parentLayerIndex);
+  const expectedLayerName = compactText(args.expectedLayerName, 160);
+  const expectedParentName = compactText(args.expectedParentName, 160);
+  const layer = payload.layer || {};
+  const postVerification = payload.postVerification || {};
+  const resultMatches = layerMatchesParentTarget(layer, args, layerIndex, expectedLayerName, parentLayerIndex, expectedParentName) &&
+    postVerification.ok === true &&
+    postVerification.parentMatches === true;
+  const readBackEvidence = observedLayerParentEvidence(evidence.readBack, args);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:parent`,
+    title: "Layer parent link matches explicit request",
+    expected: `layer ${layerIndex || "?"} -> parent ${parentLayerIndex || "?"}${expectedParentName ? ` (${expectedParentName})` : ""}`,
+    observed: resultMatches ? `${layer.name || "layer"} -> ${layer.parentName || layer.parent && layer.parent.name || "missing parent"}` : "missing or mismatched parent result",
+    passed: Boolean(resultMatches) && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_layer_details read-back matched set_layer_parent."
   });
 }
 
@@ -2042,6 +2105,11 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "set_layer_blending_mode") {
     checkSetLayerBlendingMode(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_layer_parent") {
+    checkSetLayerParent(checks, step, payload, evidence);
     return;
   }
 

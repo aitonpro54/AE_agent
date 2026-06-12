@@ -879,6 +879,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "duplicate_layer",
   "duplicate_layers",
   "set_layer_selection",
+  "set_layer_parent",
   "delete_layer",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
@@ -4323,6 +4324,7 @@ const PLANNING_TOOL_NAMES = [
   "duplicate_layer",
   "duplicate_layers",
   "set_layer_selection",
+  "set_layer_parent",
   "delete_layer",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
@@ -6267,6 +6269,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For precomp/source workflows, use precompose_layers, replace_layer_source, deep_duplicate_precomp_sources, rename_layers, and rename_project_items before considering raw ExtendScript.",
     "For explicit single-layer duplication, use duplicate_layer after inspecting the target comp/layer and pairing layerIndex with the sourceName in current AE stack order. AE inserts newly created and duplicated layers at layer index 1; do not assume creation order equals layer-index order.",
     "For explicit layer selection changes, use set_layer_selection only with concrete layerIndices from current get_comp_details/list_layers/get_layer_details evidence and expectedLayerNames when possible; do not use raw ExtendScript to select layers.",
+    "For explicit generated layer parenting, use set_layer_parent only with one inspected child layer, one inspected parent layer, expectedLayerName, expectedParentName, and post-run get_layer_details read-back. Do not use it for recursive hierarchy edits, bulk parenting, source-exact selection side effects, or non-generated user assets without a separate reviewed contract.",
     "For explicit bulk layer duplication, use duplicate_layers with concrete layerIndices after inspecting the target comp/layers. Pair sourceNames with layerIndices in current AE stack order, or insert get_comp_details before duplication when source-layer order is ambiguous. For selected-layer duplication, inspect with get_selected_layers first and bind layerIndices from {{selectedLayerIndices}}; never use duplicate_layers for deletion, source/precomp relinking, mask/path edits, or audio workflows.",
     "For destructive single-layer deletion, use delete_layer only after inspecting the explicit target comp/layer. Provide compItemIndex or compName, layerIndex, and expectedLayerName, then read back the comp/layer stack to prove the deleted layer is absent; never use selection-only, broad, multi-layer, or name-optional deletion.",
     "For composition settings, use set_comp_properties only for width, height, pixelAspect, duration, frameRate, bgColor, and displayStartTime on one explicit comp, then read back the comp before reporting success. Do not route arbitrary comp fields, layers, effects, masks, or property paths through this tool.",
@@ -9202,6 +9205,40 @@ const tools = [
         }
       },
       required: ["layerIndices"]
+    }
+  },
+  {
+    name: "set_layer_parent",
+    description: "Parent one explicit layer to another explicit layer in the same composition, with optional child/parent name guards.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based child layer index to parent."
+        },
+        parentLayerIndex: {
+          type: "number",
+          description: "1-based parent layer index in the same composition."
+        },
+        expectedLayerName: {
+          type: "string",
+          description: "Optional exact child layer name guard. The tool fails closed on mismatch."
+        },
+        expectedParentName: {
+          type: "string",
+          description: "Optional exact parent layer name guard. The tool fails closed on mismatch."
+        }
+      },
+      required: ["layerIndex", "parentLayerIndex"]
     }
   },
   {
@@ -12377,6 +12414,79 @@ async function callTool(name, args) {
           selectedCount: selectedAfter.length,
           indexMatches: indexMatches,
           nameMatches: nameMatches
+        }
+      };
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_layer_parent") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const parentLayerIndex = requiredPositiveInteger(args, "parentLayerIndex");
+    const expectedLayerName = optionalString(args, "expectedLayerName", "");
+    const expectedParentName = optionalString(args, "expectedParentName", "");
+
+    if (layerIndex === parentLayerIndex) {
+      return toolResult("layerIndex and parentLayerIndex must be different.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layerIndex = ${layerIndex};
+      var parentLayerIndex = ${parentLayerIndex};
+      var expectedLayerName = ${aeLiteral(expectedLayerName)};
+      var expectedParentName = ${aeLiteral(expectedParentName)};
+
+      if (layerIndex > comp.numLayers) throw new Error("Layer index " + layerIndex + " is out of range for comp with " + comp.numLayers + " layers.");
+      if (parentLayerIndex > comp.numLayers) throw new Error("Parent layer index " + parentLayerIndex + " is out of range for comp with " + comp.numLayers + " layers.");
+      var layer = comp.layer(layerIndex);
+      var parentLayer = comp.layer(parentLayerIndex);
+      if (!layer) throw new Error("Layer not found at index " + layerIndex + ".");
+      if (!parentLayer) throw new Error("Parent layer not found at index " + parentLayerIndex + ".");
+      if (layer === parentLayer) throw new Error("Layer cannot be parented to itself.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      if (expectedLayerName && layer.name !== expectedLayerName) {
+        throw new Error("Layer name mismatch at index " + layerIndex + ". Expected '" + expectedLayerName + "' but found '" + layer.name + "'.");
+      }
+      if (expectedParentName && parentLayer.name !== expectedParentName) {
+        throw new Error("Parent layer name mismatch at index " + parentLayerIndex + ". Expected '" + expectedParentName + "' but found '" + parentLayer.name + "'.");
+      }
+
+      var beforeParent = null;
+      try { beforeParent = layer.parent ? __codexLayerInfo(layer.parent) : null; } catch (__beforeParentError) {}
+
+      app.beginUndoGroup("Codex Set Layer Parent");
+      try {
+        layer.parent = parentLayer;
+      } finally {
+        app.endUndoGroup();
+      }
+
+      var childAfter = __codexLayerInfo(layer);
+      var parentAfter = __codexLayerInfo(parentLayer);
+      var parentMatches = childAfter.parent && childAfter.parent.index === parentAfter.index && childAfter.parent.name === parentAfter.name;
+      return {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          time: comp.time,
+          numLayers: comp.numLayers
+        },
+        layer: childAfter,
+        parent: parentAfter,
+        beforeParent: beforeParent,
+        requestedLayerIndex: layerIndex,
+        requestedParentLayerIndex: parentLayerIndex,
+        expectedLayerName: expectedLayerName || null,
+        expectedParentName: expectedParentName || null,
+        postVerification: {
+          ok: parentMatches,
+          parentMatches: parentMatches,
+          childNameMatches: !expectedLayerName || childAfter.name === expectedLayerName,
+          parentNameMatches: !expectedParentName || parentAfter.name === expectedParentName
         }
       };
     `);

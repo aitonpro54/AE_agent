@@ -5670,8 +5670,10 @@ async function verifyGeneratedParentOpacityExpressionReadBack(scenario, expected
     layerLimit: 20
   });
   const layers = Array.isArray(comp.layers) ? comp.layers : [];
-  const child = layers.find((layer) => layer.name === expected.cameraName);
-  const controller = layers.find((layer) => layer.name === expected.controllerName);
+  const childName = expected.childName || expected.cameraName;
+  const parentName = expected.parentName || expected.controllerName;
+  const child = layers.find((layer) => layer.name === childName);
+  const controller = layers.find((layer) => layer.name === parentName);
   if (!child || !controller) {
     throw new Error(`${scenario.id}: generated parent-opacity child/controller layers were not found by read-back.`);
   }
@@ -5685,8 +5687,8 @@ async function verifyGeneratedParentOpacityExpressionReadBack(scenario, expected
     includeExpressions: true
   });
   const parent = details.layer && details.layer.parent ? details.layer.parent : {};
-  if (parent.name !== expected.controllerName) {
-    throw new Error(`${scenario.id}: parent-opacity parent mismatch; expected ${expected.controllerName}, got ${parent.name || "none"}.`);
+  if (parent.name !== parentName) {
+    throw new Error(`${scenario.id}: parent-opacity parent mismatch; expected ${parentName}, got ${parent.name || "none"}.`);
   }
   const property = findPropertyInTree(details.propertyTree || [], expected.propertyPath);
   if (!property) {

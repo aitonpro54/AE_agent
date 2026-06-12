@@ -289,6 +289,7 @@ function assertReadOnlyTools(tools) {
     "set_layer_mask",
     "duplicate_layer",
     "duplicate_layers",
+    "set_layer_parent",
     "delete_layer",
     "add_comp_marker",
     "add_layer_marker",

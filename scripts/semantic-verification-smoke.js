@@ -12,6 +12,7 @@ const {
   agentLayerBlendingModeScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
+  agentParentOpacityExpressionScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentProjectItemMetadataScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
@@ -24,6 +25,7 @@ const LOCAL_MUTATING_TOOLS = new Set([
   "set_comp_properties",
   "set_layer_metadata",
   "set_layer_blending_mode",
+  "set_layer_parent",
   "set_project_item_metadata",
   "set_layer_mask",
   "set_path_geometry",
@@ -95,6 +97,10 @@ function layerInfo(name, overrides = {}) {
     label: overrides.label === undefined ? 0 : overrides.label,
     locked: overrides.locked === undefined ? false : overrides.locked,
     blendingModeName: overrides.blendingModeName || "normal",
+    nullLayer: overrides.nullLayer === undefined ? false : overrides.nullLayer,
+    adjustmentLayer: overrides.adjustmentLayer === undefined ? false : overrides.adjustmentLayer,
+    threeDLayer: overrides.threeDLayer === undefined ? false : overrides.threeDLayer,
+    parent: overrides.parent === undefined ? null : overrides.parent,
     transform: overrides.transform || null,
     text: overrides.text ? { text: overrides.text, fontSize: overrides.fontSize || null } : null,
     source: overrides.source || null
@@ -161,6 +167,19 @@ function fakeMutationResult(step, state) {
       comp: { name: compName },
       layer,
       solid: { color: args.color, width: args.width, height: args.height }
+    }, compName, layer);
+  }
+  if (step.tool === "create_null_layer") {
+    const layer = insertLayerAtTop(state, layerInfo(args.name, {
+      index: 1,
+      nullLayer: true,
+      startTime: args.startTime || 0,
+      inPoint: args.startTime || 0,
+      outPoint: (args.startTime || 0) + (args.duration || 1)
+    }));
+    return withVerification({
+      comp: { name: compName },
+      layer
     }, compName, layer);
   }
   if (step.tool === "create_text_layer") {
@@ -928,7 +947,7 @@ function fakeMutationResult(step, state) {
     return withVerification({ comp: { name: compName }, layer, text: { text: args.text, fontSize: args.fontSize } }, compName, layer);
   }
   if (step.tool === "create_shape_layer") {
-    const layer = layerInfo(args.name, { index: state.nextLayerIndex++ });
+    const layer = insertLayerAtTop(state, layerInfo(args.name, { index: 1 }));
     return withVerification({
       comp: { name: compName },
       layer,
@@ -1048,6 +1067,43 @@ function fakeMutationResult(step, state) {
       inSpatialTangent: tangent,
       outSpatialTangent: [0, 0]
     }, compName);
+  }
+  if (step.tool === "set_layer_parent") {
+    const childIndex = Number(args.layerIndex);
+    const parentIndex = Number(args.parentLayerIndex);
+    const child = state.layers.find((item) => Number(item.index) === childIndex) ||
+      layerInfo(args.expectedLayerName || `Layer ${childIndex}`, { index: childIndex });
+    const parent = state.layers.find((item) => Number(item.index) === parentIndex) ||
+      layerInfo(args.expectedParentName || `Layer ${parentIndex}`, { index: parentIndex });
+    const updatedChild = {
+      ...child,
+      name: args.expectedLayerName || child.name,
+      parent: {
+        index: parent.index,
+        id: parent.id || null,
+        name: args.expectedParentName || parent.name
+      }
+    };
+    state.layers = state.layers.map((item) => (
+      Number(item.index) === childIndex ? updatedChild : item
+    ));
+    if (!state.layers.some((item) => Number(item.index) === childIndex)) state.layers.push(updatedChild);
+    return withVerification({
+      comp: { name: compName },
+      layer: updatedChild,
+      parent: { ...parent, name: args.expectedParentName || parent.name },
+      beforeParent: child.parent || null,
+      requestedLayerIndex: childIndex,
+      requestedParentLayerIndex: parentIndex,
+      expectedLayerName: args.expectedLayerName || null,
+      expectedParentName: args.expectedParentName || null,
+      postVerification: {
+        ok: true,
+        parentMatches: true,
+        childNameMatches: !args.expectedLayerName || updatedChild.name === args.expectedLayerName,
+        parentNameMatches: !args.expectedParentName || updatedChild.parent.name === args.expectedParentName
+      }
+    }, compName, updatedChild);
   }
   if (step.tool === "set_expression") {
     return withVerification({
@@ -1660,6 +1716,51 @@ function assertLayerBlendingModePasses() {
   const semantic = buildSemanticVerification(scenario.plan, run);
   assert.strictEqual(semantic.status, "passed", `layer blending mode semantic verification should pass: ${semantic.summary}`);
   assert(semantic.checks.some((check) => check.id.indexOf("set_layer_blending_mode:blending-mode") >= 0 && check.status === "passed"), "set_layer_blending_mode read-back check should pass.");
+}
+
+function layerParentPlan(includeReadBack = true) {
+  const steps = [
+    {
+      title: "Set generated child parent",
+      tool: "set_layer_parent",
+      args: {
+        compName: "Parent Fixture",
+        layerIndex: 1,
+        parentLayerIndex: 2,
+        expectedLayerName: "Parent Fixture Child",
+        expectedParentName: "Parent Fixture Parent"
+      }
+    }
+  ];
+  if (includeReadBack) {
+    steps.push({
+      title: "Read generated child parent",
+      tool: "get_layer_details",
+      args: { compName: "Parent Fixture", layerIndex: 1 }
+    });
+  }
+  return {
+    summary: "Parent one generated child layer to one generated parent and inspect it.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps
+  };
+}
+
+function assertLayerParentPasses() {
+  const plan = layerParentPlan(true);
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `set_layer_parent semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_parent:parent") >= 0 && check.status === "passed"), "set_layer_parent read-back check should pass.");
+}
+
+function assertLayerParentMissingReadBackNeedsReview() {
+  const plan = layerParentPlan(false);
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "set_layer_parent must require post-run get_layer_details read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_parent:parent") >= 0 && check.status === "failed"), "missing set_layer_parent read-back should fail.");
 }
 
 function assertProjectItemMetadataPasses() {
@@ -3019,6 +3120,15 @@ function assertSourceTextKeyframeMismatchNeedsReview() {
   assert(semantic.checks.some((check) => check.id.indexOf("set_property_keyframes:keyframe-values") >= 0 && check.status === "failed"), "mismatched Source Text keyframe values should fail.");
 }
 
+function assertParentOpacityExpressionScenarioPasses() {
+  const [scenario] = agentParentOpacityExpressionScenarioPlans("Codex Semantic Parent Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  assert.strictEqual(semantic.status, "passed", `parent-opacity expression semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_parent:parent") >= 0 && check.status === "passed"), "parent-opacity scenario should verify set_layer_parent.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_expression:expression") >= 0 && check.status === "passed"), "parent-opacity scenario should verify set_expression.");
+}
+
 function main() {
   const scenarios = agentScenarioPlans("Codex Semantic Fixture", 0);
   const results = scenarios.map(assertScenarioPasses);
@@ -3039,6 +3149,8 @@ function main() {
   assertLayerMetadataPasses();
   assertLayerEnabledHardSoloPasses();
   assertLayerBlendingModePasses();
+  assertLayerParentPasses();
+  assertLayerParentMissingReadBackNeedsReview();
   assertProjectItemMetadataPasses();
   assertProjectItemMetadataMissingReadBackNeedsReview();
   assertDeleteLayerPasses();
@@ -3072,6 +3184,7 @@ function main() {
   assertSetPuppetPinTypeMissingReadBackNeedsReview();
   assertSourceTextKeyframesPass();
   assertSourceTextKeyframeMismatchNeedsReview();
+  assertParentOpacityExpressionScenarioPasses();
 
   console.log(JSON.stringify({
     ok: true,

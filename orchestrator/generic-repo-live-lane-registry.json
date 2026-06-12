@@ -659,12 +659,14 @@
         "get_active_comp",
         "get_selected_layers",
         "get_layer_details",
+        "set_layer_parent",
         "set_expression"
       ],
       "allowedTools": [
         "get_active_comp",
         "get_selected_layers",
         "get_layer_details",
+        "set_layer_parent",
         "set_expression"
       ],
       "allowedUnsafeSignals": [
@@ -686,16 +688,25 @@
         "scripts/agent-scenario-fixtures.js",
         "scripts/agent-scenario-report-smoke.js",
         "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "mcp-server/plan-repair.js",
         "orchestrator/generic-repo-live-lane-registry.json"
       ],
       "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check mcp-server/plan-repair.js",
         "node --check scripts/agent-scenario-fixtures.js",
         "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
         "node --check scripts/cep-panel-cdp-smoke.js",
-        "node scripts/agent-scenario-report-smoke.js"
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js"
       ],
-      "reclassifiedClassification": "existing_typed_tools_recipe_only",
-      "scope": "generated-only parent-opacity expression proof using current selected-layer evidence, parent read-back, set_expression on Transform > Opacity, expression read-back, semantic verification, and cleanup; arbitrary layer parenting, unparented-layer mutation, expression deletion, broad property scans, selection persistence, and raw JSX/source semantics remain fail-closed"
+      "reclassifiedClassification": "new_typed_tool_contract",
+      "scope": "generated-only parent-opacity expression proof using typed set_layer_parent fixture setup for one generated child/parent pair, current selected-layer-style parent evidence, parent read-back, set_expression on child Transform > Opacity, expression read-back, semantic verification, and cleanup; arbitrary/bulk layer parenting, unparented-layer mutation, expression deletion, broad property scans, selection persistence, non-generated user assets, and raw JSX/source semantics remain fail-closed"
     },
     {
       "id": "stick-effect-expression-generated-only",

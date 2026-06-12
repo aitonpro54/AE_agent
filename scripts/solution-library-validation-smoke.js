@@ -133,6 +133,7 @@ const AVAILABLE_TOOLS = [
   "get_selected_layers",
   "get_selected_properties",
   "set_layer_selection",
+  "set_layer_parent",
   "set_layer_metadata",
   "set_layer_blending_mode",
   "set_property_value",

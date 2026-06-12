@@ -555,13 +555,18 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(parentOpacity.expectedReadBack.generatedParentOpacityExpression, true);
   assert.deepStrictEqual(parentOpacity.plan.steps.map((step) => step.tool), [
     "create_comp",
-    "create_camera_with_controller",
+    "create_null_layer",
+    "create_shape_layer",
+    "set_layer_parent",
     "get_layer_details",
     "set_expression",
     "get_layer_details"
   ]);
-  assert.strictEqual(parentOpacity.plan.steps[3].args.propertyPath, "ADBE Transform Group.ADBE Opacity");
-  assert.strictEqual(parentOpacity.plan.steps[3].resultBindings.layerIndex, "{{steps.2.cameraLayer.index}}");
+  assert.strictEqual(parentOpacity.plan.steps[3].args.layerIndex, 1);
+  assert.strictEqual(parentOpacity.plan.steps[3].args.parentLayerIndex, 2);
+  assert.strictEqual(parentOpacity.plan.steps[5].args.layerIndex, 1);
+  assert.strictEqual(parentOpacity.plan.steps[5].args.propertyPath, "ADBE Transform Group.ADBE Opacity");
+  assert.strictEqual(parentOpacity.plan.steps[5].resultBindings, undefined);
 
   const [stickEffect] = agentStickEffectExpressionScenarioPlans("Codex QA AUX106 Fixture");
   assert.strictEqual(stickEffect.id, "generated-stick-effect-expression");

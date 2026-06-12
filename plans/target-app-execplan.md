@@ -26,6 +26,49 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Max-scope parent-opacity expression live proof wave:
+  продолжил generated-only live proof campaign from commit `7372eaa` after
+  compact preflight found no related Full Intake writer, terminal
+  status/proof/ledger state, and expected dirty tracked scope for the prepared
+  `max-scope-parent-opacity-expression-live-proof` family. Read-only `inspect`
+  confirmed panel/bridge `Connected`, provider/model `openai-cli/gpt-5.5`, and
+  provider status `ready`; the panel-local 5h timer was treated as
+  stale/advisory per user override. The proof added the narrow typed
+  `set_layer_parent` contract, planner aliases, tool-catalog coverage, semantic
+  verification/read-back evidence, and a generated-only fixture using one
+  generated child shape at layer index `1` and one generated parent null at
+  layer index `2`. The live command
+  `full-ui-agent-parent-opacity-expression-openai-cli-smoke` passed with panel
+  plan count 1, accepted count 1, `fallbackCount=0`, expected step count 7,
+  expected mutating count 5, dry-run ok, protected run ok with checkpoint/edit
+  session `ai-plan-bfae2bff`, semantic verification passed with 4 checks,
+  5 mutation verifications, and 2 read-back summaries, and final typed
+  read-back passed. Expected typed tools covered `create_comp`,
+  `create_null_layer`, `create_shape_layer`, `set_layer_parent`,
+  `get_layer_details`, and `set_expression`. Read-back showed generated child
+  `Codex QA AUX105 80859680 Parent Opacity Child Shape` parented to generated
+  null `Codex QA AUX105 80859680 Parent Opacity Parent Null`, with child
+  opacity expression `Math.min(value, thisLayer.parent.transform.opacity.value);`
+  on property path `ADBE Transform Group.ADBE Opacity`. Cleanup removed
+  2 generated project items, final cleanup removed 0, render queue stayed 0,
+  and artifact:
+  `logs/agent-run-reports/2026-06-12T16-15-13.875Z-openai-cli-gpt-5.5-parent-opacity-expression-Codex-QA-AUX105-80859680.json`.
+  Post-run read-only audit found `projectItemLeftovers=0`,
+  `renderQueueLeftovers=0`, `activeEditSession=false`, and `toolErrors=0`;
+  `needsReview:true` is only from checkpoint/edit-session records. Validation
+  passed: touched JS `node --check`, live-lane registry JSON parse,
+  `node scripts\agent-scenario-report-smoke.js`,
+  `node scripts\semantic-verification-smoke.js`,
+  `npm.cmd run smoke:bridge`, `npm.cmd run smoke:solutions`,
+  `npm.cmd run smoke:planning`, `npm.cmd run smoke:full-intake`,
+  `npm.cmd run check:rules`, read-only `inspect`, read-only
+  `agent-scenario-audit`, compact status/proof/ledger-summary, and
+  `git diff --check` with Windows line-ending warnings only. The first parallel
+  `smoke:bridge` attempt failed during concurrent npm smoke execution, but all
+  child scripts passed individually and `smoke:bridge` passed on isolated rerun.
+  No candidate completion, broad queue, Local/Ollama, fallback provider,
+  dependency change, raw JSX product copy, user-asset mutation, render
+  execution, push, PR, GitHub automation, or launcher edit was run.
 - [x] Max-scope parametric-anchor expression live proof wave:
   продолжил generated-only live proof campaign from commit `047a66d` after
   compact preflight confirmed clean tracked status, no related Full Intake
@@ -1741,7 +1784,7 @@ reviewable commit. Start the next wave with compact preflight, fresh
 prepared lane family that has typed target selection, semantic verification,
 protected edit-session checkpoints, typed read-back, cleanup evidence, and
 explicit unsupported source-exact semantics. Useful remaining families include
-expression-adjacent parent/stick lanes, path geometry, remaining project/file/
+expression-adjacent stick lanes, path geometry, remaining project/file/
 proxy and user-file lanes, third-party semantics lanes, and any still-unproven
 `full-ui-agent-*openai-cli-smoke` commands. Do not rerun the completed
 layer/path/EG/Puppet/composition-marker/project-item-metadata/comp-current-time/
@@ -1749,11 +1792,22 @@ selected-property-value/selected-property-keyframe/text-to-keys/
 selected-keyframe-marker/remaining-tail/render-queue/comp-properties/
 reset-work-area/rename-find-replace/assorted-composition-guides/composition-guide/
 background-layer/layer-transform/project-items/composition-version/
-effect-property/expression/parametric-anchor-expression waves unless needed for
-a regression check.
+effect-property/expression/parametric-anchor-expression/parent-opacity-expression
+waves unless needed for a regression check.
 
 ## Decision Log
 
+- 2026-06-12: Parent-opacity expression live proof is valid only for one
+  generated child layer parented to one generated null layer through the narrow
+  typed `set_layer_parent` contract, guarded by explicit child/parent layer
+  indices and expected layer names, followed by `get_layer_details` parent
+  read-back and typed `set_expression` on child `ADBE Transform Group.ADBE
+  Opacity`. The proof uses protected edit-session checkpointing, dry-run
+  gating, semantic verification, cleanup, and render queue baseline/after audit.
+  It does not approve arbitrary or bulk parenting, selected-layer persistence
+  semantics, non-generated user assets, unparented-layer mutation, expression
+  deletion or merging, source-exact ScriptUI behavior, file/proxy behavior,
+  render execution, broad active-project cleanup, or raw JSX fallback.
 - 2026-06-12: Parametric-anchor expression live proof is valid only for
   generated rectangle/ellipse shape Position targets with explicit current
   layer indices and exact property paths to `ADBE Vector Rect Position` and
@@ -2635,6 +2689,7 @@ a regression check.
 
 ## Validation
 
+| Max-scope parent-opacity expression live proof wave | Required to prove generated-only child-parent opacity expression setup while preserving explicit generated comp/layer/property target selection, typed inputs/outputs, no duplicate ids, protected edit-session checkpoints, dry-run gating, before/after typed parent and expression read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact parent-opacity semantics. | Passed after adding the narrow typed `set_layer_parent` contract, semantic verifier/read-back support, planner aliases, tool-catalog coverage, and generated-only parent-opacity fixture: `full-ui-agent-parent-opacity-expression-openai-cli-smoke` passed with provider/model `openai-cli/gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 7, expected mutating count 5, dry-run ok, protected run ok with checkpoint/edit session `ai-plan-bfae2bff`, semantic verification passed with 4 checks, 5 mutation verifications, and 2 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_null_layer`, `create_shape_layer`, `set_layer_parent`, `get_layer_details`, and `set_expression`. Read-back showed generated child layer index 1 parented to generated null layer index 2 and opacity expression `Math.min(value, thisLayer.parent.transform.opacity.value);` on `ADBE Transform Group.ADBE Opacity`; cleanup removed 2 generated project items, final cleanup removed 0, render queue stayed 0, and artifact `...parent-opacity-expression-Codex-QA-AUX105-80859680.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: touched JS `node --check`, JSON parse for live-lane registry, `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`, `npm.cmd run smoke:full-intake`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and `git diff --check` with Windows line-ending warnings only. The first parallel `smoke:bridge` attempt failed during concurrent npm smoke execution; all child scripts passed individually and the isolated rerun passed. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope parametric-anchor expression live proof wave | Required to prove generated-only parametric rectangle/ellipse shape Position expression mutation after expression set/clear while preserving explicit generated comp/layer/property target selection, typed inputs/outputs, no duplicate ids, protected edit-session checkpoints, dry-run gating, before/after typed read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact parametric-anchor semantics. | Passed after repairing stale creation-time layer-index bindings in `scripts/agent-scenario-fixtures.js` and adding focused assertions in `scripts/agent-scenario-report-smoke.js`: the first `full-ui-agent-parametric-anchor-expression-openai-cli-smoke` run failed closed on `Property path segment not found at index 1`, cleanup/audit was clean, and the rerun passed with provider/model `openai-cli/gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 9, expected mutating count 5, dry-run ok, protected run ok with checkpoint/edit session `ai-plan-2e9aa7ec`, semantic verification passed with 6 checks, 5 mutation verifications, and 4 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_shape_layer`, `get_layer_details`, and `set_expression`. Read-back showed generated rectangle layer index 2 with `ADBE Vector Rect Position` and generated ellipse layer index 1 with `ADBE Vector Ellipse Position`, both using expression `var x = thisProperty.propertyGroup(1).size[0] / -2; var y = thisProperty.propertyGroup(1).size[1] / 2; [x, y];`; cleanup removed 1 generated project item, final cleanup removed 0, render queue stayed 0, and artifact `...parametric-anchor-expression-Codex-QA-AUX-MPAP-77849054.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: `node --check scripts\agent-scenario-fixtures.js`, `node --check scripts\agent-scenario-report-smoke.js`, `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and `git diff --check` with Windows line-ending warnings only. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope expression live proof wave | Required to prove generated-only expression set/clear after effect property while preserving explicit generated comp/layer/property target selection, typed inputs/outputs, no duplicate ids, protected edit-session checkpoints, dry-run gating, before/after typed read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact expression semantics. | Passed: `full-ui-agent-expression-openai-cli-smoke` passed with provider `openai-cli`, model `gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 7, expected mutating count 4, dry-run ok, protected run ok with checkpoint/edit session `ai-plan-ba3e3efc`, semantic verification passed with 4 checks, 4 mutation verifications, and 3 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_shape_layer`, `get_selected_properties`, `set_expression`, `get_layer_details`, and `clear_expression`. Read-back showed generated comp `Codex QA AUX061 77128028 Expression Comp`, generated layer `Codex QA AUX061 77128028 Expression Shape`, Position property path `ADBE Transform Group.ADBE Position`, set expression `value + [Math.sin(time * 2) * 4, 0]`, and cleared expression state. Cleanup removed 1 generated project item, final cleanup removed 0, render queue stayed 0, and artifact `...expression-Codex-QA-AUX061-77128028.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and `git diff --check` with Windows line-ending warnings only. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope effect property live proof wave | Required to prove generated-only effect property mutation after composition version while preserving explicit generated comp/layer/effect/property target selection, typed inputs/outputs, no duplicate ids, protected edit-session checkpoints, dry-run gating, before/after typed read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact effect/property semantics. | Passed after repairing the final smoke verifier to match `get_effect_details.propertyIndex` instead of nonexistent `index`: the first `full-ui-agent-effect-property-openai-cli-smoke` run failed closed only at final read-back while bridge logs showed typed `set_effect_property` correctly set generated `ADBE Fill` Color property index 3 to `[0.95,0.18,0.22,1]`; rerun passed with provider `openai-cli`, model `gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 6, expected mutating count 4, dry-run ok, protected run ok with checkpoint/edit session `ai-plan-82c7223e`, semantic verification passed with 2 checks, 4 mutation verifications, and 2 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_shape_layer`, `add_effect`, `get_effect_details`, and `set_effect_property`. Cleanup removed 1 generated project item, final cleanup removed 0, render queue stayed 0, and artifact `...effect-property-Codex-QA-AUX050-76630466.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: `node --check scripts\cep-panel-cdp-smoke.js`, `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and `git diff --check` with Windows line-ending warnings only. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |

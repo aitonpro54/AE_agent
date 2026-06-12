@@ -8,6 +8,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "create_project_folder",
   "create_test_comp",
   "create_solid_layer",
+  "create_null_layer",
   "create_text_layer",
   "create_camera_layer",
   "create_camera_with_controller",
@@ -42,6 +43,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "duplicate_layer",
   "duplicate_layers",
   "set_layer_selection",
+  "set_layer_parent",
   "delete_layer",
   "set_comp_current_time",
   "set_comp_properties",
@@ -1896,8 +1898,10 @@ function agentParametricAnchorExpressionScenarioPlans(runPrefix) {
 function agentParentOpacityExpressionScenarioPlans(runPrefix) {
   const base = `${runPrefix} Parent Opacity`;
   const compName = `${base} Comp`;
-  const cameraName = `${base} Camera`;
-  const controllerName = `${base} Controller`;
+  const childName = `${base} Child Shape`;
+  const parentName = `${base} Parent Null`;
+  const childLayerIndex = 1;
+  const parentLayerIndex = 2;
   const propertyPath = "ADBE Transform Group.ADBE Opacity";
   const expression = "Math.min(value, thisLayer.parent.transform.opacity.value);";
 
@@ -1907,7 +1911,9 @@ function agentParentOpacityExpressionScenarioPlans(runPrefix) {
       cleanupPrefix: base,
       expectedTools: [
         "create_comp",
-        "create_camera_with_controller",
+        "create_null_layer",
+        "create_shape_layer",
+        "set_layer_parent",
         "get_layer_details",
         "set_expression",
         "get_layer_details"
@@ -1915,8 +1921,10 @@ function agentParentOpacityExpressionScenarioPlans(runPrefix) {
       expectedReadBack: {
         generatedParentOpacityExpression: true,
         compName,
-        cameraName,
-        controllerName,
+        childName,
+        parentName,
+        childLayerIndex,
+        parentLayerIndex,
         propertyPath: ["ADBE Transform Group", "ADBE Opacity"],
         expression
       },
@@ -1926,10 +1934,12 @@ function agentParentOpacityExpressionScenarioPlans(runPrefix) {
         requiresCheckpoint: true,
         steps: [
           { title: "Create generated parent-opacity comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.05, 0.07, 0.09], allowDuplicateName: false, openInViewer: true, comment: "Generated-only parent opacity expression validation" } },
-          { title: "Create generated camera with parent controller", tool: "create_camera_with_controller", args: { compName, cameraName, controllerName, pointOfInterest: [320, 180, 0], cameraPosition: [0, 0, -888.8889], zoom: 650, startTime: 0, duration: 3, separateControllerPositionDimensions: true } },
-          { title: "Read generated child parent evidence", tool: "get_layer_details", args: { compName, includeProperties: false }, resultBindings: { layerIndex: "{{steps.2.cameraLayer.index}}" } },
-          { title: "Set generated parent opacity expression", tool: "set_expression", args: { compName, propertyPath, expression, enabled: true }, resultBindings: { layerIndex: "{{steps.2.cameraLayer.index}}" } },
-          { title: "Read generated parent opacity expression", tool: "get_layer_details", args: { compName, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeExpressions: true }, resultBindings: { layerIndex: "{{steps.2.cameraLayer.index}}" } }
+          { title: "Create generated parent opacity null", tool: "create_null_layer", args: { compName, name: parentName, startTime: 0, duration: 3 } },
+          { title: "Create generated child opacity shape", tool: "create_shape_layer", args: { compName, name: childName, shape: "rectangle", size: [220, 140], position: [320, 180], fillColor: [0.24, 0.62, 0.84], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Parent generated child to generated null", tool: "set_layer_parent", args: { compName, layerIndex: childLayerIndex, parentLayerIndex, expectedLayerName: childName, expectedParentName: parentName } },
+          { title: "Read generated child parent evidence", tool: "get_layer_details", args: { compName, layerIndex: childLayerIndex, includeProperties: false } },
+          { title: "Set generated parent opacity expression", tool: "set_expression", args: { compName, layerIndex: childLayerIndex, propertyPath, expression, enabled: true } },
+          { title: "Read generated parent opacity expression", tool: "get_layer_details", args: { compName, layerIndex: childLayerIndex, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeExpressions: true } }
         ]
       }
     }
