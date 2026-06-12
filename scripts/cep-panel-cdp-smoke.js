@@ -5023,7 +5023,7 @@ function findEffectProperty(properties, expected) {
   for (const item of properties || []) {
     if (expected.propertyMatchName && item.matchName === expected.propertyMatchName) return item;
     if (expected.propertyName && item.name === expected.propertyName) return item;
-    if (expected.propertyIndex && Number(item.index) === Number(expected.propertyIndex)) return item;
+    if (expected.propertyIndex && Number(item.propertyIndex || item.index) === Number(expected.propertyIndex)) return item;
     const child = findEffectProperty(item.children || [], expected);
     if (child) return child;
   }
