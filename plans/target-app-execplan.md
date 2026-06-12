@@ -26,6 +26,42 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Max-scope rename/find-replace live proof wave:
+  continued the generated-only live proof campaign from commit `146aa6a`
+  after compact preflight confirmed clean tracked status, no related Full
+  Intake processes, terminal ledger/proof state, and baton handoff for
+  `max-scope-rename-find-replace-live-proof`. Read-only `inspect` confirmed
+  live panel `Connected`, provider/model `openai-cli/gpt-5.5`, and provider
+  status `ready`; the panel-local 5h timer was treated as stale/advisory per
+  user override. The selected prepared family was explicit generated comp
+  layer rename/find-replace using typed `create_comp`, `create_solid_layer`,
+  `create_text_layer`, `get_comp_details`, and `rename_layers`, with no
+  duplicate ids, no user asset target, no render queue mutation, and no raw JSX
+  fallback.
+  `full-ui-agent-rename-find-replace-openai-cli-smoke` passed with `ok:true`,
+  provider `openai-cli`, model `gpt-5.5`, panel plan count 1, accepted count
+  1, `fallbackCount=0`, dry-run ok, protected run ok, checkpoint/edit session
+  `ai-plan-f11a20d5`, semantic verification passed with 5 checks and 2
+  read-back summaries, and final typed `get_comp_details` read-back passed.
+  The final read-back proved generated comp
+  `Codex QA AUX032 72517585 Rename Find Replace Comp` had two generated layers
+  renamed from `Alpha` to `Beta` by `rename_layers` find/replace mode.
+  Cleanup removed 2 generated project items, final cleanup removed 0, render
+  queue stayed 0, and artifact:
+  `logs/agent-run-reports/2026-06-12T13-56-01.997Z-openai-cli-gpt-5.5-rename-find-replace-Codex-QA-AUX032-72517585.json`.
+  Post-run read-only audit found `projectItemLeftovers=0`,
+  `renderQueueLeftovers=0`, `activeEditSession=false`, and `toolErrors=0`;
+  `needsReview:true` is only from checkpoint/edit-session records. Validation
+  passed: `node scripts\agent-scenario-report-smoke.js`,
+  `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`,
+  `npm.cmd run check:rules`, read-only `inspect`, read-only
+  `agent-scenario-audit`, compact status/proof/ledger-summary, and final
+  `git diff --check`. No candidate completion, broad queue, Local/Ollama,
+  fallback provider, dependency change, raw JSX product copy, user-asset
+  mutation, render execution, push, PR, GitHub automation, or launcher edit was
+  run. This proof does not approve source-exact broad active-comp renaming,
+  project-item file-name semantics, user comp/layer mutation, regex-like
+  source-specific behavior beyond explicit `findReplace`, or raw JSX fallback.
 - [x] Max-scope reset-work-area live proof wave:
   continued the generated-only live proof campaign from commit `6a887cd`
   after compact preflight confirmed clean tracked status, no related Full
