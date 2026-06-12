@@ -26,6 +26,40 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Max-scope layer transform live proof wave:
+  continued the generated-only live proof campaign from commit `1b31792`
+  after compact preflight confirmed clean tracked status, no related Full
+  Intake processes, terminal ledger/proof state, and baton handoff for
+  `max-scope-layer-transform-live-proof`. Read-only `inspect` confirmed live
+  panel `Connected`, provider/model `openai-cli/gpt-5.5`, and provider status
+  `ready`; the panel-local 5h timer was treated as stale/advisory per user
+  override. The selected prepared family was an explicit generated comp/layer
+  transform fixture using typed `create_comp`, `create_shape_layer`,
+  `fit_layer_to_comp`, `set_layer_transform`, and `get_layer_details`, with no
+  duplicate ids, no user asset target, no render queue mutation, and no raw JSX
+  fallback. `full-ui-agent-layer-transform-openai-cli-smoke` passed with
+  `ok:true`, provider `openai-cli`, model `gpt-5.5`, panel plan count 1,
+  accepted count 1, `fallbackCount=0`, expected step count 5, expected
+  mutating count 4, dry-run ok, protected run ok, checkpoint/edit session
+  `ai-plan-01ea5a13`, semantic verification passed with 3 checks and 1
+  read-back summary, and final typed read-back passed. The final read-back
+  proved generated layer `Codex QA AUX050 75023511 Layer Transform Shape` at
+  index 1 with position `[320,180,0]` and opacity `64`. Cleanup removed 1
+  generated project item, final cleanup removed 0, render queue stayed 0, and
+  artifact:
+  `logs/agent-run-reports/2026-06-12T14-37-43.014Z-openai-cli-gpt-5.5-layer-transform-Codex-QA-AUX050-75023511.json`.
+  Post-run read-only audit found `projectItemLeftovers=0`,
+  `renderQueueLeftovers=0`, `activeEditSession=false`, and `toolErrors=0`;
+  `needsReview:true` is only from checkpoint/edit-session records. Validation
+  passed: `node scripts\agent-scenario-report-smoke.js`,
+  `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`,
+  `npm.cmd run check:rules`, read-only `inspect`, read-only
+  `agent-scenario-audit`, compact status/proof/ledger-summary, and
+  `git diff --check` with Windows line-ending warnings only. No touched
+  JavaScript files required `node --check`. No candidate completion, broad
+  queue, Local/Ollama, fallback provider, dependency change, raw JSX product
+  copy, user-asset mutation, render execution, push, PR, GitHub automation, or
+  launcher edit was run.
 - [x] Max-scope layer timing live proof wave:
   continued the generated-only live proof campaign from commit `f8d9ab1`
   after compact preflight confirmed clean tracked status, no related Full
@@ -1541,6 +1575,15 @@ background-layer waves unless needed for a regression check.
 
 ## Decision Log
 
+- 2026-06-12: Layer transform live proof is valid only for an explicit
+  generated comp target with one generated shape layer, typed
+  `fit_layer_to_comp`, typed `set_layer_transform`, final
+  `get_layer_details` read-back, protected edit-session checkpointing, dry-run
+  gating, semantic verification, cleanup, and render queue baseline/after
+  audit. It does not approve source-exact transform/fit behavior,
+  selection-dependent transforms, parent/3D/keyframe transform changes, user
+  comp mutation, broad active-comp traversal, file/render/proxy behavior, or
+  raw JSX fallback.
 - 2026-06-12: Layer timing live proof is valid only for an explicit generated
   comp target with generated solid layers, typed `set_layer_time_range`,
   typed `stagger_layers`, final `get_comp_details`/`get_layer_details`
@@ -2359,6 +2402,7 @@ background-layer waves unless needed for a regression check.
 
 ## Validation
 
+| Max-scope layer transform live proof wave | Required to prove generated-only layer transform and fit setup after layer timing while preserving explicit generated comp/layer target selection, typed inputs/outputs, no duplicate ids, protected edit-session checkpoints, dry-run gating, before/after typed read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact transform semantics. | Passed: `full-ui-agent-layer-transform-openai-cli-smoke` passed with `ok:true`, provider `openai-cli`, model `gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 5, expected mutating count 4, dry-run ok, protected run ok, checkpoint/edit session `ai-plan-01ea5a13`, semantic verification passed with 3 checks and 1 read-back summary, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_shape_layer`, `fit_layer_to_comp`, `set_layer_transform`, and `get_layer_details`. Read-back showed generated layer `Codex QA AUX050 75023511 Layer Transform Shape` at index 1 with position `[320,180,0]` and opacity `64`; cleanup removed 1 generated project item, final cleanup removed 0, render queue stayed 0, and artifact `...layer-transform-Codex-QA-AUX050-75023511.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and `git diff --check` with Windows line-ending warnings only. No touched JavaScript files required `node --check`. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope layer timing live proof wave | Required to prove generated-only layer timing setup after background layer while preserving explicit generated comp/layer target selection, typed inputs/outputs, no duplicate ids, protected edit-session checkpoints, dry-run gating, before/after typed read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact/random/below-layer semantics. | Passed after correcting the fixture expected read-back to match the actual typed `stagger_layers` contract: the first run failed closed on `Layer A` timing mismatch, cleanup/audit was clean, then `full-ui-agent-layer-timing-openai-cli-smoke` passed with `ok:true`, provider `openai-cli`, model `gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 8, expected mutating count 5, dry-run ok, protected run ok, checkpoint/edit session `ai-plan-b31c92a9`, semantic verification passed with 6 checks and 3 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_solid_layer`, `set_layer_time_range`, `stagger_layers`, `get_comp_details`, and `get_layer_details`. Read-back showed generated comp `Codex QA AUX050 74609703 Layer Timing Comp` with Layer B at index 1, `startTime=0`, `inPoint=0.5`, `outPoint=3`, and Layer A at index 2, `startTime=2.75`, `inPoint=3.25`, `outPoint=5.75`; cleanup removed 3 generated project items, final cleanup removed 0, render queue stayed 0, and artifact `...layer-timing-Codex-QA-AUX050-74609703.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0. Validation passed: touched JS `node --check`, `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and `git diff --check` with Windows line-ending warnings only. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope background layer live proof wave | Required to prove generated-only full-comp background layer setup after composition guide while preserving explicit generated comp target selection, typed inputs/outputs, no duplicate ids, protected edit-session checkpoints, dry-run gating, before/after typed read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact semantics. | Passed: `full-ui-agent-background-layer-openai-cli-smoke` passed with `ok:true`, provider `openai-cli`, model `gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 6, expected mutating count 4, dry-run ok, protected run ok, checkpoint/edit session `ai-plan-1a48b116`, semantic verification passed with 4 checks and 2 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_shape_layer`, `add_effect`, `get_comp_details`, and `get_layer_details`. Read-back showed generated comp `Codex QA AUX041 73943814 Background Layer Comp` at 640x360 with generated background layer `Codex QA AUX041 73943814 Background Layer Background` at index 2 and position `[320,180,0]`, generated foreground proof layer at index 1, and generated background fill effect `Codex QA AUX041 73943814 Background Layer Fill Effect` with match name `ADBE Fill`; cleanup removed 1 generated project item, final cleanup removed 0, render queue stayed 0, and artifact `...background-layer-Codex-QA-AUX041-73943814.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and final `git diff --check`. No touched JavaScript files required `node --check`. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope composition guide live proof wave | Required to prove generated-only single composition guide overlay setup after assorted composition guides while preserving explicit generated comp target selection, typed inputs/outputs, no duplicate ids, protected edit-session checkpoints, dry-run gating, before/after typed read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact semantics. | Passed: `full-ui-agent-composition-guide-openai-cli-smoke` passed with `ok:true`, provider `openai-cli`, model `gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 4, expected mutating count 2, dry-run ok, protected run ok, semantic verification passed with 2 checks and 2 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_shape_layer`, `get_comp_details`, and `get_layer_details`. Read-back showed generated comp `Codex QA AUX043 73464946 Composition Guide Comp` at 1280x720 with one generated guide overlay layer positioned at `[640,360,0]`, requested size `[1260,720]`, stroke color `[1,0,1]`, and stroke width `20`; cleanup removed 1 generated project item, final cleanup removed 0, render queue stayed 0, and artifact `...composition-guide-Codex-QA-AUX043-73464946.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only `inspect`, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, and final `git diff --check`. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
