@@ -4894,6 +4894,40 @@ async function verifyGeneratedProjectItemsReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedProjectItemMetadataReadBack(scenario, expected) {
+  const itemNames = Array.isArray(expected.itemNames) ? expected.itemNames : [];
+  if (!itemNames.length) {
+    throw new Error(`${scenario.id}: expected generated project item names were not configured.`);
+  }
+  const items = [];
+  for (const itemName of itemNames) {
+    const found = await callBridgeTool("find_project_items", {
+      query: itemName,
+      type: "comp",
+      exactName: true,
+      caseSensitive: true,
+      limit: 5
+    });
+    const match = found.matches && found.matches[0];
+    if (!match || !match.itemIndex) {
+      throw new Error(`${scenario.id}: generated project item ${itemName} was not found by exact-name read-back.`);
+    }
+    if (!numbersMatch(Number(expected.label), Number(match.label), 0)) {
+      throw new Error(`${scenario.id}: generated project item ${itemName} label read-back mismatch; expected ${expected.label}, got ${match.label}.`);
+    }
+    items.push({
+      itemIndex: match.itemIndex,
+      name: match.name,
+      type: match.type || null,
+      label: match.label
+    });
+  }
+  return {
+    ok: true,
+    items
+  };
+}
+
 async function verifyGeneratedCompositionVersionReadBack(scenario, expected) {
   const found = await callBridgeTool("find_project_items", {
     query: expected.base,
@@ -6646,6 +6680,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedProjectItems) {
     return verifyGeneratedProjectItemsReadBack(scenario, expected);
+  }
+
+  if (expected.generatedProjectItemMetadata) {
+    return verifyGeneratedProjectItemMetadataReadBack(scenario, expected);
   }
 
   if (expected.generatedCompositionVersionToken) {
