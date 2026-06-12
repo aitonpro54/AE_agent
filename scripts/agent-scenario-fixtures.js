@@ -1811,6 +1811,9 @@ function agentParametricAnchorExpressionScenarioPlans(runPrefix) {
   const compName = `${base} Comp`;
   const rectangleLayerName = `${base} Rectangle`;
   const ellipseLayerName = `${base} Ellipse`;
+  // AE inserts each new shape layer at the top of the stack.
+  const rectangleLayerIndex = 2;
+  const ellipseLayerIndex = 1;
   const rectanglePositionPath = [
     "ADBE Root Vectors Group",
     "Rectangle",
@@ -1873,12 +1876,12 @@ function agentParametricAnchorExpressionScenarioPlans(runPrefix) {
           { title: "Create generated parametric anchor comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.07, 0.07, 0.09], allowDuplicateName: false, openInViewer: true, comment: "generated-only parametric anchor expression validation" } },
           { title: "Create generated rectangle target", tool: "create_shape_layer", args: { compName, name: rectangleLayerName, shape: "rectangle", size: [240, 120], position: [240, 180], fillColor: [0.2, 0.56, 0.82], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
           { title: "Create generated ellipse target", tool: "create_shape_layer", args: { compName, name: ellipseLayerName, shape: "ellipse", size: [160, 120], position: [420, 180], fillColor: [0.82, 0.46, 0.2], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
-          { title: "Read generated rectangle position evidence", tool: "get_layer_details", args: { compName, includeProperties: true, propertyDepth: 4, propertyLimit: 160, includeValues: true, includeExpressions: true }, resultBindings: { layerIndex: "{{steps.2.layer.index}}" } },
-          { title: "Read generated ellipse position evidence", tool: "get_layer_details", args: { compName, includeProperties: true, propertyDepth: 4, propertyLimit: 160, includeValues: true, includeExpressions: true }, resultBindings: { layerIndex: "{{steps.3.layer.index}}" } },
-          { title: "Set generated rectangle anchor expression", tool: "set_expression", args: { compName, propertyPath: rectanglePositionPath, expression, enabled: true }, resultBindings: { layerIndex: "{{steps.2.layer.index}}" } },
-          { title: "Set generated ellipse anchor expression", tool: "set_expression", args: { compName, propertyPath: ellipsePositionPath, expression, enabled: true }, resultBindings: { layerIndex: "{{steps.3.layer.index}}" } },
-          { title: "Read generated rectangle anchor expression", tool: "get_layer_details", args: { compName, includeProperties: true, propertyDepth: 4, propertyLimit: 160, includeValues: true, includeExpressions: true }, resultBindings: { layerIndex: "{{steps.2.layer.index}}" } },
-          { title: "Read generated ellipse anchor expression", tool: "get_layer_details", args: { compName, includeProperties: true, propertyDepth: 4, propertyLimit: 160, includeValues: true, includeExpressions: true }, resultBindings: { layerIndex: "{{steps.3.layer.index}}" } }
+          { title: "Read generated rectangle position evidence", tool: "get_layer_details", args: { compName, layerIndex: rectangleLayerIndex, includeProperties: true, propertyDepth: 4, propertyLimit: 160, includeValues: true, includeExpressions: true } },
+          { title: "Read generated ellipse position evidence", tool: "get_layer_details", args: { compName, layerIndex: ellipseLayerIndex, includeProperties: true, propertyDepth: 4, propertyLimit: 160, includeValues: true, includeExpressions: true } },
+          { title: "Set generated rectangle anchor expression", tool: "set_expression", args: { compName, layerIndex: rectangleLayerIndex, propertyPath: rectanglePositionPath, expression, enabled: true } },
+          { title: "Set generated ellipse anchor expression", tool: "set_expression", args: { compName, layerIndex: ellipseLayerIndex, propertyPath: ellipsePositionPath, expression, enabled: true } },
+          { title: "Read generated rectangle anchor expression", tool: "get_layer_details", args: { compName, layerIndex: rectangleLayerIndex, includeProperties: true, propertyDepth: 4, propertyLimit: 160, includeValues: true, includeExpressions: true } },
+          { title: "Read generated ellipse anchor expression", tool: "get_layer_details", args: { compName, layerIndex: ellipseLayerIndex, includeProperties: true, propertyDepth: 4, propertyLimit: 160, includeValues: true, includeExpressions: true } }
         ]
       }
     }

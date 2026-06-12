@@ -541,6 +541,13 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   ]);
   assert.strictEqual(parametricAnchor.plan.steps[5].args.propertyPath[4], "ADBE Vector Rect Position");
   assert.strictEqual(parametricAnchor.plan.steps[6].args.propertyPath[4], "ADBE Vector Ellipse Position");
+  assert.strictEqual(parametricAnchor.plan.steps[3].args.layerIndex, 2);
+  assert.strictEqual(parametricAnchor.plan.steps[4].args.layerIndex, 1);
+  assert.strictEqual(parametricAnchor.plan.steps[5].args.layerIndex, 2);
+  assert.strictEqual(parametricAnchor.plan.steps[6].args.layerIndex, 1);
+  assert.strictEqual(parametricAnchor.plan.steps[7].args.layerIndex, 2);
+  assert.strictEqual(parametricAnchor.plan.steps[8].args.layerIndex, 1);
+  assert.strictEqual(parametricAnchor.plan.steps[5].resultBindings, undefined);
   assert(parametricAnchor.plan.steps[5].args.expression.includes("thisProperty.propertyGroup(1).size[0] / -2"));
 
   const [parentOpacity] = agentParentOpacityExpressionScenarioPlans("Codex QA AUX105 Fixture");
