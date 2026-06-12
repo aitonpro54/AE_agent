@@ -26,6 +26,49 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Max-scope Essential Graphics / Puppet live proof wave:
+  resumed dirty tracked work from commit `975b067` after confirming no separate
+  stale writer was changing files and the dirty scope was limited to
+  `scripts/cep-panel-cdp-smoke.js` plus this plan. The interrupted run had
+  already found and fixed two harness gaps: Essential Graphics scenarios now
+  dispatch to an explicit `generatedEssentialGraphicsController` verifier with
+  object-aware property-path comparison, and Puppet effect-property read-back is
+  recursive with deeper property limits plus AE checkbox `1/0` handling only
+  after the explicit expected property is matched. On resume, the first
+  read-only `inspect` found the live CDP endpoint closed at `127.0.0.1:8870`;
+  After Effects was running but the AE Agent panel was not open. A temporary
+  ignored `.codex-runtime/ae-open-ae-agent-panel.jsx` helper executed the
+  installed `AE Agent 2.0.0` menu command, after which `inspect` reached the
+  panel, bridge state was `Connected`, and `openai-cli/gpt-5.5` was ready.
+  Fresh `full-ui-agent-essential-graphics-openai-cli-smoke` passed with panel
+  plan accepted, `fallbackCount=0`, dry-run ok, protected edit-session
+  checkpoint, semantic verification 3/3, typed read-back proving controller
+  count 1, controller name, source layer, and `ADBE Opacity`, cleanup removed 1
+  generated comp, and render queue remained 0. Artifact:
+  `logs/agent-run-reports/2026-06-12T11-08-27.460Z-openai-cli-gpt-5.5-essential-graphics-Codex-QA-AUX-EG-62458737.json`.
+  Fresh `full-ui-agent-puppet-on-transparent-openai-cli-smoke` passed with
+  panel plan accepted, `fallbackCount=0`, dry-run ok, protected run, semantic
+  verification passed, recursive typed effect-property read-back for
+  `ADBE FreePin3 On Transparent`, cleanup removed 1 generated comp, and render
+  queue remained 0. Artifact:
+  `logs/agent-run-reports/2026-06-12T11-09-30.146Z-openai-cli-gpt-5.5-puppet-on-transparent-Codex-QA-AUX-PUPPET-62516412.json`.
+  Fresh `full-ui-agent-puppet-pin-type-openai-cli-smoke` failed closed inside
+  the protected run because the generated Puppet effect did not expose/resolve
+  the required `ADBE FreePin3 PosPin Atom` / `ADBE FreePin3 PosPin Type` path.
+  The edit session ended `needs-review` with checkpoint
+  `backups/empty_test_comp-checkpoint-session-ai-plan-a73c4524-2026-06-12T11-10-26-214Z.aep`.
+  Read-only audit for prefix `Codex QA AUX-PUPPET-PIN 62581511 Puppet Pin Type`
+  found `projectItemLeftovers=0`, `renderQueueLeftovers=0`, and no active edit
+  session; the generated comp had been removed by the scoped cleanup session.
+  This records the lane blocker as missing generated pin atom evidence, not as
+  candidate completion. Validation passed: `node --check
+  scripts\cep-panel-cdp-smoke.js`, `node scripts\agent-scenario-report-smoke.js`,
+  `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`,
+  `npm.cmd run check:rules`, focused `inspect`/`openai-cli-smoke`/EG/Puppet live
+  commands, compact status/proof/ledger-summary, and `git diff --check` with
+  Windows line-ending warnings only. No push, PR, GitHub automation, launcher
+  edit, dependency change, Local/Ollama substitution, fallback provider, raw JSX
+  product copy, broad queue processing, or user-asset mutation was run.
 - [x] Max-scope shape/path geometry live proof wave:
   продолжена generated-only proof campaign после compact preflight и свежей
   проверки `inspect`/`openai-cli-smoke`. Foundational
@@ -942,6 +985,24 @@ broader path/export/render/Essential Graphics/third-party families.
 
 ## Decision Log
 
+- 2026-06-12: Essential Graphics live proof required an explicit harness
+  verifier for `generatedEssentialGraphicsController`; falling through to the
+  legacy camera/folder verifier is not acceptable proof. The verifier now checks
+  exact generated comp/layer, controller name/count, and source property
+  read-back.
+- 2026-06-12: Puppet On Transparent live proof required recursive effect
+  property read-back because AE nests Puppet properties below the top-level
+  FreePin effect. Boolean effect expectations may read back as AE checkbox
+  `1/0`; this is accepted only after matching the explicit requested property.
+- 2026-06-12: Puppet Pin Type remains fail-closed when a generated FreePin
+  effect does not expose an `ADBE FreePin3 PosPin Atom` and
+  `ADBE FreePin3 PosPin Type` path. Do not synthesize raw pin creation or relax
+  the typed contract without a separate reviewed generated pin fixture.
+- 2026-06-12: During dirty-state resume, an absent live CDP endpoint at
+  `127.0.0.1:8870` was treated as a live infrastructure gap, not as proof
+  failure. The installed AE panel was opened through the AE menu command using
+  an ignored `.codex-runtime` helper, then proof continued only through the
+  normal CEP panel acceptance path.
 - 2026-06-12: During the max-scope shape/path proof wave, missing immediate
   read-back after generated mask creation was treated as a proof-fixture gap,
   not as grounds to weaken semantic verification. Flip/export path fixtures now
@@ -1622,6 +1683,7 @@ broader path/export/render/Essential Graphics/third-party families.
 
 ## Validation
 
+| Max-scope Essential Graphics / Puppet live proof wave | Required to prove the next generated-only Essential Graphics and Puppet property families after path proof, while keeping missing Puppet pin atom evidence fail-closed. | Passed/blocked: dirty-state preflight, initial `inspect` failed on closed CDP port `8870`, ignored helper opened installed AE Agent panel, fresh `inspect` and `openai-cli-smoke` passed, repaired Essential Graphics harness verifier, `full-ui-agent-essential-graphics-openai-cli-smoke` passed with typed controller/source-property read-back, repaired recursive Puppet effect-property read-back, `full-ui-agent-puppet-on-transparent-openai-cli-smoke` passed with typed `ADBE FreePin3 On Transparent` read-back, `full-ui-agent-puppet-pin-type-openai-cli-smoke` failed closed on unresolved generated `ADBE FreePin3 PosPin Atom` / `ADBE FreePin3 PosPin Type`, read-only cleanup audit found no failed-prefix project items, render queue 0, and no active edit session; `node --check scripts\cep-panel-cdp-smoke.js`, `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, compact status/proof/ledger-summary, and `git diff --check` passed with Windows line-ending warnings only. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope shape/path geometry live proof wave | Required to prove the next generated-only shape/mask path family after layer-state proof, including keyframed path geometry, horizontal flip semantics, and safe generated file export. | Passed: compact preflight, clean baton restore, `inspect`, `openai-cli-smoke`, `full-ui-agent-path-geometry-openai-cli-smoke`, repaired fixture read-back gap, `full-ui-agent-flip-path-openai-cli-smoke`, repaired `export_path_points` planning catalog and Windows Codex CLI discovery, `full-ui-agent-export-path-points-openai-cli-smoke`, touched JS `node --check`, `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `node scripts\solution-library-validation-smoke.js`, `npm.cmd run smoke:provider-contract`, `npm.cmd run smoke:provider-api`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only post-wave `inspect`, and `git diff --check` with Windows line-ending warnings only. Live proof artifacts: `...path-geometry-Codex-QA-AUX-PATH-52214682.json`, `...flip-path-Codex-QA-AUX-FLIP-52508990.json`, and `...export-path-points-Codex-QA-AUX-EXPORT-52859654.json`. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX copy, user-asset mutation, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope OpenAI CLI readiness repair | Required before any generated-only mutating live proof wave because stale bridge CLI detection selected a broken local `codex.exe` and the old CEP smoke could false-pass on a transcript containing only the user prompt. | Passed/externally blocked: compact preflight read active docs and compact status/proof/ledger-summary; `codex.cmd login status` returned `Logged in using ChatGPT`; direct bridge readiness initially failed on `C:\Users\Ant\AppData\Local\OpenAI\Codex\bin\codex.exe` due `~\.codex\config.toml` `service_tier = default`; parent repaired the bridge to support Windows `codex.cmd`/`.bat` shims and to prefer `codex.cmd`; direct `codex exec` proved `gpt-5.5`, `gpt-5.4`, and `gpt-5.4-mini` can answer while `gpt-5` is rejected for the ChatGPT-backed account; bridge readiness then passed for `openai-cli/gpt-5.5`. Validation passed: touched JS `node --check`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run check:rules`; `git diff --check` with line-ending warnings only; read-only CEP `inspect`; `connector-status-smoke`; and `openai-cli-setup-smoke`. `node scripts/cep-panel-cdp-smoke.js openai-cli-smoke` now fails correctly with external usage-limit evidence: Codex usage is exhausted and the CLI suggests retry after June 11, 2026 at 12:38 PM. No generated-only mutating CEP/AE proof, candidate completion, broad queue, Local/Ollama proof adaptation, fallback-provider proof, push, PR, GitHub automation, launcher edit, or user-asset mutation was run. |
 | Reopened screen-task final completion audit | Required to close the reopened family audit without broad queue processing or live mutation. | Passed/human-gated: compact preflight read active docs, `git status --short`, compact status/proof/ledger-summary, `.codex/handoff.md`, and `.codex/active-thread.json`; targeted plan/handoff evidence search covered CEP/panel readiness, shape/mask path geometry, Puppet pin type, Essential Graphics/Essential Properties, project/file/render/proxy/user-file policy, composition marker read/add/copy/work-area contracts, and third-party semantics policy. Compact status is `completed_no_candidates`; compact proof is `completed_no_candidates` with changedPathCount 0 and unplannedPathCount 0; ledger summary is entries=75, completed=17, blocked/skipped=58, queued=0, failed=0, terminal total=75. No scoped retry, broad queue processing, generated-only mutating live CEP/AE proof, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, user-asset mutation, push, PR, or launcher/autoloop edit was run. Closeout validation passed: JSON parse for `.codex/active-thread.json`, `npm.cmd run check:rules`, and `git diff --check` with Windows line-ending warnings only. |

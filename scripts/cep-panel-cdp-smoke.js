@@ -4976,19 +4976,28 @@ function effectPropertyMatchesExpected(property, expected) {
   }
   if (Object.prototype.hasOwnProperty.call(expected, "value")) {
     const actualValue = effectPropertyValuePreview(property.value);
-    if (typeof expected.value === "boolean") return actualValue === expected.value;
+    if (typeof expected.value === "boolean") {
+      return actualValue === expected.value || Boolean(Number(actualValue)) === expected.value;
+    }
     if (typeof expected.value === "number") return numbersMatch(expected.value, actualValue, 0.001);
     return String(actualValue) === String(expected.value);
   }
   return false;
 }
 
+function findEffectProperty(properties, expected) {
+  for (const item of properties || []) {
+    if (expected.propertyMatchName && item.matchName === expected.propertyMatchName) return item;
+    if (expected.propertyName && item.name === expected.propertyName) return item;
+    if (expected.propertyIndex && Number(item.index) === Number(expected.propertyIndex)) return item;
+    const child = findEffectProperty(item.children || [], expected);
+    if (child) return child;
+  }
+  return null;
+}
+
 function effectPropertyValueMatches(properties, expected) {
-  const property = (properties || []).find((item) => {
-    if (expected.propertyMatchName && item.matchName === expected.propertyMatchName) return true;
-    if (expected.propertyName && item.name === expected.propertyName) return true;
-    return expected.propertyIndex && Number(item.index) === Number(expected.propertyIndex);
-  });
+  const property = findEffectProperty(properties, expected);
   if (!property) return false;
   return effectPropertyMatchesExpected(property, expected);
 }
@@ -5000,8 +5009,10 @@ async function verifyGeneratedEffectPropertyReadBack(scenario, expected) {
     layerIndex: 1,
     effectName: expected.effectName,
     includeProperties: true,
-    propertyDepth: 1,
-    propertyLimit: 20
+    propertyDepth: 5,
+    propertyLimit: 160,
+    includeValues: true,
+    includeExpressions: true
   });
   if (!details || !details.effect) {
     throw new Error(`${scenario.id}: generated effect ${expected.effectName} was not found by read-back.`);
@@ -5028,6 +5039,12 @@ function propertyPathMatches(actualPath, expectedPath) {
   const tail = actualPath.slice(actualPath.length - expectedPath.length);
   return expectedPath.every((expectedSegment, index) => {
     const segment = tail[index] || {};
+    if (expectedSegment && typeof expectedSegment === "object") {
+      const expectedMatchName = expectedSegment.matchName || "";
+      const expectedName = expectedSegment.name || "";
+      return Boolean(expectedMatchName && segment.matchName === expectedMatchName) ||
+        Boolean(expectedName && segment.name === expectedName);
+    }
     return segment.matchName === expectedSegment || segment.name === expectedSegment;
   });
 }
@@ -5499,6 +5516,71 @@ async function readGeneratedLayerProperty(scenario, expected, options = {}) {
     throw new Error(`${scenario.id}: generated property ${expected.propertyPath.join(".")} was not found by read-back.`);
   }
   return { comp: compMatch, layer: details.layer || listedLayer, property, details };
+}
+
+async function verifyGeneratedEssentialGraphicsControllerReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const listedLayer = layers.find((layer) => layer.name === expected.layerName);
+  if (!listedLayer || !listedLayer.index) {
+    throw new Error(`${scenario.id}: generated Essential Graphics layer ${expected.layerName} was not found by read-back.`);
+  }
+
+  const controllers = await callBridgeTool("get_essential_graphics_controllers", {
+    compItemIndex: compMatch.itemIndex
+  });
+  const controllerItems = Array.isArray(controllers.controllers) ? controllers.controllers : [];
+  const controller = controllerItems.find((item) => item.name === expected.controllerName);
+  if (!controller) {
+    throw new Error(`${scenario.id}: generated Essential Graphics controller ${expected.controllerName} was not found by read-back.`);
+  }
+
+  const details = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: listedLayer.index,
+    includeProperties: true,
+    propertyDepth: 2,
+    propertyLimit: 80,
+    includeValues: true,
+    includeExpressions: true
+  });
+  const layer = details && details.layer ? details.layer : {};
+  if (layer.name !== expected.layerName) {
+    throw new Error(`${scenario.id}: generated Essential Graphics layer mismatch; expected ${expected.layerName}, got ${layer.name || "missing"}.`);
+  }
+  const property = findPropertyInTree(details.propertyTree || [], [
+    "ADBE Transform Group",
+    expected.propertyMatchName
+  ]);
+  if (!property || property.matchName !== expected.propertyMatchName) {
+    throw new Error(`${scenario.id}: generated Essential Graphics source property ${expected.propertyMatchName} was not found by read-back.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: compMatch.itemIndex,
+      name: compMatch.name,
+      controllerCount: controllers.controllerCount
+    },
+    layer: {
+      index: layer.index,
+      name: layer.name
+    },
+    controller: {
+      index: controller.index,
+      name: controller.name
+    },
+    property: {
+      matchName: property.matchName,
+      name: property.name
+    }
+  };
 }
 
 async function verifyGeneratedCameraControllerReadBack(scenario, expected) {
@@ -6468,6 +6550,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedCameraController) {
     return verifyGeneratedCameraControllerReadBack(scenario, expected);
+  }
+
+  if (expected.generatedEssentialGraphicsController) {
+    return verifyGeneratedEssentialGraphicsControllerReadBack(scenario, expected);
   }
 
   if (expected.generatedParentOpacityExpression) {
