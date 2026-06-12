@@ -26,6 +26,41 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Max-scope shape/path geometry live proof wave:
+  продолжена generated-only proof campaign после compact preflight и свежей
+  проверки `inspect`/`openai-cli-smoke`. Foundational
+  `full-ui-agent-path-geometry-openai-cli-smoke` passed with panel plan
+  accepted, `fallbackCount=0`, dry-run ok, protected edit-session/checkpoint,
+  semantic verification 5/5, keyframed mask geometry read-back, cleanup of 2
+  generated items, and render queue 0. Artifact:
+  `logs/agent-run-reports/2026-06-12T08-17-37.149Z-openai-cli-gpt-5.5-path-geometry-Codex-QA-AUX-PATH-52214682.json`.
+  First `full-ui-agent-flip-path-openai-cli-smoke` attempt executed safely but
+  semantic verification needed review because the fixture did not read back the
+  generated mask immediately after `set_layer_mask`; added explicit
+  `get_layer_details` evidence after mask creation for both flip/export path
+  fixtures. Rerun `full-ui-agent-flip-path-openai-cli-smoke` passed with
+  semantic verification 6/6, read-back before and after the horizontal flip,
+  cleanup of 2 generated items, and render queue 0. Artifact:
+  `logs/agent-run-reports/2026-06-12T08-22-59.829Z-openai-cli-gpt-5.5-flip-path-Codex-QA-AUX-FLIP-52508990.json`.
+  First `full-ui-agent-export-path-points-openai-cli-smoke` attempt found a
+  real Agent catalog gap: `export_path_points` existed as a typed tool but was
+  missing from `PLANNING_TOOL_NAMES`. Added it to the planning catalog and made
+  Windows Codex CLI discovery resilient to daemon PATH loss by probing
+  `%APPDATA%\npm\codex.cmd` before the stale local Codex exe. Rerun passed with
+  semantic verification 8/8, safe generated txt output sha256/content
+  read-back, generated export deletion, cleanup of 2 generated items, and
+  render queue 0. Artifact:
+  `logs/agent-run-reports/2026-06-12T08-29-46.060Z-openai-cli-gpt-5.5-export-path-points-Codex-QA-AUX-EXPORT-52859654.json`.
+  Validation passed: touched-file `node --check`, `node
+  scripts\agent-scenario-report-smoke.js`, `node
+  scripts\semantic-verification-smoke.js`, `node
+  scripts\solution-library-validation-smoke.js`, `npm.cmd run
+  smoke:provider-contract`, `npm.cmd run smoke:provider-api`, `npm.cmd run
+  smoke:bridge`, `npm.cmd run check:rules`, `git diff --check` with Windows
+  line-ending warnings only, read-only `inspect`, `openai-cli-smoke`, and the
+  three live proof commands. No push, PR, GitHub automation, launcher edit,
+  dependency change, Local/Ollama substitution, fallback provider, raw JSX
+  copy, broad queue processing, or user-asset mutation was run.
 - [x] Max-scope layer enabled/blend-mode live proof wave:
   after the first layer-metadata live proof, the next low-risk generated-only
   wave covered prepared layer state lanes with shared OpenAI CLI/panel setup.
@@ -907,6 +942,20 @@ broader path/export/render/Essential Graphics/third-party families.
 
 ## Decision Log
 
+- 2026-06-12: During the max-scope shape/path proof wave, missing immediate
+  read-back after generated mask creation was treated as a proof-fixture gap,
+  not as grounds to weaken semantic verification. Flip/export path fixtures now
+  read `get_layer_details` after `set_layer_mask`, then use path-specific
+  read-back before and after `set_path_geometry` or `export_path_points`.
+- 2026-06-12: `export_path_points` is now exposed to Agent planning only as the
+  existing generated-output typed tool with safe filename/root policy,
+  sha256/content read-back, post-export path read-back, and generated cleanup.
+  It does not approve Desktop writes, arbitrary user paths, selected-property
+  traversal, expression-driven/truncated paths, or raw JSX semantics.
+- 2026-06-12: Windows daemon-side Codex CLI discovery must not rely solely on
+  PATH. When no explicit `CODEX_CLI_PATH` is set, the bridge now tries the
+  roaming npm shim `%APPDATA%\npm\codex.cmd` before the stale local
+  `%LOCALAPPDATA%\OpenAI\Codex\bin\codex.exe`, preserving explicit overrides.
 - 2026-06-08: Max-scope approval was treated as sufficient to attempt live
   readiness repair, but not as permission to accept a weak provider proof. The
   old `openai-cli` setup blocker was repaired by teaching the bridge to execute
@@ -1573,6 +1622,7 @@ broader path/export/render/Essential Graphics/third-party families.
 
 ## Validation
 
+| Max-scope shape/path geometry live proof wave | Required to prove the next generated-only shape/mask path family after layer-state proof, including keyframed path geometry, horizontal flip semantics, and safe generated file export. | Passed: compact preflight, clean baton restore, `inspect`, `openai-cli-smoke`, `full-ui-agent-path-geometry-openai-cli-smoke`, repaired fixture read-back gap, `full-ui-agent-flip-path-openai-cli-smoke`, repaired `export_path_points` planning catalog and Windows Codex CLI discovery, `full-ui-agent-export-path-points-openai-cli-smoke`, touched JS `node --check`, `node scripts\agent-scenario-report-smoke.js`, `node scripts\semantic-verification-smoke.js`, `node scripts\solution-library-validation-smoke.js`, `npm.cmd run smoke:provider-contract`, `npm.cmd run smoke:provider-api`, `npm.cmd run smoke:bridge`, `npm.cmd run check:rules`, read-only post-wave `inspect`, and `git diff --check` with Windows line-ending warnings only. Live proof artifacts: `...path-geometry-Codex-QA-AUX-PATH-52214682.json`, `...flip-path-Codex-QA-AUX-FLIP-52508990.json`, and `...export-path-points-Codex-QA-AUX-EXPORT-52859654.json`. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX copy, user-asset mutation, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope OpenAI CLI readiness repair | Required before any generated-only mutating live proof wave because stale bridge CLI detection selected a broken local `codex.exe` and the old CEP smoke could false-pass on a transcript containing only the user prompt. | Passed/externally blocked: compact preflight read active docs and compact status/proof/ledger-summary; `codex.cmd login status` returned `Logged in using ChatGPT`; direct bridge readiness initially failed on `C:\Users\Ant\AppData\Local\OpenAI\Codex\bin\codex.exe` due `~\.codex\config.toml` `service_tier = default`; parent repaired the bridge to support Windows `codex.cmd`/`.bat` shims and to prefer `codex.cmd`; direct `codex exec` proved `gpt-5.5`, `gpt-5.4`, and `gpt-5.4-mini` can answer while `gpt-5` is rejected for the ChatGPT-backed account; bridge readiness then passed for `openai-cli/gpt-5.5`. Validation passed: touched JS `node --check`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run check:rules`; `git diff --check` with line-ending warnings only; read-only CEP `inspect`; `connector-status-smoke`; and `openai-cli-setup-smoke`. `node scripts/cep-panel-cdp-smoke.js openai-cli-smoke` now fails correctly with external usage-limit evidence: Codex usage is exhausted and the CLI suggests retry after June 11, 2026 at 12:38 PM. No generated-only mutating CEP/AE proof, candidate completion, broad queue, Local/Ollama proof adaptation, fallback-provider proof, push, PR, GitHub automation, launcher edit, or user-asset mutation was run. |
 | Reopened screen-task final completion audit | Required to close the reopened family audit without broad queue processing or live mutation. | Passed/human-gated: compact preflight read active docs, `git status --short`, compact status/proof/ledger-summary, `.codex/handoff.md`, and `.codex/active-thread.json`; targeted plan/handoff evidence search covered CEP/panel readiness, shape/mask path geometry, Puppet pin type, Essential Graphics/Essential Properties, project/file/render/proxy/user-file policy, composition marker read/add/copy/work-area contracts, and third-party semantics policy. Compact status is `completed_no_candidates`; compact proof is `completed_no_candidates` with changedPathCount 0 and unplannedPathCount 0; ledger summary is entries=75, completed=17, blocked/skipped=58, queued=0, failed=0, terminal total=75. No scoped retry, broad queue processing, generated-only mutating live CEP/AE proof, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, user-asset mutation, push, PR, or launcher/autoloop edit was run. Closeout validation passed: JSON parse for `.codex/active-thread.json`, `npm.cmd run check:rules`, and `git diff --check` with Windows line-ending warnings only. |
 | Reopened CEP/panel live proof readiness audit | Required to replace stale live-proof readiness evidence with current read-only CEP/CDP state before considering any generated-only mutating live proof. | Passed/readiness-blocked: compact preflight read active docs, `git status --short`, compact status/proof/ledger-summary; `node scripts/cep-panel-cdp-smoke.js inspect` reached `AE Agent 2.0.0` and reported bridge `Connected`; `node scripts/cep-panel-cdp-smoke.js connector-status-smoke` returned `ok:true`. Provider readiness remains blocked inside the panel because selected `openai-cli` reports `Needs setup` and last error `Run codex login and sign in with ChatGPT before using OpenAI CLI.` No scoped retry, generated-only mutating live CEP/AE proof, candidate completion, broad/default CEP smoke, broad queue, Local/Ollama use, fallback provider, dependency/package change, push, PR, raw JSX copy, user-asset mutation, or launcher/autoloop edit was run. |

@@ -879,15 +879,18 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
     "create_comp",
     "create_solid_layer",
     "set_layer_mask",
+    "get_layer_details",
     "set_path_geometry",
     "get_path_geometry",
     "set_path_geometry",
     "get_path_geometry",
     "get_layer_details"
   ]);
-  assert.strictEqual(flipPathGeometry.plan.steps[5].args.targetKind, "mask");
-  assert.strictEqual(flipPathGeometry.plan.steps[5].args.keyframes.length, 2);
-  assert.strictEqual(flipPathGeometry.plan.steps[6].args.includeKeyframes, true);
+  assert.strictEqual(flipPathGeometry.plan.steps[3].args.includeProperties, false);
+  assert.strictEqual(flipPathGeometry.plan.steps[5].args.includeKeyframes, true);
+  assert.strictEqual(flipPathGeometry.plan.steps[6].args.targetKind, "mask");
+  assert.strictEqual(flipPathGeometry.plan.steps[6].args.keyframes.length, 2);
+  assert.strictEqual(flipPathGeometry.plan.steps[7].args.includeKeyframes, true);
 
   const [exportPathPoints] = agentExportPathPointsScenarioPlans("Codex QA AUX-EXPORT Fixture");
   assert.strictEqual(exportPathPoints.id, "generated-export-path-points");
@@ -896,15 +899,17 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
     "create_comp",
     "create_solid_layer",
     "set_layer_mask",
+    "get_layer_details",
     "set_path_geometry",
     "get_path_geometry",
     "export_path_points",
     "get_path_geometry",
     "get_layer_details"
   ]);
-  assert.strictEqual(exportPathPoints.plan.steps[5].args.outputFileName.endsWith(".txt"), true);
-  assert.deepStrictEqual(exportPathPoints.plan.steps[5].args.vertices, exportPathPoints.expectedReadBack.geometry.vertices);
-  assert.strictEqual(exportPathPoints.plan.steps[6].args.includeKeyframes, true);
+  assert.strictEqual(exportPathPoints.plan.steps[3].args.includeProperties, false);
+  assert.strictEqual(exportPathPoints.plan.steps[6].args.outputFileName.endsWith(".txt"), true);
+  assert.deepStrictEqual(exportPathPoints.plan.steps[6].args.vertices, exportPathPoints.expectedReadBack.geometry.vertices);
+  assert.strictEqual(exportPathPoints.plan.steps[7].args.includeKeyframes, true);
 
   const [essentialGraphics] = agentEssentialGraphicsScenarioPlans("Codex QA AUX-EG Fixture");
   assert.strictEqual(essentialGraphics.id, "generated-essential-graphics-controller");

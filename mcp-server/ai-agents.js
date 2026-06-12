@@ -147,6 +147,12 @@ function defaultLocalAppData() {
   return "";
 }
 
+function defaultRoamingAppData() {
+  if (process.env.APPDATA) return process.env.APPDATA;
+  if (process.env.USERPROFILE) return path.join(process.env.USERPROFILE, "AppData", "Roaming");
+  return "";
+}
+
 function codexCommandCandidates() {
   const explicit = explicitCodexCommand();
   if (explicit) return [explicit];
@@ -154,6 +160,10 @@ function codexCommandCandidates() {
   const candidates = ["codex"];
   if (process.platform === "win32") {
     candidates.push("codex.cmd");
+    const roamingAppData = defaultRoamingAppData();
+    if (roamingAppData) {
+      candidates.push(path.join(roamingAppData, "npm", "codex.cmd"));
+    }
     const localAppData = defaultLocalAppData();
     if (localAppData) {
       candidates.push(path.join(localAppData, "OpenAI", "Codex", "bin", "codex.exe"));

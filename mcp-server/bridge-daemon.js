@@ -4318,6 +4318,7 @@ const PLANNING_TOOL_NAMES = [
   "create_layer_mask",
   "set_layer_mask",
   "set_path_geometry",
+  "export_path_points",
   "add_project_item_to_comp",
   "duplicate_layer",
   "duplicate_layers",
