@@ -26,6 +26,39 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 4 candidate 1:
+  `tool-layers-hard-solo-layers` received fresh
+  post-`e04567cb49013adca27d58849e0c3b772dde5f16` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, plan notes, source behavior,
+  existing `hard-solo-layers-typed-plan`, generic intake note, registry entry,
+  `layer-enabled-hard-solo-generated-only` self-improvement family metadata,
+  semantic/report smoke coverage, and typed tools `get_active_comp`,
+  `get_selected_layers`, `get_comp_details`, `get_layer_details`, and
+  `set_layer_metadata`. Source-exact behavior loops over every active-comp
+  layer and assigns `layer.enabled = layer.selected`; the safe tracked contract
+  adapts only generated explicit selected/unselected `Layer.enabled` writes with
+  expected-name guards and read-back, while native solo switches, previous
+  enabled-state restoration, broad selected-layer traversal, non-generated user
+  assets, and raw JSX remain fail-closed. The bounded retry returned
+  `completed_no_candidates` with one terminal ticket, zero open tickets, proof
+  envelope SHA-256
+  `7565b562c9114cf9b3be20ddee8cf878d066294293e0cfe70023c40c30b374dc`,
+  and `contractComplete=false`. Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-7d6c17dd5867610f/ticket.json`
+  is `terminal_unresolved`, reason `self_improvement_family_missing`;
+  synthesis is blocked with reason
+  `classification_not_allowed:unsafe_skip_tool_gap`. The precise unblock
+  condition is to update the Full Intaker resolution/synthesis path so this
+  exact unsafe-skip candidate can be accepted or reclassified through the
+  existing candidate-scoped `layer-enabled-hard-solo-generated-only` family with
+  current generated-only proof/read-back evidence, or an equivalent approved
+  candidate-scoped gate. No broad queue, live CEP/AE mutation, launcher edit,
+  dependency/package change, Local/Ollama, fallback provider, raw JSX copy,
+  source-checkout execution, native solo-switch mutation, previous-state
+  restoration, non-generated user-asset mutation, push, or PR was run. The next
+  ordered Direction 4 candidate is
+  `tool-layers-toggle-difference-blend-mode`.
+
 - [x] Sequential directions acceptance Direction 3 candidate 4:
   `tool-layers-set-track-matte-to-above` received fresh
   post-`2080f7956f8d43dbc9caf017adfeae31e714724b` scoped retry evidence.
