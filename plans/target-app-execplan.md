@@ -26,6 +26,39 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 4 candidate 4:
+  `tool-layers-toggle-specific-effects` received fresh
+  post-`affe3036504ebae3e416b545a8d3f72bb09c2a0f` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, plan notes, exact source
+  behavior, existing effect-property/read-only recipes, registry entries,
+  live-lane metadata, semantic/report smoke coverage, and typed tools
+  `get_active_comp`, `get_comp_details`, `list_effects`,
+  `get_effect_details`, `add_effect`, `set_effect_property`, and
+  `get_layer_details`. Source-exact behavior scans every project comp, layer,
+  and effect, matches `ADBE Turbulent Displace`, and assigns
+  `effect.enabled` from `ScriptUI.environment.keyboardState.altKey`. Current
+  safe contracts can read/search/add effects and set reviewed effect
+  properties, but they do not expose an effect instance enabled writer. The
+  bounded retry returned `completed_no_candidates` with one terminal ticket,
+  zero open tickets, proof envelope SHA-256
+  `76c85bd334443b818f38909ca8200e59e3e3b8b3d1922c5bdc468cbeb711d9e2`,
+  and `contractComplete=false`. Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-3f595538a515f696/ticket.json`
+  is `terminal_unresolved`, reason `self_improvement_family_missing`;
+  synthesis is blocked with reason
+  `classification_not_allowed:unsafe_skip_tool_gap`. The precise unblock
+  condition is an approved generated-only `set_effect_enabled`-style typed
+  contract with explicit comp/layer/effect identity, exact name/matchName
+  evidence, original and final `effect.enabled` read-back through
+  `get_effect_details`/`get_layer_details`, semantic verification,
+  cleanup/checkpoint policy, and fail-closed handling for project-wide
+  traversal, Alt-key semantics, non-generated user assets, and raw JSX. No
+  broad queue, live CEP/AE mutation, launcher edit, dependency/package change,
+  Local/Ollama, fallback provider, raw JSX copy, source-checkout execution,
+  effect enabled mutation, non-generated user-asset mutation, push, or PR was
+  run. The next ordered Direction 4 candidate is
+  `tool-layers-toggle-puppet-pins-as-guide-layers`.
+
 - [x] Sequential directions acceptance Direction 4 candidate 3:
   `tool-compositions-force-composition-panel-refresh` received fresh
   post-`43c37e82eed150826fffebfac0e2869c232c1443` scoped retry evidence.
@@ -2886,6 +2919,18 @@ check.
 
 ## Decision Log
 
+- 2026-06-14: `tool-layers-toggle-specific-effects` is terminal from a fresh
+  scoped retry, not completed. Source behavior scans all project comps and
+  toggles `effect.enabled` for matching `ADBE Turbulent Displace` effects from
+  Alt-key state. Existing contracts cover read-only effect search/details,
+  effect addition, and reviewed effect property values, but no
+  `set_effect_enabled`/`toggle_effect` writer or generated-only effect-enabled
+  proof lane exists. Completion requires an approved generated-only effect
+  enabled-state contract with explicit comp/layer/effect identity, exact
+  name/matchName evidence, before/after read-back, semantic verification,
+  cleanup/checkpoint policy, and fail-closed behavior for project-wide
+  traversal, Alt-key semantics, non-generated user assets, and raw JSX.
+
 - 2026-06-14: `tool-compositions-force-composition-panel-refresh` is terminal
   from a fresh scoped retry, not completed. Source behavior is a native UI
   refresh side effect implemented by toggling comp-level `motionBlur` twice.
@@ -4116,6 +4161,8 @@ check.
   composition; otherwise frame rate must be explicit.
 
 ## Validation
+
+| Sequential directions acceptance Direction 4 candidate 4 | Required to give `tool-layers-toggle-specific-effects` fresh post-`affe3036504ebae3e416b545a8d3f72bb09c2a0f` scoped evidence after reviewing source project-wide `effect.enabled` toggle behavior, read-only `find-specific-effect` coverage, effect-property live lanes, semantic/report smoke coverage, and typed tools including `list_effects`, `get_effect_details`, `add_effect`, and `set_effect_property`. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `76c85bd334443b818f38909ca8200e59e3e3b8b3d1922c5bdc468cbeb711d9e2`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-3f595538a515f696/ticket.json` is `terminal_unresolved`, reason `self_improvement_family_missing`; synthesis is blocked with reason `classification_not_allowed:unsafe_skip_tool_gap`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, effect enabled mutation, non-generated user-asset mutation, push, or PR was run. |
 
 | Sequential directions acceptance Direction 4 candidate 3 | Required to give `tool-compositions-force-composition-panel-refresh` fresh post-`43c37e82eed150826fffebfac0e2869c232c1443` scoped evidence after reviewing source comp `motionBlur` double-toggle behavior, existing composition property/work-area coverage, registry/recipe/live-lane search, semantic/report smoke coverage, and typed tool limits around `set_comp_properties` and layer-scoped `set_property_value`. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `ea56ffebd65a5ef6c3ce728bb685d6d8d74fc816f6b8f79b93dcc8a86c725144`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-04dc73d685a992ff/ticket.json` is `terminal_unresolved`, reason `self_improvement_family_missing`; synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, comp `motionBlur` toggle, non-generated user-asset mutation, push, or PR was run. |
 
