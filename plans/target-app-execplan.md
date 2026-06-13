@@ -26,6 +26,36 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 4 candidate 3:
+  `tool-compositions-force-composition-panel-refresh` received fresh
+  post-`43c37e82eed150826fffebfac0e2869c232c1443` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, plan notes, source behavior,
+  existing composition property/work-area lanes, registry/recipe search,
+  semantic/report smoke coverage, and typed tools `get_active_comp`,
+  `get_comp_details`, `set_comp_properties`, and layer-scoped
+  `set_property_value`. Source-exact behavior reads `app.project.activeItem`
+  and toggles `comp.motionBlur` twice to force a Composition panel refresh side
+  effect. Current safe contracts can read composition details, set approved comp
+  fields such as width/height/duration/frameRate/bgColor/displayStartTime, and
+  set layer `motionBlur`, but they do not expose comp-level `motionBlur` or a
+  reviewed viewer refresh operation. The bounded retry returned
+  `completed_no_candidates` with one terminal ticket, zero open tickets, proof
+  envelope SHA-256
+  `ea56ffebd65a5ef6c3ce728bb685d6d8d74fc816f6b8f79b93dcc8a86c725144`,
+  and `contractComplete=false`. Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-04dc73d685a992ff/ticket.json`
+  is `terminal_unresolved`, reason `self_improvement_family_missing`;
+  synthesis is incomplete with reason `candidate_has_no_suggested_tools`.
+  The precise unblock condition is an approved generated-only composition
+  refresh or comp-level `motionBlur` typed contract with explicit comp target,
+  read-back of original and restored `motionBlur` state, semantic verification
+  that no comp settings remain changed, cleanup/checkpoint policy, and no raw
+  JSX fallback. No broad queue, live CEP/AE mutation, launcher edit,
+  dependency/package change, Local/Ollama, fallback provider, raw JSX copy,
+  source-checkout execution, comp `motionBlur` toggle, non-generated user-asset
+  mutation, push, or PR was run. The next ordered Direction 4 candidate is
+  `tool-layers-toggle-specific-effects`.
+
 - [x] Sequential directions acceptance Direction 4 candidate 2:
   `tool-layers-toggle-difference-blend-mode` received fresh
   post-`1d55bef126672d90c7298aaa760d0e12373d594c` scoped retry evidence.
@@ -2856,6 +2886,17 @@ check.
 
 ## Decision Log
 
+- 2026-06-14: `tool-compositions-force-composition-panel-refresh` is terminal
+  from a fresh scoped retry, not completed. Source behavior is a native UI
+  refresh side effect implemented by toggling comp-level `motionBlur` twice.
+  Existing contracts cover only approved `set_comp_properties` fields and
+  layer-scoped `motionBlur`; there is no reviewed comp-level `motionBlur`
+  setter, restored-state verifier, or Composition panel refresh typed tool.
+  Completion requires an approved generated-only comp refresh or comp
+  `motionBlur` contract with explicit comp target, original/restored state
+  read-back, semantic verification that no comp settings remain changed,
+  cleanup/checkpoint policy, and no raw JSX fallback.
+
 - 2026-06-14: `tool-layers-toggle-difference-blend-mode` is terminal from a
   fresh scoped retry, not completed. The repository now has the narrow
   generated-only `set_layer_blending_mode` typed contract, normalized
@@ -4075,6 +4116,8 @@ check.
   composition; otherwise frame rate must be explicit.
 
 ## Validation
+
+| Sequential directions acceptance Direction 4 candidate 3 | Required to give `tool-compositions-force-composition-panel-refresh` fresh post-`43c37e82eed150826fffebfac0e2869c232c1443` scoped evidence after reviewing source comp `motionBlur` double-toggle behavior, existing composition property/work-area coverage, registry/recipe/live-lane search, semantic/report smoke coverage, and typed tool limits around `set_comp_properties` and layer-scoped `set_property_value`. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `ea56ffebd65a5ef6c3ce728bb685d6d8d74fc816f6b8f79b93dcc8a86c725144`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-04dc73d685a992ff/ticket.json` is `terminal_unresolved`, reason `self_improvement_family_missing`; synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, comp `motionBlur` toggle, non-generated user-asset mutation, push, or PR was run. |
 
 | Sequential directions acceptance Direction 4 candidate 2 | Required to give `tool-layers-toggle-difference-blend-mode` fresh post-`1d55bef126672d90c7298aaa760d0e12373d594c` scoped evidence after reviewing source Alt-key Difference/Normal behavior, existing blend-mode typed-plan/lane metadata, semantic/report smoke coverage, and typed tools including current `set_layer_blending_mode`. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `7c164b9082ee6405846bf1ad6692e491364ac5aea866af9cbba88355003edd49`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-7d6c17dd5867610f/ticket.json` is `terminal_unresolved`, reason `self_improvement_family_missing`; synthesis is blocked with reason `classification_not_allowed:unsafe_skip_tool_gap` even though `layer-blending-mode-difference-generated-only` is present in supported families. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, non-generated user-asset mutation, push, or PR was run. |
 
