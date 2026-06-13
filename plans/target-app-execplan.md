@@ -26,6 +26,28 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 1 candidate 4:
+  `tool-markers-copy-composition-markers-to-layer` received fresh
+  post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, existing
+  `copy-composition-markers-to-layer-typed-plan` recipe, generic intake note,
+  registry coverage, `composition-layer-marker-copy-generated-only` live-lane
+  metadata, composition/layer marker copy smoke coverage, and typed tools
+  `get_comp_details`, `get_layer_details`, `add_comp_marker`, and
+  `add_layer_marker`. The bounded retry returned `completed_no_candidates`
+  with one terminal ticket, zero open tickets, proof envelope SHA-256
+  `c5112f5f2b267cf7850a632086bc3df97d91f669402b2a0bdc978d65932e3220`.
+  Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-7d7b25381bf522c3/ticket.json`
+  is `terminal_unresolved`, reason
+  `self-improvement-read-back-contract-missing:composition-marker-read-generated-only`.
+  The precise unblock condition is to teach the runner/reducer to accept the
+  existing generated-only composition marker read/copy contract for this
+  `unsafe_skip_tool_gap` candidate through a scoped reclassification path, or
+  keep it terminal until that policy exists. No broad queue, live CEP/AE
+  mutation, launcher edit, dependency/package change, Local/Ollama, fallback
+  provider, raw JSX copy, source-checkout write, render execution, push, or PR
+  was run.
 - [x] Sequential directions acceptance Direction 1 candidate 3:
   `tool-markers-add-markers-at-work-area` received fresh
   post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
@@ -2239,6 +2261,14 @@ check.
 
 ## Decision Log
 
+- 2026-06-13: `tool-markers-copy-composition-markers-to-layer` is terminal
+  from a fresh scoped retry because the runner's self-improvement reducer does
+  not accept the existing generated-only composition marker read-back contract
+  for this unsafe-skip candidate. The current product contract remains narrow
+  and safe: generated/approved layer target, composition marker evidence from
+  `get_comp_details includeMarkers:true`, `add_layer_marker`, and
+  `get_layer_details` read-back. Source-exact active-comp/selected-layer
+  traversal and raw JSX remain fail-closed.
 - 2026-06-13: `tool-markers-add-markers-at-work-area` shares the same
   generated-only composition marker add family as
   `tool-markers-add-markers-at-out-points`. The runner reuses the family ticket
@@ -3236,6 +3266,7 @@ check.
 
 ## Validation
 
+| Sequential directions acceptance Direction 1 candidate 4 | Required to give `tool-markers-copy-composition-markers-to-layer` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current composition/layer marker copy contracts. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, and proof envelope SHA-256 `c5112f5f2b267cf7850a632086bc3df97d91f669402b2a0bdc978d65932e3220`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-7d7b25381bf522c3/ticket.json` is `terminal_unresolved`, reason `self-improvement-read-back-contract-missing:composition-marker-read-generated-only`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout write, render execution, push, or PR was run. |
 | Sequential directions acceptance Direction 1 candidate 3 | Required to give `tool-markers-add-markers-at-work-area` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current composition-marker add contracts. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, and proof envelope SHA-256 `cb0a10d04fd96d78b9e4c0474bc76fef8bd91470a4bdba8cd0f9661c529bf0f7`. Current family ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-00c604138f2132d7/ticket.json` is `terminal_unresolved`, reason `self_improvement_family_missing`, with synthesis blocked by `classification_not_allowed:unsafe_skip_tool_gap`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout write, render execution, push, or PR was run. |
 | Sequential directions acceptance Direction 1 candidate 2 | Required to give `tool-markers-add-markers-at-out-points` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current composition-marker add contracts. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket and zero open tickets. Ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-00c604138f2132d7/ticket.json` is `terminal_unresolved`, reason `self_improvement_family_missing`, with synthesis blocked by `classification_not_allowed:unsafe_skip_tool_gap`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout write, render execution, push, or PR was run. |
 | Sequential directions acceptance Direction 1 candidate 1 | Required to give `tool-compositions-set-work-area-to-markers` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence instead of relying on old contract coverage. | Passed/terminal: compact preflight passed, ledger entry and current plan/recipe/registry/live-lane evidence were reviewed, and the scoped command `node orchestrator/run-generic-repo-full-intake.mjs --ledger C:\Users\Ant\Documents\Codex\AE_agent\.codex-runtime\sdk\generic-repo-importer\kyletmartinez-after-effects-scripts-742f32d4-intake\queue-ledger.triage-75.json --run-id full-intake-kyletmartinez --context-percent 5 --max-items 1 --resolution-candidate-ids tool-compositions-set-work-area-to-markers --allow-self-improvement-lane-synthesis --compact-json` returned `completed_no_candidates` with one terminal ticket and zero open tickets. Ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-fadad01fa3ff94bd/ticket.json` is `terminal_unresolved`, reason `self_improvement_family_missing`, with synthesis blocked by `classification_not_allowed:unsafe_skip_tool_gap`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout write, render execution, push, or PR was run. |
