@@ -26,6 +26,39 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 2 candidate 12:
+  `tool-project-set-proxies-from-folder` received fresh
+  post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, plan notes, exact source
+  behavior, `project-file-render-proxy-safety-policy`, Project item/read-only
+  evidence coverage, proxy typed-tool surface, live-lane metadata, and
+  semantic/report smoke coverage. Source-equivalent behavior opens
+  `Folder.selectDialog`, reads every file from the selected folder, maps each
+  file display-name stem to `CompItem.name`, and calls
+  `CompItem.setProxy(File)` for matching comps. Existing Project item and
+  render-queue coverage can inspect bounded project inventory and can perform
+  narrow generated render queue/project-item metadata/source replacement
+  workflows, but it does not expose `useProxy`/proxy source read-back or
+  project item proxy set/clear mutation; `replace_layer_source` is not
+  equivalent to Project/CompItem proxy assignment. The bounded retry returned
+  `completed_no_candidates` with one terminal ticket, zero open tickets, proof
+  envelope SHA-256
+  `c5bf1890407a069afc81eec8f68d1ffceac8028a98938add5802c6f4f5a9fc2a`,
+  and `contractComplete=false`. Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-5ca1498566fe55b1/ticket.json`
+  is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`;
+  live-lane synthesis is incomplete with reason
+  `candidate_has_no_suggested_tools`. The precise unblock condition is an
+  approved generated-only Project item proxy typed contract with sandboxed
+  generated proxy files, explicit generated comp targets, proxy set/read-back
+  operations, dry-run/checkpoint and cleanup/rollback policy, semantic
+  verification for name-to-proxy matching, and no raw JSX fallback. No broad
+  queue, live CEP/AE mutation, launcher edit, dependency/package change,
+  Local/Ollama, fallback provider, raw JSX copy, source-checkout execution,
+  proxy relinking, user filesystem traversal, non-generated user-asset
+  mutation, push, or PR was run. The next ordered Direction 2 candidate is
+  `tool-properties-export-path-points`.
+
 - [x] Sequential directions acceptance Direction 2 candidate 11:
   `tool-project-reveal-project-file` received fresh
   post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
@@ -2583,6 +2616,20 @@ check.
 
 ## Decision Log
 
+- 2026-06-13: `tool-project-set-proxies-from-folder` is terminal from a fresh
+  scoped retry, not completed. Source-equivalent behavior opens
+  `Folder.selectDialog`, traverses the selected filesystem folder, maps file
+  display-name stems to composition names, and mutates matching project
+  compositions with `CompItem.setProxy(File)`. Current typed coverage can
+  inspect project inventory and supports narrow project item metadata, render
+  queue setup, and layer source replacement workflows, but it has no proxy
+  set/read-back contract; `replace_layer_source` is not equivalent to
+  Project/CompItem proxy assignment. Completion requires an approved
+  generated-only Project item proxy typed contract with sandboxed generated
+  proxy files, explicit generated comp targets, proxy set/read-back operations,
+  dry-run/checkpoint and cleanup/rollback policy, semantic verification for
+  name-to-proxy matching, and no raw JSX fallback.
+
 - 2026-06-13: `tool-project-reveal-project-file` is terminal from a fresh scoped
   retry, not completed. Source-equivalent behavior accesses
   `app.project.file.parent` and calls `Folder.execute()` to reveal/open the
@@ -3705,6 +3752,8 @@ check.
   composition; otherwise frame rate must be explicit.
 
 ## Validation
+
+| Sequential directions acceptance Direction 2 candidate 12 | Required to give `tool-project-set-proxies-from-folder` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing source proxy relink/folder traversal behavior, project/file/render/proxy safety policy, Project item/read-only coverage, live-lane metadata, semantic/report smoke coverage, and the missing approved generated-only proxy typed contract. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `c5bf1890407a069afc81eec8f68d1ffceac8028a98938add5802c6f4f5a9fc2a`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-5ca1498566fe55b1/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`; live-lane synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, proxy relinking, user filesystem traversal, non-generated user-asset mutation, push, or PR was run. |
 
 | Sequential directions acceptance Direction 2 candidate 11 | Required to give `tool-project-reveal-project-file` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing source OS reveal behavior, project/file safety policy, read-only project metadata coverage, live-lane metadata, semantic/report smoke coverage, and the missing approved reveal/open-folder typed contract. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `dc8a754a4ef0b5a789959d29f79534fc19a18233ea901254f8b9d4711d5f9acf`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-d3b67468672474ac/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`; live-lane synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, OS file-browser action, user project file reveal, non-generated user-asset mutation, push, or PR was run. |
 
