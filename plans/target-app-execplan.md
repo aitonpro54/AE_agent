@@ -26,6 +26,42 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 4 candidate 5:
+  `tool-layers-toggle-puppet-pins-as-guide-layers` received fresh
+  post-`36b0cb148eeb274a1ec4f76b7b021cd46aa681fe` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, plan notes, exact source
+  behavior, `select-guide-layers-typed-plan`, `toggle-puppet-pin-types-typed-plan`,
+  third-party semantics safety policy, registry entries, live-lane metadata,
+  semantic/report smoke coverage, and typed tools `get_project_info`,
+  `get_comp_details`, `get_layer_details`, `list_effects`,
+  `get_effect_details`, `set_layer_metadata`, and `set_puppet_pin_type`.
+  Source-exact behavior scans every project comp/layer/effect for
+  `Pseudo/Duik pin02` and assigns native `layer.guideLayer` from
+  `ScriptUI.environment.keyboardState.altKey`. Current safe contracts can read
+  `guideLayer`, select already-identified guide layers, set approved layer
+  metadata fields `comment`/`label`/`locked`/`enabled`, and set explicit
+  generated `ADBE FreePin3 PosPin Type` values, but they do not expose native
+  `guideLayer` mutation or a generated/safely mocked DuIK pin fixture. The
+  bounded retry returned `completed_no_candidates` with one terminal ticket,
+  zero open tickets, proof envelope SHA-256
+  `0f8ded52a9e6f7f30626d38c32d1608d0190627ada045d5f4b56dc79e5999937`,
+  and `contractComplete=false`. Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-879893cbbe5afd6a/ticket.json`
+  is `terminal_unresolved`, reason
+  `unsafe_safety_signals:thirdPartyAssumption`; synthesis is blocked with
+  reason `classification_not_allowed:unsafe_skip_tool_gap`. The precise unblock
+  condition is an approved generated-only native `guideLayer` writer or
+  puppet-pin guide-state contract with explicit comp/layer/effect identity,
+  generated or safely mocked DuIK pin evidence, `get_layer_details` and
+  `get_effect_details` read-back, semantic verification, cleanup/checkpoint
+  policy, and fail-closed handling for project-wide traversal, third-party DuIK
+  semantics, Alt-key branching, non-generated user assets, and raw JSX. No broad
+  queue, live CEP/AE mutation, launcher edit, dependency/package change,
+  Local/Ollama, fallback provider, raw JSX copy, source-checkout execution,
+  native `guideLayer` mutation, DuIK/user effect mutation, non-generated
+  user-asset mutation, push, or PR was run. Direction 4 has no remaining
+  ordered candidate in the active launcher handoff.
+
 - [x] Sequential directions acceptance Direction 4 candidate 4:
   `tool-layers-toggle-specific-effects` received fresh
   post-`affe3036504ebae3e416b545a8d3f72bb09c2a0f` scoped retry evidence.
@@ -2919,6 +2955,20 @@ check.
 
 ## Decision Log
 
+- 2026-06-14: `tool-layers-toggle-puppet-pins-as-guide-layers` is terminal
+  from a fresh scoped retry, not completed. Source behavior scans all project
+  comps for third-party `Pseudo/Duik pin02` effects and toggles native
+  `layer.guideLayer` from Alt-key state. Existing contracts can read
+  `guideLayer`, select guide layers from typed evidence, set limited layer
+  metadata fields, and mutate explicit generated `ADBE FreePin3` pin type
+  values, but there is no native `guideLayer` writer, DuIK pin fixture, or
+  generated-only puppet guide-state proof lane. Completion requires an approved
+  generated-only guide-state contract with explicit comp/layer/effect identity,
+  generated or safely mocked DuIK evidence, typed read-back, semantic
+  verification, cleanup/checkpoint policy, and fail-closed behavior for
+  project-wide traversal, third-party semantics, Alt-key branching,
+  non-generated user assets, and raw JSX.
+
 - 2026-06-14: `tool-layers-toggle-specific-effects` is terminal from a fresh
   scoped retry, not completed. Source behavior scans all project comps and
   toggles `effect.enabled` for matching `ADBE Turbulent Displace` effects from
@@ -4161,6 +4211,8 @@ check.
   composition; otherwise frame rate must be explicit.
 
 ## Validation
+
+| Sequential directions acceptance Direction 4 candidate 5 | Required to give `tool-layers-toggle-puppet-pins-as-guide-layers` fresh post-`36b0cb148eeb274a1ec4f76b7b021cd46aa681fe` scoped evidence after reviewing source project-wide `Pseudo/Duik pin02` / `layer.guideLayer` behavior, guide-layer selection coverage, generated Puppet pin type coverage, third-party semantics policy, semantic/report smoke coverage, and typed tools including `get_layer_details`, `list_effects`, `get_effect_details`, `set_layer_metadata`, and `set_puppet_pin_type`. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `0f8ded52a9e6f7f30626d38c32d1608d0190627ada045d5f4b56dc79e5999937`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-879893cbbe5afd6a/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:thirdPartyAssumption`; synthesis is blocked with reason `classification_not_allowed:unsafe_skip_tool_gap`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, native `guideLayer` mutation, DuIK/user effect mutation, non-generated user-asset mutation, push, or PR was run. |
 
 | Sequential directions acceptance Direction 4 candidate 4 | Required to give `tool-layers-toggle-specific-effects` fresh post-`affe3036504ebae3e416b545a8d3f72bb09c2a0f` scoped evidence after reviewing source project-wide `effect.enabled` toggle behavior, read-only `find-specific-effect` coverage, effect-property live lanes, semantic/report smoke coverage, and typed tools including `list_effects`, `get_effect_details`, `add_effect`, and `set_effect_property`. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `76c85bd334443b818f38909ca8200e59e3e3b8b3d1922c5bdc468cbeb711d9e2`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-3f595538a515f696/ticket.json` is `terminal_unresolved`, reason `self_improvement_family_missing`; synthesis is blocked with reason `classification_not_allowed:unsafe_skip_tool_gap`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, effect enabled mutation, non-generated user-asset mutation, push, or PR was run. |
 
