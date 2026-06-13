@@ -131,6 +131,13 @@ const FIRST_FOUR_COMPOSITION_MARKER_CONTRACT_IDS = [
   "add-composition-markers-at-out-points-typed-plan",
   "add-composition-markers-at-work-area-typed-plan"
 ];
+const FIRST_FOUR_FILE_RENDER_PROXY_CONTRACT_IDS = [
+  "project-file-render-proxy-safety-policy",
+  "export-path-points-typed-plan",
+  "add-folder-to-render-queue-typed-plan",
+  "add-selected-compositions-to-render-queue-typed-plan",
+  "add-labeled-items-to-render-queue-typed-plan"
+];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
   "get_project_info",
@@ -4576,6 +4583,58 @@ function assertFirstFourCompositionMarkerContracts(registry) {
   return FIRST_FOUR_COMPOSITION_MARKER_CONTRACT_IDS;
 }
 
+function assertFirstFourFileRenderProxyContracts(registry) {
+  for (const id of FIRST_FOUR_FILE_RENDER_PROXY_CONTRACT_IDS) {
+    const solution = solutionById(registry, id);
+    assert(solution, `Missing first-four file/render/proxy contract: ${id}`);
+    const text = recipeText(solution);
+    const contractText = solutionContractText(solution, text);
+
+    assertNoRawExecutionGuidance(id, solution, text);
+    assert(/generated|generated\/temp/.test(contractText), `${id}: contract must keep generated/temp scoping.`);
+
+    if (id === "project-file-render-proxy-safety-policy") {
+      assert(solution.tags.includes("file-output"), `${id}: policy must classify file output.`);
+      assert(solution.tags.includes("file-input"), `${id}: policy must classify file input.`);
+      assert(solution.tags.includes("render-queue"), `${id}: policy must classify render queue risk.`);
+      assert(solution.tags.includes("proxy"), `${id}: policy must classify proxy risk.`);
+      assert(contractText.includes("generated/temp assets"), `${id}: policy must require generated/temp assets first.`);
+      assert(contractText.includes("byte length") && contractText.includes("sha256"), `${id}: policy must require byte/hash evidence for file output contracts.`);
+      assert(contractText.includes("reject Desktop"), `${id}: policy must reject Desktop and arbitrary path writes.`);
+      assert(contractText.includes("separate render queue setup from render start"), `${id}: policy must separate queue setup from render execution.`);
+      assert(contractText.includes("reversible proxy state"), `${id}: policy must require reversible proxy read-back.`);
+      assert(contractText.includes("enumerate every deletion target"), `${id}: policy must require cleanup target enumeration.`);
+    } else if (id === "export-path-points-typed-plan") {
+      assert(solution.execution.preferredTools.includes("export_path_points"), `${id}: generated file export must use export_path_points.`);
+      assert(contractText.includes("logs/generated-exports/") || contractText.includes("AE_AGENT_GENERATED_EXPORT_DIR"), `${id}: export must stay under the generated export root.`);
+      assert(contractText.includes("outputFileName") && contractText.includes(".txt"), `${id}: export must require a simple generated text filename.`);
+      assert(contractText.includes("byteLength") && contractText.includes("sha256"), `${id}: export must require byte/hash read-back.`);
+      assert(contractText.includes("deleteAfterReadBack:true"), `${id}: export must support generated artifact cleanup after read-back.`);
+      assert(contractText.includes("Desktop writes") || contractText.includes("Desktop/user path"), `${id}: export must reject Desktop/user paths.`);
+      assert(contractText.includes("Post-export get_path_geometry"), `${id}: export must require post-export geometry read-back.`);
+    } else {
+      assert(solution.tags.includes("render-queue"), `${id}: render setup contract must stay tagged as render-queue.`);
+      assert(solution.execution.preferredTools.includes("add_comp_to_render_queue"), `${id}: render setup must add explicit comps to the queue.`);
+      assert(solution.execution.preferredTools.includes("get_render_queue_status"), `${id}: render setup must read render queue status.`);
+      assert(contractText.includes("generated composition"), `${id}: render setup must stay generated composition only.`);
+      assert(contractText.includes("baseline render queue count"), `${id}: render setup must record render queue baseline.`);
+      assert(contractText.includes("Post-run get_render_queue_status"), `${id}: render setup must require post-run queue read-back.`);
+      assert(/no render start|Do not start renders/.test(contractText), `${id}: render setup must forbid render execution.`);
+      assert(/queue deletion\/reordering|delete\/reorder render queue items/.test(contractText), `${id}: render setup must forbid queue cleanup/deletion.`);
+      assert(/non-generated user-asset mutation|non-generated user assets/.test(contractText), `${id}: render setup must reject non-generated user assets.`);
+    }
+
+    if (solution.execution.mutating) {
+      assert.strictEqual(solution.requiredSafetyGates.explicitConfirmation, true, `${id}: mutating file/render/proxy contract must require explicit confirmation.`);
+      assert.strictEqual(solution.requiredSafetyGates.allowMutations, true, `${id}: mutating file/render/proxy contract must require allowMutations.`);
+      assert.strictEqual(solution.requiredSafetyGates.checkpointOrEditSession, true, `${id}: mutating file/render/proxy contract must require checkpoint/edit-session protection.`);
+      assert.strictEqual(solution.requiredSafetyGates.postMutationReadBack, true, `${id}: mutating file/render/proxy contract must require post-mutation read-back.`);
+    }
+  }
+
+  return FIRST_FOUR_FILE_RENDER_PROXY_CONTRACT_IDS;
+}
+
 function main() {
   const registry = readRegistry();
   const registrySummary = assertSeedQuality(registry);
@@ -4583,6 +4642,7 @@ function main() {
   assertToolBackedGuidanceQuality(registry);
   assertImportedAdvisoryQuality(registry);
   const firstFourCompositionMarkerContracts = assertFirstFourCompositionMarkerContracts(registry);
+  const firstFourFileRenderProxyContracts = assertFirstFourFileRenderProxyContracts(registry);
   const actualRetrieval = assertActualRetrieval(registry);
   const candidateOmitted = assertCandidateInvisibility(registry);
   const staleAndEquivalent = assertStaleAndToolEquivalentBehavior();
@@ -4597,7 +4657,8 @@ function main() {
     toolBackedGuidance: TOOL_BACKED_IDS,
     importedAdvisory: IMPORTED_ADVISORY_IDS,
     firstFourContracts: {
-      compositionMarkerContracts: firstFourCompositionMarkerContracts
+      compositionMarkerContracts: firstFourCompositionMarkerContracts,
+      fileRenderProxyContracts: firstFourFileRenderProxyContracts
     },
     actualRetrieval: {
       contextReturned: actualRetrieval.contextRetrieval.returned,

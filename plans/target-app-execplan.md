@@ -26,6 +26,28 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] First-four contracts Direction 2 implementation retry:
+  generated-only file/render/proxy IO policy received fresh post-launcher
+  implementation evidence. Extended
+  `scripts/solution-library-validation-smoke.js` with
+  `firstFourContracts.fileRenderProxyContracts`, covering
+  `project-file-render-proxy-safety-policy`,
+  `export-path-points-typed-plan`, and the generated composition render-queue
+  setup recipes for folder, selected compositions, and labeled items. The new
+  assertions require generated/temp scoping, approved generated export roots,
+  simple `.txt` output names, byte length and `sha256` read-back,
+  `deleteAfterReadBack:true` cleanup support, post-export geometry read-back,
+  render queue baseline/final status read-back, no render start, no queue
+  cleanup/deletion, no non-generated user-asset mutation, proxy reversible
+  state policy, cleanup target enumeration, and no raw ExtendScript guidance.
+  Validation passed: `node --check scripts\solution-library-validation-smoke.js`,
+  `node scripts\solution-library-validation-smoke.js`,
+  `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`,
+  `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual
+  LF/CRLF warning only. No scoped queue run, live CEP/AE mutation,
+  render execution, user Desktop write, proxy relink/removal, launcher edit,
+  dependency/package change, Local, fallback provider, push, PR, raw JSX copy,
+  or user-asset mutation was run.
 - [x] First-four contracts Direction 1 implementation retry:
   composition marker contracts received fresh post-launcher implementation
   evidence, not audit-only reuse. Added a focused
