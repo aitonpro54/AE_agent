@@ -144,6 +144,17 @@ const FIRST_FOUR_PARENTING_MATTE_REORDER_CONTRACT_IDS = [
   "sortbyposition-typed-plan",
   "newtrimmednull-typed-plan"
 ];
+const FIRST_FOUR_LAYER_EFFECT_SWITCH_CONTRACT_IDS = [
+  "layer-enabled-hard-solo-generated-only",
+  "hard-solo-layers-typed-plan",
+  "layer-blending-mode-difference-generated-only",
+  "difference-blend-mode-typed-plan",
+  "explicit-layer-switch-generated-only",
+  "enable-collapse-transformations-typed-plan",
+  "enable-motion-blur-typed-plan",
+  "puppet-on-transparent-effect-property-generated-only",
+  "toggle-puppet-on-transparent-typed-plan"
+];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
   "get_project_info",
@@ -4694,6 +4705,164 @@ function assertFirstFourParentingMatteReorderContracts(registry, liveLaneRegistr
   return FIRST_FOUR_PARENTING_MATTE_REORDER_CONTRACT_IDS;
 }
 
+function assertFirstFourSwitchSolution(registry, id, requiredTools, requiredPatterns) {
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing first-four layer/effect switch contract: ${id}`);
+  const text = recipeText(solution);
+  const contractText = solutionContractText(solution, text);
+
+  assert.strictEqual(solution.execution.mutating, true, `${id}: switch/setter contract must be mutating.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  for (const tool of requiredTools) {
+    assert(solution.execution.preferredTools.includes(tool), `${id}: contract must keep typed tool ${tool}.`);
+  }
+  assert(
+    requiredTools.some((tool) => tool === "get_layer_details" || tool === "get_effect_details") ||
+      solution.execution.preferredTools.includes("get_layer_details") ||
+      solution.execution.preferredTools.includes("get_effect_details"),
+    `${id}: contract must keep typed read-back.`
+  );
+  assert.strictEqual(solution.requiredSafetyGates.explicitConfirmation, true, `${id}: switch/setter contract must require explicit confirmation.`);
+  assert.strictEqual(solution.requiredSafetyGates.allowMutations, true, `${id}: switch/setter contract must require allowMutations.`);
+  assert.strictEqual(solution.requiredSafetyGates.checkpointOrEditSession, true, `${id}: switch/setter contract must require checkpoint/edit-session protection.`);
+  assert.strictEqual(solution.requiredSafetyGates.postMutationReadBack, true, `${id}: switch/setter contract must require post-mutation read-back.`);
+  for (const pattern of requiredPatterns) {
+    assert(pattern.test(contractText), `${id}: contract must preserve ${pattern}.`);
+  }
+}
+
+function assertFirstFourSwitchLane(liveLaneRegistry, id, expected) {
+  const lane = liveLaneFamilyById(liveLaneRegistry, id);
+  assert(lane, `Missing first-four layer/effect switch lane: ${id}`);
+  assert.strictEqual(lane.productionTypedTools, true, `${id}: lane must use production typed tools.`);
+  assert.strictEqual(lane.semanticVerification, true, `${id}: lane must require semantic verification.`);
+  assert(lane.scope.includes("generated-only"), `${id}: lane must stay generated-only.`);
+  assert(!lane.allowedTools.includes("run_extendscript"), `${id}: lane must not allow inline ExtendScript.`);
+  assert(!lane.allowedTools.includes("run_extendscript_file"), `${id}: lane must not allow raw script file execution.`);
+  for (const tool of expected.requiredTools) {
+    assert(lane.requiredTools.includes(tool), `${id}: lane must require ${tool}.`);
+  }
+  for (const tool of expected.readBackTools) {
+    assert(lane.readBackTools.includes(tool), `${id}: lane must read back through ${tool}.`);
+  }
+  for (const candidateId of expected.candidateIds) {
+    assert(lane.candidateIds.includes(candidateId), `${id}: lane must stay scoped to ${candidateId}.`);
+  }
+  for (const text of expected.scopeIncludes) {
+    assert(lane.scope.includes(text), `${id}: lane scope must include "${text}".`);
+  }
+}
+
+function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
+  assertFirstFourSwitchLane(liveLaneRegistry, "layer-enabled-hard-solo-generated-only", {
+    requiredTools: ["set_layer_metadata"],
+    readBackTools: ["get_selected_layers", "get_layer_details", "get_comp_details"],
+    candidateIds: ["tool-layers-hard-solo-layers"],
+    scopeIncludes: [
+      "explicit selected-layer evidence",
+      "complete generated layer inventory",
+      "exact before/after Layer.enabled values",
+      "semantic verification",
+      "cleanup",
+      "non-generated user assets",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "layer-blending-mode-difference-generated-only", {
+    requiredTools: ["set_layer_blending_mode"],
+    readBackTools: ["get_layer_details", "get_comp_details"],
+    candidateIds: ["tool-layers-toggle-difference-blend-mode"],
+    scopeIncludes: [
+      "explicit selected-layer evidence",
+      "complete generated layer inventory",
+      "expected-name/current-mode guards",
+      "exact before/after blending mode values",
+      "source-exact Alt-key branching",
+      "non-generated user assets",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "explicit-layer-switch-generated-only", {
+    requiredTools: ["set_property_value"],
+    readBackTools: ["get_layer_details", "get_comp_details"],
+    candidateIds: ["tool-compositions-enable-collapse-transformations", "tool-compositions-enable-motion-blur"],
+    scopeIncludes: [
+      "whitelisted collapseTransformation and motionBlur",
+      "explicit generated targets",
+      "exact before/after switch values",
+      "semantic verification",
+      "cleanup",
+      "recursive/global traversal",
+      "arbitrary layer fields"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "puppet-on-transparent-effect-property-generated-only", {
+    requiredTools: ["add_effect", "get_effect_details", "set_effect_property"],
+    readBackTools: ["get_effect_details", "get_layer_details"],
+    candidateIds: ["tool-properties-toggle-puppet-on-transparent"],
+    scopeIncludes: [
+      "explicit generated ADBE FreePin3 effect",
+      "ADBE FreePin3 On Transparent",
+      "exact before/after boolean values",
+      "semantic verification",
+      "cleanup",
+      "source-exact all-project traversal",
+      "Alt-key branching",
+      "user Puppet effects",
+      "untyped effect-specific toggles"
+    ]
+  });
+
+  assertFirstFourSwitchSolution(registry, "hard-solo-layers-typed-plan", ["get_selected_layers", "get_comp_details", "set_layer_metadata", "get_layer_details"], [
+    /generated layers/,
+    /current `enabled` state/,
+    /enabled:true/,
+    /enabled:false/,
+    /Do not infer selection/,
+    /multi-comp\/project-wide hard solo/,
+    /raw script execution/
+  ]);
+  assertFirstFourSwitchSolution(registry, "difference-blend-mode-typed-plan", ["get_selected_layers", "get_comp_details", "set_layer_blending_mode", "get_layer_details"], [
+    /current `blendingModeName` evidence/,
+    /expectedCurrentBlendingModes/,
+    /blendingMode:"difference"/,
+    /Alt-key branching/,
+    /non-generated user assets/,
+    /raw script execution/
+  ]);
+  assertFirstFourSwitchSolution(registry, "enable-collapse-transformations-typed-plan", ["get_selected_layers", "get_layer_details", "set_property_value"], [
+    /current `collapseTransformation`/,
+    /requested final value `collapseTransformation:true`/,
+    /propertyPath:"collapseTransformation"/,
+    /setAtTime:false/,
+    /verifyAfter:true/,
+    /recursive\/global traversal/,
+    /unrelated layer attributes/
+  ]);
+  assertFirstFourSwitchSolution(registry, "enable-motion-blur-typed-plan", ["get_selected_layers", "get_layer_details", "set_property_value"], [
+    /current `motionBlur`/,
+    /requested final value `motionBlur:true`/,
+    /propertyPath:"motionBlur"/,
+    /setAtTime:false/,
+    /verifyAfter:true/,
+    /comp-wide motion blur/,
+    /recursive\/global traversal/,
+    /unrelated layer attributes/
+  ]);
+  assertFirstFourSwitchSolution(registry, "toggle-puppet-on-transparent-typed-plan", ["add_effect", "get_effect_details", "set_effect_property"], [
+    /explicit generated/,
+    /ADBE FreePin3 On Transparent/,
+    /reviewed boolean value/,
+    /setAtTime:false/,
+    /all-project traversal/,
+    /Alt-key branching/,
+    /user Puppet effects/,
+    /unreviewed effect\/property targeting/
+  ]);
+
+  return FIRST_FOUR_LAYER_EFFECT_SWITCH_CONTRACT_IDS;
+}
+
 function main() {
   const registry = readRegistry();
   const liveLaneRegistry = readLiveLaneRegistry();
@@ -4704,6 +4873,7 @@ function main() {
   const firstFourCompositionMarkerContracts = assertFirstFourCompositionMarkerContracts(registry);
   const firstFourFileRenderProxyContracts = assertFirstFourFileRenderProxyContracts(registry);
   const firstFourParentingMatteReorderContracts = assertFirstFourParentingMatteReorderContracts(registry, liveLaneRegistry);
+  const firstFourLayerEffectSwitchContracts = assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry);
   const actualRetrieval = assertActualRetrieval(registry);
   const candidateOmitted = assertCandidateInvisibility(registry);
   const staleAndEquivalent = assertStaleAndToolEquivalentBehavior();
@@ -4720,7 +4890,8 @@ function main() {
     firstFourContracts: {
       compositionMarkerContracts: firstFourCompositionMarkerContracts,
       fileRenderProxyContracts: firstFourFileRenderProxyContracts,
-      parentingMatteReorderContracts: firstFourParentingMatteReorderContracts
+      parentingMatteReorderContracts: firstFourParentingMatteReorderContracts,
+      layerEffectSwitchContracts: firstFourLayerEffectSwitchContracts
     },
     actualRetrieval: {
       contextReturned: actualRetrieval.contextRetrieval.returned,

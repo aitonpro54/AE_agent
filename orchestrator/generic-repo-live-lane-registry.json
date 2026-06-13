@@ -122,7 +122,7 @@
         "node scripts/smoke-test.js"
       ],
       "reclassifiedClassification": "existing_typed_tools_recipe_only",
-      "scope": "generated-only explicit layer switch proof using set_property_value on whitelisted collapseTransformation and motionBlur layer attributes plus get_layer_details/get_comp_details read-back, semantic verification, and cleanup; camera parenting, controller setup, comp-wide motion blur, recursive/global traversal, onion skinning, version duplication, and arbitrary layer fields remain fail-closed"
+      "scope": "generated-only explicit layer switch proof using set_property_value on whitelisted collapseTransformation and motionBlur layer attributes, explicit generated targets, exact before/after switch values, plus get_layer_details/get_comp_details read-back, semantic verification, and cleanup; camera parenting, controller setup, comp-wide motion blur, recursive/global traversal, onion skinning, version duplication, and arbitrary layer fields remain fail-closed"
     },
     {
       "id": "selection-generated-only",
@@ -581,7 +581,7 @@
         "node scripts/solution-library-validation-smoke.js"
       ],
       "reclassifiedClassification": "new_typed_tool_contract",
-      "scope": "generated-only hard-solo proof using explicit selected-layer evidence, complete generated layer inventory, set_layer_metadata enabled:true for selected targets, set_layer_metadata enabled:false for reviewed non-selected targets, get_layer_details/get_comp_details read-back, semantic verification, and cleanup; source-exact layer.selected traversal, native solo switches, previous-enabled-state restoration, non-generated user assets, multi-comp scope, selection persistence, raw JSX, labels/comments/locks/blend modes/timing/source changes, and render queue work remain fail-closed"
+      "scope": "generated-only hard-solo proof using explicit selected-layer evidence, complete generated layer inventory, exact before/after Layer.enabled values, set_layer_metadata enabled:true for selected targets, set_layer_metadata enabled:false for reviewed non-selected targets, get_layer_details/get_comp_details read-back, semantic verification, and cleanup; source-exact layer.selected traversal, native solo switches, previous-enabled-state restoration, non-generated user assets, multi-comp scope, selection persistence, raw JSX, labels/comments/locks/blend modes/timing/source changes, and render queue work remain fail-closed"
     },
     {
       "id": "layer-blending-mode-difference-generated-only",
@@ -653,7 +653,7 @@
         "node scripts/solution-library-validation-smoke.js"
       ],
       "reclassifiedClassification": "new_typed_tool_contract",
-      "scope": "generated-only Difference blending mode proof using explicit selected-layer evidence, complete generated layer inventory, set_layer_blending_mode with blendingMode:\"difference\" and expected-name/current-mode guards, get_layer_details/get_comp_details read-back, semantic verification, and cleanup; source-exact Alt-key branching, toggle restoration, broad selected-layer traversal, other blend mode enums, non-generated user assets, multi-comp scope, selection persistence, raw JSX, track matte edits, labels/comments/locks/enabled/timing/source changes, file I/O, and render queue work remain fail-closed"
+      "scope": "generated-only Difference blending mode proof using explicit selected-layer evidence, complete generated layer inventory, exact before/after blending mode values, set_layer_blending_mode with blendingMode:\"difference\" and expected-name/current-mode guards, get_layer_details/get_comp_details read-back, semantic verification, and cleanup; source-exact Alt-key branching, toggle restoration, broad selected-layer traversal, other blend mode enums, non-generated user assets, multi-comp scope, selection persistence, raw JSX, track matte edits, labels/comments/locks/enabled/timing/source changes, file I/O, and render queue work remain fail-closed"
     },
     {
       "id": "selected-layer-parent-opacity-expression-generated-only",
@@ -874,7 +874,7 @@
         "node scripts/solution-library-validation-smoke.js"
       ],
       "reclassifiedClassification": "existing_typed_tools_recipe_only",
-      "scope": "generated-only Puppet On Transparent proof using an explicit generated ADBE FreePin3 effect, get_effect_details evidence for ADBE FreePin3 On Transparent, set_effect_property with a reviewed boolean value, get_effect_details/get_layer_details read-back, semantic verification, and cleanup; source-exact all-project traversal, Alt-key branching, user Puppet effects, puppet pin atom mutation, third-party DuIK behavior, selection persistence, and raw JSX semantics remain fail-closed"
+      "scope": "generated-only Puppet On Transparent proof using an explicit generated ADBE FreePin3 effect, get_effect_details evidence for ADBE FreePin3 On Transparent, exact before/after boolean values, set_effect_property with a reviewed boolean value, get_effect_details/get_layer_details read-back, semantic verification, and cleanup; source-exact all-project traversal, Alt-key branching, user Puppet effects, untyped effect-specific toggles, puppet pin atom mutation, third-party DuIK behavior, selection persistence, and raw JSX semantics remain fail-closed"
     },
     {
       "id": "puppet-pin-type-generated-only",

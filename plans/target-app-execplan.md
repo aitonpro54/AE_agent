@@ -26,6 +26,36 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] First-four contracts Direction 4 implementation retry:
+  layer / effect switch contracts received fresh post-launcher implementation
+  evidence. Strengthened generated-only live-lane registry scope for
+  `explicit-layer-switch-generated-only`,
+  `layer-enabled-hard-solo-generated-only`,
+  `layer-blending-mode-difference-generated-only`, and
+  `puppet-on-transparent-effect-property-generated-only` so these lanes now
+  explicitly require exact before/after switch values for
+  `collapseTransformation`, `motionBlur`, `Layer.enabled`,
+  `Layer.blendingMode`, and `ADBE FreePin3 On Transparent` effect-property
+  writes. Extended `scripts/solution-library-validation-smoke.js` with
+  `firstFourContracts.layerEffectSwitchContracts`, covering hard-solo
+  `Layer.enabled`, Difference blending mode, explicit layer switches, and the
+  generated Puppet On Transparent effect-property toggle. The regression
+  requires generated-only scope, explicit typed targets, exact before/after
+  values, typed read-back, semantic verification, cleanup, mutation gates, and
+  fail-closed handling for global/recursive scans, source-exact Alt-key
+  branching, user assets, untyped effect-specific toggles, arbitrary layer
+  fields, and raw JSX/source semantics. Validation passed:
+  `node --check scripts\solution-library-validation-smoke.js`, JSON parse for
+  `orchestrator\generic-repo-live-lane-registry.json`,
+  `node scripts\solution-library-validation-smoke.js`,
+  `node scripts\agent-scenario-report-smoke.js`,
+  `node scripts\semantic-verification-smoke.js`,
+  `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`,
+  `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual
+  LF/CRLF warning only. No scoped queue run, live CEP/AE mutation,
+  broad/default CEP smoke, launcher edit, dependency/package change, Local,
+  fallback provider, push, PR, raw JSX copy, render execution, or user-asset
+  mutation was run.
 - [x] First-four contracts Direction 3 implementation retry:
   layer parenting / matte / reorder contracts received fresh post-launcher
   implementation evidence. Strengthened
