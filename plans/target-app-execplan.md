@@ -26,6 +26,39 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Max-scope layer selection live proof wave:
+  продолжил generated-only live proof campaign from commit `d92e5ac`.
+  Compact preflight confirmed clean tracked status, terminal Full Intake
+  status/proof/ledger state, and live panel/bridge readiness for
+  `openai-cli/gpt-5.5`; the panel-local 5h timer remained stale/advisory
+  because no current external usage-limit error was returned. Pre-run
+  read-only audit found `projectItemLeftovers=0`, `renderQueueLeftovers=0`,
+  `activeEditSession=false`, and `toolErrors=0`. The live command
+  `full-ui-agent-layer-selection-openai-cli-smoke` passed with panel plan count
+  1, accepted count 1, `fallbackCount=0`, scenario
+  `generated-layer-selection-set`, expected step count 8, expected mutating
+  count 5, and expected typed tools `create_comp`, `create_solid_layer`,
+  `create_shape_layer`, `create_text_layer`, `get_comp_details`,
+  `set_layer_selection`, `get_selected_layers`, and `get_layer_details`.
+  Dry run passed; protected run passed with checkpoint/edit session
+  `ai-plan-81845fbd`; semantic verification passed with 7 checks,
+  5 mutation verifications, and 3 read-back summaries. Final typed read-back
+  verified selected indices `[1,2]` and selected generated layers
+  `Codex QA AUX101 58270209 Layer Selection Text` and
+  `Codex QA AUX101 58270209 Layer Selection Shape`. Cleanup removed
+  2 generated project items, final cleanup removed 0, render queue stayed 0,
+  and artifact:
+  `logs/agent-run-reports/2026-06-13T13-45-21.330Z-openai-cli-gpt-5.5-layer-selection-Codex-QA-AUX101-58270209.json`.
+  Post-run read-only audit again found `projectItemLeftovers=0`,
+  `renderQueueLeftovers=0`, `activeEditSession=false`, and `toolErrors=0`;
+  `needsReview:true` is only from checkpoint/edit-session records. A narrow
+  registry metadata drift was also corrected for
+  `selection-generated-only.allowedTools` so the family whitelist includes the
+  existing typed selection recipe tools `get_comp_details` and
+  `set_layer_selection`. No candidate completion, broad queue, Local/Ollama,
+  fallback provider, dependency change, raw JSX product copy,
+  source-checkout write, user-asset mutation, render execution, push, PR,
+  GitHub automation, or launcher edit was run.
 - [x] Max-scope layer switches live proof wave:
   после human-approved skip для Puppet pin type продолжил generated-only live
   proof campaign from commit `bdc8e12`. Compact preflight confirmed clean
@@ -2016,29 +2049,41 @@ old `AE_agent` repository remains the historical source.
 
 ## Next Milestone
 
-Continue the max-scope generated-only live proof campaign from the latest
-reviewable commit. Start the next wave with compact preflight, fresh
-`inspect`/provider readiness and panel task-window budget, and a narrow
-prepared lane family that has typed target selection, semantic verification,
-protected edit-session checkpoints, typed read-back, cleanup evidence, and
-explicit unsupported source-exact semantics. The next prepared unproven wave is
-`node scripts\cep-panel-cdp-smoke.js full-ui-agent-layer-selection-openai-cli-smoke`.
-Do not rerun `full-ui-agent-puppet-pin-type-openai-cli-smoke` unchanged; the
-user chose to skip/terminalize that proof lane until a separate generated Puppet
-pin atom contract is approved.
-Useful remaining families include still-unproven path/file/proxy/user-file,
-third-party semantics, and any still-unproven
-`full-ui-agent-*openai-cli-smoke` commands. Do not rerun the completed
+Current prepared max-scope generated-only live proof set is closed for this
+run. `full-ui-agent-layer-selection-openai-cli-smoke` passed, and the only
+remaining prepared family without a passing proof is
+`full-ui-agent-puppet-pin-type-openai-cli-smoke`, which the user explicitly
+chose to skip/terminalize until a separate generated Puppet pin atom contract
+is approved. New live proof work should start only with a new scoped decision,
+compact preflight, fresh `inspect`/provider readiness, and a narrow prepared
+lane family with typed target selection, semantic verification, protected
+edit-session checkpoints, typed read-back, cleanup evidence, and explicit
+unsupported source-exact semantics. Do not rerun the completed
 layer-switches/layer/path/EG/Puppet/composition-marker/project-item-metadata/comp-current-time/
 selected-property-value/selected-property-keyframe/text-to-keys/
 selected-keyframe-marker/remaining-tail/render-queue/comp-properties/
 reset-work-area/rename-find-replace/assorted-composition-guides/composition-guide/
 background-layer/layer-transform/project-items/composition-version/
 effect-property/expression/parametric-anchor-expression/parent-opacity-expression/
-stick-effect-expression waves unless needed for a regression check.
+stick-effect-expression/layer-selection waves unless needed for a regression
+check.
 
 ## Decision Log
 
+- 2026-06-13: Layer-selection live proof is valid only for one explicit
+  generated comp and explicit generated layer indices `[1,2]`. It proves only
+  active-comp layer selection replacement through typed `set_layer_selection`
+  plus `get_selected_layers`/`get_layer_details` read-back under protected
+  edit-session checkpointing, dry-run gating, semantic verification, cleanup,
+  and render queue baseline/after audit. It does not approve persistent named
+  selection sets, fuzzy matching, nondeterministic/random selection during the
+  mutation step, project-panel selection, cross-comp selection, source-exact
+  native UI side effects, raw JSX fallback, or broad user-project scans.
+- 2026-06-13: Corrected `selection-generated-only.allowedTools` metadata in
+  `orchestrator/generic-repo-live-lane-registry.json` to include the existing
+  typed selection recipe tools `get_comp_details` and `set_layer_selection`.
+  This closes the previously noted registry drift without changing bridge
+  behavior, fixture generation, product JavaScript, or launcher files.
 - 2026-06-13: Layer-switches live proof is valid only for one explicit
   generated comp, one generated source comp, and one generated precomp layer.
   It proves `collapseTransformation:true` and `motionBlur:true` through typed
@@ -2992,6 +3037,7 @@ stick-effect-expression waves unless needed for a regression check.
 
 ## Validation
 
+| Max-scope layer selection live proof wave | Required to prove generated-only explicit layer selection semantics after layer-switches, while preserving typed inputs/outputs, no duplicate ids, protected edit-session checkpointing, dry-run gating, before/after typed layer-selection read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact selection semantics. | Passed: `full-ui-agent-layer-selection-openai-cli-smoke` passed with provider/model `openai-cli/gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 8, expected mutating count 5, dry-run ok, protected run ok with checkpoint/edit session `ai-plan-81845fbd`, semantic verification passed with 7 checks, 5 mutation verifications, and 3 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_solid_layer`, `create_shape_layer`, `create_text_layer`, `get_comp_details`, `set_layer_selection`, `get_selected_layers`, and `get_layer_details`. Read-back showed selected indices `[1,2]` and selected generated layers `Codex QA AUX101 58270209 Layer Selection Text` and `Codex QA AUX101 58270209 Layer Selection Shape`; cleanup removed 2 generated project items, final cleanup removed 0, render queue stayed 0, and artifact `logs\agent-run-reports\2026-06-13T13-45-21.330Z-openai-cli-gpt-5.5-layer-selection-Codex-QA-AUX101-58270209.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Narrow registry metadata fix added `get_comp_details` and `set_layer_selection` to `selection-generated-only.allowedTools`. Validation passed: compact preflight, read-only `inspect`, pre-run and post-run read-only `agent-scenario-audit`, live proof command, JSON parse for the live-lane registry, `npm.cmd run smoke:full-intake`, `npm.cmd run check:rules`, and `git diff --check` with Windows line-ending warnings only. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope layer switches live proof wave | Required to prove generated-only explicit layer switch semantics after skipping the blocked Puppet pin type lane, while preserving typed inputs/outputs, no duplicate ids, protected edit-session checkpointing, dry-run gating, before/after typed layer read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact layer-switch semantics. | Passed: `full-ui-agent-layer-switches-openai-cli-smoke` passed with provider/model `openai-cli/gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 8, expected mutating count 5, dry-run ok, protected run ok with checkpoint/edit session `ai-plan-b1304936`, semantic verification passed with 2 checks, 5 mutation verifications, and 3 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `add_project_item_to_comp`, `get_layer_details`, and `set_property_value`. Read-back showed generated layer `Codex QA AUX096 57086056 Layer Switches Precomp Layer` with `collapseTransformation:true` and `motionBlur:true`; cleanup removed 2 generated project items, final cleanup removed 0, render queue stayed 0, and artifact `logs\agent-run-reports\2026-06-13T13-25-36.012Z-openai-cli-gpt-5.5-layer-switches-Codex-QA-AUX096-57086056.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: compact preflight, read-only `inspect`, live proof command, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, `npm.cmd run check:rules`, and `git diff --check`. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope Puppet-on-transparent live proof wave | Required to prove generated-only Puppet On Transparent semantics on an explicit generated Puppet effect while preserving typed inputs/outputs, no duplicate ids, protected edit-session checkpointing, dry-run gating, before/after typed effect read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact Puppet semantics. | Passed: `full-ui-agent-puppet-on-transparent-openai-cli-smoke` passed with provider/model `openai-cli/gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 6, expected mutating count 4, dry-run ok, protected run ok with checkpoint/edit session `ai-plan-60ee6da0`, semantic verification passed with 2 checks, 4 mutation verifications, and 2 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_shape_layer`, `add_effect`, `get_effect_details`, and `set_effect_property`. Read-back showed generated effect `Codex QA AUX-PUPPET 48222202 Puppet On Transparent Puppet`, match name `ADBE FreePin3`, 5 returned effect properties, and generated `ADBE FreePin3 On Transparent` boolean set through typed `set_effect_property`; cleanup removed 1 generated project item, final cleanup removed 0, render queue returned to baseline 0, and artifact `logs\agent-run-reports\2026-06-13T10-57-48.159Z-openai-cli-gpt-5.5-puppet-on-transparent-Codex-QA-AUX-PUPPET-48222202.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: compact preflight, read-only `inspect`, live proof artifact parsing, read-only `agent-scenario-audit`, compact status/proof/ledger-summary, `npm.cmd run check:rules`, and `git diff --check`. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope Essential Graphics live proof wave | Required to prove generated-only Essential Graphics controller semantics on an explicit generated comp/layer/property while preserving typed inputs/outputs, no duplicate ids, protected edit-session checkpointing, dry-run gating, controller/read-back evidence, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact Essential Graphics semantics. | Passed: `full-ui-agent-essential-graphics-openai-cli-smoke` passed with provider/model `openai-cli/gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 7, expected mutating count 3, dry-run ok, protected run ok with checkpoint/edit session `ai-plan-1006efc8`, semantic verification passed with 3 checks, 3 mutation verifications, and 4 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_shape_layer`, `get_layer_details`, `get_essential_graphics_controllers`, and `add_property_to_essential_graphics`. Read-back showed generated comp `Codex QA AUX-EG 47562584 Essential Graphics Comp`, generated layer `Codex QA AUX-EG 47562584 Essential Graphics Shape`, controller `Codex QA AUX-EG 47562584 Essential Graphics Opacity`, source property `ADBE Opacity`, and controller count `0 -> 1`; cleanup removed 1 generated project item, final cleanup removed 0, render queue returned to baseline 0, and artifact `logs\agent-run-reports\2026-06-13T10-46-49.936Z-openai-cli-gpt-5.5-essential-graphics-Codex-QA-AUX-EG-47562584.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: compact preflight, read-only `inspect`, live proof artifact parsing, read-only `agent-scenario-audit`, and compact status/proof/ledger-summary. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |

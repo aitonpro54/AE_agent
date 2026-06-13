@@ -131,7 +131,9 @@
       ],
       "allowedTools": [
         "get_active_comp",
-        "get_selected_layers"
+        "get_selected_layers",
+        "get_comp_details",
+        "set_layer_selection"
       ],
       "candidateIds": [
         "tool-selection-layer-selection-set",
