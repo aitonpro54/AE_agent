@@ -26,6 +26,38 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 2 candidate 7:
+  `tool-project-clean-selected-folder` received fresh
+  post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, plan notes,
+  `project-file-render-proxy-safety-policy`, existing Project item
+  move/rename/label recipes and registry entries, project-item live-lane
+  metadata, report smoke coverage, and typed tools `get_project_info`,
+  `get_project_snapshot`, `find_project_items`,
+  `list_project_folder_items`, `move_project_items_to_folder`,
+  `rename_project_items`, and `set_project_item_metadata`. Existing coverage
+  can list, move, rename, and label explicit Project items, but it cannot
+  delete generated Project items/folders or prove `usedIn` dependency safety.
+  The bounded retry returned `completed_no_candidates` with one terminal
+  ticket, zero open tickets, proof envelope SHA-256
+  `ed2aa1296aab1a2acbd9a983b1249f7b15f5e522c486f2c6cecdb8ffeabdd34e`,
+  and `contractComplete=false`. Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-3599525fe49bfbc4/ticket.json`
+  is `terminal_unresolved`, reason
+  `unsafe_safety_signals:destructiveCleanup,usesFileIo`; live-lane synthesis
+  is incomplete with reason `candidate_has_no_suggested_tools`. The precise
+  unblock condition is an approved generated-only Project item/folder cleanup
+  contract that binds explicit generated folders, enumerates every deletion
+  target, reads dependency/`usedIn` evidence, deletes only generated
+  unreferenced items/folders with dry-run, explicit confirmation,
+  checkpoint/edit-session protection, and post-cleanup read-back, while
+  preserving all non-generated user assets. No broad queue, live CEP/AE
+  mutation, launcher edit, dependency/package change, Local/Ollama, fallback
+  provider, raw JSX copy, source-checkout execution, render execution, user
+  output file render, non-generated user-asset mutation, push, or PR was run.
+  The next ordered Direction 2 candidate is
+  `tool-project-clean-up-overlord-folder`.
+
 - [x] Sequential directions acceptance Direction 2 candidate 6:
   `tool-project-clean-render-queue` received fresh
   post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
@@ -2429,6 +2461,18 @@ check.
 
 ## Decision Log
 
+- 2026-06-13: `tool-project-clean-selected-folder` is terminal from a fresh
+  scoped retry, not completed. Existing Project item support covers read,
+  move, rename, and label metadata for explicit items; it deliberately does not
+  delete Project items or folders. Source-equivalent selected-folder cleanup
+  requires both Project panel selected-folder discovery and destructive
+  recursive deletion of unused items/folders. Completion requires a separate
+  generated-only cleanup/delete contract with explicit folder binding,
+  pre-mutation target enumeration, dependency/`usedIn` read-back, dry-run and
+  explicit confirmation, checkpoint/edit-session protection, post-cleanup
+  project read-back, semantic verification, and preservation of all
+  non-generated user assets.
+
 - 2026-06-13: `tool-project-clean-render-queue` is terminal from a fresh
   scoped retry, not completed. Existing render queue support is intentionally
   setup-only: `add_comp_to_render_queue`, `set_render_queue_output`, and
@@ -3485,6 +3529,8 @@ check.
   composition; otherwise frame rate must be explicit.
 
 ## Validation
+
+| Sequential directions acceptance Direction 2 candidate 7 | Required to give `tool-project-clean-selected-folder` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing Project item move/rename/label coverage and the missing generated-only folder cleanup/delete contract. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `ed2aa1296aab1a2acbd9a983b1249f7b15f5e522c486f2c6cecdb8ffeabdd34e`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-3599525fe49bfbc4/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:destructiveCleanup,usesFileIo`; live-lane synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, render execution, user output file render, non-generated user-asset mutation, push, or PR was run. |
 
 | Sequential directions acceptance Direction 2 candidate 6 | Required to give `tool-project-clean-render-queue` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing render queue setup coverage and the missing generated-only cleanup/delete contract. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `63b5d6f990e01fd57bc83e74d30981612d0307ae9a7f28ea191aa35b18be6649`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-a3509bd4b21cad86/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:destructiveCleanup,usesRenderQueue`; live-lane synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, render execution, user output file render, non-generated user-asset mutation, push, or PR was run. |
 
