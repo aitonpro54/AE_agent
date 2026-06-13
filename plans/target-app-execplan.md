@@ -26,6 +26,24 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 1 candidate 3:
+  `tool-markers-add-markers-at-work-area` received fresh
+  post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, existing
+  `add-composition-markers-at-work-area-typed-plan` recipe, generic intake
+  note, registry coverage, `composition-marker-add-generated-only` live-lane
+  metadata, composition marker add smoke coverage, and typed tools
+  `get_comp_details` and `add_comp_marker`. The bounded retry returned
+  `completed_no_candidates` with one terminal ticket, zero open tickets, proof
+  envelope SHA-256
+  `cb0a10d04fd96d78b9e4c0474bc76fef8bd91470a4bdba8cd0f9661c529bf0f7`.
+  Current family ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-00c604138f2132d7/ticket.json`
+  is `terminal_unresolved`, reason `self_improvement_family_missing`, with
+  synthesis blocked by `classification_not_allowed:unsafe_skip_tool_gap`.
+  No broad queue, live CEP/AE mutation, launcher edit, dependency/package
+  change, Local/Ollama, fallback provider, raw JSX copy, source-checkout write,
+  render execution, push, or PR was run.
 - [x] Sequential directions acceptance Direction 1 candidate 2:
   `tool-markers-add-markers-at-out-points` received fresh
   post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
@@ -2221,6 +2239,12 @@ check.
 
 ## Decision Log
 
+- 2026-06-13: `tool-markers-add-markers-at-work-area` shares the same
+  generated-only composition marker add family as
+  `tool-markers-add-markers-at-out-points`. The runner reuses the family ticket
+  path for the latest candidate in that family, so candidate-specific evidence
+  is recorded in the plan/handoff milestone text, proof envelope hash, and
+  reviewable commit rather than relying only on the mutable runtime ticket path.
 - 2026-06-13: `tool-markers-add-markers-at-out-points` is terminal from a
   fresh scoped retry, not completed. Current repo coverage includes a narrow
   generated-only composition marker add recipe/lane for layer out-point marker
@@ -3212,6 +3236,7 @@ check.
 
 ## Validation
 
+| Sequential directions acceptance Direction 1 candidate 3 | Required to give `tool-markers-add-markers-at-work-area` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current composition-marker add contracts. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, and proof envelope SHA-256 `cb0a10d04fd96d78b9e4c0474bc76fef8bd91470a4bdba8cd0f9661c529bf0f7`. Current family ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-00c604138f2132d7/ticket.json` is `terminal_unresolved`, reason `self_improvement_family_missing`, with synthesis blocked by `classification_not_allowed:unsafe_skip_tool_gap`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout write, render execution, push, or PR was run. |
 | Sequential directions acceptance Direction 1 candidate 2 | Required to give `tool-markers-add-markers-at-out-points` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current composition-marker add contracts. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket and zero open tickets. Ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-00c604138f2132d7/ticket.json` is `terminal_unresolved`, reason `self_improvement_family_missing`, with synthesis blocked by `classification_not_allowed:unsafe_skip_tool_gap`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout write, render execution, push, or PR was run. |
 | Sequential directions acceptance Direction 1 candidate 1 | Required to give `tool-compositions-set-work-area-to-markers` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence instead of relying on old contract coverage. | Passed/terminal: compact preflight passed, ledger entry and current plan/recipe/registry/live-lane evidence were reviewed, and the scoped command `node orchestrator/run-generic-repo-full-intake.mjs --ledger C:\Users\Ant\Documents\Codex\AE_agent\.codex-runtime\sdk\generic-repo-importer\kyletmartinez-after-effects-scripts-742f32d4-intake\queue-ledger.triage-75.json --run-id full-intake-kyletmartinez --context-percent 5 --max-items 1 --resolution-candidate-ids tool-compositions-set-work-area-to-markers --allow-self-improvement-lane-synthesis --compact-json` returned `completed_no_candidates` with one terminal ticket and zero open tickets. Ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-fadad01fa3ff94bd/ticket.json` is `terminal_unresolved`, reason `self_improvement_family_missing`, with synthesis blocked by `classification_not_allowed:unsafe_skip_tool_gap`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout write, render execution, push, or PR was run. |
 | First-four contracts launcher closeout audit | Required to verify the four requested contract directions from the clean commit without touching launcher files, broad queue state, or live mutating CEP/AE state. | Passed: compact preflight read active docs, `.codex` baton/handoff, clean `git status --short`, compact status/proof/ledger-summary, and `git rev-parse HEAD` at `5dbbe2af12c0ea41a5d666398d9c1170f6a2203b`. Contract map confirmed existing lane/recipe coverage for composition marker read/add/copy/work-area, generated export and render queue setup plus project/file/render/proxy fail-closed policy, parent-opacity `set_layer_parent` proof with broader matte/reorder gaps still fail-closed, and layer enabled/blend/switch contracts. Validation passed: JSON parse for `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, and the triage ledger; `node scripts\solution-library-validation-smoke.js`; `node scripts\semantic-verification-smoke.js`; `node scripts\agent-scenario-report-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `npm.cmd run smoke:bridge`. No scoped retry, broad queue, live mutation, Local/Ollama, fallback provider, dependency change, raw JSX copy, source-checkout execution, render execution, push, PR, GitHub automation, or launcher edit was run. |
