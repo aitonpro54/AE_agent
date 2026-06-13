@@ -26,6 +26,41 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Max-scope Essential Graphics live proof wave:
+  продолжил generated-only live proof campaign from commit `67fbccc` after
+  compact preflight confirmed clean tracked status, no related Full Intake
+  writer process, terminal status/proof/ledger state, and baton ownership for
+  `max-scope-essential-graphics-live-proof`. Read-only `inspect` confirmed
+  live panel/bridge `Connected`, provider/model `openai-cli/gpt-5.5`, and
+  provider status `ready`; the panel-local 5h timer was treated as
+  stale/advisory per user override. The live command
+  `full-ui-agent-essential-graphics-openai-cli-smoke` passed with panel plan
+  count 1, accepted count 1, `fallbackCount=0`, scenario
+  `generated-essential-graphics-controller`, expected step count 7, expected
+  mutating count 3, and expected typed tools including
+  `create_comp`, `create_shape_layer`, `get_layer_details`,
+  `get_essential_graphics_controllers`, and
+  `add_property_to_essential_graphics`. Dry run passed; protected run passed
+  with checkpoint/edit session `ai-plan-1006efc8`; semantic verification
+  passed with 3 checks, 3 mutation verifications, and 4 read-back summaries.
+  Final typed read-back verified generated comp
+  `Codex QA AUX-EG 47562584 Essential Graphics Comp`, generated shape layer
+  `Codex QA AUX-EG 47562584 Essential Graphics Shape`, controller
+  `Codex QA AUX-EG 47562584 Essential Graphics Opacity`, and source property
+  `ADBE Opacity`. Cleanup removed 1 generated project item, final cleanup
+  removed 0, render queue returned to baseline 0, and artifact:
+  `logs/agent-run-reports/2026-06-13T10-46-49.936Z-openai-cli-gpt-5.5-essential-graphics-Codex-QA-AUX-EG-47562584.json`.
+  Post-run read-only audit found `projectItemLeftovers=0`,
+  `renderQueueLeftovers=0`, `activeEditSession=false`, and `toolErrors=0`;
+  `needsReview:true` is only from checkpoint/edit-session records.
+  Unsupported source-exact semantics remain fail-closed: non-generated/user
+  Essential Graphics mutation, arbitrary selected-property/controller traversal,
+  controller renaming/reordering/deletion, MOGRT export, file/proxy/render
+  behavior, Puppet pins, third-party effects, raw JSX fallback, broad
+  active-project cleanup, and user-asset mutation. No broad queue, Local/Ollama,
+  fallback provider, dependency change, raw JSX product copy, source-checkout
+  write, user-asset mutation, render execution, push, PR, GitHub automation, or
+  launcher edit was run.
 - [x] Max-scope export-path-points live proof wave:
   продолжил generated-only live proof campaign from commit `b5848d8` after
   compact preflight confirmed clean tracked status, no related Full Intake
@@ -1936,6 +1971,17 @@ stick-effect-expression waves unless needed for a regression check.
 
 ## Decision Log
 
+- 2026-06-13: Essential Graphics live proof is valid only for one explicit
+  generated comp and generated shape layer, adding one generated opacity
+  property to Essential Graphics through typed
+  `add_property_to_essential_graphics`, with
+  `get_essential_graphics_controllers` and `get_layer_details` read-back under
+  protected edit-session checkpointing, dry-run gating, semantic verification,
+  cleanup, and render queue baseline/after audit. It does not approve
+  non-generated Essential Graphics mutation, source-exact selected-property
+  traversal, controller rename/reorder/delete behavior, MOGRT export,
+  file/proxy/render behavior, third-party effect behavior, broad active-project
+  cleanup, or raw JSX fallback.
 - 2026-06-13: Export-path-points live proof is valid only for one explicit
   generated comp, one generated solid, one generated mask path, typed geometry
   read-back, and a bridge-owned safe generated export file under
@@ -2851,6 +2897,7 @@ stick-effect-expression waves unless needed for a regression check.
 
 ## Validation
 
+| Max-scope Essential Graphics live proof wave | Required to prove generated-only Essential Graphics controller semantics on an explicit generated comp/layer/property while preserving typed inputs/outputs, no duplicate ids, protected edit-session checkpointing, dry-run gating, controller/read-back evidence, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact Essential Graphics semantics. | Passed: `full-ui-agent-essential-graphics-openai-cli-smoke` passed with provider/model `openai-cli/gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 7, expected mutating count 3, dry-run ok, protected run ok with checkpoint/edit session `ai-plan-1006efc8`, semantic verification passed with 3 checks, 3 mutation verifications, and 4 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_shape_layer`, `get_layer_details`, `get_essential_graphics_controllers`, and `add_property_to_essential_graphics`. Read-back showed generated comp `Codex QA AUX-EG 47562584 Essential Graphics Comp`, generated layer `Codex QA AUX-EG 47562584 Essential Graphics Shape`, controller `Codex QA AUX-EG 47562584 Essential Graphics Opacity`, source property `ADBE Opacity`, and controller count `0 -> 1`; cleanup removed 1 generated project item, final cleanup removed 0, render queue returned to baseline 0, and artifact `logs\agent-run-reports\2026-06-13T10-46-49.936Z-openai-cli-gpt-5.5-essential-graphics-Codex-QA-AUX-EG-47562584.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: compact preflight, read-only `inspect`, live proof artifact parsing, read-only `agent-scenario-audit`, and compact status/proof/ledger-summary. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope export-path-points live proof wave | Required to prove generated-only path point export semantics on an explicit mask path while preserving typed inputs/outputs, no duplicate ids, protected edit-session checkpointing, dry-run gating, geometry/read-back evidence, safe generated export file verification/removal, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact export semantics. | Passed: `full-ui-agent-export-path-points-openai-cli-smoke` passed with provider/model `openai-cli/gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 9, expected mutating count 5, dry-run ok, protected run ok with checkpoint/edit session `ai-plan-dd199f0e`, semantic verification passed with 8 checks, 5 mutation verifications, and 4 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_solid_layer`, `set_layer_mask`, `get_layer_details`, `set_path_geometry`, `get_path_geometry`, and `export_path_points`. Read-back showed generated comp `Codex QA AUX-EXPORT 46928101 Export Path Points Comp`, generated layer `Codex QA AUX-EXPORT 46928101 Export Path Points Solid`, generated export file `Codex-QA-AUX-EXPORT-46928101-Export-Path-Points-points.txt` with 69 bytes and SHA-256 evidence, exported points `[[220.56,35.44],[190,170],[45.33,135.67],[10.12,20.99]]`, and generated export removal after verification; cleanup removed 2 generated project items, final cleanup removed 0, render queue stayed 0, and artifact `logs\agent-run-reports\2026-06-13T10-36-44.453Z-openai-cli-gpt-5.5-export-path-points-Codex-QA-AUX-EXPORT-46928101.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: compact preflight, read-only `inspect`, `agent-scenario-audit`, and compact status/proof/ledger-summary. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope flip-path live proof wave | Required to prove generated-only horizontal flip path semantics on explicit keyframed mask geometry while preserving typed inputs/outputs, no duplicate ids, protected edit-session checkpointing, dry-run gating, before/after typed read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact flip-path semantics. | Passed: `full-ui-agent-flip-path-openai-cli-smoke` passed with provider/model `openai-cli/gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 9, expected mutating count 5, dry-run ok, protected run ok with checkpoint/edit session `ai-plan-49693033`, semantic verification passed with 6 checks, 5 mutation verifications, and 4 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_solid_layer`, `set_layer_mask`, `get_layer_details`, `set_path_geometry`, and `get_path_geometry`. Read-back showed generated comp `Codex QA AUX-FLIP 46320616 Flip Path Comp`, generated layer `Codex QA AUX-FLIP 46320616 Flip Path Solid`, generated mask `Codex QA AUX-FLIP 46320616 Flip Path Mask`, and two mask path keyframes at times 0 and 1 before/after the horizontal flip; cleanup removed 2 generated project items, final cleanup removed 0, render queue stayed 0, and artifact `logs\agent-run-reports\2026-06-13T10-26-34.692Z-openai-cli-gpt-5.5-flip-path-Codex-QA-AUX-FLIP-46320616.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: compact preflight, read-only `inspect`, `agent-scenario-audit`, and compact status/proof/ledger-summary. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
 | Max-scope stick-effect expression live proof wave | Required to prove generated-only stick-effect expression setup on an explicit effect 2D spatial property while preserving typed inputs/outputs, no duplicate ids, protected edit-session checkpoints, dry-run gating, before/after typed read-back, semantic verification, cleanup/rollback evidence, render queue baseline/after audit, and explicit unsupported source-exact stick-effect semantics. | Passed: `full-ui-agent-stick-effect-expression-openai-cli-smoke` passed with provider/model `openai-cli/gpt-5.5`, panel plan count 1, accepted count 1, `fallbackCount=0`, expected step count 7, expected mutating count 4, dry-run ok, protected run ok with checkpoint/edit session `ai-plan-993b9efb`, semantic verification passed with 3 checks, 4 mutation verifications, and 3 read-back summaries, and final typed read-back passed. Expected typed tools covered `create_comp`, `create_shape_layer`, `add_effect`, `get_effect_details`, `set_expression`, and `get_layer_details`. Read-back showed generated Ramp effect `ADBE Ramp`, property path `ADBE Effect Parade > ADBE Ramp > ADBE Ramp-0001`, expression `toComp(anchorPoint + value);`, and `expressionEnabled:true`; cleanup removed 1 generated project item, final cleanup removed 0, render queue stayed 0, and artifact `...stick-effect-expression-Codex-QA-AUX106-43951981.json`; post-run audit found projectItemLeftovers=0, renderQueueLeftovers=0, activeEditSession=false, and toolErrors=0, with `needsReview:true` only from checkpoint/edit-session records. Validation passed: read-only `inspect`, `agent-scenario-audit`, compact status/proof/ledger-summary, plus closeout checks recorded in handoff. No candidate completion, broad queue, Local/Ollama, fallback provider, dependency change, raw JSX product copy, user-asset mutation, render execution, push, PR, GitHub automation, or launcher edit was run. |
