@@ -26,6 +26,36 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Max-scope path-geometry live proof wave:
+  продолжил generated-only live proof campaign from commit `53bc573` after
+  compact preflight confirmed clean tracked status, no stale `run-generic-repo`
+  writer, terminal status/proof/ledger state, and baton ownership for
+  `max-scope-path-geometry-live-proof`. Read-only `inspect` confirmed live
+  panel/bridge `Connected`, provider/model `openai-cli/gpt-5.5`, and provider
+  status `ready`; the panel-local 5h timer was treated as stale/advisory per
+  user override. The live command
+  `full-ui-agent-path-geometry-openai-cli-smoke` passed with panel plan count
+  1, accepted count 1, `fallbackCount=0`, scenario
+  `generated-shape-mask-path-geometry`, expected step count 7, expected
+  mutating count 4, and expected typed tools `create_comp`,
+  `create_solid_layer`, `set_layer_mask`, `get_layer_details`,
+  `set_path_geometry`, and `get_path_geometry`. Dry run passed; protected run
+  passed with checkpoint/edit session `ai-plan-d25b5ee2`; semantic verification
+  passed with 5 checks, 4 mutation verifications, and 3 read-back summaries.
+  Final typed read-back verified generated comp/layer/mask identities plus two
+  mask path keyframes at times 0 and 1. Cleanup removed 2 generated project
+  items, final cleanup removed 0, render queue stayed 0, and artifact:
+  `logs/agent-run-reports/2026-06-13T10-16-53.475Z-openai-cli-gpt-5.5-path-geometry-Codex-QA-AUX-PATH-45745596.json`.
+  Post-run read-only audit found `projectItemLeftovers=0`,
+  `renderQueueLeftovers=0`, `activeEditSession=false`, and `toolErrors=0`;
+  `needsReview:true` is only from checkpoint/edit-session records. Unsupported
+  source-exact semantics remain fail-closed: ScriptUI/source traversal,
+  arbitrary user paths, expression-driven paths, broad selected-property
+  batches, file output, Essential Graphics, Puppet pins, third-party effects,
+  raw JSX fallback, render execution, and user-asset mutation. No broad queue,
+  Local/Ollama, fallback provider, dependency change, raw JSX product copy,
+  source-checkout write, user-asset mutation, render execution, push, PR,
+  GitHub automation, or launcher edit was run.
 - [x] Max-scope estimate-path-length live proof wave:
   продолжил generated-only live proof campaign from commit `3c02d82` after
   compact preflight confirmed clean tracked status, no related Full Intake
