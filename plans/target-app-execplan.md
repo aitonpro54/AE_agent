@@ -26,6 +26,32 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 2 candidate 1:
+  `tool-compositions-rename-composition-to-file-name` received fresh
+  post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, plan notes, adjacent
+  project-item rename recipes `rename-selected-project-items-typed-plan` and
+  `replace-text-in-project-item-name-typed-plan`, registry coverage for
+  `rename_project_items`, adjacent composition-version/project-item report
+  smoke coverage, semantic verification for project item rename read-back, and
+  typed tools `get_project_info`, `get_project_snapshot`,
+  `find_project_items`, `get_comp_details`, and `rename_project_items`.
+  Candidate-specific recipe/registry/live-lane/report coverage for
+  project-file-basename composition rename is still absent. The bounded retry
+  returned `completed_no_candidates` with one terminal ticket, zero open
+  tickets, proof envelope SHA-256
+  `97f41bc5f7d9879e88e25e0e4be56d995bd3b386bd878624aca498adf7b61b24`.
+  Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-d3b67468672474ac/ticket.json`
+  is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`.
+  The precise unblock condition is to add parent-owned typed-only
+  recipe/solution/lane coverage for project-file-basename composition rename,
+  allow only read-only project-file basename evidence from `get_project_info`,
+  verify generated-only CEP/CDP live proof after `127.0.0.1:8870` inspect
+  passes, then rerun this scoped candidate. No broad queue, live CEP/AE
+  mutation, launcher edit, dependency/package change, Local/Ollama, fallback
+  provider, raw JSX copy, source-checkout execution, render execution, push, or
+  PR was run.
 - [x] Sequential directions acceptance Direction 1 candidate 5:
   `tool-markers-copy-layer-markers-to-composition` received fresh
   post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
@@ -2286,6 +2312,14 @@ check.
 
 ## Decision Log
 
+- 2026-06-13: `tool-compositions-rename-composition-to-file-name` is terminal
+  from a fresh scoped retry, not completed. Adjacent project item rename
+  support exists through `rename_project_items`, but project-file-basename
+  composition rename needs its own generated-only recipe/solution/lane and a
+  policy decision that treats `get_project_info` basename evidence as a
+  bounded read-only input, not broad file I/O. Source-exact project-file access,
+  Project panel selection assumptions, raw JSX, render/proxy/file writes, and
+  user-asset mutation remain fail-closed.
 - 2026-06-13: `tool-markers-copy-layer-markers-to-composition` is terminal
   from a fresh scoped retry because the runner's self-improvement reducer does
   not accept the existing generated-only composition marker read/copy contract
@@ -3301,6 +3335,7 @@ check.
 
 ## Validation
 
+| Sequential directions acceptance Direction 2 candidate 1 | Required to give `tool-compositions-rename-composition-to-file-name` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current project-item rename contracts and the missing exact project-file-basename composition rename lane. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, and proof envelope SHA-256 `97f41bc5f7d9879e88e25e0e4be56d995bd3b386bd878624aca498adf7b61b24`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-d3b67468672474ac/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, render execution, push, or PR was run. |
 | Sequential directions acceptance Direction 1 candidate 5 | Required to give `tool-markers-copy-layer-markers-to-composition` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current composition/layer marker copy contracts. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, and proof envelope SHA-256 `1b1c81ca30136065633eb5ac3f888ef6db47367b00fd515880c4fc91e1c34750`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-7d7b25381bf522c3/ticket.json` is `terminal_unresolved`, reason `self-improvement-read-back-contract-missing:composition-marker-read-generated-only`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout write, render execution, push, or PR was run. |
 | Sequential directions acceptance Direction 1 candidate 4 | Required to give `tool-markers-copy-composition-markers-to-layer` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current composition/layer marker copy contracts. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, and proof envelope SHA-256 `c5112f5f2b267cf7850a632086bc3df97d91f669402b2a0bdc978d65932e3220`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-7d7b25381bf522c3/ticket.json` is `terminal_unresolved`, reason `self-improvement-read-back-contract-missing:composition-marker-read-generated-only`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout write, render execution, push, or PR was run. |
 | Sequential directions acceptance Direction 1 candidate 3 | Required to give `tool-markers-add-markers-at-work-area` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current composition-marker add contracts. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, and proof envelope SHA-256 `cb0a10d04fd96d78b9e4c0474bc76fef8bd91470a4bdba8cd0f9661c529bf0f7`. Current family ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-00c604138f2132d7/ticket.json` is `terminal_unresolved`, reason `self_improvement_family_missing`, with synthesis blocked by `classification_not_allowed:unsafe_skip_tool_gap`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout write, render execution, push, or PR was run. |
