@@ -26,6 +26,39 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 2 candidate 8:
+  `tool-project-clean-up-overlord-folder` received fresh
+  post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, plan notes,
+  `project-file-render-proxy-safety-policy`, existing Project item
+  move/rename/label and generated-folder render-queue coverage, live-lane
+  metadata, report/semantic smoke coverage, the QA-only `cleanup_test_items`
+  helper, and typed tools `get_project_info`, `get_project_snapshot`,
+  `find_project_items`, `list_project_folder_items`,
+  `create_project_folder`, `move_project_items_to_folder`,
+  `rename_project_items`, and `set_project_item_metadata`. Existing coverage
+  can read, move, rename, label, and queue explicit generated Project items,
+  but it cannot compare project footage paths to an external Overlord
+  filesystem folder, copy unused files, delete originals, or prove Desktop/user
+  asset preservation. The bounded retry returned `completed_no_candidates`
+  with one terminal ticket, zero open tickets, proof envelope SHA-256
+  `3083970db7602d7368cd4635e344ce3cb04152f0d5bdb8d9424932f01b204db1`,
+  and `contractComplete=false`. Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-e127cb6845d645ca/ticket.json`
+  is `terminal_unresolved`, reason
+  `unsafe_safety_signals:destructiveCleanup,thirdPartyAssumption,usesFileIo`;
+  live-lane synthesis is incomplete with reason
+  `candidate_has_no_suggested_tools`. The precise unblock condition is explicit
+  approval plus a generated-only filesystem cleanup sandbox for Overlord-style
+  assets: allowlisted scratch root, pre-mutation target enumeration, dry-run
+  preview, explicit confirmation, rollback/read-back evidence, checkpoint or
+  edit-session protection, and proof that Desktop, source-checkout, and
+  non-generated user assets are not touched. No broad queue, live CEP/AE
+  mutation, launcher edit, dependency/package change, Local/Ollama, fallback
+  provider, raw JSX copy, source-checkout execution, render execution, user
+  output file render, non-generated user-asset mutation, push, or PR was run.
+  The next ordered Direction 2 candidate is `tool-project-export-text-to-file`.
+
 - [x] Sequential directions acceptance Direction 2 candidate 7:
   `tool-project-clean-selected-folder` received fresh
   post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
@@ -2461,6 +2494,19 @@ check.
 
 ## Decision Log
 
+- 2026-06-13: `tool-project-clean-up-overlord-folder` is terminal from a fresh
+  scoped retry, not completed. Source-equivalent behavior depends on an
+  Overlord-specific Project folder plus external filesystem cleanup beside the
+  saved `.aep`, copying unused files to a Desktop backup folder and deleting
+  originals. Existing typed Project tools can inspect, move, rename, label, and
+  queue explicit generated Project items, but they do not provide filesystem
+  traversal/copy/delete, Desktop backup policy, or generated-only scratch-root
+  rollback/read-back proof. Completion requires explicit approval and a narrow
+  generated-only filesystem cleanup contract with allowlisted scratch paths,
+  target enumeration, dry-run/confirmation, checkpoint or edit-session
+  protection, rollback evidence, and proof that no Desktop, source-checkout, or
+  non-generated user asset is touched.
+
 - 2026-06-13: `tool-project-clean-selected-folder` is terminal from a fresh
   scoped retry, not completed. Existing Project item support covers read,
   move, rename, and label metadata for explicit items; it deliberately does not
@@ -3529,6 +3575,8 @@ check.
   composition; otherwise frame rate must be explicit.
 
 ## Validation
+
+| Sequential directions acceptance Direction 2 candidate 8 | Required to give `tool-project-clean-up-overlord-folder` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing Overlord filesystem cleanup risk, Project item typed coverage, live-lane metadata, semantic/report smoke coverage, and the missing generated-only filesystem cleanup sandbox. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `3083970db7602d7368cd4635e344ce3cb04152f0d5bdb8d9424932f01b204db1`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-e127cb6845d645ca/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:destructiveCleanup,thirdPartyAssumption,usesFileIo`; live-lane synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, render execution, user output file render, non-generated user-asset mutation, push, or PR was run. |
 
 | Sequential directions acceptance Direction 2 candidate 7 | Required to give `tool-project-clean-selected-folder` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing Project item move/rename/label coverage and the missing generated-only folder cleanup/delete contract. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `ed2aa1296aab1a2acbd9a983b1249f7b15f5e522c486f2c6cecdb8ffeabdd34e`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-3599525fe49bfbc4/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:destructiveCleanup,usesFileIo`; live-lane synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, render execution, user output file render, non-generated user-asset mutation, push, or PR was run. |
 
