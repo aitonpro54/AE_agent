@@ -26,6 +26,42 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 4 candidate 2:
+  `tool-layers-toggle-difference-blend-mode` received fresh
+  post-`1d55bef126672d90c7298aaa760d0e12373d594c` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, plan notes, source behavior,
+  existing `difference-blend-mode-typed-plan`, generic intake note, registry
+  entry, `layer-blending-mode-difference-generated-only` live-lane metadata,
+  semantic/report smoke coverage, and typed tools `get_active_comp`,
+  `get_selected_layers`, `get_comp_details`, `get_layer_details`, and
+  `set_layer_blending_mode`. Source-exact behavior reads
+  `ScriptUI.environment.keyboardState.altKey`, selects `BlendingMode.NORMAL` or
+  `BlendingMode.DIFFERENCE`, then assigns that mode to every active-comp
+  selected layer. The safe tracked contract adapts only generated explicit
+  selected-layer `Layer.blendingMode` Difference writes with expected-name and
+  current-mode guards plus read-back, while Alt-key branching, toggle
+  restoration, other blend mode enums, broad selected-layer traversal,
+  non-generated user assets, and raw JSX remain fail-closed. The bounded retry
+  returned `completed_no_candidates` with one terminal ticket, zero open
+  tickets, proof envelope SHA-256
+  `7c164b9082ee6405846bf1ad6692e491364ac5aea866af9cbba88355003edd49`,
+  and `contractComplete=false`. Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-7d6c17dd5867610f/ticket.json`
+  is `terminal_unresolved`, reason `self_improvement_family_missing`;
+  synthesis is blocked with reason
+  `classification_not_allowed:unsafe_skip_tool_gap` even though the existing
+  supported families include `layer-blending-mode-difference-generated-only`.
+  The precise unblock condition is to update the Full Intaker
+  resolution/synthesis path so this exact unsafe-skip candidate can be accepted
+  or reclassified through the existing candidate-scoped
+  `layer-blending-mode-difference-generated-only` family with current
+  generated-only proof/read-back evidence, or an equivalent approved
+  candidate-scoped gate. No broad queue, live CEP/AE mutation, launcher edit,
+  dependency/package change, Local/Ollama, fallback provider, raw JSX copy,
+  source-checkout execution, non-generated user-asset mutation, push, or PR was
+  run. The next ordered Direction 4 candidate is
+  `tool-compositions-force-composition-panel-refresh`.
+
 - [x] Sequential directions acceptance Direction 4 candidate 1:
   `tool-layers-hard-solo-layers` received fresh
   post-`e04567cb49013adca27d58849e0c3b772dde5f16` scoped retry evidence.
@@ -2820,6 +2856,22 @@ check.
 
 ## Decision Log
 
+- 2026-06-14: `tool-layers-toggle-difference-blend-mode` is terminal from a
+  fresh scoped retry, not completed. The repository now has the narrow
+  generated-only `set_layer_blending_mode` typed contract, normalized
+  `blendingModeName` read-back, semantic/report smoke coverage, advisory
+  recipe/registry coverage, and the candidate-scoped
+  `layer-blending-mode-difference-generated-only` family. The strict Full
+  Intaker retry still blocks this unsafe-skip entry at
+  `classification_not_allowed:unsafe_skip_tool_gap` and reports
+  `self_improvement_family_missing` instead of accepting the existing
+  candidate-scoped family. Completion now requires a resolution/synthesis gate
+  that maps this exact candidate to the existing Difference blending-mode
+  generated-only family, or an equivalent approved candidate-scoped gate.
+  Source-exact Alt-key branching, toggle restoration, other blend modes, broad
+  selected-layer traversal, non-generated user assets, and raw JSX remain
+  fail-closed outside that contract.
+
 - 2026-06-13: `tool-layers-set-track-matte-to-above` is terminal from a fresh
   scoped retry, not completed. Existing generated-only layer switch, blend-mode,
   and parent lanes deliberately fail closed on track matte edits, and the
@@ -4023,6 +4075,8 @@ check.
   composition; otherwise frame rate must be explicit.
 
 ## Validation
+
+| Sequential directions acceptance Direction 4 candidate 2 | Required to give `tool-layers-toggle-difference-blend-mode` fresh post-`1d55bef126672d90c7298aaa760d0e12373d594c` scoped evidence after reviewing source Alt-key Difference/Normal behavior, existing blend-mode typed-plan/lane metadata, semantic/report smoke coverage, and typed tools including current `set_layer_blending_mode`. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `7c164b9082ee6405846bf1ad6692e491364ac5aea866af9cbba88355003edd49`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-7d6c17dd5867610f/ticket.json` is `terminal_unresolved`, reason `self_improvement_family_missing`; synthesis is blocked with reason `classification_not_allowed:unsafe_skip_tool_gap` even though `layer-blending-mode-difference-generated-only` is present in supported families. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, non-generated user-asset mutation, push, or PR was run. |
 
 | Sequential directions acceptance Direction 3 candidate 4 | Required to give `tool-layers-set-track-matte-to-above` fresh post-`2080f7956f8d43dbc9caf017adfeae31e714724b` scoped evidence after reviewing source track-matte behavior, existing layer switch/blend and parent lane metadata, semantic/report smoke coverage, and typed tools for layer inspection. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `532516b213da61201c9514d2e2923701625a501c50cefcd2e6737d7a73167fb3`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-e5dd51219408588a/ticket.json` is `terminal_unresolved`, reason `self_improvement_family_missing`; synthesis is blocked with reason `classification_not_allowed:unsafe_skip_tool_gap`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, broad reorder/matte mutation, non-generated user-asset mutation, push, or PR was run. |
 
