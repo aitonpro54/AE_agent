@@ -26,6 +26,35 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 2 candidate 9:
+  `tool-project-export-text-to-file` received fresh
+  post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, plan notes,
+  `project-file-render-proxy-safety-policy`, existing text-layer read/edit
+  coverage, generated `export_path_points` file-output coverage, semantic and
+  report smoke coverage, and typed tools `get_selected_layers`,
+  `get_layer_details`, `create_text_layer`, `update_text_layer`, and
+  `export_path_points`. Existing coverage can inspect selected text-layer
+  evidence and can write generated path vertices under the bridge generated
+  export root, but it cannot write selected-layer text to `~/Desktop/export.txt`
+  or provide a generic generated-only text-file export contract. The bounded
+  retry returned `completed_no_candidates` with one terminal ticket, zero open
+  tickets, proof envelope SHA-256
+  `18dc9660e97bb169665e672c997286c50f9dc0c3af86546ab95e151a337c1fc1`,
+  and `contractComplete=false`. Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-d938c0d0769e9704/ticket.json`
+  is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`;
+  live-lane synthesis is incomplete with reason
+  `candidate_has_no_suggested_tools`. The precise unblock condition is an
+  approved typed file export contract limited to generated-only or read-only
+  text evidence and an allowlisted scratch output root, with dry-run, explicit
+  confirmation, overwrite policy, post-write byte/hash read-back, and
+  cleanup/rollback. No broad queue, live CEP/AE mutation, launcher edit,
+  dependency/package change, Local/Ollama, fallback provider, raw JSX copy,
+  source-checkout execution, render execution, Desktop/user output file write,
+  non-generated user-asset mutation, push, or PR was run. The next ordered
+  Direction 2 candidate is `tool-project-manually-render-png-sequence`.
+
 - [x] Sequential directions acceptance Direction 2 candidate 8:
   `tool-project-clean-up-overlord-folder` received fresh
   post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
@@ -2494,6 +2523,20 @@ check.
 
 ## Decision Log
 
+- 2026-06-13: `tool-project-export-text-to-file` is terminal from a fresh
+  scoped retry, not completed. Source-equivalent behavior reads active-comp
+  selected layers, extracts Source Text from text layers, emits fallback lines
+  for non-text selected layers, and writes the result to `~/Desktop/export.txt`.
+  Current typed coverage can inspect selected layer/text evidence and has a
+  narrow generated export writer only for path vertices via `export_path_points`;
+  it does not provide a generic text-file writer, Desktop/user-path policy,
+  overwrite handling, or byte/hash read-back for selected-layer text output.
+  Completion requires an approved typed file export contract limited to
+  generated-only or read-only text evidence, an allowlisted generated output
+  root, dry-run/confirmation, explicit overwrite policy, post-write read-back
+  with byte length and `sha256`, cleanup/rollback, and no arbitrary Desktop or
+  user-path writes.
+
 - 2026-06-13: `tool-project-clean-up-overlord-folder` is terminal from a fresh
   scoped retry, not completed. Source-equivalent behavior depends on an
   Overlord-specific Project folder plus external filesystem cleanup beside the
@@ -3575,6 +3618,8 @@ check.
   composition; otherwise frame rate must be explicit.
 
 ## Validation
+
+| Sequential directions acceptance Direction 2 candidate 9 | Required to give `tool-project-export-text-to-file` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing selected text-layer read coverage, generated `export_path_points` file-output coverage, semantic/report smoke coverage, and the missing approved text-file export contract. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `18dc9660e97bb169665e672c997286c50f9dc0c3af86546ab95e151a337c1fc1`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-d938c0d0769e9704/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`; live-lane synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, render execution, Desktop/user output file write, non-generated user-asset mutation, push, or PR was run. |
 
 | Sequential directions acceptance Direction 2 candidate 8 | Required to give `tool-project-clean-up-overlord-folder` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing Overlord filesystem cleanup risk, Project item typed coverage, live-lane metadata, semantic/report smoke coverage, and the missing generated-only filesystem cleanup sandbox. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `3083970db7602d7368cd4635e344ce3cb04152f0d5bdb8d9424932f01b204db1`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-e127cb6845d645ca/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:destructiveCleanup,thirdPartyAssumption,usesFileIo`; live-lane synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, render execution, user output file render, non-generated user-asset mutation, push, or PR was run. |
 
