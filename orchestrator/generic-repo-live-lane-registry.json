@@ -818,7 +818,7 @@
         "node scripts/solution-library-validation-smoke.js"
       ],
       "reclassifiedClassification": "existing_typed_tools_recipe_only",
-      "scope": "generated-only estimate-path-length proof using an explicit generated rectangle path, generated Path Samples and Path Length Slider Control effects, set_effect_property sample count, set_expression path-sampling expression, get_layer_details/get_effect_details read-back, semantic verification, and cleanup; source-exact comp.selectedProperties traversal, arbitrary path geometry, mask paths, keyframed paths, existing slider reuse, selection persistence, file output, and raw JSX semantics remain fail-closed"
+      "scope": "generated-only estimate-path-length proof using an explicit generated parametric rectangle path, generated Path Samples and Path Length Slider Control effects, set_effect_property sample count, set_expression rectangle-perimeter sampling expression, get_layer_details/get_effect_details read-back with generated 240x120 sampled length target 716-718, semantic verification, and cleanup; source-exact comp.selectedProperties traversal, arbitrary Bezier pointOnPath geometry, mask paths, keyframed paths, existing slider reuse, selection persistence, file output, and raw JSX semantics remain fail-closed"
     },
     {
       "id": "puppet-on-transparent-effect-property-generated-only",

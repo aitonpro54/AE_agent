@@ -15,15 +15,16 @@ adaptation uses existing typed tools on an explicit generated shape layer:
 `add_effect`, `set_effect_property`, `set_expression`, `get_effect_details`,
 and `get_layer_details`.
 
-The generated-only proof lane creates a generated comp and rectangle shape
-layer, adds generated `Path Samples` and `Path Length` Slider Control effects,
-sets `Path Samples` to `100`, applies a reviewed Path Length expression to the
-Path Length slider value, and reads both effects and expression state back.
+The generated-only proof lane creates a generated comp and parametric rectangle
+shape layer, adds generated `Path Samples` and `Path Length` Slider Control
+effects, sets `Path Samples` to `100`, applies a reviewed rectangle-perimeter
+sampling expression to the Path Length slider value, and reads both effects,
+the sampled value, and expression state back.
 
 Source-exact traversal through `comp.selectedProperties`, arbitrary selected
-path references, mask paths, Bezier geometry reads/writes, keyframed paths,
-existing slider reuse, selection persistence, file output, and raw ExtendScript
-remain fail-closed.
+path references, arbitrary Bezier `pointOnPath` geometry, mask paths, Bezier
+geometry reads/writes, keyframed paths, existing slider reuse, selection
+persistence, file output, and raw ExtendScript remain fail-closed.
 
 ## Validation Owner
 

@@ -600,8 +600,12 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
     "get_effect_details"
   ]);
   assert.strictEqual(estimatePathLength.plan.steps[4].args.value, 100);
-  assert(estimatePathLength.plan.steps[7].args.expression.includes("pointOnPath"));
+  assert(estimatePathLength.plan.steps[7].args.expression.includes("Rectangle Path 1"));
+  assert(estimatePathLength.plan.steps[7].args.expression.includes("pointAt"));
   assert.strictEqual(estimatePathLength.plan.steps[7].args.propertyPath[1].name, "Path Length");
+  assert.strictEqual(estimatePathLength.expectedReadBack.samplesValue, 100);
+  assert.strictEqual(estimatePathLength.expectedReadBack.minLengthValue, 716);
+  assert.strictEqual(estimatePathLength.expectedReadBack.maxLengthValue, 718);
 
   const [puppetOnTransparent] = agentPuppetOnTransparentScenarioPlans("Codex QA AUX-PUPPET Fixture");
   assert.strictEqual(puppetOnTransparent.id, "generated-puppet-on-transparent");

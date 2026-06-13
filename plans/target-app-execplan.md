@@ -26,6 +26,52 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Max-scope estimate-path-length live proof wave:
+  продолжил generated-only live proof campaign from commit `3c02d82` after
+  compact preflight confirmed clean tracked status, no related Full Intake
+  writer process, terminal status/proof/ledger state, and baton ownership for
+  `max-scope-estimate-path-length-live-proof`. Read-only `inspect` confirmed
+  live panel/bridge `Connected`, provider/model `openai-cli/gpt-5.5`, and
+  provider status `ready`; the panel-local 5h timer was treated as
+  stale/advisory per user override. Initial proof attempts failed closed first
+  on a missing dedicated final read-back verifier, then on an invalid
+  `pointOnPath` assumption against the typed `create_shape_layer` parametric
+  rectangle output. Decision: keep the lane inside existing typed tools and
+  narrow it to generated parametric rectangle perimeter sampling; arbitrary
+  Bezier `pointOnPath`, source-exact `comp.selectedProperties`, mask paths,
+  keyframed paths, existing slider reuse, expression merging, selection
+  persistence, file output, and raw JSX semantics remain separate fail-closed
+  contract gaps. The final live command
+  `full-ui-agent-estimate-path-length-openai-cli-smoke` passed with panel plan
+  count 1, accepted count 1, `fallbackCount=0`, expected step count 10,
+  expected mutating count 6, dry-run ok, protected run ok with checkpoint/edit
+  session `ai-plan-5ff93251`, semantic verification passed with 3 checks,
+  6 mutation verifications, and 4 read-back summaries, and final typed
+  read-back passed. Expected typed tools covered `create_comp`,
+  `create_shape_layer`, `add_effect`, `get_effect_details`,
+  `set_effect_property`, `set_expression`, and `get_layer_details`. Read-back
+  showed generated layer
+  `Codex QA AUX-EPL 45078367 Estimate Path Length Shape`, generated Slider
+  Control effects `Path Samples` and `Path Length`, `Path Samples=100`, Path
+  Length expression enabled with no expression error, and sampled Path Length
+  value `717` for the generated 240x120 rectangle target. Cleanup removed
+  1 generated project item, final cleanup removed 0, render queue stayed 0, and
+  artifact:
+  `logs/agent-run-reports/2026-06-13T10-05-45.849Z-openai-cli-gpt-5.5-estimate-path-length-Codex-QA-AUX-EPL-45078367.json`.
+  Post-run read-only audit found `projectItemLeftovers=0`,
+  `renderQueueLeftovers=0`, `activeEditSession=false`, and `toolErrors=0`;
+  `needsReview:true` is only from checkpoint/edit-session records. Validation
+  passed: touched JS `node --check`, live-lane/solution JSON parse,
+  `node scripts\agent-scenario-report-smoke.js`,
+  `node scripts\solution-library-validation-smoke.js`,
+  `node scripts\semantic-verification-smoke.js`, `npm.cmd run check:rules`,
+  `npm.cmd run smoke:solutions`, `npm.cmd run smoke:bridge`,
+  `npm.cmd run smoke:full-intake`, read-only `inspect`, read-only
+  `agent-scenario-audit`, compact status/proof/ledger-summary, and
+  `git diff --check` with Windows line-ending warnings only. No candidate
+  completion, broad queue, Local/Ollama, fallback provider, dependency change,
+  raw JSX product copy, user-asset mutation, render execution, push, PR,
+  GitHub automation, or launcher edit was run.
 - [x] Max-scope stick-effect expression live proof wave:
   продолжил generated-only live proof campaign from commit `0e9a7dd` after
   compact preflight confirmed clean tracked status, no related Full Intake

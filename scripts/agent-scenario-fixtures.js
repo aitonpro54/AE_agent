@@ -2015,12 +2015,25 @@ function agentEstimatePathLengthScenarioPlans(runPrefix) {
   const samplesEffectName = "Path Samples";
   const lengthEffectName = "Path Length";
   const pathExpression = [
-    'var pathProperty = thisLayer.content("Rectangle").content("Path 1").path;',
+    'var rectSize = thisLayer.content("Rectangle").content("Rectangle Path 1").size;',
     'var samples = Math.max(1, Math.floor(effect("Path Samples")("Slider").value));',
+    "var width = Math.abs(rectSize[0]);",
+    "var height = Math.abs(rectSize[1]);",
+    "var perimeter = 2 * (width + height);",
+    "function pointAt(progress) {",
+    "  var distance = ((progress % 1) + 1) % 1 * perimeter;",
+    "  if (distance <= width) return [-width / 2 + distance, -height / 2];",
+    "  distance -= width;",
+    "  if (distance <= height) return [width / 2, -height / 2 + distance];",
+    "  distance -= height;",
+    "  if (distance <= width) return [width / 2 - distance, height / 2];",
+    "  distance -= width;",
+    "  return [-width / 2, height / 2 - distance];",
+    "}",
     "var totalLength = 0;",
-    "var previousPoint = pathProperty.pointOnPath(0);",
+    "var previousPoint = pointAt(0);",
     "for (var i = 1; i <= samples; i++) {",
-    "  var currentPoint = pathProperty.pointOnPath(i / samples);",
+    "  var currentPoint = pointAt(i / samples);",
     "  totalLength += length(currentPoint - previousPoint);",
     "  previousPoint = currentPoint;",
     "}",
@@ -2029,6 +2042,11 @@ function agentEstimatePathLengthScenarioPlans(runPrefix) {
   const lengthSliderPropertyPath = [
     { matchName: "ADBE Effect Parade" },
     { matchName: "ADBE Slider Control", name: lengthEffectName },
+    { matchName: "ADBE Slider Control-0001" }
+  ];
+  const samplesSliderPropertyPath = [
+    { matchName: "ADBE Effect Parade" },
+    { matchName: "ADBE Slider Control", name: samplesEffectName },
     { matchName: "ADBE Slider Control-0001" }
   ];
 
@@ -2055,8 +2073,11 @@ function agentEstimatePathLengthScenarioPlans(runPrefix) {
         samplesEffectName,
         lengthEffectName,
         samplesValue: 100,
+        samplesPropertyPath: samplesSliderPropertyPath,
         propertyPath: lengthSliderPropertyPath,
-        expression: pathExpression
+        expression: pathExpression,
+        minLengthValue: 716,
+        maxLengthValue: 718
       },
       plan: {
         summary: "Generated-only live QA for estimating a rectangle path length with generated slider controls.",

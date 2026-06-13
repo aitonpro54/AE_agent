@@ -860,7 +860,8 @@ function assertImportedAdvisoryQuality(registry) {
       assert(text.includes("add_effect"), `${id}: recipe should use add_effect for slider controls.`);
       assert(text.includes("set_effect_property"), `${id}: recipe should use set_effect_property for sample count.`);
       assert(text.includes("set_expression"), `${id}: recipe should use set_expression for the Path Length slider.`);
-      assert(text.includes("pointOnPath"), `${id}: recipe should preserve the path-sampling expression scope.`);
+      assert(text.includes("Rectangle Path 1"), `${id}: recipe should preserve the generated rectangle expression scope.`);
+      assert(text.includes("716-718"), `${id}: recipe should require the generated sampled path-length target.`);
       assert(text.includes("get_effect_details"), `${id}: recipe should require effect read-back.`);
       assert(text.includes("get_layer_details"), `${id}: recipe should require layer read-back.`);
       assert(text.includes("Do not infer selected paths"), `${id}: recipe should reject inferred selected-path traversal.`);
@@ -3063,7 +3064,7 @@ function assertActualRetrieval(registry) {
   assert(stickEffectPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
   assert(!/run_extendscript/i.test(stickEffectPromptSection), "stick-effect guidance should not recommend raw ExtendScript.");
 
-  const estimatePathLengthRetrieval = retrieveSolutionHints("Estimate a generated rectangle path length by adding Path Samples and Path Length Slider Control effects, set Path Samples to 100, apply a pointOnPath expression to Path Length, and read back both slider effects.", {
+  const estimatePathLengthRetrieval = retrieveSolutionHints("Estimate a generated parametric rectangle path length by adding Path Samples and Path Length Slider Control effects, set Path Samples to 100, apply a rectangle-perimeter sampling expression to Path Length, and read back both slider effects.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
     topN: DEFAULT_MAX_HINTS

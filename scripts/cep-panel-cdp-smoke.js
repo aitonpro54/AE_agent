@@ -5778,6 +5778,123 @@ async function verifyGeneratedStickEffectExpressionReadBack(scenario, expected) 
   };
 }
 
+async function verifyGeneratedEstimatePathLengthReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const listedLayer = layers.find((layer) => layer.name === expected.layerName);
+  if (!listedLayer || !listedLayer.index) {
+    throw new Error(`${scenario.id}: generated path-length layer ${expected.layerName} was not found by read-back.`);
+  }
+
+  const samplesDetails = await callBridgeTool("get_effect_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: listedLayer.index,
+    effectName: expected.samplesEffectName,
+    includeProperties: true,
+    propertyDepth: 1,
+    propertyLimit: 20,
+    includeValues: true,
+    includeExpressions: true
+  });
+  if (!samplesDetails || !samplesDetails.effect) {
+    throw new Error(`${scenario.id}: generated Path Samples effect was not found by read-back.`);
+  }
+  if (samplesDetails.effect.matchName !== "ADBE Slider Control") {
+    throw new Error(`${scenario.id}: Path Samples effect matchName mismatch; got ${samplesDetails.effect.matchName}.`);
+  }
+  const samplesProperty = findPropertyInTree(samplesDetails.properties || [], expected.samplesPropertyPath);
+  if (!samplesProperty) {
+    throw new Error(`${scenario.id}: generated Path Samples slider property was not found by read-back.`);
+  }
+  const samplesValue = valuePreviewNumber(samplesProperty.value);
+  if (!numbersMatch(expected.samplesValue, samplesValue, 0.01)) {
+    throw new Error(`${scenario.id}: Path Samples value mismatch; expected ${expected.samplesValue}, got ${samplesValue}.`);
+  }
+
+  const lengthDetails = await callBridgeTool("get_effect_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: listedLayer.index,
+    effectName: expected.lengthEffectName,
+    includeProperties: true,
+    propertyDepth: 1,
+    propertyLimit: 20,
+    includeValues: true,
+    includeExpressions: true
+  });
+  if (!lengthDetails || !lengthDetails.effect) {
+    throw new Error(`${scenario.id}: generated Path Length effect was not found by read-back.`);
+  }
+  if (lengthDetails.effect.matchName !== "ADBE Slider Control") {
+    throw new Error(`${scenario.id}: Path Length effect matchName mismatch; got ${lengthDetails.effect.matchName}.`);
+  }
+  const lengthProperty = findPropertyInTree(lengthDetails.properties || [], expected.propertyPath);
+  if (!lengthProperty) {
+    throw new Error(`${scenario.id}: generated Path Length slider property was not found by effect read-back.`);
+  }
+  if (lengthProperty.expression !== expected.expression) {
+    throw new Error(`${scenario.id}: Path Length expression mismatch; expected ${expected.expression}, got ${lengthProperty.expression || "empty"}.`);
+  }
+  if (lengthProperty.expressionEnabled !== true) {
+    throw new Error(`${scenario.id}: Path Length expression was not enabled by effect read-back.`);
+  }
+  if (lengthProperty.expressionError) {
+    throw new Error(`${scenario.id}: Path Length expression reported an error: ${lengthProperty.expressionError}.`);
+  }
+  const lengthValue = valuePreviewNumber(lengthProperty.value);
+  if (typeof expected.minLengthValue === "number" && typeof expected.maxLengthValue === "number") {
+    if (typeof lengthValue !== "number" || lengthValue < expected.minLengthValue || lengthValue > expected.maxLengthValue) {
+      throw new Error(`${scenario.id}: Path Length value mismatch; expected ${expected.minLengthValue}-${expected.maxLengthValue}, got ${lengthValue}.`);
+    }
+  }
+
+  const layerDetails = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: listedLayer.index,
+    includeProperties: true,
+    propertyDepth: 4,
+    propertyLimit: 180,
+    includeValues: true,
+    includeExpressions: true
+  });
+  const layer = layerDetails && layerDetails.layer ? layerDetails.layer : {};
+  if (layer.name !== expected.layerName) {
+    throw new Error(`${scenario.id}: generated path-length layer ${expected.layerName} was not found by layer read-back.`);
+  }
+  const layerEffects = Array.isArray(layerDetails.effects) ? layerDetails.effects : [];
+  const layerSamplesEffect = layerEffects.find((effect) => effect.name === expected.samplesEffectName);
+  const layerLengthEffect = layerEffects.find((effect) => effect.name === expected.lengthEffectName);
+  if (!layerSamplesEffect || !layerLengthEffect) {
+    throw new Error(`${scenario.id}: generated Path Samples/Path Length effects were not found by layer read-back.`);
+  }
+
+  return {
+    ok: true,
+    comp: { itemIndex: compMatch.itemIndex, name: compMatch.name, numLayers: comp.numLayers },
+    layer: {
+      index: layer.index,
+      name: layer.name,
+      effects: layerEffects.map((effect) => ({ name: effect.name, matchName: effect.matchName }))
+    },
+    samples: {
+      effectName: samplesDetails.effect.name,
+      matchName: samplesDetails.effect.matchName,
+      value: samplesValue
+    },
+    length: {
+      effectName: lengthDetails.effect.name,
+      matchName: lengthDetails.effect.matchName,
+      value: lengthValue,
+      expression: lengthProperty.expression,
+      expressionEnabled: lengthProperty.expressionEnabled === true
+    }
+  };
+}
+
 async function verifyGeneratedOnionSkinningReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const comp = await callBridgeTool("get_comp_details", {
@@ -6802,6 +6919,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedStickEffectExpression) {
     return verifyGeneratedStickEffectExpressionReadBack(scenario, expected);
+  }
+
+  if (expected.generatedEstimatePathLength) {
+    return verifyGeneratedEstimatePathLengthReadBack(scenario, expected);
   }
 
   if (expected.generatedOnionSkinning) {
