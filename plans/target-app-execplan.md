@@ -26,6 +26,35 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 2 candidate 6:
+  `tool-project-clean-render-queue` received fresh
+  post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, plan notes,
+  `project-file-render-proxy-safety-policy`, existing render queue setup
+  recipes/registry/report-smoke coverage, `render-queue-generated-only`
+  context, typed tools `add_comp_to_render_queue`,
+  `set_render_queue_output`, and `get_render_queue_status`, plus the
+  QA-only scenario cleanup helper. Existing coverage can add/update/read
+  generated render queue items but is not a production delete contract. The
+  bounded retry returned `completed_no_candidates` with one terminal ticket,
+  zero open tickets, proof envelope SHA-256
+  `63b5d6f990e01fd57bc83e74d30981612d0307ae9a7f28ea191aa35b18be6649`,
+  and `contractComplete=false`. Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-a3509bd4b21cad86/ticket.json`
+  is `terminal_unresolved`, reason
+  `unsafe_safety_signals:destructiveCleanup,usesRenderQueue`; live-lane
+  synthesis is incomplete with reason `candidate_has_no_suggested_tools`.
+  The precise unblock condition is an approved production typed render queue
+  cleanup/delete contract limited to generated-prefix or explicitly approved
+  queue items, with dry-run, explicit confirmation, baseline/read-back proof
+  that non-generated queue items are preserved, checkpoint/edit-session
+  protection, semantic verification, and no raw JSX workaround. No broad
+  queue, live CEP/AE mutation, launcher edit, dependency/package change,
+  Local/Ollama, fallback provider, raw JSX copy, source-checkout execution,
+  render execution, user output file render, non-generated user-asset
+  mutation, push, or PR was run. The next ordered Direction 2 candidate is
+  `tool-project-clean-selected-folder`.
+
 - [x] Full intake tool-project-add-folder-to-render-queue: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-project-add-folder-to-render-queue); live gate ready, importer batch full-intake-kyletmartinez-3612c95add-import, commit recorded after candidate commit.
 
 - [x] Sequential directions acceptance Direction 2 candidate 4:
@@ -2400,6 +2429,18 @@ check.
 
 ## Decision Log
 
+- 2026-06-13: `tool-project-clean-render-queue` is terminal from a fresh
+  scoped retry, not completed. Existing render queue support is intentionally
+  setup-only: `add_comp_to_render_queue`, `set_render_queue_output`, and
+  `get_render_queue_status` can add/update/read generated queue items, while
+  setup recipes explicitly forbid queue deletion/reordering. The live smoke
+  scenario cleanup helper is QA-owned cleanup, not a reusable production typed
+  tool. Completion requires a separate approved render queue cleanup/delete
+  contract that enumerates deletion targets, limits mutation to generated-prefix
+  or explicitly approved queue items, proves non-generated items are preserved,
+  uses dry-run/confirmation plus checkpoint/edit-session protection, and avoids
+  raw JSX/source-exact global queue deletion.
+
 - 2026-05-27: Generic full-intake orchestrator processed `Project/Add_Folder_To_Render_Queue.jsx` as `tool-project-add-folder-to-render-queue`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-project-add-folder-to-render-queue).
 
 - 2026-06-13: `tool-layers-convert-srt-to-text-layers` is terminal from a fresh
@@ -3444,6 +3485,8 @@ check.
   composition; otherwise frame rate must be explicit.
 
 ## Validation
+
+| Sequential directions acceptance Direction 2 candidate 6 | Required to give `tool-project-clean-render-queue` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing render queue setup coverage and the missing generated-only cleanup/delete contract. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `63b5d6f990e01fd57bc83e74d30981612d0307ae9a7f28ea191aa35b18be6649`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-a3509bd4b21cad86/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:destructiveCleanup,usesRenderQueue`; live-lane synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, render execution, user output file render, non-generated user-asset mutation, push, or PR was run. |
 
 | Full intake tool-project-add-folder-to-render-queue | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-3612c95add-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
