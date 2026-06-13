@@ -26,6 +26,38 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 2 candidate 10:
+  `tool-project-manually-render-png-sequence` received fresh
+  post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, plan notes, exact source
+  behavior, `project-file-render-proxy-safety-policy`, generated render-queue
+  setup coverage, generated `export_path_points` file-output coverage,
+  semantic/report smoke coverage, live-lane metadata, and typed tools
+  `get_comp_details`, `set_comp_work_area`, `add_comp_to_render_queue`,
+  `set_render_queue_output`, `get_render_queue_status`, and
+  `export_path_points`. Existing coverage can set up generated render queue
+  items without render start and can write generated path vertices with
+  sha256/read-back, but it cannot write a PNG sequence, invoke
+  `saveFrameToPng`, create arbitrary output folders, or prove `comp.time`
+  restore/read-back for frame export. The bounded retry returned
+  `completed_no_candidates` with one terminal ticket, zero open tickets, proof
+  envelope SHA-256
+  `1b62c1bdbe0ea5d37a4de9609320b7a77d5fdc24828dc352296f00faf9ed2fd9`,
+  and `contractComplete=false`. Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-d3b67468672474ac/ticket.json`
+  is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`;
+  live-lane synthesis is incomplete with reason
+  `candidate_has_no_suggested_tools`. The precise unblock condition is an
+  approved generated-only PNG sequence typed contract with sandboxed output
+  root, bounded frame/work-area policy, no dialog/raw JSX, explicit render/file
+  output approval, `comp.time` restore/read-back, created-file list/count/name
+  or hash verification, semantic verification, and cleanup/rollback. No broad
+  queue, live CEP/AE mutation, launcher edit, dependency/package change,
+  Local/Ollama, fallback provider, raw JSX copy, source-checkout execution,
+  render execution, user output file render, non-generated user-asset mutation,
+  push, or PR was run. The next ordered Direction 2 candidate is
+  `tool-project-reveal-project-file`.
+
 - [x] Sequential directions acceptance Direction 2 candidate 9:
   `tool-project-export-text-to-file` received fresh
   post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
@@ -2523,6 +2555,20 @@ check.
 
 ## Decision Log
 
+- 2026-06-13: `tool-project-manually-render-png-sequence` is terminal from a
+  fresh scoped retry, not completed. Source-equivalent behavior opens
+  `Folder.selectDialog`, creates a destination folder named after the active
+  comp, advances `comp.time` over the work area, and writes numbered PNG files
+  through undocumented `comp.saveFrameToPng`. Existing generated render-queue
+  recipes are setup-only and explicitly forbid render start/output generation;
+  `export_path_points` is a narrow generated text export contract for reviewed
+  path vertices, not a frame renderer. Completion requires an approved
+  generated-only PNG sequence typed contract with sandboxed output root, bounded
+  frame/work-area policy, no dialog/raw JSX, explicit render/file-output
+  approval, `comp.time` restore/read-back, created-file list/count/name or hash
+  verification, semantic verification, cleanup/rollback, and an explicit
+  decision on undocumented `saveFrameToPng` risk.
+
 - 2026-06-13: `tool-project-export-text-to-file` is terminal from a fresh
   scoped retry, not completed. Source-equivalent behavior reads active-comp
   selected layers, extracts Source Text from text layers, emits fallback lines
@@ -3618,6 +3664,8 @@ check.
   composition; otherwise frame rate must be explicit.
 
 ## Validation
+
+| Sequential directions acceptance Direction 2 candidate 10 | Required to give `tool-project-manually-render-png-sequence` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing source PNG sequence/file-output behavior, generated render queue setup coverage, generated `export_path_points` output coverage, semantic/report smoke coverage, live-lane metadata, and the missing approved PNG sequence typed contract. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `1b62c1bdbe0ea5d37a4de9609320b7a77d5fdc24828dc352296f00faf9ed2fd9`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-d3b67468672474ac/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`; live-lane synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, render execution, user output file render, non-generated user-asset mutation, push, or PR was run. |
 
 | Sequential directions acceptance Direction 2 candidate 9 | Required to give `tool-project-export-text-to-file` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing selected text-layer read coverage, generated `export_path_points` file-output coverage, semantic/report smoke coverage, and the missing approved text-file export contract. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `18dc9660e97bb169665e672c997286c50f9dc0c3af86546ab95e151a337c1fc1`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-d938c0d0769e9704/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`; live-lane synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, render execution, Desktop/user output file write, non-generated user-asset mutation, push, or PR was run. |
 
