@@ -26,6 +26,34 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 2 candidate 11:
+  `tool-project-reveal-project-file` received fresh
+  post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, plan notes, exact source
+  behavior, `project-file-render-proxy-safety-policy`, Project read-only
+  evidence coverage, live-lane metadata, semantic/report smoke coverage, and
+  typed tools `get_project_info` and `get_project_snapshot`. Existing coverage
+  can inspect saved project metadata and bounded Project inventory, but it
+  cannot launch Finder/Explorer, call `Folder.execute()`, open OS file browsers,
+  or model alert/failure semantics for an unsaved/unopenable project location.
+  The bounded retry returned `completed_no_candidates` with one terminal
+  ticket, zero open tickets, proof envelope SHA-256
+  `dc8a754a4ef0b5a789959d29f79534fc19a18233ea901254f8b9d4711d5f9acf`,
+  and `contractComplete=false`. Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-d3b67468672474ac/ticket.json`
+  is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`;
+  live-lane synthesis is incomplete with reason
+  `candidate_has_no_suggested_tools`. The precise unblock condition is an
+  approved reveal/open-folder typed contract with saved generated project
+  fixture or explicit safe project file policy, dry-run/read-back mode, shell
+  launch disabled by default, explicit reveal/shell approval, OS-specific
+  Finder/Explorer handling, semantic verification, and no raw JSX fallback. No
+  broad queue, live CEP/AE mutation, launcher edit, dependency/package change,
+  Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, OS
+  file-browser action, user project file reveal, non-generated user-asset
+  mutation, push, or PR was run. The next ordered Direction 2 candidate is
+  `tool-project-set-proxies-from-folder`.
+
 - [x] Sequential directions acceptance Direction 2 candidate 10:
   `tool-project-manually-render-png-sequence` received fresh
   post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
@@ -2555,6 +2583,19 @@ check.
 
 ## Decision Log
 
+- 2026-06-13: `tool-project-reveal-project-file` is terminal from a fresh scoped
+  retry, not completed. Source-equivalent behavior accesses
+  `app.project.file.parent` and calls `Folder.execute()` to reveal/open the
+  saved project file location in Finder or Explorer, with an alert fallback on
+  failure. Existing typed coverage can provide read-only project path/inventory
+  evidence through `get_project_info` and `get_project_snapshot`, but path
+  inspection is not source-equivalent reveal/open-folder behavior and must not
+  be promoted as this candidate. Completion requires an approved
+  reveal/open-folder typed contract with saved generated project fixture or
+  explicit safe project file policy, dry-run/read-back mode, shell launch
+  disabled by default, explicit reveal/shell approval, OS-specific
+  Finder/Explorer handling, semantic verification, and no raw JSX fallback.
+
 - 2026-06-13: `tool-project-manually-render-png-sequence` is terminal from a
   fresh scoped retry, not completed. Source-equivalent behavior opens
   `Folder.selectDialog`, creates a destination folder named after the active
@@ -3664,6 +3705,8 @@ check.
   composition; otherwise frame rate must be explicit.
 
 ## Validation
+
+| Sequential directions acceptance Direction 2 candidate 11 | Required to give `tool-project-reveal-project-file` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing source OS reveal behavior, project/file safety policy, read-only project metadata coverage, live-lane metadata, semantic/report smoke coverage, and the missing approved reveal/open-folder typed contract. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `dc8a754a4ef0b5a789959d29f79534fc19a18233ea901254f8b9d4711d5f9acf`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-d3b67468672474ac/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`; live-lane synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, OS file-browser action, user project file reveal, non-generated user-asset mutation, push, or PR was run. |
 
 | Sequential directions acceptance Direction 2 candidate 10 | Required to give `tool-project-manually-render-png-sequence` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing source PNG sequence/file-output behavior, generated render queue setup coverage, generated `export_path_points` output coverage, semantic/report smoke coverage, live-lane metadata, and the missing approved PNG sequence typed contract. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `1b62c1bdbe0ea5d37a4de9609320b7a77d5fdc24828dc352296f00faf9ed2fd9`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-d3b67468672474ac/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`; live-lane synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, render execution, user output file render, non-generated user-asset mutation, push, or PR was run. |
 
