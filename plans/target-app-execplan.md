@@ -26,6 +26,36 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 2 candidate 2:
+  `tool-compositions-save-frame-as-png` received fresh
+  post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, plan notes, adjacent
+  project/file/render/proxy safety coverage, generated render-queue setup
+  recipes `add-folder-to-render-queue-typed-plan`,
+  `add-selected-compositions-to-render-queue-typed-plan`, and
+  `add-labeled-items-to-render-queue-typed-plan`, generated file-output
+  coverage for `export-path-points-typed-plan`, report smoke/semantic
+  verification coverage for render queue setup and generated path export, and
+  typed tools `get_active_comp`, `get_comp_details`,
+  `add_comp_to_render_queue`, `set_render_queue_output`, and
+  `get_render_queue_status`. No candidate-specific `saveFrameToPng`
+  recipe/registry/live-lane/report coverage or typed save-frame PNG tool exists.
+  The bounded retry returned `completed_no_candidates` with one terminal ticket,
+  zero open tickets, proof envelope SHA-256
+  `6c9f3c882cf4e757f850cb724d693109adfada98ae26d66ade12e2d877f0b866`.
+  Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-8a5e05513be2290b/ticket.json`
+  is `terminal_unresolved`, reason
+  `unsafe_safety_signals:usesFileIo,usesSettings`. The precise unblock
+  condition is user approval plus a narrow save-frame PNG typed contract with a
+  generated comp fixture, sandboxed output directory, explicit output path
+  policy, settings/keyboard semantics either fail-closed or explicitly modeled,
+  file existence/hash read-back, `resolutionFactor` restoration proof, and
+  cleanup. No broad queue, live CEP/AE mutation, launcher edit,
+  dependency/package change, Local/Ollama, fallback provider, raw JSX copy,
+  source-checkout execution, render execution, user output file render, push, or
+  PR was run. The next ordered Direction 2 candidate is
+  `tool-layers-convert-srt-to-text-layers`.
 - [x] Sequential directions acceptance Direction 2 candidate 1:
   `tool-compositions-rename-composition-to-file-name` received fresh
   post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
@@ -2312,6 +2342,17 @@ check.
 
 ## Decision Log
 
+- 2026-06-13: `tool-compositions-save-frame-as-png` is terminal from a fresh
+  scoped retry, not completed. Existing render queue setup and generated path
+  export contracts are adjacent safety context only; they are not substitutes
+  for `comp.saveFrameToPng`, `Folder.selectDialog`,
+  `app.settings/app.preferences`, Shift-key branching, or resolution-factor
+  restoration. Save-frame PNG remains approval-gated until a dedicated typed
+  contract exists with generated-only fixture setup, sandboxed output policy,
+  file hash/read-back and deletion, restoration proof, and explicit modeling or
+  fail-closed handling for persistent settings and keyboard-state semantics.
+  Render execution, user output file writes, raw JSX, source-checkout execution,
+  and user-asset mutation remain fail-closed.
 - 2026-06-13: `tool-compositions-rename-composition-to-file-name` is terminal
   from a fresh scoped retry, not completed. Adjacent project item rename
   support exists through `rename_project_items`, but project-file-basename
@@ -3335,6 +3376,7 @@ check.
 
 ## Validation
 
+| Sequential directions acceptance Direction 2 candidate 2 | Required to give `tool-compositions-save-frame-as-png` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current file/render/proxy safety contracts and the missing exact save-frame PNG typed lane. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, and proof envelope SHA-256 `6c9f3c882cf4e757f850cb724d693109adfada98ae26d66ade12e2d877f0b866`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-8a5e05513be2290b/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo,usesSettings`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, render execution, user output file render, push, or PR was run. |
 | Sequential directions acceptance Direction 2 candidate 1 | Required to give `tool-compositions-rename-composition-to-file-name` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current project-item rename contracts and the missing exact project-file-basename composition rename lane. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, and proof envelope SHA-256 `97f41bc5f7d9879e88e25e0e4be56d995bd3b386bd878624aca498adf7b61b24`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-d3b67468672474ac/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, render execution, push, or PR was run. |
 | Sequential directions acceptance Direction 1 candidate 5 | Required to give `tool-markers-copy-layer-markers-to-composition` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current composition/layer marker copy contracts. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, and proof envelope SHA-256 `1b1c81ca30136065633eb5ac3f888ef6db47367b00fd515880c4fc91e1c34750`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-7d7b25381bf522c3/ticket.json` is `terminal_unresolved`, reason `self-improvement-read-back-contract-missing:composition-marker-read-generated-only`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout write, render execution, push, or PR was run. |
 | Sequential directions acceptance Direction 1 candidate 4 | Required to give `tool-markers-copy-composition-markers-to-layer` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current composition/layer marker copy contracts. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, and proof envelope SHA-256 `c5112f5f2b267cf7850a632086bc3df97d91f669402b2a0bdc978d65932e3220`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-7d7b25381bf522c3/ticket.json` is `terminal_unresolved`, reason `self-improvement-read-back-contract-missing:composition-marker-read-generated-only`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout write, render execution, push, or PR was run. |
