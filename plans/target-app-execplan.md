@@ -1,4 +1,4 @@
-# Target App Execution Plan
+﻿# Target App Execution Plan
 
 ## Active Baseline
 
@@ -25,6 +25,8 @@ old `AE_agent` repository remains the historical source.
   reviewed migration.
 
 ## Progress
+
+- [x] Full intake tool-project-add-folder-to-render-queue: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-project-add-folder-to-render-queue); live gate ready, importer batch full-intake-kyletmartinez-3612c95add-import, commit recorded after candidate commit.
 
 - [x] Sequential directions acceptance Direction 2 candidate 4:
   `tool-layers-create-text-layers-from-file` received fresh
@@ -2398,6 +2400,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Project/Add_Folder_To_Render_Queue.jsx` as `tool-project-add-folder-to-render-queue`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-project-add-folder-to-render-queue).
+
 - 2026-06-13: `tool-layers-convert-srt-to-text-layers` is terminal from a fresh
   scoped retry, not completed. The safe future adaptation is not source-exact
   AE file picker/File IO; it requires a parent-approved generated-only
@@ -3441,6 +3445,8 @@ check.
 
 ## Validation
 
+| Full intake tool-project-add-folder-to-render-queue | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-3612c95add-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+
 | Sequential directions acceptance Direction 2 candidate 3 | Required to give `tool-layers-convert-srt-to-text-layers` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current text-layer typed coverage and the missing generated-only SRT content-input lane. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, and proof envelope SHA-256 `0e49c3a434371f6f2fa18652d678d3b7c25d102a5baea37a4da7e6c2f28c6b1f`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-d938c0d0769e9704/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`; live-lane synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, user SRT file read, render execution, push, or PR was run. |
 | Sequential directions acceptance Direction 2 candidate 2 | Required to give `tool-compositions-save-frame-as-png` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current file/render/proxy safety contracts and the missing exact save-frame PNG typed lane. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, and proof envelope SHA-256 `6c9f3c882cf4e757f850cb724d693109adfada98ae26d66ade12e2d877f0b866`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-8a5e05513be2290b/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo,usesSettings`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, render execution, user output file render, push, or PR was run. |
 | Sequential directions acceptance Direction 2 candidate 1 | Required to give `tool-compositions-rename-composition-to-file-name` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current project-item rename contracts and the missing exact project-file-basename composition rename lane. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, and proof envelope SHA-256 `97f41bc5f7d9879e88e25e0e4be56d995bd3b386bd878624aca498adf7b61b24`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-d3b67468672474ac/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, render execution, push, or PR was run. |
@@ -3622,6 +3628,21 @@ check.
   intent forbids validation runs. Parent importer owns registry validation,
   solution-library validation, semantic verification, and any future live
   acceptance lane.
+
+- [x] AUX-021 child batch `tool-project-add-folder-to-render-queue`:
+  detached child execution confirmed the safe generated-only import coverage
+  already present in planned paths. The typed plan, generic intake note,
+  registry entry, render-queue live-lane family, scenario fixture, report smoke,
+  CEP/CDP lane command, and solution-library assertions cover explicit generated
+  Project folder contents through `list_project_folder_items`,
+  `add_comp_to_render_queue`, optional `set_render_queue_output`, and
+  `get_render_queue_status`; Project panel selected-folder discovery,
+  filesystem folder traversal, non-generated user assets, render start, queue
+  cleanup/reordering, save/saveAs, raw JSX, and source-exact semantics remain
+  fail-closed. Validation was intentionally not run in the detached child
+  worktree because the child-run intent forbids validation, live CEP/AE,
+  OpenAI CLI planner, dependency, branch, commit, push, and PR actions. No code
+  or registry rewrite was needed beyond this child-run closeout note.
 
 ## Handoff
 
