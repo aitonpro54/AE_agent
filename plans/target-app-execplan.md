@@ -26,6 +26,35 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 2 candidate 3:
+  `tool-layers-convert-srt-to-text-layers` received fresh
+  post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, plan notes,
+  `project-file-render-proxy-safety-policy` coverage for text/SRT user-file
+  import/export fail-closed behavior, adjacent text-layer and Source Text
+  tooling/lane evidence, and typed tools `get_active_comp`,
+  `get_comp_details`, `create_text_layer`, and `get_layer_details`. Existing
+  Source Text/text-layer contracts are adjacent context only; no
+  candidate-specific SRT content-input recipe, registry entry, proof lane,
+  report smoke coverage, or semantic verification coverage exists. The bounded
+  retry returned `completed_no_candidates` with one terminal ticket, zero open
+  tickets, proof envelope SHA-256
+  `0e49c3a434371f6f2fa18652d678d3b7c25d102a5baea37a4da7e6c2f28c6b1f`.
+  Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-d938c0d0769e9704/ticket.json`
+  is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`; live-lane
+  synthesis is incomplete with reason `candidate_has_no_suggested_tools`. The
+  precise unblock condition is to approve and add a generated-only SRT
+  content-input lane that accepts reviewed SRT text or parsed subtitle blocks as
+  explicit input, rejects local file paths and AE `File.openDialog` semantics,
+  creates generated text layers with finite start/duration values through typed
+  tools, verifies text/timing with `get_layer_details` and `get_comp_details`,
+  performs cleanup/checkpoint handling, and records license-safe no-raw-JSX
+  adaptation evidence. No broad queue, live CEP/AE mutation, launcher edit,
+  dependency/package change, Local/Ollama, fallback provider, raw JSX copy,
+  source-checkout execution, user SRT file read, render execution, push, or PR
+  was run. The next ordered Direction 2 candidate is
+  `tool-layers-create-text-layers-from-file`.
 - [x] Sequential directions acceptance Direction 2 candidate 2:
   `tool-compositions-save-frame-as-png` received fresh
   post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
@@ -2342,6 +2371,15 @@ check.
 
 ## Decision Log
 
+- 2026-06-13: `tool-layers-convert-srt-to-text-layers` is terminal from a fresh
+  scoped retry, not completed. The safe future adaptation is not source-exact
+  AE file picker/File IO; it requires a parent-approved generated-only
+  content-input policy where reviewed SRT text or parsed subtitle blocks are
+  explicit inputs. Existing `create_text_layer`/text timing read-back support is
+  insufficient without a dedicated SRT parsing/input contract, proof lane,
+  semantic verification, cleanup/checkpoint policy, and license-safe no-raw-JSX
+  evidence. User SRT file reads, raw JSX, source-checkout execution, and
+  mutation of non-generated user assets remain fail-closed.
 - 2026-06-13: `tool-compositions-save-frame-as-png` is terminal from a fresh
   scoped retry, not completed. Existing render queue setup and generated path
   export contracts are adjacent safety context only; they are not substitutes
@@ -3376,6 +3414,7 @@ check.
 
 ## Validation
 
+| Sequential directions acceptance Direction 2 candidate 3 | Required to give `tool-layers-convert-srt-to-text-layers` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current text-layer typed coverage and the missing generated-only SRT content-input lane. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, and proof envelope SHA-256 `0e49c3a434371f6f2fa18652d678d3b7c25d102a5baea37a4da7e6c2f28c6b1f`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-d938c0d0769e9704/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`; live-lane synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, user SRT file read, render execution, push, or PR was run. |
 | Sequential directions acceptance Direction 2 candidate 2 | Required to give `tool-compositions-save-frame-as-png` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current file/render/proxy safety contracts and the missing exact save-frame PNG typed lane. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, and proof envelope SHA-256 `6c9f3c882cf4e757f850cb724d693109adfada98ae26d66ade12e2d877f0b866`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-8a5e05513be2290b/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo,usesSettings`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, render execution, user output file render, push, or PR was run. |
 | Sequential directions acceptance Direction 2 candidate 1 | Required to give `tool-compositions-rename-composition-to-file-name` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current project-item rename contracts and the missing exact project-file-basename composition rename lane. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, and proof envelope SHA-256 `97f41bc5f7d9879e88e25e0e4be56d995bd3b386bd878624aca498adf7b61b24`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-d3b67468672474ac/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, render execution, push, or PR was run. |
 | Sequential directions acceptance Direction 1 candidate 5 | Required to give `tool-markers-copy-layer-markers-to-composition` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing current composition/layer marker copy contracts. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, and proof envelope SHA-256 `1b1c81ca30136065633eb5ac3f888ef6db47367b00fd515880c4fc91e1c34750`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-7d7b25381bf522c3/ticket.json` is `terminal_unresolved`, reason `self-improvement-read-back-contract-missing:composition-marker-read-generated-only`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout write, render execution, push, or PR was run. |
