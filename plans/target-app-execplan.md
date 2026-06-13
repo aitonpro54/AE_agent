@@ -26,6 +26,33 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 2 candidate 4:
+  `tool-layers-create-text-layers-from-file` received fresh
+  post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, plan notes, older
+  parent-reducer ticket, adjacent text-layer typed coverage, adjacent
+  text-to-keys/select-text-layers semantic and report smoke coverage, and typed
+  tools `get_active_comp`, `get_comp_details`, `create_text_layer`, and
+  `get_layer_details`. No candidate-specific reviewed-lines content-input
+  recipe, registry entry, proof lane, report smoke coverage, or semantic
+  verification coverage exists; adjacent text-layer tools are context only.
+  The bounded retry returned `completed_no_candidates` with one terminal
+  ticket, zero open tickets, proof envelope SHA-256
+  `1c3e47c4fa608905a1ca2146e77a6d33e53e46778677f0a118c65fde974789d9`.
+  Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-d3b67468672474ac/ticket.json`
+  is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`; live-lane
+  synthesis is incomplete with reason `candidate_has_no_suggested_tools`.
+  The precise unblock condition is to approve and add a generated-only
+  reviewed-lines content-input lane that rejects local file paths and AE file
+  dialogs, creates one generated text layer per explicit reviewed line through
+  `create_text_layer`, verifies layer text/count with `get_layer_details` and
+  `get_comp_details`, documents the hyphen/underscore candidate id mapping, and
+  keeps source File IO semantics fail-closed. No broad queue, live CEP/AE
+  mutation, launcher edit, dependency/package change, Local/Ollama, fallback
+  provider, raw JSX copy, source-checkout execution, user text-file read,
+  render execution, push, or PR was run. The next ordered Direction 2 candidate
+  is `tool-project-add-folder-to-render-queue`.
 - [x] Sequential directions acceptance Direction 2 candidate 3:
   `tool-layers-convert-srt-to-text-layers` received fresh
   post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
