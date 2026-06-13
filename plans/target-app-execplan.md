@@ -26,6 +26,25 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] First-four contracts Direction 1 implementation retry:
+  composition marker contracts received fresh post-launcher implementation
+  evidence, not audit-only reuse. Added a focused
+  `firstFourContracts.compositionMarkerContracts` regression block to
+  `scripts/solution-library-validation-smoke.js` covering six marker recipes:
+  read, marker-derived work area, composition-to-layer copy,
+  layer-to-composition copy, out-point marker add, and work-area marker add.
+  The new assertions require typed `get_comp_details includeMarkers:true`
+  read-back, `comp.markerProperty.keyTime` ordering evidence, explicit
+  layer-marker substitution distinction, audio-derived marker fail-closed
+  language, no raw ExtendScript guidance, and the correct mutation gates for
+  mutating marker workflows. Validation passed:
+  `node --check scripts\solution-library-validation-smoke.js`,
+  `node scripts\solution-library-validation-smoke.js`,
+  `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`,
+  `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual
+  LF/CRLF warning only. No scoped queue run, live CEP/AE mutation,
+  broad/default CEP smoke, launcher edit, dependency/package change, Local,
+  fallback provider, push, PR, raw JSX copy, or user-asset mutation was run.
 - [x] First-four contracts launcher closeout audit:
   compact CLI preflight for `full-intake-kyletmartinez` at user-reported
   context 5 confirmed clean tracked status, current commit

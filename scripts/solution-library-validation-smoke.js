@@ -123,6 +123,14 @@ const IMPORTED_ADVISORY_IDS = [
   "frame-navigator-typed-plan",
   "milliseconds-to-frames-typed-plan"
 ];
+const FIRST_FOUR_COMPOSITION_MARKER_CONTRACT_IDS = [
+  "read-composition-markers-typed-plan",
+  "set-work-area-to-markers-typed-plan",
+  "copy-composition-markers-to-layer-typed-plan",
+  "copy-layer-markers-to-composition-typed-plan",
+  "add-composition-markers-at-out-points-typed-plan",
+  "add-composition-markers-at-work-area-typed-plan"
+];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
   "get_project_info",
@@ -207,6 +215,24 @@ function ids(retrieval) {
 function recipeText(solution) {
   const recipePath = path.join(REPO_ROOT, ...solution.execution.recipePath.split("/"));
   return fs.readFileSync(recipePath, "utf8");
+}
+
+function solutionContractText(solution, text) {
+  return [
+    text,
+    solution.intent.summary,
+    ...solution.intent.appliesWhen,
+    ...solution.verificationRecipe.steps,
+    ...solution.verificationRecipe.expectedEvidence,
+    ...solution.notes
+  ].join("\n");
+}
+
+function assertNoRawExecutionGuidance(id, solution, text) {
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: first-four contract recipes must not use raw script files.`);
+  assert(!solution.execution.preferredTools.includes("run_extendscript"), `${id}: first-four contract recipes must not prefer inline ExtendScript.`);
+  assert(!solution.execution.preferredTools.includes("run_extendscript_file"), `${id}: first-four contract recipes must not prefer raw script file execution.`);
+  assert(!/run_extendscript/i.test(text), `${id}: first-four contract recipe text must not recommend raw ExtendScript.`);
 }
 
 function assertSeedQuality(registry) {
@@ -4520,12 +4546,43 @@ function assertPromptBounds() {
   return { returned: retrieval.returned, promptSectionLength: promptSection.length };
 }
 
+function assertFirstFourCompositionMarkerContracts(registry) {
+  for (const id of FIRST_FOUR_COMPOSITION_MARKER_CONTRACT_IDS) {
+    const solution = solutionById(registry, id);
+    assert(solution, `Missing first-four composition marker contract: ${id}`);
+    const text = recipeText(solution);
+    const contractText = solutionContractText(solution, text);
+
+    assert(solution.tags.includes("composition-marker"), `${id}: contract must stay tagged as composition-marker.`);
+    assert(solution.execution.preferredTools.includes("get_comp_details"), `${id}: contract must keep typed composition read-back.`);
+    assert(contractText.includes("includeMarkers:true"), `${id}: contract must require get_comp_details includeMarkers:true read-back.`);
+    assert(contractText.includes("comp.markerProperty.keyTime"), `${id}: contract must preserve comp.markerProperty.keyTime ordering evidence.`);
+    assert(/layer marker substitution|layer marker tools|add_layer_marker|layer-marker|layer marker/.test(contractText), `${id}: contract must explicitly reject or distinguish layer-marker substitution.`);
+    assert(/audio-derived|audio analysis|audio-derived markers/.test(contractText), `${id}: contract must keep audio-derived marker generation fail-closed.`);
+    assertNoRawExecutionGuidance(id, solution, text);
+
+    if (solution.execution.mutating) {
+      assert.strictEqual(solution.requiredSafetyGates.explicitConfirmation, true, `${id}: mutating marker contract must require explicit confirmation.`);
+      assert.strictEqual(solution.requiredSafetyGates.allowMutations, true, `${id}: mutating marker contract must require allowMutations.`);
+      assert.strictEqual(solution.requiredSafetyGates.checkpointOrEditSession, true, `${id}: mutating marker contract must require checkpoint/edit-session protection.`);
+      assert.strictEqual(solution.requiredSafetyGates.postMutationReadBack, true, `${id}: mutating marker contract must require post-mutation read-back.`);
+    } else {
+      assert.strictEqual(solution.requiredSafetyGates.allowMutations, false, `${id}: read-only marker contract must not allow mutations.`);
+      assert(!solution.execution.preferredTools.includes("add_comp_marker"), `${id}: read-only marker contract must not create composition markers.`);
+      assert(!solution.execution.preferredTools.includes("add_layer_marker"), `${id}: read-only marker contract must not create layer markers.`);
+    }
+  }
+
+  return FIRST_FOUR_COMPOSITION_MARKER_CONTRACT_IDS;
+}
+
 function main() {
   const registry = readRegistry();
   const registrySummary = assertSeedQuality(registry);
   assertDakkshinAdvisoryQuality(registry);
   assertToolBackedGuidanceQuality(registry);
   assertImportedAdvisoryQuality(registry);
+  const firstFourCompositionMarkerContracts = assertFirstFourCompositionMarkerContracts(registry);
   const actualRetrieval = assertActualRetrieval(registry);
   const candidateOmitted = assertCandidateInvisibility(registry);
   const staleAndEquivalent = assertStaleAndToolEquivalentBehavior();
@@ -4539,6 +4596,9 @@ function main() {
     dakkshinAdvisory: DAKKSHIN_ADVISORY_IDS,
     toolBackedGuidance: TOOL_BACKED_IDS,
     importedAdvisory: IMPORTED_ADVISORY_IDS,
+    firstFourContracts: {
+      compositionMarkerContracts: firstFourCompositionMarkerContracts
+    },
     actualRetrieval: {
       contextReturned: actualRetrieval.contextRetrieval.returned,
       alignReturned: actualRetrieval.alignRetrieval.returned,
