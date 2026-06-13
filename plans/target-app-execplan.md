@@ -26,6 +26,39 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 2 candidate 13:
+  `tool-properties-export-path-points` received fresh
+  post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, plan notes, exact source
+  behavior, existing `export-path-points-typed-plan`, generic intake note,
+  registry entry, live-lane metadata, semantic/report smoke coverage, and typed
+  tools `get_path_geometry`, `set_path_geometry`, `set_layer_mask`, and
+  `export_path_points`. The repo has a narrow generated-only adaptation that
+  writes reviewed vertices only under the bridge generated export root with
+  byte/hash/content read-back and post-export geometry read-back. The
+  source-exact candidate still reads `comp.selectedProperties`, filters
+  selected `ADBE Vector Shape` properties, rounds/rotates vertices, and writes
+  `Folder.desktop/points.txt`; Desktop/user path output and selected-property
+  traversal remain fail-closed. The bounded retry returned
+  `completed_no_candidates` with one terminal ticket, zero open tickets, proof
+  envelope SHA-256
+  `485218a91719e0c654b0aeca82a5c0d5f7f4483455a5d6ffbfc96cddfe1febe3`,
+  and `contractComplete=false`. Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-9fa066d8da8b8326/ticket.json`
+  is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`;
+  live-lane synthesis is incomplete with reason
+  `candidate_has_no_suggested_tools`. The precise unblock condition remains an
+  approved generated-only shape path vertex export contract that binds exact
+  `ADBE Vector Shape`/path target evidence, computes rounded/rotated points,
+  writes only to an approved generated temp/export path with content/hash
+  read-back and cleanup, and keeps Desktop writes fail-closed unless separately
+  approved. No broad queue, broad/default CEP smoke, live CEP/AE mutation,
+  launcher edit, dependency/package change, Local/Ollama, fallback provider,
+  raw JSX copy, source-checkout execution, Desktop/user file write,
+  non-generated user-asset mutation, push, or PR was run. Direction 2 is now
+  exhausted; remaining ordered work starts with Direction 3 from the active
+  launcher plan.
+
 - [x] Sequential directions acceptance Direction 2 candidate 12:
   `tool-project-set-proxies-from-folder` received fresh
   post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped retry evidence.
@@ -2616,6 +2649,19 @@ check.
 
 ## Decision Log
 
+- 2026-06-13: `tool-properties-export-path-points` is terminal from a fresh
+  scoped retry, not completed. The repository has a safe generated-only
+  adaptation for one explicit reviewed Shape/Mask path target using
+  `get_path_geometry` and `export_path_points` under the bridge generated export
+  root, with content/hash read-back and post-export geometry read-back. The
+  source-exact candidate still depends on `comp.selectedProperties` traversal
+  and Desktop `points.txt` output. Completion requires an approved contract
+  that binds exact generated/reviewed path evidence for the selected
+  `ADBE Vector Shape` semantics, writes only to approved generated output with
+  cleanup/read-back, and keeps Desktop/user path writes, arbitrary output paths,
+  expression-driven/truncated paths, multi-target batches, path mutation, and
+  raw JSX fail-closed unless separately approved.
+
 - 2026-06-13: `tool-project-set-proxies-from-folder` is terminal from a fresh
   scoped retry, not completed. Source-equivalent behavior opens
   `Folder.selectDialog`, traverses the selected filesystem folder, maps file
@@ -3752,6 +3798,8 @@ check.
   composition; otherwise frame rate must be explicit.
 
 ## Validation
+
+| Sequential directions acceptance Direction 2 candidate 13 | Required to give `tool-properties-export-path-points` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing source selected-path/Desktop file-output behavior, generated `export_path_points` policy coverage, registry/live-lane metadata, semantic/report smoke coverage, and typed tools `get_path_geometry`, `set_path_geometry`, `set_layer_mask`, and `export_path_points`. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `485218a91719e0c654b0aeca82a5c0d5f7f4483455a5d6ffbfc96cddfe1febe3`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-9fa066d8da8b8326/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`; live-lane synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, broad/default CEP smoke, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, Desktop/user file write, non-generated user-asset mutation, push, or PR was run. |
 
 | Sequential directions acceptance Direction 2 candidate 12 | Required to give `tool-project-set-proxies-from-folder` fresh post-`b2d9c3340dbb230849fb7d84ca66b9b7b1b46113` scoped evidence after reviewing source proxy relink/folder traversal behavior, project/file/render/proxy safety policy, Project item/read-only coverage, live-lane metadata, semantic/report smoke coverage, and the missing approved generated-only proxy typed contract. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `c5bf1890407a069afc81eec8f68d1ffceac8028a98938add5802c6f4f5a9fc2a`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-5ca1498566fe55b1/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:usesFileIo`; live-lane synthesis is incomplete with reason `candidate_has_no_suggested_tools`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check`. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, proxy relinking, user filesystem traversal, non-generated user-asset mutation, push, or PR was run. |
 
