@@ -26,6 +26,34 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] First-four contracts Direction 3 implementation retry:
+  layer parenting / matte / reorder contracts received fresh post-launcher
+  implementation evidence. Strengthened
+  `selected-layer-parent-opacity-expression-generated-only` in
+  `orchestrator/generic-repo-live-lane-registry.json` so the lane now
+  explicitly requires one generated child/parent pair, generated comp/layer
+  indices, before/after stack read-back, parent relationship read-back,
+  semantic verification, cleanup, and fail-closed handling for track matte
+  edits and layer stack reordering. Extended
+  `scripts/solution-library-validation-smoke.js` to read the live-lane
+  registry and assert `firstFourContracts.parentingMatteReorderContracts`
+  across that parent lane plus `sortbyposition-typed-plan` and
+  `newtrimmednull-typed-plan` gap recipes. The regression keeps broad reorder,
+  arbitrary parenting, generated null creation/parenting, untyped matte edits,
+  non-generated user assets, and raw JSX/source semantics out of scope unless
+  future typed contracts provide explicit indices, dry-run/confirmation,
+  idempotency, checkpoint/edit-session protection, and post-mutation read-back.
+  Validation passed: `node --check scripts\solution-library-validation-smoke.js`,
+  JSON parse for `orchestrator\generic-repo-live-lane-registry.json`,
+  `node scripts\solution-library-validation-smoke.js`,
+  `node scripts\agent-scenario-report-smoke.js`,
+  `node scripts\semantic-verification-smoke.js`,
+  `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`,
+  `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual
+  LF/CRLF warning only. No scoped queue run, live CEP/AE mutation, broad
+  reorder/matte/parenting mutation, launcher edit, dependency/package change,
+  Local, fallback provider, push, PR, raw JSX copy, or user-asset mutation was
+  run.
 - [x] First-four contracts Direction 2 implementation retry:
   generated-only file/render/proxy IO policy received fresh post-launcher
   implementation evidence. Extended

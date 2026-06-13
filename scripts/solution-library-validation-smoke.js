@@ -14,6 +14,7 @@ const {
 
 const REPO_ROOT = path.join(__dirname, "..");
 const REGISTRY_PATH = path.join(REPO_ROOT, "registry", "solutions.json");
+const LIVE_LANE_REGISTRY_PATH = path.join(REPO_ROOT, "orchestrator", "generic-repo-live-lane-registry.json");
 const SEEDED_IDS = ["active-comp-context-review", "selected-layers-align-to-cti"];
 const DAKKSHIN_ADVISORY_IDS = [
   "basic-comp-setup-typed-plan",
@@ -138,6 +139,11 @@ const FIRST_FOUR_FILE_RENDER_PROXY_CONTRACT_IDS = [
   "add-selected-compositions-to-render-queue-typed-plan",
   "add-labeled-items-to-render-queue-typed-plan"
 ];
+const FIRST_FOUR_PARENTING_MATTE_REORDER_CONTRACT_IDS = [
+  "selected-layer-parent-opacity-expression-generated-only",
+  "sortbyposition-typed-plan",
+  "newtrimmednull-typed-plan"
+];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
   "get_project_info",
@@ -207,12 +213,20 @@ function readRegistry() {
   return JSON.parse(fs.readFileSync(REGISTRY_PATH, "utf8"));
 }
 
+function readLiveLaneRegistry() {
+  return JSON.parse(fs.readFileSync(LIVE_LANE_REGISTRY_PATH, "utf8"));
+}
+
 function cloneJson(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
 function solutionById(registry, id) {
   return registry.solutions.find((entry) => entry.id === id);
+}
+
+function liveLaneFamilyById(liveLaneRegistry, id) {
+  return liveLaneRegistry.selfImprovementFamilies.find((entry) => entry.id === id);
 }
 
 function ids(retrieval) {
@@ -4635,14 +4649,61 @@ function assertFirstFourFileRenderProxyContracts(registry) {
   return FIRST_FOUR_FILE_RENDER_PROXY_CONTRACT_IDS;
 }
 
+function assertFirstFourParentingMatteReorderContracts(registry, liveLaneRegistry) {
+  const parentLaneId = "selected-layer-parent-opacity-expression-generated-only";
+  const parentLane = liveLaneFamilyById(liveLaneRegistry, parentLaneId);
+  assert(parentLane, `Missing first-four parenting lane: ${parentLaneId}`);
+  assert(parentLane.requiredTools.includes("set_layer_parent"), `${parentLaneId}: lane must require set_layer_parent.`);
+  assert(parentLane.allowedTools.includes("get_layer_details"), `${parentLaneId}: lane must keep typed layer read-back.`);
+  assert(parentLane.readBackTools.includes("get_layer_details"), `${parentLaneId}: lane must read parent relationship back through get_layer_details.`);
+  assert.strictEqual(parentLane.semanticVerification, true, `${parentLaneId}: lane must require semantic verification.`);
+  assert(parentLane.candidateIds.includes("tool-layers-parent-opacity"), `${parentLaneId}: lane must stay scoped to parent-opacity candidate.`);
+  assert(parentLane.scope.includes("generated-only"), `${parentLaneId}: lane must stay generated-only.`);
+  assert(parentLane.scope.includes("explicit generated child/parent pair"), `${parentLaneId}: lane must bind explicit generated relationship targets.`);
+  assert(parentLane.scope.includes("generated comp/layer indices"), `${parentLaneId}: lane must require generated comp/layer indices.`);
+  assert(parentLane.scope.includes("before/after stack read-back"), `${parentLaneId}: lane must require before/after stack read-back.`);
+  assert(parentLane.scope.includes("parent relationship read-back"), `${parentLaneId}: lane must require relationship read-back.`);
+  assert(parentLane.scope.includes("semantic verification") && parentLane.scope.includes("cleanup"), `${parentLaneId}: lane must require semantic verification and cleanup evidence.`);
+  assert(parentLane.scope.includes("track matte edits"), `${parentLaneId}: lane must fail closed on untyped matte edits.`);
+  assert(parentLane.scope.includes("layer stack reordering"), `${parentLaneId}: lane must fail closed on broad reorder semantics.`);
+  assert(parentLane.scope.includes("non-generated user assets"), `${parentLaneId}: lane must reject non-generated user assets.`);
+  assert(parentLane.scope.includes("raw JSX/source semantics"), `${parentLaneId}: lane must reject raw source semantics.`);
+
+  const sortByPosition = solutionById(registry, "sortbyposition-typed-plan");
+  assert(sortByPosition, "Missing first-four reorder gap contract: sortbyposition-typed-plan");
+  const sortText = solutionContractText(sortByPosition, recipeText(sortByPosition));
+  assert.strictEqual(sortByPosition.execution.mutating, false, "sortbyposition-typed-plan: reorder gap contract must stay read-only.");
+  assert(sortText.includes("layer stack reordering typed tool"), "sortbyposition-typed-plan: must require a future reorder typed tool.");
+  assert(sortText.includes("current stack order"), "sortbyposition-typed-plan: must preserve stack-order evidence.");
+  assert(sortText.includes("verifyAfter:true"), "sortbyposition-typed-plan: future mutating reorder must require verifyAfter.");
+  assert(sortText.includes("checkpoint or edit-session protection"), "sortbyposition-typed-plan: future mutating reorder must require checkpoint/edit-session protection.");
+  assert(sortText.includes("post-mutation read-back"), "sortbyposition-typed-plan: future mutating reorder must require read-back.");
+  assertNoRawExecutionGuidance("sortbyposition-typed-plan", sortByPosition, recipeText(sortByPosition));
+
+  const newTrimmedNull = solutionById(registry, "newtrimmednull-typed-plan");
+  assert(newTrimmedNull, "Missing first-four parenting gap contract: newtrimmednull-typed-plan");
+  const nullText = solutionContractText(newTrimmedNull, recipeText(newTrimmedNull));
+  assert.strictEqual(newTrimmedNull.execution.mutating, false, "newtrimmednull-typed-plan: null/parenting gap contract must stay read-only.");
+  assert(nullText.includes("selected layer chosen as the top selected layer by explicit layer index"), "newtrimmednull-typed-plan: must bind top selected layer by explicit index.");
+  assert(nullText.includes("generated null timing/label/parenting spec"), "newtrimmednull-typed-plan: must disclose generated null relationship spec.");
+  assert(nullText.includes("ordering, and parenting typed tool contracts"), "newtrimmednull-typed-plan: must keep ordering and parenting as missing typed contracts.");
+  assert(nullText.includes("Do not create null layers") && nullText.includes("parent layers"), "newtrimmednull-typed-plan: must fail closed on current layer creation and parenting.");
+  assert(nullText.includes("post-mutation read-back"), "newtrimmednull-typed-plan: future mutating variant must require read-back.");
+  assertNoRawExecutionGuidance("newtrimmednull-typed-plan", newTrimmedNull, recipeText(newTrimmedNull));
+
+  return FIRST_FOUR_PARENTING_MATTE_REORDER_CONTRACT_IDS;
+}
+
 function main() {
   const registry = readRegistry();
+  const liveLaneRegistry = readLiveLaneRegistry();
   const registrySummary = assertSeedQuality(registry);
   assertDakkshinAdvisoryQuality(registry);
   assertToolBackedGuidanceQuality(registry);
   assertImportedAdvisoryQuality(registry);
   const firstFourCompositionMarkerContracts = assertFirstFourCompositionMarkerContracts(registry);
   const firstFourFileRenderProxyContracts = assertFirstFourFileRenderProxyContracts(registry);
+  const firstFourParentingMatteReorderContracts = assertFirstFourParentingMatteReorderContracts(registry, liveLaneRegistry);
   const actualRetrieval = assertActualRetrieval(registry);
   const candidateOmitted = assertCandidateInvisibility(registry);
   const staleAndEquivalent = assertStaleAndToolEquivalentBehavior();
@@ -4658,7 +4719,8 @@ function main() {
     importedAdvisory: IMPORTED_ADVISORY_IDS,
     firstFourContracts: {
       compositionMarkerContracts: firstFourCompositionMarkerContracts,
-      fileRenderProxyContracts: firstFourFileRenderProxyContracts
+      fileRenderProxyContracts: firstFourFileRenderProxyContracts,
+      parentingMatteReorderContracts: firstFourParentingMatteReorderContracts
     },
     actualRetrieval: {
       contextReturned: actualRetrieval.contextRetrieval.returned,

@@ -708,7 +708,7 @@
         "node scripts/semantic-verification-smoke.js"
       ],
       "reclassifiedClassification": "new_typed_tool_contract",
-      "scope": "generated-only parent-opacity expression proof using typed set_layer_parent fixture setup for one generated child/parent pair, current selected-layer-style parent evidence, parent read-back, set_expression on child Transform > Opacity, expression read-back, semantic verification, and cleanup; arbitrary/bulk layer parenting, unparented-layer mutation, expression deletion, broad property scans, selection persistence, non-generated user assets, and raw JSX/source semantics remain fail-closed"
+      "scope": "generated-only parent-opacity expression proof using typed set_layer_parent fixture setup for one explicit generated child/parent pair, generated comp/layer indices, before/after stack read-back, current selected-layer-style parent evidence, parent relationship read-back, set_expression on child Transform > Opacity, expression read-back, semantic verification, and cleanup; arbitrary/bulk layer parenting, unparented-layer mutation, track matte edits, layer stack reordering, expression deletion, broad property scans, selection persistence, non-generated user assets, and raw JSX/source semantics remain fail-closed"
     },
     {
       "id": "stick-effect-expression-generated-only",
