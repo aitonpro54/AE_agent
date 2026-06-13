@@ -26,6 +26,42 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance Direction 3 candidate 4:
+  `tool-layers-set-track-matte-to-above` received fresh
+  post-`2080f7956f8d43dbc9caf017adfeae31e714724b` scoped retry evidence.
+  Parent reducer reviewed the current ledger entry, plan notes, exact source
+  behavior, existing layer switch/blend and parent-opacity lane metadata,
+  semantic/report smoke coverage, and typed tools `get_active_comp`,
+  `get_selected_layers`, `get_comp_details`, and `get_layer_details`.
+  Source-exact behavior reads `comp.selectedLayers` and calls
+  `layer.setTrackMatte(comp.layers[layer.index - 1],
+  TrackMatteType.LUMA_INVERTED)` for every selected layer; the top selected
+  layer would address an out-of-range above-layer matte target and source
+  traversal can bulk-mutate arbitrary selected user-layer matte state. The repo
+  has inspection-only layer evidence and generated-only lanes that explicitly
+  fail closed on track matte edits, but no reviewed `set_layer_track_matte`
+  writer, track-matte read-back fields, or semantic verifier. The bounded retry
+  returned `completed_no_candidates` with one terminal ticket, zero open
+  tickets, proof envelope SHA-256
+  `532516b213da61201c9514d2e2923701625a501c50cefcd2e6737d7a73167fb3`,
+  and `contractComplete=false`. Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-e5dd51219408588a/ticket.json`
+  is `terminal_unresolved`, reason `self_improvement_family_missing`;
+  synthesis is blocked with reason
+  `classification_not_allowed:unsafe_skip_tool_gap`. The precise unblock
+  condition is an approved generated-only track-matte typed contract with
+  explicit target/matte layer indices, expected-name guards, top-layer and cycle
+  guards, reviewed `LUMA_INVERTED` semantics, `get_layer_details`/`get_comp_details`
+  track-matte read-back, semantic verification and cleanup, while keeping
+  arbitrary/bulk user-layer matte mutation, source-exact selection side effects,
+  layer reorder/parenting changes, and raw JSX fail-closed. No broad queue,
+  live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama,
+  fallback provider, raw JSX copy, source-checkout execution, broad
+  reorder/matte mutation outside the failed-closed review, non-generated
+  user-asset mutation, push, or PR was run. Direction 3 is exhausted for the
+  active launcher sequence; the next ordered Direction 4 candidate is
+  `tool-layers-hard-solo-layers`.
+
 - [x] Sequential directions acceptance Direction 3 candidate 3:
   `tool-layers-parent-selected-layers-to-layers-below` received fresh
   post-`7db00c73acc6ef5597a63c52825d4185e70b54d7` scoped retry evidence.
@@ -2751,6 +2787,18 @@ check.
 
 ## Decision Log
 
+- 2026-06-13: `tool-layers-set-track-matte-to-above` is terminal from a fresh
+  scoped retry, not completed. Existing generated-only layer switch, blend-mode,
+  and parent lanes deliberately fail closed on track matte edits, and the
+  bridge has no reviewed `set_layer_track_matte` writer, track-matte read-back
+  fields, or semantic verifier. Completion requires a candidate-scoped
+  generated-only track-matte lane with explicit target and matte layer indices,
+  expected-name guards, top-layer/out-of-range and cycle guards,
+  `LUMA_INVERTED` semantics, dry-run/confirmation gates where applicable,
+  `get_layer_details`/`get_comp_details` read-back, semantic verification, and
+  cleanup. Source-exact selected-layer traversal, arbitrary user-layer matte
+  mutation, layer reorder/parent changes, and raw JSX remain fail-closed.
+
 - 2026-06-13: `tool-layers-parent-selected-layers-to-layers-below` is terminal
   from a fresh scoped retry, not completed. The bridge now has a bounded
   one-child/one-parent `set_layer_parent` typed tool and semantic read-back, but
@@ -3942,6 +3990,8 @@ check.
   composition; otherwise frame rate must be explicit.
 
 ## Validation
+
+| Sequential directions acceptance Direction 3 candidate 4 | Required to give `tool-layers-set-track-matte-to-above` fresh post-`2080f7956f8d43dbc9caf017adfeae31e714724b` scoped evidence after reviewing source track-matte behavior, existing layer switch/blend and parent lane metadata, semantic/report smoke coverage, and typed tools for layer inspection. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `532516b213da61201c9514d2e2923701625a501c50cefcd2e6737d7a73167fb3`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-e5dd51219408588a/ticket.json` is `terminal_unresolved`, reason `self_improvement_family_missing`; synthesis is blocked with reason `classification_not_allowed:unsafe_skip_tool_gap`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, broad reorder/matte mutation, non-generated user-asset mutation, push, or PR was run. |
 
 | Sequential directions acceptance Direction 3 candidate 3 | Required to give `tool-layers-parent-selected-layers-to-layers-below` fresh post-`7db00c73acc6ef5597a63c52825d4185e70b54d7` scoped evidence after reviewing source layer-below parenting behavior, existing parent-opacity lane metadata, semantic/report smoke coverage, and typed tools including current `set_layer_parent`. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `ad2ca2ac6440718a7ab4ec5341b1a9a4c44dab42e1a929cccab0a77f989c66c3`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-e5dd51219408588a/ticket.json` is `terminal_unresolved`, reason `self_improvement_family_missing`; synthesis is blocked with reason `classification_not_allowed:unsafe_skip_tool_gap`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, broad reorder/matte mutation, non-generated user-asset mutation, push, or PR was run. |
 
