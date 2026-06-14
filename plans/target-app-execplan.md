@@ -26,6 +26,40 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Runner mapping/resolution-gaps longrun final audit:
+  scoped family `runner-mapping-resolution-gaps` is closed without a broad
+  queue. The mapping/reclassification fixes accepted 11 exact unsafe-skip ids
+  through existing generated-only families:
+  `tool-compositions-set-work-area-to-markers`,
+  `tool-layers-hard-solo-layers`,
+  `tool-layers-toggle-difference-blend-mode`,
+  `tool-utilities-frame-navigator`,
+  `tool-markers-add-markers-at-out-points`,
+  `tool-markers-add-markers-at-work-area`,
+  `tool-markers-copy-composition-markers-to-layer`,
+  `tool-markers-copy-layer-markers-to-composition`,
+  `tool-project-set-all-item-labels-to-none`,
+  `tool-properties-add-properties-to-essential-graphics`, and
+  `tool-properties-expose-essential-properties`. Three ids stayed out of scope
+  for mapping-only work: `tool-layers-reset-selected-layer-labels` needs a
+  settings/default-label preference contract, `tool-layers-set-all-track-matte-labels`
+  needs an `isTrackMatte` read/selection contract, and
+  `tool-properties-toggle-puppet-pin-types` matched
+  `puppet-pin-type-generated-only` but the generated-only proof lane failed at
+  `set_puppet_pin_type` because `pinTypePropertyPath` could not be resolved
+  against the generated `ADBE FreePin3` effect. Final compact audit:
+  status `completed_no_candidates`, proof envelope SHA-256
+  `aea5fbf8d628f666ffae9c78bc1ad3fa175de484db0fcb20007014ab26dd2bbc`,
+  ledger counts `entries=75`, `completed=36`, `blocked_or_skipped=39`,
+  `queued=0`, `failed=0`, `terminal=75`. Validation passed:
+  touched JS `node --check`, `npm.cmd run smoke:full-intake`,
+  `npm.cmd run check:rules`, `git diff --check`, plus `npm.cmd run
+  smoke:solutions` for the production-family metadata change. No broad queue,
+  `--max-items` above 1, `--parallel-all-queued`, dependency/package change,
+  Local/Ollama, fallback provider, raw JSX copy, source-checkout execution,
+  broad/default CEP smoke, approval-gated file/render/proxy/OS/third-party
+  work, push, PR, or GitHub automation was run.
+
 - [x] Full intake tool-properties-expose-essential-properties: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-expose-essential-properties); live gate ready, importer batch full-intake-kyletmartinez-d2f1a8aac4-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-properties-add-properties-to-essential-graphics: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-add-properties-to-essential-graphics); live gate ready, importer batch full-intake-kyletmartinez-69fc417a8b-import, commit recorded after candidate commit.
@@ -3194,6 +3228,13 @@ stick-effect-expression/layer-selection waves unless needed for a regression
 check.
 
 ## Decision Log
+
+- 2026-06-14: Closed the `runner-mapping-resolution-gaps` longrun as a
+  mapping-only slice. Full Intaker now accepts exact candidate-scoped
+  generated-only production families despite stale unsafe-skip tool hints,
+  normalizes non-synthesizable requested reclassifications to
+  `existing_typed_tools_recipe_only`, and keeps settings/track-matte/Puppet pin
+  atom gaps outside this mapping-only acceptance path.
 
 - 2026-05-27: Generic full-intake orchestrator processed `Properties/Expose_Essential_Properties.jsx` as `tool-properties-expose-essential-properties`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-expose-essential-properties).
 
