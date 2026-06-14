@@ -118,6 +118,7 @@ const IMPORTED_ADVISORY_IDS = [
   "replace-text-in-project-item-name-typed-plan",
   "rename-selected-project-items-typed-plan",
   "set-project-item-labels-to-none-typed-plan",
+  "set-all-item-labels-to-none-typed-plan",
   "add-comment-to-selected-layers-typed-plan",
   "unlock-all-layers-typed-plan",
   "set-all-layer-labels-to-none-typed-plan",
@@ -2665,6 +2666,27 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /label:0 only/.test(note)), `${id}: notes must keep scope label-only.`);
       assert(solution.promotionHistory.some((entry) => /tool-project-set-all-item-labels-to-none/.test(entry.from)), `${id}: promotion history should mention source candidate.`);
       assert(solution.promotionHistory.some((entry) => /No source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "set-all-item-labels-to-none-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "get_project_snapshot", "find_project_items", "list_project_folder_items", "set_project_item_metadata"],
+        `${id}: importer alias should stay on the narrow project-item metadata typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.recipePath, "recipes/set-all-item-labels-to-none-typed-plan.md", `${id}: importer alias should use the planned recipe path.`);
+      assert.strictEqual(solution.execution.mutating, true, `${id}: project-item label alias must be mutating.`);
+      assert(text.includes("label:0"), `${id}: alias recipe should require label:0.`);
+      assert(text.includes("set_project_item_metadata"), `${id}: alias recipe should use the project item metadata typed tool.`);
+      assert(text.includes("expectedItemNames"), `${id}: alias recipe should support item-name guards.`);
+      assert(text.includes("Project panel selection"), `${id}: alias recipe should fail closed for Project panel selection reads.`);
+      assert(text.includes("label defaults by type"), `${id}: alias recipe should fail closed for item-type label defaults.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_project_snapshot/.test(step)), `${id}: verification must allow project snapshot evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /find_project_items/.test(step)), `${id}: verification must include project item read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_project_item_metadata/.test(step)), `${id}: verification must include project item metadata mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /postVerification\.ok:true/.test(item)), `${id}: verification must require postVerification evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /label:0/.test(item)), `${id}: verification must require label read-back evidence.`);
+      assert(solution.notes.some((note) => /label:0 only/.test(note)), `${id}: notes must keep scope label-only.`);
+      assert(solution.promotionHistory.some((entry) => /tool-project-set-all-item-labels-to-none/.test(entry.from)), `${id}: promotion history should mention source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /No source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "find-specific-effect-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -4294,6 +4316,20 @@ function assertActualRetrieval(registry) {
   assert(setProjectItemLabelsPromptSection.includes("find_project_items"), "prompt section should preserve item search evidence for project item label workflows.");
   assert(setProjectItemLabelsPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning.");
   assert(!/run_extendscript/i.test(setProjectItemLabelsPromptSection), "project item label guidance should not recommend raw ExtendScript.");
+
+  const setAllItemLabelsRetrieval = retrieveSolutionHints("Set all generated Project item labels to none after reading the current project snapshot, binding explicit itemIndices, using set_project_item_metadata label 0, and reading labels back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(setAllItemLabelsRetrieval.ok, true);
+  assert(ids(setAllItemLabelsRetrieval).includes("set-all-item-labels-to-none-typed-plan"), "set-all item label importer alias should surface for Project item label prompts.");
+  const setAllItemLabelsPromptSection = formatSolutionHintsForPrompt(setAllItemLabelsRetrieval);
+  assert(setAllItemLabelsPromptSection.includes("Set All Item Labels To None Typed Plan"), "prompt section should include importer-planned project-item label alias title.");
+  assert(setAllItemLabelsPromptSection.includes("set_project_item_metadata"), "prompt section should prefer set_project_item_metadata for set-all Project item labels.");
+  assert(setAllItemLabelsPromptSection.includes("label:0"), "prompt section should preserve set-all label:0 policy.");
+  assert(setAllItemLabelsPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning for set-all labels.");
+  assert(!/run_extendscript/i.test(setAllItemLabelsPromptSection), "set-all project item label guidance should not recommend raw ExtendScript.");
 
   const replaceProjectItemNameRetrieval = retrieveSolutionHints("Replace Alpha with Beta in project item names after reading the current project snapshot, binding explicit itemIndices, using rename_project_items mode findReplace, and reading back project inventory. Use literal text replacement, not regex.", {
     registry,

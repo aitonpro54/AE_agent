@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-project-set-all-item-labels-to-none: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-project-set-all-item-labels-to-none); live gate ready, importer batch full-intake-kyletmartinez-885353e111-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-markers-copy-layer-markers-to-composition: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-markers-copy-layer-markers-to-composition); live gate ready, importer batch full-intake-kyletmartinez-3e7ad115eb-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-markers-copy-composition-markers-to-layer: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-markers-copy-composition-markers-to-layer); live gate ready, importer batch full-intake-kyletmartinez-43f2539e99-import, commit recorded after candidate commit.
@@ -3189,6 +3191,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Project/Set_All_Item_Labels_To_None.jsx` as `tool-project-set-all-item-labels-to-none`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-project-set-all-item-labels-to-none).
+
 - 2026-05-27: Generic full-intake orchestrator processed `Markers/Copy_Layer_Markers_To_Composition.jsx` as `tool-markers-copy-layer-markers-to-composition`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-markers-copy-layer-markers-to-composition).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Markers/Copy_Composition_Markers_To_Layer.jsx` as `tool-markers-copy-composition-markers-to-layer`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-markers-copy-composition-markers-to-layer).
@@ -4491,6 +4495,8 @@ check.
 
 ## Validation
 
+| Full intake tool-project-set-all-item-labels-to-none | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-885353e111-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+
 | Full intake tool-markers-copy-layer-markers-to-composition | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-3e7ad115eb-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-markers-copy-composition-markers-to-layer | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-43f2539e99-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
@@ -4742,6 +4748,25 @@ check.
   intent forbids validation runs. Parent importer owns registry validation,
   solution-library validation, semantic verification, and any future live
   acceptance lane.
+
+- [x] AUX-021 child batch `tool-project-set-all-item-labels-to-none`
+  (`queue-batch-1-95352612a7`): detached child execution added the
+  importer-planned alias recipe
+  `recipes/set-all-item-labels-to-none-typed-plan.md`, a matching registry
+  entry, and focused solution-library smoke assertions. The alias preserves the
+  existing generated-only Project item label contract: current project-item
+  evidence from `get_project_info` plus `get_project_snapshot`,
+  `find_project_items`, or `list_project_folder_items`; explicit
+  `itemIndices`; optional `expectedItemNames`; `set_project_item_metadata`
+  with `label:0`; and project-item read-back. Project panel selection reads,
+  item type default label lookup, item rename/move/delete, filesystem
+  operations, render queue work, proxy state, non-generated user assets, and
+  raw JSX remain fail-closed. Validation was intentionally not run in this
+  detached child worktree because the child-run intent forbids validation, live
+  AE/CEP/CDP, OpenAI CLI planner, dependency, branch, commit, push, and PR
+  actions. `.codex/handoff.md` creation was attempted but blocked by
+  filesystem ACL `Access denied` in this detached worktree, so this plan entry
+  records the child-run durable status.
 
 - [x] AUX-021 child batch `tool-project-add-folder-to-render-queue`:
   detached child execution confirmed the safe generated-only import coverage
