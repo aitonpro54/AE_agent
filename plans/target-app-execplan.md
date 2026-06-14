@@ -1,4 +1,4 @@
-﻿# Target App Execution Plan
+# Target App Execution Plan
 
 ## Active Baseline
 
@@ -25,6 +25,25 @@ old `AE_agent` repository remains the historical source.
   reviewed migration.
 
 ## Progress
+
+- [x] Full intake tool-layers-hard-solo-layers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-hard-solo-layers); live gate ready, importer batch full-intake-kyletmartinez-8193680816-import, commit recorded after candidate commit.
+
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-8ace2cc16b`:
+  preflight found a clean tracked worktree and confirmed existing planned
+  coverage for `tool-layers-hard-solo-layers` in
+  `hard-solo-layers-typed-plan`, the solution registry, and
+  `scripts/solution-library-validation-smoke.js`. The safe adaptation covers
+  generated explicit selected/unselected `Layer.enabled` writes through
+  `get_active_comp`, `get_selected_layers`, `get_comp_details`,
+  `set_layer_metadata`, and `get_layer_details`, while native solo switches,
+  previous enabled-state restoration, broad selected-layer traversal,
+  non-generated user assets, and raw JSX remain fail-closed. Validation was
+  intentionally not run because the child-run intent forbids validation, live
+  AE/CEP/CDP, OpenAI CLI planner runs, dependency changes, branches, commits,
+  push, and PR actions. No recipe, registry, or shared smoke rewrite was needed
+  beyond this child-run closeout note. `.codex/handoff.md` creation was
+  attempted but blocked by filesystem ACL `Access denied` in this detached
+  worktree.
 
 - [x] Full intake tool-compositions-set-work-area-to-markers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-compositions-set-work-area-to-markers); live gate ready, importer batch full-intake-kyletmartinez-787d45fcfa-import, commit recorded after candidate commit.
 
@@ -3065,6 +3084,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Layers/Hard_Solo_Layers.jsx` as `tool-layers-hard-solo-layers`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-hard-solo-layers).
+
 - 2026-05-27: Generic full-intake orchestrator processed `Compositions/Set_Work_Area_To_Markers.jsx` as `tool-compositions-set-work-area-to-markers`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-compositions-set-work-area-to-markers).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Properties/Toggle_Puppet_On_Transparent.jsx` as `tool-properties-toggle-puppet-on-transparent`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-toggle-puppet-on-transparent).
@@ -4353,6 +4374,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full intake tool-layers-hard-solo-layers | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-8193680816-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-compositions-set-work-area-to-markers | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-787d45fcfa-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
