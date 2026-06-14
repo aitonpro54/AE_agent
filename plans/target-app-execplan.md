@@ -26,7 +26,27 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-utilities-frame-navigator: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-utilities-frame-navigator); live gate ready, importer batch full-intake-kyletmartinez-b3f5b46bd9-import, commit recorded after candidate commit.
 - [x] Full intake tool-layers-toggle-difference-blend-mode: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-toggle-difference-blend-mode); live gate ready, importer batch full-intake-kyletmartinez-270b4a2dd9-import, commit recorded after candidate commit.
+
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-70ff19ccc0`:
+  preflight found a clean tracked worktree and confirmed existing planned
+  coverage for `tool-utilities-frame-navigator` in
+  `recipes/frame-navigator-typed-plan.md`, `registry/solutions.json`, and
+  `scripts/solution-library-validation-smoke.js`. The safe adaptation covers
+  explicit generated/current composition CTI navigation through
+  `get_active_comp` or `get_comp_details`, a reviewed seconds or zero-based
+  frame target, `set_comp_current_time`, and `get_comp_details.time`
+  read-back. Source-exact ScriptUI controls, display-start/timecode offsets,
+  selected-comp ambiguity, layer timing, work-area edits, markers, keyframes,
+  raw ExtendScript, broad project scans, and non-generated user-asset mutation
+  remain fail-closed. Validation was intentionally not run because the
+  child-run intent forbids validation, live AE/CEP/CDP, OpenAI CLI planner
+  runs, dependency changes, branches, commits, push, and PR actions. No recipe,
+  registry, or shared smoke rewrite was needed beyond this child-run closeout
+  note. `.codex/handoff.md` creation was attempted but blocked by filesystem
+  ACL `Access denied` in this detached worktree, so this plan entry records the
+  child-run durable status.
 
 - [x] AUX-021 importer child-run wrapper `queue-batch-1-4e2d5cd8ad`:
   preflight found a clean tracked worktree and confirmed existing safe
@@ -3104,6 +3124,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Utilities/Frame_Navigator.jsx` as `tool-utilities-frame-navigator`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-utilities-frame-navigator).
+
 - 2026-05-27: Generic full-intake orchestrator processed `Layers/Toggle_Difference_Blend_Mode.jsx` as `tool-layers-toggle-difference-blend-mode`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-toggle-difference-blend-mode).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Layers/Hard_Solo_Layers.jsx` as `tool-layers-hard-solo-layers`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-hard-solo-layers).
@@ -4396,6 +4418,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full intake tool-utilities-frame-navigator | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-b3f5b46bd9-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-layers-toggle-difference-blend-mode | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-270b4a2dd9-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
