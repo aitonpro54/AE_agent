@@ -1621,6 +1621,7 @@
       "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-comp-current-time-openai-cli-smoke",
       "providerPath": "openai-cli",
       "proofLane": "comp-current-time",
+      "productionTypedTools": true,
       "readBackTools": [
         "get_comp_details"
       ],
@@ -1682,6 +1683,7 @@
       "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-project-item-metadata-openai-cli-smoke",
       "providerPath": "openai-cli",
       "proofLane": "project-item-label",
+      "productionTypedTools": true,
       "readBackTools": [
         "find_project_items",
         "get_project_snapshot",
