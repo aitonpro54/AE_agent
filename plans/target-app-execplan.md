@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-properties-expose-essential-properties: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-expose-essential-properties); live gate ready, importer batch full-intake-kyletmartinez-d2f1a8aac4-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-properties-add-properties-to-essential-graphics: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-add-properties-to-essential-graphics); live gate ready, importer batch full-intake-kyletmartinez-69fc417a8b-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-project-set-all-item-labels-to-none: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-project-set-all-item-labels-to-none); live gate ready, importer batch full-intake-kyletmartinez-885353e111-import, commit recorded after candidate commit.
@@ -3193,6 +3195,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Properties/Expose_Essential_Properties.jsx` as `tool-properties-expose-essential-properties`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-expose-essential-properties).
+
 - 2026-05-27: Generic full-intake orchestrator processed `Properties/Add_Properties_To_Essential_Graphics.jsx` as `tool-properties-add-properties-to-essential-graphics`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-add-properties-to-essential-graphics).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Project/Set_All_Item_Labels_To_None.jsx` as `tool-project-set-all-item-labels-to-none`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-project-set-all-item-labels-to-none).
@@ -4499,6 +4503,8 @@ check.
 
 ## Validation
 
+| Full intake tool-properties-expose-essential-properties | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-d2f1a8aac4-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+
 | Full intake tool-properties-add-properties-to-essential-graphics | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-69fc417a8b-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-project-set-all-item-labels-to-none | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-885353e111-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
@@ -4878,6 +4884,30 @@ check.
   blocked by filesystem ACL `Access denied` in this detached worktree.
 
 ## AUX-021 Child-Run Closeout
+
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-0d0c323f8b`:
+  preflight found a clean tracked worktree and confirmed existing planned
+  coverage for `tool-properties-expose-essential-properties` in
+  `recipes/expose-essential-properties-typed-plan.md`,
+  `registry/solutions.json`, and
+  `scripts/solution-library-validation-smoke.js`. The safe adaptation remains
+  generated-only and requires explicit generated precomp/layer identity,
+  `get_layer_details`, `get_layer_essential_properties includeValues:true`,
+  one reviewed Essential Property `propertyPath`, `set_expression` only on
+  that explicit Essential Property path, and final
+  `get_layer_essential_properties` read-back showing the same property with
+  `expressionEnabled:true` and no expression error. Source-exact
+  `layer.essentialProperty` traversal from selection state, broad Essential
+  Properties writes, user precomp template mutation, Essential Graphics
+  controller side effects, MOGRT/export work, non-generated user assets, raw
+  JSX, dependency/package changes, source merge, branch, commit, push, PR, and
+  GitHub automation remain fail-closed. Validation was intentionally not run
+  because the child-run intent forbids validation, live AE/CEP/CDP, OpenAI CLI
+  planner runs, dependency changes, branches, commits, push, and PR actions.
+  No recipe, registry, or shared smoke rewrite was needed beyond this
+  child-run closeout note. `.codex/handoff.md` creation was attempted but
+  blocked by filesystem ACL `Access denied` in this detached worktree, so this
+  plan entry records the child-run durable status.
 
 - [x] AUX-021 importer child-run wrapper `queue-batch-1-fe7ffc9bf8`:
   preflight found a clean tracked worktree and confirmed existing planned
