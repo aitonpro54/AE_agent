@@ -2580,6 +2580,130 @@ function assertBoundedSelfImprovementAllowsDeclaredRenderQueueSignal() {
   }
 }
 
+function unsafeSkipStaleToolsEntry(overrides = {}) {
+  return entry({
+    id: "tool-layers-read-only-fixture",
+    sourcePath: "Layers/Read_Only_Fixture.jsx",
+    name: "Fixture Stale Generated Only Family",
+    description: "Fixture unsafe-skip entry with stale tool hints and exact generated-only family coverage.",
+    classification: "unsafe_skip_tool_gap",
+    status: "blocked_or_skipped",
+    shortReason: "Fixture stale unsafe-skip mapping gap.",
+    suggestedTools: ["get_active_comp"],
+    liveGate: { required: false, status: "not_required_for_read_only_or_skip" },
+    implementation: {
+      sliceId: "fixture-stale-generated-only-family",
+      plannedPaths: ["scripts/imported-tools/stale-generated-only-family.js"]
+    },
+    queueRank: null,
+    safetySignals: {},
+    ...overrides
+  });
+}
+
+function staleToolsExactFamilyRegistry(candidateId, overrides = {}) {
+  return {
+    entries: [],
+    selfImprovementFamilies: [
+      {
+        id: "fixture-stale-generated-only-family",
+        requiredTools: ["get_active_comp", "get_comp_details", "set_layer_metadata", "get_layer_details"],
+        allowedTools: ["get_active_comp", "get_comp_details", "set_layer_metadata", "get_layer_details"],
+        candidateIds: [candidateId],
+        command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-fixture-openai-cli-smoke",
+        providerPath: "openai-cli",
+        proofLane: "fixture-stale-generated-only-family",
+        productionTypedTools: true,
+        readBackTools: ["get_layer_details"],
+        semanticVerification: true,
+        plannedPaths: ["scripts/cep-panel-cdp-smoke.js"],
+        nonLiveValidationCommands: ["node --check scripts/cep-panel-cdp-smoke.js"],
+        reclassifiedClassification: "existing_typed_tools_recipe_only",
+        scope: "fixture exact generated-only family for stale unsafe-skip mapping",
+        ...overrides
+      }
+    ]
+  };
+}
+
+function assertUnsafeSkipExactGeneratedOnlyFamilyAllowsStaleToolHints() {
+  const fixture = createFixture("ussf");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const candidate = unsafeSkipStaleToolsEntry();
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [candidate]));
+    const registryPath = writeRegistry(fixture, staleToolsExactFamilyRegistry(candidate.id));
+    const output = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        "f-ussf",
+        1,
+        fakeCodexEnv(binDir),
+        [
+          "--allow-self-improvement-lane-synthesis",
+          "--resolution-candidate-ids",
+          candidate.id
+        ]
+      )
+    );
+    assert.strictEqual(output.status, "completed");
+    assert.deepStrictEqual(output.resolutionQueue.requeuedCandidateIds, [candidate.id]);
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    const completed = ledger.entries.find((item) => item.id === candidate.id);
+    assert.strictEqual(completed.status, "completed");
+    assert.strictEqual(completed.previousClassification, "unsafe_skip_tool_gap");
+    assert.strictEqual(completed.classification, "existing_typed_tools_recipe_only");
+    assert.strictEqual(completed.liveGate.templateSource, "bounded_self_improvement");
+    assert.strictEqual(completed.liveGate.synthesisFamily, "fixture-stale-generated-only-family");
+    assert.strictEqual(completed.implementation.liveLaneReclassification.from, "unsafe_skip_tool_gap");
+    assert(fs.existsSync(path.join(fixture.target, "scripts", "imported-tools", "stale-generated-only-family.js")));
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertUnsafeSkipExactGeneratedOnlyFamilyRejectsDisallowedSafetySignal() {
+  const fixture = createFixture("ussus");
+  try {
+    const candidate = unsafeSkipStaleToolsEntry({
+      safetySignals: { usesSettings: true }
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [candidate]));
+    const registryPath = writeRegistry(fixture, staleToolsExactFamilyRegistry(candidate.id));
+    const output = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        "f-ussus",
+        1,
+        {},
+        [
+          "--allow-self-improvement-lane-synthesis",
+          "--resolution-candidate-ids",
+          candidate.id
+        ]
+      )
+    );
+    assert.strictEqual(output.status, "completed_no_candidates");
+    assert.deepStrictEqual(output.resolutionQueue.requeuedCandidateIds, []);
+    assert.strictEqual(output.resolutionQueue.terminalTicketCount, 1);
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    const terminal = ledger.entries.find((item) => item.id === candidate.id);
+    assert.strictEqual(terminal.status, "blocked_or_skipped");
+    assert.strictEqual(terminal.resolution.status, "terminal_unresolved");
+    const ticket = JSON.parse(fs.readFileSync(path.join(fixture.target, terminal.resolution.latestTicket), "utf8"));
+    assert.strictEqual(ticket.status, "terminal_unresolved");
+    assert.strictEqual(ticket.reason, "unsafe_safety_signals:usesSettings");
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertScopedResolutionCandidateIdsOnlyProcessRequestedLane() {
   const fixture = createFixture("scoped-resolution");
   try {
@@ -3225,6 +3349,8 @@ function main() {
   assertQueuedLiveLaneNeededFamiliesAreProvedAndRanked();
   assertBoundedSelfImprovementCreatesAndRejectsLanes();
   assertBoundedSelfImprovementAllowsDeclaredRenderQueueSignal();
+  assertUnsafeSkipExactGeneratedOnlyFamilyAllowsStaleToolHints();
+  assertUnsafeSkipExactGeneratedOnlyFamilyRejectsDisallowedSafetySignal();
   assertScopedResolutionCandidateIdsOnlyProcessRequestedLane();
   assertLegacyReasoningEffortCliFailureIsScopedImportRetry();
   assertChildTimeoutResolutionRecoversImporterWorktreePatch();

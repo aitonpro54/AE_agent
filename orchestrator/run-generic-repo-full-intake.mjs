@@ -1854,14 +1854,21 @@ function selfImprovementWorkPacket({ entries, groupId, reason, runId, tools }) {
 
 function selfImprovementFamilyMatches(family, candidate, tools) {
   if (!family || typeof family !== "object") return false;
-  if (Array.isArray(family.candidateIds) && family.candidateIds.length > 0 && !family.candidateIds.includes(candidate.id)) {
+  if (family.semanticVerification !== true || !Array.isArray(family.readBackTools) || family.readBackTools.length === 0) {
     return false;
   }
-  if (Array.isArray(family.requiredTools) && !familyRequirementMatches(family, tools)) {
+  const candidateScoped = familyExplicitlyScopesCandidate(family, candidate);
+  if (Array.isArray(family.candidateIds) && family.candidateIds.length > 0 && !family.candidateIds.includes(candidate.id)) {
     return false;
   }
   if (Array.isArray(family.allowedTools) && !familyAllowsAllTools(family, tools)) {
     return false;
+  }
+  if (Array.isArray(family.requiredTools) && !familyRequirementMatches(family, tools)) {
+    const allowedTools = new Set(Array.isArray(family.allowedTools) ? family.allowedTools : []);
+    return candidateScoped &&
+      family.productionTypedTools === true &&
+      family.requiredTools.every((tool) => allowedTools.has(tool));
   }
   return true;
 }
