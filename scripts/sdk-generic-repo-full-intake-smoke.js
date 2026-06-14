@@ -2618,7 +2618,7 @@ function staleToolsExactFamilyRegistry(candidateId, overrides = {}) {
         semanticVerification: true,
         plannedPaths: ["scripts/cep-panel-cdp-smoke.js"],
         nonLiveValidationCommands: ["node --check scripts/cep-panel-cdp-smoke.js"],
-        reclassifiedClassification: "existing_typed_tools_recipe_only",
+        reclassifiedClassification: "new_typed_tool_contract_policy",
         scope: "fixture exact generated-only family for stale unsafe-skip mapping",
         ...overrides
       }
@@ -2658,6 +2658,7 @@ function assertUnsafeSkipExactGeneratedOnlyFamilyAllowsStaleToolHints() {
     assert.strictEqual(completed.liveGate.templateSource, "bounded_self_improvement");
     assert.strictEqual(completed.liveGate.synthesisFamily, "fixture-stale-generated-only-family");
     assert.strictEqual(completed.implementation.liveLaneReclassification.from, "unsafe_skip_tool_gap");
+    assert.strictEqual(completed.implementation.liveLaneReclassification.requestedClassification, "new_typed_tool_contract_policy");
     assert(fs.existsSync(path.join(fixture.target, "scripts", "imported-tools", "stale-generated-only-family.js")));
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {

@@ -2598,12 +2598,19 @@ function nextQueueRankAllocator(ledger) {
   };
 }
 
+function reclassifiedClassificationForTemplate(template) {
+  const requested = template.reclassifiedClassification || "existing_typed_tools_recipe_only";
+  return SYNTHESIZABLE_CLASSIFICATIONS.has(requested)
+    ? requested
+    : "existing_typed_tools_recipe_only";
+}
+
 function applyFamilyProofToEntry(entry, ticket, liveReport, template, allocateQueueRank) {
   const previousClassification = entry.classification;
   requeueEntryAfterResolution(entry, ticket);
   if (SELF_IMPROVEMENT_RECLASSIFIABLE_CLASSIFICATIONS.has(previousClassification)) {
     entry.previousClassification = previousClassification;
-    entry.classification = template.reclassifiedClassification || "existing_typed_tools_recipe_only";
+    entry.classification = reclassifiedClassificationForTemplate(template);
   }
   if (!Number.isInteger(entry.queueRank)) {
     entry.queueRank = allocateQueueRank();
@@ -2634,6 +2641,7 @@ function applyFamilyProofToEntry(entry, ticket, liveReport, template, allocateQu
       from: previousClassification,
       to: entry.classification,
       familyId: template.synthesis?.familyId || ticket.evidence.familyId || null,
+      requestedClassification: template.reclassifiedClassification || null,
       queueRank: entry.queueRank,
       ticketPath: ticket.isolation.ticketPath,
       updatedAt: new Date().toISOString(),
