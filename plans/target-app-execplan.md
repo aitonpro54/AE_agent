@@ -26,6 +26,26 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-markers-add-markers-at-work-area: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-markers-add-markers-at-work-area); live gate ready, importer batch full-intake-kyletmartinez-73260f8a3a-import, commit recorded after candidate commit.
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-41e6c91059`:
+  preflight found a clean tracked worktree and confirmed existing safe
+  generated-only coverage for `tool-markers-add-markers-at-work-area` in the
+  composition marker work-area registry entry and solution-library assertions.
+  The child run added the planned recipe alias path
+  `recipes/add-markers-at-work-area-typed-plan.md`, pointed the existing
+  `add-composition-markers-at-work-area-typed-plan` solution at that planned
+  recipe, and added one focused smoke assertion for the importer-planned recipe
+  path. The safe adaptation remains limited to reviewed generated composition
+  `workAreaStart` and `workAreaDuration` evidence from `get_comp_details
+  includeMarkers:true`, composition marker writes through `add_comp_marker`,
+  and final `get_comp_details includeMarkers:true` read-back. Source-exact
+  active-comp traversal, hidden UI state, marker update/delete, layer marker
+  substitution, audio-derived markers, current-time inference, work-area
+  mutation, layer timing changes, file I/O, render queue work, non-generated
+  user assets, and raw JSX remain fail-closed. Validation was intentionally not
+  run because the child-run intent forbids validation, live AE/CEP/CDP, OpenAI
+  CLI planner runs, dependency changes, branches, commits, push, and PR
+  actions.
 - [x] Full intake tool-markers-add-markers-at-out-points: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-markers-add-markers-at-out-points); live gate ready, importer batch full-intake-kyletmartinez-25a2abc27c-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-utilities-frame-navigator: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-utilities-frame-navigator); live gate ready, importer batch full-intake-kyletmartinez-b3f5b46bd9-import, commit recorded after candidate commit.
@@ -3126,6 +3146,7 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Markers/Add_Markers_At_Work_Area.jsx` as `tool-markers-add-markers-at-work-area`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-markers-add-markers-at-work-area).
 - 2026-05-27: Generic full-intake orchestrator processed `Markers/Add_Markers_At_Out_Points.jsx` as `tool-markers-add-markers-at-out-points`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-markers-add-markers-at-out-points).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Utilities/Frame_Navigator.jsx` as `tool-utilities-frame-navigator`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-utilities-frame-navigator).
@@ -4423,6 +4444,7 @@ check.
 
 ## Validation
 
+| Full intake tool-markers-add-markers-at-work-area | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-73260f8a3a-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 | Full intake tool-markers-add-markers-at-out-points | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-25a2abc27c-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-utilities-frame-navigator | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-b3f5b46bd9-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |

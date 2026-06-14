@@ -548,6 +548,7 @@ function assertImportedAdvisoryQuality(registry) {
         `${id}: work-area composition marker workflow should stay on comp work-area evidence plus add_comp_marker.`
       );
       assert.strictEqual(solution.execution.mutating, true, `${id}: work-area composition marker workflow must be mutating.`);
+      assert.strictEqual(solution.execution.recipePath, "recipes/add-markers-at-work-area-typed-plan.md", `${id}: importer alias recipe path should stay on the planned AUX-021 path.`);
       assert(text.includes("workAreaStart"), `${id}: recipe should require workAreaStart evidence.`);
       assert(text.includes("workAreaDuration"), `${id}: recipe should require workAreaDuration evidence.`);
       assert(text.includes("includeMarkers:true"), `${id}: recipe should require composition marker read-back.`);
