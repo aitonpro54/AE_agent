@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-layers-stick-effect-to-layer: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-stick-effect-to-layer); live gate ready, importer batch full-intake-kyletmartinez-3063dbf88f-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-lottie-prepare-layer-out-points-for-lottie: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-lottie-prepare-layer-out-points-for-lottie); live gate ready, importer batch full-intake-kyletmartinez-63bcdd8acd-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-compositions-transfer-composition-work-area: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-compositions-transfer-composition-work-area); live gate ready, importer batch full-intake-kyletmartinez-9615f842dd-import, commit recorded after candidate commit.
@@ -2959,6 +2961,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Layers/Stick_Effect_To_Layer.jsx` as `tool-layers-stick-effect-to-layer`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-stick-effect-to-layer).
+
 - 2026-05-27: Generic full-intake orchestrator processed `Lottie/Prepare_Layer_Out_Points_For_Lottie.jsx` as `tool-lottie-prepare-layer-out-points-for-lottie`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-lottie-prepare-layer-out-points-for-lottie).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Compositions/Transfer_Composition_Work_Area.jsx` as `tool-compositions-transfer-composition-work-area`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-compositions-transfer-composition-work-area).
@@ -4220,6 +4224,8 @@ check.
 
 ## Validation
 
+| Full intake tool-layers-stick-effect-to-layer | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-3063dbf88f-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+
 | Full intake tool-lottie-prepare-layer-out-points-for-lottie | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-63bcdd8acd-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-compositions-transfer-composition-work-area | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-9615f842dd-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
@@ -4484,6 +4490,24 @@ check.
   CEP/AE, OpenAI CLI planner, dependency, branch, commit, push, and PR actions.
   No code, registry, live-lane, recipe, or smoke rewrite was needed beyond this
   child-run closeout note.
+
+- [x] AUX-021 child batch `tool-layers-stick-effect-to-layer`: detached child
+  execution confirmed the safe generated-only import coverage already present
+  in planned paths. The typed plan, generic intake note, registry entry,
+  `stick-effect-expression-generated-only` live-lane family, scenario fixture,
+  report smoke, CEP/CDP lane command, and solution-library assertions cover an
+  explicit generated Ramp effect property through `get_active_comp`,
+  `get_effect_details`, `set_expression`, and `get_layer_details`, applying only
+  `toComp(anchorPoint + value);` with read-back evidence. Source-exact
+  `comp.selectedProperties` traversal, automatic effect discovery, non-2D
+  spatial targets, existing-expression overwrite without review, selection
+  persistence, non-generated user assets, raw JSX, and live proof execution
+  remain fail-closed. Validation was intentionally not run in the detached child
+  worktree because the child-run intent forbids validation, live CEP/AE,
+  OpenAI CLI planner, dependency, branch, commit, push, and PR actions. No code,
+  registry, live-lane, recipe, or smoke rewrite was needed beyond this child-run
+  closeout note. .codex/handoff.md creation was attempted but blocked by
+  filesystem Access denied in this detached worktree.
 
 ## Handoff
 
