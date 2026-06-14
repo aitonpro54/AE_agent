@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-compositions-transfer-composition-work-area: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-compositions-transfer-composition-work-area); live gate ready, importer batch full-intake-kyletmartinez-9615f842dd-import, commit recorded after candidate commit.
+
 - [x] Sequential directions acceptance Direction 4 candidate 5:
   `tool-layers-toggle-puppet-pins-as-guide-layers` received fresh
   post-`36b0cb148eeb274a1ec4f76b7b021cd46aa681fe` scoped retry evidence.
@@ -2955,6 +2957,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Compositions/Transfer_Composition_Work_Area.jsx` as `tool-compositions-transfer-composition-work-area`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-compositions-transfer-composition-work-area).
+
 - 2026-06-14: `tool-layers-toggle-puppet-pins-as-guide-layers` is terminal
   from a fresh scoped retry, not completed. Source behavior scans all project
   comps for third-party `Pseudo/Duik pin02` effects and toggles native
@@ -4212,6 +4216,8 @@ check.
 
 ## Validation
 
+| Full intake tool-compositions-transfer-composition-work-area | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-9615f842dd-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+
 | Sequential directions acceptance Direction 4 candidate 5 | Required to give `tool-layers-toggle-puppet-pins-as-guide-layers` fresh post-`36b0cb148eeb274a1ec4f76b7b021cd46aa681fe` scoped evidence after reviewing source project-wide `Pseudo/Duik pin02` / `layer.guideLayer` behavior, guide-layer selection coverage, generated Puppet pin type coverage, third-party semantics policy, semantic/report smoke coverage, and typed tools including `get_layer_details`, `list_effects`, `get_effect_details`, `set_layer_metadata`, and `set_puppet_pin_type`. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `0f8ded52a9e6f7f30626d38c32d1608d0190627ada045d5f4b56dc79e5999937`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-879893cbbe5afd6a/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:thirdPartyAssumption`; synthesis is blocked with reason `classification_not_allowed:unsafe_skip_tool_gap`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, native `guideLayer` mutation, DuIK/user effect mutation, non-generated user-asset mutation, push, or PR was run. |
 
 | Sequential directions acceptance Direction 4 candidate 4 | Required to give `tool-layers-toggle-specific-effects` fresh post-`affe3036504ebae3e416b545a8d3f72bb09c2a0f` scoped evidence after reviewing source project-wide `effect.enabled` toggle behavior, read-only `find-specific-effect` coverage, effect-property live lanes, semantic/report smoke coverage, and typed tools including `list_effects`, `get_effect_details`, `add_effect`, and `set_effect_property`. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `76c85bd334443b818f38909ca8200e59e3e3b8b3d1922c5bdc468cbeb711d9e2`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-3f595538a515f696/ticket.json` is `terminal_unresolved`, reason `self_improvement_family_missing`; synthesis is blocked with reason `classification_not_allowed:unsafe_skip_tool_gap`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, effect enabled mutation, non-generated user-asset mutation, push, or PR was run. |
@@ -4442,6 +4448,21 @@ check.
   worktree because the child-run intent forbids validation, live CEP/AE,
   OpenAI CLI planner, dependency, branch, commit, push, and PR actions. No code
   or registry rewrite was needed beyond this child-run closeout note.
+
+- [x] AUX-021 child batch
+  `tool-compositions-transfer-composition-work-area`: detached child execution
+  confirmed the safe generated-only import coverage already present in planned
+  paths. The typed plan, generic intake note, registry entry, work-area transfer
+  live-lane family, and solution-library assertions cover explicit source and
+  target composition work-area transfer through `get_active_comp`,
+  `get_comp_details`, and `set_comp_work_area`; persistent `app.settings`
+  clipboard behavior, Alt-key branching, marker-derived work areas,
+  current-time inference, layer retiming, duration changes, exact source JSX,
+  and non-generated user-asset mutation remain fail-closed. Validation was
+  intentionally not run in the detached child worktree because the child-run
+  intent forbids validation, live CEP/AE, OpenAI CLI planner, dependency,
+  branch, commit, push, and PR actions. No code, registry, live-lane, recipe, or
+  smoke rewrite was needed beyond this child-run closeout note.
 
 ## Handoff
 
