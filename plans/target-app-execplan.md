@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-markers-copy-layer-markers-to-composition: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-markers-copy-layer-markers-to-composition); live gate ready, importer batch full-intake-kyletmartinez-3e7ad115eb-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-markers-copy-composition-markers-to-layer: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-markers-copy-composition-markers-to-layer); live gate ready, importer batch full-intake-kyletmartinez-43f2539e99-import, commit recorded after candidate commit.
 
 - [x] AUX-021 importer child-run wrapper `queue-batch-1-5ee2ce1bd6`:
@@ -47,6 +49,26 @@ old `AE_agent` repository remains the historical source.
   closeout note. `.codex/handoff.md` creation was attempted but blocked by
   filesystem ACL `Access denied` in this detached worktree, so this plan entry
   records the child-run durable status.
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-58cdebcb7d`:
+  preflight found a clean tracked worktree and confirmed existing planned
+  coverage for `tool-markers-copy-layer-markers-to-composition` in
+  `recipes/copy-layer-markers-to-composition-typed-plan.md`,
+  `registry/solutions.json`, and
+  `scripts/solution-library-validation-smoke.js`. The safe adaptation covers
+  reviewed generated or approved layer-marker evidence from
+  `get_layer_details`, existing composition marker evidence from
+  `get_comp_details includeMarkers:true`, explicit `add_comp_marker` writes,
+  and final `get_comp_details includeMarkers:true` read-back. Source-exact
+  active-comp traversal, selected-layer traversal without current evidence,
+  marker update/delete, audio-derived markers, layer marker mutation,
+  work-area mutation, layer timing changes, file I/O, render queue work,
+  non-generated user assets, and raw JSX remain fail-closed. Validation was
+  intentionally not run because the child-run intent forbids validation, live
+  AE/CEP/CDP, OpenAI CLI planner runs, dependency changes, branches, commits,
+  push, and PR actions. No recipe, registry, or shared smoke rewrite was needed
+  beyond this child-run closeout note. `.codex/handoff.md` creation was
+  attempted but blocked by filesystem ACL `Access denied` in this detached
+  worktree, so this plan entry records the child-run durable status.
 - [x] Full intake tool-markers-add-markers-at-work-area: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-markers-add-markers-at-work-area); live gate ready, importer batch full-intake-kyletmartinez-73260f8a3a-import, commit recorded after candidate commit.
 - [x] AUX-021 importer child-run wrapper `queue-batch-1-41e6c91059`:
   preflight found a clean tracked worktree and confirmed existing safe
@@ -3167,6 +3189,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Markers/Copy_Layer_Markers_To_Composition.jsx` as `tool-markers-copy-layer-markers-to-composition`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-markers-copy-layer-markers-to-composition).
+
 - 2026-05-27: Generic full-intake orchestrator processed `Markers/Copy_Composition_Markers_To_Layer.jsx` as `tool-markers-copy-composition-markers-to-layer`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-markers-copy-composition-markers-to-layer).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Markers/Add_Markers_At_Work_Area.jsx` as `tool-markers-add-markers-at-work-area`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-markers-add-markers-at-work-area).
@@ -4466,6 +4490,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full intake tool-markers-copy-layer-markers-to-composition | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-3e7ad115eb-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-markers-copy-composition-markers-to-layer | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-43f2539e99-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
