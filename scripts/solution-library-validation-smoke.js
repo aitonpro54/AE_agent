@@ -528,6 +528,7 @@ function assertImportedAdvisoryQuality(registry) {
         `${id}: out-point composition marker workflow should stay on comp/layer evidence plus add_comp_marker.`
       );
       assert.strictEqual(solution.execution.mutating, true, `${id}: out-point composition marker workflow must be mutating.`);
+      assert.strictEqual(solution.execution.recipePath, "recipes/add-markers-at-out-points-typed-plan.md", `${id}: importer alias recipe path should stay on the planned AUX-021 path.`);
       assert(text.includes("includeLayers:true"), `${id}: recipe should require layer out-point evidence.`);
       assert(text.includes("includeMarkers:true"), `${id}: recipe should require composition marker read-back.`);
       assert(text.includes("outPoint"), `${id}: recipe should bind marker targets from outPoint evidence.`);

@@ -1390,7 +1390,7 @@
         "mode": "typed-plan",
         "mutating": true,
         "riskLevel": "medium",
-        "recipePath": "recipes/add-composition-markers-at-out-points-typed-plan.md",
+        "recipePath": "recipes/add-markers-at-out-points-typed-plan.md",
         "scriptPath": null,
         "preferredTools": [
           "get_active_comp",
@@ -1447,6 +1447,7 @@
       "notes": [
         "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
         "Use only current get_comp_details evidence for layer outPoint and composition marker count binding; do not infer marker targets from prior chat context.",
+        "Importer alias path: recipes/add-markers-at-out-points-typed-plan.md carries the same safe typed composition marker add contract for AUX-021 child batches.",
         "Do not use this recipe for work-area boundary marker creation, marker update/delete, audio-derived markers, layer marker mutation, work-area changes, layer timing changes, file I/O, render queue work, or raw ExtendScript."
       ]
     },
