@@ -2589,7 +2589,7 @@ function unsafeSkipStaleToolsEntry(overrides = {}) {
     classification: "unsafe_skip_tool_gap",
     status: "blocked_or_skipped",
     shortReason: "Fixture stale unsafe-skip mapping gap.",
-    suggestedTools: ["get_active_comp"],
+    suggestedTools: ["get_active_comp", "get_selected_properties"],
     liveGate: { required: false, status: "not_required_for_read_only_or_skip" },
     implementation: {
       sliceId: "fixture-stale-generated-only-family",

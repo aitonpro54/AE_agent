@@ -1861,14 +1861,13 @@ function selfImprovementFamilyMatches(family, candidate, tools) {
   if (Array.isArray(family.candidateIds) && family.candidateIds.length > 0 && !family.candidateIds.includes(candidate.id)) {
     return false;
   }
-  if (Array.isArray(family.allowedTools) && !familyAllowsAllTools(family, tools)) {
+  const exactProductionCandidateFamily = candidateScoped && family.productionTypedTools === true;
+  if (Array.isArray(family.allowedTools) && !familyAllowsAllTools(family, tools) && !exactProductionCandidateFamily) {
     return false;
   }
   if (Array.isArray(family.requiredTools) && !familyRequirementMatches(family, tools)) {
     const allowedTools = new Set(Array.isArray(family.allowedTools) ? family.allowedTools : []);
-    return candidateScoped &&
-      family.productionTypedTools === true &&
-      family.requiredTools.every((tool) => allowedTools.has(tool));
+    return exactProductionCandidateFamily && family.requiredTools.every((tool) => allowedTools.has(tool));
   }
   return true;
 }
