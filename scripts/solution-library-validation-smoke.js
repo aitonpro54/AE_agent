@@ -1750,6 +1750,7 @@ function assertImportedAdvisoryQuality(registry) {
         `${id}: difference blend workflow should stay on the narrow selected Layer.blendingMode typed tool sequence.`
       );
       assert.strictEqual(solution.execution.mutating, true, `${id}: difference blend workflow must be mutating.`);
+      assert.strictEqual(solution.execution.recipePath, "recipes/toggle-difference-blend-mode-typed-plan.md", `${id}: recipe path should stay on the importer-planned toggle recipe alias.`);
       assert(text.includes("blendingMode:\"difference\""), `${id}: recipe should preserve Difference blending mode.`);
       assert(text.includes("expectedCurrentBlendingModes"), `${id}: recipe should document current-mode guards.`);
       assert(text.includes("set_layer_blending_mode"), `${id}: recipe should use the layer blending mode typed writer.`);

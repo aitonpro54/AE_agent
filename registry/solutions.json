@@ -14171,7 +14171,7 @@
         "mode": "typed-plan",
         "mutating": true,
         "riskLevel": "medium",
-        "recipePath": "recipes/difference-blend-mode-typed-plan.md",
+        "recipePath": "recipes/toggle-difference-blend-mode-typed-plan.md",
         "scriptPath": null,
         "preferredTools": [
           "get_active_comp",
