@@ -26,6 +26,7 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-properties-toggle-puppet-on-transparent: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-toggle-puppet-on-transparent); live gate ready, importer batch full-intake-kyletmartinez-8bb35df41b-import, commit recorded after candidate commit.
 - [x] Full intake tool-properties-flip-path: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-flip-path); live gate ready, importer batch full-intake-kyletmartinez-5d027039f8-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-properties-estimate-path-length: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-estimate-path-length); live gate ready, importer batch full-intake-kyletmartinez-2e58985507-import, commit recorded after candidate commit.
@@ -2986,6 +2987,7 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Properties/Toggle_Puppet_On_Transparent.jsx` as `tool-properties-toggle-puppet-on-transparent`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-toggle-puppet-on-transparent).
 - 2026-05-27: Generic full-intake orchestrator processed `Properties/Flip_Path.jsx` as `tool-properties-flip-path`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-flip-path).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Properties/Estimate_Path_Length.jsx` as `tool-properties-estimate-path-length`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-estimate-path-length).
@@ -4272,6 +4274,7 @@ check.
 
 ## Validation
 
+| Full intake tool-properties-toggle-puppet-on-transparent | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-8bb35df41b-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 | Full intake tool-properties-flip-path | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-5d027039f8-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 - AUX-021 `queue-batch-1-a29a4def22`: validation intentionally not run in this
   detached child worktree. The batch request explicitly forbade validation runs,
