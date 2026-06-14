@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-properties-flip-path: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-flip-path); live gate ready, importer batch full-intake-kyletmartinez-5d027039f8-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-properties-estimate-path-length: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-estimate-path-length); live gate ready, importer batch full-intake-kyletmartinez-2e58985507-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-properties-move-parametric-anchor-point: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-move-parametric-anchor-point); live gate ready, importer batch full-intake-kyletmartinez-51b7434e89-import, commit recorded after candidate commit.
@@ -2984,6 +2986,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Properties/Flip_Path.jsx` as `tool-properties-flip-path`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-flip-path).
+
 - 2026-05-27: Generic full-intake orchestrator processed `Properties/Estimate_Path_Length.jsx` as `tool-properties-estimate-path-length`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-estimate-path-length).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Properties/Move_Parametric_Anchor_Point.jsx` as `tool-properties-move-parametric-anchor-point`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-move-parametric-anchor-point).
@@ -4257,7 +4261,23 @@ check.
   advisory only when the user asks to derive frame rate from the active
   composition; otherwise frame rate must be explicit.
 
+- 2026-06-14: AUX-021 `queue-batch-1-a29a4def22` made no implementation rewrite
+  for `tool-properties-flip-path` because the planned paths already contain the
+  accepted generated-only path-geometry recipe, registry coverage, lane
+  metadata, runner family mapping, scenario/report smoke wiring, CEP/CDP lane
+  command, and solution-library assertions. The child-run recorded status in
+  the active plan only because `.codex/handoff.md` creation was blocked by
+  filesystem ACL `Access denied`; parent importer remains responsible for any
+  source merge, validation, scoped retry evidence, and commit.
+
 ## Validation
+
+| Full intake tool-properties-flip-path | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-5d027039f8-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+- AUX-021 `queue-batch-1-a29a4def22`: validation intentionally not run in this
+  detached child worktree. The batch request explicitly forbade validation runs,
+  live AE/CEP/CDP/OpenAI CLI planner runs, package/dependency changes, branches,
+  commits, pushes, PR automation, Local/Ollama, fallback providers, web search,
+  and user-asset mutation.
 
 | Full intake tool-properties-estimate-path-length | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-2e58985507-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
@@ -4550,6 +4570,25 @@ check.
   registry, live-lane, recipe, or smoke rewrite was needed beyond this child-run
   closeout note. .codex/handoff.md creation was attempted but blocked by
   filesystem Access denied in this detached worktree.
+
+- [x] AUX-021 child batch `tool-properties-flip-path`
+  (`queue-batch-1-a29a4def22`): detached child execution confirmed the safe
+  generated-only import coverage already present in planned paths. The typed
+  plan, generic intake note, registry entry, `shape-mask-path-flip-generated-only`
+  live-lane family, scenario fixture/report smoke, CEP/CDP lane command, runner
+  family mapping, and solution-library assertions cover one explicit generated
+  shape or mask path through `get_path_geometry`, reviewed horizontal or
+  vertical flip math for vertices and tangents, `set_path_geometry`, and
+  post-mutation read-back. Source-exact ScriptUI direction UI, broad
+  `comp.selectedProperties` traversal, arbitrary user paths, expression-driven
+  paths, file output, Essential Graphics, Puppet pins, third-party effects, raw
+  JSX, and live proof execution remain fail-closed. Validation was intentionally
+  not run in the detached child worktree because the child-run intent forbids
+  validation, live AE/CEP/CDP, OpenAI CLI planner, dependency, branch, commit,
+  push, and PR actions. No code, registry, live-lane, recipe, or smoke rewrite
+  was needed beyond this child-run closeout note. `.codex/handoff.md` creation was
+  attempted but blocked by filesystem ACL `Access denied` in this detached
+  worktree.
 
 ## Handoff
 
