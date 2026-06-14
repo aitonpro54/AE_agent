@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-lottie-prepare-layer-out-points-for-lottie: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-lottie-prepare-layer-out-points-for-lottie); live gate ready, importer batch full-intake-kyletmartinez-63bcdd8acd-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-compositions-transfer-composition-work-area: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-compositions-transfer-composition-work-area); live gate ready, importer batch full-intake-kyletmartinez-9615f842dd-import, commit recorded after candidate commit.
 
 - [x] Sequential directions acceptance Direction 4 candidate 5:
@@ -2957,6 +2959,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Lottie/Prepare_Layer_Out_Points_For_Lottie.jsx` as `tool-lottie-prepare-layer-out-points-for-lottie`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-lottie-prepare-layer-out-points-for-lottie).
+
 - 2026-05-27: Generic full-intake orchestrator processed `Compositions/Transfer_Composition_Work_Area.jsx` as `tool-compositions-transfer-composition-work-area`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-compositions-transfer-composition-work-area).
 
 - 2026-06-14: `tool-layers-toggle-puppet-pins-as-guide-layers` is terminal
@@ -4216,6 +4220,8 @@ check.
 
 ## Validation
 
+| Full intake tool-lottie-prepare-layer-out-points-for-lottie | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-63bcdd8acd-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+
 | Full intake tool-compositions-transfer-composition-work-area | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-9615f842dd-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Sequential directions acceptance Direction 4 candidate 5 | Required to give `tool-layers-toggle-puppet-pins-as-guide-layers` fresh post-`36b0cb148eeb274a1ec4f76b7b021cd46aa681fe` scoped evidence after reviewing source project-wide `Pseudo/Duik pin02` / `layer.guideLayer` behavior, guide-layer selection coverage, generated Puppet pin type coverage, third-party semantics policy, semantic/report smoke coverage, and typed tools including `get_layer_details`, `list_effects`, `get_effect_details`, `set_layer_metadata`, and `set_puppet_pin_type`. | Passed/terminal: scoped retry returned `completed_no_candidates` with one terminal ticket, zero open tickets, proof envelope SHA-256 `0f8ded52a9e6f7f30626d38c32d1608d0190627ada045d5f4b56dc79e5999937`, and `contractComplete=false`. Current ticket `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-879893cbbe5afd6a/ticket.json` is `terminal_unresolved`, reason `unsafe_safety_signals:thirdPartyAssumption`; synthesis is blocked with reason `classification_not_allowed:unsafe_skip_tool_gap`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with the usual LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not applicable. No broad queue, live CEP/AE mutation, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, native `guideLayer` mutation, DuIK/user effect mutation, non-generated user-asset mutation, push, or PR was run. |
@@ -4463,6 +4469,21 @@ check.
   intent forbids validation, live CEP/AE, OpenAI CLI planner, dependency,
   branch, commit, push, and PR actions. No code, registry, live-lane, recipe, or
   smoke rewrite was needed beyond this child-run closeout note.
+
+- [x] AUX-021 child batch
+  `tool-lottie-prepare-layer-out-points-for-lottie`: detached child execution
+  confirmed the safe generated-only import coverage already present in planned
+  paths. The typed plan, generic intake note, registry entry, Lottie layer
+  out-point live-lane family, and solution-library assertions cover explicit
+  generated composition/layer timing evidence through `get_active_comp`,
+  `get_comp_details`, `set_layer_time_range`, and `get_layer_details`;
+  source-exact all-project CompItem traversal, user composition mutation,
+  exporter hidden state, undo semantics, raw JSX, and non-generated user-asset
+  mutation remain fail-closed. Validation was intentionally not run in the
+  detached child worktree because the child-run intent forbids validation, live
+  CEP/AE, OpenAI CLI planner, dependency, branch, commit, push, and PR actions.
+  No code, registry, live-lane, recipe, or smoke rewrite was needed beyond this
+  child-run closeout note.
 
 ## Handoff
 
