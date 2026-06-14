@@ -26,6 +26,38 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Sequential directions acceptance final shortlist retry:
+  `tool-properties-add-properties-to-essential-graphics` received fresh scoped
+  retry evidence after `dadbc0e23beb61295da3f85022e966a3900cdf9a`.
+  Parent reducer reviewed the exact candidate id, existing
+  `add-properties-to-essential-graphics-typed-plan`, generic intake note,
+  registry entry, runner mapping, scenario/report smoke coverage, and
+  `essential-graphics-generated-only` live-lane metadata. The bounded retry used
+  `--context-percent 5`, `--max-items 1`, the exact candidate id, and
+  `--allow-self-improvement-lane-synthesis`; it returned
+  `completed_no_candidates` with one terminal ticket, zero open tickets, proof
+  envelope SHA-256
+  `550366a6e99e45fb3de699bc1df978a002cf7f2497e4b26b18e76467e81cb4f4`,
+  and `contractComplete=false`. Current ticket
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-0e4f08dad3367dcc/ticket.json`
+  is `terminal_unresolved`, reason `self_improvement_family_missing`;
+  synthesis is blocked with reason
+  `classification_not_allowed:unsafe_skip_tool_gap` even though supported
+  families include exact candidate-scoped `essential-graphics-generated-only`.
+  The precise unblock condition is to update the Full Intaker
+  resolution/synthesis path so this exact unsafe-skip candidate can be accepted
+  or reclassified through the existing generated-only
+  `essential-graphics-generated-only` family with current typed
+  `get_essential_graphics_controllers` /
+  `add_property_to_essential_graphics` read-back evidence, semantic
+  verification, cleanup/checkpoint policy, and fail-closed handling for
+  source-exact selected-property traversal, broad Essential Properties writes,
+  MOGRT/export/user-template mutation, non-generated user assets, and raw JSX.
+  No broad queue, live CEP/AE mutation outside the generated-only lane,
+  launcher edit, dependency/package change, Local/Ollama, fallback provider,
+  raw JSX copy, source-checkout execution, non-generated user-asset mutation,
+  push, or PR was run.
+
 - [x] Full intake tool-properties-toggle-puppet-on-transparent: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-toggle-puppet-on-transparent); live gate ready, importer batch full-intake-kyletmartinez-8bb35df41b-import, commit recorded after candidate commit.
 - [x] Full intake tool-properties-flip-path: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-flip-path); live gate ready, importer batch full-intake-kyletmartinez-5d027039f8-import, commit recorded after candidate commit.
 
