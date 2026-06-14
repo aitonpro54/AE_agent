@@ -26,6 +26,34 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intaker final compact audit for FINISH LANE-AWARE SHORTLIST
+  LONGRUN: compact status/proof/ledger-summary after the three scoped ids
+  returned 75 entries, 25 completed, 50 blocked/skipped, 0 queued, 0 failed,
+  terminal total 75. Shortlist outcome: `tool-properties-flip-path` completed
+  with commit `5c6ae97205636df94305165c4a47fd473e6fc0a9` and proof
+  `3679aa0e82c0c183645d2668ade72803455bd9f9f8e50e99fce650ff1e6b32d8`;
+  `tool-properties-toggle-puppet-on-transparent` completed with commit
+  `dadbc0e23beb61295da3f85022e966a3900cdf9a` and proof
+  `d3d7d4157277689356059440003d755bd236b62d44ed969c713a1c0d679f7e47`;
+  `tool-properties-add-properties-to-essential-graphics` stayed terminal with
+  proof `550366a6e99e45fb3de699bc1df978a002cf7f2497e4b26b18e76467e81cb4f4`.
+  Future large families remaining: 14 runner mapping/resolution gaps where
+  exact generated-only lanes already exist but unsafe-skip reclassification is
+  not accepted (`composition-marker`, `layer-enabled`, `layer-metadata`,
+  `layer-blend-mode`, `marker-add/copy`, `project-item-label`,
+  `essential-graphics`, `puppet-pin-type`, and `comp-current-time`); 22 new
+  typed contract families for comp refresh/rename, layer parenting/matte,
+  effect enabled/color/shape/text/name/pin-size/stroke/property operations,
+  Lottie drop-shadow conversion, and project metadata/timing/folder selection;
+  and 14 approval-gated live/file/render/proxy/OS/third-party classes covering
+  frame/image export, SRT/text-file import/export, Newton/DuIK semantics,
+  render queue cleanup/rendering, folder cleanup, proxy relinking/removal,
+  project-file reveal, and path-points export. No broad queue, `--max-items`
+  above 1, `--parallel-all-queued`, broad/default CEP smoke, Local/Ollama,
+  fallback provider, dependency/package change, raw JSX product copy,
+  source-checkout execution, non-generated user-asset mutation, push, PR, or
+  GitHub automation was run.
+
 - [x] Sequential directions acceptance final shortlist retry:
   `tool-properties-add-properties-to-essential-graphics` received fresh scoped
   retry evidence after `dadbc0e23beb61295da3f85022e966a3900cdf9a`.
