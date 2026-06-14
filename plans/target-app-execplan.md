@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-compositions-set-work-area-to-markers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-compositions-set-work-area-to-markers); live gate ready, importer batch full-intake-kyletmartinez-787d45fcfa-import, commit recorded after candidate commit.
+
 - [x] Full Intaker final compact audit for FINISH LANE-AWARE SHORTLIST
   LONGRUN: compact status/proof/ledger-summary after the three scoped ids
   returned 75 entries, 25 completed, 50 blocked/skipped, 0 queued, 0 failed,
@@ -112,6 +114,22 @@ old `AE_agent` repository remains the historical source.
   planner runs, dependency changes, branches, commits, push, and PR actions.
   `.codex/handoff.md` creation was attempted but blocked by filesystem ACL
   `Access denied`; this plan entry records the child-run durable status instead.
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-7761d61804`:
+  preflight found a clean tracked worktree and confirmed existing planned
+  coverage for `tool-compositions-set-work-area-to-markers` in the typed plan,
+  registry entry, and solution-library validation smoke. The safe adaptation
+  covers generated composition marker setup/read-back through
+  `add_comp_marker` and `get_comp_details includeMarkers:true`, derives
+  `workAreaStart` and `workAreaDuration` from reviewed marker times, mutates
+  only the verified composition work area through `set_comp_work_area`, and
+  keeps layer markers, audio/current-time inference, user-marker mutation,
+  file/render work, raw JSX, and source-exact UI traversal fail-closed.
+  Validation was intentionally not run because the child-run intent forbids
+  validation, live AE/CEP/CDP, OpenAI CLI planner runs, dependency changes,
+  branches, commits, push, and PR actions. No recipe, registry, or shared smoke
+  rewrite was needed beyond this child-run closeout note. .codex/handoff.md creation was
+  attempted but blocked by filesystem ACL Access denied in this detached
+  worktree.
 - [x] Full intake tool-layers-stick-effect-to-layer: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-stick-effect-to-layer); live gate ready, importer batch full-intake-kyletmartinez-3063dbf88f-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-lottie-prepare-layer-out-points-for-lottie: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-lottie-prepare-layer-out-points-for-lottie); live gate ready, importer batch full-intake-kyletmartinez-63bcdd8acd-import, commit recorded after candidate commit.
@@ -3047,6 +3065,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Compositions/Set_Work_Area_To_Markers.jsx` as `tool-compositions-set-work-area-to-markers`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-compositions-set-work-area-to-markers).
+
 - 2026-05-27: Generic full-intake orchestrator processed `Properties/Toggle_Puppet_On_Transparent.jsx` as `tool-properties-toggle-puppet-on-transparent`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-toggle-puppet-on-transparent).
 - 2026-05-27: Generic full-intake orchestrator processed `Properties/Flip_Path.jsx` as `tool-properties-flip-path`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-flip-path).
 
@@ -4333,6 +4353,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full intake tool-compositions-set-work-area-to-markers | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-787d45fcfa-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-properties-toggle-puppet-on-transparent | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-8bb35df41b-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 | Full intake tool-properties-flip-path | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-5d027039f8-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
