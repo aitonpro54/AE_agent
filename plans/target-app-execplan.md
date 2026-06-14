@@ -26,6 +26,16 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-properties-move-parametric-anchor-point: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-move-parametric-anchor-point); live gate ready, importer batch full-intake-kyletmartinez-51b7434e89-import, commit recorded after candidate commit.
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-bf1f77e920`:
+  preflight found a clean tracked worktree and confirmed existing planned
+  coverage for `tool-properties-move-parametric-anchor-point` in the recipe,
+  registry, live-lane registry, scenario fixture/report smoke, CEP read-back,
+  and solution-library validation planned paths. No implementation rewrite was
+  needed in this detached child worktree. `.codex/handoff.md` creation was
+  attempted but blocked by sandbox ACL on the newly-created `.codex` directory;
+  this plan entry records the child-run durable status instead.
+
 - [x] Full intake tool-layers-stick-effect-to-layer: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-stick-effect-to-layer); live gate ready, importer batch full-intake-kyletmartinez-3063dbf88f-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-lottie-prepare-layer-out-points-for-lottie: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-lottie-prepare-layer-out-points-for-lottie); live gate ready, importer batch full-intake-kyletmartinez-63bcdd8acd-import, commit recorded after candidate commit.
@@ -2961,6 +2971,16 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Properties/Move_Parametric_Anchor_Point.jsx` as `tool-properties-move-parametric-anchor-point`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-move-parametric-anchor-point).
+- AUX-021 `queue-batch-1-bf1f77e920`: kept the already-present
+  `tool-properties-move-parametric-anchor-point` import artifacts unchanged;
+  they are scoped to advisory typed-plan guidance using current
+  `get_selected_properties`/`get_layer_details` evidence, `set_expression`, and
+  post-mutation read-back. No source merge, branch, commit, validation run,
+  live AE/CEP/CDP run, OpenAI CLI planner run, dependency/package change,
+  Local/Ollama, fallback provider, web search, push, PR, or user-asset mutation
+  was performed.
+
 - 2026-05-27: Generic full-intake orchestrator processed `Layers/Stick_Effect_To_Layer.jsx` as `tool-layers-stick-effect-to-layer`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-stick-effect-to-layer).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Lottie/Prepare_Layer_Out_Points_For_Lottie.jsx` as `tool-lottie-prepare-layer-out-points-for-lottie`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-lottie-prepare-layer-out-points-for-lottie).
@@ -4223,6 +4243,11 @@ check.
   composition; otherwise frame rate must be explicit.
 
 ## Validation
+
+| Full intake tool-properties-move-parametric-anchor-point | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-51b7434e89-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+- AUX-021 `queue-batch-1-bf1f77e920`: not run by child-run boundary. The batch
+  request explicitly forbade validation runs, live AE/CEP/CDP/OpenAI CLI planner
+  runs, package/dependency changes, commits, pushes, and PR automation.
 
 | Full intake tool-layers-stick-effect-to-layer | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-3063dbf88f-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
