@@ -941,6 +941,57 @@
       "scope": "generated-only Puppet On Transparent proof using an explicit generated ADBE FreePin3 effect, get_effect_details evidence for ADBE FreePin3 On Transparent, exact before/after boolean values, set_effect_property with a reviewed boolean value, get_effect_details/get_layer_details read-back, semantic verification, and cleanup; source-exact all-project traversal, Alt-key branching, user Puppet effects, untyped effect-specific toggles, puppet pin atom mutation, third-party DuIK behavior, selection persistence, and raw JSX semantics remain fail-closed"
     },
     {
+      "id": "layer-fill-color-cycle-generated-only",
+      "requiredTools": [
+        "add_effect",
+        "get_effect_details",
+        "set_effect_property"
+      ],
+      "allowedTools": [
+        "add_effect",
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_comp_details",
+        "get_effect_details",
+        "get_layer_details",
+        "get_selected_layers",
+        "set_effect_property"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "propertyTraversal",
+        "usesSettings"
+      ],
+      "candidateIds": [
+        "tool-layers-add-fill-with-color-cycle"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-effect-property-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "effect-property",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_effect_details",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/add-fill-with-color-cycle-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-add-fill-with-color-cycle.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only stateless Fill color-cycle proof using explicit generated layer/effect targets, ADBE Fill Color property evidence, one reviewed palette color, exact before/after value read-back, semantic verification, and cleanup; source-exact app.settings/app.preferences persistence, automatic cross-run next-color state, broad selected-layer traversal, non-generated user assets, and raw JSX semantics remain fail-closed"
+    },
+    {
       "id": "puppet-pin-type-generated-only",
       "requiredTools": [
         "get_effect_details",

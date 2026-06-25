@@ -410,6 +410,43 @@ const AUTO_LANE_FAMILIES = Object.freeze([
       "generated-only effect property family proof using add_effect, get_effect_details, set_effect_property, and read-back; expression-rig semantics and locale-specific property assumptions remain explicit recipe constraints",
   },
   {
+    id: "layer-fill-color-cycle-generated-only",
+    requiredTools: ["add_effect", "get_effect_details", "set_effect_property"],
+    allowedTools: [
+      "add_effect",
+      "create_comp",
+      "create_shape_layer",
+      "get_active_comp",
+      "get_comp_details",
+      "get_effect_details",
+      "get_layer_details",
+      "get_selected_layers",
+      "set_effect_property",
+    ],
+    allowedUnsafeSignals: ["usesSelection", "propertyTraversal", "usesSettings"],
+    candidateIds: ["tool-layers-add-fill-with-color-cycle"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-effect-property-openai-cli-smoke",
+    proofLane: "effect-property",
+    readBackTools: ["get_effect_details", "get_layer_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "recipes/add-fill-with-color-cycle-typed-plan.md",
+      "recipes/generic-repo-intake/tool-layers-add-fill-with-color-cycle.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "existing_typed_tools_recipe_only",
+    scope:
+      "generated-only stateless Fill color-cycle proof using explicit generated layer/effect targets, ADBE Fill Color property evidence, one reviewed palette color, set_effect_property with exact before/after read-back, semantic verification, and cleanup; source-exact app.settings/app.preferences persistence, automatic cross-run next-color state, broad selected-layer traversal, non-generated user assets, and raw JSX semantics remain fail-closed",
+  },
+  {
     id: "puppet-on-transparent-effect-property-generated-only",
     requiredTools: ["add_effect", "get_effect_details", "set_effect_property"],
     allowedTools: [

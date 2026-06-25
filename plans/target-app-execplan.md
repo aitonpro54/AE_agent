@@ -26,6 +26,28 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake layer Fill color-cycle stateless lane (2026-06-25):
+  parent-owned milestone for `tool-layers-add-fill-with-color-cycle` added a
+  scoped generated-only stateless typed-plan/lane adaptation using existing
+  `add_effect`, `get_effect_details`, `set_effect_property`, and
+  `get_layer_details` coverage. The new recipe and intake note explicitly fail
+  closed for source-exact `app.settings/app.preferences` persistence,
+  automatic cross-run next-color state, broad selected-layer traversal,
+  non-generated user-asset mutation, and raw JSX. A scoped retry with explicit
+  id and `--max-items 1` now maps the candidate to
+  `layer-fill-color-cycle-generated-only`; lane non-live validation and read-only
+  CEP preflight passed, but the generated-only proof failed with
+  `CEP panel is not connected to the bridge`. No candidate was marked completed,
+  and no broad queue processing, unscoped candidate selection, dependency
+  change, Local/Ollama, fallback provider, broad/default CEP smoke, raw JSX
+  copy, source-checkout execution, non-generated user-asset mutation, launcher
+  edit, push, or PR was run. Latest compact proof envelope SHA-256:
+  `730ee7357907544050007552709d144ab33aea6348ea0f79189f762a5e86c57f`.
+  The final compact status is `blocked_target_dirty` only because the scoped
+  retry ran while parent-authored tracked lane files were intentionally
+  uncommitted; the reviewable closeout commit makes the tree clean for the next
+  session.
+
 - [x] Full Intake reopened label/track-matte retry closeout (2026-06-25):
   parent-owned milestone for `tool-layers-reset-selected-layer-labels`,
   `tool-layers-set-all-track-matte-labels`, and
@@ -3337,6 +3359,15 @@ check.
 
 ## Decision Log
 
+- 2026-06-25: Accept only a stateless generated-only adaptation for
+  `tool-layers-add-fill-with-color-cycle`. Existing effect-property typed tools
+  can safely add `ADBE Fill`, inspect the Fill `Color` property, set one
+  reviewed palette color, and read it back. They must not claim source-exact
+  persistent color-cycle behavior because the source stores the next color index
+  through AE `app.settings` and `app.preferences.saveToDisk`; completing that
+  exact behavior would require a separate settings-state contract with
+  preference rollback.
+
 - 2026-06-25: Under the new safety/contract/live-readiness launcher guard, do
   not treat the older `final-terminal-completion-audit` as a stop condition.
   The 39 `blocked_or_skipped` ids are an approved reopen backlog, but work still
@@ -4711,6 +4742,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake layer Fill color-cycle stateless lane | Required to give `tool-layers-add-fill-with-color-cycle` current safety/contract/live-readiness evidence without copying raw JSX or pretending to support persistent AE settings state. | Passed focused implementation validation: `node --check orchestrator/run-generic-repo-full-intake.mjs`; `node --check scripts/solution-library-validation-smoke.js`; JSON parse for `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, and `.codex/active-thread.json`; `node scripts/solution-library-validation-smoke.js`; read-only `node scripts/cep-panel-cdp-smoke.js inspect`; read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; scoped retry with explicit `tool-layers-add-fill-with-color-cycle`, `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; compact status/proof/ledger summary; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/sdk-generic-repo-full-intake-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with LF/CRLF warnings only. Scoped retry mapped the candidate to `live-lane-family-layer-fill-color-cycle-generated-only`; non-live lane validation and read-only CEP preflight passed, but live proof failed with `CEP panel is not connected to the bridge`. Final compact proof is `blocked_target_dirty` with proof envelope SHA-256 `730ee7357907544050007552709d144ab33aea6348ea0f79189f762a5e86c57f` because parent-authored tracked lane files were uncommitted during the retry; the closeout commit resolves the dirty tree for continuation. No broad queue, unscoped `max-items > 1`, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source-checkout execution, non-generated user-asset mutation, launcher edit, push, PR, or GitHub automation was run. |
 
 | Full Intake reopened label/track-matte retry closeout | Required to give the first reopened safety/contract/live-readiness family fresh current evidence under the new launcher guard while preserving scoped retries and no broad queue processing. | Passed scoped closeout evidence: preflight read active docs, `git status --short --branch` showed a clean tracked tree on a branch ahead of origin, compact status remained `completed_no_candidates`, ledger summary remained `entries=75`, `completed=36`, `blocked_or_skipped=39`, `queued=0`, `failed=0`, `terminal=75`, and compact proof envelope SHA-256 after the final scoped retry was `7d620a8f6a4ebd21420fcdd3a3b16e309f8f37c8259bb7d6fa00f3ee246056cb`. Read-only `node scripts/cep-panel-cdp-smoke.js inspect` succeeded but showed bridge/provider UI state not loaded; `node scripts/cep-panel-cdp-smoke.js connector-status-smoke` passed. Scoped retries were run one id at a time with `--max-items 1` for `tool-layers-set-track-matte-to-above`, `tool-layers-set-all-track-matte-labels`, and `tool-layers-reset-selected-layer-labels`; each produced one terminal ticket and no candidate completion, no commit, no requeue, and no broad queue processing. The track-matte live-lane report retained non-live validation passes and failed only at the generated-only OpenAI CLI proof with `CEP panel is not connected to the bridge`. No JavaScript files were touched, so touched-file `node --check` was not applicable. |
 

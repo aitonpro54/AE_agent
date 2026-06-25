@@ -279,6 +279,114 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "add-fill-with-color-cycle-typed-plan",
+      "title": "Add Fill With Color Cycle Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "effects",
+        "fill",
+        "color-cycle",
+        "effect-property",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Apply ADBE Fill with one reviewed palette color on explicit generated or reviewed layer targets, without source-exact persistent color-cycle state.",
+        "appliesWhen": [
+          "The user asks to add Fill with a color-cycle style result to selected or explicit layers.",
+          "A stateless typed adaptation is acceptable: the plan uses one reviewed color from red, green, blue, yellow, magenta or cyan for this run.",
+          "Source-exact app.settings/app.preferences persistence and automatic cross-run color advancement are not required."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetLayers",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Current typed evidence identifying the target comp and exact selected or explicit layer indices before mutation."
+        },
+        {
+          "name": "cycleColor",
+          "type": "array",
+          "required": true,
+          "description": "Reviewed RGB or RGBA value chosen from the allowed cycle palette: red, green, blue, yellow, magenta or cyan."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated layer is generated or explicitly reviewed through current typed evidence before mutation.",
+        "The workflow adds an ADBE Fill effect and changes only its Color property on the explicit targets.",
+        "The plan displays the reviewed cycle color before confirmation and does not infer the next color from persistent AE settings.",
+        "AE app.settings/app.preferences reads or writes, automatic cross-run cycle advancement, layer source/timing/expression/keyframe changes, project item changes, render queue work, and unrelated effects are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/add-fill-with-color-cycle-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "add_effect",
+          "get_effect_details",
+          "set_effect_property",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Bind explicit target layers, add ADBE Fill, inspect the Fill Color property, set the reviewed cycle color, then read the same effect and layer back.",
+        "steps": [
+          "Run get_active_comp and get_selected_layers or equivalent generated get_comp_details evidence before mutation.",
+          "Fail closed if target layer evidence is empty, stale, not generated or not explicitly reviewed.",
+          "Show the reviewed cycle color and disclose that app.settings/app.preferences persistence is out of scope.",
+          "Run add_effect with matchName ADBE Fill for each explicit target layer.",
+          "Run get_effect_details with includeProperties:true and includeValues:true for every added Fill effect.",
+          "Run set_effect_property only after get_effect_details identifies the Fill Color property, using setAtTime:false.",
+          "Run get_effect_details and get_layer_details after mutation to confirm the same effect, property and layer targets."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the target comp, target layer names/indices and reviewed cycle color.",
+          "add_effect and get_effect_details show ADBE Fill on each expected layer.",
+          "set_effect_property and post-run get_effect_details show the reviewed color value on the Fill Color property.",
+          "get_layer_details confirms the target layers remain the intended layers."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Built as a generated-only stateless adaptation after scoped Full Intaker review of Layers/Add_Fill_With_Color_Cycle.jsx."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-25",
+          "from": "full-intake-kyletmartinez",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the typed effect-property part of kyletmartinez/after-effects-scripts Layers/Add_Fill_With_Color_Cycle.jsx into existing add_effect/get_effect_details/set_effect_property coverage. Source-exact app.settings/app.preferences color-cycle persistence remains fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Do not claim source-exact persistent color-cycle behavior without a separate settings-state typed contract and preference rollback.",
+        "Do not use raw JSX, app.settings, app.preferences, broad selected-layer traversal, unreviewed user layers or unreviewed effect/property targets."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "selected-layers-animation-typed-plan",
       "title": "Selected Layers Animation Typed Plan",
       "status": "recipe",

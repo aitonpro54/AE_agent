@@ -159,7 +159,9 @@ const FIRST_FOUR_LAYER_EFFECT_SWITCH_CONTRACT_IDS = [
   "enable-collapse-transformations-typed-plan",
   "enable-motion-blur-typed-plan",
   "puppet-on-transparent-effect-property-generated-only",
-  "toggle-puppet-on-transparent-typed-plan"
+  "toggle-puppet-on-transparent-typed-plan",
+  "layer-fill-color-cycle-generated-only",
+  "add-fill-with-color-cycle-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -4931,6 +4933,22 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
       "untyped effect-specific toggles"
     ]
   });
+  assertFirstFourSwitchLane(liveLaneRegistry, "layer-fill-color-cycle-generated-only", {
+    requiredTools: ["add_effect", "get_effect_details", "set_effect_property"],
+    readBackTools: ["get_effect_details", "get_layer_details"],
+    candidateIds: ["tool-layers-add-fill-with-color-cycle"],
+    scopeIncludes: [
+      "stateless Fill color-cycle",
+      "ADBE Fill Color property",
+      "reviewed palette color",
+      "exact before/after value",
+      "semantic verification",
+      "cleanup",
+      "app.settings/app.preferences persistence",
+      "automatic cross-run next-color state",
+      "raw JSX"
+    ]
+  });
 
   assertFirstFourSwitchSolution(registry, "hard-solo-layers-typed-plan", ["get_selected_layers", "get_comp_details", "set_layer_metadata", "get_layer_details"], [
     /generated layers/,
@@ -4977,6 +4995,16 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
     /Alt-key branching/,
     /user Puppet effects/,
     /unreviewed effect\/property targeting/
+  ]);
+  assertFirstFourSwitchSolution(registry, "add-fill-with-color-cycle-typed-plan", ["get_selected_layers", "add_effect", "get_effect_details", "set_effect_property", "get_layer_details"], [
+    /ADBE Fill/,
+    /reviewed cycle color/,
+    /setAtTime:false/,
+    /app\.settings/,
+    /app\.preferences/,
+    /automatic cross-run color advancement/,
+    /broad selected-layer traversal/,
+    /raw JSX/
   ]);
 
   return FIRST_FOUR_LAYER_EFFECT_SWITCH_CONTRACT_IDS;
