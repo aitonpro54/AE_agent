@@ -880,6 +880,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "duplicate_layers",
   "set_layer_selection",
   "set_layer_parent",
+  "set_layer_track_matte",
   "delete_layer",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
@@ -4325,6 +4326,7 @@ const PLANNING_TOOL_NAMES = [
   "duplicate_layers",
   "set_layer_selection",
   "set_layer_parent",
+  "set_layer_track_matte",
   "delete_layer",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
@@ -6270,6 +6272,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For explicit single-layer duplication, use duplicate_layer after inspecting the target comp/layer and pairing layerIndex with the sourceName in current AE stack order. AE inserts newly created and duplicated layers at layer index 1; do not assume creation order equals layer-index order.",
     "For explicit layer selection changes, use set_layer_selection only with concrete layerIndices from current get_comp_details/list_layers/get_layer_details evidence and expectedLayerNames when possible; do not use raw ExtendScript to select layers.",
     "For explicit generated layer parenting, use set_layer_parent only with one inspected child layer, one inspected parent layer, expectedLayerName, expectedParentName, and post-run get_layer_details read-back. Do not use it for recursive hierarchy edits, bulk parenting, source-exact selection side effects, or non-generated user assets without a separate reviewed contract.",
+    "For explicit generated track matte changes, use set_layer_track_matte only with one inspected fill layer, one inspected matte layer, expectedLayerName, expectedMatteLayerName, and post-run get_layer_details read-back showing hasTrackMatte, trackMatteTypeName, and trackMatteLayer. Do not use parent-link tools, layer reordering, broad layer scans, or raw ExtendScript as substitutes.",
     "For explicit bulk layer duplication, use duplicate_layers with concrete layerIndices after inspecting the target comp/layers. Pair sourceNames with layerIndices in current AE stack order, or insert get_comp_details before duplication when source-layer order is ambiguous. For selected-layer duplication, inspect with get_selected_layers first and bind layerIndices from {{selectedLayerIndices}}; never use duplicate_layers for deletion, source/precomp relinking, mask/path edits, or audio workflows.",
     "For destructive single-layer deletion, use delete_layer only after inspecting the explicit target comp/layer. Provide compItemIndex or compName, layerIndex, and expectedLayerName, then read back the comp/layer stack to prove the deleted layer is absent; never use selection-only, broad, multi-layer, or name-optional deletion.",
     "For composition settings, use set_comp_properties only for width, height, pixelAspect, duration, frameRate, bgColor, and displayStartTime on one explicit comp, then read back the comp before reporting success. Do not route arbitrary comp fields, layers, effects, masks, or property paths through this tool.",
@@ -9242,6 +9245,45 @@ const tools = [
     }
   },
   {
+    name: "set_layer_track_matte",
+    description: "Set one explicit generated layer's track matte to one explicit matte layer in the same composition, with optional name guards and required read-back.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact generated composition name to target when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based fill layer index that will receive the track matte."
+        },
+        matteLayerIndex: {
+          type: "number",
+          description: "1-based matte layer index in the same composition."
+        },
+        trackMatteType: {
+          type: "string",
+          enum: ["alpha", "alpha_inverted", "luma", "luma_inverted"],
+          description: "Reviewed track matte type to apply."
+        },
+        expectedLayerName: {
+          type: "string",
+          description: "Optional exact fill layer name guard. The tool fails closed on mismatch."
+        },
+        expectedMatteLayerName: {
+          type: "string",
+          description: "Optional exact matte layer name guard. The tool fails closed on mismatch."
+        }
+      },
+      required: ["layerIndex", "matteLayerIndex", "trackMatteType"]
+    }
+  },
+  {
     name: "set_layer_blending_mode",
     description: "Set only the reviewed normal or difference blending mode on explicit layer indices in one explicit composition, with optional expected layer-name and current-mode guards plus required read-back.",
     inputSchema: {
@@ -10362,6 +10404,24 @@ async function callTool(name, args) {
         throw new Error("Unsupported blendingMode '" + name + "'. Allowed values: normal, difference.");
       }
 
+      function __codexTrackMatteTypeName(value) {
+        try { if (value === TrackMatteType.NO_TRACK_MATTE) return "none"; } catch (__trackMatteNoneNameError) {}
+        try { if (value === TrackMatteType.ALPHA) return "alpha"; } catch (__trackMatteAlphaNameError) {}
+        try { if (value === TrackMatteType.ALPHA_INVERTED) return "alpha_inverted"; } catch (__trackMatteAlphaInvertedNameError) {}
+        try { if (value === TrackMatteType.LUMA) return "luma"; } catch (__trackMatteLumaNameError) {}
+        try { if (value === TrackMatteType.LUMA_INVERTED) return "luma_inverted"; } catch (__trackMatteLumaInvertedNameError) {}
+        return String(value);
+      }
+
+      function __codexTrackMatteTypeValue(name) {
+        var normalized = String(name || "").toLowerCase();
+        if (normalized === "alpha") return TrackMatteType.ALPHA;
+        if (normalized === "alpha_inverted") return TrackMatteType.ALPHA_INVERTED;
+        if (normalized === "luma") return TrackMatteType.LUMA;
+        if (normalized === "luma_inverted") return TrackMatteType.LUMA_INVERTED;
+        throw new Error("Unsupported trackMatteType '" + name + "'. Allowed values: alpha, alpha_inverted, luma, luma_inverted.");
+      }
+
       function __codexLayerInfo(layer) {
         var info = {
           index: layer.index,
@@ -10391,6 +10451,13 @@ async function callTool(name, args) {
           info.blendingMode = layer.blendingMode;
           info.blendingModeName = __codexBlendingModeName(layer.blendingMode);
         } catch (__blendError) {}
+        try { info.hasTrackMatte = !!layer.hasTrackMatte; } catch (__hasTrackMatteError) {}
+        try { info.isTrackMatte = !!layer.isTrackMatte; } catch (__isTrackMatteError) {}
+        try {
+          info.trackMatteType = layer.trackMatteType;
+          info.trackMatteTypeName = __codexTrackMatteTypeName(layer.trackMatteType);
+        } catch (__trackMatteTypeError) {}
+        try { info.trackMatteLayer = layer.trackMatteLayer ? __codexLayerInfo(layer.trackMatteLayer) : null; } catch (__trackMatteLayerError) {}
         try { info.markerCount = __codexLayerMarkers(layer, 0).count; } catch (__markerCountError) {}
         try { info.parent = layer.parent ? __codexLayerInfo(layer.parent) : null; } catch (__parentError) {}
         try { info.source = layer.source ? __codexItemReference(layer.source) : null; } catch (__sourceError) {}
@@ -12487,6 +12554,102 @@ async function callTool(name, args) {
           parentMatches: parentMatches,
           childNameMatches: !expectedLayerName || childAfter.name === expectedLayerName,
           parentNameMatches: !expectedParentName || parentAfter.name === expectedParentName
+        }
+      };
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_layer_track_matte") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const matteLayerIndex = requiredPositiveInteger(args, "matteLayerIndex");
+    const trackMatteType = optionalString(args, "trackMatteType", "").toLowerCase();
+    const expectedLayerName = optionalString(args, "expectedLayerName", "");
+    const expectedMatteLayerName = optionalString(args, "expectedMatteLayerName", "");
+
+    const allowedTrackMatteTypes = new Set(["alpha", "alpha_inverted", "luma", "luma_inverted"]);
+    if (!allowedTrackMatteTypes.has(trackMatteType)) {
+      return toolResult("trackMatteType must be one of: alpha, alpha_inverted, luma, luma_inverted.", true);
+    }
+    if (layerIndex === matteLayerIndex) {
+      return toolResult("layerIndex and matteLayerIndex must be different.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layerIndex = ${layerIndex};
+      var matteLayerIndex = ${matteLayerIndex};
+      var trackMatteTypeName = ${aeLiteral(trackMatteType)};
+      var expectedLayerName = ${aeLiteral(expectedLayerName)};
+      var expectedMatteLayerName = ${aeLiteral(expectedMatteLayerName)};
+
+      if (layerIndex > comp.numLayers) throw new Error("Layer index " + layerIndex + " is out of range for comp with " + comp.numLayers + " layers.");
+      if (matteLayerIndex > comp.numLayers) throw new Error("Matte layer index " + matteLayerIndex + " is out of range for comp with " + comp.numLayers + " layers.");
+      var layer = comp.layer(layerIndex);
+      var matteLayer = comp.layer(matteLayerIndex);
+      if (!layer) throw new Error("Layer not found at index " + layerIndex + ".");
+      if (!matteLayer) throw new Error("Matte layer not found at index " + matteLayerIndex + ".");
+      if (layer === matteLayer) throw new Error("Layer cannot use itself as a track matte.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      if (expectedLayerName && layer.name !== expectedLayerName) {
+        throw new Error("Layer name mismatch at index " + layerIndex + ". Expected '" + expectedLayerName + "' but found '" + layer.name + "'.");
+      }
+      if (expectedMatteLayerName && matteLayer.name !== expectedMatteLayerName) {
+        throw new Error("Matte layer name mismatch at index " + matteLayerIndex + ". Expected '" + expectedMatteLayerName + "' but found '" + matteLayer.name + "'.");
+      }
+
+      var before = __codexLayerInfo(layer);
+      var matteBefore = __codexLayerInfo(matteLayer);
+      var targetType = __codexTrackMatteTypeValue(trackMatteTypeName);
+
+      app.beginUndoGroup("Codex Set Layer Track Matte");
+      try {
+        if (typeof layer.setTrackMatte === "function") {
+          layer.setTrackMatte(matteLayer, targetType);
+        } else {
+          if (matteLayer.index !== layer.index - 1) {
+            throw new Error("This After Effects version requires the matte layer to be immediately above the fill layer for legacy trackMatteType assignment.");
+          }
+          layer.trackMatteType = targetType;
+        }
+      } finally {
+        app.endUndoGroup();
+      }
+
+      var after = __codexLayerInfo(layer);
+      var matteAfter = __codexLayerInfo(matteLayer);
+      var afterMatteLayer = after.trackMatteLayer || null;
+      var matteLayerMatches = afterMatteLayer && afterMatteLayer.index === matteAfter.index && afterMatteLayer.name === matteAfter.name;
+      var typeMatches = after.trackMatteTypeName === trackMatteTypeName;
+      var hasTrackMatteMatches = after.hasTrackMatte === true;
+      var matteRoleMatches = matteAfter.isTrackMatte === true || matteLayerMatches;
+      return {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          time: comp.time,
+          numLayers: comp.numLayers
+        },
+        layer: after,
+        matteLayer: matteAfter,
+        before: before,
+        matteBefore: matteBefore,
+        requestedLayerIndex: layerIndex,
+        requestedMatteLayerIndex: matteLayerIndex,
+        requestedTrackMatteType: trackMatteTypeName,
+        expectedLayerName: expectedLayerName || null,
+        expectedMatteLayerName: expectedMatteLayerName || null,
+        postVerification: {
+          ok: hasTrackMatteMatches && matteLayerMatches && typeMatches,
+          hasTrackMatteMatches: hasTrackMatteMatches,
+          matteLayerMatches: matteLayerMatches,
+          trackMatteTypeMatches: typeMatches,
+          matteRoleMatches: matteRoleMatches,
+          layerNameMatches: !expectedLayerName || after.name === expectedLayerName,
+          matteLayerNameMatches: !expectedMatteLayerName || matteAfter.name === expectedMatteLayerName
         }
       };
     `);

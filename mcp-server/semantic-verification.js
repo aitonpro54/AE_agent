@@ -42,6 +42,7 @@ const MUTATING_TOOLS = new Set([
   "duplicate_layers",
   "set_layer_selection",
   "set_layer_parent",
+  "set_layer_track_matte",
   "delete_layer",
   "set_comp_properties",
   "set_layer_mask",
@@ -206,6 +207,20 @@ function addLayerEvidence(target, value, source) {
   };
   for (const field of ["threeDLayer", "collapseTransformation", "motionBlur", "enabled"]) {
     if (hasOwn(value, field)) layer[field] = boolValue(value[field]);
+  }
+  if (hasOwn(value, "hasTrackMatte")) layer.hasTrackMatte = boolValue(value.hasTrackMatte);
+  if (hasOwn(value, "isTrackMatte")) layer.isTrackMatte = boolValue(value.isTrackMatte);
+  if (hasOwn(value, "trackMatteTypeName")) layer.trackMatteTypeName = compactText(value.trackMatteTypeName, 80);
+  if (hasOwn(value, "trackMatteLayer")) {
+    if (isPlainObject(value.trackMatteLayer)) {
+      layer.trackMatteLayer = {
+        index: numberValue(value.trackMatteLayer.index),
+        name: compactText(value.trackMatteLayer.name, 160),
+        id: value.trackMatteLayer.id === undefined || value.trackMatteLayer.id === null ? null : String(value.trackMatteLayer.id)
+      };
+    } else {
+      layer.trackMatteLayer = null;
+    }
   }
   if (hasOwn(value, "label")) layer.label = numberValue(value.label);
   if (hasOwn(value, "locked")) layer.locked = boolValue(value.locked);
@@ -1181,6 +1196,58 @@ function checkSetLayerParent(checks, step, payload, evidence) {
   });
 }
 
+function layerMatchesTrackMatteTarget(layer, args, layerIndex, matteLayerIndex, expectedLayerName, expectedMatteLayerName, trackMatteType) {
+  if (!layer) return false;
+  const matteLayer = isPlainObject(layer.trackMatteLayer) ? layer.trackMatteLayer : null;
+  if (!nearlyEqual(layer.index, layerIndex)) return false;
+  if (expectedLayerName && !sameString(layer.name, expectedLayerName)) return false;
+  if (layer.hasTrackMatte !== true) return false;
+  if (trackMatteType && !sameString(layer.trackMatteTypeName, trackMatteType)) return false;
+  if (!matteLayer || !nearlyEqual(matteLayer.index, matteLayerIndex)) return false;
+  if (expectedMatteLayerName && !sameString(matteLayer.name, expectedMatteLayerName)) return false;
+  return true;
+}
+
+function observedLayerTrackMatteEvidence(evidence, args) {
+  const layerIndex = numberValue(args.layerIndex);
+  const matteLayerIndex = numberValue(args.matteLayerIndex);
+  const expectedLayerName = compactText(args.expectedLayerName, 160);
+  const expectedMatteLayerName = compactText(args.expectedMatteLayerName, 160);
+  const trackMatteType = compactText(args.trackMatteType, 80);
+  if (layerIndex === null || matteLayerIndex === null || !evidence || !Array.isArray(evidence.layers)) return null;
+  for (const layer of evidence.layers) {
+    if (layerMatchesTrackMatteTarget(layer, args, layerIndex, matteLayerIndex, expectedLayerName, expectedMatteLayerName, trackMatteType)) {
+      return layer.source || `layer ${layerIndex} track matte ${matteLayerIndex}`;
+    }
+  }
+  return null;
+}
+
+function checkSetLayerTrackMatte(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const layerIndex = numberValue(args.layerIndex);
+  const matteLayerIndex = numberValue(args.matteLayerIndex);
+  const expectedLayerName = compactText(args.expectedLayerName, 160);
+  const expectedMatteLayerName = compactText(args.expectedMatteLayerName, 160);
+  const trackMatteType = compactText(args.trackMatteType, 80);
+  const layer = payload.layer || {};
+  const matteLayer = payload.matteLayer || {};
+  const postVerification = payload.postVerification || {};
+  const resultMatches = layerMatchesTrackMatteTarget(layer, args, layerIndex, matteLayerIndex, expectedLayerName, expectedMatteLayerName, trackMatteType) &&
+    postVerification.ok === true &&
+    postVerification.matteLayerMatches === true &&
+    postVerification.trackMatteTypeMatches === true;
+  const readBackEvidence = observedLayerTrackMatteEvidence(evidence.readBack, args);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:track-matte`,
+    title: "Layer track matte matches explicit request",
+    expected: `layer ${layerIndex || "?"} -> matte ${matteLayerIndex || "?"} ${trackMatteType || "unknown"}`,
+    observed: resultMatches ? `${layer.name || "layer"} -> ${matteLayer.name || "matte"} ${layer.trackMatteTypeName || "unknown"}` : "missing or mismatched track matte result",
+    passed: Boolean(resultMatches) && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_layer_details read-back matched set_layer_track_matte."
+  });
+}
+
 function projectItemMetadataFields(args, payload) {
   const fields = [];
   if (hasOwn(args, "label") || hasOwn(payload && payload.updates, "label")) fields.push("label");
@@ -2110,6 +2177,11 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "set_layer_parent") {
     checkSetLayerParent(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_layer_track_matte") {
+    checkSetLayerTrackMatte(checks, step, payload, evidence);
     return;
   }
 

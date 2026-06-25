@@ -14,6 +14,7 @@ const {
   agentLayerMetadataScenarioPlans,
   agentParentOpacityExpressionScenarioPlans,
   agentLayerSelectionScenarioPlans,
+  agentLayerTrackMatteScenarioPlans,
   agentProjectItemMetadataScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
   agentScenarioPlans,
@@ -26,6 +27,7 @@ const LOCAL_MUTATING_TOOLS = new Set([
   "set_layer_metadata",
   "set_layer_blending_mode",
   "set_layer_parent",
+  "set_layer_track_matte",
   "set_project_item_metadata",
   "set_layer_mask",
   "set_path_geometry",
@@ -97,6 +99,10 @@ function layerInfo(name, overrides = {}) {
     label: overrides.label === undefined ? 0 : overrides.label,
     locked: overrides.locked === undefined ? false : overrides.locked,
     blendingModeName: overrides.blendingModeName || "normal",
+    hasTrackMatte: overrides.hasTrackMatte === undefined ? false : overrides.hasTrackMatte,
+    isTrackMatte: overrides.isTrackMatte === undefined ? false : overrides.isTrackMatte,
+    trackMatteTypeName: overrides.trackMatteTypeName || "none",
+    trackMatteLayer: overrides.trackMatteLayer === undefined ? null : overrides.trackMatteLayer,
     nullLayer: overrides.nullLayer === undefined ? false : overrides.nullLayer,
     adjustmentLayer: overrides.adjustmentLayer === undefined ? false : overrides.adjustmentLayer,
     threeDLayer: overrides.threeDLayer === undefined ? false : overrides.threeDLayer,
@@ -517,6 +523,53 @@ function fakeMutationResult(step, state) {
         requestedBlendingMode: blendingModeName
       }
     }, compName, changed[0] && changed[0].after);
+  }
+  if (step.tool === "set_layer_track_matte") {
+    const layerIndex = Number(args.layerIndex || 1);
+    const matteLayerIndex = Number(args.matteLayerIndex || 2);
+    const expectedLayerName = String(args.expectedLayerName || `Track Matte Fixture Fill ${layerIndex}`);
+    const expectedMatteLayerName = String(args.expectedMatteLayerName || `Track Matte Fixture Matte ${matteLayerIndex}`);
+    const trackMatteTypeName = String(args.trackMatteType || "luma_inverted").toLowerCase();
+    let layer = state.layers.find((item) => Number(item.index) === layerIndex);
+    if (!layer) {
+      layer = layerInfo(expectedLayerName, { index: layerIndex });
+      state.layers.push(layer);
+    }
+    let matteLayer = state.layers.find((item) => Number(item.index) === matteLayerIndex);
+    if (!matteLayer) {
+      matteLayer = layerInfo(expectedMatteLayerName, { index: matteLayerIndex });
+      state.layers.push(matteLayer);
+    }
+    state.layers.sort((left, right) => left.index - right.index);
+    const before = { ...layer };
+    const matteBefore = { ...matteLayer };
+    matteLayer.isTrackMatte = true;
+    layer.hasTrackMatte = true;
+    layer.trackMatteTypeName = trackMatteTypeName;
+    layer.trackMatteLayer = { ...matteLayer };
+    const after = { ...layer, trackMatteLayer: { ...matteLayer } };
+    const matteAfter = { ...matteLayer };
+    return withVerification({
+      comp: { name: compName, numLayers: state.layers.length },
+      requestedLayerIndex: layerIndex,
+      requestedMatteLayerIndex: matteLayerIndex,
+      requestedTrackMatteType: trackMatteTypeName,
+      expectedLayerName,
+      expectedMatteLayerName,
+      before,
+      matteBefore,
+      layer: after,
+      matteLayer: matteAfter,
+      postVerification: {
+        ok: true,
+        hasTrackMatteMatches: true,
+        matteLayerMatches: true,
+        trackMatteTypeMatches: true,
+        matteRoleMatches: true,
+        layerNameMatches: true,
+        matteLayerNameMatches: true
+      }
+    }, compName, after);
   }
   if (step.tool === "set_project_item_metadata") {
     const expectedItemNames = Array.isArray(args.expectedItemNames) ? args.expectedItemNames.map(String) : [];
@@ -1761,6 +1814,26 @@ function assertLayerParentMissingReadBackNeedsReview() {
   const semantic = buildSemanticVerification(plan, run);
   assert.strictEqual(semantic.status, "needs_review", "set_layer_parent must require post-run get_layer_details read-back.");
   assert(semantic.checks.some((check) => check.id.indexOf("set_layer_parent:parent") >= 0 && check.status === "failed"), "missing set_layer_parent read-back should fail.");
+}
+
+function assertLayerTrackMattePasses() {
+  const [scenario] = agentLayerTrackMatteScenarioPlans("Codex Semantic Track Matte Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  assert.strictEqual(semantic.status, "passed", `set_layer_track_matte semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_track_matte:track-matte") >= 0 && check.status === "passed"), "set_layer_track_matte read-back check should pass.");
+}
+
+function assertLayerTrackMatteMissingReadBackNeedsReview() {
+  const [scenario] = agentLayerTrackMatteScenarioPlans("Codex Semantic Track Matte Missing Readback");
+  const plan = {
+    ...scenario.plan,
+    steps: scenario.plan.steps.filter((step) => !(step.tool === "get_layer_details" && /after update/i.test(step.title || "")))
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "set_layer_track_matte must require post-run get_layer_details read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_track_matte:track-matte") >= 0 && check.status === "failed"), "missing set_layer_track_matte read-back should fail.");
 }
 
 function assertProjectItemMetadataPasses() {
@@ -3151,6 +3224,8 @@ function main() {
   assertLayerBlendingModePasses();
   assertLayerParentPasses();
   assertLayerParentMissingReadBackNeedsReview();
+  assertLayerTrackMattePasses();
+  assertLayerTrackMatteMissingReadBackNeedsReview();
   assertProjectItemMetadataPasses();
   assertProjectItemMetadataMissingReadBackNeedsReview();
   assertDeleteLayerPasses();

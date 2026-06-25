@@ -13673,6 +13673,216 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "set-all-track-matte-labels-typed-plan",
+      "title": "Set All Track Matte Labels Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "track-matte",
+        "layer-label",
+        "generated-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Set Layer.label to 16 only for generated-only layers that typed read-back proves are track matte layers.",
+        "appliesWhen": [
+          "The user asks to run Set_All_Track_Matte_Labels or label all track matte layers.",
+          "Current get_comp_details or get_layer_details evidence exposes isTrackMatte:true for each accepted target layer."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "layerInventory",
+          "type": "object",
+          "required": true,
+          "description": "Current same-comp layer inventory with concrete layer indices, names, labels, and isTrackMatte evidence."
+        },
+        {
+          "name": "trackMatteLayerIndices",
+          "type": "array",
+          "required": true,
+          "description": "Explicit one-based layer indices derived only from isTrackMatte:true read-back."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow targets one generated or explicitly reviewed composition.",
+        "Track matte targets are derived only from typed isTrackMatte:true evidence.",
+        "The workflow changes only Layer.label through set_layer_metadata with label:16.",
+        "Fill layers with hasTrackMatte:true are not track matte layers for this recipe.",
+        "Layer creation, deletion, reordering, track matte relationship edits, non-generated user assets, and raw JSX remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/set-all-track-matte-labels-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "get_layer_details",
+          "set_layer_metadata"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read layer inventory, derive verified matte-layer indices, set label:16 with set_layer_metadata, then read each target back.",
+        "steps": [
+          "Run get_active_comp to bind the target composition.",
+          "Run get_comp_details includeLayers:true to read current layer order and matte-role fields.",
+          "Build explicit trackMatteLayerIndices only from isTrackMatte:true evidence.",
+          "Run set_layer_metadata with label:16, concrete layerIndices, and expectedLayerNames when available.",
+          "Run get_layer_details or get_comp_details after mutation to confirm isTrackMatte:true and label:16 for every accepted target."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies target comp, complete layer inventory, and exact isTrackMatte:true targets.",
+          "set_layer_metadata reports only label:16 updates on concrete layer indices.",
+          "Post-run read-back shows each target still has isTrackMatte:true and label:16.",
+          "Unsupported missing matte-role evidence, broad scans, layer reordering, matte relationship edits, non-generated assets, and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-layers-set-all-track-matte-labels as generated-only typed-plan coverage after adding track matte read fields."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-25",
+          "from": "generic-repo-importer-tool-layers-set-all-track-matte-labels",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the Layer.label 16 on layer.isTrackMatte intent behind Layers/Set_All_Track_Matte_Labels.jsx into typed tools as verified generated track matte role read-back plus set_layer_metadata label updates; no source JSX copied. Broad active-comp scans without current typed matte evidence, fill-layer hasTrackMatte substitution, layer reordering, matte relationship edits, non-generated user assets, and raw JSX remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current typed isTrackMatte evidence before mutating labels; do not infer matte roles from layer names, order, screenshots, or prior chat context.",
+        "Use set_layer_metadata only with label:16, explicit layerIndices, and expectedLayerNames when available.",
+        "Do not use this recipe for track matte relationship edits, layer reordering, all-layer label changes, selected-layer label changes, Project item labels, or raw script execution."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "set-track-matte-to-above-typed-plan",
+      "title": "Set Track Matte To Above Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "track-matte",
+        "matte",
+        "generated-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Set one explicit generated fill layer to use the reviewed layer above as a luma_inverted track matte.",
+        "appliesWhen": [
+          "The user asks to run Set_Track_Matte_To_Above or set the selected layer's track matte to the layer above.",
+          "Current typed evidence identifies one fill layer and one above matte layer in the same composition."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "fillLayer",
+          "type": "object",
+          "required": true,
+          "description": "Explicit fill layer identity, index, name, and current matte state from current typed evidence."
+        },
+        {
+          "name": "matteLayer",
+          "type": "object",
+          "required": true,
+          "description": "Explicit same-comp layer above the fill layer, with index and expected name."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow targets one generated or explicitly reviewed fill/matte layer pair.",
+        "The matte relationship is set only through set_layer_track_matte.",
+        "The reviewed source behavior is represented as trackMatteType:\"luma_inverted\".",
+        "No layer reordering, parent assignment, label mutation, broad selected-layer traversal, non-generated user assets, or raw JSX is allowed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/set-track-matte-to-above-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_comp_details",
+          "get_layer_details",
+          "set_layer_track_matte"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Bind one fill/matte pair from current typed evidence, set luma_inverted track matte, then read back hasTrackMatte, trackMatteTypeName, and trackMatteLayer.",
+        "steps": [
+          "Run get_active_comp to bind target composition identity.",
+          "Run get_selected_layers only when current selection supplies the fill layer, requiring exactly one selected generated fill layer.",
+          "Run get_comp_details includeLayers:true or get_layer_details to bind the fill layer and the layer above it.",
+          "Run set_layer_track_matte with explicit layerIndex, matteLayerIndex, trackMatteType:\"luma_inverted\", expectedLayerName, and expectedMatteLayerName.",
+          "Run get_layer_details after mutation to confirm hasTrackMatte:true, trackMatteTypeName:\"luma_inverted\", and matching trackMatteLayer identity."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the target comp, fill layer, layer above, and current matte state.",
+          "set_layer_track_matte reports the explicit requested fill/matte indices and postVerification success.",
+          "Post-run get_layer_details proves hasTrackMatte:true, trackMatteTypeName:\"luma_inverted\", and trackMatteLayer index/name matching the matte layer.",
+          "Unsupported topmost fill layers, ambiguous selection, layer reordering, non-generated user assets, and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-layers-set-track-matte-to-above as generated-only typed-plan coverage after adding set_layer_track_matte."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-25",
+          "from": "generic-repo-importer-tool-layers-set-track-matte-to-above",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the explicit layer-above LUMA_INVERTED track matte intent behind Layers/Set_Track_Matte_To_Above.jsx into set_layer_track_matte plus get_layer_details read-back; no source JSX copied. Layer reordering, parent-link substitution, broad selection traversal, non-generated user assets, and raw JSX remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current fill/matte layer evidence before mutation; do not infer targets from screenshots, names alone, visual indentation, or prior chat context.",
+        "Use set_layer_track_matte only with explicit layerIndex, matteLayerIndex, trackMatteType:\"luma_inverted\", and expected names when available.",
+        "Do not use this recipe for layer reordering, parent assignment, label changes, blending modes, expressions, effects, timing/source edits, render queue work, or raw script execution."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "frame-navigator-typed-plan",
       "title": "Frame Navigator Typed Plan",
       "status": "recipe",

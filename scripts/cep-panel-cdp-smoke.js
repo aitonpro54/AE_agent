@@ -34,6 +34,7 @@ const {
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentLayerSwitchScenarioPlans,
+  agentLayerTrackMatteScenarioPlans,
   agentLayerTimingScenarioPlans,
   agentLayerTransformScenarioPlans,
   agentManualTypedToolsScenarioPlans,
@@ -731,6 +732,24 @@ function openAiCliLayerDifferenceBlendModeScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_LAYER_BLEND_PREFIX || "Codex QA AUX-LB",
     scenarioFactory: agentLayerBlendingModeScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliLayerTrackMatteScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-layer-track-matte",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_LAYER_TRACK_MATTE_PREFIX || "Codex QA AUX-LTM",
+    scenarioFactory: agentLayerTrackMatteScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -7699,6 +7718,10 @@ async function main() {
   }
   if (command === "agent-layer-difference-blend-mode-openai-cli-smoke" || command === "full-ui-agent-layer-difference-blend-mode-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliLayerDifferenceBlendModeScenarioConfig());
+    return;
+  }
+  if (command === "agent-layer-track-matte-openai-cli-smoke" || command === "full-ui-agent-layer-track-matte-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliLayerTrackMatteScenarioConfig());
     return;
   }
   if (command === "agent-layer-selection-openai-cli-smoke" || command === "full-ui-agent-layer-selection-openai-cli-smoke") {

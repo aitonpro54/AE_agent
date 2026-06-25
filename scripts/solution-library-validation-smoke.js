@@ -122,6 +122,8 @@ const IMPORTED_ADVISORY_IDS = [
   "add-comment-to-selected-layers-typed-plan",
   "unlock-all-layers-typed-plan",
   "set-all-layer-labels-to-none-typed-plan",
+  "set-all-track-matte-labels-typed-plan",
+  "set-track-matte-to-above-typed-plan",
   "frame-navigator-typed-plan",
   "milliseconds-to-frames-typed-plan"
 ];
@@ -142,6 +144,9 @@ const FIRST_FOUR_FILE_RENDER_PROXY_CONTRACT_IDS = [
 ];
 const FIRST_FOUR_PARENTING_MATTE_REORDER_CONTRACT_IDS = [
   "selected-layer-parent-opacity-expression-generated-only",
+  "layer-track-matte-generated-only",
+  "set-all-track-matte-labels-typed-plan",
+  "set-track-matte-to-above-typed-plan",
   "sortbyposition-typed-plan",
   "newtrimmednull-typed-plan"
 ];
@@ -167,6 +172,7 @@ const AVAILABLE_TOOLS = [
   "get_selected_properties",
   "set_layer_selection",
   "set_layer_parent",
+  "set_layer_track_matte",
   "set_layer_metadata",
   "set_layer_blending_mode",
   "set_property_value",
@@ -2799,6 +2805,42 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Set_Spacial_In_Tanget/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "set-all-track-matte-labels-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "get_layer_details", "set_layer_metadata"],
+        `${id}: imported track-matte label workflow should stay on typed matte read-back plus layer metadata.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: track-matte labels workflow must be mutating.`);
+      assert(text.includes("isTrackMatte:true"), `${id}: recipe should require isTrackMatte evidence.`);
+      assert(text.includes("label:16"), `${id}: recipe should preserve label 16 semantics.`);
+      assert(text.includes("set_layer_metadata"), `${id}: recipe should use set_layer_metadata.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer read-back.`);
+      assert(text.includes("Fill layers with hasTrackMatte:true") || text.includes("hasTrackMatte:true"), `${id}: recipe should distinguish fill layers from matte layers.`);
+      assert(solution.verificationRecipe.steps.some((step) => /isTrackMatte:true/.test(step)), `${id}: verification must derive targets from isTrackMatte evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_metadata/.test(step)), `${id}: verification must include set_layer_metadata.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /label:16/.test(item)), `${id}: verification must require label:16 read-back.`);
+      assert(solution.notes.some((note) => /isTrackMatte/.test(note)), `${id}: notes must require typed matte-role evidence.`);
+      assert(solution.promotionHistory.some((entry) => /Set_All_Track_Matte_Labels/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "set-track-matte-to-above-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_comp_details", "get_layer_details", "set_layer_track_matte"],
+        `${id}: imported track-matte-to-above workflow should stay on the narrow set_layer_track_matte sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: track-matte-to-above workflow must be mutating.`);
+      assert(text.includes("set_layer_track_matte"), `${id}: recipe should use set_layer_track_matte.`);
+      assert(text.includes("luma_inverted"), `${id}: recipe should preserve luma_inverted semantics.`);
+      assert(text.includes("trackMatteLayer"), `${id}: recipe should require trackMatteLayer read-back.`);
+      assert(text.includes("hasTrackMatte:true"), `${id}: recipe should require hasTrackMatte read-back.`);
+      assert(text.includes("Do not reorder") || text.includes("no layer reordering"), `${id}: recipe should reject hidden layer reordering.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_track_matte/.test(step)), `${id}: verification must include set_layer_track_matte.`);
+      assert(solution.verificationRecipe.steps.some((step) => /trackMatteLayer/.test(step)), `${id}: verification must require trackMatteLayer evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /trackMatteTypeName/.test(item)), `${id}: verification must require trackMatteTypeName read-back.`);
+      assert(solution.notes.some((note) => /set_layer_track_matte/.test(note)), `${id}: notes must require set_layer_track_matte.`);
+      assert(solution.promotionHistory.some((entry) => /Set_Track_Matte_To_Above/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else {
       throw new Error(`Unhandled imported advisory solution quality checks: ${id}`);
     }
@@ -4718,6 +4760,44 @@ function assertFirstFourParentingMatteReorderContracts(registry, liveLaneRegistr
   assert(parentLane.scope.includes("layer stack reordering"), `${parentLaneId}: lane must fail closed on broad reorder semantics.`);
   assert(parentLane.scope.includes("non-generated user assets"), `${parentLaneId}: lane must reject non-generated user assets.`);
   assert(parentLane.scope.includes("raw JSX/source semantics"), `${parentLaneId}: lane must reject raw source semantics.`);
+
+  const trackMatteLaneId = "layer-track-matte-generated-only";
+  const trackMatteLane = liveLaneFamilyById(liveLaneRegistry, trackMatteLaneId);
+  assert(trackMatteLane, `Missing first-four track matte lane: ${trackMatteLaneId}`);
+  assert(trackMatteLane.requiredTools.includes("set_layer_track_matte"), `${trackMatteLaneId}: lane must require set_layer_track_matte.`);
+  assert(trackMatteLane.allowedTools.includes("set_layer_metadata"), `${trackMatteLaneId}: lane must allow verified matte label updates.`);
+  assert(trackMatteLane.allowedTools.includes("get_layer_details"), `${trackMatteLaneId}: lane must keep typed layer read-back.`);
+  assert(trackMatteLane.readBackTools.includes("get_layer_details"), `${trackMatteLaneId}: lane must read track matte state back through get_layer_details.`);
+  assert.strictEqual(trackMatteLane.semanticVerification, true, `${trackMatteLaneId}: lane must require semantic verification.`);
+  assert(trackMatteLane.candidateIds.includes("tool-layers-set-all-track-matte-labels"), `${trackMatteLaneId}: lane must cover set-all-track-matte-labels.`);
+  assert(trackMatteLane.candidateIds.includes("tool-layers-set-track-matte-to-above"), `${trackMatteLaneId}: lane must cover set-track-matte-to-above.`);
+  assert(trackMatteLane.scope.includes("generated-only"), `${trackMatteLaneId}: lane must stay generated-only.`);
+  assert(trackMatteLane.scope.includes("explicit fill/matte layer indices"), `${trackMatteLaneId}: lane must bind explicit fill and matte indices.`);
+  assert(trackMatteLane.scope.includes("hasTrackMatte") && trackMatteLane.scope.includes("isTrackMatte"), `${trackMatteLaneId}: lane must require matte read fields.`);
+  assert(trackMatteLane.scope.includes("trackMatteLayer") && trackMatteLane.scope.includes("trackMatteTypeName"), `${trackMatteLaneId}: lane must require detailed track matte read-back.`);
+  assert(trackMatteLane.scope.includes("no layer reordering") || trackMatteLane.scope.includes("layer reordering"), `${trackMatteLaneId}: lane must mention reorder limits.`);
+  assert(trackMatteLane.scope.includes("non-generated user assets"), `${trackMatteLaneId}: lane must reject non-generated user assets.`);
+  assert(trackMatteLane.scope.includes("raw JSX"), `${trackMatteLaneId}: lane must reject raw JSX.`);
+
+  const setAllTrackMatteLabels = solutionById(registry, "set-all-track-matte-labels-typed-plan");
+  assert(setAllTrackMatteLabels, "Missing track matte label recipe: set-all-track-matte-labels-typed-plan");
+  const setAllTrackMatteLabelsText = solutionContractText(setAllTrackMatteLabels, recipeText(setAllTrackMatteLabels));
+  assert.strictEqual(setAllTrackMatteLabels.execution.mutating, true, "set-all-track-matte-labels-typed-plan: must be mutating through verified explicit indices.");
+  assert(setAllTrackMatteLabels.execution.preferredTools.includes("set_layer_metadata"), "set-all-track-matte-labels-typed-plan: must use set_layer_metadata for label updates.");
+  assert(setAllTrackMatteLabelsText.includes("isTrackMatte"), "set-all-track-matte-labels-typed-plan: must require isTrackMatte evidence.");
+  assert(setAllTrackMatteLabelsText.includes("label:16"), "set-all-track-matte-labels-typed-plan: must preserve label 16 semantics.");
+  assert(setAllTrackMatteLabelsText.includes("generated-only"), "set-all-track-matte-labels-typed-plan: must stay generated-only.");
+  assertNoRawExecutionGuidance("set-all-track-matte-labels-typed-plan", setAllTrackMatteLabels, recipeText(setAllTrackMatteLabels));
+
+  const setTrackMatteToAbove = solutionById(registry, "set-track-matte-to-above-typed-plan");
+  assert(setTrackMatteToAbove, "Missing track matte writer recipe: set-track-matte-to-above-typed-plan");
+  const setTrackMatteToAboveText = solutionContractText(setTrackMatteToAbove, recipeText(setTrackMatteToAbove));
+  assert.strictEqual(setTrackMatteToAbove.execution.mutating, true, "set-track-matte-to-above-typed-plan: must be mutating through set_layer_track_matte.");
+  assert(setTrackMatteToAbove.execution.preferredTools.includes("set_layer_track_matte"), "set-track-matte-to-above-typed-plan: must prefer set_layer_track_matte.");
+  assert(setTrackMatteToAboveText.includes("LUMA_INVERTED") || setTrackMatteToAboveText.includes("luma_inverted"), "set-track-matte-to-above-typed-plan: must preserve Luma Inverted semantics.");
+  assert(setTrackMatteToAboveText.includes("trackMatteLayer"), "set-track-matte-to-above-typed-plan: must require trackMatteLayer read-back.");
+  assert(setTrackMatteToAboveText.includes("no layer reordering") || setTrackMatteToAboveText.includes("Do not reorder"), "set-track-matte-to-above-typed-plan: must reject hidden reordering.");
+  assertNoRawExecutionGuidance("set-track-matte-to-above-typed-plan", setTrackMatteToAbove, recipeText(setTrackMatteToAbove));
 
   const sortByPosition = solutionById(registry, "sortbyposition-typed-plan");
   assert(sortByPosition, "Missing first-four reorder gap contract: sortbyposition-typed-plan");

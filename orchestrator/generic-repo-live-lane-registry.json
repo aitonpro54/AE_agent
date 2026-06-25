@@ -711,6 +711,70 @@
       "scope": "generated-only parent-opacity expression proof using typed set_layer_parent fixture setup for one explicit generated child/parent pair, generated comp/layer indices, before/after stack read-back, current selected-layer-style parent evidence, parent relationship read-back, set_expression on child Transform > Opacity, expression read-back, semantic verification, and cleanup; arbitrary/bulk layer parenting, unparented-layer mutation, track matte edits, layer stack reordering, expression deletion, broad property scans, selection persistence, non-generated user assets, and raw JSX/source semantics remain fail-closed"
     },
     {
+      "id": "layer-track-matte-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_comp_details",
+        "get_layer_details",
+        "set_layer_track_matte"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_selected_layers",
+        "get_comp_details",
+        "get_layer_details",
+        "set_layer_track_matte",
+        "set_layer_metadata"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection"
+      ],
+      "candidateIds": [
+        "tool-layers-set-all-track-matte-labels",
+        "tool-layers-set-track-matte-to-above"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-track-matte-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "layer-track-matte",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_layer_details",
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/smoke-test.js",
+        "recipes/set-all-track-matte-labels-typed-plan.md",
+        "recipes/set-track-matte-to-above-typed-plan.md",
+        "registry/solutions.json",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/smoke-test.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract",
+      "scope": "generated-only track matte proof using explicit fill/matte layer indices, set_layer_track_matte with reviewed alpha/luma matte type, get_layer_details/get_comp_details read-back for hasTrackMatte, isTrackMatte, trackMatteLayer, and trackMatteTypeName, optional verified set_layer_metadata label:16 updates only on isTrackMatte:true matte layers, semantic verification, and cleanup; source-exact broad selected-layer traversal, all-layer matte scans without typed isTrackMatte evidence, parent-link substitution, layer reordering, label defaults, non-generated user assets, file I/O, render queue work, and raw JSX remain fail-closed"
+    },
+    {
       "id": "stick-effect-expression-generated-only",
       "requiredTools": [
         "get_active_comp",

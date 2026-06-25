@@ -44,6 +44,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "duplicate_layers",
   "set_layer_selection",
   "set_layer_parent",
+  "set_layer_track_matte",
   "delete_layer",
   "set_comp_current_time",
   "set_comp_properties",
@@ -1940,6 +1941,60 @@ function agentParentOpacityExpressionScenarioPlans(runPrefix) {
           { title: "Read generated child parent evidence", tool: "get_layer_details", args: { compName, layerIndex: childLayerIndex, includeProperties: false } },
           { title: "Set generated parent opacity expression", tool: "set_expression", args: { compName, layerIndex: childLayerIndex, propertyPath, expression, enabled: true } },
           { title: "Read generated parent opacity expression", tool: "get_layer_details", args: { compName, layerIndex: childLayerIndex, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeExpressions: true } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
+function agentLayerTrackMatteScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Track Matte`;
+  const compName = `${base} Comp`;
+  const fillName = `${base} Fill Shape`;
+  const matteName = `${base} Matte Shape`;
+  const fillLayerIndex = 2;
+  const matteLayerIndex = 1;
+  const trackMatteType = "luma_inverted";
+
+  return [
+    {
+      id: "generated-layer-track-matte",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "create_shape_layer",
+        "get_layer_details",
+        "get_layer_details",
+        "set_layer_track_matte",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedLayerTrackMatte: true,
+        compName,
+        fillName,
+        matteName,
+        fillLayerIndex,
+        matteLayerIndex,
+        trackMatteType
+      },
+      plan: {
+        summary: "Generated-only live QA for an explicit layer track matte relationship with read-back.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated track-matte comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.04, 0.05, 0.06], allowDuplicateName: false, openInViewer: true, comment: "Generated-only track matte validation" } },
+          { title: "Create generated fill shape", tool: "create_shape_layer", args: { compName, name: fillName, shape: "rectangle", size: [460, 260], position: [320, 180], fillColor: [0.1, 0.45, 0.9], strokeColor: [0.1, 0.45, 0.9], strokeWidth: 0, duration: 3 } },
+          { title: "Create generated matte shape", tool: "create_shape_layer", args: { compName, name: matteName, shape: "rectangle", size: [260, 170], position: [320, 180], fillColor: [0.95, 0.95, 0.95], strokeColor: [1, 1, 1], strokeWidth: 0, duration: 3 } },
+          { title: "Read generated fill layer before matte", tool: "get_layer_details", args: { compName, layerIndex: fillLayerIndex, includeProperties: false } },
+          { title: "Read generated matte layer before matte", tool: "get_layer_details", args: { compName, layerIndex: matteLayerIndex, includeProperties: false } },
+          { title: "Set generated fill track matte", tool: "set_layer_track_matte", args: { compName, layerIndex: fillLayerIndex, matteLayerIndex, trackMatteType, expectedLayerName: fillName, expectedMatteLayerName: matteName } },
+          { title: "Read generated fill track matte after update", tool: "get_layer_details", args: { compName, layerIndex: fillLayerIndex, includeProperties: false } }
         ]
       }
     }
@@ -3997,6 +4052,7 @@ module.exports = {
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentLayerSwitchScenarioPlans,
+  agentLayerTrackMatteScenarioPlans,
   agentLayerTimingScenarioPlans,
   agentLayerTransformScenarioPlans,
   agentManualTypedToolsScenarioPlans,

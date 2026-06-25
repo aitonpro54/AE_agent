@@ -26,6 +26,32 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake reopened layer track-matte contract slice (2026-06-25):
+  parent-owned milestone for `tool-layers-set-all-track-matte-labels` and
+  `tool-layers-set-track-matte-to-above` added a narrow generated-only
+  track-matte typed contract without broad queue processing, dependency
+  changes, fallback providers, raw JSX copy, source checkout execution, push,
+  PR, or launcher edits. The bridge now exposes track-matte read-back fields
+  (`hasTrackMatte`, `isTrackMatte`, `trackMatteTypeName`,
+  `trackMatteLayer`) and a scoped `set_layer_track_matte` writer with explicit
+  fill/matte layer indices, expected-name guards, reviewed
+  `alpha`/`alpha_inverted`/`luma`/`luma_inverted` types, no hidden reorder, and
+  `get_layer_details` semantic verification. Added generated-only scenario
+  fixtures, CEP command `full-ui-agent-layer-track-matte-openai-cli-smoke`, two
+  recipes (`set-all-track-matte-labels-typed-plan` and
+  `set-track-matte-to-above-typed-plan`), solution registry entries, live-lane
+  registry metadata, and runner family synthesis support. Scoped retry with
+  explicit ids and `--max-items 1` mapped both candidates to
+  `layer-track-matte-generated-only`; non-live lane validation passed, but both
+  remain terminal as `blocked_live_proof_failed` because the generated-only
+  live proof command failed with `CEP panel is not connected to the bridge`.
+  Proof envelope SHA-256 after retry:
+  `7abb069c5545ce774b5bbd29516bd0e5aba93ef5e05e2c48bca9b0220c15f9aa`.
+  `tool-layers-reset-selected-layer-labels` was reviewed and left terminal on
+  the existing default-label preference gap: no typed reader exists for AE
+  machine-independent default layer label preferences, and substituting
+  hard-coded labels remains forbidden.
+
 - [x] Reopened screen-task launcher final completion audit (2026-06-25):
   completed exactly one compact parent-owned audit for the reopened screen-task
   families without scoped retry, broad queue processing, generated-only mutating
