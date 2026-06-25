@@ -26,6 +26,32 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake composition panel refresh generated-only lane (2026-06-26):
+  parent-owned milestone for
+  `tool-compositions-force-composition-panel-refresh` added a narrow
+  `refresh_comp_panel` typed bridge contract instead of copying raw source JSX
+  or expanding `set_comp_properties`. The safe adaptation targets one explicit
+  generated or reviewed comp, reads `motionBlur` through `get_comp_details`,
+  temporarily toggles comp-level `motionBlur`, restores the original value, and
+  requires semantic verification for `transientToggled:true`,
+  `motionBlurRestored:true`, unchanged comp identity, unchanged layer count,
+  unchanged work area, and final `get_comp_details` read-back. Added planner
+  repair aliases, scenario/report smoke coverage, CEP command
+  `full-ui-agent-comp-refresh-openai-cli-smoke`, live-lane family
+  `composition-panel-refresh-generated-only`, runner mapping, typed recipe,
+  generic intake note, solution registry entry, solution-library assertions,
+  and connector/tool-catalog coverage. Scoped retry with explicit id,
+  `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and
+  `--no-commit` mapped the candidate to that family and ran non-live lane
+  validation. The candidate remains freshly terminal/live-blocked, not
+  completed: generated-only proof failed with
+  `CEP panel is not connected to the bridge`. Compact proof envelope SHA-256:
+  `413f76709f002f8568f0dd691960b8ff04503991ccb2d6c95e79fea163b6b5a6`.
+  No broad queue processing, unscoped candidate selection, dependency change,
+  Local/Ollama, fallback provider, broad/default CEP smoke, raw JSX copy,
+  source-checkout execution, non-generated user-asset mutation, launcher edit,
+  push, or PR was run.
+
 - [x] Full Intake effect-enabled toggle generated-only lane (2026-06-26):
   parent-owned milestone for `tool-layers-toggle-specific-effects` added a
   narrow `set_effect_enabled` typed bridge contract instead of copying the raw
@@ -3540,6 +3566,16 @@ check.
 
 ## Decision Log
 
+- 2026-06-26: Accept `composition-panel-refresh-generated-only` as the bounded
+  adaptation for `tool-compositions-force-composition-panel-refresh`. The
+  contract uses only explicit comp identity, optional `expectedMotionBlur`
+  guard, transient comp-level `motionBlur` double-toggle through
+  `refresh_comp_panel`, restored-state read-back, and semantic verification.
+  Source-exact active-viewer refresh fidelity, layer `motionBlur` switches,
+  arbitrary comp fields, persistent settings, non-generated user assets, raw
+  JSX, file I/O, render queue work, and project-wide traversal remain
+  fail-closed.
+
 - 2026-06-26: Accept `effect-enabled-toggle-generated-only` as the bounded
   adaptation for `tool-layers-toggle-specific-effects`. The contract uses only
   explicit generated comp/layer/effect identity, reviewed `effect.enabled`
@@ -4970,6 +5006,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake composition panel refresh generated-only lane | Required to give `tool-compositions-force-composition-panel-refresh` a current generated-only typed contract without approving raw JSX, arbitrary comp property mutation, layer motion blur, or non-generated user-asset mutation. | Passed focused implementation and scoped closeout validation: touched-file `node --check`; JSON parse for `registry/solutions.json` and `orchestrator/generic-repo-live-lane-registry.json`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `node scripts/chatgpt-connector-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake`; read-only `node scripts/cep-panel-cdp-smoke.js inspect`; read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; scoped retry with explicit `tool-compositions-force-composition-panel-refresh`, `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; and `git diff --check` with LF/CRLF warnings only. The clean retry mapped the candidate to `composition-panel-refresh-generated-only`, ran all lane non-live validation successfully, produced proof envelope SHA-256 `413f76709f002f8568f0dd691960b8ff04503991ccb2d6c95e79fea163b6b5a6`, and kept `changedPathCount=0` / `unplannedPathCount=0`. Generated-only live proof failed closed with `CEP panel is not connected to the bridge`. No broad queue, unscoped `max-items > 1`, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source-checkout execution, non-generated user-asset mutation, launcher edit, push, PR, or GitHub automation was run. |
 
 | Full Intake effect-enabled toggle generated-only lane | Required to give `tool-layers-toggle-specific-effects` a current generated-only typed contract for `effect.enabled` without approving source-exact project-wide effect traversal, Alt-key-driven semantics, raw JSX copy, unreviewed user effects, or non-generated user-asset mutation. | Passed focused implementation and non-live closeout validation: touched-file `node --check`; JSON parse for `registry/solutions.json` and `orchestrator/generic-repo-live-lane-registry.json`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `node scripts/chatgpt-connector-smoke.js`; read-only `node scripts/cep-panel-cdp-smoke.js inspect`; read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; scoped retry with explicit `tool-layers-toggle-specific-effects`, `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; direct generated-only lane command `node scripts/cep-panel-cdp-smoke.js full-ui-agent-effect-enabled-openai-cli-smoke`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with LF/CRLF warnings only. The first retry stopped as `blocked_target_dirty`; after a temporary local commit, the clean retry returned `completed_no_candidates` because the existing resolution ticket is already terminal, produced proof envelope SHA-256 `6ba633a9d09572117b61a136a718291ee229d1c60f83fbc88540111108fcd77a`, and kept `changedPathCount=0` / `unplannedPathCount=0`. Generated-only live proof failed closed with `CEP panel is not connected to the bridge`; daemon `/health` reported `panelConnected:false`. No broad queue, unscoped `max-items > 1`, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source-checkout execution, non-generated user-asset mutation, launcher edit, push, PR, or GitHub automation was run. |
 

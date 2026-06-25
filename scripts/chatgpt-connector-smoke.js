@@ -310,6 +310,7 @@ function assertReadOnlyTools(tools) {
     "set_layer_transform",
     "set_comp_current_time",
     "set_comp_properties",
+    "refresh_comp_panel",
     "set_comp_work_area",
     "set_layer_time_range",
     "stagger_layers",

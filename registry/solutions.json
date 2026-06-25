@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-06-25",
+  "updatedAt": "2026-06-26",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -15569,6 +15569,122 @@
         "Use create_shapes_from_text only with explicit layerIndex and guards.",
         "The typed tool wraps AE's native Create Shapes from Text command and fails closed when that localized menu command is unavailable.",
         "Require get_layer_details read-back for the generated shape outline layer."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "force-composition-panel-refresh-typed-plan",
+      "title": "Force Composition Panel Refresh Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "refresh",
+        "motion-blur",
+        "generated-only",
+        "typed-tool",
+        "full-intake"
+      ],
+      "intent": {
+        "summary": "Force a Composition panel refresh for one explicit generated composition by temporarily toggling comp.motionBlur and restoring the original value.",
+        "examples": [
+          "Refresh this generated composition panel after a scripted setup.",
+          "Force the comp viewer to refresh without changing the final comp motion blur state."
+        ],
+        "negativeExamples": [
+          "Enable motion blur on selected layers.",
+          "Refresh every open viewer in the project.",
+          "Run raw JSX to poke the active composition UI."
+        ],
+        "appliesWhen": [
+          "The request is scoped to refreshing one known generated or explicitly reviewed composition.",
+          "Current get_comp_details or generated create_comp evidence identifies the composition and current motionBlur state.",
+          "The plan can provide compName or compItemIndex and can read the same composition back after refresh."
+        ],
+        "whenNotToUse": [
+          "The request needs source-exact active-viewer UI fidelity or broad viewer refresh semantics.",
+          "The target is a non-generated user composition without explicit checkpoint/rollback and approval scope.",
+          "The request is to enable layer motion blur or to change durable composition settings.",
+          "The request requires raw JSX, file I/O, render queue work, persistent settings, or project-wide traversal."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetCompEvidence",
+          "type": "object",
+          "required": true,
+          "description": "Current get_comp_details or generated create_comp evidence for one explicit composition, including name or itemIndex and motionBlur."
+        },
+        {
+          "name": "expectedMotionBlur",
+          "type": "boolean",
+          "required": false,
+          "description": "Optional guard copied from prior get_comp_details evidence."
+        }
+      ],
+      "targetAssumptions": [
+        "The target composition is generated or otherwise explicitly reviewed before mutation.",
+        "The workflow uses refresh_comp_panel, not set_comp_properties, layer motionBlur, or raw ExtendScript.",
+        "The final get_comp_details read-back shows comp.motionBlur restored to the original value.",
+        "Source-exact active-viewer refresh fidelity, project-wide traversal, persistent settings, non-generated user assets, file I/O, render queue work, and raw JSX remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/force-composition-panel-refresh-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_comp_details",
+          "refresh_comp_panel"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read one explicit generated composition, run refresh_comp_panel with expectedMotionBlur when available, then read the same composition back.",
+        "steps": [
+          "Run get_comp_details for the generated composition and record itemIndex/name, motionBlur, layer count, and work area.",
+          "Run refresh_comp_panel with compName or compItemIndex and expectedMotionBlur from the prior read-back.",
+          "Run get_comp_details again for the same composition.",
+          "Verify postVerification.ok:true, transientToggled:true, motionBlurRestored:true, unchanged comp identity, unchanged layer count, unchanged work area, and final motionBlur equal to the original value."
+        ],
+        "expectedEvidence": [
+          "refresh_comp_panel reports refreshMethod:\"comp.motionBlur-double-toggle\".",
+          "refresh_comp_panel reports postVerification.motionBlurRestored:true and transientToggled:true.",
+          "Final get_comp_details read-back shows the same comp motionBlur value as before.",
+          "No set_comp_properties, layer motionBlur, raw JSX, non-generated user-asset mutation, file I/O, or render queue work is used."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-compositions-force-composition-panel-refresh as generated-only typed-plan coverage after adding refresh_comp_panel.",
+          "Generated-only proof uses full-ui-agent-comp-refresh-openai-cli-smoke."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-26",
+          "from": "generic-repo-importer-tool-compositions-force-composition-panel-refresh",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the comp refresh side effect into refresh_comp_panel plus get_comp_details read-back; no source JSX copied. Active-viewer UI fidelity, layer motionBlur switches, arbitrary comp properties, persistent settings, non-generated user assets, and raw JSX remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Use refresh_comp_panel only with explicit compName or compItemIndex.",
+        "Use expectedMotionBlur as a guard when prior get_comp_details evidence is available.",
+        "Require post-run get_comp_details read-back for restored comp.motionBlur."
       ]
     }
   ]

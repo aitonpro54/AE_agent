@@ -896,6 +896,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "set_project_item_metadata",
   "set_comp_current_time",
   "set_comp_properties",
+  "refresh_comp_panel",
   "set_comp_work_area",
   "set_layer_time_range",
   "stagger_layers",
@@ -4356,6 +4357,7 @@ const PLANNING_TOOL_NAMES = [
   "align_layers_to_time",
   "set_comp_current_time",
   "set_comp_properties",
+  "refresh_comp_panel",
   "set_comp_work_area",
   "set_layer_time_range",
   "stagger_layers",
@@ -6293,6 +6295,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For explicit bulk layer duplication, use duplicate_layers with concrete layerIndices after inspecting the target comp/layers. Pair sourceNames with layerIndices in current AE stack order, or insert get_comp_details before duplication when source-layer order is ambiguous. For selected-layer duplication, inspect with get_selected_layers first and bind layerIndices from {{selectedLayerIndices}}; never use duplicate_layers for deletion, source/precomp relinking, mask/path edits, or audio workflows.",
     "For destructive single-layer deletion, use delete_layer only after inspecting the explicit target comp/layer. Provide compItemIndex or compName, layerIndex, and expectedLayerName, then read back the comp/layer stack to prove the deleted layer is absent; never use selection-only, broad, multi-layer, or name-optional deletion.",
     "For composition settings, use set_comp_properties only for width, height, pixelAspect, duration, frameRate, bgColor, and displayStartTime on one explicit comp, then read back the comp before reporting success. Do not route arbitrary comp fields, layers, effects, masks, or property paths through this tool.",
+    "For Composition panel refresh side effects, use refresh_comp_panel only on one explicit inspected comp with optional expectedMotionBlur guard, then read back get_comp_details and prove comp.motionBlur returned to its original value. Do not use set_comp_properties, layer motionBlur, raw ExtendScript, or user comp mutation as a substitute.",
     "For explicit generated layer metadata, use set_layer_metadata only with one explicit comp target, concrete layerIndices, and expectedLayerNames when available. It only supports comment, label, locked, and enabled, and must be followed by get_layer_details read-back for each target layer.",
     "For explicit generated layer blending mode changes, use set_layer_blending_mode only with one explicit comp target, concrete layerIndices, expectedLayerNames when available, and reviewed blendingMode normal or difference. Follow with get_layer_details read-back for each target layer; do not infer targets from selection without typed evidence.",
     "For explicit generated project item labels, use set_project_item_metadata only with concrete itemIndices from current get_project_snapshot/find_project_items/list_project_folder_items evidence and expectedItemNames when available. It only supports label and must be followed by project-item read-back.",
@@ -9557,6 +9560,27 @@ const tools = [
     }
   },
   {
+    name: "refresh_comp_panel",
+    description: "Force a Composition panel refresh for one explicit composition by temporarily toggling comp.motionBlur and restoring the original value with read-back evidence.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Required when compName is omitted. 1-based project item index for the explicit target composition."
+        },
+        compName: {
+          type: "string",
+          description: "Required when compItemIndex is omitted. Exact target composition name."
+        },
+        expectedMotionBlur: {
+          type: "boolean",
+          description: "Optional guard from prior get_comp_details evidence. The tool fails closed if the current comp.motionBlur state differs."
+        }
+      }
+    }
+  },
+  {
     name: "set_layer_time_range",
     description: "Set start, in-point, out-point, or duration for selected or specified layers.",
     inputSchema: {
@@ -11994,6 +12018,7 @@ async function callTool(name, args) {
         displayStartTime: comp.displayStartTime,
         time: comp.time,
         bgColor: comp.bgColor,
+        motionBlur: comp.motionBlur,
         numLayers: comp.numLayers,
         selectedLayerIndices: selectedLayerIndices,
         layersReturned: layers.length,
@@ -15729,6 +15754,69 @@ async function callTool(name, args) {
           fieldMatches: fieldMatches,
           compIdentityMatches: before.itemIndex === after.itemIndex && before.name === after.name,
           layerCountUnchanged: before.numLayers === after.numLayers
+        }
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "refresh_comp_panel") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const expectedMotionBlur = optionalBoolean(args, "expectedMotionBlur", null);
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required for refresh_comp_panel.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var expectedMotionBlur = ${expectedMotionBlur === null ? "null" : aeLiteral(expectedMotionBlur)};
+
+      function __codexCompRefreshState(comp) {
+        return {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          width: comp.width,
+          height: comp.height,
+          duration: comp.duration,
+          frameRate: comp.frameRate,
+          workAreaStart: comp.workAreaStart,
+          workAreaDuration: comp.workAreaDuration,
+          time: comp.time,
+          motionBlur: !!comp.motionBlur,
+          numLayers: comp.numLayers
+        };
+      }
+
+      var before = __codexCompRefreshState(comp);
+      if (expectedMotionBlur !== null && before.motionBlur !== expectedMotionBlur) {
+        throw new Error("Expected comp.motionBlur " + expectedMotionBlur + " but found " + before.motionBlur + ".");
+      }
+      app.beginUndoGroup("Codex Refresh Comp Panel");
+      comp.motionBlur = !before.motionBlur;
+      var transient = __codexCompRefreshState(comp);
+      comp.motionBlur = before.motionBlur;
+      var after = __codexCompRefreshState(comp);
+      var response = {
+        comp: after,
+        before: before,
+        transient: transient,
+        after: after,
+        refreshMethod: "comp.motionBlur-double-toggle",
+        postVerification: {
+          ok: before.itemIndex === after.itemIndex &&
+            before.name === after.name &&
+            before.motionBlur === after.motionBlur &&
+            transient.motionBlur !== before.motionBlur &&
+            before.numLayers === after.numLayers &&
+            before.workAreaStart === after.workAreaStart &&
+            before.workAreaDuration === after.workAreaDuration,
+          compIdentityMatches: before.itemIndex === after.itemIndex && before.name === after.name,
+          motionBlurRestored: before.motionBlur === after.motionBlur,
+          transientToggled: transient.motionBlur !== before.motionBlur,
+          layerCountUnchanged: before.numLayers === after.numLayers,
+          workAreaUnchanged: before.workAreaStart === after.workAreaStart && before.workAreaDuration === after.workAreaDuration
         }
       };
       app.endUndoGroup();

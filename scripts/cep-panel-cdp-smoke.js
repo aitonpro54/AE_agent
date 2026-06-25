@@ -13,6 +13,7 @@ const {
   agentCompositionLayerMarkerCopyScenarioPlans,
   agentCompositionMarkerReadScenarioPlans,
   agentCompositionMarkerWorkAreaScenarioPlans,
+  agentCompRefreshScenarioPlans,
   agentCompPropertiesScenarioPlans,
   agentCompCurrentTimeScenarioPlans,
   agentCompositionGuideScenarioPlans,
@@ -684,6 +685,24 @@ function openAiCliCompPropertiesScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_COMP_PROPERTIES_PREFIX || "Codex QA AUX061",
     scenarioFactory: agentCompPropertiesScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliCompRefreshScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-comp-refresh",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_COMP_REFRESH_PREFIX || "Codex QA AUX-REFRESH",
+    scenarioFactory: agentCompRefreshScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -8189,6 +8208,10 @@ async function main() {
   }
   if (command === "agent-comp-properties-openai-cli-smoke" || command === "full-ui-agent-comp-properties-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliCompPropertiesScenarioConfig());
+    return;
+  }
+  if (command === "agent-comp-refresh-openai-cli-smoke" || command === "full-ui-agent-comp-refresh-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliCompRefreshScenarioConfig());
     return;
   }
   if (command === "agent-comp-current-time-openai-cli-smoke" || command === "full-ui-agent-comp-current-time-openai-cli-smoke") {

@@ -2096,6 +2096,61 @@
       "scope": "generated-only Essential Graphics / Essential Properties proof using one explicit generated layer, get_essential_graphics_controllers and get_layer_essential_properties read-back, add_property_to_essential_graphics for one reviewed propertyPath/controllerName, semantic verification, and cleanup; source-exact selectedProperties traversal, broad layer.essentialProperty writes, MOGRT export, user-template mutation, controller rename/delete/reorder semantics, arbitrary property guessing, raw JSX semantics, and missing generated controller evidence remain fail-closed"
     },
     {
+      "id": "composition-panel-refresh-generated-only",
+      "requiredTools": [
+        "get_comp_details",
+        "refresh_comp_panel"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "get_active_comp",
+        "get_comp_details",
+        "refresh_comp_panel"
+      ],
+      "candidateIds": [
+        "tool-compositions-force-composition-panel-refresh"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-comp-refresh-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "comp-panel-refresh",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/force-composition-panel-refresh-typed-plan.md",
+        "recipes/generic-repo-intake/tool-compositions-force-composition-panel-refresh.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only Composition panel refresh proof using one explicit generated comp, get_comp_details comp.motionBlur evidence, refresh_comp_panel double-toggle with expectedMotionBlur guard, final get_comp_details read-back proving restored motionBlur, semantic verification, and cleanup; source-exact active-viewer side effects, layer motionBlur switches, arbitrary comp fields, persistent settings, non-generated user assets, raw JSX, and broad project traversal remain fail-closed"
+    },
+    {
       "id": "comp-current-time-generated-only",
       "requiredTools": [
         "get_comp_details",

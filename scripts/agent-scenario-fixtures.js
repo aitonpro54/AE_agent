@@ -52,6 +52,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "delete_layer",
   "set_comp_current_time",
   "set_comp_properties",
+  "refresh_comp_panel",
   "set_layer_mask",
   "set_path_geometry",
   "export_path_points",
@@ -2863,6 +2864,45 @@ function agentCompPropertiesScenarioPlans(runPrefix) {
   }));
 }
 
+function agentCompRefreshScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Comp Refresh`;
+  const compName = `${base} Comp`;
+
+  return [
+    {
+      id: "generated-comp-panel-refresh",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "get_comp_details",
+        "refresh_comp_panel",
+        "get_comp_details"
+      ],
+      expectedReadBack: {
+        generatedCompPanelRefresh: true,
+        compName,
+        expectedMotionBlur: false
+      },
+      plan: {
+        summary: "Generated-only live QA for forcing a Composition panel refresh through a bounded comp.motionBlur double-toggle.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated comp-refresh comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.04, 0.05, 0.07], allowDuplicateName: false, openInViewer: true, comment: "Generated-only Composition panel refresh validation" } },
+          { title: "Read generated comp before refresh", tool: "get_comp_details", args: { compName, includeLayers: false } },
+          { title: "Refresh generated comp panel", tool: "refresh_comp_panel", args: { compName, expectedMotionBlur: false } },
+          { title: "Read generated comp after refresh", tool: "get_comp_details", args: { compName, includeLayers: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentCompCurrentTimeScenarioPlans(runPrefix) {
   const base = `${runPrefix} Comp Current Time`;
   const compName = `${base} Comp`;
@@ -4393,6 +4433,7 @@ module.exports = {
   agentCompositionLayerMarkerCopyScenarioPlans,
   agentCompositionMarkerReadScenarioPlans,
   agentCompositionMarkerWorkAreaScenarioPlans,
+  agentCompRefreshScenarioPlans,
   agentCompPropertiesScenarioPlans,
   agentCompCurrentTimeScenarioPlans,
   agentCompositionGuideScenarioPlans,

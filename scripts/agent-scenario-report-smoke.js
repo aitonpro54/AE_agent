@@ -17,6 +17,7 @@ const {
   agentCompositionLayerMarkerCopyScenarioPlans,
   agentCompositionMarkerReadScenarioPlans,
   agentCompositionMarkerWorkAreaScenarioPlans,
+  agentCompRefreshScenarioPlans,
   agentCompPropertiesScenarioPlans,
   agentCompCurrentTimeScenarioPlans,
   agentCompositionGuideScenarioPlans,
@@ -793,6 +794,17 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   ]);
   assert.strictEqual(compProperties.plan.steps[1].args.width, 720);
   assert.strictEqual(compProperties.plan.steps[3].args.duration, 3.5);
+
+  const [compRefresh] = agentCompRefreshScenarioPlans("Codex QA AUX-REFRESH Fixture");
+  assert.strictEqual(compRefresh.id, "generated-comp-panel-refresh");
+  assert.strictEqual(compRefresh.expectedReadBack.generatedCompPanelRefresh, true);
+  assert.deepStrictEqual(compRefresh.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "get_comp_details",
+    "refresh_comp_panel",
+    "get_comp_details"
+  ]);
+  assert.strictEqual(compRefresh.plan.steps[2].args.expectedMotionBlur, false);
 
   const [compCurrentTime] = agentCompCurrentTimeScenarioPlans("Codex QA AUX-CTI Fixture");
   assert.strictEqual(compCurrentTime.id, "generated-comp-current-time");

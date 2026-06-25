@@ -15,6 +15,7 @@ const MUTATING_TOOLS = new Set([
   "add_project_item_to_comp",
   "set_comp_current_time",
   "set_comp_work_area",
+  "refresh_comp_panel",
   "set_layer_time_range",
   "stagger_layers",
   "align_layers_to_time",
@@ -247,7 +248,7 @@ function addLayerEvidence(target, value, source) {
 
 function addCompEvidence(target, value, source) {
   if (!isPlainObject(value)) return;
-  const hasCompField = ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "time", "workAreaStart", "workAreaDuration", "numLayers", "layerCount"].some((key) => hasOwn(value, key));
+  const hasCompField = ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "time", "workAreaStart", "workAreaDuration", "motionBlur", "numLayers", "layerCount"].some((key) => hasOwn(value, key));
   if (!hasCompField) return;
   target.comps.push({
     name: compactText(value.name, 160),
@@ -262,6 +263,7 @@ function addCompEvidence(target, value, source) {
     time: numberValue(value.time),
     workAreaStart: numberValue(value.workAreaStart),
     workAreaDuration: numberValue(value.workAreaDuration),
+    motionBlur: value.motionBlur === undefined || value.motionBlur === null ? null : value.motionBlur === true,
     numLayers: numberValue(hasOwn(value, "numLayers") ? value.numLayers : value.layerCount),
     source: source || "observed comp"
   });
@@ -1912,6 +1914,41 @@ function checkSetCompProperties(checks, step, payload, evidence) {
   });
 }
 
+function checkRefreshCompPanel(checks, step, payload, evidence) {
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const before = isPlainObject(payload.before) ? payload.before : {};
+  const transient = isPlainObject(payload.transient) ? payload.transient : {};
+  const after = isPlainObject(payload.after) ? payload.after : payload.comp || {};
+  const restoredValue = hasOwn(after, "motionBlur") ? after.motionBlur : before.motionBlur;
+  const readBackEvidence = observedCompFieldEvidence(evidence.readBack, "motionBlur", restoredValue);
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:motionBlur-restored`,
+    title: "Composition motionBlur is restored after refresh toggle",
+    expected: `motionBlur restored to ${before.motionBlur}`,
+    observed: `before=${before.motionBlur}, transient=${transient.motionBlur}, after=${after.motionBlur}`,
+    passed: postVerification.ok === true &&
+      postVerification.motionBlurRestored === true &&
+      postVerification.transientToggled === true &&
+      before.motionBlur === after.motionBlur &&
+      transient.motionBlur !== before.motionBlur &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_comp_details read-back proved restored comp.motionBlur."
+  });
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:bounds`,
+    title: "Composition refresh stays bounded to the explicit comp",
+    expected: "same comp identity, unchanged layer count and work area",
+    observed: `identity=${postVerification.compIdentityMatches === true}, layerCount=${postVerification.layerCountUnchanged === true}, workArea=${postVerification.workAreaUnchanged === true}`,
+    passed: postVerification.compIdentityMatches === true &&
+      postVerification.layerCountUnchanged === true &&
+      postVerification.workAreaUnchanged === true &&
+      evidence.readBack.count > 0,
+    evidence: evidence.readBack.count > 0 ? "Post-run comp read-back was present." : "No post-run comp read-back was present."
+  });
+}
+
 function expectedCompCurrentTime(args, payload) {
   if (hasOwn(args, "time")) return numberValue(args.time);
   if (hasOwn(args, "frame")) {
@@ -2535,6 +2572,11 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "set_comp_properties") {
     checkSetCompProperties(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "refresh_comp_panel") {
+    checkRefreshCompPanel(checks, step, payload, evidence);
     return;
   }
 

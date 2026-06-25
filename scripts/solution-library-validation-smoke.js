@@ -225,6 +225,7 @@ const AVAILABLE_TOOLS = [
   "set_layer_transform",
   "set_comp_current_time",
   "set_comp_properties",
+  "refresh_comp_panel",
   "set_comp_work_area",
   "set_layer_time_range",
   "add_comp_marker",
@@ -4935,9 +4936,10 @@ function assertFirstFourSwitchSolution(registry, id, requiredTools, requiredPatt
     assert(solution.execution.preferredTools.includes(tool), `${id}: contract must keep typed tool ${tool}.`);
   }
   assert(
-    requiredTools.some((tool) => tool === "get_layer_details" || tool === "get_effect_details") ||
+    requiredTools.some((tool) => tool === "get_layer_details" || tool === "get_effect_details" || tool === "get_comp_details") ||
       solution.execution.preferredTools.includes("get_layer_details") ||
-      solution.execution.preferredTools.includes("get_effect_details"),
+      solution.execution.preferredTools.includes("get_effect_details") ||
+      solution.execution.preferredTools.includes("get_comp_details"),
     `${id}: contract must keep typed read-back.`
   );
   assert.strictEqual(solution.requiredSafetyGates.explicitConfirmation, true, `${id}: switch/setter contract must require explicit confirmation.`);
@@ -5114,6 +5116,23 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
       "raw JSX"
     ]
   });
+  assertFirstFourSwitchLane(liveLaneRegistry, "composition-panel-refresh-generated-only", {
+    requiredTools: ["refresh_comp_panel"],
+    readBackTools: ["get_comp_details"],
+    candidateIds: ["tool-compositions-force-composition-panel-refresh"],
+    scopeIncludes: [
+      "Composition panel refresh",
+      "comp.motionBlur",
+      "expectedMotionBlur",
+      "restored motionBlur",
+      "semantic verification",
+      "cleanup",
+      "active-viewer side effects",
+      "layer motionBlur",
+      "non-generated user assets",
+      "raw JSX"
+    ]
+  });
 
   assertFirstFourSwitchSolution(registry, "hard-solo-layers-typed-plan", ["get_selected_layers", "get_comp_details", "set_layer_metadata", "get_layer_details"], [
     /generated layers/,
@@ -5179,6 +5198,18 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
     /shapeLayer:true/,
     /Create Shapes from Text/,
     /localized menu command/,
+    /non-generated user assets/,
+    /raw JSX/
+  ]);
+  assertFirstFourSwitchSolution(registry, "force-composition-panel-refresh-typed-plan", ["get_comp_details", "refresh_comp_panel"], [
+    /generated composition/,
+    /expectedMotionBlur/,
+    /comp\.motionBlur/,
+    /motionBlurRestored:true/,
+    /transientToggled:true/,
+    /set_comp_properties/,
+    /layer motionBlur/,
+    /active-viewer/,
     /non-generated user assets/,
     /raw JSX/
   ]);

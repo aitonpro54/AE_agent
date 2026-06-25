@@ -29,6 +29,7 @@ const LOCAL_MUTATING_TOOLS = new Set([
   "create_adjustment_layer",
   "delete_layer",
   "set_comp_properties",
+  "refresh_comp_panel",
   "set_layer_metadata",
   "set_layer_blending_mode",
   "set_layer_parent",
@@ -502,6 +503,27 @@ function fakeMutationResult(step, state) {
         fieldMatches,
         compIdentityMatches: true,
         layerCountUnchanged: true
+      }
+    }, compName);
+  }
+  if (step.tool === "refresh_comp_panel") {
+    const before = { ...state.compProperties, name: compName, itemIndex: 1, numLayers: state.layers.length };
+    const transient = { ...before, motionBlur: !before.motionBlur };
+    const after = { ...before };
+    state.compProperties = { ...after };
+    return withVerification({
+      comp: after,
+      before,
+      transient,
+      after,
+      refreshMethod: "comp.motionBlur-double-toggle",
+      postVerification: {
+        ok: true,
+        compIdentityMatches: true,
+        motionBlurRestored: true,
+        transientToggled: true,
+        layerCountUnchanged: true,
+        workAreaUnchanged: true
       }
     }, compName);
   }
@@ -1644,6 +1666,7 @@ function fakeRunForPlan(plan) {
       frameRate: 24,
       bgColor: [0, 0, 0],
       displayStartTime: 0,
+      motionBlur: false,
       time: 0,
       workAreaStart: 0,
       workAreaDuration: 4
@@ -2318,6 +2341,33 @@ function assertSetCompPropertiesReadBackMismatchNeedsReview() {
   const semantic = buildSemanticVerification(plan, run);
   assert.strictEqual(semantic.status, "needs_review", "set_comp_properties must fail closed on mismatched read-back.");
   assert(semantic.checks.some((check) => check.id.indexOf("set_comp_properties:width") >= 0 && check.status === "failed"), "set_comp_properties mismatched read-back should fail.");
+}
+
+function assertRefreshCompPanelPasses() {
+  const plan = {
+    summary: "Refresh one explicit generated composition panel and inspect restored motionBlur.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Refresh generated comp panel",
+        tool: "refresh_comp_panel",
+        args: {
+          compName: "Comp Refresh Fixture",
+          expectedMotionBlur: false
+        }
+      },
+      {
+        title: "Read comp after refresh",
+        tool: "get_comp_details",
+        args: { compName: "Comp Refresh Fixture" }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `refresh_comp_panel semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("refresh_comp_panel:motionBlur-restored") >= 0 && check.status === "passed"), "refresh_comp_panel restored motionBlur check should pass.");
 }
 
 function compWorkAreaPlan(includeReadBack = true) {
@@ -3622,6 +3672,7 @@ function main() {
   assertDeleteLayerMissingReadBackNeedsReview();
   assertSetCompPropertiesPasses();
   assertSetCompPropertiesReadBackMismatchNeedsReview();
+  assertRefreshCompPanelPasses();
   assertSetCompWorkAreaReadBackFallbackPasses();
   assertSetCompWorkAreaMissingReadBackNeedsReview();
   assertSetCompCurrentTimePasses();
