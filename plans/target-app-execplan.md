@@ -26,6 +26,29 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Reopened screen-task launcher final completion audit (2026-06-25):
+  completed exactly one compact parent-owned audit for the reopened screen-task
+  families without scoped retry, broad queue processing, generated-only mutating
+  live CEP/AE proof, broad/default CEP smoke, Local/Ollama, fallback provider,
+  dependency change, raw JSX copy, user-asset mutation, push, PR, or launcher
+  edit. The launcher baseline `ab2506c` is an ancestor of the actual checkout
+  `90d0829`, so the audit uses the current checkout plus compact runtime state.
+  Compact status is `completed_no_candidates`; compact proof is
+  `completed_no_candidates` with proof envelope SHA-256
+  `aea5fbf8d628f666ffae9c78bc1ad3fa175de484db0fcb20007014ab26dd2bbc`,
+  `changedPathCount=0`, and `unplannedPathCount=0`; ledger summary is
+  `entries=75`, `completed=36`, `blocked_or_skipped=39`, `queued=0`,
+  `failed=0`, `terminal=75`. Family audit result: shape/mask path geometry,
+  Essential Graphics / Essential Properties, composition marker
+  `comp.markerProperty.keyTime` read/add/copy/work-area coverage,
+  file/export/proxy/render/user-file safety policy, and third-party semantics
+  policy are recorded in existing plan evidence; Puppet-on-transparent is
+  proven, while Puppet pin type remains fail-closed on missing generated pin
+  atom evidence. CEP/panel read-only readiness has recorded connectivity, but
+  the next useful live proof step is human-gated because the panel OpenAI CLI
+  provider reports setup/login is needed and generated-only mutating live CEP
+  proof still requires explicit approval.
+
 - [x] Runner mapping/resolution-gaps longrun final audit:
   scoped family `runner-mapping-resolution-gaps` is closed without a broad
   queue. The mapping/reclassification fixes accepted 11 exact unsafe-skip ids
@@ -3229,6 +3252,14 @@ check.
 
 ## Decision Log
 
+- 2026-06-25: Treat `ab2506c` from the launcher prompt as a stale baseline
+  because it is an ancestor of the actual checkout `90d0829`. The reopened
+  screen-task final audit is closed against current HEAD and compact runtime
+  state only. No candidate terminal reason was changed by convenience: the
+  audit only records existing proof/policy evidence and the current human gate
+  for panel OpenAI CLI setup plus explicit generated-only mutating live CEP
+  proof approval.
+
 - 2026-06-14: Closed the `runner-mapping-resolution-gaps` longrun as a
   mapping-only slice. Full Intaker now accepts exact candidate-scoped
   generated-only production families despite stale unsafe-skip tool hints,
@@ -4543,6 +4574,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Reopened screen-task launcher final completion audit | Required to close one compact audit of the reopened screen-task families without broad queue processing or live mutation. | Passed closeout validation: JSON parse for `.codex/active-thread.json`, direct `node scripts/clean-current-check.js`, retry `npm.cmd run check:rules`, and `git diff --check` with the usual LF/CRLF warning only. The first npm wrapper attempt exited 1 before script output, then the direct rule script and retry passed. No JavaScript files were touched, so touched-file `node --check` was not applicable. |
 
 | Full intake tool-properties-expose-essential-properties | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-d2f1a8aac4-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
