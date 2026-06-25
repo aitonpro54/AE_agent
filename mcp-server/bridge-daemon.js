@@ -904,6 +904,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "rename_project_items",
   "update_text_layer",
   "create_shape_layer",
+  "create_layer_connection_line",
   "fit_layer_to_comp",
   "set_property_keyframes",
   "fill_in_keyframes",
@@ -4350,6 +4351,7 @@ const PLANNING_TOOL_NAMES = [
   "rename_project_items",
   "update_text_layer",
   "create_shape_layer",
+  "create_layer_connection_line",
   "fit_layer_to_comp",
   "set_property_keyframes",
   "fill_in_keyframes",
@@ -6281,7 +6283,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For explicit generated project item labels, use set_project_item_metadata only with concrete itemIndices from current get_project_snapshot/find_project_items/list_project_folder_items evidence and expectedItemNames when available. It only supports label and must be followed by project-item read-back.",
     "For explicit layer switches, use set_property_value only with whitelisted layer attributes threeDLayer, collapseTransformation, or motionBlur on inspected layer indices, setAtTime:false, then read back with get_layer_details. Do not use it for parenting, selection changes, timeline switches, or arbitrary layer fields.",
     "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
-    "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, set_layer_mask, get_path_geometry, set_path_geometry, export_path_points, and fit_layer_to_comp. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Use set_path_geometry only for one explicit Shape or Mask path property with reviewed vertices, inTangents, outTangents, closed state, and optional bounded keyframes, then read back with get_path_geometry. Use export_path_points only after get_path_geometry evidence and only for generated export files; never write Desktop or arbitrary user paths. Do not delete masks, target multiple masks/layers, run roto, or traverse arbitrary property trees.",
+    "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_connection_line, create_layer_mask, set_layer_mask, get_path_geometry, set_path_geometry, export_path_points, and fit_layer_to_comp. Use create_layer_connection_line only for one generated locked connector layer between two explicit inspected layer targets. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Use set_path_geometry only for one explicit Shape or Mask path property with reviewed vertices, inTangents, outTangents, closed state, and optional bounded keyframes, then read back with get_path_geometry. Use export_path_points only after get_path_geometry evidence and only for generated export files; never write Desktop or arbitrary user paths. Do not delete masks, target multiple masks/layers, run roto, or traverse arbitrary property trees.",
     "For Puppet pin type changes, use set_puppet_pin_type only after get_effect_details shows one explicit ADBE FreePin3 effect, an ADBE FreePin3 PosPin Atom ancestor, and an ADBE FreePin3 PosPin Type propertyPath. Only pinType 1/position and 4/advanced are allowed; do not create or infer Puppet pins, scan the project, or mutate user Puppet effects without generated or explicitly reviewed evidence.",
     "For Essential Graphics, first inspect the explicit layer/property with get_layer_details or get_layer_essential_properties and inspect existing controllers with get_essential_graphics_controllers. Use add_property_to_essential_graphics only for one explicit propertyPath, one reviewed controllerName, and post-run get_essential_graphics_controllers read-back; do not traverse selectedProperties, export MOGRTs, mutate user template membership, or edit Essential Properties unless separate evidence and confirmation are present.",
     "For camera controller rigs, use create_camera_with_controller instead of raw ExtendScript or ad hoc parenting; read back both camera.parent and controller 3D/separated-position state with get_layer_details.",
@@ -9612,6 +9614,29 @@ const tools = [
         startTime: { type: "number", description: "Optional layer start time in seconds." },
         duration: { type: "number", description: "Optional layer duration in seconds." }
       }
+    }
+  },
+  {
+    name: "create_layer_connection_line",
+    description: "Create one generated locked shape layer containing an open stroked path expression that connects two explicit layer anchor points.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Required when compName is not provided. 1-based project item index for the explicit target composition." },
+        compName: { type: "string", description: "Required when compItemIndex is not provided. Exact composition name for the explicit target composition." },
+        fromLayerIndex: { type: "number", description: "Required 1-based source layer index for the first anchor endpoint." },
+        toLayerIndex: { type: "number", description: "Required 1-based source layer index for the second anchor endpoint." },
+        expectedFromLayerName: { type: "string", description: "Optional exact name guard for fromLayerIndex." },
+        expectedToLayerName: { type: "string", description: "Optional exact name guard for toLayerIndex." },
+        name: { type: "string", description: "Optional generated connector layer name. Defaults to Codex Connection Line." },
+        pathGroupName: { type: "string", description: "Optional shape group name for the connector path. Defaults to Connector." },
+        strokeColor: { type: "array", items: { type: "number" }, description: "Optional RGB stroke color with values from 0 to 1. Defaults to white." },
+        strokeWidth: { type: "number", description: "Optional connector stroke width. Defaults to 4." },
+        startTime: { type: "number", description: "Optional layer start time in seconds." },
+        duration: { type: "number", description: "Optional layer duration in seconds." },
+        lockLayer: { type: "boolean", description: "Whether to lock the generated connector layer after expression setup. Defaults to true." }
+      },
+      required: ["fromLayerIndex", "toLayerIndex"]
     }
   },
   {
@@ -15807,6 +15832,165 @@ async function callTool(name, args) {
         comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
         layer: __codexLayerInfo(layer),
         shape: { type: shapeType, size: requestedSize, fillColor: fillColor, strokeColor: strokeColor, strokeWidth: strokeWidth }
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "create_layer_connection_line") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const fromLayerIndex = requiredPositiveInteger(args, "fromLayerIndex");
+    const toLayerIndex = requiredPositiveInteger(args, "toLayerIndex");
+    const expectedFromLayerName = optionalString(args, "expectedFromLayerName", "");
+    const expectedToLayerName = optionalString(args, "expectedToLayerName", "");
+    const layerName = optionalString(args, "name", "Codex Connection Line");
+    const pathGroupName = optionalString(args, "pathGroupName", "Connector");
+    const strokeColor = optionalNumberArray(args, "strokeColor", [1, 1, 1], 3, 3);
+    const strokeWidth = optionalNumber(args, "strokeWidth", 4);
+    const startTime = optionalNumber(args, "startTime", null);
+    const duration = optionalNumber(args, "duration", null);
+    const lockLayer = optionalBoolean(args, "lockLayer", true);
+
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required for create_layer_connection_line.", true);
+    if (fromLayerIndex === toLayerIndex) return toolResult("fromLayerIndex and toLayerIndex must target two different layers.", true);
+    if (strokeColor.some((value) => value < 0 || value > 1)) return toolResult("strokeColor values must be between 0 and 1.", true);
+    if (strokeWidth <= 0) return toolResult("strokeWidth must be greater than 0.", true);
+    if (duration !== null && duration <= 0) return toolResult("duration must be greater than 0.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var fromLayer = comp.layer(${fromLayerIndex});
+      var toLayer = comp.layer(${toLayerIndex});
+      if (!fromLayer) throw new Error("fromLayerIndex did not resolve to a layer.");
+      if (!toLayer) throw new Error("toLayerIndex did not resolve to a layer.");
+      if (fromLayer === toLayer) throw new Error("fromLayerIndex and toLayerIndex must target two different layers.");
+      var expectedFromLayerName = ${aeLiteral(expectedFromLayerName)};
+      var expectedToLayerName = ${aeLiteral(expectedToLayerName)};
+      if (expectedFromLayerName && fromLayer.name !== expectedFromLayerName) {
+        throw new Error("fromLayer name mismatch. Expected '" + expectedFromLayerName + "' but found '" + fromLayer.name + "'.");
+      }
+      if (expectedToLayerName && toLayer.name !== expectedToLayerName) {
+        throw new Error("toLayer name mismatch. Expected '" + expectedToLayerName + "' but found '" + toLayer.name + "'.");
+      }
+      var layerName = ${aeLiteral(layerName)};
+      var pathGroupName = ${aeLiteral(pathGroupName)};
+      var strokeColor = ${aeLiteral(strokeColor)};
+      var strokeWidth = ${strokeWidth};
+      var requestedStartTime = ${startTime === null ? "null" : startTime};
+      var requestedDuration = ${duration === null ? "null" : duration};
+      var lockLayer = ${lockLayer ? "true" : "false"};
+
+      function __codexExpressionString(value) {
+        return JSON.stringify(String(value || ""));
+      }
+
+      function __codexLayerPosition2D(targetLayer) {
+        var transform = targetLayer.property("ADBE Transform Group");
+        var positionProp = transform ? transform.property("ADBE Position") : null;
+        var position = positionProp ? positionProp.value : [0, 0];
+        return [Number(position[0]) || 0, Number(position[1]) || 0];
+      }
+
+      function __codexOpenPath(points) {
+        var shape = new Shape();
+        shape.vertices = points;
+        shape.inTangents = [[0, 0], [0, 0]];
+        shape.outTangents = [[0, 0], [0, 0]];
+        shape.closed = false;
+        return shape;
+      }
+
+      function __codexPathGeometryInfo(prop, owningLayer) {
+        var info = __codexPropertyInfo(prop, owningLayer, true, true);
+        info.geometry = __codexShapeGeometryData(prop.value, 80);
+        return info;
+      }
+
+      app.beginUndoGroup("Codex Create Layer Connection Line");
+      var lineLayer = comp.layers.addShape();
+      if (layerName) lineLayer.name = layerName;
+      var transform = lineLayer.property("ADBE Transform Group");
+      if (transform && transform.property("ADBE Position")) transform.property("ADBE Position").setValue([0, 0]);
+      if (requestedStartTime !== null) {
+        lineLayer.startTime = requestedStartTime;
+        lineLayer.inPoint = requestedStartTime;
+      }
+      if (requestedDuration !== null) {
+        var baseTime = requestedStartTime !== null ? requestedStartTime : lineLayer.inPoint;
+        lineLayer.outPoint = Math.min(baseTime + requestedDuration, comp.duration);
+      }
+
+      var root = lineLayer.property("ADBE Root Vectors Group");
+      var group = root.addProperty("ADBE Vector Group");
+      group.name = pathGroupName || "Connector";
+      var contents = group.property("ADBE Vectors Group");
+      var pathGroup = contents.addProperty("ADBE Vector Shape - Group");
+      pathGroup.name = "Connector Path";
+      var pathProp = pathGroup.property("ADBE Vector Shape");
+      if (!pathProp) throw new Error("Could not create connector path property.");
+      var stroke = contents.addProperty("ADBE Vector Graphic - Stroke");
+      if (!stroke) throw new Error("Could not create connector stroke.");
+      stroke.property("ADBE Vector Stroke Color").setValue(strokeColor);
+      stroke.property("ADBE Vector Stroke Width").setValue(strokeWidth);
+
+      var initialPoints = [__codexLayerPosition2D(fromLayer), __codexLayerPosition2D(toLayer)];
+      pathProp.setValue(__codexOpenPath(initialPoints));
+      if (!pathProp.canSetExpression) throw new Error("Connector path property cannot receive expressions.");
+      var expression = [
+        "var fromLayer = thisComp.layer(" + __codexExpressionString(fromLayer.name) + ");",
+        "var toLayer = thisComp.layer(" + __codexExpressionString(toLayer.name) + ");",
+        "var fromPoint = thisLayer.fromComp(fromLayer.toComp(fromLayer.transform.anchorPoint));",
+        "var toPoint = thisLayer.fromComp(toLayer.toComp(toLayer.transform.anchorPoint));",
+        "createPath([[fromPoint[0], fromPoint[1]], [toPoint[0], toPoint[1]]], [[0, 0], [0, 0]], [[0, 0], [0, 0]], false);"
+      ].join("\\n");
+      pathProp.expression = expression;
+      try { pathProp.expressionEnabled = true; } catch (__expressionEnabledError) {}
+      if (lockLayer) lineLayer.locked = true;
+
+      var pathInfo = __codexPathGeometryInfo(pathProp, lineLayer);
+      var geometry = pathInfo.geometry || {};
+      var expressionValue = pathProp.expression || "";
+      var expressionError = pathProp.expressionError || "";
+      var postVerification = {
+        ok: geometry.closed === false &&
+          Number(geometry.vertexCount || 0) === 2 &&
+          pathProp.expressionEnabled === true &&
+          expressionValue === expression &&
+          !expressionError &&
+          (!lockLayer || lineLayer.locked === true),
+        pathOpen: geometry.closed === false,
+        vertexCount: Number(geometry.vertexCount || 0),
+        expressionEnabled: pathProp.expressionEnabled === true,
+        expressionMatches: expressionValue === expression,
+        expressionError: expressionError,
+        locked: lineLayer.locked === true,
+        lockRequested: lockLayer,
+        connectorLayerIsTop: lineLayer.index === 1,
+        fromLayerNameMatches: !expectedFromLayerName || fromLayer.name === expectedFromLayerName,
+        toLayerNameMatches: !expectedToLayerName || toLayer.name === expectedToLayerName
+      };
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        connector: __codexLayerInfo(lineLayer),
+        layer: __codexLayerInfo(lineLayer),
+        targets: {
+          from: __codexLayerInfo(fromLayer),
+          to: __codexLayerInfo(toLayer)
+        },
+        path: pathInfo,
+        pathGeometry: pathInfo,
+        stroke: {
+          color: strokeColor,
+          width: strokeWidth
+        },
+        expression: expressionValue,
+        expressionEnabled: pathProp.expressionEnabled === true,
+        expressionError: expressionError,
+        postVerification: postVerification
       };
       app.endUndoGroup();
       return response;

@@ -34,6 +34,7 @@ const {
   agentPathGeometryScenarioPlans,
   agentLayerBlendingModeScenarioPlans,
   agentAdjustmentLayerPlacementScenarioPlans,
+  agentLayerConnectionLineScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
@@ -602,6 +603,23 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(adjustmentPlacement.plan.steps[4].args.insertBeforeLayerIndex, 2);
   assert.strictEqual(adjustmentPlacement.plan.steps[4].args.expectedBeforeLayerName, adjustmentPlacement.expectedReadBack.targetName);
   assert.strictEqual(adjustmentPlacement.plan.steps[4].resultBindings, undefined);
+
+  const [layerConnectionLine] = agentLayerConnectionLineScenarioPlans("Codex QA AUX-LCL Fixture");
+  assert.strictEqual(layerConnectionLine.id, "generated-layer-connection-line");
+  assert.strictEqual(layerConnectionLine.expectedReadBack.generatedLayerConnectionLine, true);
+  assert.deepStrictEqual(layerConnectionLine.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "create_shape_layer",
+    "get_layer_details",
+    "get_layer_details",
+    "create_layer_connection_line",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(layerConnectionLine.plan.steps[5].args.fromLayerIndex, 2);
+  assert.strictEqual(layerConnectionLine.plan.steps[5].args.toLayerIndex, 1);
+  assert.strictEqual(layerConnectionLine.plan.steps[5].args.lockLayer, true);
+  assert.strictEqual(layerConnectionLine.plan.steps[5].resultBindings, undefined);
 
   const [stickEffect] = agentStickEffectExpressionScenarioPlans("Codex QA AUX106 Fixture");
   assert.strictEqual(stickEffect.id, "generated-stick-effect-expression");

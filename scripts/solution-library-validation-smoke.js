@@ -186,6 +186,7 @@ const AVAILABLE_TOOLS = [
   "create_comp",
   "create_solid_layer",
   "create_shape_layer",
+  "create_layer_connection_line",
   "create_adjustment_layer",
   "create_camera_layer",
   "create_camera_with_controller",
@@ -4935,6 +4936,23 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
       "raw JSX"
     ]
   });
+  assertFirstFourSwitchLane(liveLaneRegistry, "layer-connection-line-generated-only", {
+    requiredTools: ["create_layer_connection_line"],
+    readBackTools: ["get_layer_details", "get_comp_details"],
+    candidateIds: ["tool-layers-connect-two-layers-with-a-line"],
+    scopeIncludes: [
+      "dynamic connector line",
+      "fromLayerIndex",
+      "toLayerIndex",
+      "locked connector layer",
+      "open two-point shape path",
+      "semantic verification",
+      "cleanup",
+      "thin rectangle",
+      "non-generated user assets",
+      "raw JSX"
+    ]
+  });
   assertFirstFourSwitchLane(liveLaneRegistry, "puppet-on-transparent-effect-property-generated-only", {
     requiredTools: ["add_effect", "get_effect_details", "set_effect_property"],
     readBackTools: ["get_effect_details", "get_layer_details"],
@@ -5013,6 +5031,16 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
     /generic layer stack reorder|generic layer reordering/,
     /non-generated user-asset mutation/,
     /raw ExtendScript/
+  ]);
+  assertFirstFourSwitchSolution(registry, "connect-two-layers-with-a-line-typed-plan", ["get_selected_layers", "get_layer_details", "create_layer_connection_line"], [
+    /generated connector layer/,
+    /fromLayerIndex/,
+    /toLayerIndex/,
+    /locked/,
+    /open two-point shape path/,
+    /thin rectangle/,
+    /non-generated user assets/,
+    /raw JSX/
   ]);
   assertFirstFourSwitchSolution(registry, "toggle-puppet-on-transparent-typed-plan", ["add_effect", "get_effect_details", "set_effect_property"], [
     /explicit generated/,

@@ -32,6 +32,7 @@ const LOCAL_MUTATING_TOOLS = new Set([
   "set_project_item_metadata",
   "set_layer_mask",
   "set_path_geometry",
+  "create_layer_connection_line",
   "export_path_points",
   "set_puppet_pin_type",
   "add_property_to_essential_graphics",
@@ -1008,6 +1009,74 @@ function fakeMutationResult(step, state) {
       shape: { type: args.shape || "rectangle", size: args.size, fillColor: args.fillColor, strokeColor: args.strokeColor, strokeWidth: args.strokeWidth }
     }, compName, layer);
   }
+  if (step.tool === "create_layer_connection_line") {
+    const expression = [
+      `var fromLayer = thisComp.layer(${JSON.stringify(args.expectedFromLayerName || "From Layer")});`,
+      `var toLayer = thisComp.layer(${JSON.stringify(args.expectedToLayerName || "To Layer")});`,
+      "var fromPoint = thisLayer.fromComp(fromLayer.toComp(fromLayer.transform.anchorPoint));",
+      "var toPoint = thisLayer.fromComp(toLayer.toComp(toLayer.transform.anchorPoint));",
+      "createPath([[fromPoint[0], fromPoint[1]], [toPoint[0], toPoint[1]]], [[0, 0], [0, 0]], [[0, 0], [0, 0]], false);"
+    ].join("\n");
+    const layer = insertLayerAtTop(state, layerInfo(args.name || "Codex Connection Line", {
+      index: 1,
+      locked: args.lockLayer === false ? false : true
+    }));
+    const pathGeometry = {
+      name: "Path",
+      matchName: "ADBE Vector Shape",
+      propertyPath: [
+        { matchName: "ADBE Root Vectors Group" },
+        { matchName: "ADBE Vector Group", name: args.pathGroupName || "Connector" },
+        { matchName: "ADBE Vectors Group" },
+        { matchName: "ADBE Vector Shape - Group", name: "Connector Path" },
+        { matchName: "ADBE Vector Shape" }
+      ],
+      canSetExpression: true,
+      expressionEnabled: true,
+      expressionError: "",
+      expression,
+      geometry: {
+        kind: "Shape",
+        closed: false,
+        vertexCount: 2,
+        vertices: [[180, 180], [460, 180]],
+        inTangents: [[0, 0], [0, 0]],
+        outTangents: [[0, 0], [0, 0]],
+        truncated: false
+      }
+    };
+    return withVerification({
+      comp: { name: compName },
+      connector: layer,
+      layer,
+      targets: {
+        from: layerInfo(args.expectedFromLayerName || "From Layer", { index: args.fromLayerIndex || 2 }),
+        to: layerInfo(args.expectedToLayerName || "To Layer", { index: args.toLayerIndex || 1 })
+      },
+      path: pathGeometry,
+      pathGeometry,
+      stroke: {
+        color: args.strokeColor || [1, 1, 1],
+        width: args.strokeWidth || 4
+      },
+      expression,
+      expressionEnabled: true,
+      expressionError: "",
+      postVerification: {
+        ok: true,
+        pathOpen: true,
+        vertexCount: 2,
+        expressionEnabled: true,
+        expressionMatches: true,
+        expressionError: "",
+        locked: args.lockLayer === false ? false : true,
+        lockRequested: args.lockLayer === false ? false : true,
+        connectorLayerIsTop: true,
+        fromLayerNameMatches: true,
+        toLayerNameMatches: true
+      }
+    }, compName, layer);
+  }
   if (step.tool === "create_adjustment_layer") {
     const beforeLayerIndex = args.insertBeforeLayerIndex || null;
     let beforeLayer = beforeLayerIndex ? state.layers[beforeLayerIndex - 1] : null;
@@ -1936,6 +2005,69 @@ function assertAdjustmentLayerPlacementPasses() {
   assert.strictEqual(semantic.status, "passed", `create_adjustment_layer placement semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failed)}`);
   assert(semantic.checks.some((check) => check.id.indexOf("create_adjustment_layer:adjustment-layer") >= 0 && check.status === "passed"), "adjustment layer flag check should pass.");
   assert(semantic.checks.some((check) => check.id.indexOf("create_adjustment_layer:placement") >= 0 && check.status === "passed"), "adjustment layer placement check should pass.");
+}
+
+function assertLayerConnectionLinePasses() {
+  const plan = {
+    summary: "Create a generated dynamic connector line between two explicit generated layers.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Create connection source",
+        tool: "create_shape_layer",
+        args: {
+          compName: "Connection Line Fixture",
+          name: "Connection Line From",
+          shape: "ellipse",
+          position: [180, 180]
+        }
+      },
+      {
+        title: "Create connection target",
+        tool: "create_shape_layer",
+        args: {
+          compName: "Connection Line Fixture",
+          name: "Connection Line To",
+          shape: "rectangle",
+          position: [460, 180]
+        }
+      },
+      {
+        title: "Create generated connection line",
+        tool: "create_layer_connection_line",
+        args: {
+          compName: "Connection Line Fixture",
+          fromLayerIndex: 2,
+          toLayerIndex: 1,
+          expectedFromLayerName: "Connection Line From",
+          expectedToLayerName: "Connection Line To",
+          name: "Connection Line Connector",
+          strokeColor: [0.2, 0.8, 1],
+          strokeWidth: 5,
+          duration: 3,
+          lockLayer: true
+        }
+      },
+      {
+        title: "Read generated connection line",
+        tool: "get_layer_details",
+        args: {
+          compName: "Connection Line Fixture",
+          layerIndex: 1,
+          includeProperties: true,
+          includeExpressions: true
+        }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  const failed = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `create_layer_connection_line semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failed)}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("create_layer_connection_line:open-path") >= 0 && check.status === "passed"), "connection line open path check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("create_layer_connection_line:expression") >= 0 && check.status === "passed"), "connection line expression check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("create_layer_connection_line:locked") >= 0 && check.status === "passed"), "connection line lock check should pass.");
 }
 
 function assertProjectItemMetadataPasses() {
@@ -3329,6 +3461,7 @@ function main() {
   assertLayerTrackMattePasses();
   assertLayerTrackMatteMissingReadBackNeedsReview();
   assertAdjustmentLayerPlacementPasses();
+  assertLayerConnectionLinePasses();
   assertProjectItemMetadataPasses();
   assertProjectItemMetadataMissingReadBackNeedsReview();
   assertDeleteLayerPasses();

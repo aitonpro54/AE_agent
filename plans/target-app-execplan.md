@@ -26,6 +26,30 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake layer connection-line generated-only lane (2026-06-25):
+  parent-owned milestone for `tool-layers-connect-two-layers-with-a-line`
+  added a narrow generated-only dynamic connector contract. The bridge now
+  exposes `create_layer_connection_line`, which creates one locked generated
+  shape layer with an open two-point path expression bound only to two explicit
+  inspected endpoint layer names. Added semantic verification for connector
+  open-path/expression/lock evidence, generated-only scenario/report smoke
+  coverage, CEP command
+  `full-ui-agent-layer-connection-line-openai-cli-smoke`, the
+  `connect-two-layers-with-a-line-typed-plan` recipe, generic intake note,
+  solution registry entry, live-lane family
+  `layer-connection-line-generated-only`, and runner mapping. Scoped retry with
+  explicit id, `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and
+  `--no-commit` mapped the candidate to that lane. Non-live lane validation and
+  read-only CEP preflight passed, but generated-only proof failed with
+  `CEP panel is not connected to the bridge`. The candidate remains freshly
+  terminal/live-blocked under current rules, not completed. Clean compact proof
+  envelope SHA-256:
+  `85902cb9b116832ab7e2a91f2611646653f9d4d23953bf40135309b544651aac`.
+  No broad queue processing, unscoped candidate selection, dependency change,
+  Local/Ollama, fallback provider, broad/default CEP smoke, raw JSX copy,
+  source-checkout execution, non-generated user-asset mutation, launcher edit,
+  push, or PR was run.
+
 - [x] Full Intake layer Add 3D Break placement lane (2026-06-25):
   parent-owned milestone for `tool-layers-add-3d-break` added a narrow
   generated-only adjustment-layer placement contract. `create_adjustment_layer`
@@ -3383,6 +3407,15 @@ check.
 
 ## Decision Log
 
+- 2026-06-25: Accept `create_layer_connection_line` only as a generated-only
+  dynamic connector contract for `tool-layers-connect-two-layers-with-a-line`.
+  The contract must target explicit endpoint layer indices/names, create one
+  locked generated shape layer, and read back an open two-point shape path with
+  an enabled expression bound to those endpoints. Source-exact selected-layer
+  traversal, thin-rectangle substitutes, unlocked connector layers, raw JSX
+  copy, and non-generated user-asset mutation remain fail-closed; completion
+  still requires generated-only live proof with CEP/panel bridge connectivity.
+
 - 2026-06-25: Accept only a stateless generated-only adaptation for
   `tool-layers-add-fill-with-color-cycle`. Existing effect-property typed tools
   can safely add `ADBE Fill`, inspect the Fill `Color` property, set one
@@ -4766,6 +4799,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake layer connection-line generated-only lane | Required to give `tool-layers-connect-two-layers-with-a-line` a narrow generated-only typed connector contract without copying raw JSX, drawing a thin rectangle substitute, or mutating non-generated user assets. | Passed focused implementation validation: touched-file `node --check`; JSON parse for `registry/solutions.json` and `orchestrator/generic-repo-live-lane-registry.json`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; read-only `node scripts/cep-panel-cdp-smoke.js inspect`; read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; scoped retry with explicit `tool-layers-connect-two-layers-with-a-line`, `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; compact status/proof; `node scripts/sdk-generic-repo-full-intake-smoke.js`; `node scripts/sdk-generic-repo-importer-command-smoke.js`; `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; `npm.cmd run smoke:bridge`; and `git diff --check` with LF/CRLF warnings only. Clean scoped retry mapped the candidate to `live-lane-family-layer-connection-line-generated-only`, kept it terminal/live-blocked, and produced compact proof SHA-256 `85902cb9b116832ab7e2a91f2611646653f9d4d23953bf40135309b544651aac` with `changedPathCount=0` and `unplannedPathCount=0`. Generated-only live proof failed only with `CEP panel is not connected to the bridge`. No broad queue, unscoped `max-items > 1`, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source-checkout execution, non-generated user-asset mutation, launcher edit, push, PR, or GitHub automation was run. |
 
 | Full Intake layer Fill color-cycle stateless lane | Required to give `tool-layers-add-fill-with-color-cycle` current safety/contract/live-readiness evidence without copying raw JSX or pretending to support persistent AE settings state. | Passed focused implementation validation: `node --check orchestrator/run-generic-repo-full-intake.mjs`; `node --check scripts/solution-library-validation-smoke.js`; JSON parse for `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, and `.codex/active-thread.json`; `node scripts/solution-library-validation-smoke.js`; read-only `node scripts/cep-panel-cdp-smoke.js inspect`; read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; scoped retry with explicit `tool-layers-add-fill-with-color-cycle`, `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; compact status/proof/ledger summary; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/sdk-generic-repo-full-intake-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with LF/CRLF warnings only. Scoped retry mapped the candidate to `live-lane-family-layer-fill-color-cycle-generated-only`; non-live lane validation and read-only CEP preflight passed, but live proof failed with `CEP panel is not connected to the bridge`. Final compact proof is `blocked_target_dirty` with proof envelope SHA-256 `730ee7357907544050007552709d144ab33aea6348ea0f79189f762a5e86c57f` because parent-authored tracked lane files were uncommitted during the retry; the closeout commit resolves the dirty tree for continuation. No broad queue, unscoped `max-items > 1`, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source-checkout execution, non-generated user-asset mutation, launcher edit, push, PR, or GitHub automation was run. |
 

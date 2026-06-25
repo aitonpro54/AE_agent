@@ -20,6 +20,7 @@ const MUTATING_TOOLS = new Set([
   "split_layers_at_time",
   "update_text_layer",
   "create_shape_layer",
+  "create_layer_connection_line",
   "create_layer_mask",
   "set_path_geometry",
   "export_path_points",
@@ -1941,6 +1942,50 @@ function checkSetPathGeometry(checks, step, payload, evidence) {
   });
 }
 
+function checkCreateLayerConnectionLine(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const connector = payload.connector || payload.layer || {};
+  const pathGeometry = payload.pathGeometry || payload.path || {};
+  const geometry = pathGeometry.geometry || {};
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const expectedLocked = args.lockLayer !== false;
+  const readBackEvidence = observedNameEvidence(evidence.readBack, connector.name) ||
+    observedNameEvidence(evidence.all, connector.name);
+
+  checkName(checks, step, args.name, connector.name, evidence, "Created connector layer name matches request");
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:open-path`,
+    title: "Connector path is an open two-point shape path",
+    expected: "open path with 2 vertices",
+    observed: `closed:${geometry.closed === true}; vertices:${geometry.vertexCount || 0}`,
+    passed: postVerification.ok === true &&
+      postVerification.pathOpen === true &&
+      Number(postVerification.vertexCount || 0) === 2 &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No connector layer read-back matched the generated open path."
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:expression`,
+    title: "Connector path expression is enabled and error-free",
+    expected: "expressionEnabled:true without expressionError",
+    observed: `expressionEnabled:${payload.expressionEnabled === true}; expressionError:${payload.expressionError || ""}`,
+    passed: postVerification.expressionEnabled === true &&
+      postVerification.expressionMatches === true &&
+      !postVerification.expressionError,
+    evidence: stepLabel(step)
+  });
+  if (expectedLocked) {
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:locked`,
+      title: "Generated connector layer is locked after setup",
+      expected: "locked:true",
+      observed: `locked:${connector.locked === true}`,
+      passed: connector.locked === true && postVerification.locked === true,
+      evidence: readBackEvidence || stepLabel(step)
+    });
+  }
+}
+
 function exportPathPointsVertices(args) {
   if (Array.isArray(args.vertices)) return args.vertices;
   if (isPlainObject(args.geometry) && Array.isArray(args.geometry.vertices)) return args.geometry.vertices;
@@ -2160,6 +2205,11 @@ function verifyStep(checks, step, evidence) {
         evidence: stepLabel(step)
       });
     }
+    return;
+  }
+
+  if (step.tool === "create_layer_connection_line") {
+    checkCreateLayerConnectionLine(checks, step, payload, evidence);
     return;
   }
 

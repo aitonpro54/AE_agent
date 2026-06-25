@@ -31,6 +31,7 @@ const {
   agentPathGeometryScenarioPlans,
   agentLayerBlendingModeScenarioPlans,
   agentAdjustmentLayerPlacementScenarioPlans,
+  agentLayerConnectionLineScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
@@ -769,6 +770,24 @@ function openAiCliAdjustmentLayerPlacementScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_ADJUSTMENT_LAYER_PLACEMENT_PREFIX || "Codex QA AUX109",
     scenarioFactory: agentAdjustmentLayerPlacementScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliLayerConnectionLineScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-layer-connection-line",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_LAYER_CONNECTION_LINE_PREFIX || "Codex QA AUX-LCL",
+    scenarioFactory: agentLayerConnectionLineScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -6865,6 +6884,77 @@ async function verifyGeneratedAdjustmentLayerPlacementReadBack(scenario, expecte
   };
 }
 
+async function verifyGeneratedLayerConnectionLineReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const connector = layers.find((item) => item.name === expected.connectorName);
+  const fromLayer = layers.find((item) => item.name === expected.fromName);
+  const toLayer = layers.find((item) => item.name === expected.toName);
+  if (!connector || !fromLayer || !toLayer) {
+    throw new Error(`${scenario.id}: expected connection-line layers were not all found by read-back.`);
+  }
+  if (connector.locked !== true) {
+    throw new Error(`${scenario.id}: generated connector layer did not read back locked:true.`);
+  }
+  if (typeof expected.connectorLayerIndex === "number" && connector.index !== expected.connectorLayerIndex) {
+    throw new Error(`${scenario.id}: connector index mismatch; expected ${expected.connectorLayerIndex}, got ${connector.index}.`);
+  }
+
+  const connectorDetails = await callBridgeTool("get_layer_details", {
+    compName: expected.compName,
+    layerIndex: connector.index,
+    includeProperties: true,
+    propertyDepth: 5,
+    propertyLimit: 120,
+    includeValues: true,
+    includeExpressions: true
+  });
+  function findConnectorPath(properties) {
+    for (const property of properties || []) {
+      if (property.matchName === "ADBE Vector Shape" && property.expressionEnabled === true) return property;
+      const child = findConnectorPath(property.children || []);
+      if (child) return child;
+    }
+    return null;
+  }
+  const pathProperty = findConnectorPath(connectorDetails.propertyTree || []);
+  if (!pathProperty) {
+    throw new Error(`${scenario.id}: generated connector path expression was not found by read-back.`);
+  }
+  if (pathProperty.expressionError) {
+    throw new Error(`${scenario.id}: generated connector path expression reported an error: ${pathProperty.expressionError}`);
+  }
+  const geometry = pathProperty.value && pathProperty.value.kind === "Shape" ? pathProperty.value : null;
+  if (!geometry || geometry.closed === true || Number(geometry.vertexCount || 0) !== 2) {
+    throw new Error(`${scenario.id}: generated connector path did not read back as an open two-point path.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      numLayers: comp.numLayers
+    },
+    connector: {
+      index: connector.index,
+      name: connector.name,
+      locked: connector.locked === true,
+      expressionEnabled: pathProperty.expressionEnabled === true,
+      vertexCount: geometry.vertexCount
+    },
+    targets: {
+      from: { index: fromLayer.index, name: fromLayer.name },
+      to: { index: toLayer.index, name: toLayer.name }
+    }
+  };
+}
+
 async function verifyAgentScenarioReadBack(scenario) {
   const expected = scenario.expectedReadBack;
   if (!expected) return null;
@@ -6995,6 +7085,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedAdjustmentLayerPlacement) {
     return verifyGeneratedAdjustmentLayerPlacementReadBack(scenario, expected);
+  }
+
+  if (expected.generatedLayerConnectionLine) {
+    return verifyGeneratedLayerConnectionLineReadBack(scenario, expected);
   }
 
   if (expected.generatedLayerSelection) {
@@ -7811,6 +7905,10 @@ async function main() {
   }
   if (command === "agent-adjustment-layer-placement-openai-cli-smoke" || command === "full-ui-agent-adjustment-layer-placement-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliAdjustmentLayerPlacementScenarioConfig());
+    return;
+  }
+  if (command === "agent-layer-connection-line-openai-cli-smoke" || command === "full-ui-agent-layer-connection-line-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliLayerConnectionLineScenarioConfig());
     return;
   }
   if (command === "agent-layer-selection-openai-cli-smoke" || command === "full-ui-agent-layer-selection-openai-cli-smoke") {

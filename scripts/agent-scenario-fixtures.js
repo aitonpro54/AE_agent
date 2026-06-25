@@ -24,6 +24,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "split_layers_at_time",
   "update_text_layer",
   "create_shape_layer",
+  "create_layer_connection_line",
   "fit_layer_to_comp",
   "set_layer_transform",
   "set_property_value",
@@ -2050,6 +2051,63 @@ function agentAdjustmentLayerPlacementScenarioPlans(runPrefix) {
           { title: "Create generated adjustment break above target", tool: "create_adjustment_layer", args: { compName, name: adjustmentName, color: [1, 1, 1], width: 640, height: 360, startTime: 0, duration: 3, insertBeforeLayerIndex: targetLayerIndex, expectedBeforeLayerName: targetName } },
           { title: "Read generated adjustment break after placement", tool: "get_layer_details", args: { compName, layerIndex: 2, includeProperties: false } },
           { title: "Read generated guarded target after placement", tool: "get_layer_details", args: { compName, layerIndex: 3, includeProperties: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
+function agentLayerConnectionLineScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Connection Line`;
+  const compName = `${base} Comp`;
+  const fromName = `${base} From`;
+  const toName = `${base} To`;
+  const connectorName = `${base} Connector`;
+  const strokeColor = [0.2, 0.8, 1];
+  const strokeWidth = 5;
+
+  return [
+    {
+      id: "generated-layer-connection-line",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "create_shape_layer",
+        "get_layer_details",
+        "get_layer_details",
+        "create_layer_connection_line",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedLayerConnectionLine: true,
+        compName,
+        fromName,
+        toName,
+        connectorName,
+        connectorLayerIndex: 1,
+        fromLayerIndexBeforeConnector: 2,
+        toLayerIndexBeforeConnector: 1,
+        strokeColor,
+        strokeWidth
+      },
+      plan: {
+        summary: "Generated-only live QA for creating one locked dynamic connector line between two explicit generated layers.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated connection-line comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.04, 0.05, 0.07], allowDuplicateName: false, openInViewer: true, comment: "Generated-only layer connection line validation" } },
+          { title: "Create generated source endpoint", tool: "create_shape_layer", args: { compName, name: fromName, shape: "ellipse", size: [120, 120], position: [180, 180], fillColor: [0.22, 0.62, 0.9], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Create generated target endpoint", tool: "create_shape_layer", args: { compName, name: toName, shape: "rectangle", size: [150, 110], position: [460, 180], fillColor: [0.92, 0.52, 0.2], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Read generated source endpoint", tool: "get_layer_details", args: { compName, layerIndex: 2, includeProperties: false } },
+          { title: "Read generated target endpoint", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } },
+          { title: "Create generated locked connection line", tool: "create_layer_connection_line", args: { compName, fromLayerIndex: 2, toLayerIndex: 1, expectedFromLayerName: fromName, expectedToLayerName: toName, name: connectorName, pathGroupName: "Connector", strokeColor, strokeWidth, duration: 3, lockLayer: true } },
+          { title: "Read generated connection line", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: true, propertyDepth: 5, propertyLimit: 120, includeValues: true, includeExpressions: true } }
         ]
       }
     }
@@ -4104,6 +4162,7 @@ module.exports = {
   agentPathGeometryScenarioPlans,
   agentAdjustmentLayerPlacementScenarioPlans,
   agentLayerBlendingModeScenarioPlans,
+  agentLayerConnectionLineScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,

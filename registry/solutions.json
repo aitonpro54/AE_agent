@@ -14103,6 +14103,125 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "connect-two-layers-with-a-line-typed-plan",
+      "title": "Connect Two Layers With A Line Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "shape-layer",
+        "connector",
+        "expression",
+        "generated-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Create one generated locked dynamic connector line between two explicit inspected layers.",
+        "appliesWhen": [
+          "The user asks to connect two layers with a stroked line.",
+          "Current typed evidence identifies exactly two endpoint layer indices and names in the same composition."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Explicit target composition from current get_active_comp or get_comp_details evidence."
+        },
+        {
+          "name": "fromLayer",
+          "type": "object",
+          "required": true,
+          "description": "One-based source endpoint layer index plus expected name from get_selected_layers or get_layer_details evidence."
+        },
+        {
+          "name": "toLayer",
+          "type": "object",
+          "required": true,
+          "description": "One-based target endpoint layer index plus expected name from get_selected_layers or get_layer_details evidence."
+        },
+        {
+          "name": "connectorSpec",
+          "type": "object",
+          "required": false,
+          "description": "Reviewed generated connector name, stroke color, stroke width, duration, and lock behavior."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow targets one generated or explicitly reviewed composition.",
+        "Selection-driven requests are reduced to exactly two explicit layer indices before mutation.",
+        "The workflow adds only one generated connector layer and locks that connector after setup.",
+        "The connector path is an open two-point shape path with a generated expression bound only to the two inspected endpoint layer names.",
+        "Endpoint layers are not edited, renamed, retimed, parented, reordered, selected, relinked, or otherwise mutated.",
+        "Thin rectangle substitution, arbitrary expression text, generic open-path editing, non-generated user assets, and raw JSX remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/connect-two-layers-with-a-line-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_selected_layers",
+          "get_layer_details",
+          "create_layer_connection_line"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Bind two endpoint layers from typed evidence, create one generated locked connector through the narrow typed tool, and verify path expression/read-back.",
+        "steps": [
+          "Run get_selected_layers or get_comp_details to bind target comp identity and reduce the request to exactly two endpoint layer indices.",
+          "Run get_layer_details for both endpoint layers to verify expected names and that the targets are generated or explicitly reviewed.",
+          "Run create_layer_connection_line with compName or compItemIndex, fromLayerIndex, toLayerIndex, expectedFromLayerName, expectedToLayerName, reviewed stroke fields, and lockLayer:true.",
+          "Run get_layer_details for the generated connector with includeProperties:true, includeValues:true, and includeExpressions:true.",
+          "Verify locked:true, an enabled error-free path expression, and an open two-point shape path."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the target comp plus exactly two endpoint layer indices and names.",
+          "create_layer_connection_line reports the generated connector layer, target layer identities, stroke metadata, expression state, path geometry, and postVerification.ok:true.",
+          "Post-run read-back confirms the generated connector layer name and locked:true.",
+          "Post-run property evidence includes an ADBE Vector Shape path with expressionEnabled:true, no expressionError, closed:false, and vertexCount:2.",
+          "Unsupported source-exact selected-layer traversal, arbitrary expression text, thin rectangle substitution, endpoint mutation, layer reordering, selection side effects, non-generated user assets, and raw JSX are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-layers-connect-two-layers-with-a-line as generated-only typed-plan coverage after adding create_layer_connection_line."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-25",
+          "from": "generic-repo-importer-tool-layers-connect-two-layers-with-a-line",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the two-layer dynamic connector-line intent behind Layers/Connect_Two_Layers_With_A_Line.jsx into create_layer_connection_line plus get_layer_details read-back; no source JSX copied. Broad selected-layer traversal, endpoint layer mutation, thin rectangle substitution, arbitrary expressions, generic shape path editing, non-generated user assets, and raw JSX remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current endpoint layer evidence before mutation; do not infer targets from screenshots, names alone, visual positions, or prior chat context.",
+        "Use create_layer_connection_line only with explicit fromLayerIndex/toLayerIndex and expected names when available.",
+        "Do not use this recipe for generic shape path authoring, layer reordering, endpoint edits, selection persistence, effects, timing/source edits, render queue work, file I/O, or raw script execution."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "frame-navigator-typed-plan",
       "title": "Frame Navigator Typed Plan",
       "status": "recipe",
