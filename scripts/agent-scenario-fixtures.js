@@ -1608,6 +1608,51 @@ function agentCompositionVersionScenarioPlans(runPrefix) {
   }));
 }
 
+function agentCompositionRenameFileNameScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Composition File Rename`;
+  const originalName = `${base} Source Comp`;
+  const projectFileBasename = `${base} Project File Basename`;
+
+  return [
+    {
+      id: "generated-composition-rename-file-name",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "get_project_info",
+        "find_project_items",
+        "get_comp_details",
+        "rename_project_items"
+      ],
+      expectedReadBack: {
+        generatedCompositionRenameFileName: true,
+        base,
+        originalName,
+        projectFileBasename
+      },
+      plan: {
+        summary: "Generated-only live QA for renaming one explicit generated composition to a reviewed project file basename.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated comp for project-file basename rename", tool: "create_comp", args: { name: originalName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.07, 0.09, 0.11], allowDuplicateName: false, openInViewer: true, comment: "generated-only composition rename-to-file-name validation" } },
+          { title: "Read project info for basename evidence", tool: "get_project_info", args: {} },
+          { title: "Find generated comp before rename", tool: "find_project_items", args: { query: originalName, type: "comp", exactName: true, limit: 1, caseSensitive: true } },
+          { title: "Read generated comp before rename", tool: "get_comp_details", args: { compName: originalName, includeLayers: false } },
+          { title: "Rename generated comp to reviewed file basename", tool: "rename_project_items", args: { itemIndices: "{{steps.3.result}}", type: "comp", mode: "exact", name: projectFileBasename, limit: 1 } },
+          { title: "Find generated comp after basename rename", tool: "find_project_items", args: { query: projectFileBasename, type: "comp", exactName: true, limit: 1, caseSensitive: true } },
+          { title: "Read generated comp after basename rename", tool: "get_comp_details", args: { compName: projectFileBasename, includeLayers: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentEffectPropertyScenarioPlans(runPrefix) {
   const base = `${runPrefix} Effect Property`;
   const compName = `${base} Comp`;
@@ -4428,6 +4473,7 @@ module.exports = {
   DEFAULT_RENDER_QUEUE_BASELINE_TOTAL,
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
+  agentCompositionRenameFileNameScenarioPlans,
   agentCompositionVersionScenarioPlans,
   agentCompositionMarkerAddScenarioPlans,
   agentCompositionLayerMarkerCopyScenarioPlans,

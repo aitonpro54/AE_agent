@@ -26,6 +26,49 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake composition rename-to-file-name generated-only lane
+  (2026-06-26): parent-owned milestone for
+  `tool-compositions-rename-composition-to-file-name` added candidate-specific
+  typed-plan/lane coverage instead of reusing the adjacent composition
+  version-token lane or copying raw JSX. The safe adaptation uses existing
+  typed tools only: `get_project_info.file` as read-only project file basename
+  evidence, one explicit generated composition from `find_project_items` /
+  `get_comp_details`, `rename_project_items` with concrete `itemIndices`,
+  `type:"comp"` and `mode:"exact"`, then `find_project_items` /
+  `get_comp_details` read-back. The recipe and registry fail closed for unsaved
+  projects, basename collisions, Project panel selection semantics, project
+  save/saveAs, arbitrary filesystem reads/writes, source relinking,
+  non-generated user assets, broad composition traversal, render queue work,
+  and raw JSX. Added the
+  `rename-composition-to-file-name-typed-plan` recipe, generic intake note,
+  solution registry entry, solution-library assertions/retrieval coverage,
+  generated scenario/report smoke coverage, CEP command
+  `full-ui-agent-comp-rename-file-name-openai-cli-smoke`, live-lane family
+  `composition-rename-to-file-name-generated-only`, and runner mapping. A first
+  scoped retry correctly stopped as `blocked_target_dirty`; after a temporary
+  local commit made tracked files clean, the explicit-id retry with
+  `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`
+  mapped the candidate to the new lane and ran non-live validation. The
+  candidate remains freshly terminal/live-blocked, not completed:
+  generated-only proof failed with
+  `CEP panel is not connected to the bridge`. Clean compact proof status is
+  `completed_no_candidates`, `changedPathCount=0`,
+  `unplannedPathCount=0`; proof envelope SHA-256:
+  `40b45a100d4f5bf087c475416f93726b79e4bf7cff22183e19050a3d0150b1b6`.
+  Closeout validation passed: touched-file `node --check`, JSON parse for
+  solution/live-lane registries, `node scripts/agent-scenario-report-smoke.js`,
+  `node scripts/semantic-verification-smoke.js`,
+  `node scripts/solution-library-validation-smoke.js`,
+  `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`,
+  `npm.cmd run smoke:bridge`, `npm.cmd run smoke:full-intake`, and
+  `git diff --check` with LF/CRLF warnings only. `smoke:full-intake` timed out
+  in the first parallel 124s run, then passed when rerun alone with a longer
+  timeout.
+  No broad queue processing, unscoped candidate selection, dependency change,
+  Local/Ollama, fallback provider, broad/default CEP smoke, raw JSX copy,
+  source-checkout execution, non-generated user-asset mutation, launcher edit,
+  push, or PR was run.
+
 - [x] Full Intake composition panel refresh generated-only lane (2026-06-26):
   parent-owned milestone for
   `tool-compositions-force-composition-panel-refresh` added a narrow

@@ -92,6 +92,7 @@ const IMPORTED_ADVISORY_IDS = [
   "enable-motion-blur-typed-plan",
   "toggle-onion-skinning-typed-plan",
   "increment-composition-versions-typed-plan",
+  "rename-composition-to-file-name-typed-plan",
   "transfer-composition-work-area-typed-plan",
   "read-composition-markers-typed-plan",
   "set-work-area-to-markers-typed-plan",
@@ -2223,6 +2224,33 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.promotionHistory.some((entry) => /Increment_Composition_Versions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /AUX-097/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "rename-composition-to-file-name-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "find_project_items", "get_comp_details", "rename_project_items"],
+        `${id}: imported composition file-name workflow should stay on the narrow project-info plus project-item rename typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: composition file-name workflow must be mutating.`);
+      assert(text.includes("project file basename"), `${id}: recipe should document project file basename targeting.`);
+      assert(text.includes("get_project_info.file"), `${id}: recipe should require get_project_info.file evidence.`);
+      assert(text.includes("find_project_items"), `${id}: recipe should require project item search evidence.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require composition read-back.`);
+      assert(text.includes("rename_project_items"), `${id}: recipe should use the project item rename typed tool.`);
+      assert(text.includes('mode:"exact"'), `${id}: recipe should require exact project-item rename mode.`);
+      assert(text.includes("unsaved"), `${id}: recipe should fail closed for unsaved projects.`);
+      assert(text.includes("non-generated user assets"), `${id}: recipe should reject non-generated user assets.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_project_info/.test(step)), `${id}: verification must include project info evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /find_project_items/.test(step)), `${id}: verification must include project item search evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must include comp details read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /mode exact/.test(step)), `${id}: verification must include exact rename mode.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /changedCount:1/.test(item)), `${id}: verification must require single-item rename count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /project file basename/.test(item)), `${id}: verification must require basename read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /unchanged item identity/.test(item)), `${id}: verification must require unchanged comp identity.`);
+      assert(solution.notes.some((note) => /get_project_info\.file/.test(note)), `${id}: notes must limit file evidence to get_project_info.file.`);
+      assert(solution.notes.some((note) => /non-generated user assets/.test(note)), `${id}: notes must reject non-generated user-asset mutation.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Rename_Composition_To_File_Name/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "change-nested-composition-duration-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -4120,6 +4148,22 @@ function assertActualRetrieval(registry) {
   assert(incrementCompositionVersionsPromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
   assert(!/run_extendscript/i.test(incrementCompositionVersionsPromptSection), "composition version guidance should not recommend raw ExtendScript.");
 
+  const renameCompositionToFileNameRetrieval = retrieveSolutionHints("Rename the active generated composition to the current project file basename after reading get_project_info.file, binding the comp item with find_project_items, using rename_project_items mode exact, and reading back with get_comp_details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(renameCompositionToFileNameRetrieval.ok, true);
+  assert(ids(renameCompositionToFileNameRetrieval).includes("rename-composition-to-file-name-typed-plan"), "composition file-name advisory recipe should surface for project basename rename prompts.");
+  const renameCompositionToFileNamePromptSection = formatSolutionHintsForPrompt(renameCompositionToFileNameRetrieval);
+  assert(renameCompositionToFileNamePromptSection.includes("Rename Composition To File Name Typed Plan"), "prompt section should include composition file-name advisory title.");
+  assert(renameCompositionToFileNamePromptSection.includes("get_project_info"), "prompt section should require project info for basename evidence.");
+  assert(renameCompositionToFileNamePromptSection.includes("rename_project_items"), "prompt section should prefer rename_project_items for project item rename.");
+  assert(renameCompositionToFileNamePromptSection.includes("project file basename"), "prompt section should preserve project file basename guidance.");
+  assert(/exact/i.test(renameCompositionToFileNamePromptSection), "prompt section should preserve exact rename mode guidance.");
+  assert(renameCompositionToFileNamePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
+  assert(!/run_extendscript/i.test(renameCompositionToFileNamePromptSection), "composition file-name guidance should not recommend raw ExtendScript.");
+
   const nestedCompositionDurationRetrieval = retrieveSolutionHints("Change the selected nested precomp source composition duration to 12 seconds, then read back the nested source comp duration without retiming layers.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -5129,6 +5173,24 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
       "cleanup",
       "active-viewer side effects",
       "layer motionBlur",
+      "non-generated user assets",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "composition-rename-to-file-name-generated-only", {
+    requiredTools: ["get_project_info", "rename_project_items"],
+    readBackTools: ["find_project_items", "get_comp_details"],
+    candidateIds: ["tool-compositions-rename-composition-to-file-name"],
+    scopeIncludes: [
+      "project file basename",
+      "get_project_info.file",
+      "mode:\"exact\"",
+      "type:\"comp\"",
+      "concrete itemIndices",
+      "semantic verification",
+      "cleanup",
+      "unsaved project",
+      "arbitrary filesystem reads/writes",
       "non-generated user assets",
       "raw JSX"
     ]

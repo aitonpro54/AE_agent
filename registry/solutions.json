@@ -4616,6 +4616,117 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "rename-composition-to-file-name-typed-plan",
+      "title": "Rename Composition To File Name Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "generated-composition",
+        "project-item",
+        "rename",
+        "project-file-basename",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Exact rename of one explicit generated composition project item to the reviewed project file basename.",
+        "appliesWhen": [
+          "The user asks to rename a composition to match the current After Effects project file name.",
+          "The project file basename is available from get_project_info.file and one generated composition target is bound by current typed evidence."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "projectFileBasename",
+          "type": "string",
+          "required": true,
+          "description": "Basename without extension derived from current get_project_info.file and disclosed before confirmation."
+        },
+        {
+          "name": "targetCompItem",
+          "type": "project-item-selection",
+          "required": true,
+          "description": "Exactly one generated composition project item index from current find_project_items/get_comp_details evidence."
+        }
+      ],
+      "targetAssumptions": [
+        "The project is saved and get_project_info.file is non-null.",
+        "Every renamed item is a generated composition project item bound by explicit itemIndices before mutation.",
+        "The workflow changes only one composition project item name by exact rename_project_items mode.",
+        "Current typed tools do not expose Project panel selection ordering or source-exact UI assumptions.",
+        "Existing comp settings, layers, sources, layer source references, folders, render queue items and non-generated user assets are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/rename-composition-to-file-name-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_project_info",
+          "find_project_items",
+          "get_comp_details",
+          "rename_project_items"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read project file basename, bind one explicit generated comp, exact-rename its project item, then read back the renamed comp.",
+        "steps": [
+          "Run get_project_info and derive the project file basename from get_project_info.file.",
+          "Run find_project_items and get_comp_details to bind exactly one generated composition target before mutation.",
+          "Check for basename collisions before confirmation.",
+          "Run rename_project_items with concrete itemIndices, type comp, mode exact and the reviewed project file basename.",
+          "Run find_project_items and get_comp_details after mutation; fail closed if the project is unsaved, basename is ambiguous, a collision exists, or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence includes get_project_info.file and the derived project file basename.",
+          "Pre-run typed evidence identifies exactly one generated composition itemIndex.",
+          "rename_project_items reports changedCount:1 and before/after exact rename evidence.",
+          "Post-run find_project_items and get_comp_details show the generated composition name equals the project file basename.",
+          "Post-run get_comp_details shows unchanged item identity, width, height, duration, frame rate, layer count and work area.",
+          "Post-run evidence shows no project save/saveAs, arbitrary filesystem read/write, source relink, layer mutation, render queue mutation, broad traversal or non-generated user-asset mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-compositions-rename-composition-to-file-name generic repository importer as advisory typed-plan coverage for project-file-basename composition rename.",
+          "The generated-only lane is candidate-id-gated and uses get_project_info, find_project_items, get_comp_details and rename_project_items; parent importer owns validation plus live acceptance."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-26",
+          "from": "generic-repo-importer-tool-compositions-rename-composition-to-file-name",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Rename_Composition_To_File_Name.jsx into existing typed tools as exact generated composition project item rename to the reviewed get_project_info.file basename; no source JSX copied. The recipe requires a saved project file path, concrete generated comp itemIndices, collision review and post-mutation read-back. Unsaved project inference, Project panel selection, project save/saveAs, arbitrary filesystem reads/writes, source relinking, non-generated user-asset mutation and exact source JSX semantics remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Use this recipe for generated composition names only; do not mutate non-generated user assets or broad project inventory.",
+        "usesFileIo is limited to read-only get_project_info.file basename evidence; do not save projects, export files, reveal paths, read arbitrary files, or write arbitrary files.",
+        "Require current find_project_items and get_comp_details evidence before mutating project item names; do not infer targets from Project panel selection or prior chat context.",
+        "Require a separate typed-tool contract for unsaved-project naming policy, all-composition traversal, source relinking, comp duplication, source replacement, template batch updates or exact source JSX semantics.",
+        "Do not use this recipe for layer rename, comp property changes, deep precomp/source duplication, render queue changes, user-asset cleanup or broad project mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "add-composition-guide-typed-plan",
       "title": "Add Composition Guide Typed Plan",
       "status": "recipe",

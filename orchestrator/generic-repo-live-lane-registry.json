@@ -223,6 +223,59 @@
       "scope": "generated-only explicit composition version-token proof using rename_project_items findReplace on generated comps plus find_project_items/get_comp_details read-back; arbitrary version parsing, recursive/global traversal, source relinking, onion skinning, camera/controller parenting, and raw JSX semantics remain fail-closed"
     },
     {
+      "id": "composition-rename-to-file-name-generated-only",
+      "requiredTools": [
+        "get_project_info",
+        "rename_project_items"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "find_project_items",
+        "get_active_comp",
+        "get_comp_details",
+        "get_project_info",
+        "rename_project_items"
+      ],
+      "allowedUnsafeSignals": [
+        "usesFileIo"
+      ],
+      "candidateIds": [
+        "tool-compositions-rename-composition-to-file-name"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-comp-rename-file-name-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "composition-rename-to-file-name",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "find_project_items",
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/rename-composition-to-file-name-typed-plan.md",
+        "recipes/generic-repo-intake/tool-compositions-rename-composition-to-file-name.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only project file basename composition rename proof using get_project_info.file read-only basename evidence, one explicit generated composition, rename_project_items mode:\"exact\" with type:\"comp\" and concrete itemIndices, find_project_items/get_comp_details read-back, semantic verification, and cleanup; unsaved project, basename collisions, project save/saveAs, arbitrary filesystem reads/writes, Project panel selection, source relinking, non-generated user assets, broad composition traversal, and raw JSX remain fail-closed"
+    },
+    {
       "id": "composition-work-area-transfer-generated-only",
       "requiredTools": [
         "get_active_comp",

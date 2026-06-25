@@ -12,6 +12,7 @@ const {
 const {
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
+  agentCompositionRenameFileNameScenarioPlans,
   agentCompositionVersionScenarioPlans,
   agentCompositionMarkerAddScenarioPlans,
   agentCompositionLayerMarkerCopyScenarioPlans,
@@ -490,6 +491,24 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(compositionVersion.plan.steps[2].args.mode, "findReplace");
   assert.strictEqual(compositionVersion.plan.steps[2].args.find, "v001");
   assert.strictEqual(compositionVersion.plan.steps[2].args.replace, "v002");
+
+  const [compositionRenameFileName] = agentCompositionRenameFileNameScenarioPlans("Codex QA AUX-CRFN Fixture");
+  assert.strictEqual(compositionRenameFileName.id, "generated-composition-rename-file-name");
+  assert.strictEqual(compositionRenameFileName.expectedReadBack.generatedCompositionRenameFileName, true);
+  assert.deepStrictEqual(compositionRenameFileName.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "get_project_info",
+    "find_project_items",
+    "get_comp_details",
+    "rename_project_items",
+    "find_project_items",
+    "get_comp_details"
+  ]);
+  assert.strictEqual(compositionRenameFileName.plan.steps[4].args.itemIndices, "{{steps.3.result}}");
+  assert.strictEqual(compositionRenameFileName.plan.steps[4].args.type, "comp");
+  assert.strictEqual(compositionRenameFileName.plan.steps[4].args.mode, "exact");
+  assert.strictEqual(compositionRenameFileName.plan.steps[4].args.name, compositionRenameFileName.expectedReadBack.projectFileBasename);
+  assert(!compositionRenameFileName.plan.steps.some((step) => step.tool === "run_extendscript"));
 
   const [renderQueue] = agentRenderQueueScenarioPlans("Codex QA AUX098 Fixture", 2);
   assert.strictEqual(renderQueue.id, "generated-render-queue-setup");

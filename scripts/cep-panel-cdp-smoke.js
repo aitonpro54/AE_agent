@@ -8,6 +8,7 @@ const { writeAgentRunReport } = require("./agent-scenario-report");
 const {
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
+  agentCompositionRenameFileNameScenarioPlans,
   agentCompositionVersionScenarioPlans,
   agentCompositionMarkerAddScenarioPlans,
   agentCompositionLayerMarkerCopyScenarioPlans,
@@ -362,6 +363,24 @@ function openAiCliCompositionVersionScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_COMPOSITION_VERSION_PREFIX || "Codex QA AUX097",
     scenarioFactory: agentCompositionVersionScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliCompositionRenameFileNameScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-composition-rename-file-name",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_COMPOSITION_RENAME_FILE_NAME_PREFIX || "Codex QA AUX-CRFN",
+    scenarioFactory: agentCompositionRenameFileNameScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -8140,6 +8159,10 @@ async function main() {
   }
   if (command === "agent-composition-version-openai-cli-smoke" || command === "full-ui-agent-composition-version-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliCompositionVersionScenarioConfig());
+    return;
+  }
+  if (command === "agent-comp-rename-file-name-openai-cli-smoke" || command === "full-ui-agent-comp-rename-file-name-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliCompositionRenameFileNameScenarioConfig());
     return;
   }
   if (command === "agent-render-queue-openai-cli-smoke" || command === "full-ui-agent-render-queue-openai-cli-smoke") {
