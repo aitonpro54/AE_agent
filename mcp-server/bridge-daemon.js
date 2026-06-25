@@ -6333,7 +6333,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For destructive single-layer deletion, use delete_layer only after inspecting the explicit target comp/layer. Provide compItemIndex or compName, layerIndex, and expectedLayerName, then read back the comp/layer stack to prove the deleted layer is absent; never use selection-only, broad, multi-layer, or name-optional deletion.",
     "For composition settings, use set_comp_properties only for width, height, pixelAspect, duration, frameRate, bgColor, and displayStartTime on one explicit comp, then read back the comp before reporting success. Do not route arbitrary comp fields, layers, effects, masks, or property paths through this tool.",
     "For Composition panel refresh side effects, use refresh_comp_panel only on one explicit inspected comp with optional expectedMotionBlur guard, then read back get_comp_details and prove comp.motionBlur returned to its original value. Do not use set_comp_properties, layer motionBlur, raw ExtendScript, or user comp mutation as a substitute.",
-    "For explicit generated layer metadata, use set_layer_metadata only with one explicit comp target, concrete layerIndices, and expectedLayerNames when available. It only supports comment, label, locked, and enabled, and must be followed by get_layer_details read-back for each target layer.",
+    "For explicit generated layer metadata, use set_layer_metadata only with one explicit comp target, concrete layerIndices, and expectedLayerNames when available. It only supports comment, label, locked, enabled, and guideLayer, and must be followed by get_layer_details read-back for each target layer.",
     "For explicit generated layer blending mode changes, use set_layer_blending_mode only with one explicit comp target, concrete layerIndices, expectedLayerNames when available, and reviewed blendingMode normal or difference. Follow with get_layer_details read-back for each target layer; do not infer targets from selection without typed evidence.",
     "For explicit generated project item labels, use set_project_item_metadata only with concrete itemIndices from current get_project_snapshot/find_project_items/list_project_folder_items evidence and expectedItemNames when available. It only supports label and must be followed by project-item read-back.",
     "For explicit layer switches, use set_property_value only with whitelisted layer attributes threeDLayer, collapseTransformation, or motionBlur on inspected layer indices, setAtTime:false, then read back with get_layer_details. Do not use it for parenting, selection changes, timeline switches, or arbitrary layer fields.",
@@ -9362,7 +9362,7 @@ const tools = [
   },
   {
     name: "set_layer_metadata",
-    description: "Update only comment, label, locked, and enabled on explicit layer indices in one explicit composition, with optional expected layer-name guards and required read-back.",
+    description: "Update only comment, label, locked, enabled, and guideLayer on explicit layer indices in one explicit composition, with optional expected layer-name guards and required read-back.",
     inputSchema: {
       type: "object",
       properties: {
@@ -9399,6 +9399,10 @@ const tools = [
         enabled: {
           type: "boolean",
           description: "Optional layer visibility/enabled state to set."
+        },
+        guideLayer: {
+          type: "boolean",
+          description: "Optional AE guide-layer state to set on explicit generated or reviewed layers."
         }
       },
       required: ["layerIndices"]
@@ -15318,6 +15322,7 @@ async function callTool(name, args) {
       "label",
       "locked",
       "enabled",
+      "guideLayer",
       "autoCheckpoint",
       "checkpointLabel",
       "idempotencyKey",
@@ -15365,9 +15370,12 @@ async function callTool(name, args) {
     if (hasArg(args, "enabled")) {
       requested.enabled = optionalBoolean(args, "enabled", true);
     }
+    if (hasArg(args, "guideLayer")) {
+      requested.guideLayer = optionalBoolean(args, "guideLayer", false);
+    }
 
     const requestedKeys = Object.keys(requested);
-    if (!requestedKeys.length) return toolResult("At least one approved layer metadata update is required: comment, label, locked, or enabled.", true);
+    if (!requestedKeys.length) return toolResult("At least one approved layer metadata update is required: comment, label, locked, enabled, or guideLayer.", true);
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
@@ -15382,6 +15390,7 @@ async function callTool(name, args) {
         if (field === "label") return Number(after.label) === Number(requested.label);
         if (field === "locked") return after.locked === requested.locked;
         if (field === "enabled") return after.enabled === requested.enabled;
+        if (field === "guideLayer") return after.guideLayer === requested.guideLayer;
         return false;
       }
 
@@ -15397,14 +15406,15 @@ async function callTool(name, args) {
         }
 
         var before = __codexLayerInfo(layer);
-        if (before.locked && (requested.comment !== undefined || requested.label !== undefined || requested.enabled !== undefined) && requested.locked !== false) {
-          throw new Error("Layer is locked: " + layer.name + ". Unlock explicitly before setting comment, label, or enabled.");
+        if (before.locked && (requested.comment !== undefined || requested.label !== undefined || requested.enabled !== undefined || requested.guideLayer !== undefined) && requested.locked !== false) {
+          throw new Error("Layer is locked: " + layer.name + ". Unlock explicitly before setting comment, label, enabled, or guideLayer.");
         }
 
         if (requested.locked === false) layer.locked = false;
         if (requested.comment !== undefined) layer.comment = String(requested.comment);
         if (requested.label !== undefined) layer.label = Number(requested.label);
         if (requested.enabled !== undefined) layer.enabled = requested.enabled;
+        if (requested.guideLayer !== undefined) layer.guideLayer = requested.guideLayer;
         if (requested.locked === true) layer.locked = true;
 
         var after = __codexLayerInfo(layer);

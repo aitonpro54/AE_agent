@@ -26,6 +26,45 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake Grid Rig Control replacement generated-only lane
+  (2026-06-26): parent-owned milestone for
+  `tool-layers-replace-grid-rig-control` replaced the old terminal
+  `guideLayer/enabled/replacement contract` blocker with a narrow generated-only
+  typed adaptation. `set_layer_metadata` now supports `guideLayer` alongside
+  comment/label/locked/enabled for explicit layer indices and expected-name
+  guards. Added `replace-grid-rig-control-typed-plan`, generic intake note,
+  solution registry entry, solution-library/live-lane coverage, scenario/report
+  smoke coverage, semantic verification for `add_effect` read-back, CEP command
+  `full-ui-agent-grid-rig-control-openai-cli-smoke`, live-lane family
+  `grid-rig-control-replacement-generated-only`, and runner mapping. The safe
+  lane creates one generated replacement shape layer, preserves reviewed
+  `label`, `enabled`, and `guideLayer`, adds `Gutter` and `Matte Roundness`
+  `ADBE Slider Control` effects, deletes exactly one inspected old generated
+  control layer, then reads back stack/layer/effects. Broad selected-layer
+  traversal, non-generated destructive replacement, third-party Flex internals,
+  expression/property copying, parenting, track mattes, arbitrary effect
+  copying, file I/O, render queue work, source-checkout execution, and raw JSX
+  remain fail-closed. First scoped retry stopped as `blocked_target_dirty`; after
+  a local review commit made tracked files clean, the explicit-id retry with
+  `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`
+  ran non-live lane validation and returned `completed_no_candidates` with one
+  terminal ticket. Candidate remains freshly terminal/live-blocked, not
+  completed: generated-only live proof failed with
+  `CEP panel is not connected to the bridge`. Compact proof envelope SHA-256:
+  `747408c3f0ada449d3b214f234bf6ea674e2fceea8767255ebe98ca99783bbd5`.
+  Closeout validation passed: touched-file `node --check`, JSON parse for
+  solution/live-lane registries, `node scripts/agent-scenario-report-smoke.js`,
+  `node scripts/semantic-verification-smoke.js`,
+  `node scripts/solution-registry-smoke.js`,
+  `node scripts/solution-library-validation-smoke.js`,
+  `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`,
+  `npm.cmd run smoke:planning`, `npm.cmd run smoke:bridge`,
+  `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF
+  warnings only. No broad queue processing, unscoped candidate selection,
+  dependency change, Local/Ollama, fallback provider, broad/default CEP smoke,
+  raw JSX copy, source-checkout execution, non-generated user-asset mutation,
+  launcher edit, push, or PR was run.
+
 - [x] Full Intake composition save-frame PNG generated-output lane
   (2026-06-26): parent-owned milestone for
   `tool-compositions-save-frame-as-png` replaced the old approval-gated
@@ -3646,6 +3685,15 @@ check.
 
 ## Decision Log
 
+- 2026-06-26: For `tool-layers-replace-grid-rig-control`, the accepted safe
+  adaptation is a generated-only replacement lane using existing typed tools
+  plus `set_layer_metadata.guideLayer`. A separate monolithic raw-JSX-like
+  replacement tool was rejected because the current product can express the
+  needed proof as explicit generated shape creation, metadata preservation,
+  two reviewed Slider Control additions, exact old-layer deletion, and typed
+  read-back. Non-generated destructive replacement and source-exact Flex
+  semantics remain fail-closed until explicitly scoped with checkpoint/rollback.
+
 - 2026-06-26: Accept `composition-panel-refresh-generated-only` as the bounded
   adaptation for `tool-compositions-force-composition-panel-refresh`. The
   contract uses only explicit comp identity, optional `expectedMotionBlur`
@@ -5086,6 +5134,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake Grid Rig Control replacement generated-only lane | Required to give `tool-layers-replace-grid-rig-control` a current generated-only typed replacement lane without approving raw JSX, broad selected-layer traversal, non-generated destructive replacement, or third-party Flex internals. | Passed focused implementation and scoped closeout validation: touched-file `node --check`; JSON parse for `registry/solutions.json` and `orchestrator/generic-repo-live-lane-registry.json`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-library-validation-smoke.js`; read-only `node scripts/cep-panel-cdp-smoke.js inspect`; read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; scoped retry with explicit `tool-layers-replace-grid-rig-control`, `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake`; and `git diff --check` with LF/CRLF warnings only. The clean retry mapped the candidate to `grid-rig-control-replacement-generated-only`, ran all lane non-live validation successfully, produced proof envelope SHA-256 `747408c3f0ada449d3b214f234bf6ea674e2fceea8767255ebe98ca99783bbd5`, and kept `changedPathCount=0` / `unplannedPathCount=0`. Generated-only live proof failed closed with `CEP panel is not connected to the bridge`. No broad queue, unscoped `max-items > 1`, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source-checkout execution, non-generated user-asset mutation, launcher edit, push, PR, or GitHub automation was run. |
 
 | Full Intake composition panel refresh generated-only lane | Required to give `tool-compositions-force-composition-panel-refresh` a current generated-only typed contract without approving raw JSX, arbitrary comp property mutation, layer motion blur, or non-generated user-asset mutation. | Passed focused implementation and scoped closeout validation: touched-file `node --check`; JSON parse for `registry/solutions.json` and `orchestrator/generic-repo-live-lane-registry.json`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; `node scripts/chatgpt-connector-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake`; read-only `node scripts/cep-panel-cdp-smoke.js inspect`; read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; scoped retry with explicit `tool-compositions-force-composition-panel-refresh`, `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; and `git diff --check` with LF/CRLF warnings only. The clean retry mapped the candidate to `composition-panel-refresh-generated-only`, ran all lane non-live validation successfully, produced proof envelope SHA-256 `413f76709f002f8568f0dd691960b8ff04503991ccb2d6c95e79fea163b6b5a6`, and kept `changedPathCount=0` / `unplannedPathCount=0`. Generated-only live proof failed closed with `CEP panel is not connected to the bridge`. No broad queue, unscoped `max-items > 1`, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source-checkout execution, non-generated user-asset mutation, launcher edit, push, PR, or GitHub automation was run. |
 

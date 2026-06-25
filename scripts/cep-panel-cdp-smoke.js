@@ -36,6 +36,7 @@ const {
   agentLayerBlendingModeScenarioPlans,
   agentAdjustmentLayerPlacementScenarioPlans,
   agentLayerConnectionLineScenarioPlans,
+  agentGridRigControlReplacementScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerParentBelowScenarioPlans,
@@ -903,6 +904,24 @@ function openAiCliLayerConnectionLineScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_LAYER_CONNECTION_LINE_PREFIX || "Codex QA AUX-LCL",
     scenarioFactory: agentLayerConnectionLineScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliGridRigControlReplacementScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-grid-rig-control",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_GRID_RIG_CONTROL_PREFIX || "Codex QA AUX-GRC",
+    scenarioFactory: agentGridRigControlReplacementScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -7274,6 +7293,92 @@ async function verifyGeneratedLayerConnectionLineReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedGridRigControlReplacementReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const matchingLayers = layers.filter((item) => item.name === expected.controlName);
+  if (matchingLayers.length !== 1) {
+    throw new Error(`${scenario.id}: expected exactly one replacement Grid Rig Control layer, found ${matchingLayers.length}.`);
+  }
+  const replacement = matchingLayers[0];
+  if (typeof expected.replacementLayerIndex === "number" && replacement.index !== expected.replacementLayerIndex) {
+    throw new Error(`${scenario.id}: replacement layer index mismatch; expected ${expected.replacementLayerIndex}, got ${replacement.index}.`);
+  }
+  if (layers.some((item) => item.index === expected.deletedLayerIndex && item.name === expected.controlName)) {
+    throw new Error(`${scenario.id}: old Grid Rig Control layer still appears at deleted layer index ${expected.deletedLayerIndex}.`);
+  }
+
+  const metadata = expected.metadata || {};
+  const layerDetails = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: replacement.index,
+    includeProperties: true,
+    propertyDepth: 4,
+    propertyLimit: 120,
+    includeValues: true,
+    includeExpressions: true
+  });
+  const layer = layerDetails && layerDetails.layer ? layerDetails.layer : {};
+  if (!(layer.shapeLayer === true || layer.matchName === "ADBE Vector Layer" || layer.layerKind === "shape")) {
+    throw new Error(`${scenario.id}: replacement layer did not read back as a shape layer.`);
+  }
+  if (Number(layer.label) !== Number(metadata.label)) {
+    throw new Error(`${scenario.id}: replacement label mismatch; expected ${metadata.label}, got ${layer.label}.`);
+  }
+  if (layer.enabled !== metadata.enabled) {
+    throw new Error(`${scenario.id}: replacement enabled mismatch; expected ${metadata.enabled}, got ${layer.enabled}.`);
+  }
+  if (layer.guideLayer !== metadata.guideLayer) {
+    throw new Error(`${scenario.id}: replacement guideLayer mismatch; expected ${metadata.guideLayer}, got ${layer.guideLayer}.`);
+  }
+
+  const effectNames = Array.isArray(expected.effectNames) ? expected.effectNames : [];
+  const effects = [];
+  for (const effectName of effectNames) {
+    const details = await callBridgeTool("get_effect_details", {
+      compItemIndex: compMatch.itemIndex,
+      layerIndex: replacement.index,
+      effectName,
+      effectMatchName: "ADBE Slider Control",
+      includeProperties: true
+    });
+    if (!details || !details.effect) {
+      throw new Error(`${scenario.id}: generated slider ${effectName} was not found by read-back.`);
+    }
+    if (details.effect.matchName !== "ADBE Slider Control") {
+      throw new Error(`${scenario.id}: generated slider ${effectName} matchName mismatch: ${details.effect.matchName}.`);
+    }
+    effects.push({
+      name: details.effect.name,
+      matchName: details.effect.matchName,
+      propertiesReturned: details.propertiesReturned
+    });
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      numLayers: comp.numLayers
+    },
+    replacement: {
+      index: replacement.index,
+      name: replacement.name,
+      label: layer.label,
+      enabled: layer.enabled,
+      guideLayer: layer.guideLayer,
+      shapeLayer: layer.shapeLayer === true
+    },
+    effects
+  };
+}
+
 async function verifyGeneratedTextShapesFromTextReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const comp = await callBridgeTool("get_comp_details", {
@@ -7486,6 +7591,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedLayerConnectionLine) {
     return verifyGeneratedLayerConnectionLineReadBack(scenario, expected);
+  }
+
+  if (expected.generatedGridRigControlReplacement) {
+    return verifyGeneratedGridRigControlReplacementReadBack(scenario, expected);
   }
 
   if (expected.generatedTextShapesFromText) {
@@ -8342,6 +8451,10 @@ async function main() {
   }
   if (command === "agent-layer-connection-line-openai-cli-smoke" || command === "full-ui-agent-layer-connection-line-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliLayerConnectionLineScenarioConfig());
+    return;
+  }
+  if (command === "agent-grid-rig-control-openai-cli-smoke" || command === "full-ui-agent-grid-rig-control-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliGridRigControlReplacementScenarioConfig());
     return;
   }
   if (command === "agent-text-shapes-openai-cli-smoke" || command === "full-ui-agent-text-shapes-openai-cli-smoke") {

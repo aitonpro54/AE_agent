@@ -14558,6 +14558,133 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "replace-grid-rig-control-typed-plan",
+      "title": "Replace Grid Rig Control Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "grid-rig",
+        "replacement",
+        "shape-layer",
+        "slider-control",
+        "generated-only",
+        "typed-tool",
+        "full-intake"
+      ],
+      "intent": {
+        "summary": "Replace one explicit generated or reviewed Grid Rig Control null with one generated shape control layer, preserving reviewed metadata and adding two Slider Control effects.",
+        "appliesWhen": [
+          "The request is scoped to one inspected Grid Rig Control layer.",
+          "Current typed evidence identifies the target comp, old layer index/name, label, enabled state, and guideLayer state.",
+          "The plan can use generated assets or an explicitly reviewed asset with checkpoint/edit-session protection and rollback."
+        ],
+        "whenNotToUse": [
+          "The request requires source-exact broad selected-layer inference without reducing the target to one explicit layer.",
+          "The request needs non-generated destructive replacement without an explicit checkpoint/rollback scope.",
+          "The request depends on third-party Flex behavior beyond the reviewed generated layer evidence.",
+          "The request requires expression/property copying, parenting, track mattes, arbitrary effect copying, file I/O, render queue work, source-checkout execution, or raw JSX."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "oldControlLayer",
+          "type": "object",
+          "required": true,
+          "description": "Explicit one-based old control layer index plus expected name from get_layer_details/get_selected_layers/get_comp_details evidence."
+        },
+        {
+          "name": "preservedMetadata",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed label, enabled, and guideLayer values to apply to the replacement layer."
+        },
+        {
+          "name": "replacementSpec",
+          "type": "object",
+          "required": true,
+          "description": "Generated replacement layer name, shape style, and required Slider Control effect names."
+        }
+      ],
+      "targetAssumptions": [
+        "The old layer is generated or explicitly reviewed before deletion.",
+        "The replacement is one generated shape layer with the same expected name.",
+        "Layer metadata preservation is limited to label, enabled, and guideLayer through set_layer_metadata.",
+        "The two generated effects are ADBE Slider Control named Gutter and Matte Roundness.",
+        "delete_layer targets exactly one inspected old layer with expectedLayerName.",
+        "Source-exact selection traversal, non-generated destructive replacement, third-party Flex internals, expression/property copying, file I/O, render queue work, source-checkout execution, and raw JSX remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "high",
+        "recipePath": "recipes/replace-grid-rig-control-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_selected_layers",
+          "get_layer_details",
+          "create_shape_layer",
+          "set_layer_metadata",
+          "add_effect",
+          "get_effect_details",
+          "delete_layer",
+          "get_comp_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Create one generated replacement shape layer, preserve reviewed metadata, add two Slider Control effects, delete the old inspected layer, and verify final stack/layer/effect read-back.",
+        "steps": [
+          "Run get_selected_layers, get_comp_details, or get_layer_details to bind one old control layer by comp, layerIndex, expectedLayerName, label, enabled, and guideLayer.",
+          "Run create_shape_layer for the generated replacement with the reviewed replacement name.",
+          "Run set_layer_metadata on the replacement with label, enabled, and guideLayer plus expectedLayerNames.",
+          "Run add_effect twice with matchName ADBE Slider Control and names Gutter and Matte Roundness.",
+          "Run delete_layer for the old inspected layer with expectedLayerName.",
+          "Run get_comp_details, get_layer_details, and get_effect_details to prove old-layer absence, replacement metadata, shape-layer identity, and both Slider Control effects."
+        ],
+        "expectedEvidence": [
+          "set_layer_metadata reports updatedFields including label, enabled, and guideLayer with postVerification.ok:true.",
+          "get_layer_details read-back shows the replacement as a shape layer with the expected name, label, enabled, and guideLayer values.",
+          "get_effect_details read-back shows Gutter and Matte Roundness as ADBE Slider Control effects on the replacement layer.",
+          "delete_layer reports one old layer deletion and final get_comp_details shows exactly one expected replacement layer name.",
+          "Unsupported broad selection traversal, non-generated destructive replacement, third-party Flex internals, expression/property copying, file I/O, render queue work, source-checkout execution, and raw JSX are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-layers-replace-grid-rig-control as generated-only typed-plan coverage after extending set_layer_metadata with guideLayer.",
+          "Generated-only proof uses full-ui-agent-grid-rig-control-openai-cli-smoke."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-26",
+          "from": "generic-repo-importer-tool-layers-replace-grid-rig-control",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the generated Grid Rig Control replacement intent into typed create_shape_layer, set_layer_metadata, add_effect, delete_layer, get_comp_details, get_layer_details, and get_effect_details coverage; no source JSX copied. Broad selected-layer traversal, non-generated destructive replacement, third-party Flex internals, expression/property copying, file/render work, source-checkout execution, and raw JSX remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Use this recipe only after current typed evidence binds exactly one old control layer.",
+        "The source uses selected-layer semantics; the typed adaptation requires explicit layer index and expected-name guards before mutation.",
+        "Require final get_comp_details, get_layer_details, and get_effect_details read-back.",
+        "Do not use this recipe for generic layer replacement, selected-layer deletion, arbitrary effect copying, non-generated user assets, or raw script execution."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "frame-navigator-typed-plan",
       "title": "Frame Navigator Typed Plan",
       "status": "recipe",

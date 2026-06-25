@@ -2412,6 +2412,76 @@ function agentLayerConnectionLineScenarioPlans(runPrefix) {
   }));
 }
 
+function agentGridRigControlReplacementScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Grid Rig Control`;
+  const compName = `${base} Comp`;
+  const controlName = `${base} Layer`;
+  const effectNames = ["Gutter", "Matte Roundness"];
+  const metadata = {
+    label: 9,
+    enabled: false,
+    guideLayer: true
+  };
+
+  return [
+    {
+      id: "generated-grid-rig-control-replacement",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_null_layer",
+        "set_layer_metadata",
+        "get_layer_details",
+        "create_shape_layer",
+        "set_layer_metadata",
+        "get_layer_details",
+        "add_effect",
+        "add_effect",
+        "delete_layer",
+        "get_comp_details",
+        "get_layer_details",
+        "get_effect_details",
+        "get_effect_details"
+      ],
+      expectedReadBack: {
+        generatedGridRigControlReplacement: true,
+        compName,
+        controlName,
+        effectNames,
+        metadata,
+        replacementLayerIndex: 1,
+        deletedLayerIndex: 2
+      },
+      plan: {
+        summary: "Generated-only live QA for replacing one inspected Grid Rig Control null with a generated shape control layer.",
+        risk: "high",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated grid-rig comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.04, 0.05, 0.07], allowDuplicateName: false, openInViewer: true, comment: "Generated-only Grid Rig Control replacement validation" } },
+          { title: "Create generated old Grid Rig Control null", tool: "create_null_layer", args: { compName, name: controlName, startTime: 0, duration: 3 } },
+          { title: "Set old control metadata before replacement", tool: "set_layer_metadata", args: { compName, layerIndices: [1], expectedLayerNames: [controlName], label: metadata.label, enabled: metadata.enabled, guideLayer: metadata.guideLayer } },
+          { title: "Read old control before replacement", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } },
+          { title: "Create generated replacement shape control", tool: "create_shape_layer", args: { compName, name: controlName, shape: "rectangle", size: [120, 120], position: [320, 180], fillColor: [0.2, 0.56, 0.9], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Preserve replacement layer metadata", tool: "set_layer_metadata", args: { compName, layerIndices: [1], expectedLayerNames: [controlName], label: metadata.label, enabled: metadata.enabled, guideLayer: metadata.guideLayer } },
+          { title: "Read replacement metadata before effects", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } },
+          { title: "Add generated Gutter slider", tool: "add_effect", args: { compName, layerIndex: 1, effect: "ADBE Slider Control", name: effectNames[0] } },
+          { title: "Add generated Matte Roundness slider", tool: "add_effect", args: { compName, layerIndex: 1, effect: "ADBE Slider Control", name: effectNames[1] } },
+          { title: "Delete old generated Grid Rig Control null", tool: "delete_layer", args: { compName, layerIndex: 2, expectedLayerName: controlName } },
+          { title: "Read grid-rig layer stack after replacement", tool: "get_comp_details", args: { compName, includeLayers: true, layerLimit: 10 } },
+          { title: "Read replacement Grid Rig Control layer", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: true, propertyDepth: 4, propertyLimit: 120, includeValues: true, includeExpressions: true } },
+          { title: "Read generated Gutter slider", tool: "get_effect_details", args: { compName, layerIndex: 1, effectName: effectNames[0], effectMatchName: "ADBE Slider Control", includeProperties: true } },
+          { title: "Read generated Matte Roundness slider", tool: "get_effect_details", args: { compName, layerIndex: 1, effectName: effectNames[1], effectMatchName: "ADBE Slider Control", includeProperties: true } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentTextShapesScenarioPlans(runPrefix) {
   const base = `${runPrefix} Text Shapes`;
   const compName = `${base} Comp`;
@@ -4548,6 +4618,7 @@ module.exports = {
   agentLayerBlendingModeScenarioPlans,
   agentLayerConnectionLineScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
+  agentGridRigControlReplacementScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerParentBelowScenarioPlans,
   agentLayerParentClosestScenarioPlans,

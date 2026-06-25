@@ -172,6 +172,8 @@ const FIRST_FOUR_LAYER_EFFECT_SWITCH_CONTRACT_IDS = [
   "toggle-puppet-on-transparent-typed-plan",
   "layer-fill-color-cycle-generated-only",
   "add-fill-with-color-cycle-typed-plan",
+  "grid-rig-control-replacement-generated-only",
+  "replace-grid-rig-control-typed-plan",
   "effect-enabled-toggle-generated-only",
   "toggle-specific-effects-typed-plan"
 ];
@@ -5210,6 +5212,23 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
       "raw JSX"
     ]
   });
+  assertFirstFourSwitchLane(liveLaneRegistry, "grid-rig-control-replacement-generated-only", {
+    requiredTools: ["create_shape_layer", "set_layer_metadata", "add_effect", "delete_layer"],
+    readBackTools: ["get_comp_details", "get_layer_details", "get_effect_details"],
+    candidateIds: ["tool-layers-replace-grid-rig-control"],
+    scopeIncludes: [
+      "Grid Rig Control replacement",
+      "label/enabled/guideLayer",
+      "ADBE Slider Control",
+      "Gutter",
+      "Matte Roundness",
+      "delete_layer",
+      "semantic verification",
+      "cleanup",
+      "non-generated destructive replacement",
+      "raw JSX"
+    ]
+  });
   assertFirstFourSwitchLane(liveLaneRegistry, "composition-panel-refresh-generated-only", {
     requiredTools: ["refresh_comp_panel"],
     readBackTools: ["get_comp_details"],
@@ -5370,6 +5389,18 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
     /Alt-key behavior/,
     /broad selected-layer scans/,
     /unreviewed user effects/,
+    /raw JSX/
+  ]);
+  assertFirstFourSwitchSolution(registry, "replace-grid-rig-control-typed-plan", ["get_selected_layers", "get_layer_details", "create_shape_layer", "set_layer_metadata", "add_effect", "get_effect_details", "delete_layer"], [
+    /Grid Rig Control/,
+    /label/,
+    /enabled/,
+    /guideLayer/,
+    /ADBE Slider Control/,
+    /Gutter/,
+    /Matte Roundness/,
+    /delete_layer/,
+    /non-generated destructive replacement/,
     /raw JSX/
   ]);
 

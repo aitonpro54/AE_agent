@@ -211,7 +211,7 @@ function addLayerEvidence(target, value, source) {
     id: value.id === undefined || value.id === null ? null : String(value.id),
     source: source || "observed layer"
   };
-  for (const field of ["adjustmentLayer", "threeDLayer", "collapseTransformation", "motionBlur", "enabled"]) {
+  for (const field of ["adjustmentLayer", "threeDLayer", "collapseTransformation", "motionBlur", "enabled", "guideLayer"]) {
     if (hasOwn(value, field)) layer[field] = boolValue(value[field]);
   }
   if (hasOwn(value, "hasTrackMatte")) layer.hasTrackMatte = boolValue(value.hasTrackMatte);
@@ -1033,6 +1033,7 @@ function layerMetadataFields(args) {
   if (hasOwn(args, "label")) fields.push("label");
   if (hasOwn(args, "locked")) fields.push("locked");
   if (hasOwn(args, "enabled")) fields.push("enabled");
+  if (hasOwn(args, "guideLayer")) fields.push("guideLayer");
   return fields;
 }
 
@@ -1042,6 +1043,7 @@ function layerMetadataFieldMatches(layer, args, field) {
   if (field === "label") return nearlyEqual(layer.label, args.label);
   if (field === "locked") return boolValue(layer.locked) === boolValue(args.locked);
   if (field === "enabled") return boolValue(layer.enabled) === boolValue(args.enabled);
+  if (field === "guideLayer") return boolValue(layer.guideLayer) === boolValue(args.guideLayer);
   return false;
 }
 
@@ -1399,6 +1401,42 @@ function effectMatchesArgs(effect, args) {
   if (hasOwn(args, "effectMatchName") && args.effectMatchName && effect.matchName !== args.effectMatchName) return false;
   if (hasOwn(args, "effectName") && args.effectName && effect.name !== args.effectName) return false;
   return hasOwn(args, "effectIndex") || hasOwn(args, "effectMatchName") || hasOwn(args, "effectName");
+}
+
+function addEffectMatchesArgs(effect, args) {
+  if (!effect || !args) return false;
+  if (hasOwn(args, "effect") && args.effect && effect.matchName !== args.effect) return false;
+  if (hasOwn(args, "name") && args.name && effect.name !== args.name) return false;
+  return Boolean(args.effect || args.name);
+}
+
+function observedAddedEffectEvidence(evidence, args) {
+  if (!evidence || !Array.isArray(evidence.properties)) return null;
+  for (const property of evidence.properties) {
+    if (addEffectMatchesArgs(property, args)) {
+      return property.source || `Read added effect ${property.name || property.matchName || args.effect}.`;
+    }
+  }
+  return null;
+}
+
+function checkAddEffect(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const effect = payload.effect || {};
+  const identityMatches = addEffectMatchesArgs(effect, args);
+  const readBackEvidence = observedAddedEffectEvidence(evidence.readBack, args) ||
+    observedAddedEffectEvidence(evidence.allReadBack, args);
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:effect`,
+    title: "Added effect identity matches explicit request",
+    expected: `${args.name || args.effect || "effect"} / ${args.effect || "matchName"}`,
+    observed: identityMatches
+      ? `${effect.name || "effect"} / ${effect.matchName || "matchName"}`
+      : "missing matching effect identity",
+    passed: identityMatches && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_effect_details/get_layer_details read-back matched add_effect."
+  });
 }
 
 function observedEffectEnabledEvidence(evidence, args) {
@@ -2460,6 +2498,11 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "set_puppet_pin_type") {
     checkSetPuppetPinType(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "add_effect") {
+    checkAddEffect(checks, step, payload, evidence);
     return;
   }
 

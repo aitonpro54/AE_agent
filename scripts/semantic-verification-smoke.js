@@ -12,6 +12,7 @@ const {
   agentDakkshinTypedToolsScenarioPlans,
   agentLayerBlendingModeScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
+  agentGridRigControlReplacementScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerParentBelowScenarioPlans,
   agentLayerParentClosestScenarioPlans,
@@ -532,7 +533,7 @@ function fakeMutationResult(step, state) {
     const layerIndices = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
     const expectedLayerNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
     const updates = {};
-    for (const field of ["comment", "label", "locked", "enabled"]) {
+    for (const field of ["comment", "label", "locked", "enabled", "guideLayer"]) {
       if (Object.prototype.hasOwnProperty.call(args, field)) updates[field] = args[field];
     }
     if (!state.layers.length) {
@@ -2009,6 +2010,17 @@ function assertLayerEnabledHardSoloPasses() {
   const metadataChecks = semantic.checks.filter((check) => check.id.indexOf("set_layer_metadata:metadata") >= 0);
   assert(metadataChecks.length >= 2, "hard-solo fixture should verify selected and unselected layer enabled metadata.");
   assert(metadataChecks.every((check) => check.status === "passed"), "hard-solo layer enabled read-back checks should pass.");
+}
+
+function assertGridRigControlReplacementPasses() {
+  const [scenario] = agentGridRigControlReplacementScenarioPlans("Codex Semantic Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  const failed = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `grid-rig control replacement semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failed)}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_metadata:metadata") >= 0 && check.status === "passed"), "grid-rig fixture should verify guideLayer/enabled metadata.");
+  assert(semantic.checks.some((check) => check.id.indexOf("delete_layer:absence") >= 0 && check.status === "passed"), "grid-rig fixture should verify old layer deletion.");
+  assert(semantic.checks.some((check) => check.id.indexOf("add_effect:effect") >= 0 && check.status === "passed"), "grid-rig fixture should verify added slider effects.");
 }
 
 function assertLayerBlendingModePasses() {
@@ -3747,6 +3759,7 @@ function main() {
   assertLayerSelectionPasses();
   assertLayerMetadataPasses();
   assertLayerEnabledHardSoloPasses();
+  assertGridRigControlReplacementPasses();
   assertLayerBlendingModePasses();
   assertLayerParentPasses();
   assertLayerParentMissingReadBackNeedsReview();

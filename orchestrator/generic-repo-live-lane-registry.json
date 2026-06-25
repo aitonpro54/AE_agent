@@ -896,6 +896,78 @@
       "scope": "generated-only dynamic connector line proof using two explicit inspected layer indices/names, create_layer_connection_line with fromLayerIndex/toLayerIndex and expected-name guards, one locked connector layer generated for the proof, open two-point shape path expression read-back, stroke read-back, semantic verification, and cleanup; source-exact selected-layer traversal, shape contents beyond the connector path, thin rectangle substitution, generic open-path editing, arbitrary expressions, layer stack reordering, selection persistence, non-generated user assets, file I/O, render queue work, and raw JSX remain fail-closed"
     },
     {
+      "id": "grid-rig-control-replacement-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_selected_layers",
+        "get_layer_details",
+        "create_shape_layer",
+        "set_layer_metadata",
+        "add_effect",
+        "get_effect_details",
+        "delete_layer"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_null_layer",
+        "create_shape_layer",
+        "set_layer_metadata",
+        "add_effect",
+        "get_effect_details",
+        "delete_layer",
+        "get_active_comp",
+        "get_selected_layers",
+        "get_comp_details",
+        "get_layer_details"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "propertyTraversal"
+      ],
+      "candidateIds": [
+        "tool-layers-replace-grid-rig-control"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-grid-rig-control-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "grid-rig-control-replacement",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details",
+        "get_layer_details",
+        "get_effect_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/replace-grid-rig-control-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-replace-grid-rig-control.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only Grid Rig Control replacement proof using one explicit inspected old generated control layer, create_shape_layer replacement, set_layer_metadata preservation of label/enabled/guideLayer, two named ADBE Slider Control effects named Gutter and Matte Roundness, delete_layer for exactly one expected old layer, get_comp_details/get_layer_details/get_effect_details read-back, semantic verification, and cleanup; source-exact broad selected-layer traversal, non-generated destructive replacement, third-party Flex behavior beyond reviewed generated evidence, expression/property copying, parenting, track mattes, arbitrary effect copying, file I/O, render queue work, source-checkout execution, and raw JSX remain fail-closed"
+    },
+    {
       "id": "text-shapes-from-text-generated-only",
       "requiredTools": [
         "get_active_comp",

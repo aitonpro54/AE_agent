@@ -39,6 +39,7 @@ const {
   agentLayerBlendingModeScenarioPlans,
   agentAdjustmentLayerPlacementScenarioPlans,
   agentLayerConnectionLineScenarioPlans,
+  agentGridRigControlReplacementScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerParentBelowScenarioPlans,
@@ -922,6 +923,30 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.deepStrictEqual(layerEnabledHardSolo.plan.steps[6].args.layerIndices, [1]);
   assert.deepStrictEqual(layerEnabledHardSolo.plan.steps[8].args.layerIndices, [2]);
   assert.strictEqual(layerEnabledHardSolo.plan.steps[8].args.enabled, false);
+
+  const [gridRigControl] = agentGridRigControlReplacementScenarioPlans("Codex QA AUX-GRC Fixture");
+  assert.strictEqual(gridRigControl.id, "generated-grid-rig-control-replacement");
+  assert.strictEqual(gridRigControl.expectedReadBack.generatedGridRigControlReplacement, true);
+  assert.deepStrictEqual(gridRigControl.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_null_layer",
+    "set_layer_metadata",
+    "get_layer_details",
+    "create_shape_layer",
+    "set_layer_metadata",
+    "get_layer_details",
+    "add_effect",
+    "add_effect",
+    "delete_layer",
+    "get_comp_details",
+    "get_layer_details",
+    "get_effect_details",
+    "get_effect_details"
+  ]);
+  assert.deepStrictEqual(gridRigControl.plan.steps[5].args.layerIndices, [1]);
+  assert.strictEqual(gridRigControl.plan.steps[5].args.guideLayer, true);
+  assert.strictEqual(gridRigControl.plan.steps[8].args.name, "Matte Roundness");
+  assert.strictEqual(gridRigControl.plan.steps[9].args.layerIndex, 2);
 
   const [layerBlendingMode] = agentLayerBlendingModeScenarioPlans("Codex QA AUX-LB Fixture");
   assert.strictEqual(layerBlendingMode.id, "generated-layer-difference-blend-mode");
