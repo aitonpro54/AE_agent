@@ -158,6 +158,8 @@ const FIRST_FOUR_LAYER_EFFECT_SWITCH_CONTRACT_IDS = [
   "explicit-layer-switch-generated-only",
   "enable-collapse-transformations-typed-plan",
   "enable-motion-blur-typed-plan",
+  "adjustment-layer-placement-generated-only",
+  "add-3d-break-typed-plan",
   "puppet-on-transparent-effect-property-generated-only",
   "toggle-puppet-on-transparent-typed-plan",
   "layer-fill-color-cycle-generated-only",
@@ -4917,6 +4919,22 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
       "arbitrary layer fields"
     ]
   });
+  assertFirstFourSwitchLane(liveLaneRegistry, "adjustment-layer-placement-generated-only", {
+    requiredTools: ["create_adjustment_layer"],
+    readBackTools: ["get_comp_details", "get_layer_details"],
+    candidateIds: ["tool-layers-add-3d-break"],
+    scopeIncludes: [
+      "adjustment-layer placement",
+      "insertBeforeLayerIndex",
+      "expectedBeforeLayerName",
+      "immediatelyBefore:true",
+      "semantic verification",
+      "cleanup",
+      "generic layer reordering",
+      "non-generated user assets",
+      "raw JSX"
+    ]
+  });
   assertFirstFourSwitchLane(liveLaneRegistry, "puppet-on-transparent-effect-property-generated-only", {
     requiredTools: ["add_effect", "get_effect_details", "set_effect_property"],
     readBackTools: ["get_effect_details", "get_layer_details"],
@@ -4985,6 +5003,16 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
     /comp-wide motion blur/,
     /recursive\/global traversal/,
     /unrelated layer attributes/
+  ]);
+  assertFirstFourSwitchSolution(registry, "add-3d-break-typed-plan", ["get_selected_layers", "get_comp_details", "get_layer_details", "create_adjustment_layer"], [
+    /insertBeforeLayerIndex/,
+    /expectedBeforeLayerName/,
+    /adjustmentLayer:true/,
+    /immediatelyBefore:true/,
+    /generatedAdjustmentLayer\.index \+ 1 === guardedLayer\.index/,
+    /generic layer stack reorder|generic layer reordering/,
+    /non-generated user-asset mutation/,
+    /raw ExtendScript/
   ]);
   assertFirstFourSwitchSolution(registry, "toggle-puppet-on-transparent-typed-plan", ["add_effect", "get_effect_details", "set_effect_property"], [
     /explicit generated/,

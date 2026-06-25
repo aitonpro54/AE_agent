@@ -8,6 +8,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "create_project_folder",
   "create_test_comp",
   "create_solid_layer",
+  "create_adjustment_layer",
   "create_null_layer",
   "create_text_layer",
   "create_camera_layer",
@@ -1995,6 +1996,60 @@ function agentLayerTrackMatteScenarioPlans(runPrefix) {
           { title: "Read generated matte layer before matte", tool: "get_layer_details", args: { compName, layerIndex: matteLayerIndex, includeProperties: false } },
           { title: "Set generated fill track matte", tool: "set_layer_track_matte", args: { compName, layerIndex: fillLayerIndex, matteLayerIndex, trackMatteType, expectedLayerName: fillName, expectedMatteLayerName: matteName } },
           { title: "Read generated fill track matte after update", tool: "get_layer_details", args: { compName, layerIndex: fillLayerIndex, includeProperties: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
+function agentAdjustmentLayerPlacementScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Adjustment Break`;
+  const compName = `${base} Comp`;
+  const foregroundName = `${base} Foreground Shape`;
+  const targetName = `${base} Target Shape`;
+  const adjustmentName = `${base} 3D Break Adjustment`;
+  const targetLayerIndex = 2;
+
+  return [
+    {
+      id: "generated-adjustment-layer-placement",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "create_shape_layer",
+        "get_comp_details",
+        "create_adjustment_layer",
+        "get_layer_details",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedAdjustmentLayerPlacement: true,
+        compName,
+        foregroundName,
+        targetName,
+        adjustmentName,
+        targetLayerIndex,
+        adjustmentLayerIndexAfter: 2,
+        targetLayerIndexAfter: 3
+      },
+      plan: {
+        summary: "Generated-only live QA for inserting one generated adjustment layer immediately above a guarded generated layer.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated adjustment-placement comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.04, 0.05, 0.07], allowDuplicateName: false, openInViewer: true, comment: "Generated-only adjustment placement validation" } },
+          { title: "Create generated target shape", tool: "create_shape_layer", args: { compName, name: targetName, shape: "rectangle", size: [360, 220], position: [320, 180], fillColor: [0.18, 0.32, 0.8], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Create generated foreground shape", tool: "create_shape_layer", args: { compName, name: foregroundName, shape: "ellipse", size: [140, 140], position: [320, 180], fillColor: [0.86, 0.52, 0.18], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Read generated stack before adjustment placement", tool: "get_comp_details", args: { compName, includeLayers: true } },
+          { title: "Create generated adjustment break above target", tool: "create_adjustment_layer", args: { compName, name: adjustmentName, color: [1, 1, 1], width: 640, height: 360, startTime: 0, duration: 3, insertBeforeLayerIndex: targetLayerIndex, expectedBeforeLayerName: targetName } },
+          { title: "Read generated adjustment break after placement", tool: "get_layer_details", args: { compName, layerIndex: 2, includeProperties: false } },
+          { title: "Read generated guarded target after placement", tool: "get_layer_details", args: { compName, layerIndex: 3, includeProperties: false } }
         ]
       }
     }
@@ -4047,6 +4102,7 @@ module.exports = {
   agentFlipPathGeometryScenarioPlans,
   agentKeyframeScenarioPlans,
   agentPathGeometryScenarioPlans,
+  agentAdjustmentLayerPlacementScenarioPlans,
   agentLayerBlendingModeScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,

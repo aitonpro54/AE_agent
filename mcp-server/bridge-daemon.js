@@ -8526,6 +8526,14 @@ const tools = [
         duration: {
           type: "number",
           description: "Optional layer duration in seconds. Defaults to the composition duration."
+        },
+        insertBeforeLayerIndex: {
+          type: "number",
+          description: "Optional explicit 1-based layer index to place the new adjustment layer immediately above. Only the newly created layer is moved."
+        },
+        expectedBeforeLayerName: {
+          type: "string",
+          description: "Optional exact name guard for insertBeforeLayerIndex."
         }
       }
     }
@@ -12883,6 +12891,8 @@ async function callTool(name, args) {
     const pixelAspect = optionalNumber(args, "pixelAspect", null);
     const startTime = optionalNumber(args, "startTime", null);
     const duration = optionalNumber(args, "duration", null);
+    const insertBeforeLayerIndex = optionalPositiveInteger(args, "insertBeforeLayerIndex");
+    const expectedBeforeLayerName = optionalString(args, "expectedBeforeLayerName", "");
 
     if (color.some((value) => value < 0 || value > 1)) return toolResult("color values must be between 0 and 1.", true);
     if (width !== null && width <= 0) return toolResult("width must be greater than 0.", true);
@@ -13000,6 +13010,20 @@ async function callTool(name, args) {
       var pixelAspect = ${pixelAspect === null ? "comp.pixelAspect" : pixelAspect};
       var requestedStartTime = ${startTime === null ? "null" : startTime};
       var requestedDuration = ${duration === null ? "comp.duration" : duration};
+      var insertBeforeLayerIndex = ${insertBeforeLayerIndex === null ? "null" : insertBeforeLayerIndex};
+      var expectedBeforeLayerName = ${aeLiteral(expectedBeforeLayerName)};
+      var beforeLayer = null;
+      var beforeLayerBeforeMove = null;
+      if (insertBeforeLayerIndex !== null) {
+        if (insertBeforeLayerIndex < 1 || insertBeforeLayerIndex > comp.numLayers) {
+          throw new Error("insertBeforeLayerIndex does not identify a layer in the target comp.");
+        }
+        beforeLayer = comp.layer(insertBeforeLayerIndex);
+        if (expectedBeforeLayerName && beforeLayer.name !== expectedBeforeLayerName) {
+          throw new Error("expectedBeforeLayerName mismatch for insertBeforeLayerIndex.");
+        }
+        beforeLayerBeforeMove = __codexLayerInfo(beforeLayer);
+      }
 
       app.beginUndoGroup("Codex Create Adjustment Layer");
       var layer = comp.layers.addSolid(color, layerName, width, height, pixelAspect, requestedDuration);
@@ -13012,12 +13036,22 @@ async function callTool(name, args) {
         var baseTime = requestedStartTime !== null ? requestedStartTime : layer.inPoint;
         layer.outPoint = Math.min(baseTime + requestedDuration, comp.duration);
       }
+      if (beforeLayer !== null) {
+        layer.moveBefore(beforeLayer);
+      }
       var response = {
         comp: {
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name
         },
         layer: __codexLayerInfo(layer),
+        placement: {
+          insertBeforeLayerIndex: insertBeforeLayerIndex,
+          expectedBeforeLayerName: expectedBeforeLayerName,
+          beforeLayerBeforeMove: beforeLayerBeforeMove,
+          beforeLayerAfterMove: beforeLayer !== null ? __codexLayerInfo(beforeLayer) : null,
+          immediatelyBefore: beforeLayer !== null ? (layer.index + 1 === beforeLayer.index) : null
+        },
         solid: {
           color: color,
           width: width,

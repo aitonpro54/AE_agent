@@ -26,6 +26,30 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake layer Add 3D Break placement lane (2026-06-25):
+  parent-owned milestone for `tool-layers-add-3d-break` added a narrow
+  generated-only adjustment-layer placement contract. `create_adjustment_layer`
+  now supports guarded `insertBeforeLayerIndex` plus
+  `expectedBeforeLayerName`, moving only the newly created generated adjustment
+  layer and returning placement read-back (`immediatelyBefore:true`). Semantic
+  verification now treats `create_adjustment_layer` as mutating and verifies
+  `adjustmentLayer:true` plus immediate guarded placement. Added the
+  `add-3d-break-typed-plan` recipe, generic intake note, solution registry
+  entry, live-lane family `adjustment-layer-placement-generated-only`, and
+  generated-only scenario/report smoke coverage. Scoped retry with explicit id,
+  `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`
+  mapped the candidate to
+  `live-lane-family-adjustment-layer-placement-generated-only`; all non-live
+  lane validation passed, read-only CEP preflight passed, and generated-only
+  live proof failed with `CEP panel is not connected to the bridge`. The
+  candidate remains freshly terminal/live-blocked under current rules, not
+  completed. Proof envelope SHA-256:
+  `677c7d29a3a6fdd28ebbc4c14771c1ed854fc1b674e35030ee212f63ca08d6d6`.
+  No broad queue processing, unscoped candidate selection, dependency change,
+  Local/Ollama, fallback provider, broad/default CEP smoke, raw JSX copy,
+  source-checkout execution, non-generated user-asset mutation, launcher edit,
+  push, or PR was run.
+
 - [x] Full Intake layer Fill color-cycle stateless lane (2026-06-25):
   parent-owned milestone for `tool-layers-add-fill-with-color-cycle` added a
   scoped generated-only stateless typed-plan/lane adaptation using existing

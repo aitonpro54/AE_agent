@@ -30,6 +30,7 @@ const {
   agentKeyframeScenarioPlans,
   agentPathGeometryScenarioPlans,
   agentLayerBlendingModeScenarioPlans,
+  agentAdjustmentLayerPlacementScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
@@ -750,6 +751,24 @@ function openAiCliLayerTrackMatteScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_LAYER_TRACK_MATTE_PREFIX || "Codex QA AUX-LTM",
     scenarioFactory: agentLayerTrackMatteScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliAdjustmentLayerPlacementScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-adjustment-layer-placement",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_ADJUSTMENT_LAYER_PLACEMENT_PREFIX || "Codex QA AUX109",
+    scenarioFactory: agentAdjustmentLayerPlacementScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -6784,6 +6803,68 @@ async function verifyCameraReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedAdjustmentLayerPlacementReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const adjustment = layers.find((item) => item.name === expected.adjustmentName);
+  const target = layers.find((item) => item.name === expected.targetName);
+  const foreground = layers.find((item) => item.name === expected.foregroundName);
+  if (!adjustment || !target || !foreground) {
+    throw new Error(`${scenario.id}: expected adjustment placement layers were not all found by read-back.`);
+  }
+  if (adjustment.adjustmentLayer !== true) {
+    throw new Error(`${scenario.id}: generated adjustment layer did not read back adjustmentLayer:true.`);
+  }
+  if (adjustment.index + 1 !== target.index) {
+    throw new Error(`${scenario.id}: adjustment layer was not immediately above guarded target; adjustment index ${adjustment.index}, target index ${target.index}.`);
+  }
+  if (typeof expected.adjustmentLayerIndexAfter === "number" && adjustment.index !== expected.adjustmentLayerIndexAfter) {
+    throw new Error(`${scenario.id}: adjustment index mismatch; expected ${expected.adjustmentLayerIndexAfter}, got ${adjustment.index}.`);
+  }
+  if (typeof expected.targetLayerIndexAfter === "number" && target.index !== expected.targetLayerIndexAfter) {
+    throw new Error(`${scenario.id}: target index mismatch; expected ${expected.targetLayerIndexAfter}, got ${target.index}.`);
+  }
+
+  const adjustmentDetails = await callBridgeTool("get_layer_details", {
+    compName: expected.compName,
+    layerIndex: adjustment.index,
+    includeProperties: false
+  });
+  const targetDetails = await callBridgeTool("get_layer_details", {
+    compName: expected.compName,
+    layerIndex: target.index,
+    includeProperties: false
+  });
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      numLayers: comp.numLayers
+    },
+    adjustment: {
+      index: adjustment.index,
+      name: adjustment.name,
+      adjustmentLayer: adjustmentDetails.layer && adjustmentDetails.layer.adjustmentLayer === true
+    },
+    target: {
+      index: target.index,
+      name: target.name,
+      readBackName: targetDetails.layer && targetDetails.layer.name
+    },
+    foreground: {
+      index: foreground.index,
+      name: foreground.name
+    }
+  };
+}
+
 async function verifyAgentScenarioReadBack(scenario) {
   const expected = scenario.expectedReadBack;
   if (!expected) return null;
@@ -6910,6 +6991,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedLayerDifferenceBlendMode) {
     return verifyGeneratedLayerDifferenceBlendModeReadBack(scenario, expected);
+  }
+
+  if (expected.generatedAdjustmentLayerPlacement) {
+    return verifyGeneratedAdjustmentLayerPlacementReadBack(scenario, expected);
   }
 
   if (expected.generatedLayerSelection) {
@@ -7722,6 +7807,10 @@ async function main() {
   }
   if (command === "agent-layer-track-matte-openai-cli-smoke" || command === "full-ui-agent-layer-track-matte-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliLayerTrackMatteScenarioConfig());
+    return;
+  }
+  if (command === "agent-adjustment-layer-placement-openai-cli-smoke" || command === "full-ui-agent-adjustment-layer-placement-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliAdjustmentLayerPlacementScenarioConfig());
     return;
   }
   if (command === "agent-layer-selection-openai-cli-smoke" || command === "full-ui-agent-layer-selection-openai-cli-smoke") {

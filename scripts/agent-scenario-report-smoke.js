@@ -33,6 +33,7 @@ const {
   agentKeyframeScenarioPlans,
   agentPathGeometryScenarioPlans,
   agentLayerBlendingModeScenarioPlans,
+  agentAdjustmentLayerPlacementScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerSelectionScenarioPlans,
@@ -586,6 +587,22 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(layerTrackMatte.plan.steps[5].args.trackMatteType, "luma_inverted");
   assert.strictEqual(layerTrackMatte.plan.steps[5].resultBindings, undefined);
 
+  const [adjustmentPlacement] = agentAdjustmentLayerPlacementScenarioPlans("Codex QA AUX109 Fixture");
+  assert.strictEqual(adjustmentPlacement.id, "generated-adjustment-layer-placement");
+  assert.strictEqual(adjustmentPlacement.expectedReadBack.generatedAdjustmentLayerPlacement, true);
+  assert.deepStrictEqual(adjustmentPlacement.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "create_shape_layer",
+    "get_comp_details",
+    "create_adjustment_layer",
+    "get_layer_details",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(adjustmentPlacement.plan.steps[4].args.insertBeforeLayerIndex, 2);
+  assert.strictEqual(adjustmentPlacement.plan.steps[4].args.expectedBeforeLayerName, adjustmentPlacement.expectedReadBack.targetName);
+  assert.strictEqual(adjustmentPlacement.plan.steps[4].resultBindings, undefined);
+
   const [stickEffect] = agentStickEffectExpressionScenarioPlans("Codex QA AUX106 Fixture");
   assert.strictEqual(stickEffect.id, "generated-stick-effect-expression");
   assert.strictEqual(stickEffect.expectedReadBack.generatedStickEffectExpression, true);
@@ -987,7 +1004,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert(remainingTails[4].plan.steps.some((step) => step.tool === "set_spatial_in_tangent"));
   assert(remainingTails[5].plan.steps.some((step) => step.tool === "separate_shape_size_dimensions"));
 
-  for (const scenario of [timing, transform, projectItems, effectProperty, expression, parentOpacity, layerTrackMatte, stickEffect, estimatePathLength, pathGeometry, flipPathGeometry, puppetOnTransparent, puppetPinType, compProperties, compCurrentTime, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, keyframes, textToKeys, selectedKeyframeMarker, compositionMarkerRead, ...remainingTails]) {
+  for (const scenario of [timing, transform, projectItems, effectProperty, expression, parentOpacity, layerTrackMatte, adjustmentPlacement, stickEffect, estimatePathLength, pathGeometry, flipPathGeometry, puppetOnTransparent, puppetPinType, compProperties, compCurrentTime, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, keyframes, textToKeys, selectedKeyframeMarker, compositionMarkerRead, ...remainingTails]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }

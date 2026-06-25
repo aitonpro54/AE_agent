@@ -22,6 +22,7 @@ const {
 } = require("./agent-scenario-fixtures");
 
 const LOCAL_MUTATING_TOOLS = new Set([
+  "create_adjustment_layer",
   "delete_layer",
   "set_comp_properties",
   "set_layer_metadata",
@@ -149,7 +150,7 @@ function renameAfter(before, args) {
 function fakeMutationResult(step, state) {
   const args = step.args || {};
   const compName = args.compName || args.name || state.lastCompName || "Fixture Comp";
-  if (step.tool === "create_test_comp") {
+  if (step.tool === "create_test_comp" || step.tool === "create_comp") {
     state.lastCompName = args.name;
     state.projectItems.push({ itemIndex: state.nextItemIndex++, name: args.name, type: "comp" });
     return withVerification({
@@ -1007,6 +1008,46 @@ function fakeMutationResult(step, state) {
       shape: { type: args.shape || "rectangle", size: args.size, fillColor: args.fillColor, strokeColor: args.strokeColor, strokeWidth: args.strokeWidth }
     }, compName, layer);
   }
+  if (step.tool === "create_adjustment_layer") {
+    const beforeLayerIndex = args.insertBeforeLayerIndex || null;
+    let beforeLayer = beforeLayerIndex ? state.layers[beforeLayerIndex - 1] : null;
+    if (beforeLayerIndex && !beforeLayer) {
+      beforeLayer = layerInfo(args.expectedBeforeLayerName || `Layer ${beforeLayerIndex}`, { index: beforeLayerIndex });
+      state.layers[beforeLayerIndex - 1] = beforeLayer;
+      reindexLayers(state.layers);
+    }
+    const layer = layerInfo(args.name || "Codex Adjustment", {
+      index: 1,
+      adjustmentLayer: true,
+      startTime: args.startTime === undefined ? 0 : args.startTime,
+      outPoint: args.duration || 1
+    });
+    if (beforeLayer) {
+      state.layers.splice(Math.max(0, beforeLayer.index - 1), 0, layer);
+      reindexLayers(state.layers);
+      beforeLayer = state.layers.find((item) => item.name === beforeLayer.name) || null;
+    } else {
+      insertLayerAtTop(state, layer);
+    }
+    const created = state.layers.find((item) => item.name === layer.name) || state.layers[0];
+    return withVerification({
+      comp: { name: compName },
+      layer: created,
+      placement: {
+        insertBeforeLayerIndex: beforeLayerIndex,
+        expectedBeforeLayerName: args.expectedBeforeLayerName || "",
+        beforeLayerBeforeMove: beforeLayer ? { ...beforeLayer, index: beforeLayerIndex } : null,
+        beforeLayerAfterMove: beforeLayer,
+        immediatelyBefore: beforeLayer ? created.index + 1 === beforeLayer.index : null
+      },
+      solid: {
+        color: args.color || [1, 1, 1],
+        width: args.width || 640,
+        height: args.height || 360,
+        pixelAspect: args.pixelAspect || 1
+      }
+    }, compName, created);
+  }
   if (step.tool === "fit_layer_to_comp") {
     return withVerification({
       comp: { name: compName, width: 640, height: 360 },
@@ -1834,6 +1875,67 @@ function assertLayerTrackMatteMissingReadBackNeedsReview() {
   const semantic = buildSemanticVerification(plan, run);
   assert.strictEqual(semantic.status, "needs_review", "set_layer_track_matte must require post-run get_layer_details read-back.");
   assert(semantic.checks.some((check) => check.id.indexOf("set_layer_track_matte:track-matte") >= 0 && check.status === "failed"), "missing set_layer_track_matte read-back should fail.");
+}
+
+function assertAdjustmentLayerPlacementPasses() {
+  const plan = {
+    summary: "Create generated adjustment layer immediately above a guarded generated layer.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Create target fixture",
+        tool: "create_shape_layer",
+        args: {
+          compName: "Adjustment Placement Fixture",
+          name: "Adjustment Placement Target"
+        }
+      },
+      {
+        title: "Create foreground fixture",
+        tool: "create_shape_layer",
+        args: {
+          compName: "Adjustment Placement Fixture",
+          name: "Adjustment Placement Foreground"
+        }
+      },
+      {
+        title: "Create adjustment break before target",
+        tool: "create_adjustment_layer",
+        args: {
+          compName: "Adjustment Placement Fixture",
+          name: "Adjustment Placement Break",
+          insertBeforeLayerIndex: 2,
+          expectedBeforeLayerName: "Adjustment Placement Target",
+          duration: 2
+        }
+      },
+      {
+        title: "Read adjustment break",
+        tool: "get_layer_details",
+        args: {
+          compName: "Adjustment Placement Fixture",
+          layerIndex: 2,
+          includeProperties: false
+        }
+      },
+      {
+        title: "Read guarded target",
+        tool: "get_layer_details",
+        args: {
+          compName: "Adjustment Placement Fixture",
+          layerIndex: 3,
+          includeProperties: false
+        }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  const failed = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `create_adjustment_layer placement semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failed)}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("create_adjustment_layer:adjustment-layer") >= 0 && check.status === "passed"), "adjustment layer flag check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("create_adjustment_layer:placement") >= 0 && check.status === "passed"), "adjustment layer placement check should pass.");
 }
 
 function assertProjectItemMetadataPasses() {
@@ -3226,6 +3328,7 @@ function main() {
   assertLayerParentMissingReadBackNeedsReview();
   assertLayerTrackMattePasses();
   assertLayerTrackMatteMissingReadBackNeedsReview();
+  assertAdjustmentLayerPlacementPasses();
   assertProjectItemMetadataPasses();
   assertProjectItemMetadataMissingReadBackNeedsReview();
   assertDeleteLayerPasses();

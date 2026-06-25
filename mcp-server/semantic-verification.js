@@ -6,6 +6,7 @@ const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
 const MUTATING_TOOLS = new Set([
   "create_test_comp",
   "create_solid_layer",
+  "create_adjustment_layer",
   "create_text_layer",
   "create_camera_layer",
   "create_camera_with_controller",
@@ -205,7 +206,7 @@ function addLayerEvidence(target, value, source) {
     id: value.id === undefined || value.id === null ? null : String(value.id),
     source: source || "observed layer"
   };
-  for (const field of ["threeDLayer", "collapseTransformation", "motionBlur", "enabled"]) {
+  for (const field of ["adjustmentLayer", "threeDLayer", "collapseTransformation", "motionBlur", "enabled"]) {
     if (hasOwn(value, field)) layer[field] = boolValue(value[field]);
   }
   if (hasOwn(value, "hasTrackMatte")) layer.hasTrackMatte = boolValue(value.hasTrackMatte);
@@ -2130,6 +2131,35 @@ function verifyStep(checks, step, evidence) {
       passed: Boolean(payload.shape) && (!args.shape || payload.shape.type === args.shape),
       evidence: stepLabel(step)
     });
+    return;
+  }
+
+  if (step.tool === "create_adjustment_layer") {
+    checkName(checks, step, args.name, payload.layer && payload.layer.name, evidence, "Created adjustment layer name matches request");
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:adjustment-layer`,
+      title: "Created layer is an adjustment layer",
+      expected: "adjustmentLayer:true",
+      observed: `adjustmentLayer:${payload.layer && payload.layer.adjustmentLayer === true}`,
+      passed: Boolean(payload.layer && payload.layer.adjustmentLayer === true),
+      evidence: stepLabel(step)
+    });
+    if (args.insertBeforeLayerIndex !== undefined && args.insertBeforeLayerIndex !== null) {
+      const beforeLayer = payload.placement && payload.placement.beforeLayerAfterMove;
+      const expectedName = compactText(args.expectedBeforeLayerName, 160);
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool}:placement`,
+        title: "Created adjustment layer is immediately above the guarded layer",
+        expected: expectedName ? `immediately before ${expectedName}` : `immediately before layer ${args.insertBeforeLayerIndex}`,
+        observed: payload.placement
+          ? `immediatelyBefore:${payload.placement.immediatelyBefore === true}; layerIndex:${payload.layer && payload.layer.index}; beforeLayerIndex:${beforeLayer && beforeLayer.index}; beforeLayerName:${beforeLayer && beforeLayer.name}`
+          : "missing placement evidence",
+        passed: Boolean(payload.placement && payload.placement.immediatelyBefore === true &&
+          payload.layer && beforeLayer && payload.layer.index + 1 === beforeLayer.index &&
+          (!expectedName || beforeLayer.name === expectedName)),
+        evidence: stepLabel(step)
+      });
+    }
     return;
   }
 

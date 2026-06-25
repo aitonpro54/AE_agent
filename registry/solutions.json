@@ -12173,6 +12173,118 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "add-3d-break-typed-plan",
+      "title": "Add 3D Break Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "layers",
+        "adjustment-layer",
+        "layer-placement",
+        "generated-layer",
+        "generic-importer",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Create one generated adjustment layer immediately above one guarded layer with typed placement read-back.",
+        "appliesWhen": [
+          "The user asks to add a 3D break, adjustment break, or blank adjustment layer directly above a specific layer.",
+          "The request can be satisfied by one generated adjustment layer and a reviewed insert-before layer index/name guard."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Active or explicit composition target verified by get_active_comp or get_comp_details before mutation."
+        },
+        {
+          "name": "guardedLayer",
+          "type": "object",
+          "required": true,
+          "description": "Explicit layer index and expected name for the layer the generated adjustment layer must be inserted immediately above."
+        },
+        {
+          "name": "adjustmentLayerSpec",
+          "type": "object",
+          "required": false,
+          "description": "Reviewed generated adjustment layer name, color, dimensions, start time, and duration."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow creates exactly one generated adjustment layer.",
+        "The guarded layer index/name and current stack order are known before mutation.",
+        "Only the newly created adjustment layer may move before the guarded layer; existing layers are not reordered relative to each other.",
+        "Source-exact broad selected-layer traversal, generic layer reordering, raw JSX, non-generated user assets, and unrelated mutations are unsupported."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/add-3d-break-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_comp_details",
+          "get_layer_details",
+          "create_adjustment_layer"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read target comp and guarded layer evidence, create one generated adjustment layer with guarded insert-before placement, then read both layers back.",
+        "steps": [
+          "Run get_active_comp or get_comp_details to verify the target comp identity, dimensions, duration, current layer count, and stack order.",
+          "Run get_selected_layers only as selection evidence, then reduce to one explicit guarded layer index/name before mutation.",
+          "Run get_layer_details or get_comp_details includeLayers:true for the guarded layer before mutation.",
+          "Run create_adjustment_layer with a generated-prefix name, insertBeforeLayerIndex, and expectedBeforeLayerName.",
+          "Run get_layer_details for the generated adjustment layer and guarded layer after mutation."
+        ],
+        "expectedEvidence": [
+          "Pre-run comp evidence identifies the current stack order and guarded layer.",
+          "create_adjustment_layer returns adjustmentLayer:true, placement evidence, and immediatelyBefore:true.",
+          "Post-run get_layer_details confirms the generated adjustment layer has adjustmentLayer:true.",
+          "Post-run read-back confirms generatedAdjustmentLayer.index + 1 === guardedLayer.index.",
+          "No raw ExtendScript, generic layer reordering, existing layer reorder/rename/relink/retime, effect/property edit, expression edit, keyframe edit, mask edit, track matte edit, selection mutation, file I/O, render queue mutation, project-item mutation, or non-generated user-asset mutation appears in the plan."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-layers-add-3d-break safety/contract/live-readiness longrun.",
+          "The safe adaptation uses only typed create_adjustment_layer guarded placement and read-back evidence; no source JSX copied."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-25",
+          "from": "full-intake-kyletmartinez-tool-layers-add-3d-break",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the safe Add 3D Break intent into a generated adjustment-layer placement contract using get_active_comp/get_selected_layers/get_comp_details/get_layer_details plus create_adjustment_layer insertBeforeLayerIndex and expectedBeforeLayerName. Source-exact broad selected-layer traversal, generic layer reordering, raw JSX, and non-generated user-asset mutation remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Use this recipe only when immediate placement above one explicit guarded layer is required.",
+        "Do not use this recipe for broad layer stack sorting, moving existing layers, effect/property copying, selection persistence, non-generated user layers, raw ExtendScript, or source-exact JSX reproduction.",
+        "Require post-run stack read-back and semantic verification for adjustment-layer placement."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "niceprecomp-typed-plan",
       "title": "Nice Precomp Typed Plan",
       "status": "recipe",
