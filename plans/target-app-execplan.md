@@ -26,6 +26,26 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake parent-opacity fresh scoped retry (2026-06-25):
+  parent-owned milestone for `tool-layers-parent-opacity` reran the existing
+  generated-only parent-opacity expression lane under the current
+  safety/contract/live-readiness rules. No product/source contract change was
+  needed: the scoped retry with explicit id, `--max-items 1`,
+  `--allow-self-improvement-lane-synthesis`, and `--no-commit` matched the
+  existing `selected-layer-parent-opacity-expression-generated-only` family,
+  built the bounded self-improvement template, ran non-live lane validation,
+  and attempted the serial generated-only live proof. The candidate remains
+  freshly terminal/live-blocked, not completed: live proof failed with
+  `CEP panel is not connected to the bridge` after read-only `inspect` and
+  `connector-status-smoke` passed. Compact proof envelope SHA-256:
+  `349b9147bb4130aeddce2314249b9f80fc852f574d0c78b6b65e328946f87187`.
+  Runtime ticket:
+  `.codex-runtime/sdk/generic-repo-full-intake/full-intake-kyletmartinez/resolution-tickets/live-lane-family-a4ad64a2f7f38a83/ticket.json`.
+  No broad queue processing, unscoped candidate selection, dependency change,
+  Local/Ollama, fallback provider, broad/default CEP smoke, raw JSX copy,
+  source-checkout execution, non-generated user-asset mutation, launcher edit,
+  push, or PR was run.
+
 - [x] Full Intake text shapes-from-text generated-only lane (2026-06-25):
   parent-owned milestone for `tool-layers-create-shapes-from-text` added a
   narrow generated-only text-to-shape contract. The bridge now exposes
@@ -3433,6 +3453,15 @@ check.
 
 ## Decision Log
 
+- 2026-06-25: Keep `tool-layers-parent-opacity` on the existing
+  `selected-layer-parent-opacity-expression-generated-only` family. The current
+  safe adaptation is still explicit generated child/parent setup plus
+  `set_expression` on child Transform Opacity and `get_layer_details`
+  read-back; source-exact broad selected-layer traversal, unreviewed parent
+  links, unparented-layer side effects, expression deletion, raw JSX, and
+  non-generated user assets remain fail-closed. Today's scoped retry proved the
+  family mapping path now resolves and stops only on live bridge connectivity.
+
 - 2026-06-25: Accept `create_layer_connection_line` only as a generated-only
   dynamic connector contract for `tool-layers-connect-two-layers-with-a-line`.
   The contract must target explicit endpoint layer indices/names, create one
@@ -4825,6 +4854,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake parent-opacity fresh scoped retry | Required to give `tool-layers-parent-opacity` fresh current-rule scoped evidence after `tool-layers-create-shapes-from-text`, without broad queue processing or changing existing source contracts. | Passed scoped closeout evidence: compact preflight, `git status --short --branch`, compact status/proof/ledger summary, read-only `node scripts/cep-panel-cdp-smoke.js inspect`, read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`, and scoped retry with explicit `tool-layers-parent-opacity`, `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`. The retry resolved `selected-layer-parent-opacity-expression-generated-only`, produced one terminal ticket and no open tickets, ran lane non-live validation successfully, kept `changedPathCount=0` and `unplannedPathCount=0`, and produced proof envelope SHA-256 `349b9147bb4130aeddce2314249b9f80fc852f574d0c78b6b65e328946f87187`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF warning only. Generated-only live proof failed with `CEP panel is not connected to the bridge`; no broad queue, live user-asset mutation, broad/default CEP smoke, launcher edit, dependency/package change, Local/Ollama, fallback provider, raw JSX copy, source-checkout execution, push, PR, or GitHub automation was run. |
 
 | Full Intake layer connection-line generated-only lane | Required to give `tool-layers-connect-two-layers-with-a-line` a narrow generated-only typed connector contract without copying raw JSX, drawing a thin rectangle substitute, or mutating non-generated user assets. | Passed focused implementation validation: touched-file `node --check`; JSON parse for `registry/solutions.json` and `orchestrator/generic-repo-live-lane-registry.json`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; read-only `node scripts/cep-panel-cdp-smoke.js inspect`; read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; scoped retry with explicit `tool-layers-connect-two-layers-with-a-line`, `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; compact status/proof; `node scripts/sdk-generic-repo-full-intake-smoke.js`; `node scripts/sdk-generic-repo-importer-command-smoke.js`; `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; `npm.cmd run smoke:bridge`; and `git diff --check` with LF/CRLF warnings only. Clean scoped retry mapped the candidate to `live-lane-family-layer-connection-line-generated-only`, kept it terminal/live-blocked, and produced compact proof SHA-256 `85902cb9b116832ab7e2a91f2611646653f9d4d23953bf40135309b544651aac` with `changedPathCount=0` and `unplannedPathCount=0`. Generated-only live proof failed only with `CEP panel is not connected to the bridge`. No broad queue, unscoped `max-items > 1`, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source-checkout execution, non-generated user-asset mutation, launcher edit, push, PR, or GitHub automation was run. |
 
