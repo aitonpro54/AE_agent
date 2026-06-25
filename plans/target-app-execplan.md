@@ -26,6 +26,29 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake reopened label/track-matte retry closeout (2026-06-25):
+  parent-owned milestone for `tool-layers-reset-selected-layer-labels`,
+  `tool-layers-set-all-track-matte-labels`, and
+  `tool-layers-set-track-matte-to-above` ran three explicit scoped retries with
+  `--max-items 1` under the safety/contract/live-readiness launcher guard. No
+  broad queue processing, unscoped candidate selection, dependency change,
+  Local/Ollama, fallback provider, broad/default CEP smoke, raw JSX copy,
+  source-checkout execution, non-generated user-asset mutation, launcher edit,
+  push, or PR was run. Read-only CEP readiness was checked first:
+  `inspect` could read the panel, and `connector-status-smoke` passed, but the
+  generated-only track-matte live proof still failed with
+  `CEP panel is not connected to the bridge`. The two track-matte ids now have
+  fresh terminal `blocked_live_proof_failed` tickets against the existing
+  `layer-track-matte-generated-only` lane; `tool-layers-reset-selected-layer-labels`
+  remains terminal on the AE preference/default-label typed-read gap. Latest
+  compact proof envelope SHA-256:
+  `7d620a8f6a4ebd21420fcdd3a3b16e309f8f37c8259bb7d6fa00f3ee246056cb`.
+  Proposal-only inspections found the next smallest non-live contract candidate
+  to be `tool-layers-add-fill-with-color-cycle`, while the smallest
+  file/render/proxy cleanup candidate is `tool-project-clean-render-queue`; no
+  new family was started because synthetic context reached the handoff
+  threshold after this reviewable milestone.
+
 - [x] Full Intake final terminal completion audit (2026-06-25):
   selected the only remaining bounded family as
   `final-terminal-completion-audit`, not a new import lane. Compact preflight
@@ -3314,6 +3337,35 @@ check.
 
 ## Decision Log
 
+- 2026-06-25: Under the new safety/contract/live-readiness launcher guard, do
+  not treat the older `final-terminal-completion-audit` as a stop condition.
+  The 39 `blocked_or_skipped` ids are an approved reopen backlog, but work still
+  proceeds family by family. The first accepted family for this session is
+  label/track-matte because contracts and live-lane metadata already exist and
+  the remaining work is fresh scoped proof or a precise typed-read blocker.
+
+- 2026-06-25: Keep `tool-layers-reset-selected-layer-labels` terminal until the
+  product has a reviewed AE label-preference/default-label reader. Hard-coded
+  default label values or layer-type guesses are not acceptable substitutes for
+  source behavior that restores labels from AE preferences.
+
+- 2026-06-25: Treat `tool-layers-set-all-track-matte-labels` and
+  `tool-layers-set-track-matte-to-above` as contract-ready but live-blocked.
+  The current typed lane requires generated-only assets, explicit layer indices,
+  `set_layer_track_matte` or verified `isTrackMatte:true` targets,
+  `get_layer_details`/`get_comp_details` read-back, semantic verification, and
+  cleanup. Completion requires CEP/panel bridge connectivity sufficient for the
+  existing generated-only live proof, not a broader raw JSX or layer-reorder
+  workaround.
+
+- 2026-06-25: Use proposal-only inspection results to prioritize the next fresh
+  family after handoff. For layer/effect work, the smallest likely
+  implementation slice is `tool-layers-add-fill-with-color-cycle` using
+  existing `add_effect`, `get_effect_details`, and `set_effect_property`
+  coverage with explicit reviewed colors. For file/render/proxy cleanup, the
+  smallest likely slice is `tool-project-clean-render-queue`, but it requires a
+  new generated-only render queue deletion contract and is therefore larger.
+
 - 2026-06-25: Treat `full-intake-kyletmartinez` as exhausted under the current
   launcher guard and permissions. The next bounded family is
   `final-terminal-completion-audit`; it is a closeout audit, not a queue runner
@@ -4659,6 +4711,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake reopened label/track-matte retry closeout | Required to give the first reopened safety/contract/live-readiness family fresh current evidence under the new launcher guard while preserving scoped retries and no broad queue processing. | Passed scoped closeout evidence: preflight read active docs, `git status --short --branch` showed a clean tracked tree on a branch ahead of origin, compact status remained `completed_no_candidates`, ledger summary remained `entries=75`, `completed=36`, `blocked_or_skipped=39`, `queued=0`, `failed=0`, `terminal=75`, and compact proof envelope SHA-256 after the final scoped retry was `7d620a8f6a4ebd21420fcdd3a3b16e309f8f37c8259bb7d6fa00f3ee246056cb`. Read-only `node scripts/cep-panel-cdp-smoke.js inspect` succeeded but showed bridge/provider UI state not loaded; `node scripts/cep-panel-cdp-smoke.js connector-status-smoke` passed. Scoped retries were run one id at a time with `--max-items 1` for `tool-layers-set-track-matte-to-above`, `tool-layers-set-all-track-matte-labels`, and `tool-layers-reset-selected-layer-labels`; each produced one terminal ticket and no candidate completion, no commit, no requeue, and no broad queue processing. The track-matte live-lane report retained non-live validation passes and failed only at the generated-only OpenAI CLI proof with `CEP panel is not connected to the bridge`. No JavaScript files were touched, so touched-file `node --check` was not applicable. |
 
 | Full Intake final terminal completion audit | Required to close the longrun continuation after the Puppet policy slice by auditing remaining terminal families and selecting only one bounded next family from active docs and ledger evidence. | Passed compact preflight and audit: `git status --short --branch` was clean aside from the branch being ahead; compact status returned `completed_no_candidates`; compact proof returned `completed_no_candidates`, proof envelope SHA-256 `14d5d0e3b6af1cf7f7601cd149fcd0785220b5d6047ce45043924a9cebf88626`, `changedPathCount=0`, and `unplannedPathCount=0`; ledger summary returned `entries=75`, `completed=36`, `blocked_or_skipped=39`, `queued=0`, `failed=0`, `terminal=75`; targeted ledger audit found `nextCandidate=null`, no blocked entry missing `shortReason`, and no blocked entry missing implementation evidence. No scoped retry, broad queue processing, live CEP/AE mutation, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source-checkout execution, non-generated user-asset mutation, launcher edit, push, or PR was run. |
 
