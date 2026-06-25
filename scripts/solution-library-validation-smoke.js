@@ -31,6 +31,7 @@ const IMPORTED_ADVISORY_IDS = [
   "rename-selected-layers-with-numbers-typed-plan",
   "rename-selected-layers-with-letters-typed-plan",
   "replace-text-in-layer-name-typed-plan",
+  "reset-layer-names-typed-plan",
   "add-simple-loop-expression-typed-plan",
   "append-to-expression-typed-plan",
   "update-expressions-typed-plan",
@@ -814,6 +815,24 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate typed-tool contract for regex behavior.`);
       assert(solution.notes.some((note) => /project item rename/.test(note)), `${id}: notes must keep project item rename out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Replace_Text_In_Layer_Name/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "reset-layer-names-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "rename_layers", "get_comp_details"],
+        `${id}: empty layer-name reset workflow should stay on current comp inventory, rename_layers, and read-back.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: empty layer-name reset is mutating.`);
+      assert(text.includes("allowEmptyName:true"), `${id}: recipe should require explicit empty-name opt-in.`);
+      assert(text.includes('name:""'), `${id}: recipe should require exact empty target names.`);
+      assert(text.includes("expectedLayerNames"), `${id}: recipe should require stale-order expected-name guards.`);
+      assert(text.includes("one `rename_layers` step per concrete target layer"), `${id}: recipe should require one rename call per target layer.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp details read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /allowEmptyName:true/.test(step)), `${id}: verification must include empty-name opt-in.`);
+      assert(solution.verificationRecipe.steps.some((step) => /name:""/.test(step)), `${id}: verification must include empty string name.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /after:""/.test(item)), `${id}: verification must require empty-name read-back evidence.`);
+      assert(solution.notes.some((note) => /checkpoint\/rollback/.test(note)), `${id}: notes must keep source-exact user-layer reset behind a checkpoint/rollback decision.`);
+      assert(solution.notes.some((note) => /raw JSX/.test(note)), `${id}: notes must forbid raw JSX fallback.`);
+      assert(solution.promotionHistory.some((entry) => /tool-layers-reset-layer-names/.test(entry.from)), `${id}: promotion history should mention the source candidate id.`);
     } else if (id === "texttokeys-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -3218,6 +3237,21 @@ function assertActualRetrieval(registry) {
   assert(replaceLayerNamePromptSection.includes("rename_layers"), "prompt section should prefer rename_layers for find/replace layer renaming.");
   assert(replaceLayerNamePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
   assert(!/run_extendscript/i.test(replaceLayerNamePromptSection), "selected-layer find/replace rename guidance should not recommend raw ExtendScript.");
+
+  const resetLayerNameRetrieval = retrieveSolutionHints("Reset the reviewed generated layer names to empty strings after reading the comp layer inventory and expected layer names.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(resetLayerNameRetrieval.ok, true);
+  assert(ids(resetLayerNameRetrieval).includes("reset-layer-names-typed-plan"), "empty layer-name reset advisory recipe should surface for reset layer name prompts.");
+  const resetLayerNamePromptSection = formatSolutionHintsForPrompt(resetLayerNameRetrieval);
+  assert(resetLayerNamePromptSection.includes("Reset Layer Names Typed Plan"), "prompt section should include empty layer-name reset advisory title.");
+  assert(resetLayerNamePromptSection.includes("empty strings"), "prompt section should preserve empty-name reset intent.");
+  assert(resetLayerNamePromptSection.includes("expectedLayerNames"), "prompt section should require expected layer-name guards.");
+  assert(resetLayerNamePromptSection.includes("rename_layers"), "prompt section should prefer rename_layers for empty layer-name reset.");
+  assert(resetLayerNamePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
+  assert(!/run_extendscript/i.test(resetLayerNamePromptSection), "empty layer-name reset guidance should not recommend raw ExtendScript.");
 
   const simpleLoopExpressionRetrieval = retrieveSolutionHints("Add a simple loopOut expression to the selected animated properties after inspecting selected properties, then read back expression details.", {
     registry,

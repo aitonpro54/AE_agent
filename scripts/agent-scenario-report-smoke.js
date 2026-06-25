@@ -49,6 +49,7 @@ const {
   agentLayerTrackMatteScenarioPlans,
   agentLayerTimingScenarioPlans,
   agentLayerTransformScenarioPlans,
+  agentLayerNameResetScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
   agentParentOpacityExpressionScenarioPlans,
@@ -288,6 +289,49 @@ function assertRenameFindReplaceGeneratedOnlyFixture() {
   assert.strictEqual(scenario.plan.steps[4].args.caseSensitive, true);
   assert(!toolSequence.includes("run_extendscript"), "AUX-032 fixture must not use raw ExtendScript.");
   assert(!toolSequence.includes("cleanup_test_items"), "AUX-032 fixture cleanup is owned by the scenario runner.");
+  assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
+}
+
+function assertLayerNameResetGeneratedOnlyFixture() {
+  const [scenario] = agentLayerNameResetScenarioPlans("Codex QA Reset Names Fixture");
+  assert(scenario, "layer name reset scenario should be registered.");
+  assert.strictEqual(scenario.id, "generated-layer-name-reset");
+  assert.strictEqual(scenario.cleanupPrefix, "Codex QA Reset Names Fixture Layer Name Reset");
+  assert.deepStrictEqual(scenario.expectedTools, [
+    "create_comp",
+    "create_solid_layer",
+    "create_text_layer",
+    "get_comp_details",
+    "rename_layers"
+  ]);
+  assert.strictEqual(scenario.expectedStepCount, 7);
+  assert.strictEqual(scenario.expectedMutatingCount, 5);
+  assert.strictEqual(scenario.expectedReadBack.emptyLayerNameReset, true);
+  assert.strictEqual(scenario.expectedReadBack.expectedEmptyNameCount, 2);
+
+  const toolSequence = scenario.plan.steps.map((step) => step.tool);
+  assert.deepStrictEqual(toolSequence, [
+    "create_comp",
+    "create_solid_layer",
+    "create_text_layer",
+    "get_comp_details",
+    "rename_layers",
+    "rename_layers",
+    "get_comp_details"
+  ]);
+  assert.strictEqual(scenario.plan.steps[4].args.mode, "exact");
+  assert.strictEqual(scenario.plan.steps[4].args.name, "");
+  assert.strictEqual(scenario.plan.steps[4].args.allowEmptyName, true);
+  assert.deepStrictEqual(scenario.plan.steps[4].args.layerIndices, [1]);
+  assert.deepStrictEqual(scenario.plan.steps[5].args.layerIndices, [2]);
+  assert.deepStrictEqual(scenario.plan.steps[4].args.expectedLayerNames, [
+    "Codex QA Reset Names Fixture Layer Name Reset Text"
+  ]);
+  assert.deepStrictEqual(scenario.plan.steps[5].args.expectedLayerNames, [
+    "Codex QA Reset Names Fixture Layer Name Reset Plate"
+  ]);
+  assert(!toolSequence.includes("run_extendscript"), "empty layer-name reset fixture must not use raw ExtendScript.");
+  assert(!toolSequence.includes("cleanup_test_items"), "empty layer-name reset fixture cleanup is owned by the scenario runner.");
   assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
 }
 
@@ -1182,7 +1226,9 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert(remainingTails[4].plan.steps.some((step) => step.tool === "set_spatial_in_tangent"));
   assert(remainingTails[5].plan.steps.some((step) => step.tool === "separate_shape_size_dimensions"));
 
-  for (const scenario of [timing, transform, projectItems, effectProperty, effectEnabled, expression, parentOpacity, layerTrackMatte, adjustmentPlacement, layerConnectionLine, textShapes, stickEffect, estimatePathLength, pathGeometry, flipPathGeometry, puppetOnTransparent, puppetPinType, compProperties, compCurrentTime, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, keyframes, textToKeys, selectedKeyframeMarker, compositionMarkerRead, ...remainingTails]) {
+  const [layerNameReset] = agentLayerNameResetScenarioPlans("Codex QA Reset Names Fixture");
+
+  for (const scenario of [timing, transform, projectItems, effectProperty, effectEnabled, expression, parentOpacity, layerTrackMatte, adjustmentPlacement, layerConnectionLine, textShapes, stickEffect, estimatePathLength, pathGeometry, flipPathGeometry, puppetOnTransparent, puppetPinType, compProperties, compCurrentTime, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, layerNameReset, keyframes, textToKeys, selectedKeyframeMarker, compositionMarkerRead, ...remainingTails]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }
@@ -1192,6 +1238,7 @@ function main() {
   assertDakkshinGeneratedOnlyFixture();
   assertResetWorkAreaGeneratedOnlyFixture();
   assertRenameFindReplaceGeneratedOnlyFixture();
+  assertLayerNameResetGeneratedOnlyFixture();
   assertAssortedCompositionGuidesGeneratedOnlyFixture();
   assertCompositionGuideGeneratedOnlyFixture();
   assertBackgroundLayerGeneratedOnlyFixture();

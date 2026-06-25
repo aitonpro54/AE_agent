@@ -26,6 +26,46 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake layer name reset generated-only lane (2026-06-26):
+  parent-owned milestone for `tool-layers-reset-layer-names` replaced the old
+  empty-name blocker with a narrow generated/reviewed typed adaptation.
+  `rename_layers` now supports explicit empty exact names only when
+  `allowEmptyName:true`, exactly one explicit `layerIndices` value, and matching
+  `expectedLayerNames` are supplied. Added
+  `reset-layer-names-typed-plan`, generic intake note, solution registry entry,
+  solution-library/retrieval coverage, semantic verification coverage,
+  generated scenario/report smoke coverage, CEP command
+  `full-ui-agent-layer-name-reset-openai-cli-smoke`, live-lane family
+  `layer-empty-name-reset-generated-only`, and runner mapping. The safe lane
+  reads one generated comp's layer inventory, resets each reviewed generated
+  layer name with one guarded `rename_layers` call using `name:""`, then reads
+  the same comp back through `get_comp_details`. Source-exact all-active-comp
+  user-layer reset, broad selected-layer traversal, Project item rename, source
+  relinking, layer timing/order changes, effects, masks, parenting,
+  expressions, render queue work, file I/O, source-checkout execution, raw JSX,
+  non-generated destructive user-asset mutation, and launcher edits remain
+  fail-closed. Scoped retry with explicit id, `--max-items 1`,
+  `--allow-self-improvement-lane-synthesis`, and `--no-commit` matched the new
+  lane, passed non-live validation plus read-only CEP preflight, and produced a
+  fresh terminal/live-blocked ticket because generated-only proof failed with
+  `CEP panel is not connected to the bridge`. Compact proof envelope SHA-256:
+  `77cf7ee4e5d515286a74e7a92ac2b04323edc5796114264a97765f11fc80904a`.
+  Closeout validation passed: touched-file `node --check`, JSON parse for
+  solution/live-lane registries, `node scripts/agent-scenario-report-smoke.js`,
+  `node scripts/semantic-verification-smoke.js`,
+  `node scripts/solution-registry-smoke.js`,
+  `node scripts/solution-library-validation-smoke.js`,
+  `node scripts/sdk-generic-repo-full-intake-smoke.js`,
+  `node scripts/sdk-generic-repo-importer-command-smoke.js`,
+  `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`,
+  `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`,
+  `npm.cmd run smoke:planning`, `npm.cmd run smoke:bridge`,
+  `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF
+  warnings only. No broad queue processing, unscoped candidate selection,
+  dependency change, Local/Ollama, fallback provider, broad/default CEP smoke,
+  raw JSX copy, source-checkout execution, non-generated user-asset mutation,
+  launcher edit, push, or PR was run.
+
 - [x] Full Intake Grid Rig Control replacement generated-only lane
   (2026-06-26): parent-owned milestone for
   `tool-layers-replace-grid-rig-control` replaced the old terminal

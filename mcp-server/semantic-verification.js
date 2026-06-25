@@ -2283,7 +2283,7 @@ function exactRenamesMatch(items, args) {
   for (let index = 0; index < items.length; index += 1) {
     const item = items[index] || {};
     const expected = expectedRenameValue(item.before, args, index + 1, items.length);
-    if (!expected || item.after !== expected) return false;
+    if (typeof expected !== "string" || item.after !== expected) return false;
   }
   return true;
 }

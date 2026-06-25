@@ -1361,6 +1361,132 @@ function agentRenameFindReplaceScenarioPlans(runPrefix) {
   }));
 }
 
+function agentLayerNameResetScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Layer Name Reset`;
+  const compName = `${base} Comp`;
+  const layerAName = `${base} Plate`;
+  const layerBName = `${base} Text`;
+
+  return [
+    {
+      id: "generated-layer-name-reset",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "create_text_layer",
+        "get_comp_details",
+        "rename_layers"
+      ],
+      expectedReadBack: {
+        emptyLayerNameReset: true,
+        compName,
+        beforeNames: [layerAName, layerBName],
+        expectedEmptyNameCount: 2,
+        layerCountAfter: 2
+      },
+      plan: {
+        summary: "Generated-only live QA for resetting reviewed generated layer names to empty strings.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          {
+            title: "Create generated layer-name reset comp",
+            tool: "create_comp",
+            args: {
+              name: compName,
+              width: 640,
+              height: 360,
+              pixelAspect: 1,
+              duration: 3,
+              frameRate: 24,
+              bgColor: [0.08, 0.1, 0.12],
+              allowDuplicateName: false,
+              openInViewer: false,
+              comment: "Generated-only empty layer-name reset validation"
+            }
+          },
+          {
+            title: "Create first generated layer-name reset source layer",
+            tool: "create_solid_layer",
+            args: {
+              compName,
+              name: layerAName,
+              color: [0.2, 0.52, 0.86],
+              width: 240,
+              height: 180,
+              pixelAspect: 1,
+              startTime: 0,
+              duration: 3
+            }
+          },
+          {
+            title: "Create second generated layer-name reset source layer",
+            tool: "create_text_layer",
+            args: {
+              compName,
+              name: layerBName,
+              text: "Layer name reset",
+              position: [320, 180],
+              fontSize: 44,
+              fillColor: [0.95, 0.95, 0.85],
+              startTime: 0,
+              duration: 3
+            }
+          },
+          {
+            title: "Read generated layer names before empty reset",
+            tool: "get_comp_details",
+            args: {
+              compName,
+              includeLayers: true,
+              layerLimit: 10
+            }
+          },
+          {
+            title: "Reset generated text layer name to empty string",
+            tool: "rename_layers",
+            args: {
+              compName,
+              layerIndices: [1],
+              expectedLayerNames: [layerBName],
+              mode: "exact",
+              name: "",
+              allowEmptyName: true
+            }
+          },
+          {
+            title: "Reset generated solid layer name to empty string",
+            tool: "rename_layers",
+            args: {
+              compName,
+              layerIndices: [2],
+              expectedLayerNames: [layerAName],
+              mode: "exact",
+              name: "",
+              allowEmptyName: true
+            }
+          },
+          {
+            title: "Read generated layer names after empty reset",
+            tool: "get_comp_details",
+            args: {
+              compName,
+              includeLayers: true,
+              layerLimit: 10
+            }
+          }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentLayerTimingScenarioPlans(runPrefix) {
   const base = `${runPrefix} Layer Timing`;
   const compName = `${base} Comp`;
@@ -4627,6 +4753,7 @@ module.exports = {
   agentLayerTrackMatteScenarioPlans,
   agentLayerTimingScenarioPlans,
   agentLayerTransformScenarioPlans,
+  agentLayerNameResetScenarioPlans,
   agentManualTypedToolsScenarioPlans,
   agentMaskSafetyScenarioPlans,
   agentMarkerLifecycleScenarioPlans,

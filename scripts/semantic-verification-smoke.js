@@ -16,6 +16,7 @@ const {
   agentLayerMetadataScenarioPlans,
   agentLayerParentBelowScenarioPlans,
   agentLayerParentClosestScenarioPlans,
+  agentLayerNameResetScenarioPlans,
   agentParentOpacityExpressionScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentLayerTrackMatteScenarioPlans,
@@ -3740,6 +3741,16 @@ function assertLayerParentClosestScenarioPasses() {
   assert(parentChecks.length >= 2, "closest-layer parenting scenario should verify both set_layer_parent read-backs.");
 }
 
+function assertLayerNameResetScenarioPasses() {
+  const [scenario] = agentLayerNameResetScenarioPlans("Codex Semantic Reset Names Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  const failedChecks = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `empty layer-name reset semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failedChecks)}`);
+  const renameChecks = semantic.checks.filter((check) => check.id.indexOf("rename_layers:rename") >= 0 && check.status === "passed");
+  assert.strictEqual(renameChecks.length, 2, "empty layer-name reset scenario should verify both single-layer rename steps.");
+}
+
 function main() {
   const scenarios = agentScenarioPlans("Codex Semantic Fixture", 0);
   const results = scenarios.map(assertScenarioPasses);
@@ -3807,6 +3818,7 @@ function main() {
   assertParentOpacityExpressionScenarioPasses();
   assertLayerParentBelowScenarioPasses();
   assertLayerParentClosestScenarioPasses();
+  assertLayerNameResetScenarioPasses();
 
   console.log(JSON.stringify({
     ok: true,

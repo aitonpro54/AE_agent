@@ -2570,6 +2570,108 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "reset-layer-names-typed-plan",
+      "title": "Reset Layer Names Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "layer-name",
+        "rename",
+        "reset",
+        "empty-name",
+        "generated-only",
+        "typed-tool",
+        "generic-importer",
+        "kyletmartinez-advisory"
+      ],
+      "intent": {
+        "summary": "Reset reviewed generated layer names to empty strings, then read the layer names back.",
+        "appliesWhen": [
+          "The user asks to reset layer names to empty strings.",
+          "The workflow can bind explicit generated or reviewed layer indices and expected source names before mutation."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "layerIndices",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Concrete reviewed layer indices from current get_comp_details or get_layer_details evidence."
+        },
+        {
+          "name": "expectedLayerNames",
+          "type": "array",
+          "required": true,
+          "description": "Expected source layer names paired with the layerIndices, used as a stale-order guard."
+        }
+      ],
+      "targetAssumptions": [
+        "The target composition and layer inventory are read before mutation.",
+        "The workflow changes only reviewed layer names to empty strings.",
+        "Each empty-name reset is one explicit rename_layers call for one layer so exact-mode auto-numbering cannot alter the requested semantics."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/reset-layer-names-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "rename_layers",
+          "get_comp_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read back the same comp and confirm each reviewed target layer now has an empty name.",
+        "steps": [
+          "Run get_active_comp or target one explicit generated composition.",
+          "Run get_comp_details includeLayers:true before mutation and bind concrete layerIndices plus expectedLayerNames from that evidence.",
+          "Run one rename_layers step per target layer with mode exact, name:\"\", allowEmptyName:true, a single layer index and matching expectedLayerNames.",
+          "Run get_comp_details after mutation and confirm each reviewed target layer index has name:\"\"."
+        ],
+        "expectedEvidence": [
+          "Empty-name reset plans include current layer inventory before layerIndex values are bound.",
+          "Each rename_layers call reports changedCount:1, allowEmptyName:true, before-name evidence and after:\"\" for one reviewed layer.",
+          "Post-run get_comp_details read-back shows every reviewed target layer index has name:\"\"."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Added during safety/contract/live-readiness review for tool-layers-reset-layer-names."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-26",
+          "from": "generic-repo-importer-tool-layers-reset-layer-names",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the source behavior of resetting layer names to empty strings into a generated/reviewed typed-tool contract using rename_layers mode:\"exact\", name:\"\", allowEmptyName:true, expectedLayerNames, and get_comp_details read-back; no source JSX copied.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Generated/reviewed scoped recipe only; source-exact all-active-comp user-layer reset requires a separate checkpoint/rollback decision.",
+        "Use one rename_layers call per target layer with allowEmptyName:true and expectedLayerNames.",
+        "Do not use this recipe for normal non-empty exact renames, prefix/suffix rename, find/replace rename, project item rename, source relinking, layer timing changes, render queue items, file I/O, raw JSX, or broad cleanup."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "get-selected-layer-duration-typed-plan",
       "title": "Get Selected Layer Duration Typed Plan",
       "status": "recipe",

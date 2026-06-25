@@ -580,6 +580,62 @@
       "scope": "generated-only Source Text keyframe proof using an explicit generated text layer, set_property_keyframes on ADBE Text Properties.ADBE Text Document, get_layer_details keyframe value read-back, semantic verification, and generated-prefix cleanup; source-exact textToKeys.jsx behavior, selected-layer traversal, typo/no-call source repair, text animator ranges, raw ExtendScript, and real ae-scripting requeue remain fail-closed until candidate tool hints include the mutating/read-back contract and explicit scoped candidate ids are provided"
     },
     {
+      "id": "layer-empty-name-reset-generated-only",
+      "requiredTools": [
+        "get_comp_details",
+        "rename_layers"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_solid_layer",
+        "create_text_layer",
+        "get_active_comp",
+        "get_comp_details",
+        "get_layer_details",
+        "rename_layers"
+      ],
+      "candidateIds": [
+        "tool-layers-reset-layer-names"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-name-reset-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "layer-name-reset",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/reset-layer-names-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-reset-layer-names.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only empty layer-name reset proof using one explicit generated comp, get_comp_details layer inventory, one rename_layers mode:\"exact\" name:\"\" allowEmptyName:true call per reviewed layer with expectedLayerNames guards, post-run get_comp_details read-back, semantic verification, and cleanup; source-exact all-active-comp user-layer reset, broad selected-layer traversal, project item rename, source relinking, layer timing/order changes, effects, masks, parenting, expressions, render queue work, file I/O, source-checkout execution, and raw JSX remain fail-closed"
+    },
+    {
       "id": "layer-comment-label-lock-generated-only",
       "requiredTools": [
         "get_active_comp",

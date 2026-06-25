@@ -2013,7 +2013,7 @@ function compactCheckpoint(checkpoint) {
 function inferMutationTarget(toolName, args, payload) {
   const target = { tool: toolName };
   const request = {};
-  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "layerName", "sourceName", "expectedLayerName", "expectedLayerNames", "comment", "label", "locked", "maskIndex", "expectedMaskName", "operation", "maskMode", "targetTime", "time", "frame", "frameRate", "expectedCurrentTime", "clampToDuration", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "expectedItemNames", "itemType", "sourceItemIndex", "sourceItemName", "sourceCompItemIndex", "sourceCompName", "nameSuffix", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "renderQueueItemIndex", "outputPath", "outputFileName"]) {
+  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "layerName", "sourceName", "expectedLayerName", "expectedLayerNames", "comment", "label", "locked", "maskIndex", "expectedMaskName", "operation", "maskMode", "targetTime", "time", "frame", "frameRate", "expectedCurrentTime", "clampToDuration", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "expectedItemNames", "itemType", "sourceItemIndex", "sourceItemName", "sourceCompItemIndex", "sourceCompName", "nameSuffix", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "allowEmptyName", "renderQueueItemIndex", "outputPath", "outputFileName"]) {
     if (hasArg(args || {}, key)) request[key] = args[key];
   }
   if (Object.keys(request).length) target.request = request;
@@ -6325,6 +6325,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For timeline trims, work areas, sequencing, splitting, and offsets, use set_comp_work_area, set_layer_time_range, stagger_layers, or split_layers_at_time.",
     "For composition marker inspection, use get_comp_details with includeMarkers=true and compare markers.items in comp.markerProperty.keyTime order; for generated composition marker setup, use add_comp_marker with an explicit comp target, reviewed time/comment, and post-mutation get_comp_details includeMarkers read-back; do not substitute layer marker tools for composition markers.",
     "For precomp/source workflows, use precompose_layers, replace_layer_source, deep_duplicate_precomp_sources, rename_layers, and rename_project_items before considering raw ExtendScript.",
+    "For layer name reset workflows that intentionally set a layer name to an empty string, use rename_layers only with mode:\"exact\", name:\"\", allowEmptyName:true, exactly one explicit layerIndex per step, expectedLayerNames from current typed evidence, verifyAfter:true, and post-mutation get_comp_details read-back. Do not use empty-name reset on broad selected/user layers without generated or reviewed scope.",
     "For explicit single-layer duplication, use duplicate_layer after inspecting the target comp/layer and pairing layerIndex with the sourceName in current AE stack order. AE inserts newly created and duplicated layers at layer index 1; do not assume creation order equals layer-index order.",
     "For explicit layer selection changes, use set_layer_selection only with concrete layerIndices from current get_comp_details/list_layers/get_layer_details evidence and expectedLayerNames when possible; do not use raw ExtendScript to select layers.",
     "For explicit generated layer parenting, use set_layer_parent only with one inspected child layer, one inspected parent layer, expectedLayerName, expectedParentName, and post-run get_layer_details read-back. Do not use it for recursive hierarchy edits, bulk parenting, source-exact selection side effects, or non-generated user assets without a separate reviewed contract.",
@@ -9751,8 +9752,14 @@ const tools = [
         compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
         compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
         layerIndices: { type: ["number", "array"], description: "Optional layer index or indexes. Defaults to selected layers." },
+        expectedLayerNames: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional expected source layer names, one per layerIndices entry. When provided, mismatches fail closed before mutation."
+        },
         mode: { type: "string", enum: ["exact", "prefix", "suffix", "findReplace"], description: "Rename mode. Defaults to exact when name is provided." },
         name: { type: "string", description: "Exact base name. For multiple layers, {index} or {n} templates are supported; otherwise a number is appended." },
+        allowEmptyName: { type: "boolean", description: "Explicitly allow mode:\"exact\" with name:\"\" for one reviewed layer reset. Defaults to false." },
         prefix: { type: "string", description: "Prefix to add in prefix mode." },
         suffix: { type: "string", description: "Suffix to add in suffix mode." },
         find: { type: "string", description: "Text to find in findReplace mode." },
@@ -10748,10 +10755,10 @@ async function callTool(name, args) {
         };
       }
 
-      function __codexRenameValue(currentName, mode, index, total, exactName, prefix, suffix, findText, replaceText, caseSensitive) {
+      function __codexRenameValue(currentName, mode, index, total, exactName, prefix, suffix, findText, replaceText, caseSensitive, allowEmptyName) {
         var nextName = currentName || "";
         if (mode === "exact") {
-          if (!exactName) throw new Error("name is required for exact rename mode.");
+          if (!exactName && !(allowEmptyName && exactName === "")) throw new Error("name is required for exact rename mode.");
           nextName = exactName;
           if (total > 1) {
             if (nextName.indexOf("{index}") !== -1 || nextName.indexOf("{n}") !== -1) {
@@ -16281,15 +16288,34 @@ async function callTool(name, args) {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
     const layerIndices = optionalPositiveIntegerList(args, "layerIndices");
-    const mode = optionalString(args, "mode", hasArg(args, "name") ? "exact" : hasArg(args, "prefix") ? "prefix" : hasArg(args, "suffix") ? "suffix" : "findReplace");
-    const renameName = optionalString(args, "name", "");
+    const hasRenameName = Object.prototype.hasOwnProperty.call(args, "name") && args.name !== undefined && args.name !== null;
+    const mode = optionalString(args, "mode", hasRenameName ? "exact" : hasArg(args, "prefix") ? "prefix" : hasArg(args, "suffix") ? "suffix" : "findReplace");
+    const renameName = hasRenameName ? String(args.name) : "";
+    const allowEmptyName = optionalBoolean(args, "allowEmptyName", false);
     const prefix = optionalString(args, "prefix", "");
     const suffix = optionalString(args, "suffix", "");
     const findText = optionalString(args, "find", "");
     const replaceText = optionalString(args, "replace", "");
     const caseSensitive = optionalBoolean(args, "caseSensitive", true);
+    let expectedLayerNames = null;
+    if (hasArg(args, "expectedLayerNames")) {
+      expectedLayerNames = args.expectedLayerNames;
+      if (typeof expectedLayerNames === "string" && expectedLayerNames.trim().startsWith("[")) {
+        expectedLayerNames = JSON.parse(expectedLayerNames);
+      }
+      if (!Array.isArray(expectedLayerNames)) return toolResult("expectedLayerNames must be an array when provided.", true);
+      expectedLayerNames = expectedLayerNames.map((value) => String(value));
+      if (!layerIndices || expectedLayerNames.length !== layerIndices.length) {
+        return toolResult("expectedLayerNames must have the same length as layerIndices.", true);
+      }
+    }
 
     if (!["exact", "prefix", "suffix", "findReplace"].includes(mode)) return toolResult("mode must be one of: exact, prefix, suffix, findReplace.", true);
+    if (allowEmptyName) {
+      if (mode !== "exact" || renameName !== "") return toolResult("allowEmptyName is only valid with mode:\"exact\" and name:\"\".", true);
+      if (!layerIndices || layerIndices.length !== 1) return toolResult("Empty layer-name reset requires exactly one explicit layer index per rename_layers call.", true);
+      if (!expectedLayerNames || expectedLayerNames.length !== 1) return toolResult("Empty layer-name reset requires expectedLayerNames for the target layer.", true);
+    }
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
@@ -16297,6 +16323,8 @@ async function callTool(name, args) {
       var layers = __codexResolveLayers(comp, ${layerIndices ? aeLiteral(layerIndices) : "null"});
       var mode = ${aeLiteral(mode)};
       var exactName = ${aeLiteral(renameName)};
+      var allowEmptyName = ${allowEmptyName ? "true" : "false"};
+      var expectedLayerNames = ${expectedLayerNames ? aeLiteral(expectedLayerNames) : "null"};
       var prefix = ${aeLiteral(prefix)};
       var suffix = ${aeLiteral(suffix)};
       var findText = ${aeLiteral(findText)};
@@ -16308,8 +16336,11 @@ async function callTool(name, args) {
       for (var __i = 0; __i < layers.length; __i++) {
         var layer = layers[__i];
         if (layer.locked) throw new Error("Layer is locked: " + layer.name);
+        if (expectedLayerNames && layer.name !== expectedLayerNames[__i]) {
+          throw new Error("Layer name mismatch at index " + layer.index + ". Expected '" + expectedLayerNames[__i] + "' but found '" + layer.name + "'.");
+        }
         var beforeName = layer.name;
-        var nextName = __codexRenameValue(beforeName, mode, __i + 1, layers.length, exactName, prefix, suffix, findText, replaceText, caseSensitive);
+        var nextName = __codexRenameValue(beforeName, mode, __i + 1, layers.length, exactName, prefix, suffix, findText, replaceText, caseSensitive, allowEmptyName);
         layer.name = nextName;
         renamed.push({
           index: layer.index,
@@ -16321,6 +16352,8 @@ async function callTool(name, args) {
       var response = {
         comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
         mode: mode,
+        expectedLayerNames: expectedLayerNames,
+        allowEmptyName: allowEmptyName,
         changedCount: renamed.length,
         renamed: renamed,
         layers: renamed.map(function (item) { return item.layer; })

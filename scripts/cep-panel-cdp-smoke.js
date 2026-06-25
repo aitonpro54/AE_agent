@@ -46,6 +46,7 @@ const {
   agentLayerTrackMatteScenarioPlans,
   agentLayerTimingScenarioPlans,
   agentLayerTransformScenarioPlans,
+  agentLayerNameResetScenarioPlans,
   agentManualTypedToolsScenarioPlans,
   agentMaskSafetyScenarioPlans,
   agentMarkerLifecycleScenarioPlans,
@@ -239,6 +240,24 @@ function openAiCliRenameFindReplaceScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_RENAME_FIND_REPLACE_PREFIX || "Codex QA AUX032",
     scenarioFactory: agentRenameFindReplaceScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliLayerNameResetScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-layer-name-reset",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_LAYER_NAME_RESET_PREFIX || "Codex QA Reset Names",
+    scenarioFactory: agentLayerNameResetScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -4972,6 +4991,44 @@ async function verifyFindReplaceLayerRenameReadBack(scenario, expected) {
   };
 }
 
+async function verifyEmptyLayerNameResetReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const names = layers.map((layer) => layer.name);
+  const emptyLayers = layers.filter((layer) => layer.name === "");
+
+  for (const beforeName of expected.beforeNames || []) {
+    if (names.includes(beforeName)) {
+      throw new Error(`${scenario.id}: generated pre-reset layer name ${beforeName} was still present after empty-name reset.`);
+    }
+  }
+  if (typeof expected.expectedEmptyNameCount === "number" && emptyLayers.length !== expected.expectedEmptyNameCount) {
+    throw new Error(`${scenario.id}: expected ${expected.expectedEmptyNameCount} empty layer name(s), got ${emptyLayers.length}.`);
+  }
+  if (typeof expected.layerCountAfter === "number" && Number(comp.numLayers) !== expected.layerCountAfter) {
+    throw new Error(`${scenario.id}: expected ${expected.layerCountAfter} layer(s) after empty-name reset, got ${comp.numLayers}.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      numLayers: comp.numLayers
+    },
+    reset: {
+      beforeNames: expected.beforeNames || [],
+      expectedEmptyNameCount: expected.expectedEmptyNameCount || 0,
+      observedNames: names
+    }
+  };
+}
+
 async function verifyGeneratedLayerTimingReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const comp = await callBridgeTool("get_comp_details", {
@@ -7513,6 +7570,10 @@ async function verifyAgentScenarioReadBack(scenario) {
     return verifyFindReplaceLayerRenameReadBack(scenario, expected);
   }
 
+  if (expected.emptyLayerNameReset) {
+    return verifyEmptyLayerNameResetReadBack(scenario, expected);
+  }
+
   if (expected.assortedCompositionGuides) {
     return verifyAssortedCompositionGuidesReadBack(scenario, expected);
   }
@@ -8303,6 +8364,10 @@ async function main() {
   }
   if (command === "agent-rename-find-replace-openai-cli-smoke" || command === "full-ui-agent-rename-find-replace-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliRenameFindReplaceScenarioConfig());
+    return;
+  }
+  if (command === "agent-layer-name-reset-openai-cli-smoke" || command === "full-ui-agent-layer-name-reset-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliLayerNameResetScenarioConfig());
     return;
   }
   if (command === "agent-assorted-composition-guides-openai-cli-smoke" || command === "full-ui-agent-assorted-composition-guides-openai-cli-smoke") {
